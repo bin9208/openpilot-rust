@@ -23,7 +23,6 @@ import msgq
 import numpy as np
 from openpilot.cereal import log
 from openpilot.cereal.services import SERVICE_LIST
-from check_soundd import assets
 
 
 def lines(path):
@@ -32,7 +31,7 @@ def lines(path):
   return [json.loads(line) for line in path.read_text().splitlines()]
 
 
-def scenario(binary, library, output, mode):
+def scenario(binary, library, output, mode, fixture_assets_binary):
   output.mkdir(parents=True, exist_ok=True)
   prefix = 'sound-' + uuid.uuid4().hex[:16]
   old = os.environ.get('OPENPILOT_PREFIX')
@@ -44,7 +43,8 @@ def scenario(binary, library, output, mode):
   try:
     with tempfile.TemporaryDirectory(prefix='sound-native-') as temporary:
       root = Path(temporary)
-      base = assets(root, 48000, 1)
+      subprocess.run([str(fixture_assets_binary), str(root), '48000', '1'], check=True)
+      base = root / 'openpilot/selfdrive/assets'
       params = root / 'params' / prefix
       params.mkdir(parents=True)
       for key, value in [('SoundVolumeAdjustEngage', '37'), ('SoundVolumeAdjust', '73'), ('SoundLanguageSetting', 'en')]:
@@ -202,20 +202,29 @@ def main():
   parser = argparse.ArgumentParser()
   parser.add_argument('--binary', type=Path, required=True)
   parser.add_argument('--output', type=Path, required=True)
+  parser.add_argument('--fixture-assets-binary', type=Path, required=True,
+                      help='native create-soundd-fixture-assets executable')
+  parser.add_argument('--portaudio-library', type=Path,
+                      help='reuse an already compiled owned PortAudio ABI fixture')
   parser.add_argument('--mode', choices=['live', 'bounded', 'retry', 'inactive', 'start-failed', 'stop-retry', 'exhausted'])
   args = parser.parse_args()
+  fixture_assets_binary = args.fixture_assets_binary.resolve()
   args.output.mkdir(parents=True, exist_ok=True)
-  library = args.output.resolve() / 'libowned-portaudio.so'
-  source = Path(__file__).with_name('fixtures') / 'soundd/portaudio.c'
-  compile_result = subprocess.run(
-    ['cc', '-std=c11', '-shared', '-fPIC', '-pthread', '-Wall', '-Wextra', '-Werror', str(source), '-o', str(library)],
-    text=True,
-    capture_output=True,
-    check=True,
-  )
-  (args.output / 'compile.log').write_text(compile_result.stdout + compile_result.stderr + 'compiled owned PortAudio ABI fixture\n')
+  if args.portaudio_library is None:
+    library = args.output.resolve() / 'libowned-portaudio.so'
+    source = Path(__file__).with_name('fixtures') / 'soundd/portaudio.c'
+    compile_result = subprocess.run(
+      ['cc', '-std=c11', '-shared', '-fPIC', '-pthread', '-Wall', '-Wextra', '-Werror', str(source), '-o', str(library)],
+      text=True,
+      capture_output=True,
+      check=True,
+    )
+    (args.output / 'compile.log').write_text(compile_result.stdout + compile_result.stderr + 'compiled owned PortAudio ABI fixture\n')
+  else:
+    library = args.portaudio_library.resolve(strict=True)
+    (args.output / 'compile.log').write_text('reused prebuilt owned PortAudio ABI fixture\n')
   modes = [args.mode] if args.mode else ['live', 'bounded', 'retry', 'inactive', 'start-failed', 'stop-retry', 'exhausted']
-  results = [scenario(args.binary, library, args.output / mode, mode) for mode in modes]
+  results = [scenario(args.binary, library, args.output / mode, mode, fixture_assets_binary) for mode in modes]
   (args.output / 'summary.json').write_text(json.dumps(results, indent=2) + '\n')
   print(json.dumps({'passed': True, 'scenarios': len(results)}))
 

@@ -2574,10 +2574,19 @@ jobs:
         run: |
           python rust/tools/check_micd_analysis.py --binary "$PWD/rust/target/debug/examples/micd_trace" --output "$RUNNER_TEMP/sensor-audio/micd-source"
           python rust/tools/check_micd_daemon.py --binary "$PWD/rust/target/debug/openpilot-micd" --output "$RUNNER_TEMP/sensor-audio/micd-daemon"
+      - name: Build and validate native sound policy and fixture tools
+        run: |
+          rustup component add clippy --toolchain 1.94.0
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-policy-native --bin check-soundd-policy --bin create-soundd-fixture-assets --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-policy-native --test soundd_policy_reference --test soundd_policy_check --test soundd_fixture_assets --test soundd_policy_retirement --test soundd_policy_ci --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-policy-native --lib --test soundd_policy_reference --test soundd_policy_check --test soundd_fixture_assets --test soundd_policy_retirement --test soundd_policy_ci --bin check-soundd-policy --bin create-soundd-fixture-assets --locked -- -D warnings
       - name: Compare alert samples and continuous native playback
         run: |
-          python rust/tools/check_soundd.py --binary "$PWD/rust/target/debug/examples/sound_trace" --binding "$RUNNER_TEMP"/sensor-params-binding/params_pyx*.so --output "$RUNNER_TEMP/sensor-audio/soundd-source"
-          python rust/tools/check_soundd_daemon.py --binary "$PWD/rust/target/debug/openpilot-soundd" --output "$RUNNER_TEMP/sensor-audio/soundd-daemon"
+          "$PWD/rust/target/debug/check-soundd-policy" --binary "$PWD/rust/target/debug/examples/sound_trace" --binding "$RUNNER_TEMP"/sensor-params-binding/params_pyx*.so --output "$RUNNER_TEMP/sensor-audio/soundd-source"
+          python rust/tools/check_soundd_daemon.py --binary "$PWD/rust/target/debug/openpilot-soundd" --output "$RUNNER_TEMP/sensor-audio/soundd-daemon" --fixture-assets-binary "$PWD/rust/target/debug/create-soundd-fixture-assets"
       - name: Check PortAudio callback ownership with Miri
         env:
           MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1

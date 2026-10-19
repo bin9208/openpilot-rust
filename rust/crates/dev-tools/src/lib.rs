@@ -103,6 +103,10 @@ pub mod selfdrive_params_check;
 pub mod selfdrive_state_check;
 #[cfg(feature = "services-catalog-native")]
 pub mod services_catalog_check;
+#[cfg(feature = "soundd-policy-native")]
+pub mod soundd_policy_check;
+#[cfg(feature = "soundd-policy-native")]
+pub mod soundd_policy_reference;
 pub mod stats_clock_check;
 #[cfg(feature = "stats-daemon-native")]
 pub mod stats_daemon_check;

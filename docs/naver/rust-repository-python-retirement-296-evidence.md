@@ -4250,3 +4250,44 @@ format check, not retroactively included in that seal.
 Inventory:198 replaced-local,3 partial,3,379 pending out of3,580. Exact committed
 head CI, complete repository conversion, dev integration and user-owned device
 startup/recording/upload acceptance remain separate and unfinished.
+
+### Native sound policy and fixture generation (2026-10-19)
+
+Retired only `rust/tools/check_soundd.py`. Independent Rust policy code reads
+actual generated WAV bytes and produces all141 requests without golden lookup.
+Six original schedules cover846 states and6,348 samples; the raw legacy results
+remain distinct from the intended #392 finite-clip correction. Original asset
+bytes,17 CLI cases, source pins and full state/sample captures are retained.
+The remaining seven-scenario Python daemon checker now calls the native
+`create-soundd-fixture-assets` executable; that checker is not retired.
+
+The new API tests failed before implementation. Sixteen permanent tests cover
+reference policy, actual WAV generation, generic inputs, controller failures,
+retired-source reintroduction, real retained-daemon argparse and mandatory CI
+routing. The actual CLI test caught a missing helper argument declaration;
+the parser was repaired and its regression now passes. The optional prebuilt
+PortAudio fixture path permits same-artifact validation while CI retains its
+normal C fixture build. No physical sound output is claimed.
+
+Frozen bundle `frozen-final-u62azm6w` passed six policy and seven actual daemon
+CLI scenarios before and after deletion using the same five artifacts. All24
+policy JSON/stderr files are byte-identical; normalization is limited to four
+private generated asset paths. Each policy phase traced seven execs and zero
+Python. The explicitly retained daemon checker used one Python process in its
+15 execs; it preserves all seven runtime assertions. Policy checker SHA256:
+`51304bef1123514e5d9c8c77cc02ce67d6f4e3d53365ee0d0447095709ab3363`.
+
+Fresh post-deletion builds, all16 sound tests, scoped strict Clippy and formatting
+pass. All four rebuilt executable hashes match the frozen artifacts. Shared
+policy validation passed13 disk tests and43 existing isolation tests; an added,
+uncommitted ARM policy test failed because it incorrectly forbade the inherited
+ARM branch condition. That separate assertion is being repaired in the ARM unit;
+this evidence does not describe the combined working-tree suite as all passing.
+The sound-only commit retains all177 inherited disk guards and adds three512MiB
+guards, bringing its total to311. Evidence is under
+`2026-10-19-soundd-policy-tools/{RETIREMENT-EVIDENCE.json,postdelete-*.log,`
+`actual-final-before-lnoahvxl/,actual-final-after-om9d2jp7/}`.
+
+Inventory:199 replaced-local,3 partially replaced and3,378 pending of3,580.
+Exact committed-head CI, repository-wide conversion, integration and user-owned
+normal boot/recording/upload acceptance remain unfinished.
