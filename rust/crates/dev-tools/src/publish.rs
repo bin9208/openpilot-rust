@@ -81,24 +81,6 @@ fn protection_policy(response: &Value) -> Result<Value> {
     Ok(json!({"contexts": contexts, "checks": []}))
 }
 
-#[cfg(test)]
-mod policy_tests {
-    use super::*;
-    #[test]
-    fn actual_branch_rule_is_required_and_repository_bound() {
-        let mut response = json!({"data":{"repository":{"nameWithOwner":REPOSITORY,"ref":{"branchProtectionRule":{"requiresStatusChecks":true,"requiredStatusCheckContexts":["fast checks","rust checks"]}}}}});
-        assert_eq!(
-            protection_policy(&response).unwrap()["contexts"],
-            json!(["fast checks", "rust checks"])
-        );
-        response["data"]["repository"]["ref"]["branchProtectionRule"]["requiresStatusChecks"] =
-            json!(false);
-        assert!(protection_policy(&response).is_err());
-        response["data"]["repository"]["nameWithOwner"] = json!("other/repo");
-        assert!(protection_policy(&response).is_err());
-        assert!(protection_policy(&json!({"data":{"repository":null}})).is_err());
-    }
-}
 impl Github for GhGithub {
     fn api(
         &mut self,
@@ -647,4 +629,23 @@ pub fn publish_for_branch(
     Ok(
         json!({"source_commit":commit,"tag":tag,"release_url":published["html_url"],"ci":ci,"assets":local,"download_verified":true}),
     )
+}
+
+#[cfg(test)]
+mod policy_tests {
+    use super::*;
+    #[test]
+    fn actual_branch_rule_is_required_and_repository_bound() {
+        let mut response = json!({"data":{"repository":{"nameWithOwner":REPOSITORY,"ref":{"branchProtectionRule":{"requiresStatusChecks":true,"requiredStatusCheckContexts":["fast checks","rust checks"]}}}}});
+        assert_eq!(
+            protection_policy(&response).unwrap()["contexts"],
+            json!(["fast checks", "rust checks"])
+        );
+        response["data"]["repository"]["ref"]["branchProtectionRule"]["requiresStatusChecks"] =
+            json!(false);
+        assert!(protection_policy(&response).is_err());
+        response["data"]["repository"]["nameWithOwner"] = json!("other/repo");
+        assert!(protection_policy(&response).is_err());
+        assert!(protection_policy(&json!({"data":{"repository":null}})).is_err());
+    }
 }

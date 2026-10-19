@@ -113,6 +113,7 @@ def stage_baseline():
 def sysroot():
     if (SDK / "VERSION").exists():
         assert (SDK / "VERSION").read_text().strip() == "19.8-carrot-bt1"
+        isolate_providers()
         return
     room(10 * 2**30)
     image = download("https://github.com/ajouatom/agnos-builder/releases/download/agnos-19.8-carrot-bt1/system-375c5d22335770ac08750660bb5b29a3331c550d6a9875b35f36b88af792ea44.img.xz", "system.img.xz", "077d42186def98025ffad9723774c96f45da10c87cc6fedbc58d0cf4fa65ffd4")
@@ -135,6 +136,17 @@ def sysroot():
                 path.unlink()
                 path.symlink_to(os.path.relpath(SDK / target.lstrip("/"), path.parent))
     image.unlink(); sparse.unlink(); raw.unlink()
+    isolate_providers()
+
+
+def isolate_providers():
+    # The complete image may also contain development libraries. Do not let
+    # their generic linker names shadow the explicitly pinned providers used
+    # by this runtime (especially FFmpeg struct ABI and static JPEG/libyuv).
+    library = SDK / "usr/lib/aarch64-linux-gnu"
+    for pattern in ("libavcodec*", "libavformat*", "libavutil*", "libavdevice*", "libavfilter*", "libswscale*", "libswresample*", "libpostproc*", "libopencv*", "libjpeg.a", "libyuv.a", "libonnxruntime*"):
+        for path in library.glob(pattern):
+            if path.is_file() or path.is_symlink(): path.unlink()
 
 
 def providers():
