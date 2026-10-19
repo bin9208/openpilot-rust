@@ -162,6 +162,7 @@ def providers():
         run(["patch", "-p1", "-i", ROOT / "rust/crates/opencv-runtime/native/opencv-defined-access.patch"], cwd=source)
     include = cv / "install/include/opencv4"
     include.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(source / "include", include, dirs_exist_ok=True)
     for module in (source / "modules").iterdir():
         if (module / "include").exists():
             shutil.copytree(module / "include", include, dirs_exist_ok=True)

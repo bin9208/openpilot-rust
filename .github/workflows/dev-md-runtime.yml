@@ -41,11 +41,13 @@ jobs:
           rustup toolchain install 1.94.0 --profile minimal
           rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu aarch64-unknown-linux-musl
           python3 -m pip install --break-system-packages 'git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen'
-      - uses: actions/cache@v4
+      - uses: actions/cache/restore@v4
+        id: sdk-cache
         with:
           path: ${{ runner.temp }}/agnos-runtime/sdk
           key: agnos-sdk-375c5d22335770ac-v1
-      - uses: actions/cache@v4
+      - uses: actions/cache/restore@v4
+        id: cargo-cache
         with:
           path: |
             ~/.cargo/registry
@@ -55,8 +57,23 @@ jobs:
           restore-keys: agnos-runtime-1.94-${{ hashFiles('rust/Cargo.lock') }}-
       - name: Restore verified baseline companions and genuine OS sysroot
         run: python3 rust/ci/runtime/package.py prepare
+      - name: Cache the verified OS independently of the consumer build
+        if: steps.sdk-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/agnos-runtime/sdk
+          key: agnos-sdk-375c5d22335770ac-v1
       - name: Compile exact source, audit ABI, seal and test offline installation
         run: python3 rust/ci/runtime/package.py build
+      - name: Preserve compiled dependencies for focused repair runs
+        if: always() && steps.cargo-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ${{ runner.temp }}/agnos-runtime/target
+          key: agnos-runtime-1.94-${{ hashFiles('rust/Cargo.lock') }}-${{ github.sha }}
       - uses: actions/upload-artifact@v7
         with:
           name: dev-md-runtime-${{ github.sha }}
