@@ -729,6 +729,20 @@ fn run() -> Result<(), EntryError> {
     Ok(())
 }
 
+fn main() -> std::process::ExitCode {
+    match openpilot_managed_entry::runtime(
+        "openpilot.selfdrive.modeld.jetlink.daemon",
+        "jetlinkd",
+        || run().map_err(openpilot_managed_entry::StepError::raised),
+    ) {
+        Ok(_) => std::process::ExitCode::SUCCESS,
+        Err(error) => {
+            eprintln!("jetlinkd: {error}");
+            std::process::ExitCode::FAILURE
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -743,19 +757,5 @@ mod tests {
             Duration::from_secs(2)
         );
         assert_eq!(setup_backoff("USB mount failed"), Duration::from_secs(60));
-    }
-}
-
-fn main() -> std::process::ExitCode {
-    match openpilot_managed_entry::runtime(
-        "openpilot.selfdrive.modeld.jetlink.daemon",
-        "jetlinkd",
-        || run().map_err(openpilot_managed_entry::StepError::raised),
-    ) {
-        Ok(_) => std::process::ExitCode::SUCCESS,
-        Err(error) => {
-            eprintln!("jetlinkd: {error}");
-            std::process::ExitCode::FAILURE
-        }
     }
 }

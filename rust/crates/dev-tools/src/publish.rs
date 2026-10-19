@@ -62,23 +62,25 @@ pub trait Github {
     fn download(&mut self, asset_id: u64, destination: &Path, max_bytes: u64) -> Result<()>;
 }
 pub struct GhGithub;
-const PROTECTION_QUERY: &str = "{repository(owner:\"bin9208\",name:\"openpilot-rust\"){nameWithOwner ref(qualifiedName:\"refs/heads/dev\"){branchProtectionRule{requiresStatusChecks requiredStatusCheckContexts}}}}";
 fn protection_policy(response: &Value) -> Result<Value> {
-    let repo = &response["data"]["repository"];
+    require(response["name"] == "dev", "wrong protection policy branch")?;
     require(
-        repo["nameWithOwner"] == REPOSITORY,
-        "wrong protection policy repository",
-    )?;
-    let policy = &repo["ref"]["branchProtectionRule"];
-    require(
-        policy["requiresStatusChecks"] == true,
+        response["protected"] == true && response["protection"]["enabled"] == true,
         "required status checks are disabled or unavailable",
     )?;
-    let contexts = array(&policy["requiredStatusCheckContexts"])?;
+    let policy = &response["protection"]["required_status_checks"];
+    require(
+        policy["enforcement_level"]
+            .as_str()
+            .is_some_and(|v| v != "off"),
+        "status checks are not enforced",
+    )?;
+    let contexts = array(&policy["contexts"])?;
     for context in contexts {
         string(context)?;
     }
-    Ok(json!({"contexts": contexts, "checks": []}))
+    array(&policy["checks"])?;
+    Ok(policy.clone())
 }
 
 impl Github for GhGithub {
@@ -97,28 +99,11 @@ impl Github for GhGithub {
         if endpoint == format!("{BASE}/branches/dev/protection/required_status_checks")
             && method == "GET"
         {
-            // Read the actual branch rule through GraphQL. Unlike the REST
-            // administration endpoint this is available to the CI token with
-            // repository read access; the gate set and exact-SHA checks below
-            // remain identical. No local snapshot or permission bypass.
-            let output = Command::new("gh")
-                .args([
-                    "api",
-                    "--hostname",
-                    "github.com",
-                    "graphql",
-                    "-f",
-                    &format!("query={PROTECTION_QUERY}"),
-                ])
-                .output()?;
-            require(
-                output.status.success(),
-                format!(
-                    "cannot read branch protection: {}",
-                    String::from_utf8_lossy(&output.stderr)
-                ),
-            )?;
-            return protection_policy(&serde_json::from_slice(&output.stdout)?);
+            // GET branch exposes the current required checks with Contents:
+            // read. Both the REST protection endpoint and the GraphQL rule
+            // require administration access unavailable to GITHUB_TOKEN.
+            let branch = self.api(&format!("{BASE}/branches/dev"), "GET", None, false, false)?;
+            return protection_policy(&branch);
         }
         let mut cmd = Command::new("gh");
         cmd.args([
@@ -635,17 +620,17 @@ pub fn publish_for_branch(
 mod policy_tests {
     use super::*;
     #[test]
-    fn actual_branch_rule_is_required_and_repository_bound() {
-        let mut response = json!({"data":{"repository":{"nameWithOwner":REPOSITORY,"ref":{"branchProtectionRule":{"requiresStatusChecks":true,"requiredStatusCheckContexts":["fast checks","rust checks"]}}}}});
+    fn actual_branch_rule_is_required_and_branch_bound() {
+        let mut response = json!({"name":"dev","protected":true,"protection":{"enabled":true,"required_status_checks":{"enforcement_level":"everyone","contexts":["fast checks","rust checks"],"checks":[]}}});
         assert_eq!(
             protection_policy(&response).unwrap()["contexts"],
             json!(["fast checks", "rust checks"])
         );
-        response["data"]["repository"]["ref"]["branchProtectionRule"]["requiresStatusChecks"] =
-            json!(false);
+        response["protected"] = json!(false);
         assert!(protection_policy(&response).is_err());
-        response["data"]["repository"]["nameWithOwner"] = json!("other/repo");
+        response["protected"] = json!(true);
+        response["name"] = json!("other-branch");
         assert!(protection_policy(&response).is_err());
-        assert!(protection_policy(&json!({"data":{"repository":null}})).is_err());
+        assert!(protection_policy(&json!({})).is_err());
     }
 }

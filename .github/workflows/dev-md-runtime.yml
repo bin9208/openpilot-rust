@@ -32,8 +32,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api graphql -f 'query={repository(owner:"bin9208",name:"openpilot-rust"){nameWithOwner ref(qualifiedName:"refs/heads/dev"){branchProtectionRule{requiresStatusChecks requiredStatusCheckContexts}}}}' --jq '.data.repository.ref.branchProtectionRule' > "$RUNNER_TEMP/publication-policy.json"
-          python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/publication-policy.json")); assert p["requiresStatusChecks"] and {"fast checks","integration gate","check mapped user docs","rust checks","rust aarch64 build"} <= set(p["requiredStatusCheckContexts"])'
+          gh api repos/bin9208/openpilot-rust/branches/dev > "$RUNNER_TEMP/publication-policy.json"
+          python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/publication-policy.json")); assert p["name"] == "dev" and p["protected"] and p["protection"]["enabled"] and {"fast checks","integration gate","check mapped user docs","rust checks","rust aarch64 build"} <= set(p["protection"]["required_status_checks"]["contexts"])'
       - name: Install build tools
         run: |
           sudo apt-get update
