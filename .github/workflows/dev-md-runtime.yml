@@ -7,7 +7,7 @@ permissions:
   actions: read
 concurrency:
   group: dev-md-runtime-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.ref != 'refs/heads/dev-md' }}
 jobs:
   package:
     if: startsWith(github.ref, 'refs/heads/codex/fix-402-') && contains(github.event.head_commit.message, '[runtime-package]')
