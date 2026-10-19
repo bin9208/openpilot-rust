@@ -1,5 +1,14 @@
 # Independent Rust port repository (2026-09-29)
 
+## dev-md validation execution (2026-10-20)
+
+- The user requires local checks to stay at syntax, formatting and diff review.
+  Run functional tests, ARM/AGNOS builds, sealing, installation verification and
+  release publication in GitHub Actions. Separate quick branch checks from deep
+  PR/release checks. Do not repeat successful unchanged checks locally or use a
+  local/self-hosted runner as a workaround. This applies to the dev-md track;
+  the separate #296 conversion is not part of this task.
+
 ## dev-md upstream port isolation (2026-10-15, issue #338)
 
 - On 2026-10-16 the user clarified that this track must deliver an installable
