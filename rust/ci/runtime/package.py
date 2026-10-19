@@ -127,7 +127,8 @@ def sysroot():
     SDK.mkdir(parents=True, exist_ok=True)
     # Extract the genuine image tree; debugfs preserves its linker scripts,
     # usr-merge aliases, C/C++ headers and native libraries together.
-    run(["debugfs", "-R", f"rdump / {SDK}", raw], stdout=subprocess.DEVNULL)
+    with (WORK / "sysroot-extract.log").open("w") as diagnostics:
+        run(["debugfs", "-R", f"rdump / {SDK}", raw], stdout=subprocess.DEVNULL, stderr=diagnostics)
     assert (SDK / "VERSION").read_text().strip() == "19.8-carrot-bt1"
     for path in SDK.rglob("*"):
         if path.is_symlink():
@@ -229,7 +230,8 @@ def build():
     save(WORK / "installer-build.json", dict(schema=1, source_commit=SHA, architecture="aarch64", target="aarch64-unknown-linux-musl", installer_sha256=digest(installer), build_command=shlex.join(installer_cmd), validation="Built on GitHub-hosted runner; complete offline QEMU installation and installed AGNOS launcher verification follow before publication."))
     room(6 * 2**30)
     # Host tools have no native feature enabled; they inspect/seal the real ARM artifacts.
-    host_env = {key: value for key, value in env.items() if key not in ("LOCATIOND_EIGEN_INCLUDE", "PARAMSD_EIGEN_INCLUDE")}
+    arm_providers = {"LOCATIOND_EIGEN_INCLUDE", "PARAMSD_EIGEN_INCLUDE", "FFMPEG_DIR", "ENCODER_LIBYUV_LIB", "OPENPILOT_OPENCV_ROOT", "OPENPILOT_ORT_ROOT", "STARTUP_UI_RAYLIB_ROOT"}
+    host_env = {key: value for key, value in env.items() if key not in arm_providers}
     run(["cargo", "build", "--locked", "--manifest-path", "rust/Cargo.toml", "--release", "-p", "openpilot-dev-tools", "--bin", "package-runtime-release", "--bin", "seal-runtime-package", "--bin", "runtime-elf-audit", "--bin", "publish-runtime-release", "-p", "openpilot-manager", "--bin", "openpilot-manager"], env=host_env)
     rows = []
     for name in NAMES:
