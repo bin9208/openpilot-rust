@@ -10,9 +10,11 @@ use openpilot_jetlink::{
     Error,
 };
 use openpilot_params::Params;
+use openpilot_runtime_core::jetlink_power::{self, Action as DrawAction, Draw};
 use std::{
     env,
     fs::{self, OpenOptions},
+    io::{Read, Seek, SeekFrom},
     path::{Path, PathBuf},
     process::{Command, Stdio},
     sync::{
@@ -41,12 +43,75 @@ enum EntryError {
 fn bool_param(params: &Params, key: &str) -> Result<bool, EntryError> {
     Ok(params.get(key)?.is_some_and(|v| v == b"1"))
 }
+fn draw(action: DrawAction) -> std::io::Result<()> {
+    let mut command = if rustix::process::geteuid().is_root() {
+        Command::new(env::current_exe()?)
+    } else {
+        let mut command = Command::new("sudo");
+        command.arg("-n").arg(env::current_exe()?);
+        command
+    };
+    let mut child = command
+        .args([
+            "--usb-draw",
+            if action == DrawAction::Cut {
+                "off"
+            } else {
+                "on"
+            },
+        ])
+        .stdin(Stdio::null())
+        .spawn()?;
+    let until = Instant::now() + Duration::from_secs(2);
+    loop {
+        if let Some(status) = child.try_wait()? {
+            return if status.success() {
+                Ok(())
+            } else {
+                Err(std::io::Error::other("USB input-current helper failed"))
+            };
+        }
+        if Instant::now() >= until {
+            child.kill()?;
+            child.wait()?;
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::TimedOut,
+                "USB input-current helper exceeded2s",
+            ));
+        }
+        thread::sleep(Duration::from_millis(5));
+    }
+}
+
+fn steer_draw(policy: &mut Draw, wanted: bool) {
+    let role = if !wanted && policy.settled != Some(false) {
+        fs::read_to_string(jetlink_power::POWER_ROLE).ok()
+    } else {
+        None
+    };
+    if let Err(error) = policy.update(wanted, role.as_deref().map(str::trim), draw) {
+        eprintln!("Jetlink USB input-current policy: {error}");
+    }
+}
+
+fn setup_backoff(detail: &str) -> Duration {
+    if detail.contains("already owns the controller")
+        || detail.contains("already holds the device controller")
+    {
+        Duration::from_secs(2)
+    } else {
+        Duration::from_secs(60)
+    }
+}
 fn setup_plain_gadget() -> Result<(), Error> {
+    let mut output = tempfile::tempfile()?;
     let mut child = Command::new("sudo")
         .arg("-n")
         .arg(env::current_exe()?)
         .arg("--setup-gadget")
         .stdin(Stdio::null())
+        .stdout(output.try_clone()?)
+        .stderr(output.try_clone()?)
         .spawn()?;
     let until = Instant::now() + Duration::from_secs(15);
     loop {
@@ -54,7 +119,13 @@ fn setup_plain_gadget() -> Result<(), Error> {
             return if status.success() {
                 Ok(())
             } else {
-                Err(Error::Contract("gadget setup failed"))
+                output.seek(SeekFrom::Start(0))?;
+                let mut detail = String::new();
+                output.take(4096).read_to_string(&mut detail)?;
+                Err(Error::Native(format!(
+                    "gadget setup failed: {}",
+                    detail.trim()
+                )))
             };
         }
         if Instant::now() >= until {
@@ -202,6 +273,20 @@ fn options(
 
 fn run() -> Result<(), EntryError> {
     let helper_args = env::args().skip(1).collect::<Vec<_>>();
+    if helper_args.len() == 2 && helper_args[0] == "--usb-draw" {
+        if !rustix::process::geteuid().is_root() {
+            return Err(EntryError::Arguments(
+                "USB input-current helper requires root",
+            ));
+        }
+        let action = match helper_args[1].as_str() {
+            "off" => DrawAction::Cut,
+            "on" => DrawAction::Restore,
+            _ => return Err(EntryError::Arguments("USB draw action must be off or on")),
+        };
+        jetlink_power::apply(action)?;
+        return Ok(());
+    }
     if helper_args == ["--wifi-publisher"] {
         openpilot_jetlink::wifi::run()?;
         return Ok(());
@@ -291,6 +376,7 @@ fn run() -> Result<(), EntryError> {
     let mut effective_transport = transport_mode;
     let mut reconnect_at = Instant::now();
     let mut owner = GadgetOwner::default();
+    let mut draw_policy = Draw::default();
     let mut link: Option<Link> = None;
     let mut usb_probes = 0usize;
     let mut grace = Duration::from_secs(5);
@@ -303,6 +389,16 @@ fn run() -> Result<(), EntryError> {
             .and_then(|v| String::from_utf8(v).ok())
             .and_then(|v| v.parse::<i32>().ok())
             .unwrap_or(0);
+        let wants_link = matches!(mode, 1 | 2);
+        let egpu = wants_link
+            && (bool_param(&params, "UsbGpuActive")?
+                || bool_param(&params, "UsbGpuLoading")?
+                || openpilot_jetlink::gadget::egpu_present(Path::new("/sys/bus/usb/devices"))?);
+        // Before provisioning, including when the phone is already connected.
+        steer_draw(&mut draw_policy, wants_link && !egpu);
+        if failed && Instant::now() >= reconnect_at {
+            failed = false;
+        }
         let attached = openpilot_jetlink::physical::device_attached(transport_mode);
         let lost = link
             .as_ref()
@@ -449,9 +545,11 @@ fn run() -> Result<(), EntryError> {
         if let Err(error) = result {
             failed = true;
             failure_detail = error.to_string();
+            reconnect_at = Instant::now() + setup_backoff(&failure_detail);
             if transport_mode == TransportMode::Auto
                 && effective_transport.composite()
                 && link.is_none()
+                && setup_backoff(&failure_detail) != Duration::from_secs(2)
             {
                 // Optional NCM setup must not disable the existing bulk path.
                 // The root helper verifies the gadget is detached and owns the
@@ -531,10 +629,34 @@ fn run() -> Result<(), EntryError> {
         }
         thread::sleep(Duration::from_millis(500));
     }
+    let wanted_at_stop = params
+        .get("JetlinkMode")?
+        .is_some_and(|value| matches!(value.as_slice(), b"1" | b"2"));
+    if !wanted_at_stop {
+        // Keep the cut while the link is wanted; restore only on an empty port.
+        steer_draw(&mut draw_policy, false);
+    }
     if let Some(link) = &mut link {
         link.teardown()?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn controller_conflict_can_recover_after_adb_releases_without_hot_retry() {
+        assert_eq!(
+            setup_backoff("USB gadget 'g1' already holds the device controller (a600000.dwc3)"),
+            Duration::from_secs(2)
+        );
+        assert_eq!(
+            setup_backoff("a USB gadget already owns the controller"),
+            Duration::from_secs(2)
+        );
+        assert_eq!(setup_backoff("USB mount failed"), Duration::from_secs(60));
+    }
 }
 
 fn main() -> std::process::ExitCode {

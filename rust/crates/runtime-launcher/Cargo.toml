@@ -10,6 +10,7 @@ publish = false
 workspace = true
 
 [dependencies]
+openpilot-runtime-core = { path = "../runtime-core" }
 openpilot-startup-recovery = { path = "../startup-recovery" }
 openpilot-runtime-installer = { path = "../runtime-installer" }
 rustix = { version = "1", features = ["process", "fs", "pipe"] }

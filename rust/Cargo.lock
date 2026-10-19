@@ -3635,6 +3635,7 @@ dependencies = [
  "chrono",
  "home",
  "openpilot-process-supervision",
+ "openpilot-runtime-core",
  "openpilot-runtime-installer",
  "openpilot-runtime-version",
  "openpilot-startup-recovery",

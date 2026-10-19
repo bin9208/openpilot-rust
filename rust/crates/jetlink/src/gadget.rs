@@ -118,7 +118,15 @@ fn setup(paths: &Paths, platform: &impl Platform) -> Result<(), Error> {
     for entry in fs::read_dir(&gadgets)? {
         let controller = entry?.path().join("UDC");
         if controller.exists() && !value(&controller).is_empty() {
-            return Err(Error::Contract("a USB gadget already owns the controller"));
+            return Err(Error::Native(format!(
+                "USB gadget '{}' already holds the device controller ({})",
+                controller
+                    .parent()
+                    .and_then(Path::file_name)
+                    .unwrap_or_default()
+                    .to_string_lossy(),
+                value(&controller),
+            )));
         }
     }
     let gadget = gadgets.join("carrot_jetlink");

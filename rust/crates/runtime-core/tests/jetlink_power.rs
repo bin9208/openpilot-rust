@@ -1,4 +1,4 @@
-use openpilot_runtime_core::jetlink_power::{boot_wanted, Action, Draw};
+use openpilot_runtime_core::jetlink_power::{boot_wanted, write_voter, Action, Draw};
 use std::io;
 
 #[test]
@@ -112,5 +112,34 @@ fn boot_matches_the_upstream_nonzero_setting_file_policy() {
     }
     for value in [b"1".as_slice(), b"2", b"3\n", b"android"] {
         assert!(boot_wanted(Some(value)));
+    }
+}
+
+#[test]
+fn voter_writes_preserve_the_upstream_order_and_stop_on_the_first_io_error() {
+    for (action, expected) in [
+        (Action::Cut, [("force_val", "0\n"), ("force_active", "1\n")]),
+        (
+            Action::Restore,
+            [("force_active", "0\n"), ("force_val", "0\n")],
+        ),
+    ] {
+        let mut calls = Vec::new();
+        write_voter(action, |name, bytes| {
+            calls.push((name.to_owned(), String::from_utf8_lossy(bytes).into_owned()));
+            Ok(())
+        })
+        .unwrap();
+        assert_eq!(
+            calls,
+            expected.map(|(name, value)| (name.to_owned(), value.to_owned()))
+        );
+        let mut calls = 0;
+        assert!(write_voter(action, |_, _| {
+            calls += 1;
+            Err(io::Error::other("unavailable"))
+        })
+        .is_err());
+        assert_eq!(calls, 1);
     }
 }
