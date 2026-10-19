@@ -1,0 +1,29 @@
+name: Jetlink native fast checks
+on:
+  push:
+    branches: ['codex/fix-402-*']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: jetlink-native-fast-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  policy:
+    name: Jetlink power policy fast checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    env:
+      CARGO_INCREMENTAL: '0'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Install pinned compiler
+        run: rustup toolchain install 1.94.0 --profile minimal
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+          shared-key: jetlink-power-policy
+      - name: Focused policy and CPU-bound regressions
+        run: cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-core --test jetlink_power
