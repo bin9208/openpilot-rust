@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shlex
 import shutil
 import subprocess
@@ -252,6 +253,7 @@ def install(online):
     checkout = WORK / ("install-online" if online else "install-offline")
     run(["git", "clone", "--no-hardlinks", "--no-checkout", ROOT, checkout])
     run(["git", "-C", checkout, "checkout", "--detach", SHA])
+    run(["git", "-C", checkout, "remote", "set-url", "origin", "https://github.com/bin9208/openpilot-rust.git"])
     descriptor = json.loads((RELEASE / "runtime-release.json").read_text())
     assert descriptor["source_commit"] == SHA
     helper = RELEASE / "openpilot-runtime-install-aarch64"; helper.chmod(0o755)
@@ -263,6 +265,28 @@ def install(online):
     shutil.rmtree(checkout)
 
 
+def restore_release():
+    # The publication job starts in a fresh source checkout. Restore the sealed
+    # payload before the existing publisher compares it with all six assets.
+    descriptor = json.loads((RELEASE / "runtime-release.json").read_text())
+    assert descriptor["source_commit"] == SHA
+    archive = RELEASE / descriptor["archive"]["name"]
+    assert archive.name == f"openpilot-rust-{SHA}-aarch64.tar.gz"
+    assert digest(archive) == descriptor["archive"]["sha256"]
+    source = (ROOT / "rust/crates/dev-tools/src/package.rs").read_text().split("const SOURCE_ASSETS:", 1)[1].split("];", 1)[0]
+    assets = set(re.findall(r'"([^"\n]+)"', source))
+    assert len(assets) == 19
+    room(3 * 2**30)
+    with tarfile.open(archive) as payload:
+        for member in payload:
+            assert member.name.startswith("rust/bin/") or member.name == "rust/runtime-manifest.json" or member.name in assets, member.name
+            payload.extract(member, ROOT, filter="data")
+    assert digest(ROOT / "rust/runtime-manifest.json") == descriptor["manifest_sha256"]
+    run(["git", "add", "--renormalize", "--", *sorted(assets)])
+    assert not git("status", "--porcelain")
+    (RELEASE / "openpilot-runtime-install-aarch64").chmod(0o755)
+
+
 def publish():
     assert os.environ["GITHUB_REF"] == "refs/heads/dev-md"
     identity = json.loads((WORK / "delivery-tools/identity.json").read_text())
@@ -270,6 +294,7 @@ def publish():
     publisher = WORK / "delivery-tools/publish-runtime-release"; publisher.chmod(0o755)
     assert digest(publisher) == identity["publisher_sha256"]
     assert digest(RELEASE / "openpilot-runtime-install-aarch64") == identity["installer_sha256"]
+    restore_release()
     # The existing publisher independently checks every exact-SHA required gate
     # and all sealed asset identities. Wait outside it, once a minute, for CI.
     deadline = time.monotonic() + 3 * 3600
