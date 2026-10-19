@@ -222,10 +222,32 @@ wait
                 for pid in &fields[..3] {
                     let pid = Pid::from_raw(pid.parse().unwrap()).unwrap();
                     let id = pidfd_open(pid, PidfdFlags::empty()).unwrap();
-                    let env = fs::read(format!("/proc/{}/environ", pid.as_raw_pid())).unwrap();
-                    assert!(env
-                        .split(|b| *b == 0)
-                        .any(|b| b == format!("STATS_CHECK_TOKEN={token}").as_bytes()));
+                    // The background shell child may be reported before exec;
+                    // reserve its PID and await the actual inherited environment.
+                    loop {
+                        let env = fs::read(format!("/proc/{}/environ", pid.as_raw_pid()))
+                            .unwrap_or_default();
+                        if env
+                            .split(|b| *b == 0)
+                            .any(|b| b == format!("STATS_CHECK_TOKEN={token}").as_bytes())
+                        {
+                            break;
+                        }
+                        assert_eq!(
+                            poll(
+                                &mut [PollFd::new(&id, PollFlags::IN)],
+                                Some(&Timespec::default())
+                            )
+                            .unwrap(),
+                            0,
+                            "candidate child exited before environment acknowledgement"
+                        );
+                        assert!(
+                            Instant::now() < deadline,
+                            "candidate child did not acknowledge its private environment"
+                        );
+                        thread::sleep(Duration::from_millis(5));
+                    }
                     descendants.0.push(id);
                 }
                 break (

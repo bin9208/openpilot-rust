@@ -63,7 +63,11 @@ pub mod journald_check;
 pub mod journald_fixture;
 #[cfg(feature = "managed-entry-native")]
 pub mod managed_entry_check;
-#[cfg(any(feature = "managed-entry-native", feature = "stats-daemon-native"))]
+#[cfg(any(
+    feature = "managed-entry-native",
+    feature = "stats-daemon-native",
+    feature = "registration-tools-native"
+))]
 pub mod managed_entry_collector_source;
 #[cfg(feature = "managed-entry-native")]
 pub mod managed_entry_source;
@@ -72,6 +76,8 @@ pub mod managed_runtime_check;
 pub mod media_validation;
 pub mod message_state_check;
 pub mod miri_provenance;
+#[cfg(feature = "navd-config-tools-native")]
+pub mod navd_config_check;
 pub mod opencv_build;
 pub mod opencv_stage;
 pub mod package;
@@ -90,6 +96,8 @@ pub mod publish;
 pub(crate) mod qa_endpoint;
 pub mod qa_process;
 pub mod ratekeeper_check;
+#[cfg(feature = "registration-tools-native")]
+pub mod registration_check;
 #[cfg(feature = "registration-clock-native")]
 pub mod registration_clock_check;
 pub mod registration_utf7_check;

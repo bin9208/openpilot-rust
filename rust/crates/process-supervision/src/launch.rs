@@ -188,6 +188,15 @@ impl CapturedCommand {
         self.spawn_with_stdio(StreamMode::Inherited, &[], false)
     }
 
+    /// Start a caller-owned session while preserving all inherited standard streams.
+    /// The caller must terminate the group before reaping its retained leader.
+    pub fn spawn_session_inherited_with_env(
+        &self,
+        environment: &[(OsString, OsString)],
+    ) -> Result<CapturedChild, Error> {
+        self.spawn_with_stdio(StreamMode::Inherited, environment, true)
+    }
+
     pub fn spawn_inherited_with_lock(&self, lock: BorrowedFd<'_>) -> Result<CapturedChild, Error> {
         self.spawn_controlled(StreamMode::Inherited, &[], false, Some(lock))
     }

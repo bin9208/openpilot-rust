@@ -22,6 +22,7 @@
 - All separately launched workers use GPT-6.1 Sol. Parent owns shared Cargo manifests, workflows, deletion integration and Git publication.
 - On2026-10-18 the user confirmed the device is unavailable and will personally pull and test normal boot, recording and upload. Finish code/test/commit integration without waiting for a connection; user device results remain separate evidence.
 - Preserve the five required PR checks and separate exact merged-dev PUSH checks. No completion merely from opening a PR or scheduling CI.
+- On 2026-10-19 the user moved builds, execution, original comparisons and regression validation to GitHub Actions. Local checks are limited to diff, formatting and syntax. Group related changes, inspect CI failures and continue independent ports while CI runs; do not resume the earlier local build/proof loop. Earlier completed evidence remains historical, and pending local verification entries below now mean required CI work.
 
 ## Baseline and remaining scope
 
@@ -65,9 +66,9 @@ Interface: protocol (all five modes), USB, SPI, peripheral and runtime-fixture b
 
 Additional locally verified replacements and current failures are recorded in the
 [evidence ledger](rust-repository-python-retirement-296-evidence.md) and inventory.
-195 baseline sources are fully replaced locally, three baseline sources are
+209 baseline sources are fully replaced locally, three baseline sources are
 partially replaced because live-source helpers or unrelated Params tests remain Python,
-and 3,382 baseline sources remain pending. The added
+and 3,368 baseline sources remain pending. The added
 rust/tools/selfdrived_helpers_source.py retains those helpers; relocation is
 not retirement. Remaining families and final delivery gates stay open.
 The Bluetooth input decoder checker is now native after exact10,049-record,
@@ -334,3 +335,49 @@ retirement. The frozen eight artifacts passed 15 cases per phase, with 50 exec
 attempts and no Python in each phase. Fresh post-deletion verification passed
 72 tests (7 interrupted,8 predecessor,44 CI policy,13 disk) and strict Clippy.
 The separate real-clock and busy-producer runtime checkers remain pending.
+
+### Active registration/navigation helper closure (2026-10-19)
+
+Retirement candidates are `check_registration.py`, `registration_source.py`,
+`check_navd_config.py` and `navd_config_source.py`. Navigation imports the
+registration helpers, so this is one dependency closure. Other navigation and
+startup tools retain their existing bindings and source requirements.
+
+Independent registration captures cover the full131-case baseline,3 real socket
+timeout cases, generic inputs and primitive text/response encoders. Navigation
+captures cover26 named configurations,8 generic inputs, CLI/process failures
+and two additional GPS error-order controls. Preserve live key generation,
+signatures, Params, collectors and real timing; expected results must not come
+from the candidate. Source hashes and historical absent hashes are distinct.
+No retired Python is retained under a renamed source/text extension.
+
+- [x] Original-only capture and actual pre-implementation API failures.
+- [x] Frozen registration13 tests and independent primitive4 pass.
+- [x] Add actual CLI test for both delayed collector schedules; it passes.
+- [x] Observe missing-helper guards and closed-stdout stale-PASS regression fail.
+- [x] Final native CI routing passes 46 policy and 13 disk tests, including all retirement targets and receipt-owner units.
+- [x] Exact absence adapters, output failure fix and final full native gate.
+- [x] Same nine artifacts before/after all four removals: 27 tests, 134 registration cases, 26 navigation cases and 17 CLI controls.
+- [x] Post-deletion compiler phase finished before the workflow change; all nine outputs are byte-identical to the proven frozen artifacts.
+- [ ] Exact committed-SHA CI; no further local runtime repetition under the new workflow.
+
+Navigation's relative-path test expectation was corrected without changing the
+parser. The original GPS `.get` error order required a source-adapter correction.
+The output failure fix preserves per-case evidence while withholding a fresh
+success aggregate on broken stdout. The new retirement target remains mandatory
+alongside navigation's existing tests. Startup's45-minute budget retains the
+previous28m29s workload plus the added native controls.
+
+### Production statistics runtime/flood tools awaiting CI (2026-10-19)
+
+Removed `check_stats_runtime.py` and `check_stats_flood.py`; shared original
+logging helpers remain. Fresh production `statsd-rs` and `stats_flood` artifacts,
+sealed against373 source inputs, passed the original real-clock case, both
+busy-producer signal cases and16 CLI/effect controls. The original flood checker
+accepts an existing root while creating new per-signal children; preserve that
+behavior and unrelated files. Missing native API E0432 was observed before
+implementation. Keep the10-second admission,5-second normal shutdown and2-second
+busy shutdown bounds, real timestamp window,0600 output,10 user CPU ticks and
+two live producers. Before the workflow change, 24 native tests, strict Clippy
+and the same-artifact three-case proof passed both before and after deletion.
+Fresh post-deletion builds and regressions now run in the required CI job.

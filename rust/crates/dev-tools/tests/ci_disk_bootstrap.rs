@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 321);
+    assert_eq!(text.matches(marker).count(), 338);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -295,8 +295,44 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut managed_controllers = vec![];
     let mut managed_runtime = vec![];
     let mut registration_clock = vec![];
+    let mut registration_tools = vec![];
+    let mut navd_config_tools = vec![];
+    let mut stats_runtime_receipts = vec![];
+    let mut connectivity_ownership = vec![];
+    let mut wifi_snapshot = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
+            if i + 1 < lines.len()
+                && (lines[i + 1].contains("-p openpilot-wifi --lib --locked")
+                    || lines[i + 1].contains(
+                        "rustc --edition=2021 rust/tools/wifi_snapshot_allocation_probe.rs",
+                    ))
+            {
+                wifi_snapshot.push(tail.to_owned());
+                continue;
+            }
+            if i + 1 < lines.len()
+                && lines[i + 1].contains("-p openpilot-bluetooth -p openpilot-wifi --all-targets")
+            {
+                connectivity_ownership.push(tail.to_owned());
+                continue;
+            }
+            if i + 1 < lines.len()
+                && (lines[i + 1].contains("rust/target/debug/check-stats-runtime ")
+                    || lines[i + 1].contains("rust/target/debug/check-stats-flood "))
+            {
+                stats_runtime_receipts.push(tail.to_owned());
+                continue;
+            }
+            if i + 1 < lines.len() && lines[i + 1].contains("--features registration-tools-native")
+            {
+                registration_tools.push(tail.to_owned());
+                continue;
+            }
+            if i + 1 < lines.len() && lines[i + 1].contains("--features navd-config-tools-native") {
+                navd_config_tools.push(tail.to_owned());
+                continue;
+            }
             if i + 1 < lines.len() && lines[i + 1].contains("--features registration-clock-native")
             {
                 registration_clock.push(tail.to_owned());
@@ -567,7 +603,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     );
     assert_eq!(
         stats_daemon,
-        [512, 512, 512, 1024, 512, 512]
+        [512, 512, 512, 512, 512, 512, 1024, 512, 512]
             .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     assert_eq!(
@@ -588,6 +624,28 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
         bluetooth_input,
         [1024, 512, 512]
             .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        registration_tools,
+        [1024, 512, 512, 512]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        stats_runtime_receipts,
+        [128, 128].map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        navd_config_tools,
+        [1024, 512, 512, 512]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        connectivity_ownership,
+        [512, 512].map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        wifi_snapshot,
+        [512, 64].map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     assert_eq!(
         registration_clock,

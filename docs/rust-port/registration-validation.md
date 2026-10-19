@@ -94,17 +94,24 @@ cargo clippy --manifest-path rust/Cargo.toml -p openpilot-registration -p openpi
 cargo test --manifest-path rust/Cargo.toml -p openpilot-registration -p openpilot-uploader --all-targets --locked
 cargo build --manifest-path rust/Cargo.toml -p openpilot-registration -p openpilot-uploader --examples --locked
 
-# PYTHONPATH begins with the built original msgq bindings, then the repository and rust/tools.
-python rust/tools/check_registration.py REGISTRATION_TRACE ORIGINAL_PARAMS_SO OUTPUT
-python rust/tools/check_registration.py REGISTRATION_TRACE ORIGINAL_PARAMS_SO TIMEOUT_OUTPUT --timeouts
+cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features registration-tools-native,registration-clock-native --bin check-registration --bin check-registration-clock --bin check-registration-vendor --locked
+"${CARGO_TARGET_DIR:-rust/target}/debug/check-registration" REGISTRATION_TRACE OUTPUT
+"${CARGO_TARGET_DIR:-rust/target}/debug/check-registration" REGISTRATION_TRACE TIMEOUT_OUTPUT --timeouts
+# The remaining original comparisons require PYTHONPATH to begin with the built
+# original msgq bindings, then the repository and rust/tools.
 python rust/tools/check_uploader.py --binary UPLOADER_TRACE --output UPLOADER_REPORT
-python rust/tools/check_registration_clock.py REGISTRATION_CLOCK CLOCK_REPORT
-python rust/tools/check_registration_vendor.py CHARSET_NORM_ARCHIVE VENDOR_REPORT
+"${CARGO_TARGET_DIR:-rust/target}/debug/check-registration-clock" REGISTRATION_CLOCK CLOCK_REPORT
+"${CARGO_TARGET_DIR:-rust/target}/debug/check-registration-vendor" CHARSET_NORM_ARCHIVE VENDOR_REPORT
 
 cargo zigbuild --manifest-path rust/Cargo.toml -p openpilot-registration --example registration_trace --target aarch64-unknown-linux-gnu.2.28 --locked
-python rust/tools/check_registration.py ARM_REGISTRATION_TRACE ORIGINAL_PARAMS_SO ARM_OUTPUT \
+"${CARGO_TARGET_DIR:-rust/target}/debug/check-registration" ARM_REGISTRATION_TRACE ARM_OUTPUT \
   --runner QEMU_AARCH64 --runner=-L --runner ARM_SYSROOT
 ```
+
+#296 replaced the registration controller and source helper. Its native checker
+uses retained independent original observations; the historical original run
+above remains provenance. The former Params-binding positional argument is no
+longer accepted. Use fresh output directories for current runs.
 
 ## Remaining integration gates
 

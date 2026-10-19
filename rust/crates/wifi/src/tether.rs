@@ -8,15 +8,43 @@ use openpilot_process_supervision::{CapturedChild, CapturedCommand};
 use std::time::Duration;
 
 struct CommandChild(CapturedChild);
+impl CommandChild {
+    fn spawn(
+        command: CapturedCommand,
+        environment: &[(std::ffi::OsString, std::ffi::OsString)],
+    ) -> Result<Self, openpilot_process_supervision::Error> {
+        command
+            .spawn_session_inherited_with_env(environment)
+            .map(Self)
+    }
+
+    fn exited(&self) -> std::io::Result<bool> {
+        use rustix::process::{waitid, Pid, WaitId, WaitIdOptions};
+        loop {
+            match waitid(
+                WaitId::Pid(Pid::from_child(&self.0.process)),
+                WaitIdOptions::EXITED | WaitIdOptions::NOHANG | WaitIdOptions::NOWAIT,
+            ) {
+                Ok(status) => return Ok(status.is_some()),
+                Err(rustix::io::Errno::INTR) => continue,
+                Err(error) => return Err(error.into()),
+            }
+        }
+    }
+}
 impl Drop for CommandChild {
     fn drop(&mut self) {
-        match self.0.process.try_wait() {
-            Ok(Some(_)) => return,
-            Ok(None) => {}
-            Err(error) => eprintln!("Wi-Fi child status: {error}"),
-        }
-        if let Err(error) = self.0.process.kill() {
-            eprintln!("Wi-Fi child kill: {error}");
+        // The session leader is retained, even after normal exit, until every
+        // signal using its process-group identity has finished.
+        use rustix::process::{kill_process_group, Pid, Signal};
+        match kill_process_group(Pid::from_child(&self.0.process), Signal::KILL) {
+            Ok(()) | Err(rustix::io::Errno::SRCH) => {}
+            Err(error) => {
+                eprintln!("Wi-Fi child group kill: {error}");
+                if let Err(error) = self.0.process.kill() {
+                    eprintln!("Wi-Fi child kill: {error}");
+                }
+            }
         }
         if let Err(error) = self.0.process.wait() {
             eprintln!("Wi-Fi child reap: {error}");
@@ -125,12 +153,10 @@ impl Engine {
                         .map(Into::into)
                         .collect(),
                 };
-                let mut child = tokio::task::spawn_blocking(move || {
-                    command.spawn_inherited().map(CommandChild)
-                })
-                .await
-                .map_err(|_| Error::Panicked)??;
-                while child.0.process.try_wait()?.is_none() {
+                let child = tokio::task::spawn_blocking(move || CommandChild::spawn(command, &[]))
+                    .await
+                    .map_err(|_| Error::Panicked)??;
+                while !child.exited()? {
                     tokio::time::sleep(Duration::from_millis(20)).await;
                 }
             }
@@ -205,3 +231,6 @@ impl Engine {
         Ok(())
     }
 }
+
+#[cfg(all(test, target_os = "linux"))]
+mod cleanup_tests;

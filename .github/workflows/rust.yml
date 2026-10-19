@@ -592,7 +592,9 @@ jobs:
     runs-on: ubuntu-24.04
     # LLVM20 replay has its own required budget; LLVM18 workspace tests,
     # original-source comparisons and release packaging remain mandatory here.
-    timeout-minutes: 150
+    # e167 reached managed-runtime at 114m; the last successful remaining
+    # comparison/release stages took 43m. Keep those stages within the budget.
+    timeout-minutes: 210
     env:
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
@@ -678,6 +680,7 @@ jobs:
       - run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           cargo build -p openpilot-bootlog --example bootlog_snapshot -p openpilot-process-supervision --bin openpilot-process-child --locked
+          export WIFI_PROCESS_CHILD_BINARY="$GITHUB_WORKSPACE/rust/target/debug/openpilot-process-child"
           cargo test --workspace --locked --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3
       - name: Check process-stat parser allocation regression
         run: |
@@ -1734,12 +1737,25 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml -p openpilot-navd --features native --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-navd --features native --all-targets --locked -- -D warnings
+      - name: Require independent native navigation configuration source and lifecycle
+        run: |
+          export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
+          export NAVD_CONFIG_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/navd_config"
+          export NAVD_CONFIG_WORKER_BINARY="$GITHUB_WORKSPACE/rust/target/debug/check-navd-config"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features navd-config-tools-native --bin check-navd-config --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features navd-config-tools-native --test navd_config_check --test navd_config_reference --test registration_navd_retirement --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features navd-config-tools-native --lib navd_config_check::publication::tests --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features navd-config-tools-native --lib --bin check-navd-config --test navd_config_check --test navd_config_reference --test registration_navd_retirement --locked -- -D warnings
       - name: Compare navigation source policy, HTTP, authentication and destination CLI
         run: |
           python rust/tools/check_navd_policy.py --binary rust/target/debug/examples/navd_policy --binding "$NAVD_PARAMS_BINDING" --output "$RUNNER_TEMP/navd-native/policy"
           python rust/tools/check_navd_engine.py --binary rust/target/debug/examples/navd_engine --binding "$NAVD_PARAMS_BINDING" --output "$RUNNER_TEMP/navd-native/engine"
           python rust/tools/check_navd_http.py --binary rust/target/debug/examples/navd_http --output "$RUNNER_TEMP/navd-native/http" --timeouts
-          python rust/tools/check_navd_config.py --binary rust/target/debug/examples/navd_config --binding "$NAVD_PARAMS_BINDING" --output "$RUNNER_TEMP/navd-native/config"
+          rust/target/debug/check-navd-config --binary rust/target/debug/examples/navd_config --output "$RUNNER_TEMP/navd-native/config"
           python rust/tools/check_navd_destination.py --binary rust/target/debug/openpilot-set-destination --binding "$NAVD_PARAMS_BINDING" --output "$RUNNER_TEMP/navd-native/destination"
       - name: Compare actual navigation IPC, restart timers and signal lifecycle
         run: python rust/tools/check_navd_ipc.py --binary rust/target/debug/openpilot-navd --binding "$NAVD_PARAMS_BINDING" --output "$RUNNER_TEMP/navd-native/ipc"
@@ -2294,8 +2310,19 @@ jobs:
           rust/target/debug/check-stats-log-fault rust/target/debug "$STATS_DAEMON_BINDING" "$RUNNER_TEMP/telemetry-runtime/stats-log-fault"
       - name: Exercise statistics production startup and shutdown under sustained traffic
         run: |
-          python rust/tools/check_stats_runtime.py rust/target/debug "$RUNNER_TEMP/telemetry-runtime/stats-runtime"
-          python rust/tools/check_stats_flood.py rust/target/debug "$RUNNER_TEMP/telemetry-runtime/stats-flood"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-daemon-native --bin check-stats-runtime --bin check-stats-flood --locked
+          export STATS_RUNTIME_BINARIES="$PWD/rust/target/debug"
+          export STATS_RUNTIME_CHECKER="$PWD/rust/target/debug/check-stats-runtime"
+          export STATS_FLOOD_CHECKER="$PWD/rust/target/debug/check-stats-flood"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-daemon-native --test stats_runtime_check --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-daemon-native --lib --test stats_runtime_check --bin check-stats-runtime --bin check-stats-flood --locked -- -D warnings
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          rust/target/debug/check-stats-runtime rust/target/debug "$RUNNER_TEMP/telemetry-runtime/stats-runtime"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          rust/target/debug/check-stats-flood rust/target/debug "$RUNNER_TEMP/telemetry-runtime/stats-flood"
       - name: Compare interrupted metric receives with the original daemon
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -2355,7 +2382,8 @@ jobs:
   startup-runtime:
     name: rust startup prerequisites
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    # Prior full workload took 28m29s; retain it plus native source/ownership tests.
+    timeout-minutes: 45
     env:
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
@@ -2429,12 +2457,25 @@ jobs:
         run: |
           curl --fail --location --retry 3 https://static.crates.io/crates/charset-norm/charset-norm-3.5.1.crate --output "$RUNNER_TEMP/charset-norm-3.5.1.crate"
           rust/target/debug/check-registration-vendor "$RUNNER_TEMP/charset-norm-3.5.1.crate" "$RUNNER_TEMP/startup-runtime/detector-vendor.json"
+      - name: Require independent native registration primitives and real source comparisons
+        run: |
+          export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
+          export REGISTRATION_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/registration_trace"
+          export REGISTRATION_WORKER_BINARY="$GITHUB_WORKSPACE/rust/target/debug/check-registration"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features registration-tools-native --bin check-registration --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features registration-tools-native --lib registration_check:: --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features registration-tools-native --test registration_check --test registration_reference --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features registration-tools-native --lib --bin check-registration --test registration_check --test registration_reference --locked -- -D warnings
       - name: Compare registration signatures, persistence and response decoding
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --test registration_utf7_check --test registration_utf7_ci
-          python rust/tools/check_registration.py rust/target/debug/examples/registration_trace \
-            "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/registration"
+          rust/target/debug/check-registration rust/target/debug/examples/registration_trace \
+            "$RUNNER_TEMP/startup-runtime/registration"
           export REGISTRATION_CLOCK_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/registration_clock"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features registration-clock-native --test registration_clock_check --locked
@@ -2444,14 +2485,12 @@ jobs:
           rust/target/debug/check-registration-utf7 rust/target/debug/examples/registration_utf7 "$RUNNER_TEMP/startup-runtime/registration-utf7.json"
       - name: Compare actual registration socket deadlines and progressing responses
         run: |
-          python rust/tools/check_registration.py rust/target/debug/examples/registration_trace \
-            "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/registration-timeouts" --timeouts
+          rust/target/debug/check-registration rust/target/debug/examples/registration_trace \
+            "$RUNNER_TEMP/startup-runtime/registration-timeouts" --timeouts
       - name: Exercise registration collector publisher startup race
         run: |
-          cc -shared -fPIC -Wall -Wextra -Werror rust/tools/registration_collector_delay.c -ldl -o "$RUNNER_TEMP/registration-collector-delay.so"
-          LD_PRELOAD="$RUNNER_TEMP/registration-collector-delay.so" python rust/tools/check_registration.py rust/target/debug/examples/registration_trace \
-            "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/registration-ready" --case clock_year_ten_thousand
-          python -c 'from pathlib import Path; import sys; files=list(Path(sys.argv[1]).glob("clock_year_ten_thousand/*/collector-*/stderr.log")); assert len(files)==2; assert all("pausing before error publisher initialization" in path.read_text() for path in files)' "$RUNNER_TEMP/startup-runtime/registration-ready"
+          REGISTRATION_COLLECTOR_DELAY_MS=800 rust/target/debug/check-registration rust/target/debug/examples/registration_trace \
+            "$RUNNER_TEMP/startup-runtime/registration-ready" --case clock_year_ten_thousand
       - name: Compare uploader signing after shared registration key support
         run: python rust/tools/check_uploader.py --binary rust/target/debug/examples/uploader_trace --output "$RUNNER_TEMP/startup-runtime/uploader-signing.json"
       - name: Build and test native manager catalog QA tools
@@ -2976,8 +3015,22 @@ jobs:
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
           cargo build --manifest-path rust/Cargo.toml -p openpilot-ui-framework -p openpilot-startup-ui -p openpilot-wifi -p openpilot-cweb-push -p openpilot-process-supervision -p openpilot-bluetooth --bins --examples --locked
+          export WIFI_PROCESS_CHILD_BINARY="$GITHUB_WORKSPACE/rust/target/debug/openpilot-process-child"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-bluetooth -p openpilot-wifi --all-targets --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-bluetooth -p openpilot-wifi --all-targets --locked -- -D warnings
           python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/ui-params-binding"
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/connectivity-msgq-python"
+      - name: Require Wi-Fi snapshot semantic and allocation regression
+        run: |
+          set -euo pipefail
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-wifi --lib --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 64
+          rustc --edition=2021 rust/tools/wifi_snapshot_allocation_probe.rs --extern "openpilot_wifi=$GITHUB_WORKSPACE/rust/target/debug/libopenpilot_wifi.rlib" -L "dependency=$GITHUB_WORKSPACE/rust/target/debug/deps" -o "$RUNNER_TEMP/wifi-snapshot-allocation-probe"
+          mkdir -p "$RUNNER_TEMP/ui-connectivity"
+          "$RUNNER_TEMP/wifi-snapshot-allocation-probe" --require-improvement | tee "$RUNNER_TEMP/ui-connectivity/wifi-snapshot-allocation.tsv"
       - name: Check native Bluetooth input decoder against original records
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024

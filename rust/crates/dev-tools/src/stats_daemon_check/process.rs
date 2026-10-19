@@ -15,7 +15,7 @@ pub(super) struct Process<'a> {
     child: Child,
     pid: Pid,
     input: Option<ChildStdin>,
-    output: ChildStdout,
+    output: Option<ChildStdout>,
     buffer: Vec<u8>,
     group: bool,
     cancel: &'a AtomicBool,
@@ -26,15 +26,36 @@ impl<'a> Process<'a> {
         cancel: &'a AtomicBool,
         group: bool,
     ) -> Result<Self> {
+        Self::spawn_inner(command, cancel, group, true)
+    }
+    pub(super) fn spawn_logged(
+        command: &mut Command,
+        cancel: &'a AtomicBool,
+        group: bool,
+    ) -> Result<Self> {
+        Self::spawn_inner(command, cancel, group, false)
+    }
+    pub(super) fn pid(&self) -> Pid {
+        self.pid
+    }
+    fn spawn_inner(
+        command: &mut Command,
+        cancel: &'a AtomicBool,
+        group: bool,
+        capture: bool,
+    ) -> Result<Self> {
         check(cancel)?;
-        command.stdin(Stdio::piped()).stdout(Stdio::piped());
+        command.stdin(Stdio::piped());
+        if capture {
+            command.stdout(Stdio::piped());
+        }
         if group {
             command.process_group(0);
         }
         let mut child = command.spawn()?;
         let pid = Pid::from_child(&child);
         let input = child.stdin.take();
-        let output = child.stdout.take().expect("requested child pipe");
+        let output = child.stdout.take();
         let result = Self {
             child,
             pid,
@@ -44,10 +65,9 @@ impl<'a> Process<'a> {
             group,
             cancel,
         };
-        fcntl_setfl(
-            &result.output,
-            fcntl_getfl(&result.output)? | OFlags::NONBLOCK,
-        )?;
+        if let Some(output) = &result.output {
+            fcntl_setfl(output, fcntl_getfl(output)? | OFlags::NONBLOCK)?;
+        }
         if let Some(input) = &result.input {
             fcntl_setfl(input, fcntl_getfl(input)? | OFlags::NONBLOCK)?;
         }
@@ -77,7 +97,12 @@ impl<'a> Process<'a> {
     fn receive(&mut self) -> Result<Option<bool>> {
         check(self.cancel)?;
         let mut bytes = [0; 8192];
-        match self.output.read(&mut bytes) {
+        match self
+            .output
+            .as_mut()
+            .ok_or("child stdout is file-backed")?
+            .read(&mut bytes)
+        {
             Ok(0) => Ok(Some(false)),
             Ok(n) => {
                 self.buffer.extend_from_slice(&bytes[..n]);

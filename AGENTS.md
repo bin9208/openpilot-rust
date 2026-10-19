@@ -1,5 +1,15 @@
 # Independent Rust port repository (2026-09-29)
 
+- On 2026-10-19 the user changed the #296 validation workflow: local work is
+  limited to quick diff, formatting and syntax checks. Do not rebuild or run
+  local tests, reference comparisons or regression gates after each change.
+  Group related changes into meaningful commits and use GitHub Actions for
+  builds and validation. Inspect CI failure logs and include repairs in the
+  next batch; continue independent conversion work while CI runs. This overrides
+  the earlier repeated local build/verification process. Complete Python removal
+  and all required exact-SHA CI gates remain required. Preserve other-session
+  sources and keep dev-md/#338 separate.
+
 - On 2026-10-18 the user clarified #296 delivery: the comma device is unavailable;
   finish code conversion, optimization, tests and commit integration, and the user
   will pull and personally verify normal boot, recording and upload. Do not block

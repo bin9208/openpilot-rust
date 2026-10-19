@@ -1999,7 +1999,7 @@ rust/tools/check_monitoring_reference.py	d10d0decd660d1abb5e7df75354cf3f25b8bd23
 rust/tools/check_msgq_ion.py	7008f9446509ef08e027560d547bf88d58256923	pending	-
 rust/tools/check_msgq_sanitizers.py	50efd27009fbf18125f9ce6c820a5f9f381ee607	replaced-local	rust/crates/dev-tools/src/msgq_sanitizers_check.rs
 rust/tools/check_native_logging.py	b306fad8a037aa0454740c2101e7c4ff4dfd0a5a	pending	-
-rust/tools/check_navd_config.py	23aa01ccf0fc199c5b35813a1fdc7195ea6da300	pending	-
+rust/tools/check_navd_config.py	23aa01ccf0fc199c5b35813a1fdc7195ea6da300	replaced-local	rust/crates/dev-tools/src/navd_config_check.rs; native 26-case controller with CLI, cancellation and receipt ownership checks
 rust/tools/check_navd_destination.py	d2cd458007e0adc14d79ab21bb5c08bd1963bba9	pending	-
 rust/tools/check_navd_engine.py	a27d452daf9668ddb333f4d94e32c8116c72c7f4	pending	-
 rust/tools/check_navd_http.py	0b5f1dd2b943cab38ba06aa964950d812fea282a	pending	-
@@ -2052,7 +2052,7 @@ rust/tools/check_radarcan_ci.py	0ee781f6bed3d55bc088293a0dd7ffc79958aa9d	pending
 rust/tools/check_radarcan_constructors.py	d8b7b77c0ac1a20fc139cbc982937a59c649388d	pending	-
 rust/tools/check_radarcan_policy.py	ec240376669b915f9c8bd4561290e14988d428c4	pending	-
 rust/tools/check_radarcan_runtime.py	15067032bfb54e5c7214b131178f90d241eac9c5	pending	-
-rust/tools/check_registration.py	cbb3b6ded74388583ef0ba05300bfed240814d52	pending	-
+rust/tools/check_registration.py	cbb3b6ded74388583ef0ba05300bfed240814d52	replaced-local	rust/crates/dev-tools/src/registration_check.rs; native signed HTTP/Params/collector comparison, 131 baseline plus 3 timeout cases
 rust/tools/check_registration_clock.py	932374bbe4383ee1e98ae4fab314c237861d201c	replaced-local	Native check-registration-clock preserves13 real SystemTime comparisons, independent Gregorian policy, CLI/raw-path/error controls; source and executable drift, stale PASS and cancellation regressions; native CI caller
 rust/tools/check_registration_utf7.py	9bb1dd1f15e75efb58c78db603143cd17468be59	replaced-local	Native check-registration-utf7;107 independent CPython cases,22 process/JSON boundaries, actual CLI serialization limits and current native decoder.
 rust/tools/check_registration_vendor.py	dc7278a116a16e63654efbd2ee40706499d4064e	replaced-local	rust/crates/dev-tools/src/registration_vendor_check.rs
@@ -2078,12 +2078,12 @@ rust/tools/check_startup_ui.py	15466dc5f767059f06f1380850f666eaf6ca260e	pending	
 rust/tools/check_stats_clock.py	d39c50ee332422bbbac65e2ed44284b8439ef20b	replaced-local	openpilot-dev-tools check-stats-clock
 rust/tools/check_stats_daemon.py	ffcc3b899f807f3f96977ac2fa0b0fc690096d66	replaced-local	rust/crates/dev-tools/src/stats_daemon_check.rs
 rust/tools/check_stats_failures.py	ce144ca88d88b034376666810d767e233554bbec	replaced-local	rust/crates/dev-tools/src/stats_daemon_check.rs
-rust/tools/check_stats_flood.py	1b5ad8b2c9e66df9f6d5bfd69aedba1267cc4cd1	pending	-
+rust/tools/check_stats_flood.py	1b5ad8b2c9e66df9f6d5bfd69aedba1267cc4cd1	replaced-local	rust/crates/dev-tools/src/stats_daemon_check/runtime.rs; native production clock/file and busy-producer SIGINT/SIGTERM checks, exact CLI and owned cleanup; fresh post-delete validation in CI
 rust/tools/check_stats_interrupted.py	f0caa533e30c9ab353de7ffc1caa0353d30fe304	replaced-local	Native interrupted receive checker and shared statistics source closure: independent 5 fault cases, 15 same-ELF cases per deletion phase, no Python exec, post-delete 72 tests and strict Clippy; original statsd.py retained
 rust/tools/check_stats_log_fault.py	ff238b53e34afb709af764e44b8b301d67a753aa	replaced-local	rust/crates/dev-tools/src/stats_daemon_check.rs
 rust/tools/check_stats_numbers.py	f7d7404586d04d2be2d8b6cb65e23d80e61b88aa	replaced-local	openpilot-dev-tools check-stats-numbers
 rust/tools/check_stats_producer.py	5c5c285242a90bbb08e62a6359fe52f927ec6323	replaced-local	openpilot-dev-tools check-stats-producer; independent original wire capture and actual fork/drop/pressure/typed checks
-rust/tools/check_stats_runtime.py	04bdc4bfc995cf358ed9abd8205f70c0199cb4d1	pending	-
+rust/tools/check_stats_runtime.py	04bdc4bfc995cf358ed9abd8205f70c0199cb4d1	replaced-local	rust/crates/dev-tools/src/stats_daemon_check/runtime.rs; native production clock/file and busy-producer SIGINT/SIGTERM checks, exact CLI and owned cleanup; fresh post-delete validation in CI
 rust/tools/check_timed_daemon.py	ef291bfa1ed16f99411fee2150e06cff548cd03c	replaced-local	rust/crates/dev-tools/src/bin/check_timed_daemon.rs
 rust/tools/check_timed_date_daemon.py	dc0caebdfd36d39c5fe7d59fca69f23465844bc5	replaced-local	rust/crates/dev-tools/src/bin/check_timed_date_daemon.rs
 rust/tools/check_timed_dates.py	3085edf3bccdc4847475413c8cbe98eac6e4db9e	replaced-local	rust/crates/dev-tools/src/bin/check_timed_dates.rs
@@ -2430,7 +2430,7 @@ rust/tools/monitoring_fixtures.py	7156388b9993050fdea870375604390b7f20620e	pendi
 rust/tools/native_logging_build.py	87493de7acca1716721a4bc05b5b6fdb9b2aab1c	replaced-local	rust/crates/dev-tools/src/native_logging_build.rs;rust/crates/dev-tools/src/json11_stage.rs
 rust/tools/native_logging_transport.py	71a76f101aba183ac832debf5ae499cd2b1e25ea	pending	-
 rust/tools/navd_cases.py	7d8cde4adf508a0681197ff98eb229f4c4cdbaa4	pending	-
-rust/tools/navd_config_source.py	e972ccd5c41587698b9252dfa7154dffa3ce245b	pending	-
+rust/tools/navd_config_source.py	e972ccd5c41587698b9252dfa7154dffa3ce245b	replaced-local	rust/crates/dev-tools/src/navd_config_check/source.rs; independent native Params, signatures, JSON and GPS reference
 rust/tools/navd_destination_source.py	84e5e3fe0c6b139f13a24b4a05a33a69d4ac33dd	pending	-
 rust/tools/navd_runtime_source.py	ab19645c6bd53494ebb68713bdda4810c148e86a	pending	-
 rust/tools/navd_source.py	35541a2257f2c6434d2b7617e33db9347107dd1f	pending	-
@@ -2500,7 +2500,7 @@ rust/tools/radard_selection_source.py	eb1df62a517a220956a59333b2a1aca30b61167c	p
 rust/tools/radard_source_values.py	94ade29958e402d63b818569d0a0c62c57df8811	pending	-
 rust/tools/radard_startup_state.py	efb755102fb62c7525b9386ef91034729aaa2280	pending	-
 rust/tools/radard_trajectory_source.py	463d7cf51154c2ca69a3e558db628f13bd6f025c	pending	-
-rust/tools/registration_source.py	fd91cb6acc513a448216341db2ad77b21d4128a2	pending	-
+rust/tools/registration_source.py	fd91cb6acc513a448216341db2ad77b21d4128a2	replaced-local	rust/crates/dev-tools/src/registration_check/source.rs; independent dynamic source reference and isolated native worker
 rust/tools/run_xiaoge_opencv_qa.py	dd8d98f7c2ddf3383bd2daf8f5858d6b336ea317	pending	-
 rust/tools/selfdrived_cases.py	537f4e61bd7c27222f00e204d9e5fe2d2f05ef64	pending	-
 rust/tools/selfdrived_snapshot.py	0633a07d72c371d7965085431a80b5e027197daa	pending	-

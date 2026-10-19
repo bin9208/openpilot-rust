@@ -48,9 +48,11 @@ adjusting guesses to the fixtures.
 Reproduction, with the published archive downloaded outside Git:
 
 ```sh
-python rust/tools/check_registration_vendor.py CHARSET_NORM_ARCHIVE AUDIT_JSON
+cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-registration-vendor --locked
+"${CARGO_TARGET_DIR:-rust/target}/debug/check-registration-vendor" CHARSET_NORM_ARCHIVE AUDIT_JSON
 cargo test --manifest-path rust/vendor/charset-norm/Cargo.toml --all-targets --locked
-python rust/tools/check_registration.py REGISTRATION_TRACE ORIGINAL_PARAMS_SO OUTPUT
+cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features registration-tools-native --bin check-registration --locked
+"${CARGO_TARGET_DIR:-rust/target}/debug/check-registration" REGISTRATION_TRACE OUTPUT
 ```
 
 The registration worktree's `.omo/evidence/registration/evidence.json` records the

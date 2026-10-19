@@ -377,7 +377,7 @@ fn actual_sigint_during_collector_startup_reaps_owned_child_and_removes_ipc() {
     let body = root.path().join("body");
     fs::write(
         &body,
-        b"printf '%s' \"$$\" > \"$MANAGED_RUNTIME_FIXTURE_PID\"\nexec /bin/sleep 30\n",
+        b"printf '%s\\n%s\\n' \"$$\" \"$OPENPILOT_PREFIX\" > \"$MANAGED_RUNTIME_FIXTURE_PID\"\nexec /bin/sleep 30\n",
     )
     .unwrap();
     fs::set_permissions(&body, fs::Permissions::from_mode(0o400)).unwrap();
@@ -402,10 +402,14 @@ fn actual_sigint_during_collector_startup_reaps_owned_child_and_removes_ipc() {
             .unwrap(),
     ));
     let deadline = Instant::now() + Duration::from_secs(5);
-    let pid = loop {
+    let (pid, prefix) = loop {
         if let Ok(text) = fs::read_to_string(&pidfile) {
-            if let Ok(pid) = text.parse::<i32>() {
-                break Pid::from_raw(pid).unwrap();
+            if let Some((pid, prefix)) = text.split_once('\n') {
+                if let (Ok(pid), Some(prefix)) = (pid.parse::<i32>(), prefix.strip_suffix('\n')) {
+                    if !prefix.is_empty() {
+                        break (Pid::from_raw(pid).unwrap(), prefix.to_owned());
+                    }
+                }
             }
         }
         let status = child.0.as_mut().unwrap().try_wait().unwrap();
@@ -423,12 +427,8 @@ fn actual_sigint_during_collector_startup_reaps_owned_child_and_removes_ipc() {
         std::thread::sleep(Duration::from_millis(5));
     };
     let _worker = Worker(pidfd_open(pid, PidfdFlags::empty()).unwrap());
-    let raw = fs::read(format!("/proc/{}/environ", pid.as_raw_pid())).unwrap();
-    let prefix = raw
-        .split(|b| *b == 0)
-        .find_map(|v| v.strip_prefix(b"OPENPILOT_PREFIX="))
-        .unwrap();
-    let prefix = std::str::from_utf8(prefix).unwrap();
+    // The fixture acknowledges its actual inherited prefix before exec. Reading
+    // /proc/environ here can race the shell replacing its address space.
     let shm = PathBuf::from(format!("/dev/shm/msgq_{prefix}"));
     let endpoint = PathBuf::from(format!("/tmp/logmessage{prefix}"));
     let checker = Pid::from_raw(child.0.as_ref().unwrap().id() as i32).unwrap();

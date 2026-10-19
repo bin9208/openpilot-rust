@@ -608,6 +608,15 @@ fn ui_connectivity_requires_source_render_and_private_protocol_checks() {
     );
     assert!(!caller.contains("check_bluetooth_input_decode.py"));
     let config = workflow();
+    let native = commands(&config["jobs"]["ui-connectivity"]);
+    let ownership_tests = "cargo test --manifest-path rust/Cargo.toml -p openpilot-bluetooth -p openpilot-wifi --all-targets --locked";
+    let launcher_env = "export WIFI_PROCESS_CHILD_BINARY=\"$GITHUB_WORKSPACE/rust/target/debug/openpilot-process-child\"";
+    required(&native, &[ownership_tests, launcher_env,
+        "cargo clippy --manifest-path rust/Cargo.toml -p openpilot-bluetooth -p openpilot-wifi --all-targets --locked -- -D warnings"]);
+    assert!(
+        native.find("--bins --examples --locked").unwrap() < native.find(launcher_env).unwrap()
+    );
+    assert!(native.find(launcher_env).unwrap() < native.find(ownership_tests).unwrap());
     let environment = &config["jobs"]["ui-connectivity"]["env"];
     for key in ["CARGO_PROFILE_DEV_DEBUG", "CARGO_PROFILE_TEST_DEBUG"] {
         assert_eq!(environment[key], "0", "unbounded UI debug artifacts: {key}");
@@ -624,6 +633,10 @@ fn ui_connectivity_requires_source_render_and_private_protocol_checks() {
             "rust/target/debug/check-ui-translations --binary",
             "check_wifi_policy.py",
             "check_wifi_runtime.py",
+            "check_wifi_callback_ordering.py",
+            "cargo build --manifest-path rust/Cargo.toml -p openpilot-wifi --lib --locked",
+            "rustc --edition=2021 rust/tools/wifi_snapshot_allocation_probe.rs --extern",
+            "\"$RUNNER_TEMP/wifi-snapshot-allocation-probe\" --require-improvement",
             "check_cweb_policy.py",
             "check_cweb_http.py",
             "check_cweb_daemon.py",
@@ -842,6 +855,10 @@ fn workspace_checks_run_without_waiting_for_runtime_jobs() {
         "snapshot checker regressions require current native candidate and launcher"
     );
     mandatory(job, &[bootlog]);
+    let launcher_env = "export WIFI_PROCESS_CHILD_BINARY=\"$GITHUB_WORKSPACE/rust/target/debug/openpilot-process-child\"";
+    required(&script, &[launcher_env]);
+    assert!(script.find(bootlog).unwrap() < script.find(launcher_env).unwrap());
+    assert!(script.find(launcher_env).unwrap() < script.find("cargo test --workspace").unwrap());
 }
 #[test]
 fn hardware_runtime_requires_source_and_native_boundaries() {
@@ -890,7 +907,7 @@ fn startup_prerequisites_run_actual_children_and_collectors() {
             "--features sdk-receiver-native --test sdk_receiver --locked",
             "--bin check-sdk-receiver --test sdk_receiver --locked -- -D warnings",
             "rust/target/debug/check-sdk-receiver",
-            "check_registration.py",
+            "rust/target/debug/check-registration rust/target/debug/examples/registration_trace",
             "check-registration-clock",
             "rust/target/debug/check-registration-utf7",
             "rust/target/debug/check-registration-vendor",
@@ -1162,7 +1179,7 @@ fn navigation_requires_original_transport_auth_and_timer_evidence() {
             "check_navd_engine.py",
             "check_navd_http.py",
             "--timeouts",
-            "check_navd_config.py",
+            "rust/target/debug/check-navd-config --binary rust/target/debug/examples/navd_config",
             "check_navd_destination.py",
             "check_navd_ipc.py",
         ],
@@ -1493,7 +1510,7 @@ fn retired_tool_checks_require_current_native_builds_and_keep_original_consumers
         &[
             "-p openpilot-logmessaged -p openpilot-dev-tools --features openpilot-dev-tools/managed-entry-native,openpilot-dev-tools/managed-runtime-native,openpilot-dev-tools/registration-clock-native --bins --examples",
             "rust/target/debug/check-registration-vendor",
-            "check_registration.py",
+            "rust/target/debug/check-registration rust/target/debug/examples/registration_trace",
         ],
     );
     mandatory(startup, &["check-registration-vendor"]);
@@ -1865,4 +1882,116 @@ fn registration_clock_requires_actual_probe_and_all_native_failure_controls() {
         ],
     );
     assert!(!read(".github/workflows/rust.yml").contains("check_registration_clock.py"));
+}
+
+#[test]
+fn registration_and_navd_require_native_full_policy_and_real_delayed_collector() {
+    let data = workflow();
+    let startup = &data["jobs"]["startup-runtime"];
+    assert_eq!(startup["timeout-minutes"], "45");
+    mandatory(
+        startup,
+        &[
+            "--features registration-tools-native",
+            "rust/target/debug/check-registration ",
+            "REGISTRATION_COLLECTOR_DELAY_MS=800",
+        ],
+    );
+    let run = commands(startup);
+    required(&run, &[
+        "REGISTRATION_BINARY=\"$GITHUB_WORKSPACE/rust/target/debug/examples/registration_trace\"",
+        "REGISTRATION_WORKER_BINARY=\"$GITHUB_WORKSPACE/rust/target/debug/check-registration\"",
+        "--features registration-tools-native --bin check-registration --locked",
+        "--features registration-tools-native --lib registration_check:: --locked",
+        "--features registration-tools-native --test registration_check --test registration_reference --locked",
+        "--features registration-tools-native --lib --bin check-registration --test registration_check --test registration_reference --locked -- -D warnings",
+        "\"$RUNNER_TEMP/startup-runtime/registration\"",
+        "\"$RUNNER_TEMP/startup-runtime/registration-timeouts\" --timeouts",
+        "REGISTRATION_COLLECTOR_DELAY_MS=800 rust/target/debug/check-registration",
+        "--case clock_year_ten_thousand",
+        "build_msgq_python.py", "build_params_python.py", "check_process_supervision.py", "check_uploader.py",
+    ]);
+    assert!(!run.contains("check_registration.py"));
+    assert!(!run.contains("LD_PRELOAD="));
+    let navd = &data["jobs"]["navd-runtime"];
+    mandatory(
+        navd,
+        &[
+            "--features navd-config-tools-native",
+            "rust/target/debug/check-navd-config",
+        ],
+    );
+    let run = commands(navd);
+    required(&run, &[
+        "NAVD_CONFIG_BINARY=\"$GITHUB_WORKSPACE/rust/target/debug/examples/navd_config\"",
+        "NAVD_CONFIG_WORKER_BINARY=\"$GITHUB_WORKSPACE/rust/target/debug/check-navd-config\"",
+        "--features navd-config-tools-native --bin check-navd-config --locked",
+        "--features navd-config-tools-native --test navd_config_check --test navd_config_reference --test registration_navd_retirement --locked",
+        "--features navd-config-tools-native --lib navd_config_check::publication::tests --locked",
+        "--features navd-config-tools-native --lib --bin check-navd-config --test navd_config_check --test navd_config_reference --test registration_navd_retirement --locked -- -D warnings",
+        "rust/target/debug/check-navd-config --binary rust/target/debug/examples/navd_config --output",
+        "check_navd_policy.py", "check_navd_engine.py", "check_navd_http.py", "--timeouts", "check_navd_destination.py", "check_navd_ipc.py", "build_msgq_python.py", "build_params_python.py",
+    ]);
+    assert!(!run.contains("check_navd_config.py"));
+    // This real CLI integration test validates source AND candidate schedules.
+    required(
+        &read("rust/crates/dev-tools/tests/registration_check.rs"),
+        &[
+            "fn actual_cli_delayed_collector_preserves_both_sides_headers_and_event_order()",
+            "NativeRunner.run(&spec)",
+            "REGISTRATION_COLLECTOR_DELAY_MS",
+            "clock_year_ten_thousand",
+            "schedules, expected,",
+            "exactly two real source/native schedules",
+            "assert_eq!(schedule[\"requested_delay_ms\"], 800)",
+            "before[0].as_u64().unwrap() >= 2",
+            "assert_eq!(before[2], 0)",
+            "before[83..]",
+            "assert_eq!(reset[0], 0)",
+            "assert_ne!(reset[2], 0)",
+            "reset[83..].iter().all",
+            "refreshed[0].as_u64().unwrap() > 0",
+            "assert_eq!(refreshed[2], reset[2])",
+            "refreshed[83..]",
+            "released - subscribed >= 0.8",
+            "acknowledged >= released",
+            "refreshed_at >= acknowledged",
+        ],
+    );
+    // Keep the full independent original corpus, timeout group and real header assertions.
+    required(&read("rust/crates/dev-tools/tests/registration_reference.rs"), &[
+        "all_131_original_policies_keep_real_params_signed_requests_logs_and_collector_shutdown",
+        "(Suite::All, \"matrix\", 131)", "(Suite::Timeouts, \"timeouts\", 3)",
+        "delayed_real_error_publisher_resets_then_refreshes_the_actual_reader_before_error_workload",
+        "before[0].as_u64().unwrap() >= 2", "reset[0], 0", "refreshed[2], reset[2]", "released - subscribed >= 0.8",
+    ]);
+}
+
+#[test]
+fn production_statistics_require_actual_entrypoint_and_busy_shutdown_checks() {
+    let data = workflow();
+    let job = &data["jobs"]["telemetry-runtime"];
+    mandatory(
+        job,
+        &[
+            "--test stats_runtime_check",
+            "rust/target/debug/check-stats-runtime",
+            "rust/target/debug/check-stats-flood",
+        ],
+    );
+    let run = commands(job);
+    required(&run, &[
+        "--features stats-daemon-native --bin check-stats-runtime --bin check-stats-flood --locked",
+        "STATS_RUNTIME_BINARIES=\"$PWD/rust/target/debug\"",
+        "STATS_RUNTIME_CHECKER=\"$PWD/rust/target/debug/check-stats-runtime\"",
+        "STATS_FLOOD_CHECKER=\"$PWD/rust/target/debug/check-stats-flood\"",
+        "--features stats-daemon-native --test stats_runtime_check --locked",
+        "--lib --test stats_runtime_check --bin check-stats-runtime --bin check-stats-flood --locked -- -D warnings",
+        "rust/target/debug/check-stats-runtime rust/target/debug \"$RUNNER_TEMP/telemetry-runtime/stats-runtime\"",
+        "rust/target/debug/check-stats-flood rust/target/debug \"$RUNNER_TEMP/telemetry-runtime/stats-flood\"",
+        "build_msgq_python.py", "build_params_python.py",
+        "rust/target/debug/check-stats-interrupted",
+    ]);
+    assert!(!run.contains("check_stats_runtime.py"));
+    assert!(!run.contains("check_stats_flood.py"));
 }

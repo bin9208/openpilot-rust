@@ -1,0 +1,113 @@
+{
+  "scope": "actual unchanged Requests header parsing/text over three generic response controls, no native values used for expected codepoints",
+  "requests": "2.34.2",
+  "requests_utils_sha256": "657fd02343b2586bbd138a4ec0f03ceeb7610c2712f96ac54f28a708bf7d079c",
+  "rows": [
+    {
+      "case": "uppercase-text-mime",
+      "body_hex": "7b22646f6e676c655f6964223a22e8e4e5edf2e8f4e8eae0f2eef0227d",
+      "headers": [
+        [
+          "Content-Type",
+          "TEXT/PLAIN"
+        ]
+      ],
+      "encoding": null,
+      "text_codepoints": [
+        123,
+        34,
+        100,
+        111,
+        110,
+        103,
+        108,
+        101,
+        95,
+        105,
+        100,
+        34,
+        58,
+        34,
+        269,
+        228,
+        314,
+        237,
+        328,
+        269,
+        244,
+        269,
+        281,
+        341,
+        328,
+        238,
+        273,
+        34,
+        125
+      ]
+    },
+    {
+      "case": "last-charset-wins",
+      "body_hex": "7b22646f6e676c655f6964223a22636166c3a9227d",
+      "headers": [
+        [
+          "Content-Type",
+          "application/json; charset=latin1; charset=utf-8"
+        ]
+      ],
+      "encoding": "utf-8",
+      "text_codepoints": [
+        123,
+        34,
+        100,
+        111,
+        110,
+        103,
+        108,
+        101,
+        95,
+        105,
+        100,
+        34,
+        58,
+        34,
+        99,
+        97,
+        102,
+        233,
+        34,
+        125
+      ]
+    },
+    {
+      "case": "quoted-charset-key",
+      "body_hex": "fffe7b00220064006f006e0067006c0065005f006900640022003a0022005cd500ae22007d00",
+      "headers": [
+        [
+          "Content-Type",
+          "application/json; \"charset\" = \"utf-16\""
+        ]
+      ],
+      "encoding": "utf-16",
+      "text_codepoints": [
+        123,
+        34,
+        100,
+        111,
+        110,
+        103,
+        108,
+        101,
+        95,
+        105,
+        100,
+        34,
+        58,
+        34,
+        54620,
+        44544,
+        34,
+        125
+      ]
+    }
+  ]
+}

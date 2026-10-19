@@ -538,11 +538,13 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
+navd-config-tools-native = ["registration-tools-native"]
+stats-daemon-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq"]
 proclog-reference-native = ["dep:capnp", "dep:openpilot-cereal", "rustix/param"]
 aarch64-check-native = ["proclog-reference-native", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri"]
-soundd-policy-native = []
-stats-daemon-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq"]
 stats-producer-native = ["dep:zmq"]
+soundd-policy-native = []
+registration-tools-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq", "dep:openpilot-params", "dep:openpilot-logging", "dep:p256", "dep:url", "dep:charset-norm", "dep:brotli", "dep:brotli-decompressor"]
 bluetooth-input-native = []
 sdk-receiver-native = ["dep:brotli-decompressor", "rustix/net"]
 sdk-transport-native = ["sdk-receiver-native"]
@@ -681,6 +683,12 @@ path = "src/bin/check_hardware_command.rs"
 workspace = true
 
 [dependencies]
+brotli = { version = "=8.0.2", optional = true }
+p256 = { version = "=0.13.2", features = ["ecdsa", "pem"], optional = true }
+url = { version = "=2.5.8", optional = true }
+charset-norm = { version = "=3.5.1", path = "../../vendor/charset-norm", optional = true }
+openpilot-params = { path = "../params", optional = true }
+openpilot-logging = { path = "../logging", optional = true }
 brotli-decompressor = { version = "=5.0.3", optional = true }
 unicode-general-category = { version = "=0.6.0", optional = true }
 openpilot-runtime-core = { path = "../runtime-core", optional = true }
@@ -1388,6 +1396,23 @@ required-features = ["bluetooth-input-native"]
 name = "bluetooth_input_check"
 required-features = ["bluetooth-input-native"]
 
+[[bin]]
+name = "check-registration"
+path = "src/bin/check_registration.rs"
+required-features = ["registration-tools-native"]
+
+[[test]]
+name = "registration_check"
+required-features = ["registration-tools-native"]
+
+[[test]]
+name = "registration_reference"
+required-features = ["registration-tools-native"]
+
+[[test]]
+name = "soundd_policy_reference"
+required-features = ["soundd-policy-native"]
+
 [[test]]
 name = "stats_producer_check"
 required-features = ["stats-producer-native"]
@@ -1398,8 +1423,54 @@ path = "src/bin/check_stats_producer.rs"
 required-features = ["stats-producer-native"]
 
 [[test]]
+name = "proclog_reference_check"
+required-features = ["proclog-reference-native"]
+
+[[bin]]
+name = "check-proclog-reference"
+path = "src/bin/check_proclog_reference.rs"
+required-features = ["proclog-reference-native"]
+
+[[test]]
+name = "soundd_policy_check"
+required-features = ["soundd-policy-native"]
+
+[[bin]]
+name = "check-soundd-policy"
+path = "src/bin/check_soundd_policy.rs"
+required-features = ["soundd-policy-native"]
+
+[[test]]
 name = "stats_daemon_check"
 required-features = ["stats-daemon-native"]
+
+[[test]]
+name = "stats_interrupted_check"
+required-features = ["stats-daemon-native"]
+
+[[test]]
+name = "soundd_fixture_assets"
+required-features = ["soundd-policy-native"]
+
+[[test]]
+name = "soundd_policy_retirement"
+required-features = ["soundd-policy-native"]
+
+[[test]]
+name = "soundd_policy_ci"
+
+[[test]]
+name = "navd_config_check"
+required-features = ["navd-config-tools-native"]
+
+[[test]]
+name = "navd_config_reference"
+required-features = ["navd-config-tools-native"]
+
+[[bin]]
+name = "create-soundd-fixture-assets"
+path = "src/bin/create_soundd_fixture_assets.rs"
+required-features = ["soundd-policy-native"]
 
 [[bin]]
 name = "check-stats-daemon"
@@ -1417,57 +1488,39 @@ path = "src/bin/check_stats_log_fault.rs"
 required-features = ["stats-daemon-native"]
 
 [[test]]
-name = "soundd_policy_reference"
-required-features = ["soundd-policy-native"]
-
-[[test]]
-name = "soundd_policy_check"
-required-features = ["soundd-policy-native"]
-
-[[test]]
-name = "soundd_fixture_assets"
-required-features = ["soundd-policy-native"]
-
-[[test]]
-name = "soundd_policy_retirement"
-required-features = ["soundd-policy-native"]
-
-[[test]]
-name = "soundd_policy_ci"
-
-[[bin]]
-name = "check-soundd-policy"
-path = "src/bin/check_soundd_policy.rs"
-required-features = ["soundd-policy-native"]
-
-[[bin]]
-name = "create-soundd-fixture-assets"
-path = "src/bin/create_soundd_fixture_assets.rs"
-required-features = ["soundd-policy-native"]
-
-[[test]]
-name = "proclog_reference_check"
-required-features = ["proclog-reference-native"]
-
-[[test]]
 name = "aarch64_check"
+path = "tests/aarch64_check.rs"
 required-features = ["aarch64-check-native"]
-
-[[bin]]
-name = "check-proclog-reference"
-path = "src/bin/check_proclog_reference.rs"
-required-features = ["proclog-reference-native"]
 
 [[bin]]
 name = "check-aarch64"
 path = "src/bin/check_aarch64.rs"
 required-features = ["aarch64-check-native"]
 
-[[test]]
-name = "stats_interrupted_check"
-required-features = ["stats-daemon-native"]
-
 [[bin]]
 name = "check-stats-interrupted"
 path = "src/bin/check_stats_interrupted.rs"
+required-features = ["stats-daemon-native"]
+
+[[bin]]
+name = "check-navd-config"
+path = "src/bin/check_navd_config.rs"
+required-features = ["navd-config-tools-native"]
+
+[[test]]
+name = "registration_navd_retirement"
+required-features = ["navd-config-tools-native"]
+
+[[test]]
+name = "stats_runtime_check"
+required-features = ["stats-daemon-native"]
+
+[[bin]]
+name = "check-stats-runtime"
+path = "src/bin/check_stats_runtime.rs"
+required-features = ["stats-daemon-native"]
+
+[[bin]]
+name = "check-stats-flood"
+path = "src/bin/check_stats_flood.rs"
 required-features = ["stats-daemon-native"]

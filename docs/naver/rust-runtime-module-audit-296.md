@@ -1503,3 +1503,71 @@ Evidence: `2026-10-19-soundd-392/FINAL-HANDOFF.json` and
 `2026-10-19-sound-lock/permanent-{red,green}.log`.
 No physical audio output or device benefit is established; exact-commit CI and
 the user's device acceptance remain separate.
+
+## Connectivity request and child ownership (#394/#395)
+
+A deterministic native BlueZ regression reproduced an answered handler clearing
+an interactive prompt installed by a newer request. The unchanged Python handler
+also exhibits that ordering. Each native answer now retains an internal owner;
+completion clears only the matching request. Display updates retain their existing
+relationship to an outstanding answer. Respond, Cancel and Release overlap,
+expired answers, sender/target checks and actual 60s prompt/90s pairing deadlines
+remain covered. This intentionally corrects inherited behavior.
+
+Wi-Fi's tether command previously killed only its direct child and could reap
+that leader before cleanup. Two native regressions demonstrated a surviving
+owned descendant with both a live and an exited leader. The command now starts
+an owned session, observes exit with `waitid(NOWAIT)`, terminates the group while
+its leader identity remains reserved, and then reaps. A normal exit 17 control
+also passes. The syscall arguments, five-second activation delay, inherited
+streams and settings order remain unchanged. Tests use private helper processes;
+no host NetworkManager, privileged sysctl or vehicle setting is modified.
+
+Bluetooth's 7 and Wi-Fi's 10 package tests, 17 supervision library tests and its three
+CLI targets pass, together with strict all-target Clippy and formatting. All seven
+unchanged original protocol/policy comparisons pass, including real deadlines.
+The first Wi-Fi original import lacked libzmq; only the remaining two comparisons
+were retried with the existing pinned SDK loader path, without changing assertions.
+Five fresh executables, the Params binding and 132 source hashes remained sealed.
+The existing workspace launcher build now supplies the mandatory test executable;
+the UI connectivity job also requires the affected unit tests and Clippy.
+Evidence: `2026-10-19-connectivity-owner-review/FINAL-HANDOFF.json`.
+Device behavior and measured performance remain separate from these host checks.
+
+## Managed-runtime startup acknowledgement (#396)
+
+Exact-source CI at `e167c37d2d62df62677edbe20c65c1dfb27af9e8` failed one
+managed-runtime test while reading the collector's environment immediately before
+its shell exec. The test found no prefix in `/proc/<pid>/environ`; an unchanged
+local repeat passed 100 times, so the failure is intermittent. The fixture now
+acknowledges its actual inherited prefix with its PID, and the test waits for the
+complete record. It no longer depends on a procfs environment read across exec.
+Real SIGINT, exit 130, five-second cleanup, child reaping, IPC removal and absence
+of a success receipt remain required.
+
+Fresh builds of all seven managed daemons and the checker pass 12 integration and
+two unit tests, strict Clippy and 100 repetitions of the corrected startup test.
+Independent review found no actionable blocker. The 46 CI policy and 13 disk tests
+also pass. CI's workspace budget increases from 150 to 210 minutes: the failed run
+reached this stage at 114 minutes, while the last successful remaining comparison
+and release stages took about 43 minutes. No operation deadline or assertion was
+relaxed. The exact new commit still requires remote CI.
+Evidence: `2026-10-19-managed-startup-ack/`; remote failure:
+https://github.com/bin9208/openpilot-rust/actions/runs/39176145410.
+
+## Wi-Fi snapshot allocation candidate (#397)
+
+`State::snapshot` previously cloned the entire cached snapshot, then discarded
+its cloned networks, saved SSIDs and two derived connection fields. It now
+constructs all nine returned fields directly. Network sorting is unchanged.
+The source patch includes a standalone Rust probe with 46 semantic cases and
+paired allocation counts/requested bytes for 8 and 1,024 networks. Its saved
+native algorithm is a before/after allocation comparator; the independent
+original Wi-Fi policy and protocol comparisons remain mandatory separately.
+
+Under the user's new workflow, this candidate received only local formatting,
+syntax and diff checks. Allocation measurements and behavior validation await
+GitHub Actions; no numerical saving or device improvement is claimed. The CI
+job builds the current Wi-Fi library, requires the probe and retains its output
+with the existing connectivity evidence. This adds two growth guards, bringing
+the current workflow to 338; the new routing assertions also await CI.

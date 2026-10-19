@@ -259,6 +259,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "brotli"
+version = "8.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4bd8b9603c7aa97359dbd97ecf258968c95f3adddd6db2f7e7a5bef101c84560"
+dependencies = [
+ "alloc-no-stdlib",
+ "alloc-stdlib",
+ "brotli-decompressor",
+]
+
+[[package]]
 name = "brotli-decompressor"
 version = "5.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2806,9 +2817,11 @@ name = "openpilot-dev-tools"
 version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
+ "brotli",
  "brotli-decompressor",
  "bzip2",
  "capnp",
+ "charset-norm",
  "chrono",
  "command-fds",
  "flate2",
@@ -2821,7 +2834,9 @@ dependencies = [
  "openpilot-image-codecs",
  "openpilot-jpeg",
  "openpilot-log-format",
+ "openpilot-logging",
  "openpilot-msgq",
+ "openpilot-params",
  "openpilot-pocketfft",
  "openpilot-process-limits",
  "openpilot-process-supervision",
@@ -2829,6 +2844,7 @@ dependencies = [
  "openpilot-runtime-version",
  "openpilot-startup-ui",
  "openpilot-usbgpu",
+ "p256",
  "png 0.17.16",
  "regex",
  "rsa",
@@ -2844,6 +2860,7 @@ dependencies = [
  "tiff",
  "toml",
  "unicode-general-category 0.6.0",
+ "url",
  "xz2",
  "yaml-rust2",
  "zip",

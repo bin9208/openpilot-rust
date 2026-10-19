@@ -36,11 +36,18 @@ Artifacts and invocations are under the issue worktree's
 and source/native captures for each named scenario. The main workspace receipt
 is `.omo/evidence/registration-hardware-107-final-receipt.txt`.
 
+The historical run used `check_registration.py` with original Params/msgq
+bindings. #296 replaced that controller and its source helper. To repeat with
+the current checkout, build the native controller and probe together:
+
 ```sh
-# Python 3.12; original Params and msgq bindings as in registration-validation.md.
-python rust/tools/check_registration.py REGISTRATION_TRACE ORIGINAL_PARAMS_SO OUTPUT --hardware
-# Omit --hardware for existing 119 plus the 12 new cases (131 total).
+cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-registration --example registration_trace -p openpilot-dev-tools --features openpilot-dev-tools/registration-tools-native --bin check-registration
+"${CARGO_TARGET_DIR:-rust/target}/debug/check-registration" "${CARGO_TARGET_DIR:-rust/target}/debug/examples/registration_trace" OUTPUT --hardware
+# Omit --hardware for the complete 131-case matrix.
 ```
+
+Use a new output directory and the same source checkout for both executables.
+The former Params-binding positional argument is no longer accepted.
 
 Requests 2.34.2 remains the combined CI version. Hardware-info's original
 2.32.5 script pin does not require downgrading that environment: a focused

@@ -4380,3 +4380,82 @@ increase318→321, retaining the original177 baseline. Private proof is indexed 
 `postdelete-proof.json`. Inventory:203 replaced-local,3 partial,3,374 pending
 of3,580. Device/drive validation was not run; real-clock and flood checkers are
 separate pending work.
+
+### Native registration and navigation configuration closure (2026-10-19)
+
+Removed `check_registration.py`, `registration_source.py`, `check_navd_config.py`
+and `navd_config_source.py` after migrating their callers to native controllers
+and independent source references. The four-file closure preserves actual Params,
+RSA/EC keys and signatures, HTTP/collector effects and timing, including all 131
+registration policies, three real timeout cases and 26 navigation configurations.
+Generic input, codec, malformed response, GPS error-order and CLI controls remain
+separate from the named matrices. The old binding arguments are removed; shared
+original logging/Params and other navigation helpers remain explicitly pending.
+
+The original API and missing-helper guard regressions failed before correction.
+A closed-stdout navigation run also reproduced a stale PASS receipt after its
+output panic. The native controller now checks and flushes output before creating
+an exclusive aggregate receipt, and rolls back only the inode it owns. This
+intentionally strengthens the original receipt behavior. Per-case evidence and
+failed-comparison reports remain available. Only the exact four retired names may
+be absent; present drift, dangling aliases and missing retained inputs still fail.
+Historical source hashes are separate from live provenance. No renamed Python
+implementation is embedded or reconstructed by maintained tests.
+
+Frozen bundle `combined-gate-TtRrgPUI` passed seven focused units, 27 integration
+tests and strict Clippy. Before and after deletion, the same nine executables pass
+all 27 tests, registration 134, navigation 26 and 17 actual CLI controls. Independent
+original normalizers verify all 268 registration observations and 52 navigation
+observations, including signatures and complete Params state. Registration's
+aggregate results are byte-identical across deletion; only the exact removed live
+source keys disappear. Each phase records 940 registration and 53 navigation exec
+attempts with no Python/PyPy execution in the native process trees. Private audit
+scripts run outside those trees and are not a maintained runtime fallback.
+
+Evidence indexes: `2026-10-19-navd-config-tools/COMBINED-BEFORE-EVIDENCE.json` and
+`COMBINED-AFTER-EVIDENCE.json` (SHA256
+`d729d99da83d683400e31d476ccf6cf7c41f8ab29312731b3fea15ece4ca1789`).
+Fresh post-deletion compilation is tracked separately below. Current inventory:
+207 replaced-local, 3 partial and 3,370 pending baseline sources. CI routing now
+passes 46 policy and 13 disk tests, retains 336 growth guards, and requires the
+three navigation receipt units as well as the integration targets. This is not
+complete repository retirement or device acceptance.
+
+The registration/navigation post-deletion compiler phase finished before the
+user changed the validation workflow. Fresh `fresh-post-delete-dgpDDf8O` builds,
+seven units and Clippy passed; all nine executable hashes are identical to
+`combined-gate-TtRrgPUI`. Its 27 integration tests were not repeated locally;
+the existing same-artifact proof and required GitHub Actions remain distinct.
+
+### Native production statistics runtime/flood controllers (2026-10-19)
+
+Removed `check_stats_runtime.py` and `check_stats_flood.py`. The native commands
+preserve the real production entrypoint, timestamp bounds, one 0600 output file,
+normal SIGTERM and busy SIGINT/SIGTERM behavior. The busy cases require two live
+producers, at least 10 user CPU ticks, no shutdown flush and the original 2s wait;
+startup and ordinary shutdown retain 10s and 5s bounds. Independent original runs
+covered three cases and 16 CLI/effect controls before implementation.
+
+Missing API and exact-two-source absence regressions failed before correction.
+Nine new and 15 predecessor tests, formatting and strict Clippy passed before the
+workflow change. Two frozen checkers and two matched production artifacts pass
+all three cases before and after deletion, with 15 exec attempts and zero Python
+in each native tree. Stable reports match the original results; four provenance
+maps lose exactly the two removed paths, and retained hashes remain unchanged.
+Actual clock values, scheduler-dependent started state, CPU ticks and elapsed
+waits are validated and retained rather than compared as fixed expected numbers.
+
+A predecessor cancellation test also encountered transient `/proc/environ`
+visibility around exec. It now retains a pidfd, requires the same private token
+and a live process within the existing 15s startup bound, then performs the same
+2s shutdown and endpoint ownership assertions. This is part of the #396 test
+repair; no additional daemon defect is inferred.
+
+The root receipt uses no-clobber publication and inode-checked cleanup, a stronger
+output protection than the original. Fixed `/tmp/stats` requires exclusive host
+admission; the bind-to-acknowledgement abrupt-death window is not claimed leak-free.
+Shared logging helpers remain pending. Evidence:
+`2026-10-19-stats-runtime-tools/FINAL-HANDOFF.json`, `frozen-och3hnSA`.
+Inventory is 209 replaced-local, 3 partial and 3,368 pending baseline sources.
+Fresh post-deletion builds and validation are now CI-owned under the user's
+2026-10-19 instruction; no further local regression loop is required or claimed.
