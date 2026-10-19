@@ -10,6 +10,7 @@ import random
 import subprocess
 import sys
 import textwrap
+import tempfile
 import types
 import urllib.request
 
@@ -119,7 +120,31 @@ def main():
     for i, (want, got) in enumerate(zip(expected, actual, strict=True)):
         for j, (left, right) in enumerate(zip(want, got, strict=True)):
             assert left == right, json.dumps(dict(case=i, step=j, input=cases[i][j], expected=left, actual=right))
+    check_boot()
     print(json.dumps(dict(upstream=PIN, cases=len(cases), steps=sum(map(len, cases)), result="exact policy equivalence")))
+
+
+def check_boot():
+    # Execute the real pre-installer shell path without an existing native
+    # launcher. Only literal hardware paths and sudo are replaced in CI.
+    source = Path("launch_openpilot.sh").read_text().split('  bash "$RUST_LAUNCH_ROOT/rust/tools/ensure_runtime.sh"', 1)[0] + "fi\n"
+    for mode in (None, b"", b"0\n", b"1", b"2\n", b"3\n"):
+        for first_fails in (False, True):
+            with tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                (root / "AGNOS").touch()
+                setting = root / "mode"
+                if mode is not None: setting.write_bytes(mode)
+                val, active = root / "force_val", root / "force_active"
+                if first_fails: val.mkdir()
+                else: val.write_text("999\n")
+                active.write_text("0\n")
+                script = source.replace("/AGNOS", str(root / "AGNOS")).replace("/data/params/d/JetlinkMode", str(setting)).replace("/sys/kernel/debug/pmic-votable/USB_ICL/force_val", str(val)).replace("/sys/kernel/debug/pmic-votable/USB_ICL/force_active", str(active))
+                prefix = 'uname() { printf aarch64; }; sudo() { test "$1" = -n || return; shift; "$@"; };\n'
+                subprocess.run(["bash", "-c", prefix + script], check=True, capture_output=True)
+                wanted = mode not in (None, b"", b"0\n")
+                assert active.read_text() == ("1\n" if wanted and not first_fails else "0\n")
+                if not first_fails: assert val.read_text() == ("0\n" if wanted else "999\n")
 
 
 if __name__ == "__main__":

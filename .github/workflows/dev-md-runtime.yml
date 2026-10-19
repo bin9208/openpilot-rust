@@ -28,6 +28,10 @@ jobs:
         run: |
           sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet /opt/hostedtoolcache/CodeQL
           df -h "$RUNNER_TEMP"
+      - name: Check publication policy access before the expensive build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api repos/bin9208/openpilot-rust/branches/dev/protection/required_status_checks --jq '.contexts'
       - name: Install build tools
         run: |
           sudo apt-get update

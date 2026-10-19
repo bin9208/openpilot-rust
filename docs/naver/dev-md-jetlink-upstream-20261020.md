@@ -4,7 +4,7 @@
 
 ## 구현과 범위
 
-- 부팅 shell에서 이미 설치된 native launcher의 고정 helper를 먼저 호출하고, 새 launcher bootstrap에서도 manager 시작 전에 USB_ICL을 0으로 강제한다. Jetlink가 필요한 동안 유지한다. Off 전환 시 케이블이 붙어 있으면 복원을 보류하고 `current_pr=none`일 때 복원한다.
+- 부팅 shell에서 설치기 실행 전 USB_ICL의 고정 경로를 원본 순서로 기록한다. 아직 새 native launcher가 없는 첫 업그레이드도 보호한다. 새 launcher bootstrap에서도 manager 시작 전에 USB_ICL을 0으로 강제한다. Jetlink가 필요한 동안 유지한다. Off 전환 시 케이블이 붙어 있으면 복원을 보류하고 `current_pr=none`일 때 복원한다.
 - 원본의 PD 역할 전환(3회, 2초 간격), 이후 hard reset 1회, source hold/release, UDC 재시작(최소 10초), unplug 처리를 native 상태 기계와 고정 경로 helper로 구현한다. eGPU가 감지되면 포트 제어와 Jetlink 소유를 해제한다.
 - VM dirty limits와 socket maxima는 owner당 한 번 적용하고 원래 값을 기록한다. 기존 값이 bytes=0이면 ratio를 기록해 올바르게 복원한다. UDC compliance 두 항목과 FunctionFS debug log 제한은 각각 시도한다. 활성 상태에서 owner 재시작이면 전류 제한·tuning을 유지한다.
 - VM 기록 파일의 root 소유·일반 파일·쓰기 권한·symlink 여부를 검사하며 기록에 실패하면 값을 변경하지 않는다. 이는 원본 복원 정책을 native 권한 경계에 맞춘 차이이다.
