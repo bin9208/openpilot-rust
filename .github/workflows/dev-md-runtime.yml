@@ -64,6 +64,8 @@ jobs:
         with:
           path: ${{ runner.temp }}/agnos-runtime/sdk
           key: agnos-sdk-375c5d22335770ac-v1
+      - name: Compile host release tools in an isolated native cache
+        run: python3 rust/ci/runtime/package.py host-tools
       - name: Compile exact source, audit ABI, seal and test offline installation
         run: python3 rust/ci/runtime/package.py build
       - name: Preserve compiled dependencies for focused repair runs

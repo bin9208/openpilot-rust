@@ -23,7 +23,8 @@ SHA = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True)
 BASE = "3496c4bbf300e7487d17b2bf25afc170584dfe02"
 SDK = WORK / "sdk"
 TARGET = WORK / "target"
-TOOLS = TARGET / "release"
+HOST_TARGET = TARGET / "host-tools"
+TOOLS = HOST_TARGET / "release"
 RELEASE = WORK / "release"
 BUILD = json.loads((CONFIG / "build-args.json").read_text())
 NAMES = [BUILD[i + 1] for i, value in enumerate(BUILD) if value == "--bin"]
@@ -215,6 +216,19 @@ def environment():
     return env
 
 
+def host_tools():
+    room(6 * 2**30)
+    assert not git("status", "--porcelain")
+    env = environment()
+    # Cross-build dependencies also compile host units. A separate target tree
+    # prevents an upstream build script's cached ARM link paths leaking into
+    # packaging tools when that script does not track FFMPEG_DIR changes.
+    arm_providers = {"LOCATIOND_EIGEN_INCLUDE", "PARAMSD_EIGEN_INCLUDE", "FFMPEG_DIR", "ENCODER_LIBYUV_LIB", "OPENPILOT_OPENCV_ROOT", "OPENPILOT_ORT_ROOT", "STARTUP_UI_RAYLIB_ROOT"}
+    host_env = {key: value for key, value in env.items() if key not in arm_providers}
+    host_env["CARGO_TARGET_DIR"] = str(HOST_TARGET)
+    run(["cargo", "build", "--locked", "--manifest-path", "rust/Cargo.toml", "--release", "-p", "openpilot-dev-tools", "--bin", "package-runtime-release", "--bin", "seal-runtime-package", "--bin", "runtime-elf-audit", "--bin", "publish-runtime-release", "-p", "openpilot-manager", "--bin", "openpilot-manager"], env=host_env)
+
+
 def build():
     room(20 * 2**30)
     assert not git("status", "--porcelain")
@@ -229,10 +243,6 @@ def build():
     installer = TARGET / "aarch64-unknown-linux-musl/release/openpilot-runtime-install"
     save(WORK / "installer-build.json", dict(schema=1, source_commit=SHA, architecture="aarch64", target="aarch64-unknown-linux-musl", installer_sha256=digest(installer), build_command=shlex.join(installer_cmd), validation="Built on GitHub-hosted runner; complete offline QEMU installation and installed AGNOS launcher verification follow before publication."))
     room(6 * 2**30)
-    # Host tools have no native feature enabled; they inspect/seal the real ARM artifacts.
-    arm_providers = {"LOCATIOND_EIGEN_INCLUDE", "PARAMSD_EIGEN_INCLUDE", "FFMPEG_DIR", "ENCODER_LIBYUV_LIB", "OPENPILOT_OPENCV_ROOT", "OPENPILOT_ORT_ROOT", "STARTUP_UI_RAYLIB_ROOT"}
-    host_env = {key: value for key, value in env.items() if key not in arm_providers}
-    run(["cargo", "build", "--locked", "--manifest-path", "rust/Cargo.toml", "--release", "-p", "openpilot-dev-tools", "--bin", "package-runtime-release", "--bin", "seal-runtime-package", "--bin", "runtime-elf-audit", "--bin", "publish-runtime-release", "-p", "openpilot-manager", "--bin", "openpilot-manager"], env=host_env)
     rows = []
     for name in NAMES:
         source = installer if name == "openpilot-runtime-install" else TARGET / "aarch64-unknown-linux-gnu/release" / name
@@ -329,6 +339,7 @@ def publish():
 if __name__ == "__main__":
     os.environ["RUSTUP_TOOLCHAIN"] = "1.94.0"
     if sys.argv[1] == "prepare": stage_baseline(); sysroot(); environment()
+    elif sys.argv[1] == "host-tools": host_tools()
     elif sys.argv[1] == "build": build()
     elif sys.argv[1] == "publish": sysroot(); publish()
-    else: raise SystemExit("expected prepare, build or publish")
+    else: raise SystemExit("expected prepare, host-tools, build or publish")
