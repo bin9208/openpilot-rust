@@ -1,4 +1,4 @@
-//! Rust equivalent of the fixed offroad-only setup_gadget.sh provisioning policy.
+//! Provision the exclusively owned Jetlink gadget independently of vehicle ignition.
 use crate::Error;
 use std::{
     fs,
@@ -101,9 +101,6 @@ pub fn egpu_present(usb: &Path) -> Result<bool, Error> {
     Ok(false)
 }
 fn setup(paths: &Paths, platform: &impl Platform) -> Result<(), Error> {
-    if value(&paths.params.join("IsOffroad")) != "1" {
-        return Err(Error::Contract("Jetlink setup requires offroad"));
-    }
     if ["UsbGpuActive", "UsbGpuLoading"]
         .iter()
         .any(|key| value(&paths.params.join(key)) == "1")
@@ -247,13 +244,24 @@ mod tests {
         assert_eq!(os.calls.borrow().len(), 1);
     }
     #[test]
-    fn refuses_onroad_egpu_and_existing_controller_ownership_before_mutation() {
-        for kind in 0..4 {
+    fn provisions_usb_after_vehicle_ignition() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = fixture(dir.path());
+        fs::write(paths.params.join("IsOffroad"), "0").unwrap();
+        fs::write(paths.params.join("IsOnroad"), "1").unwrap();
+        setup(&paths, &OsFixture::default()).unwrap();
+        assert!(paths
+            .config
+            .join("usb_gadget/carrot_jetlink/configs/c.1/ffs.carrot_jetlink")
+            .is_symlink());
+    }
+    #[test]
+    fn refuses_egpu_and_existing_controller_ownership_before_mutation() {
+        for kind in 1..4 {
             // Given a conflicting source condition in isolated files.
             let dir = tempfile::tempdir().unwrap();
             let paths = fixture(dir.path());
             match kind {
-                0 => fs::write(paths.params.join("IsOffroad"), "0").unwrap(),
                 1 => fs::write(paths.params.join("UsbGpuLoading"), "1").unwrap(),
                 2 => {
                     let device = paths.usb.join("bridge");

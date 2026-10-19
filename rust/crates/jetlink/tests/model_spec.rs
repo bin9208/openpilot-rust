@@ -53,23 +53,26 @@ fn selected_session_adapter_checks_exact_output_and_keeps_native_model() {
 }
 
 #[test]
-fn app_selection_is_exact_offroad_approved_and_fail_closed_on_corruption() {
+fn app_selection_is_exact_onroad_and_fail_closed_on_corruption() {
     use openpilot_jetlink::selection;
     let cache = tempfile::tempdir().unwrap();
     let spec = ModelSpec::parse(LEGACY_JSON.as_bytes()).unwrap();
     assert!(selection::approved(cache.path()).unwrap().is_none());
-    assert!(selection::remember(cache.path(), &spec, false).is_err());
-    selection::remember(cache.path(), &spec, true).unwrap();
-    selection::remember(cache.path(), &spec, false).unwrap();
+    selection::remember(cache.path(), &spec).unwrap();
+    selection::remember(cache.path(), &spec).unwrap();
+    let mut changed_contract = spec.clone();
+    changed_contract.checkpoint = Some("changed".into());
+    assert!(selection::remember(cache.path(), &changed_contract).is_err());
     let mut changed = spec.clone();
     changed.sha256 = "a".repeat(64);
-    assert!(selection::remember(cache.path(), &changed, false).is_err());
+    selection::remember(cache.path(), &changed).unwrap();
+    assert_eq!(selection::approved(cache.path()).unwrap().unwrap(), changed);
     assert!(selection::check_loaded(&spec, &serde_json::json!({"loaded":changed.sha256})).is_err());
     assert!(selection::check_loaded(&spec, &serde_json::json!({"loaded":null})).is_err());
     assert!(selection::check_loaded(&spec, &serde_json::json!({"loaded":spec.sha256})).is_ok());
     std::fs::write(cache.path().join("selected.json"), b"invalid").unwrap();
     assert!(selection::approved(cache.path()).is_err());
-    assert!(selection::remember(cache.path(), &spec, true).is_err());
+    assert!(selection::remember(cache.path(), &spec).is_err());
 }
 
 #[test]

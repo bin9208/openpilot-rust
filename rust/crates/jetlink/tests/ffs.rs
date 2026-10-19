@@ -10,17 +10,13 @@ use openpilot_jetlink::{
 use std::{
     fs::{self, File, OpenOptions},
     io::{Read, Write},
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
+    sync::Arc,
     thread,
     time::Duration,
 };
 struct Fixture {
     dir: tempfile::TempDir,
     session: Arc<Session>,
-    offroad: Arc<AtomicBool>,
 }
 impl Fixture {
     fn new() -> Self {
@@ -41,20 +37,8 @@ impl Fixture {
             )
             .unwrap();
         }
-        let offroad = Arc::new(AtomicBool::new(true));
-        let read_offroad = Arc::clone(&offroad);
-        let session = Session::open(
-            root,
-            root,
-            &root.join("udcs"),
-            Arc::new(move || read_offroad.load(Ordering::Acquire)),
-        )
-        .unwrap();
-        Self {
-            dir,
-            session,
-            offroad,
-        }
+        let session = Session::open(root, root, &root.join("udcs")).unwrap();
+        Self { dir, session }
     }
     fn peer(&self) -> (File, File) {
         let read = OpenOptions::new()
@@ -72,7 +56,6 @@ impl Fixture {
 }
 impl Drop for Fixture {
     fn drop(&mut self) {
-        self.offroad.store(true, Ordering::Release);
         self.session.teardown().unwrap();
         let mut wake = OpenOptions::new()
             .read(true)
@@ -180,16 +163,23 @@ fn native_functionfs_client_preserves_original_wire_and_model_contract() {
     peer.join().unwrap();
 }
 #[test]
-fn role_teardown_is_refused_onroad() {
-    // Given a configured synthetic gadget whose offroad state changes.
+fn onroad_setup_teardown_and_reconnect_release_the_controller() {
     let fixture = Fixture::new();
-    fixture.offroad.store(false, Ordering::Release);
-    // When teardown is requested, then the controller binding is unchanged.
-    assert!(fixture.session.teardown().is_err());
-    assert_eq!(
-        fs::read_to_string(fixture.dir.path().join("UDC")).unwrap(),
-        "test\n"
-    );
+    assert!(fixture.session.bound().unwrap());
+    fixture.session.teardown().unwrap();
+    assert!(!fixture.session.bound().unwrap());
+    let root = fixture.dir.path();
+    let next = Session::open(root, root, &root.join("udcs")).unwrap();
+    assert!(next.bound().unwrap());
+    next.teardown().unwrap();
+}
+#[test]
+fn transport_close_releases_its_own_controller() {
+    let fixture = Fixture::new();
+    assert!(fixture.session.bound().unwrap());
+    let mut transport = FfsTransport::new(Arc::clone(&fixture.session));
+    transport.close();
+    assert!(!fixture.session.bound().unwrap());
 }
 #[test]
 fn receive_deadline_is_independent_of_blocked_hardware_reader() {

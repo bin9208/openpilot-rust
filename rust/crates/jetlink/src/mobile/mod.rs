@@ -6,7 +6,7 @@ mod network;
 mod platform;
 mod process;
 
-/// Separate privileged helper; invoked only by an already authorized offroad
+/// Separate privileged helper; invoked only by the exclusive
 /// gadget owner, with explicit iOS helper mode. No shell or Python is executed.
 pub fn helper(action: &str) -> Result<(), crate::Error> {
     use crate::Error;

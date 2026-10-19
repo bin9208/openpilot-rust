@@ -16,7 +16,7 @@ impl<T: Transport> Client<T> {
             self.provision_wifi(false)?;
             let sequence = self.send(12, b"{}", deadline)?;
             let state: Value =
-                serde_json::from_slice(&self.expect_setup(13, sequence, deadline, false)?.payload)?;
+                serde_json::from_slice(&self.expect_setup(13, sequence, deadline)?.payload)?;
             let update = state
                 .get("carrot_update")
                 .filter(|value| value.is_object())

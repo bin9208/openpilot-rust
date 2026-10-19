@@ -49,7 +49,6 @@ pub struct MobileBackend {
     version: Version,
     grace: Duration,
     cache: PathBuf,
-    offroad: Arc<dyn Fn() -> bool + Send + Sync>,
     pub hello_complete: Arc<AtomicBool>,
     pub selected_tcp: Arc<AtomicBool>,
     pub cancel: Arc<Cancel>,
@@ -63,7 +62,6 @@ pub struct Options {
     pub version: Version,
     pub grace: Duration,
     pub cache: PathBuf,
-    pub offroad: Arc<dyn Fn() -> bool + Send + Sync>,
     pub legacy: bool,
     pub status: Arc<Mutex<serde_json::Value>>,
 }
@@ -77,7 +75,6 @@ impl MobileBackend {
             version: options.version,
             grace: options.grace,
             cache: options.cache,
-            offroad: options.offroad,
             hello_complete: Arc::new(AtomicBool::new(false)),
             selected_tcp: Arc::new(AtomicBool::new(false)),
             cancel: Arc::new(Cancel::default()),
@@ -146,7 +143,7 @@ impl Backend for MobileBackend {
         let mut client = if self.legacy {
             Client::new(transport)
         } else {
-            Client::app(transport, self.cache.clone(), Arc::clone(&self.offroad))
+            Client::app(transport, self.cache.clone())
         };
         client.status = Arc::clone(&self.status);
         let owner = Arc::clone(&self.owner);

@@ -9,11 +9,7 @@ impl<T: Transport> Client<T> {
             .app
             .as_ref()
             .ok_or(Error::Contract("App setup missing"))?;
-        let (cache, offroad, connected) = (
-            app.cache.clone(),
-            app.offroad.clone(),
-            app.connected.clone(),
-        );
+        let (cache, connected) = (app.cache.clone(), app.connected.clone());
         let status = self.status.clone();
         let mut last_progress = 0u64;
         let path = super::model_cache::model_file(
@@ -22,9 +18,6 @@ impl<T: Transport> Client<T> {
             move || {
                 if !(connected)() {
                     return Err(Error::Closed);
-                }
-                if !(offroad)() {
-                    return Err(Error::Contract("model preparation requires ignition off"));
                 }
                 Ok(())
             },
@@ -50,7 +43,7 @@ impl<T: Transport> Client<T> {
             deadline,
         )?;
         let state: Value =
-            serde_json::from_slice(&self.expect_setup(4, sequence, deadline, true)?.payload)?;
+            serde_json::from_slice(&self.expect_setup(4, sequence, deadline)?.payload)?;
         if state["state"] != "need_upload" {
             return Ok(state);
         }
@@ -104,7 +97,7 @@ impl<T: Transport> Client<T> {
         self.require_setup()?;
         let deadline = Deadline::after(Duration::from_secs(300))?;
         let sequence = self.send(6, b"{}", deadline)?;
-        serde_json::from_slice(&self.expect_setup(4, sequence, deadline, true)?.payload)
+        serde_json::from_slice(&self.expect_setup(4, sequence, deadline)?.payload)
             .map_err(Error::from)
     }
 }
@@ -156,7 +149,7 @@ mod tests {
         fn close(&mut self) {}
     }
     #[test]
-    fn actual_wire_upload_uses_offsets_done_response_and_offroad_cancellation() {
+    fn actual_wire_upload_uses_offsets_done_response_and_disconnect_cancellation() {
         let root = tempfile::tempdir().unwrap();
         let path = root.path().join("fixture.onnx");
         let data = b"abcdefghijklmnopqrst";
@@ -169,7 +162,7 @@ mod tests {
             spec: serde_json::to_value(&spec).unwrap(),
             done: false,
         };
-        let mut client = Client::app(wire(), root.path().to_owned(), std::sync::Arc::new(|| true));
+        let mut client = Client::app(wire(), root.path().to_owned());
         assert_eq!(
             client
                 .upload_model(&path, &spec, &json!({"chunk":5}))
@@ -197,19 +190,17 @@ mod tests {
         assert!(client.transport.done);
         let checks = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let read = checks.clone();
-        let mut client = Client::app(
-            wire(),
-            root.path().to_owned(),
-            std::sync::Arc::new(move || read.fetch_add(1, std::sync::atomic::Ordering::SeqCst) < 2),
-        );
+        let mut client = Client::app(wire(), root.path().to_owned());
+        client.set_connected_check(std::sync::Arc::new(move || {
+            read.fetch_add(1, std::sync::atomic::Ordering::SeqCst) < 2
+        }));
         assert!(client
             .upload_model(&path, &spec, &json!({"chunk":5}))
             .is_err());
         assert_eq!(client.transport.chunks.len(), 1);
         assert!(!client.transport.done);
         for invalid in [json!(-1), json!("5"), json!(32 << 20)] {
-            let mut client =
-                Client::app(wire(), root.path().to_owned(), std::sync::Arc::new(|| true));
+            let mut client = Client::app(wire(), root.path().to_owned());
             assert!(client
                 .upload_model(&path, &spec, &json!({"chunk":invalid}))
                 .is_err());

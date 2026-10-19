@@ -57,7 +57,6 @@ struct Prepare {
 #[derive(Deserialize)]
 struct Ownership {
     enable: bool,
-    offroad: bool,
     egpu: bool,
     fail: bool,
 }
@@ -123,9 +122,9 @@ fn run(request: Request) -> Result<Value, Box<dyn std::error::Error>> {
                     }
                 };
                 let result = if step.enable {
-                    owner.enable(step.offroad, step.egpu, callback)
+                    owner.enable(step.egpu, callback)
                 } else {
-                    owner.disable(step.offroad, callback)
+                    owner.disable(callback)
                 };
                 output.push(json!({"ok":result.is_ok(),"enabled":owner.enabled(),"calls":calls}));
             }

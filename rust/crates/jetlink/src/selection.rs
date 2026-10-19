@@ -1,4 +1,4 @@
-//! Persist exact offroad-approved model contracts; do not adopt an onroad App pick.
+//! Persist exact App-selected model contracts after protocol and engine validation.
 use crate::{model_spec::ModelSpec, Error};
 use std::{
     fs,
@@ -16,7 +16,7 @@ pub fn approved(cache: &Path) -> Result<Option<ModelSpec>, Error> {
     file.take(65537).read_to_end(&mut bytes)?;
     Ok(Some(ModelSpec::parse(&bytes)?))
 }
-pub fn remember(cache: &Path, spec: &ModelSpec, offroad: bool) -> Result<(), Error> {
+pub fn remember(cache: &Path, spec: &ModelSpec) -> Result<(), Error> {
     spec.validate()?;
     if let Some(old) = approved(cache)? {
         if old.sha256 == spec.sha256 {
@@ -25,9 +25,6 @@ pub fn remember(cache: &Path, spec: &ModelSpec, offroad: bool) -> Result<(), Err
             }
             return Err(Error::Contract("model contract changed under approved SHA"));
         }
-    }
-    if !offroad {
-        return Err(Error::Contract("new App model requires offroad approval"));
     }
     fs::create_dir_all(cache)?;
     let mut staging = tempfile::NamedTempFile::new_in(cache)?;

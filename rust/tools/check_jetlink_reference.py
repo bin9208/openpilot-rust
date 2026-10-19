@@ -82,6 +82,8 @@ def main() -> None:
         wanted = {k: v.ravel().tolist() for k, v in parsed.items() if k not in ("hidden_state", "pad")}
         wanted["action"] = wanted["action"][:2]
         add({"op": "parse", "values": values.tolist()}, wanted, "adapter_parser")
+    # User policy (#400): ignition is not a USB ownership predicate. Compare
+    # unchanged ownership/error semantics with the original gate satisfied.
     calls = 0
     failing = False
     def operation():
@@ -92,18 +94,18 @@ def main() -> None:
     owner = GadgetOwner(operation, operation)
     steps, answers = [], []
     for _ in range(500):
-        enable, offroad, egpu, failing = (rng.choice((False, True)) for _ in range(4))
+        enable, egpu, failing = (rng.choice((False, True)) for _ in range(3))
         try:
             if enable:
-                owner.enable("shadow", offroad, egpu)
+                owner.enable("shadow", True, egpu)
             else:
-                owner.disable(offroad)
+                owner.disable(True)
             okay = True
         except RuntimeError:
             okay = False
-        steps.append({"enable": enable, "offroad": offroad, "egpu": egpu, "fail": failing})
+        steps.append({"enable": enable, "egpu": egpu, "fail": failing})
         answers.append({"ok": okay, "enabled": owner.enabled, "calls": calls})
-    add({"op": "owner", "steps": steps}, answers, "offroad_ownership")
+    add({"op": "owner", "steps": steps}, answers, "ignition_independent_ownership")
     add({"op": "descriptors"}, {"descriptors": list(build_descriptors()), "strings": list(build_strings())}, "functionfs_descriptors")
     for length, gadget in itertools.product((0, 1, 992, 1024, 16352, 16384, 393272), (False, True)):
         payload = bytes(index % 251 for index in range(length))

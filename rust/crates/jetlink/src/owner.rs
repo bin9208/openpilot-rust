@@ -52,15 +52,11 @@ impl GadgetOwner {
     }
     pub fn enable(
         &mut self,
-        offroad: bool,
         egpu_present: bool,
         setup: impl FnOnce() -> Result<(), Error>,
     ) -> Result<(), Error> {
         if self.enabled {
             return Ok(());
-        }
-        if !offroad {
-            return Err(Error::Contract("USB setup requires offroad"));
         }
         if egpu_present {
             return Err(Error::Contract("eGPU owns USB"));
@@ -69,16 +65,9 @@ impl GadgetOwner {
         self.enabled = true;
         Ok(())
     }
-    pub fn disable(
-        &mut self,
-        offroad: bool,
-        teardown: impl FnOnce() -> Result<(), Error>,
-    ) -> Result<(), Error> {
+    pub fn disable(&mut self, teardown: impl FnOnce() -> Result<(), Error>) -> Result<(), Error> {
         if !self.enabled {
             return Ok(());
-        }
-        if !offroad {
-            return Err(Error::Contract("USB teardown requires offroad"));
         }
         teardown()?;
         self.enabled = false;

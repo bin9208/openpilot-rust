@@ -30,9 +30,9 @@ fn command(root: &Path) -> Command {
     command
 }
 #[test]
-fn off_and_onroad_requests_publish_status_without_usb_setup() {
+fn unattached_or_disabled_requests_publish_status_without_usb_setup() {
     for (offroad, mode) in [(true, 0), (false, 2)] {
-        // Given isolated parameters which never authorize gadget setup.
+        // Without a physical cable (or with mode Off), ignition alone does not start setup.
         let dir = tempfile::tempdir().unwrap();
         let params = Params::open(&dir.path().join("params"), "fixture").unwrap();
         params.put_bool("IsOffroad", offroad).unwrap();

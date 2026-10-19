@@ -163,7 +163,7 @@ impl MobileCable {
 impl Drop for MobileCable {
     fn drop(&mut self) {
         if let Err(error) = self.close() {
-            eprintln!("unsafe mobile cable cleanup; restart offroad before retry: {error}");
+            eprintln!("unsafe mobile cable cleanup; restart Jetlink before retry: {error}");
         }
     }
 }

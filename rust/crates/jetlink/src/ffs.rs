@@ -22,58 +22,24 @@ use std::{
 };
 const CHUNK: usize = 16 * 1024;
 const MAX_MESSAGE: usize = 16 << 20;
-type Offroad = Arc<dyn Fn() -> bool + Send + Sync>;
-
-struct ParkedDescriptor {
-    file: Option<File>,
-    offroad: Offroad,
-}
-impl Drop for ParkedDescriptor {
-    fn drop(&mut self) {
-        // ep0 closure changes the USB role. Keep the descriptor until process exit
-        // when setup races an onroad transition; only parked teardown may release it.
-        if !(self.offroad)() {
-            if let Some(file) = self.file.take() {
-                std::mem::forget(file);
-            }
-        }
-    }
-}
 pub struct Session {
-    ep0: Mutex<ParkedDescriptor>,
+    ep0: Mutex<Option<File>>,
     usb_role: Mutex<()>,
     gadget: PathBuf,
     mount: PathBuf,
     state: File,
     speed: PathBuf,
-    offroad: Offroad,
     stopped: AtomicBool,
     host_ready_until: Mutex<Option<Instant>>,
 }
 impl Session {
-    /// Caller must have exclusively provisioned this gadget while offroad.
-    pub fn open(
-        mount: &Path,
-        gadget: &Path,
-        udc_root: &Path,
-        offroad: Offroad,
-    ) -> Result<Arc<Self>, Error> {
-        if !offroad() {
-            return Err(Error::Contract("descriptor setup requires offroad"));
-        }
-        let mut ep0 = ParkedDescriptor {
-            file: Some(
-                OpenOptions::new()
-                    .read(true)
-                    .write(true)
-                    .open(mount.join("ep0"))?,
-            ),
-            offroad: Arc::clone(&offroad),
-        };
-        let descriptor = ep0
-            .file
-            .as_mut()
-            .ok_or(Error::Contract("missing ep0 descriptor"))?;
+    /// Caller must have exclusively provisioned this gadget.
+    pub fn open(mount: &Path, gadget: &Path, udc_root: &Path) -> Result<Arc<Self>, Error> {
+        let mut ep0 = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(mount.join("ep0"))?;
+        let descriptor = &mut ep0;
         descriptor.write_all(&wire::descriptors())?;
         descriptor.write_all(&wire::strings())?;
         let mut controllers = fs::read_dir(udc_root)?
@@ -84,23 +50,17 @@ impl Session {
             .first()
             .ok_or(Error::Contract("no USB controller"))?;
         let state = File::open(udc_root.join(controller).join("state"))?;
-        if !offroad() {
-            return Err(Error::Contract(
-                "vehicle left offroad during descriptor setup",
-            ));
-        }
         fs::write(
             gadget.join("UDC"),
             format!("{}\n", controller.to_string_lossy()),
         )?;
         Ok(Arc::new(Self {
-            ep0: Mutex::new(ep0),
+            ep0: Mutex::new(Some(ep0)),
             usb_role: Mutex::new(()),
             gadget: gadget.to_owned(),
             mount: mount.to_owned(),
             state,
             speed: udc_root.join(controller).join("current_speed"),
-            offroad,
             stopped: AtomicBool::new(false),
             host_ready_until: Mutex::new(None),
         }))
@@ -150,15 +110,11 @@ impl Session {
             .usb_role
             .lock()
             .map_err(|_| Error::Contract("USB role mutex poisoned"))?;
-        if !(self.offroad)() {
-            return Err(Error::Contract("USB teardown requires offroad"));
-        }
         self.stopped.store(true, Ordering::Release);
         fs::write(self.gadget.join("UDC"), b"\n")?;
         self.ep0
             .lock()
             .map_err(|_| Error::Contract("ep0 mutex poisoned"))?
-            .file
             .take();
         Ok(())
     }
@@ -170,9 +126,7 @@ impl Session {
         if self.stopped.load(Ordering::Acquire) {
             return Ok(());
         }
-        if (self.offroad)() {
-            fs::write(self.gadget.join("UDC"), b"\n")?;
-        }
+        fs::write(self.gadget.join("UDC"), b"\n")?;
         Ok(())
     }
 }
@@ -426,9 +380,9 @@ impl Transport for FfsTransport {
     fn close(&mut self) {
         self.stop.store(true, Ordering::Release);
         self.watch.stopped.store(true, Ordering::Release);
-        if (self.session.offroad)() && !self.session.stopped.load(Ordering::Acquire) {
+        if !self.session.stopped.load(Ordering::Acquire) {
             if let Err(error) = self.session.teardown() {
-                eprintln!("jetlink parked transport close: {error}");
+                eprintln!("jetlink transport close: {error}");
             }
         }
     }

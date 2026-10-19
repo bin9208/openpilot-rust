@@ -182,7 +182,6 @@ fn publish_link(
     Ok(())
 }
 fn options(
-    params: &Arc<Params>,
     mode: TransportMode,
     admission_mode: TransportMode,
     version: openpilot_jetlink::wire::Version,
@@ -190,7 +189,6 @@ fn options(
     cache: &Path,
     legacy: bool,
 ) -> BackendOptions {
-    let params = Arc::clone(params);
     BackendOptions {
         mode,
         admission_mode,
@@ -199,14 +197,6 @@ fn options(
         cache: cache.to_owned(),
         legacy,
         status: Arc::new(Mutex::new(serde_json::json!({}))),
-        offroad: Arc::new(move || {
-            params
-                .get("IsOffroad")
-                .is_ok_and(|v| v.is_some_and(|v| v == b"1"))
-                && params
-                    .get("IsOnroad")
-                    .is_ok_and(|v| v.is_none_or(|v| v != b"1"))
-        }),
     }
 }
 
@@ -308,7 +298,6 @@ fn run() -> Result<(), EntryError> {
     let mut failure_detail = String::new();
     let mut count = 0;
     while !stop.load(Ordering::Acquire) {
-        let offroad = bool_param(&params, "IsOffroad")? && !bool_param(&params, "IsOnroad")?;
         let mode = params
             .get("JetlinkMode")?
             .and_then(|v| String::from_utf8(v).ok())
@@ -319,7 +308,7 @@ fn run() -> Result<(), EntryError> {
             .as_ref()
             .and_then(|link| link.server.as_ref())
             .is_some_and(|server| server.error.lock().is_ok_and(|error| !error.is_empty()));
-        if offroad && owner.enabled() && (lost || !attached) {
+        if owner.enabled() && (lost || !attached) {
             let current = link
                 .as_mut()
                 .ok_or(Error::Contract("owned Jetlink session missing"))?;
@@ -330,7 +319,7 @@ fn run() -> Result<(), EntryError> {
                 // physical detach; reconnect over the retained cable owner.
                 current.stop_inference()?;
             } else {
-                owner.disable(true, || current.teardown())?;
+                owner.disable(|| current.teardown())?;
                 link = None;
                 if !attached {
                     protocol = openpilot_jetlink::protocol_choice::ProtocolChoice::parse(
@@ -365,8 +354,8 @@ fn run() -> Result<(), EntryError> {
             reconnect_at = Instant::now() + Duration::from_secs(5);
             failed = false;
         }
-        let result = if offroad && mode == 0 {
-            let result = owner.disable(true, || {
+        let result = if mode == 0 {
+            let result = owner.disable(|| {
                 if let Some(link) = &mut link {
                     link.teardown()?;
                 }
@@ -380,19 +369,13 @@ fn run() -> Result<(), EntryError> {
                 grace = Duration::from_secs(5);
             }
             result
-        } else if offroad
-            && attached
-            && matches!(mode, 1 | 2)
-            && !failed
-            && Instant::now() >= reconnect_at
-        {
+        } else if attached && matches!(mode, 1 | 2) && !failed && Instant::now() >= reconnect_at {
             if owner.enabled() {
                 if let Some(link) = &mut link {
                     if link.server.is_none() {
                         link.spawn(
                             &socket,
                             options(
-                                &params,
                                 TransportMode::Ios,
                                 transport_mode,
                                 openpilot_jetlink::wire::Version::V3,
@@ -412,18 +395,12 @@ fn run() -> Result<(), EntryError> {
                     openpilot_jetlink::gadget::egpu_present(Path::new("/sys/bus/usb/devices"))?
                         || bool_param(&params, "UsbGpuActive")?
                         || bool_param(&params, "UsbGpuLoading")?;
-                owner.enable(true, egpu, || {
+                owner.enable(egpu, || {
                     setup_gadget(effective_transport)?;
-                    let p = Arc::clone(&params);
                     let session = Session::open(
                         Path::new("/dev/ffs-carrot-jetlink"),
                         Path::new("/sys/kernel/config/usb_gadget/carrot_jetlink"),
                         Path::new("/sys/class/udc"),
-                        Arc::new(move || {
-                            p.get("IsOffroad")
-                                .is_ok_and(|v| v.is_some_and(|v| v == b"1"))
-                                && p.get("IsOnroad").is_ok_and(|v| v.is_none_or(|v| v != b"1"))
-                        }),
                     )?;
                     let mut candidate = Link {
                         session,
@@ -444,7 +421,6 @@ fn run() -> Result<(), EntryError> {
                         candidate.spawn(
                             &socket,
                             options(
-                                &params,
                                 effective_transport,
                                 transport_mode,
                                 protocol.version,
@@ -556,11 +532,7 @@ fn run() -> Result<(), EntryError> {
         thread::sleep(Duration::from_millis(500));
     }
     if let Some(link) = &mut link {
-        if bool_param(&params, "IsOffroad")? {
-            link.teardown()?;
-        } else {
-            link.stop_inference()?;
-        }
+        link.teardown()?;
     }
     Ok(())
 }

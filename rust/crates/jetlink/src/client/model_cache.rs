@@ -1,4 +1,4 @@
-//! Verified offroad Cinque v2 provisioning; no graph execution occurs here.
+//! Verified Cinque v2 provisioning; no graph execution occurs here.
 use crate::{model_spec::ModelSpec, Error};
 use sha2::{Digest, Sha256};
 use std::{

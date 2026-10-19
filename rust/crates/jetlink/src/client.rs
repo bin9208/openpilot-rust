@@ -69,7 +69,6 @@ pub struct Client<T: Transport> {
 }
 struct AppSelection {
     cache: std::path::PathBuf,
-    offroad: std::sync::Arc<dyn Fn() -> bool + Send + Sync>,
     connected: std::sync::Arc<dyn Fn() -> bool + Send + Sync>,
 }
 impl<T: Transport> Client<T> {
@@ -96,15 +95,10 @@ impl<T: Transport> Client<T> {
             hello_complete: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
         }
     }
-    pub fn app(
-        transport: T,
-        cache: std::path::PathBuf,
-        offroad: std::sync::Arc<dyn Fn() -> bool + Send + Sync>,
-    ) -> Self {
+    pub fn app(transport: T, cache: std::path::PathBuf) -> Self {
         let mut client = Self::new(transport);
         client.app = Some(AppSelection {
             cache,
-            offroad,
             connected: std::sync::Arc::new(|| true),
         });
         client
@@ -175,10 +169,7 @@ impl<T: Transport> Client<T> {
     }
     fn idle_inner(&mut self) -> Result<(), Error> {
         self.provision_wifi(false)?;
-        if !self.ready
-            || self.app.as_ref().is_none_or(|app| !(app.offroad)())
-            || crate::now_ns() < self.idle_at
-        {
+        if !self.ready || self.app.is_none() || crate::now_ns() < self.idle_at {
             return Ok(());
         }
         self.release_app_request()?;
@@ -209,19 +200,12 @@ impl<T: Transport> Client<T> {
         if !(app.connected)() {
             return Err(Error::Closed);
         }
-        if !(app.offroad)() {
-            return Err(Error::Contract("model preparation requires ignition off"));
-        }
         Ok(())
     }
-    fn receive_setup(&mut self, deadline: Deadline, offroad: bool) -> Result<Message, Error> {
+    fn receive_setup(&mut self, deadline: Deadline) -> Result<Message, Error> {
         loop {
             deadline.remaining()?;
-            if offroad {
-                self.require_setup()?;
-            } else if self.app.as_ref().is_some_and(|app| !(app.connected)()) {
-                return Err(Error::Closed);
-            }
+            self.require_setup()?;
             self.provision_wifi(false)?;
             let poll = Deadline(
                 deadline
@@ -235,14 +219,14 @@ impl<T: Transport> Client<T> {
         }
     }
     fn release_app_request(&mut self) -> Result<(), Error> {
-        if !self.app_request_pending || self.app.as_ref().is_none_or(|app| !(app.offroad)()) {
+        if !self.app_request_pending {
             return Ok(());
         }
         self.require_setup()?;
         let deadline = Deadline::after(Duration::from_secs(2))?;
         let sequence = self.send(1, &serde_json::to_vec(&json!({"client":{"name":"jetlinkd-rs","nonce":self.client_nonce.as_deref().unwrap_or("")}}))?, deadline)?;
         let hello: Value =
-            serde_json::from_slice(&self.expect_setup(2, sequence, deadline, true)?.payload)?;
+            serde_json::from_slice(&self.expect_setup(2, sequence, deadline)?.payload)?;
         if hello["protocol"].as_u64() != Some(self.transport.version() as u64) {
             return Err(Error::Contract("fresh App HELLO protocol"));
         }
@@ -321,10 +305,9 @@ impl<T: Transport> Client<T> {
         kind: u16,
         sequence: u32,
         deadline: Deadline,
-        offroad: bool,
     ) -> Result<Message, Error> {
         loop {
-            let message = self.receive_setup(deadline, offroad)?;
+            let message = self.receive_setup(deadline)?;
             if message.header.kind == kind && message.header.sequence == sequence {
                 return Ok(message);
             }
@@ -391,9 +374,7 @@ impl<T: Transport> Client<T> {
             while hello["loaded"].is_null() {
                 self.report("loading", "app-selection", None, None);
                 until.remaining()?;
-                if !self.app.as_ref().is_some_and(|app| (app.offroad)()) {
-                    return Err(Error::Contract("App selection deferred until offroad"));
-                }
+                self.require_setup()?;
                 let deadline = Deadline::after(Duration::from_secs(2))?;
                 let seq = self.send(12, b"{}", deadline)?;
                 let state: Value =
@@ -412,7 +393,7 @@ impl<T: Transport> Client<T> {
             .app
             .as_ref()
             .ok_or(Error::Contract("App selection missing"))?;
-        let approved = crate::selection::approved(&app.cache)?;
+        crate::selection::approved(&app.cache)?;
         let fallback =
             crate::model_spec::ModelSpec::parse(crate::model_spec::LEGACY_JSON.as_bytes())?;
         let selected = if follows_app {
@@ -426,9 +407,6 @@ impl<T: Transport> Client<T> {
         if !valid_sha(&selected) {
             return Err(Error::Contract("App loaded model identity"));
         }
-        if !(app.offroad)() && approved.as_ref().is_none_or(|s| s.sha256 != selected) {
-            return Err(Error::Contract("App selection changed onroad"));
-        }
         let preloaded = hello["loaded"] == selected;
         if !preloaded {
             self.require_setup()?;
@@ -436,11 +414,8 @@ impl<T: Transport> Client<T> {
         if follows_app {
             let deadline = Deadline::after(Duration::from_secs(2))?;
             let sequence = self.send(12, b"{}", deadline)?;
-            let current: Value = serde_json::from_slice(
-                &self
-                    .expect_setup(13, sequence, deadline, !preloaded)?
-                    .payload,
-            )?;
+            let current: Value =
+                serde_json::from_slice(&self.expect_setup(13, sequence, deadline)?.payload)?;
             if current.get("loaded") != Some(&json!(selected)) {
                 return Err(Error::Contract("App engine changed before approval"));
             }
@@ -457,7 +432,7 @@ impl<T: Transport> Client<T> {
             deadline,
         )?;
         let mut state: Value =
-            serde_json::from_slice(&self.expect_setup(4, seq, deadline, !preloaded)?.payload)?;
+            serde_json::from_slice(&self.expect_setup(4, seq, deadline)?.payload)?;
         if state["state"] == "need_upload" && !follows_app {
             state = self.prepare_legacy_model(&fallback)?;
         }
@@ -471,7 +446,7 @@ impl<T: Transport> Client<T> {
                 _ => {}
             }
             self.require_setup()?;
-            let message = self.receive_setup(deadline, true)?;
+            let message = self.receive_setup(deadline)?;
             if message.header.kind == 14 {
                 return Err(Error::Contract("App engine error"));
             }
@@ -500,7 +475,7 @@ impl<T: Transport> Client<T> {
             .app
             .as_ref()
             .ok_or(Error::Contract("App selection missing"))?;
-        crate::selection::remember(&app.cache, &session.spec, (app.offroad)())?;
+        crate::selection::remember(&app.cache, &session.spec)?;
         let mut identity = Identity::new();
         for key in [
             "device_model",
@@ -659,7 +634,7 @@ impl<T: Transport> Client<T> {
         }
         self.session_contract().check_input(warped, packed)?;
         if self.sequence >= 0xffff_fffe {
-            return Err(Error::Contract("sequence exhausted; reconnect offroad"));
+            return Err(Error::Contract("sequence exhausted; reconnect"));
         }
         let mut payload = Vec::with_capacity(8 + warped.len() + packed.len() * 4);
         payload.extend(frame.to_le_bytes());
@@ -979,11 +954,7 @@ mod tests {
             .extend(serde_json::to_vec(&json!({"loaded":spec["sha256"]})).unwrap());
         output.header.length = output.payload.len() as u32;
         transport.replies.push_back(output);
-        let mut client = Client::app(
-            transport,
-            cache.path().to_owned(),
-            std::sync::Arc::new(|| true),
-        );
+        let mut client = Client::app(transport, cache.path().to_owned());
         let identity = client.connect().unwrap();
         assert_eq!(identity["artifact_sha256"], spec["sha256"]);
         assert_eq!(client.session_contract().packed_count(), 12);
@@ -1038,11 +1009,7 @@ mod tests {
         transport
             .replies
             .push_back(reply(15, 9, 0, &vec![0.; parsed.output_count().unwrap()]));
-        let client = Client::app(
-            transport,
-            cache.path().to_owned(),
-            std::sync::Arc::new(|| true),
-        );
+        let client = Client::app(transport, cache.path().to_owned());
         let directory = tempfile::tempdir().unwrap();
         let path = directory.path().join("owner.sock");
         let mut server = crate::owner::Server::spawn(client, &path).unwrap();
@@ -1083,11 +1050,7 @@ mod tests {
         transport
             .replies
             .push_back(json_reply(13, 16, json!({"loaded":null})));
-        let mut client = Client::app(
-            transport,
-            cache.path().to_owned(),
-            std::sync::Arc::new(|| true),
-        );
+        let mut client = Client::app(transport, cache.path().to_owned());
         client.connect().unwrap();
         client.idle_at = 0;
         client.idle().unwrap();
@@ -1103,11 +1066,7 @@ mod tests {
     fn physical_hello_rejection_closes_before_engine_or_approval() {
         let cache = tempfile::tempdir().unwrap();
         let spec: Value = serde_json::from_str(crate::model_spec::LEGACY_JSON).unwrap();
-        let mut client = Client::app(
-            app_wire(&spec, 3),
-            cache.path().to_owned(),
-            std::sync::Arc::new(|| true),
-        );
+        let mut client = Client::app(app_wire(&spec, 3), cache.path().to_owned());
         client.set_hello_check(|_| Err(Error::Contract("unsupported physical cable")));
         assert!(client.connect().is_err());
         assert!(client.transport.closed);
@@ -1121,11 +1080,7 @@ mod tests {
     fn v3_hello_mismatch_closes_before_protocol_can_change() {
         let cache = tempfile::tempdir().unwrap();
         let spec: Value = serde_json::from_str(crate::model_spec::LEGACY_JSON).unwrap();
-        let mut client = Client::app(
-            app_wire(&spec, 2),
-            cache.path().to_owned(),
-            std::sync::Arc::new(|| true),
-        );
+        let mut client = Client::app(app_wire(&spec, 2), cache.path().to_owned());
         assert!(client.connect().is_err());
         assert!(client.transport.closed);
         assert!(!client
@@ -1138,11 +1093,7 @@ mod tests {
         let spec: Value = serde_json::from_str(crate::model_spec::LEGACY_JSON).unwrap();
         let mut transport = app_wire(&spec, 3);
         transport.replies[1] = json_reply(13, 2, json!({"loaded":"b".repeat(64)}));
-        let mut client = Client::app(
-            transport,
-            cache.path().to_owned(),
-            std::sync::Arc::new(|| true),
-        );
+        let mut client = Client::app(transport, cache.path().to_owned());
         assert!(client.connect().is_err());
         assert_eq!(client.transport.sent.len(), 2);
         assert!(crate::selection::approved(cache.path()).unwrap().is_none());
@@ -1157,38 +1108,28 @@ mod tests {
             3,
             json!({"state":"ready","sha256":changed["sha256"],"spec":changed}),
         );
-        let mut client = Client::app(
-            transport,
-            cache.path().to_owned(),
-            std::sync::Arc::new(|| true),
-        );
+        let mut client = Client::app(transport, cache.path().to_owned());
         assert!(client.connect().is_err());
         assert_eq!(client.transport.sent.len(), 3);
         assert!(crate::selection::approved(cache.path()).unwrap().is_none());
     }
     #[test]
-    fn app_request_release_is_deferred_onroad_and_checks_fresh_loaded_identity() {
-        use std::sync::atomic::{AtomicBool, Ordering};
+    fn app_request_release_onroad_checks_fresh_loaded_identity() {
         let cache = tempfile::tempdir().unwrap();
         let spec: Value = serde_json::from_str(crate::model_spec::LEGACY_JSON).unwrap();
         let parsed =
             crate::model_spec::ModelSpec::parse(crate::model_spec::LEGACY_JSON.as_bytes()).unwrap();
-        crate::selection::remember(cache.path(), &parsed, true).unwrap();
-        let offroad = std::sync::Arc::new(AtomicBool::new(false));
-        let read = offroad.clone();
+        crate::selection::remember(cache.path(), &parsed).unwrap();
         let mut transport = app_wire(&spec, 3);
         transport
             .replies
             .push_back(json_reply(13, 15, json!({"loaded":spec["sha256"]})));
-        let mut client = Client::app(
-            transport,
-            cache.path().to_owned(),
-            std::sync::Arc::new(move || read.load(Ordering::Acquire)),
-        );
+        let mut client = Client::app(transport, cache.path().to_owned());
         client.connect().unwrap();
-        assert!(client.app_request_pending);
-        assert_eq!(client.transport.sent.len(), 13);
-        offroad.store(true, Ordering::Release);
+        assert!(!client.app_request_pending);
+        assert_eq!(client.transport.sent.len(), 14);
+        client.idle().unwrap();
+        assert_eq!(client.transport.sent.len(), 14);
         client.idle_at = 0;
         client.idle().unwrap();
         assert!(!client.app_request_pending);
@@ -1200,11 +1141,7 @@ mod tests {
             14,
             json!({"protocol":3,"loaded":"b".repeat(64)}),
         ));
-        let mut client = Client::app(
-            transport,
-            cache.path().to_owned(),
-            std::sync::Arc::new(|| true),
-        );
+        let mut client = Client::app(transport, cache.path().to_owned());
         assert!(client.connect().is_err());
         assert!(client.dead());
         assert_eq!(
@@ -1213,23 +1150,49 @@ mod tests {
         );
     }
     #[test]
-    fn app_model_change_onroad_never_becomes_new_session() {
+    fn android_first_connection_waits_for_app_selection_and_engine_preparation() {
+        let cache = tempfile::tempdir().unwrap();
+        let spec: Value = serde_json::from_str(crate::model_spec::LEGACY_JSON).unwrap();
+        let mut wire = app_wire(&spec, 3);
+        for reply in wire.replies.iter_mut().skip(2) {
+            reply.header.sequence += 1;
+        }
+        let mut hello: Value = serde_json::from_slice(&wire.replies[0].payload).unwrap();
+        hello["device"] = json!("htp-SM8550");
+        hello["telemetry"]["android_api"] = json!(35);
+        *wire.replies.back_mut().unwrap() = json_reply(2, 15, hello.clone());
+        hello["loaded"] = Value::Null;
+        wire.replies[0] = json_reply(2, 1, hello);
+        wire.replies
+            .insert(2, json_reply(13, 3, json!({"loaded":spec["sha256"]})));
+        wire.replies.insert(
+            3,
+            json_reply(4, 4, json!({"state":"loading","sha256":spec["sha256"]})),
+        );
+        let mut client = Client::app(wire, cache.path().to_owned());
+        let identity = client.connect().unwrap();
+        assert_eq!(identity["artifact_sha256"], spec["sha256"]);
+        assert!(!client.app_request_pending);
+        assert_eq!(client.transport.sent.len(), 15);
+        assert_eq!(
+            crate::selection::approved(cache.path()).unwrap().unwrap(),
+            client.session_contract().spec
+        );
+    }
+    #[test]
+    fn app_model_selection_onroad_validates_and_persists_new_session() {
         let cache = tempfile::tempdir().unwrap();
         let approved =
             crate::model_spec::ModelSpec::parse(crate::model_spec::LEGACY_JSON.as_bytes()).unwrap();
-        crate::selection::remember(cache.path(), &approved, true).unwrap();
+        crate::selection::remember(cache.path(), &approved).unwrap();
         let mut next = serde_json::to_value(&approved).unwrap();
         next["sha256"] = json!("b".repeat(64));
-        let mut client = Client::app(
-            app_wire(&next, 3),
-            cache.path().to_owned(),
-            std::sync::Arc::new(|| false),
-        );
-        assert!(client.connect().is_err());
-        assert_eq!(client.transport.sent.len(), 1);
+        let mut client = Client::app(app_wire(&next, 3), cache.path().to_owned());
+        client.connect().unwrap();
+        assert_eq!(client.session_contract().spec.sha256, "b".repeat(64));
         assert_eq!(
             crate::selection::approved(cache.path()).unwrap().unwrap(),
-            approved
+            crate::model_spec::ModelSpec::parse(&serde_json::to_vec(&next).unwrap()).unwrap()
         );
     }
 }
