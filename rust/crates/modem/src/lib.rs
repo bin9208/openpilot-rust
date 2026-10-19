@@ -1,6 +1,7 @@
 //! Native port of system/hardware/tici/modem.py; external PPP/network tools remain native dependencies.
 pub mod at;
 pub mod config;
+mod helper;
 pub mod observe;
 pub mod ppp;
 pub mod runtime;

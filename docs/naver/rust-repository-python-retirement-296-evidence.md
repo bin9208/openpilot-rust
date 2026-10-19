@@ -4507,3 +4507,47 @@ rechecks source/artifact identity after potentially blocking stdout, and retains
 the receipt descriptor through ownership-checked cleanup. Its source-ready test
 set now contains 19 checks, including blocked-output mutation and stdin forwarding;
 these are awaiting cloud execution, not reported as passed locally.
+
+At `1364e48c`, Fast checks reached the timed CI preservation tests and failed
+because the unchanged logmessaged startup command now writes to the paired proof
+directory and names its collector through an explicit variable. The immutable
+captured baseline remains unchanged. The guard now admits only this exact
+command relocation, requires the production collector and proof definitions,
+and includes removal mutations for all three. Cloud verification of this repair
+is pending; no logging runtime failure is inferred from the routing test.
+
+The same run reached three new controller gates. Bridge passed seven integration
+and six unit checks plus Clippy and its actual native controller, but the paired
+reader and artifact uploader could not read root-owned 0600 reports. CI now
+returns only that private output directory to the runner after namespace work,
+including failure cleanup; report permissions and assertions stay unchanged.
+Logging startup passed eight integration and one wire check, then strict Clippy
+rejected an unnecessary unit expression, which was removed. Soundd stopped at
+an incorrectly spelled generated Cap'n Proto module import; it now uses the
+existing `h_u_d_control` spelling. Later checks did not run, and all three fixes
+require a new cloud result.
+
+The following grouped batch adds calibration Float32 and Panda safety-padding
+controllers without deleting their original Python controls. Calibration keeps
+all 25 byte inputs and dynamically compiles the retained C++ getFloat method;
+its cloud pair compares full reports, generated source and CLI behavior. Review
+corrected cancellation after handler removal, unset-versus-empty PATH lookup and
+Apple-only FIFO test availability. Panda retains all four full/truncated and
+padding controls, including the deliberate source/native truncation distinction.
+Its cloud pair uses the existing compiled probes and full transcripts.
+
+These new controllers have 16 calibration and 13 Panda checks prepared, not
+locally executed. Their shared registration and CI integration received static
+review. Modem #398 adds 14 private-process regressions with a grouped CI baseline
+at 1364e48c: the old EOF acceptance assertion must actually fail before fixed
+checks run. The coordinated target cache is reused, then the current launcher
+is rebuilt. No other baseline failure count is presumed. Native helper cleanup
+and cancellation changes, the exact 2s deadline and inherited behavior boundaries
+are recorded in `rust-modem-helper-lifetime-398.md`. Inventory remains 209/3/3368.
+
+The 1364e48c Bluetooth file gate passed all six tests, Clippy and the actual
+15-case CLI including all Unicode scalar values. Journal passed eight tests
+(including its original 721-operation pair) but strict Clippy then rejected an
+unused PermissionsExt import left after immutable launcher conversion. Removed
+only that import; the final separate CLI and subsequent original connectivity
+comparisons were not reached. Source retirement still waits for complete evidence.

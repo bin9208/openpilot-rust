@@ -207,7 +207,7 @@ pub fn queue_capacity(topic: &str) -> Result<usize> {
     }
 }
 pub fn input_packet(topic: &str, values: &Value, now: u64) -> Result<Vec<u8>> {
-    use openpilot_cereal::{car_capnp::car_control::hud_control::AudibleAlert, log_capnp::event};
+    use openpilot_cereal::{car_capnp::car_control::h_u_d_control::AudibleAlert, log_capnp::event};
     let mut message = capnp::message::Builder::new_default();
     let mut e = message.init_root::<event::Builder>();
     e.set_log_mono_time(now);

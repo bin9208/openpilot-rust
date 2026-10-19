@@ -59,10 +59,7 @@ fn byte(stream: &mut UnixStream, process: &Process<'_>, end: Instant, expected: 
                     std::io::ErrorKind::WouldBlock
                         | std::io::ErrorKind::TimedOut
                         | std::io::ErrorKind::Interrupted
-                ) =>
-            {
-                ()
-            }
+                ) => {}
             Err(error) => return Err(error.into()),
         }
         require_alive(process, end)?;

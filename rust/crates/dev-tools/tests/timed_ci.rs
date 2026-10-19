@@ -38,6 +38,11 @@ const TESTS: [&str; 17] = [
     "timed_live_cleanup",
 ];
 const BUILD_STEP: &str = "Build and test native timed QA tools";
+const ORIGINAL_LOG_STARTUP: &str = "python rust/tools/check_logmessaged_startup.py --collector rust/target/debug/openpilot-logmessaged --output \"$RUNNER_TEMP/support-runtime/logmessaged-startup\"";
+const PAIRED_LOG_STARTUP: &str = "python rust/tools/check_logmessaged_startup.py --collector \"$collector\" --output \"$proof/original\"";
+const LOG_COLLECTOR: &str =
+    "collector=\"$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged\"";
+const LOG_PROOF: &str = "proof=\"$RUNNER_TEMP/support-runtime/logmessaged-startup-controller\"";
 const GUARD: &str =
     "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib ";
 fn original() -> Value {
@@ -134,6 +139,18 @@ fn validate(workflow: &Value) -> Result<(), String> {
             .or_default() += 1;
     }
     for (line, count) in required {
+        // The unchanged startup oracle now writes inside the paired native
+        // proof. Keep the captured baseline immutable and admit only this
+        // explicit relocation with the same production collector.
+        let line = if line == ORIGINAL_LOG_STARTUP {
+            require(
+                actual_lines.contains(&LOG_COLLECTOR) && actual_lines.contains(&LOG_PROOF),
+                "paired logging collector or proof path changed",
+            )?;
+            PAIRED_LOG_STARTUP
+        } else {
+            line
+        };
         require(
             actual_lines
                 .iter()
@@ -281,6 +298,9 @@ fn missing_softened_or_reordered_timed_routes_and_regressions_cannot_pass() {
             format!("{GUARD}2048"),
             format!("{GUARD}512"),
             "strace".into(),
+            PAIRED_LOG_STARTUP.into(),
+            LOG_COLLECTOR.into(),
+            LOG_PROOF.into(),
         ])
     {
         let mut mutation = baseline.clone();

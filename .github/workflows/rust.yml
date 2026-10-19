@@ -843,6 +843,29 @@ jobs:
           python tools/check_calibration_reference.py --binary target/debug/examples/calibration_trace --output "$RUNNER_TEMP/calibration-estimator"
           python tools/check_calibration_loop.py --binary target/debug/examples/calibration_loop --output "$RUNNER_TEMP/calibration-loop"
           python tools/check_calibration_float.py --binary target/debug/examples/calibration_float --output "$RUNNER_TEMP/calibration-float"
+      - name: Compare native calibration float controller with unchanged original
+        working-directory: .
+        run: |
+          export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
+          export CALIBRATION_FLOAT_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/calibration_float"
+          export CALIBRATION_FLOAT_PYTHON="$(command -v python)"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features calibration-float-native --bin check-calibration-float --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features calibration-float-native --test calibration_float_check --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features calibration-float-native --lib calibration_float_check::tests --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features calibration-float-native --lib --bin check-calibration-float --test calibration_float_check --locked -- -D warnings
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          rust/target/debug/check-calibration-float --binary "$CALIBRATION_FLOAT_BINARY" --output "$RUNNER_TEMP/calibration-float-native"
+      - name: Retain calibration float controller evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-calibration-float-controller
+          path: ${{ runner.temp }}/calibration-float-native/
+          if-no-files-found: warn
       - name: Compare model desire state and Bluetooth command consumption with original source
         run: |
           python tools/check_desire_reference.py --binary target/debug/examples/desire_probe --output "$RUNNER_TEMP/model-desire"
@@ -1272,6 +1295,22 @@ jobs:
           cargo build --manifest-path rust/Cargo.toml -p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux -p openpilot-process-supervision -p openpilot-logmessaged -p openpilot-dev-tools --bins --examples --locked --message-format=json 2> "$RUNNER_TEMP/panda-native/native-build.log" | tee "$RUNNER_TEMP/panda-native/native-build.jsonl"
       - name: Require Panda source, transport and continuous supervisor comparisons
         run: python rust/tools/check_pandad_ci.py --binaries rust/target/debug --build-messages "$RUNNER_TEMP/panda-native/native-build.jsonl" --output "$RUNNER_TEMP/panda-native/oracles"
+      - name: Compare native Panda safety padding controller with unchanged original
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native --bin check-pandad-safety-padding --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native --test pandad_safety_padding_check --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native --lib --bin check-pandad-safety-padding --test pandad_safety_padding_check --test pandad_safety_padding_reference --locked -- -D warnings
+          export PANDAD_PADDING_SOURCE_BINARY="$RUNNER_TEMP/panda-native/oracles/safety-src/pandad-protocol-source"
+          export PANDAD_PADDING_SOURCE_MANIFEST="$RUNNER_TEMP/panda-native/oracles/safety-src/manifest.json"
+          export PANDAD_PADDING_NATIVE_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/panda_safety"
+          export PANDAD_PADDING_PYTHON="$(command -v python)"
+          export PANDAD_PADDING_TEST_OUTPUT="$RUNNER_TEMP/panda-native/padding-controller"
+          mkdir -p "$PANDAD_PADDING_TEST_OUTPUT"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native --test pandad_safety_padding_reference --locked
       - name: Preserve Panda evidence including failed cases
         if: always()
         uses: actions/upload-artifact@v6
@@ -2617,6 +2656,9 @@ jobs:
         run: sudo -E env "PYTHONPATH=$PYTHONPATH" "$(command -v python)" rust/tools/check_bridge.py --original "$RUNNER_TEMP/services-bridge-source/bridge-original" --binary "$PWD/rust/target/debug/bridge" --output "$RUNNER_TEMP/startup-services/bridge"
       - name: Compare native bridge controller with the unchanged original controller
         run: |
+          # The namespace controller runs as root; keep its private 0600 reports
+          # readable by the runner for the paired check and failure artifacts.
+          trap 'if [ -d "$RUNNER_TEMP/startup-services/bridge-native-controller" ]; then sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/startup-services/bridge-native-controller"; fi' EXIT
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bridge-tools-native --bin check-bridge --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
@@ -2627,6 +2669,7 @@ jobs:
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bridge-tools-native --lib --bin check-bridge --test bridge_check --test bridge_controller_reference --locked -- -D warnings
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           sudo -E "$PWD/rust/target/debug/check-bridge" --original "$RUNNER_TEMP/services-bridge-source/bridge-original" --binary "$PWD/rust/target/debug/bridge" --output "$RUNNER_TEMP/startup-services/bridge-native-controller"
+          sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/startup-services/bridge-native-controller"
           export BRIDGE_ORIGINAL_CONTROLLER_REPORT="$RUNNER_TEMP/startup-services/bridge/result.json"
           export BRIDGE_NATIVE_CONTROLLER_REPORT="$RUNNER_TEMP/startup-services/bridge-native-controller/result.json"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
@@ -3256,7 +3299,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - run: rustup toolchain install 1.94.0 --profile minimal
+      - run: rustup toolchain install 1.94.0 --profile minimal --component clippy
       - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libzmq5
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 PyJWT==2.14.0 cryptography==50.0.1
       - name: Configure original platform IPC imports
@@ -3286,6 +3329,36 @@ jobs:
         run: |
           python rust/tools/check_modem_process_boundary.py --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/platform-runtime/modem-process"
           python rust/tools/check_modem.py --binary "$PWD/rust/target/debug/openpilot-modem" --trace "$PWD/rust/target/debug/examples/modem_trace" --evidence "$RUNNER_TEMP/platform-runtime/modem"
+      - name: Reproduce old modem EOF failure and require owned helper cleanup
+        run: |
+          set -euo pipefail
+          export MODEM_SOURCE_PYTHON="$(command -v python)"
+          export MODEM_HELPER_EVIDENCE="$RUNNER_TEMP/platform-runtime/modem-helper-lifetime"
+          export CARGO_TARGET_DIR="$GITHUB_WORKSPACE/rust/target"
+          export MODEM_PROCESS_CHILD_BINARY="$CARGO_TARGET_DIR/debug/openpilot-process-child"
+          baseline="$RUNNER_TEMP/modem398-baseline"
+          mkdir -p "$MODEM_HELPER_EVIDENCE"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          git fetch --no-tags --depth=1 origin 1364e48c96e888fa5d178c5eb2132d135cf30765
+          git worktree add --detach "$baseline" 1364e48c96e888fa5d178c5eb2132d135cf30765
+          mkdir -p "$baseline/rust/crates/modem/tests/fixtures"
+          cp rust/crates/modem/tests/helper_lifetime.rs "$baseline/rust/crates/modem/tests/"
+          cp rust/crates/modem/tests/fixtures/helper-entry.sh "$baseline/rust/crates/modem/tests/fixtures/"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-modem -p openpilot-process-supervision --bins --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          if cargo test --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-modem --test helper_lifetime --locked -- --exact interface_deadline_includes_stdout_eof_after_leader_exit --nocapture 2>&1 | tee "$MODEM_HELPER_EVIDENCE/baseline.log"; then
+            echo 'Expected the old modem EOF assertion to fail' >&2
+            exit 1
+          fi
+          grep -F 'test result: FAILED' "$MODEM_HELPER_EVIDENCE/baseline.log"
+          grep -F "must time out, not accept leader's valid inet line" "$MODEM_HELPER_EVIDENCE/baseline.log"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-process-supervision --bin openpilot-process-child --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-modem --features helper-lifetime-tests --test helper_lifetime --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-modem --features openpilot-modem/helper-lifetime-tests -p openpilot-process-supervision --all-targets --locked -- -D warnings
       - name: Compare hardware policy and continuous native state publication
         run: |
           python rust/tools/check_hardwared.py rust/target/debug/examples/hardwared_trace "$RUNNER_TEMP/platform-runtime/hardwared-source"

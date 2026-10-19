@@ -539,6 +539,8 @@ required-features = ["manager-catalog-tools-native"]
 
 [features]
 bluetooth-journal-native = []
+calibration-float-native = []
+pandad-safety-padding-native = []
 logmessaged-startup-native = ["stats-daemon-native"]
 bluetooth-files-native = []
 soundd-daemon-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri"]
@@ -1587,3 +1589,25 @@ required-features = ["bluetooth-journal-native"]
 [[test]]
 name = "bluetooth_journal_check"
 required-features = ["bluetooth-journal-native"]
+
+[[bin]]
+name = "check-calibration-float"
+path = "src/bin/check_calibration_float.rs"
+required-features = ["calibration-float-native"]
+
+[[test]]
+name = "calibration_float_check"
+required-features = ["calibration-float-native"]
+
+[[bin]]
+name = "check-pandad-safety-padding"
+path = "src/bin/check_pandad_safety_padding.rs"
+required-features = ["pandad-safety-padding-native"]
+
+[[test]]
+name = "pandad_safety_padding_check"
+required-features = ["pandad-safety-padding-native"]
+
+[[test]]
+name = "pandad_safety_padding_reference"
+required-features = ["pandad-safety-padding-native"]

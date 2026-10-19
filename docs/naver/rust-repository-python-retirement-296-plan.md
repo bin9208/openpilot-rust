@@ -388,3 +388,16 @@ busy shutdown bounds, real timestamp window,0600 output,10 user CPU ticks and
 two live producers. Before the workflow change, 24 native tests, strict Clippy
 and the same-artifact three-case proof passed both before and after deletion.
 Fresh post-deletion builds and regressions now run in the required CI job.
+
+### Next grouped cloud batch after 1364e48c
+
+- Repair the exact-output relocation guard, bridge report ownership, logging
+  Clippy expression and soundd generated-module spelling from actual CI logs.
+- Add native calibration Float32 and Panda safety-padding controllers, preserving
+  both unchanged originals and their real compiled probes as mandatory controls.
+  Keep their source retirement pending until reviewed cloud comparison results.
+- Reproduce and repair modem helper EOF, descendant and cancellation ownership
+  under #398 using private processes; retain the original modem comparisons.
+- Local work remains source/format/syntax only. At 1364e48c navigation passed and
+  the previously failing statistics comparison step passed; neither establishes
+  aggregate success for that run or for the following source changes.

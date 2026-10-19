@@ -1571,3 +1571,35 @@ GitHub Actions; no numerical saving or device improvement is claimed. The CI
 job builds the current Wi-Fi library, requires the probe and retains its output
 with the existing connectivity evidence. This adds two growth guards, bringing
 the current workflow to 338; the new routing assertions also await CI.
+
+At exact SHA `1364e48c96e888fa5d178c5eb2132d135cf30765`, Actions run39190411681
+completed the 46-case snapshot semantic check and the allocation probe. For eight
+snapshots of eight networks, allocator calls fell from 256 to 144 and total
+requested bytes from 10,856 to 5,760. For eight snapshots of 1,024 networks, calls
+fell from 54,672 to 43,720 and requested bytes from 2,574,920 to 1,930,304. Each
+difference exactly matches the separately measured discarded clone work. These
+are host allocator totals, not live memory, CPU timing or device savings. The job
+later failed Bluetooth journal test Clippy before its unchanged Wi-Fi protocol
+comparisons, so whole-job and current-source acceptance remain pending.
+
+## Further bounded source review (2026-10-19, cloud execution pending)
+
+Modem external helper admission, interface output and cancellation paths reveal
+the lifetime gaps tracked in [#398](https://github.com/bin9208/openpilot-rust/issues/398).
+The direct-child cleanup and unbounded blocking waits are inherited; accepting an
+exited helper before its descendants close stdout is a native file-capture
+difference requiring paired reproduction. Private fixtures and a repair are in
+progress. No device reproduction is claimed.
+
+LPA HTTP review covered cookie filtering/order, redirect method/body handling,
+response draining and client ownership. No additional concrete HTTP lifetime
+defect was found in that bounded review. Header construction has avoidable
+intermediate allocations, but no change or measurement is recorded yet.
+
+Lagd source review covered startup cancellation polling, Params writer ownership,
+fixed-length point initialization/reset, stable topic timestamp ordering,
+estimator acceptance and calibration admission against the retained original.
+The inspected reset keeps a prefilled window rather than truncating a partially
+filled queue. No new concrete defect was established. Per-evaluation temporary
+vectors remain an unmeasured optimization candidate; FFT/numerical internals,
+filesystem stall behavior and target operation are not cleared by these reads.

@@ -10,7 +10,7 @@ use sha2::{Digest, Sha256};
 use std::{
     fs,
     io::{self, Write},
-    os::unix::fs::{symlink, PermissionsExt},
+    os::unix::fs::symlink,
     path::{Path, PathBuf},
     sync::atomic::{AtomicBool, Ordering},
     time::Duration,

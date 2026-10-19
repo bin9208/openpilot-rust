@@ -27,6 +27,8 @@ mod bootlog_snapshot_sources;
 #[cfg(feature = "bridge-tools-native")]
 pub mod bridge_check;
 pub mod brotli_stage;
+#[cfg(all(unix, feature = "calibration-float-native"))]
+pub mod calibration_float_check;
 pub mod camera_ci_check;
 pub mod camera_data_generate;
 #[cfg(feature = "camera-sensor-native")]
@@ -303,3 +305,6 @@ pub mod qcom_assistance_check;
 
 #[cfg(feature = "feedback-runtime-native")]
 pub mod feedbackd_check;
+
+#[cfg(all(target_os = "linux", feature = "pandad-safety-padding-native"))]
+pub mod pandad_safety_padding_check;

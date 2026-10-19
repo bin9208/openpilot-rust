@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 365);
+    assert_eq!(text.matches(marker).count(), 380);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -305,8 +305,35 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut bluetooth_files_controller = vec![];
     let mut logmessaged_startup_controller = vec![];
     let mut bluetooth_journal_controller = vec![];
+    let mut calibration_float_controller = vec![];
+    let mut pandad_padding_controller = vec![];
+    let mut modem_helper_lifetime = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
+            if i + 1 < lines.len()
+                && (lines[i + 1].contains("git fetch --no-tags --depth=1 origin 1364e48c")
+                    || lines[i + 1].contains("--manifest-path \"$baseline/rust/Cargo.toml\"")
+                    || lines[i + 1].contains("helper-lifetime-tests")
+                    || lines[i + 1].contains(
+                        "-p openpilot-process-supervision --bin openpilot-process-child --locked",
+                    ))
+            {
+                modem_helper_lifetime.push(tail.to_owned());
+                continue;
+            }
+            if i + 1 < lines.len()
+                && (lines[i + 1].contains("--features calibration-float-native")
+                    || lines[i + 1].contains("rust/target/debug/check-calibration-float --binary"))
+            {
+                calibration_float_controller.push(tail.to_owned());
+                continue;
+            }
+            if i + 1 < lines.len()
+                && lines[i + 1].contains("--features pandad-safety-padding-native")
+            {
+                pandad_padding_controller.push(tail.to_owned());
+                continue;
+            }
             if i + 1 < lines.len()
                 && (lines[i + 1].contains("--features bluetooth-journal-native")
                     || lines[i + 1].contains("rust/target/debug/check-bluetooth-journal --binary"))
@@ -918,6 +945,21 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     assert_eq!(
         bluetooth_journal_controller,
         [512, 512, 512, 128]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        calibration_float_controller,
+        [512, 512, 512, 512, 128]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        pandad_padding_controller,
+        [512, 128, 512, 128]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        modem_helper_lifetime,
+        [2048, 1024, 512, 512, 512, 512]
             .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     // Retain the 177 still-used original guards/hash below, plus admission for

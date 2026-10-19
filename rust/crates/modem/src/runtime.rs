@@ -1,6 +1,7 @@
 use crate::{
     at,
     config::Config,
+    helper::NEVER_CANCELLED,
     monotonic, observe, ppp,
     state::{registration, Snapshot, State},
     Error,
@@ -53,12 +54,12 @@ impl Modem {
     fn roaming(&self) -> Result<bool, Error> {
         Ok(self.snapshot.iccid.starts_with("8985235") || self.config.param("GsmRoaming")? == "1")
     }
-    fn initializing(&mut self) -> Result<State, Error> {
+    fn initializing(&mut self, cancelled: &AtomicBool) -> Result<State, Error> {
         if !self.config.at_port.exists() {
             return Ok(State::Initializing);
         }
-        self.session.kill(&self.config)?;
-        ppp::cleanup(&self.config)?;
+        self.session.kill_controlled(&self.config, cancelled)?;
+        ppp::cleanup_controlled(&self.config, cancelled)?;
         for command in at::INIT {
             at::command(&self.config, command);
         }
@@ -130,7 +131,7 @@ impl Modem {
         }
         Ok(self.idle())
     }
-    fn connected(&mut self) -> Result<State, Error> {
+    fn connected(&mut self, cancelled: &AtomicBool) -> Result<State, Error> {
         if self.session.has_exited()? {
             if self.sim_change || !self.config.at_port.exists() {
                 return Ok(State::Disconnecting);
@@ -143,7 +144,7 @@ impl Modem {
             if !self.config.at_port.exists() {
                 return Ok(State::Disconnecting);
             }
-            self.session.start(&self.config)?;
+            self.session.start_controlled(&self.config, cancelled)?;
             return Ok(State::Connected);
         }
         if self.sim_change
@@ -153,7 +154,12 @@ impl Modem {
         {
             return Ok(State::Disconnecting);
         }
-        if observe::poll(&self.config, &mut self.snapshot, &mut self.session) {
+        if observe::poll_controlled(
+            &self.config,
+            &mut self.snapshot,
+            &mut self.session,
+            cancelled,
+        ) {
             self.publish()?;
         }
         Ok(State::Connected)
@@ -176,21 +182,24 @@ impl Modem {
         }
     }
     pub fn step(&mut self, state: State) -> Result<State, Error> {
+        self.step_controlled(state, &NEVER_CANCELLED)
+    }
+    fn step_controlled(&mut self, state: State, cancelled: &AtomicBool) -> Result<State, Error> {
         match state {
-            State::Initializing => self.initializing(),
+            State::Initializing => self.initializing(cancelled),
             State::Searching => self.searching(),
             State::Connecting => {
                 self.session.fails = 0;
                 self.sim_change = false;
-                self.session.start(&self.config)?;
+                self.session.start_controlled(&self.config, cancelled)?;
                 Ok(State::Connected)
             }
-            State::Connected => self.connected(),
+            State::Connected => self.connected(cancelled),
             State::Disconnecting => {
                 self.snapshot = Snapshot::default();
                 self.publish()?;
-                self.session.kill(&self.config)?;
-                ppp::cleanup(&self.config)?;
+                self.session.kill_controlled(&self.config, cancelled)?;
+                ppp::cleanup_controlled(&self.config, cancelled)?;
                 at::reset_data_port(&self.config);
                 self.sim_change = false;
                 Ok(State::Initializing)
@@ -198,20 +207,38 @@ impl Modem {
         }
     }
     pub fn run(&mut self, stop: &AtomicBool) -> Result<(), Error> {
+        // A signal interrupts the active command; normal shutdown still performs
+        // the existing service/route restoration without inventing a deadline.
+        match self.run_controlled(stop) {
+            Err(Error::Io(error))
+                if error.kind() == std::io::ErrorKind::Interrupted
+                    && stop.load(Ordering::Relaxed) =>
+            {
+                Ok(())
+            }
+            result => result,
+        }
+    }
+    fn run_controlled(&mut self, cancelled: &AtomicBool) -> Result<(), Error> {
         self.snapshot.state = State::Initializing;
         self.publish()?;
         if self.config.modem_manager.is_file() {
-            ppp::run(
+            ppp::run_controlled(
                 &self.config,
                 &["systemctl", "mask", "--runtime", "ModemManager"],
+                cancelled,
             )?;
-            ppp::run(&self.config, &["systemctl", "stop", "ModemManager"])?;
+            ppp::run_controlled(
+                &self.config,
+                &["systemctl", "stop", "ModemManager"],
+                cancelled,
+            )?;
         }
-        self.session.kill(&self.config)?;
+        self.session.kill_controlled(&self.config, cancelled)?;
         let mut state = State::Initializing;
-        while !stop.load(Ordering::Relaxed) {
+        while !cancelled.load(Ordering::Relaxed) {
             self.check_iccid(state);
-            let result = self.step(state).and_then(|next| {
+            let result = self.step_controlled(state, cancelled).and_then(|next| {
                 if next != state {
                     self.snapshot.state = next;
                     self.publish()?;
@@ -226,24 +253,55 @@ impl Modem {
                     State::Disconnecting
                 }
             };
-            std::thread::sleep(Duration::from_millis(self.config.state_wait_ms));
+            let deadline =
+                std::time::Instant::now() + Duration::from_millis(self.config.state_wait_ms);
+            while !cancelled.load(Ordering::Relaxed) && std::time::Instant::now() < deadline {
+                std::thread::sleep(
+                    deadline
+                        .saturating_duration_since(std::time::Instant::now())
+                        .min(Duration::from_millis(10)),
+                );
+            }
         }
         Ok(())
     }
     pub fn stop(&mut self) -> Result<(), Error> {
-        self.session.kill(&self.config)?;
-        ppp::cleanup(&self.config)?;
+        self.stop_controlled(&NEVER_CANCELLED)
+    }
+    pub fn stop_controlled(&mut self, cancelled: &AtomicBool) -> Result<(), Error> {
+        let network = self
+            .session
+            .kill_controlled(&self.config, cancelled)
+            .and_then(|()| ppp::cleanup_controlled(&self.config, cancelled));
+        // A second signal may interrupt shutdown helpers too. Still remove our
+        // state on cancellation, while preserving ordinary command error ordering.
+        if !matches!(&network, Err(Error::Io(error)) if error.kind() == std::io::ErrorKind::Interrupted)
+        {
+            network?;
+            self.remove_state()?;
+        } else {
+            self.remove_state()?;
+            network?;
+        }
+        if self.config.modem_manager.is_file() {
+            ppp::run_controlled(
+                &self.config,
+                &["systemctl", "unmask", "--runtime", "ModemManager"],
+                cancelled,
+            )?;
+            ppp::run_controlled(
+                &self.config,
+                &["systemctl", "start", "ModemManager"],
+                cancelled,
+            )?;
+        }
+        Ok(())
+    }
+    fn remove_state(&self) -> Result<(), Error> {
         match fs::remove_file(&self.config.state) {
             Ok(()) => {}
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
             Err(error) => return Err(error.into()),
-        }
-        if self.config.modem_manager.is_file() {
-            ppp::run(
-                &self.config,
-                &["systemctl", "unmask", "--runtime", "ModemManager"],
-            )?;
-            ppp::run(&self.config, &["systemctl", "start", "ModemManager"])?;
         }
         Ok(())
     }

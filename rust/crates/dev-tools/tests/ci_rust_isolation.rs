@@ -788,6 +788,7 @@ fn startup_services_require_source_and_live_native_protocols() {
             "BRIDGE_ORIGINAL_CONTROLLER_REPORT=",
             "BRIDGE_NATIVE_CONTROLLER_REPORT=",
             "sudo -E \"$PWD/rust/target/debug/check-bridge\" --original",
+            "sudo chown -R \"$(id -u):$(id -g)\" \"$RUNNER_TEMP/startup-services/bridge-native-controller\"",
             "check_agnos.py",
             "rust/target/debug/build-bridge-source",
             "build_msgq_python.py",
@@ -815,10 +816,24 @@ fn startup_services_require_source_and_live_native_protocols() {
     );
 }
 #[test]
+fn modem_requires_real_baseline_failure_and_fixed_helper_lifetimes() {
+    job_check("platform-runtime", &[
+        "git worktree add --detach \"$baseline\" 1364e48c96e888fa5d178c5eb2132d135cf30765",
+        "--exact interface_deadline_includes_stdout_eof_after_leader_exit --nocapture",
+        "grep -F 'test result: FAILED'",
+        "must time out, not accept leader's valid inet line",
+        "MODEM_PROCESS_CHILD_BINARY=",
+        "MODEM_SOURCE_PYTHON=",
+        "--features helper-lifetime-tests --test helper_lifetime --locked",
+        "--features openpilot-modem/helper-lifetime-tests -p openpilot-process-supervision --all-targets --locked -- -D warnings",
+    ], &["helper-lifetime-tests"], false);
+}
+#[test]
 fn platform_runtime_requires_original_source_and_live_native_processes() {
     job_check(
         "platform-runtime",
         &[
+            "rustup toolchain install 1.94.0 --profile minimal --component clippy",
             "check_manager.py",
             "check_manager_logging.py",
             "generate_manager_cars.py",
@@ -1472,6 +1487,33 @@ fn camera_requires_source_driver_fixture_and_visionipc_checks() {
 fn panda_requires_native_transports_and_source_composition() {
     job_check("panda-runtime", &["check_pandad_ci.py","build_msgq_python.py","libusb1==3.4.0","-p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux","--message-format=json","--build-messages"], &["check_pandad_ci.py"],false);
     some_artifact(&workflow()["jobs"]["panda-runtime"]);
+}
+#[test]
+fn new_calibration_and_panda_controllers_require_unchanged_original_pairs() {
+    job_check(
+        "workspace",
+        &[
+            "python tools/check_calibration_float.py --binary",
+            "--features calibration-float-native --bin check-calibration-float",
+            "--features calibration-float-native --test calibration_float_check --locked",
+            "--lib calibration_float_check::tests --locked",
+            "rust/target/debug/check-calibration-float --binary",
+            "CALIBRATION_FLOAT_BINARY=",
+            "CALIBRATION_FLOAT_PYTHON=",
+        ],
+        &["--features calibration-float-native"],
+        false,
+    );
+    job_check("panda-runtime", &[
+        "python rust/tools/check_pandad_ci.py",
+        "--features pandad-safety-padding-native --bin check-pandad-safety-padding",
+        "--features pandad-safety-padding-native --test pandad_safety_padding_check --locked",
+        "--features pandad-safety-padding-native --test pandad_safety_padding_reference --locked",
+        "PANDAD_PADDING_SOURCE_BINARY=",
+        "PANDAD_PADDING_SOURCE_MANIFEST=",
+        "PANDAD_PADDING_NATIVE_BINARY=",
+        "PANDAD_PADDING_PYTHON=",
+    ], &["--features pandad-safety-padding-native"], false);
 }
 #[test]
 fn every_gate_dependency_and_result_binding_is_required() {
