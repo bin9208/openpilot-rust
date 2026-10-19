@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "repository": "https://github.com/zoompilot/jetlink",
+  "requested_commit": "491cf1ef8d6786ed51cf995e18fc8721389066c6",
+  "hardware_policy_revision": "d24328d849b0e5154b55f149dc18c5dfe8bd79cc",
+  "follow_up_commit": "e3dbebc8843417f981a0385a54c07125cf7c3f60",
+  "license": "MIT; Zeph Leggett, 2026; third_party/jetlink/LICENSE",
+  "scope": "Requested comma USB power/reboot fix, its boot/owner-restoration follow-ups and adjacent PD/UDC/VM policies. Host Android/iOS/macOS apps remain upstream external clients; this is not a wholesale copy of their applications into the vehicle runtime.",
+  "source_sha256": {
+    "jetlink/comma/owner.py": "7d8a7bb1141c961d7e437be8de5887348000457c5a40909d32eb253a52ba57f9",
+    "jetlink/comma/port.py": "c8d6dd178e2eedbfebece93a3bdc9323dc44e863836f003d24022899fad14294",
+    "jetlink/comma/jetlink-root.sh": "ef1f26470765711857d68f20fa00b276b137ef591e9b26b71653973571e22fb7"
+  },
+  "coverage": [
+    {"upstream": "Owner.steer_draw / cmd_draw / cmd_boot", "native": ["rust/crates/runtime-core/src/jetlink_power.rs", "rust/crates/runtime-launcher/src/bootstrap/power.rs", "launch_openpilot.sh"], "behavior": "Cut input current before gadget setup and from boot for any nonzero setting; retain while wanted; restore only on an empty port; settle failed attempts rather than retrying each poll."},
+    {"upstream": "Port / cmd_port / cmd_udc", "native": ["rust/crates/runtime-core/src/jetlink_port.rs", "rust/crates/jetlink/src/usb_policy.rs", "rust/crates/jetlink/src/main.rs"], "behavior": "Three bounded DR swaps, one PD reset, source hold/release, UDC start/restart/unplug, existing eGPU exclusion and prior-owner preservation. Upstream optional phone charging policy is preserved in the core; the fork has no charging setting, so daemon input remains false (upstream default)."},
+    {"upstream": "vm_apply / vm_restore / release_tuning", "native": ["rust/crates/jetlink/src/usb_policy.rs", "rust/crates/jetlink/src/main.rs"], "behavior": "Once per owner/setting transition; snapshot stock values before changes, restore dirty-ratio mode correctly, independent UDC writes, preserve tuning across a wanted restart."},
+    {"upstream": "GADGET_HELD_RETRY / GADGET_SETUP_BACKOFF", "native": ["rust/crates/jetlink/src/main.rs", "rust/crates/jetlink/src/gadget.rs"], "behavior": "Identify the actual foreign owner and retry after 2s when it releases UDC; other gadget failures back off 60s. Never forcibly unbind a foreign gadget."}
+  ],
+  "intentional_native_adaptations": [
+    "Rust fixed-path root helper replaces upstream shell/Python runtime calls. Root-owned regular non-symlink VM snapshot is required; an unwritable snapshot aborts tuning before stock settings can be lost.",
+    "Fork onroad transport/preparation authorization, model deadlines, recurring-state identity, existing v2/v3 compatibility and CPU scheduling remain in place. Upstream offroad setup gating and network RPS core6 placement are not imported: native controlsd/selfdrived use core6 and worker scheduling is already governed by this fork's measured CPU policy.",
+    "Persistent native owner/RPC workers retain their existing process lifecycle rather than importing upstream Python launcher/lender subprocess topology. Existing checked-in protocol reference remains pinned; new power/port oracle fetches and hashes the actual hardware-policy revision separately."
+  ],
+  "verification": {"execution": "GitHub Actions only; local syntax/format/diff", "fast": ".github/workflows/jetlink-native.yml", "deep": ".github/workflows/rust.yml", "package": ".github/workflows/dev-md-runtime.yml", "oracle": "tools/check_jetlink_usb_policy.py", "hardware_acceptance": "Pending user device test; no proof that the reported reboot had the same UVLO cause."}
+}

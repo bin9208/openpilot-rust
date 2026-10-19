@@ -427,7 +427,11 @@ fn run() -> Result<(), EntryError> {
         steer_draw(&mut draw_policy, wants_link && !egpu);
         if wants_link && !egpu {
             let role = usb_policy::read(jetlink_power::POWER_ROLE);
-            let data = usb_policy::read(usb_policy::DATA_ROLE);
+            let data = if matches!(role.as_deref(), Some("sink" | "source")) {
+                usb_policy::read(usb_policy::DATA_ROLE)
+            } else {
+                None
+            };
             let udc_mode = usb_policy::read(usb_policy::UDC_MODE).unwrap_or_default();
             if (role.as_deref(), data.as_deref())
                 != (
@@ -555,10 +559,6 @@ fn run() -> Result<(), EntryError> {
                     Err(Error::Contract("enabled gadget has no owner"))
                 }
             } else {
-                let egpu =
-                    openpilot_jetlink::gadget::egpu_present(Path::new("/sys/bus/usb/devices"))?
-                        || bool_param(&params, "UsbGpuActive")?
-                        || bool_param(&params, "UsbGpuLoading")?;
                 owner.enable(egpu, || {
                     setup_gadget(effective_transport)?;
                     let session = Session::open(

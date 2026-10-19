@@ -1,0 +1,116 @@
+name: dev-md AGNOS runtime package
+on:
+  push:
+    branches: [dev-md, 'codex/fix-402-*']
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: dev-md-runtime-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  package:
+    if: startsWith(github.ref, 'refs/heads/codex/fix-402-') && contains(github.event.head_commit.message, '[runtime-package]')
+    name: Build and seal actual AGNOS runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    env:
+      GIT_LFS_SKIP_SMUDGE: '1'
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      RUSTUP_TOOLCHAIN: '1.94.0'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Reserve disk for AGNOS and bounded builds
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet /opt/hostedtoolcache/CodeQL
+          df -h "$RUNNER_TEMP"
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++-aarch64-linux-gnu clang-18 libclang-18-dev cmake pkg-config capnproto libcapnp-dev libzmq3-dev qemu-user-static android-libsparse-utils e2fsprogs git-lfs nasm
+          rustup toolchain install 1.94.0 --profile minimal
+          rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu aarch64-unknown-linux-musl
+          python3 -m pip install --break-system-packages 'git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen'
+      - uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/agnos-runtime/sdk
+          key: agnos-sdk-375c5d22335770ac-v1
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ${{ runner.temp }}/agnos-runtime/target
+          key: agnos-runtime-1.94-${{ hashFiles('rust/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: agnos-runtime-1.94-${{ hashFiles('rust/Cargo.lock') }}-
+      - name: Restore verified baseline companions and genuine OS sysroot
+        run: python3 rust/ci/runtime/package.py prepare
+      - name: Compile exact source, audit ABI, seal and test offline installation
+        run: python3 rust/ci/runtime/package.py build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dev-md-runtime-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/agnos-runtime/release/
+            ${{ runner.temp }}/agnos-runtime/delivery-tools/
+            ${{ runner.temp }}/agnos-runtime/offline-install.json
+          compression-level: 0
+          retention-days: 7
+      - name: Preserve concise diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: runtime-build-evidence-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/agnos-runtime/elf.json
+            ${{ runner.temp }}/agnos-runtime/installer-build.json
+            ${{ runner.temp }}/agnos-runtime/offline-install.json
+            ${{ runner.temp }}/agnos-runtime/build.jsonl
+          retention-days: 7
+  publish:
+    if: github.ref == 'refs/heads/dev-md' && contains(github.event.head_commit.message, '[runtime-package]')
+    name: Publish verified dev-md prerelease
+    runs-on: ubuntu-24.04
+    timeout-minutes: 210
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GIT_LFS_SKIP_SMUDGE: '1'
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: dev-md
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Reserve disk and install ARM execution tools
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static android-libsparse-utils e2fsprogs git-lfs
+      - uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/agnos-runtime/sdk
+          key: agnos-sdk-375c5d22335770ac-v1
+      - name: Download the successful package from this exact source
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          build_id=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow dev-md-runtime.yml --commit "$GITHUB_SHA" --event push --limit 20 --json databaseId,headBranch,conclusion --jq '[.[] | select(.headBranch | startswith("codex/fix-402-")) | select(.conclusion == "success")][0].databaseId')
+          test -n "$build_id" && test "$build_id" != null
+          mkdir -p "$RUNNER_TEMP/agnos-runtime"
+          gh run download "$build_id" --repo "$GITHUB_REPOSITORY" --name "dev-md-runtime-$GITHUB_SHA" --dir "$RUNNER_TEMP/agnos-runtime"
+      - name: Require exact-SHA CI, publish six sealed assets, verify public online installation
+        run: python3 rust/ci/runtime/package.py publish
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: runtime-publish-evidence-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/agnos-runtime/online-install.json
+            ${{ runner.temp }}/agnos-runtime/offline-install.json
+          retention-days: 14
