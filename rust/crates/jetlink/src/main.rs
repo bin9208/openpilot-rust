@@ -295,6 +295,9 @@ fn run() -> Result<(), EntryError> {
         if !rustix::process::geteuid().is_root() {
             return Err(EntryError::Arguments("USB policy helper requires root"));
         }
+        if !Path::new("/AGNOS").is_file() {
+            return Err(EntryError::Arguments("USB hardware policy requires AGNOS"));
+        }
         usb_policy::apply(&helper_args[1])?;
         return Ok(());
     }
@@ -302,6 +305,11 @@ fn run() -> Result<(), EntryError> {
         if !rustix::process::geteuid().is_root() {
             return Err(EntryError::Arguments(
                 "USB input-current helper requires root",
+            ));
+        }
+        if !Path::new("/AGNOS").is_file() {
+            return Err(EntryError::Arguments(
+                "USB input-current policy requires AGNOS",
             ));
         }
         let action = match helper_args[1].as_str() {
@@ -406,6 +414,7 @@ fn run() -> Result<(), EntryError> {
     let mut tuning = usb_policy::Tuning::default();
     let clock = Instant::now();
     let mut port_active = true;
+    let agnos = Path::new("/AGNOS").is_file();
     let mut link: Option<Link> = None;
     let mut usb_probes = 0usize;
     let mut grace = Duration::from_secs(5);
@@ -424,8 +433,10 @@ fn run() -> Result<(), EntryError> {
                 || bool_param(&params, "UsbGpuLoading")?
                 || openpilot_jetlink::gadget::egpu_present(Path::new("/sys/bus/usb/devices"))?);
         // Before provisioning, including when the phone is already connected.
-        steer_draw(&mut draw_policy, wants_link && !egpu);
-        if wants_link && !egpu {
+        if agnos {
+            steer_draw(&mut draw_policy, wants_link && !egpu);
+        }
+        if agnos && wants_link && !egpu {
             let role = usb_policy::read(jetlink_power::POWER_ROLE);
             let data = if matches!(role.as_deref(), Some("sink" | "source")) {
                 usb_policy::read(usb_policy::DATA_ROLE)
@@ -463,7 +474,7 @@ fn run() -> Result<(), EntryError> {
                 |action| usb_command(action.name()),
             );
             port_active = true;
-        } else if port_active {
+        } else if agnos && port_active {
             port_policy.off(|action| usb_command(action.name()));
             tuning.update(false, usb_command);
             port_active = false;
@@ -609,7 +620,7 @@ fn run() -> Result<(), EntryError> {
         } else {
             Ok(())
         };
-        if wants_link && !egpu {
+        if agnos && wants_link && !egpu {
             tuning.update(true, usb_command);
         }
         let attempt_error = result.is_err();
@@ -706,7 +717,7 @@ fn run() -> Result<(), EntryError> {
         && !bool_param(&params, "UsbGpuActive")?
         && !bool_param(&params, "UsbGpuLoading")?
         && !openpilot_jetlink::gadget::egpu_present(Path::new("/sys/bus/usb/devices"))?;
-    if !wanted_at_stop {
+    if agnos && !wanted_at_stop {
         // Keep the cut while the link is wanted; restore only on an empty port.
         steer_draw(&mut draw_policy, false);
         port_policy.off(|action| usb_command(action.name()));
