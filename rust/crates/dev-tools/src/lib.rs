@@ -1,4 +1,6 @@
 pub use openpilot_disk_space as disk_space;
+#[cfg(feature = "aarch64-check-native")]
+pub mod aarch64_check;
 pub mod alert_callbacks_check;
 pub mod alert_family_check;
 pub mod alert_manager_check;
@@ -76,6 +78,8 @@ pub mod package;
 pub mod params_reference_check;
 pub mod plot_samples_check;
 pub mod plot_samples_source;
+#[cfg(feature = "proclog-reference-native")]
+pub mod proclog_reference_check;
 pub mod publish;
 #[cfg(any(
     feature = "managed-entry-native",

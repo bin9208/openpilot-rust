@@ -1793,7 +1793,7 @@ rust/tools/carrot_server_youtube_transport.py	175f828ff7582dbc8c97667668cff7c904
 rust/tools/carrot_server_youtube_transport_source.py	9e79c7d1d4f9b505c9b4b6a139d6afb29416708a	pending	-
 rust/tools/carrot_server_youtube_url.py	0445672bb8a30de72c69ada635a942aa8ca4dffd	pending	-
 rust/tools/carrot_server_youtube_video.py	73b23086d2d28de3635232fa376478dd8da8b528	pending	-
-rust/tools/check_aarch64.py	9ea15672ccf712345c4cbec63932d7b290495e13	pending	-
+rust/tools/check_aarch64.py	9ea15672ccf712345c4cbec63932d7b290495e13	replaced-local	rust/crates/dev-tools/src/aarch64_check.rs;rust/crates/dev-tools/src/bin/check_aarch64.rs
 rust/tools/check_agnos.py	bf983d15f5eeb9708c91b7a3ba07dc2ca0caa2cb	pending	-
 rust/tools/check_agnos_updater_cli.py	c3342fe5c830d70744655e8ee923f2d989cd3a68	pending	-
 rust/tools/check_agnos_updater_close.py	8bc42573d004c6be1b7f3b54e325bbc7d6fd0ed7	pending	-
@@ -2043,7 +2043,7 @@ rust/tools/check_plannerd_native_memory.py	18bdcc408cd747e4f3b9c11a846371054b513
 rust/tools/check_policy_reference.py	9590b9d553c064623ffd6a8a728ef118b8a6483e	pending	-
 rust/tools/check_process_supervision.py	1b623e48e6d583b3df4a1d3421d0947c4a42b948	pending	-
 rust/tools/check_proclog_daemon.py	4aacc37155b94d99e4caae8f5328b9589e0fc90e	pending	-
-rust/tools/check_proclog_reference.py	f35233594595cd53f8031798d3b8b1297199668c	pending	-
+rust/tools/check_proclog_reference.py	f35233594595cd53f8031798d3b8b1297199668c	replaced-local	rust/crates/dev-tools/src/proclog_reference_check.rs;rust/crates/dev-tools/src/bin/check_proclog_reference.rs
 rust/tools/check_qcomgps_assistance.py	4a74b5f1e9a23229dd6c9aab7a2e807def382d8b	replaced-local	rust/crates/dev-tools/src/qcom_assistance_check.rs
 rust/tools/check_qcomgps_daemon.py	5fdaff0a9fc4c594bfb6b2e0853d42c100cb2b51	pending	-
 rust/tools/check_qcomgps_nmea.py	9491a654835b2d7eed031f6d249b5f7c89867587	pending	-

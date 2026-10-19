@@ -1600,6 +1600,72 @@ fn command_reader_gates_keep_both_native_consumers_and_desire_check_mandatory() 
 }
 
 #[test]
+fn workspace_preserves_complete_proclog_packets_and_checker_ownership() {
+    job_check(
+        "workspace",
+        &[
+            "cargo build -p openpilot-dev-tools --features proclog-reference-native --bin check-proclog-reference --locked",
+            "cargo build -p openpilot-proclogd --example reference_trace --locked",
+            "PROCLOG_REFERENCE_TRACE=\"$PWD/target/debug/examples/reference_trace\" cargo test -p openpilot-dev-tools --features proclog-reference-native --test proclog_reference_check --locked",
+            "cargo clippy -p openpilot-dev-tools --features proclog-reference-native --lib --bin check-proclog-reference --test proclog_reference_check --locked -- -D warnings",
+            "target/debug/check-proclog-reference --binary target/debug/examples/reference_trace",
+            "python tools/check_proclog_daemon.py",
+        ],
+        &["--bin check-proclog-reference", "--test proclog_reference_check", "target/debug/check-proclog-reference --binary"],
+        false,
+    );
+    let data = workflow();
+    assert!(!commands(&data["jobs"]["workspace"]).contains("check_proclog_reference.py"));
+    job_check(
+        "workspace",
+        &[
+            "cargo build -p openpilot-dev-tools -p openpilot-proclogd --features openpilot-dev-tools/aarch64-check-native --bin check-aarch64 --bin openpilot-proclogd --locked",
+            "AARCH64_HOST_PROBE=\"$PWD/target/debug/openpilot-proclogd\" cargo test -p openpilot-dev-tools --features aarch64-check-native --test aarch64_check --locked",
+            "cargo clippy -p openpilot-dev-tools --features aarch64-check-native --lib --bin check-aarch64 --test aarch64_check --locked -- -D warnings",
+        ],
+        &["--features openpilot-dev-tools/aarch64-check-native", "--test aarch64_check", "--bin check-aarch64"],
+        false,
+    );
+    let arm_job = &data["jobs"]["arm64"];
+    // Keep the inherited PR/protected-push routing. Only individual checker
+    // steps must be unconditional within that existing required ARM job.
+    assert_eq!(arm_job["if"], "github.event_name != 'push' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main'");
+    let mut required_arm = arm_job.clone();
+    required_arm.as_object_mut().unwrap().remove("if");
+    mandatory(
+        &required_arm,
+        &[
+            "--features aarch64-check-native --bin check-aarch64",
+            "target/debug/check-aarch64",
+        ],
+    );
+    required(
+        &commands(arm_job),
+        &[
+            "cargo zigbuild --workspace --release --locked --features openpilot-loggerd/static-ffmpeg --target aarch64-unknown-linux-musl",
+            "cargo build -p openpilot-dev-tools --features aarch64-check-native --bin check-aarch64 --locked",
+            "target/debug/check-aarch64",
+            "--binary target/aarch64-unknown-linux-musl/release/openpilot-proclogd",
+            "--runner /usr/bin/qemu-aarch64-static --report \"$RUNNER_TEMP/aarch64-probe.json\"",
+        ],
+    );
+    assert!(data["jobs"]["arm64"]["steps"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|step| {
+            step["uses"] == "actions/upload-artifact@v6"
+                && step["with"]["name"] == "rust-c3x-static-probe-pending-device-test"
+                && step["with"]["path"] == "rust/target/c3x-probe/"
+                && step.get("if").is_none()
+        }));
+    let arm = commands(&data["jobs"]["arm64"]);
+    assert!(!arm.contains("python tools/check_aarch64.py"));
+    let build=arm.find("cargo build -p openpilot-dev-tools --features aarch64-check-native --bin check-aarch64 --locked").unwrap();
+    assert!(build < arm.find("target/debug/check-aarch64").unwrap());
+}
+
+#[test]
 fn dynamic_cpp_params_interoperability_gate_keeps_native_build_and_execution() {
     job_check(
         "workspace",

@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 311);
+    assert_eq!(text.matches(marker).count(), 318);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -246,6 +246,8 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut feedback = vec![];
     let mut bluetooth_input = vec![];
     let mut stats_producer = vec![];
+    let mut proclog_reference = vec![];
+    let mut aarch64_check = vec![];
     let mut stats_daemon = vec![];
     let mut soundd_policy = vec![];
     let mut updated_ownership = vec![];
@@ -333,12 +335,23 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 stats_producer.push(tail.to_owned());
                 continue;
             }
+            if i + 1 < lines.len() && lines[i + 1].contains("--features stats-daemon-native") {
+                stats_daemon.push(tail.to_owned());
+                continue;
+            }
             if i + 1 < lines.len() && lines[i + 1].contains("--features soundd-policy-native") {
                 soundd_policy.push(tail.to_owned());
                 continue;
             }
-            if i + 1 < lines.len() && lines[i + 1].contains("--features stats-daemon-native") {
-                stats_daemon.push(tail.to_owned());
+            if i + 1 < lines.len()
+                && (lines[i + 1].contains("--features aarch64-check-native")
+                    || lines[i + 1].contains("--features openpilot-dev-tools/aarch64-check-native"))
+            {
+                aarch64_check.push(tail.to_owned());
+                continue;
+            }
+            if i + 1 < lines.len() && lines[i + 1].contains("--features proclog-reference-native") {
+                proclog_reference.push(tail.to_owned());
                 continue;
             }
             if i + 1 < lines.len() && lines[i + 1].contains("--features version-tools-native") {
@@ -555,6 +568,16 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     assert_eq!(
         stats_daemon,
         [512, 512, 512]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        aarch64_check,
+        [1024, 512, 512, 512]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        proclog_reference,
+        [1024, 512, 512]
             .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     assert_eq!(

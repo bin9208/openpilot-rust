@@ -740,6 +740,14 @@ jobs:
           cargo run --locked -p openpilot-dev-tools --bin check-filter-reference -- --binary "${CARGO_TARGET_DIR:-target}/release/examples/filter_trace"
           cargo test --locked -p openpilot-dev-tools --test filter_reference
       - run: cargo build --workspace --examples --locked
+      - name: Require native ARM checker lifecycle with actual host IPC
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build -p openpilot-dev-tools -p openpilot-proclogd --features openpilot-dev-tools/aarch64-check-native --bin check-aarch64 --bin openpilot-proclogd --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          AARCH64_HOST_PROBE="$PWD/target/debug/openpilot-proclogd" cargo test -p openpilot-dev-tools --features aarch64-check-native --test aarch64_check --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy -p openpilot-dev-tools --features aarch64-check-native --lib --bin check-aarch64 --test aarch64_check --locked -- -D warnings
       - name: Require all seven native managed-daemon failure boundaries
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -853,7 +861,16 @@ jobs:
           target/debug/check-model-timing --binary target/debug/examples/model_timing_trace --output "$RUNNER_TEMP/model-timing"
       - name: Compare driving-model input state with the original loop
         run: python tools/check_model_inputs.py --binary target/debug/examples/input_probe --output "$RUNNER_TEMP/model-inputs"
-      - run: python tools/check_proclog_reference.py
+      - name: Compare complete procLog packets and native checker ownership
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build -p openpilot-dev-tools --features proclog-reference-native --bin check-proclog-reference --locked
+          cargo build -p openpilot-proclogd --example reference_trace --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          PROCLOG_REFERENCE_TRACE="$PWD/target/debug/examples/reference_trace" cargo test -p openpilot-dev-tools --features proclog-reference-native --test proclog_reference_check --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy -p openpilot-dev-tools --features proclog-reference-native --lib --bin check-proclog-reference --test proclog_reference_check --locked -- -D warnings
+          target/debug/check-proclog-reference --binary target/debug/examples/reference_trace
       - name: Compare Params storage with the original C++ implementation
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
@@ -3641,8 +3658,9 @@ jobs:
           rustup target add --toolchain 1.94.0 aarch64-unknown-linux-musl
           cargo run --locked -p openpilot-dev-tools --bin build-loggerd-ffmpeg -- --root "$RUNNER_TEMP/logger-ffmpeg-musl" --cc 'python-zig cc -target aarch64-linux-musl' --ar 'python-zig ar' --ranlib 'python-zig ranlib'
           FFMPEG_DIR="$RUNNER_TEMP/logger-ffmpeg-musl/install" cargo zigbuild --workspace --release --locked --features openpilot-loggerd/static-ffmpeg --target aarch64-unknown-linux-musl
-          python tools/build_msgq_python.py --output "$RUNNER_TEMP/rust-msgq-python"
-          PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/check_aarch64.py \
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build -p openpilot-dev-tools --features aarch64-check-native --bin check-aarch64 --locked
+          target/debug/check-aarch64 \
             --binary target/aarch64-unknown-linux-musl/release/openpilot-proclogd \
             --runner /usr/bin/qemu-aarch64-static --report "$RUNNER_TEMP/aarch64-probe.json"
           mkdir -p target/c3x-probe

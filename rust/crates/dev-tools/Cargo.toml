@@ -538,6 +538,8 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
+proclog-reference-native = ["dep:capnp", "dep:openpilot-cereal", "rustix/param"]
+aarch64-check-native = ["proclog-reference-native", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri"]
 soundd-policy-native = []
 stats-daemon-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq"]
 stats-producer-native = ["dep:zmq"]
@@ -1442,3 +1444,21 @@ required-features = ["soundd-policy-native"]
 name = "create-soundd-fixture-assets"
 path = "src/bin/create_soundd_fixture_assets.rs"
 required-features = ["soundd-policy-native"]
+
+[[test]]
+name = "proclog_reference_check"
+required-features = ["proclog-reference-native"]
+
+[[test]]
+name = "aarch64_check"
+required-features = ["aarch64-check-native"]
+
+[[bin]]
+name = "check-proclog-reference"
+path = "src/bin/check_proclog_reference.rs"
+required-features = ["proclog-reference-native"]
+
+[[bin]]
+name = "check-aarch64"
+path = "src/bin/check_aarch64.rs"
+required-features = ["aarch64-check-native"]

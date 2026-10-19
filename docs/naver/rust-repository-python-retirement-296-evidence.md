@@ -4291,3 +4291,50 @@ guards, bringing its total to311. Evidence is under
 Inventory:199 replaced-local,3 partially replaced and3,378 pending of3,580.
 Exact committed-head CI, repository-wide conversion, integration and user-owned
 normal boot/recording/upload acceptance remain unfinished.
+
+### Native complete procLog and AArch64 validation (2026-10-19)
+
+Retired exactly `check_proclog_reference.py` and `check_aarch64.py`. Independent
+original-only captures contain176 complete Events across two smaps modes,
+22 cycles and four clock/page-size pairs. Full-schema reflection compares every
+field; mutations cover all70 scalar/text leaves. Another88 original wire frames
+and28 original protocol controls preserve error ordering, truncation, cache
+cadence, queue integer parsing and original trailing-frame acceptance.
+
+The ARM controller independently inspects ELF architecture and absence of an
+interpreter/shared dependencies, retaining the original readelf predicates.
+Twenty original controls include six actual readelf cases. Actual native IPC
+checks use the static probe through QEMU and preserve all original report fields,
+self-test output and the three-frame assertions. Fake-runner process tests are
+labelled lifecycle checks and are separate from this real QEMU execution.
+Source/executable/runner identities, FIFOs, raw paths, leader-only cancellation,
+foreign directory replacements and existing report/source-alias preservation
+are covered. Original failures preserve earlier report bytes; the native tool
+uses atomic replacement and removes only its owned result on cancellation.
+
+The original cached musl binary failed PSS/nice assertions and was not accepted.
+A fresh isolated source-matched musl build passed the unchanged original and
+native checkers. Frozen bundle `frozen-40igxjin` passed the combined44 procLog
+cycles and three QEMU frames before and after removal with identical artifacts,
+an empty PATH and zero Python executions. Fresh post-deletion builds repeated
+the actual44+3 comparisons with11 execs and zero Python. Both checker hashes,
+the trace, fresh static probe and runner remain identical to the frozen bundle.
+The static probe SHA256 is
+`0c92e17f00c9c2496d1a1e44b98bfe54381a3239d44755e7309fb76195573acb`.
+
+Post-deletion validation passes77 tests (11 ARM,9 procLog,44 CI policy,13 disk),
+both strict Clippy scopes and formatting. A post-deletion test initially read a
+retired helper as its source-alias target; changing that fixture to the retained
+source-pinned `device_probe.py` preserves the original alias assertion. The ARM
+CI assertion also now checks its inherited branch condition exactly rather than
+incorrectly forbidding it. All inherited workspace example builds and static
+workspace/FFmpeg builds remain; the new host checker build is package-bounded.
+Seven new disk guards bring this unit's commit to318 while preserving the
+inherited177 guards. The subsequently prepared statistics route adds three more
+only in the working tree. Existing daemon/device Python consumers remain.
+
+Evidence: `2026-10-19-aarch64-check-tools/{FINAL-HANDOFF.txt,`
+`fresh-postdelete-proof.json,postdelete2-*.log,frozen-40igxjin/}`. Inventory:
+201 replaced-local,3 partial,3,376 pending of3,580. QEMU remains host validation;
+`device_validation` is `not_run`. Exact committed-head CI, complete conversion,
+integration and user-owned boot/recording/upload acceptance are not complete.

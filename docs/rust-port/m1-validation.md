@@ -27,10 +27,11 @@ functions have the expected annotation-free panic body. A changed generator
 shape fails the build for review. No schema or lint is disabled.
 
 Three wire tests verify canonical Event decoding, signed values, empty
-snapshots and checked narrowing. `rust/tools/check_proclog_reference.py`
-loads the actual Python collector functions through the AST, redirects only
-their filesystem boundary to a synthetic proc tree, and compares every
-decoded Event/procLog field using pycapnp. All fields match for 22 successive
+snapshots and checked narrowing. The original Python reference checker loaded
+the actual collector through the AST, redirected only its filesystem boundary
+to a synthetic proc tree and compared every decoded Event/procLog field using
+pycapnp. Its independently captured full-schema results now back the native
+`check-proclog-reference` tool. All fields match for 22 successive
 cycles, including an altered smaps value that becomes visible at cycle 20.
 PID-reuse invalidation is an intentional correction separately covered by
 Rust tests; the original Python PID-only cache is not the oracle for it.
@@ -42,8 +43,8 @@ cd rust
 cargo test --workspace --locked
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo build -p openpilot-proclogd --example reference_trace --locked
+cargo run --locked -p openpilot-dev-tools --features proclog-reference-native --bin check-proclog-reference -- --binary "${CARGO_TARGET_DIR:-target}/debug/examples/reference_trace"
 cd ..
-uv run rust/tools/check_proclog_reference.py
 ```
 
 These are host compatibility checks, not C3X execution or CPU measurements.
