@@ -31,7 +31,9 @@ jobs:
       - name: Check publication policy access before the expensive build
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh api repos/bin9208/openpilot-rust/branches/dev/protection/required_status_checks --jq '.contexts'
+        run: |
+          gh api graphql -f 'query={repository(owner:"bin9208",name:"openpilot-rust"){nameWithOwner ref(qualifiedName:"refs/heads/dev"){branchProtectionRule{requiresStatusChecks requiredStatusCheckContexts}}}}' --jq '.data.repository.ref.branchProtectionRule' > "$RUNNER_TEMP/publication-policy.json"
+          python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/publication-policy.json")); assert p["requiresStatusChecks"] and {"fast checks","integration gate","check mapped user docs","rust checks","rust aarch64 build"} <= set(p["requiredStatusCheckContexts"])'
       - name: Install build tools
         run: |
           sudo apt-get update

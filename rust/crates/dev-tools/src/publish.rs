@@ -62,6 +62,43 @@ pub trait Github {
     fn download(&mut self, asset_id: u64, destination: &Path, max_bytes: u64) -> Result<()>;
 }
 pub struct GhGithub;
+const PROTECTION_QUERY: &str = "{repository(owner:\"bin9208\",name:\"openpilot-rust\"){nameWithOwner ref(qualifiedName:\"refs/heads/dev\"){branchProtectionRule{requiresStatusChecks requiredStatusCheckContexts}}}}";
+fn protection_policy(response: &Value) -> Result<Value> {
+    let repo = &response["data"]["repository"];
+    require(
+        repo["nameWithOwner"] == REPOSITORY,
+        "wrong protection policy repository",
+    )?;
+    let policy = &repo["ref"]["branchProtectionRule"];
+    require(
+        policy["requiresStatusChecks"] == true,
+        "required status checks are disabled or unavailable",
+    )?;
+    let contexts = array(&policy["requiredStatusCheckContexts"])?;
+    for context in contexts {
+        string(context)?;
+    }
+    Ok(json!({"contexts": contexts, "checks": []}))
+}
+
+#[cfg(test)]
+mod policy_tests {
+    use super::*;
+    #[test]
+    fn actual_branch_rule_is_required_and_repository_bound() {
+        let mut response = json!({"data":{"repository":{"nameWithOwner":REPOSITORY,"ref":{"branchProtectionRule":{"requiresStatusChecks":true,"requiredStatusCheckContexts":["fast checks","rust checks"]}}}}});
+        assert_eq!(
+            protection_policy(&response).unwrap()["contexts"],
+            json!(["fast checks", "rust checks"])
+        );
+        response["data"]["repository"]["ref"]["branchProtectionRule"]["requiresStatusChecks"] =
+            json!(false);
+        assert!(protection_policy(&response).is_err());
+        response["data"]["repository"]["nameWithOwner"] = json!("other/repo");
+        assert!(protection_policy(&response).is_err());
+        assert!(protection_policy(&json!({"data":{"repository":null}})).is_err());
+    }
+}
 impl Github for GhGithub {
     fn api(
         &mut self,
@@ -75,6 +112,32 @@ impl Github for GhGithub {
             endpoint == BASE || endpoint.starts_with(&format!("{BASE}/")),
             "wrong GitHub API repository",
         )?;
+        if endpoint == format!("{BASE}/branches/dev/protection/required_status_checks")
+            && method == "GET"
+        {
+            // Read the actual branch rule through GraphQL. Unlike the REST
+            // administration endpoint this is available to the CI token with
+            // repository read access; the gate set and exact-SHA checks below
+            // remain identical. No local snapshot or permission bypass.
+            let output = Command::new("gh")
+                .args([
+                    "api",
+                    "--hostname",
+                    "github.com",
+                    "graphql",
+                    "-f",
+                    &format!("query={PROTECTION_QUERY}"),
+                ])
+                .output()?;
+            require(
+                output.status.success(),
+                format!(
+                    "cannot read branch protection: {}",
+                    String::from_utf8_lossy(&output.stderr)
+                ),
+            )?;
+            return protection_policy(&serde_json::from_slice(&output.stdout)?);
+        }
         let mut cmd = Command::new("gh");
         cmd.args([
             "api",

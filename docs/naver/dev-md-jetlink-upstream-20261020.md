@@ -26,4 +26,6 @@
 - OS image는 AGNOS 19.8-carrot-bt1의 공개 압축/sparse/raw SHA를 검증해 sysroot를 추출한다. OpenCV·ORT·raylib header·FFmpeg·libyuv도 고정 원본과 hash를 사용한다. generic Ubuntu ARM artifact를 배포하지 않는다. 실제 AGNOS ELF dependency/symbol/version closure, seal 및 static ARM installer의 QEMU 설치와 설치된 AGNOS launcher `--verify-package`를 CI에서 확인한다.
 - dev-md에는 같은 SHA를 fast-forward한다. 발행 job은 그 SHA의 성공한 package artifact를 가져오고 기존 publisher가 정확한 SHA의 모든 required push gate와 6개 asset을 검증한 뒤 prerelease를 공개한다. 공개 installer의 online 설치도 CI에서 확인한다. 최종 CI/PR/release URL은 #402에 기록하며, 사용자 실기 검증 전 issue를 닫지 않는다.
 
+CI token으로 발행할 수 있도록 publisher의 실제 보호 규칙 조회만 REST administration endpoint 대신 GraphQL `ref.branchProtectionRule`로 옮긴다. 서버의 현재 required contexts를 그대로 확인하며, 로컬 snapshot으로 대체하거나 gate를 줄이지 않는다. 빌드 전 같은 token으로 이 조회를 먼저 확인한다.
+
 원본 dev/main 통합, 차량 접속·설치, Athena 별도 수정은 범위 밖이다.
