@@ -24,9 +24,9 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: da1fb23643f561d8cf6e693b3b8863adafda0132
+        ref: c53442881a117eb72e95f21feecdd9f84a7848ad
     - name: Require exact experimental source
-      run: 'test "$(git rev-parse HEAD)" = da1fb23643f561d8cf6e693b3b8863adafda0132
+      run: 'test "$(git rev-parse HEAD)" = c53442881a117eb72e95f21feecdd9f84a7848ad
 
         test -z "$(git status --porcelain)"'
     - name: Prepare LLVM18 original target prerequisites
@@ -41,6 +41,15 @@ jobs:
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
 
         git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx --exclude=''''
+
+        '
+    - name: Require distinct ABI and mutable accumulator semantic keys
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-model-runtime --locked --lib compiler_backend_cpu::fused_mean::tests
+        -- --nocapture
 
         '
     - name: Require exact final-output candidate and existing materialization fences
