@@ -417,141 +417,92 @@ jobs:
           assert direct >= 9 * len(observed) // 10 and direct > max(lane_major, reverse_lane) + 10000, "physical Gelu mapping unproved; no localization"
           print("verified original-only terminal diagnostic", record["mapping_exact_matches"], record["differing_channels"], flush=True)
 
-          # Three target locations are established from the two original IR index
-          # expressions, not inferred from equal-looking output values. Both kernels
-          # still perform Conv internally; this checks each kernel's own pre-Gelu value.
-          target_locations = ((46, 54), (568, 21), (704, 78))
-          stages = ("pre_gelu", "square", "cube", "cubic_term", "cubic_sum",
-                    "scaled", "denominator", "gelu")
-
-          def branch_trace(ir, signature, anchor, conditions, registers):
-              assert ir.count(signature) == ir.count(anchor) == 1
-              ir = ir.replace(signature, signature.replace("i32 %data4)",
-                               "float* noalias align 32 %data5, i32 %data4)"))
-              lines = []
-              for case, condition in enumerate(conditions):
-                  for part, comparison in enumerate(condition):
-                      lhs, rhs = comparison
-                      lines.append(f"  %diag_{case}_{part} = icmp eq i32 {lhs}, {rhs}")
-                  merged = f"%diag_{case}_0"
-                  for part in range(1, len(condition)):
-                      lines.append(f"  %diag_and_{case}_{part} = and i1 {merged}, %diag_{case}_{part}")
-                      merged = f"%diag_and_{case}_{part}"
-                  lines.append(f"  br i1 {merged}, label %diag_case_{case}, label %diag_test_{case + 1}")
-                  lines.append(f"diag_case_{case}:")
-                  for stage, register in enumerate(registers[case]):
-                      lines.append(f"  %diag_ptr_{case}_{stage} = getelementptr inbounds float, float* %data5, i32 {case * len(stages) + stage}")
-                      lines.append(f"  store float %{register}, float* %diag_ptr_{case}_{stage}")
-                  lines.append("  br label %diag_continue")
-                  lines.append(f"diag_test_{case + 1}:")
-              lines.append("  br label %diag_continue")
-              lines.append("diag_continue:")
-              return ir.replace(anchor, "\n".join(lines) + "\n" + anchor)
-
-          fused_ir = branch_trace(source_raw.decode(),
-              "i16* noalias align 32 %data3, i32 %data4) #0",
-              "  store float %v411, float* %v5\n",
-              ((("%v14", 46), ("%v34", 13)),
-               (("%v14", 568), ("%v34", 5)),
-               (("%v14", 704), ("%v34", 19))),
-              (("v200", "v201", "v202", "v203", "v204", "v205", "v384", "v385"),
-               ("v184", "v185", "v186", "v187", "v188", "v189", "v359", "v360"),
-               ("v200", "v201", "v202", "v203", "v204", "v205", "v384", "v385")))
+          # Prefix92 also fuses Conv. Trace its own pre-Gelu values; Conv91 equality to
+          # prefix93 alone does not prove that this distinct prefix92 kernel agrees.
           gelu_source_key = gelu92_receipt["terminal"]["source"]
           gelu_ir_raw = sealed(OUTPUT / f"prefix92-{gelu_source_key}.ll", gelu_source_key)
           gelu_object_sha = gelu92_receipt["program_object_sha256"][gelu_source_key]
           gelu_object = sealed(OUTPUT / f"prefix92-{gelu_source_key}.objbin", gelu_object_sha)
-          gelu_ir = branch_trace(gelu_ir_raw.decode(),
-              "i16* noalias align 32 %data3, i32 %data4) #0",
-              "  store float %v1561, float* %v827\n",
-              ((("%data4", 0), ("%v16", 11), ("%v99", 18)),
-               (("%data4", 9), ("%v16", 7), ("%v99", 7)),
-               (("%data4", 11), ("%v16", 11), ("%v99", 26))),
-              (("v881", "v882", "v883", "v884", "v885", "v886", "v1475", "v1559"),
-               ("v849", "v850", "v851", "v852", "v853", "v854", "v1457", "v1557"),
-               ("v849", "v850", "v851", "v852", "v853", "v854", "v1457", "v1557")))
 
           def replay_materialized(obj, traced):
               owners = [Aligned(len(raw), raw) for raw in gelu92_inputs]
-              outbuf = Aligned(len(materialized_gelu92))
-              tracebuf = Aligned(len(target_locations) * len(stages) * 4,
-                                 b"\xaa" * (len(target_locations) * len(stages) * 4)) if traced else None
+              output = Aligned(len(materialized_gelu92))
+              trace_buf = Aligned(len(materialized_gelu92), b"\xaa" * len(materialized_gelu92)) if traced else None
               program = CPUProgram(device, "r_15_32_16_3_4_32_4n1", jit_loader(obj))
               for tid in range(16):
-                  args = [ctypes.c_uint64(outbuf.addr), *(ctypes.c_uint64(buf.addr) for buf in owners)]
-                  if tracebuf is not None:
-                      args.append(ctypes.c_uint64(tracebuf.addr))
+                  args = [ctypes.c_uint64(output.addr), *(ctypes.c_uint64(buf.addr) for buf in owners)]
+                  if trace_buf is not None:
+                      args.append(ctypes.c_uint64(trace_buf.addr))
                   program.fxn(*args, ctypes.c_int32(tid))
               assert [buf.bytes() for buf in owners] == gelu92_inputs
-              return outbuf.bytes(), None if tracebuf is None else tracebuf.bytes()
+              return output.bytes(), None if trace_buf is None else trace_buf.bytes()
 
           original_gelu_replay, _ = replay_materialized(gelu_object, False)
           (OUTPUT / "gelu92-original-replay.bin").write_bytes(original_gelu_replay)
           assert original_gelu_replay == materialized_gelu92
-          stage_results = {"kind": "original-only-targeted-three-position-stage-diagnostic",
-                           "head_sha": os.environ["GITHUB_SHA"],
-                           "driver_sha256": sha(Path(__file__).read_bytes()),
-                           "source_sha256": source_pins,
-                           "runtime_source_sha256": runtime_pins,
-                           "provider_sha256": provider_sha,
-                           "model_sha256": prior["model_sha256"],
-                           "fused93_original_ir_sha256": sha(source_raw),
-                           "fused93_original_object_sha256": sha(object_raw),
-                           "materialized92_original_ir_sha256": sha(gelu_ir_raw),
-                           "materialized92_original_object_sha256": sha(gelu_object),
-                           "materialized92_original_owner_sha256": [sha(raw) for raw in gelu92_inputs],
-                           "historical_fused93_output_sha256": prior["output_sha256"],
-                           "historical_materialized92_output_sha256": gelu92_receipt["output_sha256"]}
-          for label, ir in (("fused93", fused_ir), ("materialized92", gelu_ir)):
-              ir_raw = ir.encode()
-              (OUTPUT / f"{label}-stage-instrumented.ll").write_bytes(ir_raw)
-              obj = compiler.compile_to_obj(ir)
-              (OUTPUT / f"{label}-stage-instrumented.objbin").write_bytes(obj)
-              if label == "fused93":
-                  # The prior two-buffer diagnostic signature is not used here.
-                  def replay_fused_stages():
-                      owners = [Aligned(len(raw), raw) for raw in input_raw]
-                      outbuf = Aligned(3840)
-                      tracebuf = Aligned(len(target_locations) * len(stages) * 4,
-                                         b"\xaa" * (len(target_locations) * len(stages) * 4))
-                      program = CPUProgram(device, "r_15_4_16_128_24_4", jit_loader(obj))
-                      for tid in range(16):
-                          args = [ctypes.c_uint64(outbuf.addr), *(ctypes.c_uint64(buf.addr) for buf in owners),
-                                  ctypes.c_uint64(tracebuf.addr)]
-                          program.fxn(*args, ctypes.c_int32(tid))
-                      assert [buf.bytes() for buf in owners] == input_raw
-                      return outbuf.bytes(), tracebuf.bytes()
-                  output, stage_raw = replay_fused_stages()
-                  expected = expected_output
-              else:
-                  output, stage_raw = replay_materialized(obj, True)
-                  expected = materialized_gelu92
-              (OUTPUT / f"{label}-stage-output.bin").write_bytes(output)
-              (OUTPUT / f"{label}-stage-trace.bin").write_bytes(stage_raw)
-              stage_results[label] = dict(ir_sha256=sha(ir_raw), object_sha256=sha(obj),
-                                          output_sha256=sha(output), trace_sha256=sha(stage_raw))
-              (OUTPUT / "stage-receipt-before-gate.json").write_text(json.dumps(stage_results, indent=2) + "\n")
-              assert output == expected, f"{label} instrumentation changed final output; trace inadmissible"
-              assert b"\xaa\xaa\xaa\xaa" not in [stage_raw[i:i+4] for i in range(0, len(stage_raw), 4)], "target stage unwritten"
 
-          fused_bits = words((OUTPUT / "fused93-stage-trace.bin").read_bytes())
-          materialized_bits = words((OUTPUT / "materialized92-stage-trace.bin").read_bytes())
-          stage_results["target_locations"] = []
-          for target, (channel, spatial) in enumerate(target_locations):
-              observed = []
-              for stage, name in enumerate(stages):
-                  at = target * len(stages) + stage
-                  observed.append(dict(stage=name, fused_bits=f"{fused_bits[at]:08x}",
-                                       materialized_bits=f"{materialized_bits[at]:08x}",
-                                       equal=fused_bits[at] == materialized_bits[at]))
-              stage_results["target_locations"].append(dict(channel=channel, spatial=spatial, stages=observed))
+          gelu_ir = gelu_ir_raw.decode()
+          signature = "i16* noalias align 32 %data3, i32 %data4) #0"
+          anchor = "  store float %v1561, float* %v827\n"
+          assert gelu_ir.count(signature) == gelu_ir.count(anchor) == 1
+          gelu_ir = gelu_ir.replace(signature, "i16* noalias align 32 %data3, float* noalias align 32 %data5, i32 %data4) #0")
+          # These 12 index/value pairs follow the original output stores exactly; no
+          # branch is added to the original kernel's control flow.
+          pre_gelu_sites = (("v849", "v825"), ("v865", "v830"), ("v881", "v836"),
+                            ("v897", "v842"), ("v913", "v826"), ("v929", "v832"),
+                            ("v945", "v838"), ("v961", "v844"), ("v977", "v828"),
+                            ("v993", "v834"), ("v1009", "v840"), ("v1025", "v846"))
+          instrumentation = "".join(
+              f"  %diag_ptr_{slot} = getelementptr inbounds float, float* %data5, i32 %{index}\n"
+              f"  store float %{value}, float* %diag_ptr_{slot}\n"
+              for slot, (value, index) in enumerate(pre_gelu_sites))
+          gelu_ir = gelu_ir.replace(anchor, instrumentation + anchor)
+          gelu_instrumented_ir = gelu_ir.encode()
+          (OUTPUT / "gelu92-pre-gelu-instrumented.ll").write_bytes(gelu_instrumented_ir)
+          gelu_instrumented_object = compiler.compile_to_obj(gelu_ir)
+          (OUTPUT / "gelu92-pre-gelu-instrumented.objbin").write_bytes(gelu_instrumented_object)
+          gelu_instrumented_output, gelu_pre_trace = replay_materialized(gelu_instrumented_object, True)
+          assert gelu_pre_trace is not None
+          (OUTPUT / "gelu92-pre-gelu-output.bin").write_bytes(gelu_instrumented_output)
+          (OUTPUT / "gelu92-pre-gelu-trace.bin").write_bytes(gelu_pre_trace)
+          pre_record = dict(kind="original-only-materialized-Gelu92-pre-Gelu-trace",
+                            head_sha=os.environ["GITHUB_SHA"], driver_sha256=sha(Path(__file__).read_bytes()),
+                            source_sha256=source_pins, runtime_source_sha256=runtime_pins,
+                            model_sha256=prior["model_sha256"], provider_sha256=provider_sha,
+                            materialized92_prefix_sha256=gelu92_receipt["prefix_sha256"],
+                            original_ir_sha256=sha(gelu_ir_raw), original_object_sha256=sha(gelu_object),
+                            original_owner_sha256=[sha(raw) for raw in gelu92_inputs],
+                            historical_output_sha256=gelu92_receipt["output_sha256"],
+                            original_replay_output_sha256=sha(original_gelu_replay),
+                            instrumented_ir_sha256=sha(gelu_instrumented_ir),
+                            instrumented_object_sha256=sha(gelu_instrumented_object),
+                            instrumented_output_sha256=sha(gelu_instrumented_output),
+                            pre_gelu_trace_sha256=sha(gelu_pre_trace))
+          (OUTPUT / "pre-gelu-receipt-before-gate.json").write_text(json.dumps(pre_record, indent=2) + "\n")
+          assert gelu_instrumented_output == materialized_gelu92, "materialized Gelu92 instrumentation changed final output; trace inadmissible"
+          trace_bits = words(gelu_pre_trace)
+          assert len(trace_bits) == 960 * 96
+          assert all(value != 0xaaaaaaaa for value in trace_bits), "pre-Gelu trace incomplete"
+          fused_pre_bits = words(conv_trace)
+          conv91_bits = words(materialized_conv91)
+          pre_record["fused93_exact_matches"] = sum(a == b for a, b in zip(trace_bits, fused_pre_bits))
+          pre_record["conv91_exact_matches"] = sum(a == b for a, b in zip(trace_bits, conv91_bits))
+          pre_record["target_pairs"] = [dict(channel=channel, spatial=spatial,
+                                             materialized92_pre_gelu_bits=f"{trace_bits[channel * 96 + spatial]:08x}",
+                                             fused93_pre_gelu_bits=f"{fused_pre_bits[channel * 96 + spatial]:08x}",
+                                             conv91_bits=f"{conv91_bits[channel * 96 + spatial]:08x}")
+                                        for channel, spatial in ((46, 54), (568, 21), (704, 78))]
+          pre_record["first_differences"] = [dict(channel=i // 96, spatial=i % 96,
+                                                 materialized92_bits=f"{a:08x}", fused93_bits=f"{b:08x}")
+                                             for i, (a, b) in enumerate(zip(trace_bits, fused_pre_bits)) if a != b][:32]
           check_sources()
           assert sha(provider_path.read_bytes()) == provider_sha
           assert sha((ROOT / "openpilot/selfdrive/modeld/models/dmonitoring_model.onnx").read_bytes()) == prior["model_sha256"]
-          (OUTPUT / "stage-receipt.json").write_text(json.dumps(stage_results, indent=2) + "\n")
-          print("verified three original-kernel stage traces", stage_results["target_locations"], flush=True)
+          (OUTPUT / "pre-gelu-receipt.json").write_text(json.dumps(pre_record, indent=2) + "\n")
+          print("verified materialized Gelu92 pre-Gelu trace", pre_record["fused93_exact_matches"], pre_record["target_pairs"], flush=True)
+
           PREFIX93_KERNEL_DRIVER
-          printf '1a07681514b14c7c4e27d744ad4a3b81f011aebc5d372fd53243f9ea895d75b6  %s/diagnose_original_terminal.py\n' "$capture_dir" | sha256sum --check --strict
+          printf 'a438f63d07c1923890b7023eabe154a4683f36aeb06531cf7c5e0583e771cba0  %s/diagnose_original_terminal.py\n' "$capture_dir" | sha256sum --check --strict
       - name: Execute sealed original object and instrumented copy
         shell: bash
         env:
