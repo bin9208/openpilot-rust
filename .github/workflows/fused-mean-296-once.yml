@@ -1,5 +1,5 @@
 name: Fused Mean 296 candidate
-true:
+'on':
   push:
     branches:
     - codex/feat-296-native-tools-candidate
