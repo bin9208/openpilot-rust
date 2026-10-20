@@ -65,6 +65,7 @@ jobs:
           ROOT = Path(os.environ["GITHUB_WORKSPACE"]).resolve()
           assert Path.cwd().resolve() == ROOT
           assert os.environ["DEV"] == "CPU:LLVM"
+          assert os.environ["CPU_COUNT"] == "16"
           for name in ("IMAGE", "FLOAT16", "NOLOCALS", "OPENPILOT_HACKS"):
               assert os.environ[name] == "1"
           assert os.environ["CACHELEVEL"] == "0" and os.environ["CCACHE"] == "0"
@@ -292,7 +293,7 @@ jobs:
            r=OnnxRunner(MODEL);names=[node.outputs[0]for node in r.graph_nodes[9:60]];(ROOT/'native-all-outputs.onnx').write_bytes(prefix_bytes(59,names));print('native diagnostic graph',len(names),'outputs')
           PREFIX93_WIRE_HELPER
           cat > "$RUNNER_TEMP/prefix93-drivers.sha256" <<EOF
-          11434b3e830b449bed6f18a4deb888474c4135b5ec8d2ce31e588efa2f179f25  $capture_dir/capture_prefix93_owners.py
+          12d85bd79705de005f9805a9ac08e26acfd68058b9f587e92e7dadbac8310dfe  $capture_dir/capture_prefix93_owners.py
           d2e405325f2312a84d22117aba411606838a6bab6bbb61c67df39a83da6fef3c  $capture_dir/capture_prefix_contexts.py
           EOF
           sha256sum --check --strict "$RUNNER_TEMP/prefix93-drivers.sha256"
@@ -301,6 +302,7 @@ jobs:
         shell: bash
         env:
           DEV: CPU:LLVM
+          CPU_COUNT: '16'
           IMAGE: '1'
           FLOAT16: '1'
           NOLOCALS: '1'
