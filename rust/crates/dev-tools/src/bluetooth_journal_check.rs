@@ -41,26 +41,55 @@ fn check_cancel(stop: &AtomicBool) -> Result<()> {
         Ok(())
     }
 }
-fn verify(files: &[Bound], stop: &AtomicBool) -> Result<()> {
+fn verify(files: &[Bound], historical_absent: Option<&Path>, stop: &AtomicBool) -> Result<()> {
     check_cancel(stop)?;
+    if let Some(path) = historical_absent {
+        if !fs::symlink_metadata(path.parent().ok_or("checker parent missing")?)?.is_dir() {
+            return Err("Bluetooth journal checker parent is not a directory".into());
+        }
+        match fs::symlink_metadata(path) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Ok(_) => return Err("Bluetooth journal historical checker reappeared".into()),
+            Err(error) => return Err(error.into()),
+        }
+    }
     for file in files {
         file.verify()?;
     }
     Ok(())
 }
-fn sources(root: &Path) -> Result<Vec<Bound>> {
+fn sources(root: &Path) -> Result<(Vec<Bound>, Option<PathBuf>)> {
     let pins: BTreeMap<String, String> = serde_json::from_str(include_str!(
         "../tests/fixtures/bluetooth-journal/source-pins.json"
     ))?;
-    pins.into_iter()
-        .map(|(name, expected)| {
-            let file = Bound::open(&root.join(&name))?;
-            if file.hash != expected {
-                return Err(format!("Bluetooth journal source changed: {name}").into());
+    let mut live = Vec::new();
+    let mut historical_absent = None;
+    for (name, expected) in pins {
+        let path = root.join(&name);
+        if name == "rust/tools/check_bluetooth_journal.py" {
+            // Only this exact historical checker may be absent during the
+            // same-ELF original/present/absent comparison.
+            match fs::symlink_metadata(&path) {
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                    if !fs::symlink_metadata(path.parent().ok_or("checker parent missing")?)?
+                        .is_dir()
+                    {
+                        return Err("Bluetooth journal checker parent is not a directory".into());
+                    }
+                    historical_absent = Some(path);
+                    continue;
+                }
+                Ok(_) => {}
+                Err(error) => return Err(error.into()),
             }
-            Ok(file)
-        })
-        .collect()
+        }
+        let file = Bound::open(&path)?;
+        if file.hash != expected {
+            return Err(format!("Bluetooth journal source changed: {name}").into());
+        }
+        live.push(file);
+    }
+    Ok((live, historical_absent))
 }
 pub fn parse_trace(text: &str) -> Result<Vec<JsonValue>> {
     // Python str.splitlines treats CRLF as one boundary. Public callers may
@@ -100,13 +129,19 @@ fn names(path: &Path) -> Result<()> {
     }
     Ok(())
 }
-fn publish(path: &Path, report: &Value, inputs: &[Bound], stop: &AtomicBool) -> Result<()> {
-    verify(inputs, stop)?;
+fn publish(
+    path: &Path,
+    report: &Value,
+    inputs: &[Bound],
+    historical_absent: Option<&Path>,
+    stop: &AtomicBool,
+) -> Result<()> {
+    verify(inputs, historical_absent, stop)?;
     let mut pending = tempfile::NamedTempFile::new_in(path.parent().ok_or("report parent")?)?;
     pending.write_all(serde_json::to_string_pretty(report)?.as_bytes())?;
-    verify(inputs, stop)?;
+    verify(inputs, historical_absent, stop)?;
     let held = pending.persist_noclobber(path).map_err(|e| e.error)?;
-    let result = verify(inputs, stop);
+    let result = verify(inputs, historical_absent, stop);
     if result.is_err() {
         if let (Ok(own), Ok(now)) = (held.metadata(), fs::symlink_metadata(path)) {
             if (own.dev(), own.ino()) == (now.dev(), now.ino()) {
@@ -122,8 +157,8 @@ pub fn check(
     printed: &mut dyn Write,
     stop: &AtomicBool,
 ) -> Result<Value> {
-    let mut inputs = sources(&options.root)?;
-    verify(&inputs, stop)?;
+    let (mut inputs, historical_absent) = sources(&options.root)?;
+    verify(&inputs, historical_absent.as_deref(), stop)?;
     fs::create_dir_all(&options.output)?;
     let operations = operations();
     if operations.len() != OPERATIONS {
@@ -174,7 +209,7 @@ pub fn check(
     command.input = Some(payload);
     command.stdout_limit = usize::MAX;
     command.stderr_limit = usize::MAX;
-    verify(&inputs, stop)?;
+    verify(&inputs, historical_absent.as_deref(), stop)?;
     let observed = runner.run(&command)?;
     let stdout = text(observed.stdout)?;
     let stderr = text(observed.stderr)?;
@@ -192,7 +227,7 @@ pub fn check(
     let hash = artifact.hash.clone();
     inputs.push(artifact);
     inputs.push(alias);
-    verify(&inputs, stop)?;
+    verify(&inputs, historical_absent.as_deref(), stop)?;
     let pins = inputs
         .iter()
         .map(|f| {
@@ -207,7 +242,13 @@ pub fn check(
     let report = json!({"operations":OPERATIONS,"max_events_per_channel":64,"mode":"0600","values_and_rewrite_decisions":"exact after UUID session normalization","source_sha256":"74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633","binary_sha256":hash,"reference_kind":"independent fixed CommandWriter source policy; UUID/inode normalization; unchanged-original CI required","input_sha256":pins});
     writeln!(printed, "{}", serde_json::to_string(&report)?)?;
     printed.flush()?;
-    publish(&options.output.join("result.json"), &report, &inputs, stop)?;
+    publish(
+        &options.output.join("result.json"),
+        &report,
+        &inputs,
+        historical_absent.as_deref(),
+        stop,
+    )?;
     Ok(report)
 }
 struct SignalRunner(Arc<AtomicBool>);

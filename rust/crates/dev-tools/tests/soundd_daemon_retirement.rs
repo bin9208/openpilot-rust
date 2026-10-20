@@ -72,6 +72,33 @@ fn inspect_lane(output: &Path) -> Value {
     stable(&report)
 }
 
+#[test]
+fn original_inactive_poll_and_summary_keep_python_median_bits() {
+    // Actual original soundd-daemon/inactive/events.jsonl from Actions artifact
+    // 12306240247 (ZIP SHA-256 ff65bb180aa08f640b0af551fbe8633510299569e7492de2a2dee4f80a2cc302).
+    let original_rows = [
+        r#"{"event":"poll","value":1,"time":179.819984277,"pid":8678}"#,
+        r#"{"event":"poll","value":2,"time":179.869993393,"pid":8678}"#,
+        r#"{"event":"poll","value":3,"time":179.919980245,"pid":8678}"#,
+    ];
+    let polls = original_rows.map(|row| serde_json::from_str::<Event>(row).unwrap().time);
+    let mut intervals = [polls[1] - polls[0], polls[2] - polls[1]];
+    intervals.sort_by(f64::total_cmp);
+    let median = (intervals[0] + intervals[1]) / 2.0;
+    let original_summary: Value =
+        serde_json::from_str(r#"{"median_period":0.049997984000000883}"#).unwrap();
+    let sealed = 0.049997984000000883_f64.to_bits();
+    assert_eq!(
+        original_summary["median_period"]
+            .as_f64()
+            .unwrap()
+            .to_bits(),
+        sealed,
+        "original summary decimal lost Python f64 bits"
+    );
+    assert_eq!(median.to_bits(), sealed);
+}
+
 fn audit_native_exec(output: &Path, trace_path: &Path) {
     let checker = required("SOUNDD_DAEMON_WORKER_BINARY");
     let daemon = required("SOUNDD_DAEMON_BINARY");

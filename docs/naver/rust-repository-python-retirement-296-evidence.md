@@ -17,7 +17,9 @@ extensionless Python execution still needs a separate complete caller audit.
 
 ### Current cloud checkpoint and next source batch (2026-10-21)
 
-Published PR #343 source remains `2d8d027932dc880bd0acd00288b256ac8d7f1b89`.
+Historical PR #343 checkpoint: `2d8d027932dc880bd0acd00288b256ac8d7f1b89`.
+The published source is now`a9933ed72fc1ca8c91cf5728d0345f1e4181104d`;
+newer results and pending source repairs are recorded below.
 Its [Rust run39494388960](https://github.com/bin9208/openpilot-rust/actions/runs/39494388960)
 passed LLVM20 graph/primitive equivalence, including all four independent
 node280 input/planning controls. Workspace and ARM jobs remain running; Panda,
@@ -4842,3 +4844,35 @@ configuration, capnp and zstandard), rather than demonstrated production defects
 These setups must reuse the successful main-job commands. The isolated fused
 Mean candidate compiles but still rejects its real cold prefix before execution;
 it remains outside this branch's committed implementation.
+
+
+### Full paramsd controller cloud acceptance and new soundd precision defect
+
+At exact source`ba5def0ab46de9cab2d3542af573625761068512`,
+[job118930155954](https://github.com/bin9208/openpilot-rust/actions/runs/39510538880/job/118930155954)
+passed the scoped real-daemon FD gate and full original/native controller proof.
+All1,202continuous and8restart raw packets decoded against independent source
+rows; saved index1199, per-lane restart bytes, GPS, gate counts and normal
+INT/TERM shutdowns passed, as did strictClippy. Parent reviewed artifact12305212845,
+ZIP SHA256`a9a6fc6dcbf15af20696d832169ba81cf5cebe4364546466ccaa1b54b2a15ce2`.
+This preserves the original controller and generator until later absence and
+caller-conversion gates. No physical runtime acceptance is implied.
+
+The same source's BlueZ post-deletion reference passed both tests and all6,363
+cases with exact native exec audit. Enumeration's new reference failed compilation
+because include_bytes! already returns a reference; the extra `&old_raw` was
+removed. This compilation failure is not numerical/functional failure or a pass.
+
+The new soundd absence proof executed all original/native-present/native-absent
+modes, then its independent reference found a last-bit median discrepancy in
+the original inactive lane. [#434](https://github.com/bin9208/openpilot-rust/issues/434)
+records the raw three timestamps and summary. The candidate enables
+`serde_json/float_roundtrip` within the soundd feature and keeps exact comparisons,
+with raw timestamp plus summary-number regression. Intended oldRED/currentGREEN
+and complete proof are pending; no numerical tolerance was added.
+
+Bluetooth journal preparation retains721ordered original normalized row hashes
+from actual artifact12304713010 and requires fresh original plus native
+present/absent lanes, exact two-executable argv audits and ELF hashes. Its Python
+checker stays present until that actual proof passes. These pending preparations
+are not additional retired inventory entries.

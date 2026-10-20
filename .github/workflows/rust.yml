@@ -3695,9 +3695,50 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-journal-native --test bluetooth_journal_check --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-journal-native --lib --test bluetooth_journal_check --bin check-bluetooth-journal --locked -- -D warnings
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-journal-native --lib --test bluetooth_journal_check --test bluetooth_journal_reference --bin check-bluetooth-journal --locked -- -D warnings
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           rust/target/debug/check-bluetooth-journal --binary "$BLUETOOTH_JOURNAL_FIXTURE" --output "$RUNNER_TEMP/ui-connectivity/bluetooth-journal-current"
+      - name: Require Bluetooth journal same-ELF source absence proof
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/ui-connectivity/bluetooth-journal-retirement"
+          export BLUETOOTH_JOURNAL_ORIGINAL_OUTPUT="$proof/original"
+          export BLUETOOTH_JOURNAL_PRESENT_OUTPUT="$proof/present"
+          export BLUETOOTH_JOURNAL_ABSENT_OUTPUT="$proof/absent"
+          export BLUETOOTH_JOURNAL_PRESENT_ROOT="$GITHUB_WORKSPACE"
+          export BLUETOOTH_JOURNAL_ABSENCE_ROOT="$proof/absent-root"
+          export BLUETOOTH_JOURNAL_CHECKER="$GITHUB_WORKSPACE/rust/target/debug/check-bluetooth-journal"
+          export BLUETOOTH_JOURNAL_PRESENT_EXEC="$proof/present.exec"
+          export BLUETOOTH_JOURNAL_ABSENT_EXEC="$proof/absent.exec"
+          export BLUETOOTH_JOURNAL_ARTIFACTS_BEFORE="$proof/before.json"
+          export BLUETOOTH_JOURNAL_ARTIFACTS_AFTER="$proof/after.json"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          mkdir -p "$proof/absent-root/rust/tools"
+          git rev-parse HEAD > "$proof/SOURCE_COMMIT"
+          seal_artifacts() {
+            printf '{"%s":"%s","%s":"%s"}\n' "$BLUETOOTH_JOURNAL_CHECKER" "$(sha256sum "$BLUETOOTH_JOURNAL_CHECKER" | cut -d ' ' -f1)" "$BLUETOOTH_JOURNAL_FIXTURE" "$(sha256sum "$BLUETOOTH_JOURNAL_FIXTURE" | cut -d ' ' -f1)"
+          }
+          seal_artifacts > "$BLUETOOTH_JOURNAL_ARTIFACTS_BEFORE"
+          sha256sum rust/tools/check_bluetooth_journal.py openpilot/selfdrive/carrot/bluetooth/model.py rust/crates/bluetooth/examples/journal_fixture.rs > "$proof/source.sha256"
+          for source in openpilot/selfdrive/carrot/bluetooth/model.py rust/crates/bluetooth/examples/journal_fixture.rs; do
+            cp --parents -- "$source" "$BLUETOOTH_JOURNAL_ABSENCE_ROOT"
+            cmp "$source" "$BLUETOOTH_JOURNAL_ABSENCE_ROOT/$source"
+          done
+          test ! -e "$BLUETOOTH_JOURNAL_ABSENCE_ROOT/rust/tools/check_bluetooth_journal.py"
+          test ! -L "$BLUETOOTH_JOURNAL_ABSENCE_ROOT/rust/tools/check_bluetooth_journal.py"
+          timeout --kill-after=5s 45s python rust/tools/check_bluetooth_journal.py --binary "$BLUETOOTH_JOURNAL_FIXTURE" --output "$BLUETOOTH_JOURNAL_ORIGINAL_OUTPUT" > "$proof/original.stdout" 2> "$proof/original.stderr"
+          find "$BLUETOOTH_JOURNAL_ORIGINAL_OUTPUT" -type f -print0 | sort -z | xargs -0 sha256sum > "$proof/original-output.sha256"
+          for lane in PRESENT ABSENT; do
+            if [ "$lane" = PRESENT ]; then root="$BLUETOOTH_JOURNAL_PRESENT_ROOT"; else root="$BLUETOOTH_JOURNAL_ABSENCE_ROOT"; fi
+            output_var="BLUETOOTH_JOURNAL_${lane}_OUTPUT"
+            exec_var="BLUETOOTH_JOURNAL_${lane}_EXEC"
+            OPENPILOT_RUST_ROOT="$root" PATH=/nonexistent /usr/bin/timeout --signal=TERM --kill-after=5s 45s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "${!exec_var}" "$BLUETOOTH_JOURNAL_CHECKER" --binary "$BLUETOOTH_JOURNAL_FIXTURE" --output "${!output_var}" > "$proof/$lane.stdout" 2> "$proof/$lane.stderr"
+          done
+          seal_artifacts > "$BLUETOOTH_JOURNAL_ARTIFACTS_AFTER"
+          sha256sum -c "$proof/source.sha256"
+          sha256sum -c "$proof/original-output.sha256"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-journal-native --test bluetooth_journal_reference --locked -- --nocapture
       - name: Check native Bluetooth input decoder against original records
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024

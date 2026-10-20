@@ -2454,3 +2454,22 @@ fn soundd_retirement_requires_both_traced_native_lanes_and_raw_reference() {
         true,
     );
 }
+
+#[test]
+fn journal_retirement_requires_live_original_all_rows_and_two_native_exec_lanes() {
+    job_check(
+        "ui-connectivity",
+        &[
+            "python rust/tools/check_bluetooth_journal.py --binary",
+            "BLUETOOTH_JOURNAL_ARTIFACTS_BEFORE=",
+            "BLUETOOTH_JOURNAL_ARTIFACTS_AFTER=",
+            "BLUETOOTH_JOURNAL_ABSENCE_ROOT=",
+            "BLUETOOTH_JOURNAL_ORIGINAL_OUTPUT=",
+            "for lane in PRESENT ABSENT; do",
+            "-e trace=execve,execveat -o \"${!exec_var}\"",
+            "--test bluetooth_journal_reference --locked -- --nocapture",
+        ],
+        &["bluetooth-journal-retirement"],
+        false,
+    );
+}

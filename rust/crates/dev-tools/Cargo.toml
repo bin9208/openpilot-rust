@@ -552,7 +552,7 @@ pandad-safety-padding-native = []
 pandad-device-native = []
 logmessaged-startup-native = ["stats-daemon-native"]
 bluetooth-files-native = []
-soundd-daemon-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri"]
+soundd-daemon-native = ["serde_json/float_roundtrip", "dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri"]
 bridge-tools-native = ["dep:openpilot-messaging", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq"]
 navd-config-tools-native = ["registration-tools-native"]
 stats-daemon-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq"]
@@ -1720,3 +1720,7 @@ required-features = ["soundd-daemon-native"]
 [[test]]
 name = "paramsd_daemon_reference"
 required-features = ["paramsd-daemon-native"]
+
+[[test]]
+name = "bluetooth_journal_reference"
+required-features = ["bluetooth-journal-native"]

@@ -1,6 +1,36 @@
 # 저장소 전체 Python 전환 작업 인수인계
 
-## 최신 감독·조합 상태: 341aa2b5, 2026-10-21
+## 최신 통합 상태: a9933ed7, 2026-10-21
+
+부모6.1 Sol이 PR343→dev의 감독·검토·통합을 담당한다. 게시한 코드는
+`a9933ed72fc1ca8c91cf5728d0345f1e4181104d`이고 전체 PR 검사
+[39510866633](https://github.com/bin9208/openpilot-rust/actions/runs/39510866633)가 진행 중이다.
+아래341aa2b5 기록은 이전 checkpoint다. dev-md와 주 작업폴더, `.omo/`는 보존한다.
+콤마는 없고 사용자가 최종 후보를 pull해 정상부팅·녹화·업로드·주행을 확인한다.
+
+BlueZ/Enum 원본·동일ELF 부재 proof는 c7005ce1에서 통과해 두Python을 제거했다.
+삭제 후 ba5def0a의 BlueZ6363사례·실행audit도 통과했다. Enum은 새reference의
+불필요한 이중참조로 컴파일 실패해 from_slice(old_raw)로 수정했다. 최신 exact-source
+post-deletion gate는 계속 필요하다. 인벤토리는213replaced-local /3partial /3364pending이다.
+
+ba5def0a의 [paramsd full job118930155954](https://github.com/bin9208/openpilot-rust/actions/runs/39510538880/job/118930155954)는
+시작게이트, 원본1210패킷과 native 전체비교, 저장·재시작/GPS/종료, strictClippy를 통과했다.
+부모가 artifact12305212845(archive a9a6fc6dcbf15af20696d832169ba81cf5cebe4364546466ccaa1b54b2a15ce2)의
+실제 두lane 패킷 수·gate·보고서를 확인했다. 원본Python과 입력생성기는 남아 있다.
+
+soundd f60e4ac0 전체audio GREEN은 #426/#433 문서에 기록했다. 추가부재proof는
+원본7모드와 native두lane 실행 후, JSON 소수 재파싱의1bit 차이에서 새reference가 실패했다.
+[#434](https://github.com/bin9208/openpilot-rust/issues/434)로 분리했고 sounddfeature의
+float_roundtrip과 원본 raw timestamp/summary 회귀를 준비했다. 허용오차는 늘리지 않는다.
+구설정RED/수정GREEN 및 전체7모드proof를 받아야 sounddPython을 제거할 수 있다.
+
+Jetlink18f4372d 집중gate는5baseline RED/6current GREEN/build/Clippy를 통과했다.
+Panda#432는 추가16진단에서 재현하지 못해 원인 미확정이며10timestamp 조건을 유지한다.
+모델 fusedMean 후보는 아직 source-selection 단계에서 거부되어 미통합이다.
+세부 rejection 사유를 남기는 한정 진단을 추가해 다음cloud에서 확인한다.
+완성되지 않은 compiler/개발도구 전환을 완료로 세거나 기기검증으로 표현하지 않는다.
+
+## 이전 감독·조합 상태: 341aa2b5, 2026-10-21
 
 부모6.1 Sol이 #296 전용 작업트리와 PR343→dev를 통합한다. 로컬 구현 HEAD는
 `341aa2b5ace9a49277c53896ad27137dd09178cd`, PR 게시 HEAD는 아직

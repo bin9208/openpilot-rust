@@ -124,7 +124,7 @@ fn sealed_original_and_fresh_native_match_full_sysfs_corpus() {
     );
     let new_raw = fs::read(native.join("result.json")).unwrap();
     let absent_raw = fs::read(absent.join("result.json")).unwrap();
-    let old: Receipt = serde_json::from_slice(&old_raw).unwrap();
+    let old: Receipt = serde_json::from_slice(old_raw).unwrap();
     let new: Receipt = serde_json::from_slice(&new_raw).unwrap();
     let missing: Receipt = serde_json::from_slice(&absent_raw).unwrap();
     assert_eq!(old.nodes, 40);
