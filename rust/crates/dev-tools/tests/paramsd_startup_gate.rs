@@ -35,8 +35,9 @@ fn gate_for_cursor(root: &Path, cursor: u64) -> StartupGate {
 }
 
 fn release_ready(gate: &StartupGate) -> bool {
+    let descriptor = gate.release_reader();
     poll(
-        &mut [PollFd::new(gate.release_reader(), PollFlags::IN)],
+        &mut [PollFd::new(&descriptor, PollFlags::IN)],
         Some(&Timespec {
             tv_sec: 0,
             tv_nsec: 0,

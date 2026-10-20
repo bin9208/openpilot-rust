@@ -8,7 +8,7 @@ use serde_json::json;
 use std::{
     ffi::{OsStr, OsString},
     fs,
-    os::unix::ffi::{OsStrExt, OsStringExt},
+    os::unix::ffi::OsStringExt,
     path::Path,
     time::{Duration, Instant},
 };
