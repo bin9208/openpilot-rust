@@ -509,6 +509,10 @@ jobs:
               "cubic_term": ((171, 187, 203, 219), (852, 868, 884, 900, 916, 932, 948, 964, 980, 996, 1012, 1028)),
               "cubic_sum": ((172, 188, 204, 220), (853, 869, 885, 901, 917, 933, 949, 965, 981, 997, 1013, 1029)),
               "scaled": ((173, 189, 205, 221), (854, 870, 886, 902, 918, 934, 950, 966, 982, 998, 1014, 1030)),
+              "exp_residual": ((313, 338, 363, 388), tuple(1282 + 14 * lane for lane in range(12))),
+              "exp_polynomial": ((325, 350, 375, 400), tuple(1294 + 14 * lane for lane in range(12))),
+              "exp_product": ((327, 352, 377, 402), tuple(1450 + 9 * lane for lane in range(12))),
+              "exp_final": ((333, 358, 383, 408), tuple(1456 + 9 * lane for lane in range(12))),
               "denominator": ((334, 359, 384, 409), (1457, 1466, 1475, 1484, 1493, 1502, 1511, 1520, 1529, 1538, 1547, 1556)),
           }
           gelu92_indices = ("v825", "v830", "v836", "v842", "v826", "v832",
@@ -603,7 +607,7 @@ jobs:
               for stage, values in stage_receipt["stages"].items()}, flush=True)
 
           PREFIX93_KERNEL_DRIVER
-          printf '02d36fd1bb75b29ba772694ed2043481223cc0f696f70401009c6866b1657aef  %s/diagnose_original_terminal.py\n' "$capture_dir" | sha256sum --check --strict
+          printf '64a329cd7562dea40e3362e8a94e0a476947213598d6683126ffa312b8eb145d  %s/diagnose_original_terminal.py\n' "$capture_dir" | sha256sum --check --strict
       - name: Execute sealed original object and instrumented copy
         shell: bash
         env:
