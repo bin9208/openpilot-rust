@@ -319,6 +319,9 @@ fn required_sources_and_cancellation_reject_before_candidate_invocation() {
         "rust/crates/bluetooth/examples/config_fixture.rs",
     ] {
         for kind in ["missing", "changed"] {
+            if source == "rust/tools/check_bluetooth_config.py" && kind == "missing" {
+                continue; // The retired checker is the sole optional historical source.
+            }
             let private = dir
                 .path()
                 .join(format!("{}-{kind}", source.replace('/', "-")));
@@ -366,6 +369,79 @@ fn required_sources_and_cancellation_reject_before_candidate_invocation() {
     )
     .is_err());
     assert!(!output.exists());
+}
+
+#[test]
+fn absent_historical_checker_is_held_through_publication_and_reappearance_fails() {
+    let dir = tempfile::tempdir().unwrap();
+    let private = dir.path().join("source");
+    fs::create_dir_all(private.join("rust/tools")).unwrap();
+    for name in [
+        "openpilot/selfdrive/carrot/bluetooth/model.py",
+        "rust/crates/bluetooth/examples/config_fixture.rs",
+    ] {
+        let target = private.join(name);
+        fs::create_dir_all(target.parent().unwrap()).unwrap();
+        fs::copy(root().join(name), target).unwrap();
+    }
+    let input =
+        include_bytes!("fixtures/bluetooth-config/original-observation-39507901490/input.jsonl");
+    let response =
+        include_bytes!("fixtures/bluetooth-config/original-observation-39507901490/original.jsonl");
+    let peer = || Peer {
+        input: input.to_vec(),
+        response: response.to_vec(),
+        mode: "ok",
+        calls: 0,
+    };
+    let options = |name| Options {
+        root: private.clone(),
+        binary: candidate(),
+        output: dir.path().join(name),
+    };
+    let mut actual = peer();
+    let output = options("absent-accepted");
+    checker::check(&output, &mut actual, &mut vec![], &AtomicBool::new(false)).unwrap();
+    assert_eq!(actual.calls, 1);
+    assert!(output.output.join("result.json").is_file());
+
+    struct Reappear(PathBuf);
+    impl Write for Reappear {
+        fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+            Ok(bytes.len())
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            fs::write(&self.0, b"reappeared")
+        }
+    }
+    let historical = private.join("rust/tools/check_bluetooth_config.py");
+    let mut actual = peer();
+    let output = options("reappeared-at-publication");
+    assert!(checker::check(
+        &output,
+        &mut actual,
+        &mut Reappear(historical.clone()),
+        &AtomicBool::new(false),
+    )
+    .is_err());
+    assert_eq!(actual.calls, 1);
+    assert!(!output.output.join("result.json").exists());
+
+    fs::remove_file(&historical).unwrap();
+    std::os::unix::fs::symlink(
+        root().join("rust/tools/check_bluetooth_config.py"),
+        &historical,
+    )
+    .unwrap();
+    struct Never;
+    impl Runner for Never {
+        fn run(&mut self, _: &CommandSpec) -> Result<Captured> {
+            panic!("candidate invoked before historical symlink rejection")
+        }
+    }
+    let output = options("historical-symlink");
+    assert!(checker::check(&output, &mut Never, &mut vec![], &AtomicBool::new(false)).is_err());
+    assert!(!output.output.exists());
 }
 
 #[test]

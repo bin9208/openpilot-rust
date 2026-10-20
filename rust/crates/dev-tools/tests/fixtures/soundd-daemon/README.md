@@ -1,7 +1,9 @@
 Independent soundd daemon checker observations
 ============================================
 
-Only `rust/tools/check_soundd_daemon.py` is a retirement candidate in this unit.
+`rust/tools/check_soundd_daemon.py` was retired after the accepted f19
+same-ELF cloud proof. Its original source hash and observations remain sealed
+in the fixtures; its implementation is not retained under another extension.
 The owned PortAudio C ABI fixture and the explicit native WAV fixture-assets
 helper remain. The controller imports neither soundd policy nor runtime sample
 constants to obtain expected results. No physical audio device is exercised by
@@ -44,7 +46,7 @@ daemon artifact, drains stdout, and requires failure without a new PASS receipt.
 Receipt cleanup retains the persisted file descriptor, including after unlink,
 so a foreign replacement cannot recycle the owned inode before cleanup. Signal
 handlers remain installed through that final cleanup check. These new tests are
-pending CI execution; unchanged original captures above have not been refreshed.
+passed the f19 cloud run; unchanged original captures above have not been refreshed.
 
 The replacement adds explicit compiler (60s), fixture-assets (30s), and private
 worker (90s) ownership bounds; the original compiler/assets calls were unbounded.
@@ -53,13 +55,17 @@ assertions remain intact. Those new safety caps are intentional differences,
 not a claim of equivalence to an unbounded subprocess. Before/after source and
 regular-file executable identities detect bounded replacement, not arbitrary
 ABA mutation. Only genuine absence of this exact retired checker is permitted;
+reappearance fails source admission and final verification.
 all other original inputs remain mandatory, including after deletion. Actual
 live hashes and the historical checker hash are reported separately.
 
-Status: source and tests prepared under the user's cloud-validation workflow.
-Only local formatting/syntax checks are permitted. No current native build,
-new local test pass, or completed retirement is claimed. GitHub Actions must run
-all tests/current seven-mode proof and retain diagnostics before deletion.
+Status: run 39512282992, job 118935976457, passed the old-median behavioral
+RED control, all seven present and absent native modes, both exact
+22-successful-exec audits, same four executable/library hashes, and strict
+Clippy. The accepted evidence ZIP is artifact 12306223105, SHA-256
+249dcaa0ff9c5c82a27c8cbc93bbddf83ecc79f8320546b8e4c4a373576293b1.
+This source deletion and checkout-absent caller change still require a fresh
+GitHub Actions pass; no local build or functional pass is claimed.
 
 Retirement observation prepared from the actual successful sensor/audio job
 118914882870 at checked-out source f60e4ac0a655592aaef659f35cc354b86ffa09a0:
@@ -70,11 +76,12 @@ This small report contains process IDs and monotonic timestamps but no WAV
 capture, credential or native-derived expected value. The reference test seals
 the raw report and compares stable mode/order/status/open-count/packet values;
 each fresh lane independently checks the variable PID, callbacks, median period,
-and actual event trace with the original strict predicates. The original and
-native lanes must remain live in CI until an absent-root run of the same fresh
-native ELF plus an exact child-execution audit passes. The retirement reference
-requires `SOUNDD_NATIVE_ABSENT_EXEC`: it counts all 22 exec attempts, rejects
-unparsed/`execveat` calls, and checks one controller, seven same-ELF private
-workers, seven asset helpers, and seven daemons with linked per-mode temporary
-roots. The fixture alone does
-not prove retirement or authenticate an arbitrary remote artifact at runtime.
+and actual event trace with the original strict predicates. The accepted f19
+job ran the unchanged Python original and both native lanes. After deletion,
+the reference compares the sealed original observation to two fresh native
+runs: the actual checkout root and a copied absent root.
+`SOUNDD_NATIVE_PRESENT_EXEC` and `SOUNDD_NATIVE_ABSENT_EXEC` each require 22
+successful execs, reject unparsed/`execveat` attempts, and check one
+controller, seven same-ELF private workers, seven asset helpers, and seven
+daemons with linked per-mode temporary roots. The fixture alone does not
+authenticate an arbitrary remote artifact at runtime.

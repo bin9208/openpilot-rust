@@ -208,38 +208,3 @@ fn binding_admission_precedes_child_execution_and_clears_stale_success() {
     assert_eq!(peer.calls, 0);
     assert!(!options.output.join("summary.json").exists());
 }
-
-#[test]
-fn actual_daemon_cli_advertises_and_requires_native_fixture_helper_before_effects() {
-    use std::process::Command;
-    // Sensor/audio CI already provides the retained NumPy/capnp/msgq imports.
-    // Local gates explicitly select the existing read-only original venv.
-    let python = std::env::var_os("SOUNDD_DAEMON_PYTHON").unwrap_or_else(|| "python".into());
-    let caller = root().join("rust/tools/check_soundd_daemon.py");
-    let help = Command::new(&python)
-        .arg("-P")
-        .arg(&caller)
-        .arg("--help")
-        .env("PYTHONDONTWRITEBYTECODE", "1")
-        .output()
-        .unwrap();
-    assert!(help.status.success(), "{:?}", help.stderr);
-    let help = String::from_utf8(help.stdout).unwrap();
-    assert!(help.contains("--fixture-assets-binary"));
-    assert!(help.contains("--portaudio-library"));
-    let temporary = tempfile::tempdir().unwrap();
-    let output = temporary.path().join("must-not-be-created");
-    let missing = Command::new(&python)
-        .arg("-P")
-        .arg(caller)
-        .args(["--binary", "/bin/false", "--output"])
-        .arg(&output)
-        .env("PYTHONDONTWRITEBYTECODE", "1")
-        .output()
-        .unwrap();
-    assert_eq!(missing.status.code(), Some(2), "{:?}", missing.stderr);
-    let error = String::from_utf8(missing.stderr).unwrap();
-    assert!(error.contains("--fixture-assets-binary"));
-    assert!(!error.contains("AttributeError"));
-    assert!(!output.exists());
-}

@@ -5,7 +5,7 @@ use serde_json::value::RawValue;
 use sha2::{Digest, Sha256};
 use std::{
     fs::{self, File, Metadata, OpenOptions},
-    io::{Read, Write},
+    io::{self, Read, Write},
     os::unix::fs::MetadataExt,
     path::{Path, PathBuf},
 };
@@ -73,6 +73,82 @@ impl Pin {
             || identity(&self.metadata) != identity(&current.metadata)
         {
             return Err(format!("gesture source identity changed: {}", self.path.display()).into());
+        }
+        Ok(())
+    }
+}
+
+// Only the historical Python generator may be absent. Hold its real parent
+// directory so a missing leaf cannot be confused with a missing/replaced root.
+struct Historical {
+    path: PathBuf,
+    parent_path: PathBuf,
+    parent: File,
+    parent_metadata: Metadata,
+    present: Option<Pin>,
+}
+impl Historical {
+    fn capture(path: PathBuf) -> Result<Self> {
+        let parent_path = path
+            .parent()
+            .ok_or("gesture helper parent missing")?
+            .to_owned();
+        let parent = File::from(rustix::fs::open(
+            &parent_path,
+            rustix::fs::OFlags::RDONLY
+                | rustix::fs::OFlags::DIRECTORY
+                | rustix::fs::OFlags::NOFOLLOW
+                | rustix::fs::OFlags::CLOEXEC,
+            rustix::fs::Mode::empty(),
+        )?);
+        let parent_metadata = parent.metadata()?;
+        let present = match fs::symlink_metadata(&path) {
+            Ok(metadata) if metadata.file_type().is_file() => {
+                Some(Pin::open(path.clone(), HELPER_SHA)?)
+            }
+            Ok(_) => return Err("historical gesture helper is not a regular file".into()),
+            Err(error) if error.kind() == io::ErrorKind::NotFound => None,
+            Err(error) => return Err(error.into()),
+        };
+        Ok(Self {
+            path,
+            parent_path,
+            parent,
+            parent_metadata,
+            present,
+        })
+    }
+    fn verify(&self) -> Result<()> {
+        let current_parent = File::from(rustix::fs::open(
+            &self.parent_path,
+            rustix::fs::OFlags::RDONLY
+                | rustix::fs::OFlags::DIRECTORY
+                | rustix::fs::OFlags::NOFOLLOW
+                | rustix::fs::OFlags::CLOEXEC,
+            rustix::fs::Mode::empty(),
+        )?);
+        if identity(&self.parent_metadata) != identity(&self.parent.metadata()?)
+            || identity(&self.parent_metadata) != identity(&current_parent.metadata()?)
+        {
+            return Err("historical gesture helper parent changed".into());
+        }
+        match &self.present {
+            Some(pin) => {
+                match fs::symlink_metadata(&self.path) {
+                    Ok(metadata) if metadata.file_type().is_file() => {}
+                    Err(error) if error.kind() == io::ErrorKind::NotFound => {
+                        return Err("historical gesture helper presence changed".into());
+                    }
+                    Ok(_) => return Err("historical gesture helper file type changed".into()),
+                    Err(error) => return Err(error.into()),
+                }
+                pin.verify()?;
+            }
+            None => match fs::symlink_metadata(&self.path) {
+                Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+                Err(error) => return Err(error.into()),
+                Ok(_) => return Err("historical gesture helper reappeared".into()),
+            },
         }
         Ok(())
     }
@@ -365,7 +441,7 @@ fn render(recorded: &[Operation]) -> Result<String> {
     Ok(output)
 }
 pub fn generate(root: &Path) -> Result<String> {
-    let helper = Pin::open(root.join(HELPER), HELPER_SHA)?;
+    let helper = Historical::capture(root.join(HELPER))?;
     let recording = Pin::open(root.join(RECORDING), RECORDING_SHA)?;
     let output = render(&self::recording(&recording.bytes)?)?;
     helper.verify()?;
@@ -373,7 +449,7 @@ pub fn generate(root: &Path) -> Result<String> {
     Ok(output)
 }
 pub fn write(root: &Path, output: &Path) -> Result<()> {
-    let helper = Pin::open(root.join(HELPER), HELPER_SHA)?;
+    let helper = Historical::capture(root.join(HELPER))?;
     let recording = Pin::open(root.join(RECORDING), RECORDING_SHA)?;
     let text = render(&self::recording(&recording.bytes)?)?;
     helper.verify()?;

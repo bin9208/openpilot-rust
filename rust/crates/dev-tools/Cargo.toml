@@ -1724,3 +1724,11 @@ required-features = ["paramsd-daemon-native"]
 [[test]]
 name = "bluetooth_journal_reference"
 required-features = ["bluetooth-journal-native"]
+
+[[test]]
+name = "bluetooth_gesture_cases_retirement"
+required-features = ["bluetooth-gesture-cases-native"]
+
+[[test]]
+name = "bluetooth_config_reference"
+required-features = ["bluetooth-config-native"]

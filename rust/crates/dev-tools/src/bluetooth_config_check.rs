@@ -97,9 +97,74 @@ impl Bound {
         Ok(())
     }
 }
+struct Historical {
+    path: PathBuf,
+    parent: PathBuf,
+    directory: File,
+    device: u64,
+    inode: u64,
+    present: Option<Bound>,
+}
+impl Historical {
+    fn open(root: &Path) -> Result<Self> {
+        let path = root.join(SOURCES[0].0);
+        let parent = path
+            .parent()
+            .ok_or("config checker parent missing")?
+            .to_owned();
+        let directory = File::from(rustix::fs::open(
+            &parent,
+            rustix::fs::OFlags::RDONLY
+                | rustix::fs::OFlags::DIRECTORY
+                | rustix::fs::OFlags::NOFOLLOW
+                | rustix::fs::OFlags::CLOEXEC,
+            rustix::fs::Mode::empty(),
+        )?);
+        let metadata = directory.metadata()?;
+        let present = match fs::symlink_metadata(&path) {
+            Ok(entry) if entry.file_type().is_file() => {
+                let bound = Bound::open(&path)?;
+                if bound.hash != SOURCES[0].1 {
+                    return Err("Bluetooth config historical checker changed".into());
+                }
+                Some(bound)
+            }
+            Ok(_) => return Err("Bluetooth config historical checker is not regular".into()),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+            Err(error) => return Err(error.into()),
+        };
+        let historical = Self {
+            path,
+            parent,
+            directory,
+            device: metadata.dev(),
+            inode: metadata.ino(),
+            present,
+        };
+        historical.verify()?;
+        Ok(historical)
+    }
+    fn verify(&self) -> Result<()> {
+        let held = self.directory.metadata()?;
+        let current = fs::symlink_metadata(&self.parent)?;
+        if !held.is_dir()
+            || !current.is_dir()
+            || (held.dev(), held.ino()) != (self.device, self.inode)
+            || (current.dev(), current.ino()) != (self.device, self.inode)
+        {
+            return Err("Bluetooth config historical checker parent changed".into());
+        }
+        match (&self.present, fs::symlink_metadata(&self.path)) {
+            (Some(bound), Ok(entry)) if entry.file_type().is_file() => bound.verify(),
+            (None, Err(error)) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            _ => Err("Bluetooth config historical checker changed presence".into()),
+        }
+    }
+}
 fn sources(root: &Path) -> Result<Vec<Bound>> {
     SOURCES
         .iter()
+        .skip(1)
         .map(|(name, expected)| {
             let bound = Bound::open(&root.join(name))?;
             if bound.hash != *expected {
@@ -109,13 +174,14 @@ fn sources(root: &Path) -> Result<Vec<Bound>> {
         })
         .collect()
 }
-fn verify(inputs: &[Bound], stop: &AtomicBool) -> Result<()> {
+fn verify(inputs: &[Bound], historical: &Historical, stop: &AtomicBool) -> Result<()> {
     if stop.load(Ordering::SeqCst) {
         return Err("Bluetooth config comparison interrupted".into());
     }
     for input in inputs {
         input.verify()?;
     }
+    historical.verify()?;
     Ok(())
 }
 fn lines(text: &str) -> Vec<&str> {
@@ -170,15 +236,16 @@ struct PendingReceipt {
     path: PathBuf,
     file: tempfile::NamedTempFile,
     inputs: Vec<Bound>,
+    historical: Historical,
 }
 impl PendingReceipt {
     fn commit(self, stop: &AtomicBool) -> Result<()> {
-        verify(&self.inputs, stop)?;
+        verify(&self.inputs, &self.historical, stop)?;
         let held = self
             .file
             .persist_noclobber(&self.path)
             .map_err(|e| e.error)?;
-        let result = verify(&self.inputs, stop);
+        let result = verify(&self.inputs, &self.historical, stop);
         if result.is_err()
             && held.metadata().is_ok_and(|m| {
                 fs::symlink_metadata(&self.path)
@@ -205,7 +272,7 @@ fn finish(
     printed: &mut dyn Write,
     stop: &AtomicBool,
 ) -> Result<Value> {
-    verify(&pending.inputs, stop)?;
+    verify(&pending.inputs, &pending.historical, stop)?;
     writeln!(printed, "{}", serde_json::to_string(&report)?)?;
     printed.flush()?;
     pending.commit(stop)?;
@@ -216,8 +283,9 @@ fn run_inner(
     runner: &mut dyn Runner,
     stop: &AtomicBool,
 ) -> Result<(Value, PendingReceipt)> {
+    let historical = Historical::open(&options.root)?;
     let mut bound = sources(&options.root)?;
-    verify(&bound, stop)?;
+    verify(&bound, &historical, stop)?;
     if let Some(parent) = options
         .output
         .parent()
@@ -253,7 +321,7 @@ fn run_inner(
     command.input = Some(input.into_bytes());
     command.stdout_limit = usize::MAX;
     command.stderr_limit = usize::MAX;
-    verify(&bound, stop)?;
+    verify(&bound, &historical, stop)?;
     let Captured {
         code,
         stdout,
@@ -283,20 +351,21 @@ fn run_inner(
     let binary_sha = artifact.hash.clone();
     bound.push(artifact);
     bound.push(alias);
-    verify(&bound, stop)?;
+    verify(&bound, &historical, stop)?;
     let report = value!({"cases": rows.len(), "accepted": expected.iter().filter(|v| v.get("error").is_none()).count(), "source_sha256": SOURCES[1].1, "binary_sha256": binary_sha,
         "input_sha256": digest(&fs::read(options.output.join("input.jsonl"))?), "original_sha256": digest(reference.as_bytes())});
-    verify(&bound, stop)?;
+    verify(&bound, &historical, stop)?;
     let receipt = options.output.join("result.json");
     let mut pending = tempfile::NamedTempFile::new_in(&options.output)?;
     pending.write_all(serde_json::to_string_pretty(&report)?.as_bytes())?;
-    verify(&bound, stop)?;
+    verify(&bound, &historical, stop)?;
     Ok((
         report,
         PendingReceipt {
             path: receipt,
             file: pending,
             inputs: bound,
+            historical,
         },
     ))
 }

@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 454);
+    assert_eq!(text.matches(marker).count(), 458);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -310,9 +310,11 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut bluetooth_journal_absence = vec![];
     let mut bluetooth_files_controller = vec![];
     let mut bluetooth_config_controller = vec![];
+    let mut bluetooth_config_absence = vec![];
     let mut bluetooth_bluez_policy_controller = vec![];
     let mut bluetooth_enumerate_controller = vec![];
     let mut bluetooth_gesture_cases = vec![];
+    let mut bluetooth_gesture_absence = vec![];
     let mut bluetooth_sudo_fixture = vec![];
     let mut messaging_update_allocation = vec![];
     let mut eigen_staging = vec![];
@@ -331,7 +333,9 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
         if let Some((_, tail)) = line.split_once(marker) {
             if i + 1 < lines.len()
                 && (lines[i + 1].contains("--features bluetooth-config-native")
-                    || lines[i + 1].contains("rust/target/debug/check-bluetooth-config --binary"))
+                    || lines[i + 1].contains(
+                        "proof=\"$RUNNER_TEMP/ui-connectivity/bluetooth-config-present\"",
+                    ))
             {
                 bluetooth_config_controller.push(tail.to_owned());
                 continue;
@@ -340,6 +344,15 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 .iter()
                 .rev()
                 .find(|line| line.starts_with("      - name:"));
+            if step == Some(&"      - name: Require Bluetooth gesture generator source absence and native callers") {
+                bluetooth_gesture_absence.push(tail.to_owned());
+                continue;
+            }
+            if step == Some(&"      - name: Require Bluetooth config same-ELF source absence proof")
+            {
+                bluetooth_config_absence.push(tail.to_owned());
+                continue;
+            }
             if step
                 == Some(&"      - name: Require Bluetooth journal same-ELF source absence proof")
             {
@@ -1089,6 +1102,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     assert_eq!(
+        bluetooth_gesture_absence,
+        [128, 512].map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
         bluetooth_gesture_cases,
         [512, 512, 512, 128]
             .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
@@ -1102,6 +1119,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
         bluetooth_bluez_policy_controller,
         [512, 512, 512, 512, 128, 128, 128]
             .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        bluetooth_config_absence,
+        [128, 512].map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     assert_eq!(
         bluetooth_config_controller,

@@ -248,7 +248,7 @@ fn validate(workflow: &Value) -> Result<(), String> {
     }
     for line in [OLD_EIGEN_INSTALL, OLD_EIGEN_IMPORT] {
         require(
-            current.get(line).is_none(),
+            !current.contains_key(line),
             "retired Eigen pip/import caller reappeared",
         )?;
     }

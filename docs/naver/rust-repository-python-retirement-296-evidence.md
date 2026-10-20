@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. The current source inventory has 213 replaced-local entries,
-three partial entries and 3,364 pending entries. `replaced-local` does not mean merged,
+SCons entrypoints. The current source inventory has 214 replaced-local entries,
+three partial entries and 3,363 pending entries. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -4876,3 +4876,30 @@ from actual artifact12304713010 and requires fresh original plus native
 present/absent lanes, exact two-executable argv audits and ELF hashes. Its Python
 checker stays present until that actual proof passes. These pending preparations
 are not additional retired inventory entries.
+
+
+### Soundd absence accepted; historical caller retired
+
+At exact source`f19ef5ad4cb56b9a7bace81fdeb34b6325e704eb`,
+[job118935976457](https://github.com/bin9208/openpilot-rust/actions/runs/39512282992/job/118935976457)
+passed the intended old-parser summary-bit RED, repaired exact regression,
+complete original/native-present/native-absent seven-mode reference and strict
+Clippy. Parent reviewed artifact12306223105, ZIP SHA256
+`249dcaa0ff9c5c82a27c8cbc93bbddf83ecc79f8320546b8e4c4a373576293b1`.
+Both native lanes executed exactly22successful native programs with identical
+four ELF/library hashes; source maps differ only by the historical checker
+(21present/20absent), and all raw event checks/expected exits/open counts passed.
+`rust/tools/check_soundd_daemon.py` is now removed. The following mandatory
+post-deletion gate uses its sealed independent original observation, all seven
+fresh native modes from the checkout and20-source copied root, both execution
+audits and exact parser regression. Reappearance is rejected. This newer gate
+is pending exact-source cloud validation; physical audio remains untested.
+Inventory is214replaced-local /3partial /3,363pending.
+
+The latest full PR source a993 also exposed two validation maintenance failures:
+workspace module-declaration formatting and a strictClippy `get().is_none()`
+in lagd_ci. These are corrected without changing the validated estimator.
+Panda passed its earlier source comparisons, then its known baseline finalization
+RED was followed by a missing hosted`rg` executable. Those three literal checks
+now use`grep -Fq`, retaining exact assertion/exit requirements. This failure
+was not a new #432 timestamp reproduction or a fixed #432 root cause.

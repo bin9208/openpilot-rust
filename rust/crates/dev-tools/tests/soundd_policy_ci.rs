@@ -25,15 +25,3 @@ fn sensor_audio_builds_and_tests_native_policy_and_assets_before_comparisons() {
             < region.find("debug/check-soundd-policy\" --binary").unwrap()
     );
 }
-#[test]
-fn daemon_caller_uses_native_fixture_helper_and_retains_all_seven_scenarios() {
-    let caller = include_str!("../../../tools/check_soundd_daemon.py");
-    assert!(!caller.contains("from check_soundd import"));
-    assert!(caller.contains("--fixture-assets-binary"));
-    assert!(caller.contains(
-        "subprocess.run([str(fixture_assets_binary), str(root), '48000', '1'], check=True)"
-    ));
-    assert!(caller.contains(
-        "['live', 'bounded', 'retry', 'inactive', 'start-failed', 'stop-retry', 'exhausted']"
-    ));
-}

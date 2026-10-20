@@ -210,8 +210,6 @@ pub mod version_source;
 #[cfg(feature = "eigen-tools-native")]
 pub mod eigen_stage;
 pub mod elf_audit;
-#[cfg(feature = "paramsd-startup-gate-native")]
-pub mod paramsd_startup_gate;
 #[cfg(feature = "encoder-runtime-native")]
 pub mod encoder_ci_check;
 #[cfg(feature = "camera-sensor-native")]
@@ -229,6 +227,9 @@ pub mod encoder_stage;
 pub mod encoder_target_check;
 #[cfg(feature = "camera-sensor-native")]
 pub mod encoder_v4l_check;
+
+#[cfg(feature = "paramsd-startup-gate-native")]
+pub mod paramsd_startup_gate;
 
 pub mod ffmpeg_build;
 pub mod hardware_command_check;

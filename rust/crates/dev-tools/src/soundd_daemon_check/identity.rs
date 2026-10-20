@@ -110,8 +110,14 @@ pub fn validate_source(root: &Path) -> Result<Value> {
     let mut live = serde_json::Map::new();
     for &(name, expected) in PINS {
         let path = root.join(name);
+        if name == RETIRED {
+            match fs::symlink_metadata(&path) {
+                Err(error) if error.kind() == io::ErrorKind::NotFound => continue,
+                Ok(_) => return Err("retired soundd Python checker reappeared".into()),
+                Err(error) => return Err(error.into()),
+            }
+        }
         match fs::symlink_metadata(&path) {
-            Err(e) if e.kind() == io::ErrorKind::NotFound && name == RETIRED => continue,
             Err(e) => return Err(e.into()),
             Ok(_) => {}
         }

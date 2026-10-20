@@ -1,0 +1,22 @@
+{
+  "source": "unchanged Python 3.12 check_bluetooth_config.py",
+  "source_sha256": "a8f85f1076773e1e5938e66064e3bb1cd0ea060d7d60df528365108fbcd2d679",
+  "workflow_run": "https://github.com/bin9208/openpilot-rust/actions/runs/39507901490",
+  "job_id": 118921359333,
+  "artifact_id": 12304713010,
+  "artifact_url": "https://github.com/bin9208/openpilot-rust/actions/runs/39507901490/artifacts/12304713010",
+  "checked_out_source": "9845db2db390bc904401a3794b723b510e3bef84",
+  "workflow_head_sha": "6b1f6bb015cc9497237beb39fb56c5e7a37b274c",
+  "artifact_zip_sha256": "a482e760a8aa8ba41d6c29cf16e029915e48ef654be2a6c5fd778c416ad082a3",
+  "original_zip_members": {
+    "input.jsonl": "bluetooth-config-original/python-input.jsonl",
+    "original.jsonl": "bluetooth-config-original/python-original.jsonl",
+    "result.json": "bluetooth-config-original/python-result.json"
+  },
+  "original_sha256": {
+    "input.jsonl": "26af3364d60611668ea429ec9d3e0eb73506f0fcd3b6c444e6c156fcb0d1638e",
+    "original.jsonl": "0f0c272b477322b200664232afa4d1886c7d25b142c78ba2b5be6b3cac728b97",
+    "result.json": "3fba79c8319615ab106b92b9064e90097d2956184bec00ffa41f2a853606d74f"
+  },
+  "candidate_executed_for_expectations": false
+}

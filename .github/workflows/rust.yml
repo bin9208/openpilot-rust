@@ -1348,9 +1348,9 @@ jobs:
           status=${PIPESTATUS[0]}
           set -e
           test "$status" -eq 101
-          rg -q 'test result: FAILED' "$proof/baseline.log"
-          rg -q 'post_execute_native_mutation_must_fail_finish_and_remove_owned_report' "$proof/baseline.log"
-          rg -q 'successful finalization accepted a mutated private native probe after execute returned' "$proof/baseline.log"
+          grep -Fq 'test result: FAILED' "$proof/baseline.log"
+          grep -Fq 'post_execute_native_mutation_must_fail_finish_and_remove_owned_report' "$proof/baseline.log"
+          grep -Fq 'successful finalization accepted a mutated private native probe after execute returned' "$proof/baseline.log"
       - name: Compare native Panda safety padding controller with unchanged original
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
@@ -2960,12 +2960,12 @@ jobs:
       - name: Compare alert samples and continuous native playback
         run: |
           "$PWD/rust/target/debug/check-soundd-policy" --binary "$PWD/rust/target/debug/examples/sound_trace" --binding "$RUNNER_TEMP"/sensor-params-binding/params_pyx*.so --output "$RUNNER_TEMP/sensor-audio/soundd-source"
-          python rust/tools/check_soundd_daemon.py --binary "$PWD/rust/target/debug/openpilot-soundd" --output "$RUNNER_TEMP/sensor-audio/soundd-daemon" --fixture-assets-binary "$PWD/rust/target/debug/create-soundd-fixture-assets" --portaudio-library "$RUNNER_TEMP/owned-soundd-portaudio.so"
       - name: Require sound daemon same-ELF present and absent execution proof
         run: |
           set -euo pipefail
+          test ! -e rust/tools/check_soundd_daemon.py
+          test ! -L rust/tools/check_soundd_daemon.py
           proof="$RUNNER_TEMP/sensor-audio/soundd-retirement"
-          export SOUNDD_ORIGINAL_OUTPUT="$RUNNER_TEMP/sensor-audio/soundd-daemon"
           export SOUNDD_NATIVE_PRESENT_OUTPUT="$proof/present"
           export SOUNDD_NATIVE_ABSENT_OUTPUT="$proof/absent"
           export SOUNDD_NATIVE_PRESENT_ROOT="$GITHUB_WORKSPACE"
@@ -2976,7 +2976,6 @@ jobs:
           mkdir -p "$proof"
           git rev-parse HEAD > "$proof/SOURCE_COMMIT"
           sha256sum "$SOUNDD_DAEMON_BINARY" "$SOUNDD_DAEMON_WORKER_BINARY" "$SOUNDD_FIXTURE_ASSETS_BINARY" "$SOUNDD_PORTAUDIO_LIBRARY" > "$proof/executables.sha256"
-          find "$SOUNDD_ORIGINAL_OUTPUT" -type f -print0 | sort -z | xargs -0 sha256sum > "$proof/original-output.sha256"
           # Stage only the exact retained source identities; do not copy the retired checker.
           python - <<'STAGE'
           import hashlib, json, os
@@ -2986,12 +2985,14 @@ jobs:
           pins = json.loads((root / 'rust/crates/dev-tools/tests/fixtures/soundd-daemon/manifest.json').read_text())['source_sha256']
           assert len(pins) == 21
           for name, digest in pins.items():
+            if name == 'rust/tools/check_soundd_daemon.py':
+              assert not (root / name).exists() and not (root / name).is_symlink()
+              continue
             data = (root / name).read_bytes()
             assert hashlib.sha256(data).hexdigest() == digest, name
-            if name != 'rust/tools/check_soundd_daemon.py':
-              path = absent / name
-              path.parent.mkdir(parents=True, exist_ok=True)
-              path.write_bytes(data)
+            path = absent / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(data)
           assert len([p for p in absent.rglob('*') if p.is_file()]) == 20
           STAGE
           test ! -e "$SOUNDD_NATIVE_ABSENT_ROOT/rust/tools/check_soundd_daemon.py"
@@ -3003,7 +3004,6 @@ jobs:
             OPENPILOT_RUST_ROOT="${!root_var}" PATH=/nonexistent /usr/bin/timeout --signal=TERM --kill-after=5s 180s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "${!exec_var}" "$SOUNDD_DAEMON_WORKER_BINARY" --binary "$SOUNDD_DAEMON_BINARY" --output "${!output_var}" --fixture-assets-binary "$SOUNDD_FIXTURE_ASSETS_BINARY" --portaudio-library "$SOUNDD_PORTAUDIO_LIBRARY" > "$proof/$lane.stdout" 2> "$proof/$lane.stderr"
           done
           sha256sum -c "$proof/executables.sha256"
-          sha256sum -c "$proof/original-output.sha256"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --test soundd_daemon_retirement --locked -- --nocapture
       - name: Check PortAudio callback ownership with Miri
@@ -3637,17 +3637,55 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-gesture-cases-native --test bluetooth_gesture_cases_generate --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-gesture-cases-native --lib --bin generate-bluetooth-gesture-cases --test bluetooth_gesture_cases_generate --locked -- -D warnings
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-gesture-cases-native --lib --bin generate-bluetooth-gesture-cases --test bluetooth_gesture_cases_generate --test bluetooth_gesture_cases_retirement --locked -- -D warnings
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           mkdir -p "$proof"
           sha256sum "$candidate" rust/target/debug/generate-bluetooth-gesture-cases rust/tools/check_bluetooth_gestures.py rust/tools/bluetooth_gesture_cases.py openpilot/selfdrive/carrot/bluetooth/model.py openpilot/selfdrive/carrot/bluetooth/tests/yiser_j6.json > "$proof/artifacts.sha256"
-          timeout --kill-after=5s 120s python rust/tools/check_bluetooth_gestures.py --binary "$candidate" --output "$proof/original" > "$proof/original.stdout" 2> "$proof/original.stderr"
-          timeout --kill-after=5s 30s rust/target/debug/generate-bluetooth-gesture-cases --root "$GITHUB_WORKSPACE" --output "$proof/native-input.jsonl" > "$proof/generator.stdout" 2> "$proof/generator.stderr"
+          timeout --kill-after=5s 30s python - "$GITHUB_WORKSPACE" > "$proof/original-input.jsonl" <<'ORIGINAL'
+          from dataclasses import asdict
+          import json, sys
+          from pathlib import Path
+          from bluetooth_gesture_cases import cases
+          for case in cases(Path(sys.argv[1])):
+            print(json.dumps(asdict(case)))
+          ORIGINAL
+          timeout --kill-after=5s 120s python rust/tools/check_bluetooth_gestures.py --binary "$candidate" --input "$proof/original-input.jsonl" --output "$proof/original" > "$proof/original.stdout" 2> "$proof/original.stderr"
+          PATH=/nonexistent /usr/bin/timeout --kill-after=5s 30s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "$proof/generator.exec" "$GITHUB_WORKSPACE/rust/target/debug/generate-bluetooth-gesture-cases" --root "$GITHUB_WORKSPACE" --output "$proof/native-input.jsonl" > "$proof/generator.stdout" 2> "$proof/generator.stderr"
           cmp "$proof/original/input.jsonl" "$proof/native-input.jsonl"
           timeout --kill-after=5s 65s "$candidate" < "$proof/native-input.jsonl" > "$proof/native-result.jsonl" 2> "$proof/native-result.stderr"
           cmp "$proof/original/native.jsonl" "$proof/native-result.jsonl"
           cmp "$proof/original/native.stderr" "$proof/native-result.stderr"
           sha256sum -c "$proof/artifacts.sha256"
+      - name: Require Bluetooth gesture generator source absence and native callers
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/ui-connectivity/bluetooth-gesture-cases"
+          export BLUETOOTH_GESTURE_ORIGINAL_OUTPUT="$proof/original"
+          export BLUETOOTH_GESTURE_ABSENT_CHECK_OUTPUT="$proof/absent-check"
+          export BLUETOOTH_GESTURE_PRESENT_ROOT="$GITHUB_WORKSPACE"
+          export BLUETOOTH_GESTURE_ABSENT_ROOT="$proof/absent-root"
+          export BLUETOOTH_GESTURE_PRESENT_INPUT="$proof/native-input.jsonl"
+          export BLUETOOTH_GESTURE_ABSENT_INPUT="$proof/absent-input.jsonl"
+          export BLUETOOTH_GESTURE_GENERATOR_BINARY="$GITHUB_WORKSPACE/rust/target/debug/generate-bluetooth-gesture-cases"
+          export BLUETOOTH_GESTURE_CANDIDATE_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/gesture_fixture"
+          export BLUETOOTH_GESTURE_PRESENT_EXEC="$proof/generator.exec"
+          export BLUETOOTH_GESTURE_ABSENT_EXEC="$proof/absent-generator.exec"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          mkdir -p "$BLUETOOTH_GESTURE_ABSENT_ROOT"
+          for source in rust/tools/check_bluetooth_gestures.py openpilot/__init__.py openpilot/selfdrive/__init__.py openpilot/selfdrive/carrot/bluetooth/__init__.py openpilot/selfdrive/carrot/bluetooth/model.py openpilot/selfdrive/carrot/bluetooth/tests/yiser_j6.json; do
+            cp --parents -- "$source" "$BLUETOOTH_GESTURE_ABSENT_ROOT"
+            cmp "$source" "$BLUETOOTH_GESTURE_ABSENT_ROOT/$source"
+          done
+          test ! -e "$BLUETOOTH_GESTURE_ABSENT_ROOT/rust/tools/bluetooth_gesture_cases.py"
+          test ! -L "$BLUETOOTH_GESTURE_ABSENT_ROOT/rust/tools/bluetooth_gesture_cases.py"
+          find "$proof/original" -type f -print0 | sort -z | xargs -0 sha256sum > "$proof/original-output.sha256"
+          PATH=/nonexistent /usr/bin/timeout --kill-after=5s 30s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "$BLUETOOTH_GESTURE_ABSENT_EXEC" "$BLUETOOTH_GESTURE_GENERATOR_BINARY" --root "$BLUETOOTH_GESTURE_ABSENT_ROOT" --output "$BLUETOOTH_GESTURE_ABSENT_INPUT" > "$proof/absent-generator.stdout" 2> "$proof/absent-generator.stderr"
+          interpreter="$(readlink -f "$(command -v python)")"
+          (cd "$BLUETOOTH_GESTURE_ABSENT_ROOT" && PYTHONPATH="$BLUETOOTH_GESTURE_ABSENT_ROOT" PYTHONDONTWRITEBYTECODE=1 /usr/bin/timeout --kill-after=5s 120s "$interpreter" rust/tools/check_bluetooth_gestures.py --binary "$BLUETOOTH_GESTURE_CANDIDATE_BINARY" --input "$BLUETOOTH_GESTURE_ABSENT_INPUT" --output "$BLUETOOTH_GESTURE_ABSENT_CHECK_OUTPUT") > "$proof/absent-check.stdout" 2> "$proof/absent-check.stderr"
+          sha256sum -c "$proof/artifacts.sha256"
+          sha256sum -c "$proof/original-output.sha256"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-gesture-cases-native --test bluetooth_gesture_cases_retirement --locked -- --nocapture
       - name: Compare native Bluetooth config controller with unchanged original
         run: |
           set -euo pipefail
@@ -3660,9 +3698,41 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-config-native --test bluetooth_config_check --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-config-native --lib --bin check-bluetooth-config --test bluetooth_config_check --locked -- -D warnings
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-config-native --lib --bin check-bluetooth-config --test bluetooth_config_check --test bluetooth_config_reference --locked -- -D warnings
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
-          rust/target/debug/check-bluetooth-config --binary "$BLUETOOTH_CONFIG_FIXTURE" --output "$RUNNER_TEMP/ui-connectivity/bluetooth-config-current"
+          proof="$RUNNER_TEMP/ui-connectivity/bluetooth-config-present"
+          mkdir -p "$proof"
+          sha256sum "$GITHUB_WORKSPACE/rust/target/debug/check-bluetooth-config" "$BLUETOOTH_CONFIG_FIXTURE" "$GITHUB_WORKSPACE/openpilot/selfdrive/carrot/bluetooth/model.py" > "$proof/artifacts.sha256"
+          PATH=/nonexistent /usr/bin/timeout --kill-after=5s 35s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "$proof/native.exec" "$GITHUB_WORKSPACE/rust/target/debug/check-bluetooth-config" --binary "$BLUETOOTH_CONFIG_FIXTURE" --output "$RUNNER_TEMP/ui-connectivity/bluetooth-config-current" > "$proof/native.stdout" 2> "$proof/native.stderr"
+      - name: Require Bluetooth config same-ELF source absence proof
+        run: |
+          set -euo pipefail
+          export BLUETOOTH_CONFIG_FIXTURE="$GITHUB_WORKSPACE/rust/target/debug/examples/config_fixture"
+          proof="$RUNNER_TEMP/ui-connectivity/bluetooth-config-retirement"
+          export BLUETOOTH_CONFIG_PRESENT_OUTPUT="$RUNNER_TEMP/ui-connectivity/bluetooth-config-current"
+          export BLUETOOTH_CONFIG_ABSENT_OUTPUT="$proof/absent"
+          export BLUETOOTH_CONFIG_ABSENT_ROOT="$proof/absent-root"
+          export BLUETOOTH_CONFIG_CHECKER="$GITHUB_WORKSPACE/rust/target/debug/check-bluetooth-config"
+          export BLUETOOTH_CONFIG_PRESENT_STDOUT="$RUNNER_TEMP/ui-connectivity/bluetooth-config-present/native.stdout"
+          export BLUETOOTH_CONFIG_PRESENT_STDERR="$RUNNER_TEMP/ui-connectivity/bluetooth-config-present/native.stderr"
+          export BLUETOOTH_CONFIG_PRESENT_EXEC="$RUNNER_TEMP/ui-connectivity/bluetooth-config-present/native.exec"
+          export BLUETOOTH_CONFIG_ABSENT_STDOUT="$proof/native.stdout"
+          export BLUETOOTH_CONFIG_ABSENT_STDERR="$proof/native.stderr"
+          export BLUETOOTH_CONFIG_ABSENT_EXEC="$proof/native.exec"
+          export BLUETOOTH_CONFIG_ARTIFACTS_SHA256="$RUNNER_TEMP/ui-connectivity/bluetooth-config-present/artifacts.sha256"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          mkdir -p "$BLUETOOTH_CONFIG_ABSENT_ROOT/rust/tools"
+          for source in openpilot/selfdrive/carrot/bluetooth/model.py rust/crates/bluetooth/examples/config_fixture.rs; do
+            cp --parents -- "$source" "$BLUETOOTH_CONFIG_ABSENT_ROOT"
+            cmp "$source" "$BLUETOOTH_CONFIG_ABSENT_ROOT/$source"
+          done
+          test ! -e "$BLUETOOTH_CONFIG_ABSENT_ROOT/rust/tools/check_bluetooth_config.py"
+          test ! -L "$BLUETOOTH_CONFIG_ABSENT_ROOT/rust/tools/check_bluetooth_config.py"
+          sha256sum -c "$BLUETOOTH_CONFIG_ARTIFACTS_SHA256"
+          OPENPILOT_RUST_ROOT="$BLUETOOTH_CONFIG_ABSENT_ROOT" PATH=/nonexistent /usr/bin/timeout --kill-after=5s 35s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "$BLUETOOTH_CONFIG_ABSENT_EXEC" "$BLUETOOTH_CONFIG_CHECKER" --binary "$BLUETOOTH_CONFIG_FIXTURE" --output "$BLUETOOTH_CONFIG_ABSENT_OUTPUT" > "$BLUETOOTH_CONFIG_ABSENT_STDOUT" 2> "$BLUETOOTH_CONFIG_ABSENT_STDERR"
+          sha256sum -c "$BLUETOOTH_CONFIG_ARTIFACTS_SHA256"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-config-native --test bluetooth_config_reference --locked -- --nocapture
       - name: Require native Bluetooth file controller with sealed original observations
         run: |
           set -euo pipefail
@@ -3701,6 +3771,7 @@ jobs:
       - name: Require Bluetooth journal same-ELF source absence proof
         run: |
           set -euo pipefail
+          export BLUETOOTH_JOURNAL_FIXTURE="$GITHUB_WORKSPACE/rust/target/debug/examples/journal_fixture"
           proof="$RUNNER_TEMP/ui-connectivity/bluetooth-journal-retirement"
           export BLUETOOTH_JOURNAL_ORIGINAL_OUTPUT="$proof/original"
           export BLUETOOTH_JOURNAL_PRESENT_OUTPUT="$proof/present"

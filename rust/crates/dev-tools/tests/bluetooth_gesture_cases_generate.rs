@@ -18,7 +18,11 @@ fn copied_root(destination: &Path) {
     ] {
         let target = destination.join(name);
         fs::create_dir_all(target.parent().unwrap()).unwrap();
-        fs::copy(root().join(name), target).unwrap();
+        if root().join(name).is_file() {
+            fs::copy(root().join(name), target).unwrap();
+        } else {
+            assert_eq!(name, "rust/tools/bluetooth_gesture_cases.py");
+        }
     }
 }
 #[derive(Deserialize)]
@@ -182,4 +186,36 @@ fn exclusive_output_and_source_pin_drift() {
     let other = temp.path().join("other.jsonl");
     assert!(generator::write(&private, &other).is_err());
     assert!(!other.exists());
+}
+
+#[test]
+fn exact_historical_helper_absence_keeps_corpus_and_other_sources_strict() {
+    let temp = tempfile::tempdir().unwrap();
+    let private = temp.path().join("source");
+    copied_root(&private);
+    let expected = generator::generate(&private).unwrap();
+    let helper = private.join("rust/tools/bluetooth_gesture_cases.py");
+    if helper.exists() {
+        fs::remove_file(&helper).unwrap();
+    }
+    let absent = generator::generate(&private).unwrap();
+    assert_eq!(absent.as_bytes(), expected.as_bytes());
+    let output = temp.path().join("absent.jsonl");
+    generator::write(&private, &output).unwrap();
+    assert_eq!(fs::read(&output).unwrap(), expected.as_bytes());
+    fs::write(&helper, b"unexpected reappearance").unwrap();
+    assert!(generator::generate(&private).is_err());
+    fs::remove_file(&helper).unwrap();
+    std::os::unix::fs::symlink(
+        root().join("rust/tools/bluetooth_gesture_cases.py"),
+        &helper,
+    )
+    .unwrap();
+    assert!(generator::generate(&private).is_err());
+    fs::remove_file(&helper).unwrap();
+    fs::remove_file(private.join("openpilot/selfdrive/carrot/bluetooth/tests/yiser_j6.json"))
+        .unwrap();
+    assert!(generator::generate(&private).is_err());
+    fs::remove_dir(private.join("rust/tools")).unwrap();
+    assert!(generator::generate(&private).is_err());
 }

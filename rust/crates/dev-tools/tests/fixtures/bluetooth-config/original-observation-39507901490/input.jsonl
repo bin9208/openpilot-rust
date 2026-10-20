@@ -1,0 +1,253 @@
+null
+false
+0
+""
+[]
+{}
+{"devices": null}
+{"devices": []}
+{"devices": {}}
+{"version": -55, "ignored": {"invalid": true}}
+{"devices": {"66:C0:0C:7B:6E:71": null}}
+{"devices": {"66:C0:0C:7B:6E:71": false}}
+{"devices": {"66:C0:0C:7B:6E:71": {}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic"}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "yiser-j6"}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic"}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "yiser-j6"}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "unknown"}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": null}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": 1}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": []}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": {}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "enabled": true}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "enabled": false}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "enabled": 1}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "enabled": 0}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "enabled": null}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "enabled": ""}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "enabled": []}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "enabled": {}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "enabled": "true"}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "name": null}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "name": true}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "name": false}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "name": 100}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "name": -0.0}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "name": Infinity}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "name": -Infinity}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "name": NaN}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "name": 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "name": 1e-07}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "name": 1e+20}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "name": "\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00\ud55c\ud83d\ude00"}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "name": "\ud800x\udfff"}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "name": ["a", null, true, 1e-07]}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "name": {"z": "'\ud55c", "a": false}}}}
+{"devices": {"66:c0:0c:7b:6e:71": {"profile": "generic"}}}
+{"devices": {"\ufb00:aa:bb:cc:dd:ee": {"profile": "generic"}}}
+{"devices": {"AA:BB:CC:DD:EE:FF": {"profile": "generic"}}}
+{"devices": {"A:B:C:D:E:F": {"profile": "generic"}}}
+{"devices": {"66:C0:0C:7B:6E:71\n": {"profile": "generic"}}}
+{"devices": {" 66:C0:0C:7B:6E:71": {"profile": "generic"}}}
+{"devices": {"\ud800": {"profile": "generic"}}}
+{"devices": {"01:02:03:04:05:0G": {"profile": "generic"}}}
+{"devices": {"66:c0:0c:7b:6e:71": {"profile": "generic", "name": "first"}, "00:00:00:00:00:00": {"profile": "generic"}, "66:C0:0C:7B:6E:71": {"profile": "yiser-j6", "name": "last"}}}
+{"devices": {"00:00:00:00:00:00": {"profile": "generic"}, "00:00:00:00:00:01": {"profile": "generic"}, "00:00:00:00:00:02": {"profile": "generic"}, "00:00:00:00:00:03": {"profile": "generic"}, "00:00:00:00:00:04": {"profile": "generic"}, "00:00:00:00:00:05": {"profile": "generic"}, "00:00:00:00:00:06": {"profile": "generic"}, "00:00:00:00:00:07": {"profile": "generic"}, "00:00:00:00:00:08": {"profile": "generic"}, "00:00:00:00:00:09": {"profile": "generic"}, "00:00:00:00:00:0a": {"profile": "generic"}, "00:00:00:00:00:0b": {"profile": "generic"}, "00:00:00:00:00:0c": {"profile": "generic"}, "00:00:00:00:00:0d": {"profile": "generic"}, "00:00:00:00:00:0e": {"profile": "generic"}, "00:00:00:00:00:0f": {"profile": "generic"}}}
+{"devices": {"00:00:00:00:00:00": {"profile": "generic"}, "00:00:00:00:00:01": {"profile": "generic"}, "00:00:00:00:00:02": {"profile": "generic"}, "00:00:00:00:00:03": {"profile": "generic"}, "00:00:00:00:00:04": {"profile": "generic"}, "00:00:00:00:00:05": {"profile": "generic"}, "00:00:00:00:00:06": {"profile": "generic"}, "00:00:00:00:00:07": {"profile": "generic"}, "00:00:00:00:00:08": {"profile": "generic"}, "00:00:00:00:00:09": {"profile": "generic"}, "00:00:00:00:00:0a": {"profile": "generic"}, "00:00:00:00:00:0b": {"profile": "generic"}, "00:00:00:00:00:0c": {"profile": "generic"}, "00:00:00:00:00:0d": {"profile": "generic"}, "00:00:00:00:00:0e": {"profile": "generic"}, "00:00:00:00:00:0f": {"profile": "generic"}, "00:00:00:00:00:10": {"profile": "generic"}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": null}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": []}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": "up"}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": true}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"down": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"down@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"down@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"down@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"down@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"left": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"left@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"left@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"left@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"left@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"right": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"right@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"right@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"right@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"right@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"center": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"center@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"center@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"center@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"center@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"1": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"1@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"1@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"1@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"1@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"2": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"2@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"2@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"2@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"2@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:0": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:0@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:0@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:0@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:0@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:0001": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:0001@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:0001@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:0001@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:0001@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:767": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:767@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:767@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:767@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:767@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:768": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:768@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:768@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:768@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:768@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:9999": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:9999@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:9999@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:9999@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:9999@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:00000": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:00000@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:00000@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:00000@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:00000@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:-1": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:-1@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:-1@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:-1@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:-1@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:\uff11": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:\uff11@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:\uff11@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:\uff11@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:\uff11@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"swipe:x+": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"swipe:x+@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"swipe:x+@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"swipe:x+@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"swipe:x+@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"swipe:x-": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"swipe:x-@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"swipe:x-@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"swipe:x-@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"swipe:x-@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"swipe:y+": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"swipe:y+@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"swipe:y+@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"swipe:y+@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"swipe:y+@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"swipe:y-": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"swipe:y-@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"swipe:y-@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"swipe:y-@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"swipe:y-@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"swipe:z+": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"swipe:z+@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"swipe:z+@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"swipe:z+@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"swipe:z+@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"tap:0:0": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"tap:0:0@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"tap:0:0@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"tap:0:0@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"tap:0:0@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"tap:99999:00000": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"tap:99999:00000@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"tap:99999:00000@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"tap:99999:00000@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"tap:99999:00000@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"tap:100000:0": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"tap:100000:0@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"tap:100000:0@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"tap:100000:0@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"tap:100000:0@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"tap:-1:0": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"tap:-1:0@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"tap:-1:0@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"tap:-1:0@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"tap:-1:0@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"tap:1:2:3": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"tap:1:2:3@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"tap:1:2:3@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"tap:1:2:3@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"tap:1:2:3@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up\n": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up\n@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up\n@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up\n@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up\n@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"\ud800": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"\ud800@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"\ud800@long": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"\ud800@other": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"\ud800@long@double": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up": "none"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:999": "none"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:999": "accelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up": "decelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:999": "decelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up": "gapAdjustCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:999": "gapAdjustCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up": "lfaButton"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:999": "lfaButton"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up": "cancel"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:999": "cancel"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up": "accelCruiseLong"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:999": "accelCruiseLong"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up": "decelCruiseLong"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:999": "decelCruiseLong"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up": "gapAdjustCruiseLong"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:999": "gapAdjustCruiseLong"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up": "lfaButtonLong"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:999": "lfaButtonLong"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up": "cancelLong"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:999": "cancelLong"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up": "laneLeft"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:999": "laneLeft"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up": "laneRight"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:999": "laneRight"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up": "paddleDecel"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:999": "paddleDecel"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up": "carrotCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:999": "carrotCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up": null}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:999": null}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up": false}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:999": false}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up": 1}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:999": 1}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up": []}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:999": []}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up": {}}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:999": {}}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up": "shell"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:999": "shell"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"up": "AccelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:999": "AccelCruise"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:0": "none", "key:1": "none", "key:2": "none", "key:3": "none", "key:4": "none", "key:5": "none", "key:6": "none", "key:7": "none", "key:8": "none", "key:9": "none", "key:10": "none", "key:11": "none", "key:12": "none", "key:13": "none", "key:14": "none", "key:15": "none", "key:16": "none", "key:17": "none", "key:18": "none", "key:19": "none", "key:20": "none", "key:21": "none", "key:22": "none", "key:23": "none", "key:24": "none", "key:25": "none", "key:26": "none", "key:27": "none", "key:28": "none", "key:29": "none", "key:30": "none", "key:31": "none", "key:32": "none", "key:33": "none", "key:34": "none", "key:35": "none", "key:36": "none", "key:37": "none", "key:38": "none", "key:39": "none", "key:40": "none", "key:41": "none", "key:42": "none", "key:43": "none", "key:44": "none", "key:45": "none", "key:46": "none", "key:47": "none", "key:48": "none", "key:49": "none", "key:50": "none", "key:51": "none", "key:52": "none", "key:53": "none", "key:54": "none", "key:55": "none", "key:56": "none", "key:57": "none", "key:58": "none", "key:59": "none", "key:60": "none", "key:61": "none", "key:62": "none"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:0": "none", "key:1": "none", "key:2": "none", "key:3": "none", "key:4": "none", "key:5": "none", "key:6": "none", "key:7": "none", "key:8": "none", "key:9": "none", "key:10": "none", "key:11": "none", "key:12": "none", "key:13": "none", "key:14": "none", "key:15": "none", "key:16": "none", "key:17": "none", "key:18": "none", "key:19": "none", "key:20": "none", "key:21": "none", "key:22": "none", "key:23": "none", "key:24": "none", "key:25": "none", "key:26": "none", "key:27": "none", "key:28": "none", "key:29": "none", "key:30": "none", "key:31": "none", "key:32": "none", "key:33": "none", "key:34": "none", "key:35": "none", "key:36": "none", "key:37": "none", "key:38": "none", "key:39": "none", "key:40": "none", "key:41": "none", "key:42": "none", "key:43": "none", "key:44": "none", "key:45": "none", "key:46": "none", "key:47": "none", "key:48": "none", "key:49": "none", "key:50": "none", "key:51": "none", "key:52": "none", "key:53": "none", "key:54": "none", "key:55": "none", "key:56": "none", "key:57": "none", "key:58": "none", "key:59": "none", "key:60": "none", "key:61": "none", "key:62": "none", "key:63": "none"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:0": "none", "key:1": "none", "key:2": "none", "key:3": "none", "key:4": "none", "key:5": "none", "key:6": "none", "key:7": "none", "key:8": "none", "key:9": "none", "key:10": "none", "key:11": "none", "key:12": "none", "key:13": "none", "key:14": "none", "key:15": "none", "key:16": "none", "key:17": "none", "key:18": "none", "key:19": "none", "key:20": "none", "key:21": "none", "key:22": "none", "key:23": "none", "key:24": "none", "key:25": "none", "key:26": "none", "key:27": "none", "key:28": "none", "key:29": "none", "key:30": "none", "key:31": "none", "key:32": "none", "key:33": "none", "key:34": "none", "key:35": "none", "key:36": "none", "key:37": "none", "key:38": "none", "key:39": "none", "key:40": "none", "key:41": "none", "key:42": "none", "key:43": "none", "key:44": "none", "key:45": "none", "key:46": "none", "key:47": "none", "key:48": "none", "key:49": "none", "key:50": "none", "key:51": "none", "key:52": "none", "key:53": "none", "key:54": "none", "key:55": "none", "key:56": "none", "key:57": "none", "key:58": "none", "key:59": "none", "key:60": "none", "key:61": "none", "key:62": "none", "key:63": "none", "key:64": "none"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:0": "none", "key:0@long": "none", "key:0@double": "none", "key:1": "none", "key:1@long": "none", "key:1@double": "none", "key:2": "none", "key:2@long": "none", "key:2@double": "none", "key:3": "none", "key:3@long": "none", "key:3@double": "none", "key:4": "none", "key:4@long": "none", "key:4@double": "none", "key:5": "none", "key:5@long": "none", "key:5@double": "none", "key:6": "none", "key:6@long": "none", "key:6@double": "none", "key:7": "none", "key:7@long": "none", "key:7@double": "none", "key:8": "none", "key:8@long": "none", "key:8@double": "none", "key:9": "none", "key:9@long": "none", "key:9@double": "none", "key:10": "none", "key:10@long": "none", "key:10@double": "none", "key:11": "none", "key:11@long": "none", "key:11@double": "none", "key:12": "none", "key:12@long": "none", "key:12@double": "none", "key:13": "none", "key:13@long": "none", "key:13@double": "none", "key:14": "none", "key:14@long": "none", "key:14@double": "none", "key:15": "none", "key:15@long": "none", "key:15@double": "none", "key:16": "none", "key:16@long": "none", "key:16@double": "none", "key:17": "none", "key:17@long": "none", "key:17@double": "none", "key:18": "none", "key:18@long": "none", "key:18@double": "none", "key:19": "none", "key:19@long": "none", "key:19@double": "none", "key:20": "none", "key:20@long": "none", "key:20@double": "none", "key:21": "none", "key:21@long": "none", "key:21@double": "none", "key:22": "none", "key:22@long": "none", "key:22@double": "none", "key:23": "none", "key:23@long": "none", "key:23@double": "none", "key:24": "none", "key:24@long": "none", "key:24@double": "none", "key:25": "none", "key:25@long": "none", "key:25@double": "none", "key:26": "none", "key:26@long": "none", "key:26@double": "none", "key:27": "none", "key:27@long": "none", "key:27@double": "none", "key:28": "none", "key:28@long": "none", "key:28@double": "none", "key:29": "none", "key:29@long": "none", "key:29@double": "none", "key:30": "none", "key:30@long": "none", "key:30@double": "none", "key:31": "none", "key:31@long": "none", "key:31@double": "none", "key:32": "none", "key:32@long": "none", "key:32@double": "none", "key:33": "none", "key:33@long": "none", "key:33@double": "none", "key:34": "none", "key:34@long": "none", "key:34@double": "none", "key:35": "none", "key:35@long": "none", "key:35@double": "none", "key:36": "none", "key:36@long": "none", "key:36@double": "none", "key:37": "none", "key:37@long": "none", "key:37@double": "none", "key:38": "none", "key:38@long": "none", "key:38@double": "none", "key:39": "none", "key:39@long": "none", "key:39@double": "none", "key:40": "none", "key:40@long": "none", "key:40@double": "none", "key:41": "none", "key:41@long": "none", "key:41@double": "none", "key:42": "none", "key:42@long": "none", "key:42@double": "none", "key:43": "none", "key:43@long": "none", "key:43@double": "none", "key:44": "none", "key:44@long": "none", "key:44@double": "none", "key:45": "none", "key:45@long": "none", "key:45@double": "none", "key:46": "none", "key:46@long": "none", "key:46@double": "none", "key:47": "none", "key:47@long": "none", "key:47@double": "none", "key:48": "none", "key:48@long": "none", "key:48@double": "none", "key:49": "none", "key:49@long": "none", "key:49@double": "none", "key:50": "none", "key:50@long": "none", "key:50@double": "none", "key:51": "none", "key:51@long": "none", "key:51@double": "none", "key:52": "none", "key:52@long": "none", "key:52@double": "none", "key:53": "none", "key:53@long": "none", "key:53@double": "none", "key:54": "none", "key:54@long": "none", "key:54@double": "none", "key:55": "none", "key:55@long": "none", "key:55@double": "none", "key:56": "none", "key:56@long": "none", "key:56@double": "none", "key:57": "none", "key:57@long": "none", "key:57@double": "none", "key:58": "none", "key:58@long": "none", "key:58@double": "none", "key:59": "none", "key:59@long": "none", "key:59@double": "none", "key:60": "none", "key:60@long": "none", "key:60@double": "none", "key:61": "none", "key:61@long": "none", "key:61@double": "none", "key:62": "none", "key:62@long": "none", "key:62@double": "none", "key:63": "none", "key:63@long": "none", "key:63@double": "none"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:0": "none", "key:0@long": "none", "key:0@double": "none", "key:1": "none", "key:1@long": "none", "key:1@double": "none", "key:2": "none", "key:2@long": "none", "key:2@double": "none", "key:3": "none", "key:3@long": "none", "key:3@double": "none", "key:4": "none", "key:4@long": "none", "key:4@double": "none", "key:5": "none", "key:5@long": "none", "key:5@double": "none", "key:6": "none", "key:6@long": "none", "key:6@double": "none", "key:7": "none", "key:7@long": "none", "key:7@double": "none", "key:8": "none", "key:8@long": "none", "key:8@double": "none", "key:9": "none", "key:9@long": "none", "key:9@double": "none", "key:10": "none", "key:10@long": "none", "key:10@double": "none", "key:11": "none", "key:11@long": "none", "key:11@double": "none", "key:12": "none", "key:12@long": "none", "key:12@double": "none", "key:13": "none", "key:13@long": "none", "key:13@double": "none", "key:14": "none", "key:14@long": "none", "key:14@double": "none", "key:15": "none", "key:15@long": "none", "key:15@double": "none", "key:16": "none", "key:16@long": "none", "key:16@double": "none", "key:17": "none", "key:17@long": "none", "key:17@double": "none", "key:18": "none", "key:18@long": "none", "key:18@double": "none", "key:19": "none", "key:19@long": "none", "key:19@double": "none", "key:20": "none", "key:20@long": "none", "key:20@double": "none", "key:21": "none", "key:21@long": "none", "key:21@double": "none", "key:22": "none", "key:22@long": "none", "key:22@double": "none", "key:23": "none", "key:23@long": "none", "key:23@double": "none", "key:24": "none", "key:24@long": "none", "key:24@double": "none", "key:25": "none", "key:25@long": "none", "key:25@double": "none", "key:26": "none", "key:26@long": "none", "key:26@double": "none", "key:27": "none", "key:27@long": "none", "key:27@double": "none", "key:28": "none", "key:28@long": "none", "key:28@double": "none", "key:29": "none", "key:29@long": "none", "key:29@double": "none", "key:30": "none", "key:30@long": "none", "key:30@double": "none", "key:31": "none", "key:31@long": "none", "key:31@double": "none", "key:32": "none", "key:32@long": "none", "key:32@double": "none", "key:33": "none", "key:33@long": "none", "key:33@double": "none", "key:34": "none", "key:34@long": "none", "key:34@double": "none", "key:35": "none", "key:35@long": "none", "key:35@double": "none", "key:36": "none", "key:36@long": "none", "key:36@double": "none", "key:37": "none", "key:37@long": "none", "key:37@double": "none", "key:38": "none", "key:38@long": "none", "key:38@double": "none", "key:39": "none", "key:39@long": "none", "key:39@double": "none", "key:40": "none", "key:40@long": "none", "key:40@double": "none", "key:41": "none", "key:41@long": "none", "key:41@double": "none", "key:42": "none", "key:42@long": "none", "key:42@double": "none", "key:43": "none", "key:43@long": "none", "key:43@double": "none", "key:44": "none", "key:44@long": "none", "key:44@double": "none", "key:45": "none", "key:45@long": "none", "key:45@double": "none", "key:46": "none", "key:46@long": "none", "key:46@double": "none", "key:47": "none", "key:47@long": "none", "key:47@double": "none", "key:48": "none", "key:48@long": "none", "key:48@double": "none", "key:49": "none", "key:49@long": "none", "key:49@double": "none", "key:50": "none", "key:50@long": "none", "key:50@double": "none", "key:51": "none", "key:51@long": "none", "key:51@double": "none", "key:52": "none", "key:52@long": "none", "key:52@double": "none", "key:53": "none", "key:53@long": "none", "key:53@double": "none", "key:54": "none", "key:54@long": "none", "key:54@double": "none", "key:55": "none", "key:55@long": "none", "key:55@double": "none", "key:56": "none", "key:56@long": "none", "key:56@double": "none", "key:57": "none", "key:57@long": "none", "key:57@double": "none", "key:58": "none", "key:58@long": "none", "key:58@double": "none", "key:59": "none", "key:59@long": "none", "key:59@double": "none", "key:60": "none", "key:60@long": "none", "key:60@double": "none", "key:61": "none", "key:61@long": "none", "key:61@double": "none", "key:62": "none", "key:62@long": "none", "key:62@double": "none", "key:63": "none", "key:63@long": "none", "key:63@double": "none", "up": "none"}}}}
+{"devices": {"66:C0:0C:7B:6E:71": {"profile": "generic", "mapping": {"key:0": "none", "key:1": "none", "key:2": "none", "key:3": "none", "key:4": "none", "key:5": "none", "key:6": "none", "key:7": "none", "key:8": "none", "key:9": "none", "key:10": "none", "key:11": "none", "key:12": "none", "key:13": "none", "key:14": "none", "key:15": "none", "key:16": "none", "key:17": "none", "key:18": "none", "key:19": "none", "key:20": "none", "key:21": "none", "key:22": "none", "key:23": "none", "key:24": "none", "key:25": "none", "key:26": "none", "key:27": "none", "key:28": "none", "key:29": "none", "key:30": "none", "key:31": "none", "key:32": "none", "key:33": "none", "key:34": "none", "key:35": "none", "key:36": "none", "key:37": "none", "key:38": "none", "key:39": "none", "key:40": "none", "key:41": "none", "key:42": "none", "key:43": "none", "key:44": "none", "key:45": "none", "key:46": "none", "key:47": "none", "key:48": "none", "key:49": "none", "key:50": "none", "key:51": "none", "key:52": "none", "key:53": "none", "key:54": "none", "key:55": "none", "key:56": "none", "key:57": "none", "key:58": "none", "key:59": "none", "key:60": "none", "key:61": "none", "key:62": "none", "key:63": "none", "key:64": "none", "\ud800": "none"}}}}

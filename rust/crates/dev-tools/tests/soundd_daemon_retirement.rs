@@ -213,7 +213,7 @@ fn audit_native_exec(output: &Path, trace_path: &Path) {
 }
 
 #[test]
-fn actual_original_present_and_absent_reports_match_sealed_observation() {
+fn sealed_original_and_checkout_absent_reports_match_all_seven_modes() {
     let captured = include_bytes!("fixtures/soundd-daemon/original-seven-f60.json");
     assert_eq!(format!("{:x}", Sha256::digest(captured)), REPORT_SHA);
     let provenance_bytes =
@@ -228,24 +228,26 @@ fn actual_original_present_and_absent_reports_match_sealed_observation() {
     assert_eq!(provenance["original_checker_sha256"], ORIGINAL_SHA);
     let captured: Value = serde_json::from_slice(captured).unwrap();
     let expected = stable(&captured);
-    let original = required("SOUNDD_ORIGINAL_OUTPUT");
     let present = required("SOUNDD_NATIVE_PRESENT_OUTPUT");
     let absent = required("SOUNDD_NATIVE_ABSENT_OUTPUT");
-    for output in [&original, &present, &absent] {
+    for output in [&present, &absent] {
         assert_eq!(inspect_lane(output), expected, "{}", output.display());
     }
     let present_root = required("SOUNDD_NATIVE_PRESENT_ROOT");
     let absent_root = required("SOUNDD_NATIVE_ABSENT_ROOT");
     let present_source = check::validate_source(&present_root).unwrap();
     let absent_source = check::validate_source(&absent_root).unwrap();
-    assert_eq!(present_source.as_object().unwrap().len(), 21);
-    assert_eq!(present_source[RETIRED], ORIGINAL_SHA);
+    assert_eq!(present_source.as_object().unwrap().len(), 20);
+    assert!(present_source.get(RETIRED).is_none());
     assert_eq!(absent_source.as_object().unwrap().len(), 20);
     assert!(absent_source.get(RETIRED).is_none());
-    let mut expected_absent = present_source.clone();
-    expected_absent.as_object_mut().unwrap().remove(RETIRED);
-    assert_eq!(absent_source, expected_absent);
-    assert!(!absent_root.join(RETIRED).exists());
+    assert_eq!(absent_source, present_source);
+    for root in [&present_root, &absent_root] {
+        assert!(matches!(
+            fs::symlink_metadata(root.join(RETIRED)),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound
+        ));
+    }
     let present_provenance = read(&present.join("provenance.json"));
     let absent_provenance = read(&absent.join("provenance.json"));
     assert_eq!(present_provenance["source_sha256"], present_source);

@@ -2073,7 +2073,7 @@ rust/tools/check_sensord_daemon.py	64be32aad57796764def4a411233056878c99f65	pend
 rust/tools/check_sensord_kernel.py	45a7b78f2b7f3de0bd185b6ca0822143025d36c0	pending	-
 rust/tools/check_services.py	654648d153d5818f00c6f807140a00641327ed25	replaced-local	openpilot-dev-tools check-services; independent 88-service/full-Event-schema/CLI and failure comparisons, native CI and post-deletion execution
 rust/tools/check_soundd.py	1e3bb65620d9e3850d5e0929254f8de4a73be8d0	replaced-local	rust/crates/dev-tools/src/soundd_policy_check.rs; rust/crates/dev-tools/src/soundd_policy_reference.rs; rust/crates/dev-tools/src/bin/create_soundd_fixture_assets.rs
-rust/tools/check_soundd_daemon.py	469e0a1748d7bae0138e6de4c591319380cab0c4	pending	-
+rust/tools/check_soundd_daemon.py	469e0a1748d7bae0138e6de4c591319380cab0c4	replaced-local	openpilot-dev-tools check-soundd-daemon; independently sealed seven-mode original report, f19 same-ELF 22+22 native exec absence proof; post-deletion exact-SHA gate pending
 rust/tools/check_startup_ui.py	15466dc5f767059f06f1380850f666eaf6ca260e	pending	-
 rust/tools/check_stats_clock.py	d39c50ee332422bbbac65e2ed44284b8439ef20b	replaced-local	openpilot-dev-tools check-stats-clock
 rust/tools/check_stats_daemon.py	ffcc3b899f807f3f96977ac2fa0b0fc690096d66	replaced-local	rust/crates/dev-tools/src/stats_daemon_check.rs

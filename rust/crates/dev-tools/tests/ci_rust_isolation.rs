@@ -675,7 +675,7 @@ fn ui_connectivity_requires_source_render_and_private_protocol_checks() {
             "--features bluetooth-config-native --test bluetooth_config_check --locked",
             "--features bluetooth-config-native --lib --bin check-bluetooth-config",
             "BLUETOOTH_CONFIG_PYTHON=python",
-            "rust/target/debug/check-bluetooth-config --binary",
+            "rust/target/debug/check-bluetooth-config\" --binary",
             "--features bluetooth-files-native --bin check-bluetooth-files",
             "--features bluetooth-files-native --test bluetooth_files_check --locked",
             "checker=\"$GITHUB_WORKSPACE/rust/target/debug/check-bluetooth-files\"",
@@ -970,7 +970,7 @@ fn sensor_audio_requires_original_and_live_native_checks() {
             "--features soundd-policy-native --bin check-soundd-policy --bin create-soundd-fixture-assets",
             "--test soundd_policy_reference --test soundd_policy_check --test soundd_fixture_assets --test soundd_policy_retirement --test soundd_policy_ci --locked",
             "--fixture-assets-binary \"$PWD/rust/target/debug/create-soundd-fixture-assets\"",
-            "check_soundd_daemon.py",
+            "test ! -e rust/tools/check_soundd_daemon.py",
             "--features soundd-daemon-native --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --bin check-soundd-daemon",
             "--test soundd_daemon_check --test soundd_daemon_runtime --locked",
             "--lib soundd_daemon_check::worker::tests --locked",
@@ -2440,7 +2440,7 @@ fn soundd_retirement_requires_both_traced_native_lanes_and_raw_reference() {
     job_check(
         "sensor-audio",
         &[
-            "python rust/tools/check_soundd_daemon.py",
+            "test ! -e rust/tools/check_soundd_daemon.py",
             "SOUNDD_NATIVE_PRESENT_EXEC=",
             "SOUNDD_NATIVE_ABSENT_EXEC=",
             "for lane in PRESENT ABSENT; do",
@@ -2470,6 +2470,42 @@ fn journal_retirement_requires_live_original_all_rows_and_two_native_exec_lanes(
             "--test bluetooth_journal_reference --locked -- --nocapture",
         ],
         &["bluetooth-journal-retirement"],
+        false,
+    );
+}
+
+#[test]
+fn gesture_retirement_keeps_original_inputs_and_fresh_private_consumer() {
+    job_check(
+        "ui-connectivity",
+        &[
+            "from bluetooth_gesture_cases import cases",
+            "--input \"$proof/original-input.jsonl\"",
+            "BLUETOOTH_GESTURE_GENERATOR_BINARY=",
+            "BLUETOOTH_GESTURE_ABSENT_CHECK_OUTPUT=",
+            "PYTHONPATH=\"$BLUETOOTH_GESTURE_ABSENT_ROOT\"",
+            "test ! -L \"$BLUETOOTH_GESTURE_ABSENT_ROOT/rust/tools/bluetooth_gesture_cases.py\"",
+            "--test bluetooth_gesture_cases_retirement --locked -- --nocapture",
+        ],
+        &["bluetooth-gesture-cases"],
+        false,
+    );
+}
+
+#[test]
+fn config_retirement_requires_sealed_original_all_cases_and_both_exec_lanes() {
+    job_check(
+        "ui-connectivity",
+        &[
+            "BLUETOOTH_CONFIG_ARTIFACTS_SHA256=",
+            "BLUETOOTH_CONFIG_PRESENT_EXEC=",
+            "BLUETOOTH_CONFIG_ABSENT_EXEC=",
+            "test ! -L \"$BLUETOOTH_CONFIG_ABSENT_ROOT/rust/tools/check_bluetooth_config.py\"",
+            "OPENPILOT_RUST_ROOT=\"$BLUETOOTH_CONFIG_ABSENT_ROOT\" PATH=/nonexistent",
+            "sha256sum -c \"$BLUETOOTH_CONFIG_ARTIFACTS_SHA256\"",
+            "--test bluetooth_config_reference --locked -- --nocapture",
+        ],
+        &["bluetooth-config-retirement"],
         false,
     );
 }
