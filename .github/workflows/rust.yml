@@ -3299,7 +3299,7 @@ jobs:
             observed = Path(os.environ['RUNNER_TEMP']) / 'estimation/paramsd/daemon' / ('restart' if restart else 'continuous') / 'input.json'
             assert json.loads(observed.read_text()) == case, observed
           ORIGINAL
-          sha256sum rust/tools/paramsd_fixture.py rust/tools/check_paramsd_daemon.py openpilot/cereal/car.capnp openpilot/cereal/log.capnp "$PARAMSD_FIXTURE_ORIGINAL_SAVED_PACKET" "$PARAMSD_FIXTURE_ORIGINAL_SCENARIOS" "$PARAMSD_FIXTURE_ORIGINAL_CONTINUOUS" "$PARAMSD_FIXTURE_ORIGINAL_RESTART" > "$proof/original.sha256"
+          sha256sum rust/tools/paramsd_fixture.py rust/tools/check_paramsd_daemon.py opendbc_repo/opendbc/car/car.capnp openpilot/cereal/log.capnp "$PARAMSD_FIXTURE_ORIGINAL_SAVED_PACKET" "$PARAMSD_FIXTURE_ORIGINAL_SCENARIOS" "$PARAMSD_FIXTURE_ORIGINAL_CONTINUOUS" "$PARAMSD_FIXTURE_ORIGINAL_RESTART" > "$proof/original.sha256"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-fixture-native --bin generate-paramsd-fixture --locked
           sha256sum "$PARAMSD_FIXTURE_NATIVE_BINARY" > "$proof/generator.sha256"

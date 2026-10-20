@@ -970,7 +970,7 @@ fn sensor_audio_requires_original_and_live_native_checks() {
             "debug/check-soundd-policy\" --binary",
             "--features soundd-policy-native --bin check-soundd-policy --bin create-soundd-fixture-assets",
             "--test soundd_policy_reference --test soundd_policy_check --test soundd_fixture_assets --test soundd_policy_retirement --test soundd_policy_ci --locked",
-            "--fixture-assets-binary \"$PWD/rust/target/debug/create-soundd-fixture-assets\"",
+            "--fixture-assets-binary \"$SOUNDD_FIXTURE_ASSETS_BINARY\"",
             "test ! -e rust/tools/check_soundd_daemon.py",
             "--features soundd-daemon-native --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --bin check-soundd-daemon",
             "--test soundd_daemon_check --test soundd_daemon_runtime --locked",
