@@ -19,8 +19,8 @@ class RustIsolationTests(unittest.TestCase):
         self.assertEqual(job['env']['CARGO_PROFILE_DEV_DEBUG'], '0')
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('webcam_source_requirements.txt', 'build-xiaoge-opencv -- --prepare-only',
-                         'build-webcam-opencv', 'build_visionipc_python.py', 'install_host_ffmpeg.sh',
-                         'install_host_ffmpeg.sh --verify', 'openpilot-webcam --features native',
+                         'build-webcam-opencv', 'build_visionipc_python.py', 'libswscale-dev=7:6.1.1-*',
+                         'pkg-config --modversion libswscale', 'openpilot-webcam --features native',
                          'webcam_camera_compare.py', 'webcam_worker_compare.py', 'odd-height unaligned-even',
                          'webcam_cli_compare.py', 'webcam_capture_errors.py', 'webcam_capture_fault.cc'):
             self.assertIn(required, commands)
@@ -366,7 +366,7 @@ class RustIsolationTests(unittest.TestCase):
         self.assertEqual(job['strategy']['matrix']['runner'], ['ubuntu-24.04', 'ubuntu-24.04-arm'])
         self.assertNotIn('if', job)
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
-        for required in ('webrtc_source_requirements.txt', 'install_host_ffmpeg.sh', 'build_params_python.py', 'build_msgq_python.py',
+        for required in ('webrtc_source_requirements.txt', 'libavcodec-dev=7:6.1.1-*', 'build_params_python.py', 'build_msgq_python.py',
                          '-p openpilot-webrtc --features native --bins', '--features native --lib --locked', '--features native --all-targets --locked',
                          'webrtc_stun_checks', 'webrtc_identifiers_compare.py', 'webrtc_multicamera_compare.py', 'webrtc_fir_compare.py',
                          'webrtc_body_compare.py', 'webrtc_params_compare.py', 'webrtc_cli_compare.py', 'webrtc_srflx_compare.py',

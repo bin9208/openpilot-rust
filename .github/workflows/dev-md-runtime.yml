@@ -41,7 +41,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y g++-aarch64-linux-gnu clang-18 libclang-18-dev cmake pkg-config capnproto libcapnp-dev libzmq3-dev qemu-user-static android-sdk-libsparse-utils e2fsprogs git-lfs nasm
-          bash tools/ci/install_host_ffmpeg.sh
+          sudo apt-get install -y 'libavcodec-dev=7:6.1.1-*' 'libavformat-dev=7:6.1.1-*' 'libavutil-dev=7:6.1.1-*'
           rustup toolchain install 1.94.0 --profile minimal
           rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu aarch64-unknown-linux-musl
           python3 -m pip install --break-system-packages 'git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen'

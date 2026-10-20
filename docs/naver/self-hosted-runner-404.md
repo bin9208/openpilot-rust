@@ -2,15 +2,6 @@
 
 Issue: https://github.com/bin9208/openpilot-rust/issues/404
 
-## Current FFmpeg host support (2026-10-20 KST)
-
-Follow-up [#405](https://github.com/bin9208/openpilot-rust/issues/405) adds
-host-aware FFmpeg selection: Ubuntu 26.04 uses FFmpeg 8.0.1; Ubuntu 24.04
-retains 6.1.1. Native logger/encoder/WebRTC/webcam builds and 30 tests passed on
-the actual 26.04 runner. See [implementation and evidence](ffmpeg-host-405.md).
-The earlier 24.04-only FFmpeg requirement and missing-tool results below are
-historical. Full ARM/AGNOS packaging is separate and not established by this run.
-
 ## Scope and observed registration (2026-10-20 KST)
 
 GitHub REST reported runner ID 21, name `bin-actions`, Linux/X64,
@@ -48,20 +39,23 @@ not change workflows on dev-md; merge requires subsequent verification.
 
 ## Required host version
 
-Host FFmpeg builds support **Ubuntu 24.04 or 26.04 amd64**. The actual host
-is 26.04.1, with Rust/Cargo, required bootstrap tools and noninteractive sudo
-confirmed by Actions. The native FFmpeg helper chooses and verifies the
-matching provider. Separate generic ARM graphics cross-build sources still
-target noble; do not mix those repositories into a 26.04 host without a
-separate cross-build adaptation.
+Use **Ubuntu 24.04 amd64** for the current workflows: they pin LLVM 18,
+FFmpeg 6.1.1 and noble cross-architecture APT sources. Do not apply the noble
+sources to Ubuntu 22.04/26.04. The observed host is 26.04.1; installing basic tools there alone will not
+resolve the pinned native dependencies. Prepare an Ubuntu 24.04 VM or
+dedicated runner environment and register it for this repository before
+full validation. A container-based adaptation is not implemented by this
+change. Retire or relabel the incompatible 26.04 runner before making the
+24.04 runner eligible for the same Linux/X64 jobs.
+
 Run the following on the runner host as the **runner service account**, not
 on a vehicle or an unrelated workstation. These commands are instructions;
 the agent has not installed packages on the host.
 
 ## Bootstrap commands
 
-The user expanded the disk and installed bootstrap tools; subsequent checks
-confirmed about 39–40 GiB free before the native compatibility build.
+**Do not run the installation commands on the current 4 GiB-free host.**
+Expand the runner disk or free space first, and prepare the 24.04 environment.
 Before each installation, check space. Keep at least 25 GiB plus expected
 growth; recover at least 35 GiB if below the floor. The readiness check's
 35 GiB minimum is only a bootstrap floor, not a guarantee for AGNOS builds.
@@ -77,7 +71,7 @@ sudo apt-get install -y \
   tar gzip bzip2 xz-utils unzip zip zstd rsync jq \
   python3 python3-pip python3-venv python3-dev \
   libssl-dev libffi-dev libbz2-dev liblzma-dev libsqlite3-dev \
-  libreadline-dev zlib1g-dev libncurses-dev tk-dev uuid-dev
+  libreadline-dev zlib1g-dev libncursesw5-dev tk-dev uuid-dev
 git lfs install
 
 # Check free space again before downloading toolchains.
@@ -216,3 +210,22 @@ Pre-merge review identified two additional Ubuntu 24.04 execution exceptions:
 `rust.yml/arm64` installs noble multiarch graphics packages. These jobs retain
 GitHub-hosted Ubuntu 24.04 rather than changing the persistent 26.04 host's
 APT architecture/package state. Their checks and build scope remain required.
+
+## User-requested rollback (2026-10-20 KST)
+
+The user cancelled integration and requested rollback of FFmpeg 8.0.1 support.
+PR #406 was still open and unmerged; it was closed. dev-md remains at
+`96258ca2bebbcffcb5e6b5fadb4abd07ea301d00`, so no dev-md merge revert is needed.
+
+The task branch reverts commits 07cac11a, 04cea4ab and d9ce35e7 without
+rewriting history. This restores the FFmpeg 6.1.1 workflow pins/ABI checks,
+removes the host-selection installer and FFmpeg-host validation workflow,
+and restores the earlier package probe. The existing ffmpeg-next dependency
+predated this task and is unchanged. Independent self-hosted routing and the
+reviewed hosted Ubuntu24 legacy/cross-build exceptions remain on the closed
+task branch only.
+
+This is a repository rollback. Packages already installed on bin-actions,
+including FFmpeg 8.0.1, are not uninstalled or downgraded. No further CI is
+dispatched for the rollback; syntax and diff checks are sufficient for these
+configuration reversions and avoid the outstanding runner disk-capacity block.
