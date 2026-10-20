@@ -3159,8 +3159,6 @@ jobs:
       - run: rustup toolchain install 1.94.0 --profile minimal
       - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 cffi==2.1.1 sympy==1.14.0 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 pytest==9.0.2
-      - name: Check atomic paramsd fixture input boundaries
-        run: python -P -m pytest -c /dev/null --noconftest -p no:cacheprovider -q rust/tools/tests/test_paramsd_atomic_gate.py
       - name: Prepare native Eigen staging evidence
         run: |
           mkdir -p "$RUNNER_TEMP/estimation/eigen"
@@ -3200,6 +3198,8 @@ jobs:
         run: |
           set -euo pipefail
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          test ! -e rust/tools/tests/test_paramsd_atomic_gate.py
+          test ! -L rust/tools/tests/test_paramsd_atomic_gate.py
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features paramsd-startup-gate-native --test paramsd_startup_gate
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features paramsd-startup-gate-native --lib --test paramsd_startup_gate -- -D warnings

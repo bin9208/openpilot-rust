@@ -14,23 +14,17 @@ use std::{
 };
 
 #[test]
-fn independent_original_sources_remain_unchanged() {
+fn original_gate_helper_remains_and_retired_python_tests_are_absent() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    for (name, expected) in [
-        (
-            "rust/tools/paramsd_startup_gate.py",
-            "d1fb549b84b3182639191a86988516baf10a8fc1a28758e046e25077d64f03f4",
-        ),
-        (
-            "rust/tools/tests/test_paramsd_atomic_gate.py",
-            "2c289464407f46382af24d01ab9459ef3e72178d0b00caac1ef8e295437701d9",
-        ),
-    ] {
-        assert_eq!(
-            openpilot_dev_tools::seal::digest(&root.join(name)).unwrap(),
-            expected
-        );
-    }
+    assert_eq!(
+        openpilot_dev_tools::seal::digest(&root.join("rust/tools/paramsd_startup_gate.py"))
+            .unwrap(),
+        "d1fb549b84b3182639191a86988516baf10a8fc1a28758e046e25077d64f03f4"
+    );
+    assert!(matches!(
+        fs::symlink_metadata(root.join("rust/tools/tests/test_paramsd_atomic_gate.py")),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound
+    ));
 }
 
 fn gate_for_cursor(root: &Path, cursor: u64) -> StartupGate {
@@ -78,6 +72,7 @@ fn complete_pose_commit_releases_wrapped_cursor() {
     let mut token = [0];
     assert_eq!(read(gate.release_reader(), &mut token).unwrap(), 1);
     assert_eq!(token, *b"R");
+    assert_eq!(gate.report().batches_queued_before_release, 1);
 }
 
 #[test]
@@ -89,6 +84,7 @@ fn complete_pose_commit_releases_cycle_overflow_cursor() {
     let mut token = [0];
     assert_eq!(read(gate.release_reader(), &mut token).unwrap(), 1);
     assert_eq!(token, *b"R");
+    assert_eq!(gate.report().batches_queued_before_release, 1);
 }
 
 #[test]

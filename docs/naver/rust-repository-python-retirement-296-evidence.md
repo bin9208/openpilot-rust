@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. The current source inventory has 214 replaced-local entries,
-three partial entries and 3,363 pending entries. `replaced-local` does not mean merged,
+SCons entrypoints. The current source inventory has 215 replaced-local entries,
+three partial entries and 3,362 pending entries. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -4903,3 +4903,22 @@ Panda passed its earlier source comparisons, then its known baseline finalizatio
 RED was followed by a missing hosted`rg` executable. Those three literal checks
 now use`grep -Fq`, retaining exact assertion/exit requirements. This failure
 was not a new #432 timestamp reproduction or a fixed #432 root cause.
+
+### paramsd atomic test source retirement (2026-10-21)
+
+Sourceba5def0a [full cloud job118930155954](https://github.com/bin9208/openpilot-rust/actions/runs/39510538880/job/118930155954)
+passed all5unchanged Python cursor cases,7native foundation tests, actual
+daemon FD handoff, full continuous/restart comparison and strictClippy. The
+Python test is removed and its normal/wrapped/overflow/rejection assertions
+remain in native tests, including batch counts on both wrap paths. CI removes
+the old pytest invocation, retains native execution and checks source absence.
+The live Python StartupGate helper and other comparators remain pending.
+Inventory215replaced-local /3partial /3362pending. Post-deletion fresh-SHA
+functional evidence is still required.
+
+The fresh62e8c235 fast job118943013713 exposed a disk-policy classifier
+collision: the config absence step's512MiB guard was attributed to the
+config controller because its following command used the same Cargo feature.
+Classification now uses the explicit step identity for the controller,
+retaining both absence guards[128,512], all controller guards and total458.
+The failing cloud output is the regression evidence; repaired CI is pending.

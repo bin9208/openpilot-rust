@@ -36,3 +36,17 @@ empty update, releases it, and verifies bounded shutdown. Its cloud inputs
 are listed in `docs/naver/rust-paramsd-native-gate-296.md`. Both Python files
 remain in place. This does not replace the original 1,202-frame source/native
 daemon comparison or establish an absent-Python retirement gate.
+
+## Original test retirement, 2026-10-21
+
+Exact source `ba5def0ab46de9cab2d3542af573625761068512`,
+[run39510538880/job118930155954](https://github.com/bin9208/openpilot-rust/actions/runs/39510538880/job/118930155954),
+passed all five unchanged Python cases, seven native foundation tests, the
+actual daemon FD-handoff test, full1,210-packet source/native comparison and
+strictClippy. The Python test file is now removed; its five cursor decisions,
+release token/readiness and batch-count assertions remain in Rust. Both wrap
+cases explicitly retain the batch-count assertion. CI invokes the native
+foundation once and rejects reappearance of the retired Python test. The live
+Python StartupGate helper remains for other independent source comparisons.
+Post-deletion exact-source checks are pending; historical preparation text
+above describes the earlier retained-source phase.

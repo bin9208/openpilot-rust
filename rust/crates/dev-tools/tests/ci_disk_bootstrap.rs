@@ -331,19 +331,16 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut launcher_handoff = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
-            if i + 1 < lines.len()
-                && (lines[i + 1].contains("--features bluetooth-config-native")
-                    || lines[i + 1].contains(
-                        "proof=\"$RUNNER_TEMP/ui-connectivity/bluetooth-config-present\"",
-                    ))
-            {
-                bluetooth_config_controller.push(tail.to_owned());
-                continue;
-            }
             let step = lines[..i]
                 .iter()
                 .rev()
                 .find(|line| line.starts_with("      - name:"));
+            if step == Some(
+                &"      - name: Compare native Bluetooth config controller with unchanged original",
+            ) {
+                bluetooth_config_controller.push(tail.to_owned());
+                continue;
+            }
             if step == Some(&"      - name: Require Bluetooth gesture generator source absence and native callers") {
                 bluetooth_gesture_absence.push(tail.to_owned());
                 continue;
