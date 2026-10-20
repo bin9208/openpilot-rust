@@ -562,8 +562,20 @@ fn source_or_daemon_mutation_during_final_stdout_cannot_publish_success() {
                 "root_summary_exists":output.join("summary.json").exists()
             })
         };
+        let write_syscalls: &[u64] = match std::env::consts::ARCH {
+            "x86_64" => &[1, 20],
+            "aarch64" => &[64, 66],
+            arch => panic!("unsupported /proc syscall ABI for blocked stdout proof: {arch}"),
+        };
+        let boundary_failure = |why: &str| -> ! {
+            fs::write(
+                temp.join("late-stdout-diagnostic.json"),
+                serde_json::to_vec_pretty(&[observe("boundary-unavailable", 0, &[])]).unwrap(),
+            )
+            .unwrap();
+            panic!("{boundary}: cannot prove blocked final stdout: {why}");
+        };
         let end = Instant::now() + Duration::from_secs(30);
-        let mut at_final_stdout = None;
         loop {
             assert!(
                 waitid(
@@ -579,27 +591,55 @@ fn source_or_daemon_mutation_during_final_stdout_cannot_publish_success() {
                 && output.join("bounded/summary.json").is_file()
                 && !output.join("summary.json").exists();
             if final_inputs_written {
-                // The pipe was filled before spawn and has no reader until the
-                // mutation below. After provenance, the controller verifies
-                // inputs and writes final stdout before publication. A stable
-                // live child here is evidence of the full-pipe boundary, though
-                // it cannot prove the preceding verification has completed.
-                // /proc/<pid>/wchan reported "0" in GitHub Actions.
-                if at_final_stdout.get_or_insert_with(Instant::now).elapsed()
-                    >= Duration::from_millis(500)
-                {
-                    break;
+                // The pipe is full and unread until mutation. Prove that the
+                // live controller is asleep in its final write to fd 1, not
+                // still hashing the inputs after publishing provenance.
+                let syscall = fs::read_to_string(proc_dir.join("syscall")).unwrap_or_else(|e| {
+                    boundary_failure(&format!("/proc syscall unreadable: {e}"))
+                });
+                let mut fields = syscall.split_whitespace();
+                let number = fields
+                    .next()
+                    .unwrap_or_else(|| boundary_failure("empty /proc syscall"));
+                if number != "running" && number != "-1" {
+                    let number = number.parse::<u64>().unwrap_or_else(|e| {
+                        boundary_failure(&format!("invalid /proc syscall number: {e}"))
+                    });
+                    if write_syscalls.contains(&number) {
+                        let fd = fields
+                            .next()
+                            .unwrap_or_else(|| boundary_failure("write syscall has no fd"));
+                        let fd = if let Some(hex) = fd.strip_prefix("0x") {
+                            u64::from_str_radix(hex, 16)
+                        } else {
+                            fd.parse::<u64>()
+                        }
+                        .unwrap_or_else(|e| boundary_failure(&format!("invalid write fd: {e}")));
+                        let status =
+                            fs::read_to_string(proc_dir.join("status")).unwrap_or_else(|e| {
+                                boundary_failure(&format!("/proc status unreadable: {e}"))
+                            });
+                        if fd == 1
+                            && status.lines().any(|line| {
+                                line.strip_prefix("State:")
+                                    .is_some_and(|state| state.trim_start().starts_with("S "))
+                            })
+                        {
+                            break;
+                        }
+                    }
                 }
-            } else {
-                at_final_stdout = None;
             }
-            assert!(
-                Instant::now() < end,
-                "{boundary}: final stdout not reached: provenance={}, bounded summary={}, root summary={}",
-                output.join("provenance.json").exists(),
-                output.join("bounded/summary.json").exists(),
-                output.join("summary.json").exists()
-            );
+            if Instant::now() >= end {
+                fs::write(
+                    temp.join("late-stdout-diagnostic.json"),
+                    serde_json::to_vec_pretty(&[observe("boundary-timeout", 0, &[])]).unwrap(),
+                )
+                .unwrap();
+                panic!(
+                    "{boundary}: blocked final stdout write to fd 1 not observed within 30 seconds"
+                );
+            }
             std::thread::sleep(Duration::from_millis(5));
         }
         assert!(!output.join("summary.json").exists());

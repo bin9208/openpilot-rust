@@ -347,7 +347,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             }
             if step
                 == Some(
-                    &"      - name: Compare native Eigen header staging with unchanged Python shim",
+                    &"      - name: Require native Eigen header staging against sealed original install",
                 )
             {
                 eigen_staging.push(tail.to_owned());

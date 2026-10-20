@@ -1,11 +1,28 @@
 #![cfg(target_os = "linux")]
 use openpilot_dev_tools::{eigen_stage, seal::digest};
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 use std::{
     collections::BTreeMap,
     fs,
     path::{Path, PathBuf},
 };
+
+const ORIGINAL_FILES: &[u8] =
+    include_bytes!("fixtures/eigen-stage/original-linux-x86_64-files.json");
+const ORIGINAL_FILES_SHA256: &str =
+    "8a4307258256f1357d60f013ddecc719d8919dc6ff0163e8346aca6d2da396a2";
+
+fn original_files() -> BTreeMap<String, String> {
+    assert_eq!(
+        format!("{:x}", Sha256::digest(ORIGINAL_FILES)),
+        ORIGINAL_FILES_SHA256,
+        "sealed original Python-install observation changed"
+    );
+    let files: BTreeMap<String, String> = serde_json::from_slice(ORIGINAL_FILES).unwrap();
+    assert_eq!(files.len(), 690);
+    files
+}
 
 fn required(name: &str) -> PathBuf {
     PathBuf::from(
@@ -90,45 +107,41 @@ fn pinned_wheel_stages_exact_header_tree_and_never_clobbers() {
 }
 
 #[test]
-fn fresh_original_python_shim_install_matches_native_every_header_byte() {
+fn sealed_original_python_install_matches_fresh_native_every_header_byte() {
     let wheel = required("EIGEN_WHEEL");
     let architecture =
         std::env::var("EIGEN_ARCHITECTURE").expect("cloud Eigen architecture required");
-    let original = required("EIGEN_ORIGINAL_INCLUDE");
     let native = required("EIGEN_NATIVE_INCLUDE");
-    assert!(original.is_absolute() && native.is_absolute());
-    assert_ne!(
-        fs::canonicalize(&original).unwrap(),
-        fs::canonicalize(&native).unwrap()
-    );
-    assert_eq!(tree(&original).len(), 690);
+    assert!(native.is_absolute());
+    let original_files = original_files();
     let temp = tempfile::tempdir().unwrap();
     let output = temp.path().join("independent-native");
     eigen_stage::stage(&wheel, &output, &architecture).unwrap();
     assert_ne!(
-        fs::canonicalize(&original).unwrap(),
+        fs::canonicalize(&native).unwrap(),
         fs::canonicalize(output.join("install")).unwrap()
     );
     let generated = tree(&output.join("install"));
-    let original_files = tree(&original);
     let native_files = tree(&native);
     assert_eq!(generated, original_files);
-    assert_eq!(generated, native_files);
+    assert_eq!(native_files, original_files);
     let evidence = required("EIGEN_EVIDENCE");
     fs::create_dir(&evidence).unwrap();
-    for (name, files) in [("original", original_files), ("native", native_files)] {
-        fs::write(
-            evidence.join(format!("{name}-files.json")),
-            serde_json::to_vec_pretty(&files).unwrap(),
-        )
-        .unwrap();
-    }
+    fs::write(evidence.join("original-files.json"), ORIGINAL_FILES).unwrap();
+    fs::write(
+        evidence.join("native-files.json"),
+        serde_json::to_vec_pretty(&native_files).unwrap(),
+    )
+    .unwrap();
     fs::write(
         evidence.join("comparison.json"),
         serde_json::to_vec_pretty(&serde_json::json!({
             "architecture": architecture,
             "wheel_sha256": digest(&wheel).unwrap(),
-            "original_include": original,
+            "original_observation_sha256": ORIGINAL_FILES_SHA256,
+            "original_observation_source": "fresh Linux x86_64 Python shim install from commaai/dependencies@40e5d76de1b33a86c5181b63db6782d8f06da1da",
+            "original_observation_artifact": 12300415646_u64,
+            "original_observation_zip_sha256": "877b1fd589b4bef46905dbad1e7d26876ec65402af698d863db28d99fa62ecaf",
             "native_include": native,
             "files": generated.len(),
             "all_sha256_equal": true

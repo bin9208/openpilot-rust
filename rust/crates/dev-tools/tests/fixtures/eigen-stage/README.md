@@ -24,21 +24,31 @@ writes `NEW_DIRECTORY/manifest.json` with sorted per-file hashes and source,
 release and wheel pins. Destination creation is exclusive; failed validation
 leaves no published tree. It does not run or package Python.
 
-Before any caller switches, GitHub Actions must install the **unchanged**
-Python shim from the pinned source on its fresh hosted runner. The added
-estimation gate retains that existing installation and its real `INCLUDE_DIR`;
-it does not replace it with an extracted reference tree. A Rust reference audit must require `EIGEN_WHEEL`,
-`EIGEN_ARCHITECTURE`, `EIGEN_ORIGINAL_INCLUDE` (that fresh pip-installed
-`eigen/install` directory), `EIGEN_EVIDENCE` (a new receipt directory), and
-`EIGEN_NATIVE_INCLUDE` (the separately staged
-native `install` directory), then compare every relative path and raw SHA-256
-across both trees and the test's independent native staging. Preserve the
-original install log, wheel and source hashes, native manifest, both sorted
-file-hash inventories and executable identity in a visible Actions artifact.
-The mandatory `eigen-tools-native` gate stages all three reviewed archives,
-runs malformed archive and no-clobber tests plus strict Clippy on the same SHA,
-and verifies source/tool hashes after the full comparison. This first cloud
-execution is pending.
-No local staging, build, functional test or original Python execution was run
-for this source preparation. Existing callers continue using the original shim
-until that cloud gate is accepted.
+The independent original observation is
+`original-linux-x86_64-files.json` (690 relative path/SHA-256 pairs; file
+SHA-256 `8a4307258256f1357d60f013ddecc719d8919dc6ff0163e8346aca6d2da396a2`).
+It was copied byte-for-byte from `eigen/x86_64-comparison/original-files.json`
+in GitHub Actions artifact `12300415646`, run `39500380365`, candidate
+`4991f8f569b50adf78e498396e246e8b68aadc68`. The downloaded artifact ZIP
+SHA-256 was `877b1fd589b4bef46905dbad1e7d26876ec65402af698d863db28d99fa62ecaf`.
+The original install log SHA-256 was
+`fc95c039d5289379a62a057739a04f9eb914ab733d05799b4005879f7a46edb8`;
+it records a fresh **Linux x86_64** `pip install` of the unchanged shim from
+`commaai/dependencies@40e5d76de1b33a86c5181b63db6782d8f06da1da`.
+The artifact's three `original-files.json` entries were byte-identical to
+this map. Each comparison record reported the same original Linux install
+path and complete equality with that architecture's separately staged native
+headers. This does **not** claim original Python installs on ARM or macOS.
+The Eigen comparison and strict Clippy passed in the estimation job; a later,
+unrelated paramsd gate compile error made that overall job fail.
+
+The Rust reference test pins the original-map bytes in code. It requires
+`EIGEN_WHEEL`, `EIGEN_ARCHITECTURE`, `EIGEN_NATIVE_INCLUDE` and `EIGEN_EVIDENCE`;
+it independently stages the supplied pinned wheel and compares every relative
+path and file SHA-256 with both the sealed original map and the separately
+staged native tree. Wrong wheel/architecture, symlink input, malformed ZIP and
+output clobber controls remain required. The comparison receipt records the
+original observation and artifact identities without labelling a native tree
+as original. Only tests and fixture data change here; existing Eigen callers
+remain unchanged until the parent integrates and validates their native header
+acquisition in GitHub Actions. No local staging, build or functional test ran.

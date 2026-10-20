@@ -746,17 +746,38 @@ fn estimators_require_original_models_loops_and_native_boundaries() {
         .rsplit('#')
         .next()
         .unwrap();
+    required(&read("rust/crates/dev-tools/src/eigen_stage.rs"), &[commit]);
     let data = workflow();
-    for name in ["workspace", "arm64", "estimation-runtime"] {
-        required(
-            &commands(&data["jobs"][name]),
-            &[
-                &format!("@{commit}#subdirectory=eigen"),
-                "LOCATIOND_EIGEN_INCLUDE=",
-                "PARAMSD_EIGEN_INCLUDE=",
-            ],
-        );
+    for (name, architecture) in [("workspace", "x86_64"), ("arm64", "aarch64")] {
+        let selected = data["jobs"][name]["steps"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|step| step["uses"] == "./.github/actions/native-eigen")
+            .collect::<Vec<_>>();
+        assert_eq!(selected.len(), 1);
+        absent(selected[0], &["if", "continue-on-error"]);
+        assert_eq!(selected[0]["with"]["architecture"], architecture);
     }
+    for name in ["workspace", "arm64", "estimation-runtime"] {
+        let run = commands(&data["jobs"][name]);
+        assert!(!run.contains("subdirectory=eigen"));
+        assert!(!run.contains("import eigen"));
+    }
+    let action = read(".github/actions/native-eigen/action.yml");
+    required(
+        &action,
+        &[
+            "--features eigen-tools-native --bin stage-eigen-headers --target",
+            "--architecture \"$EIGEN_STAGE_ARCHITECTURE\"",
+            "LOCATIOND_EIGEN_INCLUDE=",
+            "PARAMSD_EIGEN_INCLUDE=",
+            "sha256sum --check \"$proof/stager.sha256\"",
+            "--growth-mib 2048",
+            "--growth-mib 64",
+        ],
+    );
+    assert!(!action.contains("python"));
 }
 #[test]
 fn eigen_staging_requires_all_release_archives_and_original_header_comparison() {
@@ -766,7 +787,6 @@ fn eigen_staging_requires_all_release_archives_and_original_header_comparison() 
             "--features eigen-tools-native --bin stage-eigen-headers",
             "x86_64:linux_x86_64 aarch64:linux_aarch64 macos-arm64:macosx_11_0_arm64",
             "https://github.com/commaai/dependencies/releases/download/eigen/v3.4.0/",
-            "EIGEN_ORIGINAL_INCLUDE=\"$LOCATIOND_EIGEN_INCLUDE\"",
             "EIGEN_NATIVE_INCLUDE=\"$proof/$architecture-native/install\"",
             "EIGEN_EVIDENCE=\"$proof/$architecture-comparison\"",
             "--lib eigen_stage::tests",
@@ -774,7 +794,8 @@ fn eigen_staging_requires_all_release_archives_and_original_header_comparison() 
             "--lib --bin stage-eigen-headers --test eigen_stage -- -D warnings",
             "sha256sum --check \"$proof/stager.sha256\"",
             "sha256sum --check \"$proof/source.sha256\"",
-            "original-install.log",
+            "LOCATIOND_EIGEN_INCLUDE=%s/x86_64-native/install",
+            "PARAMSD_EIGEN_INCLUDE=%s/x86_64-native/install",
         ],
         &["--features eigen-tools-native"],
         true,
@@ -816,6 +837,21 @@ fn soundd_finalization_requires_original_behavioral_failure_and_retained_binding
         &["finalization-433", "soundd_daemon_check::worker::tests"],
         true,
     );
+    let scripts = commands(&workflow()["jobs"]["sensor-audio"]);
+    let invocations = scripts
+        .lines()
+        .filter(|line| line.contains("cargo ") && line.contains("--features soundd-daemon-native"))
+        .collect::<Vec<_>>();
+    assert_eq!(invocations.len(), 7);
+    for line in invocations {
+        required(
+            line,
+            &[
+                "--config profile.test.package.sha2.opt-level=3",
+                "--config profile.dev.package.sha2.opt-level=3",
+            ],
+        );
+    }
 }
 
 #[test]

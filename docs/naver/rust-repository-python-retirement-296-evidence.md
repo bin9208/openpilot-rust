@@ -17,6 +17,36 @@ extensionless Python execution still needs a separate complete caller audit.
 
 ### Current cloud checkpoint and next source batch (2026-10-21)
 
+Follow-up cloud evidence: source0d1700e5 passed startup-services including the
+actual post-deletion Bridge gate in
+[run39499806776](https://github.com/bin9208/openpilot-rust/actions/runs/39499806776).
+The Eigen portion of [run39500380365](https://github.com/bin9208/openpilot-rust/actions/runs/39500380365)
+passed two archive controls, three complete two-test header comparisons and
+strict Clippy at source4991f8f5. The parent verified all three original maps,
+native manifests and raw wheel hashes in artifact12300415646 (ZIP SHA-256
+`877b1fd589b4bef46905dbad1e7d26876ec65402af698d863db28d99fa62ecaf`).
+The overall job failed afterward in the separate paramsd foundation compile.
+Its missing pipe feature and borrowed-FD test call were corrected; no passing
+foundation result is claimed yet.
+
+The native Eigen caller transition removes all three inline Python shim
+installation/import paths. Workspace and ARM use the host-built stager action;
+estimation stages all three archives and compares all690 header hashes with
+the sealed actual original Linux installation observation. A wheel is retained
+as a pinned input archive; only its C++ install tree is extracted, with no
+Python execution or Python files in the output. External Eigen remains C++.
+This removes embedded Python acquisition calls, not another baseline inventory
+source file. First cloud validation of the new callers is still required.
+
+Audio's diagnostic excluded an actual blocked-write observation; the next
+source requires the real kernel write boundary and optimizes only QA SHA-256
+compilation while retaining all deadlines. See [#426 evidence](rust-audio-final-stdout-observer-426.md).
+The independent source-binding lifetime defect has a repair and mandatory
+behavioral old-source regression in [#433 evidence](rust-audio-qa-finalization-433.md).
+Panda's third diagnostic run39501353390 captured all10 timestamps at every hop
+in8 unchanged and8 instrumented runs; it is uninformative about the original
+loss and does not close #432.
+
 Published source is `2d8d027932dc880bd0acd00288b256ac8d7f1b89`, PR #343→dev.
 [Rust run 39494388960](https://github.com/bin9208/openpilot-rust/actions/runs/39494388960)
 is still running with Panda, sensor/audio and UI/connectivity failures; Fast

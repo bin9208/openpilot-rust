@@ -644,10 +644,10 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           cargo test -p openpilot-dev-tools --locked --test seal_runtime --test package --test publish --test runtime_bootstrap
           python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=tools/tests -q tools/tests/test_offline_qcom_publish.py
-      - name: Install source-pinned Eigen headers
-        run: |
-          python -m pip install 'git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen'
-          python -c 'import eigen; print("LOCATIOND_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR); print("PARAMSD_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR)' >> "$GITHUB_ENV"
+      - name: Stage source-pinned native Eigen headers
+        uses: ./.github/actions/native-eigen
+        with:
+          architecture: x86_64
       - run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           cargo clippy --workspace --all-targets --locked --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 -- -D warnings
@@ -2908,7 +2908,7 @@ jobs:
             printf '%s=%s\n' "$name" "${!name}" >> "$GITHUB_ENV"
           done
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --bin check-soundd-daemon --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --bin check-soundd-daemon --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 64
           cc -std=c11 -shared -fPIC -pthread -Wall -Wextra -Werror rust/tools/fixtures/soundd/portaudio.c -o "$SOUNDD_PORTAUDIO_LIBRARY"
       - name: Require audio finalization baseline rejection
@@ -2930,14 +2930,14 @@ jobs:
           printf '\n}\n' >> "$old_worker"
           git -C "$baseline" diff -- "$current_worker" > "$proof/regression-only.patch"
           sha256sum "$current_worker" "$old_worker" > "$proof/test-inputs.sha256"
-          CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_TARGET_DIR="$target" cargo build --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-dev-tools --features soundd-daemon-native --bin check-soundd-daemon --locked 2>&1 | tee "$proof/baseline-build.log"
+          CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_TARGET_DIR="$target" cargo build --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --bin check-soundd-daemon --locked 2>&1 | tee "$proof/baseline-build.log"
           old_binary="$target/debug/check-soundd-daemon"
           cp "$old_binary" "$proof/baseline-worker"
           sha256sum "$old_binary" "$proof/baseline-worker" > "$proof/baseline-worker.sha256"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_TARGET_DIR="$target" cargo test --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-dev-tools --features soundd-daemon-native --lib --no-run --locked
+          CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_TARGET_DIR="$target" cargo test --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --lib --no-run --locked
           set +e
-          SOUNDD_DAEMON_WORKER_BINARY="$old_binary" CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_TARGET_DIR="$target" /usr/bin/timeout --signal=TERM --kill-after=5s 180s cargo test --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-dev-tools --features soundd-daemon-native --lib --locked -- soundd_daemon_check::worker::finalization_433_red_tests::finalization_rechecks_private_source_and_daemon_after_actual_publication --exact --nocapture 2>&1 | tee "$proof/baseline.log"
+          SOUNDD_DAEMON_WORKER_BINARY="$old_binary" CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_TARGET_DIR="$target" /usr/bin/timeout --signal=TERM --kill-after=5s 180s cargo test --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --lib --locked -- soundd_daemon_check::worker::finalization_433_red_tests::finalization_rechecks_private_source_and_daemon_after_actual_publication --exact --nocapture 2>&1 | tee "$proof/baseline.log"
           status=${PIPESTATUS[0]}
           set -e
           test "$status" -eq 101
@@ -2950,11 +2950,11 @@ jobs:
         run: |
           set -euo pipefail
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --lib soundd_daemon_check::worker::tests --locked -- --test-threads=1
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --lib soundd_daemon_check::worker::tests --locked -- --test-threads=1
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --test soundd_daemon_check --test soundd_daemon_runtime --locked -- --test-threads=1
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --test soundd_daemon_check --test soundd_daemon_runtime --locked -- --test-threads=1
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --lib --bin check-soundd-daemon --test soundd_daemon_check --test soundd_daemon_runtime --locked -- -D warnings
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --lib --bin check-soundd-daemon --test soundd_daemon_check --test soundd_daemon_runtime --locked -- -D warnings
       - name: Compare alert samples and continuous native playback
         run: |
           "$PWD/rust/target/debug/check-soundd-policy" --binary "$PWD/rust/target/debug/examples/sound_trace" --binding "$RUNNER_TEMP"/sensor-params-binding/params_pyx*.so --output "$RUNNER_TEMP/sensor-audio/soundd-source"
@@ -3116,13 +3116,10 @@ jobs:
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 cffi==2.1.1 sympy==1.14.0 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 pytest==9.0.2
       - name: Check atomic paramsd fixture input boundaries
         run: python -P -m pytest -c /dev/null --noconftest -p no:cacheprovider -q rust/tools/tests/test_paramsd_atomic_gate.py
-      - name: Install source-pinned Eigen headers
+      - name: Prepare native Eigen staging evidence
         run: |
-          set -euo pipefail
           mkdir -p "$RUNNER_TEMP/estimation/eigen"
-          python -m pip install 'git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen' 2>&1 | tee "$RUNNER_TEMP/estimation/eigen/original-install.log"
-          python -c 'import eigen; print("LOCATIOND_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR); print("PARAMSD_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR)' >> "$GITHUB_ENV"
-      - name: Compare native Eigen header staging with unchanged Python shim
+      - name: Require native Eigen header staging against sealed original install
         run: |
           set -euo pipefail
           proof="$RUNNER_TEMP/estimation/eigen"
@@ -3147,12 +3144,13 @@ jobs:
           for item in x86_64:linux_x86_64 aarch64:linux_aarch64 macos-arm64:macosx_11_0_arm64; do
             architecture=${item%%:*}
             platform=${item#*:}
-            EIGEN_WHEEL="$proof/eigen-3.4.0-py3-none-$platform.whl" EIGEN_ARCHITECTURE="$architecture" EIGEN_ORIGINAL_INCLUDE="$LOCATIOND_EIGEN_INCLUDE" EIGEN_NATIVE_INCLUDE="$proof/$architecture-native/install" EIGEN_EVIDENCE="$proof/$architecture-comparison" cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features eigen-tools-native --test eigen_stage
+            EIGEN_WHEEL="$proof/eigen-3.4.0-py3-none-$platform.whl" EIGEN_ARCHITECTURE="$architecture" EIGEN_NATIVE_INCLUDE="$proof/$architecture-native/install" EIGEN_EVIDENCE="$proof/$architecture-comparison" cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features eigen-tools-native --test eigen_stage
           done
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features eigen-tools-native --lib --bin stage-eigen-headers --test eigen_stage -- -D warnings
           sha256sum --check "$proof/stager.sha256"
           sha256sum --check "$proof/source.sha256"
+          printf 'LOCATIOND_EIGEN_INCLUDE=%s/x86_64-native/install\nPARAMSD_EIGEN_INCLUDE=%s/x86_64-native/install\n' "$proof" "$proof" >> "$GITHUB_ENV"
       - name: Check native paramsd atomic gate foundation alongside original cases
         run: |
           set -euo pipefail
@@ -4190,10 +4188,10 @@ jobs:
         run: |
           rustup toolchain install 1.94.0 --profile minimal
           cargo +1.94.0 run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-loggerd-ffmpeg -- --root "$RUNNER_TEMP/logger-ffmpeg-gnu" --cc aarch64-linux-gnu-gcc --ar aarch64-linux-gnu-ar --ranlib aarch64-linux-gnu-ranlib
-      - name: Install source-pinned Eigen headers
-        run: |
-          python -m pip install 'git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen'
-          python -c 'import eigen; print("LOCATIOND_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR); print("PARAMSD_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR)' >> "$GITHUB_ENV"
+      - name: Stage source-pinned native Eigen headers
+        uses: ./.github/actions/native-eigen
+        with:
+          architecture: aarch64
       - name: Build generic Linux aarch64 artifact (not AGNOS validation)
         working-directory: rust
         env:
