@@ -6,6 +6,7 @@
 pub mod activation;
 mod contraction;
 pub mod convolution;
+mod fused_mean;
 pub mod image;
 pub mod llvm;
 pub mod matrix;
@@ -39,6 +40,9 @@ pub struct CompileOptions {
     /// Explicit provider and isolated worker for IMAGE LLVM kernels. No host
     /// CPU/library guessing occurs when this optional backend is selected.
     pub llvm: Option<(llvm::Config, PathBuf)>,
+    /// Explicit original CPU thread count for an experimental, source-proved
+    /// fused Conv/Gelu/Mean candidate. None retains the structural fence.
+    pub fused_mean_workers: Option<usize>,
 }
 impl Default for CompileOptions {
     fn default() -> Self {
@@ -49,6 +53,7 @@ impl Default for CompileOptions {
             offline_bindings: false,
             memory_planning: true,
             llvm: None,
+            fused_mean_workers: None,
         }
     }
 }
@@ -455,6 +460,15 @@ pub fn compile_onnx(
     } else {
         Vec::new()
     };
+    let fused_means = if options.llvm.is_some() && options.offline_bindings {
+        options
+            .fused_mean_workers
+            .map(|workers| fused_mean::closures(&lowered, &model, workers))
+            .transpose()?
+            .unwrap_or_default()
+    } else {
+        Vec::new()
+    };
     for chain in &chains {
         if gemms.iter().any(|g| !g.owned.is_disjoint(&chain.owned))
             || matrices
@@ -476,6 +490,12 @@ pub fn compile_onnx(
         }
         kernel_plans.extend(&closure.owned);
     }
+    for closure in &fused_means {
+        if !kernel_plans.is_disjoint(&closure.owned) {
+            return Err("overlapping configured LLVM fused Mean ownership".into());
+        }
+        kernel_plans.extend(&closure.owned);
+    }
     if options.offline_bindings {
         compiler_onnx::storage::apply_cpu_image_aliases_with_matrices(
             &mut lowered,
@@ -494,7 +514,12 @@ pub fn compile_onnx(
         render::render_cpu_elementwise(&physical, call.buffers[0], &format!("admit_{index}"))?;
     }
     contraction::apply(&mut physical, &model, &kernel_plans)?;
-    compiler_onnx::storage::admit_cpu_observable_fusion(&physical, &model)?;
+    fused_mean::validate_physical(&fused_means, &physical)?;
+    compiler_onnx::storage::admit_cpu_observable_fusion(
+        &physical,
+        &model,
+        &fused_means.iter().map(|c| c.output()).collect(),
+    )?;
     let mut schedule = schedule::schedule_plans(&physical, "CPU", true)?;
     let mut image_calls = BTreeMap::new();
     let mut extra_initial = BTreeMap::new();
@@ -544,8 +569,20 @@ pub fn compile_onnx(
     }
     let parallel_staged =
         contraction::parallel::insert(&parallel, &lowered, &mut schedule, &mut extra_initial)?;
+    let fused_staged =
+        fused_mean::insert(&fused_means, &lowered, &mut schedule, &mut extra_initial)?;
     let depthwise = if options.llvm.is_some() && options.offline_bindings {
-        convolution::stage(&physical, &model, &mut schedule, &mut extra_initial)?
+        let fused_owned = fused_means
+            .iter()
+            .flat_map(|closure| closure.owned.iter().copied())
+            .collect();
+        convolution::stage(
+            &physical,
+            &model,
+            &mut schedule,
+            &mut extra_initial,
+            &fused_owned,
+        )?
     } else {
         Vec::new()
     };
@@ -565,6 +602,11 @@ pub fn compile_onnx(
         for (index, call) in contraction::parallel::scheduled(&parallel_staged, &schedule)? {
             if llvm_calls.insert(index, call).is_some() {
                 return Err("overlapping configured LLVM parallel Conv schedule".into());
+            }
+        }
+        for (index, call) in fused_mean::scheduled(&fused_staged, &schedule)? {
+            if llvm_calls.insert(index, call).is_some() {
+                return Err("overlapping configured LLVM fused Mean schedule".into());
             }
         }
         for (index, call) in convolution::scheduled(&depthwise, &schedule)? {
