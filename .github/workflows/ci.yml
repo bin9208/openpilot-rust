@@ -3420,10 +3420,9 @@ jobs:
           assert not failed, failed
           PYTHON
 
-  arm64:
-    needs: [route, fast-checks, check_user_docs, integration-gate, fast, workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime, webrtc-runtime, webcam-runtime]
-    name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'rust aarch64 build' || 'Not requested - rust aarch64 build' }}
-    if: ${{ always() && (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) }}
+  arm-build:
+    name: Build generic ARM64 artifacts
+    needs: [fast]
     # Legacy setup / noble multiarch packages require an isolated Ubuntu 24.04 host.
     runs-on: ubuntu-24.04
     timeout-minutes: 120
@@ -3431,19 +3430,6 @@ jobs:
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
     steps:
-      - name: Reject failed, skipped or missing prerequisite validation
-        working-directory: ${{ runner.temp }}
-        env:
-          RESULTS: ${{ toJSON(needs) }}
-          EXPECTED: route, fast-checks, check_user_docs, integration-gate, fast, workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime, webrtc-runtime, webcam-runtime
-        run: |
-          python3 - <<'PYTHON'
-          import json, os
-          results = json.loads(os.environ['RESULTS'])
-          assert set(results) == set(os.environ['EXPECTED'].split(', ')), 'Missing prerequisite result'
-          failed = {name: value['result'] for name, value in results.items() if value['result'] != 'success'}
-          assert not failed, failed
-          PYTHON
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
@@ -3735,6 +3721,26 @@ jobs:
           name: rust-ui-application-arm-not-device-validated
           path: ${{ runner.temp }}/ui-arm/
           if-no-files-found: warn
+
+  arm64:
+    name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'rust aarch64 build' || 'Not requested - rust aarch64 build' }}
+    needs: [route, fast-checks, check_user_docs, integration-gate, fast, workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime, webrtc-runtime, webcam-runtime, arm-build]
+    if: ${{ always() && (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Require all validation and the actual ARM build
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+          EXPECTED: route, fast-checks, check_user_docs, integration-gate, fast, workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime, webrtc-runtime, webcam-runtime, arm-build
+        run: |
+          python3 - <<'PYTHON'
+          import json, os
+          results = json.loads(os.environ['RESULTS'])
+          assert set(results) == set(os.environ['EXPECTED'].split(', ')), 'Missing prerequisite result'
+          failed = {name: value['result'] for name, value in results.items() if value['result'] != 'success'}
+          assert not failed, failed
+          PYTHON
 
   runtime-delivery:
     name: Request marked runtime delivery

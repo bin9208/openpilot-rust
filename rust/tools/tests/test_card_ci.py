@@ -82,10 +82,10 @@ def test_required_ci_generates_fixtures_before_tests_and_checks_full_schemas() -
       assert any(f'check_card_hyundai_{checker}.py' in script for script in scripts[testing:])
     assert any(step.get('if') == 'always()' and step.get('uses', '').startswith('actions/upload-artifact')
                for step in jobs[job]['steps'])
-  scripts = [step.get('run', '') for step in jobs['arm64']['steps']]
+  scripts = [step.get('run', '') for step in jobs['arm-build']['steps']]
   assert any('cargo build -p openpilot-card --features native --bins --examples' in script and
              '--target aarch64-unknown-linux-gnu' in script for script in scripts)
-  uploads = [step['with']['path'] for step in jobs['arm64']['steps'] if step.get('uses', '').startswith('actions/upload-artifact')]
+  uploads = [step['with']['path'] for step in jobs['arm-build']['steps'] if step.get('uses', '').startswith('actions/upload-artifact')]
   assert any('aarch64-unknown-linux-gnu/release/openpilot-card' in path for path in uploads)
 
 

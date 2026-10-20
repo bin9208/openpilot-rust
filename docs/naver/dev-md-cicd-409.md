@@ -21,7 +21,9 @@ Failure stops downstream workloads. Integration/Rust/ARM admission gates run
 also after upstream failure and reject failed, cancelled, skipped or absent
 results. Required names remain fast checks, check mapped user docs, integration
 gate, rust checks and rust aarch64 build. The latter rejects every prerequisite
-before any ARM dependency installation or compilation. A newer revision cancels
+after the actual ARM workload. The expensive ARM job uses ordinary success
+dependencies; it cannot start after a cancelled/failed Rust stage. The final
+always-running summary rejects a skipped/cancelled ARM workload. A newer revision cancels
 the old run for the same PR; separate PRs are not globally serialized.
 
 Dedicated Naver CI/APK workflows and fast Naver-only regressions are removed.

@@ -85,7 +85,7 @@ class RustIsolationTests(unittest.TestCase):
         packages = tomllib.loads((ROOT / 'uv.lock').read_text())['package']
         eigen = next(package for package in packages if package['name'] == 'eigen')
         source_commit = eigen['source']['git'].split('#')[-1]
-        for name in ('workspace', 'arm64', 'estimation-runtime'):
+        for name in ('workspace', 'arm-build', 'estimation-runtime'):
             setup = '\n'.join(step.get('run', '') for step in data['jobs'][name]['steps'])
             self.assertIn('@' + source_commit + '#subdirectory=eigen', setup)
             self.assertIn('LOCATIOND_EIGEN_INCLUDE=', setup)
@@ -283,7 +283,7 @@ class RustIsolationTests(unittest.TestCase):
             self.assertIn(required, commands)
         self.assertTrue(any(step.get('if') == 'always()' and
                             'navd-native/' in step.get('with', {}).get('path', '') for step in job['steps']))
-        arm = '\n'.join(step.get('run', '') for step in data['jobs']['arm64']['steps'])
+        arm = '\n'.join(step.get('run', '') for step in data['jobs']['arm-build']['steps'])
         self.assertIn('cargo build -p openpilot-navd --features native --bins --examples --release --locked --target aarch64-unknown-linux-gnu', arm)
         self.assertIn('release/openpilot-set-destination', arm)
 
@@ -394,7 +394,7 @@ class RustIsolationTests(unittest.TestCase):
         artifacts = [step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@')]
         self.assertEqual(len(artifacts), 1)
         self.assertEqual(artifacts[0]['if'], 'always()')
-        arm = next(step for step in data['jobs']['arm64']['steps']
+        arm = next(step for step in data['jobs']['arm-build']['steps']
                    if step.get('name') == 'Build encoder daemon and probes with pinned ARM codecs and ION')
         self.assertEqual(arm['working-directory'], 'rust')
         self.assertIn('--features static-ffmpeg,visionipc-ion', arm['run'])
@@ -416,7 +416,7 @@ class RustIsolationTests(unittest.TestCase):
         self.assertNotIn('continue-on-error', step)
         self.assertTrue(any(step.get('if') == 'always()' and step.get('uses', '').startswith('actions/upload-artifact')
                             for step in job['steps']))
-        arm = next(step['run'] for step in data['jobs']['arm64']['steps'] if step.get('name') == 'Build generic and ION camera aarch64 artifacts')
+        arm = next(step['run'] for step in data['jobs']['arm-build']['steps'] if step.get('name') == 'Build generic and ION camera aarch64 artifacts')
         self.assertLess(arm.index('cp target/'), arm.index('--features visionipc-ion'))
         self.assertIn('--features native-skip-miri', arm)
         self.assertIn('sha256sum', arm)

@@ -71,7 +71,7 @@ class WorkflowPolicyTests(unittest.TestCase):
       if 'matrix' in job.get('strategy', {}):
         self.assertEqual(job['strategy']['max-parallel'], '1', key)
     for key in ('fast-checks', 'check_user_docs', 'git_update', 'build_release', 'model_web',
-                'model', 'android-core', 'integration-gate', 'workspace', 'fast', 'arm64'):
+                'model', 'android-core', 'integration-gate', 'workspace', 'fast', 'arm-build', 'arm64'):
       self.assertIn(key, jobs)
     self.assertEqual(jobs['workspace']['needs'], ['integration-gate'])
     self.assertEqual(jobs['runtime-delivery']['needs'], 'arm64')
@@ -92,6 +92,16 @@ class WorkflowPolicyTests(unittest.TestCase):
           with self.subTest(gate=key, dependency=dependency, state=state):
             self.assertNotEqual(invoke(results | {dependency: {'result': state}}), 0)
         self.assertNotEqual(invoke({name: value for name, value in results.items() if name != dependency}), 0)
+
+  def test_cancelled_validation_never_starts_the_expensive_arm_build(self):
+    jobs = workflow()['jobs']
+    self.assertEqual(jobs['arm-build']['needs'], ['fast'])
+    self.assertNotIn('if', jobs['arm-build'])
+    self.assertIn('arm-build', jobs['arm64']['needs'])
+    self.assertIn('always()', jobs['arm64']['if'])
+    for key, job in jobs.items():
+      if key not in ('integration-gate', 'fast', 'arm64'):
+        self.assertNotIn('always()', job.get('if', ''), key)
 
   def test_naver_dedicated_tests_removed_but_shared_guards_retained(self):
     spec = workflow()
