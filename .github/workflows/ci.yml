@@ -96,6 +96,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+      - uses: ./.github/actions/rust-path
       - name: Install pinned Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal
       - name: Check code and user documentation changes
@@ -269,6 +270,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - name: Install pinned compiler
         run: rustup toolchain install 1.94.0 --profile minimal
       - name: Native build prerequisites
@@ -329,6 +331,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
@@ -632,6 +635,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - run: sudo apt-get update && sudo apt-get install -y clang capnproto libcapnp-dev g++-aarch64-linux-gnu
@@ -698,6 +702,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
@@ -798,6 +803,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -895,6 +901,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -994,6 +1001,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
@@ -1084,6 +1092,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -1174,6 +1183,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
@@ -1237,6 +1247,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
@@ -1292,6 +1303,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
@@ -1351,6 +1363,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -1405,6 +1418,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -1452,6 +1466,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -1523,6 +1538,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
@@ -1586,6 +1602,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -1624,6 +1641,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
@@ -1675,6 +1693,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -1709,6 +1728,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -1772,6 +1792,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
@@ -1848,6 +1869,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - name: Reserve capacity and prepare Miri
         run: |
           # Only GitHub-hosted images contain these disposable tool bundles.
@@ -1895,6 +1917,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
@@ -1991,6 +2014,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
@@ -2073,6 +2097,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
@@ -2165,6 +2190,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2224,6 +2250,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2303,6 +2330,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
@@ -2447,6 +2475,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12.14'
@@ -2583,6 +2612,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12.14'
@@ -2634,6 +2664,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
@@ -2726,6 +2757,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2787,6 +2819,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
@@ -2854,6 +2887,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2930,6 +2964,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
@@ -3003,6 +3038,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
@@ -3069,6 +3105,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
@@ -3180,6 +3217,7 @@ jobs:
       PYTHONPATH: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12.14'
@@ -3260,6 +3298,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12.14'
@@ -3345,6 +3384,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12.14'
@@ -3449,6 +3489,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'

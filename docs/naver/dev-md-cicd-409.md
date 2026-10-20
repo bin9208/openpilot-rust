@@ -102,3 +102,14 @@ The fix reserves 25 GiB plus 4 GiB growth, selects a job-owned SDK, uses the
 existing pinned setup action and installs the app's SDK 35/build-tools 35.0.0.
 No test or product behavior is removed. Actual Android and remaining full CI
 validation is pending on the updated source.
+
+## Rust service PATH discovered after integration
+
+On `3e136e97`, Android (including actual APK verification), native Jetlink and
+integration gate passed. Workspace then failed at its first rustup invocation
+after setup-python, although native Jetlink had just used the provisioned Rust
+installation successfully on the same runner.
+[Workspace evidence](https://github.com/bin9208/openpilot-rust/actions/runs/39427008481/job/118649749196).
+Rust-consuming jobs now register the existing tool directory with GITHUB_PATH
+before setup actions. This does not install a different compiler or change
+source behavior. Actual continuation remains required.

@@ -1,0 +1,17 @@
+name: Expose provisioned Rust tools
+description: Preserve the runner Rust tool directory across subsequent setup actions.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        if command -v rustup >/dev/null 2>&1; then
+          rust_bin=$(dirname "$(command -v rustup)")
+        else
+          rust_bin="${CARGO_HOME:-$HOME/.cargo}/bin"
+        fi
+        if [ ! -x "$rust_bin/rustup" ] || [ ! -x "$rust_bin/cargo" ]; then
+          echo 'Rust tools are not provisioned; install rustup/cargo for the runner service account.' >&2
+          exit 1
+        fi
+        printf '%s\n' "$rust_bin" >> "$GITHUB_PATH"

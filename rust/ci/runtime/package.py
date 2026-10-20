@@ -71,7 +71,7 @@ def git(*args):
 def stage_baseline():
     assert not git("status", "--porcelain")
     changed = git("diff", "--name-only", BASE, SHA).splitlines()
-    allowed = ("AGENTS.md", "launch_openpilot.sh", "rust/Cargo.lock", "rust/crates/jetlink/", "rust/crates/runtime-core/", "rust/crates/runtime-launcher/", "rust/crates/dev-tools/src/publish.rs", "rust/ci/runtime/", "rust/upstream/jetlink.json", "docs/naver/", ".github/workflows/", "docs/development_workflow.md", "rust/crates/dev-tools/tests/publish.rs", "rust/tools/tests/", "tools/ci/", "tools/naver_ci/tests/", "tools/check_jetlink_usb_policy.py")
+    allowed = ("AGENTS.md", "launch_openpilot.sh", "rust/Cargo.lock", "rust/crates/jetlink/", "rust/crates/runtime-core/", "rust/crates/runtime-launcher/", "rust/crates/dev-tools/src/publish.rs", "rust/ci/runtime/", "rust/upstream/jetlink.json", "docs/naver/", ".github/workflows/", ".github/actions/rust-path/", "docs/development_workflow.md", "rust/crates/dev-tools/tests/publish.rs", "rust/tools/tests/", "tools/ci/", "tools/naver_ci/tests/", "tools/check_jetlink_usb_policy.py")
     assert all(any(path == prefix or prefix.endswith(("/", "-")) and path.startswith(prefix) for prefix in allowed) for path in changed), changed
     archive = download(f"https://github.com/bin9208/openpilot-rust/releases/download/runtime-{BASE}/openpilot-rust-{BASE}-aarch64.tar.gz", "baseline.tar.gz", "eb67c8c58f8c8da62aa7afdc11d7cfc1262038222b6e4b9ff0a33fe64206297d")
     base = WORK / "baseline"
