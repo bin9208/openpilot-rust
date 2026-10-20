@@ -26,7 +26,7 @@ fn option(output: PathBuf) -> Options {
     }
 }
 const HISTORICAL: &str = "rust/tools/check_bluetooth_bluez_policy.py";
-fn private_root(present: bool) -> tempfile::TempDir {
+fn private_root() -> tempfile::TempDir {
     let directory = tempfile::tempdir().unwrap();
     for source in [
         "openpilot/selfdrive/carrot/bluetooth/bluez.py",
@@ -39,9 +39,6 @@ fn private_root(present: bool) -> tempfile::TempDir {
     }
     let historical = directory.path().join(HISTORICAL);
     fs::create_dir_all(historical.parent().unwrap()).unwrap();
-    if present {
-        fs::copy(root().join(HISTORICAL), historical).unwrap();
-    }
     directory
 }
 fn private_option(private: &Path, output: &Path) -> Options {
@@ -237,7 +234,7 @@ struct RemoveWriter(Option<PathBuf>);
 impl Write for RemoveWriter {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
         if let Some(path) = self.0.take() {
-            fs::remove_file(path)?;
+            fs::remove_dir(path)?;
         }
         Ok(bytes.len())
     }
@@ -315,7 +312,7 @@ fn one_wrong_response_or_missing_digit_rejects_receipt() {
 }
 
 #[test]
-fn present_and_absent_historical_checker_use_sealed_python_observation() {
+fn absent_historical_checker_uses_sealed_python_observation() {
     let observed_cases = include_bytes!(
         "fixtures/bluetooth-bluez-policy/original-observation-39499806776/cases.jsonl"
     );
@@ -339,8 +336,8 @@ fn present_and_absent_historical_checker_use_sealed_python_observation() {
     );
     let observed_receipt: serde_json::Value = serde_json::from_slice(receipt_bytes).unwrap();
     let observed_source: serde_json::Value = serde_json::from_slice(source_bytes).unwrap();
-    for present in [true, false] {
-        let private = private_root(present);
+    {
+        let private = private_root();
         let output = private.path().join("comparison");
         let mut runner = shape(&output);
         let report = policy::run(
@@ -368,7 +365,7 @@ fn present_and_absent_historical_checker_use_sealed_python_observation() {
 }
 
 #[test]
-fn historical_checker_admits_only_absence_or_exact_regular_content() {
+fn historical_checker_requires_absence_and_sealed_live_sources() {
     for defect in [
         "changed",
         "symlink",
@@ -376,16 +373,20 @@ fn historical_checker_admits_only_absence_or_exact_regular_content() {
         "missing-parent",
         "missing-other",
     ] {
-        let private = private_root(true);
+        let private = private_root();
         let historical = private.path().join(HISTORICAL);
         match defect {
-            "changed" => fs::write(&historical, b"changed historical checker").unwrap(),
+            "changed" => fs::write(&historical, b"reappeared historical checker").unwrap(),
             "symlink" => {
-                fs::remove_file(&historical).unwrap();
-                symlink(root().join(HISTORICAL), &historical).unwrap();
+                symlink(
+                    private
+                        .path()
+                        .join("openpilot/selfdrive/carrot/bluetooth/bluez.py"),
+                    &historical,
+                )
+                .unwrap();
             }
             "fifo" => {
-                fs::remove_file(&historical).unwrap();
                 rustix::fs::mkfifoat(
                     rustix::fs::CWD,
                     &historical,
@@ -394,7 +395,6 @@ fn historical_checker_admits_only_absence_or_exact_regular_content() {
                 .unwrap();
             }
             "missing-parent" => {
-                fs::remove_file(&historical).unwrap();
                 fs::remove_dir(historical.parent().unwrap()).unwrap();
             }
             "missing-other" => {
@@ -424,17 +424,13 @@ fn historical_checker_admits_only_absence_or_exact_regular_content() {
 
 #[test]
 fn checker_mutation_or_reappearance_during_final_stdout_removes_owned_receipt() {
-    for present in [true, false] {
-        let private = private_root(present);
+    {
+        let private = private_root();
         let output = private.path().join("comparison");
         let mut runner = shape(&output);
         let mut writer = ReplaceWriter {
             path: private.path().join(HISTORICAL),
-            replacement: if present {
-                b"changed checker"
-            } else {
-                b"unexpected reappearance"
-            },
+            replacement: b"unexpected reappearance",
         };
         let error = policy::run(
             &private_option(private.path(), &output),
@@ -444,33 +440,31 @@ fn checker_mutation_or_reappearance_during_final_stdout_removes_owned_receipt() 
         )
         .unwrap_err();
         assert_eq!(runner.call, 2);
-        if !present {
-            assert!(error.to_string().contains("presence changed"));
-        }
+        assert!(error.to_string().contains("reappeared"));
         assert!(!output.join("result.json").exists());
     }
 }
 
 #[test]
-fn historical_checker_disappearance_during_final_stdout_is_rejected() {
-    let private = private_root(true);
+fn historical_checker_parent_disappearance_during_final_stdout_is_rejected() {
+    let private = private_root();
     let output = private.path().join("comparison");
     let mut runner = shape(&output);
     let error = policy::run(
         &private_option(private.path(), &output),
         &mut runner,
-        &mut RemoveWriter(Some(private.path().join(HISTORICAL))),
+        &mut RemoveWriter(Some(private.path().join("rust/tools"))),
         &AtomicBool::new(false),
     )
     .unwrap_err();
     assert_eq!(runner.call, 2);
-    assert!(error.to_string().contains("presence changed"));
+    assert!(error.to_string().contains("parent") || error.to_string().contains("No such file"));
     assert!(!output.join("result.json").exists());
 }
 
 #[test]
 fn absent_checker_parent_replacement_and_foreign_receipt_are_rejected() {
-    let private = private_root(false);
+    let private = private_root();
     let output = private.path().join("comparison");
     let mut runner = shape(&output);
     struct ParentSwap<'a>(&'a Path);
@@ -495,7 +489,7 @@ fn absent_checker_parent_replacement_and_foreign_receipt_are_rejected() {
     assert_eq!(runner.call, 2);
     assert!(!output.join("result.json").exists());
 
-    let private = private_root(false);
+    let private = private_root();
     let output = private.path().join("foreign");
     fs::create_dir(&output).unwrap();
     fs::write(output.join("result.json"), b"foreign").unwrap();

@@ -81,9 +81,6 @@ impl Bound {
     fn open(path: &Path) -> Result<Self> {
         Self::open_with_flags(path, rustix::fs::OFlags::empty())
     }
-    fn open_nofollow(path: &Path) -> Result<Self> {
-        Self::open_with_flags(path, rustix::fs::OFlags::NOFOLLOW)
-    }
     fn open_with_flags(path: &Path, extra: rustix::fs::OFlags) -> Result<Self> {
         let mut file = File::from(rustix::fs::open(
             path,
@@ -181,7 +178,6 @@ impl CheckerParent {
 }
 struct Inputs {
     live: Vec<Bound>,
-    checker: Option<Bound>,
     checker_path: PathBuf,
     checker_parent: CheckerParent,
 }
@@ -189,19 +185,14 @@ fn check(inputs: &Inputs, cancel: &AtomicBool) -> Result<()> {
     if cancel.load(Ordering::SeqCst) {
         return Err("BlueZ policy comparison interrupted".into());
     }
-    let present = match fs::symlink_metadata(&inputs.checker_path) {
-        Ok(metadata) => Some(metadata),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+    match fs::symlink_metadata(&inputs.checker_path) {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Ok(_) => return Err("BlueZ policy historical checker reappeared".into()),
         Err(error) => return Err(error.into()),
-    };
-    match (&inputs.checker, present) {
-        (Some(checker), Some(metadata)) if metadata.is_file() => checker.verify_content()?,
-        (None, None) => {}
-        _ => return Err("BlueZ policy historical checker presence changed".into()),
     }
     inputs.checker_parent.verify()?;
     for input in &inputs.live {
-        input.verify()?;
+        input.verify_content()?;
     }
     Ok(())
 }
@@ -209,21 +200,13 @@ fn sources(root: &Path) -> Result<Inputs> {
     let checker_path = root.join(SOURCES[0].0);
     let checker_parent =
         CheckerParent::open(checker_path.parent().ok_or("missing checker parent")?)?;
-    let checker = match fs::symlink_metadata(&checker_path) {
-        Ok(metadata) if metadata.is_file() => {
-            let bound = Bound::open_nofollow(&checker_path)?;
-            if bound.hash != SOURCES[0].1 {
-                return Err("BlueZ policy historical checker content changed".into());
-            }
-            Some(bound)
-        }
-        Ok(_) => return Err("BlueZ policy historical checker is not a regular file".into()),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+    match fs::symlink_metadata(&checker_path) {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Ok(_) => return Err("BlueZ policy historical checker reappeared".into()),
         Err(error) => return Err(error.into()),
-    };
+    }
     let mut inputs = Inputs {
         live: vec![],
-        checker,
         checker_path,
         checker_parent,
     };

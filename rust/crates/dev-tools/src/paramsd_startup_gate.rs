@@ -2,6 +2,7 @@
 use command_fds::{CommandFdExt, FdMapping};
 use rustix::{
     event::{poll, PollFd, PollFlags, Timespec},
+    io::Errno,
     pipe::{pipe_with, PipeFlags},
 };
 use std::{
@@ -10,6 +11,7 @@ use std::{
     os::fd::{AsFd, AsRawFd, BorrowedFd},
     path::{Path, PathBuf},
     process::Command,
+    sync::atomic::{AtomicBool, Ordering},
     time::{Duration, Instant},
 };
 
@@ -111,14 +113,33 @@ impl StartupGate {
     }
 
     pub fn wait_batch(&mut self) -> Result<()> {
-        let mut fds = [PollFd::new(&self.ready_read, PollFlags::IN)];
-        let timeout = Timespec {
-            tv_sec: 10,
-            tv_nsec: 0,
-        };
-        if poll(&mut fds, Some(&timeout))? == 0 {
-            return Err("native input-wait gate missing".into());
+        self.wait_batch_inner(None)
+    }
+
+    pub fn wait_batch_cancellable(&mut self, cancelled: &AtomicBool) -> Result<()> {
+        self.wait_batch_inner(Some(cancelled))
+    }
+
+    fn wait_batch_inner(&mut self, cancelled: Option<&AtomicBool>) -> Result<()> {
+        let deadline = Instant::now() + Duration::from_secs(10);
+        loop {
+            check_cancel(cancelled)?;
+            let remaining = deadline.saturating_duration_since(Instant::now());
+            if remaining.is_zero() {
+                return Err("native input-wait gate missing".into());
+            }
+            let timeout = Timespec {
+                tv_sec: 0,
+                tv_nsec: i64::from(remaining.min(Duration::from_millis(50)).subsec_nanos()),
+            };
+            let mut fds = [PollFd::new(&self.ready_read, PollFlags::IN)];
+            match poll(&mut fds, Some(&timeout)) {
+                Ok(0) | Err(Errno::INTR) => continue,
+                Ok(_) => break,
+                Err(error) => return Err(error.into()),
+            }
         }
+        check_cancel(cancelled)?;
         let mut token = [0];
         self.ready_read.read_exact(&mut token)?;
         if token != *b"R" {
@@ -155,6 +176,24 @@ impl StartupGate {
     }
 
     pub fn release(&mut self, previous: u64, packet_size: u64) -> Result<()> {
+        self.release_inner(previous, packet_size, None)
+    }
+
+    pub fn release_cancellable(
+        &mut self,
+        previous: u64,
+        packet_size: u64,
+        cancelled: &AtomicBool,
+    ) -> Result<()> {
+        self.release_inner(previous, packet_size, Some(cancelled))
+    }
+
+    fn release_inner(
+        &mut self,
+        previous: u64,
+        packet_size: u64,
+        cancelled: Option<&AtomicBool>,
+    ) -> Result<()> {
         let capacity = self
             .queue
             .metadata()?
@@ -164,6 +203,7 @@ impl StartupGate {
         let committed = Self::committed_cursor(previous, packet_size, capacity)?;
         let deadline = Instant::now() + Duration::from_secs(2);
         while self.pointer()? != committed {
+            check_cancel(cancelled)?;
             if Instant::now() >= deadline {
                 return Err(format!(
                     "livePose batch was not fully committed: previous={previous}, expected={committed}, actual={}",
@@ -173,6 +213,7 @@ impl StartupGate {
             }
             std::thread::sleep(Duration::from_millis(1));
         }
+        check_cancel(cancelled)?;
         self.report.input_queued_before_release = true;
         self.report.exact_committed_pose_cursor = true;
         self.report.batches_queued_before_release += 1;
@@ -186,6 +227,19 @@ impl StartupGate {
 
     pub fn finish(&mut self) -> Result<()> {
         self.release_write.write_all(b"S")?;
+        Ok(())
+    }
+
+    pub fn finish_cancellable(&mut self, cancelled: &AtomicBool) -> Result<()> {
+        check_cancel(Some(cancelled))?;
+        self.finish()
+    }
+}
+
+fn check_cancel(cancelled: Option<&AtomicBool>) -> Result<()> {
+    if cancelled.is_some_and(|flag| flag.load(Ordering::Relaxed)) {
+        Err("paramsd controller cancelled".into())
+    } else {
         Ok(())
     }
 }

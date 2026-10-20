@@ -1,4 +1,4 @@
-//! Mandatory live original/native report pair; no synthesized original fallback.
+//! Sealed independent original observation and fresh native same-ELF lanes.
 use std::{collections::BTreeMap, fs, path::PathBuf};
 
 fn required(name: &str) -> PathBuf {
@@ -8,50 +8,34 @@ fn required(name: &str) -> PathBuf {
 }
 
 #[test]
-fn original_python_312_and_native_controller_keep_full_corpus_and_receipt() {
-    let original = required("BLUEZ_POLICY_ORIGINAL_OUTPUT");
+fn sealed_original_and_fresh_native_keep_full_corpus_and_receipt() {
     let native = required("BLUEZ_POLICY_NATIVE_OUTPUT");
-    for name in [
-        "cases.jsonl",
-        "source.json",
-        "native.jsonl",
-        "native.stderr",
-    ] {
+    let observation = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/bluetooth-bluez-policy/original-observation-39499806776");
+    for name in ["cases.jsonl", "source.json"] {
         assert_eq!(
-            fs::read(original.join(name)).unwrap(),
+            fs::read(observation.join(name)).unwrap(),
             fs::read(native.join(name)).unwrap(),
-            "original/native file differs: {name}"
+            "sealed original/native file differs: {name}"
         );
     }
     let original_receipt: serde_json::Value =
-        serde_json::from_slice(&fs::read(original.join("result.json")).unwrap()).unwrap();
+        serde_json::from_slice(&fs::read(observation.join("result.json")).unwrap()).unwrap();
     let native_receipt: serde_json::Value =
         serde_json::from_slice(&fs::read(native.join("result.json")).unwrap()).unwrap();
-    assert_eq!(original_receipt, native_receipt);
-    assert_eq!(original_receipt["cases"], 6363);
-    assert_eq!(original_receipt["digit_points"], 808);
-    assert_eq!(original_receipt["unicode_version"], "15.0.0");
-    let stdout: serde_json::Value =
-        serde_json::from_slice(&fs::read(required("BLUEZ_POLICY_ORIGINAL_STDOUT")).unwrap())
-            .unwrap();
-    assert_eq!(stdout, original_receipt);
+    for key in ["cases", "accepted", "digit_points", "unicode_version"] {
+        assert_eq!(original_receipt[key], native_receipt[key], "{key}");
+    }
+    assert_eq!(native_receipt["cases"], 6363);
+    assert_eq!(native_receipt["digit_points"], 808);
+    assert_eq!(native_receipt["unicode_version"], "15.0.0");
     let native_stdout: serde_json::Value =
         serde_json::from_slice(&fs::read(required("BLUEZ_POLICY_NATIVE_STDOUT")).unwrap()).unwrap();
     assert_eq!(native_stdout, native_receipt);
-    let _original_diagnostics = fs::read(required("BLUEZ_POLICY_ORIGINAL_STDERR")).unwrap();
     let _native_diagnostics = fs::read(required("BLUEZ_POLICY_NATIVE_STDERR")).unwrap();
-    let digits: serde_json::Value =
-        serde_json::from_slice(&fs::read(required("BLUEZ_POLICY_ORIGINAL_DIGITS")).unwrap())
-            .unwrap();
     let native_digits: serde_json::Value =
         serde_json::from_slice(&fs::read(native.join("digits.stdout")).unwrap()).unwrap();
-    assert_eq!(digits, native_digits);
-    assert_eq!(digits.as_array().unwrap().len(), 808);
-    assert_eq!(
-        fs::read(required("BLUEZ_POLICY_ORIGINAL_DIGITS_STDERR")).unwrap(),
-        fs::read(native.join("digits.stderr")).unwrap(),
-        "original/native digit probe stderr differs"
-    );
+    assert_eq!(native_digits.as_array().unwrap().len(), 808);
 }
 
 #[test]
@@ -101,7 +85,7 @@ fn same_elf_absence_lane_keeps_all_outputs_and_exact_native_execs() {
             (path, hash.to_owned())
         })
         .collect::<BTreeMap<_, _>>();
-    assert_eq!(seals.len(), 4);
+    assert_eq!(seals.len(), 3);
     for (path, hash) in &seals {
         assert_eq!(&openpilot_dev_tools::seal::digest(path).unwrap(), hash);
     }

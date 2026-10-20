@@ -1828,12 +1828,12 @@ rust/tools/check_beepd_reference.py	cce9f010d8564f97490cf6840a5f13000097b63f	pen
 rust/tools/check_beepd_sleep.py	7a86d35ce887a3156b0d9b713e9272d1cab56bf3	replaced-local	openpilot-dev-tools check-beep-sleep; 27 original conversions, failure/write-order and CLI captures
 rust/tools/check_bluetooth_bluez.py	2297e17c8ae4ef900a03e1881491d7d095ca396d	pending	-
 rust/tools/check_bluetooth_bluez_invalid.py	f716b51b31a38b3d40bdaedec16ab212388f9431	pending	-
-rust/tools/check_bluetooth_bluez_policy.py	75eab59306ae9493170379e8c4a6dc0cfdd70aea	pending	-
+rust/tools/check_bluetooth_bluez_policy.py	75eab59306ae9493170379e8c4a6dc0cfdd70aea	replaced-local	openpilot-dev-tools check-bluetooth-bluez-policy; sealed original corpus and same-ELF c7005ce1 cloud absence proof; post-deletion exact-SHA gate pending
 rust/tools/check_bluetooth_bluez_prompts.py	ab82243d28dd418a240c5ef0cbd8b75de17b74e7	pending	-
 rust/tools/check_bluetooth_config.py	42716fc0761ced8740869ee2d125c8286f286c68	pending	-
 rust/tools/check_bluetooth_daemon.py	c0a5f09a67d743995ae93c0a6d836ea91341735a	pending	-
 rust/tools/check_bluetooth_engine.py	37d8c109bb4b0f46434caa78c5530e7f54cedae3	pending	-
-rust/tools/check_bluetooth_enumerate.py	f53659596be666481634eb65c0b0ab8e6c291373	pending	-
+rust/tools/check_bluetooth_enumerate.py	f53659596be666481634eb65c0b0ab8e6c291373	replaced-local	openpilot-dev-tools check-bluetooth-enumerate; sealed original corpus and same-ELF c7005ce1 cloud absence proof; post-deletion exact-SHA gate pending
 rust/tools/check_bluetooth_files.py	13fbac529c082d368a1e3b8c6ecf5d359afe701f	replaced-local	openpilot-dev-tools check-bluetooth-files; independent sealed 15 original file observations and same-ELF present/absent cloud proof; post-deletion cloud trace pending
 rust/tools/check_bluetooth_gestures.py	aabe3e2b0a235e00d7023e4b1569be9ac530c06a	pending	-
 rust/tools/check_bluetooth_input.py	0a614d789b56b4e93c5d8cb6e4711b9e673c121e	pending	-

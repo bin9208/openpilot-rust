@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 446);
+    assert_eq!(text.matches(marker).count(), 452);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -305,6 +305,8 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut bridge_controller = vec![];
     let mut soundd_daemon_controller = vec![];
     let mut soundd_finalization = vec![];
+    let mut soundd_retirement = vec![];
+    let mut paramsd_controller = vec![];
     let mut bluetooth_files_controller = vec![];
     let mut bluetooth_config_controller = vec![];
     let mut bluetooth_bluez_policy_controller = vec![];
@@ -337,6 +339,16 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 .iter()
                 .rev()
                 .find(|line| line.starts_with("      - name:"));
+            if step == Some(
+                &"      - name: Require sound daemon same-ELF present and absent execution proof",
+            ) {
+                soundd_retirement.push(tail.to_owned());
+                continue;
+            }
+            if step == Some(&"      - name: Compare full native paramsd controller against original source packets") {
+                paramsd_controller.push(tail.to_owned());
+                continue;
+            }
             if step == Some(&"      - name: Require audio finalization baseline rejection") {
                 soundd_finalization.push(tail.to_owned());
                 continue;
@@ -373,13 +385,13 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 bluetooth_gesture_cases.push(tail.to_owned());
                 continue;
             }
-            if step == Some(&"      - name: Compare native Bluetooth enumeration controller with unchanged original") {
+            if step == Some(&"      - name: Compare native Bluetooth enumeration controller against sealed original observations") {
                 bluetooth_enumerate_controller.push(tail.to_owned());
                 continue;
             }
             if step
                 == Some(
-                    &"      - name: Compare native BlueZ policy controller with unchanged original",
+                    &"      - name: Compare native BlueZ policy controller against sealed original observations",
                 )
             {
                 bluetooth_bluez_policy_controller.push(tail.to_owned());
@@ -1091,7 +1103,16 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     );
     assert_eq!(
         soundd_daemon_controller,
-        [512, 64, 512, 512, 512, 128]
+        [512, 64, 512, 512, 512]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        soundd_retirement,
+        [128, 512].map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        paramsd_controller,
+        [512, 512, 128, 512, 512]
             .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     assert_eq!(

@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. The current source inventory has 211 replaced-local entries,
-three partial entries and 3,366 pending entries. `replaced-local` does not mean merged,
+SCons entrypoints. The current source inventory has 213 replaced-local entries,
+three partial entries and 3,364 pending entries. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -4804,3 +4804,41 @@ rehashed seven diagnostic payloads and independently checked complete Conv
 buffer and final-output byte equality. The first demonstrated mismatch is
 therefore within fused Gelu arithmetic for this input, not Conv or ReduceMean;
 the exact Gelu suboperation is still under investigation. The fence remains.
+
+
+## 2026-10-21 controller retirement integration checkpoint
+
+BlueZ policy and enumeration original/present/absent proof passed at source
+`c7005ce1dfb7aeaaec74aa7d41d780df87651c7b`, [run39508434006, job118923150264](https://github.com/bin9208/openpilot-rust/actions/runs/39508434006/job/118923150264).
+Parent inspected artifact12304089348 (ZIP SHA256
+`c6dcff3ac13beb53e1e2eb8b0ba14577bb70688dfa0a918e9ce9fd84d56ef716`).
+All three BlueZ lanes retain identical 6,363 cases, raw candidate responses and
+independent source observations; 808 digit code points cover Unicode15.0.0.
+Absent execution is exactly the checker plus two native fixture invocations.
+Enumeration retains40sysfs nodes/31accepted devices with no Python exec attempt.
+The two historical checker files are now removed; combined runtime callers use
+native executables. Reappearance is rejected. Fresh post-deletion exact-source
+checks are mandatory and still pending at this checkpoint. Inventory:
+213replaced-local /3partial /3,364pending; this is not whole-project completion.
+
+The full audio job at source`f60e4ac0a655592aaef659f35cc354b86ffa09a0`
+[passed](https://github.com/bin9208/openpilot-rust/actions/runs/39505980261/job/118914882870),
+including the old finalization behavioral failure, current5worker/9controller/
+8process checks, strictClippy, seven original/native scenarios and PortAudioMiri.
+Parent inspected artifact12304571676 (ZIP SHA256
+`23e074eef387fbff6bf1262993e0854536833183f5c4a593611bb6f78f8a8652`).
+The original-only seven-scenario report is retained with provenance; a new
+same-ELF present/absent 22-exec audit is pending. The Python soundd checker is
+still present until this stronger proof passes.
+
+The new full native paramsd controller preserves1,202continuous/eight restart
+publications, atomic cursor gating, persistence, GPS and bounded shutdown.
+An independent Rust reference decodes every actual packet against original
+source rows. Its functional cloud comparison is pending; both original Python
+controller and input generator remain. No runtime/device acceptance is claimed.
+
+Diagnostic attempts also identified missing focused-job prerequisites (pytest
+configuration, capnp and zstandard), rather than demonstrated production defects.
+These setups must reuse the successful main-job commands. The isolated fused
+Mean candidate compiles but still rejects its real cold prefix before execution;
+it remains outside this branch's committed implementation.

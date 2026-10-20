@@ -1,8 +1,9 @@
-//! Requires a real Python 3.12 original run and two native runs on the same fresh ELF.
+//! Sealed Python 3.12 original observation and two fresh native same-ELF lanes.
 use serde::{
     de::{MapAccess, Visitor},
     Deserialize, Deserializer,
 };
+use sha2::{Digest, Sha256};
 use std::{
     fmt, fs,
     path::{Path, PathBuf},
@@ -59,6 +60,30 @@ fn rows(value: &Ordered, output: &Path) -> Vec<(String, String)> {
         })
         .collect()
 }
+fn original_rows(value: &Ordered) -> Vec<(String, String)> {
+    const PREFIX: &str =
+        "/home/runner/work/_temp/ui-connectivity/bluetooth-enumerate/original/dev/";
+    value
+        .0
+        .iter()
+        .map(|(path, address)| {
+            (
+                path.strip_prefix(PREFIX)
+                    .expect("sealed original device path")
+                    .to_owned(),
+                address.clone(),
+            )
+        })
+        .collect()
+}
+fn pairs(rows: &[(String, String)]) -> std::collections::BTreeMap<&str, &str> {
+    let mapped = rows
+        .iter()
+        .map(|(path, address)| (path.as_str(), address.as_str()))
+        .collect::<std::collections::BTreeMap<_, _>>();
+    assert_eq!(mapped.len(), rows.len(), "duplicate device path");
+    mapped
+}
 fn files(root: &Path) -> Vec<(PathBuf, Option<Vec<u8>>)> {
     fn visit(base: &Path, path: &Path, out: &mut Vec<(PathBuf, Option<Vec<u8>>)>) {
         for entry in fs::read_dir(path).unwrap() {
@@ -80,8 +105,7 @@ fn files(root: &Path) -> Vec<(PathBuf, Option<Vec<u8>>)> {
     out
 }
 #[test]
-fn original_python_312_and_native_controller_match_full_sysfs_corpus() {
-    let original = required("BLUETOOTH_ENUMERATE_ORIGINAL_OUTPUT");
+fn sealed_original_and_fresh_native_match_full_sysfs_corpus() {
     let native = required("BLUETOOTH_ENUMERATE_NATIVE_OUTPUT");
     let absent = required("BLUETOOTH_ENUMERATE_ABSENT_OUTPUT");
     let absent_root = required("BLUETOOTH_ENUMERATE_ABSENT_ROOT");
@@ -91,9 +115,12 @@ fn original_python_312_and_native_controller_match_full_sysfs_corpus() {
         std::io::ErrorKind::NotFound,
         "historical checker must be absent from the copied source root"
     );
-    assert_eq!(files(&original.join("sysfs")), files(&native.join("sysfs")));
-    assert_eq!(files(&original.join("sysfs")), files(&absent.join("sysfs")));
-    let old_raw = fs::read(original.join("result.json")).unwrap();
+    assert_eq!(files(&native.join("sysfs")), files(&absent.join("sysfs")));
+    let old_raw = include_bytes!("fixtures/bluetooth-enumerate/original-result.json");
+    assert_eq!(
+        format!("{:x}", Sha256::digest(old_raw)),
+        "36d25b8684cb814421dd22ada7bc75b3d9959c38433e4a5b75c70e02375ac18c"
+    );
     let new_raw = fs::read(native.join("result.json")).unwrap();
     let absent_raw = fs::read(absent.join("result.json")).unwrap();
     let old: Receipt = serde_json::from_slice(&old_raw).unwrap();
@@ -107,48 +134,46 @@ fn original_python_312_and_native_controller_match_full_sysfs_corpus() {
     assert_eq!(missing.accepted, old.accepted);
     assert_eq!(new.source_sha256, old.source_sha256);
     assert_eq!(missing.source_sha256, old.source_sha256);
-    assert_eq!(new.binary_sha256, old.binary_sha256);
-    assert_eq!(missing.binary_sha256, old.binary_sha256);
+    assert_eq!(missing.binary_sha256, new.binary_sha256);
     assert_eq!(
-        rows(&old.source, &original),
-        rows(&new.source, &native),
-        "source"
+        pairs(&original_rows(&old.source)),
+        pairs(&rows(&new.source, &native)),
+        "source pairs"
     );
     assert_eq!(
-        rows(&old.native, &original),
-        rows(&new.native, &native),
-        "native"
+        pairs(&original_rows(&old.native)),
+        pairs(&rows(&new.native, &native)),
+        "native pairs"
     );
     assert_eq!(
-        rows(&old.source, &original),
-        rows(&missing.source, &absent),
-        "absent source"
+        pairs(&original_rows(&old.source)),
+        pairs(&rows(&missing.source, &absent)),
+        "absent source pairs"
     );
     assert_eq!(
-        rows(&old.native, &original),
-        rows(&missing.native, &absent),
-        "absent native"
+        pairs(&original_rows(&old.native)),
+        pairs(&rows(&missing.native, &absent)),
+        "absent native pairs"
     );
-    assert_eq!(rows(&old.source, &original), rows(&old.native, &original));
+    assert_eq!(original_rows(&old.source), original_rows(&old.native));
     assert_eq!(rows(&new.source, &native), rows(&new.native, &native));
+    assert_eq!(rows(&new.source, &native), rows(&missing.source, &absent));
+    assert_eq!(rows(&new.native, &native), rows(&missing.native, &absent));
     assert_eq!(
         rows(&missing.source, &absent),
         rows(&missing.native, &absent)
     );
-    let original_stdout = fs::read(required("BLUETOOTH_ENUMERATE_ORIGINAL_STDOUT")).unwrap();
     let native_stdout = fs::read(required("BLUETOOTH_ENUMERATE_NATIVE_STDOUT")).unwrap();
     let absent_stdout = fs::read(required("BLUETOOTH_ENUMERATE_ABSENT_STDOUT")).unwrap();
-    assert_eq!(original_stdout, native_stdout);
-    assert_eq!(original_stdout, absent_stdout);
+    assert_eq!(native_stdout, absent_stdout);
     assert_eq!(
-        original_stdout,
+        native_stdout,
         b"PASS: 40 sysfs nodes, 31 accepted in source order, missing directory\n"
     );
-    let original_stderr = fs::read(required("BLUETOOTH_ENUMERATE_ORIGINAL_STDERR")).unwrap();
     let native_stderr = fs::read(required("BLUETOOTH_ENUMERATE_NATIVE_STDERR")).unwrap();
     let absent_stderr = fs::read(required("BLUETOOTH_ENUMERATE_ABSENT_STDERR")).unwrap();
-    assert_eq!(original_stderr, native_stderr);
-    assert_eq!(original_stderr, absent_stderr);
+    assert_eq!(native_stderr, absent_stderr);
+    assert!(native_stderr.is_empty(), "original stderr was empty");
     assert_eq!(
         fs::read(native.join("native.stderr")).unwrap(),
         fs::read(absent.join("native.stderr")).unwrap()
