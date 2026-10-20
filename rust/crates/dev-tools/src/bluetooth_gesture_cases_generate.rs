@@ -10,10 +10,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-#[path = "camera_random.rs"]
-#[allow(dead_code)]
-mod camera_random;
-use camera_random::Random;
+use crate::journald_check::Random;
 
 const HELPER: &str = "rust/tools/bluetooth_gesture_cases.py";
 const RECORDING: &str = "openpilot/selfdrive/carrot/bluetooth/tests/yiser_j6.json";
