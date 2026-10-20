@@ -1,0 +1,299 @@
+# Diagnostic-only affected checks, never merged into dev.
+name: Bluetooth 296 affected checks
+on:
+  push:
+    branches: [codex/feat-296-native-tools-candidate]
+    paths: [.github/workflows/bluetooth-296-once.yml]
+permissions:
+  contents: read
+env:
+  RUSTUP_TOOLCHAIN: '1.94.0'
+jobs:
+  bluetooth:
+    name: Bluetooth remaining native tools and migrated callers
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        ref: 341aa2b5ace9a49277c53896ad27137dd09178cd
+    - name: Require exact Bluetooth candidate source
+      run: 'test "$(git rev-parse HEAD)" = 341aa2b5ace9a49277c53896ad27137dd09178cd
+
+        test -z "$(git status --porcelain)"'
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Prepare affected Bluetooth prerequisites
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        sudo apt-get update && sudo apt-get install -y g++ clang cmake make libclang-dev capnproto libcapnp-dev libzmq3-dev
+        dbus-daemon strace
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 cffi==2.1.1 jeepney==0.9.0
+        requests==2.34.2 pyserial==3.5 pytest==9.0.2 anyio==4.12.1
+
+        '
+    - uses: ./.github/actions/native-json11
+    - name: Build affected Bluetooth daemons, examples and original IPC bindings
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-bluetooth -p openpilot-process-supervision --bins --examples
+        --locked
+
+        python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/ui-params-binding"
+
+        python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/connectivity-msgq-python"
+
+        '
+    - name: Compare native Bluetooth sudo fixture with unchanged original
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/ui-connectivity/bluetooth-sudo-fixture"
+
+        export BLUETOOTH_SUDO_ORIGINAL_PYTHON="$GITHUB_WORKSPACE/rust/tools/bluetooth_sudo_fixture.py"
+
+        export BLUETOOTH_SUDO_EVIDENCE="$proof/cases"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-sudo-fixture-native --bin
+        bluetooth-sudo-fixture --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-sudo-fixture-native --test
+        bluetooth_sudo_fixture --locked --no-run
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        mkdir -p "$proof"
+
+        interpreter="$(readlink -f "$(command -v python)")"
+
+        sha256sum "$interpreter" rust/tools/bluetooth_sudo_fixture.py rust/target/debug/bluetooth-sudo-fixture > "$proof/artifacts.sha256"
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-sudo-fixture-native --test
+        bluetooth_sudo_fixture --locked -- --nocapture
+
+        sha256sum -c "$proof/artifacts.sha256"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-sudo-fixture-native --lib
+        --bin bluetooth-sudo-fixture --test bluetooth_sudo_fixture --locked -- -D warnings
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        native_sudo="$proof/bluetooth-sudo-fixture"
+
+        cp --no-clobber rust/target/debug/bluetooth-sudo-fixture "$native_sudo"
+
+        cmp rust/target/debug/bluetooth-sudo-fixture "$native_sudo"
+
+        native_sha=$(sha256sum "$native_sudo" | cut -d '' '' -f1)
+
+        printf ''BLUETOOTH_SUDO_NATIVE_BINARY=%s\nBLUETOOTH_SUDO_NATIVE_SHA256=%s\n'' "$native_sudo" "$native_sha" >> "$GITHUB_ENV"
+
+        sha256sum "$native_sudo" rust/tools/bluetooth_sudo_fixture.py rust/tools/check_bluetooth_input.py rust/tools/bluetooth_daemon_fixture.py
+        > "$proof/caller-artifacts.sha256"
+
+        '
+    - name: Compare native Bluetooth gesture corpus with unchanged original
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/ui-connectivity/bluetooth-gesture-cases"
+
+        candidate="$GITHUB_WORKSPACE/rust/target/debug/examples/gesture_fixture"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-gesture-cases-native --bin
+        generate-bluetooth-gesture-cases --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-gesture-cases-native --test
+        bluetooth_gesture_cases_generate --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-gesture-cases-native --lib
+        --bin generate-bluetooth-gesture-cases --test bluetooth_gesture_cases_generate --locked -- -D warnings
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        mkdir -p "$proof"
+
+        sha256sum "$candidate" rust/target/debug/generate-bluetooth-gesture-cases rust/tools/check_bluetooth_gestures.py rust/tools/bluetooth_gesture_cases.py
+        openpilot/selfdrive/carrot/bluetooth/model.py openpilot/selfdrive/carrot/bluetooth/tests/yiser_j6.json > "$proof/artifacts.sha256"
+
+        timeout --kill-after=5s 120s python rust/tools/check_bluetooth_gestures.py --binary "$candidate" --output "$proof/original"
+        > "$proof/original.stdout" 2> "$proof/original.stderr"
+
+        timeout --kill-after=5s 30s rust/target/debug/generate-bluetooth-gesture-cases --root "$GITHUB_WORKSPACE" --output
+        "$proof/native-input.jsonl" > "$proof/generator.stdout" 2> "$proof/generator.stderr"
+
+        cmp "$proof/original/input.jsonl" "$proof/native-input.jsonl"
+
+        timeout --kill-after=5s 65s "$candidate" < "$proof/native-input.jsonl" > "$proof/native-result.jsonl" 2> "$proof/native-result.stderr"
+
+        cmp "$proof/original/native.jsonl" "$proof/native-result.jsonl"
+
+        cmp "$proof/original/native.stderr" "$proof/native-result.stderr"
+
+        sha256sum -c "$proof/artifacts.sha256"
+
+        '
+    - name: Compare native Bluetooth config controller with unchanged original
+      run: 'set -euo pipefail
+
+        export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
+
+        export BLUETOOTH_CONFIG_FIXTURE="$GITHUB_WORKSPACE/rust/target/debug/examples/config_fixture"
+
+        export BLUETOOTH_CONFIG_PYTHON=python
+
+        export BLUETOOTH_CONFIG_EVIDENCE="$RUNNER_TEMP/ui-connectivity/bluetooth-config-original"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-config-native --bin check-bluetooth-config
+        --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-config-native --test bluetooth_config_check
+        --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-config-native --lib --bin
+        check-bluetooth-config --test bluetooth_config_check --locked -- -D warnings
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        rust/target/debug/check-bluetooth-config --binary "$BLUETOOTH_CONFIG_FIXTURE" --output "$RUNNER_TEMP/ui-connectivity/bluetooth-config-current"
+
+        '
+    - name: Require native Bluetooth file controller with sealed original observations
+      run: 'set -euo pipefail
+
+        export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
+
+        export BLUETOOTH_FILE_FIXTURE="$GITHUB_WORKSPACE/rust/target/debug/examples/file_fixture"
+
+        export BLUETOOTH_FILES_EVIDENCE="$RUNNER_TEMP/ui-connectivity/bluetooth-files-original"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-files-native --bin check-bluetooth-files
+        --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-files-native --test bluetooth_files_check
+        --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-files-native --lib --bin
+        check-bluetooth-files --test bluetooth_files_check --locked -- -D warnings
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        proof="$RUNNER_TEMP/ui-connectivity/bluetooth-files-retirement"
+
+        checker="$GITHUB_WORKSPACE/rust/target/debug/check-bluetooth-files"
+
+        test ! -e rust/tools/check_bluetooth_files.py
+
+        test ! -L rust/tools/check_bluetooth_files.py
+
+        mkdir -p "$proof"
+
+        sha256sum "$checker" "$BLUETOOTH_FILE_FIXTURE" > "$proof/artifacts.sha256"
+
+        env PATH=/nonexistent "$checker" --binary "$BLUETOOTH_FILE_FIXTURE" --output "$proof/absent"
+
+        sha256sum -c "$proof/artifacts.sha256"
+
+        '
+    - name: Compare native Bluetooth journal controller with unchanged original
+      run: 'export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
+
+        export BLUETOOTH_JOURNAL_FIXTURE="$GITHUB_WORKSPACE/rust/target/debug/examples/journal_fixture"
+
+        export BLUETOOTH_JOURNAL_PYTHON=python
+
+        export BLUETOOTH_JOURNAL_EVIDENCE="$RUNNER_TEMP/ui-connectivity/bluetooth-journal-original"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-journal-native --bin check-bluetooth-journal
+        --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-journal-native --test bluetooth_journal_check
+        --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-journal-native --lib --test
+        bluetooth_journal_check --bin check-bluetooth-journal --locked -- -D warnings
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        rust/target/debug/check-bluetooth-journal --binary "$BLUETOOTH_JOURNAL_FIXTURE" --output "$RUNNER_TEMP/ui-connectivity/bluetooth-journal-current"
+
+        '
+    - name: Check native Bluetooth input decoder against original records
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-input-native --bin check-bluetooth-input-decode
+        --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        BLUETOOTH_INPUT_FIXTURE="$PWD/rust/target/debug/examples/input_fixture" cargo test --manifest-path rust/Cargo.toml
+        -p openpilot-dev-tools --features bluetooth-input-native --test bluetooth_input_check --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-input-native --lib --test
+        bluetooth_input_check --bin check-bluetooth-input-decode --locked -- -D warnings
+
+        '
+    - name: Compare Bluetooth input, continuous IPC and private BlueZ lifecycle
+      run: 'set -euo pipefail
+
+        test -x "$BLUETOOTH_SUDO_NATIVE_BINARY"
+
+        sha256sum -c "$RUNNER_TEMP/ui-connectivity/bluetooth-sudo-fixture/caller-artifacts.sha256"
+
+        python rust/tools/check_bluetooth_runtime.py --bin-dir "$PWD/rust/target/debug" --msgq-python "$RUNNER_TEMP/connectivity-msgq-python"
+        --output "$RUNNER_TEMP/ui-connectivity/bluetooth"
+
+        sha256sum -c "$RUNNER_TEMP/ui-connectivity/bluetooth-sudo-fixture/caller-artifacts.sha256"
+
+        '
+    - if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: bluetooth-affected-source-evidence
+        path: ${{ runner.temp }}/ui-connectivity/
+        if-no-files-found: warn
