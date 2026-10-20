@@ -60,10 +60,16 @@ validation jobs. Do not substitute queueing, a skipped job or a host build for
 successful CI, AGNOS installation or user device acceptance.
 
 Initial source: `d4d1c4e6`. [Branch run 39422917555](https://github.com/bin9208/openpilot-rust/actions/runs/39422917555)
-confirmed branch-only routing and passed all 43 unittest policy/source guards,
+confirmed branch-only routing and passed all 46 unittest policy/source guards,
 but failed the disk-guard provider-argument hash because it encoded the former
 YAML job order. Diff review verified the same commands, counts and argument
 multisets before/after; canonical sorted hashes preserve those exact values
 while allowing the approved job reorder. No disk guard was removed or relaxed.
+
+[Branch run 39423177019](https://github.com/bin9208/openpilot-rust/actions/runs/39423177019)
+on `cae7ee8f` passed fast checks (46 policy/source unittests, 13 disk-guard
+regressions, Wiki, Jetlink Python and Android core/runtime tests). No deep job
+ran on this branch push. Legacy planner/Card/Xiaoge/UI workflow-inspection tests
+are also redirected to ci.yml and the structured result gate.
 
 Status: implementation in progress. Latest PR/Actions/protection evidence pending.

@@ -55,15 +55,16 @@ def test_failed_or_missing_build_receipts_are_rejected(tmp_path: Path, batch: in
 
 
 def test_both_host_architectures_and_native_memory_are_required_gates() -> None:
-  jobs = yaml.safe_load((ROOT / ".github/workflows/rust.yml").read_text())["jobs"]
+  jobs = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())["jobs"]
   assert jobs["xiaoge-runtime"]["strategy"]["matrix"]["runner"] == ["ubuntu-24.04", "ubuntu-24.04-arm"]
   assert {"xiaoge-runtime", "xiaoge-memory"} <= set(jobs["fast"]["needs"])
   gate = jobs["fast"]["steps"][0]
-  environment = dict(os.environ, **dict.fromkeys(gate["env"], "success"))
+  results = {name: {"result": "success"} for name in jobs["fast"]["needs"]}
+  environment = dict(os.environ, RESULTS=json.dumps(results), EXPECTED=gate["env"]["EXPECTED"])
   assert subprocess.run(["bash", "-e", "-c", gate["run"]], env=environment, check=False).returncode == 0
-  for name in ["XIAOGE", "XIAOGE_MEMORY"]:
+  for name in ["xiaoge-runtime", "xiaoge-memory"]:
     for value in ["failure", "cancelled", "skipped", ""]:
-      run = subprocess.run(["bash", "-e", "-c", gate["run"]], env=dict(environment, **{name: value}), check=False)
+      run = subprocess.run(["bash", "-e", "-c", gate["run"]], env=dict(environment, RESULTS=json.dumps(results | {name: {"result": value}})), check=False)
       assert run.returncode != 0, (name, value)
   for job in ["xiaoge-runtime", "xiaoge-memory"]:
     for step in jobs[job]["steps"]:
@@ -73,7 +74,7 @@ def test_both_host_architectures_and_native_memory_are_required_gates() -> None:
 
 
 def test_miri_failure_stops_the_required_job_before_later_modes(tmp_path: Path) -> None:
-  jobs = yaml.safe_load((ROOT / ".github/workflows/rust.yml").read_text())["jobs"]
+  jobs = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())["jobs"]
   step = next(step for step in jobs["xiaoge-memory"]["steps"] if "MIRIFLAGS=" in step.get("run", ""))
   binaries = tmp_path / "bin"
   binaries.mkdir()
