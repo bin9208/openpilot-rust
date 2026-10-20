@@ -156,7 +156,9 @@ class WorkflowPolicyTests(unittest.TestCase):
         else:
           self.assertIn(job['runs-on'], ('ubuntu-24.04', 'ubuntu-24.04-arm'), (name, key))
     commands = '\n'.join(step.get('run', '') for step in workflow()['jobs']['check_user_docs']['steps'])
-    self.assertIn('package.py source-policy', commands)
+    self.assertNotIn('package.py source-policy', commands)
+    delivery = '\n'.join(step.get('run', '') for step in workflow('dev-md-runtime.yml')['jobs']['package']['steps'])
+    self.assertIn('package.py source-policy', delivery)
     native = '\n'.join(step.get('run', '') for step in workflow()['jobs']['xiaoge-runtime']['steps'])
     self.assertIn('--features native-skip-miri --all-targets', native)
     self.assertTrue((ROOT / 'rust/crates/xiaoge/tests/cadence.rs').is_file())

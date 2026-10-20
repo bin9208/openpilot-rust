@@ -224,10 +224,16 @@ suite and the existing Xiaoge native --all-targets group (including camera
 pixels); no separate automatic validation entry point is restored.
 
 The baseline source policy retains inherited-document tree identity and
-no-renames removal checks, adds exact reviewed CI/test paths and checks the
-actual source in regular CI without packaging. Unknown workflow/test paths,
+no-renames removal checks, adds exact reviewed CI/test paths and exercises policy boundaries in CI. Actual changed-source admission remains
+in delivery preparation, preserving ordinary code PR validation scope. Unknown workflow/test paths,
 provider/model sources and prefix lookalikes stay rejected. Runtime dispatch
 still requires the completed exact-source marked PR merge, and publication
 requires the verified source SHA plus independently successful push CI.
 No runtime is requested by this CI change; #418's separate release remains
 outside this task. New full PR and post-merge evidence will use the updated base.
+
+The diagnostic actual-source check also passed in the `a0e7ff3c` PR run before
+this scope correction. It is not a permanent generic PR gate: baseline reuse
+eligibility belongs to delivery, not every ordinary code change. Common CI
+runs the same policy's positive/negative regressions; delivery retains the
+actual source check before downloads/builds.
