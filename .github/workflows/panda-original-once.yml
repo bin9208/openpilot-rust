@@ -1,0 +1,116 @@
+name: One-off original Panda timestamp path capture
+
+on:
+  push:
+    branches:
+      - codex/feat-296-panda-original-capture
+    paths:
+      - .github/workflows/panda-original-once.yml
+
+jobs:
+  original-panda-capture:
+    if: github.ref == 'refs/heads/codex/feat-296-panda-original-capture'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    steps:
+      - name: Read diagnostic helpers from the one-off branch
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Hold branch-visible diagnostic source outside the checkout
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/panda-diag/tools"
+          cp .github/panda-original-diagnostic/{wrap_zmq_send.cc,make_collector_copy.py,rebuild_wrapped.py,diagnose.py} "$RUNNER_TEMP/panda-diag/tools/"
+          sha256sum .github/workflows/panda-original-once.yml .github/panda-original-diagnostic/* > "$RUNNER_TEMP/panda-diag/branch-inputs.sha256"
+      - name: Check out the exact failed source revision
+        uses: actions/checkout@v7
+        with:
+          ref: 2d8d027932dc880bd0acd00288b256ac8d7f1b89
+          persist-credentials: false
+          clean: true
+      - name: Verify exact original source revision
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 2d8d027932dc880bd0acd00288b256ac8d7f1b89
+          git status --porcelain > "$RUNNER_TEMP/panda-diag/checkout-status.txt"
+          test ! -s "$RUNNER_TEMP/panda-diag/checkout-status.txt"
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Prepare original Panda source and IPC prerequisites
+        run: |
+          set -euo pipefail
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update
+          sudo apt-get install -y capnproto libcapnp-dev g++ clang libusb-1.0-0-dev libzmq3-dev cmake pkg-config curl
+          rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 pyzmq==27.2.0 Cython==3.2.4 setuptools==82.0.1 libusb1==3.4.0 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 setproctitle==1.3.7 pytest==9.0.2
+          rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal
+          printf 'PYTHONPATH=%s/panda-diag/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Build only source-builder tools and original native collector
+        run: |
+          set -euo pipefail
+          rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin stage-json11 --bin build-pandad-protocol-source --bin build-pandad-runtime-fixture --bin build-pandad-runtime-source -p openpilot-logmessaged --bin openpilot-logmessaged --locked --message-format=json 2> "$RUNNER_TEMP/panda-diag/native-build.log" | tee "$RUNNER_TEMP/panda-diag/native-build.jsonl"
+          rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/panda-diag/msgq"
+          python -P -c 'import msgq.ipc_pyx, usb1; from openpilot.cereal import log; log.Event.new_message(); print(msgq.ipc_pyx.__file__); print(usb1.__file__)' > "$RUNNER_TEMP/panda-diag/imports.txt"
+      - name: Build exact unchanged original C++ Panda and USB fixture
+        run: |
+          set -euo pipefail
+          root="$GITHUB_WORKSPACE"
+          out="$RUNNER_TEMP/panda-diag"
+          bins="$root/rust/target/debug"
+          rust/tools/check-disk-space --path "$root" --growth-mib 2048
+          "$bins/stage-json11" --root "$root" --output "$out/json11-dependency" > "$out/stage-json11.json"
+          json11=$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["prefix"])' "$out/stage-json11.json")
+          "$bins/build-pandad-protocol-source" --root "$root" --output "$out/protocol-src" --capnp-prefix /usr --json11-prefix "$json11" --sanitize
+          "$bins/build-pandad-runtime-fixture" --root "$root" --output "$out/runtime-fixture" --json11-prefix "$json11" --libusb-include /usr/include
+          zmq=$(python -c 'from pathlib import Path; import sys; from check_pandad_ci import zmq_output; print(zmq_output(Path(sys.argv[1])))' "$out/native-build.jsonl")
+          "$bins/build-pandad-runtime-source" --root "$root" --output "$out/runtime-src" --generated-root "$out/protocol-src" --capnp-prefix /usr --json11-prefix "$json11" --libusb-include /usr/include --zmq-root "$zmq" --fixture "$out/runtime-fixture/libusb-1.0.so.0" --sanitize
+          sha256sum "$out/runtime-src/pandad-source" "$out/runtime-fixture/libusb-1.0.so.0" "$bins/openpilot-logmessaged" > "$out/built-inputs.sha256"
+      - name: Build separate diagnostic sender and collector copies
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/panda-diag"
+          rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          python "$out/tools/rebuild_wrapped.py" "$out/runtime-src/command.json" "$out/tools/wrap_zmq_send.cc" "$out/pandad-wrapped"
+          python "$out/tools/make_collector_copy.py" "$GITHUB_WORKSPACE" "$out/collector-copy"
+          cargo build --manifest-path "$out/collector-copy/Cargo.toml" --offline --locked
+          sha256sum "$GITHUB_WORKSPACE/rust/Cargo.lock" "$out/collector-copy/Cargo.lock" > "$out/collector-locks.sha256"
+          sha256sum "$out/pandad-wrapped" "$out/collector-copy/target/debug/panda-diag-logmessaged" "$out/collector-copy/src/main.rs" > "$out/diagnostic-inputs.sha256"
+      - name: Run bounded original onroad controls and instrumented captures
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/panda-diag"
+          mkdir -p "$out/evidence"
+          rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 256
+          python "$out/tools/diagnose.py" "$GITHUB_WORKSPACE" "$out/evidence" "$out/runtime-src/pandad-source" "$out/pandad-wrapped" "$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged" "$out/collector-copy/target/debug/panda-diag-logmessaged" "$out/runtime-fixture/libusb-1.0.so.0" "$out/runtime-src/manifest.json"
+      - name: Retain bounded inputs and every raw diagnostic attempt
+        if: always()
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/panda-diag"
+          mkdir -p "$out/evidence/build"
+          cp "$out"/{branch-inputs.sha256,checkout-status.txt,imports.txt,native-build.log,stage-json11.json,built-inputs.sha256,diagnostic-inputs.sha256,collector-locks.sha256} "$out/evidence/build/" 2>/dev/null || true
+          cp "$out/runtime-src/"{command.json,manifest.json} "$out/evidence/build/" 2>/dev/null || true
+          cp "$out/"{wrapped-build.json,collector-copy/Cargo.lock} "$out/evidence/build/" 2>/dev/null || true
+          cp "$out/tools/"* "$out/evidence/build/" 2>/dev/null || true
+          du -sm "$out/evidence" | tee "$out/evidence/build/size-mib.txt"
+          test "$(du -sm "$out/evidence" | cut -f1)" -lt 200
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: panda-original-timestamp-path-diagnostic
+          path: ${{ runner.temp }}/panda-diag/evidence/
+          if-no-files-found: error
+          retention-days: 7
