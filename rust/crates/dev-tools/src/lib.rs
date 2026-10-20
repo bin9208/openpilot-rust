@@ -210,6 +210,8 @@ pub mod version_source;
 #[cfg(feature = "eigen-tools-native")]
 pub mod eigen_stage;
 pub mod elf_audit;
+#[cfg(feature = "paramsd-startup-gate-native")]
+pub mod paramsd_startup_gate;
 #[cfg(feature = "encoder-runtime-native")]
 pub mod encoder_ci_check;
 #[cfg(feature = "camera-sensor-native")]

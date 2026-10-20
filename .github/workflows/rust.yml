@@ -3111,6 +3111,13 @@ jobs:
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features eigen-tools-native --lib --bin stage-eigen-headers --test eigen_stage -- -D warnings
           sha256sum --check "$proof/stager.sha256"
           sha256sum --check "$proof/source.sha256"
+      - name: Check native paramsd atomic gate foundation alongside original cases
+        run: |
+          set -euo pipefail
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features paramsd-startup-gate-native --test paramsd_startup_gate
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features paramsd-startup-gate-native --lib --test paramsd_startup_gate -- -D warnings
       - name: Build current native dependency stager
         uses: ./.github/actions/native-json11
       - name: Build native estimators and unchanged source oracle

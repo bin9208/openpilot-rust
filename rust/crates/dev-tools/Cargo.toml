@@ -538,6 +538,7 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
+paramsd-startup-gate-native = []
 eigen-tools-native = []
 bluetooth-sudo-fixture-native = []
 bluetooth-gesture-cases-native = ["dep:openpilot-runtime-core"]
@@ -789,6 +790,10 @@ required-features = ["eigen-tools-native"]
 [[test]]
 name = "eigen_stage"
 required-features = ["eigen-tools-native"]
+
+[[test]]
+name = "paramsd_startup_gate"
+required-features = ["paramsd-startup-gate-native"]
 
 [[bin]]
 name = "runtime-elf-audit"

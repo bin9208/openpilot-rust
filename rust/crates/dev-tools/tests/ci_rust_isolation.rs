@@ -782,6 +782,20 @@ fn eigen_staging_requires_all_release_archives_and_original_header_comparison() 
 }
 
 #[test]
+fn paramsd_atomic_foundation_preserves_the_original_independent_cases() {
+    job_check(
+        "estimation-runtime",
+        &[
+            "-q rust/tools/tests/test_paramsd_atomic_gate.py",
+            "--features paramsd-startup-gate-native --test paramsd_startup_gate",
+            "--features paramsd-startup-gate-native --lib --test paramsd_startup_gate -- -D warnings",
+        ],
+        &["paramsd_startup_gate"],
+        false,
+    );
+}
+
+#[test]
 fn lagd_masked_allocation_requires_same_source_old_and_current_measurements() {
     job_check(
         "estimation-runtime",
