@@ -47,6 +47,8 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 3072
           mkdir -p .analysis/scratch/2026-10-21-prefix93-fusion/prior
           gh run download 39488465388 --repo bin9208/openpilot-rust --name prefix93-original-owners-0c2d4d0806b6c802f81dcfb52066c20451ea6ba8 --dir .analysis/scratch/2026-10-21-prefix93-fusion/prior
+          mkdir -p .analysis/scratch/2026-10-21-prefix93-fusion/prior_pass
+          gh run download 39493781996 --repo bin9208/openpilot-rust --name prefix93-original-kernel-diagnostic-145b6faa4b83361b7ba586c032eefe61263d8b99 --dir .analysis/scratch/2026-10-21-prefix93-fusion/prior_pass
       - name: Stage transparent one-off original kernel diagnostic
         shell: bash
         run: |
@@ -326,7 +328,13 @@ jobs:
           source = source.replace(anchor, instrumentation + anchor)
           instrumented_ir = source.encode()
           (OUTPUT / "instrumented.ll").write_bytes(instrumented_ir)
-          instrumented_object = compiler.compile_to_obj(source)
+          prior_pass_receipt = json.loads(sealed(HERE / "prior_pass" / "diagnostic" / "receipt.json",
+                                                "2b7268f3707a1876f94557ad0a976ed76033a275ac8b3cf522a865a4257cdb41"))
+          assert prior_pass_receipt["instrumented_ir_sha256"] == sha(instrumented_ir)
+          assert prior_pass_receipt["instrumented_output_sha256"] == prior["output_sha256"]
+          instrumented_object = sealed(HERE / "prior_pass" / "diagnostic" / "instrumented.objbin",
+                                       "56e5834332bff36478d208f56fdb7e470562db24353947487f96a21f4115a46a")
+          assert prior_pass_receipt["instrumented_object_sha256"] == sha(instrumented_object)
           (OUTPUT / "instrumented.objbin").write_bytes(instrumented_object)
           instrumented_output, trace, conv_trace = execute(instrumented_object, "r_15_4_16_128_24_4", traced=True)
           (OUTPUT / "instrumented-output.bin").write_bytes(instrumented_output)
@@ -338,6 +346,9 @@ jobs:
               "head_sha": os.environ["GITHUB_SHA"],
               "prior_run": 39488465388,
               "prior_artifact": 12294054127,
+              "prior_pass_run": 39493781996,
+              "prior_pass_artifact": 12297535837,
+              "prior_pass_receipt_sha256": "2b7268f3707a1876f94557ad0a976ed76033a275ac8b3cf522a865a4257cdb41",
               "prior_receipt_sha256": sha(prior_receipt_raw),
               "prior_driver_sha256": prior["driver_sha256"],
               "driver_sha256": sha(Path(__file__).read_bytes()),
@@ -540,7 +551,7 @@ jobs:
           (OUTPUT / "stage-receipt.json").write_text(json.dumps(stage_results, indent=2) + "\n")
           print("verified three original-kernel stage traces", stage_results["target_locations"], flush=True)
           PREFIX93_KERNEL_DRIVER
-          printf '7abb698fc8d386619ddadbbbdd81362cd9645ec6c5a61c730067db347e556338  %s/diagnose_original_terminal.py\n' "$capture_dir" | sha256sum --check --strict
+          printf '1a07681514b14c7c4e27d744ad4a3b81f011aebc5d372fd53243f9ea895d75b6  %s/diagnose_original_terminal.py\n' "$capture_dir" | sha256sum --check --strict
       - name: Execute sealed original object and instrumented copy
         shell: bash
         env:
