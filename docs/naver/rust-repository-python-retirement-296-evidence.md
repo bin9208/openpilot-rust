@@ -4568,3 +4568,44 @@ PATH, with exactly the sealed checker and fixture exec attempts. The trace and
 audit are written to `BLUETOOTH_FILES_EVIDENCE`; the immutable original Python
 observation and its provenance remain separate. Post-deletion CI has not yet
 run, so this is a source-ready retirement rather than a cloud-validated one.
+
+
+### BlueZ prompt policy controller and cold node280 coverage (cloud pending)
+
+The next source-ready controller covers `check_bluetooth_bluez_policy.py` without
+removing its unchanged original. Seven prompt kinds use all 33 fixed values,
+808 independently parsed Unicode 15 Digit/Decimal points and 68 six-digit
+sequences: 6,363 ordered cases. Native policy expectations use the pinned
+Unicode property source, never production Bluetooth policy or digit tables.
+The required UI gate builds the native controller, runs its unit/regression
+checks and strict Clippy, then compares complete JSONL, source answers, stderr,
+receipts and the full digit table with actual Python 3.12 on the same hashed
+candidate ELF. Actual original output is retained visibly for later sealing.
+Source identity and binary identity remain held through final receipt
+publication, with original 30-second candidate deadlines. No functional result
+or source retirement is claimed before the required Actions run.
+
+The compiler corpus adds a cold prefix280 test from independently captured
+LLVM18/20 results: source is reconstructed from the pinned full ONNX model,
+compiled natively and run from its six external input recipes. Captured
+intermediate buffers and original objects authenticate provenance; they are not
+native compilation inputs. The zero desire case is retained. A second original-only capture with raw f32
+one-hot desire rows passed under both providers in
+[run 39485648481](https://github.com/bin9208/openpilot-rust/actions/runs/39485648481),
+commit `ca42e06a490f3bfd1287f0eb0104048726a15aa9`. Artifact 12293287379
+has ZIP SHA-256 `efe890b579566c7fe193c8e5fd49517dada3c9ec197275143b972a9e737786f7`.
+Parent independently compared its raw original receipts, IR, objects and changed
+terminal input with the compact fixtures. Both providers produced changed output
+SHA-256 `47989d3b10646cd7933c72366373ebb3f753222bf2fea9dba653c6ba363d8ec1`.
+The required native cases compile and run both inputs under both memory policies;
+their outcomes remain pending cloud execution. Prefix93 remains a separate
+unresolved numerical boundary.
+
+The narrow Lagd allocation change is tracked in
+[rust-lagd-masked-allocation-429.md](rust-lagd-masked-allocation-429.md).
+Existing original numerical/daemon checks remain mandatory, and a cloud-only
+old/current probe must verify the numerical fingerprint and actual allocation
+delta before any measured saving is reported. Local work for this batch remains
+source review, formatting, syntax and diff inspection only. Inventory remains
+210 replaced-local, 3 partially-replaced and 3,367 pending; device boot,
+recording, upload and driving acceptance remain user-owned.

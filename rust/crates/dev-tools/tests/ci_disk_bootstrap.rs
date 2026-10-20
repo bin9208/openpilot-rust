@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 401);
+    assert_eq!(text.matches(marker).count(), 411);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -255,12 +255,14 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut metadata_capture = vec![];
     let mut helper_transport = vec![];
     let mut lagd_tools = vec![];
+    let mut lagd_masked_allocation = vec![];
     let mut raylib = vec![];
     let mut logging_builder = vec![];
     let mut native_architecture = vec![];
     let mut encoder_builder = vec![];
     let mut encoder_checks = vec![];
     let mut model_source = vec![];
+    let mut compiler_node280 = vec![];
     let mut translation_checker = vec![];
     let mut diagnostic_checkers = vec![];
     let mut artifact_list = vec![];
@@ -304,6 +306,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut soundd_daemon_controller = vec![];
     let mut bluetooth_files_controller = vec![];
     let mut bluetooth_config_controller = vec![];
+    let mut bluetooth_bluez_policy_controller = vec![];
     let mut logmessaged_startup_controller = vec![];
     let mut bluetooth_journal_controller = vec![];
     let mut calibration_float_controller = vec![];
@@ -326,6 +329,28 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 .iter()
                 .rev()
                 .find(|line| line.starts_with("      - name:"));
+            if step
+                == Some(
+                    &"      - name: Compare native BlueZ policy controller with unchanged original",
+                )
+            {
+                bluetooth_bluez_policy_controller.push(tail.to_owned());
+                continue;
+            }
+            if step
+                == Some(
+                    &"      - name: Measure masked lagd input allocation against unchanged source",
+                )
+            {
+                lagd_masked_allocation.push(tail.to_owned());
+                continue;
+            }
+            if step == Some(
+                &"      - name: Require cold native node280 against independent original captures",
+            ) {
+                compiler_node280.push(tail.to_owned());
+                continue;
+            }
             if step == Some(
                 &"      - name: Require bounded launcher cleanup after failed lock acknowledgement",
             ) {
@@ -820,6 +845,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
         ]
     );
     assert_eq!(
+        compiler_node280,
+        [" --path \"$GITHUB_WORKSPACE\" --growth-mib 512"]
+    );
+    assert_eq!(
         llvm20_regression,
         vec![
             " --path \"$GITHUB_WORKSPACE\" --growth-mib 2048",
@@ -974,6 +1003,11 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     assert_eq!(
+        bluetooth_bluez_policy_controller,
+        [512, 512, 512, 512, 128, 128]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
         bluetooth_config_controller,
         [512, 512, 512, 128]
             .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
@@ -1089,6 +1123,11 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     assert_eq!(
         lagd_tools,
         [256, 1024, 512, 512, 128, 128, 128, 128, 128, 128]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        lagd_masked_allocation,
+        [8192, 1024, 128]
             .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     assert_eq!(

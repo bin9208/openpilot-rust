@@ -1671,3 +1671,16 @@ under the installation lock, then extracted, verified and activated. The retry
 unlink is therefore not an established deletion of an unrelated caller file in
 that actual install path. No speculative transport change or blanket clearance
 was made from the earlier name-pattern inventory.
+
+
+## Lagd masked-input allocation follow-up (#429)
+
+A bounded source review found two temporary masked-input `Vec<f64>` allocations
+per `Correlator::masked` call. Borrowed, clonable iterators now feed the same
+FFT order and squared-value operations. Existing normalization, rounding,
+buffers and daemon policies are preserved. The deep estimation job measures
+the same probe against pinned `edb42bf0` and the candidate in separate targets;
+it must preserve full-output fingerprints and demonstrate two fewer Rust
+allocations per call. No measurement or device CPU result is claimed yet.
+See [the focused record](rust-lagd-masked-allocation-429.md); other Lagd and
+PocketFFT internals remain outside this bounded review.

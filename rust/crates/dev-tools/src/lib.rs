@@ -11,6 +11,8 @@ pub mod athena_vision_build;
 pub mod beep_clock_check;
 pub mod beep_integer_check;
 pub mod beep_sleep_check;
+#[cfg(feature = "bluetooth-bluez-policy-native")]
+pub mod bluetooth_bluez_policy_check;
 #[cfg(feature = "bluetooth-config-native")]
 pub mod bluetooth_config_check;
 pub mod bluetooth_digits_generate;

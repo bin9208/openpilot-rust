@@ -660,6 +660,10 @@ jobs:
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx --exclude=''
+      - name: Require cold native node280 against independent original captures
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo +1.94.0 test --locked -p openpilot-model-runtime --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --test compiler_original_node280 -- --nocapture --test-threads=2
       - name: Generate runner-local Hyundai source fixtures
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -3049,6 +3053,32 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features lagd-tools-native --test lagd_reference --test lagd_reference_generic --test lagd_frames --test lagd_packet_reference --test lagd_loop_reference --test lagd_random --test lagd_numeric_cases --test lagd_check --test lagd_cli --test lagd_live_check --test lagd_live_contracts --test lagd_live_native --test lagd_session --test lagd_live_cli --test lagd_retirement --test lagd_ci --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features lagd-tools-native --lib --bin check-lagd-numeric --bin check-lagd-loop --bin check-lagd-cache --bin check-lagd-packet --bin check-lagd-daemon --bin check-lagd-params-io --test lagd_reference --test lagd_reference_generic --test lagd_frames --test lagd_packet_reference --test lagd_loop_reference --test lagd_random --test lagd_numeric_cases --test lagd_check --test lagd_cli --test lagd_live_check --test lagd_live_contracts --test lagd_live_native --test lagd_session --test lagd_live_cli --test lagd_retirement --test lagd_ci --locked -- -D warnings
+      - name: Measure masked lagd input allocation against unchanged source
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/estimation/lagd/masked-allocation-429"
+          baseline="$RUNNER_TEMP/lagd429-baseline"
+          mkdir -p "$proof"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          git fetch --no-tags --depth=1 origin edb42bf095d6a3e3b38cc0a4546976dfb710363e
+          git worktree add --detach "$baseline" edb42bf095d6a3e3b38cc0a4546976dfb710363e
+          CARGO_INCREMENTAL=0 CARGO_TARGET_DIR="$RUNNER_TEMP/lagd429-old-target" cargo build --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-lagd --lib --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          CARGO_INCREMENTAL=0 CARGO_TARGET_DIR="$GITHUB_WORKSPACE/rust/target" cargo build --manifest-path rust/Cargo.toml -p openpilot-lagd --lib --locked
+          for role in old current; do
+            if [ "$role" = old ]; then target="$RUNNER_TEMP/lagd429-old-target"; else target="$GITHUB_WORKSPACE/rust/target"; fi
+            "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+            native_flags=()
+            for out in "$target"/debug/build/*/out; do
+              if [ -d "$out" ]; then native_flags+=(-L "native=$out"); fi
+            done
+            rustc --edition=2021 -C debuginfo=0 rust/tools/lagd_masked_allocation_probe.rs \
+              --extern "openpilot_lagd=$target/debug/libopenpilot_lagd.rlib" \
+              -L "dependency=$target/debug/deps" "${native_flags[@]}" -l stdc++ \
+              -o "$proof/$role-probe"
+            "$proof/$role-probe" | tee "$proof/$role.log"
+          done
+          "$proof/current-probe" --compare "$proof/old.log" "$proof/current.log" | tee "$proof/comparison.log"
       - name: Compare delay numerical policy, full source loop, cache and native IPC
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
@@ -3233,6 +3263,37 @@ jobs:
           rustc --edition=2021 rust/tools/wifi_snapshot_allocation_probe.rs --extern "openpilot_wifi=$GITHUB_WORKSPACE/rust/target/debug/libopenpilot_wifi.rlib" -L "dependency=$GITHUB_WORKSPACE/rust/target/debug/deps" -o "$RUNNER_TEMP/wifi-snapshot-allocation-probe"
           mkdir -p "$RUNNER_TEMP/ui-connectivity"
           "$RUNNER_TEMP/wifi-snapshot-allocation-probe" --require-improvement | tee "$RUNNER_TEMP/ui-connectivity/wifi-snapshot-allocation.tsv"
+      - name: Compare native BlueZ policy controller with unchanged original
+        run: |
+          set -euo pipefail
+          export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
+          proof="$RUNNER_TEMP/ui-connectivity/bluetooth-bluez-policy"
+          candidate="$GITHUB_WORKSPACE/rust/target/debug/examples/bluez_policy"
+          export BLUEZ_POLICY_ORIGINAL_OUTPUT="$proof/original"
+          export BLUEZ_POLICY_NATIVE_OUTPUT="$proof/native"
+          export BLUEZ_POLICY_ORIGINAL_STDOUT="$proof/original.stdout"
+          export BLUEZ_POLICY_ORIGINAL_STDERR="$proof/original.stderr"
+          export BLUEZ_POLICY_ORIGINAL_DIGITS="$proof/original-digits.stdout"
+          export BLUEZ_POLICY_ORIGINAL_DIGITS_STDERR="$proof/original-digits.stderr"
+          export BLUEZ_POLICY_NATIVE_STDOUT="$proof/native.stdout"
+          export BLUEZ_POLICY_NATIVE_STDERR="$proof/native.stderr"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-bluez-policy-native --bin check-bluetooth-bluez-policy --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-bluez-policy-native --test bluetooth_bluez_policy_check --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-bluez-policy-native --lib bluetooth_bluez_policy_check:: --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-bluez-policy-native --lib --bin check-bluetooth-bluez-policy --test bluetooth_bluez_policy_check --test bluetooth_bluez_policy_reference --locked -- -D warnings
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          mkdir -p "$proof"
+          sha256sum "$candidate" rust/target/debug/check-bluetooth-bluez-policy rust/tools/check_bluetooth_bluez_policy.py openpilot/selfdrive/carrot/bluetooth/bluez.py > "$proof/artifacts.sha256"
+          timeout --kill-after=5s 120s python rust/tools/check_bluetooth_bluez_policy.py --binary "$candidate" --output "$BLUEZ_POLICY_ORIGINAL_OUTPUT" > "$BLUEZ_POLICY_ORIGINAL_STDOUT" 2> "$BLUEZ_POLICY_ORIGINAL_STDERR"
+          timeout --kill-after=5s 35s "$candidate" --digits > "$BLUEZ_POLICY_ORIGINAL_DIGITS" 2> "$BLUEZ_POLICY_ORIGINAL_DIGITS_STDERR"
+          timeout --kill-after=5s 120s rust/target/debug/check-bluetooth-bluez-policy --binary "$candidate" --output "$BLUEZ_POLICY_NATIVE_OUTPUT" > "$BLUEZ_POLICY_NATIVE_STDOUT" 2> "$BLUEZ_POLICY_NATIVE_STDERR"
+          sha256sum -c "$proof/artifacts.sha256"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-bluez-policy-native --test bluetooth_bluez_policy_reference --locked -- --nocapture
       - name: Compare native Bluetooth config controller with unchanged original
         run: |
           set -euo pipefail
@@ -3822,7 +3883,7 @@ jobs:
       - name: Require native LLVM20 graph and binding equivalence
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          LLVM_PATH="$RUNNER_TEMP/llvm20-captured/usr/lib/x86_64-linux-gnu/libLLVM.so.20.1" cargo +1.94.0 test --locked -p openpilot-model-runtime --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --test compiler_batched_matmul --test compiler_batched_projection --test compiler_batched_bias --test compiler_batched_silu --test compiler_batched_silu_chain --test compiler_batched_silu_chain_bias --test compiler_matrix_alias --test compiler_gemm_pipeline --test compiler_gemm_chain --test compiler_gemm_chain_pipeline --test compiler_gemm_branch_head --test compiler_gemm_normalized_chain --test compiler_gemm_packed_normalized --test compiler_gemm_norm_indexed --test compiler_contraction_target --test compiler_parallel_conv_layout --test compiler_input_bindings --test compiler_concat_slice --test compiler_concat_slice_cpu -- --nocapture --test-threads=2
+          LLVM_PATH="$RUNNER_TEMP/llvm20-captured/usr/lib/x86_64-linux-gnu/libLLVM.so.20.1" cargo +1.94.0 test --locked -p openpilot-model-runtime --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --test compiler_batched_matmul --test compiler_batched_projection --test compiler_batched_bias --test compiler_batched_silu --test compiler_batched_silu_chain --test compiler_batched_silu_chain_bias --test compiler_original_node280 --test compiler_matrix_alias --test compiler_gemm_pipeline --test compiler_gemm_chain --test compiler_gemm_chain_pipeline --test compiler_gemm_branch_head --test compiler_gemm_normalized_chain --test compiler_gemm_packed_normalized --test compiler_gemm_norm_indexed --test compiler_contraction_target --test compiler_parallel_conv_layout --test compiler_input_bindings --test compiler_concat_slice --test compiler_concat_slice_cpu -- --nocapture --test-threads=2
       - name: Require native LLVM20 primitive and provider equivalence
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512

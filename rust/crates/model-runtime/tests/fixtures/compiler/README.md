@@ -1096,3 +1096,57 @@ defined input/weight lanes from recipes, and keeps the unchanged original full
 buffer SHA assertions before native execution. Original output bytes and source
 receipts are unchanged. Both fresh complete provider gates and final checks above followed this repair;
 the failed first attempt remains preserved and is never counted as passing.
+
+### Original node 280 capture (pending native CI)
+
+`original-node280.json` and `node280/` retain the cold, final-output-only
+original observation from issue #296: commit
+`6836c733beff11a5493df8dcbe29d8cb5f5a168a`, [Actions run
+39483081288](https://github.com/bin9208/openpilot-rust/actions/runs/39483081288),
+job `118836405102`, artifact `12293055559` (downloaded ZIP SHA-256
+`6c8fdad643aacda597ac164c80c66c0ce3e25f6ab6b08c28882a18930a2f2b9d`).
+The unmodified pinned full-model bytes produced prefix280 SHA-256
+`24818f594a05ec3463d8a62bfbe3be53c5f4ad727bfac7b03e0598550de0ab3f`
+and the same 2,048-byte output SHA-256
+`b0b908175ad4849b177048ab2078ad82917e1fc5ef83c886c02dfaa9dc03e77e`
+under LLVM18 and LLVM20. The original returned buffer's last writer was
+program call 7; its three inputs were owned by program calls 3 and 6 and copy
+call 5. Immediate input bytes are retained once because they matched exactly
+across providers. Source IR is retained by source hash, with distinct original
+object bytes encoded as JSON hex and hashed for each provider. These objects
+are reference evidence; the native candidate does not execute them. The full
+48 MB ONNX prefix and temporary original Python drivers remain in the public
+Actions artifact, not this tracked fixture.
+
+`compiler_original_node280` reconstructs the complete ancestor prefix from
+the pinned source model, writes the six captured physical input recipes, and
+compares the native final output byte-for-byte against the independent original.
+It also verifies the compact provenance, original output, immediate input and
+owner links, IR and object receipts. This new native test has not run locally;
+the parent CI gate must run it separately under each exact provider:
+
+The separate nonzero capture used a 25×8 raw little-endian f32 `desire_pulse`:
+row `i` has one at column `i % 8`, with all other elements zero. Its input SHA-256
+is `731e4a4a646d37362bcd264f241d19f879ba79b9c0c7bb73d2806f37a64ca157`.
+The original terminal input 1 changed to SHA-256
+`3709d58f451d0f29419104656b5b72ef6f7dc3a3174bbdefa92fe0d9d0922750`;
+the final output changed to
+`47989d3b10646cd7933c72366373ebb3f753222bf2fea9dba653c6ba363d8ec1`.
+Both providers agreed. `original-node280-nonzero.json` pins [run
+39485648481](https://github.com/bin9208/openpilot-rust/actions/runs/39485648481),
+job `118845237804`, commit `ca42e06a490f3bfd1287f0eb0104048726a15aa9`,
+artifact `12293287379`, downloaded ZIP SHA-256
+`efe890b579566c7fe193c8e5fd49517dada3c9ec197275143b972a9e737786f7`,
+and both raw receipt hashes. The new 1,600-byte immediate input is
+`node280/input-1-nonzero.bin`; the other two immediate inputs, source IR and
+provider-specific original object bytes matched the zero-input captures. The
+native test retains both zero and nonzero cold end-to-end comparisons under both
+memory policies. No original object is executed by the candidate.
+
+```sh
+LLVM_PATH="$RUNNER_TEMP/llvm18-captured/usr/lib/llvm-18/lib/libLLVM.so.1" cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --test compiler_original_node280 --features native-skip-miri -- --nocapture
+LLVM_PATH="$RUNNER_TEMP/llvm20-captured/usr/lib/x86_64-linux-gnu/libLLVM.so.20.1" cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --test compiler_original_node280 --features native-skip-miri -- --nocapture
+```
+
+The original-only capture is not a native pass result. Prefix93's documented
+numerical discrepancy and whole-model acceptance remain separate.

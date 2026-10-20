@@ -370,6 +370,7 @@ fn workspace_requires_pinned_llvm20_graph_and_primitive_regressions() {
                 "compiler_batched_silu",
                 "compiler_batched_silu_chain",
                 "compiler_batched_silu_chain_bias",
+                "compiler_original_node280",
                 "compiler_matrix_alias",
                 "compiler_gemm_pipeline",
                 "compiler_gemm_chain",
@@ -422,6 +423,7 @@ fn workspace_requires_pinned_llvm20_graph_and_primitive_regressions() {
     }
     required(&commands(&data["jobs"]["workspace"]), &[
         "cargo test --workspace --locked --config profile.test.package.sha2.opt-level=3",
+        "--test compiler_original_node280 -- --nocapture --test-threads=2",
         "cargo clippy --workspace --all-targets --locked --config profile.test.package.sha2.opt-level=3",
     ]);
 }
@@ -445,6 +447,7 @@ fn llvm20_has_an_independent_mandatory_budget_without_removing_workspace_checks(
             "rustup toolchain install 1.94.0 --profile minimal",
             "git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx",
             "--test compiler_batched_silu_chain_bias",
+            "--test compiler_original_node280",
             "--test compiler_gemm_terminal",
             "--test-threads=2",
         ],
@@ -647,6 +650,12 @@ fn ui_connectivity_requires_source_render_and_private_protocol_checks() {
             "check_wifi_policy.py",
             "check_wifi_runtime.py",
             "check_wifi_callback_ordering.py",
+            "--features bluetooth-bluez-policy-native --bin check-bluetooth-bluez-policy",
+            "--features bluetooth-bluez-policy-native --test bluetooth_bluez_policy_check --locked",
+            "--features bluetooth-bluez-policy-native --lib bluetooth_bluez_policy_check:: --locked",
+            "--features bluetooth-bluez-policy-native --test bluetooth_bluez_policy_reference --locked -- --nocapture",
+            "python rust/tools/check_bluetooth_bluez_policy.py --binary",
+            "BLUEZ_POLICY_ORIGINAL_DIGITS=",
             "--features bluetooth-config-native --bin check-bluetooth-config",
             "--features bluetooth-config-native --test bluetooth_config_check --locked",
             "--features bluetooth-config-native --lib --bin check-bluetooth-config",
@@ -733,6 +742,23 @@ fn estimators_require_original_models_loops_and_native_boundaries() {
             ],
         );
     }
+}
+#[test]
+fn lagd_masked_allocation_requires_same_source_old_and_current_measurements() {
+    job_check(
+        "estimation-runtime",
+        &[
+            "edb42bf095d6a3e3b38cc0a4546976dfb710363e",
+            "CARGO_TARGET_DIR=\"$RUNNER_TEMP/lagd429-old-target\" cargo build",
+            "CARGO_TARGET_DIR=\"$GITHUB_WORKSPACE/rust/target\" cargo build",
+            "rust/tools/lagd_masked_allocation_probe.rs",
+            "--compare \"$proof/old.log\" \"$proof/current.log\"",
+            "-L \"dependency=$target/debug/deps\"",
+            "\"${native_flags[@]}\"",
+        ],
+        &["masked-allocation-429"],
+        false,
+    );
 }
 #[test]
 fn gnss_requires_source_serial_and_daemon_checks() {
