@@ -1,3 +1,4 @@
+# Isolated collector repeats exact workspace provider patches.
 name: One-off original Panda timestamp path capture
 
 on:

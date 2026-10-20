@@ -34,6 +34,13 @@ rustix = { version = "1", features = ["time"] }
 signal-hook = "0.3"
 thiserror = "2"
 zmq = "=0.10.0"
+
+[patch.crates-io]
+hyper = { path = "''' + str(root / 'rust/vendor/hyper') + '''" }
+ureq = { path = "''' + str(root / 'rust/vendor/ureq') + '''" }
+ureq-proto = { path = "''' + str(root / 'rust/vendor/ureq-proto') + '''" }
+multer = { path = "''' + str(root / 'rust/vendor/multer') + '''" }
+tungstenite = { path = "''' + str(root / 'rust/vendor/tungstenite') + '''" }
 ''')
 shutil.copy(root / 'rust/Cargo.lock', destination / 'Cargo.lock')
 lock = (destination / 'Cargo.lock').read_text()
