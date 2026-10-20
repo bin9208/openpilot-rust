@@ -1,0 +1,97 @@
+# Focused affected-source validation; main PR gate remains required.
+name: Native Eigen and paramsd 296 candidate
+on:
+  push:
+    branches: [codex/feat-296-native-tools-candidate]
+    paths: [.github/workflows/native-eigen-296-once.yml]
+permissions:
+  contents: read
+env:
+  RUSTUP_TOOLCHAIN: '1.94.0'
+jobs:
+  eigen-paramsd:
+    name: native Eigen and paramsd atomic foundation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CXX: clang++
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        ref: 4991f8f569b50adf78e498396e246e8b68aadc68
+    - name: Require exact candidate source
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = 4991f8f569b50adf78e498396e246e8b68aadc68
+
+        test -z "$(git status --porcelain)"
+
+        '
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - run: rustup toolchain install 1.94.0 --profile minimal
+    - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev
+    - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 cffi==2.1.1 sympy==1.14.0 pyzmq==27.2.0
+        zstandard==0.25.0 requests==2.34.2 pyserial==3.5 pytest==9.0.2
+    - name: Check atomic paramsd fixture input boundaries
+      run: python -P -m pytest -c /dev/null --noconftest -p no:cacheprovider -q rust/tools/tests/test_paramsd_atomic_gate.py
+    - name: Install source-pinned Eigen headers
+      run: 'set -euo pipefail
+
+        mkdir -p "$RUNNER_TEMP/estimation/eigen"
+
+        python -m pip install ''git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen''
+        2>&1 | tee "$RUNNER_TEMP/estimation/eigen/original-install.log"
+
+        python -c ''import eigen; print("LOCATIOND_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR); print("PARAMSD_EIGEN_INCLUDE=" +
+        eigen.INCLUDE_DIR)'' >> "$GITHUB_ENV"
+
+        '
+    - name: Compare native Eigen header staging with unchanged Python shim
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/estimation/eigen\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 256\nrustup component add clippy --toolchain 1.94.0\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
+        \ --locked --features eigen-tools-native --bin stage-eigen-headers\nstager=\"$GITHUB_WORKSPACE/rust/target/debug/stage-eigen-headers\"\
+        \nsha256sum \"$stager\" > \"$proof/stager.sha256\"\ngit rev-parse HEAD > \"$proof/source-commit.txt\"\nsha256sum rust/crates/dev-tools/src/eigen_stage.rs\
+        \ rust/crates/dev-tools/src/bin/stage_eigen_headers.rs rust/crates/dev-tools/tests/eigen_stage.rs > \"$proof/source.sha256\"\
+        \n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 64\nfor item in x86_64:linux_x86_64\
+        \ aarch64:linux_aarch64 macos-arm64:macosx_11_0_arm64; do\n  architecture=${item%%:*}\n  platform=${item#*:}\n  wheel=\"\
+        $proof/eigen-3.4.0-py3-none-$platform.whl\"\n  curl --fail --location --retry 3 --output \"$wheel\" \"https://github.com/commaai/dependencies/releases/download/eigen/v3.4.0/eigen-3.4.0-py3-none-$platform.whl\"\
+        \n  \"$stager\" --wheel \"$wheel\" --output \"$proof/$architecture-native\" --architecture \"$architecture\" > \"\
+        $proof/$architecture-stage.json\"\ndone\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\"\
+        \ --growth-mib 512\ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features eigen-tools-native\
+        \ --lib eigen_stage::tests\nfor item in x86_64:linux_x86_64 aarch64:linux_aarch64 macos-arm64:macosx_11_0_arm64; do\n\
+        \  architecture=${item%%:*}\n  platform=${item#*:}\n  EIGEN_WHEEL=\"$proof/eigen-3.4.0-py3-none-$platform.whl\" EIGEN_ARCHITECTURE=\"\
+        $architecture\" EIGEN_ORIGINAL_INCLUDE=\"$LOCATIOND_EIGEN_INCLUDE\" EIGEN_NATIVE_INCLUDE=\"$proof/$architecture-native/install\"\
+        \ EIGEN_EVIDENCE=\"$proof/$architecture-comparison\" cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
+        \ --locked --features eigen-tools-native --test eigen_stage\ndone\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
+        \ --locked --features eigen-tools-native --lib --bin stage-eigen-headers --test eigen_stage -- -D warnings\nsha256sum\
+        \ --check \"$proof/stager.sha256\"\nsha256sum --check \"$proof/source.sha256\"\n"
+    - name: Check native paramsd atomic gate foundation alongside original cases
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features paramsd-startup-gate-native
+        --test paramsd_startup_gate
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features paramsd-startup-gate-native
+        --lib --test paramsd_startup_gate -- -D warnings
+
+        '
+    - name: Retain independent original and native staging records
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: native-eigen-paramsd-296-evidence
+        path: ${{ runner.temp }}/estimation/
+        if-no-files-found: error
+        retention-days: 7
