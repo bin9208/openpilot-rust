@@ -49,7 +49,7 @@ jobs:
 
         mkdir -p "$proof"
 
-        git fetch --no-tags --depth=1 origin cb3b38b516b06e1be79f0d76f8fe385327f30a61
+        git fetch --no-tags --depth=1 origin cb3b38b516b06e1be79f0d76f8fe385327f30a61 a9933ed72fc1ca8c91cf5728d0345f1e4181104d
 
         GIT_LFS_SKIP_SMUDGE=1 git worktree add --detach "$baseline" cb3b38b516b06e1be79f0d76f8fe385327f30a61
 
