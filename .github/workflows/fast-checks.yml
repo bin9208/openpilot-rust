@@ -5,6 +5,11 @@ on:
   pull_request:
     branches: [dev, dev-md, main]
   workflow_dispatch:
+    inputs:
+      onnx_only:
+        description: Run only focused ONNX regressions on a hosted runner
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -12,6 +17,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   fast:
+    if: github.event_name != 'workflow_dispatch' || !inputs.onnx_only
     name: fast checks
     runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 7
@@ -59,3 +65,35 @@ jobs:
         with: {distribution: temurin, java-version: '17'}
       - name: Android Jetlink core regressions
         run: bash tools/jetlink_android/gradlew -p tools/jetlink_android :core:test :runtime:test
+  cadence:
+    if: github.event_name == 'workflow_dispatch' && inputs.onnx_only
+    name: ONNX cadence regressions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GIT_LFS_SKIP_SMUDGE: '1'
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      RUSTUP_TOOLCHAIN: '1.94.0'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Reserve space before dependencies and builds
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          df -h "$RUNNER_TEMP"
+          rust/tools/check-disk-space --path "$RUNNER_TEMP" --growth-mib 4096
+          sudo apt-get update
+          sudo apt-get install -y capnproto libcapnp-dev
+          rustup toolchain install 1.94.0 --profile minimal
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            rust/target
+          key: onnx-cadence-${{ runner.arch }}-${{ hashFiles('rust/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: onnx-cadence-${{ runner.arch }}-${{ hashFiles('rust/Cargo.lock') }}-
+      - run: cargo test --manifest-path rust/Cargo.toml -p openpilot-xiaoge --test cadence --locked
