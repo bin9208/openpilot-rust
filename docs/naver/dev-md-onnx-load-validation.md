@@ -96,3 +96,23 @@ This reuses the requested [#408 rollback](https://github.com/bin9208/openpilot-r
 and avoids running functional validation on this workstation. The separate
 CI redesign in PR #410 is left untouched. All five required checks remain
 required; manual focused evidence alone cannot authorize publication.
+
+
+Hosted GREEN job [118728550325](https://github.com/bin9208/openpilot-rust/actions/runs/39451883186/job/118728550325)
+on `7f32501862f30606417fd1eb684bfdec1438547e` passes all four cadence tests
+and all three real Git/LFS endpoint tests. Its broader native matrix and the
+parallel runtime package run were canceled when review identified a new
+receive-to-copy delay window; those canceled jobs are not validation evidence.
+
+Review correction: finish admission decisions before receiving camera pixels,
+then copy immediately for admitted inference or a captured snapshot request.
+Only owned pixels survive subsequent parameter/lock/encoding work. A snapshot
+request arriving later stays pending for the next frame, and acknowledgement
+uses only its captured request number. This retains the baseline immediate-copy
+exposure and does not assume a producer lease or atomic camera pixels. The
+native regression must recycle the producer buffer before first consumer
+access, as well as after an owned copy, and prove skipped frames stay uncopied.
+
+Native/ARM comparisons use the existing PR jobs rather than duplicating that
+matrix in the branch's focused cadence dispatch. Final package/release evidence
+remains pending on the reviewed source.

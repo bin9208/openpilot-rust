@@ -154,13 +154,13 @@ class LfsEndpointTests(unittest.TestCase):
     self.assertFalse(self.object_path.exists(), 'Fixture must start with an empty object cache')
     self.assertEqual(self.requests, [], 'Creating a pointer must not download model bytes')
 
-  def assert_materialized(self):
+  def assert_materialized(self, branch="original"):
     data = (self.repo / 'model.onnx').read_bytes()
     self.assertEqual(data, MODEL)
     self.assertEqual(hashlib.sha256(data).hexdigest(), OID)
     self.assertEqual(self.object_path.read_bytes(), MODEL)
     self.assertEqual(self.git('rev-parse', 'HEAD').stdout.strip(), self.target)
-    self.assertEqual(self.git('branch', '--show-current').stdout.strip(), 'original')
+    self.assertEqual(self.git('branch', '--show-current').stdout.strip(), branch)
     self.assertEqual(self.git('config', 'branch.original.remote').stdout.strip(), 'origin')
     self.assertEqual(self.git('remote', 'get-url', 'origin').stdout.strip(), self.base + '/original.git')
     self.assertEqual(self.git('config', 'filter.lfs.required').stdout.strip(), 'true')
@@ -214,6 +214,15 @@ class LfsEndpointTests(unittest.TestCase):
       [path for _, path, _ in self.requests], ['/rust.git/info/lfs/objects/batch', f'/objects/{OID}'],
     )
     self.assertEqual(self.git('config', '--local', '--get', 'lfs.url', check=False).returncode, 1)
+
+  def test_switch_tracks_rust_without_moving_the_original_branch(self):
+    self.prepare_target(with_pin=True)
+    self.git('switch', '--discard-changes', '-C', 'dev-md', TARGET_REF)
+    self.git('branch', '--set-upstream-to=rust/dev-md', 'dev-md')
+    self.assert_materialized(branch='dev-md')
+    self.assertEqual(self.git('rev-parse', 'refs/heads/original').stdout.strip(), self.original)
+    self.assertEqual(self.git('config', 'branch.dev-md.remote').stdout.strip(), 'rust')
+    self.assertEqual(self.git('config', 'branch.dev-md.merge').stdout.strip(), 'refs/heads/dev-md')
 
   def test_unpinned_original_origin_404_recovers_with_one_time_fetch(self):
     self.prepare_target(with_pin=False)

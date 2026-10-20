@@ -138,7 +138,7 @@ fn lazy_pixels_skip_unneeded_frames_and_share_one_snapshot_inference_copy() {
     for (stream, images) in [(service::Stream::Road, road), (service::Stream::Wide, wide)] {
         let mut camera = Camera::new(stream);
         camera
-            .receive(&shared, |_| {
+            .receive(&shared, false, |_| {
                 panic!("timeout must not reuse a previous frame")
             })
             .unwrap();
@@ -147,9 +147,11 @@ fn lazy_pixels_skip_unneeded_frames_and_share_one_snapshot_inference_copy() {
         images[0].publish(metadata(1)).unwrap();
         let mut received = false;
         camera
-            .receive(&shared, |_| {
+            .receive(&shared, false, |frame| {
                 received = true;
                 // A model/interval/BSD gate rejected inference; no snapshot pending.
+                assert!(frame.frame().is_err());
+                assert!(frame.snapshot().is_err());
                 Ok(())
             })
             .unwrap();
@@ -167,8 +169,12 @@ fn lazy_pixels_skip_unneeded_frames_and_share_one_snapshot_inference_copy() {
             let expected_packed: Vec<_> = [vec![y; 32], vec![128; 16]].concat();
             let mut consumed = false;
             camera
-                .receive(&shared, |frame| {
+                .receive(&shared, true, |frame| {
                     consumed = true;
+                    // Admission already copied the received image. Recycle its IPC
+                    // buffer before the callback first requests any pixel consumer.
+                    images[index].write(0, &pixels(220)).unwrap();
+                    images[index].publish(metadata(id + 100)).unwrap();
                     let jpeg = if snapshot_first {
                         Some(frame.snapshot()?)
                     } else {
@@ -180,9 +186,9 @@ fn lazy_pixels_skip_unneeded_frames_and_share_one_snapshot_inference_copy() {
                         None => frame.snapshot()?,
                     };
                     assert!(jpeg.starts_with(&[0xff, 0xd8]));
-                    // Producer recycling is legal even while VisionFrame is held.
-                    // Once copied, both consumers must retain the same owned image.
-                    images[index].write(0, &pixels(220)).unwrap();
+                    // Further producer writes must not change the owned image either.
+                    images[index].write(0, &pixels(240)).unwrap();
+                    images[index].publish(metadata(id + 200)).unwrap();
                     assert_eq!(frame.frame()?.pack()?, expected_packed);
                     assert_eq!(frame.snapshot()?.as_ref(), jpeg.as_ref());
                     Ok(())
@@ -195,8 +201,12 @@ fn lazy_pixels_skip_unneeded_frames_and_share_one_snapshot_inference_copy() {
             images[index].publish(metadata(id + 10)).unwrap();
             let mut skipped = false;
             camera
-                .receive(&shared, |_| {
+                .receive(&shared, false, |frame| {
                     skipped = true;
+                    // The previous owned cache still exists, but this metadata-only
+                    // notification must never expose those stale pixels.
+                    assert!(frame.frame().is_err());
+                    assert!(frame.snapshot().is_err());
                     Ok(())
                 })
                 .unwrap();
@@ -207,7 +217,7 @@ fn lazy_pixels_skip_unneeded_frames_and_share_one_snapshot_inference_copy() {
             );
         }
         camera
-            .receive(&shared, |_| {
+            .receive(&shared, false, |_| {
                 panic!("timeout must not expose retained pixels")
             })
             .unwrap();

@@ -4,7 +4,7 @@ use crate::{
     service::Stream,
 };
 use openpilot_jpeg::{Color, Layout as JpegLayout, Options, Quality};
-use openpilot_msgq::{VisionClient, VisionFrame, VisionStream};
+use openpilot_msgq::{VisionClient, VisionStream};
 use std::{sync::Arc, time::Duration};
 
 pub struct Camera {
@@ -15,11 +15,10 @@ pub struct Camera {
 }
 
 pub struct ReceivedFrame<'a> {
-    source: VisionFrame<'a>,
-    bytes: &'a mut Vec<u8>,
+    bytes: &'a [u8],
     layout: Layout,
     stream: Stream,
-    copied: bool,
+    has_pixels: bool,
 }
 
 impl Camera {
@@ -40,7 +39,8 @@ impl Camera {
     pub fn receive(
         &mut self,
         shared: &Shared,
-        consume: impl FnOnce(&mut ReceivedFrame<'_>) -> Result<(), Error>,
+        need_pixels: bool,
+        consume: impl FnOnce(&ReceivedFrame<'_>) -> Result<(), Error>,
     ) -> Result<(), Error> {
         if self
             .client
@@ -66,29 +66,34 @@ impl Camera {
             }
             self.client = Some(client);
         }
-        let client = self
-            .client
-            .as_mut()
-            .ok_or(Error::Contract("camera client missing"))?;
-        let Some(frame) = client.receive(Duration::ZERO)? else {
-            platform::sleep(0.005)?;
-            return Ok(());
-        };
-        let metadata = frame.metadata();
-        self.layout = Layout {
-            width: metadata.width,
-            height: metadata.height,
-            stride: metadata.stride,
-            uv_offset: metadata.uv_offset,
-        };
-        // Keep the client/mapping borrow until all consumers finish. Metadata-only
-        // paths do not copy pixels; snapshot and inference share one owned copy.
-        consume(&mut ReceivedFrame {
-            source: frame,
-            bytes: &mut self.bytes,
+        {
+            let client = self
+                .client
+                .as_mut()
+                .ok_or(Error::Contract("camera client missing"))?;
+            let Some(frame) = client.receive(Duration::ZERO)? else {
+                platform::sleep(0.005)?;
+                return Ok(());
+            };
+            let metadata = frame.metadata();
+            self.layout = Layout {
+                width: metadata.width,
+                height: metadata.height,
+                stride: metadata.stride,
+                uv_offset: metadata.uv_offset,
+            };
+            // Copy admitted pixels immediately, before callback I/O or locks can
+            // delay us across a ring wrap. The borrow is not a producer lease.
+            if need_pixels {
+                self.bytes.resize(metadata.len, 0);
+                frame.copy_into(&mut self.bytes)?;
+            }
+        }
+        consume(&ReceivedFrame {
+            bytes: &self.bytes,
             layout: self.layout,
             stream: self.stream,
-            copied: false,
+            has_pixels: need_pixels,
         })
     }
 
@@ -112,16 +117,14 @@ impl Camera {
 }
 
 impl ReceivedFrame<'_> {
-    pub fn frame(&mut self) -> Result<Frame<'_>, Error> {
-        if !self.copied {
-            self.bytes.resize(self.source.metadata().len, 0);
-            self.source.copy_into(self.bytes)?;
-            self.copied = true;
+    pub fn frame(&self) -> Result<Frame<'_>, Error> {
+        if !self.has_pixels {
+            return Err(Error::Contract("camera pixels were not admitted"));
         }
         Ok(Frame::new(self.bytes, self.layout)?)
     }
 
-    pub fn snapshot(&mut self) -> Result<Arc<[u8]>, Error> {
+    pub fn snapshot(&self) -> Result<Arc<[u8]>, Error> {
         let stream = self.stream;
         let layout = self.layout;
         let frame = self.frame()?;

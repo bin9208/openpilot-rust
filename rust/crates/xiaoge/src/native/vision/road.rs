@@ -30,45 +30,56 @@ pub fn run(
     }
     let mut camera = Camera::new(Stream::Road);
     while shared.running.load(Ordering::Acquire) {
-        let result = camera.receive(&shared, |camera| {
-            let now = platform::monotonic()?;
+        let result = (|| {
             shared.refresh(false)?;
-            let threshold = {
-                let mut state = shared.state()?;
-                let status = &mut state.cameras[1];
-                status.last_frame = now;
-                status.error.clear();
-                if status.snapshot_response < status.snapshot_request {
-                    status.jpeg = Some(camera.snapshot()?);
-                    status.snapshot_response = status.snapshot_request;
-                    shared.snapshot.notify_all();
-                }
-                if !model.loaded()
-                    || !state.metrics[1].ready(now, state.settings.lane_interval_seconds)
+            let (infer, threshold, snapshot) = {
+                let state = shared.state()?;
+                let status = &state.cameras[1];
+                (
+                    model.loaded()
+                        && state.metrics[1]
+                            .ready(platform::monotonic()?, state.settings.lane_interval_seconds),
+                    state.settings.lane_threshold,
+                    (status.snapshot_response < status.snapshot_request)
+                        .then_some(status.snapshot_request),
+                )
+            };
+            camera.receive(&shared, infer || snapshot.is_some(), |camera| {
+                let now = platform::monotonic()?;
                 {
+                    let mut state = shared.state()?;
+                    let status = &mut state.cameras[1];
+                    status.last_frame = now;
+                    status.error.clear();
+                    if let Some(request) = snapshot {
+                        status.jpeg = Some(camera.snapshot()?);
+                        status.snapshot_response = request;
+                        shared.snapshot.notify_all();
+                    }
+                }
+                if !infer {
                     return Ok(());
                 }
-                state.settings.lane_threshold
-            };
-            let frame = camera.frame()?;
-            let started = platform::monotonic()?;
-            let cpu = platform::thread_cpu()?;
-            let result = model.infer(&frame, threshold);
-            let finished = platform::monotonic()?;
-            let thread_cpu_ms = (platform::thread_cpu()? - cpu) * 1000.0;
-            {
-                let mut state = shared.state()?;
-                state.metrics[1].record(Timing {
-                    received: now,
-                    started,
-                    finished,
-                    thread_cpu_ms,
-                })?;
-                state.lane = result;
-                state.lane_updated = platform::timestamp()?;
-            }
-            publisher.publish(&shared)
-        });
+                let frame = camera.frame()?;
+                let started = platform::monotonic()?;
+                let cpu = platform::thread_cpu()?;
+                let result = model.infer(&frame, threshold);
+                let finished = platform::monotonic()?;
+                let thread_cpu_ms = (platform::thread_cpu()? - cpu) * 1000.0;
+                {
+                    let mut state = shared.state()?;
+                    state.metrics[1].record(Timing {
+                        received: now,
+                        started,
+                        finished,
+                        thread_cpu_ms,
+                    })?;
+                    state.lane = result;
+                    state.lane_updated = platform::timestamp()?;
+                }
+                publisher.publish(&shared)
+            })
+        })();
         if let Err(error) = result {
             camera.recover(error, &shared)?;
         }

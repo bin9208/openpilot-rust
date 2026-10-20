@@ -71,8 +71,7 @@ pub fn run(
     }
     let mut camera = Camera::new(Stream::Wide);
     while shared.running.load(Ordering::Acquire) {
-        let result = camera.receive(&shared, |camera| {
-            let now = platform::monotonic()?;
+        let result = (|| {
             shared.refresh(false)?;
             subscriber.update(Duration::ZERO)?;
             let (configured, next_side) = {
@@ -87,113 +86,125 @@ pub fn run(
             };
             let gate = update_gate(&subscriber.state, configured, next_side)?;
             let side = gate.side.filter(|_| gate.active);
-            let (clear, interval) = {
-                let mut state = shared.state()?;
-                state.gate = gate;
-                let camera_state = &mut state.cameras[0];
-                camera_state.last_frame = now;
-                camera_state.error.clear();
-                if camera_state.snapshot_response < camera_state.snapshot_request {
-                    camera_state.jpeg = Some(camera.snapshot()?);
-                    camera_state.snapshot_response = camera_state.snapshot_request;
-                    shared.snapshot.notify_all();
-                }
-                let mut clear = false;
-                for candidate in [Side::Left, Side::Right] {
-                    if !state.gate.eligible_sides.contains(&candidate) {
-                        clear |= state.blindspot_active[candidate.index()];
-                        state.blindspot_active[candidate.index()] = false;
-                        state.blindspot_side_updated[candidate.index()] = 0;
-                    }
-                }
-                if side.is_none() {
-                    state.blindspot_active = [false; 2];
-                    state.blindspot_side = None;
-                    state.blindspot_updated = platform::timestamp()?;
-                    (clear, 0.0)
-                } else {
-                    let interval = if now
-                        < state.followup_until
-                            [side.ok_or(Error::Contract("gate side missing"))?.index()]
-                    {
+            let (infer, interval, settings, snapshot) = {
+                let state = shared.state()?;
+                let now = platform::monotonic()?;
+                let interval = side.map_or(0.0, |side| {
+                    if now < state.followup_until[side.index()] {
                         0.15
                     } else {
                         state.settings.base_interval_seconds
-                    };
-                    if !state.metrics[0].ready(now, interval) {
-                        return Ok(());
                     }
-                    (false, interval)
-                }
+                });
+                let status = &state.cameras[0];
+                (
+                    side.is_some() && model.loaded() && state.metrics[0].ready(now, interval),
+                    interval,
+                    state.settings,
+                    (status.snapshot_response < status.snapshot_request)
+                        .then_some(status.snapshot_request),
+                )
             };
-            let Some(side) = side else {
-                if clear {
-                    publisher.publish(&shared)?;
-                }
-                return Ok(());
-            };
-            let operation = shared
-                .vasm_operation
-                .lock()
-                .map_err(|_| Error::Contract("blindspot operation poisoned"))?;
-            let (settings, previous) = {
-                let state = shared.state()?;
-                if generation != state.config_generation {
-                    model.load_config(state.config.clone());
-                    generation = state.config_generation;
-                }
-                (state.settings, state.side_at[side.index()])
-            };
-            if !model.loaded() || !model.configured(side) {
-                return Ok(());
-            }
-            let frame = camera.frame()?;
-            let started = platform::monotonic()?;
-            let cpu = platform::thread_cpu()?;
-            model.update(
-                &frame,
-                side,
-                &settings,
-                if previous != 0.0 {
-                    now - previous
-                } else {
-                    interval
-                },
-            )?;
-            let finished = platform::monotonic()?;
-            let thread_cpu_ms = (platform::thread_cpu()? - cpu) * 1000.0;
-            let active = model.side(side).active;
-            {
-                let mut state = shared.state()?;
-                state.metrics[0].record(Timing {
-                    received: now,
-                    started,
-                    finished,
-                    thread_cpu_ms,
-                })?;
-                state.side_at[side.index()] = now;
-                if active {
-                    state.followup_until[side.index()] = now + 1.5;
-                }
-                state.sides = [*model.side(Side::Left), *model.side(Side::Right)];
-                state.blindspot_active[side.index()] = active;
-                state.blindspot_side = Some(side);
-                state.blindspot_updated = platform::timestamp()?;
-                state.blindspot_side_updated[side.index()] = state.blindspot_updated;
-                let other = if side == Side::Left {
-                    Side::Right
-                } else {
-                    Side::Left
+            camera.receive(&shared, infer || snapshot.is_some(), |camera| {
+                let now = platform::monotonic()?;
+                let clear = {
+                    let mut state = shared.state()?;
+                    state.gate = gate;
+                    let camera_state = &mut state.cameras[0];
+                    camera_state.last_frame = now;
+                    camera_state.error.clear();
+                    if let Some(request) = snapshot {
+                        camera_state.jpeg = Some(camera.snapshot()?);
+                        camera_state.snapshot_response = request;
+                        shared.snapshot.notify_all();
+                    }
+                    let mut clear = false;
+                    for candidate in [Side::Left, Side::Right] {
+                        if !state.gate.eligible_sides.contains(&candidate) {
+                            clear |= state.blindspot_active[candidate.index()];
+                            state.blindspot_active[candidate.index()] = false;
+                            state.blindspot_side_updated[candidate.index()] = 0;
+                        }
+                    }
+                    if side.is_none() {
+                        state.blindspot_active = [false; 2];
+                        state.blindspot_side = None;
+                        state.blindspot_updated = platform::timestamp()?;
+                    }
+                    clear
                 };
-                state.next_side = if state.gate.eligible_sides.contains(&other) {
-                    other
-                } else {
-                    side
+                let Some(side) = side else {
+                    if clear {
+                        publisher.publish(&shared)?;
+                    }
+                    return Ok(());
                 };
-            }
-            drop(operation);
-            publisher.publish(&shared)
-        });
+                if !infer {
+                    return Ok(());
+                }
+                let operation = shared
+                    .vasm_operation
+                    .lock()
+                    .map_err(|_| Error::Contract("blindspot operation poisoned"))?;
+                let previous = {
+                    let state = shared.state()?;
+                    if generation != state.config_generation {
+                        model.load_config(state.config.clone());
+                        generation = state.config_generation;
+                    }
+                    state.side_at[side.index()]
+                };
+                if !model.configured(side) {
+                    return Ok(());
+                }
+                let frame = camera.frame()?;
+                let started = platform::monotonic()?;
+                let cpu = platform::thread_cpu()?;
+                model.update(
+                    &frame,
+                    side,
+                    &settings,
+                    if previous != 0.0 {
+                        now - previous
+                    } else {
+                        interval
+                    },
+                )?;
+                let finished = platform::monotonic()?;
+                let thread_cpu_ms = (platform::thread_cpu()? - cpu) * 1000.0;
+                let active = model.side(side).active;
+                {
+                    let mut state = shared.state()?;
+                    state.metrics[0].record(Timing {
+                        received: now,
+                        started,
+                        finished,
+                        thread_cpu_ms,
+                    })?;
+                    state.side_at[side.index()] = now;
+                    if active {
+                        state.followup_until[side.index()] = now + 1.5;
+                    }
+                    state.sides = [*model.side(Side::Left), *model.side(Side::Right)];
+                    state.blindspot_active[side.index()] = active;
+                    state.blindspot_side = Some(side);
+                    state.blindspot_updated = platform::timestamp()?;
+                    state.blindspot_side_updated[side.index()] = state.blindspot_updated;
+                    let other = if side == Side::Left {
+                        Side::Right
+                    } else {
+                        Side::Left
+                    };
+                    state.next_side = if state.gate.eligible_sides.contains(&other) {
+                        other
+                    } else {
+                        side
+                    };
+                }
+                drop(operation);
+                publisher.publish(&shared)
+            })
+        })();
         if let Err(error) = result {
             camera.recover(error, &shared)?;
         }
