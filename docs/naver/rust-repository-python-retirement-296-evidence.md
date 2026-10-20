@@ -4922,3 +4922,15 @@ config controller because its following command used the same Cargo feature.
 Classification now uses the explicit step identity for the controller,
 retaining both absence guards[128,512], all controller guards and total458.
 The failing cloud output is the regression evidence; repaired CI is pending.
+
+### paramsd reusable fixture generator preparation (2026-10-21)
+
+A native generator now prepares all7reusable scenario sets plus continuous1202
+and restart8frame input sequences, including all Cap'nProto wire bytes and
+rawf64state bits. Independent original construction and actual original-controller
+inputs are compared in a required estimation gate. The real generator runs under
+emptyPATH/strace with one exactexec; input/ELF seals and CLI failure tests remain
+required. Cloud compilation/byte equality is pending. Original Python fixture,
+arbitrary-service event API and live callers remain; no additional retirement
+is counted. A272-byte synthetic persisted packet from artifact12305212845 is
+retained only as provenance-bearing input for focused generator comparisons.

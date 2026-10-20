@@ -3266,6 +3266,51 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-daemon-native --bin check-paramsd-daemon-native --test paramsd_daemon_check --test paramsd_daemon_reference --locked -- -D warnings
           sha256sum -c "$proof/inputs.sha256"
+      - name: Compare native paramsd fixture generator against all original wire inputs
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/estimation/paramsd/native-fixture"
+          export PARAMSD_FIXTURE_ROOT="$GITHUB_WORKSPACE"
+          export PARAMSD_FIXTURE_ORIGINAL_SAVED_PACKET="$RUNNER_TEMP/estimation/paramsd/daemon/continuous/saved.bin"
+          export PARAMSD_FIXTURE_ORIGINAL_SCENARIOS="$proof/original-scenarios.json"
+          export PARAMSD_FIXTURE_ORIGINAL_CONTINUOUS="$proof/original-continuous.json"
+          export PARAMSD_FIXTURE_ORIGINAL_RESTART="$proof/original-restart.json"
+          export PARAMSD_FIXTURE_NATIVE_OUTPUT="$proof/native"
+          export PARAMSD_FIXTURE_NATIVE_EXEC="$proof/native.exec"
+          export PARAMSD_FIXTURE_NATIVE_BINARY="$GITHUB_WORKSPACE/rust/target/debug/generate-paramsd-fixture"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          mkdir -p "$proof"
+          git rev-parse HEAD > "$proof/SOURCE_COMMIT"
+          python - <<'ORIGINAL'
+          import json, os
+          from pathlib import Path
+          from paramsd_fixture import car_params, scenarios
+          from check_paramsd_daemon import frames
+          saved = Path(os.environ['PARAMSD_FIXTURE_ORIGINAL_SAVED_PACKET']).read_bytes()
+          Path(os.environ['PARAMSD_FIXTURE_ORIGINAL_SCENARIOS']).write_text(json.dumps({'cases': scenarios()}) + '\n')
+          for restart in (False, True):
+            gps = 'gpsLocation' if restart else 'gpsLocationExternal'
+            seed = {'LiveParametersV2': list(saved), 'CarParamsPrevRoute': car_params()} if restart else {}
+            case = {'name': 'restart' if restart else 'continuous', 'car': car_params(), 'seed': seed, 'debug': True,
+                    'replay': True, 'simulation': True, 'gps': gps, 'frames': frames(gps, 8 if restart else 1202)}
+            case['frames'].insert(0, {'time': 99.95, 'messages': []})
+            name = 'PARAMSD_FIXTURE_ORIGINAL_RESTART' if restart else 'PARAMSD_FIXTURE_ORIGINAL_CONTINUOUS'
+            Path(os.environ[name]).write_text(json.dumps(case) + '\n')
+            observed = Path(os.environ['RUNNER_TEMP']) / 'estimation/paramsd/daemon' / ('restart' if restart else 'continuous') / 'input.json'
+            assert json.loads(observed.read_text()) == case, observed
+          ORIGINAL
+          sha256sum rust/tools/paramsd_fixture.py rust/tools/check_paramsd_daemon.py openpilot/cereal/car.capnp openpilot/cereal/log.capnp "$PARAMSD_FIXTURE_ORIGINAL_SAVED_PACKET" "$PARAMSD_FIXTURE_ORIGINAL_SCENARIOS" "$PARAMSD_FIXTURE_ORIGINAL_CONTINUOUS" "$PARAMSD_FIXTURE_ORIGINAL_RESTART" > "$proof/original.sha256"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-fixture-native --bin generate-paramsd-fixture --locked
+          sha256sum "$PARAMSD_FIXTURE_NATIVE_BINARY" > "$proof/generator.sha256"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          PATH=/nonexistent /usr/bin/timeout --kill-after=5s 30s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "$PARAMSD_FIXTURE_NATIVE_EXEC" "$PARAMSD_FIXTURE_NATIVE_BINARY" --root "$PARAMSD_FIXTURE_ROOT" --output "$PARAMSD_FIXTURE_NATIVE_OUTPUT" --saved-packet "$PARAMSD_FIXTURE_ORIGINAL_SAVED_PACKET" > "$proof/native.stdout" 2> "$proof/native.stderr"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-fixture-native --test paramsd_fixture_generate --locked -- --nocapture
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-fixture-native --lib --bin generate-paramsd-fixture --test paramsd_fixture_generate --locked -- -D warnings
+          sha256sum -c "$proof/original.sha256"
+          sha256sum -c "$proof/generator.sha256"
       - name: Build and test native lagd QA tools
         env:
           CARGO_INCREMENTAL: '0'

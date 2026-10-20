@@ -2510,3 +2510,23 @@ fn config_retirement_requires_sealed_original_all_cases_and_both_exec_lanes() {
         false,
     );
 }
+
+#[test]
+fn paramsd_fixture_conversion_keeps_fresh_original_wire_and_real_cli_proof() {
+    job_check(
+        "estimation-runtime",
+        &[
+            "Compare native paramsd fixture generator against all original wire inputs",
+            "from paramsd_fixture import car_params, scenarios",
+            "from check_paramsd_daemon import frames",
+            "assert json.loads(observed.read_text()) == case",
+            "PATH=/nonexistent /usr/bin/timeout --kill-after=5s 30s /usr/bin/strace",
+            "--features paramsd-fixture-native --test paramsd_fixture_generate --locked",
+            "--features paramsd-fixture-native --lib --bin generate-paramsd-fixture --test paramsd_fixture_generate --locked -- -D warnings",
+            "sha256sum -c \"$proof/original.sha256\"",
+            "sha256sum -c \"$proof/generator.sha256\"",
+        ],
+        &["--features paramsd-fixture-native"],
+        true,
+    );
+}

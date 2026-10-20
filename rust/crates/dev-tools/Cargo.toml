@@ -538,6 +538,7 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
+paramsd-fixture-native = ["dep:capnp", "dep:openpilot-cereal", "serde_json/float_roundtrip"]
 paramsd-startup-gate-native = ["rustix/pipe"]
 paramsd-daemon-native = ["paramsd-startup-gate-native", "dep:capnp", "dep:openpilot-cereal", "dep:openpilot-messaging", "openpilot-messaging/native", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri"]
 eigen-tools-native = []
@@ -1732,3 +1733,12 @@ required-features = ["bluetooth-gesture-cases-native"]
 [[test]]
 name = "bluetooth_config_reference"
 required-features = ["bluetooth-config-native"]
+
+[[bin]]
+name = "generate-paramsd-fixture"
+path = "src/bin/generate_paramsd_fixture.rs"
+required-features = ["paramsd-fixture-native"]
+
+[[test]]
+name = "paramsd_fixture_generate"
+required-features = ["paramsd-fixture-native"]

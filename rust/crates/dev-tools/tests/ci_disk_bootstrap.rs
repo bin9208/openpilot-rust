@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 458);
+    assert_eq!(text.matches(marker).count(), 463);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -307,6 +307,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut soundd_finalization = vec![];
     let mut soundd_retirement = vec![];
     let mut paramsd_controller = vec![];
+    let mut paramsd_fixture = vec![];
     let mut bluetooth_journal_absence = vec![];
     let mut bluetooth_files_controller = vec![];
     let mut bluetooth_config_controller = vec![];
@@ -360,6 +361,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 &"      - name: Require sound daemon same-ELF present and absent execution proof",
             ) {
                 soundd_retirement.push(tail.to_owned());
+                continue;
+            }
+            if step == Some(&"      - name: Compare native paramsd fixture generator against all original wire inputs") {
+                paramsd_fixture.push(tail.to_owned());
                 continue;
             }
             if step == Some(&"      - name: Compare full native paramsd controller against original source packets") {
@@ -1138,6 +1143,11 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     assert_eq!(
         soundd_retirement,
         [128, 512].map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        paramsd_fixture,
+        [128, 512, 128, 512, 512]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     assert_eq!(
         paramsd_controller,
