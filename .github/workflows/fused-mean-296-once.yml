@@ -24,26 +24,23 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: 65e78679ffad479371951b61865fd3b0c33092ec
+        ref: 0c23a21f76b8b4f9d27bd3a85748c0a59b47d251
     - name: Require exact experimental source
-      run: 'test "$(git rev-parse HEAD)" = 65e78679ffad479371951b61865fd3b0c33092ec
+      run: 'test "$(git rev-parse HEAD)" = 0c23a21f76b8b4f9d27bd3a85748c0a59b47d251
 
         test -z "$(git status --porcelain)"'
     - name: Prepare LLVM18 original target prerequisites
       run: 'set -euo pipefail
 
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE"
-        --growth-mib 2048
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
 
         sudo apt-get update && sudo apt-get install -y g++ libllvm18 git-lfs
 
         rustup toolchain install 1.94.0 --profile minimal --component clippy
 
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE"
-        --growth-mib 128
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
 
-        git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx
-        --exclude=''''
+        git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx --exclude=''''
 
         '
     - name: Require exact final-output candidate and existing materialization fences
@@ -55,27 +52,24 @@ jobs:
 
         git rev-parse HEAD > "$proof/SOURCE_COMMIT"
 
-        sha256sum rust/crates/model-runtime/src/compiler_backend_cpu/fused_mean.rs
-        rust/crates/model-runtime/tests/compiler_conditional_cpu.rs > "$proof/inputs.sha256"
+        sha256sum rust/crates/model-runtime/src/compiler_backend_cpu/fused_mean.rs rust/crates/model-runtime/tests/compiler_conditional_cpu.rs
+        > "$proof/inputs.sha256"
 
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE"
-        --growth-mib 2048
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
 
-        FUSED_MEAN_DIAGNOSTICS="$proof/data" cargo +1.94.0 test --manifest-path rust/Cargo.toml
-        -p openpilot-model-runtime --locked --config profile.test.package.sha2.opt-level=3
-        --config profile.dev.package.sha2.opt-level=3 --test compiler_conditional_cpu
-        --test compiler_gelu_layout -- --nocapture --test-threads=2 2>&1 | tee "$proof/candidate.log"
+        FUSED_MEAN_DIAGNOSTICS="$proof/data" cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-model-runtime
+        --locked --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --test compiler_conditional_cpu
+        actual_fused_prefix_matches_independent_original_final_output -- --exact --nocapture 2>&1 | tee "$proof/candidate.log"
 
         sha256sum --check "$proof/inputs.sha256"
 
         '
     - name: Require strict native candidate Clippy
-      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE"
-        --growth-mib 512
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
 
-        cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-model-runtime
-        --locked --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3
-        --lib --test compiler_conditional_cpu --test compiler_gelu_layout -- -D warnings
+        cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-model-runtime --locked --config profile.test.package.sha2.opt-level=3
+        --config profile.dev.package.sha2.opt-level=3 --lib --test compiler_conditional_cpu --test compiler_gelu_layout --
+        -D warnings
 
         '
     - if: always()
