@@ -20,7 +20,7 @@ class RustIsolationTests(unittest.TestCase):
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('webcam_source_requirements.txt', 'build-xiaoge-opencv -- --prepare-only',
                          'build-webcam-opencv', 'build_visionipc_python.py', 'install_host_ffmpeg.sh',
-                         'pkg-config --modversion libswscale', 'openpilot-webcam --features native',
+                         'install_host_ffmpeg.sh --verify', 'openpilot-webcam --features native',
                          'webcam_camera_compare.py', 'webcam_worker_compare.py', 'odd-height unaligned-even',
                          'webcam_cli_compare.py', 'webcam_capture_errors.py', 'webcam_capture_fault.cc'):
             self.assertIn(required, commands)
