@@ -1,0 +1,54 @@
+name: Self-hosted runner readiness
+on:
+  push:
+    branches: ['codex/feat-404-*']
+    paths:
+      - '.github/workflows/**'
+      - 'docs/naver/self-hosted-runner-404.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  readiness:
+    runs-on: [self-hosted, Linux, X64]
+    timeout-minutes: 3
+    steps:
+      - name: Inspect prerequisites without installing anything
+        shell: bash
+        run: |
+          failed=0
+          report() { echo "$*" | tee -a "$GITHUB_STEP_SUMMARY"; }
+          report "Runner: $RUNNER_NAME ($RUNNER_OS/$RUNNER_ARCH)"
+          . /etc/os-release
+          report "OS: $PRETTY_NAME"
+          if [ "$ID" != ubuntu ] || [ "$VERSION_ID" != 24.04 ]; then
+            report "ERROR: current LLVM/FFmpeg and cross-APT pins require Ubuntu 24.04."
+            failed=1
+          fi
+          for tool in git curl tar xz unzip zstd python3 rustup cargo gh gcc g++ make pkg-config; do
+            if command -v "$tool" >/dev/null 2>&1; then
+              report "OK: $tool"
+            else
+              report "MISSING: $tool"
+              failed=1
+            fi
+          done
+          if sudo -n true; then
+            report "OK: noninteractive sudo"
+          else
+            report "MISSING: noninteractive sudo for workflow package installation"
+            failed=1
+          fi
+          available=$(df -Pk "$RUNNER_TEMP" | awk 'NR==2 {print $4}')
+          report "Free space in runner temp: $((available / 1024 / 1024)) GiB"
+          if [ "$available" -lt $((35 * 1024 * 1024)) ]; then
+            report "ERROR: recover at least 35 GiB before starting new builds."
+            failed=1
+          fi
+          if [ -n "${RUNNER_TOOL_CACHE:-}" ] && [ -d "$RUNNER_TOOL_CACHE" ] && [ -w "$RUNNER_TOOL_CACHE" ]; then
+            report "OK: writable tool cache"
+          else
+            report "MISSING: writable RUNNER_TOOL_CACHE (configure AGENT_TOOLSDIRECTORY)"
+            failed=1
+          fi
+          exit "$failed"

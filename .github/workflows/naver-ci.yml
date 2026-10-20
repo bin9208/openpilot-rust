@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   navigation-ui:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
@@ -41,7 +41,7 @@ jobs:
       - name: Native HUD regression
         run: python -m pytest -c /dev/null --rootdir=. --confcutdir=openpilot/selfdrive/ui/tests -q openpilot/selfdrive/ui/tests/test_carrot_hud_renderer.py openpilot/selfdrive/ui/tests/test_navigation_status.py
   phone-mapping-contract:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v7
@@ -60,7 +60,7 @@ jobs:
       - name: Java-produced bump envelope through strict C3 input
         run: python -m tools.naver_ci.check_bump_wire
   runtime-controller:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v7
@@ -74,7 +74,7 @@ jobs:
       - name: Real controller and native wire runtime tests
         run: python -m pytest -c /dev/null --rootdir=. --confcutdir=tools/naver_ci/controller_tests -q tools/naver_ci/controller_tests
   wire-schema:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -93,7 +93,7 @@ jobs:
       - name: Real Capnp and native/browser wire roundtrip
         run: python -m pytest -c /dev/null --rootdir=. --confcutdir=tools/naver_ci/wire_tests -q tools/naver_ci/wire_tests
   naver-input:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
@@ -113,7 +113,7 @@ jobs:
             openpilot/selfdrive/carrot/tests/test_navigation_ingress.py \
             openpilot/selfdrive/carrot/tests/test_navigation_runtime.py
   infrastructure:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
