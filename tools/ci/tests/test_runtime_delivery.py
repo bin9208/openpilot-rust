@@ -1,4 +1,5 @@
 """Exercise the actual delivery admission script with owned GitHub responses."""
+import ast
 import copy
 import json
 import os
@@ -43,6 +44,18 @@ const setTimeout=callback=>callback();
 
 
 class RuntimeDeliveryTests(unittest.TestCase):
+  def test_ci_only_dm_fixture_does_not_change_reused_producers(self):
+    tree = ast.parse((ROOT / 'rust/ci/runtime/package.py').read_text())
+    stage = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'stage_baseline')
+    allowed = ast.literal_eval(next(node.value for node in stage.body if isinstance(node, ast.Assign)
+                                   and any(isinstance(target, ast.Name) and target.id == 'allowed' for target in node.targets)))
+    def admitted(path):
+      return any(path == prefix or prefix.endswith(('/', '-')) and path.startswith(prefix) for prefix in allowed)
+    self.assertTrue(admitted('rust/tools/check_dmonitoring_daemon.py'))
+    for producer in ('rust/tools/build_model_tinygrad.py', 'openpilot/selfdrive/modeld/models/driving_vision.onnx',
+                     'third_party/ffmpeg/configure', 'rust/tools/check_dmonitoring_daemon.py.unreviewed'):
+      self.assertFalse(admitted(producer), producer)
+
   def test_completed_latest_exact_merge_is_admitted(self):
     result = invoke(fixture())
     self.assertEqual(result.returncode, 0, result.stderr)
