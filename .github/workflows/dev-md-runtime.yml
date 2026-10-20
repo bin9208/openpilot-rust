@@ -80,6 +80,7 @@ jobs:
           ref: ${{ needs.verify.outputs.source_sha }}
           fetch-depth: 0
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - name: Reserve disk for AGNOS and bounded builds
         run: |
@@ -105,7 +106,7 @@ jobs:
       - uses: actions/cache/restore@v4
         id: sdk-cache
         with:
-          path: ${{ runner.temp }}/agnos-runtime/sdk
+          path: ${{ env.CI_JOB_TEMP }}/agnos-runtime/sdk
           key: agnos-sdk-375c5d22335770ac-v1
       - uses: actions/cache/restore@v4
         id: cargo-cache
@@ -113,7 +114,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            ${{ runner.temp }}/agnos-runtime/target
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/target
           key: agnos-runtime-1.94-${{ hashFiles('rust/Cargo.lock') }}-${{ needs.verify.outputs.source_sha }}
           restore-keys: agnos-runtime-1.94-${{ hashFiles('rust/Cargo.lock') }}-
       - name: Restore verified baseline companions and genuine OS sysroot
@@ -122,7 +123,7 @@ jobs:
         if: steps.sdk-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: ${{ runner.temp }}/agnos-runtime/sdk
+          path: ${{ env.CI_JOB_TEMP }}/agnos-runtime/sdk
           key: agnos-sdk-375c5d22335770ac-v1
       - name: Compile host release tools in an isolated native cache
         run: python3 rust/ci/runtime/package.py host-tools
@@ -135,15 +136,15 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            ${{ runner.temp }}/agnos-runtime/target
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/target
           key: agnos-runtime-1.94-${{ hashFiles('rust/Cargo.lock') }}-${{ needs.verify.outputs.source_sha }}
       - uses: actions/upload-artifact@v7
         with:
           name: dev-md-runtime-${{ needs.verify.outputs.source_sha }}
           path: |
-            ${{ runner.temp }}/agnos-runtime/release/
-            ${{ runner.temp }}/agnos-runtime/delivery-tools/
-            ${{ runner.temp }}/agnos-runtime/offline-install.json
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/release/
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/delivery-tools/
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/offline-install.json
           compression-level: 0
           retention-days: 7
       - name: Preserve concise diagnostics
@@ -152,12 +153,15 @@ jobs:
         with:
           name: runtime-build-evidence-${{ needs.verify.outputs.source_sha }}
           path: |
-            ${{ runner.temp }}/agnos-runtime/elf.json
-            ${{ runner.temp }}/agnos-runtime/installer-build.json
-            ${{ runner.temp }}/agnos-runtime/offline-install.json
-            ${{ runner.temp }}/agnos-runtime/build.jsonl
-            ${{ runner.temp }}/agnos-runtime/sysroot-extract.log
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/elf.json
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/installer-build.json
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/offline-install.json
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/build.jsonl
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/sysroot-extract.log
           retention-days: 7
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
   publish:
     needs: [verify, package]
     name: Publish verified dev-md prerelease
@@ -176,6 +180,7 @@ jobs:
           ref: ${{ needs.verify.outputs.source_sha }}
           fetch-depth: 0
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
       - name: Reserve disk and install ARM execution tools
         run: |
           # Only GitHub-hosted images contain these disposable tool bundles.
@@ -186,7 +191,7 @@ jobs:
           sudo apt-get install -y qemu-user-static android-sdk-libsparse-utils e2fsprogs git-lfs
       - uses: actions/cache@v4
         with:
-          path: ${{ runner.temp }}/agnos-runtime/sdk
+          path: ${{ env.CI_JOB_TEMP }}/agnos-runtime/sdk
           key: agnos-sdk-375c5d22335770ac-v1
       - name: Download the successful package from this exact source
         run: |
@@ -200,6 +205,9 @@ jobs:
         with:
           name: runtime-publish-evidence-${{ needs.verify.outputs.source_sha }}
           path: |
-            ${{ runner.temp }}/agnos-runtime/online-install.json
-            ${{ runner.temp }}/agnos-runtime/offline-install.json
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/online-install.json
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/offline-install.json
           retention-days: 14
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}

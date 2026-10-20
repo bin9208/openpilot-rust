@@ -173,3 +173,16 @@ the exact provider-argument hash updated after diff review. Cloud fixtures run
 the preparation statements twice with owned tools to verify fresh roots and
 preservation of stale files. Full validation remains pending in
 https://github.com/bin9208/openpilot-rust/issues/417.
+
+The next step in [run 39450944392](https://github.com/bin9208/openpilot-rust/actions/runs/39450944392)
+passed actual fresh raylib staging, formatting, package policy and Clippy, but
+then rejected the existing fixed `torque-numerics` output. This confirms the
+preparation issue affects runner-temp output generally. Concrete validation
+and delivery jobs now allocate an owned job directory before tools run. Shell
+initialization redirects the default RUNNER_TEMP/TMPDIR while preserving
+explicit subprocess test overrides and unset-variable fallback cases. Artifact
+and cache actions use the matching CI_JOB_TEMP. After uploads, always-running
+cleanup removes only that job directory, rejects nested/unrelated/symlink paths,
+and preserves existing runner files. Provider staging/integrity checks remain
+unchanged. Cloud fixtures cover repeated jobs, shell/action path agreement,
+overrides and cleanup boundaries. No workflow globally locks other PRs.
