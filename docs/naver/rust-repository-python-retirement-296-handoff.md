@@ -1,5 +1,32 @@
 # 저장소 전체 Python 전환 작업 인수인계
 
+## 현재 감독·통합 상태: aace5f64, 2026-10-21
+
+부모6.1 Sol이 #296의 검토·통합을 맡으며 기존6 Sol 작업자를 사용한다.
+작업 HEAD는 `aace5f64`이고 PR343→dev에 후속 게시한다. dev-md, 주 작업폴더와
+`.omo/`는 건드리지 않는다. 콤마가 없으므로 사용자가 pull 후 정상부팅·녹화·업로드와
+주행을 확인한다. 이 실기 결과는 cloud 검사와 구분한다.
+
+soundd #434는 source`f19ef5ad4cb56b9a7bace81fdeb34b6325e704eb`의
+[run39512282992/job118935976457](https://github.com/bin9208/openpilot-rust/actions/runs/39512282992/job/118935976457)에서
+구파서 RED, 수정본의 원본 소수 bit 회귀와7모드 원본·native 두lane 대조, strictClippy가
+통과했다. 부모가 artifact12306223105의 실제7모드와 lane별22exec 및4ELF 봉인을
+확인했다. aace5f64에서 Python 검사기를 제거하고 삭제 후 native 두root 증명으로
+gate를 전환했다. 삭제 후 정확한 새 소스 검증은 진행해야 한다. 인벤토리는
+214replaced-local /3partial /3363pending이다.
+
+Bluetooth journal/config/gesture의 Python 부재 proof 및 호출자 전환을 준비했다.
+아직 이 세 원본을 제거하지 않았다. journal proof의 step 간 fixture 환경변수 누락을
+수정했고 Enum의 include_bytes 이중참조도 수정했다. 실제 새 cloud 결과를 받아야 한다.
+기존 a993 전체 run39510866633의 포맷, lagdClippy, Panda의 러너 미설치rg 사용 실패도
+수정했다. 이들 수정의 최신 정확한 SHA 검사는 남아 있다.
+
+모델 fusedMean 후보는 통합하지 않았다. 실제 cloud에서 closure가 선택됐지만 최종
+960값이 모두0으로 나왔다. 보존된 LLVM IR에서 서로 다른 누산값의 semantic key가
+충돌해 Gelu 결과를 재사용한 결함을 확인했다. 별도 후보에서 수정·검증을 계속하며
+원본 최종 출력과 정확히 일치하고 회귀 검사를 통과하기 전에는 production에 반영하지 않는다.
+전체 Python 전환·전체 모듈 점검·최신 필수 CI·dev 통합·소스 일치 패키지는 미완료다.
+
 ## 최신 통합 상태: a9933ed7, 2026-10-21
 
 부모6.1 Sol이 PR343→dev의 감독·검토·통합을 담당한다. 게시한 코드는
