@@ -23,8 +23,8 @@ The captured daemon ELF was93,730,640bytes, whereas21 pinned sources totaled
 target, but these observations do not identify the exact instruction or
 measure its CPU cost. The next source uses the existing workspace's
 `profile.{dev,test}.package.sha2.opt-level=3` settings for checker/test/Clippy
-builds, preserving the hash implementation, pins and all deadlines. Its cloud
-outcome must still establish whether this resolves either timeout.
+builds, preserving the hash implementation, pins and all deadlines. The source-matched f60e4ac0 cloud execution below establishes the observed
+process-test result; it does not measure a general device CPU benefit.
 
 The mutation observer now requires the live checker, both prerequisite
 receipts and no root receipt, then proves a sleeping Linux `write` or `writev`
@@ -37,4 +37,18 @@ mutations, owned cleanup, and saved stdout/proc snapshots remain.
 
 The separate retained-binding finalization repair is tracked in
 [#433](rust-audio-qa-finalization-433.md). No local functional test or device
-audio test ran. Both repairs still require exact-source cloud acceptance.
+audio test ran. Both repairs now have the exact-source cloud acceptance recorded below;
+the latest integration commit must still pass its required checks.
+
+
+Source`f60e4ac0a655592aaef659f35cc354b86ffa09a0`
+[passed the full audio job](https://github.com/bin9208/openpilot-rust/actions/runs/39505980261/job/118914882870).
+The8process checks include actual blocked-fd1 source and daemon mutations,
+controller cancellation, broken stdout,15CLI statuses and6failure boundaries.
+The full process suite completed in56.86s with no failure. Parent reviewed the
+complete log and artifact12304571676 (ZIP SHA256
+`23e074eef387fbff6bf1262993e0854536833183f5c4a593611bb6f78f8a8652`).
+The existing30s observation/five-second rejection limits remain unchanged.
+The original/native seven modes, strictClippy and PortAudioMiri passed in the
+same job. This resolves the observed hosted-test timeout for that exact source;
+latest integration acceptance and physical-device audio remain separate.

@@ -1,9 +1,9 @@
 # Audio QA finalization identity (#433)
 
 Tracking: [#433](https://github.com/bin9208/openpilot-rust/issues/433), within
-the independent #296 conversion. The old implementation's behavioral RED is
-observed; the repaired implementation's GREEN, complete audio checks and
-Clippy remain pending.
+the independent #296 conversion. Exact-source cloud execution has now
+observed the old behavioral RED and repaired GREEN, complete audio checks and
+strict Clippy. Integration on the latest issue-branch source remains required.
 
 At baseline `2d8d027932dc880bd0acd00288b256ac8d7f1b89`, the actual soundd
 checker verified pinned sources and four executing artifacts after publishing
@@ -54,3 +54,15 @@ current-source tests were skipped. The two fixed-string assertions now use
 `grep -Fq`, retaining the exit101 and exact assertion requirements. Artifact
 `12302893247` retains the old-source patch, inputs and raw failure. The parent
 independently inspected the completed job log; no deadline changed.
+
+
+At source`f60e4ac0a655592aaef659f35cc354b86ffa09a0`, the complete
+[audio job118914882870](https://github.com/bin9208/openpilot-rust/actions/runs/39505980261/job/118914882870)
+passed. Baseline2d8 failed with `accepted changed source at finalization` and
+exit101; current5worker tests,9controller tests and8process tests passed,
+including actual source/daemon mutations during blocked fd1 writes. Original
+and native seven-mode comparison, strictClippy and PortAudioMiri also passed.
+Parent inspected raw logs and artifact12304571676, ZIP SHA256
+`23e074eef387fbff6bf1262993e0854536833183f5c4a593611bb6f78f8a8652`.
+This is hosted process/ABI evidence. Physical audio and device acceptance are
+not established. #433 remains open through integration validation.
