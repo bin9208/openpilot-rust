@@ -24,9 +24,9 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: c53442881a117eb72e95f21feecdd9f84a7848ad
+        ref: 13b3ff14befbcc13d3b9aa1e89c3adc7dc4332d5
     - name: Require exact experimental source
-      run: 'test "$(git rev-parse HEAD)" = c53442881a117eb72e95f21feecdd9f84a7848ad
+      run: 'test "$(git rev-parse HEAD)" = 13b3ff14befbcc13d3b9aa1e89c3adc7dc4332d5
 
         test -z "$(git status --porcelain)"'
     - name: Prepare LLVM18 original target prerequisites
