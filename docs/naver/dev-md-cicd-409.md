@@ -198,3 +198,15 @@ Cloud regression binds a real Unix socket with an intentionally long original
 runner root; the original nine Jetlink socket tests also run in the earlier
 native integration stage. Deadlines, packet limits and original tests stay
 unchanged. Actual continuous DM comparison is still pending.
+
+### Exit-observation race in retained upload tests (#420)
+
+On `624bfa78`, [run 39461054716](https://github.com/bin9208/openpilot-rust/actions/runs/39461054716)
+passed full workspace tests and all four continuous DM IPC/original comparisons.
+The subsequent tools gate passed 244 cases but failed the owned EINTR child
+cleanup observer with `ProcessLookupError` while reading a disappearing proc
+entry. Its fixture now accepts ENOENT/ESRCH or zombie state only; live states
+remain false and permission errors propagate. The real strace/owned-child test,
+selection and five-second bound remain. Deterministic fast regressions exercise
+these outcomes. Runtime upload code and transport deadlines are unchanged.
+Acceptance: https://github.com/bin9208/openpilot-rust/issues/420.
