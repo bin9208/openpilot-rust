@@ -8,7 +8,7 @@ use crate::compiler_onnx::{
     schedule::Schedule,
     Attribute, Model,
 };
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 pub(crate) struct Staged {
     layout: Layout,
     input: usize,
@@ -55,6 +55,7 @@ pub(crate) fn stage(
     model: &Model,
     schedule: &mut Schedule,
     initialized: &mut BTreeMap<usize, Vec<u8>>,
+    reserved: &BTreeSet<usize>,
 ) -> Result<Vec<Staged>, String> {
     let mut staged = Vec::new();
     for node in model.graph.nodes.iter().filter(|n| n.op == "Conv") {
@@ -71,6 +72,9 @@ pub(crate) fn stage(
             continue;
         };
         let (input, weights, bias, output) = (ids[0], ids[1], ids[2], ids[3]);
+        if reserved.contains(&output) {
+            continue;
+        }
         if !schedule.live.contains(&output) {
             continue;
         }
