@@ -167,8 +167,7 @@ def main() -> int:
               root / 'rust/target/debug/build-pandad-runtime-fixture',
               original, wrapped,
               original_collector, diagnostic_collector, fixture]
-  tracked += [Path(os.environ['RUNNER_TEMP']) / 'panda-diag/collector-copy/Cargo.lock',
-              Path(os.environ['RUNNER_TEMP']) / 'panda-diag/collector-copy/src/main.rs']
+  tracked += [root / 'rust/crates/logmessaged/src/bin/panda-diag-logmessaged.rs']
   import msgq.ipc_pyx
   import usb1
   tracked += [Path(msgq.ipc_pyx.__file__).resolve(), Path(usb1.__file__).resolve()]

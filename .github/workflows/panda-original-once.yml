@@ -1,4 +1,4 @@
-# Isolated collector repeats exact workspace provider patches.
+# Diagnostic collector is an untracked bin in the original locked workspace.
 name: One-off original Panda timestamp path capture
 
 on:
@@ -85,26 +85,29 @@ jobs:
           out="$RUNNER_TEMP/panda-diag"
           rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 2048
           python "$out/tools/rebuild_wrapped.py" "$out/runtime-src/command.json" "$out/tools/wrap_zmq_send.cc" "$out/pandad-wrapped"
-          python "$out/tools/make_collector_copy.py" "$GITHUB_WORKSPACE" "$out/collector-copy"
-          cargo build --manifest-path "$out/collector-copy/Cargo.toml" --offline --locked
-          sha256sum "$GITHUB_WORKSPACE/rust/Cargo.lock" "$out/collector-copy/Cargo.lock" > "$out/collector-locks.sha256"
-          sha256sum "$out/pandad-wrapped" "$out/collector-copy/target/debug/panda-diag-logmessaged" "$out/collector-copy/src/main.rs" > "$out/diagnostic-inputs.sha256"
+          sha256sum rust/Cargo.toml rust/Cargo.lock rust/crates/logmessaged/Cargo.toml rust/crates/logmessaged/src/main.rs > "$out/collector-source.sha256"
+          python "$out/tools/make_collector_copy.py" "$GITHUB_WORKSPACE" > "$out/collector-copy.path"
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-logmessaged --bin panda-diag-logmessaged --offline --locked
+          sha256sum --check "$out/collector-source.sha256"
+          sha256sum "$GITHUB_WORKSPACE/rust/Cargo.lock" > "$out/collector-locks.sha256"
+          sha256sum "$out/pandad-wrapped" "$GITHUB_WORKSPACE/rust/target/debug/panda-diag-logmessaged" "$GITHUB_WORKSPACE/rust/crates/logmessaged/src/bin/panda-diag-logmessaged.rs" > "$out/diagnostic-inputs.sha256"
       - name: Run bounded original onroad controls and instrumented captures
         run: |
           set -euo pipefail
           out="$RUNNER_TEMP/panda-diag"
           mkdir -p "$out/evidence"
           rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 256
-          python "$out/tools/diagnose.py" "$GITHUB_WORKSPACE" "$out/evidence" "$out/runtime-src/pandad-source" "$out/pandad-wrapped" "$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged" "$out/collector-copy/target/debug/panda-diag-logmessaged" "$out/runtime-fixture/libusb-1.0.so.0" "$out/runtime-src/manifest.json"
+          python "$out/tools/diagnose.py" "$GITHUB_WORKSPACE" "$out/evidence" "$out/runtime-src/pandad-source" "$out/pandad-wrapped" "$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged" "$GITHUB_WORKSPACE/rust/target/debug/panda-diag-logmessaged" "$out/runtime-fixture/libusb-1.0.so.0" "$out/runtime-src/manifest.json"
       - name: Retain bounded inputs and every raw diagnostic attempt
         if: always()
         run: |
           set -euo pipefail
           out="$RUNNER_TEMP/panda-diag"
           mkdir -p "$out/evidence/build"
-          cp "$out"/{branch-inputs.sha256,checkout-status.txt,imports.txt,native-build.log,stage-json11.json,built-inputs.sha256,diagnostic-inputs.sha256,collector-locks.sha256} "$out/evidence/build/" 2>/dev/null || true
+          cp "$out"/{branch-inputs.sha256,checkout-status.txt,imports.txt,native-build.log,stage-json11.json,built-inputs.sha256,diagnostic-inputs.sha256,collector-locks.sha256,collector-source.sha256} "$out/evidence/build/" 2>/dev/null || true
           cp "$out/runtime-src/"{command.json,manifest.json} "$out/evidence/build/" 2>/dev/null || true
-          cp "$out/"{wrapped-build.json,collector-copy/Cargo.lock} "$out/evidence/build/" 2>/dev/null || true
+          cp "$out/"{wrapped-build.json,collector-copy.path} "$out/evidence/build/" 2>/dev/null || true
+          cp "$GITHUB_WORKSPACE/rust/crates/logmessaged/src/bin/panda-diag-logmessaged.rs" "$out/evidence/build/" 2>/dev/null || true
           cp "$out/tools/"* "$out/evidence/build/" 2>/dev/null || true
           du -sm "$out/evidence" | tee "$out/evidence/build/size-mib.txt"
           test "$(du -sm "$out/evidence" | cut -f1)" -lt 200
