@@ -23,12 +23,12 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: 23301d152caeee6be2abb3114b48ad542f4cd513
+        ref: acff8623b9958396f74429e5a8618a9116928040
     - uses: actions/setup-python@v6
       with:
         python-version: '3.12'
     - name: Require exact native fixture source
-      run: 'test "$(git rev-parse HEAD)" = 23301d152caeee6be2abb3114b48ad542f4cd513
+      run: 'test "$(git rev-parse HEAD)" = acff8623b9958396f74429e5a8618a9116928040
 
         test -z "$(git status --porcelain)"
 
@@ -85,7 +85,7 @@ jobs:
         \ 'continuous', 'car': car_params(), 'seed': seed, 'debug': True,\n          'replay': True, 'simulation': True, 'gps':\
         \ gps, 'frames': frames(gps, 8 if restart else 1202)}\n  case['frames'].insert(0, {'time': 99.95, 'messages': []})\n\
         \  name = 'PARAMSD_FIXTURE_ORIGINAL_RESTART' if restart else 'PARAMSD_FIXTURE_ORIGINAL_CONTINUOUS'\n  Path(os.environ[name]).write_text(json.dumps(case)\
-        \ + '\\n')\nORIGINAL\nsha256sum rust/tools/paramsd_fixture.py rust/tools/check_paramsd_daemon.py openpilot/cereal/car.capnp\
+        \ + '\\n')\nORIGINAL\nsha256sum rust/tools/paramsd_fixture.py rust/tools/check_paramsd_daemon.py opendbc_repo/opendbc/car/car.capnp\
         \ openpilot/cereal/log.capnp \"$PARAMSD_FIXTURE_ORIGINAL_SAVED_PACKET\" \"$PARAMSD_FIXTURE_ORIGINAL_SCENARIOS\" \"\
         $PARAMSD_FIXTURE_ORIGINAL_CONTINUOUS\" \"$PARAMSD_FIXTURE_ORIGINAL_RESTART\" > \"$proof/original.sha256\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
         \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
@@ -105,7 +105,8 @@ jobs:
 
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
 
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --test ci_rust_isolation --test ci_disk_bootstrap
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-policy-native --locked --test
+        ci_rust_isolation --test ci_disk_bootstrap --test soundd_policy_ci
 
         '
     - if: always()
