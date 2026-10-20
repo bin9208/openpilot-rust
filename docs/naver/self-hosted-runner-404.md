@@ -160,3 +160,29 @@ release publication is authorized by this infrastructure change.
 Runner setup references:
 - https://docs.github.com/en/actions/reference/runners/self-hosted-runners
 - https://github.com/actions/setup-python/blob/main/docs/advanced-usage.md#using-setup-python-with-a-self-hosted-runner
+
+## Actual Ubuntu 26.04 compatibility probe (2026-10-20 KST)
+
+At the user's request, replaced the OS-version-only rejection with an advisory
+and ran existing fast checks on the actual host. Source:
+`68e8cb9c9e96adef613a343df70bfad8dc9353d8`.
+
+- [Fast checks](https://github.com/bin9208/openpilot-rust/actions/runs/39402671682):
+  success, including routing guards, navigation, Wiki, Jetlink Python and
+  Android Java tests.
+- [Host/package probe](https://github.com/bin9208/openpilot-rust/actions/runs/39402671688):
+  readiness success; installed tools, sudo and cache work; free space 39 GiB.
+- LLVM 18 resolves to `1:18.1.8-20ubuntu8`. The previous assumption that
+  LLVM 18 was unavailable on this OS was not established and is not a blocker
+  demonstrated by this probe.
+- Existing pinned FFmpeg install simulation fails: current repositories offer
+  `7:8.0.1-3ubuntu2`, while workflows request `7:6.1.1-*` for libavcodec-dev,
+  libavformat-dev, libavutil-dev and libswscale-dev. No packages were installed
+  by this simulation and no noble sources were added.
+- The initial runtime-core library invocation compiled successfully but ran
+  zero tests (one ignored). It proves compilation only. The follow-up probe
+  selects existing integration tests with `--tests`.
+- This demonstrates partial compatibility, not full native/ARM/AGNOS runtime
+  compatibility. Keep exact-source FFmpeg/provider requirements intact;
+  an FFmpeg 8 migration or a 24.04 execution environment requires separate
+  implementation and verification.

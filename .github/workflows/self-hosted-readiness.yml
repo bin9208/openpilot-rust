@@ -92,7 +92,7 @@ jobs:
           available=$(df -Pk "$RUNNER_TEMP" | awk 'NR==2 {print $4}')
           test "$available" -ge $(((25 + 2) * 1024 * 1024))
           rustup toolchain install 1.94.0 --profile minimal
-          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-core --lib
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-core --tests
       - name: Remove this probe's compiled output
         if: always()
         shell: bash
