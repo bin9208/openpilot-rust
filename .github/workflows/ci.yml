@@ -230,6 +230,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with: {persist-credentials: false, lfs: false}
+      - uses: actions/setup-python@v6
+        with: {python-version: '3.12'}
       - uses: actions/setup-java@v5
         with: {distribution: temurin, java-version: '17'}
       - name: Reserve capacity and select a job-owned Android SDK
