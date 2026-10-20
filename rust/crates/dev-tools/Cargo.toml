@@ -538,7 +538,7 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
-paramsd-startup-gate-native = []
+paramsd-startup-gate-native = ["rustix/pipe"]
 eigen-tools-native = []
 bluetooth-sudo-fixture-native = []
 bluetooth-gesture-cases-native = ["dep:openpilot-runtime-core"]
