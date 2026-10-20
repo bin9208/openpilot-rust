@@ -159,6 +159,12 @@ jobs:
               "exp_final": ((333, 358, 383, 408), tuple(1456 + 9 * lane for lane in range(12))),
               "denominator": ((334, 359, 384, 409), tuple(1457 + 9 * lane for lane in range(12))),
           }
+          # The exp polynomial is a 12-instruction Horner chain in both captured IRs.
+          # Keep multiplication and addition steps separate to identify the first drift.
+          for step in range(12):
+              stages[f"horner_{step:02d}"] = (
+                  tuple(314 + step + 25 * lane for lane in range(4)),
+                  tuple(1283 + step + 14 * lane for lane in range(12)))
           gelu_indices = ("v825", "v830", "v836", "v842", "v826", "v832",
                           "v838", "v844", "v828", "v834", "v840", "v846")
           def instrument(raw, label, registers):
@@ -219,7 +225,7 @@ jobs:
               stage: {label: item[label]["admissible"] for label in ("fused93", "materialized92")}
               for stage, item in record["stages"].items()}), flush=True)
           PINNED_PREFIX93_DRIVER
-          printf 'c37677053b7ad93c77e0dc62da4794d20cacbbcf9cc26807f34143e176f4fa39  %s/trace.py\n' "$capture_dir" | sha256sum --check --strict
+          printf 'a39166d814951679038431ca023e8c2810598e33bc197d8e862f6f0139d80896  %s/trace.py\n' "$capture_dir" | sha256sum --check --strict
       - name: Replay original kernels and compare staged traces
         shell: bash
         env:
