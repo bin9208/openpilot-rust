@@ -485,11 +485,47 @@ fn json_file(path: &Path, value: &Value) -> Result<Publication> {
 pub(super) struct Completed {
     pub(super) summary: Value,
     publication: Publication,
+    bindings: Option<FinalBindings>,
+}
+struct FinalBindings {
+    root: PathBuf,
+    source_sha256: Value,
+    binary_path: PathBuf,
+    binary: Artifact,
+    helper_path: PathBuf,
+    helper: Artifact,
+    library_path: PathBuf,
+    library: Artifact,
+    worker_path: PathBuf,
+    worker: Artifact,
+}
+impl FinalBindings {
+    fn verify(&self, cancel: &AtomicBool) -> Result<()> {
+        interrupted(cancel)?;
+        require(
+            self.source_sha256 == identity::validate_source(&self.root)?,
+            "soundd original source presence changed during run",
+        )?;
+        self.binary.verify(&self.binary_path)?;
+        self.helper.verify(&self.helper_path)?;
+        self.library.verify(&self.library_path)?;
+        self.worker.verify(&self.worker_path)?;
+        interrupted(cancel)
+    }
 }
 pub(super) fn finish_cli(result: &Completed, cancel: &AtomicBool) -> Result<()> {
     // Observe signals already latched before handler removal as well as those
-    // observed by the runner. Never unlink a foreign replacement report.
-    if let Err(error) = interrupted(cancel) {
+    // observed by the runner. Keep every provenance binding through both
+    // finalizations; never unlink a foreign replacement report.
+    let verified = (|| -> Result<()> {
+        interrupted(cancel)?;
+        result
+            .bindings
+            .as_ref()
+            .ok_or("missing soundd final identity bindings")?
+            .verify(cancel)
+    })();
+    if let Err(error) = verified {
         result.publication.remove_owned();
         return Err(error);
     }
@@ -520,6 +556,7 @@ fn publish_after_stdout(
     Ok(Completed {
         summary,
         publication,
+        bindings: None,
     })
 }
 pub(super) fn run(options: &Options, worker: &Path, cancel: &AtomicBool) -> Result<Completed> {
@@ -644,26 +681,30 @@ pub(super) fn run(options: &Options, worker: &Path, cancel: &AtomicBool) -> Resu
     let helper = helper.ok_or("successful fixture helper has no regular executable identity")?;
     let library_identity =
         library_identity.ok_or("successful PortAudio library has no regular identity")?;
-    let verify = || -> Result<()> {
-        interrupted(cancel)?;
-        require(
-            before == identity::validate_source(&options.root)?,
-            "soundd original source presence changed during run",
-        )?;
-        binary.verify(&binary_path)?;
-        helper.verify(&options.fixture_assets_binary)?;
-        library_identity.verify(&library)?;
-        worker_identity.verify(worker)?;
-        interrupted(cancel)
+    let bindings = FinalBindings {
+        root: options.root.clone(),
+        source_sha256: before,
+        binary_path,
+        binary,
+        helper_path: options.fixture_assets_binary.clone(),
+        helper,
+        library_path: library,
+        library: library_identity,
+        worker_path: worker.into(),
+        worker: worker_identity,
     };
-    verify()?;
-    let provenance = json!({"source_sha256":before,"historical_source_sha256":{(identity::RETIRED):identity::ORIGINAL},"executables":{"daemon":binary.sha256,"fixture_assets":helper.sha256,"checker_worker":worker_identity.sha256,"owned_portaudio":library_identity.sha256},"limits":{"compiler_seconds":60,"assets_seconds":30,"worker_seconds":90},"physical_audio_tested":false});
+    bindings.verify(cancel)?;
+    let provenance = json!({"source_sha256":&bindings.source_sha256,"historical_source_sha256":{(identity::RETIRED):identity::ORIGINAL},"executables":{"daemon":&bindings.binary.sha256,"fixture_assets":&bindings.helper.sha256,"checker_worker":&bindings.worker.sha256,"owned_portaudio":&bindings.library.sha256},"limits":{"compiler_seconds":60,"assets_seconds":30,"worker_seconds":90},"physical_audio_tested":false});
     json_file(&options.output.join("provenance.json"), &provenance)?;
-    verify()?;
+    bindings.verify(cancel)?;
     // Check fallible stdout BEFORE publishing a new PASS. Existing foreign reports
     // are untouched on admission/child/output failure; no eager invalidation.
     let mut stdout = io::stdout().lock();
-    publish_after_stdout(&mut stdout, results, &options.output, verify)
+    let mut completed = publish_after_stdout(&mut stdout, results, &options.output, || {
+        bindings.verify(cancel)
+    })?;
+    completed.bindings = Some(bindings);
+    Ok(completed)
 }
 
 #[cfg(test)]
@@ -787,7 +828,8 @@ mod tests {
         assert!(finish_cli(
             &Completed {
                 summary: Value::Null,
-                publication
+                publication,
+                bindings: None,
             },
             &cancel
         )
@@ -806,11 +848,115 @@ mod tests {
         assert!(finish_cli(
             &Completed {
                 summary: Value::Null,
-                publication
+                publication,
+                bindings: None,
             },
             &cancel
         )
         .is_err());
         assert_eq!(fs::read(path).unwrap(), b"foreign receipt");
+    }
+
+    fn published_private_bounded_case() -> (PathBuf, Completed, PathBuf, PathBuf) {
+        let repository = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let manifest: Value = serde_json::from_slice(include_bytes!(
+            "../../tests/fixtures/soundd-daemon/manifest.json"
+        ))
+        .unwrap();
+        let evidence = PathBuf::from(
+            std::env::var_os("SOUNDD_DAEMON_TEST_OUTPUT")
+                .expect("mandatory soundd artifact directory missing"),
+        );
+        fs::create_dir_all(&evidence).unwrap();
+        let case = tempfile::Builder::new()
+            .prefix("finalization433-")
+            .tempdir_in(evidence)
+            .unwrap()
+            .keep();
+        let source = case.join("source");
+        for name in manifest["source_sha256"].as_object().unwrap().keys() {
+            let from = repository.join(name);
+            if name == identity::RETIRED && !from.exists() {
+                continue;
+            }
+            let to = source.join(name);
+            fs::create_dir_all(to.parent().unwrap()).unwrap();
+            fs::copy(from, to).unwrap();
+        }
+        let daemon = case.join("soundd-rs");
+        fs::copy(
+            std::env::var_os("SOUNDD_DAEMON_BINARY").expect("cloud daemon prerequisite"),
+            &daemon,
+        )
+        .unwrap();
+        let worker = PathBuf::from(
+            std::env::var_os("SOUNDD_DAEMON_WORKER_BINARY")
+                .expect("cloud checker worker prerequisite"),
+        );
+        let options = Options {
+            root: source.clone(),
+            binary: daemon.clone(),
+            output: case.join("output"),
+            fixture_assets_binary: PathBuf::from(
+                std::env::var_os("SOUNDD_FIXTURE_ASSETS_BINARY")
+                    .expect("cloud fixture helper prerequisite"),
+            ),
+            portaudio_library: Some(PathBuf::from(
+                std::env::var_os("SOUNDD_PORTAUDIO_LIBRARY").expect("cloud PortAudio prerequisite"),
+            )),
+            modes: vec![Mode::Bounded],
+            environment: std::env::vars_os().collect(),
+        };
+        let completed = run(&options, &worker, &AtomicBool::new(false)).unwrap();
+        assert!(options.output.join("summary.json").is_file());
+        (case, completed, source, daemon)
+    }
+
+    #[test]
+    fn finalization_rechecks_private_source_and_daemon_after_actual_publication() {
+        for changed in ["none", "source", "daemon"] {
+            let (case, completed, source, daemon) = published_private_bounded_case();
+            let receipt = case.join("output/summary.json");
+            match changed {
+                "source" => {
+                    let path = source.join("rust/tools/fixtures/soundd/portaudio.c");
+                    let mut bytes = fs::read(&path).unwrap();
+                    bytes.extend_from_slice(b"\n/* changed after publication */\n");
+                    fs::write(path, bytes).unwrap();
+                }
+                "daemon" => {
+                    let replacement = case.join("different-daemon");
+                    fs::write(&replacement, b"changed after publication\n").unwrap();
+                    fs::rename(replacement, daemon).unwrap();
+                }
+                "none" => {}
+                _ => unreachable!(),
+            }
+            let result = finish_cli(&completed, &AtomicBool::new(false));
+            if changed == "none" {
+                result.unwrap();
+                assert!(receipt.is_file());
+            } else {
+                assert!(
+                    result.is_err(),
+                    "accepted changed {changed} at finalization"
+                );
+                assert!(!receipt.exists(), "retained a stale owned receipt");
+            }
+        }
+    }
+
+    #[test]
+    fn finalization_failure_preserves_a_foreign_replacement_receipt() {
+        let (case, completed, source, _) = published_private_bounded_case();
+        let receipt = case.join("output/summary.json");
+        fs::rename(&receipt, case.join("old-summary.json")).unwrap();
+        fs::write(&receipt, b"foreign receipt\n").unwrap();
+        let path = source.join("rust/tools/fixtures/soundd/portaudio.c");
+        let mut bytes = fs::read(&path).unwrap();
+        bytes.extend_from_slice(b"\n/* changed after publication */\n");
+        fs::write(path, bytes).unwrap();
+        assert!(finish_cli(&completed, &AtomicBool::new(false)).is_err());
+        assert_eq!(fs::read(receipt).unwrap(), b"foreign receipt\n");
     }
 }

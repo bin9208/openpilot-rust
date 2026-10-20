@@ -796,6 +796,29 @@ fn paramsd_atomic_foundation_preserves_the_original_independent_cases() {
 }
 
 #[test]
+fn soundd_finalization_requires_original_behavioral_failure_and_retained_bindings() {
+    job_check(
+        "sensor-audio",
+        &[
+            "2d8d027932dc880bd0acd00288b256ac8d7f1b89",
+            "mod finalization_433_red_tests",
+            "baseline-original-source.sha256",
+            "regression-only.patch",
+            "CARGO_TARGET_DIR=\"$target\" cargo build",
+            "CARGO_TARGET_DIR=\"$target\" cargo test",
+            "180s cargo test",
+            "--exact --nocapture",
+            "test \"$status\" -eq 101",
+            "accepted changed source at finalization",
+            "--lib soundd_daemon_check::worker::tests --locked -- --test-threads=1",
+            "--test soundd_daemon_check --test soundd_daemon_runtime --locked -- --test-threads=1",
+        ],
+        &["finalization-433", "soundd_daemon_check::worker::tests"],
+        true,
+    );
+}
+
+#[test]
 fn lagd_masked_allocation_requires_same_source_old_and_current_measurements() {
     job_check(
         "estimation-runtime",

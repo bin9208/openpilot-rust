@@ -2898,19 +2898,61 @@ jobs:
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-policy-native --lib --test soundd_policy_reference --test soundd_policy_check --test soundd_fixture_assets --test soundd_policy_retirement --test soundd_policy_ci --bin check-soundd-policy --bin create-soundd-fixture-assets --locked -- -D warnings
       - name: Build and validate native sound daemon controller
         run: |
+          set -euo pipefail
           export SOUNDD_DAEMON_BINARY="$PWD/rust/target/debug/openpilot-soundd"
           export SOUNDD_DAEMON_WORKER_BINARY="$PWD/rust/target/debug/check-soundd-daemon"
           export SOUNDD_FIXTURE_ASSETS_BINARY="$PWD/rust/target/debug/create-soundd-fixture-assets"
           export SOUNDD_PORTAUDIO_LIBRARY="$RUNNER_TEMP/owned-soundd-portaudio.so"
           export SOUNDD_DAEMON_TEST_OUTPUT="$RUNNER_TEMP/sensor-audio/soundd-native-tests"
+          for name in SOUNDD_DAEMON_BINARY SOUNDD_DAEMON_WORKER_BINARY SOUNDD_FIXTURE_ASSETS_BINARY SOUNDD_PORTAUDIO_LIBRARY SOUNDD_DAEMON_TEST_OUTPUT; do
+            printf '%s=%s\n' "$name" "${!name}" >> "$GITHUB_ENV"
+          done
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --bin check-soundd-daemon --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 64
           cc -std=c11 -shared -fPIC -pthread -Wall -Wextra -Werror rust/tools/fixtures/soundd/portaudio.c -o "$SOUNDD_PORTAUDIO_LIBRARY"
+      - name: Require audio finalization baseline rejection
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/sensor-audio/finalization-433"
+          baseline="$RUNNER_TEMP/soundd433-baseline"
+          target="$RUNNER_TEMP/soundd433-target"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          mkdir -p "$proof"
+          git fetch --no-tags origin 2d8d027932dc880bd0acd00288b256ac8d7f1b89
+          GIT_LFS_SKIP_SMUDGE=1 git worktree add --detach "$baseline" 2d8d027932dc880bd0acd00288b256ac8d7f1b89
+          git -C "$baseline" rev-parse HEAD > "$proof/baseline.SOURCE_COMMIT"
+          current_worker=rust/crates/dev-tools/src/soundd_daemon_check/worker.rs
+          old_worker="$baseline/$current_worker"
+          sha256sum "$old_worker" > "$proof/baseline-original-source.sha256"
+          printf '\n#[cfg(test)]\nmod finalization_433_red_tests {\nuse super::*;\n' >> "$old_worker"
+          sed -n '/^    fn published_private_bounded_case()/,$p' "$current_worker" | sed '$d' >> "$old_worker"
+          printf '\n}\n' >> "$old_worker"
+          git -C "$baseline" diff -- "$current_worker" > "$proof/regression-only.patch"
+          sha256sum "$current_worker" "$old_worker" > "$proof/test-inputs.sha256"
+          CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_TARGET_DIR="$target" cargo build --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-dev-tools --features soundd-daemon-native --bin check-soundd-daemon --locked 2>&1 | tee "$proof/baseline-build.log"
+          old_binary="$target/debug/check-soundd-daemon"
+          cp "$old_binary" "$proof/baseline-worker"
+          sha256sum "$old_binary" "$proof/baseline-worker" > "$proof/baseline-worker.sha256"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_TARGET_DIR="$target" cargo test --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-dev-tools --features soundd-daemon-native --lib --no-run --locked
+          set +e
+          SOUNDD_DAEMON_WORKER_BINARY="$old_binary" CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_TARGET_DIR="$target" /usr/bin/timeout --signal=TERM --kill-after=5s 180s cargo test --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-dev-tools --features soundd-daemon-native --lib --locked -- soundd_daemon_check::worker::finalization_433_red_tests::finalization_rechecks_private_source_and_daemon_after_actual_publication --exact --nocapture 2>&1 | tee "$proof/baseline.log"
+          status=${PIPESTATUS[0]}
+          set -e
+          test "$status" -eq 101
+          rg -q 'test result: FAILED' "$proof/baseline.log"
+          rg -q 'accepted changed source at finalization' "$proof/baseline.log"
+          sha256sum --check "$proof/test-inputs.sha256"
+          git worktree remove --force "$baseline"
+          rm -rf "$target"
+      - name: Require native sound daemon finalization and process contracts
+        run: |
+          set -euo pipefail
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --lib soundd_daemon_check::worker::tests --locked -- --test-threads=1
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --test soundd_daemon_check --test soundd_daemon_runtime --locked -- --test-threads=1
-          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --lib soundd_daemon_check::worker::tests --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --lib --bin check-soundd-daemon --test soundd_daemon_check --test soundd_daemon_runtime --locked -- -D warnings
       - name: Compare alert samples and continuous native playback

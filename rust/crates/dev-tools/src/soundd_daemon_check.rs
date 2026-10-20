@@ -255,8 +255,10 @@ pub fn input_packet(topic: &str, values: &Value, now: u64) -> Result<Vec<u8>> {
 }
 /// Original root summary array; actual processes run only in the private worker.
 pub fn run(options: &Options, worker: &Path) -> Result<Value> {
-    worker::run(options, worker, &std::sync::atomic::AtomicBool::new(false))
-        .map(|result| result.summary)
+    let cancel = std::sync::atomic::AtomicBool::new(false);
+    let result = worker::run(options, worker, &cancel)?;
+    worker::finish_cli(&result, &cancel)?;
+    Ok(result.summary)
 }
 pub fn cli() -> Result<()> {
     use std::{

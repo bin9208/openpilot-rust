@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 439);
+    assert_eq!(text.matches(marker).count(), 441);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -304,6 +304,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut wifi_snapshot = vec![];
     let mut bridge_controller = vec![];
     let mut soundd_daemon_controller = vec![];
+    let mut soundd_finalization = vec![];
     let mut bluetooth_files_controller = vec![];
     let mut bluetooth_config_controller = vec![];
     let mut bluetooth_bluez_policy_controller = vec![];
@@ -336,6 +337,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 .iter()
                 .rev()
                 .find(|line| line.starts_with("      - name:"));
+            if step == Some(&"      - name: Require audio finalization baseline rejection") {
+                soundd_finalization.push(tail.to_owned());
+                continue;
+            }
             if step == Some(&"      - name: Check native paramsd atomic gate foundation alongside original cases") {
                 paramsd_gate.push(tail.to_owned());
                 continue;
@@ -1085,6 +1090,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
         soundd_daemon_controller,
         [512, 64, 512, 512, 512, 128]
             .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        soundd_finalization,
+        [4096, 512].map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     assert_eq!(
         bridge_controller,
