@@ -210,3 +210,9 @@ The user authorized a PR and merge on 2026-10-20 KST.
 The final PR head must pass its applicable checks before merging; a clean
 mergeability response alone is not validation. Keep dev/main and device
 deployment outside this request.
+
+Pre-merge review identified two additional Ubuntu 24.04 execution exceptions:
+`tests.yaml/build_release` invokes an OS-gated legacy setup, and
+`rust.yml/arm64` installs noble multiarch graphics packages. These jobs retain
+GitHub-hosted Ubuntu 24.04 rather than changing the persistent 26.04 host's
+APT architecture/package state. Their checks and build scope remain required.

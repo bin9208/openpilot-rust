@@ -40,7 +40,8 @@ jobs:
 
   build_release:
     name: build release
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    # Legacy setup / noble multiarch packages require an isolated Ubuntu 24.04 host.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
