@@ -16,6 +16,8 @@ pub mod bluetooth_bluez_policy_check;
 #[cfg(feature = "bluetooth-config-native")]
 pub mod bluetooth_config_check;
 pub mod bluetooth_digits_generate;
+#[cfg(feature = "bluetooth-enumerate-native")]
+pub mod bluetooth_enumerate_check;
 #[cfg(feature = "bluetooth-files-native")]
 pub mod bluetooth_files_check;
 #[cfg(feature = "bluetooth-input-native")]

@@ -1684,3 +1684,13 @@ it must preserve full-output fingerprints and demonstrate two fewer Rust
 allocations per call. No measurement or device CPU result is claimed yet.
 See [the focused record](rust-lagd-masked-allocation-429.md); other Lagd and
 PocketFFT internals remain outside this bounded review.
+
+
+A further source-only review of Params, params-typed, checkout-status and
+runtime-version found no new demonstrated allocation defect. Runtime-version's
+Git output/status calls inherit the original unbounded waits. Checkout-status
+uses a one-second capture budget and direct-child cleanup; its helper contract
+does not claim arbitrary descendant ownership (the #369 metadata capture record
+states the same boundary). These are remaining external-command review areas,
+not newly proven runtime failures or blanket module clearance. No deadlines,
+process groups, cache behavior or source metadata semantics changed in this review.

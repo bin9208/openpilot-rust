@@ -4609,3 +4609,15 @@ delta before any measured saving is reported. Local work for this batch remains
 source review, formatting, syntax and diff inspection only. Inventory remains
 210 replaced-local, 3 partially-replaced and 3,367 pending; device boot,
 recording, upload and driving acceptance remain user-owned.
+
+
+The next Bluetooth enumeration controller preserves all 40 sysfs nodes, the 29
+CPython 3.12 whitespace points, 31 accepted paths in actual directory order,
+and the missing-directory response. The required UI live pair uses the same
+fresh input fixture ELF for the unchanged Python and native controllers. Its
+reference compares complete node bytes and ordered source/native maps, removing
+only each controller's distinct output-root prefix. Original stdout/stderr and
+reports remain visible for later independent sealing. Eight native module
+checks cover the complete report, runner/spawn failures, node/addition/absent
+mutations, cancellation, foreign output and late binary drift. Their functional
+and strict Clippy outcomes remain pending Actions; the Python checker remains.

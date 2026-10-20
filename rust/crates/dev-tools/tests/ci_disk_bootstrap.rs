@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 411);
+    assert_eq!(text.matches(marker).count(), 416);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -307,6 +307,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut bluetooth_files_controller = vec![];
     let mut bluetooth_config_controller = vec![];
     let mut bluetooth_bluez_policy_controller = vec![];
+    let mut bluetooth_enumerate_controller = vec![];
     let mut logmessaged_startup_controller = vec![];
     let mut bluetooth_journal_controller = vec![];
     let mut calibration_float_controller = vec![];
@@ -329,6 +330,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 .iter()
                 .rev()
                 .find(|line| line.starts_with("      - name:"));
+            if step == Some(&"      - name: Compare native Bluetooth enumeration controller with unchanged original") {
+                bluetooth_enumerate_controller.push(tail.to_owned());
+                continue;
+            }
             if step
                 == Some(
                     &"      - name: Compare native BlueZ policy controller with unchanged original",
@@ -1000,6 +1005,11 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     assert_eq!(
         bluetooth_files_controller,
         [512, 512, 512, 128]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        bluetooth_enumerate_controller,
+        [512, 512, 512, 128, 128]
             .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     assert_eq!(

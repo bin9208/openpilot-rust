@@ -3294,6 +3294,32 @@ jobs:
           sha256sum -c "$proof/artifacts.sha256"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-bluez-policy-native --test bluetooth_bluez_policy_reference --locked -- --nocapture
+      - name: Compare native Bluetooth enumeration controller with unchanged original
+        run: |
+          set -euo pipefail
+          export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
+          proof="$RUNNER_TEMP/ui-connectivity/bluetooth-enumerate"
+          candidate="$GITHUB_WORKSPACE/rust/target/debug/examples/input_fixture"
+          export BLUETOOTH_ENUMERATE_ORIGINAL_OUTPUT="$proof/original"
+          export BLUETOOTH_ENUMERATE_NATIVE_OUTPUT="$proof/native"
+          export BLUETOOTH_ENUMERATE_ORIGINAL_STDOUT="$proof/original.stdout"
+          export BLUETOOTH_ENUMERATE_ORIGINAL_STDERR="$proof/original.stderr"
+          export BLUETOOTH_ENUMERATE_NATIVE_STDOUT="$proof/native.stdout"
+          export BLUETOOTH_ENUMERATE_NATIVE_STDERR="$proof/native.stderr"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-enumerate-native --bin check-bluetooth-enumerate --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-enumerate-native --lib bluetooth_enumerate_check:: --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-enumerate-native --lib --bin check-bluetooth-enumerate --test bluetooth_enumerate_reference --locked -- -D warnings
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          mkdir -p "$proof"
+          sha256sum "$candidate" rust/target/debug/check-bluetooth-enumerate rust/tools/check_bluetooth_enumerate.py openpilot/selfdrive/carrot/bluetooth/daemon.py > "$proof/artifacts.sha256"
+          timeout --kill-after=5s 30s python rust/tools/check_bluetooth_enumerate.py --binary "$candidate" --output "$BLUETOOTH_ENUMERATE_ORIGINAL_OUTPUT" > "$BLUETOOTH_ENUMERATE_ORIGINAL_STDOUT" 2> "$BLUETOOTH_ENUMERATE_ORIGINAL_STDERR"
+          timeout --kill-after=5s 30s rust/target/debug/check-bluetooth-enumerate --binary "$candidate" --output "$BLUETOOTH_ENUMERATE_NATIVE_OUTPUT" > "$BLUETOOTH_ENUMERATE_NATIVE_STDOUT" 2> "$BLUETOOTH_ENUMERATE_NATIVE_STDERR"
+          sha256sum -c "$proof/artifacts.sha256"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-enumerate-native --test bluetooth_enumerate_reference --locked -- --nocapture
       - name: Compare native Bluetooth config controller with unchanged original
         run: |
           set -euo pipefail

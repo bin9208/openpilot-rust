@@ -538,6 +538,7 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
+bluetooth-enumerate-native = []
 bluetooth-bluez-policy-native = ["dep:openpilot-runtime-version"]
 bluetooth-config-native = []
 bluetooth-journal-native = []
@@ -1649,3 +1650,12 @@ required-features = ["bluetooth-bluez-policy-native"]
 [[test]]
 name = "bluetooth_bluez_policy_reference"
 required-features = ["bluetooth-bluez-policy-native"]
+
+[[bin]]
+name = "check-bluetooth-enumerate"
+path = "src/bin/check_bluetooth_enumerate.rs"
+required-features = ["bluetooth-enumerate-native"]
+
+[[test]]
+name = "bluetooth_enumerate_reference"
+required-features = ["bluetooth-enumerate-native"]
