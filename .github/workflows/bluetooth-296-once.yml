@@ -1,5 +1,5 @@
-# Diagnostic-only affected checks, never merged into dev.
-name: Bluetooth 296 affected checks
+# Diagnostic-only affected checks; do not merge this workflow into dev.
+name: Bluetooth and paramsd 296 affected checks
 on:
   push:
     branches: [codex/feat-296-native-tools-candidate]
@@ -23,9 +23,9 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: 341aa2b5ace9a49277c53896ad27137dd09178cd
+        ref: 9845db2db390bc904401a3794b723b510e3bef84
     - name: Require exact Bluetooth candidate source
-      run: 'test "$(git rev-parse HEAD)" = 341aa2b5ace9a49277c53896ad27137dd09178cd
+      run: 'test "$(git rev-parse HEAD)" = 9845db2db390bc904401a3794b723b510e3bef84
 
         test -z "$(git status --porcelain)"'
     - uses: actions/setup-python@v6
@@ -57,6 +57,13 @@ jobs:
         python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/ui-params-binding"
 
         python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/connectivity-msgq-python"
+
+        '
+    - name: Compile combined affected Bluetooth QA features
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features bluetooth-bluez-policy-native,bluetooth-config-native,bluetooth-enumerate-native,bluetooth-gesture-cases-native,bluetooth-sudo-fixture-native,bluetooth-files-native,bluetooth-journal-native,bluetooth-input-native
+        --lib -- -D warnings
 
         '
     - name: Compare native Bluetooth sudo fixture with unchanged original
@@ -297,3 +304,123 @@ jobs:
         name: bluetooth-affected-source-evidence
         path: ${{ runner.temp }}/ui-connectivity/
         if-no-files-found: warn
+  paramsd:
+    name: Actual paramsd scoped FD handoff
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CXX: clang++
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        ref: 9845db2db390bc904401a3794b723b510e3bef84
+    - run: 'test "$(git rev-parse HEAD)" = 9845db2db390bc904401a3794b723b510e3bef84
+
+        test -z "$(git status --porcelain)"'
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Prepare native paramsd prerequisites
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        python -m pip install numpy==2.5.3 pycapnp==2.1.0 pytest==9.0.2
+
+        '
+    - uses: ./.github/actions/native-eigen
+      with:
+        architecture: x86_64
+    - name: Build real native paramsd consumer
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-paramsd --bin openpilot-paramsd --locked
+
+        python -m pytest -q rust/tools/tests/test_paramsd_atomic_gate.py
+
+        '
+    - name: Check native paramsd atomic gate foundation alongside original cases
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features paramsd-startup-gate-native
+        --test paramsd_startup_gate
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features paramsd-startup-gate-native
+        --lib --test paramsd_startup_gate -- -D warnings
+
+        '
+    - name: Require native paramsd scoped child-FD handoff
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/estimation/paramsd/native-gate"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        mkdir -p "$proof"
+
+        export PARAMSD_NATIVE_GATE_DAEMON="$GITHUB_WORKSPACE/rust/target/debug/openpilot-paramsd"
+
+        export PARAMSD_NATIVE_GATE_LIBRARY="$proof/startup-phase.so"
+
+        export PARAMSD_NATIVE_GATE_CAR_PARAMS="$proof/CarParams.bin"
+
+        export PARAMSD_NATIVE_GATE_EVIDENCE="$proof/native"
+
+        python -c ''import sys; from paramsd_fixture import car_params; sys.stdout.buffer.write(bytes(car_params()))'' > "$PARAMSD_NATIVE_GATE_CAR_PARAMS"
+
+        clang -std=c11 -O2 -shared -fPIC -Wall -Wextra -Werror rust/tools/paramsd_startup_phase.c -ldl -o "$PARAMSD_NATIVE_GATE_LIBRARY"
+        > "$proof/phase-build.log" 2>&1
+
+        sha256sum rust/tools/paramsd_startup_phase.c rust/tools/paramsd_fixture.py "$PARAMSD_NATIVE_GATE_DAEMON" "$PARAMSD_NATIVE_GATE_LIBRARY"
+        "$PARAMSD_NATIVE_GATE_CAR_PARAMS" > "$proof/artifacts.sha256"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-startup-gate-native --test paramsd_startup_gate
+        --locked -- --ignored --exact native_mapped_gate_holds_actual_paramsd_second_poll_and_shutdown --nocapture
+
+        sha256sum -c "$proof/artifacts.sha256"
+
+        '
+    - if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: paramsd-scoped-gate-evidence
+        path: ${{ runner.temp }}/estimation/paramsd/native-gate/
+        if-no-files-found: warn
+  source-policy:
+    name: Affected source and disk contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        ref: 9845db2db390bc904401a3794b723b510e3bef84
+    - run: 'test "$(git rev-parse HEAD)" = 9845db2db390bc904401a3794b723b510e3bef84
+
+        test -z "$(git status --porcelain)"'
+    - run: rustup toolchain install 1.94.0 --profile minimal
+    - run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --test ci_rust_isolation --test
+        ci_disk_bootstrap --test lagd_ci -- --nocapture'

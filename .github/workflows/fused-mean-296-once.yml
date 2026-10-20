@@ -1,0 +1,79 @@
+# Disposable experimental source proof; never merge this workflow into dev.
+name: Fused Mean 296 candidate
+on:
+  push:
+    branches: [codex/feat-296-native-tools-candidate]
+    paths: [.github/workflows/fused-mean-296-once.yml]
+permissions:
+  contents: read
+env:
+  RUSTUP_TOOLCHAIN: '1.94.0'
+jobs:
+  candidate:
+    name: Cold fused Mean exact original output candidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      LLVM_PATH: /usr/lib/x86_64-linux-gnu/libLLVM-18.so
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        ref: 73cc1b33b1177e906025af4d9dca28367cd1d0db
+    - name: Require exact experimental source
+      run: 'test "$(git rev-parse HEAD)" = 73cc1b33b1177e906025af4d9dca28367cd1d0db
+
+        test -z "$(git status --porcelain)"'
+    - name: Prepare LLVM18 original target prerequisites
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        sudo apt-get update && sudo apt-get install -y g++ libllvm18 git-lfs
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx --exclude=''''
+
+        '
+    - name: Require exact final-output candidate and existing materialization fences
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/fused-mean-candidate"
+
+        mkdir -p "$proof"
+
+        git rev-parse HEAD > "$proof/SOURCE_COMMIT"
+
+        sha256sum rust/crates/model-runtime/src/compiler_backend_cpu/fused_mean.rs rust/crates/model-runtime/tests/compiler_conditional_cpu.rs
+        > "$proof/inputs.sha256"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        FUSED_MEAN_DIAGNOSTICS="$proof/data" cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-model-runtime
+        --locked --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --test compiler_conditional_cpu
+        --test compiler_gelu_layout -- --nocapture --test-threads=2 2>&1 | tee "$proof/candidate.log"
+
+        sha256sum --check "$proof/inputs.sha256"
+
+        '
+    - name: Require strict native candidate Clippy
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-model-runtime --locked --config profile.test.package.sha2.opt-level=3
+        --config profile.dev.package.sha2.opt-level=3 --lib --test compiler_conditional_cpu --test compiler_gelu_layout --
+        -D warnings
+
+        '
+    - if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: fused-mean-cold-candidate-evidence
+        path: ${{ runner.temp }}/fused-mean-candidate/
+        if-no-files-found: warn
