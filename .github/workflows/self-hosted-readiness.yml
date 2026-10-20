@@ -57,6 +57,9 @@ jobs:
     runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 5
     steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - name: Check current APT repositories against existing build pins
         shell: bash
         run: |
@@ -65,7 +68,7 @@ jobs:
           sudo -n apt-get update
           apt-cache policy clang-18 libclang-18-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev
           echo 'Checking existing workflow package pins without installing packages.' >> "$GITHUB_STEP_SUMMARY"
-          if sudo -n apt-get --simulate install g++ clang-18 libclang-18-dev cmake pkg-config capnproto libcapnp-dev libzmq3-dev 'libavcodec-dev=7:6.1.1-*' 'libavformat-dev=7:6.1.1-*' 'libavutil-dev=7:6.1.1-*' 'libswscale-dev=7:6.1.1-*'; then
+          if bash tools/ci/install_host_ffmpeg.sh --simulate; then
             echo 'PASS: existing native package pins resolve.' >> "$GITHUB_STEP_SUMMARY"
           else
             echo 'FAIL: existing native package pins do not resolve; see APT diagnostics.' >> "$GITHUB_STEP_SUMMARY"

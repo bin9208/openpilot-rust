@@ -130,7 +130,8 @@ jobs:
           fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update
-          sudo apt-get install -y g++ clang-18 libclang-18-dev cmake pkg-config capnproto libcapnp-dev libzmq3-dev 'libavcodec-dev=7:6.1.1-*' 'libavformat-dev=7:6.1.1-*' 'libavutil-dev=7:6.1.1-*' 'libswscale-dev=7:6.1.1-*'
+          sudo apt-get install -y g++ clang-18 libclang-18-dev cmake pkg-config capnproto libcapnp-dev libzmq3-dev
+          bash tools/ci/install_host_ffmpeg.sh
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python -m pip install -r rust/tools/webcam_source_requirements.txt
           rustup toolchain install 1.94.0 --profile minimal --component clippy
@@ -139,8 +140,7 @@ jobs:
           uname -m > "$RUNNER_TEMP/webcam/machine.txt"
           python -m pip freeze > "$RUNNER_TEMP/webcam/python-packages.txt"
           dpkg-query -W libavcodec-dev libavformat-dev libavutil-dev libswscale-dev > "$RUNNER_TEMP/webcam/native-packages.txt"
-          test "$(pkg-config --modversion libavcodec)" = 60.31.102
-          test "$(pkg-config --modversion libswscale)" = 7.5.100
+          bash tools/ci/install_host_ffmpeg.sh --verify
       - name: Build pinned hardened videoio and unchanged source IPC bindings
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
@@ -471,7 +471,8 @@ jobs:
           fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update
-          sudo apt-get install -y g++ clang-18 libclang-18-dev cmake pkg-config capnproto libcapnp-dev libzmq3-dev ffmpeg 'libavcodec-dev=7:6.1.1-*' 'libavformat-dev=7:6.1.1-*' 'libavutil-dev=7:6.1.1-*'
+          sudo apt-get install -y g++ clang-18 libclang-18-dev cmake pkg-config capnproto libcapnp-dev libzmq3-dev ffmpeg
+          bash tools/ci/install_host_ffmpeg.sh
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python -m pip install -r rust/tools/webrtc_source_requirements.txt
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -480,8 +481,8 @@ jobs:
           git rev-parse HEAD > "$RUNNER_TEMP/webrtc/SOURCE_COMMIT"
           uname -m > "$RUNNER_TEMP/webrtc/machine.txt"
           python -m pip freeze > "$RUNNER_TEMP/webrtc/python-packages.txt"
-          dpkg-query -W libavcodec-dev libavformat-dev libavutil-dev libvpx9 libx264-164 > "$RUNNER_TEMP/webrtc/native-packages.txt"
-          test "$(pkg-config --modversion libavcodec)" = 60.31.102
+          dpkg-query -W libavcodec-dev libavformat-dev libavutil-dev > "$RUNNER_TEMP/webrtc/native-packages.txt"
+          bash tools/ci/install_host_ffmpeg.sh --verify
           ffmpeg -hide_banner -encoders > "$RUNNER_TEMP/webrtc/encoders.txt" 2>&1
           grep -q 'libvpx ' "$RUNNER_TEMP/webrtc/encoders.txt"
           grep -q 'libx264 ' "$RUNNER_TEMP/webrtc/encoders.txt"
