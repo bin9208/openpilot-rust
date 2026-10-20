@@ -72,4 +72,18 @@ regressions, Wiki, Jetlink Python and Android core/runtime tests). No deep job
 ran on this branch push. Legacy planner/Card/Xiaoge/UI workflow-inspection tests
 are also redirected to ci.yml and the structured result gate.
 
-Status: implementation in progress. Latest PR/Actions/protection evidence pending.
+PR: https://github.com/bin9208/openpilot-rust/pull/410
+Initial full PR run: https://github.com/bin9208/openpilot-rust/actions/runs/39423610369
+Fast checks, mapped docs/native publication-policy tests and Git lifecycle passed
+sequentially before the legacy build. Inspection found that GitHub emits skipped
+jobs even for fast-only branch runs; their names now differ from required deep
+contexts so skipped branch jobs cannot satisfy an unfinished PR gate.
+
+Branch protection applied/read back on 2026-10-20 KST: dev/dev-md both require
+PRs, strict five checks, administrators, conversation resolution, zero mandatory
+approving reviews, no bypass/force-push/deletion. The existing dev rule was
+retained. The personal-repository API rejects organization-only empty bypass
+lists; those unsupported fields are omitted and readback confirms no allowances.
+Exact readback and continuing results: [issue evidence](https://github.com/bin9208/openpilot-rust/issues/409#issuecomment-6291019395).
+
+Status: full PR and post-merge acceptance pending. No runtime was delivered.

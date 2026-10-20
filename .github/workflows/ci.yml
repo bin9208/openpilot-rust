@@ -43,7 +43,7 @@ jobs:
 
   fast-checks:
     needs: [route]
-    name: fast checks
+    name: ${{ needs.route.outputs.fast == 'true' && 'fast checks' || 'PR owns fast validation' }}
     runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 7
     if: needs.route.outputs.fast == 'true'
@@ -89,7 +89,7 @@ jobs:
 
   check_user_docs:
     needs: [route, fast-checks]
-    name: check mapped user docs
+    name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'check mapped user docs' || 'Not requested - check mapped user docs' }}
     runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     if: needs.route.outputs.full == 'true'
     steps:
@@ -271,7 +271,7 @@ jobs:
           python3 tools/check_jetlink_usb_policy.py rust/target/debug/examples/usb_policy_probe "$RUNNER_TEMP/jetlink-upstream"
 
   integration-gate:
-    name: integration gate
+    name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'integration gate' || 'Not requested - integration gate' }}
     needs: [route, fast-checks, check_user_docs, git_update, build_release, model_web, model, android-core, jetlink-native]
     if: ${{ always() && (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) }}
     runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
@@ -3401,7 +3401,7 @@ jobs:
             rust/target/debug/openpilot-webcam
 
   fast:
-    name: rust checks
+    name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'rust checks' || 'Not requested - rust checks' }}
     needs: [integration-gate, workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime, webrtc-runtime, webcam-runtime]
     if: ${{ always() && (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) }}
     runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
@@ -3422,7 +3422,7 @@ jobs:
 
   arm64:
     needs: [route, fast-checks, check_user_docs, integration-gate, fast, workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime, webrtc-runtime, webcam-runtime]
-    name: rust aarch64 build
+    name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'rust aarch64 build' || 'Not requested - rust aarch64 build' }}
     if: ${{ always() && (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) }}
     # Legacy setup / noble multiarch packages require an isolated Ubuntu 24.04 host.
     runs-on: ubuntu-24.04

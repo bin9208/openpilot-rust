@@ -156,7 +156,7 @@ class RustIsolationTests(unittest.TestCase):
                          'cargo build --workspace --release --locked', 'check_usbgpu_hardware.py',
                          'check_usbgpu_asm.py', 'check_usbgpu_status.py'):
             self.assertIn(required, commands)
-        self.assertEqual(data['jobs']['fast']['name'], 'rust checks')
+        self.assertIn("&& 'rust checks' || 'Not requested - rust checks'", data['jobs']['fast']['name'])
         self.assertEqual(len(data['jobs']['fast']['steps']), 1)
 
     def test_hardware_runtime_requires_source_and_native_boundaries(self):

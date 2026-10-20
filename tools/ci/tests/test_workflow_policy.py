@@ -103,10 +103,17 @@ class WorkflowPolicyTests(unittest.TestCase):
     self.assertTrue((ROOT / 'tools/naver_ci/controller_tests').is_dir())
     self.assertNotIn('uses', spec['jobs']['integration-gate'])
 
-  def test_required_names_remain_unique(self):
-    names = [job.get('name') for job in workflow()['jobs'].values()]
-    for name in ('fast checks', 'check mapped user docs', 'integration gate', 'rust checks', 'rust aarch64 build'):
-      self.assertEqual(names.count(name), 1, name)
+  def test_fast_only_push_cannot_satisfy_deep_required_contexts(self):
+    jobs = workflow()['jobs']
+    for key, name in [('check_user_docs', 'check mapped user docs'), ('integration-gate', 'integration gate'),
+                      ('fast', 'rust checks'), ('arm64', 'rust aarch64 build')]:
+      expression = jobs[key]['name']
+      self.assertIn("github.event_name != 'push'", expression)
+      self.assertIn('github.ref_name', expression)
+      self.assertIn('"dev","dev-md","main"', expression)
+      self.assertIn(f"&& '{name}' || 'Not requested - {name}'", expression)
+    self.assertIn("needs.route.outputs.fast == 'true'", jobs['fast-checks']['name'])
+    self.assertIn("|| 'PR owns fast validation'", jobs['fast-checks']['name'])
 
   def test_dev_md_gate_still_rejects_dev_target(self):
     steps = workflow()['jobs']['fast-checks']['steps']
