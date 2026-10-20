@@ -159,3 +159,17 @@ cover an immediate wake-up with a cloud regression. The unchanged exact IPC
 comparison now runs before costly model comparisons; no runtime DM policy or
 comparison tolerance changes. Acceptance remains tracked in
 https://github.com/bin9208/openpilot-rust/issues/414.
+
+### Fresh pinned renderer staging (#417)
+
+On `16d618aa`, [run 39447594803](https://github.com/bin9208/openpilot-rust/actions/runs/39447594803)
+passed through the integration gate but failed before workspace tests:
+`raylib pinned asset differs/missing; use fresh output`. The producer and pins
+were unchanged; the fixed runner-temp output was rejected by the existing
+integrity check. Each of the five CI preparations now allocates a fresh output
+generation and exports its actual path to downstream builds/artifacts. Provider
+pins/flags and all 187 disk guards remain; only output arguments change, with
+the exact provider-argument hash updated after diff review. Cloud fixtures run
+the preparation statements twice with owned tools to verify fresh roots and
+preservation of stale files. Full validation remains pending in
+https://github.com/bin9208/openpilot-rust/issues/417.

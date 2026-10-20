@@ -119,7 +119,7 @@ def test_workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths():
     # Job execution order is governed by the CI graph; preserve the exact
     # multiset of provider arguments and disk reservations independently.
     native_arguments = re.findall(r'--bin stage-startup-ui-raylib -- ([^\n]*)', text)
-    assert hashlib.sha256('\n'.join(sorted(native_arguments)).encode()).hexdigest() == 'f2c55e93dae268d5bbdb7bb06fbb5369e80218ae70e2cd7a95832f6e598613e3'
+    assert hashlib.sha256('\n'.join(sorted(native_arguments)).encode()).hexdigest() == '4035dc39d9f01018c578febe0de32e8802291867c2c50e2dc701f1a5990f3752'
     for index in native_calls:
         assert 'cargo +1.94.0 run' in lines[index]
         assert '"$GITHUB_WORKSPACE/rust/tools/check-disk-space"' in lines[index - 1]
