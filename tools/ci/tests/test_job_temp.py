@@ -1,6 +1,8 @@
 """Persistent runners need isolated, consistently collected and bounded output."""
 import json
 import os
+import shutil
+import shlex
 from pathlib import Path
 import subprocess
 import tempfile
@@ -19,7 +21,8 @@ def invoke(script, environment):
 class JobTempTests(unittest.TestCase):
     def test_two_jobs_get_fresh_tool_and_artifact_paths_and_cleanup_only_their_output(self):
         with tempfile.TemporaryDirectory(prefix='runner temp ') as temporary:
-            root = Path(temporary)
+            root = Path(temporary) / ('persistent-runner-' * 8)
+            root.mkdir()
             stale = root / 'torque-numerics'
             stale.mkdir()
             (stale / 'receipt').write_text('retain')
@@ -33,10 +36,16 @@ class JobTempTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 environment.update(dict(line.split('=', 1) for line in github_env.read_text().splitlines()))
                 owned = Path(environment['CI_JOB_TEMP'])
+                self.addCleanup(shutil.rmtree, owned, ignore_errors=True)
                 outputs.append(owned)
                 result = invoke("python3 -c 'import json,os;print(json.dumps([os.environ.get(\"RUNNER_TEMP\"),os.environ.get(\"TMPDIR\")]))'", environment)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(json.loads(result.stdout), [str(owned), str(owned)])
+                # A real Unix bind must work even when the original runner
+                # root is longer than sockaddr_un permits.
+                probe = 'import socket,tempfile;from pathlib import Path;d=tempfile.TemporaryDirectory();s=socket.socket(socket.AF_UNIX);s.bind(str(Path(d.name)/"monitoring-runtime.sock"));s.close();d.cleanup()'
+                result = invoke('python3 -c ' + shlex.quote(probe), environment)
+                self.assertEqual(result.returncode, 0, result.stderr)
                 # A tool's output matches the path passed to artifact/cache actions.
                 (owned / 'report.json').write_text('evidence')
                 self.assertTrue((Path(environment['CI_JOB_TEMP']) / 'report.json').is_file())
@@ -68,6 +77,28 @@ class JobTempTests(unittest.TestCase):
                 result = invoke(ACTION['runs']['steps'][1]['run'], environment)
                 self.assertNotEqual(result.returncode, 0, str(path))
                 self.assertEqual((outside / 'keep').read_text(), 'keep')
+
+    def test_cleanup_refuses_another_job_marker_and_top_level_symlink(self):
+        with tempfile.TemporaryDirectory() as outside, tempfile.TemporaryDirectory(prefix='openpilot-ci.', dir='/tmp') as candidate:
+            target = Path(outside) / 'keep'
+            target.write_text('keep')
+            root = Path(candidate)
+            (root / 'owner').write_text('other-job')
+            environment = dict(os.environ, CI_RUNNER_TEMP=outside, CI_JOB_TEMP=candidate,
+                               GITHUB_RUN_ID='42', GITHUB_RUN_ATTEMPT='1', GITHUB_JOB='workspace')
+            environment.pop('BASH_ENV', None)
+            result = invoke(ACTION['runs']['steps'][1]['run'], environment)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertTrue(root.is_dir())
+            (root / 'owner').unlink()
+            root.rmdir()
+            root.symlink_to(outside, target_is_directory=True)
+            try:
+                result = invoke(ACTION['runs']['steps'][1]['run'], environment)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(target.read_text(), 'keep')
+            finally:
+                root.unlink()
 
     def test_all_concrete_jobs_initialize_and_collect_the_same_output_before_cleanup(self):
         for name in ('ci.yml', 'dev-md-runtime.yml'):

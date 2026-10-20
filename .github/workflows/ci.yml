@@ -314,6 +314,7 @@ jobs:
         run: |
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-core --test jetlink_power
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-jetlink --bin jetlinkd-rs
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-jetlink --test socket
           cargo +1.94.0 check --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-launcher
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib publish::policy_tests
           cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-jetlink --example usb_policy_probe

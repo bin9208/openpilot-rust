@@ -186,3 +186,15 @@ cleanup removes only that job directory, rejects nested/unrelated/symlink paths,
 and preserves existing runner files. Provider staging/integrity checks remain
 unchanged. Cloud fixtures cover repeated jobs, shell/action path agreement,
 overrides and cleanup boundaries. No workflow globally locks other PRs.
+
+On `f162005f`, [run 39455622965](https://github.com/bin9208/openpilot-rust/actions/runs/39455622965)
+passed the formerly failing numerical stage, then workspace Jetlink socket tests
+rejected the long job-temp prefix (`path must be shorter than SUN_LEN`); the
+first failure poisoned the test mutex and produced seven secondary failures.
+This was introduced by the isolation path length, not a transport-policy change.
+Use a short owned `/tmp/openpilot-ci.*` directory for RUNNER_TEMP/TMPDIR instead.
+Cleanup checks the direct parent, symlinks and exact run/attempt/job owner marker.
+Cloud regression binds a real Unix socket with an intentionally long original
+runner root; the original nine Jetlink socket tests also run in the earlier
+native integration stage. Deadlines, packet limits and original tests stay
+unchanged. Actual continuous DM comparison is still pending.

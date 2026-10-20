@@ -10,7 +10,10 @@ runs:
     - if: inputs.cleanup != 'true'
       shell: bash
       run: |
-        owned=$(mktemp -d "$RUNNER_TEMP/openpilot-ci-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-$GITHUB_JOB-XXXXXX")
+        # Unix-domain socket addresses are bounded; keep the tool/tempfile base
+        # shorter than the persistent runner's checkout/temp directory.
+        owned=$(mktemp -d /tmp/openpilot-ci.XXXXXX)
+        printf '%s:%s:%s' "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$GITHUB_JOB" > "$owned/owner"
         # Actions retain their normal runner temp. Bash-run tools use this job's
         # output; explicit subprocess fixture overrides must remain untouched.
         {
@@ -27,11 +30,15 @@ runs:
       run: |
         if [[ -z ${CI_JOB_TEMP:-} || -z ${CI_RUNNER_TEMP:-} ]]; then exit 0; fi
         case "$CI_JOB_TEMP" in
-          "$CI_RUNNER_TEMP"/openpilot-ci-*) ;;
+          /tmp/openpilot-ci.*) ;;
           *) echo 'Refusing unrelated temporary directory' >&2; exit 1 ;;
         esac
-        if [[ ${CI_JOB_TEMP%/*} != "$CI_RUNNER_TEMP" ]]; then
+        if [[ ${CI_JOB_TEMP%/*} != /tmp ]]; then
           echo 'Refusing nested temporary directory' >&2; exit 1
         fi
         if [[ -L $CI_JOB_TEMP ]]; then echo 'Refusing symlinked job output' >&2; exit 1; fi
+        if [[ ! -f $CI_JOB_TEMP/owner || -L $CI_JOB_TEMP/owner ||
+              $(cat "$CI_JOB_TEMP/owner") != "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" ]]; then
+          echo 'Refusing output owned by another job' >&2; exit 1
+        fi
         rm -rf -- "$CI_JOB_TEMP"
