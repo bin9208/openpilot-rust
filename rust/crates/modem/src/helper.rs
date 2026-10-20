@@ -23,6 +23,7 @@ pub(crate) fn check(cancelled: &AtomicBool) -> Result<(), Error> {
 pub(crate) struct Child {
     child: CapturedChild,
     cleanup_started: bool,
+    exit: Option<ExitStatus>,
 }
 impl Child {
     pub(crate) fn spawn(
@@ -40,10 +41,17 @@ impl Child {
         Ok(Self {
             child,
             cleanup_started: false,
+            exit: None,
         })
     }
 
     pub(crate) fn exited(&self) -> io::Result<bool> {
+        if self.exit.is_some() {
+            return Ok(true);
+        }
+        if self.cleanup_started {
+            return Err(io::Error::other("modem child cleanup previously failed"));
+        }
         loop {
             match waitid(
                 WaitId::Pid(Pid::from_child(&self.child.process)),
@@ -56,7 +64,13 @@ impl Child {
         }
     }
 
-    fn terminate(&mut self) -> io::Result<ExitStatus> {
+    pub(crate) fn terminate(&mut self) -> io::Result<ExitStatus> {
+        if let Some(status) = self.exit {
+            return Ok(status);
+        }
+        if self.cleanup_started {
+            return Err(io::Error::other("modem child cleanup previously failed"));
+        }
         // No later Drop path may signal this identity after ANY reap attempt,
         // including a wait error. The leader is still retained at this point.
         self.cleanup_started = true;
@@ -69,6 +83,7 @@ impl Child {
                 }
             };
         let status = self.child.process.wait()?;
+        self.exit = Some(status);
         match signal_error {
             Some(error) => Err(error.into()),
             None => Ok(status),

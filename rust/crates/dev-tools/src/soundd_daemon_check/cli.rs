@@ -21,8 +21,7 @@ pub enum Command {
     Help,
     Run(Options),
 }
-const CHOICES: &str =
-    "'live', 'bounded', 'retry', 'inactive', 'start-failed', 'stop-retry', 'exhausted'";
+const CHOICES: &str = "live, bounded, retry, inactive, start-failed, stop-retry, exhausted";
 const USAGE:&str="usage: check-soundd-daemon [-h] --binary BINARY --output OUTPUT\n                              --fixture-assets-binary FIXTURE_ASSETS_BINARY\n                              [--portaudio-library PORTAUDIO_LIBRARY]\n                              [--mode {live,bounded,retry,inactive,start-failed,stop-retry,exhausted}]";
 pub(super) const HELP:&str="usage: check-soundd-daemon [-h] --binary BINARY --output OUTPUT\n                              --fixture-assets-binary FIXTURE_ASSETS_BINARY\n                              [--portaudio-library PORTAUDIO_LIBRARY]\n                              [--mode {live,bounded,retry,inactive,start-failed,stop-retry,exhausted}]\n\noptions:\n  -h, --help            show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n  --fixture-assets-binary FIXTURE_ASSETS_BINARY\n                        native create-soundd-fixture-assets executable\n  --portaudio-library PORTAUDIO_LIBRARY\n                        reuse an already compiled owned PortAudio ABI fixture\n  --mode {live,bounded,retry,inactive,start-failed,stop-retry,exhausted}\n";
 fn display(s: &OsStr) -> String {

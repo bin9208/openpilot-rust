@@ -262,13 +262,13 @@ impl WriterPeer for FrameWriter {
             return Err(WriterError::Failure);
         }
         let mut input = self.shared.input.lock().map_err(|_| WriterError::Failure)?;
-        let written = input
+        input
             .as_mut()
             .ok_or(WriterError::Failure)?
-            .write(bytes)
+            .write_all(bytes)
             .map_err(|_| WriterError::Failure)?;
         self.shared.frames.fetch_add(1, Ordering::Release);
-        Ok(written)
+        Ok(bytes.len())
     }
 }
 struct OwnedEncoder {

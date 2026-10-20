@@ -483,3 +483,39 @@ fn actual_exited_encoder_keeps_original_queue_capacity_after_writer_failure() {
         assert_eq!(encoder.submit(vec![3]), Err(SubmitError::Closed));
     }
 }
+
+#[test]
+fn actual_short_reading_encoder_rejects_partial_frame_and_keeps_queue_capacity() {
+    use openpilot_dev_tools::ui_application_lifecycle_recording::{Encoder, SubmitError};
+    use std::{
+        process::{Command, Stdio},
+        thread,
+        time::Instant,
+    };
+
+    // dd consumes one 4096-byte block and exits while a much larger frame is
+    // being written. A single pipe write can report success for only a prefix.
+    let mut command = Command::new("/bin/dd");
+    command
+        .args(["bs=4096", "count=1", "status=none"])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    let mut encoder = Encoder::spawn(&mut command, 8).unwrap();
+    let pid = encoder.pid().unwrap();
+    encoder.submit(vec![0; 4 * 1024 * 1024]).unwrap();
+    let start = Instant::now();
+    while !encoder.writer_finished() {
+        assert!(
+            start.elapsed() < Duration::from_secs(5),
+            "short-reading child left a partial frame accepted as complete"
+        );
+        thread::sleep(Duration::from_millis(2));
+    }
+    assert_eq!(encoder.written_frames(), 0, "partial frame was accepted");
+    for _ in 0..8 {
+        assert_eq!(encoder.submit(vec![1]), Ok(()));
+    }
+    assert_eq!(encoder.submit(vec![2]), Err(SubmitError::Full));
+    encoder.close();
+    assert!(!std::path::Path::new(&format!("/proc/{pid}")).exists());
+}

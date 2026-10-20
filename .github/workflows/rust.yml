@@ -812,7 +812,33 @@ jobs:
           python tools/check_jetlink_reference.py target/debug/examples/jetlink_probe "$RUNNER_TEMP/jetlink-reference"
           python tools/check_jetlink_rpc.py target/debug/examples/rpc_probe "$RUNNER_TEMP/jetlink-rpc"
           python tools/check_jetlink_raw.py target/debug/examples/jetlink_raw_probe "$RUNNER_TEMP/jetlink-raw"
+      - name: Require Jetlink owner baseline failures and bounded fixed lifecycle
+        run: |
+          set -euo pipefail
+          export CARGO_TARGET_DIR="$GITHUB_WORKSPACE/rust/target"
+          export JETLINK_OWNER_TEST_OUTPUT="$RUNNER_TEMP/jetlink-owner"
+          baseline="$RUNNER_TEMP/jetlink399-baseline"
+          mkdir -p "$JETLINK_OWNER_TEST_OUTPUT"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          git fetch --no-tags --depth=1 origin 11f3dec411662baa961733b363c0b38d7082fcfa
+          git worktree add --detach "$baseline" 11f3dec411662baa961733b363c0b38d7082fcfa
+          cp crates/jetlink/tests/owner_lifecycle.rs "$baseline/rust/crates/jetlink/tests/"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          if cargo test --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-jetlink --test owner_lifecycle --locked -- --nocapture 2>&1 | tee "$JETLINK_OWNER_TEST_OUTPUT/baseline.log"; then
+            echo 'Expected the old Jetlink owner assertions to fail' >&2
+            exit 1
+          fi
+          for case in failed_connect_preserves_foreign_listener failed_bind_preserves_foreign_listener ready_owner_cleanup_preserves_a_replacement_listener full_stderr_cannot_extend_failed_stop full_stderr_cannot_extend_drop; do
+            grep -F "test $case ... FAILED" "$JETLINK_OWNER_TEST_OUTPUT/baseline.log"
+          done
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test -p openpilot-jetlink --test owner_lifecycle --locked -- --nocapture
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build -p openpilot-jetlink --bins --examples --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy -p openpilot-jetlink --all-targets --locked -- -D warnings
       - name: Retain Jetlink source oracle and RPC evidence
+        if: always()
         uses: actions/upload-artifact@v6
         with:
           name: jetlink-host-oracle-evidence
@@ -820,6 +846,7 @@ jobs:
             ${{ runner.temp }}/jetlink-reference/
             ${{ runner.temp }}/jetlink-rpc/
             ${{ runner.temp }}/jetlink-raw/
+            ${{ runner.temp }}/jetlink-owner/
       - name: Compare message state and service catalog with original source
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
@@ -1311,6 +1338,22 @@ jobs:
           mkdir -p "$PANDAD_PADDING_TEST_OUTPUT"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native --test pandad_safety_padding_reference --locked
+      - name: Compare native Panda device controller with unchanged original
+        run: |
+          set -euo pipefail
+          export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
+          export PANDAD_DEVICE_SOURCE_BINARY="$RUNNER_TEMP/panda-native/oracles/device-src/pandad-protocol-source"
+          export PANDAD_DEVICE_SOURCE_MANIFEST="$RUNNER_TEMP/panda-native/oracles/device-src/manifest.json"
+          export PANDAD_DEVICE_NATIVE_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/device"
+          export PANDAD_DEVICE_PYTHON="$(command -v python)"
+          export PANDAD_DEVICE_TEST_OUTPUT="$RUNNER_TEMP/panda-native/device-controller"
+          mkdir -p "$PANDAD_DEVICE_TEST_OUTPUT"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-device-native --bin check-pandad-device --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-device-native --test pandad_device_check --test pandad_device_reference --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-device-native --lib --bin check-pandad-device --test pandad_device_check --test pandad_device_reference --locked -- -D warnings
       - name: Preserve Panda evidence including failed cases
         if: always()
         uses: actions/upload-artifact@v6
@@ -2451,8 +2494,9 @@ jobs:
   startup-runtime:
     name: rust startup prerequisites
     runs-on: ubuntu-24.04
-    # Prior full workload took 28m29s; retain it plus native source/ownership tests.
-    timeout-minutes: 45
+    # 11f3 consumed 45m after passing registration and was cancelled at uploader.
+    # Keep uploader, manager and checkout checks with their original deadlines.
+    timeout-minutes: 60
     env:
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
@@ -3139,11 +3183,11 @@ jobs:
           rustc --edition=2021 rust/tools/wifi_snapshot_allocation_probe.rs --extern "openpilot_wifi=$GITHUB_WORKSPACE/rust/target/debug/libopenpilot_wifi.rlib" -L "dependency=$GITHUB_WORKSPACE/rust/target/debug/deps" -o "$RUNNER_TEMP/wifi-snapshot-allocation-probe"
           mkdir -p "$RUNNER_TEMP/ui-connectivity"
           "$RUNNER_TEMP/wifi-snapshot-allocation-probe" --require-improvement | tee "$RUNNER_TEMP/ui-connectivity/wifi-snapshot-allocation.tsv"
-      - name: Compare native Bluetooth file controller with unchanged original
+      - name: Require native Bluetooth file controller with sealed original observations
         run: |
+          set -euo pipefail
           export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
           export BLUETOOTH_FILE_FIXTURE="$GITHUB_WORKSPACE/rust/target/debug/examples/file_fixture"
-          export BLUETOOTH_FILES_PYTHON=python
           export BLUETOOTH_FILES_EVIDENCE="$RUNNER_TEMP/ui-connectivity/bluetooth-files-original"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-files-native --bin check-bluetooth-files --locked
@@ -3152,7 +3196,19 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-files-native --lib --bin check-bluetooth-files --test bluetooth_files_check --locked -- -D warnings
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
-          rust/target/debug/check-bluetooth-files --binary "$BLUETOOTH_FILE_FIXTURE" --output "$RUNNER_TEMP/ui-connectivity/bluetooth-files-current"
+          proof="$RUNNER_TEMP/ui-connectivity/bluetooth-files-retirement"
+          checker="$GITHUB_WORKSPACE/rust/target/debug/check-bluetooth-files"
+          mkdir -p "$proof"
+          sha256sum "$checker" "$BLUETOOTH_FILE_FIXTURE" > "$proof/artifacts.sha256"
+          env PATH=/nonexistent "$checker" --binary "$BLUETOOTH_FILE_FIXTURE" --output "$proof/present"
+          backup="$RUNNER_TEMP/bluetooth-files-retired-source"
+          mv rust/tools/check_bluetooth_files.py "$backup"
+          trap 'mv "$backup" rust/tools/check_bluetooth_files.py' EXIT
+          env PATH=/nonexistent "$checker" --binary "$BLUETOOTH_FILE_FIXTURE" --output "$proof/absent"
+          diff -r "$proof/present" "$proof/absent"
+          sha256sum -c "$proof/artifacts.sha256"
+          mv "$backup" rust/tools/check_bluetooth_files.py
+          trap - EXIT
       - name: Compare native Bluetooth journal controller with unchanged original
         run: |
           export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
@@ -3175,6 +3231,26 @@ jobs:
           BLUETOOTH_INPUT_FIXTURE="$PWD/rust/target/debug/examples/input_fixture" cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-input-native --test bluetooth_input_check --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-input-native --lib --test bluetooth_input_check --bin check-bluetooth-input-decode --locked -- -D warnings
+      - name: Reproduce incomplete buffered frame writes on old native adapter
+        run: |
+          set -euo pipefail
+          export CARGO_TARGET_DIR="$GITHUB_WORKSPACE/rust/target"
+          baseline="$RUNNER_TEMP/ui423-baseline"
+          proof="$RUNNER_TEMP/ui-connectivity/recording-partial-write"
+          mkdir -p "$proof"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          git fetch --no-tags --depth=1 origin 11f3dec411662baa961733b363c0b38d7082fcfa
+          git worktree add --detach "$baseline" 11f3dec411662baa961733b363c0b38d7082fcfa
+          cp rust/crates/dev-tools/tests/ui_application_lifecycle_recording.rs "$baseline/rust/crates/dev-tools/tests/"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          if cargo test --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-dev-tools --features ui-application-lifecycle-native --test ui_application_lifecycle_recording --locked -- --exact actual_short_reading_encoder_rejects_partial_frame_and_keeps_queue_capacity --nocapture 2>&1 | tee "$proof/baseline.log"; then
+            echo 'Expected the old buffered adapter assertion to fail' >&2
+            exit 1
+          fi
+          grep -F 'test result: FAILED' "$proof/baseline.log"
+          grep -F 'short-reading child left a partial frame accepted as complete' "$proof/baseline.log"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features ui-application-lifecycle-native --test ui_application_lifecycle_recording --locked
       - name: Compare shared UI state, pixels, real input and native lifecycle
         env:
           UI_FORMS_FAILURE_OUTPUT: ${{ runner.temp }}/ui-connectivity/forms-failures

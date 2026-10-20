@@ -38,7 +38,7 @@ blocked restoration helper too; that explicit interruption does not promise
 completion of remaining external service restoration. The public uncontrolled
 trace methods retain their existing signatures and normal behavior.
 
-`rust/crates/modem/tests/helper_lifetime.rs` contains 14 independent integration
+`rust/crates/modem/tests/helper_lifetime.rs` contains 15 independent integration
 tests using private helper scripts, acknowledged leaders/descendants and held
 pidfds, plus an inherited-stdin control. The tests signal only the actual daemon leader, never its whole group.
 Cleanup assertions occur before fallback pidfd cleanup. Controls include finite
@@ -48,6 +48,14 @@ and SIGTERM, and a subsequent signal during service restoration. An unchanged
 original-source test independently observes the original EOF/decoding behavior
 and its inherited descendant leak. It never invokes host sudo, ip, pppd,
 systemctl, NetworkManager, serial devices or network services.
+
+The first cloud run at `11f3dec4` failed the retained modem differential before
+these new tests: route-failure cleanup discarded the PPP handle, so the next
+`WaitExit` treated a killed session as never started and timed out. Cleanup now
+caches successful exit status and retains the completed handle until restart.
+The additional fifteenth regression covers never-started, killed, repeated-stop
+and restarted sessions without signaling a reaped process. This repair still
+requires the unchanged original differential and full fixed CI gate.
 
 Mandatory CI must retain `check_modem_process_boundary.py` and `check_modem.py`,
 including the existing actual original/native state, reconnect, command-order,

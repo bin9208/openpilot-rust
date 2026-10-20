@@ -541,6 +541,7 @@ required-features = ["manager-catalog-tools-native"]
 bluetooth-journal-native = []
 calibration-float-native = []
 pandad-safety-padding-native = []
+pandad-device-native = []
 logmessaged-startup-native = ["stats-daemon-native"]
 bluetooth-files-native = []
 soundd-daemon-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri"]
@@ -1611,3 +1612,16 @@ required-features = ["pandad-safety-padding-native"]
 [[test]]
 name = "pandad_safety_padding_reference"
 required-features = ["pandad-safety-padding-native"]
+
+[[bin]]
+name = "check-pandad-device"
+path = "src/bin/check_pandad_device.rs"
+required-features = ["pandad-device-native"]
+
+[[test]]
+name = "pandad_device_check"
+required-features = ["pandad-device-native"]
+
+[[test]]
+name = "pandad_device_reference"
+required-features = ["pandad-device-native"]

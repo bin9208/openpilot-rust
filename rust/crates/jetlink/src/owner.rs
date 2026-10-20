@@ -3,11 +3,11 @@ use crate::{
     rpc, Deadline, Error,
 };
 use std::{
-    fs,
+    fs::{self, File},
     io::Read,
     net::Shutdown,
     os::unix::{
-        fs::PermissionsExt,
+        fs::{FileTypeExt, MetadataExt, PermissionsExt},
         net::{UnixListener, UnixStream},
     },
     path::{Path, PathBuf},
@@ -129,6 +129,7 @@ pub struct Server {
     pub error: Arc<Mutex<String>>,
     pub generation: [u8; 16],
     path: PathBuf,
+    owned_socket: Arc<Mutex<Option<File>>>,
     stop_invoked: bool,
 }
 impl Server {
@@ -141,10 +142,12 @@ impl Server {
         let error = Arc::new(Mutex::new(String::new()));
         let worker_error = Arc::clone(&error);
         let connection = Arc::new(Mutex::new(None));
+        let owned_socket = Arc::new(Mutex::new(None));
         let (done_tx, done) = mpsc::channel();
         let worker_stop = Arc::clone(&stop);
         let worker_ready = Arc::clone(&ready);
         let worker_connection = Arc::clone(&connection);
+        let worker_owned_socket = Arc::clone(&owned_socket);
         let worker_path = path.to_owned();
         let worker = thread::Builder::new()
             .name("jetlink-usb-owner".into())
@@ -156,6 +159,7 @@ impl Server {
                     &worker_stop,
                     &worker_ready,
                     &worker_connection,
+                    &worker_owned_socket,
                 );
                 if let Err(error) = &result {
                     if let Ok(mut slot) = worker_error.lock() {
@@ -164,9 +168,7 @@ impl Server {
                 }
                 worker_ready.store(false, Ordering::Release);
                 backend.close();
-                if let Err(error) = done_tx.send(result) {
-                    eprintln!("jetlink owner receiver closed: {error}");
-                }
+                let _ = done_tx.send(result);
             })?;
         Ok(Self {
             stop,
@@ -177,6 +179,7 @@ impl Server {
             error,
             generation,
             path: path.to_owned(),
+            owned_socket,
             stop_invoked: false,
         })
     }
@@ -199,22 +202,35 @@ impl Server {
         if self.worker.is_none() {
             return Ok(());
         }
-        let worker_result = self
+        // The worker already recorded its error in Server.error.
+        let _worker_result = self
             .done
             .recv_timeout(timeout)
             .map_err(|_| Error::Deadline)?;
-        if let Err(error) = worker_result {
-            eprintln!("jetlink owner ended: {error}");
-        }
         if let Some(worker) = self.worker.take() {
             worker
                 .join()
                 .map_err(|_| Error::Contract("owner worker panicked"))?;
         }
-        match fs::remove_file(&self.path) {
-            Ok(()) => {}
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-            Err(error) => return Err(error.into()),
+        let owned = self
+            .owned_socket
+            .lock()
+            .map_err(|_| Error::Contract("socket ownership mutex poisoned"))?;
+        if let Some(owned) = owned.as_ref() {
+            let identity = owned.metadata()?;
+            // The caller's process lock/trusted socket directory also excludes
+            // replacement between this pathname check and remove_file.
+            match fs::symlink_metadata(&self.path) {
+                Ok(current)
+                    if current.file_type().is_socket()
+                        && (current.dev(), current.ino()) == (identity.dev(), identity.ino()) =>
+                {
+                    fs::remove_file(&self.path)?;
+                }
+                Ok(_) => {}
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                Err(error) => return Err(error.into()),
+            }
         }
         Ok(())
     }
@@ -222,9 +238,7 @@ impl Server {
 impl Drop for Server {
     fn drop(&mut self) {
         if !self.stop_invoked {
-            if let Err(error) = self.stop(Duration::from_secs(2)) {
-                eprintln!("jetlink owner stop: {error}");
-            }
+            let _ = self.stop(Duration::from_secs(2));
         }
     }
 }
@@ -235,6 +249,7 @@ fn serve(
     stop: &AtomicBool,
     ready: &AtomicBool,
     connection: &Mutex<Option<UnixStream>>,
+    owned_socket: &Mutex<Option<File>>,
 ) -> Result<(), Error> {
     let identity = backend.connect()?;
     if stop.load(Ordering::Acquire) {
@@ -242,6 +257,25 @@ fn serve(
     }
     // Never unlink a potentially live owner; the process-lock holder removes its stale socket before spawn.
     let listener = UnixListener::bind(path)?;
+    // The process lock excludes another legitimate binder while we capture the
+    // pathname. O_PATH pins its filesystem inode (the listener fd has a different
+    // sockfs inode), so teardown can detect later replacement. This is not an
+    // atomic defense against a concurrent actor replacing the path during bind/open.
+    let owned = File::from(
+        rustix::fs::open(
+            path,
+            rustix::fs::OFlags::PATH | rustix::fs::OFlags::NOFOLLOW | rustix::fs::OFlags::CLOEXEC,
+            rustix::fs::Mode::empty(),
+        )
+        .map_err(std::io::Error::from)?,
+    );
+    if !owned.metadata()?.file_type().is_socket() {
+        return Err(Error::Contract("bound socket pathname replaced"));
+    }
+    *owned_socket
+        .lock()
+        .map_err(|_| Error::Contract("socket ownership mutex poisoned"))? = Some(owned);
+    // This pathname chmod assumes the same process lock/trusted directory.
     fs::set_permissions(path, fs::Permissions::from_mode(0o600))?;
     listener.set_nonblocking(true)?;
     ready.store(true, Ordering::Release);

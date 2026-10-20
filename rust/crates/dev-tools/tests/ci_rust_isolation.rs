@@ -607,6 +607,11 @@ fn ui_connectivity_requires_source_render_and_private_protocol_checks() {
         ],
     );
     assert!(!caller.contains("check_bluetooth_input_decode.py"));
+    required(
+        &caller,
+        &["binary / 'check-bluetooth-files'", "elif name == 'files':"],
+    );
+    assert!(!caller.contains("check_bluetooth_files.py"));
     let config = workflow();
     let native = commands(&config["jobs"]["ui-connectivity"]);
     let ownership_tests = "cargo test --manifest-path rust/Cargo.toml -p openpilot-bluetooth -p openpilot-wifi --all-targets --locked";
@@ -636,7 +641,7 @@ fn ui_connectivity_requires_source_render_and_private_protocol_checks() {
             "check_wifi_callback_ordering.py",
             "--features bluetooth-files-native --bin check-bluetooth-files",
             "--features bluetooth-files-native --test bluetooth_files_check --locked",
-            "rust/target/debug/check-bluetooth-files --binary",
+            "checker=\"$GITHUB_WORKSPACE/rust/target/debug/check-bluetooth-files\"",
             "--features bluetooth-journal-native --bin check-bluetooth-journal",
             "--features bluetooth-journal-native --test bluetooth_journal_check --locked",
             "rust/target/debug/check-bluetooth-journal --binary",
@@ -1514,6 +1519,67 @@ fn new_calibration_and_panda_controllers_require_unchanged_original_pairs() {
         "PANDAD_PADDING_NATIVE_BINARY=",
         "PANDAD_PADDING_PYTHON=",
     ], &["--features pandad-safety-padding-native"], false);
+    job_check(
+        "panda-runtime",
+        &[
+            "--features pandad-device-native --bin check-pandad-device",
+            "--test pandad_device_check --test pandad_device_reference --locked",
+            "PANDAD_DEVICE_SOURCE_BINARY=",
+            "PANDAD_DEVICE_SOURCE_MANIFEST=",
+            "PANDAD_DEVICE_NATIVE_BINARY=",
+            "PANDAD_DEVICE_PYTHON=",
+            "--features pandad-device-native --lib --bin check-pandad-device",
+        ],
+        &["--features pandad-device-native"],
+        false,
+    );
+}
+#[test]
+fn owner_and_buffered_write_repairs_require_real_old_failures_and_fixed_checks() {
+    job_check(
+        "workspace",
+        &[
+            "jetlink399-baseline",
+            "11f3dec411662baa961733b363c0b38d7082fcfa",
+            "--test owner_lifecycle --locked -- --nocapture",
+            "failed_connect_preserves_foreign_listener failed_bind_preserves_foreign_listener",
+            "full_stderr_cannot_extend_failed_stop full_stderr_cannot_extend_drop",
+            "grep -F \"test $case ... FAILED\"",
+            "cargo build -p openpilot-jetlink --bins --examples --locked",
+            "cargo clippy -p openpilot-jetlink --all-targets --locked -- -D warnings",
+        ],
+        &["--test owner_lifecycle"],
+        false,
+    );
+    job_check(
+        "ui-connectivity",
+        &[
+            "ui423-baseline",
+            "11f3dec411662baa961733b363c0b38d7082fcfa",
+            "--exact actual_short_reading_encoder_rejects_partial_frame_and_keeps_queue_capacity",
+            "grep -F 'test result: FAILED'",
+            "grep -F 'short-reading child left a partial frame accepted as complete'",
+        ],
+        &["ui423-baseline"],
+        false,
+    );
+}
+#[test]
+fn bluetooth_file_retirement_requires_same_elf_absence_proof() {
+    job_check(
+        "ui-connectivity",
+        &[
+            "sha256sum \"$checker\" \"$BLUETOOTH_FILE_FIXTURE\"",
+            "env PATH=/nonexistent \"$checker\" --binary \"$BLUETOOTH_FILE_FIXTURE\" --output \"$proof/present\"",
+            "mv rust/tools/check_bluetooth_files.py \"$backup\"",
+            "env PATH=/nonexistent \"$checker\" --binary \"$BLUETOOTH_FILE_FIXTURE\" --output \"$proof/absent\"",
+            "diff -r \"$proof/present\" \"$proof/absent\"",
+            "sha256sum -c \"$proof/artifacts.sha256\"",
+            "trap 'mv \"$backup\" rust/tools/check_bluetooth_files.py' EXIT",
+        ],
+        &["bluetooth-files-retirement"],
+        false,
+    );
 }
 #[test]
 fn every_gate_dependency_and_result_binding_is_required() {
@@ -1971,7 +2037,7 @@ fn registration_clock_requires_actual_probe_and_all_native_failure_controls() {
 fn registration_and_navd_require_native_full_policy_and_real_delayed_collector() {
     let data = workflow();
     let startup = &data["jobs"]["startup-runtime"];
-    assert_eq!(startup["timeout-minutes"], "45");
+    assert_eq!(startup["timeout-minutes"], "60");
     mandatory(
         startup,
         &[

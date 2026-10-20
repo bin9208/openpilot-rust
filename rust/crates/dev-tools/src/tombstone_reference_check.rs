@@ -317,9 +317,11 @@ impl<'a> Pair<'a> {
         packet_json(&native.line_until(self.cancel, end)?)
     }
     #[cfg(feature = "sdk-transport-native")]
-    pub(crate) fn raw_native(&mut self, request: &J) -> Result<(J, Vec<J>)> {
+    pub(crate) fn raw_native(&mut self, request: &J, minimum_logs: usize) -> Result<(J, Vec<J>)> {
         let actual = self.native_response(request, Instant::now() + Duration::from_secs(40))?;
-        let logs = self.endpoint.records(self.native_index, 0, self.cancel)?;
+        let logs = self
+            .endpoint
+            .records(self.native_index, minimum_logs, self.cancel)?;
         self.native_index += 1;
         Ok((actual, logs))
     }

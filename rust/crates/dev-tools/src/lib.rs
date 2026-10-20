@@ -308,3 +308,6 @@ pub mod feedbackd_check;
 
 #[cfg(all(target_os = "linux", feature = "pandad-safety-padding-native"))]
 pub mod pandad_safety_padding_check;
+
+#[cfg(all(target_os = "linux", feature = "pandad-device-native"))]
+pub mod pandad_device_check;

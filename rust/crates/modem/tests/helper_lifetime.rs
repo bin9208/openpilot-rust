@@ -113,6 +113,7 @@ case "$*" in
   'ip rule del table 1000') exit 1 ;;
 esac
 case {mode} in
+  ppp) [ "$1" = pppd ] || exit 0 ;;
   mask) [ "$*" = 'systemctl mask --runtime ModemManager' ] || exit 0 ;;
   stop) [ "$*" = 'systemctl stop ModemManager' ] || exit 0 ;;
   unmask) [ "$*" = 'systemctl unmask --runtime ModemManager' ] || exit 0 ;;
@@ -381,6 +382,49 @@ fn exited_ppp_leader_is_retained_until_session_cleanup() {
     );
     drop(session);
     assert_gone(&descendant, "PPP orphan cleanup after exit observation");
+}
+
+#[test]
+fn killed_ppp_remains_observably_exited_until_a_new_session_starts() {
+    let fixture = Fixture::new("ppp");
+    let mut session = ppp::Session::default();
+    assert!(
+        !session.has_exited().unwrap(),
+        "never started is not an exited PPP"
+    );
+    session.kill(&fixture.config).unwrap();
+    assert!(
+        !session.has_exited().unwrap(),
+        "cleanup without PPP preserves never-started state"
+    );
+    session.start(&fixture.config).unwrap();
+    let (leader, descendant) = fixture.acknowledged();
+    fixture.release();
+    assert!(!session.has_exited().unwrap());
+    session.kill(&fixture.config).unwrap();
+    assert!(
+        session.has_exited().unwrap(),
+        "route-failure cleanup must remain visible to WaitExit/reconnect"
+    );
+    assert_gone(&leader, "killed PPP leader");
+    assert_gone(&descendant, "killed PPP descendant before fallback");
+    // Repeated stop/observation uses cached completion, never signals a reaped
+    // leader's numeric process-group identity again.
+    session.kill(&fixture.config).unwrap();
+    assert!(session.has_exited().unwrap());
+    fs::remove_file(fixture.root.path().join("ready")).unwrap();
+    fs::remove_file(fixture.root.path().join("release")).unwrap();
+    session.start(&fixture.config).unwrap();
+    let (next_leader, next_descendant) = fixture.acknowledged();
+    fixture.release();
+    assert!(
+        !session.has_exited().unwrap(),
+        "new child resets old completion"
+    );
+    session.kill(&fixture.config).unwrap();
+    assert!(session.has_exited().unwrap());
+    assert_gone(&next_leader, "new PPP leader cleanup");
+    assert_gone(&next_descendant, "new PPP descendant cleanup");
 }
 
 struct Daemon(Child);

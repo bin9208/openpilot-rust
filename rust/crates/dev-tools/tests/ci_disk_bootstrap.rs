@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 380);
+    assert_eq!(text.matches(marker).count(), 391);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -307,15 +307,36 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut bluetooth_journal_controller = vec![];
     let mut calibration_float_controller = vec![];
     let mut pandad_padding_controller = vec![];
+    let mut pandad_device_controller = vec![];
     let mut modem_helper_lifetime = vec![];
+    let mut jetlink_owner = vec![];
+    let mut recording_partial_write = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
+            let step = lines[..i]
+                .iter()
+                .rev()
+                .find(|line| line.starts_with("      - name:"));
+            if step == Some(&"      - name: Require Jetlink owner baseline failures and bounded fixed lifecycle") {
+                jetlink_owner.push(tail.to_owned());
+                continue;
+            }
+            if step == Some(
+                &"      - name: Reproduce incomplete buffered frame writes on old native adapter",
+            ) {
+                recording_partial_write.push(tail.to_owned());
+                continue;
+            }
+            if i + 1 < lines.len() && lines[i + 1].contains("--features pandad-device-native") {
+                pandad_device_controller.push(tail.to_owned());
+                continue;
+            }
             if i + 1 < lines.len()
                 && (lines[i + 1].contains("git fetch --no-tags --depth=1 origin 1364e48c")
                     || lines[i + 1].contains("--manifest-path \"$baseline/rust/Cargo.toml\"")
                     || lines[i + 1].contains("helper-lifetime-tests")
                     || lines[i + 1].contains(
-                        "-p openpilot-process-supervision --bin openpilot-process-child --locked",
+                        "cargo build --manifest-path rust/Cargo.toml -p openpilot-process-supervision --bin openpilot-process-child --locked",
                     ))
             {
                 modem_helper_lifetime.push(tail.to_owned());
@@ -353,7 +374,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             }
             if i + 1 < lines.len()
                 && (lines[i + 1].contains("--features bluetooth-files-native")
-                    || lines[i + 1].contains("rust/target/debug/check-bluetooth-files --binary"))
+                    || lines[i + 1].contains("rust/target/debug/check-bluetooth-files --binary")
+                    || lines[i + 1].contains(
+                        "proof=\"$RUNNER_TEMP/ui-connectivity/bluetooth-files-retirement\"",
+                    ))
             {
                 bluetooth_files_controller.push(tail.to_owned());
                 continue;
@@ -960,6 +984,21 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     assert_eq!(
         modem_helper_lifetime,
         [2048, 1024, 512, 512, 512, 512]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        pandad_device_controller,
+        [512, 512, 512]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        jetlink_owner,
+        [1024, 2048, 512, 512, 512]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        recording_partial_write,
+        [1024, 2048, 512]
             .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     // Retain the 177 still-used original guards/hash below, plus admission for

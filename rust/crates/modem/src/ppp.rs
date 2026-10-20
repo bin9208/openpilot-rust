@@ -48,9 +48,15 @@ impl Session {
     ) -> Result<(), Error> {
         let result = run_controlled(config, &["killall", "-9", "pppd"], cancelled);
         // Always terminate/reap our PPP session, including when sudo failed or cancellation won.
-        self.process = None;
+        // Keep the completed handle: has_exited distinguishes killed PPP from never started.
+        let cleanup = self
+            .process
+            .as_mut()
+            .map(Child::terminate)
+            .transpose()
+            .map(|_| ());
         self.peer.clear();
-        result.map(|_| ())
+        result.map(|_| ()).and(cleanup.map_err(Error::from))
     }
     pub fn has_exited(&mut self) -> Result<bool, Error> {
         match self.process.as_mut() {

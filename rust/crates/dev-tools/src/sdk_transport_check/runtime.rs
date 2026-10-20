@@ -276,11 +276,26 @@ fn run_inner(repository: &Path, options: &Options, cancel: &Cancellation) -> Res
         ("op", J::text("capture_io")),
         ("path", crate::python_fs::json_value(missing.as_os_str())),
     ])?;
-    let (response, logs) = pair.raw_native(&request)?;
+    // Reporter and barrier use distinct PUSH sockets. A barrier alone cannot
+    // establish delivery of capture_io's required crash record (#421).
+    let (response, logs) = pair.raw_native(&request, 1)?;
     if !super::equal(&field(&response, "result")?, &J::parse("{\"value\":null}")?) {
         return Err("native I/O capture returned unexpected result".into());
     }
     let error = capture(&receiver, cancel)?;
+    fs::write(
+        options.output.join("native-error.json"),
+        format!(
+            "{}\n",
+            version_reference_check::format_report(&object(&[
+                ("request", request),
+                ("response", response),
+                ("event", error.event.clone()),
+                ("logs", array(&logs)?)
+            ])?)?
+        ),
+    )?;
+    fs::write(options.output.join("envelope-native-error.txt"), &error.raw)?;
     let JsonView::Array(exceptions) = field(&field(&error.event, "exception")?, "values")?.view()
     else {
         return Err("native exception list absent".into());
@@ -304,19 +319,6 @@ fn run_inner(repository: &Path, options: &Options, cancel: &Cancellation) -> Res
     {
         return Err("native I/O capture omitted backtrace, log, or Params effect".into());
     }
-    fs::write(
-        options.output.join("native-error.json"),
-        format!(
-            "{}\n",
-            version_reference_check::format_report(&object(&[
-                ("request", request),
-                ("response", response),
-                ("event", error.event),
-                ("logs", array(&logs)?)
-            ])?)?
-        ),
-    )?;
-    fs::write(options.output.join("envelope-native-error.txt"), error.raw)?;
     pair.finish()?;
     receiver
         .require_empty()

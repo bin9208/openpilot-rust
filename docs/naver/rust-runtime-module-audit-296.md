@@ -1603,3 +1603,30 @@ The inspected reset keeps a prefilled window rather than truncating a partially
 filled queue. No new concrete defect was established. Per-evaluation temporary
 vectors remain an unmeasured optimization candidate; FFT/numerical internals,
 filesystem stall behavior and target operation are not cleared by these reads.
+
+## Resumed cloud failure investigation (2026-10-21)
+
+At `11f3dec4`, Integration passed while Rust and Fast failed. The modem PPP
+cleanup regression is documented in #398; the fixed owner retains successful
+exit status. Jetlink socket cleanup and blocking diagnostics are documented in
+#399 with private baseline/fixed controls. Neither has current fixed execution
+evidence yet.
+
+SDK QA #421 exposed a collection-order gap: reporter and barrier use distinct
+PUSH sockets, while the raw request collected zero required records. The native
+I/O control now requires its crash log before checking the existing backtrace,
+log and Params effects. Failed capture observations are persisted before
+rejection. The original 40-second collection deadline remains.
+
+UI QA adapter #423 called Rust `BufWriter::write` once, accepting a partial frame
+as complete. The adapter now uses `write_all`; the independent generic writer
+policy still ignores an injected successful return count, as the original does.
+A real short-reading child supplies a new old-source failure control. The earlier
+already-exited-child timeout is retained and does not alone establish this cause.
+Cloud RED/GREEN and the unchanged UI lifecycle comparisons remain mandatory.
+
+Cweb-push source review covered pinned in-flight request polling, request-client
+ownership, redirect methods, address/interface admission and stop propagation.
+No additional concrete defect was established in that bounded read. Redirect
+encoding creates avoidable temporary strings but remains an unmeasured candidate;
+this review does not clear HTTP internals or device behavior.

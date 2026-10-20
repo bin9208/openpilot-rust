@@ -1,5 +1,42 @@
 # 저장소 전체 Python 전환 작업 인수인계
 
+## 재개 및 CI 복구 준비: 2026-10-21
+
+사용자는 dev-md 완료 대기를 해제하고 #296 진행을 지시했다. 부모는 6.1 Sol로
+감독·통합하며 복잡한 구현·검토는 6 Sol, 단순 목록 취합은 6 Luna에 배정한다.
+작업 폴더·dev 대상 PR343은 동일하고 dev-md와 CI/CD 최적화 별도 작업은 섞지 않는다.
+
+`11f3dec4`의 Integration은 통과했지만 Fast와 Rust 집계는 실패했다. 실제 실패는
+디스크 가드 분류, 모뎀 PPP 종료 상태, soundd 선택지 진단, Panda padding 임시값
+수명, SDK 로그 수집 순서 및 UI writer 종료 검사다. startup prerequisites는 등록
+검사 통과 후 45분 작업 한도로 취소됐다. 후속 코드에 각 수정과 검증을 연결한다.
+SDK #421은 서로 다른 PUSH 소켓의 barrier가 crash 로그보다 먼저 도착할 수 있어
+필수 로그 수를 명시한다. UI #423은 native buffered write를 완성한 뒤 frame을 세고,
+실제 short-reading child로 이전 소스 실패를 요구한다. 이전 `/bin/true` 실패는
+그대로 유지하며 이 변경만으로 원인이 입증됐다고 하지 않는다. Jetlink #399는
+외부 소켓 보존과 막힌 stderr에서도 종료를 검증한다.
+
+Panda device 도구는 원본 1,746사례·2,490연산을 대조하는 새 Rust 검사기와 9개
+검사를 등록했다. Bluetooth files는 독립 원본 관측을 고정하고 같은 ELF로 Python
+존재/부재 전후 전체 출력과 결과를 비교하도록 준비했다. 원본 파일은 아직 유지한다.
+로컬은 형식·구문·diff만 확인했고 기능 검증은 후속 정확한 SHA의 Actions에서 한다.
+현재 인벤토리209/3/3368, 전체 전환·dev 반영·패키지·사용자 실기 확인은 미완료다.
+
+## 최신 우선 기록: 11f3dec4, 2026-10-19
+
+현재 원격 HEAD는 `11f3dec411662baa961733b363c0b38d7082fcfa`다. PR #343은
+dev 대상이며 dev-md는 변경하지 않았다. Rust run39192427750과 Integration
+run39192427739가 진행 중이다. 이전 1364의 Fast 경로 보존 실패와 bridge 파일
+소유권, logging Clippy, soundd 스키마 import, journal 미사용 import를 수정했다.
+calibration float/Panda padding 도구와 modem #398의 14개 회귀 및 이전 SHA의
+실제 EOF 실패 검증도 연결했다. 로컬 실행 검증은 하지 않았고 형식·구문만 확인했다.
+
+1364에서는 Bluetooth files의 6검사·Clippy·실제 15사례가 통과해 그 도구 하나의
+원본 제거 준비를 시작했다. 아직 삭제하지 않았으므로 인벤토리는209/3/3368이다.
+Wi-Fi 46의미 검사와 할당 측정은 통과했으나 전체 connectivity job은 journal
+Clippy에서 실패했다. 숫자와 제한은 module-audit/evidence 및 #397에 기록했다.
+전체 전환·전체 CI·dev 통합·패키지와 사용자 실기기 확인은 여전히 남아 있다.
+
 ## 최신 우선 기록: 1364e48c, 2026-10-19
 
 아래의 과거 SHA·수치보다 이 기록을 우선한다. #296 전용 브랜치의 원격 HEAD는

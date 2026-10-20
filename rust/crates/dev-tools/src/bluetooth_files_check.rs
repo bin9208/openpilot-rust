@@ -1,5 +1,5 @@
 //! Native fixed atomic-JSON comparison. The reference encoder is independent
-//! of Bluetooth's serializer; mandatory CI checks it against retained Python.
+//! of Bluetooth's serializer; CI seals it against independently observed Python.
 use crate::{
     argparse_scan::{scan_os, OptionSpec},
     control_tools_policy_check::json as python_json,
@@ -28,6 +28,17 @@ mod corpus;
 mod identity;
 pub use corpus::{cases, payload, Case, CASES, SCALARS};
 use identity::{digest, Bound};
+const HISTORICAL_CHECKER: &str = "rust/tools/check_bluetooth_files.py";
+const HISTORICAL_SHA: &str = "e30b4cdca8c658cfbd713b6603ef23c64d21854ff41ffa1f611bdd43d2371682";
+const MODEL_SOURCE: &str = "openpilot/selfdrive/carrot/bluetooth/model.py";
+const MODEL_SHA: &str = "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633";
+const FIXTURE_SOURCE: &str = "rust/crates/bluetooth/examples/file_fixture.rs";
+const FIXTURE_SHA: &str = "fac81b03cc32d0a26515b3ee7213e80d8c6fe392bdb0670434c09337f1d20d93";
+struct Sources {
+    live: Vec<Bound>,
+    checker: Option<Bound>,
+    checker_path: PathBuf,
+}
 pub struct Options {
     pub root: PathBuf,
     pub binary: PathBuf,
@@ -40,24 +51,61 @@ fn check_cancel(stop: &AtomicBool) -> Result<()> {
         Ok(())
     }
 }
-fn source_inputs(root: &Path) -> Result<Vec<Bound>> {
+fn source_inputs(root: &Path) -> Result<Sources> {
     let pins: BTreeMap<String, String> = serde_json::from_str(include_str!(
         "../tests/fixtures/bluetooth-files/source-pins.json"
     ))?;
-    pins.into_iter()
-        .map(|(name, expected)| {
+    if pins.len() != 3
+        || pins.get(HISTORICAL_CHECKER).map(String::as_str) != Some(HISTORICAL_SHA)
+        || pins.get(MODEL_SOURCE).map(String::as_str) != Some(MODEL_SHA)
+        || pins.get(FIXTURE_SOURCE).map(String::as_str) != Some(FIXTURE_SHA)
+    {
+        return Err("Bluetooth files source pin roster differs".into());
+    }
+    let checker_path = root.join(HISTORICAL_CHECKER);
+    let mut sources = Sources {
+        live: vec![],
+        checker: None,
+        checker_path,
+    };
+    for (name, expected) in pins {
+        if name == HISTORICAL_CHECKER {
+            // Only this retired helper may be absent. A dangling symlink is
+            // present to symlink_metadata and must fail the regular-file guard.
+            match fs::symlink_metadata(&sources.checker_path) {
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
+                Err(error) => return Err(error.into()),
+                Ok(metadata) if metadata.file_type().is_file() => {}
+                Ok(_) => return Err("Bluetooth historical checker is not a regular file".into()),
+            }
+            let file = Bound::open(&sources.checker_path)?;
+            if file.hash != expected {
+                return Err(format!("Bluetooth files source changed: {name}").into());
+            }
+            sources.checker = Some(file);
+        } else {
             let file = Bound::open(&root.join(&name))?;
             if file.hash != expected {
                 return Err(format!("Bluetooth files source changed: {name}").into());
             }
-            Ok(file)
-        })
-        .collect()
+            sources.live.push(file);
+        }
+    }
+    Ok(sources)
 }
-fn verify(files: &[Bound], stop: &AtomicBool) -> Result<()> {
+fn verify(files: &Sources, stop: &AtomicBool) -> Result<()> {
     check_cancel(stop)?;
-    for file in files {
+    for file in &files.live {
         file.verify()?;
+    }
+    if let Some(checker) = &files.checker {
+        checker.verify()?;
+    } else {
+        match fs::symlink_metadata(&files.checker_path) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error.into()),
+            Ok(_) => return Err("Bluetooth historical checker appeared during comparison".into()),
+        }
     }
     Ok(())
 }
@@ -112,7 +160,7 @@ fn same_file(path: &Path, expected: &[u8], mode: u32) -> Result<()> {
     }
     Ok(())
 }
-fn publish(path: &Path, report: &Value, files: &[Bound], stop: &AtomicBool) -> Result<()> {
+fn publish(path: &Path, report: &Value, files: &Sources, stop: &AtomicBool) -> Result<()> {
     verify(files, stop)?;
     let mut pending =
         tempfile::NamedTempFile::new_in(path.parent().ok_or("report parent missing")?)?;
@@ -132,7 +180,7 @@ fn publish(path: &Path, report: &Value, files: &[Bound], stop: &AtomicBool) -> R
     result
 }
 /// Reuses the shared owned command runner; tests obtain their expected files
-/// from the unchanged Python checker in CI, never from the candidate.
+/// from the sealed original observation manifest, never from the candidate.
 pub fn check(
     options: &Options,
     runner: &mut dyn Runner,
@@ -215,10 +263,11 @@ pub fn check(
     artifact.verify()?;
     alias.verify()?;
     let artifact_hash = artifact.hash.clone();
-    files.push(artifact);
-    files.push(alias);
+    files.live.push(artifact);
+    files.live.push(alias);
     verify(&files, stop)?;
     let pins = files
+        .live
         .iter()
         .map(|file| {
             let path = file
@@ -229,7 +278,7 @@ pub fn check(
             json!({"path":path,"sha256":file.hash})
         })
         .collect::<Vec<_>>();
-    let report = json!({"cases":CASES,"all_unicode_scalar_values":SCALARS,"unicode_errors":cases.iter().filter(|c|!c.succeeded).count(),"bytes":sizes.iter().sum::<usize>(),"comparison":"exact bytes and permissions","source_sha256":"74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633","binary_sha256":artifact_hash,"reference_kind":"independent fixed source schedule; unchanged-original CI required","input_sha256":pins,"file_observations":hashes});
+    let report = json!({"cases":CASES,"all_unicode_scalar_values":SCALARS,"unicode_errors":cases.iter().filter(|c|!c.succeeded).count(),"bytes":sizes.iter().sum::<usize>(),"comparison":"exact bytes and permissions","source_sha256":MODEL_SHA,"binary_sha256":artifact_hash,"reference_kind":"independent fixed source schedule authenticated by immutable original observations","reference_observation_sha256":digest(include_bytes!("../tests/fixtures/bluetooth-files/original-observation.json")),"historical_source_sha256":{(HISTORICAL_CHECKER):HISTORICAL_SHA},"input_sha256":pins,"file_observations":hashes});
     // Flush the summary before publishing. Broken stdout/cancellation must not
     // leave a new success receipt; never delete a preexisting foreign receipt.
     writeln!(printed, "{}", serde_json::to_string(&report)?)?;

@@ -34,70 +34,83 @@ struct Original {
     report: Value,
 }
 fn original() -> Original {
-    let directory = tempfile::tempdir().unwrap();
-    let output = directory.path().join("original-checker");
-    let mut spec = CommandSpec::new_os(
-        vec![
-            std::env::var_os("BLUETOOTH_FILES_PYTHON")
-                .expect("mandatory Python3.12 original oracle for CI"),
-            repository()
-                .join("rust/tools/check_bluetooth_files.py")
-                .into_os_string(),
-            "--binary".into(),
-            candidate().into_os_string(),
-            "--output".into(),
-            output.as_os_str().into(),
-        ],
-        Duration::from_secs(60),
-    );
-    spec.cwd = Some(repository());
-    spec.stdout_limit = usize::MAX;
-    spec.stderr_limit = usize::MAX;
-    let observed = NativeRunner.run(&spec).unwrap();
+    // This manifest is byte-for-byte ORIGINAL Python evidence downloaded from
+    // Actions. The reference encoder is separate from the candidate; authenticate
+    // every reconstructed byte before using it in either positive or fake peers.
+    let raw = include_bytes!("fixtures/bluetooth-files/original-observation.json");
     assert_eq!(
-        observed.code,
-        0,
-        "unchanged original failed: {}",
-        String::from_utf8_lossy(&observed.stderr)
+        sha(raw),
+        "a70cdb6d3bf57a44e0d711149500759895c0af93032b6df922ab5d1917c01273"
     );
-    let report: Value =
-        serde_json::from_slice(&fs::read(output.join("result.json")).unwrap()).unwrap();
-    let files = (0..CASES)
-        .map(|index| {
-            let path = output.join("original").join(format!("{index}.json"));
-            (
-                fs::read(&path).unwrap(),
-                fs::metadata(path).unwrap().permissions().mode() & 0o777,
-            )
-        })
-        .collect::<Vec<_>>();
-    let booleans = files.iter().map(|(_, mode)| *mode == 0o600).collect();
-    let input = fs::read(output.join("input.jsonl")).unwrap();
-    // No native candidate observations supply these expected bytes or modes.
+    let observed: Value = serde_json::from_slice(raw).unwrap();
+    let provenance: Value =
+        serde_json::from_str(include_str!("fixtures/bluetooth-files/provenance.json")).unwrap();
+    assert_eq!(provenance["observation_sha256"], sha(raw));
+    assert_eq!(
+        provenance["source_commit"],
+        "1364e48c96e888fa5d178c5eb2132d135cf30765"
+    );
+    assert_eq!(provenance["run_id"], 39190411681_u64);
+    assert_eq!(provenance["job_id"], 117862093373_u64);
+    assert_eq!(
+        provenance["artifact_zip_sha256"],
+        "52b48b41f8d2477f3e04b6f10cb0ca49472b86e761533d176cdf43c28e594636"
+    );
+    assert_eq!(
+        observed["source_checker_sha256"],
+        "e30b4cdca8c658cfbd713b6603ef23c64d21854ff41ffa1f611bdd43d2371682"
+    );
+    assert_eq!(
+        observed["model_sha256"],
+        "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+    );
     let cases = checker::cases();
-    assert_eq!(cases.len(), 15);
+    assert_eq!(cases.len(), CASES);
+    let input = checker::payload(&cases);
+    assert_eq!(observed["input_sha256"], sha(&input));
     assert_eq!(
-        checker::payload(&cases),
-        input,
-        "full original JSONL input schedule"
+        input.len() as u64,
+        provenance["input_bytes"].as_u64().unwrap()
     );
-    for (index, (case, (bytes, mode))) in cases.iter().zip(&files).enumerate() {
-        assert_eq!(&case.expected, bytes, "original full bytes {index}");
+    let slots = observed["files"].as_array().unwrap();
+    assert_eq!(slots.len(), CASES);
+    let mut files = vec![];
+    let mut booleans = vec![];
+    for (index, (case, slot)) in cases.into_iter().zip(slots).enumerate() {
+        assert_eq!(slot["index"], index);
         assert_eq!(
-            case.succeeded,
-            *mode == 0o600,
-            "original encoding outcome {index}"
+            slot["sha256"],
+            sha(&case.expected),
+            "full original bytes {index}"
         );
+        assert_eq!(slot["bytes"], case.expected.len());
+        let succeeded = slot["succeeded"].as_bool().unwrap();
+        let mode = u32::try_from(slot["mode"].as_u64().unwrap()).unwrap();
+        assert_eq!(
+            case.succeeded, succeeded,
+            "original Unicode outcome {index}"
+        );
+        assert_eq!(mode, if succeeded { 0o600 } else { 0o644 });
+        files.push((case.expected, mode));
+        booleans.push(succeeded);
     }
-    assert_eq!(fs::read_dir(output.join("original")).unwrap().count(), 15);
+    let report = json!({
+        "cases":slots.len(), "all_unicode_scalar_values":1112064,
+        "unicode_errors":booleans.iter().filter(|v| !**v).count(),
+        "bytes":files.iter().map(|(v,_)|v.len()).sum::<usize>(),
+        "comparison":"exact bytes and permissions", "source_sha256":observed["model_sha256"],
+        // This is current executable identity, never a golden algorithm answer.
+        "binary_sha256":sha(&fs::read(candidate()).unwrap())
+    });
     Original {
-        directory,
+        directory: tempfile::tempdir().unwrap(),
         files,
         input,
         booleans,
         report,
     }
 }
+
 fn options(root: &Path, binary: &Path, output: &Path) -> Options {
     Options {
         root: root.into(),
@@ -106,7 +119,7 @@ fn options(root: &Path, binary: &Path, output: &Path) -> Options {
     }
 }
 #[test]
-fn all_fifteen_source_bytes_modes_and_payload_match_unchanged_python_then_real_native() {
+fn sealed_fifteen_original_observations_authenticate_reference_bytes_then_real_native() {
     let oracle = original();
     let output = oracle.directory.path().join("native-checker");
     let report = checker::check(
@@ -144,17 +157,22 @@ fn all_fifteen_source_bytes_modes_and_payload_match_unchanged_python_then_real_n
         }
         assert_eq!(report["file_observations"][index]["sha256"], sha(bytes));
     }
-    // Persist a compact actual original observation for parent review/sealing.
+    // Copy the immutable source observation unchanged; never label this replay
+    // as fresh Python execution or replace it with native candidate observations.
     let evidence = PathBuf::from(
         std::env::var_os("BLUETOOTH_FILES_EVIDENCE").expect("mandatory CI evidence output"),
     );
     fs::create_dir_all(&evidence).unwrap();
-    fs::write(evidence.join("original-observation.json"),serde_json::to_vec_pretty(&json!({
-        "kind":"actual unchanged Python checker source files, not native candidate answers",
-        "source_checker_sha256":sha(&fs::read(repository().join("rust/tools/check_bluetooth_files.py")).unwrap()),
-        "model_sha256":oracle.report["source_sha256"],"input_sha256":sha(&oracle.input),
-        "files":oracle.files.iter().enumerate().map(|(i,(bytes,mode))|json!({"index":i,"sha256":sha(bytes),"bytes":bytes.len(),"mode":mode,"succeeded":*mode==0o600})).collect::<Vec<_>>()
-    })).unwrap()).unwrap();
+    fs::write(
+        evidence.join("original-observation.json"),
+        include_bytes!("fixtures/bluetooth-files/original-observation.json"),
+    )
+    .unwrap();
+    fs::write(
+        evidence.join("provenance.json"),
+        include_bytes!("fixtures/bluetooth-files/provenance.json"),
+    )
+    .unwrap();
     fs::write(
         evidence.join("native-report.json"),
         serde_json::to_vec_pretty(&report).unwrap(),
@@ -205,6 +223,10 @@ impl Runner for Peer<'_> {
             }
             "temporary" => fs::write(output.join("0.json.leftover.tmp"), b"unremoved")?,
             "source" => fs::write(&self.source, b"changed source")?,
+            "retired-reappeared" => {
+                fs::create_dir_all(self.source.parent().unwrap())?;
+                fs::write(&self.source, b"reintroduced checker")?;
+            }
             "executable" => fs::write(&self.alias, b"changed executable")?,
             "retarget" => {
                 let other = self.alias.with_extension("other");
@@ -230,6 +252,9 @@ fn source_copy(root: &Path) {
     let pins: Value =
         serde_json::from_str(include_str!("fixtures/bluetooth-files/source-pins.json")).unwrap();
     for name in pins.as_object().unwrap().keys() {
+        if name == "rust/tools/check_bluetooth_files.py" {
+            continue;
+        }
         let path = root.join(name);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::copy(repository().join(name), path).unwrap();
@@ -251,6 +276,7 @@ fn original_sourced_peers_reject_result_file_identity_and_publication_failures()
         "mode",
         "temporary",
         "source",
+        "retired-reappeared",
         "executable",
         "retarget",
         "timeout",
@@ -271,7 +297,11 @@ fn original_sourced_peers_reject_result_file_identity_and_publication_failures()
         let mut peer = Peer {
             oracle: &oracle,
             mode,
-            source: root.join("openpilot/selfdrive/carrot/bluetooth/model.py"),
+            source: root.join(if mode == "retired-reappeared" {
+                "rust/tools/check_bluetooth_files.py"
+            } else {
+                "openpilot/selfdrive/carrot/bluetooth/model.py"
+            }),
             alias: alias.clone(),
             calls: 0,
         };
@@ -358,9 +388,9 @@ fn missing_changed_dangling_and_fifo_sources_or_executables_fail_without_executi
             panic!("candidate executed before admission")
         }
     }
-    for source in [true, false] {
+    for source in ["model", "fixture", "executable"] {
         for kind in ["missing", "changed", "dangling", "fifo"] {
-            if !source && kind == "changed" {
+            if source == "executable" && kind == "changed" {
                 continue;
             }
             let dir = tempfile::tempdir().unwrap();
@@ -368,10 +398,10 @@ fn missing_changed_dangling_and_fifo_sources_or_executables_fail_without_executi
             source_copy(&root);
             let binary = dir.path().join("binary");
             fs::write(&binary, b"owned identity").unwrap();
-            let path = if source {
-                root.join("openpilot/selfdrive/carrot/bluetooth/model.py")
-            } else {
-                binary.clone()
+            let path = match source {
+                "model" => root.join("openpilot/selfdrive/carrot/bluetooth/model.py"),
+                "fixture" => root.join("rust/crates/bluetooth/examples/file_fixture.rs"),
+                _ => binary.clone(),
             };
             fs::remove_file(&path).unwrap();
             match kind {
@@ -404,6 +434,104 @@ fn missing_changed_dangling_and_fifo_sources_or_executables_fail_without_executi
         }
     }
 }
+#[cfg(target_os = "linux")]
+#[test]
+fn only_the_owned_historical_checker_may_be_absent_with_truthful_live_provenance() {
+    let oracle = original();
+    for kind in [
+        "absent",
+        "changed",
+        "dangling",
+        "symlink",
+        "fifo",
+        "directory",
+    ] {
+        let directory = tempfile::tempdir().unwrap();
+        let root = directory.path().join("root");
+        source_copy(&root);
+        let retired = root.join("rust/tools/check_bluetooth_files.py");
+        fs::create_dir_all(retired.parent().unwrap()).unwrap();
+        match kind {
+            "changed" => fs::write(&retired, b"changed historical checker").unwrap(),
+            "dangling" => symlink(directory.path().join("absent-target"), &retired).unwrap(),
+            "symlink" => symlink(
+                repository().join("rust/tools/check_bluetooth_files.py"),
+                &retired,
+            )
+            .unwrap(),
+            "fifo" => rustix::fs::mknodat(
+                rustix::fs::CWD,
+                &retired,
+                rustix::fs::FileType::Fifo,
+                rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR,
+                0,
+            )
+            .unwrap(),
+            "directory" => fs::create_dir(&retired).unwrap(),
+            _ => {}
+        }
+        let binary = directory.path().join("binary");
+        fs::write(&binary, b"private fixture identity").unwrap();
+        let output = directory.path().join("output");
+        if kind != "absent" {
+            fs::create_dir(&output).unwrap();
+            fs::write(output.join("result.json"), b"foreign report").unwrap();
+        }
+        let mut peer = Peer {
+            oracle: &oracle,
+            mode: "ok",
+            source: PathBuf::new(),
+            alias: binary.clone(),
+            calls: 0,
+        };
+        let result = checker::check(
+            &options(&root, &binary, &output),
+            &mut peer,
+            &mut vec![],
+            &AtomicBool::new(false),
+        );
+        assert_eq!(result.is_ok(), kind == "absent", "{kind}: {result:?}");
+        assert_eq!(
+            peer.calls,
+            usize::from(kind == "absent"),
+            "admission before invocation"
+        );
+        if kind == "absent" {
+            let report = result.unwrap();
+            assert_eq!(
+                report["historical_source_sha256"]["rust/tools/check_bluetooth_files.py"],
+                "e30b4cdca8c658cfbd713b6603ef23c64d21854ff41ffa1f611bdd43d2371682"
+            );
+            assert_eq!(
+                report["reference_observation_sha256"],
+                "a70cdb6d3bf57a44e0d711149500759895c0af93032b6df922ab5d1917c01273"
+            );
+            let inputs = report["input_sha256"].as_array().unwrap();
+            assert_eq!(
+                inputs.len(),
+                4,
+                "two live sources plus executable and alias"
+            );
+            assert!(!inputs.iter().any(|v| v["path"]
+                .as_str()
+                .is_some_and(|p| p.ends_with("check_bluetooth_files.py"))));
+            for path in [
+                "openpilot/selfdrive/carrot/bluetooth/model.py",
+                "rust/crates/bluetooth/examples/file_fixture.rs",
+            ] {
+                assert!(inputs
+                    .iter()
+                    .any(|v| v["path"] == root.join(path).to_str().unwrap()));
+            }
+        } else {
+            assert_eq!(
+                fs::read(output.join("result.json")).unwrap(),
+                b"foreign report"
+            );
+        }
+    }
+}
+
 #[cfg(target_os = "linux")]
 #[test]
 fn actual_cli_preserves_raw_paths_and_argument_admission() {

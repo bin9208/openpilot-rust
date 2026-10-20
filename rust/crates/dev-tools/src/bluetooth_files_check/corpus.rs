@@ -1,6 +1,6 @@
 //! Fixed schedule translated from the pinned Python checker. Expected UTF-8 is
 //! encoded here independently of the candidate's JsonValue/atomic_value code.
-//! CI validates every input and output byte against the unchanged original.
+//! CI authenticates every input/output byte against sealed original observations.
 use std::fmt::Write;
 
 pub const CASES: usize = 15;

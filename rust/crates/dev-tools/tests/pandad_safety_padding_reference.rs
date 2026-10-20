@@ -165,6 +165,7 @@ fn actual_cli_statuses_and_missing_probe_artifact_phases_match_the_original() {
     let source = required("PANDAD_PADDING_SOURCE_BINARY");
     let binary = required("PANDAD_PADDING_NATIVE_BINARY");
     let python = required("PANDAD_PADDING_PYTHON");
+    let native_checker = checker();
     for args in [
         vec![],
         vec![OsString::from("--unknown")],
@@ -224,7 +225,10 @@ fn actual_cli_statuses_and_missing_probe_artifact_phases_match_the_original() {
                 output.clone().into(),
             ]);
             let got = NativeRunner
-                .run(&command(if original { &python } else { &checker() }, args))
+                .run(&command(
+                    if original { &python } else { &native_checker },
+                    args,
+                ))
                 .unwrap();
             assert_eq!(got.code, 1);
             assert!(!output.join("report.json").exists());
