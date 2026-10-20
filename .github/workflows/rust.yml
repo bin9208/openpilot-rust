@@ -828,13 +828,15 @@ jobs:
           git worktree add --detach "$baseline" 11f3dec411662baa961733b363c0b38d7082fcfa
           cp crates/jetlink/tests/owner_lifecycle.rs "$baseline/rust/crates/jetlink/tests/"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-          if cargo test --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-jetlink --test owner_lifecycle --locked -- --nocapture 2>&1 | tee "$JETLINK_OWNER_TEST_OUTPUT/baseline.log"; then
-            echo 'Expected the old Jetlink owner assertions to fail' >&2
-            exit 1
-          fi
+          set +e
+          cargo test --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-jetlink --test owner_lifecycle --locked -- --nocapture 2>&1 | tee "$JETLINK_OWNER_TEST_OUTPUT/baseline.log"
+          status=${PIPESTATUS[0]}
+          set -e
+          test "$status" -eq 101
           for case in failed_connect_preserves_foreign_listener failed_bind_preserves_foreign_listener ready_owner_cleanup_preserves_a_replacement_listener full_stderr_cannot_extend_failed_stop full_stderr_cannot_extend_drop; do
-            grep -F "test $case ... FAILED" "$JETLINK_OWNER_TEST_OUTPUT/baseline.log"
+            grep -Fx "    $case" "$JETLINK_OWNER_TEST_OUTPUT/baseline.log"
           done
+          grep -F 'test result: FAILED. 1 passed; 5 failed; 1 ignored; 0 measured; 0 filtered out;' "$JETLINK_OWNER_TEST_OUTPUT/baseline.log"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test -p openpilot-jetlink --test owner_lifecycle --locked -- --nocapture
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
