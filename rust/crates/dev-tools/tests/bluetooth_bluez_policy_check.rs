@@ -233,10 +233,12 @@ impl Write for ReplaceWriter {
         Ok(())
     }
 }
-struct RemoveWriter(PathBuf);
+struct RemoveWriter(Option<PathBuf>);
 impl Write for RemoveWriter {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        fs::remove_file(&self.0)?;
+        if let Some(path) = self.0.take() {
+            fs::remove_file(path)?;
+        }
         Ok(bytes.len())
     }
     fn flush(&mut self) -> io::Result<()> {
@@ -457,7 +459,7 @@ fn historical_checker_disappearance_during_final_stdout_is_rejected() {
     let error = policy::run(
         &private_option(private.path(), &output),
         &mut runner,
-        &mut RemoveWriter(private.path().join(HISTORICAL)),
+        &mut RemoveWriter(Some(private.path().join(HISTORICAL))),
         &AtomicBool::new(false),
     )
     .unwrap_err();
