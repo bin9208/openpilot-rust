@@ -32,6 +32,7 @@ jobs:
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libllvm18
+          python -m pip install numpy==2.5.3 onnx==1.20.1
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 3072
           curl --fail --location --retry 3 --max-time 180 --output "$RUNNER_TEMP/llvm18.deb" 'https://archive.ubuntu.com/ubuntu/pool/main/l/llvm-toolchain-18/libllvm18_18.1.3-1ubuntu1_amd64.deb'
           printf 'af6197096ce3b89aab86de59f01c1b5feb008b2ae1514a03906c0664edb8b0b1  %s/llvm18.deb\n' "$RUNNER_TEMP" | sha256sum --check --strict
@@ -58,6 +59,7 @@ jobs:
           then instruments a copy of the same LLVM IR to observe pre-mean Gelu values.
           The trace is inadmissible unless both executions retain the original output.
           """
+          import ast
           import ctypes
           import hashlib
           import json
@@ -145,6 +147,99 @@ jobs:
           assert isinstance(compiler, CPULLVMCompiler)
           compiler.cachekey = None
 
+          def capture_original_conv91():
+              """Cold original prefix91 from the pinned model, with actual terminal ownership."""
+              from tinygrad import Tensor, dtypes
+              from tinygrad.nn.onnx import OnnxRunner
+              from tinygrad.engine.realize import compile_linear, resolve_params, ExecContext, pm_exec, get_call_outs_ins
+              from tinygrad.uop.ops import Ops
+              model = ROOT / "openpilot/selfdrive/modeld/models/dmonitoring_model.onnx"
+              model_hash = "dee5a294e8afaacc9295ac5d100e00733ecac278e79264b96331e40a3ede1b04"
+              sealed(model, model_hash)
+              helper = HERE / "prior" / "capture_prefix_contexts.py"
+              tree = ast.parse(helper.read_text())
+              methods = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in {"vi", "f", "m", "readvi", "fields", "prefix_bytes"}]
+              namespace = {"MODEL": model}
+              exec(compile(ast.Module(body=methods, type_ignores=[]), str(helper), "exec"), namespace)
+              prefix91 = namespace["prefix_bytes"](91, ["getitem_132"])
+              prefix91_hash = "846069ff34bc5ada1a534ca96631a820cb44a0367718ae9a4512727364d2b8ce"
+              assert sha(prefix91) == prefix91_hash
+              (OUTPUT / "prefix91.onnx").write_bytes(prefix91)
+              raw_inputs = {"input_img": bytes(range(256)) * 5400,
+                            "calib": struct.pack("<3f", 1 + 2**-11, -0., .3)}
+              tensors = {"input_img": Tensor(raw_inputs["input_img"], dtype=dtypes.uint8).reshape(1, 1382400),
+                         "calib": Tensor(raw_inputs["calib"], dtype=dtypes.float32).reshape(1, 3)}
+              out = OnnxRunner(OUTPUT / "prefix91.onnx")(tensors)["getitem_132"].cast(dtypes.float32)
+              linear, variables = out.linear_with_vars()
+              original_compile = compiler.compile_to_obj
+              source_objects = {}
+              compile_calls = [0]
+              def counted(source):
+                  obj = original_compile(source)
+                  key = sha(source.encode())
+                  source_objects[key] = sha(obj)
+                  compile_calls[0] += 1
+                  (OUTPUT / f"prefix91-{key}.ll").write_text(source)
+                  (OUTPUT / f"prefix91-{key}.objbin").write_bytes(obj)
+                  return obj
+              compiler.compile_to_obj = counted
+              try:
+                  compiled = compile_linear(linear)
+                  bases = {}
+                  def region(buffer):
+                      identity = id(buffer.base)
+                      if identity not in bases:
+                          bases[identity] = len(bases)
+                      return dict(base=bases[identity], offset=buffer.offset, bytes=buffer.nbytes, dtype=str(buffer.dtype))
+                  def overlaps(a, b):
+                      return a["base"] == b["base"] and max(a["offset"], b["offset"]) < min(a["offset"] + a["bytes"], b["offset"] + b["bytes"])
+                  returned = region(out.uop.buffer)
+                  writers = []
+                  for index, call in enumerate(compiled.src):
+                      operation = call.src[0]
+                      outs, ins = get_call_outs_ins(call)
+                      params = resolve_params(call, ())
+                      if operation.op is Ops.PROGRAM:
+                          key = sha(operation.src[3].arg.encode())
+                          assert key in source_objects
+                          slots = operation.arg.globals
+                      else:
+                          key = None
+                          slots = tuple(range(len(params)))
+                      for slot in outs:
+                          if operation.op is not Ops.SLICE and overlaps(region(params[slot].buffer), returned):
+                              writers.append((index, call, slot, operation.op.name, key, list(outs), list(ins), list(slots), region(params[slot].buffer)))
+                  assert writers
+                  index, terminal_call, output_slot, op, key, outs, ins, globals_, output_region = writers[-1]
+                  assert op == "PROGRAM" and output_region == returned
+                  ctx = ExecContext(variables, (), True, True, True)
+                  terminal_raw = None
+                  for at, call in enumerate(compiled.src):
+                      pm_exec.rewrite(call, ctx)
+                      if at == index:
+                          terminal_raw = bytes(resolve_params(call, ())[output_slot].buffer.as_memoryview())
+                  before_read_calls = compile_calls[0]
+                  before_read_objects = dict(source_objects)
+                  raw = out.data().tobytes()
+                  assert compile_calls[0] == before_read_calls and source_objects == before_read_objects
+                  assert terminal_raw == raw and len(raw) == 368640
+                  assert sha(raw) == "f3fbba7c06e6304d7e14a98da1f34a9aeb269cfc3e54459a2e6abc31d7dd9aed"
+                  (OUTPUT / "materialized-conv91.bin").write_bytes(raw)
+                  receipt = dict(model_sha256=model_hash, prefix91_sha256=prefix91_hash,
+                                 input_sha256={name: sha(value) for name, value in raw_inputs.items()},
+                                 output_sha256=sha(raw), shape=[1, 960, 8, 12],
+                                 returned=returned, terminal=dict(call=index, output_slot=output_slot, op=op,
+                                 source=key, outs=outs, ins=ins, globals=globals_, region=output_region),
+                                 program_object_sha256=source_objects,
+                                 compile_calls_after_execution=before_read_calls,
+                                 compile_calls_after_output_read=compile_calls[0])
+                  (OUTPUT / "materialized-conv91-receipt.json").write_text(json.dumps(receipt, indent=2) + "\n")
+                  return raw, receipt
+              finally:
+                  compiler.compile_to_obj = original_compile
+
+          materialized_conv91, conv91_receipt = capture_original_conv91()
+
           class Aligned:
               def __init__(self, size, initial=None):
                   self.allocation = ctypes.create_string_buffer(size + 31)
@@ -159,17 +254,18 @@ jobs:
           def execute(obj, name, traced=False):
               inputs = [Aligned(len(raw), raw) for raw in input_raw]
               output = Aligned(3840)
-              trace = Aligned(960 * 96 * 4, b"\xaa" * (960 * 96 * 4)) if traced else None
+              gelu_trace = Aligned(960 * 96 * 4, b"\xaa" * (960 * 96 * 4)) if traced else None
+              conv_trace = Aligned(960 * 96 * 4, b"\xaa" * (960 * 96 * 4)) if traced else None
               program = CPUProgram(device, name, jit_loader(obj))
               for tid in range(16):
                   args = [ctypes.c_uint64(output.addr), *(ctypes.c_uint64(v.addr) for v in inputs)]
-                  if trace is not None:
-                      args.append(ctypes.c_uint64(trace.addr))
+                  if gelu_trace is not None:
+                      args.extend((ctypes.c_uint64(gelu_trace.addr), ctypes.c_uint64(conv_trace.addr)))
                   program.fxn(*args, ctypes.c_int32(tid))
               assert [buf.bytes() for buf in inputs] == input_raw, "kernel modified captured input"
-              return output.bytes(), None if trace is None else trace.bytes()
+              return output.bytes(), None if gelu_trace is None else gelu_trace.bytes(), None if conv_trace is None else conv_trace.bytes()
 
-          original_output, _ = execute(object_raw, "r_15_4_16_128_24_4")
+          original_output, _, _ = execute(object_raw, "r_15_4_16_128_24_4")
           (OUTPUT / "original-output.bin").write_bytes(original_output)
           assert sha(original_output) == prior["output_sha256"] and original_output == expected_output
 
@@ -178,7 +274,7 @@ jobs:
           source = source_raw.decode()
           signature = "i16* noalias align 32 %data3, i32 %data4) #0"
           assert source.count(signature) == 1
-          source = source.replace(signature, "i16* noalias align 32 %data3, float* noalias align 32 %data5, i32 %data4) #0")
+          source = source.replace(signature, "i16* noalias align 32 %data3, float* noalias align 32 %data5, float* noalias align 32 %data6, i32 %data4) #0")
           anchor = "  store float %v411, float* %v5\n"
           assert source.count(anchor) == 1
           instrumentation = """  %diag_ch = mul i32 %v14, 96
@@ -195,16 +291,25 @@ jobs:
             %diag_index3 = add i32 %diag_index0, 3
             %diag_ptr3 = getelementptr inbounds float, float* %data5, i32 %diag_index3
             store float %v410, float* %diag_ptr3
+            %diag_conv_ptr0 = getelementptr inbounds float, float* %data6, i32 %diag_index0
+            store float %v168, float* %diag_conv_ptr0
+            %diag_conv_ptr1 = getelementptr inbounds float, float* %data6, i32 %diag_index1
+            store float %v184, float* %diag_conv_ptr1
+            %diag_conv_ptr2 = getelementptr inbounds float, float* %data6, i32 %diag_index2
+            store float %v200, float* %diag_conv_ptr2
+            %diag_conv_ptr3 = getelementptr inbounds float, float* %data6, i32 %diag_index3
+            store float %v216, float* %diag_conv_ptr3
           """
           source = source.replace(anchor, instrumentation + anchor)
           instrumented_ir = source.encode()
           (OUTPUT / "instrumented.ll").write_bytes(instrumented_ir)
           instrumented_object = compiler.compile_to_obj(source)
           (OUTPUT / "instrumented.objbin").write_bytes(instrumented_object)
-          instrumented_output, trace = execute(instrumented_object, "r_15_4_16_128_24_4", traced=True)
+          instrumented_output, trace, conv_trace = execute(instrumented_object, "r_15_4_16_128_24_4", traced=True)
           (OUTPUT / "instrumented-output.bin").write_bytes(instrumented_output)
-          assert trace is not None
+          assert trace is not None and conv_trace is not None
           (OUTPUT / "gelu-trace.bin").write_bytes(trace)
+          (OUTPUT / "conv-trace.bin").write_bytes(conv_trace)
           record = {
               "kind": "original-kernel-diagnostic-only",
               "head_sha": os.environ["GITHUB_SHA"],
@@ -226,6 +331,9 @@ jobs:
               "original_output_sha256": sha(original_output),
               "instrumented_output_sha256": sha(instrumented_output),
               "trace_sha256": sha(trace),
+              "conv_trace_sha256": sha(conv_trace),
+              "materialized_conv91_sha256": sha(materialized_conv91),
+              "materialized_conv91": conv91_receipt,
               "trace_shape": [960, 24, 4],
               "trace_index": "channel*96 + group*4 + lane",
           }
@@ -240,6 +348,9 @@ jobs:
           observed = words(trace)
           baseline = words(materialized)
           assert len(observed) == len(baseline) == 960 * 96
+          observed_conv = words(conv_trace)
+          baseline_conv = words(materialized_conv91)
+          assert len(observed_conv) == len(baseline_conv) == 960 * 96
           direct = sum(a == b for a, b in zip(observed, baseline))
           lane_major = sum(observed[ch*96 + group*4 + lane] == baseline[ch*96 + lane*24 + group]
                            for ch in range(960) for group in range(24) for lane in range(4))
@@ -250,9 +361,17 @@ jobs:
           record["differing_channels"] = {str(ch): sum(observed[ch*96+i] != baseline[ch*96+i] for i in range(96)) for ch in (46, 568, 704)}
           record["first_differences"] = [{"channel": i // 96, "spatial": i % 96, "fused_bits": f"{a:08x}", "materialized_bits": f"{b:08x}"}
                                          for i, (a, b) in enumerate(zip(observed, baseline)) if a != b][:32]
+          record["conv_exact_matches"] = sum(a == b for a, b in zip(observed_conv, baseline_conv))
+          record["target_pairs"] = [{"channel": ch, "spatial": spatial,
+                                     "fused_conv_bits": f"{observed_conv[ch*96+spatial]:08x}",
+                                     "materialized_conv_bits": f"{baseline_conv[ch*96+spatial]:08x}",
+                                     "fused_gelu_bits": f"{observed[ch*96+spatial]:08x}",
+                                     "materialized_gelu_bits": f"{baseline[ch*96+spatial]:08x}"}
+                                    for ch, spatial in ((46, 54), (568, 21), (704, 78))]
           check_sources()
           assert sha(provider_path.read_bytes()) == provider_sha
           assert sha(fixture_path.read_bytes()) == sha(fixture_raw)
+          assert sha((ROOT / "openpilot/selfdrive/modeld/models/dmonitoring_model.onnx").read_bytes()) == prior["model_sha256"]
           for slot, raw in enumerate(input_raw, 1):
               assert sha((PRIOR / prior["boundaries"]["terminal_before"][str(slot)]["file"]).read_bytes()) == sha(raw)
           sealed(HERE / "prior" / "capture_prefix93_owners.py", prior["driver_sha256"])
@@ -263,7 +382,7 @@ jobs:
           assert direct >= 9 * len(observed) // 10 and direct > max(lane_major, reverse_lane) + 10000, "physical Gelu mapping unproved; no localization"
           print("verified original-only terminal diagnostic", record["mapping_exact_matches"], record["differing_channels"], flush=True)
           PREFIX93_KERNEL_DRIVER
-          printf '768f8a3b0c7bb38a11f213214b5dd3034265e36242bf68ae43495ad2c87dfccf  %s/diagnose_original_terminal.py\n' "$capture_dir" | sha256sum --check --strict
+          printf 'a66d56aae708ca3e4e36c7d9997b8069313e528524e6946f20225e27936df3b7  %s/diagnose_original_terminal.py\n' "$capture_dir" | sha256sum --check --strict
       - name: Execute sealed original object and instrumented copy
         shell: bash
         env:
@@ -280,7 +399,7 @@ jobs:
           export LLVM_PATH="$RUNNER_TEMP/llvm18-captured/usr/lib/llvm-18/lib/libLLVM.so.1"
           export LD_LIBRARY_PATH="$RUNNER_TEMP/llvm18-captured/usr/lib/llvm-18/lib:${LD_LIBRARY_PATH:-}"
           export PYTHONPATH="$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/tinygrad_repo"
-          timeout 120s python .analysis/scratch/2026-10-21-prefix93-fusion/diagnose_original_terminal.py 2>&1 | tee .analysis/scratch/2026-10-21-prefix93-fusion/diagnostic.log
+          timeout 240s python .analysis/scratch/2026-10-21-prefix93-fusion/diagnose_original_terminal.py 2>&1 | tee .analysis/scratch/2026-10-21-prefix93-fusion/diagnostic.log
       - name: Preserve diagnostic and failure gates
         if: always()
         uses: actions/upload-artifact@v4
