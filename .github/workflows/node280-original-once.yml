@@ -146,6 +146,7 @@ jobs:
           compiler = device.renderer.compiler
           assert isinstance(compiler, CPULLVMCompiler)
           compiler.cachekey = None
+          known_source_objects = {}
 
           def capture_original_prefix(index, output_name, prefix_hash, output_hash):
               """Cold original prefix from the pinned model, with actual terminal ownership."""
@@ -177,6 +178,7 @@ jobs:
               def counted(source):
                   obj = original_compile(source)
                   key = sha(source.encode())
+                  known_source_objects[key] = obj
                   source_objects[key] = sha(obj)
                   compile_calls[0] += 1
                   (OUTPUT / f"prefix{index}-{key}.ll").write_text(source)
@@ -200,8 +202,13 @@ jobs:
                       outs, ins = get_call_outs_ins(call)
                       params = resolve_params(call, ())
                       if operation.op is Ops.PROGRAM:
-                          key = sha(operation.src[3].arg.encode())
-                          assert key in source_objects
+                          source = operation.src[3].arg
+                          key = sha(source.encode())
+                          assert key in known_source_objects
+                          obj = known_source_objects[key]
+                          source_objects[key] = sha(obj)
+                          (OUTPUT / f"prefix{index}-{key}.ll").write_text(source)
+                          (OUTPUT / f"prefix{index}-{key}.objbin").write_bytes(obj)
                           slots = operation.arg.globals
                       else:
                           key = None
@@ -390,7 +397,7 @@ jobs:
           assert direct >= 9 * len(observed) // 10 and direct > max(lane_major, reverse_lane) + 10000, "physical Gelu mapping unproved; no localization"
           print("verified original-only terminal diagnostic", record["mapping_exact_matches"], record["differing_channels"], flush=True)
           PREFIX93_KERNEL_DRIVER
-          printf 'cf6109fac7e2256059aa4c17d5ba46c4d1906be683274ae2562f2b4ab3773f64  %s/diagnose_original_terminal.py\n' "$capture_dir" | sha256sum --check --strict
+          printf 'ee01bd6b67308e873e7ef52a91f9fe14bc2d8f59709efa80d4da3b1300555b73  %s/diagnose_original_terminal.py\n' "$capture_dir" | sha256sum --check --strict
       - name: Execute sealed original object and instrumented copy
         shell: bash
         env:
