@@ -113,3 +113,18 @@ installation successfully on the same runner.
 Rust-consuming jobs now register the existing tool directory with GITHUB_PATH
 before setup actions. This does not install a different compiler or change
 source behavior. Actual continuation remains required.
+
+Further diagnosis corrected the initial PATH-only hypothesis: native Jetlink's
+post-action logged `Cleaning cargo/bin`; the exact rust-cache revision
+`6323deb102c322ba6fcbdcafc7e3dddab59af2b6` deletes pre-existing regular bin files
+in cleanBin, including Rustup hardlinks on persistent runners. The next run's
+preflight confirmed the shims were absent, so path registration alone cannot
+restore them. Native caching now excludes bin cleanup/restoration and uses a
+new prefix. The common action restores absent shims from official Rustup 1.29.1
+archives with pinned x86_64/aarch64 SHA-256 values, admitting disk capacity first.
+It selects no default compiler; existing jobs still explicitly install 1.94.0
+or their original nightly. Cloud fixtures reject low space and corrupt binaries.
+
+Upstream evidence: [cleanup source](https://github.com/Swatinem/rust-cache/blob/6323deb102c322ba6fcbdcafc7e3dddab59af2b6/src/cleanup.ts#L82).
+Rustup version/checksums were read from static.rust-lang.org release-stable.toml
+and the two architecture-specific archive/1.29.1 rustup-init.sha256 files.

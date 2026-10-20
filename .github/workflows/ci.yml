@@ -279,6 +279,8 @@ jobs:
         with:
           workspaces: rust
           shared-key: jetlink-power-policy
+          prefix-key: v1-rust-no-bins
+          cache-bin: false
       - name: Focused policy and CPU-bound regressions
         run: |
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-core --test jetlink_power
