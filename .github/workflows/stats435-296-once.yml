@@ -1,0 +1,108 @@
+name: 296 stats queue readiness focused proof
+'on':
+  push:
+    branches:
+      - codex/feat-296-native-tools-candidate
+    paths:
+      - .github/workflows/stats435-296-once.yml
+permissions:
+  contents: read
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
+jobs:
+  stats435:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: d21944e6391344d5b807fafe503c8853ea245b1b
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Require exact stats candidate and prerequisites
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = d21944e6391344d5b807fafe503c8853ea245b1b
+          test -z "$(git status --porcelain)"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          sudo apt-get update
+          sudo apt-get install -y capnproto libcapnp-dev g++ libzmq5
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 sentry-sdk==2.55.0 zstandard==0.25.0
+          printf 'PYTHONPATH=%s/telemetry-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Build current native JSON11 stager
+        uses: ./.github/actions/native-json11
+      - name: Stage native logmessaged and ZMQ headers before original Params bindings
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/stats435-proof"
+          mkdir -p "$proof"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-logmessaged --bin openpilot-logmessaged --locked 2>&1 | tee "$proof/logmessaged-build.log"
+      - name: Build original telemetry message and Params bindings
+        run: |
+          set -euo pipefail
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/telemetry-msgq-python"
+          python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/telemetry-params-binding"
+      - name: Require actual queue readiness, original fault results and strict Clippy
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/stats435-proof"
+          mkdir -p "$proof"
+          git rev-parse HEAD > "$proof/SOURCE_COMMIT"
+          sha256sum rust/crates/dev-tools/src/stats_daemon_check/worker.rs rust/crates/dev-tools/src/stats_daemon_check/interrupted.rs rust/crates/dev-tools/tests/stats_interrupted_check.rs rust/crates/dev-tools/tests/fixtures/stats-interrupted/original.json rust/crates/dev-tools/tests/fixtures/stats-interrupted/source-pins.json rust/crates/dev-tools/src/managed_entry_collector_source.rs rust/crates/msgq/src/queue.rs rust/tools/zmq_receive_boundary.c > "$proof/source.sha256"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-statsd --bin statsd-rs --locked 2>&1 | tee "$proof/statsd-build.log"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-daemon-native --bin check-stats-interrupted --locked 2>&1 | tee "$proof/checker-build.log"
+          gcc -Wall -Wextra -Werror -O2 -fPIC -DZMQ_LINK_WRAP -c rust/tools/zmq_receive_boundary.c -o "$proof/receive-wrap.o"
+          gcc -Wall -Wextra -Werror -O2 -fPIC -shared rust/tools/zmq_receive_boundary.c -ldl -o "$proof/receive-preload.so"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo rustc --manifest-path rust/Cargo.toml -p openpilot-statsd --example stats_daemon --locked -- -C link-arg=-Wl,--wrap=zmq_msg_recv -C "link-arg=$proof/receive-wrap.o" 2>&1 | tee "$proof/wrapped-example-build.log"
+          stats_receive_bindings=("$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so)
+          test "${#stats_receive_bindings[@]}" -eq 1
+          export STATS_INTERRUPTED_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/stats_daemon"
+          export STATS_INTERRUPTED_BINDING="${stats_receive_bindings[0]}"
+          export STATS_INTERRUPTED_PRELOAD="$proof/receive-preload.so"
+          export STATS_INTERRUPTED_CHECKER="$GITHUB_WORKSPACE/rust/target/debug/check-stats-interrupted"
+          sha256sum "$GITHUB_WORKSPACE/rust/target/debug/statsd-rs" "$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged" "$STATS_INTERRUPTED_BINARY" "$STATS_INTERRUPTED_BINDING" "$STATS_INTERRUPTED_PRELOAD" "$STATS_INTERRUPTED_CHECKER" "$proof/receive-wrap.o" "$RUNNER_TEMP/telemetry-params-binding/provenance.json" > "$proof/artifacts.sha256"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-daemon-native --lib stats_daemon_check::worker::queue_readiness_tests --locked -- --nocapture 2>&1 | tee "$proof/queue-tests.log"
+          grep -Fq 'test result: ok. 4 passed; 0 failed' "$proof/queue-tests.log"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-daemon-native --test stats_interrupted_check --locked -- --nocapture 2>&1 | tee "$proof/interrupted-tests.log"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-daemon-native --lib --test stats_interrupted_check --bin check-stats-interrupted --locked -- -D warnings 2>&1 | tee "$proof/clippy.log"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          "$STATS_INTERRUPTED_CHECKER" "$STATS_INTERRUPTED_BINARY" "$STATS_INTERRUPTED_BINDING" "$STATS_INTERRUPTED_PRELOAD" "$proof/comparison" > "$proof/cli.stdout" 2> "$proof/cli.stderr"
+          python - "$proof/comparison/result.json" <<'RECEIPT'
+          import json, sys
+          from pathlib import Path
+          report = json.loads(Path(sys.argv[1]).read_text())
+          assert report['before'] is False
+          assert report['reference_kind'] == 'captured unchanged original'
+          assert [row['case'] for row in report['results']] == ['one', 'repeated', 'empty', 'invalid', 'closed']
+          assert all(row['source'] == row['native'] for row in report['results'])
+          RECEIPT
+          find "$proof/comparison" -type f -print0 | sort -z | xargs -0 sha256sum > "$proof/comparison.sha256"
+          sha256sum -c "$proof/source.sha256"
+          sha256sum -c "$proof/artifacts.sha256"
+          sha256sum -c "$proof/comparison.sha256"
+      - if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: stats435-focused-evidence
+          path: |
+            ${{ runner.temp }}/stats435-proof/
+            ${{ runner.temp }}/telemetry-params-binding/commands.json
+            ${{ runner.temp }}/telemetry-params-binding/provenance.json
+          if-no-files-found: warn
