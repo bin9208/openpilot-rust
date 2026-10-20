@@ -4934,3 +4934,12 @@ required. Cloud compilation/byte equality is pending. Original Python fixture,
 arbitrary-service event API and live callers remain; no additional retirement
 is counted. A272-byte synthetic persisted packet from artifact12305212845 is
 retained only as provenance-bearing input for focused generator comparisons.
+
+### Source-owned prefix93 closure accepted for opt-in compiler capability
+
+Exactsource13b3ff14 passed the independent cold final-output gate and138tests
+across19affected target suites in run39515566390/job118946776183, plusstrictClippy.
+Parent verified actual3,840-byte output equality and artifact12307294357 archive
+69440cc8…; details are in rust-prefix93-fma-diagnostic-296.md. The default
+fusion fence remains. This capability does not retire remaining model-export,
+fulltinygrad or vendor Python, and does not establish device/CPU results.

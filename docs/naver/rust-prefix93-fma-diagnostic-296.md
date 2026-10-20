@@ -175,3 +175,33 @@ verified the three listed raw-word pairs in canonical channel/spatial order.
 The historical object hashes and displayed multiply/add versus FMA instructions
 were also independently checked with read-only disassembly. No original or
 native functional program was executed locally for that review.
+
+## Native source-owned closure evidence, 2026-10-21
+
+The opt-in generic pointwise Conv/tanhGelu/spatialMean implementation now
+selects by typed operations, shapes, constants and exclusive ownership. It
+reconstructs only public raw image/calibration inputs and compiles the whole
+owned closure; captured intermediate buffers are never fed into the candidate.
+The default `fused_mean_workers=None` keeps the existing structural fence.
+
+Exact source`13b3ff14befbcc13d3b9aa1e89c3adc7dc4332d5` passed
+[cold comparison39515085028/job118945196598](https://github.com/bin9208/openpilot-rust/actions/runs/39515085028/job/118945196598)
+and [affected regressions39515566390/job118946776183](https://github.com/bin9208/openpilot-rust/actions/runs/39515566390/job/118946776183).
+The latter ran138tests across the library and18affected compiler suites,
+including the cold comparison, default rejection/materialization controls,
+pointwise/depthwise convolution, storage aliases, IMAGE packing, input bindings
+and originalnode280. StrictClippy passed for the same selected targets.
+
+The parent independently inspected artifact12307294357 (archiveSHA256
+`69440cc813418605a970c697c5b0cce6e57a1613e879954b6a9a7101800d39da`)
+and confirmed both3,840-byte final buffers are identical withSHA256
+`7307a9b9129f7650c5793a6098dfb30f1830699e24f7a94c3936d6d6c9b57ee5`.
+The target remains sealedLLVM18/znver3/16workers; this is not proof for
+another provider/target, an arbitrary fusion topology, a complete model compiler,
+vehicle operation or measuredCPU savings. The main feature branch integrates
+only the five model files byte-identical to that validated source.
+
+Earlier all-zero candidates exposed missing accumulator identity and numeric
+constant keys in the new closure's generated IR. Distinct slots and both
+exp2bound comparisons are now required by two focused IR regressions.
+The temporary diagnostic workflows remain outside the integration branch.
