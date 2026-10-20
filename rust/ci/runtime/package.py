@@ -10,7 +10,6 @@ import shutil
 import subprocess
 import sys
 import tarfile
-import time
 import zipfile
 
 assert os.environ.get("GITHUB_ACTIONS") == "true", "runtime validation/builds belong in GitHub Actions"
@@ -20,6 +19,7 @@ WORK = Path(os.environ["RUNNER_TEMP"]) / "agnos-runtime"
 WORK.mkdir(exist_ok=True)
 CONFIG = ROOT / "rust/ci/runtime"
 SHA = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+assert SHA == os.environ.get("RUNTIME_SOURCE_SHA", os.environ["GITHUB_SHA"]), "wrong delivery source"
 BASE = "3496c4bbf300e7487d17b2bf25afc170584dfe02"
 SDK = WORK / "sdk"
 TARGET = WORK / "target"
@@ -71,7 +71,7 @@ def git(*args):
 def stage_baseline():
     assert not git("status", "--porcelain")
     changed = git("diff", "--name-only", BASE, SHA).splitlines()
-    allowed = ("AGENTS.md", "launch_openpilot.sh", "rust/Cargo.lock", "rust/crates/jetlink/", "rust/crates/runtime-core/", "rust/crates/runtime-launcher/", "rust/crates/dev-tools/src/publish.rs", "rust/ci/runtime/", "rust/upstream/jetlink.json", "docs/naver/dev-md-jetlink-", ".github/workflows/jetlink-native.yml", ".github/workflows/dev-md-runtime.yml", "tools/check_jetlink_usb_policy.py")
+    allowed = ("AGENTS.md", "launch_openpilot.sh", "rust/Cargo.lock", "rust/crates/jetlink/", "rust/crates/runtime-core/", "rust/crates/runtime-launcher/", "rust/crates/dev-tools/src/publish.rs", "rust/ci/runtime/", "rust/upstream/jetlink.json", "docs/naver/", ".github/workflows/", "docs/development_workflow.md", "rust/crates/dev-tools/tests/publish.rs", "tools/ci/", "tools/naver_ci/tests/", "tools/check_jetlink_usb_policy.py")
     assert all(any(path == prefix or prefix.endswith(("/", "-")) and path.startswith(prefix) for prefix in allowed) for path in changed), changed
     archive = download(f"https://github.com/bin9208/openpilot-rust/releases/download/runtime-{BASE}/openpilot-rust-{BASE}-aarch64.tar.gz", "baseline.tar.gz", "eb67c8c58f8c8da62aa7afdc11d7cfc1262038222b6e4b9ff0a33fe64206297d")
     base = WORK / "baseline"
@@ -320,18 +320,8 @@ def publish():
     assert digest(publisher) == identity["publisher_sha256"]
     assert digest(RELEASE / "openpilot-runtime-install-aarch64") == identity["installer_sha256"]
     restore_release()
-    # The existing publisher independently checks every exact-SHA required gate
-    # and all sealed asset identities. Wait outside it, once a minute, for CI.
-    deadline = time.monotonic() + 3 * 3600
-    while True:
-        data = json.loads(subprocess.check_output(["gh", "api", f"repos/bin9208/openpilot-rust/actions/runs?head_sha={SHA}&event=push&branch=dev-md&per_page=100"]))
-        paths = (".github/workflows/rust.yml", ".github/workflows/fast-checks.yml", ".github/workflows/integration.yml", ".github/workflows/user-docs.yaml")
-        gates = {path: next((item for item in data["workflow_runs"] if item["path"] == path), None) for path in paths}
-        failed = [path for path, item in gates.items() if item and item["status"] == "completed" and item["conclusion"] != "success"]
-        assert not failed, f"required CI failed: {failed}"
-        if all(item and item["status"] == "completed" for item in gates.values()): break
-        assert time.monotonic() < deadline, "required CI still pending"
-        time.sleep(60)
+    # The dispatcher waited for this separate, completed CI run before building.
+    # The native publisher independently rechecks latest exact-SHA CI and all assets.
     run([publisher, "--root", ROOT, "--assets", RELEASE, "--branch", "dev-md"])
     install(True)
 

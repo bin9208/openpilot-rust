@@ -13,12 +13,16 @@ use std::{
 };
 pub const REPOSITORY: &str = "bin9208/openpilot-rust";
 const BASE: &str = "repos/bin9208/openpilot-rust";
-const GATES: &[(&str, &[&str])] = &[
-    ("rust.yml", &["rust checks", "rust aarch64 build"]),
-    ("fast-checks.yml", &["fast checks"]),
-    ("integration.yml", &["integration gate"]),
-    ("user-docs.yaml", &["check mapped user docs"]),
-];
+const GATES: &[(&str, &[&str])] = &[(
+    "ci.yml",
+    &[
+        "fast checks",
+        "check mapped user docs",
+        "integration gate",
+        "rust checks",
+        "rust aarch64 build",
+    ],
+)];
 fn require(ok: bool, message: impl Into<String>) -> Result<()> {
     if ok {
         Ok(())
@@ -62,8 +66,8 @@ pub trait Github {
     fn download(&mut self, asset_id: u64, destination: &Path, max_bytes: u64) -> Result<()>;
 }
 pub struct GhGithub;
-fn protection_policy(response: &Value) -> Result<Value> {
-    require(response["name"] == "dev", "wrong protection policy branch")?;
+fn protection_policy(response: &Value, branch: &str) -> Result<Value> {
+    require(response["name"] == branch, "wrong protection policy branch")?;
     require(
         response["protected"] == true && response["protection"]["enabled"] == true,
         "required status checks are disabled or unavailable",
@@ -96,14 +100,21 @@ impl Github for GhGithub {
             endpoint == BASE || endpoint.starts_with(&format!("{BASE}/")),
             "wrong GitHub API repository",
         )?;
-        if endpoint == format!("{BASE}/branches/dev/protection/required_status_checks")
-            && method == "GET"
-        {
+        let protected_branch = ["dev", "dev-md"].into_iter().find(|branch| {
+            endpoint == format!("{BASE}/branches/{branch}/protection/required_status_checks")
+        });
+        if let Some(branch_name) = protected_branch.filter(|_| method == "GET") {
             // GET branch exposes the current required checks with Contents:
             // read. Both the REST protection endpoint and the GraphQL rule
             // require administration access unavailable to GITHUB_TOKEN.
-            let branch = self.api(&format!("{BASE}/branches/dev"), "GET", None, false, false)?;
-            return protection_policy(&branch);
+            let branch = self.api(
+                &format!("{BASE}/branches/{branch_name}"),
+                "GET",
+                None,
+                false,
+                false,
+            )?;
+            return protection_policy(&branch, branch_name);
         }
         let mut cmd = Command::new("gh");
         cmd.args([
@@ -250,7 +261,7 @@ pub fn ci_evidence_for_branch(g: &mut impl Github, commit: &str, branch: &str) -
         "wrong GitHub repository identity",
     )?;
     let policy = g.api(
-        &format!("{BASE}/branches/dev/protection/required_status_checks"),
+        &format!("{BASE}/branches/{branch}/protection/required_status_checks"),
         "GET",
         None,
         false,
@@ -269,7 +280,7 @@ pub fn ci_evidence_for_branch(g: &mut impl Github, commit: &str, branch: &str) -
             .iter()
             .flat_map(|(_, names)| names.iter())
             .all(|s| required.contains(*s)),
-        "required dev protection checks missing",
+        "required branch protection checks missing",
     )?;
     let runs = rows(
         g,
@@ -623,14 +634,14 @@ mod policy_tests {
     fn actual_branch_rule_is_required_and_branch_bound() {
         let mut response = json!({"name":"dev","protected":true,"protection":{"enabled":true,"required_status_checks":{"enforcement_level":"everyone","contexts":["fast checks","rust checks"],"checks":[]}}});
         assert_eq!(
-            protection_policy(&response).unwrap()["contexts"],
+            protection_policy(&response, "dev").unwrap()["contexts"],
             json!(["fast checks", "rust checks"])
         );
         response["protected"] = json!(false);
-        assert!(protection_policy(&response).is_err());
+        assert!(protection_policy(&response, "dev").is_err());
         response["protected"] = json!(true);
         response["name"] = json!("other-branch");
-        assert!(protection_policy(&response).is_err());
-        assert!(protection_policy(&json!({})).is_err());
+        assert!(protection_policy(&response, "dev").is_err());
+        assert!(protection_policy(&json!({}), "dev").is_err());
     }
 }

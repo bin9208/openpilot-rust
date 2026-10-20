@@ -1,5 +1,6 @@
-"""Regression guard for required-check routing and fail-closed aggregation."""
+"""Fail-closed sequential CI, event routing and release dispatch contracts."""
 from pathlib import Path
+import json
 import os
 import subprocess
 import unittest
@@ -9,51 +10,127 @@ import yaml
 ROOT = Path(__file__).resolve().parents[3]
 
 
-def workflow(name):
+def workflow(name='ci.yml'):
   return yaml.load((ROOT / '.github/workflows' / name).read_text(), Loader=yaml.BaseLoader)
 
 
+def javascript(script, fixture):
+  harness = '''
+const fixture = JSON.parse(process.env.FIXTURE);
+const outputs = {};
+const context = {eventName: fixture.event, ref: fixture.ref, repo: {owner:'bin9208',repo:'openpilot-rust'}};
+const github = {rest:{pulls:{list:'pulls'}}, paginate: async () => fixture.pulls || []};
+const core = {setOutput: (key,value) => outputs[key] = value};
+(async () => { SCRIPT; process.stdout.write(JSON.stringify(outputs)); })().catch(e => {console.error(e);process.exit(1);});
+'''.replace('SCRIPT', script)
+  return subprocess.run(['node', '-e', harness], env={**os.environ, 'FIXTURE': json.dumps(fixture)},
+                        capture_output=True, text=True, check=True)
+
+
 class WorkflowPolicyTests(unittest.TestCase):
-  def test_fast_checks_cover_all_branch_pushes_and_protected_prs(self):
-    events = workflow('fast-checks.yml')['on']
+  def test_one_entry_point_without_path_skips(self):
+    events = workflow()['on']
     self.assertEqual(events['push']['branches'], ['**'])
     self.assertEqual(set(events['pull_request']['branches']), {'dev', 'dev-md', 'main'})
+    self.assertIn('edited', events['pull_request']['types'])
     for event in ('push', 'pull_request'):
       self.assertNotIn('paths', events[event])
       self.assertNotIn('paths-ignore', events[event])
+    for old in ('fast-checks.yml', 'integration.yml', 'rust.yml', 'user-docs.yaml',
+                'tests.yaml', 'jetlink.yml', 'jetlink-native.yml', 'naver-ci.yml', 'naver-apk-tools.yml'):
+      self.assertFalse((ROOT / '.github/workflows' / old).exists(), old)
 
-  def test_integration_runs_before_and_after_merge_without_path_skips(self):
-    spec = workflow('integration.yml')
-    for event in ('push', 'pull_request'):
-      self.assertEqual(spec['on'][event], {'branches': ['dev', 'dev-md', 'main']})
-    self.assertEqual(spec['jobs']['build']['with']['run_number'], '1')
-    gate = spec['jobs']['gate']
-    self.assertEqual(set(gate['needs']), {'build', 'navigation', 'apk', 'jetlink'})
-    self.assertEqual(gate['if'], '${{ always() }}')
-    step = gate['steps'][0]
-    for name in ('BUILD', 'NAVIGATION', 'APK', 'JETLINK'):
-      self.assertIn(f'test "${name}" = success', step['run'])
-    for job in ('build', 'navigation', 'apk', 'jetlink'):
-      self.assertNotIn('if', spec['jobs'][job])
-      self.assertNotIn('continue-on-error', spec['jobs'][job])
-      called = Path(spec['jobs'][job]['uses']).name
-      self.assertIn('workflow_call', workflow(called)['on'])
+  def test_branch_push_pr_and_merge_routing(self):
+    script = workflow()['jobs']['route']['steps'][0]['with']['script']
+    cases = [
+      ('push', 'refs/heads/codex/feat-test', [], {'fast': 'true', 'full': 'false'}),
+      ('push', 'refs/heads/codex/feat-test', [{'base': {'ref': 'dev-md'}}], {'fast': 'false', 'full': 'false'}),
+      ('push', 'refs/heads/codex/feat-test', [{'base': {'ref': 'elsewhere'}}], {'fast': 'true', 'full': 'false'}),
+      ('pull_request', 'refs/pull/12/merge', [], {'fast': 'true', 'full': 'true'}),
+      ('push', 'refs/heads/dev-md', [], {'fast': 'true', 'full': 'true'}),
+      ('push', 'refs/heads/dev', [], {'fast': 'true', 'full': 'true'}),
+      ('workflow_dispatch', 'refs/heads/codex/feat-test', [], {'fast': 'true', 'full': 'true'}),
+    ]
+    for event, ref, pulls, expected in cases:
+      with self.subTest(event=event, ref=ref, pulls=pulls):
+        result = javascript(script, dict(event=event, ref=ref, pulls=pulls))
+        self.assertEqual(json.loads(result.stdout), expected)
 
-  def test_documentation_check_runs_on_protected_branch_pushes(self):
-    events = workflow('user-docs.yaml')['on']
-    self.assertTrue({'main', 'dev', 'dev-md'}.issubset(events['push']['branches']))
-    self.assertIn('pull_request', events)
+  def test_all_jobs_form_one_chain_and_matrices_are_serial(self):
+    jobs = workflow()['jobs']
+    ancestors = {}
+    # Jobs are stored in execution order; every pair must be ordered by needs.
+    for key, job in jobs.items():
+      needs = job.get('needs', [])
+      if isinstance(needs, str):
+        needs = [needs]
+      self.assertTrue(all(dep in ancestors for dep in needs), key)
+      ancestors[key] = set(needs).union(*(ancestors[dep] for dep in needs))
+      self.assertEqual(ancestors[key], set(ancestors) - {key}, key)
+      self.assertNotIn('continue-on-error', job)
+      if 'matrix' in job.get('strategy', {}):
+        self.assertEqual(job['strategy']['max-parallel'], '1', key)
+    for key in ('fast-checks', 'check_user_docs', 'git_update', 'build_release', 'model_web',
+                'model', 'android-core', 'integration-gate', 'workspace', 'fast', 'arm64'):
+      self.assertIn(key, jobs)
+    self.assertEqual(jobs['workspace']['needs'], ['integration-gate'])
+    self.assertEqual(jobs['runtime-delivery']['needs'], 'arm64' if isinstance(jobs['runtime-delivery']['needs'], str) else ['arm64'])
 
-  def test_dev_md_fast_gate_rejects_dev_target_but_allows_candidate_validation(self):
-    steps = workflow('fast-checks.yml')['jobs']['fast']['steps']
+  def test_gates_reject_failure_cancellation_skips_and_missing_results(self):
+    jobs = workflow()['jobs']
+    for key in ('integration-gate', 'fast', 'arm64'):
+      job = jobs[key]
+      self.assertIn('always()', job['if'])
+      step = job['steps'][0]
+      results = {name: {'result': 'success'} for name in job['needs']}
+      def invoke(values):
+        environment = {**os.environ, 'RESULTS': json.dumps(values), 'EXPECTED': step['env']['EXPECTED']}
+        return subprocess.run(['bash', '-eu', '-c', step['run']], env=environment, capture_output=True).returncode
+      self.assertEqual(invoke(results), 0, key)
+      for dependency in results:
+        for state in ('failure', 'cancelled', 'skipped', ''):
+          with self.subTest(gate=key, dependency=dependency, state=state):
+            self.assertNotEqual(invoke(results | {dependency: {'result': state}}), 0)
+        self.assertNotEqual(invoke({name: value for name, value in results.items() if name != dependency}), 0)
+
+  def test_naver_dedicated_tests_removed_but_shared_guards_retained(self):
+    spec = workflow()
+    fast = '\n'.join(step.get('run', '') for step in spec['jobs']['fast-checks']['steps'])
+    for removed in ('tools/naver_ci/tests', 'test_naver_input_smoke', 'test_naver_navigation_protocol', 'test_navigation_sources'):
+      self.assertNotIn(removed, fast)
+    self.assertTrue((ROOT / 'tools/ci/tests/test_sync_upstream.py').is_file())
+    self.assertTrue((ROOT / 'tools/naver_map_patch').is_dir())
+    self.assertTrue((ROOT / 'tools/naver_ci/controller_tests').is_dir())
+    self.assertNotIn('uses', spec['jobs']['integration-gate'])
+
+  def test_required_names_remain_unique(self):
+    names = [job.get('name') for job in workflow()['jobs'].values()]
+    for name in ('fast checks', 'check mapped user docs', 'integration gate', 'rust checks', 'rust aarch64 build'):
+      self.assertEqual(names.count(name), 1, name)
+
+  def test_dev_md_gate_still_rejects_dev_target(self):
+    steps = workflow()['jobs']['fast-checks']['steps']
     gate = next(step for step in steps if step.get('name') == 'Keep dev-md changes out of dev')
-    for target, expected in [('dev', 1), ('dev-md', 0), ('main', 0), ('codex/feat-338-test', 0)]:
-      with self.subTest(target=target):
-        result = subprocess.run(['bash', '-eu', '-c', gate['run']],
-                                env={**os.environ, 'TARGET_BRANCH': target},
-                                capture_output=True, text=True)
-        self.assertEqual(result.returncode, expected, result.stderr)
-    self.assertEqual(gate['env']['TARGET_BRANCH'], '${{ github.base_ref || github.ref_name }}')
+    for target, expected in [('dev', 1), ('dev-md', 0), ('main', 0), ('codex/feat-test', 0)]:
+      result = subprocess.run(['bash', '-eu', '-c', gate['run']],
+                              env={**os.environ, 'TARGET_BRANCH': target}, capture_output=True)
+      self.assertEqual(result.returncode, expected)
+
+  def test_runtime_delivery_is_serial_and_requires_a_marked_merge(self):
+    delivery = workflow()['jobs']['runtime-delivery']
+    self.assertIn("'[runtime-package]'", delivery['if'])
+    self.assertIn("refs/heads/dev-md", delivery['if'])
+    self.assertIn("github.event_name == 'push'", delivery['if'])
+    script = delivery['steps'][0]['with']['script']
+    self.assertIn('pr.merged_at && pr.merge_commit_sha === context.sha', script)
+    runtime = workflow('dev-md-runtime.yml')
+    self.assertEqual(set(runtime['on']), {'workflow_dispatch'})
+    self.assertEqual(runtime['jobs']['package']['needs'], 'verify')
+    self.assertEqual(runtime['jobs']['publish']['needs'], ['verify', 'package'])
+    self.assertNotIn('codex/fix-402-', (ROOT / '.github/workflows/dev-md-runtime.yml').read_text())
+    for name in ('package', 'publish'):
+      checkout = next(step for step in runtime['jobs'][name]['steps'] if 'actions/checkout@' in step.get('uses', ''))
+      self.assertEqual(checkout['with']['ref'], '${{ needs.verify.outputs.source_sha }}')
 
 
 if __name__ == '__main__':

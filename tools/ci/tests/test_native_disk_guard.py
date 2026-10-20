@@ -81,7 +81,7 @@ def test_cold_bootstrap_builds_only_host_guard_and_survives_target_cleanup(tmp_p
 
 
 def test_workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths():
-    workflow = ROOT / '.github/workflows/rust.yml'
+    workflow = ROOT / '.github/workflows/ci.yml'
     text = workflow.read_text()
     assert 'card_ci_space.py' not in text
     assert text.count('"$GITHUB_WORKSPACE/rust/tools/check-disk-space"') == 187

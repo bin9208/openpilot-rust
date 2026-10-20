@@ -8,12 +8,16 @@ use release::{git, Fixture};
 use serde_json::{json, Value};
 use std::{collections::BTreeMap, fs, path::Path};
 const REPO: &str = "bin9208/openpilot-rust";
-const GATES: &[(&str, &[&str])] = &[
-    ("rust.yml", &["rust checks", "rust aarch64 build"]),
-    ("fast-checks.yml", &["fast checks"]),
-    ("integration.yml", &["integration gate"]),
-    ("user-docs.yaml", &["check mapped user docs"]),
-];
+const GATES: &[(&str, &[&str])] = &[(
+    "ci.yml",
+    &[
+        "fast checks",
+        "check mapped user docs",
+        "integration gate",
+        "rust checks",
+        "rust aarch64 build",
+    ],
+)];
 struct OwnedGithub {
     commit: String,
     store: tempfile::TempDir,
@@ -106,7 +110,11 @@ impl Github for OwnedGithub {
         }
         let result = if endpoint == format!("repos/{REPO}") {
             json!({"full_name":self.full_name})
-        } else if suffix == "branches/dev/protection/required_status_checks" {
+        } else if matches!(
+            suffix,
+            "branches/dev/protection/required_status_checks"
+                | "branches/dev-md/protection/required_status_checks"
+        ) {
             json!({"contexts":GATES.iter().flat_map(|(_,n)|n.iter()).collect::<Vec<_>>(),"checks":[]})
         } else if suffix.starts_with("commits/") && suffix.contains("check-runs") {
             assert!(paginate);
@@ -234,9 +242,28 @@ fn failures_prevent_remote_writes() {
         "newer-failed",
         "missing-protection",
         "job-head",
+        "run-cancelled",
+        "job-cancelled",
+        "missing-job",
+        "duplicate-job",
+        "workflow-repo",
+        "workflow-running",
+        "legacy-workflow",
     ] {
         let (f, mut g) = prepared();
         match fault {
+            "run-cancelled" => g.runs[0]["conclusion"] = "cancelled".into(),
+            "workflow-running" => g.runs[0]["status"] = "in_progress".into(),
+            "workflow-repo" => g.runs[0]["repository"]["full_name"] = "someone/other".into(),
+            "legacy-workflow" => g.runs[0]["path"] = ".github/workflows/rust.yml".into(),
+            "job-cancelled" => g.jobs.get_mut(&1).unwrap()[0]["conclusion"] = "cancelled".into(),
+            "missing-job" => {
+                g.jobs.get_mut(&1).unwrap().pop();
+            }
+            "duplicate-job" => {
+                let job = g.jobs[&1][0].clone();
+                g.jobs.get_mut(&1).unwrap().push(job);
+            }
             "wrong-repo" => g.full_name = "bin9208/openpilot".into(),
             "wrong-head" => g.runs[0]["head_sha"] = "f".repeat(40).into(),
             "branch" => g.runs[0]["head_branch"] = "main".into(),

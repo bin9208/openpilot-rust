@@ -1,20 +1,75 @@
 name: dev-md AGNOS runtime package
 on:
-  push:
-    branches: [dev-md, 'codex/fix-402-*']
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact merged dev-md commit
+        required: true
+        type: string
+      ci_run_id:
+        description: Successful unified push CI run
+        required: true
+        type: string
 permissions:
   contents: read
   actions: read
+  pull-requests: read
 concurrency:
   group: dev-md-runtime-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/dev-md' }}
+  cancel-in-progress: false
 jobs:
+  verify:
+    name: Verify completed exact-source merge CI
+    if: github.repository == 'bin9208/openpilot-rust' && github.ref == 'refs/heads/dev-md'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      source_sha: ${{ steps.verify.outputs.source_sha }}
+    steps:
+      - uses: actions/github-script@v7
+        id: verify
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          CI_RUN_ID: ${{ inputs.ci_run_id }}
+        with:
+          script: |
+            const sha = process.env.SOURCE_SHA;
+            const id = process.env.CI_RUN_ID;
+            if (!/^[a-f0-9]{40}$/.test(sha) || !/^[1-9][0-9]*$/.test(id)) throw new Error('Invalid delivery identity');
+            const branch = await github.rest.repos.getBranch({...context.repo, branch: 'dev-md'});
+            if (branch.data.commit.sha !== sha) throw new Error('Stale dev-md source');
+            const commit = await github.rest.repos.getCommit({...context.repo, ref: sha});
+            if (!commit.data.commit.message.includes('[runtime-package]')) throw new Error('Unmarked runtime delivery');
+            const prs = await github.paginate(github.rest.repos.listPullRequestsAssociatedWithCommit, {
+              ...context.repo, commit_sha: sha, per_page: 100
+            });
+            if (!prs.some(pr => pr.merged_at && pr.merge_commit_sha === sha && pr.base.ref === 'dev-md')) throw new Error('Not a dev-md PR merge');
+            let run;
+            for (let attempt = 0; attempt < 60; attempt++) {
+              run = (await github.rest.actions.getWorkflowRun({...context.repo, run_id: Number(id)})).data;
+              if (run.path !== '.github/workflows/ci.yml' || run.head_sha !== sha || run.head_branch !== 'dev-md' || run.event !== 'push' || run.repository.full_name !== 'bin9208/openpilot-rust') throw new Error('Wrong validation identity');
+              if (run.status === 'completed') break;
+              await new Promise(resolve => setTimeout(resolve, 5000));
+            }
+            if (run.status !== 'completed' || run.conclusion !== 'success') throw new Error('Unified CI did not succeed');
+            const runs = await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+              ...context.repo, head_sha: sha, branch: 'dev-md', event: 'push', per_page: 100
+            });
+            const latest = runs.filter(r => r.path === '.github/workflows/ci.yml').sort((a,b) => b.id-a.id)[0];
+            if (!latest || latest.id !== Number(id) || latest.run_attempt !== run.run_attempt) throw new Error('Validation was superseded');
+            const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {...context.repo, run_id: Number(id), filter: 'latest', per_page: 100});
+            for (const name of ['fast checks', 'check mapped user docs', 'integration gate', 'rust checks', 'rust aarch64 build']) {
+              const matching = jobs.filter(j => j.name === name);
+              if (matching.length !== 1 || matching[0].head_sha !== sha || matching[0].status !== 'completed' || matching[0].conclusion !== 'success') throw new Error(`Missing/failed gate: ${name}`);
+            }
+            core.setOutput('source_sha', sha);
   package:
-    if: startsWith(github.ref, 'refs/heads/codex/fix-402-') && contains(github.event.head_commit.message, '[runtime-package]')
+    needs: verify
     name: Build and seal actual AGNOS runtime
     runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 150
     env:
+      RUNTIME_SOURCE_SHA: ${{ needs.verify.outputs.source_sha }}
       GIT_LFS_SKIP_SMUDGE: '1'
       CARGO_INCREMENTAL: '0'
       CARGO_BUILD_JOBS: '2'
@@ -22,6 +77,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          ref: ${{ needs.verify.outputs.source_sha }}
           fetch-depth: 0
           persist-credentials: false
       - name: Reserve disk for AGNOS and bounded builds
@@ -35,8 +91,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api repos/bin9208/openpilot-rust/branches/dev > "$RUNNER_TEMP/publication-policy.json"
-          python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/publication-policy.json")); assert p["name"] == "dev" and p["protected"] and p["protection"]["enabled"] and {"fast checks","integration gate","check mapped user docs","rust checks","rust aarch64 build"} <= set(p["protection"]["required_status_checks"]["contexts"])'
+          gh api repos/bin9208/openpilot-rust/branches/dev-md > "$RUNNER_TEMP/publication-policy.json"
+          python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/publication-policy.json")); assert p["name"] == "dev-md" and p["protected"] and p["protection"]["enabled"] and {"fast checks","integration gate","check mapped user docs","rust checks","rust aarch64 build"} <= set(p["protection"]["required_status_checks"]["contexts"])'
       - name: Install build tools
         run: |
           sudo apt-get update
@@ -57,7 +113,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             ${{ runner.temp }}/agnos-runtime/target
-          key: agnos-runtime-1.94-${{ hashFiles('rust/Cargo.lock') }}-${{ github.sha }}
+          key: agnos-runtime-1.94-${{ hashFiles('rust/Cargo.lock') }}-${{ needs.verify.outputs.source_sha }}
           restore-keys: agnos-runtime-1.94-${{ hashFiles('rust/Cargo.lock') }}-
       - name: Restore verified baseline companions and genuine OS sysroot
         run: python3 rust/ci/runtime/package.py prepare
@@ -79,10 +135,10 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             ${{ runner.temp }}/agnos-runtime/target
-          key: agnos-runtime-1.94-${{ hashFiles('rust/Cargo.lock') }}-${{ github.sha }}
+          key: agnos-runtime-1.94-${{ hashFiles('rust/Cargo.lock') }}-${{ needs.verify.outputs.source_sha }}
       - uses: actions/upload-artifact@v7
         with:
-          name: dev-md-runtime-${{ github.sha }}
+          name: dev-md-runtime-${{ needs.verify.outputs.source_sha }}
           path: |
             ${{ runner.temp }}/agnos-runtime/release/
             ${{ runner.temp }}/agnos-runtime/delivery-tools/
@@ -93,7 +149,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: runtime-build-evidence-${{ github.sha }}
+          name: runtime-build-evidence-${{ needs.verify.outputs.source_sha }}
           path: |
             ${{ runner.temp }}/agnos-runtime/elf.json
             ${{ runner.temp }}/agnos-runtime/installer-build.json
@@ -102,7 +158,7 @@ jobs:
             ${{ runner.temp }}/agnos-runtime/sysroot-extract.log
           retention-days: 7
   publish:
-    if: github.ref == 'refs/heads/dev-md' && contains(github.event.head_commit.message, '[runtime-package]')
+    needs: [verify, package]
     name: Publish verified dev-md prerelease
     runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 210
@@ -110,12 +166,13 @@ jobs:
       contents: write
       actions: read
     env:
+      RUNTIME_SOURCE_SHA: ${{ needs.verify.outputs.source_sha }}
       GIT_LFS_SKIP_SMUDGE: '1'
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: dev-md
+          ref: ${{ needs.verify.outputs.source_sha }}
           fetch-depth: 0
           persist-credentials: false
       - name: Reserve disk and install ARM execution tools
@@ -132,17 +189,15 @@ jobs:
           key: agnos-sdk-375c5d22335770ac-v1
       - name: Download the successful package from this exact source
         run: |
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          build_id=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow dev-md-runtime.yml --commit "$GITHUB_SHA" --event push --limit 20 --json databaseId,headBranch,conclusion --jq '[.[] | select(.headBranch | startswith("codex/fix-402-")) | select(.conclusion == "success")][0].databaseId')
-          test -n "$build_id" && test "$build_id" != null
+          test "$(git rev-parse HEAD)" = "$RUNTIME_SOURCE_SHA"
           mkdir -p "$RUNNER_TEMP/agnos-runtime"
-          gh run download "$build_id" --repo "$GITHUB_REPOSITORY" --name "dev-md-runtime-$GITHUB_SHA" --dir "$RUNNER_TEMP/agnos-runtime"
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "dev-md-runtime-$RUNTIME_SOURCE_SHA" --dir "$RUNNER_TEMP/agnos-runtime"
       - name: Require exact-SHA CI, publish six sealed assets, verify public online installation
         run: python3 rust/ci/runtime/package.py publish
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: runtime-publish-evidence-${{ github.sha }}
+          name: runtime-publish-evidence-${{ needs.verify.outputs.source_sha }}
           path: |
             ${{ runner.temp }}/agnos-runtime/online-install.json
             ${{ runner.temp }}/agnos-runtime/offline-install.json
