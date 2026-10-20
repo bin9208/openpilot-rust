@@ -8,6 +8,16 @@ GitHub REST reported runner ID 21, name `bin-actions`, Linux/X64,
 version 2.337.0, online and idle. Registration does not prove installed
 packages, Ubuntu version or build readiness.
 
+The actual readiness run on source commit
+`646bde2752f00d2954cb845853f3feec585ccc85` confirmed **Ubuntu 26.04.1 LTS**,
+only **4 GiB free**, missing git/unzip/zstd/rustup/cargo/gh/gcc/g++/make/pkg-config,
+and password-required sudo. The tool cache is writable.
+[Readiness run](https://github.com/bin9208/openpilot-rust/actions/runs/39400253235)
+failed as intended on these missing prerequisites.
+[Fast checks](https://github.com/bin9208/openpilot-rust/actions/runs/39400253462)
+was routed to bin-actions; it was cancelled after the disk shortfall was
+confirmed, before allowing further dependency installation/build work.
+
 The user explicitly requested this migration, overriding the older self-hosted
 prohibition for this CI task. Work starts from `dev-md` on
 `codex/feat-404-self-hosted-actions`; any PR targets `dev-md`.
@@ -26,7 +36,12 @@ not change workflows on dev-md; merge requires subsequent verification.
 
 Use **Ubuntu 24.04 amd64** for the current workflows: they pin LLVM 18,
 FFmpeg 6.1.1 and noble cross-architecture APT sources. Do not apply the noble
-sources to Ubuntu 22.04/26.04. The readiness workflow reports the real host OS.
+sources to Ubuntu 22.04/26.04. The observed host is 26.04.1; installing basic tools there alone will not
+resolve the pinned native dependencies. Prepare an Ubuntu 24.04 VM or
+dedicated runner environment and register it for this repository before
+full validation. A container-based adaptation is not implemented by this
+change. Retire or relabel the incompatible 26.04 runner before making the
+24.04 runner eligible for the same Linux/X64 jobs.
 
 Run the following on the runner host as the **runner service account**, not
 on a vehicle or an unrelated workstation. These commands are instructions;
@@ -34,6 +49,8 @@ the agent has not installed packages on the host.
 
 ## Bootstrap commands
 
+**Do not run the installation commands on the current 4 GiB-free host.**
+Expand the runner disk or free space first, and prepare the 24.04 environment.
 Before each installation, check space. Keep at least 25 GiB plus expected
 growth; recover at least 35 GiB if below the floor. The readiness check's
 35 GiB minimum is only a bootstrap floor, not a guarantee for AGNOS builds.
