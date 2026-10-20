@@ -230,6 +230,8 @@ pub mod encoder_v4l_check;
 
 #[cfg(feature = "paramsd-fixture-native")]
 pub mod paramsd_fixture_generate;
+#[cfg(feature = "paramsd-fixture-native")]
+pub mod paramsd_loop_fixture_generate;
 #[cfg(feature = "paramsd-startup-gate-native")]
 pub mod paramsd_startup_gate;
 

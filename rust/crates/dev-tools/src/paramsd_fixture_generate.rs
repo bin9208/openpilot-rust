@@ -74,7 +74,11 @@ fn packet(time: f64, valid: bool, fill: impl FnOnce(event::Builder<'_>)) -> Vec<
 }
 
 pub fn car_state(time: f64, speed: f64, steering: f64) -> Vec<u8> {
-    packet(time, true, |mut event| {
+    car_state_valid(time, speed, steering, true)
+}
+
+pub fn car_state_valid(time: f64, speed: f64, steering: f64, valid: bool) -> Vec<u8> {
+    packet(time, valid, |mut event| {
         let mut state = event.reborrow().init_car_state();
         state.set_v_ego(speed as f32);
         state.set_steering_angle_deg(steering as f32);
@@ -152,16 +156,20 @@ pub fn pose(time: f64, options: Pose) -> Vec<u8> {
 }
 
 pub fn gps(service: &str, time: f64) -> Result<Vec<u8>> {
+    gps_valid(service, time, true, false)
+}
+
+pub fn gps_valid(service: &str, time: f64, has_fix: bool, valid: bool) -> Result<Vec<u8>> {
     if !matches!(service, "gpsLocation" | "gpsLocationExternal") {
         return Err("unexpected paramsd GPS service".into());
     }
-    Ok(packet(time, false, |mut event| {
+    Ok(packet(time, valid, |mut event| {
         let mut location = if service == "gpsLocation" {
             event.reborrow().init_gps_location()
         } else {
             event.reborrow().init_gps_location_external()
         };
-        location.set_has_fix(true);
+        location.set_has_fix(has_fix);
         location.set_latitude(37.5);
         location.set_longitude(127.);
         location.set_bearing_deg(22.5);

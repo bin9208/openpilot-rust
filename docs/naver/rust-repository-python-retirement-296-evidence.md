@@ -4943,3 +4943,18 @@ Parent verified actual3,840-byte output equality and artifact12307294357 archive
 69440cc8…; details are in rust-prefix93-fma-diagnostic-296.md. The default
 fusion fence remains. This capability does not retire remaining model-export,
 fulltinygrad or vendor Python, and does not establish device/CPU results.
+
+### Native paramsd loop input preparation
+
+The native input family now also covers all39loop cases:22legacy cache
+migration byte encodings,12V2 variants,3malformed/suppression inputs and two
+ordered1210-frame GPS lanes. Fresh original helper output must match the
+actual original checker's input and every native packet byte, including event
+validity, list allocation and message reversal. Original Python and callers
+remain. No source is counted retired for this preparation.
+
+Source-policy d219 job118950166180 passed native fixture byte/CLI tests and
+strictClippy, then exposed a policy test looking for the step's display name
+in shell commands. The name is now checked in the structured step field;
+all actual command, capture, seal and mandatory-gate requirements remain.
+Repaired exact-source policy and new loop byte validation are pending.

@@ -1742,3 +1742,12 @@ required-features = ["paramsd-fixture-native"]
 [[test]]
 name = "paramsd_fixture_generate"
 required-features = ["paramsd-fixture-native"]
+
+[[bin]]
+name = "generate-paramsd-loop-fixture"
+path = "src/bin/generate_paramsd_loop_fixture.rs"
+required-features = ["paramsd-fixture-native"]
+
+[[test]]
+name = "paramsd_loop_fixture_generate"
+required-features = ["paramsd-fixture-native"]

@@ -2513,16 +2513,23 @@ fn config_retirement_requires_sealed_original_all_cases_and_both_exec_lanes() {
 
 #[test]
 fn paramsd_fixture_conversion_keeps_fresh_original_wire_and_real_cli_proof() {
+    assert!(workflow()["jobs"]["estimation-runtime"]["steps"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|step| step["name"]
+            == "Compare native paramsd fixture generator against all original wire inputs"));
     job_check(
         "estimation-runtime",
         &[
-            "Compare native paramsd fixture generator against all original wire inputs",
             "from paramsd_fixture import car_params, scenarios",
             "from check_paramsd_daemon import frames",
+            "from paramsd_loop_fixture import cases as loop_cases",
+            "assert json.loads(observed_loop.read_text())",
             "assert json.loads(observed.read_text()) == case",
             "PATH=/nonexistent /usr/bin/timeout --kill-after=5s 30s /usr/bin/strace",
-            "--features paramsd-fixture-native --test paramsd_fixture_generate --locked",
-            "--features paramsd-fixture-native --lib --bin generate-paramsd-fixture --test paramsd_fixture_generate --locked -- -D warnings",
+            "--features paramsd-fixture-native --test paramsd_fixture_generate --test paramsd_loop_fixture_generate --locked",
+            "--features paramsd-fixture-native --lib --bin generate-paramsd-fixture --bin generate-paramsd-loop-fixture --test paramsd_fixture_generate --test paramsd_loop_fixture_generate --locked -- -D warnings",
             "sha256sum -c \"$proof/original.sha256\"",
             "sha256sum -c \"$proof/generator.sha256\"",
         ],
