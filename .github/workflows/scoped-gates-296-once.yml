@@ -1,0 +1,170 @@
+name: 296 scoped paramsd and Jetlink followup
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/scoped-gates-296-once.yml
+permissions:
+  contents: read
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
+jobs:
+  paramsd:
+    name: Actual paramsd scoped FD handoff
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CXX: clang++
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        ref: 9845db2db390bc904401a3794b723b510e3bef84
+    - run: 'test "$(git rev-parse HEAD)" = 9845db2db390bc904401a3794b723b510e3bef84
+
+        test -z "$(git status --porcelain)"'
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Prepare native paramsd prerequisites
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE"
+        --growth-mib 2048
+
+        sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto
+        libcapnp-dev
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        python -m pip install numpy==2.5.3 pycapnp==2.1.0 pytest==9.0.2
+
+        '
+    - uses: ./.github/actions/native-eigen
+      with:
+        architecture: x86_64
+    - name: Build real native paramsd consumer
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE"
+        --growth-mib 4096
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-paramsd --bin openpilot-paramsd
+        --locked
+
+        python -m pytest -q --confcutdir=rust/tools/tests rust/tools/tests/test_paramsd_atomic_gate.py
+
+        '
+    - name: Check native paramsd atomic gate foundation alongside original cases
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE"
+        --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked
+        --features paramsd-startup-gate-native --test paramsd_startup_gate
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE"
+        --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked
+        --features paramsd-startup-gate-native --lib --test paramsd_startup_gate --
+        -D warnings
+
+        '
+    - name: Require native paramsd scoped child-FD handoff
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/estimation/paramsd/native-gate"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE"
+        --growth-mib 128
+
+        mkdir -p "$proof"
+
+        export PARAMSD_NATIVE_GATE_DAEMON="$GITHUB_WORKSPACE/rust/target/debug/openpilot-paramsd"
+
+        export PARAMSD_NATIVE_GATE_LIBRARY="$proof/startup-phase.so"
+
+        export PARAMSD_NATIVE_GATE_CAR_PARAMS="$proof/CarParams.bin"
+
+        export PARAMSD_NATIVE_GATE_EVIDENCE="$proof/native"
+
+        python -c ''import sys; from paramsd_fixture import car_params; sys.stdout.buffer.write(bytes(car_params()))''
+        > "$PARAMSD_NATIVE_GATE_CAR_PARAMS"
+
+        clang -std=c11 -O2 -shared -fPIC -Wall -Wextra -Werror rust/tools/paramsd_startup_phase.c
+        -ldl -o "$PARAMSD_NATIVE_GATE_LIBRARY" > "$proof/phase-build.log" 2>&1
+
+        sha256sum rust/tools/paramsd_startup_phase.c rust/tools/paramsd_fixture.py
+        "$PARAMSD_NATIVE_GATE_DAEMON" "$PARAMSD_NATIVE_GATE_LIBRARY" "$PARAMSD_NATIVE_GATE_CAR_PARAMS"
+        > "$proof/artifacts.sha256"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE"
+        --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features
+        paramsd-startup-gate-native --test paramsd_startup_gate --locked -- --ignored
+        --exact native_mapped_gate_holds_actual_paramsd_second_poll_and_shutdown --nocapture
+
+        sha256sum -c "$proof/artifacts.sha256"
+
+        '
+    - if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: paramsd-scoped-gate-evidence
+        path: ${{ runner.temp }}/estimation/paramsd/native-gate/
+        if-no-files-found: warn
+  jetlink:
+    name: Jetlink exact old RED and current GREEN parser
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+    defaults:
+      run:
+        working-directory: rust
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        ref: 18f4372d3e909d6b1dd9b79fb7f0e09b055315de
+    - name: Prepare Jetlink toolchain
+      run: rustup toolchain install 1.94.0 --profile minimal --component clippy
+    - name: Require Jetlink owner baseline failures and bounded fixed lifecycle
+      run: "set -euo pipefail\nexport CARGO_TARGET_DIR=\"$GITHUB_WORKSPACE/rust/target\"\
+        \nexport JETLINK_OWNER_TEST_OUTPUT=\"$RUNNER_TEMP/jetlink-owner\"\nbaseline=\"\
+        $RUNNER_TEMP/jetlink399-baseline\"\nmkdir -p \"$JETLINK_OWNER_TEST_OUTPUT\"\
+        \n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\"\
+        \ --growth-mib 1024\ngit fetch --no-tags --depth=1 origin 11f3dec411662baa961733b363c0b38d7082fcfa\n\
+        git worktree add --detach \"$baseline\" 11f3dec411662baa961733b363c0b38d7082fcfa\n\
+        cp crates/jetlink/tests/owner_lifecycle.rs \"$baseline/rust/crates/jetlink/tests/\"\
+        \n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\"\
+        \ --growth-mib 2048\nset +e\ncargo test --manifest-path \"$baseline/rust/Cargo.toml\"\
+        \ -p openpilot-jetlink --test owner_lifecycle --locked -- --nocapture 2>&1\
+        \ | tee \"$JETLINK_OWNER_TEST_OUTPUT/baseline.log\"\nstatus=${PIPESTATUS[0]}\n\
+        set -e\ntest \"$status\" -eq 101\nfor case in failed_connect_preserves_foreign_listener\
+        \ failed_bind_preserves_foreign_listener ready_owner_cleanup_preserves_a_replacement_listener\
+        \ full_stderr_cannot_extend_failed_stop full_stderr_cannot_extend_drop; do\n\
+        \  grep -Fx \"    $case\" \"$JETLINK_OWNER_TEST_OUTPUT/baseline.log\"\ndone\n\
+        grep -F 'test result: FAILED. 1 passed; 5 failed; 1 ignored; 0 measured; 0\
+        \ filtered out;' \"$JETLINK_OWNER_TEST_OUTPUT/baseline.log\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo test -p openpilot-jetlink\
+        \ --test owner_lifecycle --locked -- --nocapture\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo build -p openpilot-jetlink\
+        \ --bins --examples --locked\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo clippy -p openpilot-jetlink\
+        \ --all-targets --locked -- -D warnings\n"
+    - if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: jetlink-owner-focused-evidence
+        path: ${{ runner.temp }}/jetlink-owner/
