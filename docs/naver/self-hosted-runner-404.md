@@ -186,3 +186,13 @@ and ran existing fast checks on the actual host. Source:
   compatibility. Keep exact-source FFmpeg/provider requirements intact;
   an FFmpeg 8 migration or a 24.04 execution environment requires separate
   implementation and verification.
+
+Follow-up source: `99872814264b345ced953e088279869cf35232dd`.
+[Integration-test probe](https://github.com/bin9208/openpilot-rust/actions/runs/39403113283)
+completed on bin-actions: readiness passed; runtime-core compiled with Rust
+1.94.0 and **41 existing integration tests passed**, zero failed (one ignored
+library test). Coverage includes filters, Jetlink power, proc-stat/procfs,
+PSS sampling and sampler. Native package simulation again confirmed the four
+FFmpeg 6.1.1 pins are unavailable. Thus the combined workflow correctly remains
+failed even though Rust tests passed. ARM graphics cross-source compatibility,
+full native video builds and AGNOS packaging remain untested.
