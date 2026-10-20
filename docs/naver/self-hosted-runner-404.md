@@ -15,8 +15,13 @@ and password-required sudo. The tool cache is writable.
 [Readiness run](https://github.com/bin9208/openpilot-rust/actions/runs/39400253235)
 failed as intended on these missing prerequisites.
 [Fast checks](https://github.com/bin9208/openpilot-rust/actions/runs/39400253462)
-was routed to bin-actions; it was cancelled after the disk shortfall was
-confirmed, before allowing further dependency installation/build work.
+was routed to bin-actions and failed because git is absent. Checkout used its
+archive fallback and setup-python installed Python successfully, but the
+changed-files check requires the git executable. Cancellation was attempted
+after discovering the disk shortfall; the run had already failed. No further
+builds or dependency installations were dispatched. The documentation-only
+evidence commits use [skip ci] to avoid repeating unchanged failed checks
+until host provisioning is complete.
 
 The user explicitly requested this migration, overriding the older self-hosted
 prohibition for this CI task. Work starts from `dev-md` on
