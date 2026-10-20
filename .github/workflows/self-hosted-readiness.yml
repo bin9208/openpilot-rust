@@ -22,8 +22,7 @@ jobs:
           . /etc/os-release
           report "OS: $PRETTY_NAME"
           if [ "$ID" != ubuntu ] || [ "$VERSION_ID" != 24.04 ]; then
-            report "ERROR: current LLVM/FFmpeg and cross-APT pins require Ubuntu 24.04."
-            failed=1
+            report "NOTICE: non-24.04 host; package compatibility must be tested separately."
           fi
           for tool in git curl tar xz unzip zstd python3 rustup cargo gh gcc g++ make pkg-config; do
             if command -v "$tool" >/dev/null 2>&1; then
@@ -52,3 +51,49 @@ jobs:
             failed=1
           fi
           exit "$failed"
+
+  native-packages:
+    needs: readiness
+    runs-on: [self-hosted, Linux, X64]
+    timeout-minutes: 5
+    steps:
+      - name: Check current APT repositories against existing build pins
+        shell: bash
+        run: |
+          available=$(df -Pk "$RUNNER_TEMP" | awk 'NR==2 {print $4}')
+          test "$available" -ge $((35 * 1024 * 1024))
+          sudo -n apt-get update
+          apt-cache policy clang-18 libclang-18-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev
+          echo 'Checking existing workflow package pins without installing packages.' >> "$GITHUB_STEP_SUMMARY"
+          if sudo -n apt-get --simulate install g++ clang-18 libclang-18-dev cmake pkg-config capnproto libcapnp-dev libzmq3-dev 'libavcodec-dev=7:6.1.1-*' 'libavformat-dev=7:6.1.1-*' 'libavutil-dev=7:6.1.1-*' 'libswscale-dev=7:6.1.1-*'; then
+            echo 'PASS: existing native package pins resolve.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'FAIL: existing native package pins do not resolve; see APT diagnostics.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+  rust-core:
+    needs: readiness
+    runs-on: [self-hosted, Linux, X64]
+    timeout-minutes: 15
+    env:
+      GIT_LFS_SKIP_SMUDGE: '1'
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_TARGET_DIR: ${{ runner.temp }}/self-hosted-404-core
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Test existing runtime-core on the actual host
+        shell: bash
+        run: |
+          available=$(df -Pk "$RUNNER_TEMP" | awk 'NR==2 {print $4}')
+          test "$available" -ge $(((25 + 2) * 1024 * 1024))
+          rustup toolchain install 1.94.0 --profile minimal
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-core --lib
+      - name: Remove this probe's compiled output
+        if: always()
+        shell: bash
+        run: rm -rf -- "$CARGO_TARGET_DIR"
