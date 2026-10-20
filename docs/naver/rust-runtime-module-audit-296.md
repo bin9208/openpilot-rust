@@ -5,6 +5,22 @@ A focused regression or passing package test does not clear all internals of
 that module. [The implementation ledger](rust-runtime-retirement-296.md) owns
 integration/device evidence and the remaining Python-tool inventory.
 
+2026-10-21 follow-up: the parent and a 6 Sol reviewer inspected uploader's
+HTTP/body/source identity, scan and runtime ownership, plus loggerd rotation,
+file ownership and writer drain against the retained original paths. This
+bounded review found no new source-demonstrable defect or justified allocation
+change. Uploader response reads retain the original per-I/O timeout semantics;
+a total request budget would need a separately tested behavioral contract.
+Logger rotation's ready count and preserve-before-drain order match the original.
+No local functional run or new recording/upload device evidence follows.
+
+Measured host follow-ups are [lagd #429](rust-lagd-masked-allocation-429.md)
+and [messaging #431](rust-messaging-update-allocation-296.md): exact-source
+cloud numerical/semantic fingerprints match while allocator calls and requested
+bytes fall. These receipts do not establish whole-core CPU, peak memory, target
+latency or blanket module clearance. The user will personally check normal
+boot, recording, upload and driving after the final source is delivered.
+
 | Area | Inspected scope and evidence | Remaining scope |
 | --- | --- | --- |
 | runtime-launcher | #298 watchdog ownership; #287 exact native service identity; #290/#297 atomic source/package startup handoff and full host launcher tests | Other startup internals; AGNOS/device restart and permission boundaries remain unvalidated |

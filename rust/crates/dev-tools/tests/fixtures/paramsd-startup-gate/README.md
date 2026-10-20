@@ -14,7 +14,8 @@ for `paramsd_startup_gate.py` and
 `2c289464407f46382af24d01ab9459ef3e72178d0b00caac1ef8e295437701d9`
 for `test_paramsd_atomic_gate.py`. The native gate is explicitly registered
 behind `paramsd-startup-gate-native`; the estimation cloud job retains the
-original pytest invocation and adds the six native tests and strict Clippy.
+original pytest invocation and adds six native behavior tests, one retained-
+source identity test, and strict Clippy.
 This is source preparation and has not yet run in cloud.
 
 `rust/tools/check_paramsd_daemon.py` is the live consumer of `StartupGate`.
