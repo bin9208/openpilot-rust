@@ -390,6 +390,11 @@ jobs:
       - run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           cargo test --workspace --locked
+      - run: python tools/build_msgq_python.py --output "$RUNNER_TEMP/rust-msgq-python"
+      - name: Compare continuous driver monitoring with the original loop and IPC
+        run: |
+          PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python tools/check_dmonitoring_daemon.py \
+            --binary target/debug/openpilot-dmonitoringd --output "$RUNNER_TEMP/dmonitoring-daemon"
       - name: Require complete Hyundai schemas after workspace tests
         run: |
           python tools/check_card_hyundai_params.py "$HYUNDAI_FIXTURE_DIR"
@@ -532,7 +537,6 @@ jobs:
         run: python tools/check_model_inputs.py --binary target/debug/examples/input_probe --output "$RUNNER_TEMP/model-inputs"
       - run: python tools/check_proclog_reference.py
       - run: python tools/check_params_reference.py
-      - run: python tools/build_msgq_python.py --output "$RUNNER_TEMP/rust-msgq-python"
       - name: Exercise structured log producers with original and Rust collectors
         run: |
           cargo build -p openpilot-logging --examples --locked
@@ -540,10 +544,6 @@ jobs:
           PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$PYTHONPATH" python tools/check_logging_producer.py \
             --binary target/debug/examples/logging_probe --fork-binary target/debug/examples/logging_fork \
             --collector target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/logging-producer"
-      - name: Compare continuous driver monitoring with the original loop and IPC
-        run: |
-          PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python tools/check_dmonitoring_daemon.py \
-            --binary target/debug/openpilot-dmonitoringd --output "$RUNNER_TEMP/dmonitoring-daemon"
       - name: Validate continuous procLog cadence and native IPC shutdown
         run: |
           PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/check_proclog_daemon.py \

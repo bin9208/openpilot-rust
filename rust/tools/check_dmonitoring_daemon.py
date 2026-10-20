@@ -51,6 +51,13 @@ def packets(frame,scenario):
         cs.buttonEvents=[{'type':'cancel','pressed':frame%2==0}]
     return result
 
+def publish_inputs(publishers,encoded):
+    # REPLAY polls modelV2. Publish that wake-up last so the native snapshot
+    # contains the same complete input set passed to Oracle.step below.
+    for name,payload in encoded.items():
+        if name!='modelV2':publishers[name].send(payload)
+    publishers['modelV2'].send(encoded['modelV2'])
+
 def check(args,scenario):
     prefix=f'rust-probe-dm2-{os.getpid()}-{scenario}'
     shm=Path('/dev/shm')/f'msgq_{prefix}';shm.mkdir()
@@ -78,7 +85,7 @@ def check(args,scenario):
         for frame in range(frames):
             inputs=packets(frame,scenario)
             encoded={name:value.to_bytes() for name,value in inputs.items()}
-            for name,payload in encoded.items():publishers[name].send(payload)
+            publish_inputs(publishers,encoded)
             raw=subscriber.receive();assert raw is not None,f'frame {frame} timeout'
             actual=log.Event.from_bytes(raw).__enter__()
             # Route timestamps identify the snapshot actually assessed by the child.

@@ -147,3 +147,15 @@ concurrent-writer tests run in Actions before the full workspace stage. All Rust
 executables remain built from the exact release SHA; external model/provider
 producers are unchanged by this Rust-only repair fix. No runtime is published
 for this infrastructure PR. Issue: https://github.com/bin9208/openpilot-rust/issues/413
+
+### DM replay comparison input ordering (#414)
+
+On `ec805b27`, [run 39438516023](https://github.com/bin9208/openpilot-rust/actions/runs/39438516023)
+passed the full workspace Clippy/tests and focused Params repair regressions,
+then failed the continuous DM comparison at recovery frame 0 (vision factor
+2.0 versus 1.0). The fixture sent replay's polled modelV2 before remaining
+inputs, while the oracle received the whole set. Publish modelV2 last and
+cover an immediate wake-up with a cloud regression. The unchanged exact IPC
+comparison now runs before costly model comparisons; no runtime DM policy or
+comparison tolerance changes. Acceptance remains tracked in
+https://github.com/bin9208/openpilot-rust/issues/414.
