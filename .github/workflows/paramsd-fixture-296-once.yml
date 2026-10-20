@@ -1,0 +1,116 @@
+name: 296 native paramsd fixture original wire proof
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/paramsd-fixture-296-once.yml
+permissions:
+  contents: read
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
+jobs:
+  fixture:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        ref: 23301d152caeee6be2abb3114b48ad542f4cd513
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Require exact native fixture source
+      run: 'test "$(git rev-parse HEAD)" = 23301d152caeee6be2abb3114b48ad542f4cd513
+
+        test -z "$(git status --porcelain)"
+
+        '
+    - name: Prepare original-only synthetic persistence and fixture dependencies
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        sudo apt-get update && sudo apt-get install -y g++ capnproto libcapnp-dev strace
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        python -m pip install numpy==2.5.3 pycapnp==2.1.0 zstandard==0.25.0
+
+        python - <<''SAVED''
+
+        import json,hashlib,os
+
+        from pathlib import Path
+
+        record=Path(''rust/crates/dev-tools/tests/fixtures/paramsd-fixture/original-saved-39510538880.json'')
+
+        value=json.loads(record.read_text())
+
+        assert value[''checked_out_source'']==''ba5def0ab46de9cab2d3542af573625761068512''
+
+        saved=bytes(value[''saved_bytes''])
+
+        assert len(saved)==272 and hashlib.sha256(saved).hexdigest()==value[''saved_sha256'']
+
+        target=Path(os.environ[''RUNNER_TEMP''])/''estimation/paramsd/daemon/continuous/saved.bin''
+
+        target.parent.mkdir(parents=True)
+
+        target.write_bytes(saved)
+
+        SAVED
+
+        '
+    - name: Compare native paramsd fixture generator against all original wire inputs
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/estimation/paramsd/native-fixture\"\nexport PARAMSD_FIXTURE_ROOT=\"$GITHUB_WORKSPACE\"\
+        \nexport PARAMSD_FIXTURE_ORIGINAL_SAVED_PACKET=\"$RUNNER_TEMP/estimation/paramsd/daemon/continuous/saved.bin\"\nexport\
+        \ PARAMSD_FIXTURE_ORIGINAL_SCENARIOS=\"$proof/original-scenarios.json\"\nexport PARAMSD_FIXTURE_ORIGINAL_CONTINUOUS=\"\
+        $proof/original-continuous.json\"\nexport PARAMSD_FIXTURE_ORIGINAL_RESTART=\"$proof/original-restart.json\"\nexport\
+        \ PARAMSD_FIXTURE_NATIVE_OUTPUT=\"$proof/native\"\nexport PARAMSD_FIXTURE_NATIVE_EXEC=\"$proof/native.exec\"\nexport\
+        \ PARAMSD_FIXTURE_NATIVE_BINARY=\"$GITHUB_WORKSPACE/rust/target/debug/generate-paramsd-fixture\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 128\nmkdir -p \"$proof\"\ngit rev-parse HEAD > \"$proof/SOURCE_COMMIT\"\
+        \npython - <<'ORIGINAL'\nimport json, os\nfrom pathlib import Path\nfrom paramsd_fixture import car_params, scenarios\n\
+        from check_paramsd_daemon import frames\nsaved = Path(os.environ['PARAMSD_FIXTURE_ORIGINAL_SAVED_PACKET']).read_bytes()\n\
+        Path(os.environ['PARAMSD_FIXTURE_ORIGINAL_SCENARIOS']).write_text(json.dumps({'cases': scenarios()}) + '\\n')\nfor\
+        \ restart in (False, True):\n  gps = 'gpsLocation' if restart else 'gpsLocationExternal'\n  seed = {'LiveParametersV2':\
+        \ list(saved), 'CarParamsPrevRoute': car_params()} if restart else {}\n  case = {'name': 'restart' if restart else\
+        \ 'continuous', 'car': car_params(), 'seed': seed, 'debug': True,\n          'replay': True, 'simulation': True, 'gps':\
+        \ gps, 'frames': frames(gps, 8 if restart else 1202)}\n  case['frames'].insert(0, {'time': 99.95, 'messages': []})\n\
+        \  name = 'PARAMSD_FIXTURE_ORIGINAL_RESTART' if restart else 'PARAMSD_FIXTURE_ORIGINAL_CONTINUOUS'\n  Path(os.environ[name]).write_text(json.dumps(case)\
+        \ + '\\n')\nORIGINAL\nsha256sum rust/tools/paramsd_fixture.py rust/tools/check_paramsd_daemon.py openpilot/cereal/car.capnp\
+        \ openpilot/cereal/log.capnp \"$PARAMSD_FIXTURE_ORIGINAL_SAVED_PACKET\" \"$PARAMSD_FIXTURE_ORIGINAL_SCENARIOS\" \"\
+        $PARAMSD_FIXTURE_ORIGINAL_CONTINUOUS\" \"$PARAMSD_FIXTURE_ORIGINAL_RESTART\" > \"$proof/original.sha256\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
+        \ --features paramsd-fixture-native --bin generate-paramsd-fixture --locked\nsha256sum \"$PARAMSD_FIXTURE_NATIVE_BINARY\"\
+        \ > \"$proof/generator.sha256\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib\
+        \ 128\nPATH=/nonexistent /usr/bin/timeout --kill-after=5s 30s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat\
+        \ -o \"$PARAMSD_FIXTURE_NATIVE_EXEC\" \"$PARAMSD_FIXTURE_NATIVE_BINARY\" --root \"$PARAMSD_FIXTURE_ROOT\" --output\
+        \ \"$PARAMSD_FIXTURE_NATIVE_OUTPUT\" --saved-packet \"$PARAMSD_FIXTURE_ORIGINAL_SAVED_PACKET\" > \"$proof/native.stdout\"\
+        \ 2> \"$proof/native.stderr\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib\
+        \ 512\ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-fixture-native --test\
+        \ paramsd_fixture_generate --locked -- --nocapture\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\"\
+        \ --growth-mib 512\ncargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-fixture-native\
+        \ --lib --bin generate-paramsd-fixture --test paramsd_fixture_generate --locked -- -D warnings\nsha256sum -c \"$proof/original.sha256\"\
+        \nsha256sum -c \"$proof/generator.sha256\"\n"
+    - name: Require updated mandatory source and disk policies
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --test ci_rust_isolation --test ci_disk_bootstrap
+
+        '
+    - if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: paramsd-native-fixture-evidence
+        path: ${{ runner.temp }}/estimation/paramsd/native-fixture/
+        if-no-files-found: warn
