@@ -1694,3 +1694,18 @@ does not claim arbitrary descendant ownership (the #369 metadata capture record
 states the same boundary). These are remaining external-command review areas,
 not newly proven runtime failures or blanket module clearance. No deadlines,
 process groups, cache behavior or source metadata semantics changed in this review.
+
+
+### Bounded timed, messaging and retained logging review (2026-10-21)
+
+Source review covered timed GPS/timezone admission (`timed/src/runtime.rs`),
+the messaging subscriber receive/update path (`messaging/src/runtime.rs` and
+`state.rs`), and logging's retained producer (`logging/src/producer/runtime.rs`).
+No new runtime bug or basis for changing their policies was demonstrated.
+Messaging's intermediate `Vec` conversion is an allocation candidate tracked
+in [#431](https://github.com/bin9208/openpilot-rust/issues/431); a borrowed route
+and exact old/current cloud probe are prepared. Its benefit remains unmeasured,
+including the possibility that Rust already reuses the consumed allocation.
+The malformed-batch parse boundary, topic/frame semantics and original checks
+must remain intact. This source review and pending optimization do not establish
+module-wide clearance, numerical equivalence, vehicle timing or CPU savings.

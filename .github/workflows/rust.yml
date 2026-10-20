@@ -1453,6 +1453,43 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
           cargo test --manifest-path rust/Cargo.toml -p openpilot-selfdrived -p openpilot-messaging --locked
           python -P -m pytest -c /dev/null --rootdir . --confcutdir=rust/tools/tests --import-mode=importlib rust/tools/tests/test_selfdrived_source.py -q
+      - name: Measure actual messaging update allocation against unchanged source
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/selfdrived-native/messaging-allocation-431"
+          baseline="$RUNNER_TEMP/messaging431-baseline"
+          mkdir -p "$proof"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          git fetch --no-tags --depth=1 origin 7709c2e3c455cefba0ff2a72dffad7c22375e49a
+          GIT_LFS_SKIP_SMUDGE=1 git worktree add --detach "$baseline" 7709c2e3c455cefba0ff2a72dffad7c22375e49a
+          sha256sum rust/tools/messaging_update_allocation_probe.rs > "$proof/probes.sha256"
+          git -C "$baseline" rev-parse HEAD > "$proof/old.SOURCE_COMMIT"
+          git rev-parse HEAD > "$proof/current.SOURCE_COMMIT"
+          CARGO_INCREMENTAL=0 CARGO_TARGET_DIR="$RUNNER_TEMP/messaging431-old-target" cargo build --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-messaging --lib --locked 2>&1 | tee "$proof/old-build.log"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          CARGO_INCREMENTAL=0 CARGO_TARGET_DIR="$GITHUB_WORKSPACE/rust/target" cargo build --manifest-path rust/Cargo.toml -p openpilot-messaging --lib --locked 2>&1 | tee "$proof/current-build.log"
+          for role in old current; do
+            if [ "$role" = old ]; then target="$RUNNER_TEMP/messaging431-old-target"; else target="$GITHUB_WORKSPACE/rust/target"; fi
+            "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+            shopt -s nullglob
+            cereal=("$target"/debug/deps/libopenpilot_cereal-*.rlib)
+            capnp=("$target"/debug/deps/libcapnp-*.rlib)
+            test "${#cereal[@]}" -eq 1
+            test "${#capnp[@]}" -eq 1
+            sha256sum "$target/debug/libopenpilot_messaging.rlib" "${cereal[0]}" "${capnp[0]}" > "$proof/$role-inputs.sha256"
+            rustc --edition=2021 -C debuginfo=0 -D warnings rust/tools/messaging_update_allocation_probe.rs \
+              --extern "openpilot_messaging=$target/debug/libopenpilot_messaging.rlib" \
+              --extern "openpilot_cereal=${cereal[0]}" --extern "capnp=${capnp[0]}" \
+              -L "dependency=$target/debug/deps" -o "$proof/$role-probe"
+            sha256sum "$proof/$role-probe" > "$proof/$role-executable.sha256"
+            timeout --kill-after=5s 45s "$proof/$role-probe" > "$proof/$role.log" 2> "$proof/$role.stderr"
+            sha256sum -c "$proof/$role-executable.sha256"
+            sha256sum -c "$proof/$role-inputs.sha256"
+          done
+          "$proof/current-probe" --compare "$proof/old.log" "$proof/current.log" | tee "$proof/comparison.log"
+          sha256sum -c "$proof/probes.sha256"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-messaging --all-targets --locked -- -D warnings
       - name: Compare complete selfdrived policy and source effects
         run: |
           selfdrive_examples="$GITHUB_WORKSPACE/rust/target/debug/examples"
@@ -3345,6 +3382,24 @@ jobs:
           sha256sum -c "$proof/artifacts.sha256"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-enumerate-native --test bluetooth_enumerate_reference --locked -- --nocapture
+      - name: Compare native Bluetooth sudo fixture with unchanged original
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/ui-connectivity/bluetooth-sudo-fixture"
+          export BLUETOOTH_SUDO_ORIGINAL_PYTHON="$GITHUB_WORKSPACE/rust/tools/bluetooth_sudo_fixture.py"
+          export BLUETOOTH_SUDO_EVIDENCE="$proof/cases"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-sudo-fixture-native --bin bluetooth-sudo-fixture --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-sudo-fixture-native --test bluetooth_sudo_fixture --locked --no-run
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          mkdir -p "$proof"
+          interpreter="$(readlink -f "$(command -v python)")"
+          sha256sum "$interpreter" rust/tools/bluetooth_sudo_fixture.py rust/target/debug/bluetooth-sudo-fixture > "$proof/artifacts.sha256"
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-sudo-fixture-native --test bluetooth_sudo_fixture --locked -- --nocapture
+          sha256sum -c "$proof/artifacts.sha256"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-sudo-fixture-native --lib --bin bluetooth-sudo-fixture --test bluetooth_sudo_fixture --locked -- -D warnings
       - name: Compare native Bluetooth gesture corpus with unchanged original
         run: |
           set -euo pipefail

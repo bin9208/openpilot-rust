@@ -26,6 +26,8 @@ pub mod bluetooth_gesture_cases_generate;
 pub mod bluetooth_input_check;
 #[cfg(feature = "bluetooth-journal-native")]
 pub mod bluetooth_journal_check;
+#[cfg(feature = "bluetooth-sudo-fixture-native")]
+pub mod bluetooth_sudo_fixture;
 #[cfg(feature = "bootlog-artifact-native")]
 pub mod bootlog_artifact_check;
 #[cfg(target_os = "linux")]

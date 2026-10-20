@@ -4686,3 +4686,49 @@ all exact numerical criteria remain unchanged. The temporary original-only
 capture workflow stays on its isolated capture branch and is not part of this
 PR's implementation or a Python retirement claim. No original or native kernel
 was executed locally for this follow-up.
+
+
+The Bluetooth permission-command test helper now has a native source port and
+required cloud process pair. It preserves arbitrary argv logging, Python Unix
+surrogate escaping, unknown modes, fail-<second argument>, ten-second sleep,
+self-SIGTERM and complete 1 MiB output on both streams. Short argv is logged
+before its failure and after any mode action; Rust-owned argument diagnostics
+are not represented as Python traceback parity. Each child has a 20-second
+owned-group deadline, and all ten actual original/native pair cases retain raw
+logs, streams, status and timing in the UI artifact. The interpreter, original
+script and native ELF are sealed before/after the pair. Source review caught
+and fixed initially restricted argument admission and the loud/error stderr
+assertion. The original helper and both Python callers remain until actual
+cloud results and caller migration. No retirement count changes.
+
+[Issue #431](https://github.com/bin9208/openpilot-rust/issues/431) tracks the
+messaging intermediate-vector allocation candidate. The new borrowed input
+route keeps complete batch parsing before state mutation and existing update
+callers. A source regression covers two-topic processing and malformed-second
+message rejection. The required selfdrived gate builds exact old/current
+messaging libraries and compiles the same standalone Rust allocation probe
+against each checkout's own unambiguous cereal/capnp dependencies. The package's
+unsafe-code prohibition remains intact. Four receipt rows cover warm empty,
+single-topic, two-topic and malformed batches; their complete fingerprints must
+match, the empty control must stay equal, and both nonempty paths must use fewer
+Rust allocator calls and requested bytes. This is an unmeasured hypothesis;
+Rust may reuse the previous collection's allocation. Failure of that premise
+requires reconsidering the candidate, not lowering the gate. Existing numerical,
+wire, messaging/selfdrived and original comparisons remain required. Bounded
+source review of timed and retained logging producer paths found no additional
+new defect; it does not clear all modules. No local functional execution occurred.
+
+
+The next original-only Conv/Gelu diagnostic at
+`10beba0628ea9862f898d95554e1312c6da103be` passed
+[run 39491994973](https://github.com/bin9208/openpilot-rust/actions/runs/39491994973),
+artifact 12296012647, receipt SHA-256
+`d0a663177306dcca8d1ec281fb4164e27bfb63c12c3aec88e36bb108df14f369`.
+All 92,160 pre-Gelu Conv values match a separately recaptured original Conv91
+buffer exactly, SHA-256
+`f3fbba7c06e6304d7e14a98da1f34a9aeb269cfc3e54459a2e6abc31d7dd9aed`.
+The Gelu differences and original final-output hash stay unchanged. Parent
+rehashed seven diagnostic payloads and independently checked complete Conv
+buffer and final-output byte equality. The first demonstrated mismatch is
+therefore within fused Gelu arithmetic for this input, not Conv or ReduceMean;
+the exact Gelu suboperation is still under investigation. The fence remains.
