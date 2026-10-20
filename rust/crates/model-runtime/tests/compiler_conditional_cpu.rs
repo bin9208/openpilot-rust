@@ -523,6 +523,151 @@ fn fusion_source(case: &serde_json::Value) -> Vec<u8> {
     source
 }
 #[test]
+fn actual_fused_prefix_matches_independent_original_final_output() {
+    use openpilot_model_runtime::compiler_backend_cpu::llvm::Config;
+    fn preserve_tree(source: &std::path::Path, destination: &std::path::Path) {
+        fs::create_dir(destination).unwrap();
+        for entry in fs::read_dir(source).unwrap() {
+            let entry = entry.unwrap();
+            let ty = entry.file_type().unwrap();
+            let target = destination.join(entry.file_name());
+            if ty.is_dir() {
+                preserve_tree(&entry.path(), &target);
+            } else {
+                assert!(ty.is_file(), "unexpected generated bundle entry");
+                fs::copy(entry.path(), target).unwrap();
+            }
+        }
+    }
+    let fixture = fusion_fixture();
+    let case = fixture["admission_cases"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|case| case["name"] == "direct")
+        .unwrap();
+    let source = fusion_source(case);
+    let library = std::path::PathBuf::from(std::env::var_os("LLVM_PATH").unwrap());
+    let library_sha256 = format!("{:x}", Sha256::digest(fs::read(&library).unwrap()));
+    assert_eq!(
+        library_sha256, "5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0",
+        "prefix93 original comparison requires sealed LLVM18"
+    );
+    let config = Config {
+        library,
+        library_sha256,
+        triple: "x86_64-none-unknown-elf".into(),
+        cpu: "znver3".into(),
+        features: String::new(),
+        passes: "default<O2>".into(),
+        loop_unrolling: true,
+        loop_vectorization: true,
+        slp_vectorization: true,
+        verify_each: true,
+    };
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("prefix.onnx");
+    fs::write(&path, &source).unwrap();
+    let destination = temp.path().join("bundle");
+    let compilation = compile_onnx(
+        &path,
+        &format!("{:x}", Sha256::digest(&source)),
+        &CompileOptions {
+            offline_bindings: true,
+            fused_mean_workers: Some(16),
+            llvm: Some((
+                config,
+                std::path::PathBuf::from(env!("CARGO_BIN_EXE_offline-llvm-compile")),
+            )),
+            ..CompileOptions::default()
+        },
+        &destination,
+    )
+    .unwrap();
+    assert_eq!(compilation.graph.backend, "cpu-llvm");
+    let diagnostics = std::env::var_os("FUSED_MEAN_DIAGNOSTICS")
+        .map(|root| std::path::PathBuf::from(root).join("prefix93"));
+    if let Some(root) = &diagnostics {
+        assert!(
+            !root.exists(),
+            "preserve prior fused Mean diagnostic evidence"
+        );
+        fs::create_dir_all(root).unwrap();
+        preserve_tree(&destination, &root.join("candidate-bundle"));
+        fs::copy(&path, root.join("candidate-prefix.onnx")).unwrap();
+        fs::write(
+            root.join("independent-fixture.json"),
+            serde_json::to_vec_pretty(&fixture).unwrap(),
+        )
+        .unwrap();
+    }
+    // Reconstruct only public raw model inputs; no captured Conv/Gelu/Mean
+    // intermediate is read or written into this cold native candidate.
+    let mut model = unsafe { CpuModel::load(&destination) }.unwrap();
+    let mut input_sha256 = std::collections::BTreeMap::new();
+    for input in &compilation.graph.inputs {
+        let bytes = match input.name.as_str() {
+            "img" => (0u8..=255).collect::<Vec<_>>().repeat(1536),
+            "big_img" => (0u8..=255).rev().collect::<Vec<_>>().repeat(1536),
+            "desire_pulse" => vec![0; 25 * 8 * 4],
+            "traffic_convention" | "action_t" => vec![0; 2 * 4],
+            "features_buffer" => vec![0; 24 * 512 * 4],
+            "input_img" => (0u8..=255).collect::<Vec<_>>().repeat(5400),
+            "calib" => [1.0f32 + 2f32.powi(-11), -0.0, 0.3]
+                .into_iter()
+                .flat_map(f32::to_le_bytes)
+                .collect(),
+            _ => panic!("unknown input"),
+        };
+        input_sha256.insert(input.name.clone(), format!("{:x}", Sha256::digest(&bytes)));
+        model.write_input(&input.name, &bytes).unwrap();
+    }
+    let expected = &case["outputs"]["mean"];
+    let expected_bytes = decode(expected["hex"].as_str().unwrap());
+    if let Some(root) = &diagnostics {
+        fs::write(
+            root.join("independent-original-final-mean.bin"),
+            &expected_bytes,
+        )
+        .unwrap();
+        fs::write(
+            root.join("source-and-input-pins.json"),
+            serde_json::to_vec_pretty(&serde_json::json!({
+                "source_model_sha256": fixture["source_model_sha256"],
+                "candidate_prefix_sha256": format!("{:x}", Sha256::digest(&source)),
+                "sealed_original_final_sha256": expected["sha256"],
+                "llvm_library_sha256": "5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0",
+                "cpu": "znver3",
+                "fused_mean_workers": 16,
+                "input_sha256": input_sha256,
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+    }
+    model.run();
+    let mut actual = vec![0; model.output_size("mean").unwrap()];
+    model.read_output("mean", &mut actual).unwrap();
+    if let Some(root) = &diagnostics {
+        fs::write(root.join("candidate-final-mean.bin"), &actual).unwrap();
+        fs::write(
+            root.join("comparison.json"),
+            serde_json::to_vec_pretty(&serde_json::json!({
+                "actual_sha256": format!("{:x}", Sha256::digest(&actual)),
+                "actual_bytes": actual.len(),
+                "expected_sha256": expected["sha256"],
+                "expected_bytes": expected_bytes.len(),
+                "exact": actual == expected_bytes,
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+    }
+    assert_eq!(expected["sha256"], fixture["true_prefix"]["sha256"]);
+    assert_eq!(actual.len() as u64, expected["bytes"].as_u64().unwrap());
+    assert_eq!(actual, expected_bytes);
+}
+#[test]
 fn unproved_observable_fusion_rejects_direct_views_arithmetic_and_multiple_outputs() {
     for case in fusion_fixture()["admission_cases"]
         .as_array()
