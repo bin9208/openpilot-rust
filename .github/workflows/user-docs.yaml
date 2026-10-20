@@ -14,7 +14,7 @@ on:
 jobs:
   check_user_docs:
     name: check mapped user docs
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     steps:
       - uses: actions/checkout@v6
         with:

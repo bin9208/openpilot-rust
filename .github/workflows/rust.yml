@@ -17,7 +17,7 @@ jobs:
     name: rust checks
     needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime, webrtc-runtime, webcam-runtime]
     if: ${{ always() }}
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 2
     steps:
       - name: Require runtime validation
@@ -101,7 +101,7 @@ jobs:
           test "$UI_RUNTIME" = success
   webcam-runtime:
     name: rust webcam source runtime (${{ matrix.runner }})
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ fromJSON(matrix.runner == 'ubuntu-24.04' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || format('["{0}"]', matrix.runner)) }}
     timeout-minutes: 35
     strategy:
       fail-fast: false
@@ -124,7 +124,10 @@ jobs:
           python-version: '3.12.14'
       - name: Install exact source closure and native capture providers
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          # Only GitHub-hosted images contain these disposable tool bundles.
+          if [ "${{ runner.environment }}" = github-hosted ]; then
+            sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update
           sudo apt-get install -y g++ clang-18 libclang-18-dev cmake pkg-config capnproto libcapnp-dev libzmq3-dev 'libavcodec-dev=7:6.1.1-*' 'libavformat-dev=7:6.1.1-*' 'libavutil-dev=7:6.1.1-*' 'libswscale-dev=7:6.1.1-*'
@@ -188,7 +191,7 @@ jobs:
             rust/target/debug/openpilot-webcam
   planner-runtime:
     name: rust planner source comparison (${{ matrix.runner }})
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ fromJSON(matrix.runner == 'ubuntu-24.04' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || format('["{0}"]', matrix.runner)) }}
     strategy:
       fail-fast: false
       matrix:
@@ -212,7 +215,10 @@ jobs:
           python-version: '3.12.14'
       - name: Reserve capacity and install original planner dependencies
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          # Only GitHub-hosted images contain these disposable tool bundles.
+          if [ "${{ runner.environment }}" = github-hosted ]; then
+            sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang-18 libzmq3-dev
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -267,7 +273,7 @@ jobs:
             rust/target/debug/examples/plannerd_*
   planner-memory:
     name: rust planner pure memory contracts
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 45
     env:
       CARGO_INCREMENTAL: '0'
@@ -278,7 +284,10 @@ jobs:
           persist-credentials: false
       - name: Reserve capacity and prepare Miri
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          # Only GitHub-hosted images contain these disposable tool bundles.
+          if [ "${{ runner.environment }}" = github-hosted ]; then
+            sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
           sudo apt-get update && sudo apt-get install -y capnproto
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -305,7 +314,7 @@ jobs:
           path: ${{ runner.temp }}/planner-memory/
   joystickd-runtime:
     name: rust control tools source and native runtimes
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -358,7 +367,7 @@ jobs:
             ${{ runner.temp }}/joystickd/lateral-runtime/**
   carrot-man-runtime:
     name: rust CarrotMan owner (${{ matrix.arch }})
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ fromJSON(matrix.runner == 'ubuntu-24.04' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || format('["{0}"]', matrix.runner)) }}
     timeout-minutes: 25
     strategy:
       fail-fast: false
@@ -379,7 +388,10 @@ jobs:
           python-version: '3.12.14'
       - name: Reserve runner capacity and install pinned dependencies
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          # Only GitHub-hosted images contain these disposable tool bundles.
+          if [ "${{ runner.environment }}" = github-hosted ]; then
+            sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y g++ clang cmake pkg-config libzmq3-dev capnproto libcapnp-dev
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -430,7 +442,7 @@ jobs:
             rust/target/debug/openpilot-carrot-man
   webrtc-runtime:
     name: rust WebRTC source runtime (${{ matrix.runner }})
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ fromJSON(matrix.runner == 'ubuntu-24.04' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || format('["{0}"]', matrix.runner)) }}
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -453,7 +465,10 @@ jobs:
           python-version: '3.12.14'
       - name: Reserve capacity and install pinned source and native providers
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          # Only GitHub-hosted images contain these disposable tool bundles.
+          if [ "${{ runner.environment }}" = github-hosted ]; then
+            sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update
           sudo apt-get install -y g++ clang-18 libclang-18-dev cmake pkg-config capnproto libcapnp-dev libzmq3-dev ffmpeg 'libavcodec-dev=7:6.1.1-*' 'libavformat-dev=7:6.1.1-*' 'libavutil-dev=7:6.1.1-*'
@@ -509,7 +524,7 @@ jobs:
             rust/target/debug/examples/webrtc_stun_checks
   workspace:
     name: rust workspace checks
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 120
     env:
       CARGO_BUILD_JOBS: '2'
@@ -537,7 +552,10 @@ jobs:
       - run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
       - name: Reserve capacity for workspace validation
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          # Only GitHub-hosted images contain these disposable tool bundles.
+          if [ "${{ runner.environment }}" = github-hosted ]; then
+            sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 12288
       - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang libllvm18 git-lfs libclang-dev libavcodec-dev libavformat-dev libavutil-dev ffmpeg libsdl2-2.0-0 cmake qemu-user-static libc6-arm64-cross libstdc++6-arm64-cross strace
       - run: |
@@ -816,7 +834,7 @@ jobs:
             ${{ runner.temp }}/logging-producer/**/*.log
   xiaoge-runtime:
     name: rust Xiaoge source comparison (${{ matrix.runner }})
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ fromJSON(matrix.runner == 'ubuntu-24.04' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || format('["{0}"]', matrix.runner)) }}
     strategy:
       fail-fast: false
       matrix:
@@ -839,7 +857,10 @@ jobs:
           python-version: '3.12'
       - name: Reserve capacity and install Xiaoge build prerequisites
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          # Only GitHub-hosted images contain these disposable tool bundles.
+          if [ "${{ runner.environment }}" = github-hosted ]; then
+            sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ cmake ninja-build libzmq3-dev git-lfs
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -888,7 +909,7 @@ jobs:
             rust/target/debug/examples/jpeg_options
   xiaoge-memory:
     name: rust Xiaoge native memory
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 75
     env:
       CARGO_BUILD_JOBS: '2'
@@ -907,7 +928,10 @@ jobs:
           python-version: '3.12'
       - name: Reserve capacity and install memory-check prerequisites
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          # Only GitHub-hosted images contain these disposable tool bundles.
+          if [ "${{ runner.environment }}" = github-hosted ]; then
+            sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y clang-18 cmake g++ git-lfs
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -948,7 +972,7 @@ jobs:
             ${{ runner.temp }}/xiaoge-opencv-asan/native-libraries.sha256
   encoder-runtime:
     name: rust encoder runtime
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 45
     env:
       CARGO_BUILD_JOBS: '2'
@@ -968,7 +992,10 @@ jobs:
         run: printf 'PYTHONPATH=%s/encoder-native/python:%s\nENCODER_MSGQ_PYTHON=%s/encoder-native/python\n' "$RUNNER_TEMP" "$PYTHONPATH" "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Reserve capacity and install native codec prerequisites
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          # Only GitHub-hosted images contain these disposable tool bundles.
+          if [ "${{ runner.environment }}" = github-hosted ]; then
+            sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev cmake pkg-config capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libyuv-dev libzmq3-dev ffmpeg
       - name: Install pinned encoder oracle dependencies
@@ -1015,7 +1042,7 @@ jobs:
           if-no-files-found: warn
   camera-runtime:
     name: rust camera runtime
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 40
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1036,7 +1063,10 @@ jobs:
         run: printf 'PYTHONPATH=%s/camera-native/python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Reserve capacity and install camera prerequisites
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          # Only GitHub-hosted images contain these disposable tool bundles.
+          if [ "${{ runner.environment }}" = github-hosted ]; then
+            sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang-18 libclang-rt-18-dev libzmq3-dev
       - name: Install pinned camera oracle dependencies
@@ -1076,7 +1106,7 @@ jobs:
           if-no-files-found: warn
   panda-runtime:
     name: rust Panda runtime
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 40
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1095,7 +1125,10 @@ jobs:
         run: printf 'PYTHONPATH=%s/panda-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Reserve capacity and install Panda prerequisites
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          # Only GitHub-hosted images contain these disposable tool bundles.
+          if [ "${{ runner.environment }}" = github-hosted ]; then
+            sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang libusb-1.0-0-dev libzmq3-dev cmake pkg-config curl
       - name: Install pinned Panda oracle dependencies
@@ -1132,7 +1165,7 @@ jobs:
           if-no-files-found: warn
   selfdrive-runtime:
     name: rust selfdrived runtime
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 45
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1154,7 +1187,10 @@ jobs:
         run: printf 'PYTHONPATH=%s/selfdrived-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Reserve runner capacity and install native prerequisites
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          # Only GitHub-hosted images contain these disposable tool bundles.
+          if [ "${{ runner.environment }}" = github-hosted ]; then
+            sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev
       - name: Install pinned selfdrived oracle dependencies
@@ -1220,7 +1256,7 @@ jobs:
           if-no-files-found: warn
   card-runtime:
     name: rust Card and CAN runtime
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 90
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1242,7 +1278,10 @@ jobs:
         run: printf 'PYTHONPATH=%s/card-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Reserve runner capacity before dependency installation
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          # Only GitHub-hosted images contain these disposable tool bundles.
+          if [ "${{ runner.environment }}" = github-hosted ]; then
+            sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev
       - name: Install pinned Card oracle dependencies
@@ -1311,7 +1350,7 @@ jobs:
           if-no-files-found: warn
   radar-runtime:
     name: rust RadarCAN source and host runtime
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 45
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1333,7 +1372,10 @@ jobs:
         run: printf 'PYTHONPATH=%s/radar-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Reserve runner capacity and install source binding dependencies
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          # Only GitHub-hosted images contain these disposable tool bundles.
+          if [ "${{ runner.environment }}" = github-hosted ]; then
+            sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -1410,7 +1452,10 @@ jobs:
         run: printf 'PYTHONPATH=%s/radar-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Reserve runner capacity and install generic ARM dependencies
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          # Only GitHub-hosted images contain these disposable tool bundles.
+          if [ "${{ runner.environment }}" = github-hosted ]; then
+            sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ binutils libzmq3-dev
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -1477,7 +1522,7 @@ jobs:
           if-no-files-found: warn
   radar-memory:
     name: rust RadarCAN buffer ownership with Miri
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1493,7 +1538,10 @@ jobs:
           python-version: '3.12'
       - name: Reserve capacity for pinned interpreter dependencies
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          # Only GitHub-hosted images contain these disposable tool bundles.
+          if [ "${{ runner.environment }}" = github-hosted ]; then
+            sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -1530,7 +1578,7 @@ jobs:
           if-no-files-found: warn
   navd-runtime:
     name: rust navigation runtime
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 35
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1549,7 +1597,10 @@ jobs:
         run: printf 'PYTHONPATH=%s/navd-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Reserve runner capacity and install navigation prerequisites
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          # Only GitHub-hosted images contain these disposable tool bundles.
+          if [ "${{ runner.environment }}" = github-hosted ]; then
+            sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -1593,7 +1644,7 @@ jobs:
           if-no-files-found: warn
   radard-runtime:
     name: rust radard source and native runtime (${{ matrix.runner }})
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ fromJSON(matrix.runner == 'ubuntu-24.04' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || format('["{0}"]', matrix.runner)) }}
     strategy:
       fail-fast: false
       matrix:
@@ -1627,7 +1678,10 @@ jobs:
           git rev-parse HEAD > "$RUNNER_TEMP/radard-native/SOURCE_COMMIT"
           uname -m | tee "$RUNNER_TEMP/radard-native/machine.txt"
           test "$(uname -m)" = '${{ matrix.machine }}'
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          # Only GitHub-hosted images contain these disposable tool bundles.
+          if [ "${{ runner.environment }}" = github-hosted ]; then
+            sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ binutils libzmq3-dev
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -1740,7 +1794,7 @@ jobs:
           if-no-files-found: warn
   carrot-navi-runtime:
     name: rust Carrot Navi original and host runtime
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 30
     env:
       RUSTUP_TOOLCHAIN: '1.94.0'
@@ -1759,7 +1813,10 @@ jobs:
           python-version: '3.12.14'
       - name: Reserve runner capacity and install confirmed binding dependencies
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          # Only GitHub-hosted images contain these disposable tool bundles.
+          if [ "${{ runner.environment }}" = github-hosted ]; then
+            sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev iproute2 util-linux
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -1891,7 +1948,10 @@ jobs:
           python-version: '3.12.14'
       - name: Reserve runner capacity and install native ARM build dependencies
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          # Only GitHub-hosted images contain these disposable tool bundles.
+          if [ "${{ runner.environment }}" = github-hosted ]; then
+            sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto g++ binutils
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -1919,7 +1979,7 @@ jobs:
           if-no-files-found: warn
   support-runtime:
     name: rust support runtime
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2016,7 +2076,7 @@ jobs:
             ${{ runner.temp }}/support-params-binding/provenance.json
   telemetry-runtime:
     name: rust telemetry runtime
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2101,7 +2161,7 @@ jobs:
             ${{ runner.temp }}/telemetry-params-binding/provenance.json
   startup-runtime:
     name: rust startup prerequisites
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2192,7 +2252,7 @@ jobs:
             ${{ runner.temp }}/startup-params-binding/provenance.json
   startup-services:
     name: rust startup services
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2249,7 +2309,7 @@ jobs:
           path: ${{ runner.temp }}/startup-services/
   sensor-audio:
     name: rust sensor and audio runtime
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2300,7 +2360,7 @@ jobs:
           path: ${{ runner.temp }}/sensor-audio/
   gnss-runtime:
     name: rust GNSS runtime
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2344,7 +2404,7 @@ jobs:
           path: ${{ runner.temp }}/gnss/
   controls-runtime:
     name: rust control runtime
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 35
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2398,7 +2458,7 @@ jobs:
           path: ${{ runner.temp }}/controls/
   estimation-runtime:
     name: rust estimation runtime
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 35
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2467,7 +2527,7 @@ jobs:
             ${{ runner.temp }}/paramsd-oracle/build.log
   ui-runtime:
     name: rust UI application runtime
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 60
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2489,7 +2549,10 @@ jobs:
         run: printf 'PYTHONPATH=%s/ui-native/python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Reserve capacity and install UI prerequisites
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          # Only GitHub-hosted images contain these disposable tool bundles.
+          if [ "${{ runner.environment }}" = github-hosted ]; then
+            sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang cmake pkg-config libgl-dev libgles-dev libx11-dev xvfb xauth x11-utils mesa-utils ffmpeg strace
       - name: Install pinned original GUI dependencies
@@ -2569,7 +2632,7 @@ jobs:
           if-no-files-found: warn
   ui-connectivity:
     name: rust UI and connectivity
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 35
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2631,7 +2694,7 @@ jobs:
             ${{ runner.temp }}/ui-raylib/plugin-build.json
   platform-runtime:
     name: rust platform runtime
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2684,7 +2747,7 @@ jobs:
             ${{ runner.temp }}/platform-params-binding/provenance.json
   hardware-runtime:
     name: rust hardware and boot runtime
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2745,7 +2808,7 @@ jobs:
             ${{ runner.temp }}/hardware-params-binding/provenance.json
   logger-runtime:
     name: rust original route logger
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2843,7 +2906,7 @@ jobs:
             ${{ runner.temp }}/logger-original/*.log
   model-pipelines:
     name: rust original model pipelines
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2944,7 +3007,7 @@ jobs:
             ${{ runner.temp }}/model-logging-faults/
   model-memory:
     name: rust model memory
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 15
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3005,6 +3068,7 @@ jobs:
   arm64:
     name: rust aarch64 build
     if: github.event_name != 'push' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/dev-md' || github.ref == 'refs/heads/main'
+    # Legacy setup / noble multiarch packages require an isolated Ubuntu 24.04 host.
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
@@ -3019,7 +3083,10 @@ jobs:
           python-version: '3.12'
       - name: Reserve capacity for generic ARM build dependencies
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          # Only GitHub-hosted images contain these disposable tool bundles.
+          if [ "${{ runner.environment }}" = github-hosted ]; then
+            sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 12288
           sudo apt-get update && sudo apt-get install -y g++-aarch64-linux-gnu capnproto libcapnp-dev qemu-user-static clang libclang-dev make cmake
       - name: Stage native GNU aarch64 startup renderer and portable loader headers
@@ -3301,7 +3368,7 @@ jobs:
           if-no-files-found: warn
   athena-runtime:
     name: rust Athena runtime
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3337,7 +3404,7 @@ jobs:
 
   web-upload-timeouts:
     name: active upload timeout contracts
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7

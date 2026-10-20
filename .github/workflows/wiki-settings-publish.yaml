@@ -22,7 +22,7 @@ jobs:
   synchronize:
     if: github.repository == 'bin9208/openpilot'
     name: validate and synchronize Wiki
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 15
     steps:
       - name: Check out trusted carrot-wip code

@@ -23,7 +23,7 @@ env:
 jobs:
   git_update:
     name: Git update lifecycle
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
@@ -40,6 +40,7 @@ jobs:
 
   build_release:
     name: build release
+    # Legacy setup / noble multiarch packages require an isolated Ubuntu 24.04 host.
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
@@ -85,7 +86,7 @@ jobs:
 
   model_web:
     name: Model and Bluetooth web controls
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
