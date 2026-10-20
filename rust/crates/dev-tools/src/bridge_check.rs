@@ -1,6 +1,6 @@
 //! Native controller for the unchanged source/native bridge lifecycle matrix.
-//! The original Python controller remains an independent live CI control until
-//! the retained cloud observation and absent-path execution are accepted.
+//! Independent original-controller observations authenticate fresh bidirectional
+//! traffic after retiring the Python controller.
 use crate::{
     argparse_scan::{scan_os, ArgumentError, OptionSpec},
     path_resolve::resolve_non_strict,

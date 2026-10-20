@@ -759,6 +759,29 @@ fn estimators_require_original_models_loops_and_native_boundaries() {
     }
 }
 #[test]
+fn eigen_staging_requires_all_release_archives_and_original_header_comparison() {
+    job_check(
+        "estimation-runtime",
+        &[
+            "--features eigen-tools-native --bin stage-eigen-headers",
+            "x86_64:linux_x86_64 aarch64:linux_aarch64 macos-arm64:macosx_11_0_arm64",
+            "https://github.com/commaai/dependencies/releases/download/eigen/v3.4.0/",
+            "EIGEN_ORIGINAL_INCLUDE=\"$LOCATIOND_EIGEN_INCLUDE\"",
+            "EIGEN_NATIVE_INCLUDE=\"$proof/$architecture-native/install\"",
+            "EIGEN_EVIDENCE=\"$proof/$architecture-comparison\"",
+            "--lib eigen_stage::tests",
+            "--features eigen-tools-native --test eigen_stage",
+            "--lib --bin stage-eigen-headers --test eigen_stage -- -D warnings",
+            "sha256sum --check \"$proof/stager.sha256\"",
+            "sha256sum --check \"$proof/source.sha256\"",
+            "original-install.log",
+        ],
+        &["--features eigen-tools-native"],
+        true,
+    );
+}
+
+#[test]
 fn lagd_masked_allocation_requires_same_source_old_and_current_measurements() {
     job_check(
         "estimation-runtime",
@@ -839,12 +862,10 @@ fn startup_services_require_source_and_live_native_protocols() {
             "--lib updated_process_check::ownership_tests --locked",
             "--features command-owner-tests --lib --test command_owner",
             "--lib --test updated_process_check --bin check-updated-process",
-            "check_bridge.py",
             "--features bridge-tools-native --bin check-bridge",
             "--features bridge-tools-native --test bridge_check --locked",
             "--features bridge-tools-native --lib bridge_check:: --locked",
             "--features bridge-tools-native --test bridge_controller_reference --locked",
-            "BRIDGE_ORIGINAL_CONTROLLER_REPORT=",
             "BRIDGE_NATIVE_CONTROLLER_REPORT=",
             "sudo -E \"$PWD/rust/target/debug/check-bridge\" --original",
             "sudo chown -R \"$(id -u):$(id -g)\" \"$RUNNER_TEMP/startup-services/bridge-native-controller\"",
@@ -2233,11 +2254,12 @@ fn production_statistics_require_actual_entrypoint_and_busy_shutdown_checks() {
 }
 
 #[test]
-fn bridge_retirement_preparation_keeps_live_original_and_same_elf_absence() {
+fn bridge_retirement_requires_actual_source_absence_and_same_elf_native_trace() {
     job_check(
         "startup-services",
         &[
-            "python)\" rust/tools/check_bridge.py",
+            "test ! -e rust/tools/check_bridge.py",
+            "test ! -L rust/tools/check_bridge.py",
             "--test bridge_controller_reference --locked",
             "--lib bridge_check:: --locked",
             "BRIDGE_ABSENCE_PROOF=\"$proof\"",

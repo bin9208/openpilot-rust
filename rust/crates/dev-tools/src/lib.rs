@@ -207,6 +207,8 @@ pub mod version_reference_check;
 #[cfg(feature = "version-tools-native")]
 pub mod version_source;
 
+#[cfg(feature = "eigen-tools-native")]
+pub mod eigen_stage;
 pub mod elf_audit;
 #[cfg(feature = "encoder-runtime-native")]
 pub mod encoder_ci_check;

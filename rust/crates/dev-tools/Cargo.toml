@@ -538,6 +538,7 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
+eigen-tools-native = []
 bluetooth-sudo-fixture-native = []
 bluetooth-gesture-cases-native = ["dep:openpilot-runtime-core"]
 bluetooth-enumerate-native = []
@@ -779,6 +780,15 @@ path = "src/bin/publish_runtime_release.rs"
 [[bin]]
 name = "stage-encoder-target"
 path = "src/bin/stage_encoder_target.rs"
+
+[[bin]]
+name = "stage-eigen-headers"
+path = "src/bin/stage_eigen_headers.rs"
+required-features = ["eigen-tools-native"]
+
+[[test]]
+name = "eigen_stage"
+required-features = ["eigen-tools-native"]
 
 [[bin]]
 name = "runtime-elf-audit"

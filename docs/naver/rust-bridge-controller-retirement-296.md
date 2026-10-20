@@ -1,7 +1,38 @@
-# Bridge checker retirement preparation (#296)
+# Bridge checker retirement (#296)
 
-The original Python controller `rust/tools/check_bridge.py` remains present and
-continues to run in the startup-services cloud job. At source commit
+The original Python controller `rust/tools/check_bridge.py` is removed after
+the full original/native and same-ELF absence comparison passed at source
+`2d8d027932dc880bd0acd00288b256ac8d7f1b89`.
+[Startup-services job 118875506146](https://github.com/bin9208/openpilot-rust/actions/runs/39494388960/job/118875506146)
+passed controller tests, strict Clippy, actual bidirectional traffic, both
+publication-mutation checks, and the required native exec audit. Artifact
+`12297452708` (`rust-startup-services-evidence`, ZIP SHA-256
+`ea65e1f32b436f902974a726724aad8a3d5ae0e4404849c2f2f8a7c72f7975e8`)
+was independently reviewed by the parent. The raw original report is byte
+identical to the earlier original capture; the original, current native and
+Python-absent native reports all match the immutable original observation
+(SHA-256 `93238454770d40562d60087fa355b2da8cfc72112a56ee751df1fb69098201e3`).
+The two 160-packet direction hashes remain
+`2e863802da7df834e15445128337e8007dc48bb32f0d5356710feb7bf3aac3ec`
+and `4b2e0fd751509172d255cceaad2e2e476ec90890c91baa8c1cc5a80619e318e9`.
+
+The observed checker/original/native executable hashes are respectively
+`9052a0dc96df12225cf0b0d2fabf3ba8c12eb9323c3b42982b443c5b8dccb10f`,
+`782f45252475ebc9f608d0353679dcc3c894a176a5374658caaefd02fecad937`,
+and `bc0fb8f3c39def396ca3c3772e392a2b0ac0a3d26c1ec66c85150960ffbc8088`.
+Both live report provenance and the exec audit bind those identities. The
+parent independently parsed all 17 exec attempts: five checker entries, four
+`unshare`, four `ip`, two original bridge and two native bridge calls.
+
+The post-deletion cloud gate requires the historical source to be absent in
+the actual checkout, seals all five executing tools before either traffic run,
+compares both fresh native reports with the original observation, and checks
+both provenance receipts and all executable hashes afterward. It retains the
+original C++ bridge build and namespace/lifecycle checks. This revised gate
+still requires its first post-deletion cloud run; the earlier passing artifact
+does not by itself establish a passing new HEAD or device operation.
+
+Historical original capture: at source commit
 `edb42bf095d6a3e3b38cc0a4546976dfb710363e`, [job 118816129850](https://github.com/bin9208/openpilot-rust/actions/runs/39477200877/job/118816129850)
 passed the native controller tests, strict Clippy, and the live Python/native
 comparison. Artifact `12290810936` (`rust-startup-services-evidence`, archive
@@ -38,14 +69,13 @@ creation; both paths must reject success, with the latter removing only its own
 receipt inode. The retained fixture is sealed by a source-pinned hash; runtime
 validation of that hash does not itself authenticate the remote Actions archive.
 
-Cloud acceptance must run the present-path live original/native gate, then a
-separate absent-path run of the **same native checker ELF** using a private
+The pre-deletion cloud acceptance ran the present-path live original/native
+gate, then a separate absent-path run of the **same native checker ELF** using a private
 `OPENPILOT_RUST_ROOT` with no `rust/tools/check_bridge.py`. Compare both
 `result.json` reports to the sealed observation and each other; retain exact
 ELF SHA-256, full original/native artifacts, namespace/process cleanup and
 strict Clippy evidence. The focused identity test exercises changed content,
-symlink/FIFO, missing parent and absent-path reappearance negatives. Keep the original Python controller and
-workflow until that cloud evidence is accepted. No local build, functional
+symlink/FIFO, missing parent and absent-path reappearance negatives. No local build, functional
 test, namespace probe, or daemon execution was run for this preparation.
 
 Parent artifact review independently recomputed the downloaded archive digest
@@ -55,4 +85,5 @@ native `unshare` and `ip`, then traces the same checker and two bridge ELFs in
 the absent-path comparison. The required reference test accounts for all 17
 exec attempts: checker/main plus four workers, four unshare calls, four ip
 calls and two calls to each bridge. Unexpected or opaque exec attempts fail.
-This new absence/exec gate and the #427 repair still await cloud execution.
+The absence/exec gate and #427 repair passed on `2d8d0279`; the post-deletion
+gate remains cloud pending.

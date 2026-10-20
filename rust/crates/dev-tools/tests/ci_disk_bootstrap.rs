@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 432);
+    assert_eq!(text.matches(marker).count(), 437);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -311,6 +311,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut bluetooth_gesture_cases = vec![];
     let mut bluetooth_sudo_fixture = vec![];
     let mut messaging_update_allocation = vec![];
+    let mut eigen_staging = vec![];
     let mut logmessaged_startup_controller = vec![];
     let mut bluetooth_journal_controller = vec![];
     let mut calibration_float_controller = vec![];
@@ -334,6 +335,14 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 .iter()
                 .rev()
                 .find(|line| line.starts_with("      - name:"));
+            if step
+                == Some(
+                    &"      - name: Compare native Eigen header staging with unchanged Python shim",
+                )
+            {
+                eigen_staging.push(tail.to_owned());
+                continue;
+            }
             if step
                 == Some(
                     &"      - name: Compare native Bluetooth sudo fixture with unchanged original",
@@ -463,12 +472,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 soundd_daemon_controller.push(tail.to_owned());
                 continue;
             }
-            if i + 1 < lines.len()
-                && (lines[i + 1].contains("--features bridge-tools-native")
-                    || lines[i + 1].contains("sudo -E \"$PWD/rust/target/debug/check-bridge\"")
-                    || lines[i + 1]
-                        .contains("proof=\"$RUNNER_TEMP/startup-services/bridge-absence-proof\""))
-            {
+            if step == Some(&"      - name: Require native bridge controller against sealed original observations") {
                 bridge_controller.push(tail.to_owned());
                 continue;
             }
@@ -1041,6 +1045,11 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     assert_eq!(
         messaging_update_allocation,
         [4096, 1024, 128, 512]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        eigen_staging,
+        [256, 512, 64, 512, 512]
             .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     assert_eq!(

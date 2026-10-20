@@ -2792,13 +2792,13 @@ jobs:
           python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/services-params-binding"
       - name: Compare LPA serial, TLS, profile and notification lifecycle
         run: python rust/tools/check_lpa.py --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/startup-services/lpa"
-      - name: Compare source and native bridge packets and connection lifecycle
-        run: sudo -E env "PYTHONPATH=$PYTHONPATH" "$(command -v python)" rust/tools/check_bridge.py --original "$RUNNER_TEMP/services-bridge-source/bridge-original" --binary "$PWD/rust/target/debug/bridge" --output "$RUNNER_TEMP/startup-services/bridge"
-      - name: Compare native bridge controller with the unchanged original controller
+      - name: Require native bridge controller against sealed original observations
         run: |
           # The namespace controller runs as root; keep its private 0600 reports
           # readable by the runner for the paired check and failure artifacts.
           set -euo pipefail
+          test ! -e rust/tools/check_bridge.py
+          test ! -L rust/tools/check_bridge.py
           trap 'for path in "$RUNNER_TEMP/startup-services/bridge-native-controller" "$RUNNER_TEMP/startup-services/bridge-absence-proof"; do if [ -d "$path" ]; then sudo chown -R "$(id -u):$(id -g)" "$path"; fi; done' EXIT
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bridge-tools-native --bin check-bridge --locked
@@ -2808,11 +2808,6 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bridge-tools-native --lib bridge_check:: --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bridge-tools-native --lib --bin check-bridge --test bridge_check --test bridge_controller_reference --locked -- -D warnings
-          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
-          sudo -E "$PWD/rust/target/debug/check-bridge" --original "$RUNNER_TEMP/services-bridge-source/bridge-original" --binary "$PWD/rust/target/debug/bridge" --output "$RUNNER_TEMP/startup-services/bridge-native-controller"
-          sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/startup-services/bridge-native-controller"
-          export BRIDGE_ORIGINAL_CONTROLLER_REPORT="$RUNNER_TEMP/startup-services/bridge/result.json"
-          export BRIDGE_NATIVE_CONTROLLER_REPORT="$RUNNER_TEMP/startup-services/bridge-native-controller/result.json"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           proof="$RUNNER_TEMP/startup-services/bridge-absence-proof"
           checker="$GITHUB_WORKSPACE/rust/target/debug/check-bridge"
@@ -2827,6 +2822,10 @@ jobs:
           printf '%s\n' "$proof/native-path/unshare" > "$proof/unshare.path"
           printf '%s\n' "$proof/native-path/ip" > "$proof/ip.path"
           sha256sum "$checker" "$original" "$native" "$proof/native-path/unshare" "$proof/native-path/ip" > "$proof/artifacts.sha256"
+          sudo -E "$PWD/rust/target/debug/check-bridge" --original "$RUNNER_TEMP/services-bridge-source/bridge-original" --binary "$PWD/rust/target/debug/bridge" --output "$RUNNER_TEMP/startup-services/bridge-native-controller"
+          sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/startup-services/bridge-native-controller"
+          export BRIDGE_NATIVE_CONTROLLER_REPORT="$RUNNER_TEMP/startup-services/bridge-native-controller/result.json"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           sudo -E env "OPENPILOT_RUST_ROOT=$proof/native-root" "PATH=$proof/native-path" /usr/bin/timeout --signal=TERM --kill-after=5s 300s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "$proof/native.exec" "$checker" --original "$original" --binary "$native" --output "$proof/absent" > "$proof/native.stdout" 2> "$proof/native.stderr"
           sudo chown -R "$(id -u):$(id -g)" "$proof"
           diff "$RUNNER_TEMP/startup-services/bridge-native-controller/result.json" "$proof/absent/result.json"
@@ -3077,8 +3076,41 @@ jobs:
         run: python -P -m pytest -c /dev/null --noconftest -p no:cacheprovider -q rust/tools/tests/test_paramsd_atomic_gate.py
       - name: Install source-pinned Eigen headers
         run: |
-          python -m pip install 'git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen'
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/estimation/eigen"
+          python -m pip install 'git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen' 2>&1 | tee "$RUNNER_TEMP/estimation/eigen/original-install.log"
           python -c 'import eigen; print("LOCATIOND_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR); print("PARAMSD_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR)' >> "$GITHUB_ENV"
+      - name: Compare native Eigen header staging with unchanged Python shim
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/estimation/eigen"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 256
+          rustup component add clippy --toolchain 1.94.0
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features eigen-tools-native --bin stage-eigen-headers
+          stager="$GITHUB_WORKSPACE/rust/target/debug/stage-eigen-headers"
+          sha256sum "$stager" > "$proof/stager.sha256"
+          git rev-parse HEAD > "$proof/source-commit.txt"
+          sha256sum rust/crates/dev-tools/src/eigen_stage.rs rust/crates/dev-tools/src/bin/stage_eigen_headers.rs rust/crates/dev-tools/tests/eigen_stage.rs > "$proof/source.sha256"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 64
+          for item in x86_64:linux_x86_64 aarch64:linux_aarch64 macos-arm64:macosx_11_0_arm64; do
+            architecture=${item%%:*}
+            platform=${item#*:}
+            wheel="$proof/eigen-3.4.0-py3-none-$platform.whl"
+            curl --fail --location --retry 3 --output "$wheel" "https://github.com/commaai/dependencies/releases/download/eigen/v3.4.0/eigen-3.4.0-py3-none-$platform.whl"
+            "$stager" --wheel "$wheel" --output "$proof/$architecture-native" --architecture "$architecture" > "$proof/$architecture-stage.json"
+          done
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features eigen-tools-native --lib eigen_stage::tests
+          for item in x86_64:linux_x86_64 aarch64:linux_aarch64 macos-arm64:macosx_11_0_arm64; do
+            architecture=${item%%:*}
+            platform=${item#*:}
+            EIGEN_WHEEL="$proof/eigen-3.4.0-py3-none-$platform.whl" EIGEN_ARCHITECTURE="$architecture" EIGEN_ORIGINAL_INCLUDE="$LOCATIOND_EIGEN_INCLUDE" EIGEN_NATIVE_INCLUDE="$proof/$architecture-native/install" EIGEN_EVIDENCE="$proof/$architecture-comparison" cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features eigen-tools-native --test eigen_stage
+          done
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features eigen-tools-native --lib --bin stage-eigen-headers --test eigen_stage -- -D warnings
+          sha256sum --check "$proof/stager.sha256"
+          sha256sum --check "$proof/source.sha256"
       - name: Build current native dependency stager
         uses: ./.github/actions/native-json11
       - name: Build native estimators and unchanged source oracle
