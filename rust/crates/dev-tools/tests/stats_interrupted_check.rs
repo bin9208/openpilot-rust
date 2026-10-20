@@ -29,7 +29,7 @@ fn mandatory_ci_uses_native_controller_and_real_receive_fault_wrapper() {
         "STATS_INTERRUPTED_BINDING=",
         "STATS_INTERRUPTED_PRELOAD=",
         "STATS_INTERRUPTED_CHECKER=",
-        "--features stats-daemon-native --test stats_interrupted_check --locked",
+        "--features stats-daemon-native --lib --test stats_interrupted_check --locked",
         "cargo clippy",
         "--lib --test stats_interrupted_check --bin check-stats-interrupted --locked -- -D warnings",
         "rust/target/debug/check-stats-interrupted rust/target/debug/examples/stats_daemon",

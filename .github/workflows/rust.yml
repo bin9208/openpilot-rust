@@ -2516,7 +2516,7 @@ jobs:
           test "${#stats_receive_bindings[@]}" -eq 1
           export STATS_INTERRUPTED_BINARY="$PWD/rust/target/debug/examples/stats_daemon" STATS_INTERRUPTED_BINDING="${stats_receive_bindings[0]}" STATS_INTERRUPTED_PRELOAD="$fault_root/receive-preload.so" STATS_INTERRUPTED_CHECKER="$PWD/rust/target/debug/check-stats-interrupted"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-daemon-native --test stats_interrupted_check --locked
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-daemon-native --lib --test stats_interrupted_check --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-daemon-native --lib --test stats_interrupted_check --bin check-stats-interrupted --locked -- -D warnings
           rust/target/debug/check-stats-interrupted rust/target/debug/examples/stats_daemon \

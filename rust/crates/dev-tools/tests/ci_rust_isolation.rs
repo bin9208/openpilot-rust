@@ -2151,7 +2151,7 @@ fn telemetry_retains_metadata_error_transport_across_calls_and_threads() {
             "rust/target/debug/check-stats-failures rust/target/debug",
             "rust/target/debug/check-stats-log-fault rust/target/debug",
             "rust/target/debug/check-stats-interrupted rust/target/debug/examples/stats_daemon",
-            "--features stats-daemon-native --test stats_interrupted_check --locked",
+            "--features stats-daemon-native --lib --test stats_interrupted_check --locked",
             "--lib --test stats_interrupted_check --bin check-stats-interrupted --locked -- -D warnings",
             "--features openpilot-dev-tools/version-tools-native",
             "--test version_source --test version_check --test version_collector_check --locked",

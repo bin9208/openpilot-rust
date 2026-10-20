@@ -8,7 +8,7 @@ use rustix::process::Signal;
 use serde_json::{json, Value};
 use std::{
     fs::{self, File, OpenOptions},
-    io::{Cursor, Write},
+    io::{self, Cursor, Write},
     os::unix::fs::{symlink, PermissionsExt},
     path::{Path, PathBuf},
     process::{Command, Stdio},
@@ -16,6 +16,7 @@ use std::{
     time::{Duration, Instant},
 };
 const BIG: usize = 10 * 1024 * 1024;
+const QUEUES: [&str; 2] = ["logMessage", "errorLogMessage"];
 fn require(value: bool, message: &str) -> Result<()> {
     if value {
         Ok(())
@@ -50,6 +51,44 @@ fn record(packet: &[u8], error: bool) -> Result<(Value, u64)> {
         event.get_log_mono_time(),
     ))
 }
+fn queue_size(shm: &Path, name: &str) -> Result<Option<u64>> {
+    match fs::metadata(shm.join(name)) {
+        Ok(metadata) if metadata.is_file() => Ok(Some(metadata.len())),
+        Ok(_) => Err(format!("collector queue is not a regular file: {name}").into()),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(error.into()),
+    }
+}
+fn wait_for_queues(
+    shm: &Path,
+    deadline: Instant,
+    cancel: &AtomicBool,
+    mut alive: impl FnMut() -> Result<bool>,
+) -> Result<()> {
+    loop {
+        check(cancel)?;
+        require(alive()?, "collector exited before full-size queues")?;
+        let log = queue_size(shm, QUEUES[0])?;
+        let error = queue_size(shm, QUEUES[1])?;
+        if log.is_some_and(|size| size > BIG as u64) && error.is_some_and(|size| size > BIG as u64)
+        {
+            return Ok(());
+        }
+        if Instant::now() >= deadline {
+            require(
+                log.is_some() && error.is_some(),
+                "collector startup timeout",
+            )?;
+            return Err(format!(
+                "collector queue capacity reduced: logMessage={} errorLogMessage={} bytes",
+                log.expect("present queue"),
+                error.expect("present queue")
+            )
+            .into());
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+}
 pub(super) struct Collector<'a> {
     process: Process<'a>,
     log: Subscriber,
@@ -75,19 +114,8 @@ impl<'a> Collector<'a> {
         let process = Process::spawn(&mut command, cancel, false)?;
         let shm = PathBuf::from(format!("/dev/shm/msgq_{prefix}"));
         let deadline = Instant::now() + Duration::from_secs(20);
-        while !["logMessage", "errorLogMessage"]
-            .iter()
-            .all(|s| shm.join(s).exists())
-        {
-            check(cancel)?;
-            require(
-                process.exited()?.is_none(),
-                "collector exited before queues",
-            )?;
-            require(Instant::now() < deadline, "collector startup timeout")?;
-            std::thread::sleep(Duration::from_millis(10));
-        }
-        for name in ["logMessage", "errorLogMessage"] {
+        wait_for_queues(&shm, deadline, cancel, || Ok(process.exited()?.is_none()))?;
+        for name in QUEUES {
             require(
                 fs::metadata(shm.join(name))?.len() > BIG as u64,
                 "collector queue capacity reduced",
@@ -558,5 +586,115 @@ pub(super) fn run(
         ),
         "log-fault" => log_fault(&mut collector, &mut process, output, &endpoint),
         _ => failures(&mut collector, &mut process, case, output, &endpoint),
+    }
+}
+
+#[cfg(test)]
+mod queue_readiness_tests {
+    use super::{wait_for_queues, BIG, QUEUES};
+    use std::{
+        fs::File,
+        sync::atomic::{AtomicBool, Ordering},
+        time::{Duration, Instant},
+    };
+
+    #[test]
+    fn existing_zero_and_partial_files_wait_for_both_full_capacities() {
+        let root = tempfile::tempdir().unwrap();
+        let log = File::create(root.path().join(QUEUES[0])).unwrap();
+        let error = File::create(root.path().join(QUEUES[1])).unwrap();
+        error.set_len(BIG as u64).unwrap();
+        let mut fills = 0;
+        let mut alive_checks = 0;
+        wait_for_queues(
+            root.path(),
+            Instant::now() + Duration::from_secs(1),
+            &AtomicBool::new(false),
+            || {
+                alive_checks += 1;
+                match alive_checks {
+                    2 => {
+                        log.set_len(BIG as u64 + 8)?;
+                        fills += 1;
+                    }
+                    3 => {
+                        error.set_len(BIG as u64 + 8)?;
+                        fills += 1;
+                    }
+                    _ => {}
+                }
+                Ok(true)
+            },
+        )
+        .unwrap();
+        assert_eq!(fills, 2, "premature subscription to an undersized queue");
+        assert_eq!(alive_checks, 3);
+    }
+
+    #[test]
+    fn full_files_are_accepted_without_waiting_for_collector_progress() {
+        let root = tempfile::tempdir().unwrap();
+        for name in QUEUES {
+            File::create(root.path().join(name))
+                .unwrap()
+                .set_len(BIG as u64 + 8)
+                .unwrap();
+        }
+        let mut alive_checks = 0;
+        wait_for_queues(root.path(), Instant::now(), &AtomicBool::new(false), || {
+            alive_checks += 1;
+            Ok(true)
+        })
+        .unwrap();
+        assert_eq!(alive_checks, 1);
+        let failure = wait_for_queues(root.path(), Instant::now(), &AtomicBool::new(false), || {
+            Ok(false)
+        })
+        .unwrap_err()
+        .to_string();
+        assert!(failure.contains("collector exited before full-size queues"));
+    }
+
+    #[test]
+    fn undersized_deadline_cancel_and_dead_collector_still_reject() {
+        let root = tempfile::tempdir().unwrap();
+        for name in QUEUES {
+            File::create(root.path().join(name))
+                .unwrap()
+                .set_len(BIG as u64)
+                .unwrap();
+        }
+        let cancel = AtomicBool::new(false);
+        let failure = wait_for_queues(root.path(), Instant::now(), &cancel, || Ok(true))
+            .unwrap_err()
+            .to_string();
+        assert!(failure.contains("collector queue capacity reduced"));
+        assert!(failure.contains(&format!("logMessage={BIG} errorLogMessage={BIG}")));
+        let failure = wait_for_queues(
+            root.path(),
+            Instant::now() + Duration::from_secs(1),
+            &cancel,
+            || Ok(false),
+        )
+        .unwrap_err()
+        .to_string();
+        assert!(failure.contains("collector exited before full-size queues"));
+        cancel.store(true, Ordering::SeqCst);
+        assert!(wait_for_queues(root.path(), Instant::now(), &cancel, || {
+            panic!("cancelled wait asked for collector progress")
+        })
+        .is_err());
+    }
+
+    #[test]
+    fn missing_queue_keeps_startup_timeout_classification() {
+        let root = tempfile::tempdir().unwrap();
+        File::create(root.path().join(QUEUES[0])).unwrap();
+        let failure = wait_for_queues(root.path(), Instant::now(), &AtomicBool::new(false), || {
+            Ok(true)
+        })
+        .unwrap_err()
+        .to_string();
+        assert!(failure.contains("collector startup timeout"));
     }
 }
