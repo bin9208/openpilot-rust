@@ -303,7 +303,11 @@ pub(crate) fn apply_cpu_image_aliases_with_matrices(
 /// otherwise an observable f32 path must cross explicit storage conversion.
 /// This is conservative admission, not an implementation of the fused schedule
 /// or an analytic proof that quantization masks differences for every input.
-pub fn admit_cpu_observable_fusion(graph: &LoweredGraph, model: &Model) -> Result<(), String> {
+pub fn admit_cpu_observable_fusion(
+    graph: &LoweredGraph,
+    model: &Model,
+    fused_outputs: &BTreeSet<usize>,
+) -> Result<(), String> {
     let mut held = graph.outputs.values().copied().collect::<BTreeSet<_>>();
     for id in (0..graph.plans.len()).rev() {
         if held.contains(&id) {
@@ -353,7 +357,7 @@ pub fn admit_cpu_observable_fusion(graph: &LoweredGraph, model: &Model) -> Resul
         })
         .flat_map(|node| node.outputs.iter())
         .filter_map(|name| graph.names.get(name))
-        .filter(|id| graph.plans[**id].ty.dtype == 1)
+        .filter(|id| graph.plans[**id].ty.dtype == 1 && !fused_outputs.contains(id))
         .copied()
         .collect::<BTreeSet<_>>();
     fn plan(

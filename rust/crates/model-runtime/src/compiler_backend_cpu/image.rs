@@ -545,6 +545,16 @@ impl Ir {
             .collect();
         self.numeric_constants = true;
     }
+    /// Identify distinct ABI and stack slots without changing the existing
+    /// numeric-constant scheduling policy. Fused closures have several mutable
+    /// accumulators whose loads must never share one semantic key.
+    pub(super) fn register_slots(&mut self, values: &[(&str, u8, i64)]) {
+        self.parameters.extend(
+            values
+                .iter()
+                .map(|(name, op, slot)| (name.to_string(), (*op, *slot))),
+        );
+    }
     pub(super) fn line(&mut self, line: impl AsRef<str>) {
         self.flush();
         writeln!(self.text, "  {}", line.as_ref()).unwrap();
