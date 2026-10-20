@@ -63,3 +63,18 @@ fn cooldown_uses_current_bsd_followup_interval_and_recovers() {
     assert!(metrics.ready(3.41, 0.4));
     assert!(!metrics.ready(3.39, 0.4));
 }
+
+#[test]
+fn inference_that_uses_the_entire_interval_also_releases_cpu() {
+    let mut metrics = Metrics::new(1.0);
+    metrics
+        .record(Timing {
+            received: 1.0,
+            started: 1.0,
+            finished: 1.5,
+            thread_cpu_ms: 500.0,
+        })
+        .unwrap();
+    assert!(!metrics.ready(1.5, 0.5));
+    assert!(metrics.ready(2.0, 0.5));
+}

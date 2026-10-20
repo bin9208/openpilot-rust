@@ -15,12 +15,15 @@ import zipfile
 
 assert os.environ.get("GITHUB_ACTIONS") == "true", "runtime validation/builds belong in GitHub Actions"
 assert os.environ.get("GITHUB_REPOSITORY") == "bin9208/openpilot-rust"
+assert os.environ.get("RUNNER_ENVIRONMENT") == "github-hosted", "runtime delivery requires a GitHub-hosted runner"
 ROOT = Path(os.environ["GITHUB_WORKSPACE"])
 WORK = Path(os.environ["RUNNER_TEMP"]) / "agnos-runtime"
 WORK.mkdir(exist_ok=True)
 CONFIG = ROOT / "rust/ci/runtime"
 SHA = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+assert SHA == os.environ["GITHUB_SHA"], "checkout must match the event source"
 BASE = "3496c4bbf300e7487d17b2bf25afc170584dfe02"
+INHERITED = "a2b06522a24f4a3533192daf99ac48f119782bda"
 SDK = WORK / "sdk"
 TARGET = WORK / "target"
 HOST_TARGET = TARGET / "host-tools"
@@ -68,11 +71,43 @@ def git(*args):
     return subprocess.check_output(["git", *args], cwd=ROOT, text=True).strip()
 
 
-def stage_baseline():
+def source_path_allowed(path, source_entry="", inherited_entry=""):
+    allowed = (
+        "AGENTS.md", "launch_openpilot.sh", "rust/Cargo.lock",
+        "rust/crates/jetlink/", "rust/crates/runtime-core/", "rust/crates/runtime-launcher/",
+        "rust/crates/xiaoge/", "rust/crates/dev-tools/src/publish.rs", "rust/ci/runtime/",
+        "rust/upstream/jetlink.json", "docs/naver/dev-md-jetlink-",
+        "docs/naver/dev-md-lfs-checkout-validation.md", "docs/naver/dev-md-onnx-load-validation.md",
+        "docs/user/en/lane-change.md", "docs/user/ko/lane-change.md", ".lfsconfig",
+        ".github/workflows/jetlink-native.yml", ".github/workflows/dev-md-runtime.yml",
+        ".github/workflows/fast-checks.yml", "tools/check_jetlink_usb_policy.py",
+        "tools/ci/tests/test_lfs_endpoint.py",
+    )
+    if any(path == prefix or prefix.endswith(("/", "-")) and path.startswith(prefix) for prefix in allowed):
+        return True
+    # Historical runner documentation is permitted only with its original mode,
+    # type and blob. It does not authorize new CI or provider-source changes.
+    return path == "docs/naver/self-hosted-runner-404.md" and bool(source_entry) and source_entry == inherited_entry
+
+
+def check_source_policy():
     assert not git("status", "--porcelain")
-    changed = git("diff", "--name-only", BASE, SHA).splitlines()
-    allowed = ("AGENTS.md", "launch_openpilot.sh", "rust/Cargo.lock", "rust/crates/jetlink/", "rust/crates/runtime-core/", "rust/crates/runtime-launcher/", "rust/crates/dev-tools/src/publish.rs", "rust/ci/runtime/", "rust/upstream/jetlink.json", "docs/naver/dev-md-jetlink-", ".github/workflows/jetlink-native.yml", ".github/workflows/dev-md-runtime.yml", "tools/check_jetlink_usb_policy.py")
-    assert all(any(path == prefix or prefix.endswith(("/", "-")) and path.startswith(prefix) for prefix in allowed) for path in changed), changed
+    # Check both sides of moves so an allowed destination cannot hide removal
+    # of a native provider's source.
+    changed = git("diff", "--no-renames", "--name-only", BASE, SHA).splitlines()
+    inherited_path = "docs/naver/self-hosted-runner-404.md"
+    source_entry = git("ls-tree", SHA, "--", inherited_path)
+    inherited_entry = git("ls-tree", INHERITED, "--", inherited_path)
+    rejected = [path for path in changed if not source_path_allowed(path, source_entry, inherited_entry)]
+    save(WORK / "source-policy.json", dict(schema=1, source_commit=SHA, baseline_source=BASE,
+         inherited_source=INHERITED, inherited_path=inherited_path, source_entry=source_entry,
+         inherited_entry=inherited_entry, changed_source_paths=changed, rejected_source_paths=rejected))
+    assert not rejected, f"baseline provider reuse rejects source changes: {rejected}"
+    return changed
+
+
+def stage_baseline():
+    changed = check_source_policy()
     archive = download(f"https://github.com/bin9208/openpilot-rust/releases/download/runtime-{BASE}/openpilot-rust-{BASE}-aarch64.tar.gz", "baseline.tar.gz", "eb67c8c58f8c8da62aa7afdc11d7cfc1262038222b6e4b9ff0a33fe64206297d")
     base = WORK / "baseline"
     room(4 * 2**30)
@@ -314,6 +349,7 @@ def restore_release():
 
 def publish():
     assert os.environ["GITHUB_REF"] == "refs/heads/dev-md"
+    assert os.environ["GITHUB_EVENT_NAME"] == "push"
     identity = json.loads((WORK / "delivery-tools/identity.json").read_text())
     assert identity["source_commit"] == SHA
     publisher = WORK / "delivery-tools/publish-runtime-release"; publisher.chmod(0o755)
@@ -338,8 +374,9 @@ def publish():
 
 if __name__ == "__main__":
     os.environ["RUSTUP_TOOLCHAIN"] = "1.94.0"
-    if sys.argv[1] == "prepare": stage_baseline(); sysroot(); environment()
+    if sys.argv[1] == "source-policy": check_source_policy()
+    elif sys.argv[1] == "prepare": stage_baseline(); sysroot(); environment()
     elif sys.argv[1] == "host-tools": host_tools()
     elif sys.argv[1] == "build": build()
     elif sys.argv[1] == "publish": sysroot(); publish()
-    else: raise SystemExit("expected prepare, host-tools, build or publish")
+    else: raise SystemExit("expected source-policy, prepare, host-tools, build or publish")

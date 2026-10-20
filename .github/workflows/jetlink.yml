@@ -7,7 +7,7 @@ permissions:
 jobs:
   model:
     name: model contract and CPU inference
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -19,7 +19,7 @@ jobs:
         run: python -m pytest -c /dev/null --rootdir=. --confcutdir=tools/jetlink_model/tests tools/jetlink_model/tests -q
   android-core:
     name: Android protocol and Java inference
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7

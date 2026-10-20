@@ -71,10 +71,7 @@ pub fn run(
     }
     let mut camera = Camera::new(Stream::Wide);
     while shared.running.load(Ordering::Acquire) {
-        let result = (|| {
-            if !camera.receive(&shared)? {
-                return Ok(());
-            }
+        let result = camera.receive(&shared, |camera| {
             let now = platform::monotonic()?;
             shared.refresh(false)?;
             subscriber.update(Duration::ZERO)?;
@@ -123,7 +120,7 @@ pub fn run(
                     } else {
                         state.settings.base_interval_seconds
                     };
-                    if now - state.metrics[0].last_inference < interval {
+                    if !state.metrics[0].ready(now, interval) {
                         return Ok(());
                     }
                     (false, interval)
@@ -196,7 +193,7 @@ pub fn run(
             }
             drop(operation);
             publisher.publish(&shared)
-        })();
+        });
         if let Err(error) = result {
             camera.recover(error, &shared)?;
         }

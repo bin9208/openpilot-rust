@@ -1,5 +1,6 @@
 name: dev-md AGNOS runtime package
 on:
+  workflow_dispatch:
   push:
     branches: [dev-md, 'codex/fix-402-*']
 permissions:
@@ -10,9 +11,12 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/dev-md' }}
 jobs:
   package:
-    if: startsWith(github.ref, 'refs/heads/codex/fix-402-') && contains(github.event.head_commit.message, '[runtime-package]')
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/codex/fix-415-416-lfs-onnx') ||
+      (github.event_name == 'push' && contains(github.event.head_commit.message, '[runtime-package]') &&
+      (github.ref == 'refs/heads/dev-md' || startsWith(github.ref, 'refs/heads/codex/fix-402-')))
     name: Build and seal actual AGNOS runtime
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 150
     env:
       GIT_LFS_SKIP_SMUDGE: '1'
@@ -24,6 +28,63 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Check focused source policy before downloads or builds
+        run: |
+          python3 - <<'PY'
+          import ast
+          import json
+          import os
+          from pathlib import Path
+          import unittest
+
+          source = ast.parse(Path('rust/ci/runtime/package.py').read_text())
+          policy = next(node for node in source.body if isinstance(node, ast.FunctionDef) and node.name == 'source_path_allowed')
+          namespace = {}
+          exec(compile(ast.Module(body=[policy], type_ignores=[]), 'package-policy', 'exec'), namespace)
+          allowed = namespace['source_path_allowed']
+
+          class SourcePolicyTests(unittest.TestCase):
+              def test_focused_sources_and_tests(self):
+                  for path in ('rust/crates/xiaoge/src/native/vision/road.rs', 'rust/crates/xiaoge/tests/cadence.rs', 'tools/ci/tests/test_lfs_endpoint.py'):
+                      with self.subTest(path=path):
+                          self.assertTrue(allowed(path))
+
+              def test_exact_docs_config_and_workflow(self):
+                  for path in ('.lfsconfig', '.github/workflows/fast-checks.yml', 'docs/user/en/lane-change.md', 'docs/user/ko/lane-change.md', 'docs/naver/dev-md-lfs-checkout-validation.md', 'docs/naver/dev-md-onnx-load-validation.md'):
+                      with self.subTest(path=path):
+                          self.assertTrue(allowed(path))
+
+              def test_provider_model_and_unrelated_sources_rejected(self):
+                  for path in ('rust/crates/opencv-runtime/src/lib.rs', 'openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx', 'panda/board/main.c', '.github/workflows/rust.yml', 'tools/ci/tests/test_other.py'):
+                      with self.subTest(path=path):
+                          self.assertFalse(allowed(path))
+
+              def test_exact_path_and_directory_boundaries(self):
+                  for path in ('.lfsconfig.extra', '.github/workflows/fast-checks.yml.extra', 'rust/crates/xiaoge-other/src/lib.rs', 'docs/naver/dev-md-onnx-load-validation.md.extra'):
+                      with self.subTest(path=path):
+                          self.assertFalse(allowed(path))
+
+              def test_inherited_document_requires_identical_nonempty_tree_entry(self):
+                  path = 'docs/naver/self-hosted-runner-404.md'
+                  entry = '100644 blob original\t' + path
+                  self.assertTrue(allowed(path, entry, entry))
+                  self.assertFalse(allowed(path))
+                  self.assertFalse(allowed(path, '', entry))
+                  self.assertFalse(allowed(path, entry.replace('original', 'changed'), entry))
+                  self.assertFalse(allowed(path, entry.replace('100644', '100755'), entry))
+                  self.assertFalse(allowed(path, entry.replace('blob', 'commit'), entry))
+
+              def test_matching_entries_do_not_allow_unknown_paths(self):
+                  self.assertFalse(allowed('.github/workflows/unrelated.yml', 'same', 'same'))
+
+          result = unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(SourcePolicyTests))
+          output = Path(os.environ['RUNNER_TEMP']) / 'agnos-runtime'
+          output.mkdir(exist_ok=True)
+          (output / 'source-policy-tests.json').write_text(json.dumps(dict(source_commit=os.environ['GITHUB_SHA'], runner_environment=os.environ['RUNNER_ENVIRONMENT'], tests=result.testsRun, failures=len(result.failures), errors=len(result.errors)), indent=2) + '\n')
+          if not result.wasSuccessful():
+              raise SystemExit(1)
+          PY
+          python3 rust/ci/runtime/package.py source-policy
       - name: Reserve disk for AGNOS and bounded builds
         run: |
           # Only GitHub-hosted images contain these disposable tool bundles.
@@ -100,11 +161,14 @@ jobs:
             ${{ runner.temp }}/agnos-runtime/offline-install.json
             ${{ runner.temp }}/agnos-runtime/build.jsonl
             ${{ runner.temp }}/agnos-runtime/sysroot-extract.log
+            ${{ runner.temp }}/agnos-runtime/source-policy.json
+            ${{ runner.temp }}/agnos-runtime/source-policy-tests.json
           retention-days: 7
   publish:
-    if: github.ref == 'refs/heads/dev-md' && contains(github.event.head_commit.message, '[runtime-package]')
+    needs: package
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev-md' && contains(github.event.head_commit.message, '[runtime-package]')
     name: Publish verified dev-md prerelease
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 210
     permissions:
       contents: write
@@ -115,7 +179,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: dev-md
+          ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
       - name: Reserve disk and install ARM execution tools
@@ -133,10 +197,8 @@ jobs:
       - name: Download the successful package from this exact source
         run: |
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          build_id=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow dev-md-runtime.yml --commit "$GITHUB_SHA" --event push --limit 20 --json databaseId,headBranch,conclusion --jq '[.[] | select(.headBranch | startswith("codex/fix-402-")) | select(.conclusion == "success")][0].databaseId')
-          test -n "$build_id" && test "$build_id" != null
           mkdir -p "$RUNNER_TEMP/agnos-runtime"
-          gh run download "$build_id" --repo "$GITHUB_REPOSITORY" --name "dev-md-runtime-$GITHUB_SHA" --dir "$RUNNER_TEMP/agnos-runtime"
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "dev-md-runtime-$GITHUB_SHA" --dir "$RUNNER_TEMP/agnos-runtime"
       - name: Require exact-SHA CI, publish six sealed assets, verify public online installation
         run: python3 rust/ci/runtime/package.py publish
       - uses: actions/upload-artifact@v7

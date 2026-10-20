@@ -30,13 +30,9 @@ pub fn run(
     }
     let mut camera = Camera::new(Stream::Road);
     while shared.running.load(Ordering::Acquire) {
-        let result = (|| {
-            if !camera.receive(&shared)? {
-                return Ok(());
-            }
+        let result = camera.receive(&shared, |camera| {
             let now = platform::monotonic()?;
             shared.refresh(false)?;
-            let frame = camera.frame()?;
             let threshold = {
                 let mut state = shared.state()?;
                 let status = &mut state.cameras[1];
@@ -48,12 +44,13 @@ pub fn run(
                     shared.snapshot.notify_all();
                 }
                 if !model.loaded()
-                    || now - state.metrics[1].last_inference < state.settings.lane_interval_seconds
+                    || !state.metrics[1].ready(now, state.settings.lane_interval_seconds)
                 {
                     return Ok(());
                 }
                 state.settings.lane_threshold
             };
+            let frame = camera.frame()?;
             let started = platform::monotonic()?;
             let cpu = platform::thread_cpu()?;
             let result = model.infer(&frame, threshold);
@@ -71,7 +68,7 @@ pub fn run(
                 state.lane_updated = platform::timestamp()?;
             }
             publisher.publish(&shared)
-        })();
+        });
         if let Err(error) = result {
             camera.recover(error, &shared)?;
         }
