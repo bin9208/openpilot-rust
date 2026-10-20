@@ -538,6 +538,7 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
+bluetooth-gesture-cases-native = ["dep:openpilot-runtime-core"]
 bluetooth-enumerate-native = []
 bluetooth-bluez-policy-native = ["dep:openpilot-runtime-version"]
 bluetooth-config-native = []
@@ -1667,3 +1668,12 @@ required-features = ["pandad-safety-padding-native"]
 [[test]]
 name = "pandad_safety_padding_finalize"
 required-features = ["pandad-safety-padding-native"]
+
+[[bin]]
+name = "generate-bluetooth-gesture-cases"
+path = "src/bin/generate_bluetooth_gesture_cases.rs"
+required-features = ["bluetooth-gesture-cases-native"]
+
+[[test]]
+name = "bluetooth_gesture_cases_generate"
+required-features = ["bluetooth-gesture-cases-native"]

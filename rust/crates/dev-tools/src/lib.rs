@@ -20,6 +20,8 @@ pub mod bluetooth_digits_generate;
 pub mod bluetooth_enumerate_check;
 #[cfg(feature = "bluetooth-files-native")]
 pub mod bluetooth_files_check;
+#[cfg(feature = "bluetooth-gesture-cases-native")]
+pub mod bluetooth_gesture_cases_generate;
 #[cfg(feature = "bluetooth-input-native")]
 pub mod bluetooth_input_check;
 #[cfg(feature = "bluetooth-journal-native")]

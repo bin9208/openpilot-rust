@@ -4634,3 +4634,18 @@ source bytes. The Python checker remains present pending these cloud results.
 A finalization binding gap discovered during review is tracked in
 [#430](rust-panda-padding-finalization-430.md), with an explicit old-assertion RED
 and fixed four-case gate prepared. This does not increase the retirement count.
+
+
+The native Bluetooth gesture input generator preserves the 37 ordered cases,
+647 deterministic prefix operations, 10,000 seeded random iterations per shared
+sequence and all 128 recorded input events. Review caught two exact-input
+hazards before execution: integer middle stamps at 0/10 must remain integers,
+and recorded decimal timestamps need correctly rounded lexical f64 parsing
+rather than serde_json's default numeric conversion. Both are corrected in the
+source; the tests inspect raw numeric lexemes. A mandatory UI cloud gate runs
+the unchanged original gesture checker against the same fresh candidate ELF,
+compares the entire generated input JSONL byte for byte and then compares the
+candidate's complete output and stderr for that native input. Source/ELF hashes
+must remain unchanged. Its outcome remains pending Actions. Both Python helper
+and checker remain present, with no inventory increase or functional completion
+claim. Local validation for this batch is limited to formatting, syntax and diff.

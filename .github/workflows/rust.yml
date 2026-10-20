@@ -3345,6 +3345,27 @@ jobs:
           sha256sum -c "$proof/artifacts.sha256"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-enumerate-native --test bluetooth_enumerate_reference --locked -- --nocapture
+      - name: Compare native Bluetooth gesture corpus with unchanged original
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/ui-connectivity/bluetooth-gesture-cases"
+          candidate="$GITHUB_WORKSPACE/rust/target/debug/examples/gesture_fixture"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-gesture-cases-native --bin generate-bluetooth-gesture-cases --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-gesture-cases-native --test bluetooth_gesture_cases_generate --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-gesture-cases-native --lib --bin generate-bluetooth-gesture-cases --test bluetooth_gesture_cases_generate --locked -- -D warnings
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          mkdir -p "$proof"
+          sha256sum "$candidate" rust/target/debug/generate-bluetooth-gesture-cases rust/tools/check_bluetooth_gestures.py rust/tools/bluetooth_gesture_cases.py openpilot/selfdrive/carrot/bluetooth/model.py openpilot/selfdrive/carrot/bluetooth/tests/yiser_j6.json > "$proof/artifacts.sha256"
+          timeout --kill-after=5s 120s python rust/tools/check_bluetooth_gestures.py --binary "$candidate" --output "$proof/original" > "$proof/original.stdout" 2> "$proof/original.stderr"
+          timeout --kill-after=5s 30s rust/target/debug/generate-bluetooth-gesture-cases --root "$GITHUB_WORKSPACE" --output "$proof/native-input.jsonl" > "$proof/generator.stdout" 2> "$proof/generator.stderr"
+          cmp "$proof/original/input.jsonl" "$proof/native-input.jsonl"
+          timeout --kill-after=5s 65s "$candidate" < "$proof/native-input.jsonl" > "$proof/native-result.jsonl" 2> "$proof/native-result.stderr"
+          cmp "$proof/original/native.jsonl" "$proof/native-result.jsonl"
+          cmp "$proof/original/native.stderr" "$proof/native-result.stderr"
+          sha256sum -c "$proof/artifacts.sha256"
       - name: Compare native Bluetooth config controller with unchanged original
         run: |
           set -euo pipefail
