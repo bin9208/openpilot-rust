@@ -121,7 +121,7 @@ pub fn cases() -> Result<Vec<JsonValue>> {
             text(address)?
         };
         out.push(parse(&format!(
-            "{{\"devices\": {{{address}: {{\"profile\": \"generic\"}}}}}"
+            "{{\"devices\": {{{address}: {{\"profile\": \"generic\"}}}}}}"
         ))?);
     }
     out.push(parse(&format!("{{\"devices\": {{\"66:c0:0c:7b:6e:71\": {{\"profile\": \"generic\", \"name\": \"first\"}}, \"00:00:00:00:00:00\": {{\"profile\": \"generic\"}}, \"{MAC}\": {{\"profile\": \"yiser-j6\", \"name\": \"last\"}}}}}}"))?);
