@@ -279,7 +279,7 @@ jobs:
           set -euo pipefail
           export LLVM_PATH="$RUNNER_TEMP/llvm18-captured/usr/lib/llvm-18/lib/libLLVM.so.1"
           export LD_LIBRARY_PATH="$RUNNER_TEMP/llvm18-captured/usr/lib/llvm-18/lib:${LD_LIBRARY_PATH:-}"
-          export PYTHONPATH="$GITHUB_WORKSPACE/tinygrad_repo"
+          export PYTHONPATH="$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/tinygrad_repo"
           timeout 120s python .analysis/scratch/2026-10-21-prefix93-fusion/diagnose_original_terminal.py 2>&1 | tee .analysis/scratch/2026-10-21-prefix93-fusion/diagnostic.log
       - name: Preserve diagnostic and failure gates
         if: always()
