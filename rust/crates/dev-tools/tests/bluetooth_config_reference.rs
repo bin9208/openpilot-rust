@@ -146,12 +146,12 @@ fn audit_exec(trace: &str, output: &str, checker: &str, candidate: &str) {
     let invocation =
         regex::Regex::new(r#"(?m)\bexecve\(("(?:[^"\\]|\\.)*"), (\[.*\]), .*\) = 0$"#).unwrap();
     assert_eq!(
-        opening.find_iter(&trace).count(),
+        opening.find_iter(trace).count(),
         2,
         "unexpected exec attempt"
     );
     let mut actual = BTreeMap::new();
-    for capture in invocation.captures_iter(&trace) {
+    for capture in invocation.captures_iter(trace) {
         let program: String = serde_json::from_str(&capture[1]).unwrap();
         let argv: Vec<String> = serde_json::from_str(&capture[2]).unwrap();
         *actual.entry((program, argv)).or_insert(0) += 1;
