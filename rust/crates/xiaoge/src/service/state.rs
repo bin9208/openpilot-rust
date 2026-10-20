@@ -49,6 +49,7 @@ pub struct Model {
 
 pub struct Metrics {
     pub last_inference: f64,
+    last_finished: f64,
     pub latency_ms: f64,
     pub thread_cpu_ms: f64,
     pub count: u64,
@@ -61,6 +62,7 @@ impl Metrics {
     pub const fn new(now: f64) -> Self {
         Self {
             last_inference: 0.0,
+            last_finished: 0.0,
             latency_ms: 0.0,
             thread_cpu_ms: 0.0,
             count: 0,
@@ -70,8 +72,23 @@ impl Metrics {
         }
     }
 
+    /// Keep normal start cadence, but release CPU for an interval after an overrun.
+    /// The original receive time remains available for status/freshness consumers.
+    pub fn ready(&self, now: f64, interval: f64) -> bool {
+        if self.count == 0 {
+            return true;
+        }
+        let previous = if self.latency_ms >= interval * 1000.0 {
+            self.last_finished
+        } else {
+            self.last_inference
+        };
+        now - previous >= interval
+    }
+
     pub fn record(&mut self, timing: Timing) -> Result<(), crate::Error> {
         self.last_inference = timing.received;
+        self.last_finished = timing.finished;
         self.latency_ms = (timing.finished - timing.started) * 1000.0;
         self.thread_cpu_ms = timing.thread_cpu_ms;
         self.count = self
