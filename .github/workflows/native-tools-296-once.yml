@@ -1,5 +1,5 @@
-# Focused affected-source validation; final PR exact-SHA CI is still required.
-name: Native tools 296 candidate checks
+# Diagnostic-only affected checks; this workflow is never merged into dev.
+name: Native tools 296 follow-up checks
 on:
   push:
     branches: [codex/feat-296-native-tools-candidate]
@@ -20,11 +20,11 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: a0690dd94924996f2bc1c7da7a5dde964bf7fce3
+        ref: f60e4ac0a655592aaef659f35cc354b86ffa09a0
     - name: Require exact candidate source
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = a0690dd94924996f2bc1c7da7a5dde964bf7fce3
+        test "$(git rev-parse HEAD)" = f60e4ac0a655592aaef659f35cc354b86ffa09a0
 
         test -z "$(git status --porcelain)"
 
@@ -160,9 +160,9 @@ jobs:
 
         test "$status" -eq 101
 
-        rg -q ''test result: FAILED'' "$proof/baseline.log"
+        grep -Fq ''test result: FAILED'' "$proof/baseline.log"
 
-        rg -q ''accepted changed source at finalization'' "$proof/baseline.log"
+        grep -Fq ''accepted changed source at finalization'' "$proof/baseline.log"
 
         sha256sum --check "$proof/test-inputs.sha256"
 
@@ -238,224 +238,6 @@ jobs:
       with:
         name: rust-sensor-audio-evidence
         path: ${{ runner.temp }}/sensor-audio/
-  estimation-runtime:
-    name: rust estimation runtime
-    runs-on: ubuntu-24.04
-    timeout-minutes: 35
-    env:
-      CARGO_BUILD_JOBS: '2'
-      CARGO_INCREMENTAL: '0'
-      CXX: clang++
-      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
-    steps:
-    - uses: actions/checkout@v7
-      with:
-        persist-credentials: false
-        ref: a0690dd94924996f2bc1c7da7a5dde964bf7fce3
-    - name: Require exact candidate source
-      run: 'set -euo pipefail
-
-        test "$(git rev-parse HEAD)" = a0690dd94924996f2bc1c7da7a5dde964bf7fce3
-
-        test -z "$(git status --porcelain)"
-
-        '
-    - uses: actions/setup-python@v6
-      with:
-        python-version: '3.12'
-    - run: rustup toolchain install 1.94.0 --profile minimal
-    - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev
-    - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 cffi==2.1.1 sympy==1.14.0 pyzmq==27.2.0
-        zstandard==0.25.0 requests==2.34.2 pyserial==3.5 pytest==9.0.2
-    - name: Check atomic paramsd fixture input boundaries
-      run: python -P -m pytest -c /dev/null --noconftest -p no:cacheprovider -q rust/tools/tests/test_paramsd_atomic_gate.py
-    - name: Prepare native Eigen staging evidence
-      run: 'mkdir -p "$RUNNER_TEMP/estimation/eigen"
-
-        '
-    - name: Require native Eigen header staging against sealed original install
-      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/estimation/eigen\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
-        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 256\nrustup component add clippy --toolchain 1.94.0\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
-        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
-        \ --locked --features eigen-tools-native --bin stage-eigen-headers\nstager=\"$GITHUB_WORKSPACE/rust/target/debug/stage-eigen-headers\"\
-        \nsha256sum \"$stager\" > \"$proof/stager.sha256\"\ngit rev-parse HEAD > \"$proof/source-commit.txt\"\nsha256sum rust/crates/dev-tools/src/eigen_stage.rs\
-        \ rust/crates/dev-tools/src/bin/stage_eigen_headers.rs rust/crates/dev-tools/tests/eigen_stage.rs > \"$proof/source.sha256\"\
-        \n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 64\nfor item in x86_64:linux_x86_64\
-        \ aarch64:linux_aarch64 macos-arm64:macosx_11_0_arm64; do\n  architecture=${item%%:*}\n  platform=${item#*:}\n  wheel=\"\
-        $proof/eigen-3.4.0-py3-none-$platform.whl\"\n  curl --fail --location --retry 3 --output \"$wheel\" \"https://github.com/commaai/dependencies/releases/download/eigen/v3.4.0/eigen-3.4.0-py3-none-$platform.whl\"\
-        \n  \"$stager\" --wheel \"$wheel\" --output \"$proof/$architecture-native\" --architecture \"$architecture\" > \"\
-        $proof/$architecture-stage.json\"\ndone\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\"\
-        \ --growth-mib 512\ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features eigen-tools-native\
-        \ --lib eigen_stage::tests\nfor item in x86_64:linux_x86_64 aarch64:linux_aarch64 macos-arm64:macosx_11_0_arm64; do\n\
-        \  architecture=${item%%:*}\n  platform=${item#*:}\n  EIGEN_WHEEL=\"$proof/eigen-3.4.0-py3-none-$platform.whl\" EIGEN_ARCHITECTURE=\"\
-        $architecture\" EIGEN_NATIVE_INCLUDE=\"$proof/$architecture-native/install\" EIGEN_EVIDENCE=\"$proof/$architecture-comparison\"\
-        \ cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features eigen-tools-native --test\
-        \ eigen_stage\ndone\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 512\n\
-        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features eigen-tools-native --lib --bin\
-        \ stage-eigen-headers --test eigen_stage -- -D warnings\nsha256sum --check \"$proof/stager.sha256\"\nsha256sum --check\
-        \ \"$proof/source.sha256\"\nprintf 'LOCATIOND_EIGEN_INCLUDE=%s/x86_64-native/install\\nPARAMSD_EIGEN_INCLUDE=%s/x86_64-native/install\\\
-        n' \"$proof\" \"$proof\" >> \"$GITHUB_ENV\"\n"
-    - name: Check native paramsd atomic gate foundation alongside original cases
-      run: 'set -euo pipefail
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features paramsd-startup-gate-native
-        --test paramsd_startup_gate
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features paramsd-startup-gate-native
-        --lib --test paramsd_startup_gate -- -D warnings
-
-        '
-    - name: Build current native dependency stager
-      uses: ./.github/actions/native-json11
-    - name: Build native estimators and unchanged source oracle
-      run: 'mkdir -p "$RUNNER_TEMP/estimation/lagd"
-
-        python rust/tools/build_locationd_oracle.py --output "$RUNNER_TEMP/locationd-oracle" --eigen-include "$LOCATIOND_EIGEN_INCLUDE"
-
-        python rust/tools/build_paramsd_oracle.py --output "$RUNNER_TEMP/paramsd-oracle" --eigen-include "$PARAMSD_EIGEN_INCLUDE"
-        --reuse-wrapper "$RUNNER_TEMP/locationd-oracle"/ekf_sym_pyx*.so
-
-        python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/estimation-params-binding"
-
-        cargo build --manifest-path rust/Cargo.toml -p openpilot-locationd -p openpilot-lagd -p openpilot-paramsd --bins --examples
-        --locked
-
-        '
-    - name: Compare location model, complete source loop, timestamps and native IPC
-      run: 'python rust/tools/check_locationd.py --oracle "$RUNNER_TEMP/locationd-oracle" --trace "$PWD/rust/target/debug/examples/location_trace"
-        --evidence "$RUNNER_TEMP/estimation/locationd/estimator"
-
-        python rust/tools/check_locationd_loop.py --oracle "$RUNNER_TEMP/locationd-oracle" --trace "$PWD/rust/target/debug/examples/location_loop"
-        --evidence "$RUNNER_TEMP/estimation/locationd/loop"
-
-        python rust/tools/check_locationd_timestamp.py --oracle "$RUNNER_TEMP/locationd-oracle" --trace "$PWD/rust/target/debug/examples/location_trace"
-        --evidence "$RUNNER_TEMP/estimation/locationd/timestamp"
-
-        python rust/tools/check_locationd_daemon.py --oracle "$RUNNER_TEMP/locationd-oracle" --target "$PWD/rust/target" --evidence
-        "$RUNNER_TEMP/estimation/locationd/daemon"
-
-        python rust/tools/check_locationd_startup.py --oracle "$RUNNER_TEMP/locationd-oracle" --binding "$RUNNER_TEMP/estimation-params-binding"/params_pyx*.so
-        --binary "$PWD/rust/target/debug/openpilot-locationd" --output "$RUNNER_TEMP/estimation/locationd/startup"
-
-        '
-    - name: Compare vehicle model, source main loop, cache migration and native IPC
-      run: 'python rust/tools/check_paramsd.py --oracle "$RUNNER_TEMP/paramsd-oracle" --trace "$PWD/rust/target/debug/examples/paramsd_trace"
-        --evidence "$RUNNER_TEMP/estimation/paramsd/estimator"
-
-        python rust/tools/check_paramsd_loop.py --oracle "$RUNNER_TEMP/paramsd-oracle" --trace "$PWD/rust/target/debug/examples/paramsd_loop"
-        --evidence "$RUNNER_TEMP/estimation/paramsd/loop"
-
-        python rust/tools/check_paramsd_daemon.py --oracle "$RUNNER_TEMP/paramsd-oracle" --target "$PWD/rust/target" --evidence
-        "$RUNNER_TEMP/estimation/paramsd/daemon"
-
-        python rust/tools/check_paramsd_startup.py --binary "$PWD/rust/target/debug/openpilot-paramsd" --evidence "$RUNNER_TEMP/estimation/paramsd/startup"
-
-        '
-    - name: Build and test native lagd QA tools
-      env:
-        CARGO_INCREMENTAL: '0'
-        CARGO_PROFILE_DEV_DEBUG: '0'
-        CARGO_PROFILE_TEST_DEBUG: '0'
-      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 256
-
-        rustup component add clippy --toolchain 1.94.0
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-
-        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features lagd-tools-native --bin check-lagd-numeric
-        --bin check-lagd-loop --bin check-lagd-cache --bin check-lagd-packet --bin check-lagd-daemon --bin check-lagd-params-io
-        --locked
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features lagd-tools-native --test lagd_reference
-        --test lagd_reference_generic --test lagd_frames --test lagd_packet_reference --test lagd_loop_reference --test lagd_random
-        --test lagd_numeric_cases --test lagd_check --test lagd_cli --test lagd_live_check --test lagd_live_contracts --test
-        lagd_live_native --test lagd_session --test lagd_live_cli --test lagd_retirement --test lagd_ci --locked
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features lagd-tools-native --lib --bin check-lagd-numeric
-        --bin check-lagd-loop --bin check-lagd-cache --bin check-lagd-packet --bin check-lagd-daemon --bin check-lagd-params-io
-        --test lagd_reference --test lagd_reference_generic --test lagd_frames --test lagd_packet_reference --test lagd_loop_reference
-        --test lagd_random --test lagd_numeric_cases --test lagd_check --test lagd_cli --test lagd_live_check --test lagd_live_contracts
-        --test lagd_live_native --test lagd_session --test lagd_live_cli --test lagd_retirement --test lagd_ci --locked --
-        -D warnings
-
-        '
-    - name: Measure masked lagd input allocation against unchanged source
-      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/estimation/lagd/masked-allocation-429\"\nbaseline=\"$RUNNER_TEMP/lagd429-baseline\"\
-        \nmkdir -p \"$proof\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib\
-        \ 8192\ngit fetch --no-tags --depth=1 origin edb42bf095d6a3e3b38cc0a4546976dfb710363e\ngit worktree add --detach \"\
-        $baseline\" edb42bf095d6a3e3b38cc0a4546976dfb710363e\nCARGO_INCREMENTAL=0 CARGO_TARGET_DIR=\"$RUNNER_TEMP/lagd429-old-target\"\
-        \ cargo build --manifest-path \"$baseline/rust/Cargo.toml\" -p openpilot-lagd --lib --locked\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
-        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 1024\nCARGO_INCREMENTAL=0 CARGO_TARGET_DIR=\"$GITHUB_WORKSPACE/rust/target\"\
-        \ cargo build --manifest-path rust/Cargo.toml -p openpilot-lagd --lib --locked\nfor role in old current; do\n  if\
-        \ [ \"$role\" = old ]; then target=\"$RUNNER_TEMP/lagd429-old-target\"; else target=\"$GITHUB_WORKSPACE/rust/target\"\
-        ; fi\n  \"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 128\n  native_flags=()\n\
-        \  for out in \"$target\"/debug/build/*/out; do\n    if [ -d \"$out\" ]; then native_flags+=(-L \"native=$out\");\
-        \ fi\n  done\n  rustc --edition=2021 -C debuginfo=0 rust/tools/lagd_masked_allocation_probe.rs \\\n    --extern \"\
-        openpilot_lagd=$target/debug/libopenpilot_lagd.rlib\" \\\n    -L \"dependency=$target/debug/deps\" \"${native_flags[@]}\"\
-        \ -l stdc++ \\\n    -o \"$proof/$role-probe\"\n  \"$proof/$role-probe\" | tee \"$proof/$role.log\"\ndone\n\"$proof/current-probe\"\
-        \ --compare \"$proof/old.log\" \"$proof/current.log\" | tee \"$proof/comparison.log\"\n"
-    - name: Compare delay numerical policy, full source loop, cache and native IPC
-      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
-
-        rust/target/debug/check-lagd-numeric "$PWD/rust/target/debug/examples/lag_numeric" "$RUNNER_TEMP/estimation/lagd/numeric.json"
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
-
-        rust/target/debug/check-lagd-loop "$PWD/rust/target/debug/examples/lag_loop" "$RUNNER_TEMP/estimation/lagd/loop"
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
-
-        rust/target/debug/check-lagd-cache "$PWD/rust/target/debug/examples/lag_cache" "$RUNNER_TEMP/estimation/lagd/cache.json"
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
-
-        rust/target/debug/check-lagd-packet "$PWD/rust/target/debug/examples/lag_packet" "$RUNNER_TEMP/estimation/lagd/packet.json"
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
-
-        rust/target/debug/check-lagd-daemon "$PWD/rust/target/debug/openpilot-lagd" "$PWD/rust/target/debug/examples/lag_ipc_peer"
-        "$RUNNER_TEMP/estimation/lagd/daemon"
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
-
-        rust/target/debug/check-lagd-params-io "$PWD/rust/target/debug/openpilot-lagd" "$RUNNER_TEMP/estimation/lagd/params-io.json"
-
-        '
-    - name: Check production numerical ownership and native memory boundaries
-      run: 'cargo test --manifest-path rust/Cargo.toml -p openpilot-locationd -p openpilot-lagd -p openpilot-paramsd -p openpilot-pocketfft
-        --locked
-
-        python rust/tools/check_locationd_native.py --evidence "$RUNNER_TEMP/estimation/locationd/native"
-
-        python rust/tools/check_paramsd_native.py --evidence "$RUNNER_TEMP/estimation/paramsd/native"
-
-        clang++ -std=c++17 -O1 -g -ffp-contract=off -fsanitize=address,undefined -fno-omit-frame-pointer rust/crates/pocketfft/native/kernel_test.cc
-        -o "$RUNNER_TEMP/estimation/lagd/pocketfft-sanitized"
-
-        ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 "$RUNNER_TEMP/estimation/lagd/pocketfft-sanitized" > "$RUNNER_TEMP/estimation/lagd/pocketfft-sanitizer.log"
-        2>&1
-
-        '
-    - name: Retain estimator source and native evidence
-      if: always()
-      uses: actions/upload-artifact@v6
-      with:
-        name: rust-estimation-evidence
-        path: '${{ runner.temp }}/estimation/
-
-          ${{ runner.temp }}/locationd-oracle/build.log
-
-          ${{ runner.temp }}/paramsd-oracle/build.log
-
-          '
   ui-connectivity:
     name: rust UI and connectivity
     runs-on: ubuntu-24.04
@@ -471,11 +253,11 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: a0690dd94924996f2bc1c7da7a5dde964bf7fce3
+        ref: f60e4ac0a655592aaef659f35cc354b86ffa09a0
     - name: Require exact candidate source
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = a0690dd94924996f2bc1c7da7a5dde964bf7fce3
+        test "$(git rev-parse HEAD)" = f60e4ac0a655592aaef659f35cc354b86ffa09a0
 
         test -z "$(git status --porcelain)"
 
@@ -605,131 +387,86 @@ jobs:
 
         '
     - name: Compare native BlueZ policy controller with unchanged original
-      run: 'set -euo pipefail
-
-        export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
-
-        proof="$RUNNER_TEMP/ui-connectivity/bluetooth-bluez-policy"
-
-        candidate="$GITHUB_WORKSPACE/rust/target/debug/examples/bluez_policy"
-
-        export BLUEZ_POLICY_ORIGINAL_OUTPUT="$proof/original"
-
-        export BLUEZ_POLICY_NATIVE_OUTPUT="$proof/native"
-
-        export BLUEZ_POLICY_ORIGINAL_STDOUT="$proof/original.stdout"
-
-        export BLUEZ_POLICY_ORIGINAL_STDERR="$proof/original.stderr"
-
-        export BLUEZ_POLICY_ORIGINAL_DIGITS="$proof/original-digits.stdout"
-
-        export BLUEZ_POLICY_ORIGINAL_DIGITS_STDERR="$proof/original-digits.stderr"
-
-        export BLUEZ_POLICY_NATIVE_STDOUT="$proof/native.stdout"
-
-        export BLUEZ_POLICY_NATIVE_STDERR="$proof/native.stderr"
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-bluez-policy-native --bin
-        check-bluetooth-bluez-policy --locked
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-bluez-policy-native --test
-        bluetooth_bluez_policy_check --locked
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-bluez-policy-native --lib bluetooth_bluez_policy_check::
-        --locked
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-bluez-policy-native --lib
-        --bin check-bluetooth-bluez-policy --test bluetooth_bluez_policy_check --test bluetooth_bluez_policy_reference --locked
-        -- -D warnings
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
-
-        mkdir -p "$proof"
-
-        sha256sum "$candidate" rust/target/debug/check-bluetooth-bluez-policy rust/tools/check_bluetooth_bluez_policy.py openpilot/selfdrive/carrot/bluetooth/bluez.py
-        > "$proof/artifacts.sha256"
-
-        timeout --kill-after=5s 120s python rust/tools/check_bluetooth_bluez_policy.py --binary "$candidate" --output "$BLUEZ_POLICY_ORIGINAL_OUTPUT"
-        > "$BLUEZ_POLICY_ORIGINAL_STDOUT" 2> "$BLUEZ_POLICY_ORIGINAL_STDERR"
-
-        timeout --kill-after=5s 35s "$candidate" --digits > "$BLUEZ_POLICY_ORIGINAL_DIGITS" 2> "$BLUEZ_POLICY_ORIGINAL_DIGITS_STDERR"
-
-        timeout --kill-after=5s 120s rust/target/debug/check-bluetooth-bluez-policy --binary "$candidate" --output "$BLUEZ_POLICY_NATIVE_OUTPUT"
-        > "$BLUEZ_POLICY_NATIVE_STDOUT" 2> "$BLUEZ_POLICY_NATIVE_STDERR"
-
-        sha256sum -c "$proof/artifacts.sha256"
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
-
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-bluez-policy-native --test
-        bluetooth_bluez_policy_reference --locked -- --nocapture
-
-        '
+      run: "set -euo pipefail\nexport OPENPILOT_RUST_ROOT=\"$GITHUB_WORKSPACE\"\nproof=\"$RUNNER_TEMP/ui-connectivity/bluetooth-bluez-policy\"\
+        \ncandidate=\"$GITHUB_WORKSPACE/rust/target/debug/examples/bluez_policy\"\nexport BLUEZ_POLICY_ORIGINAL_OUTPUT=\"\
+        $proof/original\"\nexport BLUEZ_POLICY_NATIVE_OUTPUT=\"$proof/native\"\nexport BLUEZ_POLICY_ORIGINAL_STDOUT=\"$proof/original.stdout\"\
+        \nexport BLUEZ_POLICY_ORIGINAL_STDERR=\"$proof/original.stderr\"\nexport BLUEZ_POLICY_ORIGINAL_DIGITS=\"$proof/original-digits.stdout\"\
+        \nexport BLUEZ_POLICY_ORIGINAL_DIGITS_STDERR=\"$proof/original-digits.stderr\"\nexport BLUEZ_POLICY_NATIVE_STDOUT=\"\
+        $proof/native.stdout\"\nexport BLUEZ_POLICY_NATIVE_STDERR=\"$proof/native.stderr\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
+        \ --features bluetooth-bluez-policy-native --bin check-bluetooth-bluez-policy --locked\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
+        \ --features bluetooth-bluez-policy-native --test bluetooth_bluez_policy_check --locked\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
+        \ --features bluetooth-bluez-policy-native --lib bluetooth_bluez_policy_check:: --locked\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
+        \ --features bluetooth-bluez-policy-native --lib --bin check-bluetooth-bluez-policy --test bluetooth_bluez_policy_check\
+        \ --test bluetooth_bluez_policy_reference --locked -- -D warnings\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 128\nmkdir -p \"$proof\"\nsha256sum \"$candidate\" rust/target/debug/check-bluetooth-bluez-policy\
+        \ rust/tools/check_bluetooth_bluez_policy.py openpilot/selfdrive/carrot/bluetooth/bluez.py > \"$proof/artifacts.sha256\"\
+        \ntimeout --kill-after=5s 120s python rust/tools/check_bluetooth_bluez_policy.py --binary \"$candidate\" --output\
+        \ \"$BLUEZ_POLICY_ORIGINAL_OUTPUT\" > \"$BLUEZ_POLICY_ORIGINAL_STDOUT\" 2> \"$BLUEZ_POLICY_ORIGINAL_STDERR\"\ntimeout\
+        \ --kill-after=5s 35s \"$candidate\" --digits > \"$BLUEZ_POLICY_ORIGINAL_DIGITS\" 2> \"$BLUEZ_POLICY_ORIGINAL_DIGITS_STDERR\"\
+        \ntimeout --kill-after=5s 120s rust/target/debug/check-bluetooth-bluez-policy --binary \"$candidate\" --output \"\
+        $BLUEZ_POLICY_NATIVE_OUTPUT\" > \"$BLUEZ_POLICY_NATIVE_STDOUT\" 2> \"$BLUEZ_POLICY_NATIVE_STDERR\"\nsha256sum -c \"\
+        $proof/artifacts.sha256\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib\
+        \ 128\nabsence=\"$proof/absence\"\nmkdir -p \"$absence/root/rust/tools\"\nfor source in openpilot/selfdrive/carrot/bluetooth/bluez.py\
+        \ rust/crates/bluetooth/examples/bluez_policy.rs rust/crates/bluetooth/src/bluez/policy.rs; do\n  mkdir -p \"$absence/root/$(dirname\
+        \ \"$source\")\"\n  cp \"$GITHUB_WORKSPACE/$source\" \"$absence/root/$source\"\ndone\nchecker=\"$GITHUB_WORKSPACE/rust/target/debug/check-bluetooth-bluez-policy\"\
+        \nprintf '%s\\n' \"$checker\" > \"$absence/checker.path\"\nprintf '%s\\n' \"$candidate\" > \"$absence/candidate.path\"\
+        \ntest ! -e \"$absence/root/rust/tools/check_bluetooth_bluez_policy.py\"\ntest ! -L \"$absence/root/rust/tools/check_bluetooth_bluez_policy.py\"\
+        \nOPENPILOT_RUST_ROOT=\"$absence/root\" PATH=/nonexistent /usr/bin/timeout --signal=TERM --kill-after=5s 120s /usr/bin/strace\
+        \ -f -qq -s 65535 -e trace=execve,execveat -o \"$absence/native.exec\" \"$checker\" --binary \"$candidate\" --output\
+        \ \"$absence/output\" > \"$absence/native.stdout\" 2> \"$absence/native.stderr\"\nfor name in cases.jsonl source.json\
+        \ native.jsonl native.stderr digits.stdout digits.stderr result.json; do\n  cmp \"$BLUEZ_POLICY_NATIVE_OUTPUT/$name\"\
+        \ \"$absence/output/$name\"\ndone\ncmp \"$BLUEZ_POLICY_NATIVE_STDOUT\" \"$absence/native.stdout\"\ncmp \"$BLUEZ_POLICY_NATIVE_STDERR\"\
+        \ \"$absence/native.stderr\"\nsha256sum -c \"$proof/artifacts.sha256\"\nexport BLUEZ_POLICY_ABSENCE_PROOF=\"$absence\"\
+        \n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 128\ncargo test --manifest-path\
+        \ rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-bluez-policy-native --test bluetooth_bluez_policy_reference\
+        \ --locked -- --nocapture\n"
     - name: Compare native Bluetooth enumeration controller with unchanged original
-      run: 'set -euo pipefail
-
-        export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
-
-        proof="$RUNNER_TEMP/ui-connectivity/bluetooth-enumerate"
-
-        candidate="$GITHUB_WORKSPACE/rust/target/debug/examples/input_fixture"
-
-        export BLUETOOTH_ENUMERATE_ORIGINAL_OUTPUT="$proof/original"
-
-        export BLUETOOTH_ENUMERATE_NATIVE_OUTPUT="$proof/native"
-
-        export BLUETOOTH_ENUMERATE_ORIGINAL_STDOUT="$proof/original.stdout"
-
-        export BLUETOOTH_ENUMERATE_ORIGINAL_STDERR="$proof/original.stderr"
-
-        export BLUETOOTH_ENUMERATE_NATIVE_STDOUT="$proof/native.stdout"
-
-        export BLUETOOTH_ENUMERATE_NATIVE_STDERR="$proof/native.stderr"
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-enumerate-native --bin check-bluetooth-enumerate
-        --locked
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-enumerate-native --lib bluetooth_enumerate_check::
-        --locked
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-enumerate-native --lib --bin
-        check-bluetooth-enumerate --test bluetooth_enumerate_reference --locked -- -D warnings
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
-
-        mkdir -p "$proof"
-
-        sha256sum "$candidate" rust/target/debug/check-bluetooth-enumerate rust/tools/check_bluetooth_enumerate.py openpilot/selfdrive/carrot/bluetooth/daemon.py
-        > "$proof/artifacts.sha256"
-
-        timeout --kill-after=5s 30s python rust/tools/check_bluetooth_enumerate.py --binary "$candidate" --output "$BLUETOOTH_ENUMERATE_ORIGINAL_OUTPUT"
-        > "$BLUETOOTH_ENUMERATE_ORIGINAL_STDOUT" 2> "$BLUETOOTH_ENUMERATE_ORIGINAL_STDERR"
-
-        timeout --kill-after=5s 30s rust/target/debug/check-bluetooth-enumerate --binary "$candidate" --output "$BLUETOOTH_ENUMERATE_NATIVE_OUTPUT"
-        > "$BLUETOOTH_ENUMERATE_NATIVE_STDOUT" 2> "$BLUETOOTH_ENUMERATE_NATIVE_STDERR"
-
-        sha256sum -c "$proof/artifacts.sha256"
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
-
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-enumerate-native --test bluetooth_enumerate_reference
-        --locked -- --nocapture
-
-        '
+      run: "set -euo pipefail\nexport OPENPILOT_RUST_ROOT=\"$GITHUB_WORKSPACE\"\nproof=\"$RUNNER_TEMP/ui-connectivity/bluetooth-enumerate\"\
+        \ncandidate=\"$GITHUB_WORKSPACE/rust/target/debug/examples/input_fixture\"\nexport BLUETOOTH_ENUMERATE_ORIGINAL_OUTPUT=\"\
+        $proof/original\"\nexport BLUETOOTH_ENUMERATE_NATIVE_OUTPUT=\"$proof/native\"\nexport BLUETOOTH_ENUMERATE_ORIGINAL_STDOUT=\"\
+        $proof/original.stdout\"\nexport BLUETOOTH_ENUMERATE_ORIGINAL_STDERR=\"$proof/original.stderr\"\nexport BLUETOOTH_ENUMERATE_NATIVE_STDOUT=\"\
+        $proof/native.stdout\"\nexport BLUETOOTH_ENUMERATE_NATIVE_STDERR=\"$proof/native.stderr\"\nexport BLUETOOTH_ENUMERATE_ABSENT_ROOT=\"\
+        $proof/absent-root\"\nexport BLUETOOTH_ENUMERATE_ABSENT_OUTPUT=\"$proof/absent-native\"\nexport BLUETOOTH_ENUMERATE_ABSENT_STDOUT=\"\
+        $proof/absent-native.stdout\"\nexport BLUETOOTH_ENUMERATE_ABSENT_STDERR=\"$proof/absent-native.stderr\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
+        \ --features bluetooth-enumerate-native --bin check-bluetooth-enumerate --locked\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
+        \ --features bluetooth-enumerate-native --lib bluetooth_enumerate_check:: --locked\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
+        \ --features bluetooth-enumerate-native --lib --bin check-bluetooth-enumerate --test bluetooth_enumerate_reference\
+        \ --locked -- -D warnings\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib\
+        \ 128\nmkdir -p \"$proof\"\nsha256sum \"$candidate\" rust/target/debug/check-bluetooth-enumerate rust/tools/check_bluetooth_enumerate.py\
+        \ openpilot/selfdrive/carrot/bluetooth/daemon.py > \"$proof/artifacts.sha256\"\ntimeout --kill-after=5s 30s python\
+        \ rust/tools/check_bluetooth_enumerate.py --binary \"$candidate\" --output \"$BLUETOOTH_ENUMERATE_ORIGINAL_OUTPUT\"\
+        \ > \"$BLUETOOTH_ENUMERATE_ORIGINAL_STDOUT\" 2> \"$BLUETOOTH_ENUMERATE_ORIGINAL_STDERR\"\ntimeout --kill-after=5s\
+        \ 30s rust/target/debug/check-bluetooth-enumerate --binary \"$candidate\" --output \"$BLUETOOTH_ENUMERATE_NATIVE_OUTPUT\"\
+        \ > \"$BLUETOOTH_ENUMERATE_NATIVE_STDOUT\" 2> \"$BLUETOOTH_ENUMERATE_NATIVE_STDERR\"\nsha256sum -c \"$proof/artifacts.sha256\"\
+        \n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 128\nabsent_sources=(\n\
+        \  openpilot/selfdrive/carrot/bluetooth/daemon.py\n  openpilot/selfdrive/carrot/bluetooth/model.py\n  rust/tools/bluetooth_engine_source.py\n\
+        \  rust/crates/bluetooth/examples/input_fixture.rs\n  rust/crates/bluetooth/src/input.rs\n)\nmkdir -p \"$BLUETOOTH_ENUMERATE_ABSENT_ROOT\"\
+        \ \"$proof/empty-path\"\nsha256sum \"${absent_sources[@]}\" > \"$proof/present-sources.sha256\"\nfor name in \"${absent_sources[@]}\"\
+        ; do\n  cp --parents -- \"$name\" \"$BLUETOOTH_ENUMERATE_ABSENT_ROOT\"\n  cmp -- \"$name\" \"$BLUETOOTH_ENUMERATE_ABSENT_ROOT/$name\"\
+        \ndone\n(cd \"$BLUETOOTH_ENUMERATE_ABSENT_ROOT\" && sha256sum \"${absent_sources[@]}\") > \"$proof/absent-sources.sha256\"\
+        \ntest -d \"$BLUETOOTH_ENUMERATE_ABSENT_ROOT/rust/tools\"\ntest ! -e \"$BLUETOOTH_ENUMERATE_ABSENT_ROOT/rust/tools/check_bluetooth_enumerate.py\"\
+        \ntest ! -L \"$BLUETOOTH_ENUMERATE_ABSENT_ROOT/rust/tools/check_bluetooth_enumerate.py\"\nchecker=\"$GITHUB_WORKSPACE/rust/target/debug/check-bluetooth-enumerate\"\
+        \nOPENPILOT_RUST_ROOT=\"$BLUETOOTH_ENUMERATE_ABSENT_ROOT\" PATH=\"$proof/empty-path\" /usr/bin/timeout --signal=TERM\
+        \ --kill-after=5s 30s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o \"$proof/absent.exec\" \"$checker\"\
+        \ --binary \"$candidate\" --output \"$BLUETOOTH_ENUMERATE_ABSENT_OUTPUT\" > \"$BLUETOOTH_ENUMERATE_ABSENT_STDOUT\"\
+        \ 2> \"$BLUETOOTH_ENUMERATE_ABSENT_STDERR\"\nawk -v checker=\"$checker\" -v candidate=\"$candidate\" '\n  /execveat\\\
+        (/ { unexpected++; next }\n  /execve\\(/ {\n    if (index($0, \"execve(\\\"\" checker \"\\\",\") > 0) controller++;\n\
+        \    else if (index($0, \"execve(\\\"\" candidate \"\\\",\") > 0) fixture++;\n    else unexpected++;\n  }\n  END {\n\
+        \    printf \"checker=%d fixture=%d unexpected=%d\\n\", controller, fixture, unexpected;\n    exit !(controller ==\
+        \ 1 && fixture == 2 && unexpected == 0);\n  }\n' \"$proof/absent.exec\" | tee \"$proof/absent-exec-roster.txt\"\n\
+        sha256sum -c \"$proof/artifacts.sha256\"\nsha256sum -c \"$proof/present-sources.sha256\"\n(cd \"$BLUETOOTH_ENUMERATE_ABSENT_ROOT\"\
+        \ && sha256sum -c \"$proof/absent-sources.sha256\")\nfor name in \"${absent_sources[@]}\"; do cmp -- \"$name\" \"\
+        $BLUETOOTH_ENUMERATE_ABSENT_ROOT/$name\"; done\ntest ! -e \"$BLUETOOTH_ENUMERATE_ABSENT_ROOT/rust/tools/check_bluetooth_enumerate.py\"\
+        \ntest ! -L \"$BLUETOOTH_ENUMERATE_ABSENT_ROOT/rust/tools/check_bluetooth_enumerate.py\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 128\ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
+        \ --features bluetooth-enumerate-native --test bluetooth_enumerate_reference --locked -- --nocapture\n"
     - name: Compare native Bluetooth sudo fixture with unchanged original
       run: 'set -euo pipefail
 
@@ -766,6 +503,21 @@ jobs:
 
         cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-sudo-fixture-native --lib
         --bin bluetooth-sudo-fixture --test bluetooth_sudo_fixture --locked -- -D warnings
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        native_sudo="$proof/bluetooth-sudo-fixture"
+
+        cp --no-clobber rust/target/debug/bluetooth-sudo-fixture "$native_sudo"
+
+        cmp rust/target/debug/bluetooth-sudo-fixture "$native_sudo"
+
+        native_sha=$(sha256sum "$native_sudo" | cut -d '' '' -f1)
+
+        printf ''BLUETOOTH_SUDO_NATIVE_BINARY=%s\nBLUETOOTH_SUDO_NATIVE_SHA256=%s\n'' "$native_sudo" "$native_sha" >> "$GITHUB_ENV"
+
+        sha256sum "$native_sudo" rust/tools/bluetooth_sudo_fixture.py rust/tools/check_bluetooth_input.py rust/tools/bluetooth_daemon_fixture.py
+        > "$proof/caller-artifacts.sha256"
 
         '
     - name: Compare native Bluetooth gesture corpus with unchanged original
@@ -1031,8 +783,18 @@ jobs:
 
         '
     - name: Compare Bluetooth input, continuous IPC and private BlueZ lifecycle
-      run: python rust/tools/check_bluetooth_runtime.py --bin-dir "$PWD/rust/target/debug" --msgq-python "$RUNNER_TEMP/connectivity-msgq-python"
+      run: 'set -euo pipefail
+
+        test -x "$BLUETOOTH_SUDO_NATIVE_BINARY"
+
+        sha256sum -c "$RUNNER_TEMP/ui-connectivity/bluetooth-sudo-fixture/caller-artifacts.sha256"
+
+        python rust/tools/check_bluetooth_runtime.py --bin-dir "$PWD/rust/target/debug" --msgq-python "$RUNNER_TEMP/connectivity-msgq-python"
         --output "$RUNNER_TEMP/ui-connectivity/bluetooth"
+
+        sha256sum -c "$RUNNER_TEMP/ui-connectivity/bluetooth-sudo-fixture/caller-artifacts.sha256"
+
+        '
     - name: Retain source/native images and connectivity evidence
       if: always()
       uses: actions/upload-artifact@v6
@@ -1049,16 +811,10 @@ jobs:
           ${{ runner.temp }}/image-sdk.*/install/openpilot-image-codecs-sdk.txt
 
           '
-  native-eigen-action:
-    name: native Eigen action (${{ matrix.architecture }}, host archive check)
+  source-policy:
+    name: Affected source and disk contracts
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        architecture:
-        - x86_64
-        - aarch64
+    timeout-minutes: 10
     env:
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
@@ -1067,49 +823,80 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: a0690dd94924996f2bc1c7da7a5dde964bf7fce3
         persist-credentials: false
-    - name: Require exact candidate source
-      run: 'set -euo pipefail
+        ref: f60e4ac0a655592aaef659f35cc354b86ffa09a0
+    - run: 'test "$(git rev-parse HEAD)" = f60e4ac0a655592aaef659f35cc354b86ffa09a0
 
-        test "$(git rev-parse HEAD)" = a0690dd94924996f2bc1c7da7a5dde964bf7fce3
-
-        test -z "$(git status --porcelain)"
-
-        '
+        test -z "$(git status --porcelain)"'
     - run: rustup toolchain install 1.94.0 --profile minimal
-    - uses: ./.github/actions/native-eigen
+    - run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --test ci_rust_isolation --test
+        ci_disk_bootstrap --test lagd_ci -- --nocapture'
+  prefix93-baseline:
+    name: Cold prefix93 actual fence RED baseline
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+    steps:
+    - uses: actions/checkout@v7
       with:
-        architecture: ${{ matrix.architecture }}
-    - name: Require actual action tree against sealed original headers
-      env:
-        ACTION_ARCHITECTURE: ${{ matrix.architecture }}
+        persist-credentials: false
+        ref: 7626b358b58146eab2ba4f05eca309c29cb78fb1
+    - run: 'test "$(git rev-parse HEAD)" = 7626b358b58146eab2ba4f05eca309c29cb78fb1
+
+        test -z "$(git status --porcelain)"'
+    - run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        sudo apt-get update && sudo apt-get install -y g++ libllvm18 git-lfs
+
+        rustup toolchain install 1.94.0 --profile minimal'
+    - run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx --exclude='''' '
+    - name: Require actual missing closure baseline rejection
       run: 'set -euo pipefail
 
-        case "$ACTION_ARCHITECTURE" in x86_64) platform=linux_x86_64 ;; aarch64) platform=linux_aarch64 ;; *) exit 1 ;; esac
+        proof="$RUNNER_TEMP/prefix93-baseline"
 
-        proof="$RUNNER_TEMP/native-eigen-$ACTION_ARCHITECTURE"
+        mkdir -p "$proof"
 
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+        git rev-parse HEAD > "$proof/SOURCE_COMMIT"
 
-        EIGEN_WHEEL="$proof/eigen-3.4.0-py3-none-$platform.whl" EIGEN_ARCHITECTURE="$ACTION_ARCHITECTURE" EIGEN_NATIVE_INCLUDE="$LOCATIOND_EIGEN_INCLUDE"
-        EIGEN_EVIDENCE="$proof/action-comparison" cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features
-        eigen-tools-native --test eigen_stage --locked
+        sha256sum rust/crates/model-runtime/tests/compiler_conditional_cpu.rs > "$proof/test.sha256"
 
-        '
-    - name: Check source-policy and native disk guard regressions
-      if: matrix.architecture == 'x86_64'
-      run: 'set -euo pipefail
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
 
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+        cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-model-runtime --locked --config profile.test.package.sha2.opt-level=3
+        --config profile.dev.package.sha2.opt-level=3 --test compiler_conditional_cpu --no-run
 
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --test ci_rust_isolation --test ci_disk_bootstrap
-        --locked
+        set +e
+
+        LLVM_PATH=/usr/lib/x86_64-linux-gnu/libLLVM-18.so cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-model-runtime
+        --locked --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --test compiler_conditional_cpu
+        actual_fused_prefix_matches_independent_original_final_output -- --exact --nocapture 2>&1 | tee "$proof/baseline.log"
+
+        status=${PIPESTATUS[0]}
+
+        set -e
+
+        test "$status" -eq 101
+
+        grep -Fq ''running 1 test'' "$proof/baseline.log"
+
+        grep -Fq ''test result: FAILED'' "$proof/baseline.log"
+
+        grep -Fq ''CPU observable Conv/Gelu/ReduceMean fusion is not implemented'' "$proof/baseline.log"
+
+        sha256sum --check "$proof/test.sha256"
 
         '
     - if: always()
       uses: actions/upload-artifact@v6
       with:
-        name: native-eigen-action-comparison-${{ matrix.architecture }}
-        path: ${{ runner.temp }}/native-eigen-${{ matrix.architecture }}/action-comparison/
-        if-no-files-found: warn
+        name: prefix93-cold-baseline
+        path: ${{ runner.temp }}/prefix93-baseline/
