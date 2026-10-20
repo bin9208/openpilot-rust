@@ -1,4 +1,4 @@
-name: One-time original node 280 nonzero desire capture (issue 296)
+name: One-time original prefix 93 fusion ownership capture (issue 296)
 on:
   push:
     branches:
@@ -8,9 +8,9 @@ on:
 permissions:
   contents: read
 jobs:
-  original-node280:
+  original-prefix93:
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -19,23 +19,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Reserve disk before dependencies and capture
+      - name: Reserve 25 GiB plus 3 GiB before dependencies or capture
         shell: bash
         run: |
           set -euo pipefail
           sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 3072
-      - name: Install original-only dependencies and pinned model
+      - name: Install minimal pinned original dependencies
         shell: bash
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends git-lfs libllvm18
+          sudo apt-get install -y --no-install-recommends libllvm18
           python -m pip install numpy==2.5.3 onnx==1.20.1
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 3072
-          git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx --exclude=''
-          printf 'f73a9e535523d5e9acb9e642c64e33d631825dc8ba74123757d107cedd047bb5  openpilot/selfdrive/modeld/models/driving_supercombo.onnx\n' | sha256sum --check --strict
-      - name: Fetch exact LLVM 18 and LLVM 20 provider binaries
+          printf 'dee5a294e8afaacc9295ac5d100e00733ecac278e79264b96331e40a3ede1b04  openpilot/selfdrive/modeld/models/dmonitoring_model.onnx\n' | sha256sum --check --strict
+      - name: Fetch exact LLVM 18 provider
         shell: bash
         run: |
           set -euo pipefail
@@ -44,279 +43,183 @@ jobs:
           printf 'af6197096ce3b89aab86de59f01c1b5feb008b2ae1514a03906c0664edb8b0b1  %s/llvm18.deb\n' "$RUNNER_TEMP" | sha256sum --check --strict
           dpkg-deb --extract "$RUNNER_TEMP/llvm18.deb" "$RUNNER_TEMP/llvm18-captured"
           printf '5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0  %s/llvm18-captured/usr/lib/llvm-18/lib/libLLVM.so.1\n' "$RUNNER_TEMP" | sha256sum --check --strict
-          curl --fail --location --retry 3 --max-time 180 --output "$RUNNER_TEMP/llvm20.deb" 'https://archive.ubuntu.com/ubuntu/pool/main/l/llvm-toolchain-20/libllvm20_20.1.2-0ubuntu1%7e24.04.3_amd64.deb'
-          printf 'f018e71c72c7a4742fb1aff9dc98b45586f42e6ea464d4918af7e3772b7f0658  %s/llvm20.deb\n' "$RUNNER_TEMP" | sha256sum --check --strict
-          dpkg-deb --extract "$RUNNER_TEMP/llvm20.deb" "$RUNNER_TEMP/llvm20-captured"
-          printf '4b93481bd1c9d42c0951275dd275d4a9d30db78c309ae2cc0405669bc6dbbf8a  %s/llvm20-captured/usr/lib/x86_64-linux-gnu/libLLVM.so.20.1\n' "$RUNNER_TEMP" | sha256sum --check --strict
-      - name: Stage immutable original capture drivers
+      - name: Stage source-visible immutable original diagnostic
         shell: bash
         run: |
           set -euo pipefail
-          capture_dir="$GITHUB_WORKSPACE/.analysis/scratch/2026-10-21-model-next"
+          capture_dir="$GITHUB_WORKSPACE/.analysis/scratch/2026-10-21-prefix93-fusion"
           mkdir -p "$capture_dir"
-          cat > "$capture_dir/capture_actual_node280_nonzero.py" <<'NODE280_CAPTURE_ACTUAL_NODE280_NONZERO_PY'
-          """Temporary independent-original node 280 capture, for GitHub-hosted Actions only.
+          cat > "$capture_dir/capture_prefix93_owners.py" <<'PREFIX93_OWNER_DRIVER'
+          """Temporary original-only prefix93 terminal ownership capture for GitHub Actions.
 
-          The two adjacent dependencies are byte-identical historical original drivers.
-          This wrapper changes only their source-root/output selection and requested ONNX
-          prefix, then replaces the old node-274 size-selected capture with generic
-          returned-buffer ownership discovery. It never imports a Rust candidate.
+          This extends the existing independent dmonitoring prefix93 observation. It does
+          not load or execute a Rust candidate and is not a replacement source file.
           """
+          import ast
           import hashlib
+          import json
           import os
+          import struct
           from pathlib import Path
 
           ROOT = Path(os.environ["GITHUB_WORKSPACE"]).resolve()
           assert Path.cwd().resolve() == ROOT
-          assert os.environ["OPENPILOT_RUST_ROOT"] == str(ROOT)
-          assert os.environ["CPU_COUNT"] == "16"
-          assert os.environ["DEV"] == "CPU:LLVM:x86_64,x86-64"
-          assert os.environ["CACHELEVEL"] == "0"
-          assert os.environ["CCACHE"] == "0"
+          assert os.environ["DEV"] == "CPU:LLVM"
+          for name in ("IMAGE", "FLOAT16", "NOLOCALS", "OPENPILOT_HACKS"):
+              assert os.environ[name] == "1"
+          assert os.environ["CACHELEVEL"] == "0" and os.environ["CCACHE"] == "0"
           assert os.environ.get("GRAPH_ONLY") != "1"
           HERE = Path(__file__).resolve().parent
-          BASE = HERE / "capture_prefix274_current.py"
+          OUTPUT = HERE / "capture"
+          OUTPUT.mkdir(exist_ok=False)
+          MODEL = ROOT / "openpilot/selfdrive/modeld/models/dmonitoring_model.onnx"
           WIRE = HERE / "capture_prefix_contexts.py"
-          assert hashlib.sha256(BASE.read_bytes()).hexdigest() == "20adcea5bc6284cae9d6be0035be3d531f96a8fc83c83ad2c3d6cb2dcf61cb09"
-          assert hashlib.sha256(WIRE.read_bytes()).hexdigest() == "d2e405325f2312a84d22117aba411606838a6bab6bbb61c67df39a83da6fef3c"
-          assert HERE.is_relative_to(ROOT / ".analysis/scratch")
-          source = BASE.read_text()
+          sha = lambda raw: hashlib.sha256(raw).hexdigest()
+          assert sha(MODEL.read_bytes()) == "dee5a294e8afaacc9295ac5d100e00733ecac278e79264b96331e40a3ede1b04"
+          assert sha(WIRE.read_bytes()) == "d2e405325f2312a84d22117aba411606838a6bab6bbb61c67df39a83da6fef3c"
+          source_pins = {'tinygrad_repo/tinygrad/codegen/late/devectorizer.py': '54fcfa351cfcd9d8e22e9e9cade7a4970f635b5cb3d0f7924a795b76af92cfa1',
+           'tinygrad_repo/tinygrad/codegen/late/expander.py': '0283354382ab32a083351fce0b43af964a3f98c281bdb96d49dbca808aab7490',
+           'tinygrad_repo/tinygrad/codegen/opt/heuristic.py': '91b378a78d7ced908b76db190fb978c1c92d8b07d0d2e711475f116061d91f89',
+           'tinygrad_repo/tinygrad/codegen/opt/postrange.py': '17af91a317d5851637a8f6de32ac8693c35e591e52777c9bf1f44011469018a0',
+           'tinygrad_repo/tinygrad/codegen/simplify.py': '97f219e1900f7998a08248821e4cf0b72b178adc6e3cfe22b90f802c2340f9fb',
+           'tinygrad_repo/tinygrad/device.py': '7c28ae3854a3f009fc6eddfb52f03b3d382a23b581d94a3c4741a12bdc79f008',
+           'tinygrad_repo/tinygrad/dtype.py': 'de4bb7980fac9c09f851374fc6e8c57441071fca6d98dc92c6e984170bc58008',
+           'tinygrad_repo/tinygrad/engine/realize.py': '362a666b89a29df9fbd8e7cb267ef3f5b4136f5cbad9cf6e88fabc25c1b4bcda',
+           'tinygrad_repo/tinygrad/helpers.py': '24c347d2137c92e1dc35d78cd9df45b38d31cc4d34729a35215f8822b3f2f6fb',
+           'tinygrad_repo/tinygrad/mixin/elementwise.py': '648b15352bbad5a62fc50b1129d23c30ec5a068aab7a4c70aff8325e87b1bcd2',
+           'tinygrad_repo/tinygrad/nn/onnx.py': 'db5d97311c3192960c9e2c501dbd546ed5b8dc4396e361e4211f7e8373556b96',
+           'tinygrad_repo/tinygrad/renderer/llvmir.py': '34fc242484fed32a645fac6ad855064081ac0de5b01a291a071c1bbc92cdf29e',
+           'tinygrad_repo/tinygrad/runtime/support/compiler_cpu.py': 'db106591197315ecf28f0e15de99d2841c9892e6e58290213c62c598e7014139',
+           'tinygrad_repo/tinygrad/schedule/memory.py': '5208f60a013dc79a2dc5752fa8f41af0067583aaac93ce626fa1c47b25861ac0',
+           'tinygrad_repo/tinygrad/schedule/rangeify.py': '52bad522c3660171a708769999373a5177ac60d2ecde8c3db555769b677d2035',
+           'tinygrad_repo/tinygrad/tensor.py': 'c825e67e3e7d237cbbb4bf32cb30255422fb1feec6d0f769a1e7a5cb45573b99',
+           'tinygrad_repo/tinygrad/uop/decompositions.py': '907e0660b37758b3dea3324c99292ad73590ea09fdefd1bbd831c4e78068c7e3',
+           'tinygrad_repo/tinygrad/uop/ops.py': 'd4b454cc4577a23be8d688aed874b9911992332e21bea7d7567974c9dc7c197a'}
+          for path, digest in source_pins.items():
+              assert sha((ROOT / path).read_bytes()) == digest, path
+          provider = Path(os.environ["LLVM_PATH"])
+          provider_hash = sha(provider.read_bytes())
+          assert provider_hash == "5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0"
+          wire = ast.parse(WIRE.read_text())
+          functions = [node for node in wire.body if isinstance(node, ast.FunctionDef) and node.name in {"vi", "f", "m", "readvi", "fields", "prefix_bytes"}]
+          ns = {"MODEL": MODEL}
+          exec(compile(ast.Module(body=functions, type_ignores=[]), str(WIRE), "exec"), ns)
+          prefix = ns["prefix_bytes"](93, ["mean"])
+          assert sha(prefix) == "d9bf497acb1c940894b6af5570c23ac24b9c69ed8774603a7221df8d895e6c17"
+          (OUTPUT / "prefix93.onnx").write_bytes(prefix)
 
-          def replace_once(before, after):
-              global source
-              assert source.count(before) == 1, before
-              source = source.replace(before, after)
-
-          replace_once(
-              "assert scope_root==Path('/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust')",
-              "assert scope_root==Path(os.environ['GITHUB_WORKSPACE']).resolve()",
-          )
-          replace_once(
-              "for relative,want in source_pins.items():",
-              "source_pins.update({'tinygrad_repo/tinygrad/mixin/elementwise.py':'648b15352bbad5a62fc50b1129d23c30ec5a068aab7a4c70aff8325e87b1bcd2','tinygrad_repo/tinygrad/uop/decompositions.py':'907e0660b37758b3dea3324c99292ad73590ea09fdefd1bbd831c4e78068c7e3','tinygrad_repo/tinygrad/device.py':'7c28ae3854a3f009fc6eddfb52f03b3d382a23b581d94a3c4741a12bdc79f008','tinygrad_repo/tinygrad/uop/ops.py':'d4b454cc4577a23be8d688aed874b9911992332e21bea7d7567974c9dc7c197a'})\nfor relative,want in source_pins.items():",
-          )
-          replace_once(
-              "root=Path('.analysis/scratch/2026-10-18-batched-matmul')",
-              "root=Path('.analysis/scratch/2026-10-21-model-next')",
-          )
-          replace_once(
-              "Path('.analysis/scratch/2026-10-15-native-compiler-launch/capture_prefix_contexts.py').read_text()",
-              "Path('.analysis/scratch/2026-10-21-model-next/capture_prefix_contexts.py').read_text()",
-          )
-          replace_once(
-              "prefix=ns['prefix_bytes'](274,['policy/val_13'])",
-              "prefix=ns['prefix_bytes'](280,['policy/linear_2'])",
-          )
-          replace_once("out=runner(inputs)['policy/val_13']", "out=runner(inputs)['policy/linear_2']")
-          replace_once("output_name='policy/val_13'", "output_name='policy/linear_2'")
-          replace_once(
-              "logical_input=runner.graph_values['policy/index'];weights=runner.graph_values['policy/val_12']",
-              "",
-          )
-          replace_once("logical_input_shape=list(logical_input.shape),logical_weight_shape=list(weights.shape),weight_dtype=str(weights.dtype),", "")
-          replace_once("  record['logical_input_uop']=str(logical_input.uop)\n", "")
-          replace_once("Unmodified original final-output-only prefix through pinned node274", "Unmodified original final-output-only prefix through node280")
-          replace_once("compile_calls=[0];compiled_sources={};original_compile_to_obj=compiler.compile_to_obj", "compile_calls=[0];compiled_sources={};compiled_objects={};original_compile_to_obj=compiler.compile_to_obj")
-          replace_once(
-              "compile_calls[0]+=1;result=original_compile_to_obj(source);compiled_sources[hashlib.sha256(source.encode()).hexdigest()]=hashlib.sha256(result).hexdigest();return result",
-              "compile_calls[0]+=1;result=original_compile_to_obj(source);key=hashlib.sha256(source.encode()).hexdigest();compiled_sources[key]=hashlib.sha256(result).hexdigest();compiled_objects[key]=result;return result",
-          )
-          replace_once("import os,json,hashlib,time,ast", "import os,json,hashlib,time,ast,struct")
-          replace_once("input_raw={'img':", "desire_bytes=b''.join(struct.pack('<f',1.0 if j==i%8 else 0.0)for i in range(25)for j in range(8))\ninput_raw={'img':")
-          assert source.count("bytes(25*8*4)")==2
-          source=source.replace("bytes(25*8*4)","desire_bytes")
-          start = source.index("  started=time.monotonic();linear,variables=out.linear_with_vars();")
-          source = source[:start] + '''
-            from tinygrad.engine.realize import get_call_outs_ins
-            started=time.monotonic()
-            linear,variables=out.linear_with_vars()
-            compiled=compile_linear(linear)
-            base_ids={};calls=[];programs={};boundaries={}
-            ir_dir=output.with_suffix('.ir');ir_dir.mkdir(exist_ok=False)
-            object_dir=output.with_suffix('.objects');object_dir.mkdir(exist_ok=False)
-            def sha(raw):return hashlib.sha256(raw).hexdigest()
-            def region(buf):
-             base=id(buf.base)
-             if base not in base_ids:base_ids[base]=len(base_ids)
-             return dict(base=base_ids[base],offset=buf.offset,bytes=buf.nbytes,dtype=str(buf.dtype))
-            def overlaps(a,b):return a['base']==b['base'] and max(a['offset'],b['offset'])<min(a['offset']+a['bytes'],b['offset']+b['bytes'])
-            for index,call in enumerate(compiled.src):
-             operation=call.src[0];outs,ins=get_call_outs_ins(call)
-             params=resolve_params(call,())
-             if operation.op is Ops.PROGRAM:
-              key=sha(operation.src[3].arg.encode())
-              assert key in compiled_sources,'every program must compile under selected provider'
-              programs[key]=dict(object_sha256=compiled_sources[key],source=operation.src[3].arg,opts=repr(operation.src[0].arg.applied_opts),global_size=operation.arg.global_size,local_size=operation.arg.local_size)
-              (ir_dir/(key+'.ll')).write_text(operation.src[3].arg)
-              slots=operation.arg.globals
-             else:key=None;slots=tuple(range(len(params)))
-             calls.append(dict(call_index=index,op=operation.op.name,source=key,globals=list(slots),outs=list(outs),ins=list(ins),regions={str(slot):region(params[slot].buffer)for slot in slots}))
-            record.update(last_node=280,desire_pulse_recipe='25x8 little-endian f32; row i has one at column i%8 and zero elsewhere',context='Cold independent original final-output-only prefix280 with nonzero desire pulse, original allocation/schedule and immediate snapshots, no candidate replay.',programs=programs,calls=calls,program_calls=sum(c['op']=='PROGRAM'for c in calls),original_distinct_programs=len(compiled_sources),provider_real_object_sha256=compiled_sources,compile_to_obj_calls=compile_calls[0],cache_disabled=True,oracle_source_root=str(scope_root),tinygrad_module=str(Path(tinygrad.__file__).resolve().relative_to(scope_root)),library_sha256=provider_sha,driver_dependency_sha256={'capture_prefix274_current.py':'20adcea5bc6284cae9d6be0035be3d531f96a8fc83c83ad2c3d6cb2dcf61cb09','capture_prefix_contexts.py':'d2e405325f2312a84d22117aba411606838a6bab6bbb61c67df39a83da6fef3c'})
-            returned=region(out.uop.buffer)
-            record['returned_output_region']=returned
-            output.with_suffix('.scheduled.json').write_text(json.dumps(record,indent=2)+'\\n')
-            writers=[(c,slot)for c in calls if c['op']!='SLICE'for slot in c['outs']if overlaps(c['regions'][str(slot)],returned)]
-            assert writers,'no writer for actual returned tensor buffer'
-            terminal,output_slot=writers[-1]
-            record['terminal_owner']=dict(call_index=terminal['call_index'],output_slot=output_slot,op=terminal['op'],source=terminal['source'],region=terminal['regions'][str(output_slot)],globals=terminal['globals'],ins=terminal['ins'],outs=terminal['outs'])
-            assert terminal['op']=='PROGRAM' and terminal['regions'][str(output_slot)]==returned,'non-program or partial output requires separate proof'
-            input_owners={}
-            for slot in terminal['ins']:
-             target=terminal['regions'][str(slot)]
-             prior=[(c,s)for c in calls[:terminal['call_index']]if c['op']!='SLICE'for s in c['outs']if overlaps(c['regions'][str(s)],target)]
-             if not prior:input_owners[str(slot)]=None;continue
-             owner,owner_slot=prior[-1]
-             input_owners[str(slot)]=dict(call_index=owner['call_index'],op=owner['op'],source=owner['source'],output_slot=owner_slot,region=owner['regions'][str(owner_slot)])
-            record['input_owners']=input_owners
-            output.with_suffix('.owners.json').write_text(json.dumps(record,indent=2)+'\\n')
-            ctx=ExecContext(variables,(),True,True,True)
-            def snapshot(call,index,slots,phase):
-             params=resolve_params(call,())
-             captured={str(slot):bytes(params[slot].buffer.as_memoryview())for slot in slots}
-             assert sum(map(len,captured.values()))<16*1024*1024
-             return dict(call_index=index,phase=phase,source=calls[index]['source'],regions=calls[index]['regions'],buffers_hex={s:b.hex()for s,b in captured.items()},buffers_sha256={s:sha(b)for s,b in captured.items()})
-            for index,call in enumerate(compiled.src):
-             if index==terminal['call_index']:boundaries['terminal_before']=snapshot(call,index,terminal['ins'],'immediate before original terminal')
-             pm_exec.rewrite(call,ctx)
-             if any(owner is not None and index==owner['call_index']for owner in input_owners.values()):
-              boundaries['input_owner_after_'+str(index)]=snapshot(call,index,calls[index]['globals'],'immediate after original input owner before arena reuse')
-             if index==terminal['call_index']:boundaries['terminal_after']=snapshot(call,index,terminal['globals'],'immediate after original terminal before arena reuse')
-            compile_calls_after_execution=compile_calls[0]
-            compiled_sources_after_execution=dict(compiled_sources)
-            for key,obj in compiled_objects.items():
-             assert sha(obj)==compiled_sources_after_execution[key]
-             (object_dir/(key+'.o')).write_bytes(obj)
-            record.update(compile_to_obj_calls_after_execution=compile_calls_after_execution,provider_real_object_sha256=compiled_sources_after_execution,original_distinct_programs=len(compiled_sources_after_execution))
-            record['boundaries']=boundaries
-            output.with_suffix('.boundaries.json').write_text(json.dumps(record,indent=2)+'\\n')
-            for slot,owner in input_owners.items():
-             assert boundaries['terminal_before']['buffers_hex'][slot]==boundaries['terminal_after']['buffers_hex'][slot]
-             if owner is not None:
-              assert owner['region']==terminal['regions'][slot],'partial input writer requires separate proof'
-              assert boundaries['input_owner_after_'+str(owner['call_index'])]['buffers_hex'][str(owner['output_slot'])]==boundaries['terminal_before']['buffers_hex'][slot]
-            raw=out.data().tobytes()
-            assert compile_calls[0]==compile_calls_after_execution,'reading returned output caused a new compile'
-            assert compiled_sources==compiled_sources_after_execution,'reading returned output changed compiler receipts'
-            record['compile_to_obj_calls_after_output_read']=compile_calls[0]
-            assert raw==bytes.fromhex(boundaries['terminal_after']['buffers_hex'][str(output_slot)])
-            assert len(raw)==returned['bytes']
-            for relative,want in source_pins.items():assert sha((scope_root/relative).read_bytes())==want,relative
-            assert sha(provider.read_bytes())==provider_sha
-            assert sha(source_model.read_bytes())==record['source_model_sha256']
-            record.update(output_hex=raw.hex(),output_sha256=sha(raw),elapsed_seconds=time.monotonic()-started,source_before_after_equal=True,provider_before_after_equal=True,input_owner_links_exact=True,guard_driver_sha256=sha(Path(__file__).read_bytes()))
-            output.write_text(json.dumps(record,indent=2)+'\\n')
-            print('captured node280',record['prefix_sha256'],record['output_sha256'],record['elapsed_seconds'],flush=True)
-          '''
-          exec(compile(source, str(BASE), "exec"), {"__file__": str(Path(__file__).resolve())})
-          NODE280_CAPTURE_ACTUAL_NODE280_NONZERO_PY
-          cat > "$capture_dir/capture_prefix274_current.py" <<'NODE280_CAPTURE_PREFIX274_CURRENT_PY'
-          """Pinned original final-output-only driving prefix; graph-only preparation optional."""
-          import os,json,hashlib,time,ast
-          from pathlib import Path
-          import sys
-          scope_root=Path.cwd().resolve()
-          assert scope_root==Path('/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust')
-          sys.path.insert(0,str(scope_root/'tinygrad_repo'))
-          os.environ['PYTHONPATH']=':'.join(str(v)for v in [scope_root,scope_root/'tinygrad_repo',scope_root/'rust/tools'])
-          assert os.environ.get('CPU_COUNT')=='16', 'pin CPU_COUNT before importing tinygrad'
-          assert os.environ.get('DEV')=='CPU:LLVM:x86_64,x86-64', 'pin renderer target before compiler installation'
-          import tinygrad
-          assert Path(tinygrad.__file__).resolve().is_relative_to(scope_root/'tinygrad_repo')
-          source_pins={'tinygrad_repo/tinygrad/tensor.py': 'c825e67e3e7d237cbbb4bf32cb30255422fb1feec6d0f769a1e7a5cb45573b99', 'tinygrad_repo/tinygrad/nn/onnx.py': 'db5d97311c3192960c9e2c501dbd546ed5b8dc4396e361e4211f7e8373556b96', 'tinygrad_repo/tinygrad/schedule/rangeify.py': '52bad522c3660171a708769999373a5177ac60d2ecde8c3db555769b677d2035', 'tinygrad_repo/tinygrad/codegen/simplify.py': '97f219e1900f7998a08248821e4cf0b72b178adc6e3cfe22b90f802c2340f9fb', 'tinygrad_repo/tinygrad/codegen/opt/heuristic.py': '91b378a78d7ced908b76db190fb978c1c92d8b07d0d2e711475f116061d91f89', 'tinygrad_repo/tinygrad/codegen/opt/postrange.py': '17af91a317d5851637a8f6de32ac8693c35e591e52777c9bf1f44011469018a0', 'tinygrad_repo/tinygrad/renderer/llvmir.py': '34fc242484fed32a645fac6ad855064081ac0de5b01a291a071c1bbc92cdf29e', 'tinygrad_repo/tinygrad/runtime/support/compiler_cpu.py': 'db106591197315ecf28f0e15de99d2841c9892e6e58290213c62c598e7014139', 'tinygrad_repo/tinygrad/dtype.py': 'de4bb7980fac9c09f851374fc6e8c57441071fca6d98dc92c6e984170bc58008', 'tinygrad_repo/tinygrad/helpers.py': '24c347d2137c92e1dc35d78cd9df45b38d31cc4d34729a35215f8822b3f2f6fb', 'tinygrad_repo/tinygrad/codegen/late/expander.py': '0283354382ab32a083351fce0b43af964a3f98c281bdb96d49dbca808aab7490'}
-          source_pins.update({'tinygrad_repo/tinygrad/engine/realize.py':'362a666b89a29df9fbd8e7cb267ef3f5b4136f5cbad9cf6e88fabc25c1b4bcda','tinygrad_repo/tinygrad/schedule/memory.py':'5208f60a013dc79a2dc5752fa8f41af0067583aaac93ce626fa1c47b25861ac0'})
-          for relative,want in source_pins.items():assert hashlib.sha256((scope_root/relative).read_bytes()).hexdigest()==want,relative
-          from tinygrad import Tensor,Context,dtypes
+          from tinygrad import Tensor, dtypes
           from tinygrad.nn.onnx import OnnxRunner
-          from tinygrad.engine.realize import compile_linear,resolve_params,ExecContext,pm_exec
+          from tinygrad.device import Device
+          from tinygrad.engine.realize import compile_linear, resolve_params, ExecContext, pm_exec, get_call_outs_ins
+          from tinygrad.runtime.support.compiler_cpu import CPULLVMCompiler
           from tinygrad.uop.ops import Ops
-          from tinygrad.runtime.support.compiler_cpu import CPULLVMCompiler,ClangCompiler
-          from tinygrad.renderer.llvmir import CPULLVMRenderer
-          assert CPULLVMRenderer.global_max==(16,0,0)
-          provider=Path(os.environ['LLVM_PATH']);provider_sha=hashlib.sha256(provider.read_bytes()).hexdigest()
-          assert provider_sha in ['5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0','4b93481bd1c9d42c0951275dd275d4a9d30db78c309ae2cc0405669bc6dbbf8a']
-          from tinygrad.device import Compiler,Device
-          root=Path('.analysis/scratch/2026-10-18-batched-matmul'); source_model=Path('openpilot/selfdrive/modeld/models/driving_supercombo.onnx')
-          assert hashlib.sha256(source_model.read_bytes()).hexdigest()=='f73a9e535523d5e9acb9e642c64e33d631825dc8ba74123757d107cedd047bb5'
-          # Existing independent wire-level prefix extraction; no native parser/renderer.
-          wire=ast.parse(Path('.analysis/scratch/2026-10-15-native-compiler-launch/capture_prefix_contexts.py').read_text())
-          ns={'Path':Path,'MODEL':source_model};exec(compile(ast.Module(body=[n for n in wire.body if isinstance(n,ast.FunctionDef)and n.name in {'vi','f','m','readvi','fields','prefix_bytes'}],type_ignores=[]),'wire-only-prefix','exec'),ns)
-          ns['prefix_bytes'].__globals__['MODEL']=source_model
-          output=root/os.environ['PREFIX_OUTPUT'];assert not output.exists(), 'preserve previous original captures'
-          prefix=ns['prefix_bytes'](274,['policy/val_13']); path=output.with_suffix('.onnx');assert not path.exists();path.write_bytes(prefix)
-          wire_fields=ns['fields'];graph_proto=next(v for n,w,v,_ in wire_fields(prefix)if n==7)
-          initializers={}
-          for tag,wire,value,_ in wire_fields(graph_proto):
-           if tag!=5:continue
-           values=list(wire_fields(value));name=next(v.decode()for n,w,v,_ in values if n==8);raw=next((v for n,w,v,_ in values if n==9),None)
-           initializers[name]=dict(tensor_proto_sha256=hashlib.sha256(value).hexdigest(),raw_data_bytes=None if raw is None else len(raw),raw_data_sha256=None if raw is None else hashlib.sha256(raw).hexdigest())
-          input_raw={'img':bytes(range(256))*1536,'big_img':bytes(reversed(range(256)))*1536,'desire_pulse':bytes(25*8*4),'traffic_convention':bytes(8),'features_buffer':bytes(24*512*4),'action_t':bytes(8)}
-          input_sha256={name:hashlib.sha256(raw).hexdigest()for name,raw in input_raw.items()}
-          graph_only=os.environ.get('GRAPH_ONLY')=='1'
-          if graph_only:
-           def blocked(*args,**kwargs):raise AssertionError('graph-only prefix must not compile or execute')
-           Compiler.compile_cached=blocked; CPULLVMCompiler.compile_to_obj=blocked;ClangCompiler.compile_to_obj=blocked
-           from tinygrad.runtime.ops_cpu import CPUComputeQueue
-           CPUComputeQueue.exec=blocked
-          else:
-           compiler=CPULLVMCompiler(['x86_64','x86-64']);compiler.cachekey=None
-           compile_calls=[0];compiled_sources={};original_compile_to_obj=compiler.compile_to_obj
-           def counted(source):
-            compile_calls[0]+=1;result=original_compile_to_obj(source);compiled_sources[hashlib.sha256(source.encode()).hexdigest()]=hashlib.sha256(result).hexdigest();return result
-           compiler.compile_to_obj=counted
-           original_compile=compiler.compile_cached
-           compile_count=[0]
-           def progress_compile(source):
-            compile_count[0]+=1;started=time.monotonic()
-            print('compile',compile_count[0],hashlib.sha256(source.encode()).hexdigest(),len(source),'bytes',flush=True)
-            result=original_compile(source)
-            print('compiled',compile_count[0],'seconds',round(time.monotonic()-started,3),flush=True)
-            return result
-           compiler.compile_cached=progress_compile
-           Device['CPU'].renderer.compiler=compiler
-          inputs={'img':Tensor(bytes(range(256))*1536,dtype=dtypes.uint8).reshape(1,12,128,256),'big_img':Tensor(bytes(reversed(range(256)))*1536,dtype=dtypes.uint8).reshape(1,12,128,256),'desire_pulse':Tensor(bytes(25*8*4),dtype=dtypes.float32).reshape(1,25,8),'traffic_convention':Tensor(bytes(8),dtype=dtypes.float32).reshape(1,2),'features_buffer':Tensor(bytes(24*512*4),dtype=dtypes.float32).reshape(1,24,512),'action_t':Tensor(bytes(8),dtype=dtypes.float32).reshape(1,2)}
-          with Context(DEV='CPU:LLVM:x86_64,x86-64',IMAGE=1,FLOAT16=1,NOLOCALS=1,OPENPILOT_HACKS=1,CPU_COUNT=16):
-           if not graph_only:assert Device['CPU'].renderer.compiler is compiler, 'target renderer must retain selected compiler'
-           runner=OnnxRunner(path);out=runner(inputs)['policy/val_13'].cast(dtypes.float32);logical_input=runner.graph_values['policy/index'];weights=runner.graph_values['policy/val_12']
-           record=dict(source_sha256=source_pins,input_sha256=input_sha256,source_initializer_sha256=initializers,context='Unmodified original final-output-only prefix through pinned node274; no forced intermediate realization. Explicit physicalf32 input buffers replace source F16 offline bindings; image inputs use fixed uint8 ramps and other rawbuffers are zero. No Tensor.zeros constant folding.',source_model_sha256=hashlib.sha256(source_model.read_bytes()).hexdigest(),prefix_sha256=hashlib.sha256(prefix).hexdigest(),prefix_bytes=len(prefix),output_name='policy/val_13',output_shape=list(out.shape),logical_input_shape=list(logical_input.shape),logical_weight_shape=list(weights.shape),weight_dtype=str(weights.dtype),input_names=list(inputs),graph_only=graph_only,cpu_count=16,threading=True)
-           print('constructed',dict(prefix_sha256=record['prefix_sha256'],source_model_sha256=record['source_model_sha256'],output_shape=record['output_shape'],initializer_count=len(initializers)),flush=True)
-           if graph_only:
-            record['logical_input_uop']=str(logical_input.uop)
-            (root/'actual-prefix274-graph.json').write_text(json.dumps(record,indent=2)+'\n')
-           else:
-            started=time.monotonic();linear,variables=out.linear_with_vars();print('scheduled',len(linear.src),'calls',flush=True);compiled=compile_linear(linear);print('compiled in',time.monotonic()-started,flush=True)
-            programs={};calls=[];matrix_buffers=None
-            for c in compiled.src:
-             if c.src[0].op is not Ops.PROGRAM:continue
-             p=c.src[0];key=hashlib.sha256(p.src[3].arg.encode()).hexdigest();assert key in compiled_sources, 'every original program must actually compile under the selected provider'
-             programs[key]=dict(object_sha256=compiled_sources[key],source=p.src[3].arg,opts=repr(p.src[0].arg.applied_opts),global_size=p.arg.global_size,local_size=p.arg.local_size)
-             ps=resolve_params(c,());bufs=[ps[i].buffer for i in p.arg.globals];calls.append(dict(source=key,bytes=[b.nbytes for b in bufs]))
-             if [b.nbytes for b in bufs]==[18432,9792,589824]:
-              assert matrix_buffers is None,'ambiguous target physical matrix call'
-              matrix_buffers=bufs;record['matrix_program_source_sha256']=key
-            print('executing',len(calls),'program calls',flush=True)
-            assert matrix_buffers is not None,'target physical matrix call not found'
-            # Preserve original compiled LINEAR, allocation plan, call order and wait
-            # semantics. Copy the target's live arguments before later arena reuse.
-            ctx=ExecContext(variables,(),True,True,True);matrix_snapshots=[]
-            for call_index,call in enumerate(compiled.src):
-             operation=call.src[0]
-             pm_exec.rewrite(call,ctx)
-             if operation.op is Ops.PROGRAM and hashlib.sha256(operation.src[3].arg.encode()).hexdigest()==record['matrix_program_source_sha256']:
-              params=resolve_params(call,());bufs=[params[i].buffer for i in operation.arg.globals]
-              captured=[bytes(b.as_memoryview())for b in bufs];assert sum(map(len,captured))<2*1024*1024
-              matrix_snapshots.append(dict(call_index=call_index,program_source_sha256=record['matrix_program_source_sha256'],scope='immediate after original call, before subsequent arena reuse',buffers_hex=[b.hex()for b in captured],buffers_sha256=[hashlib.sha256(b).hexdigest()for b in captured],buffers=[dict(bytes=b.nbytes,offset=b.offset,dtype=str(b.dtype))for b in bufs]))
-            assert len(matrix_snapshots)==1, 'unique original node274 matrix boundary required'
-            raw=out.data().tobytes();snapshot=matrix_snapshots[0]
-            record['matrix_boundary']=snapshot
-            record['matrix_buffers_hex']=snapshot['buffers_hex']
-            record['matrix_buffers_sha256']=snapshot['buffers_sha256']
-            record['matrix_core_output_sha256']=snapshot['buffers_sha256'][0]
-            record['matrix_is_final_program']=calls[-1]['source']==record['matrix_program_source_sha256']
-            assert compile_calls[0]>0
-            record.update(program_calls=len(calls),original_distinct_programs=len(compiled_sources),provider_real_object_sha256=compiled_sources,oracle_source_root=str(scope_root),tinygrad_module=str(Path(tinygrad.__file__).resolve().relative_to(scope_root)),cache_disabled=True,compile_to_obj_calls=compile_calls[0],output_hex=raw.hex(),output_sha256=hashlib.sha256(raw).hexdigest(),elapsed_seconds=time.monotonic()-started,library_sha256=hashlib.sha256(Path(os.environ['LLVM_PATH']).read_bytes()).hexdigest(),programs=programs,calls=calls)
-            output.write_text(json.dumps(record,indent=2)+'\n');print('executed output',record['output_sha256'],'elapsed',record['elapsed_seconds'],flush=True)
-          NODE280_CAPTURE_PREFIX274_CURRENT_PY
-          cat > "$capture_dir/capture_prefix_contexts.py" <<'NODE280_CAPTURE_PREFIX_CONTEXTS_PY'
+
+          assert Path(__import__("tinygrad").__file__).resolve().is_relative_to(ROOT / "tinygrad_repo")
+          compiler = Device["CPU"].renderer.compiler
+          assert isinstance(compiler, CPULLVMCompiler)
+          compiler.cachekey = None
+          compiled_sources = {}
+          compiled_objects = {}
+          compile_count = [0]
+          original_compile = compiler.compile_to_obj
+
+          def counted(source):
+              result = original_compile(source)
+              key = sha(source.encode())
+              compiled_sources[key] = sha(result)
+              compiled_objects[key] = result
+              compile_count[0] += 1
+              return result
+
+          compiler.compile_to_obj = counted
+          raw_inputs = {"input_img": bytes(range(256)) * 5400, "calib": struct.pack("<3f", 1 + 2**-11, -0., .3)}
+          inputs = {
+              "input_img": Tensor(raw_inputs["input_img"], dtype=dtypes.uint8).reshape(1, 1382400),
+              "calib": Tensor(raw_inputs["calib"], dtype=dtypes.float32).reshape(1, 3),
+          }
+          out = OnnxRunner(OUTPUT / "prefix93.onnx")(inputs)["mean"].cast(dtypes.float32)
+          linear, variables = out.linear_with_vars()
+          compiled = compile_linear(linear)
+          base_ids = {}
+          def region(buffer):
+              identity = id(buffer.base)
+              if identity not in base_ids:
+                  base_ids[identity] = len(base_ids)
+              return dict(base=base_ids[identity], offset=buffer.offset, bytes=buffer.nbytes, dtype=str(buffer.dtype))
+          def overlaps(a, b):
+              return a["base"] == b["base"] and max(a["offset"], b["offset"]) < min(a["offset"] + a["bytes"], b["offset"] + b["bytes"])
+
+          calls = []
+          for index, call in enumerate(compiled.src):
+              operation = call.src[0]
+              outs, ins = get_call_outs_ins(call)
+              params = resolve_params(call, ())
+              if operation.op is Ops.PROGRAM:
+                  source = operation.src[3].arg
+                  key = sha(source.encode())
+                  assert key in compiled_sources
+                  (OUTPUT / f"{key}.ll").write_text(source)
+                  slots = operation.arg.globals
+              else:
+                  key = None
+                  slots = tuple(range(len(params)))
+              calls.append(dict(index=index, op=operation.op.name, source=key, outs=list(outs), ins=list(ins), globals=list(slots), regions={str(slot): region(params[slot].buffer) for slot in slots}))
+          returned = region(out.uop.buffer)
+          writers = [(call, slot) for call in calls if call["op"] != "SLICE" for slot in call["outs"] if overlaps(call["regions"][str(slot)], returned)]
+          assert writers
+          terminal, output_slot = writers[-1]
+          assert terminal["op"] == "PROGRAM" and terminal["regions"][str(output_slot)] == returned
+          assert terminal["source"] == "7ce852371c1860e4449e1da40e566f32f8485f6e6974ccfa9b4600bc31191020"
+          input_owners = {}
+          for slot in terminal["ins"]:
+              target = terminal["regions"][str(slot)]
+              prior = [(call, output) for call in calls[:terminal["index"]] if call["op"] != "SLICE" for output in call["outs"] if overlaps(call["regions"][str(output)], target)]
+              input_owners[str(slot)] = None if not prior else dict(call_index=prior[-1][0]["index"], output_slot=prior[-1][1], op=prior[-1][0]["op"], source=prior[-1][0]["source"], region=prior[-1][0]["regions"][str(prior[-1][1])])
+
+          ctx = ExecContext(variables, (), True, True, True)
+          boundaries = {}
+          def snapshot(index, call, slots, phase):
+              params = resolve_params(call, ())
+              result = {}
+              for slot in slots:
+                  raw = bytes(params[slot].buffer.as_memoryview())
+                  assert len(raw) <= 16 * 1024 * 1024
+                  name = f"{phase}-call{index}-slot{slot}.bin"
+                  (OUTPUT / name).write_bytes(raw)
+                  result[str(slot)] = dict(file=name, bytes=len(raw), sha256=sha(raw))
+              return result
+          for index, call in enumerate(compiled.src):
+              if index == terminal["index"]:
+                  boundaries["terminal_before"] = snapshot(index, call, terminal["ins"], "terminal-before")
+              pm_exec.rewrite(call, ctx)
+              if any(owner is not None and owner["call_index"] == index for owner in input_owners.values()):
+                  boundaries[f"owner_after_{index}"] = snapshot(index, call, calls[index]["globals"], "owner-after")
+              if index == terminal["index"]:
+                  boundaries["terminal_after"] = snapshot(index, call, terminal["globals"], "terminal-after")
+          post_execution_calls = compile_count[0]
+          post_execution_sources = dict(compiled_sources)
+          for key, obj in compiled_objects.items():
+              assert sha(obj) == post_execution_sources[key]
+              (OUTPUT / f"{key}.objbin").write_bytes(obj)
+          raw = out.data().tobytes()
+          assert compile_count[0] == post_execution_calls and compiled_sources == post_execution_sources
+          assert raw == (OUTPUT / boundaries["terminal_after"][str(output_slot)]["file"]).read_bytes()
+          assert sha(raw) == "7307a9b9129f7650c5793a6098dfb30f1830699e24f7a94c3936d6d6c9b57ee5"
+          for slot, owner in input_owners.items():
+              assert boundaries["terminal_before"][slot]["sha256"] == boundaries["terminal_after"][slot]["sha256"]
+              if owner is not None:
+                  assert owner["region"] == terminal["regions"][slot]
+                  assert boundaries[f"owner_after_{owner['call_index']}"][str(owner["output_slot"])]["sha256"] == boundaries["terminal_before"][slot]["sha256"]
+          for path, digest in source_pins.items():
+              assert sha((ROOT / path).read_bytes()) == digest
+          assert sha(MODEL.read_bytes()) == "dee5a294e8afaacc9295ac5d100e00733ecac278e79264b96331e40a3ede1b04"
+          assert sha(provider.read_bytes()) == provider_hash
+          record = dict(model_sha256=sha(MODEL.read_bytes()), prefix_sha256=sha(prefix), output_sha256=sha(raw), output_hex=raw.hex(), input_sha256={name: sha(data) for name, data in raw_inputs.items()}, source_sha256=source_pins, provider_sha256=provider_hash, driver_sha256=sha(Path(__file__).read_bytes()), terminal=terminal, returned=returned, input_owners=input_owners, boundaries=boundaries, calls=calls, program_object_sha256=compiled_sources, compile_calls_after_execution=post_execution_calls, compile_calls_after_output_read=compile_count[0])
+          (OUTPUT / "receipt.json").write_text(json.dumps(record, indent=2) + "\n")
+          print("captured original prefix93 owners", record["prefix_sha256"], record["output_sha256"], flush=True)
+          PREFIX93_OWNER_DRIVER
+          cat > "$capture_dir/capture_prefix_contexts.py" <<'PREFIX93_WIRE_HELPER'
           from pathlib import Path
           import json,hashlib,struct,sys,subprocess,os,time
           from tinygrad import Tensor,dtypes
@@ -387,49 +290,40 @@ jobs:
            (ROOT/'report.json').write_text(json.dumps(report,indent=2)+'\n')
           elif mode=='native-model':
            r=OnnxRunner(MODEL);names=[node.outputs[0]for node in r.graph_nodes[9:60]];(ROOT/'native-all-outputs.onnx').write_bytes(prefix_bytes(59,names));print('native diagnostic graph',len(names),'outputs')
-          NODE280_CAPTURE_PREFIX_CONTEXTS_PY
-          cat > "$RUNNER_TEMP/node280-drivers.sha256" <<EOF
-          251f3519936c2a6c593c74385058547fbf53f8d1ea0a233bfc2e57d81dfd005e  $capture_dir/capture_actual_node280_nonzero.py
-          20adcea5bc6284cae9d6be0035be3d531f96a8fc83c83ad2c3d6cb2dcf61cb09  $capture_dir/capture_prefix274_current.py
+          PREFIX93_WIRE_HELPER
+          cat > "$RUNNER_TEMP/prefix93-drivers.sha256" <<EOF
+          11434b3e830b449bed6f18a4deb888474c4135b5ec8d2ce31e588efa2f179f25  $capture_dir/capture_prefix93_owners.py
           d2e405325f2312a84d22117aba411606838a6bab6bbb61c67df39a83da6fef3c  $capture_dir/capture_prefix_contexts.py
           EOF
-          sha256sum --check --strict "$RUNNER_TEMP/node280-drivers.sha256"
-          cp "$RUNNER_TEMP/node280-drivers.sha256" "$capture_dir/driver-sha256.txt"
-      - name: Run independent original node 280 captures
+          sha256sum --check --strict "$RUNNER_TEMP/prefix93-drivers.sha256"
+          cp "$RUNNER_TEMP/prefix93-drivers.sha256" "$capture_dir/driver-sha256.txt"
+      - name: Execute cold original prefix 93 and retain status
         shell: bash
         env:
-          CPU_COUNT: '16'
-          CCACHE: '0'
+          DEV: CPU:LLVM
+          IMAGE: '1'
+          FLOAT16: '1'
+          NOLOCALS: '1'
+          OPENPILOT_HACKS: '1'
           CACHELEVEL: '0'
-          DEV: CPU:LLVM:x86_64,x86-64
+          CCACHE: '0'
         run: |
           set -uo pipefail
           cd "$GITHUB_WORKSPACE"
-          capture_dir="$GITHUB_WORKSPACE/.analysis/scratch/2026-10-21-model-next"
-          export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 3072 || exit 1
+          export LLVM_PATH="$RUNNER_TEMP/llvm18-captured/usr/lib/llvm-18/lib/libLLVM.so.1"
           export PYTHONPATH="$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/tinygrad_repo:$GITHUB_WORKSPACE/rust/tools"
-          unset GRAPH_ONLY
-          failures=0
-          for version in 18 20; do
-            "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 3072 || exit 1
-            case "$version" in
-              18) export LLVM_PATH="$RUNNER_TEMP/llvm18-captured/usr/lib/llvm-18/lib/libLLVM.so.1" ;;
-              20) export LLVM_PATH="$RUNNER_TEMP/llvm20-captured/usr/lib/x86_64-linux-gnu/libLLVM.so.20.1" ;;
-            esac
-            export PREFIX_OUTPUT="node280-nonzero-original${version}.json"
-            timeout --signal=TERM --kill-after=10s 120s python3 -P "$capture_dir/capture_actual_node280_nonzero.py" > "$capture_dir/node280-nonzero-original${version}.log" 2>&1
-            status=$?
-            printf 'LLVM %s status %s\n' "$version" "$status" | tee "$capture_dir/node280-nonzero-original${version}.status"
-            if [ "$status" -ne 0 ]; then failures=$((failures + 1)); fi
-          done
-          find "$capture_dir" -type f -print0 | sort -z | xargs -0 sha256sum > "$capture_dir/artifact-sha256.txt"
-          exit "$failures"
-      - name: Preserve both original captures and diagnostics
+          capture_dir="$GITHUB_WORKSPACE/.analysis/scratch/2026-10-21-prefix93-fusion"
+          timeout --signal=TERM --kill-after=10s 180s python3 -P "$capture_dir/capture_prefix93_owners.py" > "$capture_dir/capture.log" 2>&1
+          status=$?
+          printf 'original prefix93 status %s\n' "$status" | tee "$capture_dir/status.txt"
+          exit "$status"
+      - name: Preserve original output, source, object and diagnostics even on failure
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: node280-nonzero-original-${{ github.sha }}
-          path: .analysis/scratch/2026-10-21-model-next/
+          name: prefix93-original-owners-${{ github.sha }}
+          path: .analysis/scratch/2026-10-21-prefix93-fusion/
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 30
