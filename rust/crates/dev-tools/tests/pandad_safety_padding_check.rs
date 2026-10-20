@@ -24,6 +24,75 @@ fn contract() -> Value {
     ))
     .unwrap()
 }
+fn captured_original() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/pandad-safety-padding/edb42bf0-original")
+}
+fn captured_rows(path: &Path) -> Vec<Value> {
+    fs::read_to_string(path)
+        .unwrap()
+        .lines()
+        .map(|line| serde_json::from_str(line).unwrap())
+        .collect()
+}
+#[test]
+fn sealed_executed_original_fixture_retains_actual_wire_rows_and_report() {
+    const MANIFEST_SHA: &str = "3a12023217195181b9f1d05d06803a4b0add0438baf700abfeb5a7ad0f3f22ea";
+    let folder = captured_original();
+    let manifest = fs::read(folder.join("SHA256SUMS")).unwrap();
+    assert_eq!(format!("{:x}", Sha256::digest(&manifest)), MANIFEST_SHA);
+    let listed = std::str::from_utf8(&manifest)
+        .unwrap()
+        .lines()
+        .map(|line| {
+            let (digest, name) = line.split_once("  ").unwrap();
+            assert!(!name.contains('/') && !name.contains(".."));
+            assert_eq!(
+                format!("{:x}", Sha256::digest(fs::read(folder.join(name)).unwrap())),
+                digest,
+                "{name}"
+            );
+            name
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(listed.len(), 12);
+    assert_eq!(
+        captured_rows(&folder.join("car-params.input.jsonl")),
+        vec![contract()["encoding_request"].clone()]
+    );
+    let encoded = captured_rows(&folder.join("car-params.stdout"));
+    let wire = encoded[0]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|n| u8::try_from(n.as_u64().unwrap()).unwrap())
+        .collect::<Vec<_>>();
+    assert_eq!(wire.len(), 312);
+    let source = captured_rows(&folder.join("source.stdout"));
+    let native = captured_rows(&folder.join("native.stdout"));
+    let observed = check::compare(wire.len(), &source, &native).unwrap();
+    let report: Value =
+        serde_json::from_slice(&fs::read(folder.join("report.json")).unwrap()).unwrap();
+    assert_eq!(observed, report);
+    assert_eq!(
+        report,
+        serde_json::from_slice::<Value>(&fs::read(folder.join("original.stdout")).unwrap())
+            .unwrap()
+    );
+    assert_eq!(report["source_truncated_final_commands"][0]["index"], 4369);
+    assert_eq!(report["source_truncated_final_commands"][1]["index"], 8738);
+    assert!(fs::read(folder.join("original.stderr")).unwrap().is_empty());
+    let expected = check::cases(&wire).unwrap();
+    for (name, child) in [("source", "source-params"), ("native", "native-params")] {
+        let rows = captured_rows(&folder.join(format!("{name}.input.jsonl")));
+        assert_eq!(rows.len(), 4);
+        for (index, mut row) in rows.into_iter().enumerate() {
+            let params = row.as_object_mut().unwrap().remove("params_root").unwrap();
+            assert_eq!(params.as_str().unwrap(), format!("/home/runner/work/_temp/panda-native/padding-controller/pair-vsc2ns/original/{child}"));
+            assert_eq!(row, expected[index]);
+        }
+    }
+}
 fn responses() -> (Vec<Value>, Vec<Value>) {
     let valid = json!({"failed":false,"changed":[],"logs":[{"level":30,"message":"source fixture control"}],
         "commands":[{"panda":1,"request":220,"value":17,"index":65435}],
@@ -250,13 +319,11 @@ fn child_failure_and_broken_stdout_never_publish_a_report() {
     }
 }
 #[test]
-fn source_drift_and_existing_output_are_rejected_without_probe_execution() {
+fn surviving_source_drift_and_existing_output_are_rejected_without_probe_execution() {
     let temp = tempfile::tempdir().unwrap();
     let options = options(temp.path());
     fs::write(
-        options
-            .root
-            .join("rust/tools/check_pandad_safety_padding.py"),
+        options.root.join("rust/tools/check_pandad_safety.py"),
         b"changed original",
     )
     .unwrap();
@@ -342,13 +409,114 @@ fn stdout_boundary_mutation_rejects_changed_private_input_before_receipt_publica
         fail: false,
     };
     let mut stdout = Mutating {
-        path: options
-            .root
-            .join("rust/tools/check_pandad_safety_padding.py"),
+        path: options.root.join("rust/tools/check_pandad_safety.py"),
     };
     assert!(check::execute(&options, &mut replay, &AtomicBool::new(false), &mut stdout).is_err());
     assert_eq!(replay.calls.len(), 3);
     assert!(!options.output.join("report.json").exists());
+}
+#[test]
+fn exact_historical_checker_reappearance_and_missing_parent_are_rejected_before_launch() {
+    for kind in [
+        "changed-file",
+        "symlink",
+        "dangling-symlink",
+        "fifo",
+        "directory",
+        "missing-parent",
+    ] {
+        let temp = tempfile::tempdir().unwrap();
+        let options = options(temp.path());
+        let historical = options
+            .root
+            .join("rust/tools/check_pandad_safety_padding.py");
+        match kind {
+            "changed-file" => fs::write(&historical, b"historical checker returned").unwrap(),
+            "symlink" => std::os::unix::fs::symlink("check_pandad_safety.py", &historical).unwrap(),
+            "dangling-symlink" => {
+                std::os::unix::fs::symlink("missing-target", &historical).unwrap()
+            }
+            "fifo" => rustix::fs::mkfifoat(
+                rustix::fs::CWD,
+                &historical,
+                rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR,
+            )
+            .unwrap(),
+            "directory" => fs::create_dir(&historical).unwrap(),
+            _ => fs::remove_dir_all(options.root.join("rust/tools")).unwrap(),
+        }
+        let mut replay = Replay {
+            calls: vec![],
+            fail: false,
+        };
+        assert!(
+            check::execute(
+                &options,
+                &mut replay,
+                &AtomicBool::new(false),
+                &mut Vec::new()
+            )
+            .is_err(),
+            "{kind}"
+        );
+        assert!(replay.calls.is_empty(), "{kind}");
+        assert!(!options.output.join("report.json").exists(), "{kind}");
+    }
+}
+#[test]
+fn exact_original_presence_is_admitted_but_presence_changes_fail_after_stdout() {
+    for (initially_present, change) in [(false, "reappear"), (true, "remove"), (true, "mutate")] {
+        let temp = tempfile::tempdir().unwrap();
+        let options = options(temp.path());
+        let historical = options
+            .root
+            .join("rust/tools/check_pandad_safety_padding.py");
+        if initially_present {
+            if !root()
+                .join("rust/tools/check_pandad_safety_padding.py")
+                .exists()
+            {
+                continue;
+            }
+            fs::copy(
+                root().join("rust/tools/check_pandad_safety_padding.py"),
+                &historical,
+            )
+            .unwrap();
+        }
+        struct ChangePresence {
+            path: PathBuf,
+            change: &'static str,
+        }
+        impl Write for ChangePresence {
+            fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+                match self.change {
+                    "remove" => fs::remove_file(&self.path)?,
+                    _ => fs::write(&self.path, b"changed or reappeared")?,
+                }
+                Ok(bytes.len())
+            }
+            fn flush(&mut self) -> io::Result<()> {
+                Ok(())
+            }
+        }
+        let mut replay = Replay {
+            calls: vec![],
+            fail: false,
+        };
+        assert!(check::execute(
+            &options,
+            &mut replay,
+            &AtomicBool::new(false),
+            &mut ChangePresence {
+                path: historical,
+                change
+            }
+        )
+        .is_err());
+        assert_eq!(replay.calls.len(), 3);
+        assert!(!options.output.join("report.json").exists());
+    }
 }
 #[test]
 fn late_cancellation_removes_only_a_descriptor_reserved_owned_report() {

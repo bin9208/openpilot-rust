@@ -9,10 +9,6 @@ use std::{
 };
 const PINS: &[(&str, &str)] = &[
     (
-        "rust/tools/check_pandad_safety_padding.py",
-        "f0d0867a9481a698df8da04d472bdf2e2d6aa77da2a3ae29fba08aae74d5a836",
-    ),
-    (
         "rust/tools/check_pandad_safety.py",
         "56a08236f486458df4398eb97e85ae11cbebcdb3c04e75f6ca0b4360cac1c9bc",
     ),
@@ -37,6 +33,8 @@ const PINS: &[(&str, &str)] = &[
         "47d08fa1987c9150e55d09a2a533a0a115851aadb34bd1a0c82325e0be8726b3",
     ),
 ];
+const RETIRED_CHECKER: &str = "rust/tools/check_pandad_safety_padding.py";
+const RETIRED_SHA256: &str = "f0d0867a9481a698df8da04d472bdf2e2d6aa77da2a3ae29fba08aae74d5a836";
 fn identity(m: &Metadata) -> (u64, u64, u64, i64, i64, i64, i64) {
     (
         m.dev(),
@@ -105,7 +103,8 @@ impl Bound {
     }
 }
 pub(super) fn sources(root: &Path) -> Result<Vec<Bound>> {
-    PINS.iter()
+    let mut pins = PINS
+        .iter()
         .map(|(name, expected)| {
             let bound = Bound::open(&root.join(name))?;
             if bound.hash != *expected {
@@ -113,7 +112,55 @@ pub(super) fn sources(root: &Path) -> Result<Vec<Bound>> {
             }
             Ok(bound)
         })
-        .collect()
+        .collect::<Result<Vec<_>>>()?;
+    if let Some(bound) = historical(root)? {
+        pins.push(bound);
+    }
+    Ok(pins)
+}
+fn historical(root: &Path) -> Result<Option<Bound>> {
+    let parent = root.join("rust/tools");
+    if !fs::metadata(&parent)?.is_dir() {
+        return Err("safety-padding source tools parent is not a directory".into());
+    }
+    let path = root.join(RETIRED_CHECKER);
+    match fs::symlink_metadata(&path) {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(error.into()),
+        Ok(metadata) if metadata.file_type().is_file() => {
+            let bound = Bound::open(&path)?;
+            if bound.hash != RETIRED_SHA256 || !fs::symlink_metadata(&path)?.file_type().is_file() {
+                return Err("historical safety-padding checker changed".into());
+            }
+            Ok(Some(bound))
+        }
+        Ok(_) => Err("historical safety-padding checker is not a regular file".into()),
+    }
+}
+pub(super) fn verify_sources(root: &Path, pins: &[Bound]) -> Result<()> {
+    let was_present = pins
+        .iter()
+        .any(|pin| pin.path == root.join(RETIRED_CHECKER));
+    let parent = root.join("rust/tools");
+    if !fs::metadata(&parent)?.is_dir() {
+        return Err("safety-padding source tools parent is not a directory".into());
+    }
+    let now_present = match fs::symlink_metadata(root.join(RETIRED_CHECKER)) {
+        Ok(_) => true,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => false,
+        Err(error) => return Err(error.into()),
+    };
+    if was_present != now_present {
+        return Err("historical safety-padding checker presence changed".into());
+    }
+    let now = historical(root)?;
+    if was_present != now.is_some() {
+        return Err("historical safety-padding checker presence changed".into());
+    }
+    for pin in pins {
+        pin.verify()?;
+    }
+    Ok(())
 }
 pub(super) struct Publication {
     path: PathBuf,

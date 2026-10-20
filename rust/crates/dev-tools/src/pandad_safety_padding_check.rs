@@ -247,10 +247,21 @@ fn invoke(
 pub struct Completed {
     pub report: Value,
     publication: Publication,
+    root: PathBuf,
+    pins: Vec<Bound>,
+    source: Bound,
+    binary: Bound,
 }
 impl Completed {
     pub fn finish(&self, cancelled: &AtomicBool) -> Result<()> {
-        if let Err(error) = interrupted(cancelled) {
+        let verified = (|| -> Result<()> {
+            interrupted(cancelled)?;
+            self.source.verify()?;
+            self.binary.verify()?;
+            ownership::verify_sources(&self.root, &self.pins)?;
+            interrupted(cancelled)
+        })();
+        if let Err(error) = verified {
             self.publication.remove_owned();
             return Err(error);
         }
@@ -328,9 +339,7 @@ pub fn execute(
         interrupted(cancel)?;
         source.verify()?;
         binary.verify()?;
-        for pin in &pins {
-            pin.verify()?;
-        }
+        ownership::verify_sources(&options.root, &pins)?;
         interrupted(cancel)
     };
     verify()?;
@@ -345,7 +354,7 @@ pub fn execute(
         .collect();
     let provenance = json!({"admitted_source_sha256":hashes,"executables":{
         "source":source.hash,"native":binary.hash},"subprocess_timeout_seconds":90,
-        "scope":"controller, helper, direct PandaSafety and Params admission pins; source probe build closure is recorded by build-pandad-protocol-source"});
+        "scope":"six surviving direct admission pins and optional exact historical checker; source probe build closure is recorded by build-pandad-protocol-source"});
     ownership::publish(&options.output.join("provenance.json"), &provenance)?;
     serde_json::to_writer(&mut *stdout, &report)?;
     stdout.write_all(b"\n")?;
@@ -359,6 +368,10 @@ pub fn execute(
     Ok(Completed {
         report,
         publication,
+        root: options.root.clone(),
+        pins,
+        source,
+        binary,
     })
 }
 struct Controlled<'a>(&'a AtomicBool);

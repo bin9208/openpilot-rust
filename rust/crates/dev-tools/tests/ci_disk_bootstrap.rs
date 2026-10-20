@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 416);
+    assert_eq!(text.matches(marker).count(), 420);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -312,6 +312,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut bluetooth_journal_controller = vec![];
     let mut calibration_float_controller = vec![];
     let mut pandad_padding_controller = vec![];
+    let mut pandad_padding_finalization = vec![];
     let mut pandad_device_controller = vec![];
     let mut modem_helper_lifetime = vec![];
     let mut jetlink_owner = vec![];
@@ -354,6 +355,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 &"      - name: Require cold native node280 against independent original captures",
             ) {
                 compiler_node280.push(tail.to_owned());
+                continue;
+            }
+            if step == Some(&"      - name: Require old Panda padding finalization drift failure") {
+                pandad_padding_finalization.push(tail.to_owned());
                 continue;
             }
             if step == Some(
@@ -1043,8 +1048,13 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     assert_eq!(
+        pandad_padding_finalization,
+        [1024, 8192, 128]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
         pandad_padding_controller,
-        [512, 128, 512, 128]
+        [512, 128, 512, 128, 512]
             .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     assert_eq!(

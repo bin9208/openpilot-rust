@@ -1,7 +1,10 @@
 {
-  "provenance": "Source inspection only; this is not an executed source capture or a candidate result",
+  "provenance": "Six surviving source-admission pins; executed original capture is in edb42bf0-original/",
+  "retired_checker": {
+    "path": "rust/tools/check_pandad_safety_padding.py",
+    "pre_retirement_sha256": "f0d0867a9481a698df8da04d472bdf2e2d6aa77da2a3ae29fba08aae74d5a836"
+  },
   "source_sha256": {
-    "rust/tools/check_pandad_safety_padding.py": "f0d0867a9481a698df8da04d472bdf2e2d6aa77da2a3ae29fba08aae74d5a836",
     "rust/tools/check_pandad_safety.py": "56a08236f486458df4398eb97e85ae11cbebcdb3c04e75f6ca0b4360cac1c9bc",
     "rust/tools/pandad_safety_source.cc": "9f99911342e1b28243a347b8d82708a48faacd2c35e1f753a36099980941d8f0",
     "openpilot/selfdrive/pandad/panda_safety.cc": "f5a583f5c574c9a2bbf9e7940c6c9529a89bcd5d2f135071d3bb934827169717",

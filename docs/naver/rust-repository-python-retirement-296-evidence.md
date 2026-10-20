@@ -4621,3 +4621,16 @@ reports remain visible for later independent sealing. Eight native module
 checks cover the complete report, runner/spawn failures, node/addition/absent
 mutations, cancellation, foreign output and late binary drift. Their functional
 and strict Clippy outcomes remain pending Actions; the Python checker remains.
+
+
+Panda allocator-padding retirement preparation retains twelve independently
+executed raw files from artifact 12289868344, ZIP SHA-256
+`40026fdfe4f4a6dcd804f1e48208a1e41c38ddd9cff025fd83c6cb19da996d01`.
+The fresh original, native-present and native-absent lanes remain required;
+the absent lane additionally audits the exact four native exec attempts under
+an unavailable PATH and seals all three ELFs. The complete 21-input original
+source-build map is retained separately and must match current declarations and
+source bytes. The Python checker remains present pending these cloud results.
+A finalization binding gap discovered during review is tracked in
+[#430](rust-panda-padding-finalization-430.md), with an explicit old-assertion RED
+and fixed four-case gate prepared. This does not increase the retirement count.

@@ -1300,7 +1300,7 @@ jobs:
         run: |
           sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang libusb-1.0-0-dev libzmq3-dev cmake pkg-config curl
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang libusb-1.0-0-dev libzmq3-dev cmake pkg-config curl strace
       - name: Install pinned Panda oracle dependencies
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -1326,14 +1326,37 @@ jobs:
           cargo build --manifest-path rust/Cargo.toml -p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux -p openpilot-process-supervision -p openpilot-logmessaged -p openpilot-dev-tools --bins --examples --locked --message-format=json 2> "$RUNNER_TEMP/panda-native/native-build.log" | tee "$RUNNER_TEMP/panda-native/native-build.jsonl"
       - name: Require Panda source, transport and continuous supervisor comparisons
         run: python rust/tools/check_pandad_ci.py --binaries rust/target/debug --build-messages "$RUNNER_TEMP/panda-native/native-build.jsonl" --output "$RUNNER_TEMP/panda-native/oracles"
+      - name: Require old Panda padding finalization drift failure
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/panda-native/padding-finalization-430"
+          baseline="$RUNNER_TEMP/padding430-baseline"
+          mkdir -p "$proof"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          git fetch --no-tags --depth=1 origin edb42bf095d6a3e3b38cc0a4546976dfb710363e
+          GIT_LFS_SKIP_SMUDGE=1 git worktree add --detach "$baseline" edb42bf095d6a3e3b38cc0a4546976dfb710363e
+          cp rust/crates/dev-tools/tests/pandad_safety_padding_finalize.rs "$baseline/rust/crates/dev-tools/tests/"
+          cp -a rust/crates/dev-tools/tests/fixtures/pandad-safety-padding/edb42bf0-original "$baseline/rust/crates/dev-tools/tests/fixtures/pandad-safety-padding/"
+          export CARGO_TARGET_DIR="$RUNNER_TEMP/padding430-target"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          cargo test --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-dev-tools --features pandad-safety-padding-native --test pandad_safety_padding_finalize --no-run --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          set +e
+          /usr/bin/timeout --signal=TERM --kill-after=2s 15s cargo test --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-dev-tools --features pandad-safety-padding-native --test pandad_safety_padding_finalize --locked -- --exact post_execute_native_mutation_must_fail_finish_and_remove_owned_report --nocapture 2>&1 | tee "$proof/baseline.log"
+          status=${PIPESTATUS[0]}
+          set -e
+          test "$status" -eq 101
+          rg -q 'test result: FAILED' "$proof/baseline.log"
+          rg -q 'post_execute_native_mutation_must_fail_finish_and_remove_owned_report' "$proof/baseline.log"
+          rg -q 'successful finalization accepted a mutated private native probe after execute returned' "$proof/baseline.log"
       - name: Compare native Panda safety padding controller with unchanged original
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native --bin check-pandad-safety-padding --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native --test pandad_safety_padding_check --locked
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native --test pandad_safety_padding_check --locked --test pandad_safety_padding_finalize
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native --lib --bin check-pandad-safety-padding --test pandad_safety_padding_check --test pandad_safety_padding_reference --locked -- -D warnings
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native --lib --bin check-pandad-safety-padding --test pandad_safety_padding_check --test pandad_safety_padding_reference --test pandad_safety_padding_absence --test pandad_safety_padding_finalize --locked -- -D warnings
           export PANDAD_PADDING_SOURCE_BINARY="$RUNNER_TEMP/panda-native/oracles/safety-src/pandad-protocol-source"
           export PANDAD_PADDING_SOURCE_MANIFEST="$RUNNER_TEMP/panda-native/oracles/safety-src/manifest.json"
           export PANDAD_PADDING_NATIVE_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/panda_safety"
@@ -1342,6 +1365,8 @@ jobs:
           mkdir -p "$PANDAD_PADDING_TEST_OUTPUT"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native --test pandad_safety_padding_reference --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native --test pandad_safety_padding_absence --locked -- --nocapture
       - name: Compare native Panda device controller with unchanged original
         run: |
           set -euo pipefail

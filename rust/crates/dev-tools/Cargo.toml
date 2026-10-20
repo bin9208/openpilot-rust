@@ -1659,3 +1659,11 @@ required-features = ["bluetooth-enumerate-native"]
 [[test]]
 name = "bluetooth_enumerate_reference"
 required-features = ["bluetooth-enumerate-native"]
+
+[[test]]
+name = "pandad_safety_padding_absence"
+required-features = ["pandad-safety-padding-native"]
+
+[[test]]
+name = "pandad_safety_padding_finalize"
+required-features = ["pandad-safety-padding-native"]
