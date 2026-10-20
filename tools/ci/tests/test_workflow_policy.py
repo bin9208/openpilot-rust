@@ -74,7 +74,7 @@ class WorkflowPolicyTests(unittest.TestCase):
                 'model', 'android-core', 'integration-gate', 'workspace', 'fast', 'arm64'):
       self.assertIn(key, jobs)
     self.assertEqual(jobs['workspace']['needs'], ['integration-gate'])
-    self.assertEqual(jobs['runtime-delivery']['needs'], 'arm64' if isinstance(jobs['runtime-delivery']['needs'], str) else ['arm64'])
+    self.assertEqual(jobs['runtime-delivery']['needs'], 'arm64')
 
   def test_gates_reject_failure_cancellation_skips_and_missing_results(self):
     jobs = workflow()['jobs']
