@@ -4649,3 +4649,40 @@ candidate's complete output and stderr for that native input. Source/ELF hashes
 must remain unchanged. Its outcome remains pending Actions. Both Python helper
 and checker remain present, with no inventory increase or functional completion
 claim. Local validation for this batch is limited to formatting, syntax and diff.
+
+
+### Prefix93 original fused-kernel localization (2026-10-21)
+
+The original-only ownership capture at `0c2d4d0806b6c802f81dcfb52066c20451ea6ba8`
+passed [run 39488465388](https://github.com/bin9208/openpilot-rust/actions/runs/39488465388),
+artifact 12294054127, receipt SHA-256
+`e3152225d774365df1eedecc4565a5d73a0e061b589149847d70ffe27766f3cc`.
+The prior run 39487728226 failed the unchanged IR seal because the capture
+omitted historical CPU_COUNT=16; restoring that configuration passed without
+changing the expected IR or output. This is the driver-monitoring prefix93,
+not the driving model's independent prefix280 test.
+
+A separate original-kernel diagnostic at
+`1f28d6a765beb27d3b9a886d650bf8d09643c7c4` passed
+[run 39490770391](https://github.com/bin9208/openpilot-rust/actions/runs/39490770391),
+artifact 12296155986. The preceding run 39490310168 failed before execution
+because PYTHONPATH omitted the repository root; only that path was repaired.
+Its receipt SHA-256 is
+`b8869972f49d94a3d33e2084ada2c9400cf4c16e67e9d0e13fdc458774ce42f7`.
+The original sealed object and the copy instrumented to expose Gelu scalars
+both retain exact historical final-output SHA-256
+`7307a9b9129f7650c5793a6098dfb30f1830699e24f7a94c3936d6d6c9b57ee5`.
+All source/provider/input and instrumented IR/object hashes are recorded.
+
+Parent independently rehashed all five diagnostic payloads and compared the
+92,160 raw f32 words against the independently materialized Gelu92 input:
+92,114 match exactly and 46 differ. The established channel-major/group/lane
+layout has far more exact matches than the two tested alternate layouts. One
+mismatch occurs in each of the three channels with final output differences:
+channel/spatial 46/54, 568/21 and 704/78. Therefore the discrepancy is already
+present before ReduceMean in this output-preserving diagnostic. This does not
+yet identify a Conv or Gelu arithmetic operation. The native fusion fence and
+all exact numerical criteria remain unchanged. The temporary original-only
+capture workflow stays on its isolated capture branch and is not part of this
+PR's implementation or a Python retirement claim. No original or native kernel
+was executed locally for this follow-up.

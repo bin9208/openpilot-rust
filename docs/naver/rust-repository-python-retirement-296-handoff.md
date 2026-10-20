@@ -1,5 +1,34 @@
 # 저장소 전체 Python 전환 작업 인수인계
 
+## 최신 조합 상태: 7709c2e3, 2026-10-21
+
+#296 전용 브랜치에 검토한 후속 다섯 커밋을 준비했다. HEAD는 `7709c2e3`이고
+원격은 아직 `edb42bf0`다. 기존 ARM job 118816130250의 실행 결과를 보존하기
+위해 새 PR 푸시를 기다리는 동안 소스 전환을 계속한다. 이 job은 static C3X
+musl workspace 빌드 단계이며 전체 한도는 시작 시각 18:48:42 UTC부터 120분이다.
+성공·실패·시간 만료 결과를 확인한 뒤 후속 묶음을 push하고 정확한 SHA의
+필수 CI 결과를 확인해야 한다. 큐 등록만으로 작업을 종료하지 않는다.
+
+후속 묶음은 #424~428/430의 런처·QA 수명·관측 수정, Bluetooth files 원본
+하나 제거, config/BlueZ policy/enumerate native 검사기, 37사례 제스처 입력
+생성기, #429 lagd 할당 개선과 cold node280 두 입력의 독립 대조를 포함한다.
+원본 대조·회귀·Clippy·할당 결과는 새 Actions에서 확인 전이다. 제스처 검토에서
+정수 0/10 시각과 정확한 decimal→f64 파싱 차이를 수정했고 전체 JSONL
+바이트 대조를 필수로 추가했다. 생성기와 checker Python 두 원본은 유지한다.
+인벤토리는 210 replaced-local / 3 partial / 3,367 pending이다.
+
+prefix93 원본 cloud 진단은 run 39490770391에서 최종 원본 출력이 동일한
+계측을 통과했다. Gelu 92,160값 중 46개가 materialized 원본과 다르고 최종
+차이 세 채널에도 각각 하나씩 있다. 부모가 payload hash와 raw word 비교를
+독립 확인했다. ReduceMean 이전 차이까지 좁혔으며 Conv/Gelu의 정확한 원인은
+아직 미확정이다. 별도 capture 브랜치에서 다음 진단을 진행하며 native fence는
+유지한다. temporary Python 진단을 dev에 합치거나 Rust 전환으로 세지 않는다.
+
+로컬은 구문·포맷·diff·자료 검토만 수행한다. `.omo/`는 미추적 상태로 보존한다.
+dev-md는 건드리지 않으며 실기 정상부팅·녹화·업로드·주행 확인은 사용자가 맡는다.
+전체 Python 전환, 필수 CI, dev 통합과 최종 소스 일치 패키지는 아직 미완료다.
+
+
 ## 현재 조합 중인 후속 변경: 2026-10-21
 
 이번 후속 조합의 기준인 직전 게시 HEAD는
