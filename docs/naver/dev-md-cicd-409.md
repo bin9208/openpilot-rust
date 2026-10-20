@@ -89,3 +89,16 @@ lists; those unsupported fields are omitted and readback confirms no allowances.
 Exact readback and continuing results: [issue evidence](https://github.com/bin9208/openpilot-rust/issues/409#issuecomment-6291019395).
 
 Status: full PR and post-merge acceptance pending. No runtime was delivered.
+
+## Android prerequisite discovered in full CI
+
+On source `481aadd6`, full legacy build/native models/camera/runtime regressions,
+web controls and Jetlink CPU inference passed. Android app lint/APK compilation
+failed because the existing self-hosted job had no SDK location; Rust and ARM
+workloads were skipped and required aggregators failed as designed.
+[Failure job](https://github.com/bin9208/openpilot-rust/actions/runs/39424631693/job/118639684171).
+
+The fix reserves 25 GiB plus 4 GiB growth, selects a job-owned SDK, uses the
+existing pinned setup action and installs the app's SDK 35/build-tools 35.0.0.
+No test or product behavior is removed. Actual Android and remaining full CI
+validation is pending on the updated source.

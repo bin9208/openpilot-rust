@@ -133,6 +133,21 @@ class WorkflowPolicyTests(unittest.TestCase):
                               env={**os.environ, 'TARGET_BRANCH': target}, capture_output=True)
       self.assertEqual(result.returncode, expected)
 
+  def test_android_apk_checks_have_an_explicit_source_matched_sdk(self):
+    steps = workflow()['jobs']['android-core']['steps']
+    setup = next(i for i, step in enumerate(steps) if step.get('uses', '').startswith('android-actions/setup-android@'))
+    install = next(i for i, step in enumerate(steps) if 'sdkmanager' in step.get('run', ''))
+    build = next(i for i, step in enumerate(steps) if ':app:assembleDebug' in step.get('run', ''))
+    self.assertLess(setup, install)
+    self.assertLess(install, build)
+    app = (ROOT / 'tools/jetlink_android/app/build.gradle.kts').read_text()
+    self.assertIn('compileSdk = 35', app)
+    self.assertIn('buildToolsVersion = "35.0.0"', app)
+    self.assertIn("'platforms;android-35' 'build-tools;35.0.0'", steps[install]['run'])
+    reserve = next(step['run'] for step in steps[:setup] if 'ANDROID_HOME=' in step.get('run', ''))
+    self.assertIn('25 + 4', reserve)
+    self.assertIn('ANDROID_SDK_ROOT=', reserve)
+
   def test_runtime_delivery_is_serial_and_requires_a_marked_merge(self):
     delivery = workflow()['jobs']['runtime-delivery']
     self.assertIn("'[runtime-package]'", delivery['if'])
