@@ -147,8 +147,8 @@ jobs:
           assert isinstance(compiler, CPULLVMCompiler)
           compiler.cachekey = None
 
-          def capture_original_conv91():
-              """Cold original prefix91 from the pinned model, with actual terminal ownership."""
+          def capture_original_prefix(index, output_name, prefix_hash, output_hash):
+              """Cold original prefix from the pinned model, with actual terminal ownership."""
               from tinygrad import Tensor, dtypes
               from tinygrad.nn.onnx import OnnxRunner
               from tinygrad.engine.realize import compile_linear, resolve_params, ExecContext, pm_exec, get_call_outs_ins
@@ -161,15 +161,15 @@ jobs:
               methods = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in {"vi", "f", "m", "readvi", "fields", "prefix_bytes"}]
               namespace = {"MODEL": model}
               exec(compile(ast.Module(body=methods, type_ignores=[]), str(helper), "exec"), namespace)
-              prefix91 = namespace["prefix_bytes"](91, ["getitem_132"])
-              prefix91_hash = "846069ff34bc5ada1a534ca96631a820cb44a0367718ae9a4512727364d2b8ce"
-              assert sha(prefix91) == prefix91_hash
-              (OUTPUT / "prefix91.onnx").write_bytes(prefix91)
+              prefix = namespace["prefix_bytes"](index, [output_name])
+              assert sha(prefix) == prefix_hash
+              prefix_path = OUTPUT / f"prefix{index}.onnx"
+              prefix_path.write_bytes(prefix)
               raw_inputs = {"input_img": bytes(range(256)) * 5400,
                             "calib": struct.pack("<3f", 1 + 2**-11, -0., .3)}
               tensors = {"input_img": Tensor(raw_inputs["input_img"], dtype=dtypes.uint8).reshape(1, 1382400),
                          "calib": Tensor(raw_inputs["calib"], dtype=dtypes.float32).reshape(1, 3)}
-              out = OnnxRunner(OUTPUT / "prefix91.onnx")(tensors)["getitem_132"].cast(dtypes.float32)
+              out = OnnxRunner(prefix_path)(tensors)[output_name].cast(dtypes.float32)
               linear, variables = out.linear_with_vars()
               original_compile = compiler.compile_to_obj
               source_objects = {}
@@ -179,8 +179,8 @@ jobs:
                   key = sha(source.encode())
                   source_objects[key] = sha(obj)
                   compile_calls[0] += 1
-                  (OUTPUT / f"prefix91-{key}.ll").write_text(source)
-                  (OUTPUT / f"prefix91-{key}.objbin").write_bytes(obj)
+                  (OUTPUT / f"prefix{index}-{key}.ll").write_text(source)
+                  (OUTPUT / f"prefix{index}-{key}.objbin").write_bytes(obj)
                   return obj
               compiler.compile_to_obj = counted
               try:
@@ -223,9 +223,9 @@ jobs:
                   raw = out.data().tobytes()
                   assert compile_calls[0] == before_read_calls and source_objects == before_read_objects
                   assert terminal_raw == raw and len(raw) == 368640
-                  assert sha(raw) == "f3fbba7c06e6304d7e14a98da1f34a9aeb269cfc3e54459a2e6abc31d7dd9aed"
-                  (OUTPUT / "materialized-conv91.bin").write_bytes(raw)
-                  receipt = dict(model_sha256=model_hash, prefix91_sha256=prefix91_hash,
+                  assert sha(raw) == output_hash
+                  (OUTPUT / f"materialized-prefix{index}.bin").write_bytes(raw)
+                  receipt = dict(model_sha256=model_hash, prefix_sha256=prefix_hash,
                                  input_sha256={name: sha(value) for name, value in raw_inputs.items()},
                                  output_sha256=sha(raw), shape=[1, 960, 8, 12],
                                  returned=returned, terminal=dict(call=index, output_slot=output_slot, op=op,
@@ -233,12 +233,19 @@ jobs:
                                  program_object_sha256=source_objects,
                                  compile_calls_after_execution=before_read_calls,
                                  compile_calls_after_output_read=compile_calls[0])
-                  (OUTPUT / "materialized-conv91-receipt.json").write_text(json.dumps(receipt, indent=2) + "\n")
+                  (OUTPUT / f"materialized-prefix{index}-receipt.json").write_text(json.dumps(receipt, indent=2) + "\n")
                   return raw, receipt
               finally:
                   compiler.compile_to_obj = original_compile
 
-          materialized_conv91, conv91_receipt = capture_original_conv91()
+          materialized_conv91, conv91_receipt = capture_original_prefix(
+              91, "getitem_132", "846069ff34bc5ada1a534ca96631a820cb44a0367718ae9a4512727364d2b8ce",
+              "f3fbba7c06e6304d7e14a98da1f34a9aeb269cfc3e54459a2e6abc31d7dd9aed")
+          materialized_gelu92, gelu92_receipt = capture_original_prefix(
+              92, "gelu_28", "38c08c9019cfac8e4fd4714591978e1338c7fc84e3fab1c1d9166d93dc5067d4",
+              "af9e1224e9f618475b0220047b9aae4727fc188d81e85bbcd93acdf4a70899d6")
+          assert materialized_gelu92 == materialized
+          assert gelu92_receipt["terminal"]["source"] == "f2c45130cd720e831837744139a88264c8bdc174c25be8603b7e36356e559585"
 
           class Aligned:
               def __init__(self, size, initial=None):
@@ -334,6 +341,7 @@ jobs:
               "conv_trace_sha256": sha(conv_trace),
               "materialized_conv91_sha256": sha(materialized_conv91),
               "materialized_conv91": conv91_receipt,
+              "materialized_gelu92": gelu92_receipt,
               "trace_shape": [960, 24, 4],
               "trace_index": "channel*96 + group*4 + lane",
           }
@@ -382,7 +390,7 @@ jobs:
           assert direct >= 9 * len(observed) // 10 and direct > max(lane_major, reverse_lane) + 10000, "physical Gelu mapping unproved; no localization"
           print("verified original-only terminal diagnostic", record["mapping_exact_matches"], record["differing_channels"], flush=True)
           PREFIX93_KERNEL_DRIVER
-          printf 'a66d56aae708ca3e4e36c7d9997b8069313e528524e6946f20225e27936df3b7  %s/diagnose_original_terminal.py\n' "$capture_dir" | sha256sum --check --strict
+          printf 'cf6109fac7e2256059aa4c17d5ba46c4d1906be683274ae2562f2b4ab3773f64  %s/diagnose_original_terminal.py\n' "$capture_dir" | sha256sum --check --strict
       - name: Execute sealed original object and instrumented copy
         shell: bash
         env:
@@ -399,7 +407,7 @@ jobs:
           export LLVM_PATH="$RUNNER_TEMP/llvm18-captured/usr/lib/llvm-18/lib/libLLVM.so.1"
           export LD_LIBRARY_PATH="$RUNNER_TEMP/llvm18-captured/usr/lib/llvm-18/lib:${LD_LIBRARY_PATH:-}"
           export PYTHONPATH="$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/tinygrad_repo"
-          timeout 240s python .analysis/scratch/2026-10-21-prefix93-fusion/diagnose_original_terminal.py 2>&1 | tee .analysis/scratch/2026-10-21-prefix93-fusion/diagnostic.log
+          timeout 480s python .analysis/scratch/2026-10-21-prefix93-fusion/diagnose_original_terminal.py 2>&1 | tee .analysis/scratch/2026-10-21-prefix93-fusion/diagnostic.log
       - name: Preserve diagnostic and failure gates
         if: always()
         uses: actions/upload-artifact@v4
