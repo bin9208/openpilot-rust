@@ -318,11 +318,12 @@ fn actual_cli_statuses_and_missing_probe_artifact_phases_match_the_original() {
                 "--output".into(),
                 output.clone().into(),
             ]);
+            let original_root = root();
             let got = NativeRunner
                 .run(&command(
                     if original { &python } else { &native_checker },
                     args,
-                    if original { &root() } else { &admission },
+                    if original { &original_root } else { &admission },
                 ))
                 .unwrap();
             assert_eq!(got.code, 1);

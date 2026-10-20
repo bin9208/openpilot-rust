@@ -284,14 +284,14 @@ pub fn scenarios() -> Value {
     cases.push(json!({"name":"active-fallback-and-thresholds", "car":car_params(0, None), "operations":boundaries}));
     let mut operations = Vec::new();
     for (angle, count) in [
-        (11., 14),
+        (11.0_f64, 14),
         (9., 4),
         (7.5, 4),
         (-11., 24),
         (-9., 4),
         (-7.5, 4),
     ] {
-        let radians = (angle as f64).to_radians();
+        let radians = angle.to_radians();
         operations.push(state(
             Some(&[1., 15., radians, 0., 10., 0., 0., 0., radians]),
             None,

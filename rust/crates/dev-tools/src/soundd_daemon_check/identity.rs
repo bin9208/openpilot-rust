@@ -117,10 +117,7 @@ pub fn validate_source(root: &Path) -> Result<Value> {
                 Err(error) => return Err(error.into()),
             }
         }
-        match fs::symlink_metadata(&path) {
-            Err(e) => return Err(e.into()),
-            Ok(_) => {}
-        }
+        fs::symlink_metadata(&path)?;
         let mut raw = Vec::new();
         regular(&path)?.read_to_end(&mut raw)?;
         require(
