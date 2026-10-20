@@ -16,12 +16,23 @@ for `test_paramsd_atomic_gate.py`. The native gate is explicitly registered
 behind `paramsd-startup-gate-native`; the estimation cloud job retains the
 original pytest invocation and adds six native behavior tests, one retained-
 source identity test, and strict Clippy.
-This is source preparation and has not yet run in cloud.
+The original five cases and native foundation tests passed in the prior
+cloud run identified by the #296 coordinator. The new ignored actual-daemon
+test described below has not yet run in cloud.
 
 `rust/tools/check_paramsd_daemon.py` is the live consumer of `StartupGate`.
 It passes only the ready-write and release-read descriptors to the child via
-Python `pass_fds`. The current native process owner has no equivalent scoped
-pass-FD operation. Both Python files remain in place; no native daemon lane,
-`build_library` replacement, or retirement is claimed. Cloud validation must
-run the independent original five tests alongside these Rust tests before a
-future live original/native comparison.
+Python `pass_fds`. The native gate now uses the repository's existing
+`command-fds` child-only mapping to pass owned clones of the same two CLOEXEC
+pipe ends. The C hook keeps separate ready-write and release-read FDs, while
+the parent retains the exact pose cursor check. No process-wide inheritable
+descriptor or caller-written unsafe `pre_exec` is needed; daemon stdin,
+stdout, and stderr retain their original roles.
+
+The ignored `native_mapped_gate_holds_actual_paramsd_second_poll_and_shutdown`
+test is a first actual consumer: it spawns the real `openpilot-paramsd` with
+the unchanged source-built C hook, holds its second poll after one completed
+empty update, releases it, and verifies bounded shutdown. Its cloud inputs
+are listed in `docs/naver/rust-paramsd-native-gate-296.md`. Both Python files
+remain in place. This does not replace the original 1,202-frame source/native
+daemon comparison or establish an absent-Python retirement gate.

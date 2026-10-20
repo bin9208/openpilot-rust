@@ -3167,6 +3167,22 @@ jobs:
           python rust/tools/build_paramsd_oracle.py --output "$RUNNER_TEMP/paramsd-oracle" --eigen-include "$PARAMSD_EIGEN_INCLUDE" --reuse-wrapper "$RUNNER_TEMP/locationd-oracle"/ekf_sym_pyx*.so
           python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/estimation-params-binding"
           cargo build --manifest-path rust/Cargo.toml -p openpilot-locationd -p openpilot-lagd -p openpilot-paramsd --bins --examples --locked
+      - name: Require native paramsd scoped child-FD handoff
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/estimation/paramsd/native-gate"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          mkdir -p "$proof"
+          export PARAMSD_NATIVE_GATE_DAEMON="$GITHUB_WORKSPACE/rust/target/debug/openpilot-paramsd"
+          export PARAMSD_NATIVE_GATE_LIBRARY="$proof/startup-phase.so"
+          export PARAMSD_NATIVE_GATE_CAR_PARAMS="$proof/CarParams.bin"
+          export PARAMSD_NATIVE_GATE_EVIDENCE="$proof/native"
+          python -c 'import sys; from paramsd_fixture import car_params; sys.stdout.buffer.write(bytes(car_params()))' > "$PARAMSD_NATIVE_GATE_CAR_PARAMS"
+          clang -std=c11 -O2 -shared -fPIC -Wall -Wextra -Werror rust/tools/paramsd_startup_phase.c -ldl -o "$PARAMSD_NATIVE_GATE_LIBRARY" > "$proof/phase-build.log" 2>&1
+          sha256sum rust/tools/paramsd_startup_phase.c rust/tools/paramsd_fixture.py "$PARAMSD_NATIVE_GATE_DAEMON" "$PARAMSD_NATIVE_GATE_LIBRARY" "$PARAMSD_NATIVE_GATE_CAR_PARAMS" > "$proof/artifacts.sha256"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-startup-gate-native --test paramsd_startup_gate --locked -- --ignored --exact native_mapped_gate_holds_actual_paramsd_second_poll_and_shutdown --nocapture
+          sha256sum -c "$proof/artifacts.sha256"
       - name: Compare location model, complete source loop, timestamps and native IPC
         run: |
           python rust/tools/check_locationd.py --oracle "$RUNNER_TEMP/locationd-oracle" --trace "$PWD/rust/target/debug/examples/location_trace" --evidence "$RUNNER_TEMP/estimation/locationd/estimator"

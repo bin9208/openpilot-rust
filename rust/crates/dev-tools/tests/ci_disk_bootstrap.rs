@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 444);
+    assert_eq!(text.matches(marker).count(), 446);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -341,7 +341,9 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 soundd_finalization.push(tail.to_owned());
                 continue;
             }
-            if step == Some(&"      - name: Check native paramsd atomic gate foundation alongside original cases") {
+            if step == Some(&"      - name: Check native paramsd atomic gate foundation alongside original cases")
+                || step == Some(&"      - name: Require native paramsd scoped child-FD handoff")
+            {
                 paramsd_gate.push(tail.to_owned());
                 continue;
             }
@@ -1064,7 +1066,8 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     );
     assert_eq!(
         paramsd_gate,
-        [512, 512].map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+        [512, 512, 128, 512]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     assert_eq!(
         bluetooth_gesture_cases,

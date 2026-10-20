@@ -1,5 +1,5 @@
-//! Atomic livePose cursor gate. Child FD inheritance remains owned by the
-//! Python controller until a scoped native `pass_fds` process API exists.
+//! Atomic livePose cursor gate with selected child-only FD mapping for paramsd.
+use command_fds::{CommandFdExt, FdMapping};
 use rustix::{
     event::{poll, PollFd, PollFlags, Timespec},
     pipe::{pipe_with, PipeFlags},
@@ -7,8 +7,9 @@ use rustix::{
 use std::{
     fs::{self, File},
     io::{Read, Write},
-    os::fd::{AsFd, BorrowedFd},
+    os::fd::{AsFd, AsRawFd, BorrowedFd},
     path::{Path, PathBuf},
+    process::Command,
     time::{Duration, Instant},
 };
 
@@ -47,8 +48,8 @@ pub struct StartupGate {
 
 impl StartupGate {
     pub fn new(queue: &Path, output: &Path) -> Result<Self> {
-        // Both ends remain CLOEXEC; this module does not provide a child spawn
-        // operation or make process-wide inheritable descriptors.
+        // Both ends remain CLOEXEC; attach maps only owned clones into the
+        // selected child without making them process-wide inheritable.
         let (ready_read, ready_write) = pipe_with(PipeFlags::CLOEXEC)?;
         let (release_read, release_write) = pipe_with(PipeFlags::CLOEXEC)?;
         Ok(Self {
@@ -72,6 +73,41 @@ impl StartupGate {
 
     pub fn report(&self) -> &Report {
         &self.report
+    }
+
+    /// Pass only the held gate ends to this child, preserving the C hook's
+    /// separate ready-write and release-read descriptor contract. The mapping
+    /// is scoped to `command.spawn()`; all original descriptors stay CLOEXEC.
+    pub fn attach(
+        &self,
+        command: &mut Command,
+        library: &Path,
+        position: &Path,
+        trace: &Path,
+    ) -> Result<()> {
+        command.fd_mappings(vec![
+            FdMapping {
+                parent_fd: self.ready_write.try_clone()?.into(),
+                child_fd: self.ready_write.as_raw_fd(),
+            },
+            FdMapping {
+                parent_fd: self.release_read.try_clone()?.into(),
+                child_fd: self.release_read.as_raw_fd(),
+            },
+        ])?;
+        command
+            .env("LD_PRELOAD", library)
+            .env("PARAMSD_PHASE_TRACE", trace)
+            .env("PARAMSD_PHASE_POSITION", position)
+            .env(
+                "PARAMSD_PHASE_READY_FD",
+                self.ready_write.as_raw_fd().to_string(),
+            )
+            .env(
+                "PARAMSD_PHASE_RELEASE_FD",
+                self.release_read.as_raw_fd().to_string(),
+            );
+        Ok(())
     }
 
     pub fn wait_batch(&mut self) -> Result<()> {

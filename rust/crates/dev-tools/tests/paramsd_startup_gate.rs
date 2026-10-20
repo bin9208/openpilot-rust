@@ -2,8 +2,16 @@ use openpilot_dev_tools::paramsd_startup_gate::StartupGate;
 use rustix::{
     event::{poll, PollFd, PollFlags, Timespec},
     io::{read, write},
+    process::{kill_process_group, Pid, Signal},
 };
-use std::{fs, path::Path};
+use std::{
+    fs,
+    os::{fd::AsRawFd, unix::process::CommandExt},
+    path::{Path, PathBuf},
+    process::{Child, Command, Stdio},
+    thread,
+    time::{Duration, Instant},
+};
 
 #[test]
 fn independent_original_sources_remain_unchanged() {
@@ -117,4 +125,144 @@ fn ready_and_finish_tokens_use_owned_real_pipes() {
     let mut token = [0];
     assert_eq!(read(gate.release_reader(), &mut token).unwrap(), 1);
     assert_eq!(token, *b"S");
+}
+
+struct OwnedDaemon {
+    child: Child,
+    reaped: bool,
+}
+impl Drop for OwnedDaemon {
+    fn drop(&mut self) {
+        if !self.reaped {
+            let _ = kill_process_group(Pid::from_child(&self.child), Signal::KILL);
+            let _ = self.child.kill();
+            let _ = self.child.wait();
+        }
+    }
+}
+fn required_path(name: &str) -> PathBuf {
+    let path = PathBuf::from(std::env::var_os(name).unwrap_or_else(|| panic!("{name} required")));
+    assert!(path.is_absolute(), "{name} must be absolute");
+    path
+}
+
+/// Cloud-only actual consumer of the scoped child-FD handoff. The complete
+/// 1,202-frame original/native daemon comparison remains a separate gate.
+#[test]
+#[ignore = "requires source-built phase hook, original CarParams, and fresh daemon ELF in Actions"]
+fn native_mapped_gate_holds_actual_paramsd_second_poll_and_shutdown() {
+    let daemon = required_path("PARAMSD_NATIVE_GATE_DAEMON");
+    let library = required_path("PARAMSD_NATIVE_GATE_LIBRARY");
+    let car = required_path("PARAMSD_NATIVE_GATE_CAR_PARAMS");
+    let evidence = required_path("PARAMSD_NATIVE_GATE_EVIDENCE");
+    fs::create_dir(&evidence).expect("native paramsd evidence must be fresh");
+    assert!(daemon.is_file() && library.is_file() && car.is_file());
+    assert_eq!(
+        openpilot_dev_tools::seal::digest(
+            &Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../..")
+                .join("rust/tools/paramsd_startup_phase.c")
+        )
+        .unwrap(),
+        "1b524e78cdfa1cb4013a35cb570fd2fbc03cce7a0153a5ef8ba1627102265a3b"
+    );
+    let private = tempfile::tempdir().unwrap();
+    let shm = tempfile::Builder::new()
+        .prefix("msgq_rust-probe-params-")
+        .tempdir_in("/dev/shm")
+        .unwrap();
+    let prefix = shm
+        .path()
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .strip_prefix("msgq_")
+        .unwrap();
+    let params = private.path().join("params");
+    let memory = private.path().join("memory");
+    fs::create_dir_all(params.join(prefix)).unwrap();
+    fs::create_dir_all(memory.join(prefix)).unwrap();
+    fs::write(params.join(prefix).join("UbloxAvailable"), b"1").unwrap();
+    fs::copy(&car, params.join(prefix).join("CarParams")).unwrap();
+    let position = memory.join(prefix).join("LastGPSPosition");
+    fs::write(&position, b"old position").unwrap();
+    let trace = evidence.join("poll.jsonl");
+    let mut gate = StartupGate::new(&shm.path().join("livePose"), &evidence).unwrap();
+    let child_gate_fds = [
+        gate.ready_writer().as_raw_fd(),
+        gate.release_reader().as_raw_fd(),
+    ];
+    let mut command = Command::new(&daemon);
+    command
+        .arg("--memory-root")
+        .arg(&memory)
+        .env("OPENPILOT_PREFIX", prefix)
+        .env("PARAMS_ROOT", &params)
+        .env("DEBUG", "1")
+        .env("REPLAY", "1")
+        .env("SIMULATION", "1")
+        .env_remove("ZMQ")
+        .env_remove("CEREAL_FAKE")
+        .stdin(Stdio::null())
+        .stdout(Stdio::from(
+            fs::File::create(evidence.join("stdout.log")).unwrap(),
+        ))
+        .stderr(Stdio::from(
+            fs::File::create(evidence.join("stderr.log")).unwrap(),
+        ))
+        .process_group(0);
+    gate.attach(&mut command, &library, &position, &trace)
+        .unwrap();
+    let child = command.spawn().unwrap();
+    drop(command);
+    let mut owned = OwnedDaemon {
+        child,
+        reaped: false,
+    };
+    gate.wait_batch().unwrap();
+    assert!(!position.exists(), "daemon has not entered its main loop");
+    let rows = fs::read_to_string(&trace)
+        .unwrap()
+        .lines()
+        .map(|line| serde_json::from_str::<serde_json::Value>(line).unwrap())
+        .collect::<Vec<_>>();
+    assert!(rows
+        .iter()
+        .any(|row| row["event"] == "gate" && row["completed"] == 1));
+    assert_eq!(
+        rows.iter()
+            .filter(|row| row["event"] == "return" && row["result"] == 0)
+            .map(|row| row["completed"].as_u64().unwrap())
+            .collect::<Vec<_>>(),
+        [1]
+    );
+    assert_eq!(gate.report().completed_waits_before_input, 1);
+    gate.finish().unwrap();
+    rustix::process::kill_process(Pid::from_child(&owned.child), Signal::TERM).unwrap();
+    let deadline = Instant::now() + Duration::from_secs(5);
+    let status = loop {
+        if let Some(status) = owned.child.try_wait().unwrap() {
+            break status;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "paramsd did not stop within five seconds"
+        );
+        thread::sleep(Duration::from_millis(5));
+    };
+    owned.reaped = true;
+    assert!(status.success(), "paramsd exited {status}");
+    fs::write(
+        evidence.join("result.json"),
+        serde_json::to_vec_pretty(&serde_json::json!({
+            "pass":true,
+            "daemon_exit":status.code(),
+            "completed_waits_before_input":1,
+            "child_gate_fds":child_gate_fds,
+            "original_phase_hook_sha256":"1b524e78cdfa1cb4013a35cb570fd2fbc03cce7a0153a5ef8ba1627102265a3b"
+        }))
+        .unwrap(),
+    )
+    .unwrap();
 }

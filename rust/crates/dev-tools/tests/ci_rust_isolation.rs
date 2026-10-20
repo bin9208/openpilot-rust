@@ -810,8 +810,11 @@ fn paramsd_atomic_foundation_preserves_the_original_independent_cases() {
             "-q rust/tools/tests/test_paramsd_atomic_gate.py",
             "--features paramsd-startup-gate-native --test paramsd_startup_gate",
             "--features paramsd-startup-gate-native --lib --test paramsd_startup_gate -- -D warnings",
+            "--ignored --exact native_mapped_gate_holds_actual_paramsd_second_poll_and_shutdown --nocapture",
+            "PARAMSD_NATIVE_GATE_CAR_PARAMS=\"$proof/CarParams.bin\"",
+            "sha256sum -c \"$proof/artifacts.sha256\"",
         ],
-        &["paramsd_startup_gate"],
+        &["paramsd_startup_gate", "PARAMSD_NATIVE_GATE_CAR_PARAMS"],
         false,
     );
 }
