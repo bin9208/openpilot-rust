@@ -289,6 +289,11 @@ jobs:
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib publish::policy_tests
           cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-jetlink --example usb_policy_probe
           python3 tools/check_jetlink_usb_policy.py rust/target/debug/examples/usb_policy_probe "$RUNNER_TEMP/jetlink-upstream"
+      - name: Reject stale Params repairs before full workspace validation
+        run: |
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-params --test conditional_write
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-plannerd --lib native_parameters::tests
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-plannerd --test native_parameters
 
   integration-gate:
     name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'integration gate' || 'Not requested - integration gate' }}

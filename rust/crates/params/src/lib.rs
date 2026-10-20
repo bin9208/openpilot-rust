@@ -166,6 +166,29 @@ impl Params {
         Ok(())
     }
 
+    /// Persist only if the optional raw value still matches the caller's snapshot.
+    /// The comparison and rename share the same lock as ordinary Params writes.
+    pub fn put_if_unchanged(
+        &self,
+        key: &str,
+        expected: Option<&[u8]>,
+        value: &[u8],
+    ) -> Result<bool, Error> {
+        let path = self.path(key)?;
+        let mut temporary = tempfile::Builder::new()
+            .prefix(".tmp_value_")
+            .tempfile_in(&self.root)?;
+        temporary.write_all(value)?;
+        temporary.as_file().sync_all()?;
+        let _lock = self.lock()?;
+        if self.get(key)?.as_deref() != expected {
+            return Ok(false);
+        }
+        temporary.persist(path).map_err(|error| error.error)?;
+        File::open(&self.directory)?.sync_all()?;
+        Ok(true)
+    }
+
     pub fn remove(&self, key: &str) -> Result<(), Error> {
         let path = self.path(key)?;
         let _lock = self.lock()?;

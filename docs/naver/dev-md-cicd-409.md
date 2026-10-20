@@ -128,3 +128,22 @@ or their original nightly. Cloud fixtures reject low space and corrupt binaries.
 Upstream evidence: [cleanup source](https://github.com/Swatinem/rust-cache/blob/6323deb102c322ba6fcbdcafc7e3dddab59af2b6/src/cleanup.ts#L82).
 Rustup version/checksums were read from static.rust-lang.org release-stable.toml
 and the two architecture-specific archive/1.29.1 rustup-init.sha256 files.
+
+## Planner repair prerequisite (#413)
+
+On `f077eb35`, cache preservation worked: workspace passed Rust tool setup,
+formatting, packaging policies, Clippy and fixture generation, then the full
+workspace test failed at `native_parameters` / `repair 75`. This is a real lost
+update: queued repairs for a previous invalid value can overwrite a newer valid
+external write. The original deadline/test is retained.
+[Failure](https://github.com/bin9208/openpilot-rust/actions/runs/39430751347/job/118665978425).
+
+The prerequisite fix adds Params::put_if_unchanged, comparing the optional raw
+snapshot and committing the atomic rename under the existing Params lock. The
+planner captures that snapshot in its bounded background queue. Existing put,
+lower-bound/default values, nonblocking control-cycle behavior, queue size and
+error handling remain unchanged. Focused stale-write, missing/empty and
+concurrent-writer tests run in Actions before the full workspace stage. All Rust
+executables remain built from the exact release SHA; external model/provider
+producers are unchanged by this Rust-only repair fix. No runtime is published
+for this infrastructure PR. Issue: https://github.com/bin9208/openpilot-rust/issues/413
