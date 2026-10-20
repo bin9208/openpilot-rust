@@ -149,12 +149,12 @@ fn inspect_archive(bytes: &[u8]) -> Result<Vec<Member>> {
         central_directory_count(bytes, wheel.central_directory_start())? == wheel.len(),
         "duplicate Eigen wheel central-directory member",
     )?;
-    let mut names = BTreeSet::new();
+    let mut names = BTreeSet::<String>::new();
     let mut selected = Vec::new();
     let mut expanded = 0_u64;
     for index in 0..wheel.len() {
         let member = wheel.by_index(index)?;
-        let name = member.name()?;
+        let name = member.name()?.into_owned();
         safe(&name)?;
         require(
             names.insert(name.to_owned()),
