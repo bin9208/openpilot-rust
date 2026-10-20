@@ -539,6 +539,7 @@ required-features = ["manager-catalog-tools-native"]
 
 [features]
 paramsd-startup-gate-native = ["rustix/pipe"]
+paramsd-daemon-native = ["paramsd-startup-gate-native", "dep:capnp", "dep:openpilot-cereal", "dep:openpilot-messaging", "openpilot-messaging/native", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri"]
 eigen-tools-native = []
 bluetooth-sudo-fixture-native = []
 bluetooth-gesture-cases-native = ["dep:openpilot-runtime-core"]
@@ -1702,3 +1703,20 @@ required-features = ["bluetooth-sudo-fixture-native"]
 [[test]]
 name = "bluetooth_sudo_fixture"
 required-features = ["bluetooth-sudo-fixture-native"]
+
+[[bin]]
+name = "check-paramsd-daemon-native"
+path = "src/bin/check_paramsd_daemon_native.rs"
+required-features = ["paramsd-daemon-native"]
+
+[[test]]
+name = "paramsd_daemon_check"
+required-features = ["paramsd-daemon-native"]
+
+[[test]]
+name = "soundd_daemon_retirement"
+required-features = ["soundd-daemon-native"]
+
+[[test]]
+name = "paramsd_daemon_reference"
+required-features = ["paramsd-daemon-native"]

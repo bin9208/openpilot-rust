@@ -663,14 +663,14 @@ fn ui_connectivity_requires_source_render_and_private_protocol_checks() {
             "--features bluetooth-enumerate-native --bin check-bluetooth-enumerate",
             "--features bluetooth-enumerate-native --lib bluetooth_enumerate_check:: --locked",
             "--features bluetooth-enumerate-native --test bluetooth_enumerate_reference --locked -- --nocapture",
-            "python rust/tools/check_bluetooth_enumerate.py --binary",
-            "BLUETOOTH_ENUMERATE_ORIGINAL_OUTPUT=",
+            "test ! -e rust/tools/check_bluetooth_enumerate.py",
+            "BLUETOOTH_ENUMERATE_ABSENT_OUTPUT=",
             "--features bluetooth-bluez-policy-native --bin check-bluetooth-bluez-policy",
             "--features bluetooth-bluez-policy-native --test bluetooth_bluez_policy_check --locked",
             "--features bluetooth-bluez-policy-native --lib bluetooth_bluez_policy_check:: --locked",
             "--features bluetooth-bluez-policy-native --test bluetooth_bluez_policy_reference --locked -- --nocapture",
-            "python rust/tools/check_bluetooth_bluez_policy.py --binary",
-            "BLUEZ_POLICY_ORIGINAL_DIGITS=",
+            "test ! -e rust/tools/check_bluetooth_bluez_policy.py",
+            "BLUEZ_POLICY_ABSENCE_PROOF=",
             "--features bluetooth-config-native --bin check-bluetooth-config",
             "--features bluetooth-config-native --test bluetooth_config_check --locked",
             "--features bluetooth-config-native --lib --bin check-bluetooth-config",
@@ -847,7 +847,7 @@ fn soundd_finalization_requires_original_behavioral_failure_and_retained_binding
         .lines()
         .filter(|line| line.contains("cargo ") && line.contains("--features soundd-daemon-native"))
         .collect::<Vec<_>>();
-    assert_eq!(invocations.len(), 7);
+    assert_eq!(invocations.len(), 8);
     for line in invocations {
         required(
             line,
@@ -860,11 +860,11 @@ fn soundd_finalization_requires_original_behavioral_failure_and_retained_binding
 }
 
 #[test]
-fn bluez_policy_retirement_preparation_requires_live_original_and_native_only_absence() {
+fn bluez_policy_retirement_requires_sealed_original_and_native_only_absence() {
     job_check(
         "ui-connectivity",
         &[
-            "python rust/tools/check_bluetooth_bluez_policy.py",
+            "test ! -e rust/tools/check_bluetooth_bluez_policy.py",
             "test ! -e \"$absence/root/rust/tools/check_bluetooth_bluez_policy.py\"",
             "test ! -L \"$absence/root/rust/tools/check_bluetooth_bluez_policy.py\"",
             "OPENPILOT_RUST_ROOT=\"$absence/root\" PATH=/nonexistent /usr/bin/timeout",
@@ -878,11 +878,11 @@ fn bluez_policy_retirement_preparation_requires_live_original_and_native_only_ab
 }
 
 #[test]
-fn enumeration_retirement_preparation_requires_live_original_and_native_only_absence() {
+fn enumeration_retirement_requires_sealed_original_and_native_only_absence() {
     job_check(
         "ui-connectivity",
         &[
-            "python rust/tools/check_bluetooth_enumerate.py",
+            "test ! -e rust/tools/check_bluetooth_enumerate.py",
             "test ! -e \"$BLUETOOTH_ENUMERATE_ABSENT_ROOT/rust/tools/check_bluetooth_enumerate.py\"",
             "test ! -L \"$BLUETOOTH_ENUMERATE_ABSENT_ROOT/rust/tools/check_bluetooth_enumerate.py\"",
             "OPENPILOT_RUST_ROOT=\"$BLUETOOTH_ENUMERATE_ABSENT_ROOT\" PATH=\"$proof/empty-path\" /usr/bin/timeout",
@@ -974,7 +974,7 @@ fn sensor_audio_requires_original_and_live_native_checks() {
             "--features soundd-daemon-native --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --bin check-soundd-daemon",
             "--test soundd_daemon_check --test soundd_daemon_runtime --locked",
             "--lib soundd_daemon_check::worker::tests --locked",
-            "\"$PWD/rust/target/debug/check-soundd-daemon\" --binary",
+            "\"$SOUNDD_DAEMON_WORKER_BINARY\" --binary",
             "rust/target/debug/check-feedbackd --binary",
             "--features feedback-runtime-native --bin check-feedbackd",
             "--test feedbackd_check --test feedbackd_runtime_check --locked",
@@ -2409,5 +2409,48 @@ fn bridge_retirement_requires_actual_source_absence_and_same_elf_native_trace() 
         ],
         &["--test bridge_controller_reference"],
         false,
+    );
+}
+
+#[test]
+fn paramsd_full_native_controller_requires_live_source_packet_comparison() {
+    job_check(
+        "estimation-runtime",
+        &[
+            "python rust/tools/check_paramsd_daemon.py",
+            "--features paramsd-daemon-native --bin check-paramsd-daemon-native",
+            "--test paramsd_daemon_check --locked",
+            "--test paramsd_daemon_reference --locked -- --nocapture",
+            "PARAMSD_ORIGINAL_OUTPUT=",
+            "PARAMSD_NATIVE_OUTPUT=",
+            "continuous/input.json",
+            "restart/input.json",
+            "continuous/source.json",
+            "restart/source.json",
+            "180s \"$checker\" --daemon",
+            "sha256sum -c \"$proof/inputs.sha256\"",
+        ],
+        &["native-controller-proof"],
+        true,
+    );
+}
+
+#[test]
+fn soundd_retirement_requires_both_traced_native_lanes_and_raw_reference() {
+    job_check(
+        "sensor-audio",
+        &[
+            "python rust/tools/check_soundd_daemon.py",
+            "SOUNDD_NATIVE_PRESENT_EXEC=",
+            "SOUNDD_NATIVE_ABSENT_EXEC=",
+            "for lane in PRESENT ABSENT; do",
+            "PATH=/nonexistent /usr/bin/timeout",
+            "-e trace=execve,execveat",
+            "test ! -L \"$SOUNDD_NATIVE_ABSENT_ROOT/rust/tools/check_soundd_daemon.py\"",
+            "--test soundd_daemon_retirement --locked -- --nocapture",
+            "sha256sum -c \"$proof/executables.sha256\"",
+        ],
+        &["soundd-retirement"],
+        true,
     );
 }

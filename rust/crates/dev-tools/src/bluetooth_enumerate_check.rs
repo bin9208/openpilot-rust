@@ -128,30 +128,18 @@ impl Bound {
         verify_held(&self.path, &self.file, &self.hash)
     }
 }
-enum Historical {
-    Present(Bound),
-    Absent {
-        path: PathBuf,
-        parent: PathBuf,
-        directory: File,
-        device: u64,
-        inode: u64,
-    },
+struct Historical {
+    path: PathBuf,
+    parent: PathBuf,
+    directory: File,
+    device: u64,
+    inode: u64,
 }
 impl Historical {
     fn open(root: &Path) -> Result<Self> {
         let path = root.join(HISTORICAL_CHECKER);
         match fs::symlink_metadata(&path) {
-            Ok(metadata) => {
-                if !metadata.is_file() || metadata.file_type().is_symlink() {
-                    return Err("historical enumeration checker is not regular".into());
-                }
-                let bound = Bound::open(&path)?;
-                if bound.hash != HISTORICAL_SHA {
-                    return Err("historical enumeration checker changed".into());
-                }
-                Ok(Self::Present(bound))
-            }
+            Ok(_) => Err("historical enumeration checker reappeared".into()),
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
                 let parent = path
                     .parent()
@@ -166,7 +154,7 @@ impl Historical {
                     rustix::fs::Mode::empty(),
                 )?);
                 let metadata = directory.metadata()?;
-                let absent = Self::Absent {
+                let absent = Self {
                     path,
                     parent,
                     directory,
@@ -180,35 +168,19 @@ impl Historical {
         }
     }
     fn verify(&self) -> Result<()> {
-        match self {
-            Self::Present(bound) => {
-                if !fs::symlink_metadata(&bound.path)?.is_file() {
-                    return Err("historical enumeration checker changed type".into());
-                }
-                bound.verify()
-            }
-            Self::Absent {
-                path,
-                parent,
-                directory,
-                device,
-                inode,
-            } => {
-                let held = directory.metadata()?;
-                let current = fs::symlink_metadata(parent)?;
-                if !held.is_dir()
-                    || !current.is_dir()
-                    || (held.dev(), held.ino()) != (*device, *inode)
-                    || (current.dev(), current.ino()) != (*device, *inode)
-                {
-                    return Err("historical enumeration checker parent changed".into());
-                }
-                match fs::symlink_metadata(path) {
-                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
-                    Ok(_) => Err("historical enumeration checker reappeared".into()),
-                    Err(error) => Err(error.into()),
-                }
-            }
+        let held = self.directory.metadata()?;
+        let current = fs::symlink_metadata(&self.parent)?;
+        if !held.is_dir()
+            || !current.is_dir()
+            || (held.dev(), held.ino()) != (self.device, self.inode)
+            || (current.dev(), current.ino()) != (self.device, self.inode)
+        {
+            return Err("historical enumeration checker parent changed".into());
+        }
+        match fs::symlink_metadata(&self.path) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            Ok(_) => Err("historical enumeration checker reappeared".into()),
+            Err(error) => Err(error.into()),
         }
     }
 }
@@ -804,15 +776,17 @@ mod tests {
     }
     fn copied_sources(folder: &Path) -> PathBuf {
         let source = folder.join("source");
-        for (name, _) in SOURCES {
+        assert!(
+            matches!(fs::symlink_metadata(root().join(HISTORICAL_CHECKER)), Err(error)
+            if error.kind() == io::ErrorKind::NotFound)
+        );
+        for (name, _) in SOURCES.into_iter().skip(1) {
             let from = root().join(name);
-            if name == HISTORICAL_CHECKER && !from.exists() {
-                continue;
-            }
             let to = source.join(name);
             fs::create_dir_all(to.parent().unwrap()).unwrap();
             fs::copy(from, to).unwrap();
         }
+        fs::create_dir_all(source.join("rust/tools")).unwrap();
         source
     }
     fn remove_historical(source: &Path) {

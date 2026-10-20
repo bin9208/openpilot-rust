@@ -2868,7 +2868,7 @@ jobs:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
       - run: rustup toolchain install nightly-2026-09-29 --profile minimal --component miri
-      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libzmq5
+      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libzmq5 strace
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0
       - name: Configure original sensor and audio IPC imports
         run: printf 'PYTHONPATH=%s/sensor-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
@@ -2956,13 +2956,56 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --test soundd_daemon_check --test soundd_daemon_runtime --locked -- --test-threads=1
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --lib --bin check-soundd-daemon --test soundd_daemon_check --test soundd_daemon_runtime --locked -- -D warnings
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --lib --bin check-soundd-daemon --test soundd_daemon_check --test soundd_daemon_runtime --test soundd_daemon_retirement --locked -- -D warnings
       - name: Compare alert samples and continuous native playback
         run: |
           "$PWD/rust/target/debug/check-soundd-policy" --binary "$PWD/rust/target/debug/examples/sound_trace" --binding "$RUNNER_TEMP"/sensor-params-binding/params_pyx*.so --output "$RUNNER_TEMP/sensor-audio/soundd-source"
           python rust/tools/check_soundd_daemon.py --binary "$PWD/rust/target/debug/openpilot-soundd" --output "$RUNNER_TEMP/sensor-audio/soundd-daemon" --fixture-assets-binary "$PWD/rust/target/debug/create-soundd-fixture-assets" --portaudio-library "$RUNNER_TEMP/owned-soundd-portaudio.so"
+      - name: Require sound daemon same-ELF present and absent execution proof
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/sensor-audio/soundd-retirement"
+          export SOUNDD_ORIGINAL_OUTPUT="$RUNNER_TEMP/sensor-audio/soundd-daemon"
+          export SOUNDD_NATIVE_PRESENT_OUTPUT="$proof/present"
+          export SOUNDD_NATIVE_ABSENT_OUTPUT="$proof/absent"
+          export SOUNDD_NATIVE_PRESENT_ROOT="$GITHUB_WORKSPACE"
+          export SOUNDD_NATIVE_ABSENT_ROOT="$proof/absent-root"
+          export SOUNDD_NATIVE_PRESENT_EXEC="$proof/present.exec"
+          export SOUNDD_NATIVE_ABSENT_EXEC="$proof/absent.exec"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
-          "$PWD/rust/target/debug/check-soundd-daemon" --binary "$PWD/rust/target/debug/openpilot-soundd" --output "$RUNNER_TEMP/sensor-audio/soundd-native-controller" --fixture-assets-binary "$PWD/rust/target/debug/create-soundd-fixture-assets" --portaudio-library "$RUNNER_TEMP/owned-soundd-portaudio.so"
+          mkdir -p "$proof"
+          git rev-parse HEAD > "$proof/SOURCE_COMMIT"
+          sha256sum "$SOUNDD_DAEMON_BINARY" "$SOUNDD_DAEMON_WORKER_BINARY" "$SOUNDD_FIXTURE_ASSETS_BINARY" "$SOUNDD_PORTAUDIO_LIBRARY" > "$proof/executables.sha256"
+          find "$SOUNDD_ORIGINAL_OUTPUT" -type f -print0 | sort -z | xargs -0 sha256sum > "$proof/original-output.sha256"
+          # Stage only the exact retained source identities; do not copy the retired checker.
+          python - <<'STAGE'
+          import hashlib, json, os
+          from pathlib import Path
+          root = Path(os.environ['SOUNDD_NATIVE_PRESENT_ROOT'])
+          absent = Path(os.environ['SOUNDD_NATIVE_ABSENT_ROOT'])
+          pins = json.loads((root / 'rust/crates/dev-tools/tests/fixtures/soundd-daemon/manifest.json').read_text())['source_sha256']
+          assert len(pins) == 21
+          for name, digest in pins.items():
+            data = (root / name).read_bytes()
+            assert hashlib.sha256(data).hexdigest() == digest, name
+            if name != 'rust/tools/check_soundd_daemon.py':
+              path = absent / name
+              path.parent.mkdir(parents=True, exist_ok=True)
+              path.write_bytes(data)
+          assert len([p for p in absent.rglob('*') if p.is_file()]) == 20
+          STAGE
+          test ! -e "$SOUNDD_NATIVE_ABSENT_ROOT/rust/tools/check_soundd_daemon.py"
+          test ! -L "$SOUNDD_NATIVE_ABSENT_ROOT/rust/tools/check_soundd_daemon.py"
+          for lane in PRESENT ABSENT; do
+            root_var="SOUNDD_NATIVE_${lane}_ROOT"
+            output_var="SOUNDD_NATIVE_${lane}_OUTPUT"
+            exec_var="SOUNDD_NATIVE_${lane}_EXEC"
+            OPENPILOT_RUST_ROOT="${!root_var}" PATH=/nonexistent /usr/bin/timeout --signal=TERM --kill-after=5s 180s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "${!exec_var}" "$SOUNDD_DAEMON_WORKER_BINARY" --binary "$SOUNDD_DAEMON_BINARY" --output "${!output_var}" --fixture-assets-binary "$SOUNDD_FIXTURE_ASSETS_BINARY" --portaudio-library "$SOUNDD_PORTAUDIO_LIBRARY" > "$proof/$lane.stdout" 2> "$proof/$lane.stderr"
+          done
+          sha256sum -c "$proof/executables.sha256"
+          sha256sum -c "$proof/original-output.sha256"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --test soundd_daemon_retirement --locked -- --nocapture
       - name: Check PortAudio callback ownership with Miri
         env:
           MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1
@@ -3002,7 +3045,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
-      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libzmq5
+      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libzmq5 strace
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0 pyserial==3.5 requests==2.32.5 pytest==9.0.2
       - name: Configure original GNSS IPC imports
         run: printf 'PYTHONPATH=%s/gnss-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
@@ -3198,6 +3241,31 @@ jobs:
           python rust/tools/check_paramsd_loop.py --oracle "$RUNNER_TEMP/paramsd-oracle" --trace "$PWD/rust/target/debug/examples/paramsd_loop" --evidence "$RUNNER_TEMP/estimation/paramsd/loop"
           python rust/tools/check_paramsd_daemon.py --oracle "$RUNNER_TEMP/paramsd-oracle" --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/estimation/paramsd/daemon"
           python rust/tools/check_paramsd_startup.py --binary "$PWD/rust/target/debug/openpilot-paramsd" --evidence "$RUNNER_TEMP/estimation/paramsd/startup"
+      - name: Compare full native paramsd controller against original source packets
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/estimation/paramsd/native-controller-proof"
+          export PARAMSD_ORIGINAL_OUTPUT="$RUNNER_TEMP/estimation/paramsd/daemon"
+          export PARAMSD_NATIVE_OUTPUT="$proof/native"
+          export PARAMSD_NATIVE_DAEMON="$GITHUB_WORKSPACE/rust/target/debug/openpilot-paramsd"
+          export PARAMSD_NATIVE_HOOK="$PARAMSD_ORIGINAL_OUTPUT/continuous/startup-phase.so"
+          checker="$GITHUB_WORKSPACE/rust/target/debug/check-paramsd-daemon-native"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-daemon-native --bin check-paramsd-daemon-native --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-daemon-native --test paramsd_daemon_check --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          mkdir -p "$proof"
+          git rev-parse HEAD > "$proof/SOURCE_COMMIT"
+          sha256sum "$checker" "$PARAMSD_NATIVE_DAEMON" "$PARAMSD_NATIVE_HOOK" "$PARAMSD_ORIGINAL_OUTPUT/continuous/input.json" "$PARAMSD_ORIGINAL_OUTPUT/restart/input.json" "$PARAMSD_ORIGINAL_OUTPUT/continuous/source.json" "$PARAMSD_ORIGINAL_OUTPUT/restart/source.json" rust/tools/check_paramsd_daemon.py rust/tools/paramsd_fixture.py rust/tools/paramsd_startup_phase.c > "$proof/inputs.sha256"
+          sha256sum "$PARAMSD_ORIGINAL_OUTPUT"/{continuous,restart}/{results.json,saved.bin,gps.json,packets.json} >> "$proof/inputs.sha256"
+          /usr/bin/timeout --signal=TERM --kill-after=5s 180s "$checker" --daemon "$PARAMSD_NATIVE_DAEMON" --library "$PARAMSD_NATIVE_HOOK" --continuous-input "$PARAMSD_ORIGINAL_OUTPUT/continuous/input.json" --restart-input "$PARAMSD_ORIGINAL_OUTPUT/restart/input.json" --evidence "$PARAMSD_NATIVE_OUTPUT" > "$proof/native.stdout" 2> "$proof/native.stderr"
+          sha256sum -c "$proof/inputs.sha256"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-daemon-native --test paramsd_daemon_reference --locked -- --nocapture
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-daemon-native --bin check-paramsd-daemon-native --test paramsd_daemon_check --test paramsd_daemon_reference --locked -- -D warnings
+          sha256sum -c "$proof/inputs.sha256"
       - name: Build and test native lagd QA tools
         env:
           CARGO_INCREMENTAL: '0'
@@ -3422,18 +3490,15 @@ jobs:
           rustc --edition=2021 rust/tools/wifi_snapshot_allocation_probe.rs --extern "openpilot_wifi=$GITHUB_WORKSPACE/rust/target/debug/libopenpilot_wifi.rlib" -L "dependency=$GITHUB_WORKSPACE/rust/target/debug/deps" -o "$RUNNER_TEMP/wifi-snapshot-allocation-probe"
           mkdir -p "$RUNNER_TEMP/ui-connectivity"
           "$RUNNER_TEMP/wifi-snapshot-allocation-probe" --require-improvement | tee "$RUNNER_TEMP/ui-connectivity/wifi-snapshot-allocation.tsv"
-      - name: Compare native BlueZ policy controller with unchanged original
+      - name: Compare native BlueZ policy controller against sealed original observations
         run: |
           set -euo pipefail
+          test ! -e rust/tools/check_bluetooth_bluez_policy.py
+          test ! -L rust/tools/check_bluetooth_bluez_policy.py
           export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
           proof="$RUNNER_TEMP/ui-connectivity/bluetooth-bluez-policy"
           candidate="$GITHUB_WORKSPACE/rust/target/debug/examples/bluez_policy"
-          export BLUEZ_POLICY_ORIGINAL_OUTPUT="$proof/original"
           export BLUEZ_POLICY_NATIVE_OUTPUT="$proof/native"
-          export BLUEZ_POLICY_ORIGINAL_STDOUT="$proof/original.stdout"
-          export BLUEZ_POLICY_ORIGINAL_STDERR="$proof/original.stderr"
-          export BLUEZ_POLICY_ORIGINAL_DIGITS="$proof/original-digits.stdout"
-          export BLUEZ_POLICY_ORIGINAL_DIGITS_STDERR="$proof/original-digits.stderr"
           export BLUEZ_POLICY_NATIVE_STDOUT="$proof/native.stdout"
           export BLUEZ_POLICY_NATIVE_STDERR="$proof/native.stderr"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
@@ -3446,9 +3511,7 @@ jobs:
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-bluez-policy-native --lib --bin check-bluetooth-bluez-policy --test bluetooth_bluez_policy_check --test bluetooth_bluez_policy_reference --locked -- -D warnings
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           mkdir -p "$proof"
-          sha256sum "$candidate" rust/target/debug/check-bluetooth-bluez-policy rust/tools/check_bluetooth_bluez_policy.py openpilot/selfdrive/carrot/bluetooth/bluez.py > "$proof/artifacts.sha256"
-          timeout --kill-after=5s 120s python rust/tools/check_bluetooth_bluez_policy.py --binary "$candidate" --output "$BLUEZ_POLICY_ORIGINAL_OUTPUT" > "$BLUEZ_POLICY_ORIGINAL_STDOUT" 2> "$BLUEZ_POLICY_ORIGINAL_STDERR"
-          timeout --kill-after=5s 35s "$candidate" --digits > "$BLUEZ_POLICY_ORIGINAL_DIGITS" 2> "$BLUEZ_POLICY_ORIGINAL_DIGITS_STDERR"
+          sha256sum "$candidate" rust/target/debug/check-bluetooth-bluez-policy openpilot/selfdrive/carrot/bluetooth/bluez.py > "$proof/artifacts.sha256"
           timeout --kill-after=5s 120s rust/target/debug/check-bluetooth-bluez-policy --binary "$candidate" --output "$BLUEZ_POLICY_NATIVE_OUTPUT" > "$BLUEZ_POLICY_NATIVE_STDOUT" 2> "$BLUEZ_POLICY_NATIVE_STDERR"
           sha256sum -c "$proof/artifacts.sha256"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
@@ -3473,16 +3536,15 @@ jobs:
           export BLUEZ_POLICY_ABSENCE_PROOF="$absence"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-bluez-policy-native --test bluetooth_bluez_policy_reference --locked -- --nocapture
-      - name: Compare native Bluetooth enumeration controller with unchanged original
+      - name: Compare native Bluetooth enumeration controller against sealed original observations
         run: |
           set -euo pipefail
+          test ! -e rust/tools/check_bluetooth_enumerate.py
+          test ! -L rust/tools/check_bluetooth_enumerate.py
           export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
           proof="$RUNNER_TEMP/ui-connectivity/bluetooth-enumerate"
           candidate="$GITHUB_WORKSPACE/rust/target/debug/examples/input_fixture"
-          export BLUETOOTH_ENUMERATE_ORIGINAL_OUTPUT="$proof/original"
           export BLUETOOTH_ENUMERATE_NATIVE_OUTPUT="$proof/native"
-          export BLUETOOTH_ENUMERATE_ORIGINAL_STDOUT="$proof/original.stdout"
-          export BLUETOOTH_ENUMERATE_ORIGINAL_STDERR="$proof/original.stderr"
           export BLUETOOTH_ENUMERATE_NATIVE_STDOUT="$proof/native.stdout"
           export BLUETOOTH_ENUMERATE_NATIVE_STDERR="$proof/native.stderr"
           export BLUETOOTH_ENUMERATE_ABSENT_ROOT="$proof/absent-root"
@@ -3497,8 +3559,7 @@ jobs:
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-enumerate-native --lib --bin check-bluetooth-enumerate --test bluetooth_enumerate_reference --locked -- -D warnings
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           mkdir -p "$proof"
-          sha256sum "$candidate" rust/target/debug/check-bluetooth-enumerate rust/tools/check_bluetooth_enumerate.py openpilot/selfdrive/carrot/bluetooth/daemon.py > "$proof/artifacts.sha256"
-          timeout --kill-after=5s 30s python rust/tools/check_bluetooth_enumerate.py --binary "$candidate" --output "$BLUETOOTH_ENUMERATE_ORIGINAL_OUTPUT" > "$BLUETOOTH_ENUMERATE_ORIGINAL_STDOUT" 2> "$BLUETOOTH_ENUMERATE_ORIGINAL_STDERR"
+          sha256sum "$candidate" rust/target/debug/check-bluetooth-enumerate openpilot/selfdrive/carrot/bluetooth/daemon.py > "$proof/artifacts.sha256"
           timeout --kill-after=5s 30s rust/target/debug/check-bluetooth-enumerate --binary "$candidate" --output "$BLUETOOTH_ENUMERATE_NATIVE_OUTPUT" > "$BLUETOOTH_ENUMERATE_NATIVE_STDOUT" 2> "$BLUETOOTH_ENUMERATE_NATIVE_STDERR"
           sha256sum -c "$proof/artifacts.sha256"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
@@ -3797,7 +3858,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal --component clippy
-      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libzmq5
+      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libzmq5 strace
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 PyJWT==2.14.0 cryptography==50.0.1
       - name: Configure original platform IPC imports
         run: printf 'PYTHONPATH=%s/platform-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
@@ -3883,7 +3944,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libzmq5
+      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libzmq5 strace
       - run: rustup toolchain install 1.94.0 --profile minimal
       - run: rustup toolchain install nightly-2026-09-29 --profile minimal
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 PyJWT==2.14.0 cryptography==50.0.1

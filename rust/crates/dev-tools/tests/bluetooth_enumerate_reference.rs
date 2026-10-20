@@ -1,9 +1,11 @@
-//! Requires a real Python 3.12 original run and two native runs on the same fresh ELF.
+//! Sealed Python 3.12 original observation and two fresh native same-ELF lanes.
 use serde::{
     de::{MapAccess, Visitor},
     Deserialize, Deserializer,
 };
+use sha2::{Digest, Sha256};
 use std::{
+    collections::BTreeMap,
     fmt, fs,
     path::{Path, PathBuf},
 };
@@ -59,6 +61,30 @@ fn rows(value: &Ordered, output: &Path) -> Vec<(String, String)> {
         })
         .collect()
 }
+fn original_rows(value: &Ordered) -> Vec<(String, String)> {
+    const PREFIX: &str =
+        "/home/runner/work/_temp/ui-connectivity/bluetooth-enumerate/original/dev/";
+    value
+        .0
+        .iter()
+        .map(|(path, address)| {
+            (
+                path.strip_prefix(PREFIX)
+                    .expect("sealed original device path")
+                    .to_owned(),
+                address.clone(),
+            )
+        })
+        .collect()
+}
+fn pairs(rows: &[(String, String)]) -> std::collections::BTreeMap<&str, &str> {
+    let mapped = rows
+        .iter()
+        .map(|(path, address)| (path.as_str(), address.as_str()))
+        .collect::<std::collections::BTreeMap<_, _>>();
+    assert_eq!(mapped.len(), rows.len(), "duplicate device path");
+    mapped
+}
 fn files(root: &Path) -> Vec<(PathBuf, Option<Vec<u8>>)> {
     fn visit(base: &Path, path: &Path, out: &mut Vec<(PathBuf, Option<Vec<u8>>)>) {
         for entry in fs::read_dir(path).unwrap() {
@@ -80,8 +106,7 @@ fn files(root: &Path) -> Vec<(PathBuf, Option<Vec<u8>>)> {
     out
 }
 #[test]
-fn original_python_312_and_native_controller_match_full_sysfs_corpus() {
-    let original = required("BLUETOOTH_ENUMERATE_ORIGINAL_OUTPUT");
+fn sealed_original_and_fresh_native_match_full_sysfs_corpus() {
     let native = required("BLUETOOTH_ENUMERATE_NATIVE_OUTPUT");
     let absent = required("BLUETOOTH_ENUMERATE_ABSENT_OUTPUT");
     let absent_root = required("BLUETOOTH_ENUMERATE_ABSENT_ROOT");
@@ -91,9 +116,12 @@ fn original_python_312_and_native_controller_match_full_sysfs_corpus() {
         std::io::ErrorKind::NotFound,
         "historical checker must be absent from the copied source root"
     );
-    assert_eq!(files(&original.join("sysfs")), files(&native.join("sysfs")));
-    assert_eq!(files(&original.join("sysfs")), files(&absent.join("sysfs")));
-    let old_raw = fs::read(original.join("result.json")).unwrap();
+    assert_eq!(files(&native.join("sysfs")), files(&absent.join("sysfs")));
+    let old_raw = include_bytes!("fixtures/bluetooth-enumerate/original-result.json");
+    assert_eq!(
+        format!("{:x}", Sha256::digest(old_raw)),
+        "36d25b8684cb814421dd22ada7bc75b3d9959c38433e4a5b75c70e02375ac18c"
+    );
     let new_raw = fs::read(native.join("result.json")).unwrap();
     let absent_raw = fs::read(absent.join("result.json")).unwrap();
     let old: Receipt = serde_json::from_slice(&old_raw).unwrap();
@@ -107,48 +135,46 @@ fn original_python_312_and_native_controller_match_full_sysfs_corpus() {
     assert_eq!(missing.accepted, old.accepted);
     assert_eq!(new.source_sha256, old.source_sha256);
     assert_eq!(missing.source_sha256, old.source_sha256);
-    assert_eq!(new.binary_sha256, old.binary_sha256);
-    assert_eq!(missing.binary_sha256, old.binary_sha256);
+    assert_eq!(missing.binary_sha256, new.binary_sha256);
     assert_eq!(
-        rows(&old.source, &original),
-        rows(&new.source, &native),
-        "source"
+        pairs(&original_rows(&old.source)),
+        pairs(&rows(&new.source, &native)),
+        "source pairs"
     );
     assert_eq!(
-        rows(&old.native, &original),
-        rows(&new.native, &native),
-        "native"
+        pairs(&original_rows(&old.native)),
+        pairs(&rows(&new.native, &native)),
+        "native pairs"
     );
     assert_eq!(
-        rows(&old.source, &original),
-        rows(&missing.source, &absent),
-        "absent source"
+        pairs(&original_rows(&old.source)),
+        pairs(&rows(&missing.source, &absent)),
+        "absent source pairs"
     );
     assert_eq!(
-        rows(&old.native, &original),
-        rows(&missing.native, &absent),
-        "absent native"
+        pairs(&original_rows(&old.native)),
+        pairs(&rows(&missing.native, &absent)),
+        "absent native pairs"
     );
-    assert_eq!(rows(&old.source, &original), rows(&old.native, &original));
+    assert_eq!(original_rows(&old.source), original_rows(&old.native));
     assert_eq!(rows(&new.source, &native), rows(&new.native, &native));
+    assert_eq!(rows(&new.source, &native), rows(&missing.source, &absent));
+    assert_eq!(rows(&new.native, &native), rows(&missing.native, &absent));
     assert_eq!(
         rows(&missing.source, &absent),
         rows(&missing.native, &absent)
     );
-    let original_stdout = fs::read(required("BLUETOOTH_ENUMERATE_ORIGINAL_STDOUT")).unwrap();
     let native_stdout = fs::read(required("BLUETOOTH_ENUMERATE_NATIVE_STDOUT")).unwrap();
     let absent_stdout = fs::read(required("BLUETOOTH_ENUMERATE_ABSENT_STDOUT")).unwrap();
-    assert_eq!(original_stdout, native_stdout);
-    assert_eq!(original_stdout, absent_stdout);
+    assert_eq!(native_stdout, absent_stdout);
     assert_eq!(
-        original_stdout,
+        native_stdout,
         b"PASS: 40 sysfs nodes, 31 accepted in source order, missing directory\n"
     );
-    let original_stderr = fs::read(required("BLUETOOTH_ENUMERATE_ORIGINAL_STDERR")).unwrap();
     let native_stderr = fs::read(required("BLUETOOTH_ENUMERATE_NATIVE_STDERR")).unwrap();
     let absent_stderr = fs::read(required("BLUETOOTH_ENUMERATE_ABSENT_STDERR")).unwrap();
-    assert_eq!(original_stderr, native_stderr);
-    assert_eq!(original_stderr, absent_stderr);
+    assert_eq!(native_stderr, absent_stderr);
+    assert!(native_stderr.is_empty(), "original stderr was empty");
     assert_eq!(
         fs::read(native.join("native.stderr")).unwrap(),
         fs::read(absent.join("native.stderr")).unwrap()
@@ -169,4 +195,99 @@ fn original_python_312_and_native_controller_match_full_sysfs_corpus() {
         rows(&present_fixture, &native),
         rows(&absent_fixture, &absent)
     );
+}
+
+#[test]
+fn absent_lane_executes_exactly_the_sealed_checker_and_two_fixture_modes() {
+    let output = required("BLUETOOTH_ENUMERATE_ABSENT_OUTPUT");
+    let proof = output
+        .parent()
+        .expect("absent output inside proof directory");
+    let repository = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let checker =
+        fs::canonicalize(repository.join("rust/target/debug/check-bluetooth-enumerate")).unwrap();
+    let candidate =
+        fs::canonicalize(repository.join("rust/target/debug/examples/input_fixture")).unwrap();
+    let daemon =
+        fs::canonicalize(repository.join("openpilot/selfdrive/carrot/bluetooth/daemon.py"))
+            .unwrap();
+    let seals = fs::read_to_string(proof.join("artifacts.sha256")).unwrap();
+    let mut sealed = BTreeMap::new();
+    for line in seals.lines() {
+        let (hash, path) = line.split_once("  ").expect("sha256sum artifact line");
+        let path = PathBuf::from(path);
+        let path = fs::canonicalize(if path.is_absolute() {
+            path
+        } else {
+            repository.join(path)
+        })
+        .unwrap();
+        assert!(
+            sealed.insert(path, hash).is_none(),
+            "duplicate artifact seal"
+        );
+    }
+    assert_eq!(sealed.len(), 3, "checker, fixture and daemon seals");
+    for path in [&checker, &candidate, &daemon] {
+        let hash = sealed.get(path).expect("executed ELF must be sealed");
+        assert_eq!(&openpilot_dev_tools::seal::digest(path).unwrap(), hash);
+    }
+    let checker = checker.to_str().unwrap().to_owned();
+    let candidate = candidate.to_str().unwrap().to_owned();
+    let output = output.to_str().unwrap().to_owned();
+    let expected = BTreeMap::from([
+        (
+            (
+                checker.clone(),
+                vec![
+                    checker,
+                    "--binary".into(),
+                    candidate.clone(),
+                    "--output".into(),
+                    output.clone(),
+                ],
+            ),
+            1,
+        ),
+        (
+            (
+                candidate.clone(),
+                vec![
+                    candidate.clone(),
+                    "enumerate".into(),
+                    format!("{output}/sysfs"),
+                    format!("{output}/dev"),
+                ],
+            ),
+            1,
+        ),
+        (
+            (
+                candidate.clone(),
+                vec![
+                    candidate.clone(),
+                    "enumerate".into(),
+                    format!("{output}/absent"),
+                    format!("{output}/dev"),
+                ],
+            ),
+            1,
+        ),
+    ]);
+    let opening = regex::Regex::new(r"\bexecve(?:at)?\(").unwrap();
+    let invocation =
+        regex::Regex::new(r#"(?m)\bexecve\(("(?:[^"\\]|\\.)*"), (\[.*\]), .*\) = 0$"#).unwrap();
+    let trace = fs::read_to_string(proof.join("absent.exec")).unwrap();
+    assert_eq!(
+        opening.find_iter(&trace).count(),
+        3,
+        "unexpected exec attempt"
+    );
+    let mut actual = BTreeMap::new();
+    for capture in invocation.captures_iter(&trace) {
+        let executable: String = serde_json::from_str(&capture[1]).unwrap();
+        let argv: Vec<String> = serde_json::from_str(&capture[2]).unwrap();
+        *actual.entry((executable, argv)).or_insert(0) += 1;
+    }
+    assert_eq!(actual, expected, "failed, opaque or unexpected exec/argv");
 }

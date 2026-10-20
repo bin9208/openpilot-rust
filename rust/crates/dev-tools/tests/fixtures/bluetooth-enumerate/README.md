@@ -25,13 +25,13 @@ its bytes by SHA-256, maps only the original output-root prefix to its own
 fresh output root, and independently executes the candidate ELF twice. A new
 candidate's ELF hash is checked against that run's own binary, not the old ELF.
 
-The historical checker remains tracked. The next cloud gate executes the same
-fresh native controller ELF with the present checkout and a copied root missing
-only `rust/tools/check_bluetooth_enumerate.py`. The live original Python lane
-also remains mandatory. The reference compares full reports, stdout/stderr,
-fixture streams and ordered device maps after normalizing only the output-root
-prefix. The workflow hashes the executable files before and after the lanes and
-uses an `execve` trace to require exactly one controller and two candidate ELF
-executions in the absent lane. Its result is pending cloud execution; this
-source preparation did not execute either controller locally. The checker is
-not deleted and no caller changes are made here.
+The historical checker was retired after the same-ELF original/present/absent
+Actions proof in run `39508434006`. The next cloud gate runs the same fresh
+native controller ELF in the current checkout and a copied absent source
+root. The reference compares full reports, stdout/stderr, fixture streams
+and full device pairs against this sealed original observation, normalizing
+only output-root prefixes. Fresh same-ELF lanes retain exact enumeration
+order checks. Executable hashes must be checked before and after
+both fresh lanes, with an exact exec trace requiring one controller and two
+candidate ELF executions in the copied-root lane. Post-deletion validation
+is still pending.

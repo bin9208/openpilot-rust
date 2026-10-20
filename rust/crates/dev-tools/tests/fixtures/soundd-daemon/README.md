@@ -60,3 +60,21 @@ Status: source and tests prepared under the user's cloud-validation workflow.
 Only local formatting/syntax checks are permitted. No current native build,
 new local test pass, or completed retirement is claimed. GitHub Actions must run
 all tests/current seven-mode proof and retain diagnostics before deletion.
+
+Retirement observation prepared from the actual successful sensor/audio job
+118914882870 at checked-out source f60e4ac0a655592aaef659f35cc354b86ffa09a0:
+`original-seven-f60.json` is the unchanged Python controller's complete root
+summary, copied byte-for-byte from artifact 12304571676. Its SHA and the ZIP,
+workflow, source and checker identities are in `original-seven-f60.provenance.json`.
+This small report contains process IDs and monotonic timestamps but no WAV
+capture, credential or native-derived expected value. The reference test seals
+the raw report and compares stable mode/order/status/open-count/packet values;
+each fresh lane independently checks the variable PID, callbacks, median period,
+and actual event trace with the original strict predicates. The original and
+native lanes must remain live in CI until an absent-root run of the same fresh
+native ELF plus an exact child-execution audit passes. The retirement reference
+requires `SOUNDD_NATIVE_ABSENT_EXEC`: it counts all 22 exec attempts, rejects
+unparsed/`execveat` calls, and checks one controller, seven same-ELF private
+workers, seven asset helpers, and seven daemons with linked per-mode temporary
+roots. The fixture alone does
+not prove retirement or authenticate an arbitrary remote artifact at runtime.
