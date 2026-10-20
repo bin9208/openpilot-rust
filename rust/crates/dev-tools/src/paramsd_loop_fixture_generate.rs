@@ -168,7 +168,8 @@ pub fn cases() -> Result<Value> {
             Vec::new(),
         ));
     }
-    let cache_variants: [(f64, Option<usize>, &[f64], bool, bool); 12] = [
+    type CacheVariant<'a> = (f64, Option<usize>, &'a [f64], bool, bool);
+    let cache_variants: [CacheVariant<'_>; 12] = [
         (
             15.,
             Some(0),
