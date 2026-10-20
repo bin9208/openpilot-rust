@@ -98,7 +98,8 @@ done
         with self.subTest(workflow=filename, job=key):
           checkout = next(i for i, step in enumerate(steps) if step.get('uses', '').startswith('actions/checkout@'))
           helper = next(i for i, step in enumerate(steps) if step.get('uses') == './.github/actions/rust-path')
-          self.assertEqual(helper, checkout + 1)
+          self.assertEqual(steps[checkout + 1]["uses"], "./.github/actions/job-temp")
+          self.assertEqual(helper, checkout + 2)
           for i, step in enumerate(steps):
             if step.get('uses', '').startswith('actions/setup-python@'):
               self.assertLess(helper, i)
