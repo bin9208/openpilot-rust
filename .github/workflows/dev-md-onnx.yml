@@ -1,0 +1,40 @@
+name: dev-md ONNX focused validation
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: dev-md-onnx-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  cadence:
+    name: ONNX cadence regressions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GIT_LFS_SKIP_SMUDGE: '1'
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      RUSTUP_TOOLCHAIN: '1.94.0'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Reserve space before dependencies and builds
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          df -h "$RUNNER_TEMP"
+          rust/tools/check-disk-space --path "$RUNNER_TEMP" --growth-mib 4096
+          sudo apt-get update
+          sudo apt-get install -y capnproto libcapnp-dev
+          rustup toolchain install 1.94.0 --profile minimal
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            rust/target
+          key: onnx-cadence-${{ runner.arch }}-${{ hashFiles('rust/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: onnx-cadence-${{ runner.arch }}-${{ hashFiles('rust/Cargo.lock') }}-
+      - run: cargo test --manifest-path rust/Cargo.toml -p openpilot-xiaoge --test cadence --locked
