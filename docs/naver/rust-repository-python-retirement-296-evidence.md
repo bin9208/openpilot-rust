@@ -4958,3 +4958,15 @@ strictClippy, then exposed a policy test looking for the step's display name
 in shell commands. The name is now checked in the structured step field;
 all actual command, capture, seal and mandatory-gate requirements remain.
 Repaired exact-source policy and new loop byte validation are pending.
+
+### soundd post-deletion actual native gate accepted
+
+Exact sourced21944e6391344d5b807fafe503c8853ea245b1b passed
+[run39516609369/job118950165958](https://github.com/bin9208/openpilot-rust/actions/runs/39516609369/job/118950165958).
+The parent independently verified artifact12308905066, archiveSHA256
+`fdd2f3641c4cce90122d03b016ca04dc8d3a2eaab4ef6e7df8cc491e1c81e5e8`: both
+roots ran7modes with22exec attempts each, matching4ELF hashes and20retained
+source pins. The retired Python checker is absent in both roots; only its
+historical hash remains in provenance. Native finalization/process contracts,
+the median-bit regression, full mode reference and strictClippy passed.
+Physical audio and vehicle boot/recording/upload remain user-device evidence.
