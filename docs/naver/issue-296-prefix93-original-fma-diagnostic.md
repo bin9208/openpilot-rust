@@ -109,3 +109,62 @@ compiler correctness. Keep the prefix-93 native fusion fence until a generic
 policy is implemented and checked against both original paths and the existing
 LLVM18/20 prefix and whole-model gates. This diagnostic alone does not prove a
 native fix or full compiler acceptance.
+
+## Proposed generic compiler policy (review before implementation)
+
+Source review of the current Rust compiler shows why changing the single C
+exp2 helper would be incorrect. `compiler_onnx/render/math.rs` uses
+`__builtin_fmaf` at every exp2 polynomial step. The ordinary C compiler is
+invoked with `-ffp-contract=off`, so this explicit FMA is retained. The
+configured LLVM direct-Gelu boundary in
+`compiler_backend_cpu/activation.rs` emits `fmul` then `fadd` with `contract`
+flags and lets the selected LLVM target decide which pairs contract. The
+schedule selects that boundary only for a standalone, direct f32 Gelu call.
+`compiler_onnx/storage.rs::admit_cpu_observable_fusion` currently rejects the
+unproved unquantized Conv/Gelu/Mean ancestry before compilation. These paths
+must not be conflated: replacing every polynomial FMA with separate operations
+would break the independently verified materialized Gelu output.
+
+The generic rule should be **boundary- and target-driven**:
+
+1. At an actual scheduled storage write, preserve its dtype conversion and
+   f32 rounding before a later kernel load. An unheld logical graph node or
+   in-kernel temporary is not automatically such a boundary.
+2. Within a candidate fused kernel, retain each original `fmul`/`fadd` in
+   ordered scalar SSA with the original `nsz arcp contract afn` flags. Do not
+   pre-rewrite all pairs to FMA, globally disable contraction, insert a
+   node-specific round, or route through the standalone `native_exp2` C helper.
+   Lower the *whole admitted closure* with its genuine consumers, reductions,
+   lane grouping and source input ownership, then use the explicit LLVM
+   provider/target configuration. LLVM decides where contraction survives in
+   that concrete kernel shape. The historical fused and materialized objects
+   demonstrate that the same arithmetic DAG can yield different contraction
+   boundaries when its kernel context differs.
+3. Keep separately materialized Gelu on its existing path. Introduce a
+   target-owned fused closure only after source-derived graph ancestry and
+   physical schedule prove the input, output and intermediate ownership. A
+   failed proof leaves the current structural rejection intact. The rule is
+   graph- and target-based, not based on node index 93, tensor names, or an
+   observed output lookup.
+
+The existing `compiler_backend_cpu/llvm.rs::Config` already requires explicit
+provider SHA, triple, CPU, features and passes. A proposed fused artifact must
+record all of these plus source/optimized-IR/object hashes. `znver3` is the
+effective target of *this LLVM18 original receipt*, not a universal CPU pin:
+LLVM20 and other accepted targets need their own original provenance. There is
+no proven target-independent rule saying that every fused exp-polynomial
+multiply must round at step 06. The one accepted original object and the
+intervention identify this occurrence, not all possible graph shapes.
+
+For implementation review, begin with a cold, true-final-output prefix93
+candidate constructed from the genuine input recipe and owned original model
+prefix, with no original intermediate fed to Rust. Inspect generated IR and
+object for the disputed multiply/add and compare every 960 f32 output bits
+against the independent fused original. Separately verify materialized Gelu92
+and its following mean remain exact. Require both LLVM18 and LLVM20 original
+target/provider captures before claiming a cross-provider policy; LLVM18's
+`znver3` result alone cannot stand in for LLVM20. Run the already retained
+earlier-prefix and later-prefix corpus, 279/280, source mutation rejection,
+and the full-model gate afterward. Keep the structural fence for every closure
+whose source schedule or target behavior lacks an independent exact-output
+receipt. This is an evidence plan, not permission to relax any existing gate.
