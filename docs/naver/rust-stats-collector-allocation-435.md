@@ -22,3 +22,22 @@ missing-file classification. The existing actual five-case receive-fault
 source/native comparison and original flush/fatal assertions stay required.
 Cloud behavioral validation and exact fixed-SHA evidence are pending. This
 checker change is not a production msgq capacity change or device result.
+
+## Source-matched cloud evidence
+
+Exactsource`d21944e6391344d5b807fafe503c8853ea245b1b`,
+[run39517003021/job118951460426](https://github.com/bin9208/openpilot-rust/actions/runs/39517003021/job/118951460426),
+passed all4queue readiness tests,7interrupted-controller tests, strictClippy,
+and the actual CLI's5source/native results. The parent independently inspected
+artifact12308531201, archiveSHA256
+`07ae0d0b00cb2453381a61a5f014ccdf4b6cce0b4b7c4015dd41d36b412f4621`.
+The one/repeated/empty cases retained the original gauge with exit0; invalid
+and closed retained no files and exit1. Fault rosters exactly match the sealed
+original `[4]`, `[4,4,4]`, `[4,11]`, `[4,22]`, `[4,88]`.
+
+The first focused attempt failed before behavior because original Params
+bindings were built before native transport headers existed. The successful
+workflow uses the same prerequisite order as the maintained telemetry job.
+The original failure's exact race cause remains unproved; the deterministic
+file-allocation boundary is fixed and accepted by the actual receive gate.
+Integration/latest complete-PR validation remains separate and pending.
