@@ -1,5 +1,47 @@
 # 저장소 전체 Python 전환 작업 인수인계
 
+## 최신 감독·조합 상태: 2d8d0279, 2026-10-21
+
+부모 6.1 Sol이 #296 전용 작업트리와 PR #343→dev를 조합한다. 게시 HEAD는
+`2d8d027932dc880bd0acd00288b256ac8d7f1b89`이고 로컬 후속 변경은 별도다.
+dev-md와 주 작업폴더의 미완료 변경은 건드리지 않는다. 사용자는 콤마가 없어
+수정 커밋을 pull한 뒤 정상부팅·녹화·업로드·주행을 직접 확인한다. 기기 검증이나
+전체 전환 완료를 주장하지 않는다.
+
+현재 Rust [run 39494388960](https://github.com/bin9208/openpilot-rust/actions/runs/39494388960)은
+진행 중이다. Fast와 Integration은 통과했으며 estimation/selfdrived/startup-services도
+통과했다. lagd #429는 동일 출력에서 16회 기준 32할당 및 16,384/32,768요청바이트를
+절약했고, messaging #431은 1,000업데이트 기준 1,000할당과 24,000/48,000요청바이트를
+절약했다. 후자는 부모가 artifact 원본 영수증과 ELF·라이브러리 hash까지 확인했다.
+전체 Rust 집계는 Panda 원본 타임스탬프 누락, 오디오 후기 변경 관측 시간초과,
+BlueZ checker의 Error 형식 컴파일 오류 때문에 성공 상태가 아니다.
+
+Panda 원본의 10기록 조건은 유지하고 별도 진단 branch
+`codex/feat-296-panda-original-capture`의 `f8feec60711da2ac7d07a7121be7dd5b1129e426`
+[run 39498926277](https://github.com/bin9208/openpilot-rust/actions/runs/39498926277)에서
+송신·수집·구독 hop을 계측한다. 원본은 정확한 2d8을 checkout하고 8회 무계측/8회
+계측 실행을 보존한다. 진단용 Python은 dev에 합치거나 전환으로 세지 않는다.
+오디오는 허위 성공 증거가 없고, 원본 mutation과 root receipt 미발행을 확인했다.
+5초 조건을 유지하며 /proc·drained stdout 관측을 추가했다. BlueZ 형식 오류도
+구체적으로 수정했으나 후속 SHA의 cloud 확인 전이다.
+
+Bridge는 2d8의 원본·Rust·Python 부재 실행과 17 native exec 증거를 독립 확인해
+Python checker 하나를 삭제했다. 후속 gate는 실제 checkout의 원본 부재와 트래픽
+전후 실행 파일 봉인을 요구한다. 삭제 후 첫 CI는 아직 남아 있다. 소스 인벤토리는
+211 replaced-local / 3 partial / 3,366 pending이다. Eigen 헤더 준비의 native stager,
+3플랫폼의 전체 690파일 원본 대조·비정상 ZIP·배타적 발행·Clippy gate도 준비했다.
+실제 Python 설치 호출 세 곳은 원본 대조가 통과할 때까지 유지한다.
+
+기존 edb의 ARM job118816130250은 성공했다. C3X probe artifact12296721982의
+실제 source는 PR merge `98c7b3b5e5a26687c7ce6757a208dc46c5415d52`이며 tree가
+edb와 동일함을 확인했다. static AArch64/QEMU 합성 3프레임만의 증거이고 AGNOS
+정상부팅/기기 확인이 아니다. prefix93은 Conv/pre-Gelu/`scaled`까지 원본 간 전체
+일치를 확인했지만 이후 Gelu의 첫 세부 차이는 미확정이다. 출력을 바꾸는 계측은
+기각했고 native fusion fence는 유지한다.
+
+로컬 검증은 구문·형식·diff·자료 검토만 한다. `.omo/`는 그대로 미추적 보존한다.
+전체 Python 전환·모듈 점검·전체 CI·dev 통합·소스 일치 패키지는 계속 진행해야 한다.
+
 ## 최신 조합 상태: 7709c2e3, 2026-10-21
 
 #296 전용 브랜치에 검토한 후속 다섯 커밋을 준비했다. HEAD는 `7709c2e3`이고

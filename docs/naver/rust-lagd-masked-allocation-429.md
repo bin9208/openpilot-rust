@@ -2,8 +2,24 @@
 
 Issue: https://github.com/bin9208/openpilot-rust/issues/429
 
-Status (2026-10-21): source change and cloud probe prepared; no functional or
-allocation result has been claimed. The user permits local syntax, formatting,
+Status (2026-10-21): exact-source cloud comparison passed at
+`2d8d027932dc880bd0acd00288b256ac8d7f1b89` in
+[estimation job 118875506175](https://github.com/bin9208/openpilot-rust/actions/runs/39494388960/job/118875506175).
+The parent read the complete successful job log, including the raw
+`MASKED_ALLOC`/`MASKED_COMPARE` rows. The existing numerical/source-loop/daemon
+checks and strict Clippy also passed in that job.
+
+| Length | Iterations | Old calls / requested bytes | Current calls / requested bytes | Identical output fingerprint |
+| ---: | ---: | ---: | ---: | --- |
+| 64 | 16 | 352 / 1,064,960 | 320 / 1,048,576 | `4ef1f725fd119e83` |
+| 128 | 16 | 352 / 1,081,344 | 320 / 1,048,576 | `b2c85feb1f71ee26` |
+
+Thus each row saves 32 Rust allocator calls; requested bytes fall by 16,384
+and 32,768 respectively. Artifact `12295894842` retains the raw logs and
+comparison. These measurements do not establish CPU, peak-memory or vehicle
+improvements, and the overall Rust workflow still has unrelated failed jobs.
+
+The user permits local syntax, formatting,
 and diff review only. Run builds, tests, and measurements in GitHub Actions on
 the exact candidate SHA, then record that SHA, Actions URL, measured rows, and
 any failure here.

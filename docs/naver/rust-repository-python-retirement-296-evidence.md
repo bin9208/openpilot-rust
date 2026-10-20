@@ -10,10 +10,48 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. 188 sources have locally verified replacements and migrated
-callers; seven are partially replaced and 3,385 remain pending. `replaced-local` does not mean merged,
+SCons entrypoints. The current source inventory has 211 replaced-local entries,
+three partial entries and 3,366 pending entries. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
+
+### Current cloud checkpoint and next source batch (2026-10-21)
+
+Published source is `2d8d027932dc880bd0acd00288b256ac8d7f1b89`, PR #343→dev.
+[Rust run 39494388960](https://github.com/bin9208/openpilot-rust/actions/runs/39494388960)
+is still running with Panda, sensor/audio and UI/connectivity failures; Fast
+and Integration passed. Estimation, selfdrived and startup-services passed.
+The lagd #429 and messaging #431 allocation receipts and their limitations are
+recorded in [lagd evidence](rust-lagd-masked-allocation-429.md) and
+[messaging evidence](rust-messaging-update-allocation-296.md). The latter's
+actual old/current artifact was independently downloaded and read by the parent.
+There is no aggregate CI, dev integration, final package or device acceptance.
+
+Bridge's complete actual original/native report and same-ELF absent-source
+traffic/exec audit passed at 2d8. The parent independently verified the archive,
+all reports, two 160-packet direction hashes and 17 native exec attempts before
+removing `rust/tools/check_bridge.py`. The revised gate checks actual checkout
+absence and seals identities before both traffic runs; it still needs a fresh
+post-deletion run. See [Bridge evidence](rust-bridge-controller-retirement-296.md).
+
+The next source batch fixes the concrete BlueZ CLI error type mismatch and
+adds bounded `/proc`/stdout snapshots to the unchanged five-second audio
+late-mutation test. Its prior timeout produced no root success receipt and
+does not demonstrate a false PASS. A separate source-visible original Panda
+diagnostic at `f8feec60711da2ac7d07a7121be7dd5b1129e426`,
+[run 39498926277](https://github.com/bin9208/openpilot-rust/actions/runs/39498926277),
+keeps the ten-timestamp assertion while recording actual send returns,
+collector ingress and subscriber records. Diagnostic Python stays outside the
+candidate and is not counted as retirement.
+
+Native Eigen staging now has a feature-gated CLI and mandatory three-release-
+archive/full-690-header comparison against the existing fresh Python shim
+installation. Existing Python acquisition callers remain until that first
+cloud comparison is accepted. No external Eigen C++ library is claimed as
+Rust-owned. Source review found and removed a pathname reopen between archive
+hashing and directory inspection; both now inspect the same verified snapshot.
+Exclusive publication disarms the temporary-directory cleanup after rename.
+Only syntax, formatting, diff and data review ran locally.
 
 ### Native DBC generation and package closure (2026-10-19)
 
