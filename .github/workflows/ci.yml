@@ -44,7 +44,7 @@ jobs:
   fast-checks:
     needs: [route]
     name: ${{ needs.route.outputs.fast == 'true' && 'fast checks' || 'PR owns fast validation' }}
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 7
     if: needs.route.outputs.fast == 'true'
     steps:
@@ -94,7 +94,7 @@ jobs:
   check_user_docs:
     needs: [route, fast-checks]
     name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'check mapped user docs' || 'Not requested - check mapped user docs' }}
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     if: needs.route.outputs.full == 'true'
     steps:
       - uses: actions/checkout@v6
@@ -134,6 +134,8 @@ jobs:
         run: |
           CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test publish
           CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib publish::policy_tests
+      - name: Verify exact-source baseline reuse policy without packaging
+        run: python3 rust/ci/runtime/package.py source-policy
       - uses: ./.github/actions/job-temp
         if: always()
         with: {cleanup: 'true'}
@@ -141,7 +143,7 @@ jobs:
   git_update:
     needs: [check_user_docs]
     name: Git update lifecycle
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7
@@ -216,7 +218,7 @@ jobs:
   model_web:
     needs: [build_release]
     name: Model and Bluetooth web controls
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7
@@ -232,7 +234,7 @@ jobs:
   model:
     needs: [model_web]
     name: model contract and CPU inference
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -250,7 +252,7 @@ jobs:
   android-core:
     needs: [model]
     name: Android protocol and Java inference
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -290,7 +292,7 @@ jobs:
   jetlink-native:
     needs: [android-core]
     name: Jetlink power policy fast checks
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       CARGO_INCREMENTAL: '0'
@@ -332,7 +334,7 @@ jobs:
     name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'integration gate' || 'Not requested - integration gate' }}
     needs: [route, fast-checks, check_user_docs, git_update, build_release, model_web, model, android-core, jetlink-native]
     if: ${{ always() && (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) }}
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
       - name: Require every preceding validation result
@@ -351,7 +353,7 @@ jobs:
   workspace:
     needs: [integration-gate]
     name: rust workspace checks
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
       CARGO_BUILD_JOBS: '2'
@@ -669,7 +671,7 @@ jobs:
   model-memory:
     needs: [workspace]
     name: rust model memory
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       CARGO_BUILD_JOBS: '2'
@@ -736,7 +738,7 @@ jobs:
   model-pipelines:
     needs: [model-memory]
     name: rust original model pipelines
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -844,7 +846,7 @@ jobs:
   logger-runtime:
     needs: [model-pipelines]
     name: rust original route logger
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -949,7 +951,7 @@ jobs:
   support-runtime:
     needs: [logger-runtime]
     name: rust support runtime
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1053,7 +1055,7 @@ jobs:
   telemetry-runtime:
     needs: [support-runtime]
     name: rust telemetry runtime
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1145,7 +1147,7 @@ jobs:
   startup-runtime:
     needs: [telemetry-runtime]
     name: rust startup prerequisites
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1243,7 +1245,7 @@ jobs:
   hardware-runtime:
     needs: [startup-runtime]
     name: rust hardware and boot runtime
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1311,7 +1313,7 @@ jobs:
   platform-runtime:
     needs: [hardware-runtime]
     name: rust platform runtime
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1371,7 +1373,7 @@ jobs:
   startup-services:
     needs: [platform-runtime]
     name: rust startup services
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1436,7 +1438,7 @@ jobs:
   sensor-audio:
     needs: [startup-services]
     name: rust sensor and audio runtime
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1494,7 +1496,7 @@ jobs:
   gnss-runtime:
     needs: [sensor-audio]
     name: rust GNSS runtime
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1545,7 +1547,7 @@ jobs:
   estimation-runtime:
     needs: [gnss-runtime]
     name: rust estimation runtime
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1621,7 +1623,7 @@ jobs:
   ui-connectivity:
     needs: [estimation-runtime]
     name: rust UI and connectivity
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1691,7 +1693,7 @@ jobs:
   athena-runtime:
     needs: [ui-connectivity]
     name: rust Athena runtime
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1733,7 +1735,7 @@ jobs:
   controls-runtime:
     needs: [athena-runtime]
     name: rust control runtime
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1794,7 +1796,7 @@ jobs:
   web-upload-timeouts:
     needs: [controls-runtime]
     name: active upload timeout contracts
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -1829,7 +1831,7 @@ jobs:
   joystickd-runtime:
     needs: [web-upload-timeouts]
     name: rust control tools source and native runtimes
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1889,7 +1891,7 @@ jobs:
   planner-runtime:
     needs: [joystickd-runtime]
     name: rust planner source comparison (${{ matrix.runner }})
-    runs-on: ${{ fromJSON(matrix.runner == 'ubuntu-24.04' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || format('["{0}"]', matrix.runner)) }}
+    runs-on: ${{ matrix.runner }}
     strategy:
       max-parallel: 1
       fail-fast: false
@@ -1979,7 +1981,7 @@ jobs:
   planner-memory:
     needs: [planner-runtime]
     name: rust planner pure memory contracts
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       CARGO_INCREMENTAL: '0'
@@ -2027,7 +2029,7 @@ jobs:
   card-runtime:
     needs: [planner-memory]
     name: rust Card and CAN runtime
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2128,7 +2130,7 @@ jobs:
   radar-runtime:
     needs: [card-runtime]
     name: rust RadarCAN source and host runtime
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2314,7 +2316,7 @@ jobs:
   radar-memory:
     needs: [radar-arm]
     name: rust RadarCAN buffer ownership with Miri
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2377,7 +2379,7 @@ jobs:
   navd-runtime:
     needs: [radar-memory]
     name: rust navigation runtime
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2450,7 +2452,7 @@ jobs:
   radard-runtime:
     needs: [navd-runtime]
     name: rust radard source and native runtime (${{ matrix.runner }})
-    runs-on: ${{ fromJSON(matrix.runner == 'ubuntu-24.04' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || format('["{0}"]', matrix.runner)) }}
+    runs-on: ${{ matrix.runner }}
     strategy:
       max-parallel: 1
       fail-fast: false
@@ -2608,7 +2610,7 @@ jobs:
   carrot-navi-runtime:
     needs: [radard-runtime]
     name: rust Carrot Navi original and host runtime
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       RUSTUP_TOOLCHAIN: '1.94.0'
@@ -2806,7 +2808,7 @@ jobs:
   selfdrive-runtime:
     needs: [carrot-navi-arm]
     name: rust selfdrived runtime
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2904,7 +2906,7 @@ jobs:
   panda-runtime:
     needs: [selfdrive-runtime]
     name: rust Panda runtime
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2970,7 +2972,7 @@ jobs:
   camera-runtime:
     needs: [panda-runtime]
     name: rust camera runtime
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3041,7 +3043,7 @@ jobs:
   encoder-runtime:
     needs: [camera-runtime]
     name: rust encoder runtime
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3118,7 +3120,7 @@ jobs:
   xiaoge-runtime:
     needs: [encoder-runtime]
     name: rust Xiaoge source comparison (${{ matrix.runner }})
-    runs-on: ${{ fromJSON(matrix.runner == 'ubuntu-24.04' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || format('["{0}"]', matrix.runner)) }}
+    runs-on: ${{ matrix.runner }}
     strategy:
       max-parallel: 1
       fail-fast: false
@@ -3201,7 +3203,7 @@ jobs:
   xiaoge-memory:
     needs: [xiaoge-runtime]
     name: rust Xiaoge native memory
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 75
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3271,7 +3273,7 @@ jobs:
   ui-runtime:
     needs: [xiaoge-memory]
     name: rust UI application runtime
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3384,7 +3386,7 @@ jobs:
   carrot-man-runtime:
     needs: [ui-runtime]
     name: rust CarrotMan owner (${{ matrix.arch }})
-    runs-on: ${{ fromJSON(matrix.runner == 'ubuntu-24.04' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || format('["{0}"]', matrix.runner)) }}
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 25
     strategy:
       max-parallel: 1
@@ -3467,7 +3469,7 @@ jobs:
   webrtc-runtime:
     needs: [carrot-man-runtime]
     name: rust WebRTC source runtime (${{ matrix.runner }})
-    runs-on: ${{ fromJSON(matrix.runner == 'ubuntu-24.04' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || format('["{0}"]', matrix.runner)) }}
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 45
     strategy:
       max-parallel: 1
@@ -3557,7 +3559,7 @@ jobs:
   webcam-runtime:
     needs: [webrtc-runtime]
     name: rust webcam source runtime (${{ matrix.runner }})
-    runs-on: ${{ fromJSON(matrix.runner == 'ubuntu-24.04' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || format('["{0}"]', matrix.runner)) }}
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 35
     strategy:
       max-parallel: 1
@@ -3656,7 +3658,7 @@ jobs:
     name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'rust checks' || 'Not requested - rust checks' }}
     needs: [integration-gate, workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime, webrtc-runtime, webcam-runtime]
     if: ${{ always() && (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) }}
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64"]' || '["ubuntu-24.04"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
       - name: Require every preceding validation result

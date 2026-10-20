@@ -46,15 +46,33 @@ const setTimeout=callback=>callback();
 class RuntimeDeliveryTests(unittest.TestCase):
   def test_ci_only_dm_fixture_does_not_change_reused_producers(self):
     tree = ast.parse((ROOT / 'rust/ci/runtime/package.py').read_text())
-    stage = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'stage_baseline')
-    allowed = ast.literal_eval(next(node.value for node in stage.body if isinstance(node, ast.Assign)
-                                   and any(isinstance(target, ast.Name) and target.id == 'allowed' for target in node.targets)))
-    def admitted(path):
-      return any(path == prefix or prefix.endswith(('/', '-')) and path.startswith(prefix) for prefix in allowed)
+    policy = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'source_path_allowed')
+    namespace = {}
+    exec(compile(ast.Module(body=[policy], type_ignores=[]), '<source-policy>', 'exec'), namespace)
+    admitted = namespace['source_path_allowed']
     self.assertTrue(admitted('rust/tools/check_dmonitoring_daemon.py'))
     for producer in ('rust/tools/build_model_tinygrad.py', 'openpilot/selfdrive/modeld/models/driving_vision.onnx',
                      'third_party/ffmpeg/configure', 'rust/tools/check_dmonitoring_daemon.py.unreviewed'):
       self.assertFalse(admitted(producer), producer)
+
+  def test_inherited_document_and_unknown_source_guards_survive_ci_consolidation(self):
+    tree = ast.parse((ROOT / 'rust/ci/runtime/package.py').read_text())
+    policy = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'source_path_allowed')
+    namespace = {}
+    exec(compile(ast.Module(body=[policy], type_ignores=[]), '<source-policy>', 'exec'), namespace)
+    allowed = namespace['source_path_allowed']
+    path = 'docs/naver/self-hosted-runner-404.md'
+    entry = '100644 blob original\t' + path
+    self.assertTrue(allowed(path, entry, entry))
+    for changed in ('', entry.replace('original', 'changed'), entry.replace('100644', '100755'), entry.replace('blob', 'commit')):
+      self.assertFalse(allowed(path, changed, entry))
+    for unknown in ('.github/workflows/unrelated.yml', 'tools/ci/tests/test_other.py', '.lfsconfig.extra',
+                    '.github/workflows/ci.yml.extra', 'rust/crates/opencv-runtime/src/lib.rs'):
+      self.assertFalse(allowed(unknown, 'same', 'same'), unknown)
+    for reviewed in ('.github/workflows/ci.yml', '.github/workflows/rust.yml', '.lfsconfig',
+                     'rust/crates/xiaoge/tests/cadence.rs', 'tools/ci/tests/test_lfs_endpoint.py',
+                     'tools/ci/tests/test_eintr_cleanup.py', '.github/actions/job-temp/action.yml'):
+      self.assertTrue(allowed(reviewed), reviewed)
 
   def test_completed_latest_exact_merge_is_admitted(self):
     result = invoke(fixture())

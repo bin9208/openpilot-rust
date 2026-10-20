@@ -148,6 +148,20 @@ class WorkflowPolicyTests(unittest.TestCase):
     self.assertIn('25 + 4', reserve)
     self.assertIn('ANDROID_SDK_ROOT=', reserve)
 
+  def test_latest_base_hosted_runner_policy_is_preserved(self):
+    for name in ('ci.yml', 'dev-md-runtime.yml'):
+      for key, job in workflow(name)['jobs'].items():
+        if 'matrix' in job.get('strategy', {}):
+          self.assertEqual(job['runs-on'], '${{ matrix.runner }}', (name, key))
+        else:
+          self.assertIn(job['runs-on'], ('ubuntu-24.04', 'ubuntu-24.04-arm'), (name, key))
+    commands = '\n'.join(step.get('run', '') for step in workflow()['jobs']['check_user_docs']['steps'])
+    self.assertIn('package.py source-policy', commands)
+    native = '\n'.join(step.get('run', '') for step in workflow()['jobs']['xiaoge-runtime']['steps'])
+    self.assertIn('--features native-skip-miri --all-targets', native)
+    self.assertTrue((ROOT / 'rust/crates/xiaoge/tests/cadence.rs').is_file())
+    self.assertTrue((ROOT / 'rust/crates/xiaoge/tests/camera_pixels.rs').is_file())
+
   def test_runtime_delivery_is_serial_and_requires_a_marked_merge(self):
     delivery = workflow()['jobs']['runtime-delivery']
     self.assertIn("'[runtime-package]'", delivery['if'])

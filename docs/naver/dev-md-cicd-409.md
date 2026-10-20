@@ -210,3 +210,24 @@ remain false and permission errors propagate. The real strace/owned-child test,
 selection and five-second bound remain. Deterministic fast regressions exercise
 these outcomes. Runtime upload code and transport deadlines are unchanged.
 Acceptance: https://github.com/bin9208/openpilot-rust/issues/420.
+
+### Updated protected base during validation (#418)
+
+While #410 validation was running, PR #418 advanced dev-md to `0682e933`.
+Merge that latest base into this feature branch, retaining its LFS endpoint,
+loopback checkout regressions, ONNX overrun/camera ownership fixes and tests,
+hosted-runner policy, and fail-closed baseline source-policy checks. All
+concrete jobs retain the newly established Ubuntu 24.04/ARM hosted placement;
+serial execution still comes from needs/max-parallel, not runner counts.
+The former one-off ONNX dispatch is covered by the common workspace cadence
+suite and the existing Xiaoge native --all-targets group (including camera
+pixels); no separate automatic validation entry point is restored.
+
+The baseline source policy retains inherited-document tree identity and
+no-renames removal checks, adds exact reviewed CI/test paths and checks the
+actual source in regular CI without packaging. Unknown workflow/test paths,
+provider/model sources and prefix lookalikes stay rejected. Runtime dispatch
+still requires the completed exact-source marked PR merge, and publication
+requires the verified source SHA plus independently successful push CI.
+No runtime is requested by this CI change; #418's separate release remains
+outside this task. New full PR and post-merge evidence will use the updated base.
