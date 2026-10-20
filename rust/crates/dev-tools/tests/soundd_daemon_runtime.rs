@@ -540,6 +540,28 @@ fn source_or_daemon_mutation_during_final_stdout_cannot_publish_success() {
         let mut owner = CheckerChild(Some(child));
         let child = owner.0.as_ref().unwrap();
         let pid = Pid::from_child(child);
+        let proc_dir = PathBuf::from(format!("/proc/{}", child.id()));
+        let observe = |phase: &str, drained: u64, tail: &[u8]| {
+            let read = |name: &str| {
+                fs::read_to_string(proc_dir.join(name))
+                    .unwrap_or_else(|error| format!("unavailable: {error}"))
+            };
+            let stdout_fd = fs::read_link(proc_dir.join("fd/1"))
+                .map(|path| path.display().to_string())
+                .unwrap_or_else(|error| format!("unavailable: {error}"));
+            json!({
+                "phase":phase,
+                "drained_bytes":drained,
+                "drained_tail_hex":hex(tail),
+                "syscall":read("syscall"),
+                "status":read("status"),
+                "wchan":read("wchan"),
+                "stdout_fd":stdout_fd,
+                "stdout_fdinfo":read("fdinfo/1"),
+                "stderr":fs::read_to_string(temp.join("stderr.log")).unwrap_or_default(),
+                "root_summary_exists":output.join("summary.json").exists()
+            })
+        };
         let end = Instant::now() + Duration::from_secs(30);
         let mut at_final_stdout = None;
         loop {
@@ -581,6 +603,7 @@ fn source_or_daemon_mutation_during_final_stdout_cannot_publish_success() {
             std::thread::sleep(Duration::from_millis(5));
         }
         assert!(!output.join("summary.json").exists());
+        let mut observations = vec![observe("predicate", 0, &[])];
         // All mutations are confined to copied inputs. The real daemon and
         // repository source used by other tests/CI steps are never changed.
         if boundary == "source" {
@@ -593,13 +616,23 @@ fn source_or_daemon_mutation_during_final_stdout_cannot_publish_success() {
             fs::write(&changed, b"private changed executable identity\n").unwrap();
             fs::rename(changed, &daemon).unwrap();
         }
+        observations.push(observe("mutated", 0, &[]));
         let end = Instant::now() + Duration::from_secs(5);
+        let mut drained = 0_u64;
+        let mut tail = Vec::new();
         loop {
             let mut bytes = [0; 8192];
             loop {
                 match reader.read(&mut bytes) {
                     Ok(0) => break,
-                    Ok(_) => (),
+                    Ok(count) => {
+                        drained += count as u64;
+                        tail.extend_from_slice(&bytes[..count]);
+                        if tail.len() > 256 {
+                            let excess = tail.len() - 256;
+                            tail.drain(..excess);
+                        }
+                    }
                     Err(e) if e.kind() == ErrorKind::WouldBlock => break,
                     Err(e) if e.kind() == ErrorKind::Interrupted => (),
                     Err(e) => panic!("{e}"),
@@ -614,12 +647,23 @@ fn source_or_daemon_mutation_during_final_stdout_cannot_publish_success() {
             {
                 break;
             }
-            assert!(
-                Instant::now() < end,
-                "{boundary}: checker did not reject changed input"
-            );
+            if Instant::now() >= end {
+                observations.push(observe("timeout", drained, &tail));
+                fs::write(
+                    temp.join("late-stdout-diagnostic.json"),
+                    serde_json::to_vec_pretty(&observations).unwrap(),
+                )
+                .unwrap();
+                panic!("{boundary}: checker did not reject changed input");
+            }
             std::thread::sleep(Duration::from_millis(5));
         }
+        observations.push(observe("exited", drained, &tail));
+        fs::write(
+            temp.join("late-stdout-diagnostic.json"),
+            serde_json::to_vec_pretty(&observations).unwrap(),
+        )
+        .unwrap();
         assert!(
             !owner.wait().success(),
             "{boundary}: stale provenance accepted"
