@@ -1892,7 +1892,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     strategy:
       max-parallel: 1
-      fail-fast: false
+      fail-fast: true
       matrix:
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
     timeout-minutes: 45
@@ -2453,7 +2453,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     strategy:
       max-parallel: 1
-      fail-fast: false
+      fail-fast: true
       matrix:
         include:
           - runner: ubuntu-24.04
@@ -3121,7 +3121,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     strategy:
       max-parallel: 1
-      fail-fast: false
+      fail-fast: true
       matrix:
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
     timeout-minutes: 75
@@ -3388,7 +3388,7 @@ jobs:
     timeout-minutes: 25
     strategy:
       max-parallel: 1
-      fail-fast: false
+      fail-fast: true
       matrix:
         include:
           - { arch: x86_64, runner: ubuntu-24.04 }
@@ -3471,7 +3471,7 @@ jobs:
     timeout-minutes: 45
     strategy:
       max-parallel: 1
-      fail-fast: false
+      fail-fast: true
       matrix:
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
     env:
@@ -3561,7 +3561,7 @@ jobs:
     timeout-minutes: 35
     strategy:
       max-parallel: 1
-      fail-fast: false
+      fail-fast: true
       matrix:
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
     env:

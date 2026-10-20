@@ -70,6 +70,7 @@ class WorkflowPolicyTests(unittest.TestCase):
       self.assertNotIn('continue-on-error', job)
       if 'matrix' in job.get('strategy', {}):
         self.assertEqual(job['strategy']['max-parallel'], '1', key)
+        self.assertEqual(job['strategy']['fail-fast'], 'true', key)
     for key in ('fast-checks', 'check_user_docs', 'git_update', 'build_release', 'model_web',
                 'model', 'android-core', 'integration-gate', 'workspace', 'fast', 'arm-build', 'arm64'):
       self.assertIn(key, jobs)

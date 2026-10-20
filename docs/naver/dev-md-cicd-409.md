@@ -14,7 +14,7 @@ fast checks → mapped user docs and publication-policy regressions → Git upda
 lifecycle → legacy build/regressions → web controls → Jetlink CPU inference →
 Android checks/APK → native Jetlink power/USB policy → integration gate → the existing 38 Rust runtime groups in
 the former rust checks dependency-array order → rust checks → generic ARM64
-build. Every architecture matrix has max-parallel 1. Existing runners, native
+build. Every architecture matrix has max-parallel 1 and fail-fast true. Existing runners, native
 providers, build flags and source-comparison scope are retained.
 
 Failure stops downstream workloads. Integration/Rust/ARM admission gates run
@@ -237,3 +237,11 @@ this scope correction. It is not a permanent generic PR gate: baseline reuse
 eligibility belongs to delivery, not every ordinary code change. Common CI
 runs the same policy's positive/negative regressions; delivery retains the
 actual source check before downloads/builds.
+
+Matrix failure admission is explicit: all six architecture matrices combine
+max-parallel 1 with fail-fast true. The previous inherited false setting would
+have permitted another queued architecture after failure despite serial
+execution. Policy regression now requires both settings. GitHub's scheduler
+cancels queued/running siblings on matrix failure; final required gates reject
+the resulting failed/cancelled group.
+Reference: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idstrategyfail-fast
