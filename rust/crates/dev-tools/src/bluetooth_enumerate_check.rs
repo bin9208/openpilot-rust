@@ -30,11 +30,16 @@ const SPACES: [u32; 29] = [
     9, 10, 11, 12, 13, 28, 29, 30, 31, 32, 133, 160, 5760, 8192, 8193, 8194, 8195, 8196, 8197,
     8198, 8199, 8200, 8201, 8202, 8232, 8233, 8239, 8287, 12288,
 ];
+const HISTORICAL_CHECKER: &str = "rust/tools/check_bluetooth_enumerate.py";
+const HISTORICAL_SHA: &str = "2adaabcdf0ed4f6ccab1e466fa095e0c32b0b956c7de2cca833fbc0ef55e9fe0";
+const ORIGINAL_REPORT: &[u8] =
+    include_bytes!("../tests/fixtures/bluetooth-enumerate/original-result.json");
+const ORIGINAL_REPORT_SHA: &str =
+    "36d25b8684cb814421dd22ada7bc75b3d9959c38433e4a5b75c70e02375ac18c";
+const ORIGINAL_DEVICES: &str =
+    "/home/runner/work/_temp/ui-connectivity/bluetooth-enumerate/original/dev/";
 const SOURCES: [(&str, &str); 6] = [
-    (
-        "rust/tools/check_bluetooth_enumerate.py",
-        "2adaabcdf0ed4f6ccab1e466fa095e0c32b0b956c7de2cca833fbc0ef55e9fe0",
-    ),
+    (HISTORICAL_CHECKER, HISTORICAL_SHA),
     (
         "openpilot/selfdrive/carrot/bluetooth/daemon.py",
         "d032d6069416bae35aea07e25f28f9930795f29cf0a9518c122bfecb6cebe4d3",
@@ -123,10 +128,95 @@ impl Bound {
         verify_held(&self.path, &self.file, &self.hash)
     }
 }
-fn check(bounds: &[Bound], cancel: &AtomicBool) -> Result<()> {
+enum Historical {
+    Present(Bound),
+    Absent {
+        path: PathBuf,
+        parent: PathBuf,
+        directory: File,
+        device: u64,
+        inode: u64,
+    },
+}
+impl Historical {
+    fn open(root: &Path) -> Result<Self> {
+        let path = root.join(HISTORICAL_CHECKER);
+        match fs::symlink_metadata(&path) {
+            Ok(metadata) => {
+                if !metadata.is_file() || metadata.file_type().is_symlink() {
+                    return Err("historical enumeration checker is not regular".into());
+                }
+                let bound = Bound::open(&path)?;
+                if bound.hash != HISTORICAL_SHA {
+                    return Err("historical enumeration checker changed".into());
+                }
+                Ok(Self::Present(bound))
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                let parent = path
+                    .parent()
+                    .ok_or("historical checker parent missing")?
+                    .to_owned();
+                let directory = File::from(rustix::fs::open(
+                    &parent,
+                    rustix::fs::OFlags::RDONLY
+                        | rustix::fs::OFlags::DIRECTORY
+                        | rustix::fs::OFlags::NOFOLLOW
+                        | rustix::fs::OFlags::CLOEXEC,
+                    rustix::fs::Mode::empty(),
+                )?);
+                let metadata = directory.metadata()?;
+                let absent = Self::Absent {
+                    path,
+                    parent,
+                    directory,
+                    device: metadata.dev(),
+                    inode: metadata.ino(),
+                };
+                absent.verify()?;
+                Ok(absent)
+            }
+            Err(error) => Err(error.into()),
+        }
+    }
+    fn verify(&self) -> Result<()> {
+        match self {
+            Self::Present(bound) => {
+                if !fs::symlink_metadata(&bound.path)?.is_file() {
+                    return Err("historical enumeration checker changed type".into());
+                }
+                bound.verify()
+            }
+            Self::Absent {
+                path,
+                parent,
+                directory,
+                device,
+                inode,
+            } => {
+                let held = directory.metadata()?;
+                let current = fs::symlink_metadata(parent)?;
+                if !held.is_dir()
+                    || !current.is_dir()
+                    || (held.dev(), held.ino()) != (*device, *inode)
+                    || (current.dev(), current.ino()) != (*device, *inode)
+                {
+                    return Err("historical enumeration checker parent changed".into());
+                }
+                match fs::symlink_metadata(path) {
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+                    Ok(_) => Err("historical enumeration checker reappeared".into()),
+                    Err(error) => Err(error.into()),
+                }
+            }
+        }
+    }
+}
+fn check(bounds: &[Bound], historical: &Historical, cancel: &AtomicBool) -> Result<()> {
     if cancel.load(Ordering::SeqCst) {
         return Err("enumeration interrupted".into());
     }
+    historical.verify()?;
     for bound in bounds {
         bound.verify()?;
     }
@@ -167,6 +257,59 @@ impl<'de> Deserialize<'de> for Ordered {
         }
         deserializer.deserialize_map(OrderedVisitor)
     }
+}
+#[derive(Deserialize)]
+struct OriginalReport {
+    nodes: usize,
+    accepted: usize,
+    source: Ordered,
+    native: Ordered,
+    source_sha256: String,
+}
+fn original_rows(devices: &Path) -> Result<Ordered> {
+    if sha(ORIGINAL_REPORT) != ORIGINAL_REPORT_SHA {
+        return Err("original enumeration observation changed".into());
+    }
+    let report: OriginalReport = serde_json::from_slice(ORIGINAL_REPORT)?;
+    if report.nodes != 40
+        || report.accepted != 31
+        || report.source_sha256 != SOURCES[1].1
+        || report.source != report.native
+        || report.source.0.len() != 31
+    {
+        return Err("original enumeration observation invalid".into());
+    }
+    Ok(Ordered(
+        report
+            .source
+            .0
+            .into_iter()
+            .map(|(path, address)| {
+                let name = path
+                    .strip_prefix(ORIGINAL_DEVICES)
+                    .ok_or("original enumeration device path changed")?;
+                let current = devices.join(name);
+                Ok((
+                    current
+                        .to_str()
+                        .ok_or("non-UTF-8 enumeration device path")?
+                        .to_owned(),
+                    address,
+                ))
+            })
+            .collect::<Result<Vec<_>>>()?,
+    ))
+}
+fn same_device_pairs(left: &Ordered, right: &Ordered) -> bool {
+    left.0
+        .iter()
+        .cloned()
+        .collect::<std::collections::BTreeMap<_, _>>()
+        == right
+            .0
+            .iter()
+            .cloned()
+            .collect::<std::collections::BTreeMap<_, _>>()
 }
 fn trim_python(value: &str) -> &str {
     value.trim_matches(|c| SPACES.contains(&(c as u32)))
@@ -399,11 +542,12 @@ struct Pending {
     path: PathBuf,
     hash: String,
     bounds: Vec<Bound>,
+    historical: Historical,
     root: PathBuf,
 }
 impl Pending {
     fn verify(&self, cancel: &AtomicBool) -> Result<()> {
-        check(&self.bounds, cancel)?;
+        check(&self.bounds, &self.historical, cancel)?;
         verify_tree(&self.root, &cases())?;
         verify_held(self.file.path(), self.file.as_file(), &self.hash)
     }
@@ -413,7 +557,7 @@ impl Pending {
             .file
             .persist_noclobber(&self.path)
             .map_err(|e| e.error)?;
-        let result = check(&self.bounds, cancel)
+        let result = check(&self.bounds, &self.historical, cancel)
             .and_then(|_| verify_tree(&self.root, &cases()))
             .and_then(|_| verify_held(&self.path, &held, &self.hash));
         if result.is_err()
@@ -441,7 +585,8 @@ fn run_inner(
     cancel: &AtomicBool,
 ) -> Result<(String, Pending)> {
     let mut held = Vec::new();
-    for (name, hash) in SOURCES {
+    let historical = Historical::open(&options.root)?;
+    for (name, hash) in SOURCES.into_iter().skip(1) {
         let bound = Bound::open(&options.root.join(name))?;
         if bound.hash != hash {
             return Err(format!("enumeration source changed: {name}").into());
@@ -458,7 +603,7 @@ fn run_inner(
     let binary_hash = artifact.hash.clone();
     held.push(artifact);
     held.push(Bound::open(&alias)?);
-    check(&held, cancel)?;
+    check(&held, &historical, cancel)?;
     if let Some(parent) = options
         .output
         .parent()
@@ -480,7 +625,13 @@ fn run_inner(
     if source.0.len() != 31 {
         return Err("enumeration acceptance cardinality changed".into());
     }
-    check(&held, cancel)?;
+    // The original artifact preserves one filesystem iteration order. Each
+    // fresh run must match its candidate in that run's order, but a new host's
+    // directory hash may legitimately enumerate the same nodes differently.
+    if !same_device_pairs(&source, &original_rows(&devices)?) {
+        return Err("enumeration result differs from sealed original observation".into());
+    }
+    check(&held, &historical, cancel)?;
     verify_tree(&root, &corpus)?;
     let mut command = CommandSpec::new_os(
         vec![
@@ -498,7 +649,7 @@ fn run_inner(
     let code = runner
         .run_to_files(&command, &stdout_path, &stderr_path)?
         .code;
-    check(&held, cancel)?;
+    check(&held, &historical, cancel)?;
     verify_tree(&root, &corpus)?;
     let native_text = captured_text(&stdout_path, &stderr_path)?;
     if code != 0 {
@@ -524,7 +675,7 @@ fn run_inner(
     let code = runner
         .run_to_files(&absent, &absent_stdout, &absent_stderr)?
         .code;
-    check(&held, cancel)?;
+    check(&held, &historical, cancel)?;
     verify_tree(&root, &corpus)?;
     let absent_text = captured_text(&absent_stdout, &absent_stderr)?;
     if code != 0 {
@@ -550,7 +701,7 @@ fn run_inner(
         corpus.len(),
         source.0.len()
     );
-    check(&held, cancel)?;
+    check(&held, &historical, cancel)?;
     Ok((
         printed,
         Pending {
@@ -558,6 +709,7 @@ fn run_inner(
             path: root.join("result.json"),
             hash: sha(report_text.as_bytes()),
             bounds: held,
+            historical,
             root,
         },
     ))
@@ -649,6 +801,27 @@ mod tests {
         )
         .unwrap();
         binary
+    }
+    fn copied_sources(folder: &Path) -> PathBuf {
+        let source = folder.join("source");
+        for (name, _) in SOURCES {
+            let from = root().join(name);
+            if name == HISTORICAL_CHECKER && !from.exists() {
+                continue;
+            }
+            let to = source.join(name);
+            fs::create_dir_all(to.parent().unwrap()).unwrap();
+            fs::copy(from, to).unwrap();
+        }
+        source
+    }
+    fn remove_historical(source: &Path) {
+        let path = source.join(HISTORICAL_CHECKER);
+        match fs::remove_file(path) {
+            Ok(()) => {}
+            Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+            Err(error) => panic!("cannot remove historical checker: {error}"),
+        }
     }
     struct Reject;
     impl Runner for Reject {
@@ -877,5 +1050,146 @@ mod tests {
             let c = char::from_u32(*point).unwrap();
             assert_eq!(trim_python(&format!("{c}0005{c}")), "0005");
         }
+    }
+
+    #[test]
+    fn historical_checker_absence_preserves_original_pairs_and_current_order() {
+        let temp = tempfile::tempdir().unwrap();
+        let source = copied_sources(temp.path());
+        remove_historical(&source);
+        let output = temp.path().join("run");
+        let binary = copied_binary(temp.path());
+        let mut fixture = Fixture {
+            call: 0,
+            mutate: None,
+            output: output.clone(),
+        };
+        let mut options = options(output.clone(), binary);
+        options.root = source;
+        let mut stdout = Vec::new();
+        run(&options, &mut fixture, &mut stdout, &AtomicBool::new(false)).unwrap();
+        assert_eq!(fixture.call, 2);
+        assert_eq!(
+            stdout,
+            b"PASS: 40 sysfs nodes, 31 accepted in source order, missing directory\n"
+        );
+        let report: OriginalReport =
+            serde_json::from_slice(&fs::read(output.join("result.json")).unwrap()).unwrap();
+        assert!(same_device_pairs(
+            &report.source,
+            &original_rows(&output.join("dev")).unwrap()
+        ));
+        assert_eq!(report.native, report.source);
+    }
+
+    #[test]
+    fn only_historical_checker_may_be_absent_and_nonregular_entries_fail() {
+        use std::os::unix::fs::symlink;
+        for state in [
+            "missing-parent",
+            "missing-other",
+            "wrong",
+            "symlink",
+            "fifo",
+        ] {
+            let temp = tempfile::tempdir().unwrap();
+            let source = copied_sources(temp.path());
+            let checker = source.join(HISTORICAL_CHECKER);
+            match state {
+                "missing-parent" => fs::remove_dir_all(checker.parent().unwrap()).unwrap(),
+                "missing-other" => {
+                    fs::remove_file(source.join(SOURCES[1].0)).unwrap();
+                }
+                "wrong" => fs::write(&checker, b"wrong original checker").unwrap(),
+                "symlink" => {
+                    remove_historical(&source);
+                    symlink(source.join(SOURCES[1].0), &checker).unwrap();
+                }
+                "fifo" => {
+                    remove_historical(&source);
+                    assert!(std::process::Command::new("mkfifo")
+                        .arg(&checker)
+                        .status()
+                        .unwrap()
+                        .success());
+                }
+                _ => unreachable!(),
+            }
+            let output = temp.path().join("run");
+            let binary = copied_binary(temp.path());
+            let mut options = options(output.clone(), binary);
+            options.root = source;
+            assert!(
+                run(
+                    &options,
+                    &mut Reject,
+                    &mut Vec::new(),
+                    &AtomicBool::new(false)
+                )
+                .is_err(),
+                "accepted historical state {state}"
+            );
+            assert!(!output.join("result.json").exists());
+        }
+    }
+
+    struct ReappearWriter(PathBuf);
+    impl Write for ReappearWriter {
+        fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+            fs::write(&self.0, b"historical checker reappeared")?;
+            Ok(bytes.len())
+        }
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+    #[test]
+    fn historical_reappearance_during_final_stdout_cannot_publish_receipt() {
+        let temp = tempfile::tempdir().unwrap();
+        let source = copied_sources(temp.path());
+        let checker = source.join(HISTORICAL_CHECKER);
+        remove_historical(&source);
+        let output = temp.path().join("run");
+        let binary = copied_binary(temp.path());
+        let mut options = options(output.clone(), binary);
+        options.root = source;
+        let mut fixture = Fixture {
+            call: 0,
+            mutate: None,
+            output: output.clone(),
+        };
+        assert!(run(
+            &options,
+            &mut fixture,
+            &mut ReappearWriter(checker),
+            &AtomicBool::new(false)
+        )
+        .is_err());
+        assert_eq!(fixture.call, 2);
+        assert!(!output.join("result.json").exists());
+    }
+
+    #[test]
+    fn absent_historical_checker_does_not_clobber_foreign_receipt() {
+        let temp = tempfile::tempdir().unwrap();
+        let source = copied_sources(temp.path());
+        remove_historical(&source);
+        let output = temp.path().join("foreign");
+        fs::create_dir(&output).unwrap();
+        fs::write(output.join("result.json"), b"foreign receipt\n").unwrap();
+        let binary = copied_binary(temp.path());
+        let mut options = options(output.clone(), binary);
+        options.root = source;
+        assert!(run(
+            &options,
+            &mut Reject,
+            &mut Vec::new(),
+            &AtomicBool::new(false)
+        )
+        .is_err());
+        assert_eq!(
+            fs::read(output.join("result.json")).unwrap(),
+            b"foreign receipt\n"
+        );
     }
 }

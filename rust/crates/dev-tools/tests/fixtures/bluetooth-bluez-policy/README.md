@@ -33,3 +33,26 @@ Only after
 that independent live pair passes should its original output be sealed here;
 no native-generated expected file is an original capture. Keep the original
 Python checker until a later reviewed retirement gate proves its absence.
+
+The original-only observation from run `39499806776` is sealed in
+`original-observation-39499806776/`; it contains the unchanged Python
+controller's exact ordered case stream, independent policy results, and
+receipt. The native controller admits either the exact historical checker
+source or its absence under a held, unchanged `rust/tools` directory. It
+still requires the three other source pins. A symlink, FIFO, changed checker,
+missing parent, or checker reappearance is rejected, including at final
+receipt publication.
+
+A future cloud retirement gate must use one freshly built `bluez_policy` ELF
+for the original present-source run and native present/absent runs. Seal the
+original checker source, ELF, and native controller executable before and
+after all lanes. Copy only the three surviving pinned sources into a private
+root with a real `rust/tools` directory and no historical checker; compare
+the complete case stream, independent source results, fixture responses,
+digit capture, stderr, receipt, and stdout with the present lanes and the
+sealed observation. Run the absent lane with `PATH=/nonexistent` under a
+bounded `strace -f -e trace=execve,execveat` audit. Its exact child exec
+roster is three successful calls: native controller once, `bluez_policy`
+without arguments once, and `bluez_policy --digits` once. Any Python or
+extra executable attempt fails the gate. This cloud proof has not run yet;
+the Python checker remains in the repository.

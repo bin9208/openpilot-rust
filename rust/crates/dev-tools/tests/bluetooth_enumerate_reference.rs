@@ -1,4 +1,4 @@
-//! Requires a real Python 3.12 original run and native run on the same fresh ELF.
+//! Requires a real Python 3.12 original run and two native runs on the same fresh ELF.
 use serde::{
     de::{MapAccess, Visitor},
     Deserialize, Deserializer,
@@ -83,17 +83,32 @@ fn files(root: &Path) -> Vec<(PathBuf, Option<Vec<u8>>)> {
 fn original_python_312_and_native_controller_match_full_sysfs_corpus() {
     let original = required("BLUETOOTH_ENUMERATE_ORIGINAL_OUTPUT");
     let native = required("BLUETOOTH_ENUMERATE_NATIVE_OUTPUT");
+    let absent = required("BLUETOOTH_ENUMERATE_ABSENT_OUTPUT");
+    let absent_root = required("BLUETOOTH_ENUMERATE_ABSENT_ROOT");
+    let checker = absent_root.join("rust/tools/check_bluetooth_enumerate.py");
+    assert_eq!(
+        fs::symlink_metadata(checker).unwrap_err().kind(),
+        std::io::ErrorKind::NotFound,
+        "historical checker must be absent from the copied source root"
+    );
     assert_eq!(files(&original.join("sysfs")), files(&native.join("sysfs")));
+    assert_eq!(files(&original.join("sysfs")), files(&absent.join("sysfs")));
     let old_raw = fs::read(original.join("result.json")).unwrap();
     let new_raw = fs::read(native.join("result.json")).unwrap();
+    let absent_raw = fs::read(absent.join("result.json")).unwrap();
     let old: Receipt = serde_json::from_slice(&old_raw).unwrap();
     let new: Receipt = serde_json::from_slice(&new_raw).unwrap();
+    let missing: Receipt = serde_json::from_slice(&absent_raw).unwrap();
     assert_eq!(old.nodes, 40);
     assert_eq!(new.nodes, old.nodes);
+    assert_eq!(missing.nodes, old.nodes);
     assert_eq!(old.accepted, 31);
     assert_eq!(new.accepted, old.accepted);
+    assert_eq!(missing.accepted, old.accepted);
     assert_eq!(new.source_sha256, old.source_sha256);
+    assert_eq!(missing.source_sha256, old.source_sha256);
     assert_eq!(new.binary_sha256, old.binary_sha256);
+    assert_eq!(missing.binary_sha256, old.binary_sha256);
     assert_eq!(
         rows(&old.source, &original),
         rows(&new.source, &native),
@@ -104,20 +119,54 @@ fn original_python_312_and_native_controller_match_full_sysfs_corpus() {
         rows(&new.native, &native),
         "native"
     );
+    assert_eq!(
+        rows(&old.source, &original),
+        rows(&missing.source, &absent),
+        "absent source"
+    );
+    assert_eq!(
+        rows(&old.native, &original),
+        rows(&missing.native, &absent),
+        "absent native"
+    );
     assert_eq!(rows(&old.source, &original), rows(&old.native, &original));
     assert_eq!(rows(&new.source, &native), rows(&new.native, &native));
+    assert_eq!(
+        rows(&missing.source, &absent),
+        rows(&missing.native, &absent)
+    );
     let original_stdout = fs::read(required("BLUETOOTH_ENUMERATE_ORIGINAL_STDOUT")).unwrap();
     let native_stdout = fs::read(required("BLUETOOTH_ENUMERATE_NATIVE_STDOUT")).unwrap();
+    let absent_stdout = fs::read(required("BLUETOOTH_ENUMERATE_ABSENT_STDOUT")).unwrap();
     assert_eq!(original_stdout, native_stdout);
+    assert_eq!(original_stdout, absent_stdout);
     assert_eq!(
         original_stdout,
         b"PASS: 40 sysfs nodes, 31 accepted in source order, missing directory\n"
     );
     let original_stderr = fs::read(required("BLUETOOTH_ENUMERATE_ORIGINAL_STDERR")).unwrap();
     let native_stderr = fs::read(required("BLUETOOTH_ENUMERATE_NATIVE_STDERR")).unwrap();
+    let absent_stderr = fs::read(required("BLUETOOTH_ENUMERATE_ABSENT_STDERR")).unwrap();
     assert_eq!(original_stderr, native_stderr);
-    let _native_fixture_stdout = fs::read(native.join("native.stdout")).unwrap();
-    let _native_fixture_stderr = fs::read(native.join("native.stderr")).unwrap();
-    let _native_absent_stdout = fs::read(native.join("absent.stdout")).unwrap();
-    let _native_absent_stderr = fs::read(native.join("absent.stderr")).unwrap();
+    assert_eq!(original_stderr, absent_stderr);
+    assert_eq!(
+        fs::read(native.join("native.stderr")).unwrap(),
+        fs::read(absent.join("native.stderr")).unwrap()
+    );
+    assert_eq!(
+        fs::read(native.join("absent.stdout")).unwrap(),
+        fs::read(absent.join("absent.stdout")).unwrap()
+    );
+    assert_eq!(
+        fs::read(native.join("absent.stderr")).unwrap(),
+        fs::read(absent.join("absent.stderr")).unwrap()
+    );
+    let present_fixture: Ordered =
+        serde_json::from_slice(&fs::read(native.join("native.stdout")).unwrap()).unwrap();
+    let absent_fixture: Ordered =
+        serde_json::from_slice(&fs::read(absent.join("native.stdout")).unwrap()).unwrap();
+    assert_eq!(
+        rows(&present_fixture, &native),
+        rows(&absent_fixture, &absent)
+    );
 }

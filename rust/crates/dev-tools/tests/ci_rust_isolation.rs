@@ -830,6 +830,8 @@ fn soundd_finalization_requires_original_behavioral_failure_and_retained_binding
             "180s cargo test",
             "--exact --nocapture",
             "test \"$status\" -eq 101",
+            "grep -Fq 'test result: FAILED'",
+            "grep -Fq 'accepted changed source at finalization'",
             "accepted changed source at finalization",
             "--lib soundd_daemon_check::worker::tests --locked -- --test-threads=1",
             "--test soundd_daemon_check --test soundd_daemon_runtime --locked -- --test-threads=1",
@@ -852,6 +854,64 @@ fn soundd_finalization_requires_original_behavioral_failure_and_retained_binding
             ],
         );
     }
+}
+
+#[test]
+fn bluez_policy_retirement_preparation_requires_live_original_and_native_only_absence() {
+    job_check(
+        "ui-connectivity",
+        &[
+            "python rust/tools/check_bluetooth_bluez_policy.py",
+            "test ! -e \"$absence/root/rust/tools/check_bluetooth_bluez_policy.py\"",
+            "test ! -L \"$absence/root/rust/tools/check_bluetooth_bluez_policy.py\"",
+            "OPENPILOT_RUST_ROOT=\"$absence/root\" PATH=/nonexistent /usr/bin/timeout",
+            "-e trace=execve,execveat -o \"$absence/native.exec\"",
+            "BLUEZ_POLICY_ABSENCE_PROOF=\"$absence\"",
+            "--test bluetooth_bluez_policy_reference --locked -- --nocapture",
+        ],
+        &["bluetooth_bluez_policy.py", "BLUEZ_POLICY_ABSENCE_PROOF"],
+        false,
+    );
+}
+
+#[test]
+fn enumeration_retirement_preparation_requires_live_original_and_native_only_absence() {
+    job_check(
+        "ui-connectivity",
+        &[
+            "python rust/tools/check_bluetooth_enumerate.py",
+            "test ! -e \"$BLUETOOTH_ENUMERATE_ABSENT_ROOT/rust/tools/check_bluetooth_enumerate.py\"",
+            "test ! -L \"$BLUETOOTH_ENUMERATE_ABSENT_ROOT/rust/tools/check_bluetooth_enumerate.py\"",
+            "OPENPILOT_RUST_ROOT=\"$BLUETOOTH_ENUMERATE_ABSENT_ROOT\" PATH=\"$proof/empty-path\" /usr/bin/timeout",
+            "-e trace=execve,execveat -o \"$proof/absent.exec\"",
+            "controller == 1 && fixture == 2 && unexpected == 0",
+            "--test bluetooth_enumerate_reference --locked -- --nocapture",
+        ],
+        &["bluetooth_enumerate.py", "BLUETOOTH_ENUMERATE_ABSENT_ROOT"],
+        false,
+    );
+}
+
+#[test]
+fn bluetooth_sudo_callers_require_the_paired_native_elf_and_identity_seals() {
+    job_check(
+        "ui-connectivity",
+        &[
+            "BLUETOOTH_SUDO_ORIGINAL_PYTHON=\"$GITHUB_WORKSPACE/rust/tools/bluetooth_sudo_fixture.py\"",
+            "cmp rust/target/debug/bluetooth-sudo-fixture \"$native_sudo\"",
+            "BLUETOOTH_SUDO_NATIVE_BINARY=%s\\nBLUETOOTH_SUDO_NATIVE_SHA256=%s",
+            "sha256sum \"$native_sudo\" rust/tools/bluetooth_sudo_fixture.py rust/tools/check_bluetooth_input.py rust/tools/bluetooth_daemon_fixture.py",
+            "test -x \"$BLUETOOTH_SUDO_NATIVE_BINARY\"",
+            "python rust/tools/check_bluetooth_runtime.py",
+        ],
+        &["bluetooth_sudo_fixture.py", "check_bluetooth_runtime.py"],
+        false,
+    );
+    let script = commands(&workflow()["jobs"]["ui-connectivity"]);
+    assert_eq!(
+        script.matches("sha256sum -c \"$RUNNER_TEMP/ui-connectivity/bluetooth-sudo-fixture/caller-artifacts.sha256\"").count(),
+        2,
+    );
 }
 
 #[test]
@@ -908,7 +968,7 @@ fn sensor_audio_requires_original_and_live_native_checks() {
             "--test soundd_policy_reference --test soundd_policy_check --test soundd_fixture_assets --test soundd_policy_retirement --test soundd_policy_ci --locked",
             "--fixture-assets-binary \"$PWD/rust/target/debug/create-soundd-fixture-assets\"",
             "check_soundd_daemon.py",
-            "--features soundd-daemon-native --bin check-soundd-daemon",
+            "--features soundd-daemon-native --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --bin check-soundd-daemon",
             "--test soundd_daemon_check --test soundd_daemon_runtime --locked",
             "--lib soundd_daemon_check::worker::tests --locked",
             "\"$PWD/rust/target/debug/check-soundd-daemon\" --binary",

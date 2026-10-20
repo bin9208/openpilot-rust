@@ -29,8 +29,17 @@ the actual checkout, seals all five executing tools before either traffic run,
 compares both fresh native reports with the original observation, and checks
 both provenance receipts and all executable hashes afterward. It retains the
 original C++ bridge build and namespace/lifecycle checks. This revised gate
-still requires its first post-deletion cloud run; the earlier passing artifact
-does not by itself establish a passing new HEAD or device operation.
+passed at checked-out source
+`0d1700e5a3ad0181ecfdd7f7f25e4fc9d088e1d2`,
+[job118894126434](https://github.com/bin9208/openpilot-rust/actions/runs/39499806776/job/118894126434).
+That diagnostic workflow's head was `6acd3681`, distinct from its explicitly
+pinned source checkout. Artifact `12299956453`, ZIP SHA-256
+`cb5ed1b805fc7c50bb0ba5c6e84ea70e9fe4a9c62e9ee8380e96d481c5bfc81d`,
+contains both new traffic reports, provenance, five executable seals and the
+17-exec trace. The parent independently downloaded and reviewed these records:
+the same controller/original/native hashes and two160-packet direction hashes
+remain accepted, with no Python exec. This is a passing post-deletion host
+gate, not a passing whole candidate, dev integration or device operation.
 
 Historical original capture: at source commit
 `edb42bf095d6a3e3b38cc0a4546976dfb710363e`, [job 118816129850](https://github.com/bin9208/openpilot-rust/actions/runs/39477200877/job/118816129850)
@@ -85,5 +94,5 @@ native `unshare` and `ip`, then traces the same checker and two bridge ELFs in
 the absent-path comparison. The required reference test accounts for all 17
 exec attempts: checker/main plus four workers, four unshare calls, four ip
 calls and two calls to each bridge. Unexpected or opaque exec attempts fail.
-The absence/exec gate and #427 repair passed on `2d8d0279`; the post-deletion
-gate remains cloud pending.
+The absence/exec gate and #427 repair passed on `2d8d0279`; the actual
+post-deletion gate subsequently passed on `0d1700e5` as recorded above.

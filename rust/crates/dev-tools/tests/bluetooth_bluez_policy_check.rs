@@ -4,9 +4,11 @@ use openpilot_dev_tools::{
     seal::Result,
 };
 use openpilot_log_format::JsonView;
+use sha2::{Digest, Sha256};
 use std::{
     fs,
     io::{self, Write},
+    os::unix::fs::symlink,
     path::{Path, PathBuf},
     process::Command,
     sync::atomic::AtomicBool,
@@ -21,6 +23,39 @@ fn option(output: PathBuf) -> Options {
         root: root(),
         binary: root().join("rust/crates/bluetooth/examples/bluez_policy.rs"),
         output,
+    }
+}
+const HISTORICAL: &str = "rust/tools/check_bluetooth_bluez_policy.py";
+fn private_root(present: bool) -> tempfile::TempDir {
+    let directory = tempfile::tempdir().unwrap();
+    for source in [
+        "openpilot/selfdrive/carrot/bluetooth/bluez.py",
+        "rust/crates/bluetooth/examples/bluez_policy.rs",
+        "rust/crates/bluetooth/src/bluez/policy.rs",
+    ] {
+        let path = directory.path().join(source);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::copy(root().join(source), path).unwrap();
+    }
+    let historical = directory.path().join(HISTORICAL);
+    fs::create_dir_all(historical.parent().unwrap()).unwrap();
+    if present {
+        fs::copy(root().join(HISTORICAL), historical).unwrap();
+    }
+    directory
+}
+fn private_option(private: &Path, output: &Path) -> Options {
+    Options {
+        root: private.into(),
+        binary: private.join("rust/crates/bluetooth/examples/bluez_policy.rs"),
+        output: output.into(),
+    }
+}
+fn shape(output: &Path) -> OriginalShapeRunner {
+    OriginalShapeRunner {
+        output: output.into(),
+        call: 0,
+        corrupt: None,
     }
 }
 #[test]
@@ -185,6 +220,29 @@ fn subprocess_text_and_nonempty_stderr_match_original_capture_semantics() {
 struct MutatingWriter {
     binary: PathBuf,
 }
+struct ReplaceWriter {
+    path: PathBuf,
+    replacement: &'static [u8],
+}
+impl Write for ReplaceWriter {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        fs::write(&self.path, self.replacement)?;
+        Ok(bytes.len())
+    }
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+struct RemoveWriter(PathBuf);
+impl Write for RemoveWriter {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        fs::remove_file(&self.0)?;
+        Ok(bytes.len())
+    }
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
 impl Write for MutatingWriter {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
         fs::write(&self.binary, b"changed copied fixture")?;
@@ -252,6 +310,201 @@ fn one_wrong_response_or_missing_digit_rejects_receipt() {
         }
         assert!(!output.join("result.json").exists());
     }
+}
+
+#[test]
+fn present_and_absent_historical_checker_use_sealed_python_observation() {
+    let observed_cases = include_bytes!(
+        "fixtures/bluetooth-bluez-policy/original-observation-39499806776/cases.jsonl"
+    );
+    assert_eq!(
+        format!("{:x}", Sha256::digest(observed_cases)),
+        "db2d480a8bace324c8854bf837b1d2cc4270d2c058d481609de1532c4e0c9fbc"
+    );
+    let source_bytes = include_bytes!(
+        "fixtures/bluetooth-bluez-policy/original-observation-39499806776/source.json"
+    );
+    assert_eq!(
+        format!("{:x}", Sha256::digest(source_bytes)),
+        "fedaa7902e27d97cc508b8acfcf0995edd6117ea55725fa3c658ebd54eb18e5d"
+    );
+    let receipt_bytes = include_bytes!(
+        "fixtures/bluetooth-bluez-policy/original-observation-39499806776/result.json"
+    );
+    assert_eq!(
+        format!("{:x}", Sha256::digest(receipt_bytes)),
+        "923ec492db1924b994824dab7d09e505e39d0acd856cf049eecbc591ba11dbe5"
+    );
+    let observed_receipt: serde_json::Value = serde_json::from_slice(receipt_bytes).unwrap();
+    let observed_source: serde_json::Value = serde_json::from_slice(source_bytes).unwrap();
+    for present in [true, false] {
+        let private = private_root(present);
+        let output = private.path().join("comparison");
+        let mut runner = shape(&output);
+        let report = policy::run(
+            &private_option(private.path(), &output),
+            &mut runner,
+            &mut Vec::new(),
+            &AtomicBool::new(false),
+        )
+        .unwrap();
+        assert_eq!(runner.call, 2);
+        assert_eq!(
+            fs::read(output.join("cases.jsonl")).unwrap().as_slice(),
+            observed_cases.as_slice()
+        );
+        let source: serde_json::Value =
+            serde_json::from_slice(&fs::read(output.join("source.json")).unwrap()).unwrap();
+        assert_eq!(source, observed_source);
+        assert_eq!(report["cases"], 6363);
+        assert_eq!(report["accepted"], 3598);
+        for key in ["cases", "accepted", "digit_points", "unicode_version"] {
+            assert_eq!(report[key], observed_receipt[key]);
+        }
+        assert!(output.join("result.json").exists());
+    }
+}
+
+#[test]
+fn historical_checker_admits_only_absence_or_exact_regular_content() {
+    for defect in [
+        "changed",
+        "symlink",
+        "fifo",
+        "missing-parent",
+        "missing-other",
+    ] {
+        let private = private_root(true);
+        let historical = private.path().join(HISTORICAL);
+        match defect {
+            "changed" => fs::write(&historical, b"changed historical checker").unwrap(),
+            "symlink" => {
+                fs::remove_file(&historical).unwrap();
+                symlink(root().join(HISTORICAL), &historical).unwrap();
+            }
+            "fifo" => {
+                fs::remove_file(&historical).unwrap();
+                rustix::fs::mkfifoat(
+                    rustix::fs::CWD,
+                    &historical,
+                    rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR,
+                )
+                .unwrap();
+            }
+            "missing-parent" => {
+                fs::remove_file(&historical).unwrap();
+                fs::remove_dir(historical.parent().unwrap()).unwrap();
+            }
+            "missing-other" => {
+                fs::remove_file(
+                    private
+                        .path()
+                        .join("openpilot/selfdrive/carrot/bluetooth/bluez.py"),
+                )
+                .unwrap();
+            }
+            _ => unreachable!(),
+        }
+        let output = private.path().join("comparison");
+        assert!(
+            policy::run(
+                &private_option(private.path(), &output),
+                &mut RejectRun,
+                &mut Vec::new(),
+                &AtomicBool::new(false),
+            )
+            .is_err(),
+            "{defect}"
+        );
+        assert!(!output.join("result.json").exists(), "{defect}");
+    }
+}
+
+#[test]
+fn checker_mutation_or_reappearance_during_final_stdout_removes_owned_receipt() {
+    for present in [true, false] {
+        let private = private_root(present);
+        let output = private.path().join("comparison");
+        let mut runner = shape(&output);
+        let mut writer = ReplaceWriter {
+            path: private.path().join(HISTORICAL),
+            replacement: if present {
+                b"changed checker"
+            } else {
+                b"unexpected reappearance"
+            },
+        };
+        let error = policy::run(
+            &private_option(private.path(), &output),
+            &mut runner,
+            &mut writer,
+            &AtomicBool::new(false),
+        )
+        .unwrap_err();
+        assert_eq!(runner.call, 2);
+        if !present {
+            assert!(error.to_string().contains("presence changed"));
+        }
+        assert!(!output.join("result.json").exists());
+    }
+}
+
+#[test]
+fn historical_checker_disappearance_during_final_stdout_is_rejected() {
+    let private = private_root(true);
+    let output = private.path().join("comparison");
+    let mut runner = shape(&output);
+    let error = policy::run(
+        &private_option(private.path(), &output),
+        &mut runner,
+        &mut RemoveWriter(private.path().join(HISTORICAL)),
+        &AtomicBool::new(false),
+    )
+    .unwrap_err();
+    assert_eq!(runner.call, 2);
+    assert!(error.to_string().contains("presence changed"));
+    assert!(!output.join("result.json").exists());
+}
+
+#[test]
+fn absent_checker_parent_replacement_and_foreign_receipt_are_rejected() {
+    let private = private_root(false);
+    let output = private.path().join("comparison");
+    let mut runner = shape(&output);
+    struct ParentSwap<'a>(&'a Path);
+    impl Write for ParentSwap<'_> {
+        fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+            let parent = self.0.join("rust/tools");
+            fs::rename(&parent, self.0.join("rust/tools-old"))?;
+            fs::create_dir(&parent)?;
+            Ok(bytes.len())
+        }
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+    assert!(policy::run(
+        &private_option(private.path(), &output),
+        &mut runner,
+        &mut ParentSwap(private.path()),
+        &AtomicBool::new(false),
+    )
+    .is_err());
+    assert_eq!(runner.call, 2);
+    assert!(!output.join("result.json").exists());
+
+    let private = private_root(false);
+    let output = private.path().join("foreign");
+    fs::create_dir(&output).unwrap();
+    fs::write(output.join("result.json"), b"foreign").unwrap();
+    assert!(policy::run(
+        &private_option(private.path(), &output),
+        &mut RejectRun,
+        &mut Vec::new(),
+        &AtomicBool::new(false),
+    )
+    .is_err());
+    assert_eq!(fs::read(output.join("result.json")).unwrap(), b"foreign");
 }
 
 #[cfg(target_os = "linux")]

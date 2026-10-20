@@ -12,7 +12,7 @@ use sha2::{Digest, Sha256};
 use std::{
     fs::{self, File, Metadata},
     io::{Read, Write},
-    os::unix::fs::MetadataExt,
+    os::unix::fs::{FileExt, MetadataExt},
     path::{Path, PathBuf},
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -79,9 +79,18 @@ struct Bound {
 }
 impl Bound {
     fn open(path: &Path) -> Result<Self> {
+        Self::open_with_flags(path, rustix::fs::OFlags::empty())
+    }
+    fn open_nofollow(path: &Path) -> Result<Self> {
+        Self::open_with_flags(path, rustix::fs::OFlags::NOFOLLOW)
+    }
+    fn open_with_flags(path: &Path, extra: rustix::fs::OFlags) -> Result<Self> {
         let mut file = File::from(rustix::fs::open(
             path,
-            rustix::fs::OFlags::RDONLY | rustix::fs::OFlags::NONBLOCK | rustix::fs::OFlags::CLOEXEC,
+            rustix::fs::OFlags::RDONLY
+                | rustix::fs::OFlags::NONBLOCK
+                | rustix::fs::OFlags::CLOEXEC
+                | extra,
             rustix::fs::Mode::empty(),
         )?);
         let metadata = file.metadata()?;
@@ -114,27 +123,119 @@ impl Bound {
         }
         Ok(())
     }
+    fn verify_content(&self) -> Result<()> {
+        self.verify()?;
+        let mut hash = Sha256::new();
+        let mut chunk = [0; 65536];
+        let mut offset = 0;
+        loop {
+            let n = self.file.read_at(&mut chunk, offset)?;
+            if n == 0 {
+                break;
+            }
+            hash.update(&chunk[..n]);
+            offset += n as u64;
+            if offset > self.metadata.len() {
+                return Err(format!("BlueZ policy input changed: {}", self.path.display()).into());
+            }
+        }
+        if format!("{:x}", hash.finalize()) != self.hash {
+            return Err(format!("BlueZ policy input changed: {}", self.path.display()).into());
+        }
+        self.verify()
+    }
 }
-fn check(inputs: &[Bound], cancel: &AtomicBool) -> Result<()> {
+struct CheckerParent {
+    path: PathBuf,
+    file: File,
+    metadata: Metadata,
+}
+impl CheckerParent {
+    fn open(path: &Path) -> Result<Self> {
+        let file = File::from(rustix::fs::open(
+            path,
+            rustix::fs::OFlags::RDONLY
+                | rustix::fs::OFlags::DIRECTORY
+                | rustix::fs::OFlags::NOFOLLOW
+                | rustix::fs::OFlags::CLOEXEC,
+            rustix::fs::Mode::empty(),
+        )?);
+        let metadata = file.metadata()?;
+        if !metadata.is_dir() || !fs::symlink_metadata(path)?.is_dir() {
+            return Err("BlueZ policy checker parent is not a directory".into());
+        }
+        Ok(Self {
+            path: path.into(),
+            file,
+            metadata,
+        })
+    }
+    fn verify(&self) -> Result<()> {
+        if identity(&self.metadata) != identity(&self.file.metadata()?)
+            || identity(&self.metadata) != identity(&fs::symlink_metadata(&self.path)?)
+        {
+            return Err("BlueZ policy checker parent changed".into());
+        }
+        Ok(())
+    }
+}
+struct Inputs {
+    live: Vec<Bound>,
+    checker: Option<Bound>,
+    checker_path: PathBuf,
+    checker_parent: CheckerParent,
+}
+fn check(inputs: &Inputs, cancel: &AtomicBool) -> Result<()> {
     if cancel.load(Ordering::SeqCst) {
         return Err("BlueZ policy comparison interrupted".into());
     }
-    for input in inputs {
+    let present = match fs::symlink_metadata(&inputs.checker_path) {
+        Ok(metadata) => Some(metadata),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+        Err(error) => return Err(error.into()),
+    };
+    match (&inputs.checker, present) {
+        (Some(checker), Some(metadata)) if metadata.is_file() => checker.verify_content()?,
+        (None, None) => {}
+        _ => return Err("BlueZ policy historical checker presence changed".into()),
+    }
+    inputs.checker_parent.verify()?;
+    for input in &inputs.live {
         input.verify()?;
     }
     Ok(())
 }
-fn sources(root: &Path) -> Result<Vec<Bound>> {
-    SOURCES
-        .iter()
-        .map(|(name, expected)| {
-            let bound = Bound::open(&root.join(name))?;
-            if bound.hash != *expected {
-                return Err(format!("BlueZ policy source changed: {name}").into());
+fn sources(root: &Path) -> Result<Inputs> {
+    let checker_path = root.join(SOURCES[0].0);
+    let checker_parent =
+        CheckerParent::open(checker_path.parent().ok_or("missing checker parent")?)?;
+    let checker = match fs::symlink_metadata(&checker_path) {
+        Ok(metadata) if metadata.is_file() => {
+            let bound = Bound::open_nofollow(&checker_path)?;
+            if bound.hash != SOURCES[0].1 {
+                return Err("BlueZ policy historical checker content changed".into());
             }
-            Ok(bound)
-        })
-        .collect()
+            Some(bound)
+        }
+        Ok(_) => return Err("BlueZ policy historical checker is not a regular file".into()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+        Err(error) => return Err(error.into()),
+    };
+    let mut inputs = Inputs {
+        live: vec![],
+        checker,
+        checker_path,
+        checker_parent,
+    };
+    for (name, expected) in SOURCES.iter().skip(1) {
+        let bound = Bound::open(&root.join(name))?;
+        if bound.hash != *expected {
+            return Err(format!("BlueZ policy source changed: {name}").into());
+        }
+        inputs.live.push(bound);
+    }
+    check(&inputs, &AtomicBool::new(false))?;
+    Ok(inputs)
 }
 
 /// Unicode 15 Digit|Decimal entries, with decimal values derived only from
@@ -244,7 +345,7 @@ pub struct Options {
 struct Pending {
     path: PathBuf,
     file: tempfile::NamedTempFile,
-    inputs: Vec<Bound>,
+    inputs: Inputs,
 }
 impl Pending {
     fn commit(self, cancel: &AtomicBool) -> Result<()> {
@@ -362,8 +463,8 @@ fn run_inner(
     let artifact = Bound::open(&binary)?;
     let alias = Bound::open(&alias)?;
     let binary_hash = artifact.hash.clone();
-    inputs.push(artifact);
-    inputs.push(alias);
+    inputs.live.push(artifact);
+    inputs.live.push(alias);
     let mut command =
         CommandSpec::new_os(vec![binary.as_os_str().to_owned()], Duration::from_secs(30));
     command.input = Some(cases.as_bytes().to_vec());

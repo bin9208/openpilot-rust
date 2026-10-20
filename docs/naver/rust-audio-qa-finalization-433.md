@@ -1,8 +1,9 @@
 # Audio QA finalization identity (#433)
 
 Tracking: [#433](https://github.com/bin9208/openpilot-rust/issues/433), within
-the independent #296 conversion. This is a source-ready repair; cloud
-behavioral RED/GREEN, complete audio checks and Clippy remain pending.
+the independent #296 conversion. The old implementation's behavioral RED is
+observed; the repaired implementation's GREEN, complete audio checks and
+Clippy remain pending.
 
 At baseline `2d8d027932dc880bd0acd00288b256ac8d7f1b89`, the actual soundd
 checker verified pinned sources and four executing artifacts after publishing
@@ -41,3 +42,15 @@ process failure does not hide this earlier deterministic evidence. All existing
 process predicates, five-second mutation timeout, original/native audio
 comparison and strict Clippy remain required. Local work was limited to source,
 format, YAML/shell syntax and diff review; no functional code ran locally.
+
+At exact source `a0690dd94924996f2bc1c7da7a5dde964bf7fce3`,
+[job118906422217](https://github.com/bin9208/openpilot-rust/actions/runs/39503456244/job/118906422217)
+built the unchanged old production implementation with only the regression
+tests appended. The exact source-mutation test failed in2.55s with
+`accepted changed source at finalization`, exit101: the intended old-behavior
+RED. The following shell assertion failed because `rg` was unavailable on the
+hosted runner. That is not a passing job or repaired-source GREEN; subsequent
+current-source tests were skipped. The two fixed-string assertions now use
+`grep -Fq`, retaining the exit101 and exact assertion requirements. Artifact
+`12302893247` retains the old-source patch, inputs and raw failure. The parent
+independently inspected the completed job log; no deadline changed.

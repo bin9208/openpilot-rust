@@ -17,71 +17,75 @@ extensionless Python execution still needs a separate complete caller audit.
 
 ### Current cloud checkpoint and next source batch (2026-10-21)
 
-Follow-up cloud evidence: source0d1700e5 passed startup-services including the
-actual post-deletion Bridge gate in
-[run39499806776](https://github.com/bin9208/openpilot-rust/actions/runs/39499806776).
-The Eigen portion of [run39500380365](https://github.com/bin9208/openpilot-rust/actions/runs/39500380365)
-passed two archive controls, three complete two-test header comparisons and
-strict Clippy at source4991f8f5. The parent verified all three original maps,
-native manifests and raw wheel hashes in artifact12300415646 (ZIP SHA-256
+Published PR #343 source remains `2d8d027932dc880bd0acd00288b256ac8d7f1b89`.
+Its [Rust run39494388960](https://github.com/bin9208/openpilot-rust/actions/runs/39494388960)
+passed LLVM20 graph/primitive equivalence, including all four independent
+node280 input/planning controls. Workspace and ARM jobs remain running; Panda,
+audio and UI/connectivity failed. Fast and Integration passed. There is no
+aggregate CI success, dev integration, final package or device acceptance.
+The actual lagd #429 and messaging #431 allocation evidence is recorded in
+[lagd](rust-lagd-masked-allocation-429.md) and
+[messaging](rust-messaging-update-allocation-296.md); neither establishes CPU
+or device savings.
+
+The focused [run39503456244](https://github.com/bin9208/openpilot-rust/actions/runs/39503456244)
+explicitly checks out source `a0690dd94924996f2bc1c7da7a5dde964bf7fce3`;
+its workflow head is `df267a2880ba655380a96474b62157e5434e80de`.
+The actual native Eigen action and complete690-file original header comparison
+passed for both x86_64 and aarch64 archive inputs on x86_64 hosts. This is not
+ARM execution. The parent downloaded comparison artifacts12302561921 and
+12302462410 (ZIP SHA-256 respectively
+`861615c0ec94be631077444a10b7c1b153227b96a3cd703ede7de8e879a36e3e`
+and `2007b0dc66fd820dae7c7d442f8b8d1bc7c847defd3eda1a90e1a7bbdf7a6d51`).
+The seven native paramsd atomic-gate foundation tests passed, alongside the
+five retained original Python cases. Both native estimators then passed their
+original comparisons. The job subsequently failed in lagd's CI-policy test,
+which still required the retired Eigen pip/import lines. The x86 action job
+also failed after its successful header comparison in an audio command-text
+policy assertion. Both stale contracts are corrected in the next source.
+Python paramsd controllers and their descriptor-passing consumers remain.
+
+All three embedded Eigen pip/import callers are replaced by native archive
+staging and source-bound include exports. Earlier source4991f8f5 passed the
+three-wheel full-header comparison and strict Clippy in
+[run39500380365](https://github.com/bin9208/openpilot-rust/actions/runs/39500380365).
+The parent independently verified all3 raw wheels and complete original maps
+in artifact12300415646 (ZIP SHA-256
 `877b1fd589b4bef46905dbad1e7d26876ec65402af698d863db28d99fa62ecaf`).
-The overall job failed afterward in the separate paramsd foundation compile.
-Its missing pipe feature and borrowed-FD test call were corrected; no passing
-foundation result is claimed yet.
+Only the C++ install tree is extracted; no Python executes or appears in that
+output. External Eigen stays C++. No baseline-source inventory entry is added
+for removing these embedded calls.
 
-The native Eigen caller transition removes all three inline Python shim
-installation/import paths. Workspace and ARM use the host-built stager action;
-estimation stages all three archives and compares all690 header hashes with
-the sealed actual original Linux installation observation. A wheel is retained
-as a pinned input archive; only its C++ install tree is extracted, with no
-Python execution or Python files in the output. External Eigen remains C++.
-This removes embedded Python acquisition calls, not another baseline inventory
-source file. First cloud validation of the new callers is still required.
+Audio's old-source finalization regression now produced the exact intended
+exit101 and source-mutation assertion. The subsequent shell receipt check
+failed because `rg` was absent; current-source tests were skipped. The receipt
+checks now use `grep -Fq`. The repaired GREEN, blocked-stdout observation,
+complete audio suite and Clippy remain required. See [#433](rust-audio-qa-finalization-433.md)
+and [#426](rust-audio-final-stdout-observer-426.md). Panda's diagnostic
+run39501353390 captured all10 timestamps in8 unchanged and8 instrumented runs;
+it does not reproduce the missing first timestamp or close #432.
 
-Audio's diagnostic excluded an actual blocked-write observation; the next
-source requires the real kernel write boundary and optimizes only QA SHA-256
-compilation while retaining all deadlines. See [#426 evidence](rust-audio-final-stdout-observer-426.md).
-The independent source-binding lifetime defect has a repair and mandatory
-behavioral old-source regression in [#433 evidence](rust-audio-qa-finalization-433.md).
-Panda's third diagnostic run39501353390 captured all10 timestamps at every hop
-in8 unchanged and8 instrumented runs; it is uninformative about the original
-loss and does not close #432.
+The actual post-deletion Bridge gate passed at source0d1700e5 in
+[run39499806776](https://github.com/bin9208/openpilot-rust/actions/runs/39499806776).
+The parent independently reviewed its new traffic reports, provenance, seals
+and17-exec trace in artifact12299956453; see
+[Bridge evidence](rust-bridge-controller-retirement-296.md).
 
-Published source is `2d8d027932dc880bd0acd00288b256ac8d7f1b89`, PR #343→dev.
-[Rust run 39494388960](https://github.com/bin9208/openpilot-rust/actions/runs/39494388960)
-is still running with Panda, sensor/audio and UI/connectivity failures; Fast
-and Integration passed. Estimation, selfdrived and startup-services passed.
-The lagd #429 and messaging #431 allocation receipts and their limitations are
-recorded in [lagd evidence](rust-lagd-masked-allocation-429.md) and
-[messaging evidence](rust-messaging-update-allocation-296.md). The latter's
-actual old/current artifact was independently downloaded and read by the parent.
-There is no aggregate CI, dev integration, final package or device acceptance.
+BlueZ policy and Bluetooth enumeration now carry sealed original-only cloud
+observations and source-absence preparation. Mandatory cloud lanes reuse the
+same checker/candidate ELFs, compare the full corpus and require only native
+execs with unavailable PATH. Their original Python files stay until those new
+lanes pass. Sudo's native fixture already matched10 original modes; its two
+callers now install an explicitly hash-bound native ELF, with cloud caller
+verification still pending. None is newly counted retired.
 
-Bridge's complete actual original/native report and same-ELF absent-source
-traffic/exec audit passed at 2d8. The parent independently verified the archive,
-all reports, two 160-packet direction hashes and 17 native exec attempts before
-removing `rust/tools/check_bridge.py`. The revised gate checks actual checkout
-absence and seals identities before both traffic runs; it still needs a fresh
-post-deletion run. See [Bridge evidence](rust-bridge-controller-retirement-296.md).
-
-The next source batch fixes the concrete BlueZ CLI error type mismatch and
-adds bounded `/proc`/stdout snapshots to the unchanged five-second audio
-late-mutation test. Its prior timeout produced no root success receipt and
-does not demonstrate a false PASS. A separate source-visible original Panda
-diagnostic at `f8feec60711da2ac7d07a7121be7dd5b1129e426`,
-[run 39498926277](https://github.com/bin9208/openpilot-rust/actions/runs/39498926277),
-keeps the ten-timestamp assertion while recording actual send returns,
-collector ingress and subscriber records. Diagnostic Python stays outside the
-candidate and is not counted as retirement.
-
-Native Eigen staging now has a feature-gated CLI and mandatory three-release-
-archive/full-690-header comparison against the existing fresh Python shim
-installation. Existing Python acquisition callers remain until that first
-cloud comparison is accepted. No external Eigen C++ library is claimed as
-Rust-owned. Source review found and removed a pathname reopen between archive
-hashing and directory inspection; both now inspect the same verified snapshot.
-Exclusive publication disarms the temporary-directory cleanup after rename.
-Only syntax, formatting, diff and data review ran locally.
+The [prefix93 diagnostic](rust-prefix93-fma-diagnostic-296.md) localizes the
+original LLVM18 discrepancy to contraction-dependent intermediate rounding in
+the Gelu polynomial. Parent artifact and historical-object review is complete;
+the native fusion fence remains and generic closure repair is unfinished.
+Disposable original-capture Python/workflows are not merged as replacements.
+All local work in this batch stays at source, formatting, YAML/shell syntax,
+diff and artifact-data review; functional execution remains in Actions.
 
 ### Native DBC generation and package closure (2026-10-19)
 

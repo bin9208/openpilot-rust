@@ -23,6 +23,13 @@ const TESTS: [&str; 15] = [
 ];
 const BUILD: &str = "Build and test native lagd QA tools";
 const RUN: &str = "Compare delay numerical policy, full source loop, cache and native IPC";
+const ESTIMATORS: &str = "Build native estimators and unchanged source oracle";
+const EIGEN: &str = "Require native Eigen header staging against sealed original install";
+const OLD_EIGEN_INSTALL: &str = "python -m pip install 'git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen'";
+const OLD_EIGEN_IMPORT: &str = "python -c 'import eigen; print(\"LOCATIOND_EIGEN_INCLUDE=\" + eigen.INCLUDE_DIR); print(\"PARAMSD_EIGEN_INCLUDE=\" + eigen.INCLUDE_DIR)' >> \"$GITHUB_ENV\"";
+const NATIVE_EIGEN_BUILD: &str = "cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features eigen-tools-native --bin stage-eigen-headers";
+const NATIVE_EIGEN_STAGE: &str = "\"$stager\" --wheel \"$wheel\" --output \"$proof/$architecture-native\" --architecture \"$architecture\" > \"$proof/$architecture-stage.json\"";
+const NATIVE_EIGEN_EXPORT: &str = "printf 'LOCATIOND_EIGEN_INCLUDE=%s/x86_64-native/install\\nPARAMSD_EIGEN_INCLUDE=%s/x86_64-native/install\\n' \"$proof\" \"$proof\" >> \"$GITHUB_ENV\"";
 const GUARD: &str =
     "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib ";
 fn original() -> Value {
@@ -80,6 +87,41 @@ fn validate(workflow: &Value) -> Result<(), String> {
         )?;
     }
     let steps = job["steps"].as_array().ok_or("missing estimation steps")?;
+    let eigen = steps
+        .iter()
+        .position(|step| step["name"] == EIGEN)
+        .ok_or("native Eigen staging missing")?;
+    require(
+        steps.iter().filter(|step| step["name"] == EIGEN).count() == 1,
+        "native Eigen staging duplicated",
+    )?;
+    mandatory(&steps[eigen])?;
+    let eigen_script = steps[eigen]["run"]
+        .as_str()
+        .ok_or("native Eigen staging commands missing")?;
+    let eigen_lines = eigen_script.lines().map(str::trim).collect::<Vec<_>>();
+    for line in [NATIVE_EIGEN_BUILD, NATIVE_EIGEN_STAGE, NATIVE_EIGEN_EXPORT] {
+        require(
+            eigen_lines
+                .iter()
+                .filter(|current| **current == line)
+                .count()
+                == 1,
+            "native Eigen build or estimator include export changed",
+        )?;
+    }
+    require(
+        eigen_lines.contains(&"for item in x86_64:linux_x86_64 aarch64:linux_aarch64 macos-arm64:macosx_11_0_arm64; do"),
+        "native Eigen header staging lost the pinned platform matrix",
+    )?;
+    let estimators = steps
+        .iter()
+        .position(|step| step["name"] == ESTIMATORS)
+        .ok_or("estimator build missing")?;
+    require(
+        eigen < estimators,
+        "native Eigen staging moved after estimator build",
+    )?;
     for oldstep in old["steps"].as_array().unwrap() {
         if oldstep.get("uses").is_some() {
             require(
@@ -93,6 +135,10 @@ fn validate(workflow: &Value) -> Result<(), String> {
         .position(|step| step["name"] == BUILD)
         .ok_or("native lagd build missing")?;
     mandatory(&steps[build])?;
+    require(
+        eigen < build,
+        "native Eigen staging moved after estimator build",
+    )?;
     let build_script = steps[build]["run"]
         .as_str()
         .ok_or("native lagd build commands missing")?;
@@ -190,12 +236,21 @@ fn validate(workflow: &Value) -> Result<(), String> {
     let current = lines(steps);
     let original = lines(old["steps"].as_array().unwrap());
     for (line, count) in original {
-        if !line.starts_with("python rust/tools/check_lagd_") {
+        if !line.starts_with("python rust/tools/check_lagd_")
+            && line != OLD_EIGEN_INSTALL
+            && line != OLD_EIGEN_IMPORT
+        {
             require(
                 current.get(&line) == Some(&count),
                 "unrelated estimator command removed/duplicated/changed",
             )?;
         }
+    }
+    for line in [OLD_EIGEN_INSTALL, OLD_EIGEN_IMPORT] {
+        require(
+            current.get(line).is_none(),
+            "retired Eigen pip/import caller reappeared",
+        )?;
     }
     for step in steps {
         if let Some(script) = step["run"].as_str() {
@@ -234,6 +289,50 @@ fn missing_native_tools_tests_guards_or_unrelated_gates_cannot_pass() {
         .unwrap();
     let build = steps.iter().position(|step| step["name"] == BUILD).unwrap();
     let run = steps.iter().position(|step| step["name"] == RUN).unwrap();
+    let eigen = steps.iter().position(|step| step["name"] == EIGEN).unwrap();
+    let estimators = steps
+        .iter()
+        .position(|step| step["name"] == ESTIMATORS)
+        .unwrap();
+    let mut changed = current.clone();
+    let moved = changed["jobs"]["estimation-runtime"]["steps"]
+        .as_array_mut()
+        .unwrap()
+        .remove(eigen);
+    changed["jobs"]["estimation-runtime"]["steps"]
+        .as_array_mut()
+        .unwrap()
+        .insert(estimators, moved);
+    assert!(
+        validate(&changed).is_err(),
+        "accepted native Eigen staging after estimator build"
+    );
+    for marker in [NATIVE_EIGEN_BUILD, NATIVE_EIGEN_STAGE, NATIVE_EIGEN_EXPORT] {
+        let mut changed = current.clone();
+        let script = changed["jobs"]["estimation-runtime"]["steps"][eigen]["run"]
+            .as_str()
+            .unwrap()
+            .replace(marker, "removed-by-regression");
+        changed["jobs"]["estimation-runtime"]["steps"][eigen]["run"] = script.into();
+        assert!(validate(&changed).is_err(), "accepted missing {marker}");
+    }
+    let mut changed = current.clone();
+    changed["jobs"]["estimation-runtime"]["steps"][eigen]["if"] = "always()".into();
+    assert!(
+        validate(&changed).is_err(),
+        "accepted optional native Eigen stage"
+    );
+    let mut changed = current.clone();
+    let script = changed["jobs"]["estimation-runtime"]["steps"][eigen]["run"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    changed["jobs"]["estimation-runtime"]["steps"][eigen]["run"] =
+        format!("{script}\n{OLD_EIGEN_INSTALL}\n").into();
+    assert!(
+        validate(&changed).is_err(),
+        "accepted restored Eigen pip caller"
+    );
     for marker in TOOLS
         .map(|v| format!("--bin check-lagd-{v}"))
         .into_iter()

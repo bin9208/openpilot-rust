@@ -2941,8 +2941,8 @@ jobs:
           status=${PIPESTATUS[0]}
           set -e
           test "$status" -eq 101
-          rg -q 'test result: FAILED' "$proof/baseline.log"
-          rg -q 'accepted changed source at finalization' "$proof/baseline.log"
+          grep -Fq 'test result: FAILED' "$proof/baseline.log"
+          grep -Fq 'accepted changed source at finalization' "$proof/baseline.log"
           sha256sum --check "$proof/test-inputs.sha256"
           git worktree remove --force "$baseline"
           rm -rf "$target"
@@ -3434,6 +3434,26 @@ jobs:
           timeout --kill-after=5s 120s rust/target/debug/check-bluetooth-bluez-policy --binary "$candidate" --output "$BLUEZ_POLICY_NATIVE_OUTPUT" > "$BLUEZ_POLICY_NATIVE_STDOUT" 2> "$BLUEZ_POLICY_NATIVE_STDERR"
           sha256sum -c "$proof/artifacts.sha256"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          absence="$proof/absence"
+          mkdir -p "$absence/root/rust/tools"
+          for source in openpilot/selfdrive/carrot/bluetooth/bluez.py rust/crates/bluetooth/examples/bluez_policy.rs rust/crates/bluetooth/src/bluez/policy.rs; do
+            mkdir -p "$absence/root/$(dirname "$source")"
+            cp "$GITHUB_WORKSPACE/$source" "$absence/root/$source"
+          done
+          checker="$GITHUB_WORKSPACE/rust/target/debug/check-bluetooth-bluez-policy"
+          printf '%s\n' "$checker" > "$absence/checker.path"
+          printf '%s\n' "$candidate" > "$absence/candidate.path"
+          test ! -e "$absence/root/rust/tools/check_bluetooth_bluez_policy.py"
+          test ! -L "$absence/root/rust/tools/check_bluetooth_bluez_policy.py"
+          OPENPILOT_RUST_ROOT="$absence/root" PATH=/nonexistent /usr/bin/timeout --signal=TERM --kill-after=5s 120s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "$absence/native.exec" "$checker" --binary "$candidate" --output "$absence/output" > "$absence/native.stdout" 2> "$absence/native.stderr"
+          for name in cases.jsonl source.json native.jsonl native.stderr digits.stdout digits.stderr result.json; do
+            cmp "$BLUEZ_POLICY_NATIVE_OUTPUT/$name" "$absence/output/$name"
+          done
+          cmp "$BLUEZ_POLICY_NATIVE_STDOUT" "$absence/native.stdout"
+          cmp "$BLUEZ_POLICY_NATIVE_STDERR" "$absence/native.stderr"
+          sha256sum -c "$proof/artifacts.sha256"
+          export BLUEZ_POLICY_ABSENCE_PROOF="$absence"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-bluez-policy-native --test bluetooth_bluez_policy_reference --locked -- --nocapture
       - name: Compare native Bluetooth enumeration controller with unchanged original
         run: |
@@ -3447,6 +3467,10 @@ jobs:
           export BLUETOOTH_ENUMERATE_ORIGINAL_STDERR="$proof/original.stderr"
           export BLUETOOTH_ENUMERATE_NATIVE_STDOUT="$proof/native.stdout"
           export BLUETOOTH_ENUMERATE_NATIVE_STDERR="$proof/native.stderr"
+          export BLUETOOTH_ENUMERATE_ABSENT_ROOT="$proof/absent-root"
+          export BLUETOOTH_ENUMERATE_ABSENT_OUTPUT="$proof/absent-native"
+          export BLUETOOTH_ENUMERATE_ABSENT_STDOUT="$proof/absent-native.stdout"
+          export BLUETOOTH_ENUMERATE_ABSENT_STDERR="$proof/absent-native.stderr"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-enumerate-native --bin check-bluetooth-enumerate --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
@@ -3459,6 +3483,44 @@ jobs:
           timeout --kill-after=5s 30s python rust/tools/check_bluetooth_enumerate.py --binary "$candidate" --output "$BLUETOOTH_ENUMERATE_ORIGINAL_OUTPUT" > "$BLUETOOTH_ENUMERATE_ORIGINAL_STDOUT" 2> "$BLUETOOTH_ENUMERATE_ORIGINAL_STDERR"
           timeout --kill-after=5s 30s rust/target/debug/check-bluetooth-enumerate --binary "$candidate" --output "$BLUETOOTH_ENUMERATE_NATIVE_OUTPUT" > "$BLUETOOTH_ENUMERATE_NATIVE_STDOUT" 2> "$BLUETOOTH_ENUMERATE_NATIVE_STDERR"
           sha256sum -c "$proof/artifacts.sha256"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          absent_sources=(
+            openpilot/selfdrive/carrot/bluetooth/daemon.py
+            openpilot/selfdrive/carrot/bluetooth/model.py
+            rust/tools/bluetooth_engine_source.py
+            rust/crates/bluetooth/examples/input_fixture.rs
+            rust/crates/bluetooth/src/input.rs
+          )
+          mkdir -p "$BLUETOOTH_ENUMERATE_ABSENT_ROOT" "$proof/empty-path"
+          sha256sum "${absent_sources[@]}" > "$proof/present-sources.sha256"
+          for name in "${absent_sources[@]}"; do
+            cp --parents -- "$name" "$BLUETOOTH_ENUMERATE_ABSENT_ROOT"
+            cmp -- "$name" "$BLUETOOTH_ENUMERATE_ABSENT_ROOT/$name"
+          done
+          (cd "$BLUETOOTH_ENUMERATE_ABSENT_ROOT" && sha256sum "${absent_sources[@]}") > "$proof/absent-sources.sha256"
+          test -d "$BLUETOOTH_ENUMERATE_ABSENT_ROOT/rust/tools"
+          test ! -e "$BLUETOOTH_ENUMERATE_ABSENT_ROOT/rust/tools/check_bluetooth_enumerate.py"
+          test ! -L "$BLUETOOTH_ENUMERATE_ABSENT_ROOT/rust/tools/check_bluetooth_enumerate.py"
+          checker="$GITHUB_WORKSPACE/rust/target/debug/check-bluetooth-enumerate"
+          OPENPILOT_RUST_ROOT="$BLUETOOTH_ENUMERATE_ABSENT_ROOT" PATH="$proof/empty-path" /usr/bin/timeout --signal=TERM --kill-after=5s 30s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "$proof/absent.exec" "$checker" --binary "$candidate" --output "$BLUETOOTH_ENUMERATE_ABSENT_OUTPUT" > "$BLUETOOTH_ENUMERATE_ABSENT_STDOUT" 2> "$BLUETOOTH_ENUMERATE_ABSENT_STDERR"
+          awk -v checker="$checker" -v candidate="$candidate" '
+            /execveat\(/ { unexpected++; next }
+            /execve\(/ {
+              if (index($0, "execve(\"" checker "\",") > 0) controller++;
+              else if (index($0, "execve(\"" candidate "\",") > 0) fixture++;
+              else unexpected++;
+            }
+            END {
+              printf "checker=%d fixture=%d unexpected=%d\n", controller, fixture, unexpected;
+              exit !(controller == 1 && fixture == 2 && unexpected == 0);
+            }
+          ' "$proof/absent.exec" | tee "$proof/absent-exec-roster.txt"
+          sha256sum -c "$proof/artifacts.sha256"
+          sha256sum -c "$proof/present-sources.sha256"
+          (cd "$BLUETOOTH_ENUMERATE_ABSENT_ROOT" && sha256sum -c "$proof/absent-sources.sha256")
+          for name in "${absent_sources[@]}"; do cmp -- "$name" "$BLUETOOTH_ENUMERATE_ABSENT_ROOT/$name"; done
+          test ! -e "$BLUETOOTH_ENUMERATE_ABSENT_ROOT/rust/tools/check_bluetooth_enumerate.py"
+          test ! -L "$BLUETOOTH_ENUMERATE_ABSENT_ROOT/rust/tools/check_bluetooth_enumerate.py"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-enumerate-native --test bluetooth_enumerate_reference --locked -- --nocapture
       - name: Compare native Bluetooth sudo fixture with unchanged original
@@ -3479,6 +3541,13 @@ jobs:
           sha256sum -c "$proof/artifacts.sha256"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-sudo-fixture-native --lib --bin bluetooth-sudo-fixture --test bluetooth_sudo_fixture --locked -- -D warnings
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          native_sudo="$proof/bluetooth-sudo-fixture"
+          cp --no-clobber rust/target/debug/bluetooth-sudo-fixture "$native_sudo"
+          cmp rust/target/debug/bluetooth-sudo-fixture "$native_sudo"
+          native_sha=$(sha256sum "$native_sudo" | cut -d ' ' -f1)
+          printf 'BLUETOOTH_SUDO_NATIVE_BINARY=%s\nBLUETOOTH_SUDO_NATIVE_SHA256=%s\n' "$native_sudo" "$native_sha" >> "$GITHUB_ENV"
+          sha256sum "$native_sudo" rust/tools/bluetooth_sudo_fixture.py rust/tools/check_bluetooth_input.py rust/tools/bluetooth_daemon_fixture.py > "$proof/caller-artifacts.sha256"
       - name: Compare native Bluetooth gesture corpus with unchanged original
         run: |
           set -euo pipefail
@@ -3675,7 +3744,12 @@ jobs:
           python rust/tools/check_cweb_daemon.py --binary "$PWD/rust/target/debug/openpilot-cweb-push" --binding "$RUNNER_TEMP/ui-params-binding"/params_pyx*.so --output "$RUNNER_TEMP/ui-connectivity/cweb/daemon"
           python rust/tools/check_cweb_address.py --binary "$PWD/rust/target/debug/examples/cweb_address" --output "$RUNNER_TEMP/ui-connectivity/cweb/address"
       - name: Compare Bluetooth input, continuous IPC and private BlueZ lifecycle
-        run: python rust/tools/check_bluetooth_runtime.py --bin-dir "$PWD/rust/target/debug" --msgq-python "$RUNNER_TEMP/connectivity-msgq-python" --output "$RUNNER_TEMP/ui-connectivity/bluetooth"
+        run: |
+          set -euo pipefail
+          test -x "$BLUETOOTH_SUDO_NATIVE_BINARY"
+          sha256sum -c "$RUNNER_TEMP/ui-connectivity/bluetooth-sudo-fixture/caller-artifacts.sha256"
+          python rust/tools/check_bluetooth_runtime.py --bin-dir "$PWD/rust/target/debug" --msgq-python "$RUNNER_TEMP/connectivity-msgq-python" --output "$RUNNER_TEMP/ui-connectivity/bluetooth"
+          sha256sum -c "$RUNNER_TEMP/ui-connectivity/bluetooth-sudo-fixture/caller-artifacts.sha256"
       - name: Retain source/native images and connectivity evidence
         if: always()
         uses: actions/upload-artifact@v6
