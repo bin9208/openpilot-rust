@@ -1,4 +1,4 @@
-name: 296 controller retirement and source proof
+name: 296 soundd precision and remaining controller proof
 'on':
   push:
     branches:
@@ -10,164 +10,6 @@ permissions:
 env:
   RUSTUP_TOOLCHAIN: 1.94.0
 jobs:
-  paramsd:
-    name: Full paramsd original and native controller
-    runs-on: ubuntu-24.04
-    timeout-minutes: 35
-    env:
-      CARGO_BUILD_JOBS: '2'
-      CARGO_INCREMENTAL: '0'
-      CARGO_PROFILE_DEV_DEBUG: '0'
-      CARGO_PROFILE_TEST_DEBUG: '0'
-      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
-      CXX: clang++
-    steps:
-    - uses: actions/checkout@v7
-      with:
-        persist-credentials: false
-        ref: ba5def0ab46de9cab2d3542af573625761068512
-    - uses: actions/setup-python@v6
-      with:
-        python-version: '3.12'
-    - name: Prepare exact main-job paramsd prerequisites
-      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-
-        sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev
-
-        rustup toolchain install 1.94.0 --profile minimal --component clippy
-
-        python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 cffi==2.1.1 sympy==1.14.0 pyzmq==27.2.0
-        zstandard==0.25.0 requests==2.34.2 pyserial==3.5 pytest==9.0.2'
-    - name: Check atomic paramsd fixture input boundaries
-      run: python -P -m pytest -c /dev/null --noconftest -p no:cacheprovider -q rust/tools/tests/test_paramsd_atomic_gate.py
-    - uses: ./.github/actions/native-eigen
-      with:
-        architecture: x86_64
-    - uses: ./.github/actions/native-json11
-    - name: Build unchanged paramsd oracle and actual consumer
-      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
-
-        python rust/tools/build_paramsd_oracle.py --output "$RUNNER_TEMP/paramsd-oracle" --eigen-include "$PARAMSD_EIGEN_INCLUDE"
-
-        python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/estimation-params-binding"
-
-        cargo build --manifest-path rust/Cargo.toml -p openpilot-paramsd --bins --examples --locked
-
-        '
-    - name: Check native paramsd atomic gate foundation alongside original cases
-      run: 'set -euo pipefail
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features paramsd-startup-gate-native
-        --test paramsd_startup_gate
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features paramsd-startup-gate-native
-        --lib --test paramsd_startup_gate -- -D warnings
-
-        '
-    - name: Require native paramsd scoped child-FD handoff
-      run: 'set -euo pipefail
-
-        proof="$RUNNER_TEMP/estimation/paramsd/native-gate"
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
-
-        mkdir -p "$proof"
-
-        export PARAMSD_NATIVE_GATE_DAEMON="$GITHUB_WORKSPACE/rust/target/debug/openpilot-paramsd"
-
-        export PARAMSD_NATIVE_GATE_LIBRARY="$proof/startup-phase.so"
-
-        export PARAMSD_NATIVE_GATE_CAR_PARAMS="$proof/CarParams.bin"
-
-        export PARAMSD_NATIVE_GATE_EVIDENCE="$proof/native"
-
-        python -c ''import sys; from paramsd_fixture import car_params; sys.stdout.buffer.write(bytes(car_params()))'' > "$PARAMSD_NATIVE_GATE_CAR_PARAMS"
-
-        clang -std=c11 -O2 -shared -fPIC -Wall -Wextra -Werror rust/tools/paramsd_startup_phase.c -ldl -o "$PARAMSD_NATIVE_GATE_LIBRARY"
-        > "$proof/phase-build.log" 2>&1
-
-        sha256sum rust/tools/paramsd_startup_phase.c rust/tools/paramsd_fixture.py "$PARAMSD_NATIVE_GATE_DAEMON" "$PARAMSD_NATIVE_GATE_LIBRARY"
-        "$PARAMSD_NATIVE_GATE_CAR_PARAMS" > "$proof/artifacts.sha256"
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-startup-gate-native --test paramsd_startup_gate
-        --locked -- --ignored --exact native_mapped_gate_holds_actual_paramsd_second_poll_and_shutdown --nocapture
-
-        sha256sum -c "$proof/artifacts.sha256"
-
-        '
-    - name: Capture unchanged original continuous and restart input/source
-      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
-
-        python rust/tools/check_paramsd_daemon.py --oracle "$RUNNER_TEMP/paramsd-oracle" --target "$PWD/rust/target" --evidence
-        "$RUNNER_TEMP/estimation/paramsd/daemon"
-
-        '
-    - name: Compare full native paramsd controller against original source packets
-      run: 'set -euo pipefail
-
-        proof="$RUNNER_TEMP/estimation/paramsd/native-controller-proof"
-
-        export PARAMSD_ORIGINAL_OUTPUT="$RUNNER_TEMP/estimation/paramsd/daemon"
-
-        export PARAMSD_NATIVE_OUTPUT="$proof/native"
-
-        export PARAMSD_NATIVE_DAEMON="$GITHUB_WORKSPACE/rust/target/debug/openpilot-paramsd"
-
-        export PARAMSD_NATIVE_HOOK="$PARAMSD_ORIGINAL_OUTPUT/continuous/startup-phase.so"
-
-        checker="$GITHUB_WORKSPACE/rust/target/debug/check-paramsd-daemon-native"
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-daemon-native --bin check-paramsd-daemon-native
-        --locked
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-daemon-native --test paramsd_daemon_check
-        --locked
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
-
-        mkdir -p "$proof"
-
-        git rev-parse HEAD > "$proof/SOURCE_COMMIT"
-
-        sha256sum "$checker" "$PARAMSD_NATIVE_DAEMON" "$PARAMSD_NATIVE_HOOK" "$PARAMSD_ORIGINAL_OUTPUT/continuous/input.json"
-        "$PARAMSD_ORIGINAL_OUTPUT/restart/input.json" "$PARAMSD_ORIGINAL_OUTPUT/continuous/source.json" "$PARAMSD_ORIGINAL_OUTPUT/restart/source.json"
-        rust/tools/check_paramsd_daemon.py rust/tools/paramsd_fixture.py rust/tools/paramsd_startup_phase.c > "$proof/inputs.sha256"
-
-        /usr/bin/timeout --signal=TERM --kill-after=5s 180s "$checker" --daemon "$PARAMSD_NATIVE_DAEMON" --library "$PARAMSD_NATIVE_HOOK"
-        --continuous-input "$PARAMSD_ORIGINAL_OUTPUT/continuous/input.json" --restart-input "$PARAMSD_ORIGINAL_OUTPUT/restart/input.json"
-        --evidence "$PARAMSD_NATIVE_OUTPUT" > "$proof/native.stdout" 2> "$proof/native.stderr"
-
-        sha256sum -c "$proof/inputs.sha256"
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-daemon-native --test paramsd_daemon_reference
-        --locked -- --nocapture
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-daemon-native --bin check-paramsd-daemon-native
-        --test paramsd_daemon_check --test paramsd_daemon_reference --locked -- -D warnings
-
-        sha256sum -c "$proof/inputs.sha256"
-
-        '
-    - if: always()
-      uses: actions/upload-artifact@v6
-      with:
-        name: paramsd-full-controller-evidence
-        path: ${{ runner.temp }}/estimation/paramsd/
-        if-no-files-found: warn
   soundd:
     name: Soundd actual same-ELF original present absent proof
     runs-on: ubuntu-24.04
@@ -182,7 +24,7 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: ba5def0ab46de9cab2d3542af573625761068512
+        ref: f19ef5ad4cb56b9a7bace81fdeb34b6325e704eb
     - uses: actions/setup-python@v6
       with:
         python-version: '3.12'
@@ -194,6 +36,49 @@ jobs:
         rustup toolchain install 1.94.0 --profile minimal --component clippy
 
         python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0'
+    - name: Require old exact JSON median behavioral failure
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/sensor-audio/float-roundtrip-434"
+
+        baseline="$RUNNER_TEMP/soundd434-baseline"
+
+        export CARGO_TARGET_DIR="$GITHUB_WORKSPACE/rust/target"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        mkdir -p "$proof"
+
+        git fetch --no-tags --depth=1 origin cb3b38b516b06e1be79f0d76f8fe385327f30a61
+
+        GIT_LFS_SKIP_SMUDGE=1 git worktree add --detach "$baseline" cb3b38b516b06e1be79f0d76f8fe385327f30a61
+
+        git -C "$baseline" rev-parse HEAD > "$proof/BASELINE_SOURCE_COMMIT"
+
+        git -C "$baseline" diff a9933ed72fc1ca8c91cf5728d0345f1e4181104d -- rust/crates/dev-tools/tests/soundd_daemon_retirement.rs
+        > "$proof/regression-only.patch"
+
+        git -C "$baseline" diff --exit-code a9933ed72fc1ca8c91cf5728d0345f1e4181104d -- rust/crates/dev-tools/Cargo.toml rust/crates/dev-tools/src/soundd_daemon_check
+
+        set +e
+
+        cargo test --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-dev-tools --features soundd-daemon-native --config
+        profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --test soundd_daemon_retirement
+        --locked -- original_inactive_poll_and_summary_keep_python_median_bits --exact --nocapture 2>&1 | tee "$proof/baseline.log"
+
+        status=${PIPESTATUS[0]}
+
+        set -e
+
+        test "$status" -eq 101
+
+        grep -F ''original summary decimal lost Python f64 bits'' "$proof/baseline.log"
+
+        grep -F ''test result: FAILED. 0 passed; 1 failed;'' "$proof/baseline.log"
+
+        git worktree remove --force "$baseline"
+
+        '
     - name: Configure original sensor and audio IPC imports
       run: printf 'PYTHONPATH=%s/sensor-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
     - name: Build original IPC and actual soundd artifacts
@@ -234,9 +119,10 @@ jobs:
         \ SOUNDD_NATIVE_PRESENT_EXEC=\"$proof/present.exec\"\nexport SOUNDD_NATIVE_ABSENT_EXEC=\"$proof/absent.exec\"\n\"\
         $GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 128\nmkdir -p \"$proof\"\
         \ngit rev-parse HEAD > \"$proof/SOURCE_COMMIT\"\nsha256sum \"$SOUNDD_DAEMON_BINARY\" \"$SOUNDD_DAEMON_WORKER_BINARY\"\
-        \ \"$SOUNDD_FIXTURE_ASSETS_BINARY\" \"$SOUNDD_PORTAUDIO_LIBRARY\" > \"$proof/executables.sha256\"\n# Stage only the\
-        \ exact retained source identities; do not copy the retired checker.\npython - <<'STAGE'\nimport hashlib, json, os\n\
-        from pathlib import Path\nroot = Path(os.environ['SOUNDD_NATIVE_PRESENT_ROOT'])\nabsent = Path(os.environ['SOUNDD_NATIVE_ABSENT_ROOT'])\n\
+        \ \"$SOUNDD_FIXTURE_ASSETS_BINARY\" \"$SOUNDD_PORTAUDIO_LIBRARY\" > \"$proof/executables.sha256\"\nfind \"$SOUNDD_ORIGINAL_OUTPUT\"\
+        \ -type f -print0 | sort -z | xargs -0 sha256sum > \"$proof/original-output.sha256\"\n# Stage only the exact retained\
+        \ source identities; do not copy the retired checker.\npython - <<'STAGE'\nimport hashlib, json, os\nfrom pathlib\
+        \ import Path\nroot = Path(os.environ['SOUNDD_NATIVE_PRESENT_ROOT'])\nabsent = Path(os.environ['SOUNDD_NATIVE_ABSENT_ROOT'])\n\
         pins = json.loads((root / 'rust/crates/dev-tools/tests/fixtures/soundd-daemon/manifest.json').read_text())['source_sha256']\n\
         assert len(pins) == 21\nfor name, digest in pins.items():\n  data = (root / name).read_bytes()\n  assert hashlib.sha256(data).hexdigest()\
         \ == digest, name\n  if name != 'rust/tools/check_soundd_daemon.py':\n    path = absent / name\n    path.parent.mkdir(parents=True,\
@@ -247,10 +133,10 @@ jobs:
         \ --signal=TERM --kill-after=5s 180s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o \"${!exec_var}\"\
         \ \"$SOUNDD_DAEMON_WORKER_BINARY\" --binary \"$SOUNDD_DAEMON_BINARY\" --output \"${!output_var}\" --fixture-assets-binary\
         \ \"$SOUNDD_FIXTURE_ASSETS_BINARY\" --portaudio-library \"$SOUNDD_PORTAUDIO_LIBRARY\" > \"$proof/$lane.stdout\" 2>\
-        \ \"$proof/$lane.stderr\"\ndone\nsha256sum -c \"$proof/executables.sha256\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
-        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
-        \ --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3\
-        \ --test soundd_daemon_retirement --locked -- --nocapture\n"
+        \ \"$proof/$lane.stderr\"\ndone\nsha256sum -c \"$proof/executables.sha256\"\nsha256sum -c \"$proof/original-output.sha256\"\
+        \n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo test --manifest-path\
+        \ rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3\
+        \ --config profile.dev.package.sha2.opt-level=3 --test soundd_daemon_retirement --locked -- --nocapture\n"
     - name: Strict Clippy of retirement reference
       run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
 
@@ -279,9 +165,9 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: ba5def0ab46de9cab2d3542af573625761068512
+        ref: f19ef5ad4cb56b9a7bace81fdeb34b6325e704eb
     - name: Require exact Bluetooth candidate source
-      run: 'test "$(git rev-parse HEAD)" = ba5def0ab46de9cab2d3542af573625761068512
+      run: 'test "$(git rev-parse HEAD)" = f19ef5ad4cb56b9a7bace81fdeb34b6325e704eb
 
         test -z "$(git status --porcelain)"'
     - uses: actions/setup-python@v6
@@ -590,13 +476,39 @@ jobs:
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
 
         cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-journal-native --lib --test
-        bluetooth_journal_check --bin check-bluetooth-journal --locked -- -D warnings
+        bluetooth_journal_check --test bluetooth_journal_reference --bin check-bluetooth-journal --locked -- -D warnings
 
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
 
         rust/target/debug/check-bluetooth-journal --binary "$BLUETOOTH_JOURNAL_FIXTURE" --output "$RUNNER_TEMP/ui-connectivity/bluetooth-journal-current"
 
         '
+    - name: Require Bluetooth journal same-ELF source absence proof
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/ui-connectivity/bluetooth-journal-retirement\"\nexport BLUETOOTH_JOURNAL_ORIGINAL_OUTPUT=\"\
+        $proof/original\"\nexport BLUETOOTH_JOURNAL_PRESENT_OUTPUT=\"$proof/present\"\nexport BLUETOOTH_JOURNAL_ABSENT_OUTPUT=\"\
+        $proof/absent\"\nexport BLUETOOTH_JOURNAL_PRESENT_ROOT=\"$GITHUB_WORKSPACE\"\nexport BLUETOOTH_JOURNAL_ABSENCE_ROOT=\"\
+        $proof/absent-root\"\nexport BLUETOOTH_JOURNAL_CHECKER=\"$GITHUB_WORKSPACE/rust/target/debug/check-bluetooth-journal\"\
+        \nexport BLUETOOTH_JOURNAL_PRESENT_EXEC=\"$proof/present.exec\"\nexport BLUETOOTH_JOURNAL_ABSENT_EXEC=\"$proof/absent.exec\"\
+        \nexport BLUETOOTH_JOURNAL_ARTIFACTS_BEFORE=\"$proof/before.json\"\nexport BLUETOOTH_JOURNAL_ARTIFACTS_AFTER=\"$proof/after.json\"\
+        \n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 128\nmkdir -p \"$proof/absent-root/rust/tools\"\
+        \ngit rev-parse HEAD > \"$proof/SOURCE_COMMIT\"\nseal_artifacts() {\n  printf '{\"%s\":\"%s\",\"%s\":\"%s\"}\\n' \"\
+        $BLUETOOTH_JOURNAL_CHECKER\" \"$(sha256sum \"$BLUETOOTH_JOURNAL_CHECKER\" | cut -d ' ' -f1)\" \"$BLUETOOTH_JOURNAL_FIXTURE\"\
+        \ \"$(sha256sum \"$BLUETOOTH_JOURNAL_FIXTURE\" | cut -d ' ' -f1)\"\n}\nseal_artifacts > \"$BLUETOOTH_JOURNAL_ARTIFACTS_BEFORE\"\
+        \nsha256sum rust/tools/check_bluetooth_journal.py openpilot/selfdrive/carrot/bluetooth/model.py rust/crates/bluetooth/examples/journal_fixture.rs\
+        \ > \"$proof/source.sha256\"\nfor source in openpilot/selfdrive/carrot/bluetooth/model.py rust/crates/bluetooth/examples/journal_fixture.rs;\
+        \ do\n  cp --parents -- \"$source\" \"$BLUETOOTH_JOURNAL_ABSENCE_ROOT\"\n  cmp \"$source\" \"$BLUETOOTH_JOURNAL_ABSENCE_ROOT/$source\"\
+        \ndone\ntest ! -e \"$BLUETOOTH_JOURNAL_ABSENCE_ROOT/rust/tools/check_bluetooth_journal.py\"\ntest ! -L \"$BLUETOOTH_JOURNAL_ABSENCE_ROOT/rust/tools/check_bluetooth_journal.py\"\
+        \ntimeout --kill-after=5s 45s python rust/tools/check_bluetooth_journal.py --binary \"$BLUETOOTH_JOURNAL_FIXTURE\"\
+        \ --output \"$BLUETOOTH_JOURNAL_ORIGINAL_OUTPUT\" > \"$proof/original.stdout\" 2> \"$proof/original.stderr\"\nfind\
+        \ \"$BLUETOOTH_JOURNAL_ORIGINAL_OUTPUT\" -type f -print0 | sort -z | xargs -0 sha256sum > \"$proof/original-output.sha256\"\
+        \nfor lane in PRESENT ABSENT; do\n  if [ \"$lane\" = PRESENT ]; then root=\"$BLUETOOTH_JOURNAL_PRESENT_ROOT\"; else\
+        \ root=\"$BLUETOOTH_JOURNAL_ABSENCE_ROOT\"; fi\n  output_var=\"BLUETOOTH_JOURNAL_${lane}_OUTPUT\"\n  exec_var=\"BLUETOOTH_JOURNAL_${lane}_EXEC\"\
+        \n  OPENPILOT_RUST_ROOT=\"$root\" PATH=/nonexistent /usr/bin/timeout --signal=TERM --kill-after=5s 45s /usr/bin/strace\
+        \ -f -qq -s 65535 -e trace=execve,execveat -o \"${!exec_var}\" \"$BLUETOOTH_JOURNAL_CHECKER\" --binary \"$BLUETOOTH_JOURNAL_FIXTURE\"\
+        \ --output \"${!output_var}\" > \"$proof/$lane.stdout\" 2> \"$proof/$lane.stderr\"\ndone\nseal_artifacts > \"$BLUETOOTH_JOURNAL_ARTIFACTS_AFTER\"\
+        \nsha256sum -c \"$proof/source.sha256\"\nsha256sum -c \"$proof/original-output.sha256\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
+        \ --features bluetooth-journal-native --test bluetooth_journal_reference --locked -- --nocapture\n"
     - name: Check native Bluetooth input decoder against original records
       run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
 
@@ -642,7 +554,7 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: ba5def0ab46de9cab2d3542af573625761068512
+        ref: f19ef5ad4cb56b9a7bace81fdeb34b6325e704eb
     - name: Install source check toolchain
       run: rustup toolchain install 1.94.0 --profile minimal
     - name: Require changed native CI source contracts
@@ -652,47 +564,3 @@ jobs:
         --test lagd_ci -- --nocapture
 
         '
-  jetlink:
-    name: Jetlink exact old RED and current GREEN parser
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    env:
-      CARGO_BUILD_JOBS: '2'
-      CARGO_INCREMENTAL: '0'
-      CARGO_PROFILE_DEV_DEBUG: '0'
-      CARGO_PROFILE_TEST_DEBUG: '0'
-    defaults:
-      run:
-        working-directory: rust
-    steps:
-    - uses: actions/checkout@v7
-      with:
-        persist-credentials: false
-        ref: 18f4372d3e909d6b1dd9b79fb7f0e09b055315de
-    - name: Prepare Jetlink toolchain
-      run: 'sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev
-
-        rustup toolchain install 1.94.0 --profile minimal --component clippy
-
-        '
-    - name: Require Jetlink owner baseline failures and bounded fixed lifecycle
-      run: "set -euo pipefail\nexport CARGO_TARGET_DIR=\"$GITHUB_WORKSPACE/rust/target\"\nexport JETLINK_OWNER_TEST_OUTPUT=\"\
-        $RUNNER_TEMP/jetlink-owner\"\nbaseline=\"$RUNNER_TEMP/jetlink399-baseline\"\nmkdir -p \"$JETLINK_OWNER_TEST_OUTPUT\"\
-        \n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024\ngit fetch --no-tags\
-        \ --depth=1 origin 11f3dec411662baa961733b363c0b38d7082fcfa\ngit worktree add --detach \"$baseline\" 11f3dec411662baa961733b363c0b38d7082fcfa\n\
-        cp crates/jetlink/tests/owner_lifecycle.rs \"$baseline/rust/crates/jetlink/tests/\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
-        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 2048\nset +e\ncargo test --manifest-path \"$baseline/rust/Cargo.toml\"\
-        \ -p openpilot-jetlink --test owner_lifecycle --locked -- --nocapture 2>&1 | tee \"$JETLINK_OWNER_TEST_OUTPUT/baseline.log\"\
-        \nstatus=${PIPESTATUS[0]}\nset -e\ntest \"$status\" -eq 101\nfor case in failed_connect_preserves_foreign_listener\
-        \ failed_bind_preserves_foreign_listener ready_owner_cleanup_preserves_a_replacement_listener full_stderr_cannot_extend_failed_stop\
-        \ full_stderr_cannot_extend_drop; do\n  grep -Fx \"    $case\" \"$JETLINK_OWNER_TEST_OUTPUT/baseline.log\"\ndone\n\
-        grep -F 'test result: FAILED. 1 passed; 5 failed; 1 ignored; 0 measured; 0 filtered out;' \"$JETLINK_OWNER_TEST_OUTPUT/baseline.log\"\
-        \n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo test -p openpilot-jetlink\
-        \ --test owner_lifecycle --locked -- --nocapture\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\"\
-        \ --growth-mib 512\ncargo build -p openpilot-jetlink --bins --examples --locked\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
-        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo clippy -p openpilot-jetlink --all-targets --locked -- -D warnings\n"
-    - if: always()
-      uses: actions/upload-artifact@v6
-      with:
-        name: jetlink-owner-focused-evidence
-        path: ${{ runner.temp }}/jetlink-owner/
