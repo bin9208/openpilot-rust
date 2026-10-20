@@ -229,3 +229,32 @@ This is a repository rollback. Packages already installed on bin-actions,
 including FFmpeg 8.0.1, are not uninstalled or downgraded. No further CI is
 dispatched for the rollback; syntax and diff checks are sufficient for these
 configuration reversions and avoid the outstanding runner disk-capacity block.
+
+## Recreated Ubuntu 24.04 runner validation (2026-10-20 KST)
+
+The user recreated bin-actions on Ubuntu 24.04.5 LTS (runner ID 22) and
+installed the bootstrap prerequisites. The initial check found missing tools;
+after provisioning, the runner's service environment exposed all required
+executables, including Rustup/Cargo. Noninteractive sudo and writable tool
+cache checks passed. The successful readiness check reported 52 GiB free.
+
+Validated source: `5fc59afc890f552151f7ca8ae8f6a4589caaa679` (FFmpeg 8
+support already reverted).
+
+| Check | Result | Actions evidence |
+| --- | --- | --- |
+| Runner readiness | Success | [39414713489, attempt 2](https://github.com/bin9208/openpilot-rust/actions/runs/39414713489/attempts/2) |
+| FFmpeg 6.1.1/native dependency resolution | APT simulation passed; package version 7:6.1.1-3ubuntu5 | Same readiness run |
+| Runtime-core integration tests | 41 passed, zero failed; one ignored library test | Same readiness run |
+| Fast checks | Success, including CI policies, navigation, Wiki, Jetlink Python/protocol and Android core/runtime tests | [39415278500](https://github.com/bin9208/openpilot-rust/actions/runs/39415278500) |
+
+The APT simulation proves package resolution, not actual native video-library
+installation or execution. Full media/source-oracle, ARM and AGNOS package
+builds were not run after the Ubuntu 24.04 recreation. PR #406 remains closed
+and unmerged. No dev-md/dev/main integration, release publication or device
+deployment was performed. The earlier Ubuntu 26.04 findings above are historical.
+
+On the user's request, record these completed results and push the task
+branch. This documentation-only commit skips CI to avoid repeating successful
+unchanged checks. The original checkout's unrelated uncommitted Athena source
+and Cargo dependency changes are preserved outside this task commit.
