@@ -71,7 +71,7 @@ jobs:
           sealed(accepted / "instrumented.objbin", accepted_hash)
           assert receipt["instrumented_ir_sha256"] == digest(ir)
           assert receipt["instrumented_object_sha256"] == accepted_hash
-          assert receipt["instrumented_output_sha256"] == "7307a9b9129f7650c5793a6098dfb30f1830699e24f7a94c3936d6c9b57ee5"
+          assert receipt["instrumented_output_sha256"] == "7307a9b9129f7650c5793a6098dfb30f1830699e24f7a94c3936d6d6c9b57ee5"
           from tinygrad.runtime.support.compiler_cpu import CPULLVMCompiler, LLVMCompiler, llvm
           host_cpu = ctypes.string_at(llvm.LLVMGetHostCPUName()).decode()
           host_features = ctypes.string_at(llvm.LLVMGetHostCPUFeatures()).decode()
