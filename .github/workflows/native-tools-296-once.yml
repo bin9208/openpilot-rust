@@ -1,4 +1,4 @@
-# One-off affected-area validation; not a replacement for PR exact-SHA CI.
+# Focused affected-source validation; final PR exact-SHA CI is still required.
 name: Native tools 296 candidate checks
 on:
   push:
@@ -9,210 +9,6 @@ permissions:
 env:
   RUSTUP_TOOLCHAIN: '1.94.0'
 jobs:
-  startup-services:
-    name: rust startup services
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    env:
-      CARGO_BUILD_JOBS: '2'
-      CARGO_INCREMENTAL: '0'
-      CARGO_PROFILE_DEV_DEBUG: '0'
-      CARGO_PROFILE_TEST_DEBUG: '0'
-      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
-    steps:
-    - uses: actions/checkout@v7
-      with:
-        persist-credentials: false
-        ref: 0d1700e5a3ad0181ecfdd7f7f25e4fc9d088e1d2
-    - name: Require exact candidate source
-      run: 'set -euo pipefail
-
-        test "$(git rev-parse HEAD)" = 0d1700e5a3ad0181ecfdd7f7f25e4fc9d088e1d2
-
-        test -z "$(git status --porcelain)"
-
-        '
-    - uses: actions/setup-python@v6
-      with:
-        python-version: '3.12'
-    - run: rustup toolchain install 1.94.0 --profile minimal
-    - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev openssl iproute2 strace
-    - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0
-        requests==2.34.2 pyserial==3.5 PyJWT==2.14.0 cryptography==50.0.1 pytest==9.0.2
-    - name: Configure original startup service IPC imports
-      run: printf 'PYTHONPATH=%s/services-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
-    - run: python -m pip install pycryptodome==3.23.0
-    - run: python -m pip install comma-deps-raylib==6.0.0.1.post103 Pillow==12.3.0 python-xlib==0.33 setproctitle==1.3.7 psutil==7.2.2
-    - name: Stage pinned native startup renderer
-      run: 'sudo apt-get install -y libgl-dev libx11-dev libxrandr2 libxinerama1 libxcursor1 libxi6 xvfb xauth
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-
-        cargo +1.94.0 run --manifest-path "$GITHUB_WORKSPACE/rust/Cargo.toml" -p openpilot-dev-tools --locked --bin stage-startup-ui-raylib
-        -- --arch x86_64 --output "$RUNNER_TEMP/startup-raylib-host" --shared
-
-        printf ''STARTUP_UI_RAYLIB_ROOT=%s/startup-raylib-host\nSTARTUP_UI_RAYLIB_LIBRARY=%s/startup-raylib-host/lib/libopenpilot-raylib.so\n''
-        "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
-
-        '
-    - name: Build native startup service boundaries
-      run: cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools -p openpilot-lpa -p openpilot-bridge -p openpilot-agnos
-        -p openpilot-updated -p openpilot-startup-ui -p openpilot-process-supervision --bins --examples --locked
-    - name: Verify updater command and checker process ownership
-      env:
-        UPDATED_OWNER_LAUNCHER: ${{ github.workspace }}/rust/target/debug/openpilot-process-child
-      run: 'rustup component add clippy --toolchain 1.94.0
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-updated --features command-owner-tests --test command_owner
-        --locked
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --lib updated_process_check::ownership_tests --locked
-        -- --test-threads=1
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-updated --features command-owner-tests --lib --test command_owner
-        --locked -- -D warnings
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --lib --test updated_process_check --bin check-updated-process
-        --bin updated-process-fixture --locked -- -D warnings
-
-        '
-    - name: Build current native dependency stager
-      uses: ./.github/actions/native-json11
-    - name: Build original IPC binding and messaging bridge
-      run: 'python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/services-msgq-python"
-
-        rust/target/debug/build-bridge-source --root "$GITHUB_WORKSPACE" --output "$RUNNER_TEMP/services-bridge-source"
-
-        python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/services-params-binding"
-
-        '
-    - name: Compare LPA serial, TLS, profile and notification lifecycle
-      run: python rust/tools/check_lpa.py --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/startup-services/lpa"
-    - name: Require native bridge controller against sealed original observations
-      run: '# The namespace controller runs as root; keep its private 0600 reports
-
-        # readable by the runner for the paired check and failure artifacts.
-
-        set -euo pipefail
-
-        test ! -e rust/tools/check_bridge.py
-
-        test ! -L rust/tools/check_bridge.py
-
-        trap ''for path in "$RUNNER_TEMP/startup-services/bridge-native-controller" "$RUNNER_TEMP/startup-services/bridge-absence-proof";
-        do if [ -d "$path" ]; then sudo chown -R "$(id -u):$(id -g)" "$path"; fi; done'' EXIT
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-
-        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bridge-tools-native --bin check-bridge
-        --locked
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bridge-tools-native --test bridge_check
-        --locked
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bridge-tools-native --lib bridge_check::
-        --locked
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bridge-tools-native --lib --bin check-bridge
-        --test bridge_check --test bridge_controller_reference --locked -- -D warnings
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
-
-        proof="$RUNNER_TEMP/startup-services/bridge-absence-proof"
-
-        checker="$GITHUB_WORKSPACE/rust/target/debug/check-bridge"
-
-        original="$RUNNER_TEMP/services-bridge-source/bridge-original"
-
-        native="$GITHUB_WORKSPACE/rust/target/debug/bridge"
-
-        mkdir -p "$proof/native-root/rust/tools" "$proof/native-path"
-
-        ln -s "$(command -v unshare)" "$proof/native-path/unshare"
-
-        ln -s "$(command -v ip)" "$proof/native-path/ip"
-
-        printf ''%s\n'' "$checker" > "$proof/checker.path"
-
-        printf ''%s\n'' "$original" > "$proof/original.path"
-
-        printf ''%s\n'' "$native" > "$proof/native.path"
-
-        printf ''%s\n'' "$proof/native-path/unshare" > "$proof/unshare.path"
-
-        printf ''%s\n'' "$proof/native-path/ip" > "$proof/ip.path"
-
-        sha256sum "$checker" "$original" "$native" "$proof/native-path/unshare" "$proof/native-path/ip" > "$proof/artifacts.sha256"
-
-        sudo -E "$PWD/rust/target/debug/check-bridge" --original "$RUNNER_TEMP/services-bridge-source/bridge-original" --binary
-        "$PWD/rust/target/debug/bridge" --output "$RUNNER_TEMP/startup-services/bridge-native-controller"
-
-        sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/startup-services/bridge-native-controller"
-
-        export BRIDGE_NATIVE_CONTROLLER_REPORT="$RUNNER_TEMP/startup-services/bridge-native-controller/result.json"
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
-
-        sudo -E env "OPENPILOT_RUST_ROOT=$proof/native-root" "PATH=$proof/native-path" /usr/bin/timeout --signal=TERM --kill-after=5s
-        300s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "$proof/native.exec" "$checker" --original "$original"
-        --binary "$native" --output "$proof/absent" > "$proof/native.stdout" 2> "$proof/native.stderr"
-
-        sudo chown -R "$(id -u):$(id -g)" "$proof"
-
-        diff "$RUNNER_TEMP/startup-services/bridge-native-controller/result.json" "$proof/absent/result.json"
-
-        sha256sum -c "$proof/artifacts.sha256"
-
-        export BRIDGE_ABSENCE_PROOF="$proof"
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bridge-tools-native --test bridge_controller_reference
-        --locked
-
-        '
-    - name: Compare AGNOS images, retry policy, casync and actual CLI
-      run: python rust/tools/check_agnos.py --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/startup-services/agnos"
-    - name: Compare updater Git lifecycle, native signals and background AGNOS adapter
-      run: 'PYTHONPATH="$PWD/rust/tools:$PYTHONPATH" python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=rust/tools/tests
-        rust/tools/tests/test_updated_comparison.py -q
-
-        python rust/tools/check_updated.py --binary "$PWD/rust/target/debug/examples/updated_trace" --launcher "$PWD/rust/target/debug/openpilot-process-child"
-        --binding "$RUNNER_TEMP"/services-params-binding/params_pyx*.so --output "$RUNNER_TEMP/startup-services/updated-source"
-
-        "$PWD/rust/target/debug/check-updated-process" --binary "$PWD/rust/target/debug/examples/updated_command" --launcher
-        "$PWD/rust/target/debug/openpilot-process-child" --fixture "$PWD/rust/target/debug/updated-process-fixture" --baseline
-        "$PWD/rust/crates/dev-tools/tests/fixtures/updated-process/original.json" --output "$RUNNER_TEMP/startup-services/updated-process"
-
-        python rust/tools/check_updated_daemon.py --binary "$PWD/rust/target/debug/openpilot-updated" --launcher "$PWD/rust/target/debug/openpilot-process-child"
-        --output "$RUNNER_TEMP/startup-services/updated-daemon"
-
-        python rust/tools/check_updated_agnos.py --target "$PWD/rust/target" --output "$RUNNER_TEMP/startup-services/updated-agnos"
-
-        '
-    - name: Compare actual startup UI rendering, input and child lifecycle
-      run: xvfb-run -a -s '-screen 0 2400x1400x24 -nolisten tcp' python rust/tools/check_startup_ui.py --target "$PWD/rust/target/debug"
-        --output "$RUNNER_TEMP/startup-services/ui"
-    - name: Retain startup service comparison evidence
-      if: always()
-      uses: actions/upload-artifact@v6
-      with:
-        name: rust-startup-services-evidence
-        path: ${{ runner.temp }}/startup-services/
   sensor-audio:
     name: rust sensor and audio runtime
     runs-on: ubuntu-24.04
@@ -224,11 +20,11 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: 0d1700e5a3ad0181ecfdd7f7f25e4fc9d088e1d2
+        ref: a0690dd94924996f2bc1c7da7a5dde964bf7fce3
     - name: Require exact candidate source
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = 0d1700e5a3ad0181ecfdd7f7f25e4fc9d088e1d2
+        test "$(git rev-parse HEAD)" = a0690dd94924996f2bc1c7da7a5dde964bf7fce3
 
         test -z "$(git status --porcelain)"
 
@@ -289,39 +85,111 @@ jobs:
 
         '
     - name: Build and validate native sound daemon controller
-      run: 'export SOUNDD_DAEMON_BINARY="$PWD/rust/target/debug/openpilot-soundd"
+      run: "set -euo pipefail\nexport SOUNDD_DAEMON_BINARY=\"$PWD/rust/target/debug/openpilot-soundd\"\nexport SOUNDD_DAEMON_WORKER_BINARY=\"\
+        $PWD/rust/target/debug/check-soundd-daemon\"\nexport SOUNDD_FIXTURE_ASSETS_BINARY=\"$PWD/rust/target/debug/create-soundd-fixture-assets\"\
+        \nexport SOUNDD_PORTAUDIO_LIBRARY=\"$RUNNER_TEMP/owned-soundd-portaudio.so\"\nexport SOUNDD_DAEMON_TEST_OUTPUT=\"\
+        $RUNNER_TEMP/sensor-audio/soundd-native-tests\"\nfor name in SOUNDD_DAEMON_BINARY SOUNDD_DAEMON_WORKER_BINARY SOUNDD_FIXTURE_ASSETS_BINARY\
+        \ SOUNDD_PORTAUDIO_LIBRARY SOUNDD_DAEMON_TEST_OUTPUT; do\n  printf '%s=%s\\n' \"$name\" \"${!name}\" >> \"$GITHUB_ENV\"\
+        \ndone\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo build\
+        \ --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3\
+        \ --config profile.dev.package.sha2.opt-level=3 --bin check-soundd-daemon --locked\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 64\ncc -std=c11 -shared -fPIC -pthread -Wall -Wextra -Werror rust/tools/fixtures/soundd/portaudio.c\
+        \ -o \"$SOUNDD_PORTAUDIO_LIBRARY\"\n"
+    - name: Require audio finalization baseline rejection
+      run: 'set -euo pipefail
 
-        export SOUNDD_DAEMON_WORKER_BINARY="$PWD/rust/target/debug/check-soundd-daemon"
+        proof="$RUNNER_TEMP/sensor-audio/finalization-433"
 
-        export SOUNDD_FIXTURE_ASSETS_BINARY="$PWD/rust/target/debug/create-soundd-fixture-assets"
+        baseline="$RUNNER_TEMP/soundd433-baseline"
 
-        export SOUNDD_PORTAUDIO_LIBRARY="$RUNNER_TEMP/owned-soundd-portaudio.so"
+        target="$RUNNER_TEMP/soundd433-target"
 
-        export SOUNDD_DAEMON_TEST_OUTPUT="$RUNNER_TEMP/sensor-audio/soundd-native-tests"
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        mkdir -p "$proof"
+
+        git fetch --no-tags origin 2d8d027932dc880bd0acd00288b256ac8d7f1b89
+
+        GIT_LFS_SKIP_SMUDGE=1 git worktree add --detach "$baseline" 2d8d027932dc880bd0acd00288b256ac8d7f1b89
+
+        git -C "$baseline" rev-parse HEAD > "$proof/baseline.SOURCE_COMMIT"
+
+        current_worker=rust/crates/dev-tools/src/soundd_daemon_check/worker.rs
+
+        old_worker="$baseline/$current_worker"
+
+        sha256sum "$old_worker" > "$proof/baseline-original-source.sha256"
+
+        printf ''\n#[cfg(test)]\nmod finalization_433_red_tests {\nuse super::*;\n'' >> "$old_worker"
+
+        sed -n ''/^    fn published_private_bounded_case()/,$p'' "$current_worker" | sed ''$d'' >> "$old_worker"
+
+        printf ''\n}\n'' >> "$old_worker"
+
+        git -C "$baseline" diff -- "$current_worker" > "$proof/regression-only.patch"
+
+        sha256sum "$current_worker" "$old_worker" > "$proof/test-inputs.sha256"
+
+        CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_TARGET_DIR="$target" cargo build --manifest-path
+        "$baseline/rust/Cargo.toml" -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3
+        --config profile.dev.package.sha2.opt-level=3 --bin check-soundd-daemon --locked 2>&1 | tee "$proof/baseline-build.log"
+
+        old_binary="$target/debug/check-soundd-daemon"
+
+        cp "$old_binary" "$proof/baseline-worker"
+
+        sha256sum "$old_binary" "$proof/baseline-worker" > "$proof/baseline-worker.sha256"
 
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
 
-        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --bin check-soundd-daemon
-        --locked
+        CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_TARGET_DIR="$target" cargo test --manifest-path
+        "$baseline/rust/Cargo.toml" -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3
+        --config profile.dev.package.sha2.opt-level=3 --lib --no-run --locked
 
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 64
+        set +e
 
-        cc -std=c11 -shared -fPIC -pthread -Wall -Wextra -Werror rust/tools/fixtures/soundd/portaudio.c -o "$SOUNDD_PORTAUDIO_LIBRARY"
+        SOUNDD_DAEMON_WORKER_BINARY="$old_binary" CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0
+        CARGO_TARGET_DIR="$target" /usr/bin/timeout --signal=TERM --kill-after=5s 180s cargo test --manifest-path "$baseline/rust/Cargo.toml"
+        -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3
+        --lib --locked -- soundd_daemon_check::worker::finalization_433_red_tests::finalization_rechecks_private_source_and_daemon_after_actual_publication
+        --exact --nocapture 2>&1 | tee "$proof/baseline.log"
+
+        status=${PIPESTATUS[0]}
+
+        set -e
+
+        test "$status" -eq 101
+
+        rg -q ''test result: FAILED'' "$proof/baseline.log"
+
+        rg -q ''accepted changed source at finalization'' "$proof/baseline.log"
+
+        sha256sum --check "$proof/test-inputs.sha256"
+
+        git worktree remove --force "$baseline"
+
+        rm -rf "$target"
+
+        '
+    - name: Require native sound daemon finalization and process contracts
+      run: 'set -euo pipefail
 
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
 
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --test soundd_daemon_check
-        --test soundd_daemon_runtime --locked -- --test-threads=1
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3
+        --config profile.dev.package.sha2.opt-level=3 --lib soundd_daemon_check::worker::tests --locked -- --test-threads=1
 
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
 
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --lib soundd_daemon_check::worker::tests
-        --locked
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3
+        --config profile.dev.package.sha2.opt-level=3 --test soundd_daemon_check --test soundd_daemon_runtime --locked --
+        --test-threads=1
 
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
 
-        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --lib --bin check-soundd-daemon
-        --test soundd_daemon_check --test soundd_daemon_runtime --locked -- -D warnings
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3
+        --config profile.dev.package.sha2.opt-level=3 --lib --bin check-soundd-daemon --test soundd_daemon_check --test soundd_daemon_runtime
+        --locked -- -D warnings
 
         '
     - name: Compare alert samples and continuous native playback
@@ -383,11 +251,11 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: 0d1700e5a3ad0181ecfdd7f7f25e4fc9d088e1d2
+        ref: a0690dd94924996f2bc1c7da7a5dde964bf7fce3
     - name: Require exact candidate source
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = 0d1700e5a3ad0181ecfdd7f7f25e4fc9d088e1d2
+        test "$(git rev-parse HEAD)" = a0690dd94924996f2bc1c7da7a5dde964bf7fce3
 
         test -z "$(git status --porcelain)"
 
@@ -401,19 +269,11 @@ jobs:
         zstandard==0.25.0 requests==2.34.2 pyserial==3.5 pytest==9.0.2
     - name: Check atomic paramsd fixture input boundaries
       run: python -P -m pytest -c /dev/null --noconftest -p no:cacheprovider -q rust/tools/tests/test_paramsd_atomic_gate.py
-    - name: Install source-pinned Eigen headers
-      run: 'set -euo pipefail
-
-        mkdir -p "$RUNNER_TEMP/estimation/eigen"
-
-        python -m pip install ''git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen''
-        2>&1 | tee "$RUNNER_TEMP/estimation/eigen/original-install.log"
-
-        python -c ''import eigen; print("LOCATIOND_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR); print("PARAMSD_EIGEN_INCLUDE=" +
-        eigen.INCLUDE_DIR)'' >> "$GITHUB_ENV"
+    - name: Prepare native Eigen staging evidence
+      run: 'mkdir -p "$RUNNER_TEMP/estimation/eigen"
 
         '
-    - name: Compare native Eigen header staging with unchanged Python shim
+    - name: Require native Eigen header staging against sealed original install
       run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/estimation/eigen\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
         \ --path \"$GITHUB_WORKSPACE\" --growth-mib 256\nrustup component add clippy --toolchain 1.94.0\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
         \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
@@ -428,12 +288,27 @@ jobs:
         \ --growth-mib 512\ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features eigen-tools-native\
         \ --lib eigen_stage::tests\nfor item in x86_64:linux_x86_64 aarch64:linux_aarch64 macos-arm64:macosx_11_0_arm64; do\n\
         \  architecture=${item%%:*}\n  platform=${item#*:}\n  EIGEN_WHEEL=\"$proof/eigen-3.4.0-py3-none-$platform.whl\" EIGEN_ARCHITECTURE=\"\
-        $architecture\" EIGEN_ORIGINAL_INCLUDE=\"$LOCATIOND_EIGEN_INCLUDE\" EIGEN_NATIVE_INCLUDE=\"$proof/$architecture-native/install\"\
-        \ EIGEN_EVIDENCE=\"$proof/$architecture-comparison\" cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
-        \ --locked --features eigen-tools-native --test eigen_stage\ndone\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
-        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
-        \ --locked --features eigen-tools-native --lib --bin stage-eigen-headers --test eigen_stage -- -D warnings\nsha256sum\
-        \ --check \"$proof/stager.sha256\"\nsha256sum --check \"$proof/source.sha256\"\n"
+        $architecture\" EIGEN_NATIVE_INCLUDE=\"$proof/$architecture-native/install\" EIGEN_EVIDENCE=\"$proof/$architecture-comparison\"\
+        \ cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features eigen-tools-native --test\
+        \ eigen_stage\ndone\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 512\n\
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features eigen-tools-native --lib --bin\
+        \ stage-eigen-headers --test eigen_stage -- -D warnings\nsha256sum --check \"$proof/stager.sha256\"\nsha256sum --check\
+        \ \"$proof/source.sha256\"\nprintf 'LOCATIOND_EIGEN_INCLUDE=%s/x86_64-native/install\\nPARAMSD_EIGEN_INCLUDE=%s/x86_64-native/install\\\
+        n' \"$proof\" \"$proof\" >> \"$GITHUB_ENV\"\n"
+    - name: Check native paramsd atomic gate foundation alongside original cases
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features paramsd-startup-gate-native
+        --test paramsd_startup_gate
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features paramsd-startup-gate-native
+        --lib --test paramsd_startup_gate -- -D warnings
+
+        '
     - name: Build current native dependency stager
       uses: ./.github/actions/native-json11
     - name: Build native estimators and unchanged source oracle
@@ -596,11 +471,11 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: 0d1700e5a3ad0181ecfdd7f7f25e4fc9d088e1d2
+        ref: a0690dd94924996f2bc1c7da7a5dde964bf7fce3
     - name: Require exact candidate source
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = 0d1700e5a3ad0181ecfdd7f7f25e4fc9d088e1d2
+        test "$(git rev-parse HEAD)" = a0690dd94924996f2bc1c7da7a5dde964bf7fce3
 
         test -z "$(git status --porcelain)"
 
@@ -1174,3 +1049,67 @@ jobs:
           ${{ runner.temp }}/image-sdk.*/install/openpilot-image-codecs-sdk.txt
 
           '
+  native-eigen-action:
+    name: native Eigen action (${{ matrix.architecture }}, host archive check)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture:
+        - x86_64
+        - aarch64
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: a0690dd94924996f2bc1c7da7a5dde964bf7fce3
+        persist-credentials: false
+    - name: Require exact candidate source
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = a0690dd94924996f2bc1c7da7a5dde964bf7fce3
+
+        test -z "$(git status --porcelain)"
+
+        '
+    - run: rustup toolchain install 1.94.0 --profile minimal
+    - uses: ./.github/actions/native-eigen
+      with:
+        architecture: ${{ matrix.architecture }}
+    - name: Require actual action tree against sealed original headers
+      env:
+        ACTION_ARCHITECTURE: ${{ matrix.architecture }}
+      run: 'set -euo pipefail
+
+        case "$ACTION_ARCHITECTURE" in x86_64) platform=linux_x86_64 ;; aarch64) platform=linux_aarch64 ;; *) exit 1 ;; esac
+
+        proof="$RUNNER_TEMP/native-eigen-$ACTION_ARCHITECTURE"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        EIGEN_WHEEL="$proof/eigen-3.4.0-py3-none-$platform.whl" EIGEN_ARCHITECTURE="$ACTION_ARCHITECTURE" EIGEN_NATIVE_INCLUDE="$LOCATIOND_EIGEN_INCLUDE"
+        EIGEN_EVIDENCE="$proof/action-comparison" cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features
+        eigen-tools-native --test eigen_stage --locked
+
+        '
+    - name: Check source-policy and native disk guard regressions
+      if: matrix.architecture == 'x86_64'
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --test ci_rust_isolation --test ci_disk_bootstrap
+        --locked
+
+        '
+    - if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: native-eigen-action-comparison-${{ matrix.architecture }}
+        path: ${{ runner.temp }}/native-eigen-${{ matrix.architecture }}/action-comparison/
+        if-no-files-found: warn
