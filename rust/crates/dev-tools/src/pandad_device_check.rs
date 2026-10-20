@@ -56,26 +56,8 @@ pub fn parse(args: &[OsString], root: &Path) -> Result<Option<Options>> {
     } else {
         (args, vec![])
     };
-    // Match argparse's attached zero-argument -h tail without changing shared
-    // scanner behavior; action ordering still decides an earlier plain -h.
-    use std::os::unix::ffi::OsStringExt;
-    let mut literal = false;
-    let prefix = prefix
-        .iter()
-        .map(|argument| {
-            let bytes = argument.as_bytes();
-            if bytes == b"--" {
-                literal = true;
-            }
-            if !literal && bytes.starts_with(b"-h") && bytes.len() > 2 && bytes[2] != b'=' {
-                OsString::from_vec([b"-h=".as_slice(), &bytes[2..]].concat())
-            } else {
-                argument.clone()
-            }
-        })
-        .collect::<Vec<_>>();
     let parsed = scan_os(
-        &prefix,
+        prefix,
         &[
             OptionSpec::value("--source", true),
             OptionSpec::value("--native", true),

@@ -11,7 +11,7 @@ workspace = true
 
 [dependencies]
 openpilot-runtime-installer = { path = "../runtime-installer" }
-rustix = { version = "1", features = ["process"] }
+rustix = { version = "1", features = ["event", "process"] }
 signal-hook = "0.3"
 thiserror = "2"
 openpilot-process-supervision = { path = "../process-supervision" }

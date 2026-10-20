@@ -1834,7 +1834,7 @@ rust/tools/check_bluetooth_config.py	42716fc0761ced8740869ee2d125c8286f286c68	pe
 rust/tools/check_bluetooth_daemon.py	c0a5f09a67d743995ae93c0a6d836ea91341735a	pending	-
 rust/tools/check_bluetooth_engine.py	37d8c109bb4b0f46434caa78c5530e7f54cedae3	pending	-
 rust/tools/check_bluetooth_enumerate.py	f53659596be666481634eb65c0b0ab8e6c291373	pending	-
-rust/tools/check_bluetooth_files.py	13fbac529c082d368a1e3b8c6ecf5d359afe701f	pending	-
+rust/tools/check_bluetooth_files.py	13fbac529c082d368a1e3b8c6ecf5d359afe701f	replaced-local	openpilot-dev-tools check-bluetooth-files; independent sealed 15 original file observations and same-ELF present/absent cloud proof; post-deletion cloud trace pending
 rust/tools/check_bluetooth_gestures.py	aabe3e2b0a235e00d7023e4b1569be9ac530c06a	pending	-
 rust/tools/check_bluetooth_input.py	0a614d789b56b4e93c5d8cb6e4711b9e673c121e	pending	-
 rust/tools/check_bluetooth_input_decode.py	0feecb81c9459913e11fafc48dd58a25ad057f4b	replaced-local	openpilot-dev-tools check-bluetooth-input-decode; independent 10049 source records, exact signed fields/binary64 timestamp bits, actual input_fixture and owned cancellation

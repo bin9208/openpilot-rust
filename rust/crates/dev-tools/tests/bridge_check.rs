@@ -128,3 +128,23 @@ fn malformed_reports_cannot_substitute_for_traffic() {
         assert!(bridge::compare_reports(&bad, &bad).is_err());
     }
 }
+#[test]
+fn sealed_original_bridge_observation_rejects_single_direction_drift() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "fixtures/bridge-controller/original-observation.json"
+    ))
+    .unwrap();
+    assert_eq!(
+        fixture["historical_checker_sha256"],
+        "17d5fc9f1d5dc3c59306ba0a8fdcc3bd85b216b362fbbe18fdc7e5daaa246821"
+    );
+    let original = &fixture["original_report"];
+    bridge::compare_with_observation(original).unwrap();
+    for group in ["source", "rust"] {
+        for direction in ["outgoing", "incoming"] {
+            let mut changed = original.clone();
+            changed[group][direction] = serde_json::json!("changed traffic");
+            assert!(bridge::compare_with_observation(&changed).is_err());
+        }
+    }
+}

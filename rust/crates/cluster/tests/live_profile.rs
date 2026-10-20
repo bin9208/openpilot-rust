@@ -146,6 +146,17 @@ fn actual_cereal_poll_projection_and_owned_media_worker_close() {
     assert!(started.len() > before.len());
     assert!(input.close());
     assert!(input.close());
-    assert_eq!(decoder_threads(), before);
-    println!("actual native Cereal stages={stages:?}; owned media decoder tasks={started:?} joined on repeated close");
+    // pthread_join may return after clear_child_tid but before /proc removes the
+    // exiting task. Bound only that kernel observation; close itself stays strict.
+    let deadline = Instant::now() + Duration::from_secs(1);
+    let mut remaining = decoder_threads();
+    while remaining != before && Instant::now() < deadline {
+        std::thread::sleep(Duration::from_millis(1));
+        remaining = decoder_threads();
+    }
+    assert_eq!(
+        remaining, before,
+        "decoder task lingered after joined close; before={before:?}, started={started:?}"
+    );
+    println!("actual native Cereal stages={stages:?}; owned media decoder tasks before={before:?} started={started:?} gone={remaining:?} on repeated close");
 }

@@ -4,10 +4,11 @@
   "scenarios": 1746,
   "operations": 2490,
   "timeout_seconds": 60,
+  "historical_oracle_source_sha256": "dbf7b2de42a945047f3c0d8f5450f3e89e16452cb454c4b922ee81b799347468",
   "sources": {
     "rust/tools/check_pandad_device.py": "d44e161374b29f91bfb315d9b66eb65acf40e20b64d72b17d5acc3a414cb3c18",
     "rust/tools/pandad_device_cases.py": "33ceb4a8f54680f4aa777e1212a56b6936ead14b03510ba5823a4d0b20cfa78b",
-    "rust/tools/pandad_device_source.cc": "dbf7b2de42a945047f3c0d8f5450f3e89e16452cb454c4b922ee81b799347468",
+    "rust/tools/pandad_device_source.cc": "96a8b74bf789bf96a91067bf4a174aaca3bbd455133eb4c48bdd8a6598a09197",
     "openpilot/selfdrive/pandad/panda.cc": "fb50fce93675ae93403b478a6bc32621af10359420281a23dc16b3e283f98089",
     "openpilot/selfdrive/pandad/panda.h": "faebd7a679a0fc8b44ca6b42fe0c6ed9aeddb52f3d4980db5dc025e05dbdc15a"
   }

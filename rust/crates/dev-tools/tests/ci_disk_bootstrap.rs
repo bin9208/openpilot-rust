@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 391);
+    assert_eq!(text.matches(marker).count(), 401);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -303,6 +303,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut bridge_controller = vec![];
     let mut soundd_daemon_controller = vec![];
     let mut bluetooth_files_controller = vec![];
+    let mut bluetooth_config_controller = vec![];
     let mut logmessaged_startup_controller = vec![];
     let mut bluetooth_journal_controller = vec![];
     let mut calibration_float_controller = vec![];
@@ -311,12 +312,26 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut modem_helper_lifetime = vec![];
     let mut jetlink_owner = vec![];
     let mut recording_partial_write = vec![];
+    let mut launcher_handoff = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
+            if i + 1 < lines.len()
+                && (lines[i + 1].contains("--features bluetooth-config-native")
+                    || lines[i + 1].contains("rust/target/debug/check-bluetooth-config --binary"))
+            {
+                bluetooth_config_controller.push(tail.to_owned());
+                continue;
+            }
             let step = lines[..i]
                 .iter()
                 .rev()
                 .find(|line| line.starts_with("      - name:"));
+            if step == Some(
+                &"      - name: Require bounded launcher cleanup after failed lock acknowledgement",
+            ) {
+                launcher_handoff.push(tail.to_owned());
+                continue;
+            }
             if step == Some(&"      - name: Require Jetlink owner baseline failures and bounded fixed lifecycle") {
                 jetlink_owner.push(tail.to_owned());
                 continue;
@@ -394,7 +409,9 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             }
             if i + 1 < lines.len()
                 && (lines[i + 1].contains("--features bridge-tools-native")
-                    || lines[i + 1].contains("sudo -E \"$PWD/rust/target/debug/check-bridge\""))
+                    || lines[i + 1].contains("sudo -E \"$PWD/rust/target/debug/check-bridge\"")
+                    || lines[i + 1]
+                        .contains("proof=\"$RUNNER_TEMP/startup-services/bridge-absence-proof\""))
             {
                 bridge_controller.push(tail.to_owned());
                 continue;
@@ -957,13 +974,18 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     assert_eq!(
+        bluetooth_config_controller,
+        [512, 512, 512, 128]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
         soundd_daemon_controller,
         [512, 64, 512, 512, 512, 128]
             .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     assert_eq!(
         bridge_controller,
-        [1024, 512, 512, 512, 128, 512]
+        [1024, 512, 512, 512, 128, 128, 512]
             .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     assert_eq!(
@@ -998,7 +1020,12 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     );
     assert_eq!(
         recording_partial_write,
-        [1024, 2048, 512]
+        [1024, 8192, 512]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        launcher_handoff,
+        [1024, 1024, 512, 512, 512]
             .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     // Retain the 177 still-used original guards/hash below, plus admission for

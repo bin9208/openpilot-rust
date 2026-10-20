@@ -144,6 +144,10 @@ fn unchanged_original_and_native_match_every_dynamic_request_response_and_report
             "full raw {file}"
         );
     }
+    assert!(
+        fs::read(original.join("source.stderr")).unwrap().is_empty(),
+        "sanitized original C++ probe must have clean stderr"
+    );
     assert_eq!(hash(&source), before[0]);
     assert_eq!(hash(&native), before[1]);
     let proof = value(&output.join("provenance.json"));
@@ -167,17 +171,22 @@ fn unchanged_original_and_native_match_every_dynamic_request_response_and_report
 fn unchanged_original_and_native_cli_admission_and_source_first_failure_artifacts() {
     let evidence = evidence();
     let python = required("PANDAD_DEVICE_PYTHON");
-    for args in [
+    for (index, args) in [
         vec![],
         vec!["--help"],
         vec!["--hel"],
         vec!["-hfoo"],
+        vec!["-hfoo=bar"],
+        vec!["-hf"],
         vec!["-h", "-hfoo"],
         vec!["--unknown"],
         vec!["--source"],
         vec!["--source", "s", "--native", "n"],
         vec!["--runner", "--help"],
-    ] {
+    ]
+    .into_iter()
+    .enumerate()
+    {
         let mut outcomes = Vec::new();
         for original in [true, false] {
             let mut argv = if original {
@@ -193,7 +202,25 @@ fn unchanged_original_and_native_cli_admission_and_source_first_failure_artifact
             };
             argv.extend(args.iter().map(OsString::from));
             let child = NativeRunner.run(&command(argv)).unwrap();
+            let lane = if original { "original" } else { "native" };
+            fs::write(
+                evidence.join(format!("admission-{index:02}-{lane}.stdout")),
+                &child.stdout,
+            )
+            .unwrap();
+            fs::write(
+                evidence.join(format!("admission-{index:02}-{lane}.stderr")),
+                &child.stderr,
+            )
+            .unwrap();
             outcomes.push(child.code);
+        }
+        fs::write(
+            evidence.join(format!("admission-{index:02}.json")),
+            serde_json::to_vec_pretty(&serde_json::json!({"args":args.clone(),"original_exit":outcomes[0],"native_exit":outcomes[1]})).unwrap(),
+        ).unwrap();
+        if args == ["-hfoo"] {
+            assert_eq!(outcomes[0], 0, "cloud-observed original help admission");
         }
         assert_eq!(outcomes[0], outcomes[1], "{args:?}");
         assert!(outcomes[0] == 0 || outcomes[0] == 2);

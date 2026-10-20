@@ -454,11 +454,11 @@ fn only_the_owned_historical_checker_may_be_absent_with_truthful_live_provenance
         match kind {
             "changed" => fs::write(&retired, b"changed historical checker").unwrap(),
             "dangling" => symlink(directory.path().join("absent-target"), &retired).unwrap(),
-            "symlink" => symlink(
-                repository().join("rust/tools/check_bluetooth_files.py"),
-                &retired,
-            )
-            .unwrap(),
+            "symlink" => {
+                let target = directory.path().join("private-regular-target");
+                fs::write(&target, b"private regular target").unwrap();
+                symlink(target, &retired).unwrap();
+            }
             "fifo" => rustix::fs::mknodat(
                 rustix::fs::CWD,
                 &retired,
@@ -592,6 +592,144 @@ fn actual_cli_preserves_raw_paths_and_argument_admission() {
         report,
         serde_json::from_slice::<Value>(&fs::read(output.join("result.json")).unwrap()).unwrap()
     );
+}
+#[cfg(target_os = "linux")]
+#[test]
+fn fresh_post_retirement_cli_executes_only_sealed_native_checker_and_fixture() {
+    use std::{collections::BTreeMap, ffi::OsString};
+
+    let root = repository();
+    assert!(
+        matches!(
+            fs::symlink_metadata(root.join("rust/tools/check_bluetooth_files.py")),
+            Err(error) if error.kind() == io::ErrorKind::NotFound
+        ),
+        "the historical checker must be absent in this post-retirement gate"
+    );
+    let checker = fs::canonicalize(env!("CARGO_BIN_EXE_check-bluetooth-files")).unwrap();
+    let fixture = candidate();
+    let artifacts = BTreeMap::from([
+        (
+            checker.to_str().unwrap().to_owned(),
+            sha(&fs::read(&checker).unwrap()),
+        ),
+        (
+            fixture.to_str().unwrap().to_owned(),
+            sha(&fs::read(&fixture).unwrap()),
+        ),
+    ]);
+    assert_eq!(
+        artifacts.len(),
+        2,
+        "the checker and fixture must be distinct"
+    );
+    let evidence = PathBuf::from(
+        std::env::var_os("BLUETOOTH_FILES_EVIDENCE").expect("mandatory CI evidence output"),
+    );
+    fs::create_dir_all(&evidence).unwrap();
+    let directory = tempfile::tempdir().unwrap();
+    let output = directory.path().join("post-retirement-cli");
+    let trace = evidence.join("native.exec");
+    fs::write(
+        evidence.join("artifacts.sha256"),
+        artifacts
+            .iter()
+            .map(|(path, digest)| format!("{digest}  {path}\n"))
+            .collect::<String>(),
+    )
+    .unwrap();
+    let mut spec = CommandSpec::new_os(
+        vec![
+            "/usr/bin/strace".into(),
+            "-f".into(),
+            "-qq".into(),
+            "-s".into(),
+            "65535".into(),
+            "-e".into(),
+            "trace=execve,execveat".into(),
+            "-o".into(),
+            trace.as_os_str().into(),
+            checker.as_os_str().into(),
+            "--binary".into(),
+            fixture.as_os_str().into(),
+            "--output".into(),
+            output.as_os_str().into(),
+        ],
+        Duration::from_secs(60),
+    );
+    spec.set_os_env(BTreeMap::from([
+        (OsString::from("PATH"), OsString::from("/nonexistent")),
+        (
+            OsString::from("OPENPILOT_RUST_ROOT"),
+            root.as_os_str().into(),
+        ),
+    ]));
+    spec.env_remove = std::env::vars_os()
+        .map(|(key, _)| key)
+        .filter(|key| {
+            key.as_os_str() != std::ffi::OsStr::new("PATH")
+                && key.as_os_str() != std::ffi::OsStr::new("OPENPILOT_RUST_ROOT")
+        })
+        .collect();
+    let stdout = evidence.join("native.stdout");
+    let stderr = evidence.join("native.stderr");
+    let observed = NativeRunner.run_to_files(&spec, &stdout, &stderr);
+    if let Ok(bytes) = fs::read(output.join("result.json")) {
+        fs::write(evidence.join("native-result.json"), bytes).unwrap();
+    }
+    let observed = observed.unwrap();
+    assert!(
+        observed.code == 0,
+        "{}",
+        String::from_utf8_lossy(&fs::read(&stderr).unwrap())
+    );
+    let report: Value = serde_json::from_slice(&fs::read(&stdout).unwrap()).unwrap();
+    assert_eq!(report["cases"], 15);
+    assert_eq!(report["unicode_errors"], 3);
+    assert_eq!(
+        report,
+        serde_json::from_slice::<Value>(&fs::read(output.join("result.json")).unwrap()).unwrap()
+    );
+    let opening = regex::Regex::new(r"\bexecve(?:at)?\(").unwrap();
+    let executable = regex::Regex::new(r#"\bexecve\(("(?:[^"\\]|\\.)*")"#).unwrap();
+    let mut attempts = Vec::new();
+    for line in fs::read_to_string(&trace).unwrap().lines() {
+        if !opening.is_match(line) {
+            continue;
+        }
+        let capture = executable
+            .captures(line)
+            .unwrap_or_else(|| panic!("opaque/unaccounted execve or execveat attempt: {line}"));
+        let path: String = serde_json::from_str(&capture[1]).unwrap();
+        assert!(
+            artifacts.contains_key(&path),
+            "unsealed executable attempt: {line}"
+        );
+        attempts.push(path);
+    }
+    assert_eq!(
+        attempts.len(),
+        2,
+        "exactly the sealed checker and fixture execute"
+    );
+    assert_eq!(attempts[0], checker.to_str().unwrap());
+    assert_eq!(attempts[1], fixture.to_str().unwrap());
+    for (path, expected) in &artifacts {
+        assert_eq!(sha(&fs::read(path).unwrap()), *expected);
+    }
+    fs::write(
+        evidence.join("native-exec-audit.json"),
+        serde_json::to_vec_pretty(&json!({
+            "passed": true,
+            "source_retired": true,
+            "cases": 15,
+            "exec_attempts": attempts,
+            "sealed_executables_sha256": artifacts,
+            "path": "/nonexistent"
+        }))
+        .unwrap(),
+    )
+    .unwrap();
 }
 #[cfg(target_os = "linux")]
 #[path = "bluetooth_files_check/lifecycle.rs"]

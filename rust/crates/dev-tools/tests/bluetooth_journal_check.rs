@@ -134,6 +134,10 @@ fn all_721_original_operations_and_rewrite_decisions_match_independent_source_an
         std::env::var_os("BLUETOOTH_JOURNAL_EVIDENCE").expect("mandatory CI capture output"),
     );
     fs::create_dir_all(&evidence).unwrap();
+    // Preserve the unchanged Python checker's raw trace before its temporary
+    // source run is dropped. The Rust checker's original.jsonl is synthetic.
+    let raw = fs::read(original.directory.path().join("source-run/original.jsonl")).unwrap();
+    fs::write(evidence.join("original-raw.jsonl"), &raw).unwrap();
     let normalized = checker::normalize_trace(&original.rows).unwrap();
     let text = normalized
         .rows
@@ -141,7 +145,7 @@ fn all_721_original_operations_and_rewrite_decisions_match_independent_source_an
         .map(|r| r.to_json().unwrap() + "\n")
         .collect::<String>();
     fs::write(evidence.join("original-normalized.jsonl"), &text).unwrap();
-    fs::write(evidence.join("original-observation.json"),serde_json::to_vec_pretty(&json!({"kind":"actual unchanged Python source trace, never native candidate observations","operations":721,"source_checker_sha256":sha(&fs::read(repository().join("rust/tools/check_bluetooth_journal.py")).unwrap()),"model_sha256":original.report["source_sha256"],"input_sha256":sha(&original.input),"normalized_trace_sha256":sha(text.as_bytes()),"normalized_trace_bytes":text.len(),"sessions":normalized.sessions.len(),"max_events":normalized.max_events})).unwrap()).unwrap();
+    fs::write(evidence.join("original-observation.json"),serde_json::to_vec_pretty(&json!({"kind":"actual unchanged Python source trace, never native candidate observations","operations":721,"source_checker_sha256":sha(&fs::read(repository().join("rust/tools/check_bluetooth_journal.py")).unwrap()),"model_sha256":original.report["source_sha256"],"input_sha256":sha(&original.input),"raw_trace_sha256":sha(&raw),"raw_trace_bytes":raw.len(),"normalized_trace_sha256":sha(text.as_bytes()),"normalized_trace_bytes":text.len(),"sessions":normalized.sessions.len(),"max_events":normalized.max_events})).unwrap()).unwrap();
     fs::write(
         evidence.join("native-report.json"),
         serde_json::to_vec_pretty(&report).unwrap(),

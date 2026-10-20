@@ -126,8 +126,15 @@ fn unchanged_original_and_native_startup_observations_agree_without_python_execu
         fs::read(proof.join("native.stdout")).unwrap(),
         format!("{new_bytes}\n").as_bytes()
     );
+    let mut original_disk_rows = BTreeMap::new();
+    let mut original_observed_hashes = BTreeMap::new();
     for case in ["legacy-source", "ready-source", "ready-native"] {
-        let source = json(original.join(case).join("observed.json"));
+        let original_observed_bytes = fs::read(original.join(case).join("observed.json")).unwrap();
+        original_observed_hashes.insert(
+            case,
+            format!("{:x}", Sha256::digest(&original_observed_bytes)),
+        );
+        let source: Value = serde_json::from_slice(&original_observed_bytes).unwrap();
         let observed = json(native.join(case).join("observed.json"));
         assert_eq!(source, observed, "{case}");
         for service in ["logMessage", "errorLogMessage"] {
@@ -143,11 +150,13 @@ fn unchanged_original_and_native_startup_observations_agree_without_python_execu
                 "native {case}/{service}"
             );
         }
+        let original_rows = disk(&original, case);
         assert_eq!(
-            disk(&original, case),
+            original_rows,
             disk(&native, case),
             "{case}; only generated top-level id differs"
         );
+        original_disk_rows.insert(case, original_rows);
         let worker = json(native.join(case).join("worker.stdout"));
         let capacities = worker["queue_file_bytes"].as_object().unwrap();
         assert_eq!(capacities.len(), 2);
@@ -155,6 +164,28 @@ fn unchanged_original_and_native_startup_observations_agree_without_python_execu
             .values()
             .all(|n| n.as_u64().unwrap() > 10 * 1024 * 1024));
     }
+    // Hidden .comma directories are omitted by upload-artifact. Keep the exact
+    // original rows read above (after UUID validation and only id removal) in
+    // a visible file, separately from the native candidate's disk records.
+    let disk_rows_bytes = serde_json::to_vec_pretty(&original_disk_rows).unwrap();
+    fs::write(proof.join("original-disk-rows.json"), &disk_rows_bytes).unwrap();
+    let workspace = PathBuf::from(
+        std::env::var_os("GITHUB_WORKSPACE")
+            .expect("Actions workspace missing for original provenance"),
+    );
+    let provenance = serde_json::json!({
+        "source_commit": std::env::var("GITHUB_SHA").expect("Actions source SHA missing"),
+        "original_checker_sha256": format!("{:x}", Sha256::digest(fs::read(workspace.join("rust/tools/check_logmessaged_startup.py")).unwrap())),
+        "original_report_sha256": format!("{:x}", Sha256::digest(old_bytes.as_bytes())),
+        "original_observed_sha256": original_observed_hashes,
+        "original_disk_rows_sha256": format!("{:x}", Sha256::digest(&disk_rows_bytes)),
+        "normalization": "each original swaglog row passed UUID validation; only its top-level id was removed",
+    });
+    fs::write(
+        proof.join("original-disk-rows.provenance.json"),
+        serde_json::to_vec_pretty(&provenance).unwrap(),
+    )
+    .unwrap();
     let artifacts: BTreeMap<String, String> = fs::read_to_string(proof.join("artifacts.sha256"))
         .unwrap()
         .lines()

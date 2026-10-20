@@ -19,7 +19,7 @@ pub(super) const PINS: &[(&str, &str)] = &[
     ),
     (
         "rust/tools/pandad_device_source.cc",
-        "dbf7b2de42a945047f3c0d8f5450f3e89e16452cb454c4b922ee81b799347468",
+        "96a8b74bf789bf96a91067bf4a174aaca3bbd455133eb4c48bdd8a6598a09197",
     ),
     (
         "openpilot/selfdrive/pandad/panda.cc",

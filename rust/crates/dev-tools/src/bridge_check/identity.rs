@@ -3,7 +3,7 @@ use crate::seal::Result;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::{
-    fs::File,
+    fs::{self, File},
     io::{self, Read},
     os::unix::{ffi::OsStrExt, fs::MetadataExt},
     path::{Path, PathBuf},
@@ -56,6 +56,66 @@ impl Artifact {
                 path.display()
             )
             .into());
+        }
+        Ok(())
+    }
+}
+/// Only the historical Python controller has an absence exception. A present
+/// copy must still match its original bytes and remain the same regular file.
+pub(super) struct HistoricalSource {
+    path: PathBuf,
+    present: Option<Artifact>,
+    expected_sha256: String,
+}
+impl HistoricalSource {
+    pub(super) fn capture(path: &Path, expected_sha256: &str) -> Result<Self> {
+        let parent = path
+            .parent()
+            .ok_or("bridge historical controller parent absent")?;
+        if !fs::metadata(parent)?.is_dir() {
+            return Err("bridge historical controller parent is not a directory".into());
+        }
+        let present = match fs::symlink_metadata(path) {
+            Err(error) if error.kind() == io::ErrorKind::NotFound => None,
+            Err(error) => return Err(error.into()),
+            Ok(metadata) if metadata.file_type().is_file() => {
+                let artifact = Artifact::open(path)?;
+                if artifact.sha256 != expected_sha256 {
+                    return Err("bridge historical controller source drift".into());
+                }
+                Some(artifact)
+            }
+            Ok(_) => return Err("bridge historical controller is not a regular file".into()),
+        };
+        Ok(Self {
+            path: path.into(),
+            present,
+            expected_sha256: expected_sha256.into(),
+        })
+    }
+    pub(super) fn verify(&self) -> Result<()> {
+        let parent = self
+            .path
+            .parent()
+            .ok_or("bridge historical controller parent absent")?;
+        if !fs::metadata(parent)?.is_dir() {
+            return Err("bridge historical controller parent is not a directory".into());
+        }
+        match &self.present {
+            Some(artifact) => {
+                if !fs::symlink_metadata(&self.path)?.file_type().is_file() {
+                    return Err("bridge historical controller changed file type".into());
+                }
+                artifact.verify(&self.path)?;
+                if artifact.sha256 != self.expected_sha256 {
+                    return Err("bridge historical controller source drift".into());
+                }
+            }
+            None => match fs::symlink_metadata(&self.path) {
+                Err(error) if error.kind() == io::ErrorKind::NotFound => (),
+                Err(error) => return Err(error.into()),
+                Ok(_) => return Err("bridge historical controller reappeared".into()),
+            },
         }
         Ok(())
     }
@@ -155,5 +215,37 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(actual, bytes);
         assert_eq!(path_value(Path::new("/owned/ascii")), json!("/owned/ascii"));
+    }
+    #[test]
+    fn exact_historical_source_absence_and_reappearance_are_distinct_from_drift() {
+        let root = tempfile::tempdir().unwrap();
+        let parent = root.path().join("tools");
+        let path = parent.join("check_bridge.py");
+        let expected = format!("{:x}", Sha256::digest(b"original source"));
+        assert!(HistoricalSource::capture(&path, &expected).is_err());
+        fs::create_dir(&parent).unwrap();
+        let absent = HistoricalSource::capture(&path, &expected).unwrap();
+        absent.verify().unwrap();
+        fs::remove_dir(&parent).unwrap();
+        assert!(absent.verify().is_err(), "parent removal must fail");
+        fs::create_dir(&parent).unwrap();
+        fs::write(&path, b"original source").unwrap();
+        assert!(absent.verify().is_err(), "reappearance must fail");
+        let present = HistoricalSource::capture(&path, &expected).unwrap();
+        present.verify().unwrap();
+        fs::write(&path, b"changed source").unwrap();
+        assert!(present.verify().is_err(), "in-place drift must fail");
+        assert!(HistoricalSource::capture(&path, &expected).is_err());
+        fs::remove_file(&path).unwrap();
+        std::os::unix::fs::symlink("missing", &path).unwrap();
+        assert!(HistoricalSource::capture(&path, &expected).is_err());
+        fs::remove_file(&path).unwrap();
+        rustix::fs::mkfifoat(
+            rustix::fs::CWD,
+            &path,
+            rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR,
+        )
+        .unwrap();
+        assert!(HistoricalSource::capture(&path, &expected).is_err());
     }
 }

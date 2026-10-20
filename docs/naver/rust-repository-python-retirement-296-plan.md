@@ -19,7 +19,7 @@
 - Preserve existing functionality, failure/cleanup behavior and test assertions. No weakened tolerances, cadence, validity limits, skipped suites or self-generated expected answers.
 - Count every remaining source/dependency explicitly. Native runtime success does not complete development tools, compiler functionality, Python removal or device acceptance.
 - Before builds, installs and large copies, retain 25 GiB plus estimated growth; recover at least35 GiB if below the floor. One coordinated Cargo owner, two build jobs, incremental disabled. Do not interrupt another track's build.
-- All separately launched workers use GPT-6.1 Sol. Parent owns shared Cargo manifests, workflows, deletion integration and Git publication.
+- Parent uses GPT-6.1 Sol for supervision/integration; the latest user choice assigns complex implementation/review to GPT-6 Sol and simple inventory/result collection to GPT-6 Luna. Parent owns shared Cargo manifests, workflows, deletion integration and Git publication.
 - On2026-10-18 the user confirmed the device is unavailable and will personally pull and test normal boot, recording and upload. Finish code/test/commit integration without waiting for a connection; user device results remain separate evidence.
 - Preserve the five required PR checks and separate exact merged-dev PUSH checks. No completion merely from opening a PR or scheduling CI.
 - On 2026-10-19 the user moved builds, execution, original comparisons and regression validation to GitHub Actions. Local checks are limited to diff, formatting and syntax. Group related changes, inspect CI failures and continue independent ports while CI runs; do not resume the earlier local build/proof loop. Earlier completed evidence remains historical, and pending local verification entries below now mean required CI work.
@@ -66,14 +66,14 @@ Interface: protocol (all five modes), USB, SPI, peripheral and runtime-fixture b
 
 Additional locally verified replacements and current failures are recorded in the
 [evidence ledger](rust-repository-python-retirement-296-evidence.md) and inventory.
-209 baseline sources are fully replaced locally, three baseline sources are
+210 baseline sources are fully replaced locally, three baseline sources are
 partially replaced because live-source helpers or unrelated Params tests remain Python,
-and 3,368 baseline sources remain pending. The added
+and 3,367 baseline sources remain pending. The added
 rust/tools/selfdrived_helpers_source.py retains those helpers; relocation is
 not retirement. Remaining families and final delivery gates stay open.
 The Bluetooth input decoder checker is now native after exact10,049-record,
 artifact, raw-path, identity/cancellation and same-ELF removal proofs; the suite
-caller dispatches only that case natively. The other13 Bluetooth Python cases
+caller also dispatches the retired file checker natively, with config routing prepared but its original retained for comparison. The other12 Bluetooth Python cases
 and exact committed-head CI remain pending.
 The statistics producer controller and its source helper are retired after
 independent wire captures, same-ELF removal proof, six regression tests and a

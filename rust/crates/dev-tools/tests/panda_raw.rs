@@ -4,6 +4,7 @@ use openpilot_dev_tools::{
     seal::Result,
 };
 use openpilot_log_format::{JsonValue, JsonView};
+use sha2::Digest;
 use std::{
     ffi::OsString,
     fs,
@@ -149,7 +150,21 @@ fn twenty_nine_original_raw_builds_preserve_all_command_bytes_receipts_and_failu
 }
 fn verify(fixture: &serde_json::Value) {
     let source = root();
-    for row in fixture["cases"].as_array().unwrap() {
+    const HISTORICAL_DEVICE_ORACLE: &str =
+        "dbf7b2de42a945047f3c0d8f5450f3e89e16452cb454c4b922ee81b799347468";
+    const CURRENT_DEVICE_ORACLE: &str =
+        "96a8b74bf789bf96a91067bf4a174aaca3bbd455133eb4c48bdd8a6598a09197";
+    assert_eq!(
+        format!(
+            "{:x}",
+            sha2::Sha256::digest(
+                fs::read(source.join("rust/tools/pandad_device_source.cc")).unwrap()
+            )
+        ),
+        CURRENT_DEVICE_ORACLE
+    );
+    let cases = fixture["cases"].as_array().unwrap();
+    for (case_index, row) in cases.iter().enumerate() {
         let temp = tempfile::tempdir().unwrap();
         let base = temp.path();
         let raw = |name: &str| base.join(OsString::from_vec([name.as_bytes(), b"-\xff"].concat()));
@@ -267,9 +282,19 @@ fn verify(fixture: &serde_json::Value) {
                 .replace(base.to_str().unwrap(), "BASE")
                 .replace(source.to_str().unwrap(), "ROOT");
             if name.ends_with(".json") {
+                let historical = expected.as_str().unwrap();
+                let expected = if historical.contains(HISTORICAL_DEVICE_ORACLE) {
+                    assert_eq!(cases.len(), 29, "unexpected historical fixture family");
+                    assert!(matches!(case_index, 4 | 5), "unexpected historical case");
+                    assert_eq!(name, "manifest.json");
+                    assert_eq!(historical.matches(HISTORICAL_DEVICE_ORACLE).count(), 1);
+                    historical.replace(HISTORICAL_DEVICE_ORACLE, CURRENT_DEVICE_ORACLE)
+                } else {
+                    historical.to_owned()
+                };
                 assert_eq!(
                     canonical(&JsonValue::parse(&text).unwrap()),
-                    canonical(&JsonValue::parse(expected.as_str().unwrap()).unwrap()),
+                    canonical(&JsonValue::parse(&expected).unwrap()),
                     "{name} {row}"
                 );
             } else {

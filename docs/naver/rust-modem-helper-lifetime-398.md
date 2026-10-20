@@ -1,5 +1,13 @@
 # Modem helper ownership and cancellation (#398)
 
+At `edb42bf095d6a3e3b38cc0a4546976dfb710363e`, GitHub-hosted
+[platform job118816129959](https://github.com/bin9208/openpilot-rust/actions/runs/39477200877/job/118816129959)
+passed. The copied EOF regression failed at the expected assertion against
+`1364e48c`; all 15 fixed helper regressions, the unchanged modem differential
+and process-boundary checks, and strict Clippy then passed. This supersedes
+the pending execution status below for this bounded unit. Full project CI,
+integration and user device validation remain separate gates.
+
 Issue [#398](https://github.com/bin9208/openpilot-rust/issues/398), under
 [#296](https://github.com/bin9208/openpilot-rust/issues/296), covers the modem's
 external-command ownership. The implementation and regressions are source-ready;

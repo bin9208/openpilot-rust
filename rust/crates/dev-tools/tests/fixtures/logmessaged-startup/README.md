@@ -1,8 +1,22 @@
 # Logmessaged startup controller contracts
 
-This is a source-derived contract, **not a captured native answer corpus**.
-`source-pins.json` pins the unchanged Python checker, its ftruncate pause fixture,
-and all nine retained independent collector-source inputs. The new checker also
+`original-observation.json` retains independent unchanged-Python observations
+from [run 39192427750, support-runtime job 117868253013](https://github.com/bin9208/openpilot-rust/actions/runs/39192427750/job/117868253013),
+source commit `11f3dec411662baa961733b363c0b38d7082fcfa`. It records the artifact
+ID and archive SHA256, original report SHA256, all three observed payloads and
+their original packet hashes. It contains no candidate output. The archive did
+not retain private collector swaglog files, so live native disk records remain
+checked against the original source contract, not falsely labelled as captured
+original disk bytes. The existing live original/native full disk-row gate now
+also writes `original-disk-rows.json` and a hash/provenance manifest to the
+visible proof root. Its next successful Actions artifact must be inspected and
+accepted before replacing that live gate.
+
+`source-pins.json` pins the historical Python checker, its ftruncate pause fixture,
+and the retained independent collector-source inputs. Only the exact historical
+checker may be absent; a present changed checker, symlink, FIFO or directory is
+rejected. Its digest is reported as historical provenance, outside live input
+hashes. The new checker also
 binds the actual executing ELF and the authored source boundary compiled into it.
 No Python helper is executed by the native implementation.
 
@@ -43,12 +57,12 @@ stdout is fallible and precedes atomic create-new receipt publication, with a
 held-file identity for cancellation cleanup.
 
 Both `logmessaged_native.py` and `logmessaged_reference.py` remain mandatory
-shared inputs because other Python controllers still consume them. The original
-startup checker is also retained until reviewed CI original/native comparison
-passes. Nothing has been renamed into a fixture or claimed retired here.
+shared inputs because other Python controllers still consume them. The startup
+checker remains in the tree until the new Actions artifact captures the missing
+disk rows and the parent updates its caller and CI gate; deletion follows
+exact-SHA cloud proof.
 
-**Validation status:** new implementation and tests are source-only. Formatting
-and diff checks may run locally; compilation, missing/API admission checks,
-all eight controller tests, the wire unit, the mandatory Rust paired-reference
-audit, Clippy and unchanged-original/native proof are CI-owned under
-the user workflow override. No local build, runtime or capture was executed.
+**Validation status:** the independent original/cloud pair passed on the pinned
+run above. The retirement changes are source-only pending a new exact-SHA cloud
+run of the absent-path, reappearance, provenance, native wire, Clippy and
+no-Python execution checks. No local build, runtime or probe was executed.

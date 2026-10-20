@@ -1,4 +1,9 @@
-use std::{fs::File, os::unix::net::UnixStream, process::Command, sync::atomic::AtomicBool};
+use std::{
+    fs::File,
+    os::{fd::AsFd, unix::net::UnixStream},
+    process::Command,
+    sync::atomic::AtomicBool,
+};
 
 #[test]
 #[ignore = "owned process receives the actual launcher lock"]
@@ -49,6 +54,154 @@ fn early_child_exit_is_reaped_without_waiting_for_a_missing_handshake() {
     )
     .is_err());
     assert!(started.elapsed() < std::time::Duration::from_secs(2));
+}
+
+#[test]
+#[ignore = "owned child refuses the lock acknowledgement and ignores TERM"]
+fn resistant_handoff_child() {
+    use rustix::{
+        event::{poll, PollFd, PollFlags, Timespec},
+        process::{pidfd_open, Pid, PidfdFlags},
+    };
+    let root = std::path::PathBuf::from(std::env::var_os("OWNED_ERROR_ROOT").unwrap());
+    let token = std::env::var("OWNED_ERROR_TOKEN").unwrap();
+    let parent: i32 = std::env::var("OWNED_ERROR_PARENT")
+        .unwrap()
+        .parse()
+        .unwrap();
+    let parent = pidfd_open(Pid::from_raw(parent).unwrap(), PidfdFlags::empty()).unwrap();
+    let _signals = signal_hook::iterator::Signals::new([signal_hook::consts::SIGTERM]).unwrap();
+    // Keep the socket open without reading the sent descriptor or acknowledging
+    // it. The launcher reaches its real two-second send_boot_lock error path.
+    let _stream =
+        UnixStream::connect(std::env::var_os("CARROT_BOOT_LOCK_SOCKET").unwrap()).unwrap();
+    let marker = root.join("ready.pending");
+    std::fs::write(&marker, format!("{token} {}\n", std::process::id())).unwrap();
+    std::fs::rename(marker, root.join("ready")).unwrap();
+    while poll(
+        &mut [PollFd::new(&parent, PollFlags::IN)],
+        Some(&Timespec::default()),
+    )
+    .unwrap()
+        == 0
+    {
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+}
+
+#[test]
+fn failed_lock_acknowledgement_kills_and_reaps_term_resistant_owned_child() {
+    use rustix::{
+        event::{poll, PollFd, PollFlags, Timespec},
+        process::{
+            pidfd_open, pidfd_send_signal, waitid, Pid, PidfdFlags, Signal, WaitId, WaitIdOptions,
+        },
+    };
+    let root = tempfile::tempdir().unwrap();
+    let lock_path = root.path().join("lock");
+    let lock = File::create(&lock_path).unwrap();
+    lock.lock().unwrap();
+    let token = root
+        .path()
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_owned();
+    let marker = root.path().join("ready");
+    let expected = token.clone();
+    let watcher = std::thread::spawn(move || {
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        loop {
+            if let Ok(text) = std::fs::read_to_string(&marker) {
+                let fields = text.split_whitespace().collect::<Vec<_>>();
+                if fields.len() == 2 && fields[0] == expected {
+                    let raw: i32 = fields[1].parse().unwrap();
+                    let pid = Pid::from_raw(raw).unwrap();
+                    let id = pidfd_open(pid, PidfdFlags::empty()).unwrap();
+                    let environment = std::fs::read(format!("/proc/{raw}/environ")).unwrap();
+                    assert!(environment
+                        .split(|v| *v == 0)
+                        .any(|v| v == format!("OWNED_ERROR_TOKEN={expected}").as_bytes()));
+                    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(6);
+                    loop {
+                        if poll(
+                            &mut [PollFd::new(&id, PollFlags::IN)],
+                            Some(&Timespec::default()),
+                        )
+                        .unwrap()
+                            != 0
+                        {
+                            return (id, false);
+                        }
+                        if std::time::Instant::now() >= deadline {
+                            // A baseline launcher may wait forever after TERM.
+                            // Kill only the token-verified child held by this pidfd.
+                            match pidfd_send_signal(&id, Signal::KILL) {
+                                Ok(()) | Err(rustix::io::Errno::SRCH) => {}
+                                Err(error) => panic!("owned child cleanup failed: {error}"),
+                            }
+                            return (id, true);
+                        }
+                        std::thread::sleep(std::time::Duration::from_millis(10));
+                    }
+                }
+            }
+            assert!(
+                std::time::Instant::now() < deadline,
+                "owned child marker absent"
+            );
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+    });
+    let mut command = Command::new(std::env::current_exe().unwrap());
+    command
+        .args([
+            "--exact",
+            "resistant_handoff_child",
+            "--ignored",
+            "--nocapture",
+        ])
+        .env("OWNED_ERROR_ROOT", root.path())
+        .env("OWNED_ERROR_TOKEN", &token)
+        .env("OWNED_ERROR_PARENT", std::process::id().to_string());
+    let started = std::time::Instant::now();
+    let result =
+        openpilot_runtime_launcher::handoff::run_locked(command, &lock, &AtomicBool::new(false));
+    let elapsed = started.elapsed();
+    let (id, forced_cleanup) = watcher.join().unwrap();
+    assert!(result.is_err(), "missing lock acknowledgement must fail");
+    assert!(
+        elapsed >= std::time::Duration::from_millis(1800),
+        "handoff failed before its two-second acknowledgement deadline: {elapsed:?}"
+    );
+    assert!(
+        elapsed < std::time::Duration::from_secs(5),
+        "error cleanup exceeded bound: {elapsed:?}"
+    );
+    assert!(!forced_cleanup, "watcher had to kill the owned child");
+    assert_eq!(
+        poll(
+            &mut [PollFd::new(&id, PollFlags::IN)],
+            Some(&Timespec::default())
+        )
+        .unwrap(),
+        1
+    );
+    assert!(
+        matches!(
+            waitid(
+                WaitId::PidFd(id.as_fd()),
+                WaitIdOptions::EXITED | WaitIdOptions::NOHANG | WaitIdOptions::NOWAIT
+            ),
+            Err(rustix::io::Errno::CHILD)
+        ),
+        "owned child was not reaped"
+    );
+    assert!(matches!(
+        File::open(&lock_path).unwrap().try_lock(),
+        Err(std::fs::TryLockError::WouldBlock)
+    ));
 }
 
 #[test]

@@ -495,6 +495,33 @@ pub(super) fn finish_cli(result: &Completed, cancel: &AtomicBool) -> Result<()> 
     }
     Ok(())
 }
+fn publish_after_stdout(
+    stdout: &mut impl Write,
+    results: Vec<Value>,
+    output: &Path,
+    verify: impl Fn() -> Result<()>,
+) -> Result<Completed> {
+    // This is the controller's actual fallible final stdout boundary. Identity
+    // checks must follow it before and after publishing the owned receipt.
+    writeln!(
+        stdout,
+        "{{\"passed\": true, \"scenarios\": {}}}",
+        results.len()
+    )?;
+    stdout.flush()?;
+    verify()?;
+    let summary = Value::Array(results);
+    let path = output.join("summary.json");
+    let publication = json_file(&path, &summary)?;
+    if let Err(error) = verify() {
+        publication.remove_owned();
+        return Err(error);
+    }
+    Ok(Completed {
+        summary,
+        publication,
+    })
+}
 pub(super) fn run(options: &Options, worker: &Path, cancel: &AtomicBool) -> Result<Completed> {
     require(!options.modes.is_empty(), "empty soundd scenario roster")?;
     interrupted(cancel)?;
@@ -636,31 +663,98 @@ pub(super) fn run(options: &Options, worker: &Path, cancel: &AtomicBool) -> Resu
     // Check fallible stdout BEFORE publishing a new PASS. Existing foreign reports
     // are untouched on admission/child/output failure; no eager invalidation.
     let mut stdout = io::stdout().lock();
-    writeln!(
-        stdout,
-        "{{\"passed\": true, \"scenarios\": {}}}",
-        results.len()
-    )?;
-    stdout.flush()?;
-    // Stdout may block while another process changes a sealed input. Recheck
-    // after that fallible boundary and on both sides of receipt publication.
-    verify()?;
-    let summary = Value::Array(results);
-    let path = options.output.join("summary.json");
-    let publication = json_file(&path, &summary)?;
-    if let Err(error) = verify() {
-        publication.remove_owned();
-        return Err(error);
-    }
-    Ok(Completed {
-        summary,
-        publication,
-    })
+    publish_after_stdout(&mut stdout, results, &options.output, verify)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    struct MutatingWriter {
+        path: PathBuf,
+        replace: bool,
+        mutated: bool,
+        written: Vec<u8>,
+    }
+    impl Write for MutatingWriter {
+        fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+            if !self.mutated {
+                if self.replace {
+                    let replacement = self.path.with_extension("replacement");
+                    fs::write(&replacement, b"changed private daemon\n")?;
+                    fs::rename(replacement, &self.path)?;
+                } else {
+                    let mut original = fs::read(&self.path)?;
+                    original.extend_from_slice(b"\n/* changed private source */\n");
+                    fs::write(&self.path, original)?;
+                }
+                self.mutated = true;
+            }
+            self.written.extend_from_slice(bytes);
+            Ok(bytes.len())
+        }
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+    #[test]
+    fn final_stdout_mutation_rejects_private_source_and_daemon_before_receipt() {
+        let repository = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let manifest: Value = serde_json::from_slice(include_bytes!(
+            "../../tests/fixtures/soundd-daemon/manifest.json"
+        ))
+        .unwrap();
+        for replace in [false, true] {
+            let temp = tempfile::tempdir().unwrap();
+            let source = temp.path().join("source");
+            for name in manifest["source_sha256"].as_object().unwrap().keys() {
+                let from = repository.join(name);
+                if name == identity::RETIRED && !from.exists() {
+                    continue;
+                }
+                let to = source.join(name);
+                fs::create_dir_all(to.parent().unwrap()).unwrap();
+                fs::copy(from, to).unwrap();
+            }
+            let before = identity::validate_source(&source).unwrap();
+            let daemon = temp.path().join("soundd-rs");
+            fs::write(&daemon, b"private daemon identity\n").unwrap();
+            let held = Artifact::open(&daemon).unwrap();
+            let output = temp.path().join("output");
+            fs::create_dir(&output).unwrap();
+            let receipt = output.join("summary.json");
+            fs::write(&receipt, b"foreign receipt\n").unwrap();
+            let mut writer = MutatingWriter {
+                path: if replace {
+                    daemon.clone()
+                } else {
+                    source.join("rust/tools/fixtures/soundd/portaudio.c")
+                },
+                replace,
+                mutated: false,
+                written: Vec::new(),
+            };
+            let verify = || -> Result<()> {
+                require(
+                    before == identity::validate_source(&source)?,
+                    "soundd original source presence changed during run",
+                )?;
+                held.verify(&daemon)
+            };
+            verify().unwrap();
+            assert!(publish_after_stdout(
+                &mut writer,
+                vec![json!({"passed":true})],
+                &output,
+                verify
+            )
+            .is_err());
+            assert_eq!(
+                writer.written.as_slice(),
+                b"{\"passed\": true, \"scenarios\": 1}\n"
+            );
+            assert_eq!(fs::read(receipt).unwrap(), b"foreign receipt\n");
+        }
+    }
     #[test]
     fn namespace_and_temporary_root_cleanup_preserve_foreign_replacements() {
         let namespace = Namespace::new().unwrap();

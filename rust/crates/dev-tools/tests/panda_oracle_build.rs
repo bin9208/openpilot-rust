@@ -4,6 +4,7 @@ use openpilot_dev_tools::{
     seal::Result,
 };
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -77,6 +78,17 @@ fn replace(value: &Value, pairs: &[(&str, &str)]) -> Value {
 #[test]
 fn original_commands_includes_and_manifests_match_all_seventeen_cases() {
     let root = root();
+    const HISTORICAL_DEVICE_ORACLE: &str =
+        "dbf7b2de42a945047f3c0d8f5450f3e89e16452cb454c4b922ee81b799347468";
+    const CURRENT_DEVICE_ORACLE: &str =
+        "96a8b74bf789bf96a91067bf4a174aaca3bbd455133eb4c48bdd8a6598a09197";
+    assert_eq!(
+        format!(
+            "{:x}",
+            Sha256::digest(fs::read(root.join("rust/tools/pandad_device_source.cc")).unwrap())
+        ),
+        CURRENT_DEVICE_ORACLE
+    );
     let root_s = root.to_str().unwrap();
     let cases: Vec<Value> =
         serde_json::from_str(include_str!("fixtures/panda-oracle/original.json")).unwrap();
@@ -128,7 +140,24 @@ fn original_commands_includes_and_manifests_match_all_seventeen_cases() {
             } else {
                 Value::String(content)
             };
-            assert_eq!(normalize(&actual), *expected, "{label}: {name}");
+            let mut historical = expected.clone();
+            if matches!(label, "protocol-device" | "protocol-device-sanitize")
+                && name == "manifest.json"
+            {
+                let pinned = &mut historical["sources"]["rust/tools/pandad_device_source.cc"];
+                assert_eq!(
+                    pinned.as_str(),
+                    Some(HISTORICAL_DEVICE_ORACLE),
+                    "historical {label}"
+                );
+                *pinned = CURRENT_DEVICE_ORACLE.into();
+            } else {
+                assert!(
+                    !historical.to_string().contains(HISTORICAL_DEVICE_ORACLE),
+                    "unexpected historical device hash in {label}: {name}"
+                );
+            }
+            assert_eq!(normalize(&actual), historical, "{label}: {name}");
         }
     }
 }

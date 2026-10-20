@@ -1630,3 +1630,44 @@ ownership, redirect methods, address/interface admission and stop propagation.
 No additional concrete defect was established in that bounded read. Redirect
 encoding creates avoidable temporary strings but remains an unmeasured candidate;
 this review does not clear HTTP internals or device behavior.
+
+
+## Bounded current cloud results and remaining failures (2026-10-21)
+
+At `edb42bf095d6a3e3b38cc0a4546976dfb710363e`, platform job
+[118816129959](https://github.com/bin9208/openpilot-rust/actions/runs/39477200877/job/118816129959)
+passed the old modem EOF regression, all 15 helper-lifetime checks, strict Clippy
+and its remaining original/native platform comparisons. Telemetry job
+[118816129992](https://github.com/bin9208/openpilot-rust/actions/runs/39477200877/job/118816129992)
+passed the required SDK crash record and full native I/O effects, with the
+subsequent tombstone comparisons. These scoped host results supersede the
+previous pending status for #398/#421; they do not clear every runtime module.
+
+The aggregate Rust run is not green: the new Panda device gate exposed QA-only
+packed-field reference UB (#425) and a native short-help admission difference;
+the Audio late-mutation test required unavailable kernel wait-channel visibility
+(#426). UI's old-source recording regression did not execute because sharing a
+CMake output cache across checkout roots failed before compilation. Sanitizers,
+raw byte comparisons, mutation rejection, deadlines and original CLI controls
+remain required. Repairs and isolated baseline build output are prepared for
+fresh cloud execution. Launcher failed-handshake cleanup (#424) and bridge QA
+late-output identity ownership (#427) are separate source-backed findings with
+focused regressions in preparation. No device startup, recording, upload or
+vehicle acceptance was performed during this pass.
+
+
+The same workspace run stopped at cluster live-profile's immediate proc-task
+assertion (#428), after both repeated owned-close calls succeeded. Source review
+follows Input -> MediaInput -> DecodeWorker and confirms the done notification
+and owned thread join precede true. The test now waits at most one second for
+the exact preexisting task set to reappear, preserving all close, start and
+final equality assertions. This addresses the observer boundary supported by
+Linux/libc exit ordering, not a measured device decoder leak; fresh CI remains
+required. Primary source links and the failing job are recorded in #428.
+
+Installer transport deletion was also traced through its caller: descriptor and
+archive destinations are created inside a fresh private `.pending-*` directory
+under the installation lock, then extracted, verified and activated. The retry
+unlink is therefore not an established deletion of an unrelated caller file in
+that actual install path. No speculative transport change or blanket clearance
+was made from the earlier name-pattern inventory.

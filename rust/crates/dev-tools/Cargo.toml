@@ -538,6 +538,7 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
+bluetooth-config-native = []
 bluetooth-journal-native = []
 calibration-float-native = []
 pandad-safety-padding-native = []
@@ -1625,3 +1626,12 @@ required-features = ["pandad-device-native"]
 [[test]]
 name = "pandad_device_reference"
 required-features = ["pandad-device-native"]
+
+[[bin]]
+name = "check-bluetooth-config"
+path = "src/bin/check_bluetooth_config.rs"
+required-features = ["bluetooth-config-native"]
+
+[[test]]
+name = "bluetooth_config_check"
+required-features = ["bluetooth-config-native"]

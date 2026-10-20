@@ -1,5 +1,36 @@
 # 저장소 전체 Python 전환 작업 인수인계
 
+## 현재 조합 중인 후속 변경: 2026-10-21
+
+이번 후속 조합의 기준인 직전 게시 HEAD는
+`edb42bf095d6a3e3b38cc0a4546976dfb710363e`다.
+Integration과 Fast는 통과했고 Rust 집계는 실패다. 개별 platform은 모뎀 #398의
+이전 EOF 실패와 수정 15검사·Clippy·원본 대조를 통과했다. telemetry도 SDK #421의
+실제 crash-I/O 비교 및 전체 job을 통과했다. 이 결과는 dev 통합이나 기기 검증이 아니다.
+
+실패한 후속 경계는 Panda 새 검사기의 `-hfoo` 처리와 C++ QA probe packed 필드
+참조의 UBSan(#425), 오디오 검증의 읽을 수 없는 `/proc/PID/wchan`(#426),
+UI 이전 소스 빌드의 CMake 절대 경로 캐시 충돌이다. workspace는 cluster
+종료 직후 `/proc` task 관측 단정(#428)에서 실패했다. 실제 소유 thread join은
+완료하며, 기존 close와 정확한 최종 집합 조건을 보존하고 커널 관측만 최대 1초
+기다리도록 보완했다. 각 수정과 회귀 검사를 준비했다.
+부팅 런처 실패 시 TERM 무시 자식 때문에 종료가 멈추는 #424도 수정·회귀·cloud
+이전 소스 실패 검사를 연결했다. 로컬은 형식·구문·diff만 검사한다.
+
+Bluetooth files는 edb에서 7검사·Clippy와 같은 ELF의 Python 존재/부재 전체
+34파일·21,734,088바이트 일치를 통과해 Python 원본 하나를 삭제했다. 삭제 후
+새 빌드·검사·실제 exec 감사는 아직 실행 전이다. 인벤토리는 소스 기준
+210 replaced-local / 3 partial / 3,367 pending이다. Bluetooth config는 253사례
+원본 대조를 준비했고, journal의 실제 원본 raw trace와 logmessaged startup의
+전체 원본 disk rows를 다음 cloud artifact에 보존하도록 추가했다. 두 원본은 유지한다.
+Bridge는 원본 관측 고정과 제거 준비를 진행하며 Python 원본을 유지한다.
+독립 6 Sol 검토 두 건은 추가 확정 blocker를 찾지 못했고, launcher의 KILL 이후
+background reaper 생성 실패 시 reap 보장 한계는 #424 문서에 명시했다.
+모델 컴파일러는 독립 prefix279 증거와 prefix93 수치 차이가 별개로 남아 있다.
+다음 node280 `policy/linear_2` 원본 캡처는 별도 임시 cloud 진단으로 진행한다.
+전체 전환·전체 CI·dev 반영·최종 패키지는 미완료이고, 콤마 정상부팅·녹화·업로드는
+사용자가 git pull 후 직접 확인한다. dev-md 및 별도 CI/CD 최적화 작업은 변경하지 않는다.
+
 ## 재개 및 CI 복구 준비: 2026-10-21
 
 사용자는 dev-md 완료 대기를 해제하고 #296 진행을 지시했다. 부모는 6.1 Sol로

@@ -27,6 +27,35 @@ fn options(path: &Path) -> Options {
         output: path.into(),
     }
 }
+fn copied_inputs(copy: &Path) {
+    let pins: std::collections::BTreeMap<String, String> = serde_json::from_str(include_str!(
+        "fixtures/logmessaged-startup/source-pins.json"
+    ))
+    .unwrap();
+    let authored = [
+        "rust/crates/dev-tools/src/logmessaged_startup_check.rs",
+        "rust/crates/dev-tools/src/logmessaged_startup_check/worker.rs",
+        "rust/crates/dev-tools/src/bin/check_logmessaged_startup.rs",
+        "rust/crates/dev-tools/src/managed_entry_collector_source.rs",
+        "rust/crates/dev-tools/src/stats_daemon_check/process.rs",
+        "rust/crates/dev-tools/src/stats_daemon_check/identity.rs",
+        "rust/crates/dev-tools/src/qa_endpoint.rs",
+        "rust/crates/dev-tools/src/qa_process.rs",
+        "rust/crates/dev-tools/src/argparse_scan.rs",
+        "rust/crates/dev-tools/src/python_fs.rs",
+        "rust/crates/dev-tools/src/path_resolve.rs",
+        "rust/crates/dev-tools/tests/fixtures/logmessaged-startup/source-pins.json",
+        "rust/crates/dev-tools/tests/fixtures/logmessaged-startup/original-observation.json",
+    ];
+    for name in pins.keys().map(String::as_str).chain(authored) {
+        if name == "rust/tools/check_logmessaged_startup.py" {
+            continue;
+        }
+        let target = copy.join(name);
+        fs::create_dir_all(target.parent().unwrap()).unwrap();
+        fs::copy(repository().join(name), target).unwrap();
+    }
+}
 #[test]
 fn independently_read_original_three_case_contract_rejects_missing_extra_or_wrong_records() {
     assert_eq!(
@@ -159,34 +188,37 @@ fn existing_output_receipt_is_not_overwritten_or_removed() {
     );
 }
 #[test]
-fn changed_original_and_fifo_input_fail_before_worker_or_success() {
+fn changed_or_nonregular_historical_checker_fails_before_worker_or_success() {
     use openpilot_dev_tools::qa_process::{CommandSpec, NativeRunner, Runner};
-    let root = repository();
     let temp = tempfile::tempdir().unwrap();
     let copy = temp.path().join("repository");
-    let pins: std::collections::BTreeMap<String, String> = serde_json::from_str(include_str!(
-        "fixtures/logmessaged-startup/source-pins.json"
-    ))
-    .unwrap();
-    for name in pins.keys() {
-        let target = copy.join(name);
-        fs::create_dir_all(target.parent().unwrap()).unwrap();
-        fs::copy(root.join(name), target).unwrap();
-    }
+    copied_inputs(&copy);
     let source = copy.join("rust/tools/check_logmessaged_startup.py");
-    for fifo in [false, true] {
-        fs::remove_file(&source).unwrap();
-        if fifo {
-            rustix::fs::mkfifoat(
+    fs::create_dir_all(source.parent().unwrap()).unwrap();
+    for kind in ["changed", "fifo", "dangling", "symlink", "directory"] {
+        if source.exists() || fs::symlink_metadata(&source).is_ok() {
+            if source.is_dir() {
+                fs::remove_dir(&source).unwrap();
+            } else {
+                fs::remove_file(&source).unwrap();
+            }
+        }
+        match kind {
+            "fifo" => rustix::fs::mkfifoat(
                 rustix::fs::CWD,
                 &source,
                 rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR,
             )
-            .unwrap();
-        } else {
-            fs::write(&source, b"changed original").unwrap();
+            .unwrap(),
+            "dangling" => std::os::unix::fs::symlink("missing", &source).unwrap(),
+            "symlink" => {
+                std::os::unix::fs::symlink(copy.join("rust/tools/logmessaged_native.py"), &source)
+                    .unwrap()
+            }
+            "directory" => fs::create_dir(&source).unwrap(),
+            _ => fs::write(&source, b"changed original").unwrap(),
         }
-        let output = temp.path().join(if fifo { "fifo" } else { "changed" });
+        let output = temp.path().join(kind);
         let mut spec = CommandSpec::new_os(
             vec![
                 executable().into_os_string(),
@@ -202,10 +234,116 @@ fn changed_original_and_fifo_input_fail_before_worker_or_success() {
             copy.clone().into_os_string(),
         )]));
         let observed = NativeRunner.run(&spec).unwrap();
-        assert_eq!(observed.code, 1);
+        assert_eq!(observed.code, 1, "{kind}");
         assert!(!output.join("legacy-source").exists());
         assert!(!output.join("report.json").exists());
     }
+}
+#[test]
+fn only_historical_checker_has_an_absence_exception() {
+    use openpilot_dev_tools::qa_process::{CommandSpec, NativeRunner, Runner};
+    let temp = tempfile::tempdir().unwrap();
+    let copy = temp.path().join("repository");
+    copied_inputs(&copy);
+    fs::remove_file(copy.join("rust/tools/logmessaged_native.py")).unwrap();
+    let output = temp.path().join("missing-shared-source");
+    let mut spec = CommandSpec::new_os(
+        vec![
+            executable().into_os_string(),
+            "--collector".into(),
+            collector().into_os_string(),
+            "--output".into(),
+            output.clone().into_os_string(),
+        ],
+        Duration::from_secs(5),
+    );
+    spec.set_os_env(std::collections::BTreeMap::from([(
+        "OPENPILOT_RUST_ROOT".into(),
+        copy.into_os_string(),
+    )]));
+    let observed = NativeRunner.run(&spec).unwrap();
+    assert_eq!(observed.code, 1);
+    assert!(!output.join("legacy-source").exists());
+    assert!(!output.join("report.json").exists());
+}
+#[test]
+fn only_exact_historical_checker_absence_is_accepted_and_reappearance_cannot_publish() {
+    struct Owned(Option<std::process::Child>);
+    impl Drop for Owned {
+        fn drop(&mut self) {
+            if let Some(mut child) = self.0.take() {
+                let _ = child.kill();
+                let _ = child.wait();
+            }
+        }
+    }
+    let temp = tempfile::tempdir().unwrap();
+    let copy = temp.path().join("repository");
+    copied_inputs(&copy);
+    let absent = copy.join("rust/tools/check_logmessaged_startup.py");
+    assert!(!absent.exists());
+    let output = temp.path().join("absent");
+    let report = checker::run(
+        &Options {
+            repository: copy.clone(),
+            collector: collector(),
+            output: output.clone(),
+        },
+        &executable(),
+    )
+    .unwrap();
+    let report: Value = serde_json::from_str(&report.to_json().unwrap()).unwrap();
+    assert_eq!(report["passed"], true);
+    assert_eq!(
+        report["historical_source_sha256"]["rust/tools/check_logmessaged_startup.py"],
+        "46cae42fe4749a48bb9f0acc81b92db974288633d28100b0a023b3d002b9b022"
+    );
+    assert_eq!(
+        report["reference_observation_sha256"],
+        "6b3a28eb057aac4dc3bdf3088015711e7bf684acda5e8c40cb2af2d52b92ef15"
+    );
+    assert!(report["input_sha256"]
+        .get("rust/tools/check_logmessaged_startup.py")
+        .is_none());
+    let output = temp.path().join("reappearance");
+    let child = Command::new(executable())
+        .args([
+            "--collector".into(),
+            collector().into_os_string(),
+            "--output".into(),
+            output.clone().into_os_string(),
+        ])
+        .env("OPENPILOT_RUST_ROOT", &copy)
+        .stdout(Stdio::null())
+        .stderr(fs::File::create(temp.path().join("reappearance.stderr")).unwrap())
+        .spawn()
+        .unwrap();
+    let mut owner = Owned(Some(child));
+    let deadline = Instant::now() + Duration::from_secs(20);
+    while !output.join("legacy-source/process-ready.json").is_file() {
+        assert!(
+            owner.0.as_mut().unwrap().try_wait().unwrap().is_none(),
+            "checker exited before first worker ACK"
+        );
+        assert!(Instant::now() < deadline, "first worker ACK absent");
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    fs::create_dir_all(absent.parent().unwrap()).unwrap();
+    fs::write(&absent, b"reappeared during native comparison").unwrap();
+    let deadline = Instant::now() + Duration::from_secs(10);
+    let status = loop {
+        if let Some(status) = owner.0.as_mut().unwrap().try_wait().unwrap() {
+            break status;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "checker did not reject reappearance"
+        );
+        std::thread::sleep(Duration::from_millis(5));
+    };
+    let _ = owner.0.take();
+    assert!(!status.success());
+    assert!(!output.join("report.json").exists());
 }
 #[test]
 fn leader_only_cancellation_stops_owned_children_and_preserves_foreign_replacement() {

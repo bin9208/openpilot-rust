@@ -539,17 +539,10 @@ fn source_or_daemon_mutation_during_final_stdout_cannot_publish_success() {
             .unwrap();
         let mut owner = CheckerChild(Some(child));
         let child = owner.0.as_ref().unwrap();
-        let raw_pid = child.id();
         let pid = Pid::from_child(child);
         let end = Instant::now() + Duration::from_secs(30);
+        let mut at_final_stdout = None;
         loop {
-            let state = fs::read_to_string(format!("/proc/{raw_pid}/wchan")).unwrap_or_default();
-            if output.join("provenance.json").is_file()
-                && output.join("bounded/summary.json").is_file()
-                && state.contains("pipe_write")
-            {
-                break;
-            }
             assert!(
                 waitid(
                     WaitId::Pid(pid),
@@ -560,9 +553,30 @@ fn source_or_daemon_mutation_during_final_stdout_cannot_publish_success() {
                 "{boundary}: {}",
                 fs::read_to_string(temp.join("stderr.log")).unwrap()
             );
+            let final_inputs_written = output.join("provenance.json").is_file()
+                && output.join("bounded/summary.json").is_file()
+                && !output.join("summary.json").exists();
+            if final_inputs_written {
+                // The pipe was filled before spawn and has no reader until the
+                // mutation below. After provenance, the controller verifies
+                // inputs and writes final stdout before publication. A stable
+                // live child here is evidence of the full-pipe boundary, though
+                // it cannot prove the preceding verification has completed.
+                // /proc/<pid>/wchan reported "0" in GitHub Actions.
+                if at_final_stdout.get_or_insert_with(Instant::now).elapsed()
+                    >= Duration::from_millis(500)
+                {
+                    break;
+                }
+            } else {
+                at_final_stdout = None;
+            }
             assert!(
                 Instant::now() < end,
-                "{boundary}: final stdout not reached: {state}"
+                "{boundary}: final stdout not reached: provenance={}, bounded summary={}, root summary={}",
+                output.join("provenance.json").exists(),
+                output.join("bounded/summary.json").exists(),
+                output.join("summary.json").exists()
             );
             std::thread::sleep(Duration::from_millis(5));
         }

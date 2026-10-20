@@ -56,30 +56,30 @@ Json health(const health_t &h) {
     {"uptime", double(h.uptime_pkt)}, {"voltage", double(h.voltage_pkt)}, {"current", double(h.current_pkt)},
     {"safety_tx_blocked", double(h.safety_tx_blocked_pkt)}, {"safety_rx_invalid", double(h.safety_rx_invalid_pkt)},
     {"tx_overflow", double(h.tx_buffer_overflow_pkt)}, {"rx_overflow", double(h.rx_buffer_overflow_pkt)},
-    {"faults", double(h.faults_pkt)}, {"ignition_line", h.ignition_line_pkt}, {"ignition_can", h.ignition_can_pkt},
-    {"controls_allowed", h.controls_allowed_pkt}, {"harness_status", h.car_harness_status_pkt},
-    {"safety_model", h.safety_mode_pkt}, {"safety_param", h.safety_param_pkt}, {"fault_status", h.fault_status_pkt},
-    {"power_save", h.power_save_enabled_pkt}, {"heartbeat_lost", h.heartbeat_lost_pkt},
-    {"alternative_experience", h.alternative_experience_pkt}, {"interrupt_load", h.interrupt_load_pkt},
-    {"fan_power", h.fan_power}, {"safety_rx_checks_invalid", h.safety_rx_checks_invalid_pkt},
-    {"spi_checksum_errors", h.spi_checksum_error_count_pkt}, {"fan_stall_count", h.fan_stall_count},
-    {"sbu1_mv", h.sbu1_voltage_mV}, {"sbu2_mv", h.sbu2_voltage_mV}, {"som_reset_triggered", h.som_reset_triggered}
+    {"faults", double(h.faults_pkt)}, {"ignition_line", int(h.ignition_line_pkt)}, {"ignition_can", int(h.ignition_can_pkt)},
+    {"controls_allowed", int(h.controls_allowed_pkt)}, {"harness_status", int(h.car_harness_status_pkt)},
+    {"safety_model", int(h.safety_mode_pkt)}, {"safety_param", int(h.safety_param_pkt)}, {"fault_status", int(h.fault_status_pkt)},
+    {"power_save", int(h.power_save_enabled_pkt)}, {"heartbeat_lost", int(h.heartbeat_lost_pkt)},
+    {"alternative_experience", int(h.alternative_experience_pkt)}, {"interrupt_load", double(h.interrupt_load_pkt)},
+    {"fan_power", int(h.fan_power)}, {"safety_rx_checks_invalid", int(h.safety_rx_checks_invalid_pkt)},
+    {"spi_checksum_errors", int(h.spi_checksum_error_count_pkt)}, {"fan_stall_count", int(h.fan_stall_count)},
+    {"sbu1_mv", int(h.sbu1_voltage_mV)}, {"sbu2_mv", int(h.sbu2_voltage_mV)}, {"som_reset_triggered", int(h.som_reset_triggered)}
   };
   return Json::object{{"health", fields}, {"interrupt_bits", double(bits)}};
 }
 
 Json can_health(const can_health_t &h) {
   return Json::object{
-    {"bus_off", h.bus_off}, {"bus_off_count", double(h.bus_off_cnt)}, {"error_warning", h.error_warning},
-    {"error_passive", h.error_passive}, {"last_error", h.last_error}, {"last_stored_error", h.last_stored_error},
-    {"last_data_error", h.last_data_error}, {"last_data_stored_error", h.last_data_stored_error},
-    {"receive_error_count", h.receive_error_cnt}, {"transmit_error_count", h.transmit_error_cnt},
+    {"bus_off", int(h.bus_off)}, {"bus_off_count", double(h.bus_off_cnt)}, {"error_warning", int(h.error_warning)},
+    {"error_passive", int(h.error_passive)}, {"last_error", int(h.last_error)}, {"last_stored_error", int(h.last_stored_error)},
+    {"last_data_error", int(h.last_data_error)}, {"last_data_stored_error", int(h.last_data_stored_error)},
+    {"receive_error_count", int(h.receive_error_cnt)}, {"transmit_error_count", int(h.transmit_error_cnt)},
     {"total_errors", double(h.total_error_cnt)}, {"total_tx_lost", double(h.total_tx_lost_cnt)},
     {"total_rx_lost", double(h.total_rx_lost_cnt)}, {"total_tx", double(h.total_tx_cnt)},
     {"total_rx", double(h.total_rx_cnt)}, {"total_forwarded", double(h.total_fwd_cnt)},
-    {"total_tx_checksum_errors", double(h.total_tx_checksum_error_cnt)}, {"can_speed", h.can_speed},
-    {"can_data_speed", h.can_data_speed}, {"canfd_enabled", h.canfd_enabled}, {"brs_enabled", h.brs_enabled},
-    {"canfd_non_iso", h.canfd_non_iso}, {"irq0_rate", double(h.irq0_call_rate)}, {"irq1_rate", double(h.irq1_call_rate)},
+    {"total_tx_checksum_errors", double(h.total_tx_checksum_error_cnt)}, {"can_speed", int(h.can_speed)},
+    {"can_data_speed", int(h.can_data_speed)}, {"canfd_enabled", int(h.canfd_enabled)}, {"brs_enabled", int(h.brs_enabled)},
+    {"canfd_non_iso", int(h.canfd_non_iso)}, {"irq0_rate", double(h.irq0_call_rate)}, {"irq1_rate", double(h.irq1_call_rate)},
     {"irq2_rate", double(h.irq2_call_rate)}, {"core_reset_count", double(h.can_core_reset_cnt)}
   };
 }

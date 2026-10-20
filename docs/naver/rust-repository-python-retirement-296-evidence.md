@@ -4551,3 +4551,20 @@ The 1364e48c Bluetooth file gate passed all six tests, Clippy and the actual
 unused PermissionsExt import left after immutable launcher conversion. Removed
 only that import; the final separate CLI and subsequent original connectivity
 comparisons were not reached. Source retirement still waits for complete evidence.
+
+On the later `edb` bridge batch, Bluetooth files passed its seven sealed tests,
+strict Clippy and the same-ELF present/absent comparison in
+[Actions run 39477200877, job 118816129917](https://github.com/bin9208/openpilot-rust/actions/runs/39477200877/job/118816129917).
+The later UI CMake failure was unrelated. Artifact 12291885056 has ZIP SHA-256
+`b681cd8a57158eebf10c7445cc8f5b581ec22bc17efe15390322fc42d1543c22`;
+the two 34-entry lanes each total 21,734,088 identical bytes. Checker ELF
+SHA-256 is `4a454ebd7521e5bbf94661f97d0c30b1131fce074b85aed9817398a50e005c75`
+and fixture ELF SHA-256 is
+`df7a42b9e709682ad569b3754f0838a0477dc80646c5cfafbccc6cf9318acff8`.
+
+That evidence authorizes deletion of only `rust/tools/check_bluetooth_files.py`.
+The post-deletion source now requires a fresh CI real-CLI trace under a disabled
+PATH, with exactly the sealed checker and fixture exec attempts. The trace and
+audit are written to `BLUETOOTH_FILES_EVIDENCE`; the immutable original Python
+observation and its provenance remain separate. Post-deletion CI has not yet
+run, so this is a source-ready retirement rather than a cloud-validated one.

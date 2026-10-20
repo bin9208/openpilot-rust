@@ -2521,6 +2521,36 @@ jobs:
           cargo --version
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           CARGO_INCREMENTAL=0 cargo build --manifest-path rust/Cargo.toml -p openpilot-runtime-launcher -p openpilot-process-supervision -p openpilot-managed-entry -p openpilot-registration -p openpilot-manager-catalog -p openpilot-checkout-status -p openpilot-uploader -p openpilot-logmessaged -p openpilot-dev-tools --features openpilot-dev-tools/managed-entry-native,openpilot-dev-tools/managed-runtime-native,openpilot-dev-tools/registration-clock-native --bins --examples --locked
+      - name: Require bounded launcher cleanup after failed lock acknowledgement
+        run: |
+          set -euo pipefail
+          export CARGO_TARGET_DIR="$GITHUB_WORKSPACE/rust/target"
+          proof="$RUNNER_TEMP/startup-runtime/failed-handoff"
+          baseline="$RUNNER_TEMP/handoff424-baseline"
+          mkdir -p "$proof"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          git fetch --no-tags --depth=1 origin edb42bf095d6a3e3b38cc0a4546976dfb710363e
+          git worktree add --detach "$baseline" edb42bf095d6a3e3b38cc0a4546976dfb710363e
+          # Same regression and declared test features, original launcher logic.
+          cp rust/crates/runtime-launcher/tests/handoff.rs "$baseline/rust/crates/runtime-launcher/tests/"
+          cp rust/crates/runtime-launcher/Cargo.toml "$baseline/rust/crates/runtime-launcher/"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo test --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-runtime-launcher --test handoff --no-run --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          set +e
+          /usr/bin/timeout --signal=TERM --kill-after=2s 15s cargo test --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-runtime-launcher --test handoff --locked -- --exact failed_lock_acknowledgement_kills_and_reaps_term_resistant_owned_child --nocapture 2>&1 | tee "$proof/baseline.log"
+          status=${PIPESTATUS[0]}
+          set -e
+          # The test's token-verified pidfd watcher cleans up the old stuck child.
+          # A compile error or external timeout is not the intended RED evidence.
+          test "$status" -eq 101
+          grep -F 'test result: FAILED' "$proof/baseline.log"
+          grep -F 'failed_lock_acknowledgement_kills_and_reaps_term_resistant_owned_child' "$proof/baseline.log"
+          grep -F 'error cleanup exceeded bound' "$proof/baseline.log"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-runtime-launcher --test handoff --locked -- --nocapture
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-runtime-launcher --all-targets --locked -- -D warnings
       - name: Build current native dependency stager
         uses: ./.github/actions/native-json11
       - name: Build original startup message and Params bindings
@@ -2702,7 +2732,8 @@ jobs:
         run: |
           # The namespace controller runs as root; keep its private 0600 reports
           # readable by the runner for the paired check and failure artifacts.
-          trap 'if [ -d "$RUNNER_TEMP/startup-services/bridge-native-controller" ]; then sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/startup-services/bridge-native-controller"; fi' EXIT
+          set -euo pipefail
+          trap 'for path in "$RUNNER_TEMP/startup-services/bridge-native-controller" "$RUNNER_TEMP/startup-services/bridge-absence-proof"; do if [ -d "$path" ]; then sudo chown -R "$(id -u):$(id -g)" "$path"; fi; done' EXIT
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bridge-tools-native --bin check-bridge --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
@@ -2716,6 +2747,25 @@ jobs:
           sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/startup-services/bridge-native-controller"
           export BRIDGE_ORIGINAL_CONTROLLER_REPORT="$RUNNER_TEMP/startup-services/bridge/result.json"
           export BRIDGE_NATIVE_CONTROLLER_REPORT="$RUNNER_TEMP/startup-services/bridge-native-controller/result.json"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          proof="$RUNNER_TEMP/startup-services/bridge-absence-proof"
+          checker="$GITHUB_WORKSPACE/rust/target/debug/check-bridge"
+          original="$RUNNER_TEMP/services-bridge-source/bridge-original"
+          native="$GITHUB_WORKSPACE/rust/target/debug/bridge"
+          mkdir -p "$proof/native-root/rust/tools" "$proof/native-path"
+          ln -s "$(command -v unshare)" "$proof/native-path/unshare"
+          ln -s "$(command -v ip)" "$proof/native-path/ip"
+          printf '%s\n' "$checker" > "$proof/checker.path"
+          printf '%s\n' "$original" > "$proof/original.path"
+          printf '%s\n' "$native" > "$proof/native.path"
+          printf '%s\n' "$proof/native-path/unshare" > "$proof/unshare.path"
+          printf '%s\n' "$proof/native-path/ip" > "$proof/ip.path"
+          sha256sum "$checker" "$original" "$native" "$proof/native-path/unshare" "$proof/native-path/ip" > "$proof/artifacts.sha256"
+          sudo -E env "OPENPILOT_RUST_ROOT=$proof/native-root" "PATH=$proof/native-path" /usr/bin/timeout --signal=TERM --kill-after=5s 300s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "$proof/native.exec" "$checker" --original "$original" --binary "$native" --output "$proof/absent" > "$proof/native.stdout" 2> "$proof/native.stderr"
+          sudo chown -R "$(id -u):$(id -g)" "$proof"
+          diff "$RUNNER_TEMP/startup-services/bridge-native-controller/result.json" "$proof/absent/result.json"
+          sha256sum -c "$proof/artifacts.sha256"
+          export BRIDGE_ABSENCE_PROOF="$proof"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bridge-tools-native --test bridge_controller_reference --locked
       - name: Compare AGNOS images, retry policy, casync and actual CLI
@@ -3124,7 +3174,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal --component clippy
-      - run: sudo apt-get update && sudo apt-get install -y g++ clang cmake make jq curl ghostscript libclang-dev capnproto libcapnp-dev libzmq3-dev libgl-dev libx11-dev libxrandr2 libxinerama1 libxcursor1 libxi6 libxtst6 xvfb xauth ffmpeg dbus-daemon
+      - run: sudo apt-get update && sudo apt-get install -y g++ clang cmake make jq curl ghostscript libclang-dev capnproto libcapnp-dev libzmq3-dev libgl-dev libx11-dev libxrandr2 libxinerama1 libxcursor1 libxi6 libxtst6 xvfb xauth ffmpeg dbus-daemon strace
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 cffi==2.1.1 pillow==12.3.0 python-xlib==0.33 jeepney==0.9.0 comma-deps-raylib==6.0.0.1.post103 setproctitle==1.3.7 psutil==7.2.2 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 pytest==9.0.2 anyio==4.12.1
       - name: Stage source-pinned native renderer
         run: |
@@ -3183,6 +3233,21 @@ jobs:
           rustc --edition=2021 rust/tools/wifi_snapshot_allocation_probe.rs --extern "openpilot_wifi=$GITHUB_WORKSPACE/rust/target/debug/libopenpilot_wifi.rlib" -L "dependency=$GITHUB_WORKSPACE/rust/target/debug/deps" -o "$RUNNER_TEMP/wifi-snapshot-allocation-probe"
           mkdir -p "$RUNNER_TEMP/ui-connectivity"
           "$RUNNER_TEMP/wifi-snapshot-allocation-probe" --require-improvement | tee "$RUNNER_TEMP/ui-connectivity/wifi-snapshot-allocation.tsv"
+      - name: Compare native Bluetooth config controller with unchanged original
+        run: |
+          set -euo pipefail
+          export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
+          export BLUETOOTH_CONFIG_FIXTURE="$GITHUB_WORKSPACE/rust/target/debug/examples/config_fixture"
+          export BLUETOOTH_CONFIG_PYTHON=python
+          export BLUETOOTH_CONFIG_EVIDENCE="$RUNNER_TEMP/ui-connectivity/bluetooth-config-original"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-config-native --bin check-bluetooth-config --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-config-native --test bluetooth_config_check --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-config-native --lib --bin check-bluetooth-config --test bluetooth_config_check --locked -- -D warnings
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          rust/target/debug/check-bluetooth-config --binary "$BLUETOOTH_CONFIG_FIXTURE" --output "$RUNNER_TEMP/ui-connectivity/bluetooth-config-current"
       - name: Require native Bluetooth file controller with sealed original observations
         run: |
           set -euo pipefail
@@ -3198,17 +3263,12 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           proof="$RUNNER_TEMP/ui-connectivity/bluetooth-files-retirement"
           checker="$GITHUB_WORKSPACE/rust/target/debug/check-bluetooth-files"
+          test ! -e rust/tools/check_bluetooth_files.py
+          test ! -L rust/tools/check_bluetooth_files.py
           mkdir -p "$proof"
           sha256sum "$checker" "$BLUETOOTH_FILE_FIXTURE" > "$proof/artifacts.sha256"
-          env PATH=/nonexistent "$checker" --binary "$BLUETOOTH_FILE_FIXTURE" --output "$proof/present"
-          backup="$RUNNER_TEMP/bluetooth-files-retired-source"
-          mv rust/tools/check_bluetooth_files.py "$backup"
-          trap 'mv "$backup" rust/tools/check_bluetooth_files.py' EXIT
           env PATH=/nonexistent "$checker" --binary "$BLUETOOTH_FILE_FIXTURE" --output "$proof/absent"
-          diff -r "$proof/present" "$proof/absent"
           sha256sum -c "$proof/artifacts.sha256"
-          mv "$backup" rust/tools/check_bluetooth_files.py
-          trap - EXIT
       - name: Compare native Bluetooth journal controller with unchanged original
         run: |
           export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
@@ -3242,8 +3302,10 @@ jobs:
           git fetch --no-tags --depth=1 origin 11f3dec411662baa961733b363c0b38d7082fcfa
           git worktree add --detach "$baseline" 11f3dec411662baa961733b363c0b38d7082fcfa
           cp rust/crates/dev-tools/tests/ui_application_lifecycle_recording.rs "$baseline/rust/crates/dev-tools/tests/"
-          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-          if cargo test --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-dev-tools --features ui-application-lifecycle-native --test ui_application_lifecycle_recording --locked -- --exact actual_short_reading_encoder_rejects_partial_frame_and_keeps_queue_capacity --nocapture 2>&1 | tee "$proof/baseline.log"; then
+          # CMake caches contain absolute source paths. Keep the immutable old
+          # checkout in its own bounded target rather than sharing current OUT_DIR.
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          if CARGO_TARGET_DIR="$RUNNER_TEMP/ui423-target" cargo test --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-dev-tools --features ui-application-lifecycle-native --test ui_application_lifecycle_recording --locked -- --exact actual_short_reading_encoder_rejects_partial_frame_and_keeps_queue_capacity --nocapture 2>&1 | tee "$proof/baseline.log"; then
             echo 'Expected the old buffered adapter assertion to fail' >&2
             exit 1
           fi

@@ -612,6 +612,14 @@ fn ui_connectivity_requires_source_render_and_private_protocol_checks() {
         &["binary / 'check-bluetooth-files'", "elif name == 'files':"],
     );
     assert!(!caller.contains("check_bluetooth_files.py"));
+    required(
+        &caller,
+        &[
+            "binary / 'check-bluetooth-config'",
+            "elif name == 'config':",
+        ],
+    );
+    assert!(!caller.contains("check_bluetooth_config.py"));
     let config = workflow();
     let native = commands(&config["jobs"]["ui-connectivity"]);
     let ownership_tests = "cargo test --manifest-path rust/Cargo.toml -p openpilot-bluetooth -p openpilot-wifi --all-targets --locked";
@@ -639,6 +647,11 @@ fn ui_connectivity_requires_source_render_and_private_protocol_checks() {
             "check_wifi_policy.py",
             "check_wifi_runtime.py",
             "check_wifi_callback_ordering.py",
+            "--features bluetooth-config-native --bin check-bluetooth-config",
+            "--features bluetooth-config-native --test bluetooth_config_check --locked",
+            "--features bluetooth-config-native --lib --bin check-bluetooth-config",
+            "BLUETOOTH_CONFIG_PYTHON=python",
+            "rust/target/debug/check-bluetooth-config --binary",
             "--features bluetooth-files-native --bin check-bluetooth-files",
             "--features bluetooth-files-native --test bluetooth_files_check --locked",
             "checker=\"$GITHUB_WORKSPACE/rust/target/debug/check-bluetooth-files\"",
@@ -1555,6 +1568,7 @@ fn owner_and_buffered_write_repairs_require_real_old_failures_and_fixed_checks()
         "ui-connectivity",
         &[
             "ui423-baseline",
+            "CARGO_TARGET_DIR=\"$RUNNER_TEMP/ui423-target\" cargo test",
             "11f3dec411662baa961733b363c0b38d7082fcfa",
             "--exact actual_short_reading_encoder_rejects_partial_frame_and_keeps_queue_capacity",
             "grep -F 'test result: FAILED'",
@@ -1565,19 +1579,38 @@ fn owner_and_buffered_write_repairs_require_real_old_failures_and_fixed_checks()
     );
 }
 #[test]
-fn bluetooth_file_retirement_requires_same_elf_absence_proof() {
+fn bluetooth_file_retirement_requires_fresh_absent_source_proof() {
+    assert!(!root().join("rust/tools/check_bluetooth_files.py").exists());
     job_check(
         "ui-connectivity",
         &[
+            "test ! -e rust/tools/check_bluetooth_files.py",
+            "test ! -L rust/tools/check_bluetooth_files.py",
             "sha256sum \"$checker\" \"$BLUETOOTH_FILE_FIXTURE\"",
-            "env PATH=/nonexistent \"$checker\" --binary \"$BLUETOOTH_FILE_FIXTURE\" --output \"$proof/present\"",
-            "mv rust/tools/check_bluetooth_files.py \"$backup\"",
             "env PATH=/nonexistent \"$checker\" --binary \"$BLUETOOTH_FILE_FIXTURE\" --output \"$proof/absent\"",
-            "diff -r \"$proof/present\" \"$proof/absent\"",
             "sha256sum -c \"$proof/artifacts.sha256\"",
-            "trap 'mv \"$backup\" rust/tools/check_bluetooth_files.py' EXIT",
+            "--features bluetooth-files-native --test bluetooth_files_check --locked",
+            "strace",
         ],
         &["bluetooth-files-retirement"],
+        false,
+    );
+}
+#[test]
+fn launcher_failed_handoff_requires_actual_old_failure_and_fixed_lifecycle() {
+    job_check(
+        "startup-runtime",
+        &[
+            "handoff424-baseline",
+            "edb42bf095d6a3e3b38cc0a4546976dfb710363e",
+            "--test handoff --no-run --locked",
+            "timeout --signal=TERM --kill-after=2s 15s",
+            "test \"$status\" -eq 101",
+            "grep -F 'error cleanup exceeded bound'",
+            "cargo test --manifest-path rust/Cargo.toml -p openpilot-runtime-launcher --test handoff --locked",
+            "cargo clippy --manifest-path rust/Cargo.toml -p openpilot-runtime-launcher --all-targets --locked -- -D warnings",
+        ],
+        &["--test handoff"],
         false,
     );
 }
@@ -2143,4 +2176,24 @@ fn production_statistics_require_actual_entrypoint_and_busy_shutdown_checks() {
     ]);
     assert!(!run.contains("check_stats_runtime.py"));
     assert!(!run.contains("check_stats_flood.py"));
+}
+
+#[test]
+fn bridge_retirement_preparation_keeps_live_original_and_same_elf_absence() {
+    job_check(
+        "startup-services",
+        &[
+            "python)\" rust/tools/check_bridge.py",
+            "--test bridge_controller_reference --locked",
+            "--lib bridge_check:: --locked",
+            "BRIDGE_ABSENCE_PROOF=\"$proof\"",
+            "OPENPILOT_RUST_ROOT=$proof/native-root",
+            "PATH=$proof/native-path",
+            "timeout --signal=TERM --kill-after=5s 300s",
+            "trace=execve,execveat",
+            "sha256sum -c \"$proof/artifacts.sha256\"",
+        ],
+        &["--test bridge_controller_reference"],
+        false,
+    );
 }

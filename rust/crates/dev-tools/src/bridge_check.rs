@@ -1,5 +1,6 @@
 //! Native controller for the unchanged source/native bridge lifecycle matrix.
-//! The original Python controller remains a mandatory independent CI control.
+//! The original Python controller remains an independent live CI control until
+//! the retained cloud observation and absent-path execution are accepted.
 use crate::{
     argparse_scan::{scan_os, ArgumentError, OptionSpec},
     path_resolve::resolve_non_strict,
@@ -25,6 +26,7 @@ mod identity;
 mod publication;
 mod traffic;
 const SOURCE_SHA: &str = "17d5fc9f1d5dc3c59306ba0a8fdcc3bd85b216b362fbbe18fdc7e5daaa246821";
+const OBSERVATION_SHA: &str = "93238454770d40562d60087fa355b2da8cfc72112a56ee751df1fb69098201e3";
 const PASS: &str = "PASS: source/native bridge bidirectional bursts, substring whitelist, client disconnect/reconnect and shutdown";
 pub const SCENARIOS: [&str; 2] = ["outgoing", "incoming"];
 #[derive(Debug)]
@@ -321,9 +323,66 @@ pub fn compare_reports(expected: &Value, actual: &Value) -> Result<()> {
     if expected != actual {
         return Err("original/native bridge controller reports differ".into());
     }
+    compare_with_observation(expected)?;
     Ok(())
 }
-pub fn run(options: &Options, executable: &Path, cancel: &AtomicBool) -> Result<Value> {
+/// Independent unchanged-Python result from the pinned Actions artifact.
+pub fn compare_with_observation(actual: &Value) -> Result<()> {
+    let bytes = include_bytes!("../tests/fixtures/bridge-controller/original-observation.json");
+    if format!("{:x}", Sha256::digest(bytes)) != OBSERVATION_SHA {
+        return Err("bridge original observation digest differs".into());
+    }
+    let observation: Value = serde_json::from_slice(bytes)?;
+    if observation["historical_checker_sha256"] != SOURCE_SHA {
+        return Err("bridge original observation checker provenance differs".into());
+    }
+    let raw = observation["original_report_raw"]
+        .as_str()
+        .ok_or("bridge original raw report absent")?;
+    let raw_sha = format!("{:x}", Sha256::digest(raw.as_bytes()));
+    if observation["original_report_sha256"].as_str() != Some(raw_sha.as_str())
+        || serde_json::from_str::<Value>(raw)? != observation["original_report"]
+    {
+        return Err("bridge original report source seal differs".into());
+    }
+    for scenario in SCENARIOS {
+        let case = &observation["original_source_cases"][scenario];
+        if case["digest"] != observation["original_report"]["source"][scenario] {
+            return Err("bridge original source case differs from report".into());
+        }
+        let raw_scenario = case["scenario_raw"]
+            .as_str()
+            .ok_or("bridge original source scenario absent")?;
+        let scenario_sha = format!("{:x}", Sha256::digest(raw_scenario.as_bytes()));
+        let parsed: Value = serde_json::from_str(raw_scenario)?;
+        if case["scenario_sha256"].as_str() != Some(scenario_sha.as_str())
+            || parsed["digest"] != case["digest"]
+            || parsed["network_namespace"].as_str().is_none()
+        {
+            return Err("bridge original source scenario seal differs".into());
+        }
+        for stream in ["stdout", "stderr"] {
+            let raw_key = format!("{stream}_raw");
+            let sha_key = format!("{stream}_sha256");
+            let raw = case[raw_key.as_str()]
+                .as_str()
+                .ok_or("bridge original source stream absent")?;
+            let digest = format!("{:x}", Sha256::digest(raw.as_bytes()));
+            if case[sha_key.as_str()].as_str() != Some(digest.as_str()) {
+                return Err("bridge original source stream seal differs".into());
+            }
+        }
+    }
+    if &observation["original_report"] != actual {
+        return Err("bridge result differs from retained original observation".into());
+    }
+    Ok(())
+}
+fn run_owned(
+    options: &Options,
+    executable: &Path,
+    cancel: &AtomicBool,
+) -> Result<(Value, Vec<identity::Input>)> {
     if options.scenario.is_some() {
         return Err("public run does not accept worker scenario".into());
     }
@@ -360,6 +419,7 @@ pub fn run(options: &Options, executable: &Path, cancel: &AtomicBool) -> Result<
     if records["source"] != records["rust"] {
         return Err("source/native bridge traffic differs".into());
     }
+    compare_with_observation(&records)?;
     check(cancel)?;
     let hashes = identities
         .iter()
@@ -367,9 +427,53 @@ pub fn run(options: &Options, executable: &Path, cancel: &AtomicBool) -> Result<
         .collect::<Result<Vec<_>>>()?;
     write_json(
         &options.output.join("provenance.json"),
-        &json!({"controller_source_sha256":SOURCE_SHA,"original_sha256":hashes[0],"native_sha256":hashes[1],"controller_sha256":hashes[2]}),
+        &json!({"controller_source_sha256":SOURCE_SHA,"reference_observation_sha256":OBSERVATION_SHA,"original_sha256":hashes[0],"native_sha256":hashes[1],"controller_sha256":hashes[2]}),
     )?;
-    Ok(records)
+    Ok((records, identities))
+}
+pub fn run(options: &Options, executable: &Path, cancel: &AtomicBool) -> Result<Value> {
+    run_owned(options, executable, cancel).map(|(report, _identities)| report)
+}
+fn publish_report(
+    report: &Value,
+    output: &Path,
+    stdout: &mut impl Write,
+    identities: &[identity::Input],
+    historical: &identity::HistoricalSource,
+    cancel: &AtomicBool,
+) -> Result<publication::Publication> {
+    check(cancel)?;
+    for input in identities {
+        input.verified_sha256()?;
+    }
+    historical.verify()?;
+    writeln!(stdout, "{PASS}")?;
+    stdout.flush()?;
+    check(cancel)?;
+    for input in identities {
+        input.verified_sha256()?;
+    }
+    historical.verify()?;
+    let publication = publication::Publication::write(&output.join("result.json"), report)?;
+    for input in identities {
+        input.verified_sha256()?;
+    }
+    historical.verify()?;
+    check(cancel)?;
+    Ok(publication)
+}
+fn finish_report(
+    publication: publication::Publication,
+    identities: &[identity::Input],
+    historical: &identity::HistoricalSource,
+    cancel: &AtomicBool,
+) -> Result<()> {
+    check(cancel)?;
+    for input in identities {
+        input.verified_sha256()?;
+    }
+    historical.verify()?;
+    publication.finish(cancel)
 }
 pub fn cli() -> Result<()> {
     let Some(options) = parse(&std::env::args_os().skip(1).collect::<Vec<_>>())? else {
@@ -382,26 +486,35 @@ pub fn cli() -> Result<()> {
         .into_iter()
         .collect::<std::io::Result<Vec<_>>>()?;
     let mut publication = None;
+    let mut identities = None;
+    let mut historical = None;
     let result = (|| {
         if options.scenario.is_some() {
             publication = Some(worker(&options, &cancel)?);
             return check(&cancel);
         }
-        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        let source = fs::read(root.join("rust/tools/check_bridge.py"))?;
-        if format!("{:x}", Sha256::digest(&source)) != SOURCE_SHA {
-            return Err("bridge original controller source drift".into());
-        }
-        let report = run(&options, &std::env::current_exe()?, &cancel)?;
-        let mut stdout = std::io::stdout().lock();
-        writeln!(stdout, "{PASS}")?;
-        stdout.flush()?;
-        check(&cancel)?;
-        publication = Some(publication::Publication::write(
-            &options.output.join("result.json"),
-            &report,
+        let root = std::env::var_os("OPENPILOT_RUST_ROOT")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.."));
+        historical = Some(identity::HistoricalSource::capture(
+            &root.join("rust/tools/check_bridge.py"),
+            SOURCE_SHA,
         )?);
-        check(&cancel)
+        let (report, inputs) = run_owned(&options, &std::env::current_exe()?, &cancel)?;
+        identities = Some(inputs);
+        publication = Some(publish_report(
+            &report,
+            &options.output,
+            &mut std::io::stdout().lock(),
+            identities
+                .as_ref()
+                .ok_or("missing bridge input identities")?,
+            historical
+                .as_ref()
+                .ok_or("missing bridge historical source")?,
+            &cancel,
+        )?);
+        Ok(())
     })();
     for signal in signals {
         signal_hook::low_level::unregister(signal);
@@ -409,9 +522,98 @@ pub fn cli() -> Result<()> {
     // Observe a signal latched during publication or immediately before handler
     // removal. On any failure the guard rolls back only its own report inode.
     result.and_then(|()| {
-        check(&cancel)?;
-        publication
-            .ok_or("missing bridge report publication")?
-            .finish(&cancel)
+        let publication = publication.ok_or("missing bridge report publication")?;
+        if options.scenario.is_some() {
+            return publication.finish(&cancel);
+        }
+        finish_report(
+            publication,
+            identities
+                .as_deref()
+                .ok_or("missing bridge input identities")?,
+            historical
+                .as_ref()
+                .ok_or("missing bridge historical source")?,
+            &cancel,
+        )
     })
+}
+
+#[cfg(test)]
+mod late_identity_tests {
+    use super::*;
+    use std::io;
+
+    struct MutatingWriter {
+        path: PathBuf,
+    }
+    impl Write for MutatingWriter {
+        fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+            fs::write(&self.path, b"changed executable")?;
+            Ok(bytes.len())
+        }
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+    #[test]
+    fn executable_mutated_during_final_stdout_cannot_publish_result() {
+        let root = tempfile::tempdir().unwrap();
+        let historical_parent = root.path().join("rust/tools");
+        fs::create_dir_all(&historical_parent).unwrap();
+        let historical = identity::HistoricalSource::capture(
+            &historical_parent.join("check_bridge.py"),
+            SOURCE_SHA,
+        )
+        .unwrap();
+        let executable = root.path().join("bridge-copy");
+        fs::write(&executable, b"original executable").unwrap();
+        let inputs = [identity::Input::capture(&executable)];
+        let output = root.path().join("report");
+        fs::create_dir(&output).unwrap();
+        let mut writer = MutatingWriter {
+            path: executable.clone(),
+        };
+        assert!(publish_report(
+            &json!({"passed": true}),
+            &output,
+            &mut writer,
+            &inputs,
+            &historical,
+            &AtomicBool::new(false),
+        )
+        .is_err());
+        assert!(!output.join("result.json").exists());
+    }
+    #[test]
+    fn executable_mutated_after_publication_rolls_back_owned_result() {
+        let root = tempfile::tempdir().unwrap();
+        let historical_parent = root.path().join("rust/tools");
+        fs::create_dir_all(&historical_parent).unwrap();
+        let historical = identity::HistoricalSource::capture(
+            &historical_parent.join("check_bridge.py"),
+            SOURCE_SHA,
+        )
+        .unwrap();
+        let executable = root.path().join("bridge-copy");
+        fs::write(&executable, b"original executable").unwrap();
+        let inputs = [identity::Input::capture(&executable)];
+        let output = root.path().join("report");
+        fs::create_dir(&output).unwrap();
+        let publication = publish_report(
+            &json!({"passed": true}),
+            &output,
+            &mut Vec::<u8>::new(),
+            &inputs,
+            &historical,
+            &AtomicBool::new(false),
+        )
+        .unwrap();
+        assert!(output.join("result.json").exists());
+        fs::write(&executable, b"changed executable").unwrap();
+        assert!(
+            finish_report(publication, &inputs, &historical, &AtomicBool::new(false),).is_err()
+        );
+        assert!(!output.join("result.json").exists());
+    }
 }

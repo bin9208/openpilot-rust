@@ -27,6 +27,8 @@ mod worker;
 
 pub const CASES: [&str; 3] = ["legacy-source", "ready-source", "ready-native"];
 pub const MARKER: &str = r#"{"msg": "first-error-after-start", "levelnum": 40}"#;
+const HISTORICAL_CHECKER: &str = "rust/tools/check_logmessaged_startup.py";
+const OBSERVATION_SHA256: &str = "6b3a28eb057aac4dc3bdf3088015711e7bf684acda5e8c40cb2af2d52b92ef15";
 pub struct Options {
     pub repository: PathBuf,
     pub collector: PathBuf,
@@ -60,18 +62,49 @@ pub fn validate_observed(case: &str, observed: &Value, disk: &[Value]) -> Result
 struct Inputs {
     held: Vec<Bound>,
     hashes: BTreeMap<String, String>,
+    historical_checker: Option<Bound>,
+    historical_path: PathBuf,
+    historical_hash: String,
 }
 impl Inputs {
     fn new(repository: &Path, executable: &Path) -> Result<Self> {
+        require(
+            format!(
+                "{:x}",
+                Sha256::digest(include_bytes!(
+                    "../tests/fixtures/logmessaged-startup/original-observation.json"
+                ))
+            ) == OBSERVATION_SHA256,
+            "startup original observation digest differs",
+        )?;
         let pins: BTreeMap<String, String> = serde_json::from_str(include_str!(
             "../tests/fixtures/logmessaged-startup/source-pins.json"
         ))?;
+        let historical_hash = pins
+            .get(HISTORICAL_CHECKER)
+            .ok_or("historical startup checker pin missing")?
+            .clone();
         let mut result = Self {
             held: vec![],
             hashes: BTreeMap::new(),
+            historical_checker: None,
+            historical_path: repository.join(HISTORICAL_CHECKER),
+            historical_hash,
         };
         for (name, expected) in pins {
-            result.bind(repository.join(&name), &name, Some(&expected))?;
+            if name == HISTORICAL_CHECKER {
+                match fs::symlink_metadata(&result.historical_path) {
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
+                    Err(error) => return Err(error.into()),
+                    Ok(metadata) if metadata.file_type().is_file() => (),
+                    Ok(_) => return Err("historical startup checker is not a regular file".into()),
+                }
+                let held = Bound::open(&result.historical_path)?;
+                require(held.hash == expected, "historical startup checker changed")?;
+                result.historical_checker = Some(held);
+            } else {
+                result.bind(repository.join(&name), &name, Some(&expected))?;
+            }
         }
         // These are the authored mechanical boundary files compiled into this
         // executable, not a claim about every transitive dependency's build.
@@ -124,6 +157,10 @@ impl Inputs {
                 "rust/crates/dev-tools/tests/fixtures/logmessaged-startup/source-pins.json",
                 &include_bytes!("../tests/fixtures/logmessaged-startup/source-pins.json")[..],
             ),
+            (
+                "rust/crates/dev-tools/tests/fixtures/logmessaged-startup/original-observation.json",
+                &include_bytes!("../tests/fixtures/logmessaged-startup/original-observation.json")[..],
+            ),
         ] {
             result.bind(
                 repository.join(name),
@@ -147,6 +184,21 @@ impl Inputs {
     fn verify(&self) -> Result<()> {
         for input in &self.held {
             input.verify()?;
+        }
+        if let Some(checker) = &self.historical_checker {
+            require(
+                fs::symlink_metadata(&self.historical_path)?
+                    .file_type()
+                    .is_file(),
+                "historical startup checker path changed type",
+            )?;
+            checker.verify()?;
+        } else {
+            match fs::symlink_metadata(&self.historical_path) {
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => (),
+                Err(error) => return Err(error.into()),
+                Ok(_) => return Err("historical startup checker reappeared".into()),
+            }
         }
         Ok(())
     }
@@ -339,8 +391,8 @@ fn execute(
     // fixture hash, and describe the actual native gate rather than inventing
     // a successful historical C compilation in the compiler field.
     let report=JsonValue::parse(&format!(
-        "{{\"passed\":true,\"cases\":{{{}}},\"compiler\":[],\"fixture_sha256\":{},\"initialization_gate\":\"native source publisher reset handshake\",\"input_sha256\":{}}}",
-        cases.join(","),serde_json::to_string(inputs.hashes.get("rust/tools/fixtures/logmessaged_publisher_pause.c").ok_or("pause fixture hash missing")?)?,serde_json::to_string(&inputs.hashes)?))?;
+        "{{\"passed\":true,\"cases\":{{{}}},\"compiler\":[],\"fixture_sha256\":{},\"initialization_gate\":\"native source publisher reset handshake\",\"input_sha256\":{},\"historical_source_sha256\":{{\"{}\":{}}},\"reference_observation_sha256\":{}}}",
+        cases.join(","),serde_json::to_string(inputs.hashes.get("rust/tools/fixtures/logmessaged_publisher_pause.c").ok_or("pause fixture hash missing")?)?,serde_json::to_string(&inputs.hashes)?,HISTORICAL_CHECKER,serde_json::to_string(&inputs.historical_hash)?,serde_json::to_string(OBSERVATION_SHA256)?))?;
     let bytes = report.to_json()?;
     if announce {
         let mut stdout = std::io::stdout().lock();

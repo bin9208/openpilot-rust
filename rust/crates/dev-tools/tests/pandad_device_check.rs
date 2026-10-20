@@ -6,6 +6,7 @@ use openpilot_dev_tools::{
     seal::Result,
 };
 use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
 use std::{
     ffi::OsString,
     fs,
@@ -38,6 +39,22 @@ fn options(path: &Path) -> check::Options {
         output: path.join("output"),
         runner: vec![],
     }
+}
+#[test]
+fn current_qa_oracle_pin_is_distinct_from_immutable_historical_capture() {
+    let contract: Value =
+        serde_json::from_str(include_str!("fixtures/pandad-device/contract.json")).unwrap();
+    let historical = "dbf7b2de42a945047f3c0d8f5450f3e89e16452cb454c4b922ee81b799347468";
+    let current = format!(
+        "{:x}",
+        Sha256::digest(fs::read(root().join("rust/tools/pandad_device_source.cc")).unwrap())
+    );
+    assert_eq!(contract["historical_oracle_source_sha256"], historical);
+    assert_eq!(
+        contract["sources"]["rust/tools/pandad_device_source.cc"],
+        current
+    );
+    assert_ne!(current, historical);
 }
 #[test]
 fn dynamic_roster_preserves_all_sources_counts_boundaries_and_rng_order_controls() {
@@ -299,10 +316,18 @@ fn exclusive_output_and_changed_dangling_or_fifo_source_pins_reject_before_spawn
             panic!("must not spawn")
         }
     }
-    for mutation in ["changed", "dangling", "fifo", "existing-output"] {
+    for (source, mutation) in [
+        ("rust/tools/check_pandad_device.py", "changed"),
+        ("rust/tools/check_pandad_device.py", "dangling"),
+        ("rust/tools/check_pandad_device.py", "fifo"),
+        ("rust/tools/check_pandad_device.py", "existing-output"),
+        ("rust/tools/pandad_device_source.cc", "changed"),
+        ("rust/tools/pandad_device_source.cc", "dangling"),
+        ("rust/tools/pandad_device_source.cc", "fifo"),
+    ] {
         let temp = tempfile::tempdir().unwrap();
         let options = options(temp.path());
-        let path = options.root.join("rust/tools/check_pandad_device.py");
+        let path = options.root.join(source);
         if mutation == "existing-output" {
             fs::create_dir(&options.output).unwrap();
             fs::write(options.output.join("report.json"), b"foreign receipt").unwrap();

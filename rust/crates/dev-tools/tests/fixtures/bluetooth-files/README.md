@@ -5,8 +5,26 @@ The original/native gate passed at commit
 [run 39190411681 / job 117862093373](https://github.com/bin9208/openpilot-rust/actions/runs/39190411681/job/117862093373).
 The individual file-controller six tests, strict Clippy and actual CLI with 15 cases
 passed. Later unrelated job failures do not invalidate or broaden that evidence.
-Retirement-specific source changes and seven tests still await their cloud gate.
-The Python checker remains present pending parent-owned deletion/proof.
+The retirement-specific seven tests, strict Clippy, and same-ELF present/absent
+comparison passed in Actions [run 39477200877 / job 118816129917](https://github.com/bin9208/openpilot-rust/actions/runs/39477200877/job/118816129917)
+before a later unrelated UI CMake failure. The downloaded artifact 12291885056
+has ZIP SHA-256
+`b681cd8a57158eebf10c7445cc8f5b581ec22bc17efe15390322fc42d1543c22`.
+Each lane contains 34 identical entries totalling 21,734,088 bytes; the
+checker ELF is `4a454ebd7521e5bbf94661f97d0c30b1131fce074b85aed9817398a50e005c75`
+and the fixture ELF is
+`df7a42b9e709682ad569b3754f0838a0477dc80646c5cfafbccc6cf9318acff8`.
+These are pre-deletion comparison results, not a post-deletion gate.
+
+The historical Python source is now deleted. The required post-deletion cloud
+test runs the real CLI with a disabled PATH and `/usr/bin/strace` tracing both
+`execve` and `execveat`. It accepts exactly two attempts, each matched to the
+sealed checker or fixture ELF. Both hashes are taken before its bounded
+60-second launch and checked again afterward. The test writes its raw trace,
+stdout/stderr, available result JSON, binary hashes and audit JSON under
+`BLUETOOTH_FILES_EVIDENCE`, retaining diagnostics on command failure. Any opaque
+or additional execution attempt fails. This test and the seven earlier tests are pending on
+the deletion SHA; the Python observation and provenance below remain immutable.
 
 `original-observation.json` is copied **byte-for-byte** from the independently
 produced Python observation in artifact 12159974238, entry
@@ -48,5 +66,5 @@ separate `historical_source_sha256` from current `input_sha256` identities.
 
 Local preparation used source/data inspection, artifact extraction/hash checks,
 formatting and diffs only. No local builds, regressions or original execution
-were performed. Parent owns caller/CI migration and exact deletion after the
-required cloud and same-ELF absence proof. No device, CPU or allocation claim.
+were performed. Parent owns caller/CI migration and post-deletion cloud proof.
+No device, CPU or allocation claim.
