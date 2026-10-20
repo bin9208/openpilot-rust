@@ -1,4 +1,4 @@
-name: One-time original node 280 capture (issue 296)
+name: One-time original node 280 nonzero desire capture (issue 296)
 on:
   push:
     branches:
@@ -54,7 +54,7 @@ jobs:
           set -euo pipefail
           capture_dir="$GITHUB_WORKSPACE/.analysis/scratch/2026-10-21-model-next"
           mkdir -p "$capture_dir"
-          cat > "$capture_dir/capture_actual_node280.py" <<'NODE280_CAPTURE_ACTUAL_NODE280_PY'
+          cat > "$capture_dir/capture_actual_node280_nonzero.py" <<'NODE280_CAPTURE_ACTUAL_NODE280_NONZERO_PY'
           """Temporary independent-original node 280 capture, for GitHub-hosted Actions only.
 
           The two adjacent dependencies are byte-identical historical original drivers.
@@ -121,6 +121,10 @@ jobs:
               "compile_calls[0]+=1;result=original_compile_to_obj(source);compiled_sources[hashlib.sha256(source.encode()).hexdigest()]=hashlib.sha256(result).hexdigest();return result",
               "compile_calls[0]+=1;result=original_compile_to_obj(source);key=hashlib.sha256(source.encode()).hexdigest();compiled_sources[key]=hashlib.sha256(result).hexdigest();compiled_objects[key]=result;return result",
           )
+          replace_once("import os,json,hashlib,time,ast", "import os,json,hashlib,time,ast,struct")
+          replace_once("input_raw={'img':", "desire_bytes=b''.join(struct.pack('<f',1.0 if j==i%8 else 0.0)for i in range(25)for j in range(8))\ninput_raw={'img':")
+          assert source.count("bytes(25*8*4)")==2
+          source=source.replace("bytes(25*8*4)","desire_bytes")
           start = source.index("  started=time.monotonic();linear,variables=out.linear_with_vars();")
           source = source[:start] + '''
             from tinygrad.engine.realize import get_call_outs_ins
@@ -147,7 +151,7 @@ jobs:
               slots=operation.arg.globals
              else:key=None;slots=tuple(range(len(params)))
              calls.append(dict(call_index=index,op=operation.op.name,source=key,globals=list(slots),outs=list(outs),ins=list(ins),regions={str(slot):region(params[slot].buffer)for slot in slots}))
-            record.update(last_node=280,context='Cold independent original final-output-only prefix280, original allocation/schedule and immediate snapshots, no candidate replay.',programs=programs,calls=calls,program_calls=sum(c['op']=='PROGRAM'for c in calls),original_distinct_programs=len(compiled_sources),provider_real_object_sha256=compiled_sources,compile_to_obj_calls=compile_calls[0],cache_disabled=True,oracle_source_root=str(scope_root),tinygrad_module=str(Path(tinygrad.__file__).resolve().relative_to(scope_root)),library_sha256=provider_sha,driver_dependency_sha256={'capture_prefix274_current.py':'20adcea5bc6284cae9d6be0035be3d531f96a8fc83c83ad2c3d6cb2dcf61cb09','capture_prefix_contexts.py':'d2e405325f2312a84d22117aba411606838a6bab6bbb61c67df39a83da6fef3c'})
+            record.update(last_node=280,desire_pulse_recipe='25x8 little-endian f32; row i has one at column i%8 and zero elsewhere',context='Cold independent original final-output-only prefix280 with nonzero desire pulse, original allocation/schedule and immediate snapshots, no candidate replay.',programs=programs,calls=calls,program_calls=sum(c['op']=='PROGRAM'for c in calls),original_distinct_programs=len(compiled_sources),provider_real_object_sha256=compiled_sources,compile_to_obj_calls=compile_calls[0],cache_disabled=True,oracle_source_root=str(scope_root),tinygrad_module=str(Path(tinygrad.__file__).resolve().relative_to(scope_root)),library_sha256=provider_sha,driver_dependency_sha256={'capture_prefix274_current.py':'20adcea5bc6284cae9d6be0035be3d531f96a8fc83c83ad2c3d6cb2dcf61cb09','capture_prefix_contexts.py':'d2e405325f2312a84d22117aba411606838a6bab6bbb61c67df39a83da6fef3c'})
             returned=region(out.uop.buffer)
             record['returned_output_region']=returned
             output.with_suffix('.scheduled.json').write_text(json.dumps(record,indent=2)+'\\n')
@@ -204,7 +208,7 @@ jobs:
             print('captured node280',record['prefix_sha256'],record['output_sha256'],record['elapsed_seconds'],flush=True)
           '''
           exec(compile(source, str(BASE), "exec"), {"__file__": str(Path(__file__).resolve())})
-          NODE280_CAPTURE_ACTUAL_NODE280_PY
+          NODE280_CAPTURE_ACTUAL_NODE280_NONZERO_PY
           cat > "$capture_dir/capture_prefix274_current.py" <<'NODE280_CAPTURE_PREFIX274_CURRENT_PY'
           """Pinned original final-output-only driving prefix; graph-only preparation optional."""
           import os,json,hashlib,time,ast
@@ -385,7 +389,7 @@ jobs:
            r=OnnxRunner(MODEL);names=[node.outputs[0]for node in r.graph_nodes[9:60]];(ROOT/'native-all-outputs.onnx').write_bytes(prefix_bytes(59,names));print('native diagnostic graph',len(names),'outputs')
           NODE280_CAPTURE_PREFIX_CONTEXTS_PY
           cat > "$RUNNER_TEMP/node280-drivers.sha256" <<EOF
-          dceec3c1b1e563afaa21dcc10515d5292b8d83d5c06fb830e50e93d8c6235992  $capture_dir/capture_actual_node280.py
+          251f3519936c2a6c593c74385058547fbf53f8d1ea0a233bfc2e57d81dfd005e  $capture_dir/capture_actual_node280_nonzero.py
           20adcea5bc6284cae9d6be0035be3d531f96a8fc83c83ad2c3d6cb2dcf61cb09  $capture_dir/capture_prefix274_current.py
           d2e405325f2312a84d22117aba411606838a6bab6bbb61c67df39a83da6fef3c  $capture_dir/capture_prefix_contexts.py
           EOF
@@ -412,10 +416,10 @@ jobs:
               18) export LLVM_PATH="$RUNNER_TEMP/llvm18-captured/usr/lib/llvm-18/lib/libLLVM.so.1" ;;
               20) export LLVM_PATH="$RUNNER_TEMP/llvm20-captured/usr/lib/x86_64-linux-gnu/libLLVM.so.20.1" ;;
             esac
-            export PREFIX_OUTPUT="node280-original${version}.json"
-            timeout --signal=TERM --kill-after=10s 120s python3 -P "$capture_dir/capture_actual_node280.py" > "$capture_dir/node280-original${version}.log" 2>&1
+            export PREFIX_OUTPUT="node280-nonzero-original${version}.json"
+            timeout --signal=TERM --kill-after=10s 120s python3 -P "$capture_dir/capture_actual_node280_nonzero.py" > "$capture_dir/node280-nonzero-original${version}.log" 2>&1
             status=$?
-            printf 'LLVM %s status %s\n' "$version" "$status" | tee "$capture_dir/node280-original${version}.status"
+            printf 'LLVM %s status %s\n' "$version" "$status" | tee "$capture_dir/node280-nonzero-original${version}.status"
             if [ "$status" -ne 0 ]; then failures=$((failures + 1)); fi
           done
           find "$capture_dir" -type f -print0 | sort -z | xargs -0 sha256sum > "$capture_dir/artifact-sha256.txt"
@@ -424,7 +428,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: node280-original-${{ github.sha }}
+          name: node280-nonzero-original-${{ github.sha }}
           path: .analysis/scratch/2026-10-21-model-next/
           include-hidden-files: true
           if-no-files-found: warn
