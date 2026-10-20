@@ -41,4 +41,8 @@ runs:
               $(cat "$CI_JOB_TEMP/owner") != "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" ]]; then
           echo 'Refusing output owned by another job' >&2; exit 1
         fi
-        rm -rf -- "$CI_JOB_TEMP"
+        # Network-namespace comparisons run as root and may leave root-owned
+        # output. Escalate only after the same bounded ownership checks above.
+        if ! rm -rf --one-file-system -- "$CI_JOB_TEMP"; then
+          sudo -n rm -rf --one-file-system -- "$CI_JOB_TEMP"
+        fi

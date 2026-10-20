@@ -19,6 +19,26 @@ def invoke(script, environment):
 
 
 class JobTempTests(unittest.TestCase):
+    @unittest.skipUnless(os.environ.get('GITHUB_ACTIONS') == 'true', 'requires hosted runner passwordless sudo')
+    def test_cleanup_removes_privileged_namespace_output_without_following_symlinks(self):
+        with tempfile.TemporaryDirectory() as outside, tempfile.TemporaryDirectory(prefix='openpilot-ci.', dir='/tmp') as candidate:
+            root = Path(candidate)
+            (root / 'owner').write_text('42:1:startup-services')
+            retained = Path(outside) / 'keep'
+            retained.write_text('retain')
+            privileged = root / 'namespace'
+            subprocess.run(['sudo', '-n', 'mkdir', '-m', '700', str(privileged)], check=True)
+            subprocess.run(['sudo', '-n', 'touch', str(privileged / 'result.json')], check=True)
+            subprocess.run(['sudo', '-n', 'ln', '-s', outside, str(privileged / 'outside')], check=True)
+            self.addCleanup(subprocess.run, ['sudo', '-n', 'rm', '-rf', '--', candidate], check=True)
+            environment = dict(os.environ, CI_RUNNER_TEMP=outside, CI_JOB_TEMP=candidate,
+                               GITHUB_RUN_ID='42', GITHUB_RUN_ATTEMPT='1', GITHUB_JOB='startup-services')
+            environment.pop('BASH_ENV', None)
+            result = invoke(ACTION['runs']['steps'][1]['run'], environment)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse(root.exists())
+            self.assertEqual(retained.read_text(), 'retain')
+
     def test_two_jobs_get_fresh_tool_and_artifact_paths_and_cleanup_only_their_output(self):
         with tempfile.TemporaryDirectory(prefix='runner temp ') as temporary:
             root = Path(temporary) / ('persistent-runner-' * 8)

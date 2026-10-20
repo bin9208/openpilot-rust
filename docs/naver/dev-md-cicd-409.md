@@ -245,3 +245,13 @@ execution. Policy regression now requires both settings. GitHub's scheduler
 cancels queued/running siblings on matrix failure; final required gates reject
 the resulting failed/cancelled group.
 Reference: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idstrategyfail-fast
+
+The `5a3c548e` [PR run 39476994003](https://github.com/bin9208/openpilot-rust/actions/runs/39476994003)
+passed groups 1–10 functional steps, including startup UI and bridge namespace
+comparisons, but group 10 cleanup failed on root-owned namespace evidence and
+Python bytecode. Cleanup now retries with noninteractive sudo only inside the
+already validated exact job-owned temporary root, without crossing filesystems
+or following symlinks. A hosted-runner regression creates real root-owned output
+and verifies cleanup preserves an external symlink target. The later groups and
+ARM build skipped, and both final required summaries failed as intended.
+Continue exact-source PR and post-merge validation; acceptance remains in #417.
