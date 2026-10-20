@@ -202,3 +202,11 @@ PSS sampling and sampler. Native package simulation again confirmed the four
 FFmpeg 6.1.1 pins are unavailable. Thus the combined workflow correctly remains
 failed even though Rust tests passed. ARM graphics cross-source compatibility,
 full native video builds and AGNOS packaging remain untested.
+
+## Integration request
+
+The user authorized a PR and merge on 2026-10-20 KST.
+[PR #406](https://github.com/bin9208/openpilot-rust/pull/406) targets dev-md.
+The final PR head must pass its applicable checks before merging; a clean
+mergeability response alone is not validation. Keep dev/main and device
+deployment outside this request.
