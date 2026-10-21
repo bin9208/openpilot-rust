@@ -19,13 +19,13 @@ jobs:
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
-      EXPECTED_SOURCE: 457e211b5997623bb759a567794b33e517eb4432
+      EXPECTED_SOURCE: 7f8de4a33cba5bbab85eff4821561d1a1f500cc5
       RUSTUP_TOOLCHAIN: 1.94.0
     steps:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: 457e211b5997623bb759a567794b33e517eb4432
+        ref: 7f8de4a33cba5bbab85eff4821561d1a1f500cc5
     - name: Admit exact source and Python 3.12
       run: test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
     - uses: actions/setup-python@v6
@@ -137,9 +137,10 @@ jobs:
       shell: bash
       run: "set -euo pipefail\nrust/tools/check-disk-space --path \"$GITHUB_WORKSPACE\" --growth-mib 512\npython - <<'ARCHIVE_RAW'\n\
         import hashlib, os, subprocess\nfrom pathlib import Path\nproof = Path(os.environ['RUNNER_TEMP']) / 'panda-current-raw'\n\
-        source = proof / 'raw-output'\nif source.is_dir():\n    target = proof / 'raw-pair.tar'\n    subprocess.run(['tar',\
-        \ '--format=gnu', '-C', str(proof), '-cf', str(target), '--', 'raw-output'], check=True, timeout=300)\n    print('raw-pair.tar\
-        \ sha256', hashlib.sha256(target.read_bytes()).hexdigest())\nARCHIVE_RAW\n"
+        for source, name in [('raw-output', 'raw-pair.tar'), ('original-cli-only', 'original-cli-only.tar')]:\n    if (proof\
+        \ / source).is_dir():\n        target = proof / name\n        subprocess.run(['tar', '--format=gnu', '-C', str(proof),\
+        \ '-cf', str(target), '--', source], check=True, timeout=300)\n        print(name, 'sha256', hashlib.sha256(target.read_bytes()).hexdigest())\n\
+        ARCHIVE_RAW\n"
     - uses: actions/upload-artifact@v6
       if: always()
       with:
@@ -147,6 +148,10 @@ jobs:
         path: '${{ runner.temp }}/panda-current-raw/current-raw-pair.json
 
           ${{ runner.temp }}/panda-current-raw/raw-pair.tar
+
+          ${{ runner.temp }}/panda-current-raw/original-cli-only.tar
+
+          ${{ runner.temp }}/panda-current-raw/original-cli-only/original-cli.json
 
           ${{ runner.temp }}/panda-current-raw/original.stdout
 
@@ -160,7 +165,13 @@ jobs:
 
           ${{ runner.temp }}/panda-current-raw/native-build.log
 
+          ${{ runner.temp }}/panda-current-raw/native-tests.log
+
+          ${{ runner.temp }}/panda-current-raw/native-clippy.log
+
           ${{ runner.temp }}/panda-current-raw/capture-current-raw-pair.py
+
+          ${{ runner.temp }}/panda-current-raw/capture-original-cli.py
 
           '
         if-no-files-found: error
