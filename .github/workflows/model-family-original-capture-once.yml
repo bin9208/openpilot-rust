@@ -244,7 +244,7 @@ jobs:
         printf ''%s  %s\n'' afe1c795d7f609801eb4cd5a5a7748c3c996929403a3c0fa102f232f2a8d248d rust/crates/dev-tools/tests/fixtures/driving-daemon-original/fixture.json
         | sha256sum -c -
 
-        rust/target/debug/stage-driving-daemon-fixture --archive rust/crates/dev-tools/tests/fixtures/driving-daemon-original/observations.tar.xz
+        rust/target/debug/stage-driving-daemon-fixture --archive "$GITHUB_WORKSPACE/rust/crates/dev-tools/tests/fixtures/driving-daemon-original/observations.tar.xz"
         --output "$proof/driving-fixture" --blob-sha256 3ddfb1213cccbbf0d4d0ef7854b79cef5637acdfd7b59d883b13063d6968b4fe --blob-bytes
         59663776 --compact-images > "$proof/native-stage.json"
 
