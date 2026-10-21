@@ -181,7 +181,13 @@ impl Inputs {
         })
     }
 }
-fn admit_family_data(directory: &Path, expected: &str, kind: &str, held: &mut Vec<Held>) -> Value {
+fn admit_family_data(
+    directory: &Path,
+    expected: &str,
+    kind: &str,
+    source: &str,
+    held: &mut Vec<Held>,
+) -> Value {
     let path = directory.join("manifest.json");
     let manifest = Held::open(&path);
     assert_eq!(manifest.seal["sha256"], expected);
@@ -190,7 +196,7 @@ fn admit_family_data(directory: &Path, expected: &str, kind: &str, held: &mut Ve
     assert_eq!(value["kind"], kind);
     assert_eq!(value["origin"], "unchanged original checker");
     assert_eq!(value["native_port_generated_expected"], false);
-    assert_eq!(value["source_commit"], text("MODEL_FAMILY_CAPTURE_SOURCE"));
+    assert_eq!(value["source_commit"], source);
     let files = value["files"].as_object().unwrap();
     assert!(!files.is_empty() && files.len() <= 256 && files.contains_key("report.json"));
     for (name, seal) in files {
@@ -288,12 +294,14 @@ fn same_elf_replays_all_three_native_clis_in_both_absent_roots() {
         &inputs.original.join("startup/original"),
         &inputs.startup_manifest,
         "startup",
+        &text("MODEL_FAMILY_CAPTURE_SOURCE"),
         &mut held,
     );
     let usb_manifest = admit_family_data(
         &inputs.original.join("usbgpu/original"),
         &inputs.usb_manifest,
         "usbgpu",
+        &text("MODEL_FAMILY_CAPTURE_SOURCE"),
         &mut held,
     );
     assert_eq!(startup_manifest["models"], usb_manifest["models"]);
@@ -609,4 +617,32 @@ fn same_elf_replays_all_three_native_clis_in_both_absent_roots() {
         &proof.join("summary.json"),
         &json!({"passed":true,"same_elfs":held.iter().map(Held::evidence).collect::<Vec<_>>(),"accepted":accepted,"roots":2,"driver_case_runs_per_root":16,"startup_case_runs_per_root":8,"usb_case_runs_per_root":6,"reappearance_controls":negatives,"execution_environment":{"path":"/nonexistent","removed_variables":["PYTHONPATH","PYTHONHOME"],"interpreter_execution":"not_measured","exec_trace_collected":false},"source_absence":{"roots_verified":2,"retired_paths_per_root":retired.len(),"after_traffic":true},"accepted_reports_final_verified":accepted_reports.len(),"different_model_datasets":true,"scope":"USB unchanged-controller assertions against native protocol fixture; startup independent source initialization; no device proof"}),
     );
+}
+
+#[test]
+fn committed_original_data_preserves_all_captured_byte_seals() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/model-family-original");
+    let mut held = Vec::new();
+    for (kind, expected) in [
+        (
+            "startup",
+            "4c54c0d6fb375cec2d64c6ecfeb5ce709f223bbe0aeb0114b68c5a4e184c7416",
+        ),
+        (
+            "usbgpu",
+            "8774d6752cabaeba96bacd4bab009a9432f12e5231e8da608285ff5115b21ad8",
+        ),
+    ] {
+        admit_family_data(
+            &root.join(kind).join("original"),
+            expected,
+            kind,
+            "0ec6cbae2d85fd98f2e0894697de7869f6159f51",
+            &mut held,
+        );
+    }
+    assert_eq!(held.len(), 116); // Two manifests plus114 independently sealed data files.
+    for file in held {
+        file.verify();
+    }
 }

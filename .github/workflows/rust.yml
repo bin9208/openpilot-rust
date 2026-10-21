@@ -4710,7 +4710,7 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 3072
           cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features driver-daemon-native --bin stage-driver-daemon-fixture --bin prepare-model-family-catalog --bin stage-model-family-usb-assets --bin check-driver-daemon --bin check-model-startup --bin check-usbgpu-daemon > "$proof/grouped-cli-build.log" 2>&1 || { cat "$proof/grouped-cli-build.log"; exit 1; }
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features driver-daemon-native --no-run --test driver_daemon_retirement --test model_family_prepare --test model_family_retirement --test model_startup_check --test usbgpu_daemon_check > "$proof/grouped-integration-compile.log" 2>&1 || { cat "$proof/grouped-integration-compile.log"; exit 1; }
-          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features driver-daemon-native --test model_family_retirement support::tests:: -- --nocapture > "$proof/grouped-support-tests.log" 2>&1 || { cat "$proof/grouped-support-tests.log"; exit 1; }
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features driver-daemon-native --test model_family_retirement -- --nocapture > "$proof/grouped-support-tests.log" 2>&1 || { cat "$proof/grouped-support-tests.log"; exit 1; }
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features driver-daemon-native --lib model_ -- --nocapture > "$proof/model-family-unit.log" 2>&1 || { cat "$proof/model-family-unit.log"; exit 1; }
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features driver-daemon-native --lib driver_daemon_check:: -- --nocapture > "$proof/driver-unit.log" 2>&1 || { cat "$proof/driver-unit.log"; exit 1; }
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features driver-daemon-native --lib usbgpu_daemon_check:: -- --nocapture > "$proof/usb-unit.log" 2>&1 || { cat "$proof/usb-unit.log"; exit 1; }
@@ -4784,7 +4784,7 @@ jobs:
           export MODEL_FAMILY_GATE_ROOT="$GITHUB_WORKSPACE"
           export MODEL_FAMILY_GATE_PREPARATION="$proof"
           export MODEL_FAMILY_GATE_ORIGINAL="$GITHUB_WORKSPACE/rust/crates/dev-tools/tests/fixtures/model-family-original"
-          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features driver-daemon-native --test model_family_retirement same_elf_replays_all_three_native_clis_in_both_absent_roots -- --ignored --exact --nocapture > "$proof/grouped-native.stdout" 2> "$proof/grouped-native.stderr"
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features driver-daemon-native --test model_family_retirement same_elf_replays_all_three_native_clis_in_both_absent_roots -- --ignored --exact --nocapture > "$proof/grouped-native.stdout" 2> "$proof/grouped-native.stderr" || { tail -n 100 "$proof/grouped-native.stdout" "$proof/grouped-native.stderr"; exit 1; }
       - name: Preserve native actual CLI, all reports and exact data/provider provenance
         uses: actions/upload-artifact@v6
         if: always()
