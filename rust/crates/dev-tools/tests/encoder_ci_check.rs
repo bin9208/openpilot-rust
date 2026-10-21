@@ -534,7 +534,10 @@ fn owned_process_stager_builder_artifacts_and_failure_short_circuit() {
 fn raw_json11_prefix_survives_owned_stager_and_dependency_metadata() {
     use std::{
         ffi::OsString,
-        os::unix::{ffi::OsStringExt, fs::PermissionsExt},
+        os::unix::{
+            ffi::{OsStrExt, OsStringExt},
+            fs::PermissionsExt,
+        },
     };
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path();
@@ -577,6 +580,59 @@ fn raw_json11_prefix_survives_owned_stager_and_dependency_metadata() {
     );
     assert_eq!(
         fs::read_to_string(opts.output.join("commands/stage-json11.exit.json")).unwrap(),
+        "{\"returncode\": 0}\n"
+    );
+    let builder = opts.binaries.join("build-encoder-source");
+    write(
+        &builder,
+        "#!/bin/sh\nprintf '%s\\0' \"$@\" > \"$2/builder-argv\"\n",
+    );
+    fs::set_permissions(builder, fs::Permissions::from_mode(0o755)).unwrap();
+    openpilot_dev_tools::encoder_ci_check::build_source(
+        &opts,
+        &[
+            ("jpeg".into(), root.join("jpeg")),
+            ("zmq".into(), root.join("zmq")),
+        ]
+        .into(),
+        &actual,
+        &mut NativeRunner,
+        &mut |path, growth| {
+            reservations.push((path.to_path_buf(), growth));
+            Ok(())
+        },
+        &mut printed,
+        &mut errors,
+    )
+    .unwrap();
+    let child_argv = fs::read(root.join("builder-argv")).unwrap();
+    let child_argv = child_argv.split(|byte| *byte == 0).collect::<Vec<_>>();
+    assert_eq!(child_argv.len(), 15);
+    assert_eq!(child_argv[8], b"--json11-prefix");
+    assert_eq!(child_argv[9], prefix.as_os_str().as_bytes());
+    let command = openpilot_log_format::JsonValue::parse(
+        &fs::read_to_string(opts.output.join("commands/source-build.command.json")).unwrap(),
+    )
+    .unwrap();
+    let args = command.get("argv").unwrap();
+    let openpilot_log_format::JsonView::Array(args) = args.view() else {
+        panic!("expected command argv")
+    };
+    assert_eq!(
+        openpilot_dev_tools::python_fs::from_json(&args[10]).unwrap(),
+        prefix.as_os_str()
+    );
+    assert_eq!(
+        reservations,
+        [
+            (opts.output.clone(), 256 * 1024 * 1024),
+            (opts.output.clone(), 1024 * 1024 * 1024)
+        ]
+    );
+    assert_eq!(printed, b"PASS stage-json11\nPASS source-build\n");
+    assert!(errors.is_empty());
+    assert_eq!(
+        fs::read_to_string(opts.output.join("commands/source-build.exit.json")).unwrap(),
         "{\"returncode\": 0}\n"
     );
     assert!(!opts.output.join("receipt.json").exists());
