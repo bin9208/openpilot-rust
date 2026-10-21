@@ -53,8 +53,10 @@ four partial baseline entries.
    real reuse boundary. Use current-host exports, preserve historical objects
    and source seals. The first fresh-target attempt39651208682 stopped before
    model traffic on a new shared stager Clippy lint;481ae6fe fixes it without
-   changing runtime policy. Current-host gate39652828256 must complete the no-collector/CLI/raw-alias gate and migrate
-   the shared original dependencies.
+   changing runtime policy. Current-host gate39652828256 now passes
+   no-collector/CLI/raw-alias comparisons; parent and reviewer audit all535 ZIP
+   CRCs and both43-file original captures. Shared driver source/caller retirement
+   remains pending.
 3. Full f5c8 CI `39617311670` passed all runtime/ARM jobs except workspace:
    `desire_reference_cli` failed a source-output hash assertion. The serde feature
    ordering defect #463 is fixed and affected gate39639003843 is accepted. Preserve
