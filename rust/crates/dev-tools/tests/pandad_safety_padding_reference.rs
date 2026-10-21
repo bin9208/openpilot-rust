@@ -29,6 +29,54 @@ fn workspace() -> tempfile::TempDir {
 fn checker() -> PathBuf {
     PathBuf::from(env!("CARGO_BIN_EXE_check-pandad-safety-padding"))
 }
+fn sealed_original() -> PathBuf {
+    let folder = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/pandad-safety-padding/edb42bf0-original");
+    let manifest = fs::read(folder.join("SHA256SUMS")).unwrap();
+    assert_eq!(
+        format!("{:x}", Sha256::digest(&manifest)),
+        "3a12023217195181b9f1d05d06803a4b0add0438baf700abfeb5a7ad0f3f22ea"
+    );
+    let mut count = 0;
+    for line in std::str::from_utf8(&manifest).unwrap().lines() {
+        let (digest, name) = line.split_once("  ").unwrap();
+        assert!(!name.contains('/') && !name.contains(".."));
+        assert_eq!(hash(&folder.join(name)), digest, "sealed original {name}");
+        count += 1;
+    }
+    assert_eq!(count, 12);
+    folder
+}
+fn original_negative_phases() -> Value {
+    let bytes =
+        include_bytes!("fixtures/pandad-safety-padding/edb42bf0-original-negative-phases.json");
+    assert_eq!(
+        format!("{:x}", Sha256::digest(bytes)),
+        "6a488184317862a18677d2a4406a88cc34351b7dfa441d2dd972a2c5abbfdcb7"
+    );
+    let matrix: Value = serde_json::from_slice(bytes).unwrap();
+    assert_eq!(
+        matrix["source_commit"],
+        "edb42bf095d6a3e3b38cc0a4546976dfb710363e"
+    );
+    assert_eq!(matrix["job_id"], 118816129716_i64);
+    matrix
+}
+fn historical_present() -> bool {
+    let historical = root().join("rust/tools/check_pandad_safety_padding.py");
+    match fs::symlink_metadata(&historical) {
+        Ok(metadata) => {
+            assert!(metadata.file_type().is_file());
+            assert_eq!(
+                hash(&historical),
+                "f0d0867a9481a698df8da04d472bdf2e2d6aa77da2a3ae29fba08aae74d5a836"
+            );
+            true
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => false,
+        Err(error) => panic!("historical checker admission: {error}"),
+    }
+}
 fn retired_admission_root(pair: &Path) -> PathBuf {
     let destination = pair.join("native-admission-root");
     let contract: Value = json(
@@ -77,17 +125,22 @@ fn rows(path: &Path) -> Vec<Value> {
         .collect()
 }
 #[test]
-fn unchanged_original_and_native_controllers_match_the_same_live_probes_and_all_transcripts() {
+fn sealed_original_and_native_controllers_match_the_same_live_probes_and_all_transcripts() {
     let temp = workspace();
     // Keep all evidence, including failure transcripts, for Actions upload.
     let pair = temp.keep();
     let admission = retired_admission_root(&pair);
     let source = required("PANDAD_PADDING_SOURCE_BINARY");
     let binary = required("PANDAD_PADDING_NATIVE_BINARY");
-    let python = required("PANDAD_PADDING_PYTHON");
+    let captured = sealed_original();
+    let has_historical = historical_present();
     let source_before = hash(&source);
     let binary_before = hash(&binary);
-    let original = pair.join("original");
+    let original = if has_historical {
+        pair.join("original")
+    } else {
+        captured.clone()
+    };
     let native_present = pair.join("native-present");
     let native_absent = pair.join("native-absent");
     let common = |output: &Path| {
@@ -100,14 +153,23 @@ fn unchanged_original_and_native_controllers_match_the_same_live_probes_and_all_
             output.into(),
         ]
     };
-    let mut args = vec![
-        "-P".into(),
-        root()
-            .join("rust/tools/check_pandad_safety_padding.py")
-            .into(),
-    ];
-    args.extend(common(&original));
-    let expected = invoke(&command(&python, args, &root()));
+    let expected = if has_historical {
+        let python = required("PANDAD_PADDING_PYTHON");
+        let mut args = vec![
+            "-P".into(),
+            root()
+                .join("rust/tools/check_pandad_safety_padding.py")
+                .into(),
+        ];
+        args.extend(common(&original));
+        invoke(&command(&python, args, &root()))
+    } else {
+        openpilot_dev_tools::qa_process::Captured {
+            code: 0,
+            stdout: fs::read(captured.join("original.stdout")).unwrap(),
+            stderr: fs::read(captured.join("original.stderr")).unwrap(),
+        }
+    };
     fs::write(pair.join("original.stdout"), &expected.stdout).unwrap();
     fs::write(pair.join("original.stderr"), &expected.stderr).unwrap();
     let native_run = |name: &str, output: &Path, admitted: &Path| {
@@ -131,8 +193,6 @@ fn unchanged_original_and_native_controllers_match_the_same_live_probes_and_all_
         "same native checker stderr drift"
     );
     let expected_report = json(original.join("report.json"));
-    let captured = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/pandad-safety-padding/edb42bf0-original");
     assert_eq!(expected_report, json(captured.join("report.json")));
     for name in [
         "car-params.stdout",
@@ -153,7 +213,7 @@ fn unchanged_original_and_native_controllers_match_the_same_live_probes_and_all_
         serde_json::from_slice::<Value>(&expected.stdout).unwrap()
     );
     for (name, output, got, historical_present) in [
-        ("native-present", &native_present, &present, true),
+        ("native-present", &native_present, &present, has_historical),
         ("native-absent", &native_absent, &absent, false),
     ] {
         assert_eq!(expected_report, json(output.join("report.json")), "{name}");
@@ -185,7 +245,18 @@ fn unchanged_original_and_native_controllers_match_the_same_live_probes_and_all_
                 } else {
                     "native-params"
                 };
-                for (owned, rows) in [(&original, &mut expected_rows), (output, &mut actual_rows)] {
+                let captured_root = PathBuf::from(
+                    "/home/runner/work/_temp/panda-native/padding-controller/pair-vsc2ns/original",
+                );
+                let original_root = if has_historical {
+                    &original
+                } else {
+                    &captured_root
+                };
+                for (owned, rows) in [
+                    (original_root, &mut expected_rows),
+                    (output, &mut actual_rows),
+                ] {
                     for row in rows {
                         let params = row.as_object_mut().unwrap().remove("params_root").unwrap();
                         assert_eq!(
@@ -225,6 +296,7 @@ fn unchanged_original_and_native_controllers_match_the_same_live_probes_and_all_
     }
     assert_eq!(hash(&source), source_before);
     assert_eq!(hash(&binary), binary_before);
+    assert_eq!(historical_present(), has_historical);
     // Bind the existing native source builder's complete declared input map,
     // not just the controller's narrower direct-policy admission pins.
     let build = json(required("PANDAD_PADDING_SOURCE_MANIFEST"));
@@ -256,7 +328,10 @@ fn actual_cli_statuses_and_missing_probe_artifact_phases_match_the_original() {
     let admission = retired_admission_root(&pair);
     let source = required("PANDAD_PADDING_SOURCE_BINARY");
     let binary = required("PANDAD_PADDING_NATIVE_BINARY");
-    let python = required("PANDAD_PADDING_PYTHON");
+    let has_historical = historical_present();
+    let _captured = sealed_original();
+    let phases = original_negative_phases();
+    let python = has_historical.then(|| required("PANDAD_PADDING_PYTHON"));
     let native_checker = checker();
     for args in [
         vec![],
@@ -272,23 +347,30 @@ fn actual_cli_statuses_and_missing_probe_artifact_phases_match_the_original() {
         let native = NativeRunner
             .run(&command(&checker(), args.clone(), &admission))
             .unwrap();
-        let mut original_args = vec![
-            "-P".into(),
-            root()
-                .join("rust/tools/check_pandad_safety_padding.py")
-                .into(),
-        ];
-        original_args.extend(args);
-        let original = NativeRunner
-            .run(&command(&python, original_args, &root()))
-            .unwrap();
         assert_eq!(native.code, expected_code);
-        assert_eq!(original.code, expected_code);
+        if let Some(python) = &python {
+            let mut original_args = vec![
+                "-P".into(),
+                root()
+                    .join("rust/tools/check_pandad_safety_padding.py")
+                    .into(),
+            ];
+            original_args.extend(args);
+            let original = NativeRunner
+                .run(&command(python, original_args, &root()))
+                .unwrap();
+            assert_eq!(original.code, expected_code);
+        }
     }
     for missing_source in [true, false] {
         let absent = pair.join("absent-probe");
         let mut outputs = vec![];
-        for original in [true, false] {
+        let lanes: &[bool] = if has_historical {
+            &[false, true]
+        } else {
+            &[false]
+        };
+        for &original in lanes {
             let output = pair.join(format!("missing-{missing_source}-{original}"));
             let mut args = if original {
                 vec![
@@ -321,7 +403,11 @@ fn actual_cli_statuses_and_missing_probe_artifact_phases_match_the_original() {
             let original_root = root();
             let got = NativeRunner
                 .run(&command(
-                    if original { &python } else { &native_checker },
+                    if original {
+                        python.as_ref().unwrap()
+                    } else {
+                        &native_checker
+                    },
                     args,
                     if original { &original_root } else { &admission },
                 ))
@@ -330,6 +416,11 @@ fn actual_cli_statuses_and_missing_probe_artifact_phases_match_the_original() {
             assert!(!output.join("report.json").exists());
             outputs.push(output);
         }
+        let original_matrix = if missing_source {
+            &phases["missing_source"]
+        } else {
+            &phases["missing_native"]
+        };
         for name in [
             "car-params.input.jsonl",
             "car-params.stdout",
@@ -341,13 +432,24 @@ fn actual_cli_statuses_and_missing_probe_artifact_phases_match_the_original() {
             "native.stdout",
             "native.stderr",
         ] {
+            let expected = original_matrix[name]
+                .as_bool()
+                .unwrap_or_else(|| panic!("missing sealed original phase: {name}"));
             assert_eq!(
                 outputs[0].join(name).exists(),
-                outputs[1].join(name).exists(),
-                "{missing_source}: {name}"
+                expected,
+                "{missing_source}: native {name} vs sealed original"
             );
+            if has_historical {
+                assert_eq!(
+                    outputs[1].join(name).exists(),
+                    expected,
+                    "{missing_source}: fresh original {name} vs sealed original"
+                );
+            }
         }
     }
+    assert_eq!(historical_present(), has_historical);
 }
 #[test]
 fn sigint_reaps_an_acknowledged_owned_probe_without_publishing_success() {

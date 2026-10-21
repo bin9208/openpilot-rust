@@ -1,4 +1,4 @@
-//! Fresh interpreter-free execution before retiring the original checker.
+//! Mandatory interpreter-free execution after retiring the original checker.
 #![cfg(all(target_os = "linux", feature = "pandad-safety-padding-native"))]
 use openpilot_dev_tools::qa_process::{CommandSpec, NativeRunner, Runner};
 use serde_json::{json, Value};
@@ -24,6 +24,9 @@ fn required(name: &str) -> PathBuf {
 #[test]
 fn absent_checker_root_executes_only_three_sealed_native_artifacts() {
     let repository = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    assert!(
+        matches!(fs::symlink_metadata(repository.join("rust/tools/check_pandad_safety_padding.py")), Err(e) if e.kind() == std::io::ErrorKind::NotFound)
+    );
     let proof = tempfile::Builder::new()
         .prefix("absence-")
         .tempdir_in(required("PANDAD_PADDING_TEST_OUTPUT"))
@@ -252,7 +255,7 @@ fn absent_checker_root_executes_only_three_sealed_native_artifacts() {
         serde_json::to_vec_pretty(&json!({
             "passed": true,
             "historical_checker_absent_in_admission_root": true,
-            "repository_python_retired": false,
+            "repository_python_retired": true,
             "exec_attempts": attempts,
             "sealed_executables_sha256": seals,
             "path": "/nonexistent",

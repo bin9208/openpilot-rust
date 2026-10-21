@@ -338,7 +338,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 .iter()
                 .rev()
                 .find(|line| line.starts_with("      - name:"));
-            if step == Some(&"      - name: Compare native Panda safety padding controller with unchanged original") {
+            if step == Some(&"      - name: Require native Panda padding controller with sealed original observations") {
                 pandad_padding_controller.push(tail.to_owned());
                 continue;
             }

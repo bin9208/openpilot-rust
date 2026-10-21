@@ -12,6 +12,8 @@ use std::{
 };
 
 const HISTORICAL: &str = "rust/tools/check_pandad_safety_padding.py";
+const CAPTURED_PARAMS_ROOT: &str =
+    "/home/runner/work/_temp/panda-native/padding-controller/pair-vsc2ns/original";
 fn repository() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..")
 }
@@ -29,6 +31,30 @@ fn json_file(path: &Path) -> Value {
 }
 fn missing(path: &Path) {
     assert!(matches!(fs::symlink_metadata(path), Err(e) if e.kind() == io::ErrorKind::NotFound));
+}
+fn sealed_original_copy(original: &Path, proof: &Path) {
+    let folder = repository()
+        .join("rust/crates/dev-tools/tests/fixtures/pandad-safety-padding/edb42bf0-original");
+    let manifest = fs::read(folder.join("SHA256SUMS")).unwrap();
+    assert_eq!(
+        format!("{:x}", Sha256::digest(&manifest)),
+        "3a12023217195181b9f1d05d06803a4b0add0438baf700abfeb5a7ad0f3f22ea"
+    );
+    fs::create_dir(original).unwrap();
+    let mut count = 0;
+    for line in std::str::from_utf8(&manifest).unwrap().lines() {
+        let (digest, name) = line.split_once("  ").unwrap();
+        assert!(!name.contains('/') && !name.contains(".."));
+        let bytes = fs::read(folder.join(name)).unwrap();
+        assert_eq!(format!("{:x}", Sha256::digest(&bytes)), digest, "{name}");
+        if name.starts_with("original.") {
+            fs::write(proof.join(name), bytes).unwrap();
+        } else {
+            fs::write(original.join(name), bytes).unwrap();
+        }
+        count += 1;
+    }
+    assert_eq!(count, 12);
 }
 fn native_env(spec: &mut CommandSpec, root: &Path) {
     spec.set_os_env(BTreeMap::from([
@@ -126,7 +152,7 @@ fn exec_attempts(trace: &Path, sealed: &BTreeMap<String, String>) -> Vec<(String
 }
 
 #[test]
-fn fresh_original_and_same_elf_present_absent_are_equivalent_and_interpreter_free() {
+fn original_observation_and_same_elf_native_roots_are_equivalent_and_interpreter_free() {
     let proof = tempfile::Builder::new()
         .prefix("retirement-")
         .tempdir_in(required("PANDAD_PADDING_TEST_OUTPUT"))
@@ -137,21 +163,33 @@ fn fresh_original_and_same_elf_present_absent_are_equivalent_and_interpreter_fre
     let binary = required("PANDAD_PADDING_NATIVE_BINARY");
     let manifest = required("PANDAD_PADDING_SOURCE_MANIFEST");
     let plain_manifest = required("PANDAD_PADDING_TRACE_SOURCE_MANIFEST");
-    let python = required("PANDAD_PADDING_PYTHON");
-    let python_sha = sha(&python);
+    let historical = repository().join(HISTORICAL);
+    let has_historical = match fs::symlink_metadata(&historical) {
+        Ok(metadata) => {
+            assert!(metadata.file_type().is_file());
+            true
+        }
+        Err(error) if error.kind() == io::ErrorKind::NotFound => false,
+        Err(error) => panic!("historical checker admission: {error}"),
+    };
+    let python = has_historical.then(|| required("PANDAD_PADDING_PYTHON"));
+    let python_sha = python.as_ref().map(|path| sha(path));
     let checker = fs::canonicalize(env!("CARGO_BIN_EXE_check-pandad-safety-padding")).unwrap();
     let repo = repository();
     let contract: Value = serde_json::from_slice(include_bytes!(
         "fixtures/pandad-safety-padding/contract.json"
     ))
     .unwrap();
-    let historical = repo.join(HISTORICAL);
-    assert_eq!(
-        sha(&historical),
-        contract["retired_checker"]["pre_retirement_sha256"]
-            .as_str()
-            .unwrap()
-    );
+    if has_historical {
+        assert_eq!(
+            sha(&historical),
+            contract["retired_checker"]["pre_retirement_sha256"]
+                .as_str()
+                .unwrap()
+        );
+    } else {
+        missing(&historical);
+    }
     let pins = contract["source_sha256"].as_object().unwrap();
     assert_eq!(pins.len(), 6);
     let absent_root = proof.join("absent-root");
@@ -222,28 +260,43 @@ fn fresh_original_and_same_elf_present_absent_are_equivalent_and_interpreter_fre
     let original = proof.join("original");
     let present = proof.join("native-present");
     let absent = proof.join("native-absent");
-    let mut original_argv = vec![python.clone().into(), "-P".into(), historical.into()];
-    original_argv.extend(args(&source, &binary, &original));
-    let mut original_spec = CommandSpec::new_os(original_argv, Duration::from_secs(300));
-    original_spec
-        .env
-        .insert("OPENPILOT_RUST_ROOT".into(), repo.to_str().unwrap().into());
-    original_spec.env.insert(
-        "PYTHONPATH".into(),
-        std::env::join_paths([&repo, &repo.join("rust/tools")])
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .into(),
-    );
-    let original_status = NativeRunner
-        .run_to_files(
-            &original_spec,
-            &proof.join("original.stdout"),
-            &proof.join("original.stderr"),
+    let original_live_exit_code = if let Some(python) = &python {
+        let mut original_argv = vec![python.clone().into(), "-P".into(), historical.into()];
+        original_argv.extend(args(&source, &binary, &original));
+        let mut original_spec = CommandSpec::new_os(original_argv, Duration::from_secs(300));
+        original_spec
+            .env
+            .insert("OPENPILOT_RUST_ROOT".into(), repo.to_str().unwrap().into());
+        original_spec.env.insert(
+            "PYTHONPATH".into(),
+            std::env::join_paths([&repo, &repo.join("rust/tools")])
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .into(),
+        );
+        Some(
+            NativeRunner
+                .run_to_files(
+                    &original_spec,
+                    &proof.join("original.stdout"),
+                    &proof.join("original.stderr"),
+                )
+                .unwrap()
+                .code,
         )
-        .unwrap();
-    assert_eq!(original_status.code, 0, "sanitized original source failed");
+    } else {
+        sealed_original_copy(&original, &proof);
+        None
+    };
+    if let Some(code) = original_live_exit_code {
+        assert_eq!(code, 0, "sanitized original source failed");
+    }
+    let original_params_root = if has_historical {
+        original.clone()
+    } else {
+        PathBuf::from(CAPTURED_PARAMS_ROOT)
+    };
 
     // Complete the sanitizer comparisons before any process is placed under ptrace.
     // LeakSanitizer cannot run under strace, so the later audit uses a separately
@@ -296,13 +349,13 @@ fn fresh_original_and_same_elf_present_absent_are_equivalent_and_interpreter_fre
             }
             let name = format!("{label}.input.jsonl");
             assert_eq!(
-                rows(&original.join(&name), &original, label),
+                rows(&original.join(&name), &original_params_root, label),
                 rows(&output.join(&name), output, label),
                 "{lane} sanitized: {name}"
             );
         }
     }
-    fs::write(proof.join("sanitized-gate.json"), serde_json::to_vec_pretty(&json!({"passed":true,"original":original_status.code,"present":present_sanitized_status.code,"absent":absent_sanitized_status.code,"source_sha256":sealed[source.to_str().unwrap()]})).unwrap()).unwrap();
+    fs::write(proof.join("sanitized-gate.json"), serde_json::to_vec_pretty(&json!({"passed":true,"original_live_exit_code":original_live_exit_code,"sealed_historical_observation":!has_historical,"present":present_sanitized_status.code,"absent":absent_sanitized_status.code,"source_sha256":sealed[source.to_str().unwrap()]})).unwrap()).unwrap();
 
     let plain_present = proof.join("native-present-plain");
     let plain_absent = proof.join("native-absent-plain");
@@ -347,16 +400,9 @@ fn fresh_original_and_same_elf_present_absent_are_equivalent_and_interpreter_fre
         .unwrap();
     fs::write(
         proof.join("exit-codes.json"),
-        serde_json::to_vec_pretty(&json!({"original":original_status.code,"present":present_status.code,"absent":absent_status.code})).unwrap(),
+        serde_json::to_vec_pretty(&json!({"original_live_exit_code":original_live_exit_code,"sealed_historical_observation":!has_historical,"present":present_status.code,"absent":absent_status.code})).unwrap(),
     ).unwrap();
-    assert_eq!(
-        [
-            original_status.code,
-            present_status.code,
-            absent_status.code
-        ],
-        [0, 0, 0]
-    );
+    assert_eq!([present_status.code, absent_status.code], [0, 0]);
     assert_eq!(
         fs::read(proof.join("native-present.stdout")).unwrap(),
         fs::read(proof.join("native-absent.stdout")).unwrap()
@@ -381,7 +427,10 @@ fn fresh_original_and_same_elf_present_absent_are_equivalent_and_interpreter_fre
         serde_json::from_slice::<Value>(sealed_original).unwrap()
     );
     assert_eq!(json_file(&proof.join("original.stdout")), expected);
-    for (lane, output, has_checker) in [("present", &present, true), ("absent", &absent, false)] {
+    for (lane, output, has_checker) in [
+        ("present", &present, has_historical),
+        ("absent", &absent, false),
+    ] {
         assert_eq!(
             json_file(&output.join("report.json")),
             expected,
@@ -417,7 +466,7 @@ fn fresh_original_and_same_elf_present_absent_are_equivalent_and_interpreter_fre
             }
             let name = format!("{label}.input.jsonl");
             assert_eq!(
-                rows(&original.join(&name), &original, label),
+                rows(&original.join(&name), &original_params_root, label),
                 rows(&output.join(&name), output, label),
                 "{lane}: {name}"
             );
@@ -440,7 +489,7 @@ fn fresh_original_and_same_elf_present_absent_are_equivalent_and_interpreter_fre
             }
             let name = format!("{label}.input.jsonl");
             assert_eq!(
-                rows(&original.join(&name), &original, label),
+                rows(&original.join(&name), &original_params_root, label),
                 rows(&output.join(&name), output, label),
                 "{lane} plain: {name}"
             );
@@ -488,7 +537,9 @@ fn fresh_original_and_same_elf_present_absent_are_equivalent_and_interpreter_fre
     for (path, digest) in &plain_sealed {
         assert_eq!(sha(Path::new(path)), *digest, "changed executable: {path}");
     }
-    assert_eq!(sha(&python), python_sha);
+    if let (Some(python), Some(python_sha)) = (&python, &python_sha) {
+        assert_eq!(sha(python), *python_sha);
+    }
     for (name, digest) in pins {
         assert_eq!(sha(&repo.join(name)), digest.as_str().unwrap());
         assert_eq!(sha(&absent_root.join(name)), digest.as_str().unwrap());
@@ -498,12 +549,16 @@ fn fresh_original_and_same_elf_present_absent_are_equivalent_and_interpreter_fre
     }
     assert_eq!(sha(&manifest), manifest_sha);
     assert_eq!(sha(&plain_manifest), plain_manifest_sha);
-    assert_eq!(
-        sha(&repo.join(HISTORICAL)),
-        contract["retired_checker"]["pre_retirement_sha256"]
-            .as_str()
-            .unwrap()
-    );
+    if has_historical {
+        assert_eq!(
+            sha(&repo.join(HISTORICAL)),
+            contract["retired_checker"]["pre_retirement_sha256"]
+                .as_str()
+                .unwrap()
+        );
+    } else {
+        missing(&repo.join(HISTORICAL));
+    }
     missing(&absent_root.join(HISTORICAL));
-    fs::write(proof.join("comparison.json"), serde_json::to_vec_pretty(&json!({"pass":true,"four_cases":true,"sanitized_original_present_absent_untraced":true,"plain_trace_source_same_21_inputs":true,"native_probe_elf_same_in_all_lanes":true,"interpreter_free_absent_lane":true})).unwrap()).unwrap();
+    fs::write(proof.join("comparison.json"), serde_json::to_vec_pretty(&json!({"pass":true,"four_cases":true,"original_observation":if has_historical { "fresh_original" } else { "sealed_edb42bf0_capture" },"sanitized_native_roots_untraced":true,"plain_trace_source_same_21_inputs":true,"native_probe_elf_same_in_all_lanes":true,"interpreter_free_absent_lane":true})).unwrap()).unwrap();
 }

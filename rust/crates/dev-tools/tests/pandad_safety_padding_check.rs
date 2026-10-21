@@ -28,6 +28,21 @@ fn captured_original() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests/fixtures/pandad-safety-padding/edb42bf0-original")
 }
+fn historical_present() -> bool {
+    let path = root().join("rust/tools/check_pandad_safety_padding.py");
+    match fs::symlink_metadata(&path) {
+        Ok(metadata) => {
+            assert!(metadata.file_type().is_file());
+            assert_eq!(
+                format!("{:x}", Sha256::digest(fs::read(path).unwrap())),
+                "f0d0867a9481a698df8da04d472bdf2e2d6aa77da2a3ae29fba08aae74d5a836"
+            );
+            true
+        }
+        Err(error) if error.kind() == io::ErrorKind::NotFound => false,
+        Err(error) => panic!("historical checker admission: {error}"),
+    }
+}
 fn captured_rows(path: &Path) -> Vec<Value> {
     fs::read_to_string(path)
         .unwrap()
@@ -465,19 +480,21 @@ fn exact_historical_checker_reappearance_and_missing_parent_are_rejected_before_
 }
 #[test]
 fn exact_original_presence_is_admitted_but_presence_changes_fail_after_stdout() {
-    for (initially_present, change) in [(false, "reappear"), (true, "remove"), (true, "mutate")] {
+    let mut states = vec![(false, "reappear")];
+    if historical_present() {
+        states.extend([(true, "remove"), (true, "mutate")]);
+    } else {
+        // A missing historical source remains a tested admission state. The
+        // independently sealed original observation stays mandatory above.
+        assert_eq!(states.len(), 1);
+    }
+    for (initially_present, change) in states {
         let temp = tempfile::tempdir().unwrap();
         let options = options(temp.path());
         let historical = options
             .root
             .join("rust/tools/check_pandad_safety_padding.py");
         if initially_present {
-            if !root()
-                .join("rust/tools/check_pandad_safety_padding.py")
-                .exists()
-            {
-                continue;
-            }
             fs::copy(
                 root().join("rust/tools/check_pandad_safety_padding.py"),
                 &historical,

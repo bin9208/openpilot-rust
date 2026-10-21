@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. The current source inventory has 219 replaced-local entries,
-three partial entries and 3,358 pending entries. `replaced-local` does not mean merged,
+SCons entrypoints. The current source inventory has 220 replaced-local entries,
+three partial entries and 3,357 pending entries. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -5104,3 +5104,11 @@ Event contents. Both source roots genuinely lack the retired checker.
 The companion source-policy job118978371946 passed13disk/69isolation/2lagd.
 The main artifact now also writes its SOURCE_COMMIT directly; the accepted
 4492987c artifact's source was established from the checkout assertion/job log.
+
+## Panda padding checker removal after source20a proof (2026-10-21)
+
+Source20a8f52e cloud run39529140105/job118990740395 succeeded with fresh original, sameELF native checkout/private-absent roots, full sanitized probes untraced and plain traced builds bound to identical21source hashes. Artifact12314188013 SHA256 `3153e98dd6ff053928cff93c4549bc105217632d7a5aa103a440147cfe1102d0`. Parent independently audited all five reports, complete transcripts,9requests per lane and exact4exec vectors per plain lane. See rust-panda-sanitizer-trace-440.md.
+
+The actual Python checker is now removed. Maintained reference/retirement tests verify the SHA-sealed12original-only raw data files; no Python is copied, downloaded or executed for the removed controller. The original negative artifact phase matrix is separately sealed: all18entries independently match edb42bf0 artifact SHA256 `40026fdfe4f4a6dcd804f1e48208a1e41c38ddd9cff025fd83c6cb19da996d01`. Native CLI exits, all failure phases, cancellation, finalization and mandatory interpreter-free absence checks remain. The historical live-original proof is recorded separately from postdelete captured observations, without fabricating a fresh original exit status.
+
+Inventory220replaced-local/3partial/3357pending. Actual deleted-checkout cloud proof, latest whole PR and device acceptance remain pending.

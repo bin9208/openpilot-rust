@@ -2018,7 +2018,7 @@ rust/tools/check_pandad_peripheral.py	584a03cee437061c68ba9294e516bd1edac8e6c5	p
 rust/tools/check_pandad_protocol.py	48f0c90ff260dad3ca8ee65977c1dee4aa2ed87b	pending	-
 rust/tools/check_pandad_runtime.py	72bacce202eba3303acb9a9d6ae2b428d7eaf08b	pending	-
 rust/tools/check_pandad_safety.py	c48ef4a89c02dbda94140ac446d5315018f447aa	pending	-
-rust/tools/check_pandad_safety_padding.py	155822c5d0ef31cf1d802c5b5299ceddae9a041e	pending	-
+rust/tools/check_pandad_safety_padding.py	155822c5d0ef31cf1d802c5b5299ceddae9a041e	replaced-local	rust/crates/dev-tools/src/pandad_safety_padding_check.rs; native check-pandad-safety-padding; sealed original full transcripts, 18 negative phase entries and same-ELF sanitized/untraced plus plain native exec audit
 rust/tools/check_pandad_spi.py	01147e623f469e1ccfb80b10bd43afeb08d96878	pending	-
 rust/tools/check_pandad_spidev.py	558e4214302e64b96e5867920a16e615a56b8d6a	pending	-
 rust/tools/check_pandad_state.py	456b56d597e65df999050398571c912e9981f1da	pending	-

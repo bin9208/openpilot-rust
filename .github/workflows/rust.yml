@@ -1351,7 +1351,7 @@ jobs:
           grep -Fq 'test result: FAILED' "$proof/baseline.log"
           grep -Fq 'post_execute_native_mutation_must_fail_finish_and_remove_owned_report' "$proof/baseline.log"
           grep -Fq 'successful finalization accepted a mutated private native probe after execute returned' "$proof/baseline.log"
-      - name: Compare native Panda safety padding controller with unchanged original
+      - name: Require native Panda padding controller with sealed original observations
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native --bin check-pandad-safety-padding --locked

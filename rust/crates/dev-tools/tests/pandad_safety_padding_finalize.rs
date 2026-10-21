@@ -60,8 +60,22 @@ fn options(temp: &Path, checker_present: bool) -> Options {
         fs::create_dir_all(target.parent().unwrap()).unwrap();
         fs::copy(root().join(name), target).unwrap();
     }
-    if checker_present && root().join(HISTORICAL).exists() {
-        fs::copy(root().join(HISTORICAL), private.join(HISTORICAL)).unwrap();
+    let historical = root().join(HISTORICAL);
+    match fs::symlink_metadata(&historical) {
+        Ok(metadata) => {
+            assert!(metadata.file_type().is_file());
+            assert_eq!(
+                sha(&fs::read(&historical).unwrap()),
+                "f0d0867a9481a698df8da04d472bdf2e2d6aa77da2a3ae29fba08aae74d5a836"
+            );
+            if checker_present {
+                fs::copy(historical, private.join(HISTORICAL)).unwrap();
+            }
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            assert!(private.join(HISTORICAL).parent().unwrap().is_dir());
+        }
+        Err(error) => panic!("historical checker admission: {error}"),
     }
     let source = temp.join("private-source-probe");
     let binary = temp.join("private-native-probe");
