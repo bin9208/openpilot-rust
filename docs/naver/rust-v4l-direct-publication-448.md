@@ -50,5 +50,23 @@ contains83CRC-checked members. Dashcam upload GNU/musl ELF hashes are
 fc94f4497c83404b9d422cd643e296705ead6022448d6858583971cc27784968 /
 74cd303566be35d467f9c685491072fe8461d5d54ce96e54e2e3effb3eb5c593.
 These are generic ARM build outputs, not sealed AGNOS/device, V4L execution or
-ARM performance evidence. New head917cd7db has its own full PR run39567841179;
-its required checks and updated ARM build remain pending.
+ARM performance evidence. That checkpoint is historical. The newer ARM result below supersedes its
+pending updated-build status; whole-PR and device results remain separate.
+
+
+New affected ARM [39567841179/job119114353753](https://github.com/bin9208/openpilot-rust/actions/runs/39567841179/job/119114353753)
+passed at merge checkout a9d151ef1bc4486157d40179b3057644938c62b7, merging
+head917cd7db into dev b55552db and including #448/#449/#450. The full PR failed
+separate QA/workspace checks. Parent audited all17,341 encoder artifact12335387552
+CRCs and SOURCE_COMMIT; ZIP SHA256
+`425b0e83673d9296368bc90c5d125b2bc97f9d4d50ab0c4dcbf395e05f623d35`.
+AArch64 encoderd SHA256 is
+cc192fb9e439b418ccd0b8804086a5854e0f71726a185c0a9316046b5c249094; codec
+and V4L trace hashes remain c777ca70abeebba3b7ac138d70fb9f4a510bb1ed7d9dd13537f8d689ce465672 /
+6236df4b53b99fbf9d707eb46f3d1a359176d9ff8715086d5deb57e811b73cb2.
+Generic artifact12335202195 has83 valid CRCs, ZIP SHA256
+`8c6ebec18f0302e0bf9117bec8e6a49bd4a12f47c723f23f1676feb14e424d36`;
+dashcam GNU/musl AArch64 hashes are
+42c142ff082f0db2cb109cda986621adc8f68be21d015e9f55b8edef112b5d77 /
+2bcbf402f881539c5b10de663b844a52b6b5af629c40e40062233292a7cc6c04.
+These remain generic build artifacts rather than sealed AGNOS/device evidence.
