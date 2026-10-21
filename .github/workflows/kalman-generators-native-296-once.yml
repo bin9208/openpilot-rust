@@ -31,7 +31,7 @@ jobs:
 
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
 
-        rustup toolchain install 1.94.0 --profile minimal --component clippy
+        rustup toolchain install 1.94.0 --profile minimal --component clippy --component rustfmt
 
         mkdir "$RUNNER_TEMP/kalman-generators-native-296"
 
