@@ -51,6 +51,8 @@ class RuntimeDeliveryTests(unittest.TestCase):
     exec(compile(ast.Module(body=[policy], type_ignores=[]), '<source-policy>', 'exec'), namespace)
     admitted = namespace['source_path_allowed']
     self.assertTrue(admitted('rust/tools/check_dmonitoring_daemon.py'))
+    self.assertTrue(admitted('rust/tools/check_card_runtime_pumped.py'))
+    self.assertTrue(admitted('tools/ci/tests/test_card_warmup.py'))
     for producer in ('rust/tools/build_model_tinygrad.py', 'openpilot/selfdrive/modeld/models/driving_vision.onnx',
                      'third_party/ffmpeg/configure', 'rust/tools/check_dmonitoring_daemon.py.unreviewed'):
       self.assertFalse(admitted(producer), producer)

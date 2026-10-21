@@ -255,3 +255,23 @@ or following symlinks. A hosted-runner regression creates real root-owned output
 and verifies cleanup preserves an external symlink target. The later groups and
 ARM build skipped, and both final required summaries failed as intended.
 Continue exact-source PR and post-merge validation; acceptance remains in #417.
+
+### GM warmup clock-dependent setup (#444)
+
+On `bc39d162`, [run 39505026003](https://github.com/bin9208/openpilot-rust/actions/runs/39505026003)
+passed groups 1–20 and the complete Card/CAN original corpus, then actual Volt
+IPC failed at measured CAN row 2: source included steering frame 0x180 while
+native did not. Equal topic admission histories had omitted clock-dependent
+warmup state: repeated loopback on every fenced setup step made rare host
+pauses cross the unchanged 15ms GM transmit guard. Warmup steering indexes
+were source `[96]` versus native `[39,89,174,249,317]`, changing last-steer state.
+
+Give only Volt's warmup an explicit pre-first-loopback state, retaining all
+other setup frames and all 80 measured corpus packets, including their full
+loopback confirmations. In addition to the unchanged measured exact gate,
+require the complete warmup CAN bytes/order/validity to match after equal
+input histories; mismatches fail immediately without output-driven retries.
+Cloud regressions check retained measured inputs and real gate wiring against
+tampered warmup output. GM runtime/source code, EPS guard, cadence, readiness,
+packet counts, deadlines and input-only three-attempt bound stay unchanged.
+Full latest-source PR and post-merge acceptance remains tracked in #444/#409.
