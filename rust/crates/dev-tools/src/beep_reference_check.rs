@@ -689,6 +689,9 @@ pub fn cli() -> Result<()> {
     let root = std::env::var_os("OPENPILOT_RUST_ROOT")
         .map(PathBuf::from)
         .unwrap_or_else(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.."));
+    let checker_absent = args.values.contains_key("--checker-absent")
+        || fs::symlink_metadata(root.join(SOURCES[0].0))
+            .is_err_and(|error| error.kind() == std::io::ErrorKind::NotFound);
     check(
         &Options {
             root,
@@ -700,7 +703,7 @@ pub fn cli() -> Result<()> {
                 .ok_or("non-UTF8 beep original manifest hash")?
                 .to_owned(),
             output: PathBuf::from(&args.values["--output"]),
-            checker_absent: args.values.contains_key("--checker-absent"),
+            checker_absent,
         },
         &mut NativeRunner,
         &mut std::io::stdout(),

@@ -1479,7 +1479,7 @@ rust/tools/build_plannerd_source.py	f91112691a33f27d04fc302dd4af044b8d5a9aab	pen
 rust/tools/build_usbgpu_catalog.py	7777d6f90151798508ea8f8fbebcf3f81bd14ff7	pending	-
 rust/tools/build_usbgpu_local.py	fbc959d4f699350d262990946ded62dc5ac09a7c	pending	-
 rust/tools/build_visionipc_python.py	6f0e7f57b827610e001e8360819f26227228b88e	pending	-
-rust/tools/calibration_cases.py	909959093c988010ec08c9c068b424b19231a705	pending	-
+rust/tools/calibration_cases.py	909959093c988010ec08c9c068b424b19231a705	replaced-local	rust/crates/dev-tools/tests/fixtures/calibration-estimator-original-04ee2c;docs/naver/rust-calibration-estimator-controller-296.md
 rust/tools/calibration_ipc.py	d1c267f269c37582e6bdcf5b485a15c22fadc725	pending	-
 rust/tools/calibration_reference.py	b13a779f014902b995b2f79edca34d49bf53f4b7	pending	-
 rust/tools/camerad_camera_lifecycle_cleanup.py	2ec2363f857b8284901851353ed7abf3d2c6aea6	replaced-local	Native lifecycle cleanup audit used by the continuous runtime checker; original capture/artifact contracts and live host cleanup checks preserved.
@@ -1824,7 +1824,7 @@ rust/tools/check_athena_upload_edges.py	ff5ffc38e15c0aca7f13ee3a83a42015e58ab274
 rust/tools/check_beepd_clock.py	fcb1d49ee419326b4f9ec602641e98fd410cb06b	replaced-local	openpilot-dev-tools check-beep-clock
 rust/tools/check_beepd_daemon.py	414ef778895ba1d5298c6f3397316f4f31fbef15	pending	-
 rust/tools/check_beepd_integer.py	10f7f3581ee8a13740a84cfd8a5443fc1253e5c9	replaced-local	openpilot-dev-tools check-beep-integer + build-beep-integer-reference; 278 live original C++ Params comparisons and independent Cython captures
-rust/tools/check_beepd_reference.py	cce9f010d8564f97490cf6840a5f13000097b63f	pending	-
+rust/tools/check_beepd_reference.py	cce9f010d8564f97490cf6840a5f13000097b63f	replaced-local	rust/crates/dev-tools/src/beep_reference_check.rs;docs/naver/rust-beep-reference-controller-296.md
 rust/tools/check_beepd_sleep.py	7a86d35ce887a3156b0d9b713e9272d1cab56bf3	replaced-local	openpilot-dev-tools check-beep-sleep; 27 original conversions, failure/write-order and CLI captures
 rust/tools/check_bluetooth_bluez.py	2297e17c8ae4ef900a03e1881491d7d095ca396d	pending	-
 rust/tools/check_bluetooth_bluez_invalid.py	f716b51b31a38b3d40bdaedec16ab212388f9431	pending	-
@@ -1847,7 +1847,7 @@ rust/tools/check_bridge.py	837e2ab770658577c5f564a77a563aed814ceb59	replaced-loc
 rust/tools/check_calibration_daemon.py	59ff14326c59ac7fcf2e4f26a1af76456072041f	pending	-
 rust/tools/check_calibration_float.py	38e332e2cc7fb8fcca65e305afb8d6ea0b1e6779	replaced-local	Native check-calibration-float; accepted original25-row/12CLI and56exec same-ELF gate; actual deletion sourcecd51eb14 run39536911039 passed
 rust/tools/check_calibration_loop.py	4a64bcf62f5e155b2da5be5fc4f6f62f84935906	pending	-
-rust/tools/check_calibration_reference.py	081106a094b16c35dbde0cce3769910f1b90512f	pending	-
+rust/tools/check_calibration_reference.py	081106a094b16c35dbde0cce3769910f1b90512f	replaced-local	rust/crates/dev-tools/src/calibration_reference_check.rs;docs/naver/rust-calibration-estimator-controller-296.md
 rust/tools/check_camerad_camera_lifecycle.py	1d1df7ff42c948731a0d5ea54be27f49a0520f06	replaced-local	rust/crates/dev-tools/src/camera_lifecycle_check.rs
 rust/tools/check_camerad_ci.py	fb43eceeabe3ce7cd8a4fa4c859b9f78988bcd83	replaced-local	Native check-camerad-ci preserves58 live build/check commands, source/binary receipts, disk guards and original partial failure artifacts; mandatory CI caller migrated.
 rust/tools/check_camerad_exposure.py	2df105103bf6ad8de4d2002069ecc18d9bf13cff	replaced-local	rust/crates/dev-tools/src/camera_exposure_check.rs; final state quoting caller migrated and helper removed

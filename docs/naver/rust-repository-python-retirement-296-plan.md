@@ -66,9 +66,9 @@ Interface: protocol (all five modes), USB, SPI, peripheral and runtime-fixture b
 
 Additional locally verified replacements and current failures are recorded in the
 [evidence ledger](rust-repository-python-retirement-296-evidence.md) and inventory.
-223 baseline sources are fully replaced locally, three baseline sources are
+226 baseline sources are fully replaced locally, three baseline sources are
 partially replaced because live-source helpers or unrelated Params tests remain Python,
-and 3,354 baseline sources remain pending. The added
+and 3,351 baseline sources remain pending. The added
 rust/tools/selfdrived_helpers_source.py retains those helpers; relocation is
 not retirement. Remaining families and final delivery gates stay open.
 The Bluetooth input decoder checker is now native after exact10,049-record,
@@ -401,3 +401,6 @@ Fresh post-deletion builds and regressions now run in the required CI job.
 - Local work remains source/format/syntax only. At 1364e48c navigation passed and
   the previously failing statistics comparison step passed; neither establishes
   aggregate success for that run or for the following source changes.
+
+
+The next three actual removals retire the beep reference controller and the calibration estimator controller/history generator after accepted same-current-ELF private-absence proofs (39541676860 and39541772800). The unchanged calibration CLI was freshly compared before deletion. Maintained callers now select Rust. Actual deleted-checkout cloud validation is required before accepting this batch; shared original helpers and all remaining Python remain in scope. Inventory226local/3partial/3351pending is source implementation progress, not project acceptance.
