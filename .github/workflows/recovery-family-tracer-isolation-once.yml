@@ -22,12 +22,12 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 047b1ea403062a725d834a4b1e0533e094c86722
+        ref: 5acc5eacb73155a087cb917cfa06a3f8ee2b45a7
         persist-credentials: false
     - name: Bind exact source and reserve disk before prerequisites
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = 047b1ea403062a725d834a4b1e0533e094c86722
+        test "$(git rev-parse HEAD)" = 5acc5eacb73155a087cb917cfa06a3f8ee2b45a7
 
         proof="$RUNNER_TEMP/recovery-frozen"
 
@@ -212,7 +212,7 @@ jobs:
         '
     - name: Verify full held source and ELF identities after traffic
       if: always()
-      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/recovery-frozen\"\ntest \"$(git rev-parse HEAD)\" = 047b1ea403062a725d834a4b1e0533e094c86722\n\
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/recovery-frozen\"\ntest \"$(git rev-parse HEAD)\" = 5acc5eacb73155a087cb917cfa06a3f8ee2b45a7\n\
         if test -f \"$proof/held-inputs.list\"; then\n  while IFS= read -r path; do test -f \"$path\" && test ! -L \"$path\"\
         ; stat -c '%d %i %s %f' \"$path\"; sha256sum \"$path\"; done < \"$proof/held-inputs.list\" > \"$proof/held-inputs.after\"\
         \n  cmp \"$proof/held-inputs.before\" \"$proof/held-inputs.after\"\nfi\n"
