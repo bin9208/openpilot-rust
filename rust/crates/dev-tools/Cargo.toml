@@ -553,6 +553,8 @@ bluetooth-config-native = ["dep:openpilot-runtime-version"]
 bluetooth-journal-native = []
 calibration-float-native = []
 calibration-reference-native = ["dep:capnp", "dep:openpilot-cereal", "serde_json/float_roundtrip"]
+desire-reference-native = ["serde_json/float_roundtrip"]
+panda-ci-native = ["serde_json/float_roundtrip"]
 pandad-safety-padding-native = []
 pandad-device-native = []
 logmessaged-startup-native = ["stats-daemon-native"]
@@ -1828,3 +1830,21 @@ required-features = ["calibration-reference-native"]
 [[test]]
 name = "calibration_reference_retirement"
 required-features = ["calibration-reference-native"]
+
+[[bin]]
+name = "check-desire-reference-native"
+path = "src/bin/check_desire_reference_native.rs"
+required-features = ["desire-reference-native"]
+
+[[test]]
+name = "desire_reference_check"
+required-features = ["desire-reference-native"]
+
+[[bin]]
+name = "check-pandad-ci"
+path = "src/bin/check_pandad_ci.rs"
+required-features = ["panda-ci-native"]
+
+[[test]]
+name = "panda_ci_check"
+required-features = ["panda-ci-native"]

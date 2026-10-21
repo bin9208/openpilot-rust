@@ -1,0 +1,25 @@
+{
+  "kind": "original-only DesireHelper request and reference capture; no native candidate executed",
+  "repository": "bin9208/openpilot-rust",
+  "checked_out_source": "6e34f78ae77734dac46967cc605836b950c99db9",
+  "workflow_commit": "2e21d8a1e1213c5f627038b4cb8923dd62c977ea",
+  "run_id": 39543376659,
+  "job_id": 119035975781,
+  "artifact_id": 12320572226,
+  "artifact_zip_sha256": "0642441ea177e46a5bd39923f2949c4317da4570d2b127af348d8dd061bec69d",
+  "capture_script_sha256": "7f4a85bb0be5973b705e9bfa18db1b398f59ed993b1ce9e0684e3f81143fa6d4",
+  "manifest_sha256": "ccb84511e949ccd9ebe44c2dc259cd29f5839a42ec35478a1698311b985a81cf",
+  "request": {
+    "raw_bytes": 143229930,
+    "raw_sha256": "6ae79545af6ca232d603520cf05d0a2f83ed207a14e3bbc4e0518154f59cb570",
+    "compressed_sha256": "76e4113c7df8cd7b96284c3bfa2b6a22ab112e745e743c70648baa9585097f58"
+  },
+  "reference": {
+    "raw_bytes": 96524611,
+    "raw_sha256": "ea0b820405f12e2922db8efe41f780b9064c6e76d347529b44b6ec621ac41847",
+    "compressed_sha256": "b67d04fe1266cc1e3e240e7bf4195143f0a5e634b31afda4d84e3afe05a07159"
+  },
+  "frames": 24585,
+  "scenarios": 47,
+  "scope": "The Linux Python 3.12.14 original-only writer supplied the expected streams. Native parity, candidate stdout/stderr, and actual device behavior require later cloud checks."
+}

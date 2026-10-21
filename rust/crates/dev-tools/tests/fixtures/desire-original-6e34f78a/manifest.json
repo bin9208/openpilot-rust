@@ -1,0 +1,271 @@
+{
+  "actual_imported_repo_modules": {
+    "openpilot/__init__.py": [
+      "openpilot"
+    ],
+    "openpilot/cereal/__init__.py": [
+      "openpilot.cereal"
+    ],
+    "openpilot/common/__init__.py": [
+      "openpilot.common"
+    ],
+    "openpilot/common/constants.py": [
+      "openpilot.common.constants"
+    ],
+    "openpilot/selfdrive/__init__.py": [
+      "openpilot.selfdrive"
+    ],
+    "openpilot/selfdrive/carrot/bluetooth/__init__.py": [
+      "openpilot.selfdrive.carrot.bluetooth"
+    ],
+    "openpilot/selfdrive/carrot/bluetooth/model.py": [
+      "openpilot.selfdrive.carrot.bluetooth.model"
+    ],
+    "openpilot/selfdrive/controls/__init__.py": [
+      "openpilot.selfdrive.controls"
+    ],
+    "openpilot/selfdrive/controls/lib/__init__.py": [
+      "openpilot.selfdrive.controls.lib"
+    ],
+    "openpilot/selfdrive/controls/lib/cutin_helpers.py": [
+      "openpilot.selfdrive.controls.lib.cutin_helpers"
+    ],
+    "openpilot/selfdrive/controls/lib/desire_helper.py": [
+      "openpilot.selfdrive.controls.lib.desire_helper"
+    ],
+    "openpilot/selfdrive/controls/lib/desire_lib/__init__.py": [
+      "openpilot.selfdrive.controls.lib.desire_lib"
+    ],
+    "openpilot/selfdrive/controls/lib/desire_lib/constants.py": [
+      "openpilot.selfdrive.controls.lib.desire_lib.constants"
+    ],
+    "openpilot/selfdrive/controls/lib/desire_lib/hysteresis.py": [
+      "openpilot.selfdrive.controls.lib.desire_lib.hysteresis"
+    ],
+    "openpilot/selfdrive/controls/lib/desire_lib/lane_math.py": [
+      "openpilot.selfdrive.controls.lib.desire_lib.lane_math"
+    ],
+    "openpilot/selfdrive/controls/lib/desire_lib/maneuver_classifier.py": [
+      "openpilot.selfdrive.controls.lib.desire_lib.maneuver_classifier"
+    ],
+    "openpilot/selfdrive/controls/lib/desire_lib/side_state.py": [
+      "openpilot.selfdrive.controls.lib.desire_lib.side_state"
+    ],
+    "openpilot/selfdrive/modeld/__init__.py": [
+      "openpilot.selfdrive.modeld"
+    ],
+    "openpilot/selfdrive/modeld/constants.py": [
+      "openpilot.selfdrive.modeld.constants"
+    ],
+    "rust/tools/check_desire_reference.py": [
+      "desire_reference_original"
+    ]
+  },
+  "capture_script": {
+    "after_sha256": "7f4a85bb0be5973b705e9bfa18db1b398f59ed993b1ce9e0684e3f81143fa6d4",
+    "before_sha256": "7f4a85bb0be5973b705e9bfa18db1b398f59ed993b1ce9e0684e3f81143fa6d4",
+    "path": "/home/runner/work/_temp/desire-original-296/original_only.py"
+  },
+  "files": {
+    "reference.jsonl": {
+      "bytes": 96524611,
+      "sha256": "ea0b820405f12e2922db8efe41f780b9064c6e76d347529b44b6ec621ac41847"
+    },
+    "request.jsonl": {
+      "bytes": 143229930,
+      "sha256": "6ae79545af6ca232d603520cf05d0a2f83ed207a14e3bbc4e0518154f59cb570"
+    }
+  },
+  "frames": 24585,
+  "kind": "original-only desire source capture; no candidate invoked",
+  "original_statement_block": [
+    "original",
+    "helper",
+    "config",
+    "counts",
+    "request_path",
+    "reference_path",
+    "with request/reference writer"
+  ],
+  "runtime": {
+    "numpy": "2.5.3",
+    "pycapnp": "2.1.0",
+    "python": "3.12.14 (main, Aug 13 2026, 02:47:42) [GCC 13.3.0]"
+  },
+  "scenario_count": 47,
+  "scenarios": {
+    "changing-track": 45,
+    "far-track": 45,
+    "front-track": 45,
+    "full-cycle-left": 180,
+    "full-cycle-right": 180,
+    "random-0": 600,
+    "random-1": 600,
+    "random-10": 600,
+    "random-11": 600,
+    "random-12": 600,
+    "random-13": 600,
+    "random-14": 600,
+    "random-15": 600,
+    "random-16": 600,
+    "random-17": 600,
+    "random-18": 600,
+    "random-19": 600,
+    "random-2": 600,
+    "random-20": 600,
+    "random-21": 600,
+    "random-22": 600,
+    "random-23": 600,
+    "random-24": 600,
+    "random-25": 600,
+    "random-26": 600,
+    "random-27": 600,
+    "random-28": 600,
+    "random-29": 600,
+    "random-3": 600,
+    "random-30": 600,
+    "random-31": 600,
+    "random-32": 600,
+    "random-33": 600,
+    "random-34": 600,
+    "random-35": 600,
+    "random-36": 600,
+    "random-37": 600,
+    "random-38": 600,
+    "random-39": 600,
+    "random-4": 600,
+    "random-5": 600,
+    "random-6": 600,
+    "random-7": 600,
+    "random-8": 600,
+    "random-9": 600,
+    "receding": 45,
+    "unsafe-peer": 45
+  },
+  "source": {
+    "opendbc_repo/opendbc/car/car.capnp": {
+      "after_sha256": "6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda",
+      "before_sha256": "6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda"
+    },
+    "opendbc_repo/opendbc/car/include/c++.capnp": {
+      "after_sha256": "fb306076cd38c27af1aed20fac6395e9a46fbe5b5df6a248b5f1b6845a079c44",
+      "before_sha256": "fb306076cd38c27af1aed20fac6395e9a46fbe5b5df6a248b5f1b6845a079c44"
+    },
+    "opendbc_repo/opendbc/car/rlog.capnp": {
+      "after_sha256": "0f4a316832f333bdd17d4af32f0102844fa569b97a417ada3ffbe0d2de5cbd21",
+      "before_sha256": "0f4a316832f333bdd17d4af32f0102844fa569b97a417ada3ffbe0d2de5cbd21"
+    },
+    "openpilot/__init__.py": {
+      "after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "before_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "openpilot/cereal/__init__.py": {
+      "after_sha256": "c8e54d7417631916d8c5842d0d509d8c573ca8089e9cad6fc7acad849503fb60",
+      "before_sha256": "c8e54d7417631916d8c5842d0d509d8c573ca8089e9cad6fc7acad849503fb60"
+    },
+    "openpilot/cereal/custom.capnp": {
+      "after_sha256": "102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693",
+      "before_sha256": "102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693"
+    },
+    "openpilot/cereal/deprecated.capnp": {
+      "after_sha256": "65079ff035a29c4c267d07ef7240c316c7eaa81b52f795142ed7603489a61355",
+      "before_sha256": "65079ff035a29c4c267d07ef7240c316c7eaa81b52f795142ed7603489a61355"
+    },
+    "openpilot/cereal/include/c++.capnp": {
+      "after_sha256": "fb306076cd38c27af1aed20fac6395e9a46fbe5b5df6a248b5f1b6845a079c44",
+      "before_sha256": "fb306076cd38c27af1aed20fac6395e9a46fbe5b5df6a248b5f1b6845a079c44"
+    },
+    "openpilot/cereal/log.capnp": {
+      "after_sha256": "fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620",
+      "before_sha256": "fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620"
+    },
+    "openpilot/common/__init__.py": {
+      "after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "before_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "openpilot/common/constants.py": {
+      "after_sha256": "fc439d59c24b95ed349b84f1a5862df3ea50e0891dbec4ea3cf5e1e0ccff6513",
+      "before_sha256": "fc439d59c24b95ed349b84f1a5862df3ea50e0891dbec4ea3cf5e1e0ccff6513"
+    },
+    "openpilot/common/realtime.py": {
+      "after_sha256": "6337d64508299a53c00f0795397e5043ec7b69c864d6ca8c02604244502aba5e",
+      "before_sha256": "6337d64508299a53c00f0795397e5043ec7b69c864d6ca8c02604244502aba5e"
+    },
+    "openpilot/selfdrive/__init__.py": {
+      "after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "before_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "openpilot/selfdrive/carrot/bluetooth/__init__.py": {
+      "after_sha256": "3246f90bbcd881f8c4216259af31274ac35f911c78d440b605d722ed345a1827",
+      "before_sha256": "3246f90bbcd881f8c4216259af31274ac35f911c78d440b605d722ed345a1827"
+    },
+    "openpilot/selfdrive/carrot/bluetooth/model.py": {
+      "after_sha256": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633",
+      "before_sha256": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+    },
+    "openpilot/selfdrive/controls/__init__.py": {
+      "after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "before_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "openpilot/selfdrive/controls/lib/__init__.py": {
+      "after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "before_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "openpilot/selfdrive/controls/lib/cutin_helpers.py": {
+      "after_sha256": "fa7558f0ff4878e390e55a3560c675831064755b20869ee3bc345c3d92b00e16",
+      "before_sha256": "fa7558f0ff4878e390e55a3560c675831064755b20869ee3bc345c3d92b00e16"
+    },
+    "openpilot/selfdrive/controls/lib/desire_helper.py": {
+      "after_sha256": "0f2ac68ce42a3f8e701e3797ac1d5b244886e1312bccbca61186489729d45e91",
+      "before_sha256": "0f2ac68ce42a3f8e701e3797ac1d5b244886e1312bccbca61186489729d45e91"
+    },
+    "openpilot/selfdrive/controls/lib/desire_lib/__init__.py": {
+      "after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "before_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "openpilot/selfdrive/controls/lib/desire_lib/constants.py": {
+      "after_sha256": "9f86522d3704ef2a5f9ad4bca06367c7c888c58011d7b1ff65af9f56889499b2",
+      "before_sha256": "9f86522d3704ef2a5f9ad4bca06367c7c888c58011d7b1ff65af9f56889499b2"
+    },
+    "openpilot/selfdrive/controls/lib/desire_lib/hysteresis.py": {
+      "after_sha256": "ca0648afb579033e1a04c9f80815478dd9a1e281a9611399dd4f35fdc94007a6",
+      "before_sha256": "ca0648afb579033e1a04c9f80815478dd9a1e281a9611399dd4f35fdc94007a6"
+    },
+    "openpilot/selfdrive/controls/lib/desire_lib/lane_math.py": {
+      "after_sha256": "568593d0a032438d374b9139b9563c685b1675d4a580aa42db7d8e1cf68bab45",
+      "before_sha256": "568593d0a032438d374b9139b9563c685b1675d4a580aa42db7d8e1cf68bab45"
+    },
+    "openpilot/selfdrive/controls/lib/desire_lib/maneuver_classifier.py": {
+      "after_sha256": "fae005dca463b28c87bf666678b0707a738aa7d40dd6b86044b01aa088f8c61f",
+      "before_sha256": "fae005dca463b28c87bf666678b0707a738aa7d40dd6b86044b01aa088f8c61f"
+    },
+    "openpilot/selfdrive/controls/lib/desire_lib/side_state.py": {
+      "after_sha256": "32eea2c2b28b0a3db0558239643a7d53c8f785ca2612a066afd17e604ff3c499",
+      "before_sha256": "32eea2c2b28b0a3db0558239643a7d53c8f785ca2612a066afd17e604ff3c499"
+    },
+    "openpilot/selfdrive/modeld/__init__.py": {
+      "after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "before_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "openpilot/selfdrive/modeld/constants.py": {
+      "after_sha256": "5d597d287df626d08b234a17db05e884302fead646ff4e7f0153079547c8010c",
+      "before_sha256": "5d597d287df626d08b234a17db05e884302fead646ff4e7f0153079547c8010c"
+    },
+    "rust/tools/check_desire_reference.py": {
+      "after_sha256": "b5529bcac8036ec559de785319b8bd131963fe05eb9aa149528992f7b4f88f8e",
+      "before_sha256": "b5529bcac8036ec559de785319b8bd131963fe05eb9aa149528992f7b4f88f8e"
+    }
+  },
+  "source_commit": "6e34f78ae77734dac46967cc605836b950c99db9",
+  "state_coverage": {
+    "desire:0": 22199,
+    "desire:1": 468,
+    "desire:2": 276,
+    "desire:3": 848,
+    "desire:4": 794,
+    "state:Finishing": 692,
+    "state:Off": 19810,
+    "state:PreLaneChange": 3133,
+    "state:Starting": 950
+  }
+}
