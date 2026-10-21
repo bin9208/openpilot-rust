@@ -1744,3 +1744,23 @@ construction; a6c3201f uses distinct runtime queue endpoints and reruns the full
 encoder job. This candidate still needs complete cloud evidence and affected ARM
 builds. Neither local source review nor host fixtures establishes hardware VIDC,
 vehicle CPU, camera timing, module-wide optimization or all-module bug clearance.
+
+
+### Accepted #448/#449 hosted bounds, 2026-10-21
+
+#448 a6c3201f/39546722792 passed complete codec/V4L/runtime/IPC and Clippy;
+parent and reviewer verified5codec cases/112packet hashes,32V4L and10runtime
+cases. Selected payload-copy accounting is205400→102700bytes with240→240
+allocations. This supersedes the preceding pending host status, not the pending
+latest ARM/device evidence. See rust-v4l-direct-publication-448.md.
+
+#449 4c876dc7/39550724394 passed the entire support/upload/Params/lifecycle job
+and strict Clippy. Repeated1,000 progress callbacks allocate3,000→2,000 times,
+request303,128→273,128bytes and emit the same fingerprint. Cold costs rise
+4→5calls/475→687bytes. These are bounded Rust allocation observations, not CPU,
+network, peak-memory or device results. See rust-dashcam-progress-allocation-449.md.
+
+A new source-only cweb redirect review confirms per-byte temporary Strings in
+http.rs location encoding. A single owned String is a candidate; preserve all
+256 byte mappings, URL joining, methods, redirect limits and actual HTTP/lifecycle
+comparisons before accepting it. No new runtime bug or measured benefit is claimed.

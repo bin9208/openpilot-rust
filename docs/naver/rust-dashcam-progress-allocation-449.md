@@ -19,8 +19,24 @@ its registry checksum comes from the official sparse index. Local checks read
 only metadata and checked syntax/format/diff; no dependency installation or build
 ran locally. Runtime unsafe-code lint policy remains unchanged.
 
-The maintained support-runtime gate keeps all original upload/Params/catalog/
-metadata/lifecycle and Git ownership comparisons, and adds package tests and
-strict all-target Clippy. Hosted functional proof, allocation values and affected
-ARM verification are pending. No CPU, bandwidth, latency or device result is
-claimed from source inspection.
+The [hosted support-runtime job](https://github.com/bin9208/openpilot-rust/actions/runs/39550724394/job/119059059811)
+passed on checked-out source `4c876dc7da80629b81a166bc4b0810f1621d2d42`
+(diagnostic workflow head `5c50cf08406378f87731a5b4997acf122c5772c4`).
+Its retained artifact is `12324177889`, ZIP SHA-256
+`0c962cfb5fb0518ae3383f6ea8a75b876283fa92e779d972fbf3e770bc85abb7`.
+The ZIP passed CRC inspection. `support-runtime/dashcam-progress-tests.log`
+records both unit tests passing, including the isolated allocation child;
+`dashcam-progress-clippy.log` records strict Clippy completion. The whole job
+also passed the maintained original/native HTTP, upload, Params, catalog,
+metadata, Git capture, connection ownership and lifecycle steps.
+
+For one cold event, the previous bookkeeping recorded 4 allocation calls and
+475 requested bytes; the nested-map path recorded 5 calls and 687 bytes. For
+1,000 warmed events with the same JSON progress-patch serialization, the previous path
+recorded 3,000 calls and 303,128 bytes; the current production helper recorded
+2,000 calls and 273,128 bytes. The 1,000-call and 30,000-byte differences equal
+one copied 30-byte filename per warmed callback. Both paths emitted the same
+semantic fingerprint, `3894085801202778587`, and the test compared complete
+progress patches and state. These are Rust allocator requests in a hosted test,
+not a measurement of HTTP transport, peak memory, CPU time, bandwidth or device
+performance. Affected ARM/device verification remains pending.

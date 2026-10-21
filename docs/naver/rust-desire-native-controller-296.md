@@ -29,6 +29,22 @@ a byte-parity claim. The CLI fixture SHA256 is
 
 The Python checker is removed and the actual workspace caller selects Rust with
 mandatory source-absence, unit, integration, CLI, strictClippy and default-CLI
-checks. Actual deleted-checkout cloud proof remains pending. Shared original
-Python helpers, the rest of repository conversion, latest full PR/ARM and user
-boot/recording/upload/driving acceptance remain separate unfinished work.
+checks. Actual deleted-checkout proof passed on source
+`9b69270f44348d660dfca1cf5676c5499529fc53` in
+[39551450349/job119061342499](https://github.com/bin9208/openpilot-rust/actions/runs/39551450349/job/119061342499),
+workflow `785e0612bd24e41e526e55f6db93ffc37b64669a`.
+Artifact12324546334 ZIP SHA256 is
+`f382775c1dd2b382a7bac770a051e29beef8e2a2b5bc101b336b14776dfad450`.
+Parent and reviewer independently checked the archive CRC, full stream hashes,
+27 source seals, source absence, same held executable identities and exactly two
+successful executions per root. All20 CLI admissions, four controller tests,
+retirement proof, selected unit test, strict Clippy and ordinary default CLI passed.
+
+The artifact uploader omits the generated non-UTF-8 pathname. Its20-case test
+checked all three stream hashes and the parsed report in that directory before
+upload; retained default/checkout/private-root streams independently match those
+same full hashes. Thus the passing raw-path execution is CI test evidence, while
+the raw-path files themselves are not retained in the ZIP. Help/error text parity
+is not claimed. Shared original Python helpers, the remaining repository
+conversion, latest full PR/ARM and user boot/recording/upload/driving acceptance
+remain separate unfinished work.
