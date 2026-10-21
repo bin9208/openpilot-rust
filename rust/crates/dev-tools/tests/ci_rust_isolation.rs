@@ -2666,3 +2666,16 @@ fn lpa_cookie_header_keeps_original_tls_and_requires_measured_byte_exact_improve
         ],
     );
 }
+
+#[test]
+fn beep_native_controller_keeps_all_twenty_original_cases_and_real_caller() {
+    job_check("telemetry-runtime", &[
+        "python rust/tools/check_beepd_reference.py --binary",
+        "openpilot-dev-tools/beep-reference-native",
+        "BEEP_REFERENCE_ORIGINAL_MANIFEST_SHA256=0a02d6aacb5b930012a47886c389571d9cf3ff404ecd796171045f10734a9188",
+        "BEEP_REFERENCE_EVIDENCE=",
+        "--locked --lib --test beep_reference_check",
+        "--bin check-beep-reference --test beep_reference_check",
+        "rust/target/debug/check-beep-reference --binary",
+    ], &["--test beep_reference_check"], false);
+}
