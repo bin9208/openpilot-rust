@@ -1,14 +1,14 @@
 //! Cloud-only comparison against sealed unchanged-Python requests and C++ responses.
 #![cfg(all(target_os = "linux", feature = "pandad-device-native"))]
 use base64::{engine::general_purpose::STANDARD, Engine as _};
-use openpilot_dev_tools::qa_process::{CommandSpec, NativeRunner, Runner};
-use serde_json::Value;
+use openpilot_dev_tools::qa_process::{Captured, CommandSpec, NativeRunner, Runner};
+use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::{
     collections::BTreeSet,
     ffi::OsString,
     fs,
-    os::unix::ffi::OsStringExt,
+    os::unix::ffi::{OsStrExt, OsStringExt},
     path::{Path, PathBuf},
     time::Duration,
 };
@@ -231,6 +231,28 @@ fn command(root: &Path, args: Vec<OsString>) -> CommandSpec {
     command.stderr_limit = 1024 * 1024;
     command
 }
+fn retain_cli(evidence: &Path, name: &str, spec: &CommandSpec, child: &Captured) {
+    let argv = spec.effective_argv();
+    let cwd = spec
+        .cwd
+        .clone()
+        .unwrap_or_else(|| std::env::current_dir().unwrap());
+    let receipt = json!({
+        "argv_b64": argv.iter().map(|v| STANDARD.encode(v.as_bytes())).collect::<Vec<_>>(),
+        "checker_sha256": hash(Path::new(&argv[0])),
+        "cwd_b64": STANDARD.encode(cwd.as_os_str().as_bytes()),
+        "explicit_environment_b64": spec.os_env.as_ref().map(|values| values.iter().map(|(key,value)|
+            (STANDARD.encode(key.as_bytes()), STANDARD.encode(value.as_bytes()))).collect::<Vec<_>>()),
+        "exit": child.code,
+        "stdout_b64": STANDARD.encode(&child.stdout),
+        "stderr_b64": STANDARD.encode(&child.stderr),
+    });
+    fs::write(
+        evidence.join(format!("{name}.cli.json")),
+        serde_json::to_vec_pretty(&receipt).unwrap(),
+    )
+    .unwrap();
+}
 fn checkout_mode() -> String {
     let mode = std::env::var("PANDAD_DEVICE_RETIREMENT_MODE")
         .expect("mandatory explicit predelete/postdelete mode");
@@ -326,19 +348,19 @@ fn sealed_original_requests_and_cpp_responses_match_cold_native_private_absent_a
         ("raw-output", absent, raw),
     ] {
         source_root_pins(&source_root);
-        let child = NativeRunner
-            .run(&command(
-                &source_root,
-                vec![
-                    "--source".into(),
-                    source.clone().into_os_string(),
-                    "--native".into(),
-                    native.clone().into_os_string(),
-                    "--output".into(),
-                    output.clone().into_os_string(),
-                ],
-            ))
-            .unwrap();
+        let spec = command(
+            &source_root,
+            vec![
+                "--source".into(),
+                source.clone().into_os_string(),
+                "--native".into(),
+                native.clone().into_os_string(),
+                "--output".into(),
+                output.clone().into_os_string(),
+            ],
+        );
+        let child = NativeRunner.run(&spec).unwrap();
+        retain_cli(&evidence, lane, &spec, &child);
         fs::write(evidence.join(format!("{lane}.stdout")), &child.stdout).unwrap();
         fs::write(evidence.join(format!("{lane}.stderr")), &child.stderr).unwrap();
         assert_eq!(
@@ -381,6 +403,31 @@ fn sealed_original_requests_and_cpp_responses_match_cold_native_private_absent_a
         assert_eq!([hash(&source), hash(&native)], before);
         assert_eq!(hash(&checker), checker_pin);
         source_root_pins(&source_root);
+        if lane == "raw-output" {
+            // Artifact uploaders accept UTF-8 filenames. The actual invocation
+            // above uses raw0xff; preserve its argv receipt and relocate only
+            // the completed evidence, checking every byte before/after rename.
+            let mut files = BTreeSet::new();
+            file_roster(&output, &output, &mut files);
+            let seals = files
+                .iter()
+                .map(|name| (name.clone(), hash(&output.join(name))))
+                .collect::<std::collections::BTreeMap<_, _>>();
+            let archived = evidence.join("raw-output-bytes");
+            fs::rename(&output, &archived).unwrap();
+            for (name, pin) in &seals {
+                assert_eq!(hash(&archived.join(name)), *pin);
+            }
+            fs::write(
+                evidence.join("raw-output.archive.json"),
+                serde_json::to_vec_pretty(&json!({
+                    "invoked_output_path_b64": STANDARD.encode(output.as_os_str().as_bytes()),
+                    "archived_as": "raw-output-bytes", "files_sha256": seals
+                }))
+                .unwrap(),
+            )
+            .unwrap();
+        }
     }
     assert_eq!(
         original(),
@@ -394,7 +441,12 @@ fn sealed_original_requests_and_cpp_responses_match_cold_native_private_absent_a
 fn sealed_original_eleven_cli_exit_admissions_match_after_retirement() {
     let mode = checkout_mode();
     let (capture, manifest) = original();
-    let private = tempfile::tempdir_in(required("PANDAD_DEVICE_TEST_OUTPUT")).unwrap();
+    let evidence = tempfile::Builder::new()
+        .prefix("device-cli-")
+        .tempdir_in(required("PANDAD_DEVICE_TEST_OUTPUT"))
+        .unwrap()
+        .keep();
+    let private = tempfile::tempdir_in(&evidence).unwrap();
     let checker = PathBuf::from(env!("CARGO_BIN_EXE_check-pandad-device"));
     let checker_pin = hash(&checker);
     for (name, args) in [
@@ -433,6 +485,7 @@ fn sealed_original_eleven_cli_exit_admissions_match_after_retirement() {
         let mut spec = command(&root(), args.into_iter().map(OsString::from).collect());
         spec.cwd = Some(private.path().to_owned());
         let child = NativeRunner.run(&spec).unwrap();
+        retain_cli(&evidence, name, &spec, &child);
         assert_eq!(
             i64::from(child.code),
             expected["exit"].as_i64().unwrap(),
@@ -563,27 +616,27 @@ fn sealed_original_missing_source_missing_native_and_foreign_output_effects_matc
             fs::create_dir(&output).unwrap();
             fs::write(output.join("report.json"), b"foreign receipt").unwrap();
         }
-        let child = NativeRunner
-            .run(&command(
-                &root(),
-                vec![
-                    "--source".into(),
-                    if name == "missing-source" {
-                        absent.clone().into_os_string()
-                    } else {
-                        source.clone().into_os_string()
-                    },
-                    "--native".into(),
-                    if name == "missing-native" {
-                        absent.clone().into_os_string()
-                    } else {
-                        native.clone().into_os_string()
-                    },
-                    "--output".into(),
-                    output.clone().into_os_string(),
-                ],
-            ))
-            .unwrap();
+        let spec = command(
+            &root(),
+            vec![
+                "--source".into(),
+                if name == "missing-source" {
+                    absent.clone().into_os_string()
+                } else {
+                    source.clone().into_os_string()
+                },
+                "--native".into(),
+                if name == "missing-native" {
+                    absent.clone().into_os_string()
+                } else {
+                    native.clone().into_os_string()
+                },
+                "--output".into(),
+                output.clone().into_os_string(),
+            ],
+        );
+        let child = NativeRunner.run(&spec).unwrap();
+        retain_cli(&evidence, name, &spec, &child);
         fs::write(evidence.join(format!("{name}.stdout")), &child.stdout).unwrap();
         fs::write(evidence.join(format!("{name}.stderr")), &child.stderr).unwrap();
         assert_eq!(i64::from(child.code), receipt["exit"].as_i64().unwrap());

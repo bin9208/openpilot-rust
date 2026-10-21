@@ -23,7 +23,8 @@ fields and case order, retaining only the original normalization of unspecified
 health `interrupt_load`. The separately recorded `interrupt_bits` remains checked.
 
 Actual native CLI lanes cover checkout, private source absence and a raw0xff
-output path, with an additional present-source lane before deletion. Eleven
+output path. The checkout is present before deletion and must be absent after
+deletion. Eleven
 parser admissions check independently observed exits and output channels, no
 false PASS or filesystem effects. Missing source/native probes additionally
 check source-first failure order and exact retained files. A preexisting foreign
@@ -37,7 +38,16 @@ Explicit `predelete`/`postdelete` test modes distinguish present-source validati
 from required actual absence. The final deletion gate must not restore, download
 or execute the retired Python files.
 
-The original capture and candidate hosted results remain pending. No Python
+Candidate39629276623 passes all10 controls and3 full retirement tests, then fails
+because its recipe omitted the Clippy component. That setup is corrected for a
+full rerun; strict-Clippy acceptance remains pending. Parent also found that the
+artifact uploader omitted the raw-byte directory although its live assertions
+passed. The next proof retains actual argv/status/streams for every native CLI
+call and relocates completed raw-path evidence to an ASCII archive directory,
+with hashes checked before/after and a separate explicit archive mapping. Those
+evidence additions still require hosted validation.
+
+No Python
 source has been removed by this device-family candidate. The separate outer
 Panda controller source deletion and its38-phase gate are accepted in
 [39625704015](https://github.com/bin9208/openpilot-rust/actions/runs/39625704015);
