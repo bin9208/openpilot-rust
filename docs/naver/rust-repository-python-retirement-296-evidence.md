@@ -45,10 +45,23 @@ manifest SHA256
 Native39678813421 compiled and passed three units but exposed an optional
 original `error_class` summary missing qualified JSONDecodeError names in four
 receipts. Commit3abd3a50b instead validates the sealed final exception line,
-without modifying the original capture; the corrected hosted comparison is
-pending. Maintained callers now use the host-native receipt binary from the
-existing native-json11 producer. Its focused native comparison and workflow
-integration gates must pass before marking these14 execution edges accepted.
+without modifying the original capture. Corrected native39679579648 passes
+all67 observations (34 successful outputs,27 source error categories and six
+explicit non-string-prefix rejections), four units and strict Clippy at source
+`3abd3a50b3e6769c9d4baa42954e18647fbeb4f6`, workflow
+`8c0ecd674ae08924f7ed7f9d9859ba5931ede02e`. Parent independently checked all78
+artifact member CRCs and all67 native/original comparisons; artifact12383687016
+is38,385bytes, ZIP SHA256
+`6ccd1b156c2b260b5927aa24c0b99d064a01e48890436b6fc9c471011b56aeaf`.
+Maintained callers use the host-native binary from native-json11. Integration
+39680000548 caught a missing Panda job producer;3851ac65d adds it. Next run
+39680731634 passes all five unit/caller checks and actual composite-host output,
+but case61 exposes a filesystem enumeration-order difference (`z,a` versus
+original `a,z`) in the comparison harness. The product must preserve unsorted
+first-match behavior; the fixture must distinguish recorded provider order from
+current provider order rather than sort either directory or invent a successful
+original output. That focused correction and workflow-policy gate remain pending
+before marking these14 execution edges accepted.
 Six non-string prefix print cases are explicit rejected schema boundaries,
 not claimed arbitrary-Python-print parity; reads are bounded to4MiB.
 
@@ -105,7 +118,11 @@ The prior preflight39673003192 failed on four mixed-case rustix signal constants
 traffic are not covered by this preflight. Review subsequently found the default
 512MiB catalog bound rejects the genuine776,634,338-byte USB model. Commit5f0aef024
 adds separate800MiB/file,1GiB total/512-file admission and exact original asset
-roster comparison; changed-bound regression39675298032 remains pending.
+roster comparison. Changed-bound regression39675298032 passes three focused
+controls, current all-target compilation and strict Clippy at5acc5eacb. Parent
+checked artifact12381512205 (5,900bytes/eight CRC members), ZIP SHA256
+`2b4e5a401ccd12cf020d50dc0b70a1126e2df8a14adb9dd23598dcea51e03d12`.
+A separate800MiB asset limit is necessary even for the correctly matched release.
 
 Recovery [39672931897](https://github.com/bin9208/openpilot-rust/actions/runs/39672931897)
 passes16 family units, strict Clippy and seven complete controllers per root,
