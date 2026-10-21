@@ -1926,6 +1926,10 @@ name = "driver_daemon_check"
 required-features = ["driver-daemon-native"]
 
 [[test]]
+name = "model_family_retirement"
+required-features = ["driver-daemon-native"]
+
+[[test]]
 name = "driving_daemon_retirement"
 required-features = ["driving-daemon-native"]
 
