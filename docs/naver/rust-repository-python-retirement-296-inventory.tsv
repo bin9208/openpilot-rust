@@ -1974,7 +1974,7 @@ rust/tools/check_logging_connect.py	17e2b9ab5933e88d46ded0c6941e5e32cb80a74f	pen
 rust/tools/check_logging_producer.py	27b9f2ab64c8a5733b20c1d371267cd7f0580495	pending	-
 rust/tools/check_logmessaged_native.py	273df598b87efaf9f058ba0fee79ae6d9ff01199	pending	-
 rust/tools/check_logmessaged_reference.py	209eeb15b3f5072f82fd617c9ec0461d50404c2e	pending	-
-rust/tools/check_logmessaged_startup.py	114fa9d0560862495292a5d1e45dc1e979018df1	pending	-
+rust/tools/check_logmessaged_startup.py	114fa9d0560862495292a5d1e45dc1e979018df1	replaced-local	rust/crates/dev-tools/src/logmessaged_startup_check.rs; native check-logmessaged-startup; original13d 18-file packet/disk fixture and mandatory source-absence exec audit
 rust/tools/check_longitudinal_maneuvers.py	d2dffdba6b73012d0412d16b78fdb8a3dbb08513	pending	-
 rust/tools/check_lpa.py	a108f6ee3aad8a11e425c5dfd210106967adb82d	pending	-
 rust/tools/check_managed_entry.py	dd17dd395fda42caa96eafeaee28669c0b9acd49	replaced-local	rust/crates/dev-tools/src/managed_entry_check.rs; managed_entry_source.rs; full44/readiness frozen before-after no-Python proof and native callers; #296 evidence ledger

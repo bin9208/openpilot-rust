@@ -2296,16 +2296,12 @@ jobs:
             --native rust/target/debug/examples/params_string_probe --output "$RUNNER_TEMP/support-runtime/params-string"
           python rust/tools/check_params_string_uploader.py --binding "$RUNNER_TEMP"/support-params-binding/params_pyx*.so \
             --binary rust/target/debug/openpilot-uploader --collector rust/target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/support-runtime/params-uploader"
-      - name: Compare native log collector startup controller with unchanged original
+      - name: Require same-ELF logmessaged startup with historical checker absent
         run: |
           set -euo pipefail
           rustup component add clippy --toolchain 1.94.0
           export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
-          proof="$RUNNER_TEMP/support-runtime/logmessaged-startup-controller"
-          mkdir -p "$proof"
-          checker="$GITHUB_WORKSPACE/rust/target/debug/check-logmessaged-startup"
-          collector="$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged"
-          export LOGMESSAGED_COLLECTOR_BINARY="$collector"
+          export LOGMESSAGED_COLLECTOR_BINARY="$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features logmessaged-startup-native --bin check-logmessaged-startup --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
@@ -2313,32 +2309,20 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features logmessaged-startup-native --lib logmessaged_startup_check::worker::tests --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features logmessaged-startup-native --lib --bin check-logmessaged-startup --test logmessaged_startup_check --test logmessaged_startup_reference --locked --test logmessaged_startup_retirement -- -D warnings
-          mapfile -t original_sources < <(jq -r 'keys[]' rust/crates/dev-tools/tests/fixtures/logmessaged-startup/source-pins.json)
-          sha256sum "$checker" "$collector" "${original_sources[@]}" > "$proof/original-inputs.sha256"
-          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
-          python rust/tools/check_logmessaged_startup.py --collector "$collector" --output "$proof/original"
-          sha256sum -c "$proof/original-inputs.sha256"
-          mkdir "$proof/native-path"
-          ln -s /usr/bin/git "$proof/native-path/git"
-          sha256sum "$checker" "$collector" "$proof/native-path/git" > "$proof/artifacts.sha256"
-          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
-          env PATH="$proof/native-path" /usr/bin/timeout --kill-after=5s 180s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "$proof/native.exec" "$checker" --collector "$collector" --output "$proof/native" > "$proof/native.stdout" 2> "$proof/native.stderr"
-          sha256sum -c "$proof/artifacts.sha256"
-          sha256sum -c "$proof/original-inputs.sha256"
-          export LOGMESSAGED_STARTUP_PROOF="$proof"
-          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features logmessaged-startup-native --test logmessaged_startup_reference --locked
-          sha256sum -c "$proof/original-inputs.sha256"
-      - name: Require same-ELF logmessaged startup with historical checker absent
-        run: |
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features logmessaged-startup-native --lib --bin check-logmessaged-startup --test logmessaged_startup_check --test logmessaged_startup_reference --test logmessaged_startup_retirement --locked -- -D warnings
           set -euo pipefail
           proof="$RUNNER_TEMP/support-runtime/logmessaged-startup-retirement"
           checker="$GITHUB_WORKSPACE/rust/target/debug/check-logmessaged-startup"
           collector="$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged"
+          fixture="$GITHUB_WORKSPACE/rust/crates/dev-tools/tests/fixtures/logmessaged-startup/13d-original"
           roots="$proof/roots"
-          mkdir -p "$roots/present" "$roots/absent"
-          jq -r 'keys[]' rust/crates/dev-tools/tests/fixtures/logmessaged-startup/source-pins.json > "$proof/pinned-paths.txt"
+          mkdir -p "$proof/native-path" "$roots/absent"
+          ln -s /usr/bin/git "$proof/native-path/git"
+          test ! -e rust/tools/check_logmessaged_startup.py
+          test ! -L rust/tools/check_logmessaged_startup.py
+          test -d rust/tools
+          test "$(sha256sum "$fixture/SHA256SUMS" | cut -d' ' -f1)" = cee8e19032542bc4851d0ce6bfebd9b71dde9184b19bdc5b0fb23e06e974d0dd
+          (cd "$fixture" && sha256sum -c SHA256SUMS)
           cat > "$proof/authored-paths.txt" <<'PATHS'
           rust/crates/dev-tools/src/logmessaged_startup_check.rs
           rust/crates/dev-tools/src/logmessaged_startup_check/worker.rs
@@ -2354,36 +2338,41 @@ jobs:
           rust/crates/dev-tools/tests/fixtures/logmessaged-startup/source-pins.json
           rust/crates/dev-tools/tests/fixtures/logmessaged-startup/original-observation.json
           PATHS
+          jq -r 'keys[] | select(. != "rust/tools/check_logmessaged_startup.py")' rust/crates/dev-tools/tests/fixtures/logmessaged-startup/source-pins.json > "$proof/pinned-paths.txt"
           cat "$proof/pinned-paths.txt" "$proof/authored-paths.txt" | sort -u > "$proof/all-root-paths.txt"
           while IFS= read -r name; do
-            for lane in present absent; do
-              if [ "$lane" = absent ] && [ "$name" = rust/tools/check_logmessaged_startup.py ]; then continue; fi
-              mkdir -p "$roots/$lane/$(dirname "$name")"
-              cp -- "$GITHUB_WORKSPACE/$name" "$roots/$lane/$name"
-            done
+            mkdir -p "$roots/absent/$(dirname "$name")"
+            cp -- "$GITHUB_WORKSPACE/$name" "$roots/absent/$name"
           done < "$proof/all-root-paths.txt"
-          test -f "$roots/present/rust/tools/check_logmessaged_startup.py"
           test -d "$roots/absent/rust/tools"
           test ! -e "$roots/absent/rust/tools/check_logmessaged_startup.py"
-          sha256sum "$checker" "$collector" "$RUNNER_TEMP/support-runtime/logmessaged-startup-controller/native-path/git" rust/tools/check_logmessaged_startup.py > "$proof/inputs.sha256"
-          find "$roots" -type f -print0 | sort -z | xargs -0 sha256sum >> "$proof/inputs.sha256"
+          test ! -L "$roots/absent/rust/tools/check_logmessaged_startup.py"
+          sha256sum "$checker" "$collector" "$proof/native-path/git" > "$proof/artifacts.sha256"
+          cp "$proof/artifacts.sha256" "$proof/inputs.sha256"
+          while IFS= read -r name; do sha256sum "$GITHUB_WORKSPACE/$name" "$roots/absent/$name"; done < "$proof/all-root-paths.txt" >> "$proof/inputs.sha256"
           find "$roots" -print0 | sort -z | xargs -0 stat -c '%n %d %i %s %Y %Z %F' > "$proof/inputs.stat"
-          for lane in present absent; do
+          for lane in current absent; do
             "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
-            env OPENPILOT_RUST_ROOT="$roots/$lane" PATH="$RUNNER_TEMP/support-runtime/logmessaged-startup-controller/native-path" /usr/bin/timeout --kill-after=5s 180s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "$proof/$lane.exec" "$checker" --collector "$collector" --output "$proof/$lane" > "$proof/$lane.stdout" 2> "$proof/$lane.stderr"
+            root="$GITHUB_WORKSPACE"
+            if [ "$lane" = absent ]; then root="$roots/absent"; fi
+            env OPENPILOT_RUST_ROOT="$root" PATH="$proof/native-path" /usr/bin/timeout --kill-after=5s 180s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "$proof/$lane.exec" "$checker" --collector "$collector" --output "$proof/$lane" > "$proof/$lane.stdout" 2> "$proof/$lane.stderr"
             sha256sum -c "$proof/inputs.sha256"
+            (cd "$fixture" && sha256sum -c SHA256SUMS)
             find "$roots" -print0 | sort -z | xargs -0 stat -c '%n %d %i %s %Y %Z %F' > "$proof/inputs-after.stat"
             cmp "$proof/inputs.stat" "$proof/inputs-after.stat"
           done
+          export LOGMESSAGED_STARTUP_PROOF="$proof"
           export LOGMESSAGED_STARTUP_RETIREMENT_PROOF="$proof"
-          export LOGMESSAGED_STARTUP_RETIREMENT_ORIGINAL="$RUNNER_TEMP/support-runtime/logmessaged-startup-controller/original"
           export LOGMESSAGED_STARTUP_RETIREMENT_CHECKER="$checker"
           export LOGMESSAGED_STARTUP_RETIREMENT_COLLECTOR="$collector"
-          export LOGMESSAGED_STARTUP_RETIREMENT_PRESENT_ROOT="$roots/present"
+          export LOGMESSAGED_STARTUP_RETIREMENT_CURRENT_ROOT="$GITHUB_WORKSPACE"
           export LOGMESSAGED_STARTUP_RETIREMENT_ABSENT_ROOT="$roots/absent"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features logmessaged-startup-native --test logmessaged_startup_reference --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features logmessaged-startup-native --test logmessaged_startup_retirement --locked -- --nocapture
           sha256sum -c "$proof/inputs.sha256"
+          (cd "$fixture" && sha256sum -c SHA256SUMS)
           find "$roots" -print0 | sort -z | xargs -0 stat -c '%n %d %i %s %Y %Z %F' > "$proof/inputs-after.stat"
           cmp "$proof/inputs.stat" "$proof/inputs-after.stat"
       - name: Compare uploader logs and transport failures through both collectors

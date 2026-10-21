@@ -1,4 +1,4 @@
-//! Mandatory independent cloud pair. No original/candidate is run by this audit.
+//! Mandatory cloud comparison against independently captured original observations.
 #![cfg(all(target_os = "linux", feature = "logmessaged-startup-native"))]
 use openpilot_log_format::{JsonValue, JsonView};
 use serde_json::Value;
@@ -9,6 +9,37 @@ use std::{
     io::Cursor,
     path::{Path, PathBuf},
 };
+const ORIGINAL_MANIFEST_SHA256: &str =
+    "cee8e19032542bc4851d0ce6bfebd9b71dde9184b19bdc5b0fb23e06e974d0dd";
+const ORIGINAL_REPORT_SHA256: &str =
+    "ee463cc49825ed060521c243600313f99a1f3fd88353c89329da8c846718075e";
+fn original_fixture() -> PathBuf {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/logmessaged-startup/13d-original");
+    let manifest = fs::read(root.join("SHA256SUMS")).unwrap();
+    assert_eq!(
+        format!("{:x}", Sha256::digest(&manifest)),
+        ORIGINAL_MANIFEST_SHA256
+    );
+    let manifest = std::str::from_utf8(&manifest).unwrap();
+    assert_eq!(manifest.lines().count(), 18);
+    for row in manifest.lines() {
+        let (expected, name) = row.split_once("  ").unwrap();
+        assert_eq!(
+            format!("{:x}", Sha256::digest(fs::read(root.join(name)).unwrap())),
+            expected,
+            "sealed original {name}"
+        );
+    }
+    assert_eq!(
+        format!(
+            "{:x}",
+            Sha256::digest(fs::read(root.join("report.json")).unwrap())
+        ),
+        ORIGINAL_REPORT_SHA256
+    );
+    root
+}
 fn json(path: impl AsRef<Path>) -> Value {
     serde_json::from_slice(&fs::read(path).unwrap()).unwrap()
 }
@@ -93,13 +124,13 @@ fn packets(output: &Path, case: &str, service: &str) -> Vec<String> {
     records
 }
 #[test]
-fn unchanged_original_and_native_startup_observations_agree_without_python_execution() {
+fn sealed_original_and_native_startup_observations_agree_without_python_execution() {
     let proof = PathBuf::from(
         std::env::var_os("LOGMESSAGED_STARTUP_PROOF")
             .expect("mandatory original/native CI proof missing"),
     );
-    let original = proof.join("original");
-    let native = proof.join("native");
+    let original = original_fixture();
+    let native = proof.join("current");
     let old_bytes = fs::read_to_string(original.join("report.json")).unwrap();
     let new_bytes = fs::read_to_string(native.join("report.json")).unwrap();
     let old: Value = serde_json::from_str(&old_bytes).unwrap();
@@ -123,7 +154,7 @@ fn unchanged_original_and_native_startup_observations_agree_without_python_execu
     assert_eq!(case_order(&old_bytes), expected_order);
     assert_eq!(case_order(&new_bytes), expected_order);
     assert_eq!(
-        fs::read(proof.join("native.stdout")).unwrap(),
+        fs::read(proof.join("current.stdout")).unwrap(),
         format!("{new_bytes}\n").as_bytes()
     );
     let mut original_disk_rows = BTreeMap::new();
@@ -137,6 +168,9 @@ fn unchanged_original_and_native_startup_observations_agree_without_python_execu
         let source: Value = serde_json::from_slice(&original_observed_bytes).unwrap();
         let observed = json(native.join(case).join("observed.json"));
         assert_eq!(source, observed, "{case}");
+        assert!(fs::read(original.join(case).join("collector/stdout.log"))
+            .unwrap()
+            .is_empty());
         for service in ["logMessage", "errorLogMessage"] {
             let expected: Vec<String> = serde_json::from_value(source[service].clone()).unwrap();
             assert_eq!(
@@ -157,6 +191,10 @@ fn unchanged_original_and_native_startup_observations_agree_without_python_execu
             "{case}; only generated top-level id differs"
         );
         original_disk_rows.insert(case, original_rows);
+        let original_exit = json(original.join(case).join("collector/exit.json"));
+        let native_exit = json(native.join(case).join("collector/exit.json"));
+        assert_eq!(native_exit["code"], original_exit["code"]);
+        assert_eq!(native_exit["signal"], original_exit["signal"]);
         let worker = json(native.join(case).join("worker.stdout"));
         let capacities = worker["queue_file_bytes"].as_object().unwrap();
         assert_eq!(capacities.len(), 2);
@@ -164,18 +202,14 @@ fn unchanged_original_and_native_startup_observations_agree_without_python_execu
             .values()
             .all(|n| n.as_u64().unwrap() > 10 * 1024 * 1024));
     }
-    // Hidden .comma directories are omitted by upload-artifact. Keep the exact
-    // original rows read above (after UUID validation and only id removal) in
-    // a visible file, separately from the native candidate's disk records.
+    // Keep normalized original disk rows visible in the cloud proof artifact.
     let disk_rows_bytes = serde_json::to_vec_pretty(&original_disk_rows).unwrap();
     fs::write(proof.join("original-disk-rows.json"), &disk_rows_bytes).unwrap();
-    let workspace = PathBuf::from(
-        std::env::var_os("GITHUB_WORKSPACE")
-            .expect("Actions workspace missing for original provenance"),
-    );
     let provenance = serde_json::json!({
-        "source_commit": std::env::var("GITHUB_SHA").expect("Actions source SHA missing"),
-        "original_checker_sha256": format!("{:x}", Sha256::digest(fs::read(workspace.join("rust/tools/check_logmessaged_startup.py")).unwrap())),
+        "original_source_commit": "13d2065301fea64b1f0af0549ab69480a128234a",
+        "original_artifact_id": 12311923940_u64,
+        "original_manifest_sha256": ORIGINAL_MANIFEST_SHA256,
+        "original_checker_sha256": "46cae42fe4749a48bb9f0acc81b92db974288633d28100b0a023b3d002b9b022",
         "original_report_sha256": format!("{:x}", Sha256::digest(old_bytes.as_bytes())),
         "original_observed_sha256": original_observed_hashes,
         "original_disk_rows_sha256": format!("{:x}", Sha256::digest(&disk_rows_bytes)),
@@ -205,7 +239,7 @@ fn unchanged_original_and_native_startup_observations_agree_without_python_execu
     let opening = regex::Regex::new(r"\bexecve(?:at)?\(").unwrap();
     let executable = regex::Regex::new(r#"\bexecve\(("(?:[^"\\]|\\.)*")"#).unwrap();
     let mut executions = vec![];
-    for line in fs::read_to_string(proof.join("native.exec"))
+    for line in fs::read_to_string(proof.join("current.exec"))
         .unwrap()
         .lines()
     {
@@ -232,7 +266,11 @@ fn unchanged_original_and_native_startup_observations_agree_without_python_execu
         );
         executions.push(path);
     }
-    assert!(!executions.is_empty());
+    assert_eq!(
+        executions.len(),
+        7,
+        "native startup execution roster changed"
+    );
     let summary = serde_json::json!({"passed":true,"cases":3,"exec_attempts":executions.len(),"python_exec_attempts":0,"artifacts":artifacts,
         "compiler_metadata_transition":"original C shim recipe retained in original/report.json; native reset handshake executes no compiler"});
     fs::write(

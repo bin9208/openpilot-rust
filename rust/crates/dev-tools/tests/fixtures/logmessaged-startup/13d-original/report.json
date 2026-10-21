@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "cases": {
+    "legacy-source": {
+      "logMessage": 1,
+      "errorLogMessage": 0
+    },
+    "ready-source": {
+      "logMessage": 1,
+      "errorLogMessage": 1
+    },
+    "ready-native": {
+      "logMessage": 1,
+      "errorLogMessage": 1
+    }
+  },
+  "compiler": [
+    "cc",
+    "-shared",
+    "-fPIC",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/fixtures/logmessaged_publisher_pause.c",
+    "-ldl",
+    "-o",
+    "/home/runner/work/_temp/logmessaged-startup-absence/paired/original/publisher_pause.so"
+  ],
+  "fixture_sha256": "b54710b8bb665cadcbcafb51ad2252c56fb79e51b5c168bd344d69f3a722444e"
+}

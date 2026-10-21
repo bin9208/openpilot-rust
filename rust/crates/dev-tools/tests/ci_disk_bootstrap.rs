@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 469);
+    assert_eq!(text.matches(marker).count(), 467);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -321,7 +321,6 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut messaging_update_allocation = vec![];
     let mut eigen_staging = vec![];
     let mut paramsd_gate = vec![];
-    let mut logmessaged_startup_controller = vec![];
     let mut logmessaged_startup_retirement = vec![];
     let mut bluetooth_journal_controller = vec![];
     let mut calibration_float_controller = vec![];
@@ -496,16 +495,6 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                     || lines[i + 1].contains("rust/target/debug/check-bluetooth-journal --binary"))
             {
                 bluetooth_journal_controller.push(tail.to_owned());
-                continue;
-            }
-            if i + 1 < lines.len()
-                && (lines[i + 1].contains("--features logmessaged-startup-native")
-                    || lines[i + 1].contains(
-                        "python rust/tools/check_logmessaged_startup.py --collector \"$collector\"",
-                    )
-                    || lines[i + 1].contains("env PATH=\"$proof/native-path\" /usr/bin/timeout"))
-            {
-                logmessaged_startup_controller.push(tail.to_owned());
                 continue;
             }
             if i + 1 < lines.len()
@@ -1085,11 +1074,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     );
     assert_eq!(
         logmessaged_startup_retirement,
-        [128, 512].map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
-    );
-    assert_eq!(
-        logmessaged_startup_controller,
-        [512, 512, 512, 512, 128, 128, 512]
+        [512, 512, 512, 512, 128, 512, 512]
             .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     assert_eq!(

@@ -1,5 +1,4 @@
-//! Cloud-only present/absent proof for the historical startup checker.
-//! The original Python controller still runs separately to produce `original`.
+//! Cloud-only current/absent proof against the sealed original startup observations.
 #![cfg(all(target_os = "linux", feature = "logmessaged-startup-native"))]
 
 use openpilot_cereal::log_capnp::event;
@@ -14,6 +13,10 @@ use std::{
 const CASES: [&str; 3] = ["legacy-source", "ready-source", "ready-native"];
 const HISTORICAL: &str = "rust/tools/check_logmessaged_startup.py";
 const ORIGINAL_MARKER: &str = r#"{"msg": "first-error-after-start", "levelnum": 40}"#;
+const ORIGINAL_MANIFEST_SHA256: &str =
+    "cee8e19032542bc4851d0ce6bfebd9b71dde9184b19bdc5b0fb23e06e974d0dd";
+const ORIGINAL_REPORT_SHA256: &str =
+    "ee463cc49825ed060521c243600313f99a1f3fd88353c89329da8c846718075e";
 
 fn required(name: &str) -> PathBuf {
     let path = PathBuf::from(std::env::var_os(name).expect(name));
@@ -26,14 +29,28 @@ fn read_json(path: &Path) -> Value {
 fn hash(path: &Path) -> String {
     format!("{:x}", Sha256::digest(fs::read(path).unwrap()))
 }
-fn check_sources(root: &Path, present: bool) {
+fn original_fixture() -> PathBuf {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/logmessaged-startup/13d-original");
+    let manifest = root.join("SHA256SUMS");
+    assert_eq!(hash(&manifest), ORIGINAL_MANIFEST_SHA256);
+    let records = fs::read_to_string(manifest).unwrap();
+    assert_eq!(records.lines().count(), 18);
+    for row in records.lines() {
+        let (expected, name) = row.split_once("  ").unwrap();
+        assert_eq!(hash(&root.join(name)), expected, "sealed original {name}");
+    }
+    assert_eq!(hash(&root.join("report.json")), ORIGINAL_REPORT_SHA256);
+    root
+}
+fn check_sources(root: &Path) {
     let pins: std::collections::BTreeMap<String, String> = serde_json::from_str(include_str!(
         "fixtures/logmessaged-startup/source-pins.json"
     ))
     .unwrap();
     for (name, expected) in pins {
         let path = root.join(&name);
-        if name == HISTORICAL && !present {
+        if name == HISTORICAL {
             assert!(fs::symlink_metadata(path.parent().unwrap())
                 .unwrap()
                 .file_type()
@@ -184,27 +201,31 @@ fn execs(trace: &Path, checker: &Path, collector: &Path, output: &Path) {
 }
 
 #[test]
-fn same_elf_present_and_absent_lanes_match_live_original_startup() {
+fn same_elf_current_and_absent_lanes_match_sealed_original_startup() {
     let proof = required("LOGMESSAGED_STARTUP_RETIREMENT_PROOF");
-    let original = required("LOGMESSAGED_STARTUP_RETIREMENT_ORIGINAL");
+    let original = original_fixture();
     let checker = required("LOGMESSAGED_STARTUP_RETIREMENT_CHECKER");
     let collector = required("LOGMESSAGED_STARTUP_RETIREMENT_COLLECTOR");
-    let present_root = required("LOGMESSAGED_STARTUP_RETIREMENT_PRESENT_ROOT");
+    let current_root = required("LOGMESSAGED_STARTUP_RETIREMENT_CURRENT_ROOT");
     let absent_root = required("LOGMESSAGED_STARTUP_RETIREMENT_ABSENT_ROOT");
-    assert_ne!(present_root, absent_root);
-    check_sources(&present_root, true);
-    check_sources(&absent_root, false);
+    assert_ne!(current_root, absent_root);
+    assert_eq!(
+        fs::canonicalize(&current_root).unwrap(),
+        fs::canonicalize(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..")).unwrap()
+    );
+    check_sources(&current_root);
+    check_sources(&absent_root);
     let original_report = read_json(&original.join("report.json"));
     assert_eq!(original_report["passed"], true);
     assert_eq!(
         original_report["cases"],
         json!({"legacy-source":{"logMessage":1,"errorLogMessage":0},"ready-source":{"logMessage":1,"errorLogMessage":1},"ready-native":{"logMessage":1,"errorLogMessage":1}})
     );
-    let present = fs::read(proof.join("present/report.json")).unwrap();
+    let present = fs::read(proof.join("current/report.json")).unwrap();
     let absent = fs::read(proof.join("absent/report.json")).unwrap();
     assert_eq!(
         present, absent,
-        "the historical helper must not affect the native report"
+        "the copied absent root must not affect the native report"
     );
     let report: Value = serde_json::from_slice(&present).unwrap();
     assert_eq!(report["passed"], true);
@@ -212,12 +233,12 @@ fn same_elf_present_and_absent_lanes_match_live_original_startup() {
     assert_eq!(report["fixture_sha256"], original_report["fixture_sha256"]);
     assert_eq!(
         report["historical_source_sha256"][HISTORICAL],
-        hash(&present_root.join(HISTORICAL))
+        "46cae42fe4749a48bb9f0acc81b92db974288633d28100b0a023b3d002b9b022"
     );
     assert!(report["input_sha256"].get(HISTORICAL).is_none());
     assert_eq!(report["input_sha256"]["checker"], hash(&checker));
     assert_eq!(report["input_sha256"]["collector"], hash(&collector));
-    for lane in ["present", "absent"] {
+    for lane in ["current", "absent"] {
         let output = proof.join(lane);
         assert_eq!(
             fs::read(output.with_extension("stdout")).unwrap(),
@@ -252,8 +273,11 @@ fn same_elf_present_and_absent_lanes_match_live_original_startup() {
             }
             assert_eq!(disk(&output.join(case)), disk(&original.join(case)));
             let exit = read_json(&output.join(case).join("collector/exit.json"));
+            let original_exit = read_json(&original.join(case).join("collector/exit.json"));
             assert_eq!(exit["signal"], 2);
             assert_eq!(exit["code"], if case == "ready-native" { 0 } else { -2 });
+            assert_eq!(exit["code"], original_exit["code"]);
+            assert_eq!(exit["signal"], original_exit["signal"]);
         }
     }
 }

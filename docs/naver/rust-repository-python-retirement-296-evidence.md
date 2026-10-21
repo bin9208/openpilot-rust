@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. The current source inventory has 218 replaced-local entries,
-three partial entries and 3,359 pending entries. `replaced-local` does not mean merged,
+SCons entrypoints. The current source inventory has 219 replaced-local entries,
+three partial entries and 3,358 pending entries. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -5057,3 +5057,33 @@ execs per lane; source/ELF seals precede the original invocation and are recheck
 The new469 disk-guard and mandatory-step policies await cloud execution. The
 historical checker remains until that proof passes. Local checks were Rust
 formatting, YAML/shell syntax and diff review only.
+
+
+## Logmessaged startup checker retirement (2026-10-21)
+
+Actual source `13d2065301fea64b1f0af0549ab69480a128234a` passed the independent
+original/paired-native/present/absent proof in
+[run39523666271/job118973216977](https://github.com/bin9208/openpilot-rust/actions/runs/39523666271/job/118973216977).
+Workflow head was separately `29a08fcf0cca90d0442f0e4037f36f248a57863c`.
+Artifact12311923940 is2,553,541bytes, archive SHA256
+`d2cd07c56ba9e74e066c45e38338d7905be2e8a3854e4ad2f302513cbb0ecdac`.
+The parent verified all18 newly retained data files are byte-exact members of
+`paired/original/`, with no copied Python source or native-derived expected data.
+Fresh original, native and both helper-presence roots agree across legacy-source,
+ready-source and ready-native: log/error counts1/0,1/1,1/1. Packets decode the
+same valid Event text, disk rows differ only by validated UUID, and collector
+exit code/signal is-2/2,-2/2,0/2. Every native lane has exactly seven successful
+execs without Python/compiler execution. Ten checker tests, one worker test,
+one paired reference and one sourceabsence test plus strictClippy passed.
+
+`check_logmessaged_startup.py` is removed after that preproof. The required main
+step now executes fresh current and copied absent roots, keeps all worker,
+CLI/error, readiness, complete packet/disk and exit checks, and compares against
+those18 independent original-only files. SHA256SUMS digest
+`cee8e19032542bc4851d0ce6bfebd9b71dde9184b19bdc5b0fb23e06e974d0dd`
+is compiled into both reference tests. Source/ELF and root identities remain
+sealed, exact execution vectors are required, and both roots must lack the old
+helper including dangling symlinks. The new post-deletion gate is awaiting
+fresh cloud execution. Inventory219replaced-local/3partial/3358pending.
+Local validation is formatting, shell/YAML syntax, fixture data/hash review and
+diff inspection only. No device, full conversion or integration is claimed.

@@ -1236,7 +1236,7 @@ fn journald_requires_native_ipc_and_independent_fixture_contracts() {
         .contains("python rust/tools/check_journald.py"));
 }
 #[test]
-fn logmessaged_startup_requires_original_pair_and_native_exec_audit() {
+fn logmessaged_startup_requires_sealed_original_and_native_exec_audit() {
     job_check(
         "support-runtime",
         &[
@@ -1244,17 +1244,20 @@ fn logmessaged_startup_requires_original_pair_and_native_exec_audit() {
             "--features logmessaged-startup-native --test logmessaged_startup_check --locked",
             "--lib logmessaged_startup_check::worker::tests --locked",
             "--features logmessaged-startup-native --test logmessaged_startup_reference --locked",
-            "python rust/tools/check_logmessaged_startup.py --collector",
             "LOGMESSAGED_STARTUP_PROOF=",
-            "env PATH=\"$proof/native-path\" /usr/bin/timeout",
-            "sha256sum -c \"$proof/artifacts.sha256\"",
+            "env OPENPILOT_RUST_ROOT=\"$root\" PATH=\"$proof/native-path\" /usr/bin/timeout",
+            "sha256sum -c \"$proof/inputs.sha256\"",
+            "cee8e19032542bc4851d0ce6bfebd9b71dde9184b19bdc5b0fb23e06e974d0dd",
+            "(cd \"$fixture\" && sha256sum -c SHA256SUMS)",
         ],
-        &[
-            "--features logmessaged-startup-native",
-            "check_logmessaged_startup.py",
-        ],
+        &["--features logmessaged-startup-native"],
         false,
     );
+    assert!(!commands(&workflow()["jobs"]["support-runtime"])
+        .contains("python rust/tools/check_logmessaged_startup.py"));
+    assert!(!root()
+        .join("rust/tools/check_logmessaged_startup.py")
+        .exists());
 }
 #[test]
 fn interrupted_send_boundary_is_a_required_support_check() {
@@ -2590,7 +2593,7 @@ fn paramsd_loop_native_controller_keeps_original_and_full_sealed_comparison() {
 }
 
 #[test]
-fn logmessaged_startup_retirement_keeps_live_original_and_same_elf_absent_proof() {
+fn logmessaged_startup_retirement_keeps_sealed_original_and_same_elf_absent_proof() {
     let data = workflow();
     let job = &data["jobs"]["support-runtime"];
     let steps = job["steps"].as_array().unwrap();
@@ -2605,36 +2608,28 @@ fn logmessaged_startup_retirement_keeps_live_original_and_same_elf_absent_proof(
     required(
         selected[0]["run"].as_str().unwrap(),
         &[
-            "LOGMESSAGED_STARTUP_RETIREMENT_ORIGINAL=",
-            "for lane in present absent",
+            "LOGMESSAGED_STARTUP_RETIREMENT_CURRENT_ROOT=",
+            "for lane in current absent",
+            "test ! -e rust/tools/check_logmessaged_startup.py",
+            "test ! -L rust/tools/check_logmessaged_startup.py",
             "test ! -e \"$roots/absent/rust/tools/check_logmessaged_startup.py\"",
+            "test ! -L \"$roots/absent/rust/tools/check_logmessaged_startup.py\"",
             "-e trace=execve,execveat",
             "sha256sum -c \"$proof/inputs.sha256\"",
             "cmp \"$proof/inputs.stat\" \"$proof/inputs-after.stat\"",
             "--features logmessaged-startup-native --test logmessaged_startup_retirement --locked",
         ],
     );
-    let paired: Vec<_> = steps
-        .iter()
-        .filter(|step| {
-            step["name"]
-                == "Compare native log collector startup controller with unchanged original"
-        })
-        .collect();
-    assert_eq!(paired.len(), 1);
-    absent(paired[0], &["if", "continue-on-error"]);
-    let run = paired[0]["run"].as_str().unwrap();
-    let seal = run
-        .find("sha256sum \"$checker\" \"$collector\" \"${original_sources[@]}\"")
-        .unwrap();
-    let original = run
-        .find("python rust/tools/check_logmessaged_startup.py --collector")
-        .unwrap();
-    assert!(seal < original);
-    assert_eq!(
-        run.matches("sha256sum -c \"$proof/original-inputs.sha256\"")
-            .count(),
-        3
+    required(
+        &read("rust/crates/dev-tools/tests/logmessaged_startup_retirement.rs"),
+        &[
+            "ORIGINAL_MANIFEST_SHA256",
+            "records.lines().count(), 18",
+            "original_fixture()",
+            "packets(&original.join(case), service)",
+            "disk(&original.join(case))",
+            "same_elf_current_and_absent_lanes_match_sealed_original_startup",
+        ],
     );
     artifacts(job);
 }
