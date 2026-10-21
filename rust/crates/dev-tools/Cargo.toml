@@ -1824,3 +1824,7 @@ required-features = ["calibration-reference-native"]
 [[test]]
 name = "calibration_reference_check"
 required-features = ["calibration-reference-native"]
+
+[[test]]
+name = "calibration_reference_retirement"
+required-features = ["calibration-reference-native"]

@@ -29,6 +29,68 @@ const MANIFEST_SHA: &str = "a8144a49c71ffae8c46b595d0fde684b71784f2574149bb81fb6
 const SOURCE_COMMIT: &str = "5bcfae4482d9c4dcb1da46e1086bea609e0c9688";
 const STEPS: usize = 15_128;
 const MAX_TRACE: u64 = 32 * 1024 * 1024;
+const RETIRED_SOURCES: [&str; 2] = [
+    "rust/tools/check_calibration_reference.py",
+    "rust/tools/calibration_cases.py",
+];
+
+struct SourceSeal {
+    path: PathBuf,
+    name: String,
+    hash: String,
+    absent: bool,
+}
+
+fn source_seals(root: &Path, sources: &Map<String, Value>) -> Result<Vec<SourceSeal>> {
+    let mut seals = Vec::with_capacity(sources.len());
+    for (name, hash) in sources {
+        let path = root.join(name);
+        let hash = hash.as_str().ok_or("source hash not text")?.to_owned();
+        let absent = match fs::symlink_metadata(&path) {
+            Err(error)
+                if error.kind() == std::io::ErrorKind::NotFound
+                    && RETIRED_SOURCES.contains(&name.as_str()) =>
+            {
+                true
+            }
+            Ok(metadata) => {
+                require(
+                    metadata.file_type().is_file(),
+                    format!("source not regular: {name}"),
+                )?;
+                require(
+                    sha(&fs::read(&path)?) == hash,
+                    format!("original source changed: {name}"),
+                )?;
+                false
+            }
+            Err(error) => return Err(error.into()),
+        };
+        seals.push(SourceSeal {
+            path,
+            name: name.clone(),
+            hash,
+            absent,
+        });
+    }
+    Ok(seals)
+}
+
+fn verify_source_seals(seals: &[SourceSeal]) -> Result<()> {
+    for seal in seals {
+        match fs::symlink_metadata(&seal.path) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound && seal.absent => {}
+            Ok(metadata) if !seal.absent && metadata.file_type().is_file() => {
+                require(
+                    sha(&fs::read(&seal.path)?) == seal.hash,
+                    format!("source changed during run: {}", seal.name),
+                )?;
+            }
+            _ => return Err(format!("source presence changed during run: {}", seal.name).into()),
+        }
+    }
+    Ok(())
+}
 
 pub struct Options {
     pub root: PathBuf,
@@ -527,17 +589,7 @@ fn compare_row(row: &Value, actual: &Value) -> Result<usize> {
 pub fn check(options: &Options, runner: &mut impl Runner) -> Result<Value> {
     let (manifest, rows) = capture()?;
     let sources = obj(&manifest["source_sha256"], "original source hashes")?;
-    for (name, hash) in sources {
-        let path = options.root.join(name);
-        require(
-            fs::symlink_metadata(&path)?.file_type().is_file(),
-            format!("source not regular: {name}"),
-        )?;
-        require(
-            sha(&fs::read(path)?) == hash.as_str().ok_or("source hash not text")?,
-            format!("original source changed: {name}"),
-        )?;
-    }
+    let source_seals = source_seals(&options.root, sources)?;
     let binary = fs::canonicalize(&options.binary)?;
     require(
         fs::symlink_metadata(&binary)?.file_type().is_file(),
@@ -657,14 +709,7 @@ pub fn check(options: &Options, runner: &mut impl Runner) -> Result<Value> {
         sha(&fs::read(&binary)?) == binary_sha,
         "calibration binary changed during run",
     )?;
-    for (name, hash) in sources {
-        let path = options.root.join(name);
-        require(
-            fs::symlink_metadata(&path)?.file_type().is_file()
-                && sha(&fs::read(path)?) == hash.as_str().ok_or("source hash not text")?,
-            format!("original source changed during run: {name}"),
-        )?;
-    }
+    verify_source_seals(&source_seals)?;
     let report = json!({"result":"pass","steps":STEPS,"packet_fields":packet_fields,
         "expected_source_errors":failures,"persistence_steps":persistence_steps,
         "scenarios":scenarios,"statuses":statuses,
@@ -686,6 +731,37 @@ pub fn check(options: &Options, runner: &mut impl Runner) -> Result<Value> {
 mod tests {
     use super::*;
     use std::os::unix::ffi::{OsStrExt, OsStringExt};
+
+    #[test]
+    fn only_two_historical_sources_may_be_absent_and_reappearance_is_rejected() {
+        let dir = tempfile::tempdir().unwrap();
+        let required = "rust/tools/calibration_reference.py";
+        let retired = RETIRED_SOURCES[0];
+        let required_path = dir.path().join(required);
+        fs::create_dir_all(required_path.parent().unwrap()).unwrap();
+        fs::write(&required_path, b"pinned reference").unwrap();
+        let mut sources = Map::new();
+        sources.insert(required.into(), json!(sha(b"pinned reference")));
+        sources.insert(retired.into(), json!(sha(b"old checker")));
+        let seals = source_seals(dir.path(), &sources).unwrap();
+        assert!(verify_source_seals(&seals).is_ok());
+        fs::write(dir.path().join(retired), b"old checker").unwrap();
+        assert!(
+            verify_source_seals(&seals).is_err(),
+            "reappearance accepted"
+        );
+        fs::remove_file(dir.path().join(retired)).unwrap();
+        fs::write(&required_path, b"changed reference").unwrap();
+        assert!(
+            source_seals(dir.path(), &sources).is_err(),
+            "changed mandatory source accepted"
+        );
+        fs::remove_file(&required_path).unwrap();
+        assert!(
+            source_seals(dir.path(), &sources).is_err(),
+            "missing mandatory source accepted"
+        );
+    }
 
     #[test]
     fn cli_requires_both_paths_and_preserves_raw_unix_bytes() {
