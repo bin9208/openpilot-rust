@@ -716,6 +716,10 @@ fn ui_connectivity_requires_source_render_and_private_protocol_checks() {
 }
 #[test]
 fn estimators_require_original_models_loops_and_native_boundaries() {
+    let data = workflow();
+    let env = &data["jobs"]["estimation-runtime"]["env"];
+    assert_eq!(env["CARGO_PROFILE_DEV_DEBUG"], "0");
+    assert_eq!(env["CARGO_PROFILE_TEST_DEBUG"], "0");
     job_check(
         "estimation-runtime",
         &[
