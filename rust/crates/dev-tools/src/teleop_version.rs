@@ -49,14 +49,14 @@ pub fn lookup(bytes: &[u8]) -> Result<Vec<u8>> {
     let version=version.as_str().ok_or_else(||error("UnsupportedVersionType","PEP 621 project.version must be a string; incidental tomllib print(non-string) is not implemented"))?;
     Ok(format!("{version}\n").into_bytes())
 }
-/// input() reads one universal-newline-delimited line; int() uses base ten.
+/// Unix Python stdin ends a line at LF; embedded CR remains input to int().
 pub fn bump(bytes: &[u8]) -> Result<Vec<u8>> {
     if bytes.is_empty() {
         return Err(error("EOFError", "EOF when reading a line"));
     }
     let line = &bytes[..bytes
         .iter()
-        .position(|b| matches!(b, b'\r' | b'\n'))
+        .position(|b| *b == b'\n')
         .unwrap_or(bytes.len())];
     // Unix Python stdin uses surrogateescape; invalid bytes cannot form decimal digits.
     let split = line.iter().rposition(|&b| b == b'.').map_or(0, |i| i + 1);
@@ -146,7 +146,7 @@ pub fn cli() -> std::result::Result<(), Box<dyn std::error::Error>> {
                 break;
             }
             bytes.push(byte[0]);
-            if matches!(byte[0], b'\r' | b'\n') {
+            if byte[0] == b'\n' {
                 break;
             }
         }

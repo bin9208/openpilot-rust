@@ -13,11 +13,17 @@ fn increment_is_final_component_python_integer_conversion_not_semver() {
             "1.999999999999999999999999999999\n",
             "1.1000000000000000000000000000000\n",
         ),
-        ("1.2\rignored\n", "1.3\n"),
     ] {
         assert_eq!(bump(input.as_bytes()).unwrap(), expected.as_bytes());
     }
-    for input in ["1.", "1.1__2", "1.0x10", "1.²", "1.\u{1c}2"] {
+    for input in [
+        "1.",
+        "1.1__2",
+        "1.0x10",
+        "1.²",
+        "1.\u{1c}2",
+        "1.2\rignored\n",
+    ] {
         assert_eq!(bump(input.as_bytes()).unwrap_err().class, "ValueError");
     }
     assert_eq!(bump(b"").unwrap_err().class, "EOFError");
@@ -132,8 +138,11 @@ fn independent_original_computations_and_disposable_script_effects() {
             "original-pyproject.toml"
         ])
     );
+    // Retain original result data, without restoring its executable shell/Python
+    // snippets. The unchanged capture manifest still binds their provenance.
     let verify = || {
-        for (name, pin) in files {
+        for name in ["computations.json", "script-effects.json"] {
+            let pin = &files[name];
             assert!(!fs::symlink_metadata(original.join(name))
                 .unwrap()
                 .file_type()
@@ -149,11 +158,11 @@ fn independent_original_computations_and_disposable_script_effects() {
         manifest["source_pins_after"]
     );
     assert_eq!(
-        sha(&fs::read(original.join("original-bump_tag.sh")).unwrap()),
+        manifest["source_pins_before"]["teleoprtc_repo/scripts/bump_tag.sh"],
         "34e3f49bcc8905086065d31b085d0c544ffe89092e4f303cdcaa5459c52424e0"
     );
     assert_eq!(
-        sha(&fs::read(original.join("original-pyproject.toml")).unwrap()),
+        manifest["source_pins_before"]["teleoprtc_repo/pyproject.toml"],
         "1a35c809ec724bc7de6536c42da261a69dc4662455c609f2d969e7389980daf9"
     );
     let cli_before = sha(&fs::read(&cli).unwrap());
@@ -292,6 +301,7 @@ fn independent_original_computations_and_disposable_script_effects() {
         env.insert(key.into(), "2026-10-22T00:00:00Z".into());
     }
     let mut observed_effects = Vec::new();
+    let categories = regex::Regex::new(r"(?m)^([\w.]+(?:Error|Exception)):").unwrap();
     for case in effects {
         let work = tempfile::tempdir().unwrap();
         let git = |args: &[&str]| {
@@ -338,7 +348,6 @@ fn independent_original_computations_and_disposable_script_effects() {
         if case["invocation"]["status"] == 0 {
             assert_eq!(result.stderr, decode(&case["invocation"]["stderr_b64"]));
         } else {
-            let categories = regex::Regex::new(r"(?m)^([\w.]+(?:Error|Exception)):").unwrap();
             let source = decode(&case["invocation"]["stderr_b64"]);
             let source = String::from_utf8_lossy(&source);
             let native = String::from_utf8_lossy(&result.stderr);
