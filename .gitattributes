@@ -43,3 +43,8 @@ rust/crates/dev-tools/tests/fixtures/camera-runtime-check/schema/car.capnp -text
 
 # Empty captured process titles are real trailing TSV fields, not padding.
 rust/crates/process-limits/tests/fixtures/source-title-original.tsv -text whitespace=-blank-at-eol
+
+# Independent model observations retain exact captured bytes and sealed hashes.
+rust/crates/dev-tools/tests/fixtures/model-family-original/** -text
+# The NAS installed marker was captured with CRLF, which its SHA includes.
+rust/crates/dev-tools/tests/fixtures/model-family-original/usbgpu/original/capture-evidence/installed.json whitespace=cr-at-eol
