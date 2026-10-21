@@ -7,7 +7,9 @@ use openpilot_dev_tools::{
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::{
+    ffi::OsString,
     fs,
+    os::unix::ffi::{OsStrExt, OsStringExt},
     path::{Path, PathBuf},
 };
 fn root() -> PathBuf {
@@ -139,6 +141,48 @@ fn locked_json11_stages_match_original_for_both_supported_architectures() {
             );
         }
     }
+}
+#[test]
+fn json11_download_keeps_raw_output_path_bytes() {
+    struct RawDownload {
+        wheel: Vec<u8>,
+        command: Option<Vec<OsString>>,
+    }
+    impl Runner for RawDownload {
+        fn run(&mut self, spec: &CommandSpec) -> Result<Captured> {
+            let argv = spec.effective_argv();
+            fs::write(Path::new(&argv[4]), &self.wheel)?;
+            self.command = Some(argv);
+            Ok(Captured {
+                code: 0,
+                stdout: Vec::new(),
+                stderr: Vec::new(),
+            })
+        }
+    }
+    let temp = tempfile::tempdir().unwrap();
+    fs::copy(fixture("json11-lock.toml"), temp.path().join("uv.lock")).unwrap();
+    let output = temp
+        .path()
+        .join(OsString::from_vec(b"json11-\xff".to_vec()));
+    let mut peer = RawDownload {
+        wheel: fs::read(fixture("json11-fixture-py3-none-manylinux_2_28_x86_64.whl")).unwrap(),
+        command: None,
+    };
+    let staged = json11_stage::stage(temp.path(), &output, "x86_64", &mut peer, u64::MAX)
+        .expect("raw output path must stage the pinned wheel");
+    let command = peer.command.unwrap();
+    assert_eq!(command[0], "curl");
+    assert_eq!(command[3], "-o");
+    assert_eq!(
+        command[4].as_bytes(),
+        output
+            .join("json11-fixture-py3-none-manylinux_2_28_x86_64.whl")
+            .as_os_str()
+            .as_bytes()
+    );
+    assert!(staged.prefix.starts_with(&output));
+    assert!(staged.prefix.is_dir());
 }
 #[test]
 fn json11_hash_failure_never_extracts_and_failures_keep_owned_archive() {

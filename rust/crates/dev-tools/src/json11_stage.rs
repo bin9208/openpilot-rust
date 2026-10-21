@@ -1,12 +1,13 @@
 //! Stage the architecture-specific json11 wheel pinned in the repository lock.
 use crate::{
-    disk_space,
+    disk_space, python_fs,
     qa_process::{CommandSpec, NativeRunner, Runner},
     seal::{digest, Result},
 };
 use serde_json::{json, Value};
 use std::{
     collections::{BTreeMap, BTreeSet},
+    ffi::OsString,
     fs::{self, File},
     io,
     path::{Component, Path, PathBuf},
@@ -61,14 +62,14 @@ pub fn stage(
         .filter(|name| !name.is_empty() && *name != "." && *name != "..")
         .ok_or("invalid wheel filename")?;
     let archive = output.join(filename);
-    let argv = vec![
+    let argv: Vec<OsString> = vec![
         "curl".into(),
         "-fsSL".into(),
         url.into(),
         "-o".into(),
-        archive.to_string_lossy().into_owned(),
+        archive.as_os_str().to_owned(),
     ];
-    let captured = runner.run(&CommandSpec::new(argv, Duration::from_secs(300)))?;
+    let captured = runner.run(&CommandSpec::new_os(argv, Duration::from_secs(300)))?;
     if captured.code != 0 {
         return Err(format!(
             "json11 download exited {}: {}",
@@ -140,17 +141,19 @@ pub fn stage(
         dependency: json!({"json11_version":package.get("version").and_then(toml::Value::as_str).ok_or("json11 version missing")?,"json11_sha256":sha256,"json11_architecture":architecture}),
     })
 }
-pub fn cli() -> Result<()> {
-    let mut args = std::env::args().skip(1);
+fn parse_cli(
+    args: impl IntoIterator<Item = OsString>,
+) -> Result<Option<(PathBuf, PathBuf, String)>> {
+    let mut args = args.into_iter();
     let mut values = BTreeMap::new();
     while let Some(key) = args.next() {
         if key == "--help" || key == "-h" {
-            println!(
-                "Usage: stage-json11 --root ROOT --output OUTPUT [--architecture x86_64|aarch64]"
-            );
-            return Ok(());
+            return Ok(None);
         }
-        if !["--root", "--output", "--architecture"].contains(&key.as_str()) {
+        if !["--root", "--output", "--architecture"]
+            .iter()
+            .any(|known| key == *known)
+        {
             return Err("unknown json11 staging argument".into());
         }
         let value = args.next().ok_or("argument requires value")?;
@@ -158,11 +161,35 @@ pub fn cli() -> Result<()> {
             return Err("duplicate json11 staging argument".into());
         }
     }
-    let root = PathBuf::from(values.remove("--root").ok_or("--root required")?);
-    let output = PathBuf::from(values.remove("--output").ok_or("--output required")?);
+    let root = PathBuf::from(
+        values
+            .remove(&OsString::from("--root"))
+            .ok_or("--root required")?,
+    );
+    let output = PathBuf::from(
+        values
+            .remove(&OsString::from("--output"))
+            .ok_or("--output required")?,
+    );
     let architecture = values
-        .remove("--architecture")
-        .unwrap_or_else(|| std::env::consts::ARCH.into());
+        .remove(&OsString::from("--architecture"))
+        .unwrap_or_else(|| std::env::consts::ARCH.into())
+        .into_string()
+        .map_err(|_| "json11 architecture must be UTF-8")?;
+    Ok(Some((root, output, architecture)))
+}
+fn staged_json(staged: &Staged) -> Result<String> {
+    Ok(format!(
+        "{{\"dependency\":{},\"prefix\":{}}}",
+        serde_json::to_string(&staged.dependency)?,
+        python_fs::json_string(staged.prefix.as_os_str())?
+    ))
+}
+pub fn cli() -> Result<()> {
+    let Some((root, output, architecture)) = parse_cli(std::env::args_os().skip(1))? else {
+        println!("Usage: stage-json11 --root ROOT --output OUTPUT [--architecture x86_64|aarch64]");
+        return Ok(());
+    };
     let space = disk_space::inspect(&output, GROWTH)?;
     let staged = stage(
         &root,
@@ -171,9 +198,46 @@ pub fn cli() -> Result<()> {
         &mut NativeRunner,
         space.free_bytes,
     )?;
-    println!(
-        "{}",
-        json!({"prefix":staged.prefix,"dependency":staged.dependency})
-    );
+    println!("{}", staged_json(&staged)?);
     Ok(())
+}
+#[cfg(test)]
+mod tests {
+    use super::{parse_cli, staged_json, Staged};
+    use serde_json::json;
+    use std::{ffi::OsString, os::unix::ffi::OsStringExt, path::PathBuf};
+
+    #[test]
+    fn raw_output_argument_survives_cli_and_receipt() {
+        let raw = OsString::from_vec(b"json11-\xff".to_vec());
+        let (_, output, arch) = parse_cli([
+            "--root".into(),
+            "/repo".into(),
+            "--output".into(),
+            raw.clone(),
+            "--architecture".into(),
+            "x86_64".into(),
+        ])
+        .unwrap()
+        .unwrap();
+        assert_eq!(output, PathBuf::from(raw.clone()));
+        assert_eq!(arch, "x86_64");
+        let receipt = staged_json(&Staged {
+            prefix: output.join("install"),
+            dependency: json!({"json11_architecture":"x86_64"}),
+        })
+        .unwrap();
+        assert!(receipt.contains(r#""prefix":"json11-\udcff/install""#));
+        assert!(parse_cli(["--output".into(), raw, "--help".into()])
+            .unwrap()
+            .is_none());
+        let normal = Staged {
+            prefix: PathBuf::from("/tmp/json11/install"),
+            dependency: json!({"json11_architecture":"x86_64"}),
+        };
+        assert_eq!(
+            staged_json(&normal).unwrap(),
+            json!({"prefix": normal.prefix, "dependency": normal.dependency}).to_string()
+        );
+    }
 }
