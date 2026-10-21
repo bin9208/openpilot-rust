@@ -24,9 +24,9 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: 61f4f27590d1517223dd39ed33d817bb589df356
+        ref: b43ac10d78c20029c86028e96811678f8cff5a1d
     - name: Require exact 03a candidate source
-      run: 'test "$(git rev-parse HEAD)" = 61f4f27590d1517223dd39ed33d817bb589df356
+      run: 'test "$(git rev-parse HEAD)" = b43ac10d78c20029c86028e96811678f8cff5a1d
 
         test -z "$(git status --porcelain)"'
     - uses: actions/setup-python@v6
@@ -488,11 +488,13 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: 61f4f27590d1517223dd39ed33d817bb589df356
-    - name: Require exact 03a candidate source
-      run: 'test "$(git rev-parse HEAD)" = 03a6259e2d292a737d9d3abbe64982df912e5284
+        ref: b43ac10d78c20029c86028e96811678f8cff5a1d
+    - name: Require exact current source
+      run: 'test "$(git rev-parse HEAD)" = b43ac10d78c20029c86028e96811678f8cff5a1d
 
-        test -z "$(git status --porcelain)"'
+        test -z "$(git status --porcelain)"
+
+        '
     - name: Prepare source-policy compile prerequisites
       run: 'set -euo pipefail
 
