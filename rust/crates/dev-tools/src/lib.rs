@@ -360,4 +360,6 @@ pub mod driving_daemon_reference;
 #[cfg(all(target_os = "linux", feature = "driving-daemon-native"))]
 pub mod driving_logging_check;
 #[cfg(all(target_os = "linux", feature = "driving-daemon-native"))]
+pub mod driving_logging_fault_build;
+#[cfg(all(target_os = "linux", feature = "driving-daemon-native"))]
 pub mod driving_logging_fault_check;

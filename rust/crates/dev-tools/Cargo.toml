@@ -1905,3 +1905,8 @@ required-features = ["driving-daemon-native"]
 [[test]]
 name = "panda_ci_retirement"
 required-features = ["panda-ci-native"]
+
+[[bin]]
+name = "build-driving-logging-fault"
+path = "src/bin/build_driving_logging_fault.rs"
+required-features = ["driving-daemon-native"]
