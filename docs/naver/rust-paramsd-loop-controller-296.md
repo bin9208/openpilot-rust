@@ -40,3 +40,27 @@ unchanged source/input/ELF bindings plus the new output binding, exact retained
 input/output hashes, and two successful native execs. The workflow commit
 `2bd29771ae30832433a4cb7c7adcfc876bb4d354` is separate from that tested source.
 Neither the Python loop checker nor its fixture/source helpers is retired yet.
+
+
+## Retirement preparation and finalization follow-up (#441)
+
+Only `check_paramsd_loop.py` and `paramsd_loop_fixture.py` are designated for
+future absence. `paramsd_fixture.py` and `paramsd_loop_source.py` remain shared,
+mandatory originals. Source admission now records historical hashes separately,
+rejects changed/nonregular/reappearing paths and keeps live input/source bounds.
+The generator likewise rechecks its admitted sources through output publication.
+The new retirement proof requires a fresh independent Python/C++ original plus
+two native roots, all39requests/2420rawrows,4saves/216GPS decisions and two exact
+successful exec vectors per native lane. Neither Python file is removed yet.
+
+Independent review identified a further finalization gap: the previous CLI
+released held bounds before handler teardown, and did not check that the
+exclusive result path still named its held inode. #441 retains the bounds and
+rollback guard through teardown and final identity/cancel checks; a foreign
+receipt is preserved on error. New unit controls mutate source, historical
+absence, cancellation and receipt identity at that boundary, and require stdout
+flush ordering. A cloud old-source receipt-replacement assertion failure and
+fixed regression/complete comparison/strictClippy remain required. The old
+baseline test injects only a documented test callback after publication; it
+must compile and fail behaviorally, not be counted RED from a build error.
+Local verification is Rust formatting and diff review only.

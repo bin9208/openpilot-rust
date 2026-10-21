@@ -7,22 +7,123 @@ use capnp::serialize::write_message_to_words;
 use openpilot_cereal::log_capnp::event;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
-use std::{fs, path::Path};
+use std::{
+    fs::{self, File, Metadata},
+    io::{self, Read},
+    os::unix::fs::MetadataExt,
+    path::{Path, PathBuf},
+};
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 const LOOP_SHA: &str = "767f58edf7163edf8eaa493b5453f3bc00f6966772dba932e96a294e3efe3089";
 const FIXTURE_SHA: &str = "8c0356bb780039c475def68358567489e036ab422921b8389bc7fbed20635521";
 
-fn pin(root: &Path, path: &str, expected: &str) -> Result<()> {
-    if format!("{:x}", Sha256::digest(fs::read(root.join(path))?)) != expected {
-        return Err(format!("paramsd original input source changed: {path}").into());
-    }
-    Ok(())
+fn identity(metadata: &Metadata) -> (u64, u64, u64, i64, i64, i64, i64) {
+    (
+        metadata.dev(),
+        metadata.ino(),
+        metadata.len(),
+        metadata.mtime(),
+        metadata.mtime_nsec(),
+        metadata.ctime(),
+        metadata.ctime_nsec(),
+    )
 }
 
-fn source_pins(root: &Path) -> Result<()> {
-    pin(root, "rust/tools/paramsd_loop_fixture.py", LOOP_SHA)?;
-    pin(root, "rust/tools/paramsd_fixture.py", FIXTURE_SHA)
+fn current(path: &Path) -> Result<(Metadata, String)> {
+    let fd = rustix::fs::open(
+        path,
+        rustix::fs::OFlags::RDONLY
+            | rustix::fs::OFlags::NONBLOCK
+            | rustix::fs::OFlags::CLOEXEC
+            | rustix::fs::OFlags::NOFOLLOW,
+        rustix::fs::Mode::empty(),
+    )?;
+    let mut file = File::from(fd);
+    let metadata = file.metadata()?;
+    if !metadata.is_file() || metadata.len() > 2_000_000 {
+        return Err(format!(
+            "paramsd loop source is not a bounded regular file: {}",
+            path.display()
+        )
+        .into());
+    }
+    let mut bytes = Vec::new();
+    (&mut file).take(2_000_001).read_to_end(&mut bytes)?;
+    if bytes.len() > 2_000_000
+        || identity(&metadata) != identity(&file.metadata()?)
+        || identity(&metadata) != identity(&fs::symlink_metadata(path)?)
+    {
+        return Err(format!("paramsd loop source changed while read: {}", path.display()).into());
+    }
+    Ok((metadata, format!("{:x}", Sha256::digest(bytes))))
+}
+
+enum SourcePin {
+    Present(PathBuf, Metadata, String),
+    Absent(PathBuf),
+}
+impl SourcePin {
+    fn capture(path: PathBuf, expected: Option<&str>, optional: bool) -> Result<Self> {
+        if optional
+            && matches!(fs::symlink_metadata(&path), Err(e) if e.kind() == io::ErrorKind::NotFound)
+        {
+            return Ok(Self::Absent(path));
+        }
+        let (metadata, hash) = current(&path)?;
+        if expected.is_some_and(|wanted| wanted != hash) {
+            return Err(
+                format!("paramsd original input source changed: {}", path.display()).into(),
+            );
+        }
+        Ok(Self::Present(path, metadata, hash))
+    }
+    fn verify(&self) -> Result<()> {
+        match self {
+            Self::Present(path, metadata, hash) => {
+                let (now, digest) = current(path)?;
+                if identity(metadata) != identity(&now) || *hash != digest {
+                    return Err(format!("paramsd loop source changed: {}", path.display()).into());
+                }
+            }
+            Self::Absent(path) => {
+                if !matches!(fs::symlink_metadata(path), Err(e) if e.kind() == io::ErrorKind::NotFound)
+                {
+                    return Err(format!(
+                        "retired paramsd loop fixture reappeared: {}",
+                        path.display()
+                    )
+                    .into());
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+fn source_pins(root: &Path) -> Result<Vec<SourcePin>> {
+    Ok(vec![
+        SourcePin::capture(
+            root.join("rust/tools/paramsd_loop_fixture.py"),
+            Some(LOOP_SHA),
+            true,
+        )?,
+        SourcePin::capture(
+            root.join("rust/tools/paramsd_fixture.py"),
+            Some(FIXTURE_SHA),
+            false,
+        )?,
+        SourcePin::capture(
+            root.join("rust/crates/dev-tools/src/paramsd_loop_fixture_generate.rs"),
+            None,
+            false,
+        )?,
+        SourcePin::capture(
+            root.join("rust/crates/dev-tools/src/paramsd_fixture_generate.rs"),
+            None,
+            false,
+        )?,
+    ])
 }
 
 fn legacy_json(field: Option<&str>) -> String {
@@ -292,9 +393,32 @@ pub fn cases() -> Result<Value> {
 }
 
 pub fn generate(root: &Path, output: &Path) -> Result<()> {
-    source_pins(root)?;
+    let pins = source_pins(root)?;
     let bytes = serde_json::to_vec(&cases()?)?;
     fs::create_dir(output)?;
     fs::write(output.join("input.json"), bytes)?;
-    source_pins(root)
+    for pin in &pins {
+        pin.verify()?;
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod source_pin_tests {
+    use super::SourcePin;
+    use std::fs;
+
+    #[test]
+    fn absent_retired_source_reappearance_and_present_source_mutation_fail_verification() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("retired.py");
+        let absent = SourcePin::capture(path.clone(), None, true).unwrap();
+        absent.verify().unwrap();
+        fs::write(&path, b"reappeared").unwrap();
+        assert!(absent.verify().is_err());
+        let present = SourcePin::capture(path.clone(), None, false).unwrap();
+        present.verify().unwrap();
+        fs::write(&path, b"mutated source").unwrap();
+        assert!(present.verify().is_err());
+    }
 }

@@ -1773,3 +1773,7 @@ required-features = ["paramsd-loop-native"]
 [[test]]
 name = "paramsd_loop_check"
 required-features = ["paramsd-loop-native"]
+
+[[test]]
+name = "paramsd_loop_retirement"
+required-features = ["paramsd-loop-native"]

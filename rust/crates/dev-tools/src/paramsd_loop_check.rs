@@ -21,7 +21,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-const SOURCES: [(&str, Option<&str>); 6] = [
+const SOURCES: [(&str, Option<&str>); 9] = [
     (
         "rust/tools/paramsd_loop_fixture.py",
         Some("767f58edf7163edf8eaa493b5453f3bc00f6966772dba932e96a294e3efe3089"),
@@ -35,11 +35,30 @@ const SOURCES: [(&str, Option<&str>); 6] = [
         Some("56c9afe7bc9bb21220478f21405ebf5327a931b0403c7cf628203e0b49fd58c3"),
     ),
     (
+        "rust/tools/paramsd_loop_source.py",
+        Some("4718a02dd4d43f54a5254eb3a5d0999355e5f46a669e2a8586ddf91929f3fca0"),
+    ),
+    (
         "rust/crates/dev-tools/src/paramsd_loop_fixture_generate.rs",
         None,
     ),
+    (
+        "rust/crates/dev-tools/src/paramsd_fixture_generate.rs",
+        None,
+    ),
     ("rust/crates/dev-tools/src/paramsd_loop_reference.rs", None),
+    ("rust/crates/dev-tools/src/paramsd_loop_check.rs", None),
     ("rust/crates/paramsd/examples/paramsd_loop.rs", None),
+];
+const RETIRED: [(&str, &str); 2] = [
+    (
+        "rust/tools/paramsd_loop_fixture.py",
+        "767f58edf7163edf8eaa493b5453f3bc00f6966772dba932e96a294e3efe3089",
+    ),
+    (
+        "rust/tools/check_paramsd_loop.py",
+        "56c9afe7bc9bb21220478f21405ebf5327a931b0403c7cf628203e0b49fd58c3",
+    ),
 ];
 const RAW_LIMIT: u64 = 32_000_000;
 
@@ -184,12 +203,27 @@ fn native_elf(bound: &mut Bound) -> Result<()> {
     bound.verify()
 }
 
-fn check(stop: &AtomicBool, bounds: &[Bound]) -> Result<()> {
+fn absent(path: &Path) -> Result<bool> {
+    match fs::symlink_metadata(path) {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(true),
+        Err(error) => Err(error.into()),
+        Ok(_) => Ok(false),
+    }
+}
+
+fn check(stop: &AtomicBool, bounds: &[Bound], missing: &[PathBuf]) -> Result<()> {
     if stop.load(Ordering::SeqCst) {
         return Err("paramsd loop comparison interrupted".into());
     }
     for bound in bounds {
         bound.verify()?;
+    }
+    for path in missing {
+        if !absent(path)? {
+            return Err(
+                format!("retired paramsd loop source reappeared: {}", path.display()).into(),
+            );
+        }
     }
     Ok(())
 }
@@ -210,16 +244,21 @@ fn bindings(bounds: &[Bound]) -> Value {
     )
 }
 
-fn report(summary: &Summary, bounds: &[Bound]) -> Value {
+fn report(
+    summary: &Summary,
+    bounds: &[Bound],
+    historical: &serde_json::Map<String, Value>,
+) -> Value {
     json!({"result":"pass","cases":summary.cases,"frames":summary.frames,
         "saves":summary.saves,"gps_writes":summary.gps_writes,
-        "sources":bindings(bounds)})
+        "sources":bindings(bounds),"historical_source_sha256":historical})
 }
 
 pub struct Completed {
     report: Value,
     evidence: PathBuf,
     bounds: Vec<Bound>,
+    missing: Vec<PathBuf>,
 }
 
 pub fn prepare(options: &Options, runner: &mut dyn Runner, stop: &AtomicBool) -> Result<Completed> {
@@ -234,14 +273,29 @@ pub fn prepare(options: &Options, runner: &mut dyn Runner, stop: &AtomicBool) ->
     let evidence = resolve_non_strict(&options.evidence)?;
     let root = resolve_non_strict(&options.root)?;
     let mut bounds = Vec::new();
+    let mut missing = Vec::new();
+    let mut historical = serde_json::Map::new();
     for (name, expected) in SOURCES {
-        bounds.push(Bound::open(root.join(name), expected)?);
+        let path = root.join(name);
+        if let Some((_, digest)) = RETIRED.iter().find(|(retired, _)| *retired == name) {
+            if absent(&path)? {
+                missing.push(path);
+                historical.insert(name.into(), json!(digest));
+                continue;
+            }
+        }
+        bounds.push(Bound::open(path, expected)?);
     }
+    fs::write(
+        evidence.join("historical-sources.json"),
+        serde_json::to_vec_pretty(&historical)?,
+    )?;
     let binary = resolve_non_strict(&options.binary)?;
     let mut candidate = Bound::open(binary.clone(), None)?;
     native_elf(&mut candidate)?;
+    let candidate_hash = candidate.hash.clone();
     bounds.push(candidate);
-    check(stop, &bounds)?;
+    check(stop, &bounds, &missing)?;
     let request = paramsd_loop_fixture_generate::cases()?;
     paramsd_loop_reference::verify_input(&request)?;
     if request["cases"]
@@ -253,10 +307,8 @@ pub fn prepare(options: &Options, runner: &mut dyn Runner, stop: &AtomicBool) ->
     let request = serde_json::to_vec(&request)?;
     let input = evidence.join("input.json");
     fs::write(&input, &request)?;
-    bounds.push(Bound::open(
-        input,
-        Some(&format!("{:x}", Sha256::digest(&request))),
-    )?);
+    let input_hash = format!("{:x}", Sha256::digest(&request));
+    bounds.push(Bound::open(input, Some(&input_hash))?);
     let raw = evidence.join("native-raw.json");
     let mut command = CommandSpec::new_os(
         vec![binary.clone().into_os_string(), raw.as_os_str().to_owned()],
@@ -269,10 +321,10 @@ pub fn prepare(options: &Options, runner: &mut dyn Runner, stop: &AtomicBool) ->
         evidence.join("invocation.json"),
         serde_json::to_vec_pretty(
             &json!({"argv":[path_value(&binary),path_value(&raw)],"timeout_seconds":180,
-                "binary_sha256":bounds[SOURCES.len()].hash,"input_sha256":bounds[SOURCES.len()+1].hash}),
+                "binary_sha256":candidate_hash,"input_sha256":input_hash}),
         )?,
     )?;
-    check(stop, &bounds)?;
+    check(stop, &bounds, &missing)?;
     fs::write(
         evidence.join("sources-before.json"),
         serde_json::to_vec_pretty(&bindings(&bounds))?,
@@ -296,46 +348,83 @@ pub fn prepare(options: &Options, runner: &mut dyn Runner, stop: &AtomicBool) ->
         evidence.join("process.json"),
         serde_json::to_vec_pretty(&json!({"exit_code":code}))?,
     )?;
-    check(stop, &bounds)?;
+    check(stop, &bounds, &missing)?;
     if code != 0 {
         return Err(format!("paramsd loop candidate exited {code}").into());
     }
     let output = Bound::open_with_limit(raw.clone(), None, Some(RAW_LIMIT))?;
     let summary = paramsd_loop_reference::compare_file(&raw)?;
     bounds.push(output);
-    check(stop, &bounds)?;
+    check(stop, &bounds, &missing)?;
     fs::write(
         evidence.join("sources-after.json"),
         serde_json::to_vec_pretty(&bindings(&bounds))?,
     )?;
     Ok(Completed {
-        report: report(&summary, &bounds),
+        report: report(&summary, &bounds, &historical),
         evidence,
         bounds,
+        missing,
     })
 }
 
-pub fn finish(done: Completed, printed: &mut dyn Write, stop: &AtomicBool) -> Result<Value> {
-    check(stop, &done.bounds)?;
+struct Receipt {
+    path: PathBuf,
+    file: File,
+    committed: bool,
+}
+impl Receipt {
+    fn owns(&self) -> bool {
+        let Ok(held) = self.file.metadata() else {
+            return false;
+        };
+        fs::symlink_metadata(&self.path).is_ok_and(|current| {
+            current.is_file() && (held.dev(), held.ino()) == (current.dev(), current.ino())
+        })
+    }
+}
+impl Drop for Receipt {
+    fn drop(&mut self) {
+        if !self.committed && self.owns() {
+            let _ = fs::remove_file(&self.path);
+        }
+    }
+}
+
+fn finish_after_teardown(
+    done: Completed,
+    printed: &mut dyn Write,
+    stop: &AtomicBool,
+    teardown: impl FnOnce(),
+) -> Result<Value> {
+    check(stop, &done.bounds, &done.missing)?;
     writeln!(printed, "{}", serde_json::to_string(&done.report)?)?;
     printed.flush()?;
-    check(stop, &done.bounds)?;
+    check(stop, &done.bounds, &done.missing)?;
     let path = done.evidence.join("result.json");
     let mut pending = tempfile::NamedTempFile::new_in(&done.evidence)?;
     pending.write_all(serde_json::to_string_pretty(&done.report)?.as_bytes())?;
-    check(stop, &done.bounds)?;
-    let held = pending
+    check(stop, &done.bounds, &done.missing)?;
+    let file = pending
         .persist_noclobber(&path)
         .map_err(|error| error.error)?;
-    if let Err(error) = check(stop, &done.bounds) {
-        if let (Ok(own), Ok(current)) = (held.metadata(), fs::symlink_metadata(&path)) {
-            if (own.dev(), own.ino()) == (current.dev(), current.ino()) {
-                let _ = fs::remove_file(&path);
-            }
-        }
-        return Err(error);
+    let mut receipt = Receipt {
+        path,
+        file,
+        committed: false,
+    };
+    // The source pins and rollback guard remain live until the handlers are gone.
+    teardown();
+    check(stop, &done.bounds, &done.missing)?;
+    if !receipt.owns() {
+        return Err("paramsd loop result receipt replaced before commit".into());
     }
+    receipt.committed = true;
     Ok(done.report)
+}
+
+pub fn finish(done: Completed, printed: &mut dyn Write, stop: &AtomicBool) -> Result<Value> {
+    finish_after_teardown(done, printed, stop, || {})
 }
 
 struct SignalRunner(Arc<AtomicBool>);
@@ -389,8 +478,97 @@ pub fn cli() -> Result<()> {
             .push(signal_hook::flag::register(signal, stop.clone())?);
     }
     let prepared = prepare(&options, &mut SignalRunner(stop.clone()), &stop)?;
-    let result = finish(prepared, &mut std::io::stdout(), &stop);
-    drop(signals);
+    let result = finish_after_teardown(prepared, &mut std::io::stdout(), &stop, || drop(signals));
     result?;
     Ok(())
+}
+
+#[cfg(test)]
+mod finalization_tests {
+    use super::*;
+    use std::{cell::Cell, io};
+
+    fn prepared(directory: &Path) -> (Completed, PathBuf, PathBuf) {
+        let input = directory.join("held-input");
+        fs::write(&input, b"held input").unwrap();
+        let evidence = directory.join("evidence");
+        fs::create_dir(&evidence).unwrap();
+        let absent = directory.join("retired.py");
+        (
+            Completed {
+                report: json!({"result":"pass","cases":39,"frames":2420,"saves":4,"gps_writes":216}),
+                evidence,
+                bounds: vec![Bound::open(input.clone(), None).unwrap()],
+                missing: vec![absent.clone()],
+            },
+            input,
+            absent,
+        )
+    }
+
+    struct Flushed<'a>(&'a Cell<bool>);
+    impl Write for Flushed<'_> {
+        fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+            Ok(bytes.len())
+        }
+        fn flush(&mut self) -> io::Result<()> {
+            self.0.set(true);
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn teardown_rechecks_held_inputs_absence_and_cancellation_before_commit() {
+        for mutation in ["none", "input", "reappear", "cancel"] {
+            let directory = tempfile::tempdir().unwrap();
+            let (done, input, absent) = prepared(directory.path());
+            let receipt = done.evidence.join("result.json");
+            let stop = AtomicBool::new(false);
+            let flushed = Cell::new(false);
+            let outcome = finish_after_teardown(done, &mut Flushed(&flushed), &stop, || {
+                assert!(flushed.get(), "stdout must flush before handler teardown");
+                assert!(
+                    receipt.is_file(),
+                    "receipt must still be pending during teardown"
+                );
+                match mutation {
+                    "input" => fs::write(&input, b"changed after publication").unwrap(),
+                    "reappear" => fs::write(&absent, b"reappeared").unwrap(),
+                    "cancel" => stop.store(true, Ordering::SeqCst),
+                    _ => {}
+                }
+            });
+            if mutation == "none" {
+                assert_eq!(outcome.unwrap()["result"], "pass");
+                assert!(receipt.is_file());
+            } else {
+                assert!(outcome.is_err(), "{mutation} committed");
+                assert!(!receipt.exists(), "{mutation} left owned success receipt");
+            }
+        }
+    }
+
+    #[test]
+    fn teardown_rejects_replaced_receipt_without_clobbering_foreign_file() {
+        for change_input in [false, true] {
+            let directory = tempfile::tempdir().unwrap();
+            let (done, input, _) = prepared(directory.path());
+            let receipt = done.evidence.join("result.json");
+            let stop = AtomicBool::new(false);
+            let error = finish_after_teardown(done, &mut Vec::new(), &stop, || {
+                if change_input {
+                    fs::write(&input, b"changed after publication").unwrap();
+                }
+                fs::remove_file(&receipt).unwrap();
+                fs::write(&receipt, b"foreign receipt").unwrap();
+            })
+            .unwrap_err();
+            if change_input {
+                assert!(error.to_string().contains("input changed"));
+            } else {
+                assert!(error.to_string().contains("receipt replaced before commit"));
+            }
+            assert_eq!(fs::read(receipt).unwrap(), b"foreign receipt");
+        }
+    }
 }

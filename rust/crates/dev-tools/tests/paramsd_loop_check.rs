@@ -21,8 +21,11 @@ fn fixture_options(directory: &Path) -> Options {
         "rust/tools/paramsd_loop_fixture.py",
         "rust/tools/paramsd_fixture.py",
         "rust/tools/check_paramsd_loop.py",
+        "rust/tools/paramsd_loop_source.py",
         "rust/crates/dev-tools/src/paramsd_loop_fixture_generate.rs",
+        "rust/crates/dev-tools/src/paramsd_fixture_generate.rs",
         "rust/crates/dev-tools/src/paramsd_loop_reference.rs",
+        "rust/crates/dev-tools/src/paramsd_loop_check.rs",
         "rust/crates/paramsd/examples/paramsd_loop.rs",
     ] {
         let path = source.join(name);
@@ -45,6 +48,7 @@ enum Mode {
     MutateBinary,
     MutateInput,
     MutateSource,
+    Reappear,
 }
 struct Peer {
     mode: Mode,
@@ -116,6 +120,17 @@ impl Runner for Peer {
                     stderr: Vec::new(),
                 })
             }
+            Mode::Reappear => {
+                fs::write(
+                    self.source.join("rust/tools/check_paramsd_loop.py"),
+                    b"unexpected retired checker",
+                )?;
+                Ok(Captured {
+                    code: 0,
+                    stdout: Vec::new(),
+                    stderr: Vec::new(),
+                })
+            }
         }
     }
 }
@@ -130,9 +145,13 @@ fn child_failure_missing_or_invalid_raw_and_mutated_inputs_never_publish() {
         Mode::MutateBinary,
         Mode::MutateInput,
         Mode::MutateSource,
+        Mode::Reappear,
     ] {
         let directory = tempfile::tempdir().unwrap();
         let options = fixture_options(directory.path());
+        if matches!(mode, Mode::Reappear) {
+            fs::remove_file(options.root.join("rust/tools/check_paramsd_loop.py")).unwrap();
+        }
         let mut runner = Peer {
             mode,
             calls: 0,
@@ -197,6 +216,63 @@ fn original_source_alias_is_rejected_before_candidate_invocation() {
     assert!(prepare(&options, &mut runner, &AtomicBool::new(false)).is_err());
     assert_eq!(runner.calls, 0);
     assert!(!options.evidence.join("result.json").exists());
+}
+
+#[test]
+fn both_retired_python_paths_admit_true_absence_but_reject_changed_or_nonregular_entries() {
+    for (name, digest) in [
+        (
+            "rust/tools/paramsd_loop_fixture.py",
+            "767f58edf7163edf8eaa493b5453f3bc00f6966772dba932e96a294e3efe3089",
+        ),
+        (
+            "rust/tools/check_paramsd_loop.py",
+            "56c9afe7bc9bb21220478f21405ebf5327a931b0403c7cf628203e0b49fd58c3",
+        ),
+    ] {
+        let directory = tempfile::tempdir().unwrap();
+        let options = fixture_options(directory.path());
+        fs::remove_file(options.root.join(name)).unwrap();
+        let mut runner = Peer {
+            mode: Mode::Failure,
+            calls: 0,
+            binary: options.binary.clone(),
+            source: options.root.clone(),
+        };
+        assert!(prepare(&options, &mut runner, &AtomicBool::new(false)).is_err());
+        assert_eq!(
+            runner.calls, 1,
+            "true absence must reach the candidate: {name}"
+        );
+        let historical: serde_json::Value = serde_json::from_slice(
+            &fs::read(options.evidence.join("historical-sources.json")).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(historical[name], digest);
+        assert!(!options.evidence.join("result.json").exists());
+
+        for mutation in ["changed", "symlink", "directory"] {
+            let directory = tempfile::tempdir().unwrap();
+            let options = fixture_options(directory.path());
+            let path = options.root.join(name);
+            fs::remove_file(&path).unwrap();
+            match mutation {
+                "changed" => fs::write(&path, b"changed retired source").unwrap(),
+                "symlink" => std::os::unix::fs::symlink(root().join(name), &path).unwrap(),
+                "directory" => fs::create_dir(&path).unwrap(),
+                _ => unreachable!(),
+            }
+            let mut runner = Peer {
+                mode: Mode::Failure,
+                calls: 0,
+                binary: options.binary.clone(),
+                source: options.root.clone(),
+            };
+            assert!(prepare(&options, &mut runner, &AtomicBool::new(false)).is_err());
+            assert_eq!(runner.calls, 0, "{name}: {mutation}");
+            assert!(!options.evidence.join("result.json").exists());
+        }
+    }
 }
 
 #[test]

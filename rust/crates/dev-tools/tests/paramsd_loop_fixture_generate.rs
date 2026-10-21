@@ -86,3 +86,46 @@ fn every_wire_byte_matches_fresh_unchanged_original_input() {
         "library and CLI generation diverged"
     );
 }
+
+#[test]
+fn retired_loop_fixture_is_optional_only_when_exact_path_is_absent() {
+    let repo = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    for state in ["absent", "changed", "symlink", "directory"] {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("root");
+        for name in [
+            "rust/tools/paramsd_loop_fixture.py",
+            "rust/tools/paramsd_fixture.py",
+            "rust/crates/dev-tools/src/paramsd_loop_fixture_generate.rs",
+            "rust/crates/dev-tools/src/paramsd_fixture_generate.rs",
+        ] {
+            let destination = root.join(name);
+            fs::create_dir_all(destination.parent().unwrap()).unwrap();
+            fs::copy(repo.join(name), destination).unwrap();
+        }
+        let retired = root.join("rust/tools/paramsd_loop_fixture.py");
+        fs::remove_file(&retired).unwrap();
+        match state {
+            "absent" => {}
+            "changed" => fs::write(&retired, b"changed original fixture").unwrap(),
+            "symlink" => std::os::unix::fs::symlink(
+                repo.join("rust/tools/paramsd_loop_fixture.py"),
+                &retired,
+            )
+            .unwrap(),
+            "directory" => fs::create_dir(&retired).unwrap(),
+            _ => unreachable!(),
+        }
+        let output = temp.path().join("output");
+        let result = generate(&root, &output);
+        if state == "absent" {
+            result.unwrap();
+            let observed: Value =
+                serde_json::from_slice(&fs::read(output.join("input.json")).unwrap()).unwrap();
+            assert_eq!(observed, cases().unwrap());
+        } else {
+            assert!(result.is_err(), "{state} accepted");
+            assert!(!output.exists());
+        }
+    }
+}
