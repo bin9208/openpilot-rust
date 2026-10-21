@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
-      EXPECTED_SOURCE: 049a3f9c0a511d77a41adc65760ff095dd13f293
+      EXPECTED_SOURCE: a20ad0fadb24e3ac77e53d00305bec3ba34cbeed
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
@@ -20,7 +20,7 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 049a3f9c0a511d77a41adc65760ff095dd13f293
+        ref: a20ad0fadb24e3ac77e53d00305bec3ba34cbeed
         persist-credentials: false
     - uses: actions/setup-python@v6
       with:
