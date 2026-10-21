@@ -9,7 +9,7 @@ use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::{
     fs,
-    io::{self, Write},
+    io::{self, Read, Write},
     os::unix::fs::symlink,
     path::{Path, PathBuf},
     sync::atomic::{AtomicBool, Ordering},
@@ -26,6 +26,26 @@ fn candidate() -> PathBuf {
 }
 fn sha(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
+}
+const ORIGINAL_TRACE_BYTES: usize = 5_535_468;
+const ORIGINAL_TRACE_SHA256: &str =
+    "7d5928a8f2ab66747dfedd35a2bd28e767b8eac10f4bf1676d363b10f971c04e";
+const PACKED_TRACE_SHA256: &str =
+    "c574db2834f292cec9b4ae94146a9a6027ebf9676dcbd696e6aa249a9573bb4a";
+
+fn original_rows() -> Vec<JsonValue> {
+    let packed = include_bytes!("fixtures/bluetooth-journal/original-trace-d219.jsonl.bz2");
+    assert_eq!(sha(packed), PACKED_TRACE_SHA256);
+    let mut raw = Vec::new();
+    bzip2::read::BzDecoder::new(&packed[..])
+        .take(ORIGINAL_TRACE_BYTES as u64 + 1)
+        .read_to_end(&mut raw)
+        .unwrap();
+    assert_eq!(raw.len(), ORIGINAL_TRACE_BYTES);
+    assert_eq!(sha(&raw), ORIGINAL_TRACE_SHA256);
+    let rows = checker::parse_trace(std::str::from_utf8(&raw).unwrap()).unwrap();
+    assert_eq!(rows.len(), OPERATIONS);
+    rows
 }
 #[test]
 fn public_trace_parser_keeps_python_crlf_and_other_line_boundaries() {
@@ -56,8 +76,15 @@ fn corpus() -> Corpus {
     fs::create_dir_all(&original).unwrap();
     let operations = checker::operations();
     let input = checker::payload(&operations).unwrap();
-    let rows = checker::source_trace(&operations).unwrap();
-    assert_eq!(rows.len(), OPERATIONS);
+    let sealed: Value = serde_json::from_str(include_str!(
+        "fixtures/bluetooth-journal/original-observation-39507901490.json"
+    ))
+    .unwrap();
+    assert_eq!(
+        sha(&input),
+        sealed["observation"]["input_sha256"].as_str().unwrap()
+    );
+    let rows = original_rows();
     let final_row = rows.last().unwrap();
     let JsonView::Array(files) = final_row.view() else {
         panic!("source snapshot array")
@@ -146,43 +173,26 @@ fn fixed_trace_mutations_preserve_every_field_and_original_acceptance_guard() {
         "extra-file",
         "over64",
     ] {
-        // Mutations use the translated schedule checked against sealed original row digests above.
+        // Mutate the independent original rows, not the translated expected schedule.
         let mut lines = original_lines.clone();
         match mode {
             "missing-row" => {
                 lines.pop();
             }
             "extra-row" => lines.push(lines.last().unwrap().clone()),
-            "mode" => lines[1] = lines[1].replacen("\"mode\": 384", "\"mode\": 420", 1),
-            "id" => {
-                let session = checker::normalize_trace(&original.rows)
-                    .unwrap()
-                    .sessions
-                    .into_iter()
-                    .next()
-                    .unwrap();
-                lines[1] = lines[1].replace(&format!("{session}:1"), "BAD:1");
+            "mode" => {
+                let mut row: Value = serde_json::from_str(&lines[1]).unwrap();
+                assert_eq!(row[0]["mode"], 384);
+                row[0]["mode"] = json!(420);
+                lines[1] = row.to_string();
             }
-            "second-session" => {
-                let session = checker::normalize_trace(&original.rows)
-                    .unwrap()
-                    .sessions
-                    .into_iter()
-                    .next()
-                    .unwrap();
-                lines[1] = lines[1].replace(&session, "11111111111111111111111111111111");
-            }
-            "sequence" => lines[1] = lines[1].replace(":1\\\"", ":2\\\""),
-            "action" => lines[1] = lines[1].replace("accelCruise", "cancel"),
-            "address" => lines[1] = lines[1].replace("66:C0:0C:7B:6E:71", "00:00:00:00:00:00"),
             "hold" => {
-                lines[304] = lines[304].replace("/dev/input/event0:up@long", "different-hold")
+                let changed = lines[304].replace("/dev/input/event0:up@long", "different-hold");
+                assert_ne!(changed, lines[304], "hold target absent");
+                lines[304] = changed;
             }
-            "repeat" => {
-                lines[1] = lines[1].replace("\\\"repeat\\\": false", "\\\"repeat\\\": true")
-            }
-            "time" => lines[1] = lines[1].replace("10.0", "10.25"),
-            "missing-field" | "extra-field" | "rewrite" | "extra-file" | "over64" => {
+            "id" | "second-session" | "sequence" | "action" | "address" | "repeat" | "time"
+            | "missing-field" | "extra-field" | "rewrite" | "extra-file" | "over64" => {
                 // Outer structure contains no floats outside the bytes string.
                 let mut row: Value = serde_json::from_str(&lines[1]).unwrap();
                 if mode == "rewrite" {
@@ -194,16 +204,33 @@ fn fixed_trace_mutations_preserve_every_field_and_original_acceptance_guard() {
                 } else {
                     let mut journal: Value =
                         serde_json::from_str(row[0]["bytes"].as_str().unwrap()).unwrap();
-                    if mode == "missing-field" {
-                        journal["events"][0]
-                            .as_object_mut()
-                            .unwrap()
-                            .remove("repeat");
-                    } else if mode == "extra-field" {
-                        journal["events"][0]["unobserved"] = json!(true);
-                    } else {
-                        let event = journal["events"][0].clone();
-                        journal["events"] = json!(vec![event; 65]);
+                    let event = &mut journal["events"][0];
+                    match mode {
+                        "id" => event["id"] = json!("BAD:1"),
+                        "second-session" => {
+                            event["id"] = json!("11111111111111111111111111111111:1")
+                        }
+                        "sequence" => {
+                            let id = event["id"].as_str().unwrap();
+                            let session = id.split_once(':').unwrap().0;
+                            event["id"] = json!(format!("{session}:2"));
+                        }
+                        "action" => event["action"] = json!("cancel"),
+                        "address" => event["address"] = json!("00:00:00:00:00:00"),
+                        "repeat" => {
+                            assert_eq!(event["repeat"], false);
+                            event["repeat"] = json!(true);
+                        }
+                        "time" => event["time"] = json!(10.25),
+                        "missing-field" => {
+                            assert!(event.as_object_mut().unwrap().remove("repeat").is_some());
+                        }
+                        "extra-field" => event["unobserved"] = json!(true),
+                        "over64" => {
+                            let repeated = event.clone();
+                            journal["events"] = json!(vec![repeated; 65]);
+                        }
+                        _ => unreachable!(),
                     }
                     row[0]["bytes"] = json!(journal.to_string());
                 }
@@ -211,7 +238,10 @@ fn fixed_trace_mutations_preserve_every_field_and_original_acceptance_guard() {
             }
             _ => unreachable!(),
         }
-        assert_ne!(lines, original_lines, "ineffective source mutation: {mode}");
+        assert!(
+            lines != original_lines,
+            "ineffective source mutation: {mode}"
+        );
         let rows = lines
             .iter()
             .map(|s| JsonValue::parse(s).unwrap())
