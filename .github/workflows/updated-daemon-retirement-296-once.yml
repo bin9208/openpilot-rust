@@ -14,17 +14,18 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
-      EXPECTED_SOURCE: ec95aec6bd81a5f718fb2cac54a443d9a61e426c
+      EXPECTED_SOURCE: b91c1bd30b9ee4c15a6b1ad521173412cb6fa63a
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       TZ: UTC
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+      UPDATED_FIXTURE_REQUIRE_ABSENT: '0'
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: ec95aec6bd81a5f718fb2cac54a443d9a61e426c
+        ref: b91c1bd30b9ee4c15a6b1ad521173412cb6fa63a
         persist-credentials: false
     - uses: actions/setup-python@v6
       with:
@@ -69,10 +70,15 @@ jobs:
         2>&1 | tee "$proof/launcher-build.log"
 
         cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features updated-daemon-native --bin check-updated-daemon
-        --bin updated-fixture --locked 2>&1 | tee "$proof/controller-build.log"
+        --bin check-updated --bin updated-fixture --locked 2>&1 | tee "$proof/controller-build.log"
 
         sha256sum rust/tools/check_updated_daemon.py rust/tools/updated_fixtures.py rust/target/debug/openpilot-updated rust/target/debug/openpilot-process-child
         rust/target/debug/updated-fixture rust/target/debug/check-updated-daemon > "$proof/sealed-inputs.sha256"
+
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-updated --example updated_trace --locked 2>&1 | tee "$proof/trace-build.log"
 
         '
     - name: Execute unchanged original first and capture its actual invocation time window
@@ -132,6 +138,39 @@ jobs:
         "$EXPECTED_SOURCE" "$GITHUB_WORKSPACE" "$proof" "$proof" >> "$GITHUB_ENV"
 
         sha256sum --check "$proof/sealed-inputs.sha256"
+
+        '
+    - name: Require all retired updater scenarios and independent native fixture observations with helper absent in private
+        root
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/updated-daemon-296"
+
+        export UPDATED_CHECK_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/updated_trace"
+
+        export UPDATED_CHECK_LAUNCHER="$UPDATED_DAEMON_LAUNCHER"
+
+        export UPDATED_CHECK_SHIM="$UPDATED_DAEMON_FIXTURE"
+
+        export UPDATED_CHECK_OUTPUT="$proof/source-native-test"
+
+        export UPDATED_CHECK_CLI_OUTPUT="$proof/source-cli"
+
+        export UPDATED_CHECK_ABSENCE_EVIDENCE="$proof/source-absence"
+
+        export UPDATED_FIXTURE_NATIVE_OUTPUT="$proof/fixture-native"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features updated-fixture-native --test updated_check
+        --test updated_fixture_original --locked -- --nocapture 2>&1 | tee "$proof/source-tests.log"
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features updated-fixture-native --lib --bin
+        check-updated --bin updated-fixture --test updated_check --test updated_fixture_original --locked -- -D warnings 2>&1
+        | tee "$proof/source-clippy.log"
+
+        rust/target/debug/check-updated --binary "$UPDATED_CHECK_BINARY" --launcher "$UPDATED_CHECK_LAUNCHER" --output "$proof/source-default-cli"
+        > "$proof/source-default-cli.stdout" 2> "$proof/source-default-cli.stderr"
 
         '
     - name: Require full daemon regressions, fresh original pair, raw CLI and strict same-ELF trace proof
