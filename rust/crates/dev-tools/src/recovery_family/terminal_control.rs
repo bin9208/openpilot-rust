@@ -16,6 +16,13 @@ pub struct TerminalPairConfig<'a> {
     pub output: &'a Path,
 }
 
+pub struct TerminalFrozenConfig<'a> {
+    pub repository: &'a Path,
+    pub source_server: &'a Path,
+    pub candidate: &'a Path,
+    pub output: &'a Path,
+}
+
 fn port() -> Result<u16> {
     let listener = TcpListener::bind(("127.0.0.1", 0))?;
     Ok(listener.local_addr()?.port())
@@ -375,6 +382,131 @@ pub fn run_terminal_pair(config: &TerminalPairConfig<'_>) -> Result<()> {
         serde_json::to_vec_pretty(
             &json!({"pass":true,"scenario":source_result,"source_sha256":source.digest(),"wrapper_sha256":wrapper.digest(),"candidate_sha256":candidate.digest()}),
         )?,
+    )?;
+    Ok(())
+}
+
+/// Rerun the owned PTY/WebSocket scenario on the native server and compare all
+/// stable result fields with the independently sealed original observation.
+pub fn run_terminal_frozen(
+    config: &TerminalFrozenConfig<'_>,
+    load_original: impl Fn(&str) -> Result<Value>,
+) -> Result<()> {
+    fs::create_dir(config.output)?;
+    let source_pin = Pin::open(config.source_server, 4 * 1024 * 1024)?;
+    let candidate_pin = Pin::open(config.candidate, 256 * 1024 * 1024)?;
+    let source_proof = load_original("terminal/source/source-proof.json")?;
+    let source_cleanup = load_original("terminal/source/cleanup.json")?;
+    let source_invocation = load_original("terminal/source/invocation.json")?;
+    let source_wire = load_original("terminal/source/wire.json")?;
+    let mut source_result = load_original("terminal/source/result.json")?;
+    if source_proof["sha256"].as_str() != Some(source_pin.digest())
+        || source_proof["source_main_cleanup_not_claimed"] != true
+        || source_cleanup["exit_code"] != 0
+        || source_wire.as_array().is_none_or(|rows| rows.len() != 395)
+        || !source_invocation["command"]
+            .as_array()
+            .is_some_and(|command| {
+                command.len() == 7
+                    && command[2]
+                        .as_str()
+                        .is_some_and(|path| path.ends_with("/rust/tools/carrot_recovery_source.py"))
+            })
+    {
+        return Err("frozen terminal source provenance changed".into());
+    }
+    let source_pid = source_result["pid"]
+        .as_u64()
+        .ok_or("original terminal PID absent")?;
+    let source_final_pid = source_result["final_pid"]
+        .as_u64()
+        .ok_or("original terminal final PID absent")?;
+    if source_pid == 0 || source_final_pid == 0 || source_pid == source_final_pid {
+        return Err("original terminal PID relation changed".into());
+    }
+    source_result
+        .as_object_mut()
+        .ok_or("original terminal result not an object")?
+        .remove("pid");
+    source_result
+        .as_object_mut()
+        .ok_or("original terminal result not an object")?
+        .remove("final_pid");
+    let directory = config.output.join("native");
+    fs::create_dir(&directory)?;
+    let shell = directory.join("fixture-shell");
+    fs::write(&shell, "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> \"$CARROT_RECOVERY_SHELL_LOG\"\nexec /bin/bash --noprofile --norc -i\n")?;
+    fs::set_permissions(&shell, fs::Permissions::from_mode(0o700))?;
+    let port = port()?;
+    let argv = [
+        OsString::from(config.candidate),
+        OsString::from("--host"),
+        OsString::from("127.0.0.1"),
+        OsString::from("--port"),
+        port.to_string().into(),
+    ];
+    let environment = [
+        (OsString::from("USER"), OsString::from("comma")),
+        (OsString::from("SHELL"), OsString::from(&shell)),
+        (OsString::from("PS1"), OsString::from("OWNED> ")),
+        (OsString::from("PS2"), OsString::from("CONT> ")),
+        (OsString::from("TMUX"), OsString::from("must-be-removed")),
+        (
+            OsString::from("CARROT_RECOVERY_SHELL_LOG"),
+            OsString::from(directory.join("shell-argv.log")),
+        ),
+    ];
+    let mut server = OwnedServer::spawn(
+        &argv,
+        config.repository,
+        &directory.join("process.log"),
+        &environment,
+        &["TERM", "COLORTERM"],
+        false,
+    )?;
+    let peer = HttpPeer::new(port, Duration::from_secs(2));
+    let result = (|| -> Result<Value> {
+        peer.wait_ready("/api/support_terminal/status", Duration::from_secs(5))?;
+        scenario(port, config.repository, &directory)
+    })();
+    let stop = server.signal(Signal::TERM);
+    let exit = server.finish(Duration::from_secs(5));
+    fs::write(
+        directory.join("cleanup.json"),
+        serde_json::to_vec_pretty(&json!({"stop":stop.is_ok(),"exit":exit.as_ref().ok()}))?,
+    )?;
+    let mut native_result = result?;
+    stop?;
+    if exit? != 0 {
+        return Err("native frozen terminal server cleanup failed".into());
+    }
+    let shell_pid = native_result["shell_pid"]
+        .as_u64()
+        .ok_or("native terminal PID absent")?;
+    let fresh_pid = native_result["fresh_pid"]
+        .as_u64()
+        .ok_or("native terminal fresh PID absent")?;
+    if shell_pid == 0 || fresh_pid == 0 || shell_pid == fresh_pid {
+        return Err("native terminal PID relation changed".into());
+    }
+    native_result
+        .as_object_mut()
+        .ok_or("native terminal result not an object")?
+        .remove("shell_pid");
+    native_result
+        .as_object_mut()
+        .ok_or("native terminal result not an object")?
+        .remove("fresh_pid");
+    if source_result != native_result || fs::read(directory.join("shell-argv.log"))?.is_empty() {
+        return Err("frozen original/native terminal scenario changed".into());
+    }
+    source_pin.verify()?;
+    candidate_pin.verify()?;
+    fs::write(
+        config.output.join("result.json"),
+        serde_json::to_vec_pretty(&json!({"pass":true,"frozen_original_compared":true,
+            "comparison":native_result,"source_sha256":source_pin.digest(),
+            "candidate_sha256":candidate_pin.digest()}))?,
     )?;
     Ok(())
 }

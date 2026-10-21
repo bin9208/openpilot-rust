@@ -35,6 +35,23 @@ fn state(pid: u32) -> Result<Option<String>> {
 }
 
 pub fn run_support_shutdown(config: &SupportShutdownConfig<'_>) -> Result<()> {
+    run_support_shutdown_inner(config, None)
+}
+
+/// Requires the same pending-tunnel termination and request-disconnect
+/// relations observed by the unchanged original controller. The source rows
+/// must come from the independently authenticated original-only fixture.
+pub fn run_support_shutdown_frozen(
+    config: &SupportShutdownConfig<'_>,
+    load_original: impl Fn(&str) -> Result<serde_json::Value>,
+) -> Result<()> {
+    run_support_shutdown_inner(config, Some(&load_original))
+}
+
+fn run_support_shutdown_inner(
+    config: &SupportShutdownConfig<'_>,
+    load_original: Option<&dyn Fn(&str) -> Result<serde_json::Value>>,
+) -> Result<()> {
     fs::create_dir(config.output)?;
     let candidate = Pin::open(config.candidate, 256 * 1024 * 1024)?;
     let tunnel = config.output.join("cloudflared");
@@ -146,11 +163,59 @@ pub fn run_support_shutdown(config: &SupportShutdownConfig<'_>) -> Result<()> {
         if observed_exit != 0 || owner_exit != observed_exit || tunnel_state.is_some() || !exited {
             return Err("recovery pending support shutdown failed".into());
         }
+        if let Some(load) = load_original {
+            let source_observation = load("shutdown/source/observation.json")?;
+            let source_request = load("shutdown/source/request.json")?;
+            let source_cleanup = load("shutdown/source/cleanup.json")?;
+            let source_result = load("shutdown/source/result.json")?;
+            let native_observation: serde_json::Value =
+                serde_json::from_slice(&fs::read(config.output.join("observation.json"))?)?;
+            let native_request: serde_json::Value =
+                serde_json::from_slice(&fs::read(config.output.join("request.json"))?)?;
+            let native_cleanup: serde_json::Value =
+                serde_json::from_slice(&fs::read(config.output.join("cleanup.json"))?)?;
+            let mut source_result_observation = source_result.clone();
+            source_result_observation
+                .as_object_mut()
+                .ok_or("original shutdown result not an object")?
+                .remove("expected_observable_confirmed");
+            if source_result_observation != source_observation {
+                return Err("original shutdown observation/result changed".into());
+            }
+            let expected_scenario = "SIGTERM during real pending support tunnel startup";
+            for row in [&source_observation, &source_result, &native_observation] {
+                if row["scenario"] != expected_scenario
+                    || row["tunnel_entered"] != true
+                    || row["exited_within_three_seconds"] != true
+                    || row["expect_blocked"] != false
+                    || !row["tunnel_pid"].as_u64().is_some_and(|pid| pid > 0)
+                    || !row["seconds_before_release"]
+                        .as_f64()
+                        .is_some_and(|elapsed| {
+                            elapsed.is_finite() && (0.0..=3.0).contains(&elapsed)
+                        })
+                {
+                    return Err("original/native pending tunnel shutdown relation changed".into());
+                }
+            }
+            if source_result["expected_observable_confirmed"] != true
+                || source_request["closed"] != "ServerDisconnectedError"
+                || source_cleanup["exit"] != 0
+                || source_cleanup.get("tunnel_state_after") != Some(&serde_json::Value::Null)
+                || native_request["completed"] != false
+                || native_request.get("status") != Some(&serde_json::Value::Null)
+                || native_cleanup["observed_exit"] != 0
+                || native_cleanup.get("tunnel_state_before_owner_cleanup")
+                    != Some(&serde_json::Value::Null)
+            {
+                return Err("original/native pending tunnel request or cleanup changed".into());
+            }
+        }
         candidate.verify()?;
         fs::write(
             config.output.join("result.json"),
             serde_json::to_vec_pretty(
-                &json!({"pass":true,"exited_within_three_seconds":true,"candidate_sha256":candidate.digest()}),
+                &json!({"pass":true,"exited_within_three_seconds":true,"candidate_sha256":candidate.digest(),"frozen_original_compared":load_original.is_some()}),
             )?,
         )?;
         Ok(())

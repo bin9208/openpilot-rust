@@ -23,8 +23,25 @@ pub struct UploadCorpusConfig<'a> {
     pub output: &'a Path,
 }
 
+pub struct UploadFrozenConfig<'a> {
+    pub repository: &'a Path,
+    pub source_server: &'a Path,
+    pub candidate: &'a Path,
+    pub actions_binary: &'a Path,
+    pub process_child: &'a Path,
+    pub output: &'a Path,
+}
+
+struct UploadNativeInputs<'a> {
+    repository: &'a Path,
+    candidate: &'a Path,
+    actions_binary: &'a Path,
+    process_child: &'a Path,
+    output: &'a Path,
+}
+
 fn run_http_action(
-    config: &UploadCorpusConfig<'_>,
+    config: &UploadNativeInputs<'_>,
     row: &Value,
     name: &str,
     output: &Path,
@@ -241,11 +258,18 @@ pub fn admit_upload_corpus(config: &UploadCorpusConfig<'_>) -> Result<()> {
         }
     }
     let direct_actions = config.output.join("direct-http-actions");
+    let native_inputs = UploadNativeInputs {
+        repository: config.repository,
+        candidate: config.candidate,
+        actions_binary: config.actions_binary,
+        process_child: config.process_child,
+        output: config.output,
+    };
     fs::create_dir(&direct_actions)?;
     let mut action_rows = Vec::new();
     for (name, row) in ["success", "partial", "all-failed"].iter().zip(&http) {
         action_rows.push(run_http_action(
-            config,
+            &native_inputs,
             row,
             name,
             &direct_actions.join(name),
@@ -255,7 +279,24 @@ pub fn admit_upload_corpus(config: &UploadCorpusConfig<'_>) -> Result<()> {
             serde_json::to_vec_pretty(&action_rows)?,
         )?;
     }
+    let direct_rows = run_native_upload_cases(&native_inputs, &rows)?;
+    for pin in &pins {
+        pin.verify()?;
+    }
+    fs::write(
+        config.output.join("admission.json"),
+        serde_json::to_vec_pretty(&json!({
+            "pass":true,"source_controller_required":true,"upload_modes":MODES.len(),
+        "http_action_modes":3,"rust_driven_native_modes":direct_rows.len(),"rust_driven_http_actions":action_rows.len(),"source_sha256":pins[2].digest(),
+            "candidate_sha256":pins[3].digest(),"actions_sha256":pins[4].digest(),
+        }))?,
+    )?;
+    Ok(())
+}
+
+fn run_native_upload_cases(config: &UploadNativeInputs<'_>, rows: &[Value]) -> Result<Vec<Value>> {
     let mut direct_rows = Vec::new();
+    let mut runner = NativeRunner;
     let direct_output = config.output.join("direct-native");
     fs::create_dir(&direct_output)?;
     for (name, row) in MODES.iter().zip(&rows) {
@@ -358,16 +399,82 @@ pub fn admit_upload_corpus(config: &UploadCorpusConfig<'_>) -> Result<()> {
             return Err(format!("Rust-driven recovery upload mismatch: {name}").into());
         }
     }
-    for pin in &pins {
+    Ok(direct_rows)
+}
+
+/// Replays all 16 CLI upload modes and three HTTP actions with fresh native
+/// processes, checking full response and recipient requests against the
+/// immutable source-only projection. No Python controller runs in this path.
+pub fn run_upload_frozen(
+    config: &UploadFrozenConfig<'_>,
+    load_original: impl Fn(&str) -> Result<Value>,
+) -> Result<()> {
+    fs::create_dir(config.output)?;
+    let source = Pin::open(config.source_server, 4 * 1024 * 1024)?;
+    let candidate = Pin::open(config.candidate, 256 * 1024 * 1024)?;
+    let actions = Pin::open(config.actions_binary, 256 * 1024 * 1024)?;
+    let child = Pin::open(config.process_child, 256 * 1024 * 1024)?;
+    let rows = load_original("projected-source/upload/comparisons.json")?;
+    let rows = rows
+        .as_array()
+        .ok_or("frozen upload source scenarios absent")?;
+    let http = load_original("projected-source/upload/http/comparisons.json")?;
+    let http = http.as_array().ok_or("frozen upload HTTP actions absent")?;
+    if rows.len() != MODES.len() || http.len() != 3 {
+        return Err("frozen upload source roster changed".into());
+    }
+    for (name, row) in MODES.iter().zip(rows) {
+        if row["scenario"] != *name
+            || !row["source"].is_object()
+            || !row["source_requests"].is_array()
+            || row.get("native").is_some()
+            || row.get("native_requests").is_some()
+        {
+            return Err(format!("frozen upload source scenario changed: {name}").into());
+        }
+    }
+    for (name, row) in ["success", "partial", "all-failed"].iter().zip(http) {
+        if row["scenario"] != *name
+            || !row["source"].is_object()
+            || !row["source_requests"].is_array()
+            || row.get("native").is_some()
+            || row.get("native_requests").is_some()
+        {
+            return Err(format!("frozen upload HTTP source changed: {name}").into());
+        }
+    }
+    let inputs = UploadNativeInputs {
+        repository: config.repository,
+        candidate: config.candidate,
+        actions_binary: config.actions_binary,
+        process_child: config.process_child,
+        output: config.output,
+    };
+    let direct_actions = config.output.join("direct-http-actions");
+    fs::create_dir(&direct_actions)?;
+    let mut action_rows = Vec::with_capacity(http.len());
+    for (name, row) in ["success", "partial", "all-failed"].iter().zip(http) {
+        action_rows.push(run_http_action(
+            &inputs,
+            row,
+            name,
+            &direct_actions.join(name),
+        )?);
+        fs::write(
+            direct_actions.join("comparisons.json"),
+            serde_json::to_vec_pretty(&action_rows)?,
+        )?;
+    }
+    let direct_rows = run_native_upload_cases(&inputs, rows)?;
+    for pin in [&source, &candidate, &actions, &child] {
         pin.verify()?;
     }
     fs::write(
         config.output.join("admission.json"),
-        serde_json::to_vec_pretty(&json!({
-            "pass":true,"source_controller_required":true,"upload_modes":MODES.len(),
-        "http_action_modes":3,"rust_driven_native_modes":direct_rows.len(),"rust_driven_http_actions":action_rows.len(),"source_sha256":pins[2].digest(),
-            "candidate_sha256":pins[3].digest(),"actions_sha256":pins[4].digest(),
-        }))?,
+        serde_json::to_vec_pretty(&json!({"pass":true,"frozen_original_compared":true,
+            "upload_modes":direct_rows.len(),"http_action_modes":action_rows.len(),
+            "source_sha256":source.digest(),"candidate_sha256":candidate.digest(),
+            "actions_sha256":actions.digest(),"child_sha256":child.digest()}))?,
     )?;
     Ok(())
 }

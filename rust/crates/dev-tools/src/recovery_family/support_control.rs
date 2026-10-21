@@ -24,6 +24,15 @@ pub struct SupportPairConfig<'a> {
     pub output: &'a Path,
 }
 
+pub struct SupportFrozenConfig<'a> {
+    pub repository: &'a Path,
+    pub source_server: &'a Path,
+    pub candidate: &'a Path,
+    pub fixture_binary: &'a Path,
+    pub process_child: &'a Path,
+    pub output: &'a Path,
+}
+
 type HttpObservation = (u16, Value, Vec<u8>, Vec<(String, String)>);
 
 struct Session {
@@ -626,6 +635,154 @@ pub fn run_support_pair(config: &SupportPairConfig<'_>) -> Result<()> {
         serde_json::to_vec_pretty(
             &json!({"pass":true,"comparison":results[0],"source_sha256":source.digest(),"wrapper_sha256":wrapper.digest(),"candidate_sha256":candidate.digest(),"fixture_sha256":fixture.digest(),"child_sha256":child.digest(),"xterm_asset_sha256":xterm.digest()}),
         )?,
+    )?;
+    Ok(())
+}
+
+/// Fresh Rust-owned support session/permission effects against independent
+/// original-only observations. Source HTTP ports, session IDs and wall-clock
+/// fields remain dynamic; `exercise` checks their relationships and effects.
+pub fn run_support_frozen(
+    config: &SupportFrozenConfig<'_>,
+    load_original: impl Fn(&str) -> Result<Value>,
+) -> Result<()> {
+    fs::create_dir(config.output)?;
+    let source = Pin::open(config.source_server, 4 * 1024 * 1024)?;
+    let candidate = Pin::open(config.candidate, 256 * 1024 * 1024)?;
+    let fixture = Pin::open(config.fixture_binary, 256 * 1024 * 1024)?;
+    let child = Pin::open(config.process_child, 256 * 1024 * 1024)?;
+    let xterm = Pin::open(
+        &config
+            .repository
+            .join("openpilot/selfdrive/carrot/web/js/vendor/xterm.js"),
+        4 * 1024 * 1024,
+    )?;
+    let original_result = load_original("support/source/result.json")?;
+    let original_static = load_original("support/source/static.json")?;
+    let original_expiry = load_original("support/source/expiry.json")?;
+    let original_cleanup = load_original("support/source/cleanup.json")?;
+    let original_http = load_original("support/source/http.json")?;
+    let original_wire = load_original("support/source/wire.json")?;
+    let original_webhooks = load_original("support/source/webhooks.json")?;
+    let original_proof = load_original("support/source/source-proof.json")?;
+    if original_proof["sha256"].as_str() != Some(source.digest())
+        || original_cleanup["exit"] != 0
+        || original_result
+            .as_object()
+            .is_none_or(|row| row.len() != 13)
+        || original_static
+            .as_array()
+            .is_none_or(|rows| rows.len() != 2)
+        || original_http.as_array().is_none_or(|rows| rows.len() != 14)
+        || original_wire.as_array().is_none_or(|rows| rows.len() != 98)
+        || original_webhooks
+            .as_array()
+            .is_none_or(|rows| rows.len() != 2)
+        || original_expiry["expired_file_exists"] != false
+        || !original_expiry["seconds"]
+            .as_f64()
+            .is_some_and(|seconds| (14.0..=18.0).contains(&seconds))
+    {
+        return Err("frozen original support observation changed".into());
+    }
+    let directory = config.output.join("native");
+    fs::create_dir(&directory)?;
+    let shell = directory.join("fixture-shell");
+    fs::write(&shell, "#!/bin/sh\nexec /bin/bash --noprofile --norc -i\n")?;
+    fs::set_permissions(&shell, fs::Permissions::from_mode(0o700))?;
+    let alias = directory.join("fixture-params/alias");
+    fs::create_dir_all(&alias)?;
+    symlink("alias", directory.join("fixture-params/d"))?;
+    for (name, value) in [
+        ("CarName", "owned-support-car"),
+        ("DongleId", "owned-support-id"),
+        ("HardwareSerial", "owned-support-serial"),
+    ] {
+        fs::write(alias.join(name), value)?;
+    }
+    let web = directory.join("openpilot/selfdrive/carrot/web");
+    fs::create_dir_all(web.parent().ok_or("missing support web parent")?)?;
+    symlink(
+        config.repository.join("openpilot/selfdrive/carrot/web"),
+        &web,
+    )?;
+    let webhook = ScriptedHttpPeer::start(vec![Reply::empty(204), Reply::empty(204)])?;
+    let port = TcpListener::bind(("127.0.0.1", 0))?.local_addr()?.port();
+    let argv = [
+        OsString::from(config.fixture_binary),
+        OsString::from(&directory),
+        OsString::from(directory.join("tmux.log")),
+        OsString::from(config.process_child),
+        port.to_string().into(),
+    ];
+    let environment = [
+        (OsString::from("OPENPILOT_ROOT"), OsString::from(&directory)),
+        (
+            OsString::from("CARROT_DATA_DIR"),
+            OsString::from(directory.join("fixture-data")),
+        ),
+        (OsString::from("USER"), OsString::from("comma")),
+        (OsString::from("SHELL"), OsString::from(&shell)),
+        (OsString::from("PS1"), OsString::from("OWNED> ")),
+        (OsString::from("PS2"), OsString::from("CONT> ")),
+        (
+            OsString::from("CARROT_SUPPORT_FAKE_TUNNEL_URL"),
+            OsString::from("https://owned-support.invalid"),
+        ),
+        (
+            OsString::from("CARROT_SUPPORT_DISCORD_WEBHOOK_URL"),
+            OsString::from(format!("http://127.0.0.1:{}/owned-webhook", webhook.port())),
+        ),
+        (
+            OsString::from("CARROT_SUPPORT_DISCORD_WEBHOOK_DISABLE"),
+            OsString::from("0"),
+        ),
+    ];
+    let mut server = OwnedServer::spawn(
+        &argv,
+        config.repository,
+        &directory.join("process.log"),
+        &environment,
+        &[],
+        false,
+    )?;
+    let comparison = (|| -> Result<Value> {
+        HttpPeer::new(port, Duration::from_secs(2))
+            .wait_ready("/api/support_terminal/status", Duration::from_secs(5))?;
+        exercise(port, &directory, &webhook)
+    })();
+    let stop = server.signal(Signal::TERM);
+    let exit = server.finish(Duration::from_secs(8));
+    fs::write(
+        directory.join("cleanup.json"),
+        serde_json::to_vec_pretty(&json!({"stop":stop.is_ok(),"exit":exit.as_ref().ok(),
+            "webhook_requests":webhook.requests()?.len()}))?,
+    )?;
+    let actual = comparison?;
+    stop?;
+    check(
+        exit? == 0 && webhook.pending_replies()? == 0 && webhook.requests()?.len() == 2,
+        "native support fixture cleanup failed",
+    )?;
+    let native_expiry: Value = serde_json::from_slice(&fs::read(directory.join("expiry.json"))?)?;
+    check(
+        original_result == actual["scenarios"]
+            && original_static == actual["static"]
+            && native_expiry["expired_file_exists"] == false
+            && native_expiry["seconds"]
+                .as_f64()
+                .is_some_and(|seconds| (14.0..=18.0).contains(&seconds)),
+        "frozen original/native support scenario mismatch",
+    )?;
+    for pin in [&source, &candidate, &fixture, &child, &xterm] {
+        pin.verify()?;
+    }
+    fs::write(
+        config.output.join("result.json"),
+        serde_json::to_vec_pretty(&json!({"pass":true,"comparison":actual,
+            "frozen_original_compared":true,"source_sha256":source.digest(),
+            "candidate_sha256":candidate.digest(),"fixture_sha256":fixture.digest(),
+            "child_sha256":child.digest(),"xterm_asset_sha256":xterm.digest()}))?,
     )?;
     Ok(())
 }

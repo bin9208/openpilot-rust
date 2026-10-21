@@ -78,6 +78,23 @@ fn output_with_pid(
 /// strict side. The original source-race observation continues in the old
 /// controller until a fresh independent capture is sealed.
 pub fn run_terminal_lifecycle(config: &TerminalLifecycleConfig<'_>) -> Result<()> {
+    run_terminal_lifecycle_inner(config, None)
+}
+
+/// Compare the fresh native reset and cleanup effects with immutable original
+/// observations. Process IDs are required to be distinct within each run,
+/// rather than copied from the historical host.
+pub fn run_terminal_lifecycle_frozen(
+    config: &TerminalLifecycleConfig<'_>,
+    load_original: impl Fn(&str) -> Result<Value>,
+) -> Result<()> {
+    run_terminal_lifecycle_inner(config, Some(&load_original))
+}
+
+fn run_terminal_lifecycle_inner(
+    config: &TerminalLifecycleConfig<'_>,
+    load_original: Option<&dyn Fn(&str) -> Result<Value>>,
+) -> Result<()> {
     fs::create_dir(config.output)?;
     let candidate = Pin::open(config.candidate, 256 * 1024 * 1024)?;
     let shell = config.output.join("fixture-shell");
@@ -244,11 +261,55 @@ pub fn run_terminal_lifecycle(config: &TerminalLifecycleConfig<'_>) -> Result<()
     {
         return Err("native lifecycle server or descendant cleanup failed".into());
     }
+    if let Some(load) = load_original {
+        let original = load("lifecycle/source/result.json")?;
+        let original_rounds = original["reset_rounds"]
+            .as_array()
+            .ok_or("original lifecycle reset rounds absent")?;
+        let native_rows: Value =
+            serde_json::from_slice(&fs::read(config.output.join("rounds.json"))?)?;
+        let native_rounds = native_rows
+            .as_array()
+            .ok_or("native lifecycle reset rounds absent")?;
+        if original_rounds.len() != 24
+            || native_rounds.len() != 24
+            || original["source_race_observed"] != false
+        {
+            return Err("original/native lifecycle roster changed".into());
+        }
+        let mut original_pids = std::collections::BTreeSet::new();
+        let mut native_pids = std::collections::BTreeSet::new();
+        for (index, (source, native)) in original_rounds.iter().zip(native_rounds).enumerate() {
+            let source_pid = source["pid"].as_u64().ok_or("original reset PID absent")?;
+            let native_pid = native["pid"].as_u64().ok_or("native reset PID absent")?;
+            if source["round"].as_u64() != Some(index as u64)
+                || native["round"].as_u64() != Some(index as u64)
+                || source["command_completed"] != true
+                || native["command_completed"] != true
+                || source_pid == 0
+                || native_pid == 0
+                || !original_pids.insert(source_pid)
+                || !native_pids.insert(native_pid)
+            {
+                return Err(format!("lifecycle reset relation changed: {index}").into());
+            }
+        }
+        let source_cleanup = load("lifecycle/source/cleanup.json")?;
+        if source_cleanup["exit_code"] != 0
+            || source_cleanup["source_fixture_leftovers_removed"] != json!([])
+        {
+            return Err("original lifecycle cleanup changed".into());
+        }
+        let source_wire = load("lifecycle/source/wire.json")?;
+        if source_wire.as_array().is_none_or(|rows| rows.len() != 156) {
+            return Err("original lifecycle wire roster changed".into());
+        }
+    }
     candidate.verify()?;
     fs::write(
         config.output.join("result.json"),
         serde_json::to_vec_pretty(
-            &json!({"pass":true,"native_24_reset_rounds":pids.len()==24,"native_active_peer_closed_before_replacement":true,"native_leader_and_two_level_descendant_cleanup":true,"native_server_shutdown_cleanup":true,"candidate_sha256":candidate.digest(),"source_race_observation":"unchanged original controller remains mandatory"}),
+            &json!({"pass":true,"native_24_reset_rounds":pids.len()==24,"native_active_peer_closed_before_replacement":true,"native_leader_and_two_level_descendant_cleanup":true,"native_server_shutdown_cleanup":true,"candidate_sha256":candidate.digest(),"frozen_original_compared":load_original.is_some(),"source_race_observation":"historical source-only observation; not native success expectation"}),
         )?,
     )?;
     Ok(())
