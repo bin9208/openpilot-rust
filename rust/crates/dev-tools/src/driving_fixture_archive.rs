@@ -6,12 +6,13 @@ use sha2::{Digest, Sha256};
 use std::{
     collections::BTreeMap,
     fs::{self, File},
-    io::{Read, Seek, SeekFrom, Write},
+    io::{Cursor, Read, Seek, SeekFrom, Write},
     os::unix::fs::MetadataExt,
     path::{Component, Path, PathBuf},
 };
 const MAX_PACKED: u64 = 512 * 1024 * 1024;
 const MAX_UNPACKED: u64 = 2 * 1024 * 1024 * 1024;
+const XZ_MEMORY_LIMIT: u64 = 320 * 1024 * 1024;
 pub const MANIFEST_SHA256: &str =
     "afe1c795d7f609801eb4cd5a5a7748c3c996929403a3c0fa102f232f2a8d248d";
 pub const SOURCE_COMMIT: &str = "e25a14386582858dae25c6daca5ced3bfb4bacab";
@@ -60,7 +61,7 @@ fn generate_images(
                 .as_u64()
                 .ok_or("missing frozen image size")?
                 .try_into()?;
-            if size == 0 || size > 8 * 1024 * 1024 || size % 8 != 0 {
+            if size == 0 || size > 8 * 1024 * 1024 || !size.is_multiple_of(8) {
                 return Err("frozen image size outside generator bounds".into());
             }
             let count = if mode == "dual" { 12 } else { 4 };
@@ -133,8 +134,21 @@ fn generate_images(
     }
     Ok(generated)
 }
+fn decoder<'a>(mut reader: impl Read + 'a) -> Result<Box<dyn Read + 'a>> {
+    let mut magic = [0u8; 6];
+    reader.read_exact(&mut magic)?;
+    let input = Cursor::new(magic).chain(reader);
+    if magic.starts_with(&[0x1f, 0x8b, 0x08]) {
+        Ok(Box::new(GzDecoder::new(input)))
+    } else if magic == [0xfd, b'7', b'z', b'X', b'Z', 0x00] {
+        let stream = xz2::stream::Stream::new_stream_decoder(XZ_MEMORY_LIMIT, 0)?;
+        Ok(Box::new(xz2::read::XzDecoder::new_stream(input, stream)))
+    } else {
+        Err("driving archive must have gzip or XZ magic".into())
+    }
+}
 fn extract(reader: impl Read, output: &Path, compact_images: bool) -> Result<Vec<Value>> {
-    let bounded = GzDecoder::new(reader).take(MAX_UNPACKED + 1);
+    let bounded = decoder(reader)?.take(MAX_UNPACKED + 1);
     let mut archive = tar::Archive::new(bounded);
     let mut actual = BTreeMap::new();
     let mut total = 0u64;
@@ -194,7 +208,7 @@ fn extract(reader: impl Read, output: &Path, compact_images: bool) -> Result<Vec
     let mut remaining = archive.into_inner();
     std::io::copy(&mut remaining, &mut std::io::sink())?;
     if remaining.limit() == 0 {
-        return Err("driving fixture gzip expansion exceeds bound".into());
+        return Err("driving fixture archive expansion exceeds bound".into());
     }
     let pin = actual
         .remove("fixture.json")
@@ -383,12 +397,43 @@ mod tests {
             vec![("fixture.json", tar::EntryType::Regular, b"{}".as_slice())],
             vec![],
         ] {
+            let gzip = packed(&members);
+            let mut tar = Vec::new();
+            GzDecoder::new(gzip.as_slice())
+                .read_to_end(&mut tar)
+                .unwrap();
+            let mut encoder = xz2::write::XzEncoder::new(Vec::new(), 1);
+            encoder.write_all(&tar).unwrap();
+            let xz = encoder.finish().unwrap();
+            for bytes in [gzip, xz] {
+                let temp = tempfile::tempdir().unwrap();
+                assert!(
+                    extract(bytes.as_slice(), temp.path(), false).is_err(),
+                    "{members:?}"
+                );
+                assert!(!temp.path().parent().unwrap().join("escape").exists());
+            }
+        }
+    }
+    #[test]
+    fn rejects_unknown_malformed_and_truncated_compression() {
+        for bytes in [
+            b"unknown".as_slice(),
+            b"\x1f\x8b\x08\0\0\0",
+            b"\xfd7zXZ\0",
+            b"\x1f\x8b",
+            b"",
+        ] {
             let temp = tempfile::tempdir().unwrap();
-            assert!(
-                extract(packed(&members).as_slice(), temp.path(), false).is_err(),
-                "{members:?}"
-            );
-            assert!(!temp.path().parent().unwrap().join("escape").exists());
+            assert!(extract(bytes, temp.path(), false).is_err());
+        }
+        for bytes in [packed(&[]), {
+            let mut encoder = xz2::write::XzEncoder::new(Vec::new(), 1);
+            encoder.write_all(&[0u8; 1024]).unwrap();
+            encoder.finish().unwrap()
+        }] {
+            let temp = tempfile::tempdir().unwrap();
+            assert!(extract(&bytes[..bytes.len() / 2], temp.path(), false).is_err());
         }
     }
     #[test]

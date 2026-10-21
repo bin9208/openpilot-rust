@@ -2,7 +2,8 @@
 #[path = "support/driving_cli.rs"]
 mod cli;
 use openpilot_dev_tools::{
-    driving_daemon_check::source_policy::RETIRED, driving_daemon_reference::fixture::Fixture,
+    driving_daemon_check::source_policy::RETIRED,
+    driving_daemon_reference::{fixture::Fixture, Original},
 };
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -14,7 +15,7 @@ use std::{
     io::Read,
     os::unix::{
         ffi::OsStrExt,
-        fs::{symlink, MetadataExt},
+        fs::{symlink, FileExt, MetadataExt},
     },
     path::{Path, PathBuf},
     process::Command,
@@ -188,6 +189,395 @@ impl Held {
 fn arg(args: &mut Vec<OsString>, key: &str, value: &Path) {
     args.extend([key.into(), value.as_os_str().to_owned()]);
 }
+const EXPORTER_SOURCES: [&str; 14] = [
+    "rust/tools/build_model_pipelines.py",
+    "rust/tools/model_export/__init__.py",
+    "rust/tools/model_export/binding_order.py",
+    "rust/tools/model_export/buffers.py",
+    "rust/tools/model_export/capture.py",
+    "rust/tools/model_export/compile.py",
+    "rust/tools/model_export/native.py",
+    "rust/tools/model_export/original.py",
+    "rust/tools/model_export/pipeline.py",
+    "rust/tools/model_export/publish.py",
+    "rust/tools/model_export/qcom.py",
+    "rust/tools/model_export/schema.py",
+    "tinygrad_repo/tinygrad/runtime/ops_cpu.py",
+    "tinygrad_repo/tinygrad/runtime/support/compiler_cpu.py",
+];
+// CPU frequency, uptime and process IDs are deliberately not provider identity.
+fn cpu_identity(text: &str) -> Value {
+    let mut profiles = Vec::new();
+    for section in text.split("\n\n") {
+        let fields = section
+            .lines()
+            .filter_map(|line| line.split_once(':'))
+            .map(|(key, value)| (key.trim(), value.trim()))
+            .collect::<BTreeMap<_, _>>();
+        if let (Some(model), Some(flags)) = (fields.get("model name"), fields.get("flags")) {
+            let mut flags = flags.split_whitespace().collect::<Vec<_>>();
+            flags.sort_unstable();
+            flags.dedup();
+            let profile = json!({"model_name":model,"flags":flags});
+            if !profiles.contains(&profile) {
+                profiles.push(profile);
+            }
+        }
+    }
+    assert!(!profiles.is_empty(), "current CPU identity missing");
+    json!(profiles)
+}
+struct DataSeal {
+    path: PathBuf,
+    file: File,
+    identity: (u64, u64, u64, i64, i64, i64, i64),
+    pin: Value,
+}
+impl DataSeal {
+    fn digest(file: &File, length: u64) -> String {
+        let mut hash = Sha256::new();
+        let mut chunk = [0; 65536];
+        let mut offset = 0;
+        loop {
+            let n = file.read_at(&mut chunk, offset).unwrap();
+            if n == 0 {
+                break;
+            }
+            hash.update(&chunk[..n]);
+            offset += n as u64;
+            assert!(offset <= length, "held input grew during hashing");
+        }
+        assert_eq!(offset, length, "held input was truncated");
+        format!("{:x}", hash.finalize())
+    }
+    fn open(path: &Path, limit: u64) -> Self {
+        let fd = rustix::fs::open(
+            path,
+            rustix::fs::OFlags::RDONLY
+                | rustix::fs::OFlags::NOFOLLOW
+                | rustix::fs::OFlags::NONBLOCK
+                | rustix::fs::OFlags::CLOEXEC,
+            rustix::fs::Mode::empty(),
+        )
+        .unwrap();
+        let file = File::from(fd);
+        let meta = file.metadata().unwrap();
+        assert!(meta.is_file() && meta.len() <= limit);
+        let pin = json!({"bytes":meta.len(),"sha256":Self::digest(&file,meta.len())});
+        let value = Self {
+            path: path.into(),
+            file,
+            identity: Self::identity(&meta),
+            pin,
+        };
+        value.verify();
+        value
+    }
+    fn identity(meta: &fs::Metadata) -> (u64, u64, u64, i64, i64, i64, i64) {
+        (
+            meta.dev(),
+            meta.ino(),
+            meta.len(),
+            meta.mtime(),
+            meta.mtime_nsec(),
+            meta.ctime(),
+            meta.ctime_nsec(),
+        )
+    }
+    fn verify(&self) {
+        let named = fs::symlink_metadata(&self.path).unwrap();
+        assert!(named.is_file() && !named.file_type().is_symlink());
+        assert_eq!(Self::identity(&named), self.identity);
+        assert_eq!(
+            Self::identity(&self.file.metadata().unwrap()),
+            self.identity
+        );
+        assert_eq!(
+            Self::digest(&self.file, self.identity.2),
+            self.pin["sha256"].as_str().unwrap()
+        );
+        assert_eq!(
+            Self::identity(&self.file.metadata().unwrap()),
+            self.identity
+        );
+        assert_eq!(
+            Self::identity(&fs::symlink_metadata(&self.path).unwrap()),
+            self.identity
+        );
+    }
+}
+struct CurrentCatalog {
+    root: PathBuf,
+    root_identity: (u64, u64),
+    receipt: DataSeal,
+    value: Value,
+    inputs: Vec<DataSeal>,
+    catalog: BTreeMap<String, DataSeal>,
+}
+impl CurrentCatalog {
+    fn open(repo: &Path, fixture: &Fixture) -> Self {
+        fixture.verify().unwrap();
+        let requested = required("DRIVING_CURRENT_CATALOG");
+        let root = requested.canonicalize().unwrap();
+        assert_eq!(
+            requested, root,
+            "current catalog must name its actual absolute directory"
+        );
+        let historical = required("DRIVING_FIXTURE_DIRECTORY")
+            .canonicalize()
+            .unwrap();
+        assert!(
+            !root.starts_with(&historical),
+            "current executable catalog must be separate from historical fixture"
+        );
+        let receipt = DataSeal::open(&required("DRIVING_CURRENT_CATALOG_RECEIPT"), 2_000_000);
+        assert!(!receipt.path.starts_with(&historical) && !receipt.path.starts_with(&root));
+        let value: Value = serde_json::from_slice(&fs::read(&receipt.path).unwrap()).unwrap();
+        assert_eq!(value["version"], 1);
+        assert_eq!(value["provider"], "CPU:LLVM");
+        assert_eq!(value["source_commit"], env::var("EXPECTED_SOURCE").unwrap());
+        assert_eq!(
+            value["historical_fixture_manifest_sha256"],
+            env::var("DRIVING_FIXTURE_MANIFEST_SHA256").unwrap()
+        );
+        let manifest: Value =
+            serde_json::from_slice(&fs::read(historical.join("fixture.json")).unwrap()).unwrap();
+        assert_eq!(
+            value["historical_catalog_generation"],
+            manifest["catalog_generation"]
+        );
+        let mut inputs = Vec::new();
+        let models = value["models"].as_object().unwrap();
+        assert_eq!(models.len(), 5);
+        for name in [
+            "driving_tinygrad.pkl",
+            "dmonitoring_model_tinygrad.pkl",
+            "dmonitoring_model_metadata.pkl",
+            "dm_warp_1344x760_tinygrad.pkl",
+            "dm_warp_1928x1208_tinygrad.pkl",
+        ] {
+            let relative = format!("models/{name}");
+            let seal = DataSeal::open(&historical.join(&relative), 512 * 1024 * 1024);
+            assert_eq!(models.get(name).unwrap(), &seal.pin);
+            assert_eq!(manifest["files"][&relative], seal.pin);
+            inputs.push(seal);
+        }
+        let sources = value["exporter_sources"].as_object().unwrap();
+        assert_eq!(sources.len(), EXPORTER_SOURCES.len());
+        for relative in EXPORTER_SOURCES {
+            let seal = DataSeal::open(&repo.join(relative), 4_000_000);
+            assert_eq!(sources.get(relative).unwrap(), &seal.pin);
+            inputs.push(seal);
+        }
+        let lock = DataSeal::open(&repo.join("uv.lock"), 4_000_000);
+        assert_eq!(value["lock"], lock.pin);
+        inputs.push(lock);
+        let library = PathBuf::from(env::var_os("LLVM_PATH").expect("explicit LLVM_PATH required"))
+            .canonicalize()
+            .unwrap();
+        assert_eq!(
+            value["llvm"]["library_path"].as_str().unwrap(),
+            library.to_str().unwrap()
+        );
+        let seal = DataSeal::open(&library, 512 * 1024 * 1024);
+        assert_eq!(value["llvm"]["library"], seal.pin);
+        inputs.push(seal);
+        let mut catalog = BTreeMap::new();
+        fn visit(root: &Path, dir: &Path, out: &mut BTreeMap<String, DataSeal>, total: &mut u64) {
+            for entry in fs::read_dir(dir).unwrap() {
+                let entry = entry.unwrap();
+                let kind = entry.file_type().unwrap();
+                assert!(!kind.is_symlink());
+                if kind.is_dir() {
+                    visit(root, &entry.path(), out, total)
+                } else {
+                    assert!(kind.is_file());
+                    let seal = DataSeal::open(&entry.path(), 512 * 1024 * 1024);
+                    *total = total.checked_add(seal.identity.2).unwrap();
+                    assert!(*total <= 2 * 1024 * 1024 * 1024 && out.len() < 2000);
+                    out.insert(
+                        entry
+                            .path()
+                            .strip_prefix(root)
+                            .unwrap()
+                            .to_str()
+                            .unwrap()
+                            .into(),
+                        seal,
+                    );
+                }
+            }
+        }
+        visit(&root, &root, &mut catalog, &mut 0);
+        let pins = catalog
+            .iter()
+            .map(|(name, seal)| (name.clone(), seal.pin.clone()))
+            .collect::<BTreeMap<_, _>>();
+        assert_eq!(value["catalog_files"], json!(pins));
+        let pointer: Value =
+            serde_json::from_slice(&fs::read(root.join("current.json")).unwrap()).unwrap();
+        assert_eq!(value["catalog_generation"], pointer["generation"]);
+        let generation = pointer["generation"].as_str().unwrap();
+        assert!(generation.len() == 64 && generation.bytes().all(|b| b.is_ascii_hexdigit()));
+        assert_eq!(sha(&root.join(generation).join("index.json")), generation);
+        let index: Value =
+            serde_json::from_slice(&fs::read(root.join(generation).join("index.json")).unwrap())
+                .unwrap();
+        let bundles = index["bundles"].as_array().unwrap();
+        assert_eq!(
+            bundles.len(),
+            4,
+            "current full catalog requires both families and cameras"
+        );
+        for camera in [[1344, 760], [1928, 1208]] {
+            for kind in ["driving", "driver"] {
+                let matched = bundles
+                    .iter()
+                    .filter(|b| b["kind"] == kind && b["camera"] == json!(camera))
+                    .collect::<Vec<_>>();
+                assert_eq!(matched.len(), 1);
+                let directory = format!("{kind}-{}x{}", camera[0], camera[1]);
+                assert_eq!(matched[0]["directory"], directory);
+                let bundle = root.join(generation).join(&directory);
+                assert_eq!(
+                    matched[0]["pipeline_sha256"],
+                    sha(&bundle.join("pipeline.json"))
+                );
+                assert_eq!(matched[0]["graph_sha256"], sha(&bundle.join("graph.json")));
+                let graph: Value =
+                    serde_json::from_slice(&fs::read(bundle.join("graph.json")).unwrap()).unwrap();
+                assert_eq!(graph["backend"], "cpu-llvm");
+                assert_eq!(graph["arch"], std::env::consts::ARCH);
+                let descriptor: Value = serde_json::from_slice(
+                    &fs::read(root.join(generation).join(&directory).join("pipeline.json"))
+                        .unwrap(),
+                )
+                .unwrap();
+                assert_eq!(descriptor["kind"], kind);
+                assert_eq!(descriptor["camera"], json!(camera));
+                let expected = if kind == "driving" {
+                    json!({"driving":value["models"]["driving_tinygrad.pkl"]["sha256"]})
+                } else {
+                    json!({"model":value["models"]["dmonitoring_model_tinygrad.pkl"]["sha256"],"metadata":value["models"]["dmonitoring_model_metadata.pkl"]["sha256"],"warp":value["models"][format!("dm_warp_{}x{}_tinygrad.pkl",camera[0],camera[1])]["sha256"]})
+                };
+                assert_eq!(descriptor["sources"], expected);
+            }
+        }
+        let meta = fs::symlink_metadata(&root).unwrap();
+        let result = Self {
+            root,
+            root_identity: (meta.dev(), meta.ino()),
+            receipt,
+            value,
+            inputs,
+            catalog,
+        };
+        // The native controller still independently performs model_source::verify
+        // and whole-catalog held validation during each actual invocation.
+        let original = Original::open(
+            &fixture.original_directory(),
+            fixture.original_manifest_sha256(),
+        )
+        .unwrap();
+        assert_eq!(
+            original.manifest()["model"]["sha256"],
+            result.value["models"]["driving_tinygrad.pkl"]["sha256"]
+        );
+        original.verify().unwrap();
+        result.verify();
+        result
+    }
+    fn verify(&self) {
+        self.receipt.verify();
+        assert_eq!(
+            self.value["host_cpu"],
+            cpu_identity(&fs::read_to_string("/proc/cpuinfo").unwrap())
+        );
+        let version = Command::new("dpkg-query")
+            .args(["-W", "-f=${Version}", "libllvm18"])
+            .output()
+            .unwrap();
+        assert!(version.status.success());
+        assert_eq!(
+            self.value["llvm"]["package_version"],
+            String::from_utf8(version.stdout).unwrap()
+        );
+        for seal in &self.inputs {
+            seal.verify();
+        }
+        let meta = fs::symlink_metadata(&self.root).unwrap();
+        assert!(meta.is_dir() && !meta.file_type().is_symlink());
+        assert_eq!((meta.dev(), meta.ino()), self.root_identity);
+        // CatalogBinding handles active invocations; compare complete receipt
+        // membership again at boundaries so insertion is also rejected.
+        fn names(root: &Path, dir: &Path, out: &mut Vec<String>) {
+            for entry in fs::read_dir(dir).unwrap() {
+                let entry = entry.unwrap();
+                let kind = entry.file_type().unwrap();
+                assert!(!kind.is_symlink());
+                if kind.is_dir() {
+                    names(root, &entry.path(), out)
+                } else {
+                    assert!(kind.is_file());
+                    assert!(out.len() < 2000);
+                    out.push(
+                        entry
+                            .path()
+                            .strip_prefix(root)
+                            .unwrap()
+                            .to_str()
+                            .unwrap()
+                            .into(),
+                    );
+                }
+            }
+        }
+        let mut current = Vec::new();
+        names(&self.root, &self.root, &mut current);
+        current.sort();
+        assert_eq!(current, self.catalog.keys().cloned().collect::<Vec<_>>());
+        for seal in self.catalog.values() {
+            seal.verify();
+        }
+    }
+    fn evidence(&self) -> Value {
+        json!({"receipt_sha256":self.receipt.pin["sha256"],"historical_fixture_manifest_sha256":self.value["historical_fixture_manifest_sha256"],"historical_catalog_generation":self.value["historical_catalog_generation"],"current_catalog_generation":self.value["catalog_generation"],"provider":self.value["provider"],"host_cpu":self.value["host_cpu"],"llvm":self.value["llvm"],"metadata_projection_excludes":["CPU frequency","uptime","process IDs"],"v4l_provider":"synthetic sealed NV12 via original VisionIPC peer; no device"})
+    }
+}
+
+#[test]
+fn current_host_receipt_ignores_cpu_frequency_but_rejects_a_different_isa() {
+    let host = "model name : Example CPU\nflags : avx2 sse2\ncpu MHz : 1000\n";
+    assert_eq!(
+        cpu_identity(host),
+        cpu_identity(&host.replace("1000", "2000"))
+    );
+    assert_ne!(
+        cpu_identity(host),
+        cpu_identity(&host.replace("avx2 sse2", "avx512f avx2 sse2"))
+    );
+    assert!(std::panic::catch_unwind(|| cpu_identity("model name : missing flags")).is_err());
+}
+
+#[test]
+fn held_current_receipt_rejects_mutation_and_identical_foreign_replacement() {
+    let root = tempfile::tempdir().unwrap();
+    let path = root.path().join("receipt.json");
+    fs::write(&path, b"sealed").unwrap();
+    let seal = DataSeal::open(&path, 64);
+    seal.verify();
+    fs::write(&path, b"changed").unwrap();
+    assert!(std::panic::catch_unwind(|| seal.verify()).is_err());
+    fs::write(&path, b"sealed").unwrap();
+    let seal = DataSeal::open(&path, 64);
+    let replacement = root.path().join("foreign");
+    fs::write(&replacement, b"sealed").unwrap();
+    fs::rename(replacement, &path).unwrap();
+    assert!(std::panic::catch_unwind(|| seal.verify()).is_err());
+    fs::remove_file(&path).unwrap();
+    symlink("missing", &path).unwrap();
+    assert!(std::panic::catch_unwind(|| DataSeal::open(&path, 64)).is_err());
+}
 fn base(fixture: &Fixture, root: &Path, policy: &str, output: &Path) -> Vec<OsString> {
     let mut args = vec![
         "--source-policy".into(),
@@ -196,7 +586,7 @@ fn base(fixture: &Fixture, root: &Path, policy: &str, output: &Path) -> Vec<OsSt
         fixture.original_manifest_sha256().into(),
     ];
     for (key, path) in [
-        ("--catalog", fixture.catalog()),
+        ("--catalog", required("DRIVING_CURRENT_CATALOG")),
         ("--original-dir", fixture.original_directory()),
         ("--root", root.to_owned()),
         ("--output", output.to_owned()),
@@ -283,6 +673,7 @@ fn same_elf_complete_fixture_survives_all_retired_python_absences() {
     )
     .unwrap();
     let source = env::var("EXPECTED_SOURCE").unwrap();
+    let current_catalog = CurrentCatalog::open(&repo, &fixture);
     let checkout = Command::new("git")
         .args(["-C"])
         .arg(&repo)
@@ -356,6 +747,12 @@ fn same_elf_complete_fixture_survives_all_retired_python_absences() {
         ),
         ("private", &private, "retired-driving"),
     ] {
+        current_catalog.verify();
+        fs::write(
+            evidence.join(format!("{name}-current-catalog.json")),
+            serde_json::to_vec_pretty(&current_catalog.evidence()).unwrap(),
+        )
+        .unwrap();
         let mut pair = Vec::new();
         for (logging, suffix) in [(false, "model"), (true, "collector")] {
             let out = evidence.join(format!("{name}-{suffix}"));
@@ -382,6 +779,7 @@ fn same_elf_complete_fixture_survives_all_retired_python_absences() {
             );
             pair.push(stable(&report, &out));
             fixture.verify().unwrap();
+            current_catalog.verify();
         }
         let out = evidence.join(format!("{name}-fault"));
         let mut args = base(&fixture, root, policy, &out);
@@ -403,6 +801,7 @@ fn same_elf_complete_fixture_survives_all_retired_python_absences() {
         pair.push(json!({"source":report["source"],"modes":report["native"].as_array().unwrap().iter().map(|r|r["mode"].clone()).collect::<Vec<_>>(),"ordinary_exit":report["ordinary_exit"]}));
         comparisons.push(pair);
         fixture.verify().unwrap();
+        current_catalog.verify();
         for (path, seal) in &seals {
             seal.verify(path);
         }
@@ -415,12 +814,13 @@ fn same_elf_complete_fixture_survives_all_retired_python_absences() {
     assert_eq!(rejected, RETIRED.len() * 2);
     absent(&private);
     fixture.verify().unwrap();
+    current_catalog.verify();
     for (path, seal) in &seals {
         seal.verify(path);
     }
     assert_eq!(snapshot(&private), files);
     assert_eq!(snapshot(&repo), files);
-    fs::write(evidence.join("summary.json"),serde_json::to_vec_pretty(&json!({"passed":true,"source":source,"same_elf":seals.iter().map(|(p,s)|(p.display().to_string(),s.digest.clone())).collect::<BTreeMap<_,_>>(),"lanes":2,"model_publications_per_lane":114,"collector_publications_per_lane":114,"linked_fault_modes_per_lane":2,"reappearance_failures":rejected,"python_sources_restored":false})).unwrap()).unwrap();
+    fs::write(evidence.join("summary.json"),serde_json::to_vec_pretty(&json!({"passed":true,"source":source,"current_catalog":current_catalog.evidence(),"same_elf":seals.iter().map(|(p,s)|(p.display().to_string(),s.digest.clone())).collect::<BTreeMap<_,_>>(),"lanes":2,"model_publications_per_lane":114,"collector_publications_per_lane":114,"linked_fault_modes_per_lane":2,"reappearance_failures":rejected,"python_sources_restored":false})).unwrap()).unwrap();
 }
 
 #[test]
