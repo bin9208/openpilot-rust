@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 480);
+    assert_eq!(text.matches(marker).count(), 484);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -328,6 +328,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut calibration_estimator_retirement = vec![];
     let mut updater_controller_retirement = vec![];
     let mut dashcam_progress_allocation = vec![];
+    let mut desire_controller_retirement = vec![];
     let mut pandad_padding_controller = vec![];
     let mut pandad_padding_finalization = vec![];
     let mut pandad_device_controller = vec![];
@@ -341,6 +342,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 .iter()
                 .rev()
                 .find(|line| line.starts_with("      - name:"));
+            if step == Some(&"      - name: Verify retired desire controller against complete original corpus and CLI admissions") {
+                desire_controller_retirement.push(tail.to_owned());
+                continue;
+            }
             if step
                 == Some(
                     &"      - name: Require dashcam progress equivalence and allocation accounting",
@@ -845,6 +850,11 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     // The removed camera pip install and Cython build had 512/1024 MiB
     // guards. Native camera operations retain every required reserve.
     assert_eq!(arguments.len(), 177);
+    assert_eq!(
+        desire_controller_retirement,
+        [512, 2048, 512, 512]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
     assert_eq!(
         dashcam_progress_allocation,
         [512, 512].map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))

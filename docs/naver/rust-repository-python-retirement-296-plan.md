@@ -66,9 +66,9 @@ Interface: protocol (all five modes), USB, SPI, peripheral and runtime-fixture b
 
 Additional locally verified replacements and current failures are recorded in the
 [evidence ledger](rust-repository-python-retirement-296-evidence.md) and inventory.
-229 baseline sources are fully replaced locally, three baseline sources are
+230 baseline sources are fully replaced locally, three baseline sources are
 partially replaced because live-source helpers or unrelated Params tests remain Python,
-and 3,348 baseline sources remain pending. The added
+and 3,347 baseline sources remain pending. The added
 rust/tools/selfdrived_helpers_source.py retains those helpers; relocation is
 not retirement. Remaining families and final delivery gates stay open.
 The Bluetooth input decoder checker is now native after exact10,049-record,
@@ -418,3 +418,16 @@ updated_fixtures.py and the other pinned original dependencies remain. The
 actual-deleted-checkout run39547256419 at083f937a passed15tests/strictClippy/default
 CLI and both1,089exec audits. The whole startup-services rerun remains pending.
 Inventory229replaced-local/3partial/3348pending; entire project acceptance is open.
+
+
+### Desire complete original controller retirement (2026-10-21)
+
+Run39548303946/job119051425025 checked1de0b0d7 before removal:83lib,
+4integration, full24585-row same-ELF checkout/private-absence corpus and Clippy
+passed. All20 original/native CLI admissions have matching exit statuses and
+channels, including successful raw0xff output paths. Help/error wording differs
+and is retained as evidence rather than claimed byte parity. Removed only
+check_desire_reference.py and replaced the real workspace caller with mandatory
+native unit/integration/CLI/absence/default-CLI gates and full artifacts. Shared27
+original dependency pins remain. Actual-deleted-checkout cloud proof remains
+pending. Inventory230replaced-local/3partial/3347pending.

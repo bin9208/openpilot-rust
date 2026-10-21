@@ -1852,3 +1852,7 @@ required-features = ["panda-ci-native"]
 [[test]]
 name = "desire_reference_retirement"
 required-features = ["desire-reference-native"]
+
+[[test]]
+name = "desire_reference_cli"
+required-features = ["desire-reference-native"]

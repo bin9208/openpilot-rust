@@ -2,12 +2,26 @@
 
 ## 현재 감독·통합 상태: updater 실제삭제 수용, 2026-10-21
 
+추가수용: Desire1de0b0d7의39548303946은83lib/4integration/1fullsame-ELF/Clippy와
+20CLI기록을 통과했다. 두root각2exec/전체24585행바이트일치/원본raw0xff경로성공을
+독립확인한 뒤 Pythonchecker와 실제caller를 Rust로 전환했다. 실제삭제후CI는 대기다.
+#449 dashcamprogress의 nestedmap 후보4c876dc7는 동일이름반복할당을 없애며
+39550724394에서 전체support/upload/Params/lifecycle 및 격리된cold/warm측정을 진행한다.
+아직수치/차량성능주장은 없다. Panda는 두38phase가모두성공했지만stdout디스크예약
+41기록과 native의빠진기록을비교기가거부했다. native도기록/flush를복원하고
+추가ABI예약1회를문서화해재검증한다. 원본Panda는남는다.
+
+전체PR run39541018977의head는b5888cd6, 실제checkout은syntheticmerge
+b757dac402c1ed23c262a407664cdd275b5ea0ea이다. 양쪽tree는
+c85e220930a77593ae4a820dadd9823f4049ae86으로같고, runtime메타데이터는실제mergeSHA를
+기록한다. ARM은C3Xprobe단계를마치고generic/ION UI 빌드중이다.
+
 부모6.1 Sol이 감독·검토·통합하며6Sol 작업자가 분리된 구현/검토를 맡는다.
 #296 전용 작업트리와 PR343→dev만 사용한다. dev-md/주 작업폴더/.omo는 보존한다.
 사용자가 pull 후 기기 부팅·녹화·업로드·주행을 확인한다. 로컬은 문법·포맷·diff·
 저장된 데이터 판독만 수행하고 실행/빌드/Clippy는 GitHub-hosted Actions로 제한한다.
 
-인벤토리는229replaced-local/3partial/3348pending이다. Beep controller와 전체
+인벤토리는230replaced-local/3partial/3347pending이다. Beep controller와 전체
 calibration estimator 두 도구의 실제 삭제 후 검증39542693865/39542699485는 성공했다.
 원본의 전체20beep사례/15,128calibration단계를 유지했다. Updater505cc30c의
 39543788680은 원본16/Rust15검사와 두root각1,089실행/Python0/Clippy를 통과했다.

@@ -1,5 +1,5 @@
 //! Full original-only corpus through one freshly built checker and probe ELF pair.
-//! The historical Python checker remains in the checkout for this pre-deletion gate.
+//! Explicit DESIRE_REFERENCE_EXPECT_ABSENT=1 also proves post-deletion checkout absence.
 #![cfg(all(target_os = "linux", feature = "desire-reference-native"))]
 
 use openpilot_dev_tools::qa_process::{CommandSpec, NativeRunner, Runner};
@@ -135,6 +135,13 @@ fn absent(path: &Path) {
         path.display()
     );
 }
+fn verify_checkout_historical(path: &Path, expect_absent: bool, bound: Option<&Seal>) {
+    if expect_absent {
+        absent(path);
+    } else {
+        assert_eq!(seal(path), *bound.expect("present historical source seal"));
+    }
+}
 fn same_bytes(left: &Path, right: &Path) {
     let mut left = regular(left);
     let mut right = regular(right);
@@ -223,6 +230,11 @@ fn run_spec(checker: &Path, probe: &Path, output: &Path, root: &Path, trace: &Pa
 
 #[test]
 fn original_only_24585_rows_match_same_elf_checkout_and_historical_absent_root() {
+    let expect_absent = match std::env::var_os("DESIRE_REFERENCE_EXPECT_ABSENT") {
+        None => false,
+        Some(value) if value == OsStr::new("1") => true,
+        Some(_) => panic!("DESIRE_REFERENCE_EXPECT_ABSENT must be 1 when set"),
+    };
     let repository =
         fs::canonicalize(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..")).unwrap();
     let fixture = Path::new(env!("CARGO_MANIFEST_DIR")).join(FIXTURE);
@@ -249,7 +261,11 @@ fn original_only_24585_rows_match_same_elf_checkout_and_historical_absent_root()
         (probe.clone(), seal(&probe)),
     ]);
     let checkout_historical = repository.join(HISTORICAL);
-    assert_eq!(sha_file(&checkout_historical), HISTORICAL_SHA);
+    if expect_absent {
+        absent(&checkout_historical);
+    } else {
+        assert_eq!(sha_file(&checkout_historical), HISTORICAL_SHA);
+    }
     let evidence_root = required_path("DESIRE_REFERENCE_RETIREMENT_OUTPUT");
     fs::create_dir_all(&evidence_root).unwrap();
     let proof = tempfile::Builder::new()
@@ -267,6 +283,10 @@ fn original_only_24585_rows_match_same_elf_checkout_and_historical_absent_root()
             "{name}"
         );
         let original = repository.join(name);
+        if name.as_str() == HISTORICAL && expect_absent {
+            absent(&original);
+            continue;
+        }
         let before = seal(&original);
         assert_eq!(
             expected["before_sha256"].as_str(),
@@ -287,19 +307,24 @@ fn original_only_24585_rows_match_same_elf_checkout_and_historical_absent_root()
         );
         copied_seals.insert(name.clone(), bound);
     }
+    assert_eq!(source_seals.len(), if expect_absent { 27 } else { 28 });
     assert_eq!(copied_seals.len(), 27);
     let absent_historical = absent_root.join(HISTORICAL);
     absent(&absent_historical);
     fs::write(
         proof.join("inputs-before.json"),
-        serde_json::to_vec_pretty(&json!({"executables":&executable_seals,"checkout_sources":&source_seals,"absent_sources":&copied_seals})).unwrap(),
+        serde_json::to_vec_pretty(&json!({"executables":&executable_seals,"checkout_sources":&source_seals,"absent_sources":&copied_seals,"checkout_historical_absent":expect_absent})).unwrap(),
     )
     .unwrap();
 
     let mut first_output: Option<PathBuf> = None;
     for (lane, root) in [("checkout", &repository), ("absent", &absent_root)] {
         absent(&absent_historical);
-        assert_eq!(seal(&checkout_historical), source_seals[HISTORICAL]);
+        verify_checkout_historical(
+            &checkout_historical,
+            expect_absent,
+            source_seals.get(HISTORICAL),
+        );
         for (name, bound) in &source_seals {
             assert_eq!(
                 seal(&repository.join(name)),
@@ -402,7 +427,11 @@ fn original_only_24585_rows_match_same_elf_checkout_and_historical_absent_root()
             first_output = Some(output.clone());
         }
         absent(&absent_historical);
-        assert_eq!(seal(&checkout_historical), source_seals[HISTORICAL]);
+        verify_checkout_historical(
+            &checkout_historical,
+            expect_absent,
+            source_seals.get(HISTORICAL),
+        );
         for (name, bound) in &source_seals {
             assert_eq!(
                 seal(&repository.join(name)),
@@ -423,7 +452,7 @@ fn original_only_24585_rows_match_same_elf_checkout_and_historical_absent_root()
     }
     let mut final_sources = BTreeMap::new();
     let mut final_copies = BTreeMap::new();
-    for name in sources.keys() {
+    for name in source_seals.keys() {
         final_sources.insert(name.clone(), seal(&repository.join(name)));
         if name.as_str() != HISTORICAL {
             final_copies.insert(name.clone(), seal(&absent_root.join(name)));
@@ -437,17 +466,21 @@ fn original_only_24585_rows_match_same_elf_checkout_and_historical_absent_root()
     assert_eq!(final_copies, copied_seals);
     assert_eq!(final_executables, executable_seals);
     absent(&absent_historical);
+    verify_checkout_historical(
+        &checkout_historical,
+        expect_absent,
+        source_seals.get(HISTORICAL),
+    );
     fs::write(
         proof.join("inputs-after.json"),
-        serde_json::to_vec_pretty(&json!({"executables":&final_executables,"checkout_sources":&final_sources,"absent_sources":&final_copies})).unwrap(),
+        serde_json::to_vec_pretty(&json!({"executables":&final_executables,"checkout_sources":&final_sources,"absent_sources":&final_copies,"checkout_historical_absent":expect_absent})).unwrap(),
     )
     .unwrap();
     fs::write(
         proof.join("comparison.json"),
-        serde_json::to_vec_pretty(&json!({"pass":true,"frames":24585,"scenarios":47,"same_executable_inodes_and_bytes":true,"copied_source_files":27,"successful_execs_per_lane":2})).unwrap(),
+        serde_json::to_vec_pretty(&json!({"pass":true,"frames":24585,"scenarios":47,"same_executable_inodes_and_bytes":true,"copied_source_files":27,"successful_execs_per_lane":2,"checkout_historical_absent":expect_absent})).unwrap(),
     )
     .unwrap();
-    // The accepted original-only capture has the full request/reference streams,
-    // not independently sealed original CLI help/error outputs. Those admissions
-    // remain pending until an actual original CLI capture is retained in Actions.
+    // CLI help/error observations have a separate cloud capture. This gate binds
+    // the full corpus and same-ELF source-absence behavior in both root lanes.
 }

@@ -167,12 +167,16 @@ fn private_options(directory: &Path, historical_absent: bool) -> Options {
     let root = directory.join("source");
     let actual_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
     for (name, _) in manifest["source"].as_object().unwrap() {
-        if historical_absent && name == "rust/tools/check_desire_reference.py" {
+        let original = actual_root.join(name);
+        if name == "rust/tools/check_desire_reference.py"
+            && (historical_absent
+                || matches!(fs::symlink_metadata(&original), Err(error) if error.kind() == std::io::ErrorKind::NotFound))
+        {
             continue;
         }
         let path = root.join(name);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
-        fs::copy(actual_root.join(name), path).unwrap();
+        fs::copy(original, path).unwrap();
     }
     // The historical checker may be absent while its source directory remains.
     // A late reappearance must be a real file mutation, not a failed test write.

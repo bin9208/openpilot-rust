@@ -931,9 +931,38 @@ jobs:
             ${{ runner.temp }}/calibration-float-native/
             ${{ runner.temp }}/calibration-float-postdelete/
           if-no-files-found: warn
+      - name: Verify retired desire controller against complete original corpus and CLI admissions
+        working-directory: .
+        run: |
+          set -euo pipefail
+          test ! -e rust/tools/check_desire_reference.py
+          test ! -L rust/tools/check_desire_reference.py
+          proof="$RUNNER_TEMP/desire-controller-native"
+          mkdir -p "$proof"
+          export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
+          export DESIRE_REFERENCE_CHECKER="$GITHUB_WORKSPACE/rust/target/debug/check-desire-reference-native"
+          export DESIRE_REFERENCE_PROBE="$GITHUB_WORKSPACE/rust/target/debug/examples/desire_probe"
+          export DESIRE_REFERENCE_EXPECT_ABSENT=1
+          export DESIRE_REFERENCE_RETIREMENT_OUTPUT="$proof/retirement"
+          export DESIRE_REFERENCE_CLI_OUTPUT="$proof/cli"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features desire-reference-native --bin check-desire-reference-native --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features desire-reference-native --lib desire_reference_check:: --locked -- --nocapture 2>&1 | tee "$proof/unit-tests.log"
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features desire-reference-native --test desire_reference_check --test desire_reference_retirement --test desire_reference_cli --locked -- --nocapture 2>&1 | tee "$proof/controller-tests.log"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features desire-reference-native --lib --bin check-desire-reference-native --test desire_reference_check --test desire_reference_retirement --test desire_reference_cli --locked -- -D warnings 2>&1 | tee "$proof/clippy.log"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          rust/target/debug/check-desire-reference-native --binary "$DESIRE_REFERENCE_PROBE" --output "$proof/default-cli" > "$proof/default-cli.stdout" 2> "$proof/default-cli.stderr"
+      - name: Retain complete desire controller retirement evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-desire-controller-retirement
+          path: ${{ runner.temp }}/desire-controller-native/
+          if-no-files-found: warn
       - name: Compare model desire state and Bluetooth command consumption with original source
         run: |
-          python tools/check_desire_reference.py --binary target/debug/examples/desire_probe --output "$RUNNER_TEMP/model-desire"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo build -p openpilot-dev-tools --bin check-command-reference --bin check-command-json-boundary --locked
           target/debug/check-command-reference --binary target/debug/examples/command_probe --output "$RUNNER_TEMP/model-commands"
@@ -2426,10 +2455,12 @@ jobs:
             --binding "$RUNNER_TEMP"/support-params-binding/params_pyx*.so --collector rust/target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/support-runtime/uploader-log-fault"
       - name: Require dashcam progress equivalence and allocation accounting
         run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/support-runtime"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dashcam-upload --lib --locked -- --nocapture
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dashcam-upload --lib --locked -- --nocapture 2>&1 | tee "$RUNNER_TEMP/support-runtime/dashcam-progress-tests.log"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dashcam-upload --all-targets --locked -- -D warnings
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dashcam-upload --all-targets --locked -- -D warnings 2>&1 | tee "$RUNNER_TEMP/support-runtime/dashcam-progress-clippy.log"
       - name: Compare dashcam jobs, catalog, metadata and real Params
         run: |
           python rust/tools/check_dashcam_jobs.py --binary rust/target/debug/examples/dashcam_job_trace --output "$RUNNER_TEMP/support-runtime/dashcam-jobs"

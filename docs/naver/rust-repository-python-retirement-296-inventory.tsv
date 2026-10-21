@@ -1927,7 +1927,7 @@ rust/tools/check_dashcam_params.py	9eda1c86b76d2a955cfa378e87331c43aff7887c	pend
 rust/tools/check_dashcam_runtime.py	f640a530a4df155ad2263871b6f9e76dc03aee32	pending	-
 rust/tools/check_deleter_daemon.py	df1faa3bd3de28b7c92c781675163edafc3f0d69	pending	-
 rust/tools/check_deleter_reference.py	a63830c4ac5e042b2aa82fd9b7771713d4c66567	pending	-
-rust/tools/check_desire_reference.py	9fa489afc27b786afb4a4cee2153aab14c677fa4	pending	-
+rust/tools/check_desire_reference.py	9fa489afc27b786afb4a4cee2153aab14c677fa4	replaced-local	rust/crates/dev-tools/src/desire_reference_check.rs; complete independent original24585-row corpus and20CLI admissions
 rust/tools/check_dmonitoring_daemon.py	ec97d6a3191af643cc3ff05253cd81742dd99b8d	pending	-
 rust/tools/check_driver_daemon.py	76894648a334de8c71205b6c605b5916914c81db	pending	-
 rust/tools/check_driving_daemon.py	046223c65c7e54fb3d3cba2e08ec86630506f3a7	pending	-

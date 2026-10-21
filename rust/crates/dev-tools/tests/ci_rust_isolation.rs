@@ -2846,3 +2846,41 @@ fn dashcam_progress_allocation_proof_keeps_functional_and_full_upload_routes() {
         ],
     );
 }
+
+#[test]
+fn desire_retirement_preserves_full_original_corpus_absence_cli_and_command_gates() {
+    let data = workflow();
+    let job = &data["jobs"]["workspace"];
+    let steps = job["steps"].as_array().unwrap();
+    let step = steps.iter().find(|step| step["name"] == "Verify retired desire controller against complete original corpus and CLI admissions").unwrap();
+    absent(step, &["if", "continue-on-error"]);
+    assert_eq!(step["working-directory"], ".");
+    required(step["run"].as_str().unwrap(), &[
+        "test ! -e rust/tools/check_desire_reference.py", "test ! -L rust/tools/check_desire_reference.py",
+        "DESIRE_REFERENCE_EXPECT_ABSENT=1", "DESIRE_REFERENCE_CHECKER=", "DESIRE_REFERENCE_PROBE=",
+        "DESIRE_REFERENCE_RETIREMENT_OUTPUT=", "DESIRE_REFERENCE_CLI_OUTPUT=",
+        "--features desire-reference-native --bin check-desire-reference-native --locked",
+        "--features desire-reference-native --lib desire_reference_check:: --locked -- --nocapture",
+        "--test desire_reference_check --test desire_reference_retirement --test desire_reference_cli --locked -- --nocapture",
+        "--lib --bin check-desire-reference-native --test desire_reference_check --test desire_reference_retirement --test desire_reference_cli --locked -- -D warnings",
+        "rust/target/debug/check-desire-reference-native --binary",
+    ]);
+    let run = commands(job);
+    assert!(!run.contains("python tools/check_desire_reference.py"));
+    required(
+        &run,
+        &[
+            "target/debug/check-command-reference",
+            "target/debug/check-command-json-boundary",
+        ],
+    );
+    let artifact = steps
+        .iter()
+        .find(|step| step["name"] == "Retain complete desire controller retirement evidence")
+        .unwrap();
+    assert_eq!(artifact["if"], "always()");
+    assert_eq!(
+        artifact["with"]["path"],
+        "${{ runner.temp }}/desire-controller-native/"
+    );
+}

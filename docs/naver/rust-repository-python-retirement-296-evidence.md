@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. The current source inventory has 229 replaced-local entries,
-three partial entries and 3,348 pending entries. `replaced-local` does not mean merged,
+SCons entrypoints. The current source inventory has 230 replaced-local entries,
+three partial entries and 3,347 pending entries. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -5173,3 +5173,34 @@ daemon and AGNOS gates remain mandatory. updated_fixtures.py remains a live daem
 dependency and a passive native input pin. Actual deleted-checkout execution,
 whole startup-services/latest full PR/ARM and device acceptance remain pending.
 Inventory229replaced-local/3partial/3348pending does not imply whole conversion.
+
+
+## Desire actual controller retirement prepared (2026-10-21)
+
+The unchanged Python CLI and native controller compare all24585 original rows,
+47scenarios, full state/discrete/array fields and original1e-10 numeric tolerance.
+At source049a3f9c run39546177049 the main fresh pair passed: request143229930bytes
+SHA6ae79545af6ca232d603520cf05d0a2f83ed207a14e3bbc4e0518154f59cb570;
+reference96524611bytes SHAea0b820405f12e2922db8efe41f780b9064c6e76d347529b44b6ec621ac41847;
+actual89830766bytes SHA71e098692d451676bf1763121a4337ff50c9a4e82c3476c4db0a1422016c2782.
+Parent streamed both lanes from artifact12321509065 and confirmed all hashes.
+That whole job failed only at its failure-injection fixture, repaired bya20ad0fa.
+
+Before removal, source1de0b0d7fbe86e6855d58c8fa9dbb038b5d44126 passed
+[39548303946/job119051425025](https://github.com/bin9208/openpilot-rust/actions/runs/39548303946/job/119051425025),
+workflow32b4379b709b2a5deb0267ff77d4df28df3f7a15.
+Artifact12323365248 ZIP SHA256
+e0abcb079d7cf91e0fc52cd7e1318bff106662ef3fd5ff6ff91b33dc1bbe06cc.
+83library/4integration/1fullsame-ELF tests and strictClippy passed. Both roots had
+exactly2successful execs and byte-identical report/request/reference/actual/raw
+streams, with unchanged input seals. Independent CLI capture20 cases includes
+validraw0xff paths. Status/channel parity holds; help/error wording is deliberately
+not byte parity. Parent sealed only original observations, SHA
+ac3e8ec4a5117054c073c8761d454ef60a4b599ab16beb9efd647b78364711cf.
+
+Removed only the Python checker; replaced its maintained workspace caller,
+kept all27 still-required original dependency pins and Bluetooth command/JSON
+gates. Actual deleted-checkout proof now explicitly requires checkout source
+absence and replays all20 independently captured admissions. That postdelete
+cloud proof remains pending; no model behavior/device acceptance is claimed.
+Inventory230replaced-local/3partial/3347pending.
