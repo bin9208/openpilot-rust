@@ -33,9 +33,10 @@ pub fn lane_tensor(image: &Image) -> Result<Tensor, Error> {
         ));
     }
     let mut values = Vec::with_capacity(3 * 416 * 416);
-    for _ in 0..3 {
-        values.extend(view.data().iter().map(|&byte| f32::from(byte) / 255.0));
-    }
+    values.extend(view.data().iter().map(|&byte| f32::from(byte) / 255.0));
+    // Every channel contains the same gray plane. Reuse its exact division bits.
+    values.extend_from_within(..416 * 416);
+    values.extend_from_within(..416 * 416);
     Ok(Tensor::from_parts(vec![1, 3, 416, 416], values)?)
 }
 
