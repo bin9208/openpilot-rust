@@ -389,7 +389,7 @@ fn execute(options: &Options, mut emit: impl FnMut(&Value) -> Result<()>) -> Res
                     lifecycle_path.exists(),
                     "USB worker did not start before original 30s deadline",
                 )?;
-                daemon.signal(rustix::process::Signal::Term)?;
+                daemon.signal(rustix::process::Signal::TERM)?;
                 require(
                     daemon.wait(Duration::from_secs(5), &cancel)?.success(),
                     "USB cancelled daemon did not exit successfully",

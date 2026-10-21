@@ -233,7 +233,7 @@ impl Process {
     }
     pub fn stop(&mut self, cancel: &Cancellation) -> Result<ExitStatus> {
         if self.status.is_none() {
-            self.signal(Signal::Term)?;
+            self.signal(Signal::TERM)?;
         }
         let status = self.wait(Duration::from_secs(5), cancel)?;
         self.cleanup_group();
@@ -247,7 +247,7 @@ impl Process {
         }
         self.group_cleaned = true;
         if let Some(pid) = Pid::from_raw(self.child.id() as i32) {
-            let _ = kill_process_group(pid, Signal::Kill);
+            let _ = kill_process_group(pid, Signal::KILL);
         }
     }
 }
@@ -256,7 +256,7 @@ impl Drop for Process {
         if self.status.is_none() {
             // Give the daemon its original five-second SIGTERM cleanup window
             // so its separately owned USB worker/shared memory can be reaped.
-            let _ = self.signal(Signal::Term);
+            let _ = self.signal(Signal::TERM);
             let deadline = Instant::now() + Duration::from_secs(5);
             while Instant::now() < deadline {
                 let _ = self.drain();
