@@ -1,0 +1,176 @@
+name: One-time Panda safety padding retirement proof 296
+permissions:
+  contents: read
+jobs:
+  fresh-original-present-absent:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      OPENPILOT_RUST_ROOT: ${{ github.workspace }}
+      PANDAD_PADDING_TEST_OUTPUT: ${{ runner.temp }}/padding-retirement-296
+      PANDAD_PADDING_SOURCE_BINARY: ${{ runner.temp }}/padding-retirement-296/source/pandad-protocol-source
+      PANDAD_PADDING_SOURCE_MANIFEST: ${{ runner.temp }}/padding-retirement-296/source/manifest.json
+      PANDAD_PADDING_NATIVE_BINARY: ${{ github.workspace }}/rust/target/debug/examples/panda_safety
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        ref: 3a57116f445af1d297150e6bbef7b1ac9ffa6a26
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Pin source and install minimum build and audit prerequisites
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = 3a57116f445af1d297150e6bbef7b1ac9ffa6a26
+
+        mkdir -p "$PANDAD_PADDING_TEST_OUTPUT"
+
+        git rev-parse HEAD > "$PANDAD_PADDING_TEST_OUTPUT/source-commit.txt"
+
+        sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
+
+        sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends capnproto libcapnp-dev g++ clang libusb-1.0-0-dev libzmq3-dev cmake
+        pkg-config curl strace
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        '
+    - name: Build one fresh source probe and both sealed native executables
+      run: 'set -euo pipefail
+
+        proof="$PANDAD_PADDING_TEST_OUTPUT"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo +1.94.0 build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin stage-json11 --bin build-pandad-protocol-source
+        --features pandad-safety-padding-native --bin check-pandad-safety-padding --locked 2>&1 | tee "$proof/dev-tools-build.log"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo +1.94.0 build --manifest-path rust/Cargo.toml -p openpilot-pandad --example panda_safety --locked 2>&1 | tee
+        "$proof/native-probe-build.log"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        rust/target/debug/stage-json11 --root "$GITHUB_WORKSPACE" --output "$proof/json11" > "$proof/json11.json"
+
+        json11_prefix="$(python -c ''import json,sys; print(json.load(open(sys.argv[1]))["prefix"])'' "$proof/json11.json")"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        rust/target/debug/build-pandad-protocol-source --root "$GITHUB_WORKSPACE" --output "$proof/source" --capnp-prefix
+        /usr --json11-prefix "$json11_prefix" --sanitize --safety > "$proof/source-build.stdout" 2> "$proof/source-build.stderr"
+
+        test -s "$PANDAD_PADDING_SOURCE_BINARY"
+
+        test -s "$PANDAD_PADDING_NATIVE_BINARY"
+
+        test -s rust/target/debug/check-pandad-safety-padding
+
+        printf ''PANDAD_PADDING_PYTHON=%s\n'' "$(command -v python)" >> "$GITHUB_ENV"
+
+        sha256sum "$PANDAD_PADDING_SOURCE_BINARY" "$PANDAD_PADDING_NATIVE_BINARY" "$PANDAD_PADDING_SOURCE_MANIFEST" rust/target/debug/check-pandad-safety-padding
+        rust/tools/check_pandad_safety_padding.py rust/tools/check_pandad_safety.py openpilot/selfdrive/pandad/panda_safety.cc
+        openpilot/common/params.h > "$proof/inputs.before.sha256"
+
+        '
+    - name: Require actual old finalization failure on edb42bf0
+      run: 'set -euo pipefail
+
+        proof="$PANDAD_PADDING_TEST_OUTPUT"
+
+        baseline="$RUNNER_TEMP/padding-edb42bf0-baseline"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        git fetch --no-tags --depth=1 origin edb42bf095d6a3e3b38cc0a4546976dfb710363e
+
+        GIT_LFS_SKIP_SMUDGE=1 git worktree add --detach "$baseline" edb42bf095d6a3e3b38cc0a4546976dfb710363e
+
+        cp rust/crates/dev-tools/tests/pandad_safety_padding_finalize.rs "$baseline/rust/crates/dev-tools/tests/"
+
+        cp -a rust/crates/dev-tools/tests/fixtures/pandad-safety-padding/edb42bf0-original "$baseline/rust/crates/dev-tools/tests/fixtures/pandad-safety-padding/"
+
+        export CARGO_TARGET_DIR="$RUNNER_TEMP/padding-edb42bf0-target"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
+
+        cargo +1.94.0 test --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-dev-tools --features pandad-safety-padding-native
+        --test pandad_safety_padding_finalize --no-run --locked 2>&1 | tee "$proof/old-build.log"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        set +e
+
+        /usr/bin/timeout --signal=TERM --kill-after=2s 15s cargo +1.94.0 test --manifest-path "$baseline/rust/Cargo.toml"
+        -p openpilot-dev-tools --features pandad-safety-padding-native --test pandad_safety_padding_finalize --locked -- --exact
+        post_execute_native_mutation_must_fail_finish_and_remove_owned_report --nocapture 2>&1 | tee "$proof/old-red.log"
+
+        status=${PIPESTATUS[0]}
+
+        set -e
+
+        test "$status" -eq 101
+
+        grep -Fq ''test result: FAILED'' "$proof/old-red.log"
+
+        grep -Fq ''successful finalization accepted a mutated private native probe after execute returned'' "$proof/old-red.log"
+
+        printf ''baseline_exit=%s\n'' "$status" > "$proof/old-red-status.txt"
+
+        sha256sum -c "$proof/inputs.before.sha256"
+
+        '
+    - name: Require fresh triple-lane proof, fixed finalization and strict Clippy
+      run: 'set -euo pipefail
+
+        proof="$PANDAD_PADDING_TEST_OUTPUT"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native
+        --test pandad_safety_padding_retirement --test pandad_safety_padding_finalize --locked -- --nocapture 2>&1 | tee "$proof/current-green.log"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native
+        --lib --bin check-pandad-safety-padding --test pandad_safety_padding_retirement --test pandad_safety_padding_finalize
+        --locked -- -D warnings 2>&1 | tee "$proof/current-clippy.log"
+
+        sha256sum -c "$proof/inputs.before.sha256"
+
+        test -s "$proof/old-red-status.txt"
+
+        test "$(find "$proof" -name comparison.json -type f | wc -l)" -eq 1
+
+        test "$(find "$proof" -name native-present-exec-audit.json -type f | wc -l)" -eq 1
+
+        test "$(find "$proof" -name native-absent-exec-audit.json -type f | wc -l)" -eq 1
+
+        '
+    - name: Preserve original, present, absent, old-red and fixed-green evidence
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: panda-padding-retirement-296-${{ github.sha }}
+        path: ${{ runner.temp }}/padding-retirement-296/
+        if-no-files-found: warn
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/pandad-padding-retirement-296-once.yml
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
