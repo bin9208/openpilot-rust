@@ -180,9 +180,11 @@ fn source_paths(root: &Path) -> BTreeSet<PathBuf> {
         "pandad_device_check/ownership.rs",
         "bin/stage_pandad_device_reference.rs",
         "bin/check_pandad_protocol.rs",
+        "bin/stage_pandad_protocol_reference.rs",
         "pandad_protocol_check/cases.rs",
         "pandad_protocol_check/ownership.rs",
         "bin/check_pandad_can_io.rs",
+        "bin/stage_pandad_can_io_reference.rs",
         "pandad_can_io_check/cases.rs",
         "pandad_can_io_check/ownership.rs",
     ] {
@@ -218,6 +220,38 @@ fn source_hashes(root: &Path) -> BTreeMap<String, String> {
         .into_iter()
         .map(|path| (path.to_str().unwrap().to_owned(), sha(&root.join(&path))))
         .collect()
+}
+
+#[test]
+fn current_source_roster_binds_protocol_and_can_io_reference_stagers() {
+    let root = tempfile::tempdir().unwrap();
+    for directory in [
+        "rust/tools",
+        "rust/crates/dev-tools/src/bin",
+        "rust/crates/pandad",
+        "rust/crates/panda-usb",
+        "rust/crates/panda-spi",
+        "rust/crates/panda-spi-linux",
+    ] {
+        fs::create_dir_all(root.path().join(directory)).unwrap();
+    }
+    let names = [
+        "rust/crates/dev-tools/src/bin/stage_pandad_protocol_reference.rs",
+        "rust/crates/dev-tools/src/bin/stage_pandad_can_io_reference.rs",
+    ];
+    for name in names {
+        fs::write(root.path().join(name), b"held reference stager").unwrap();
+    }
+    let before = source_hashes(root.path());
+    assert_eq!(
+        before.keys().map(String::as_str).collect::<BTreeSet<_>>(),
+        names.into_iter().collect()
+    );
+    for name in names {
+        fs::write(root.path().join(name), b"changed reference stager").unwrap();
+        let after = source_hashes(root.path());
+        assert_ne!(before[name], after[name], "unbound stager source: {name}");
+    }
 }
 
 fn copy_private_tree(source: &Path, target: &Path, relative: &Path, budget: &mut u64) {
@@ -357,7 +391,7 @@ fn prepare_private_root(repo: &Path, private: &Path, expect_absent: bool) -> Val
         .map(|(name, hash)| (name.clone(), hash.clone()))
         .collect::<BTreeMap<_, _>>();
     assert_eq!(copied, expected_copied);
-    assert_eq!(copied.len(), 163);
+    assert_eq!(copied.len(), 165);
     openpilot_disk_space::inspect(private, 2 * GIB)
         .unwrap()
         .require()

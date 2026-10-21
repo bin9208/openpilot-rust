@@ -5621,3 +5621,33 @@ streams/statuses/argv are retained. These candidate tests have **not run yet**.
 Existing installed runtime model modules remain unchanged; Python model definitions
 and other oracle/build consumers remain pending. Neither generator is deleted or
 accepted in inventory yet.
+
+
+### Full-checkpoint source-closure and legacy policy admissions (2026-10-22)
+
+Full Rust39691148023 atf913de3aa Panda119537355486 passes the first original
+admission/side-effect test, then catches missing protocol/CAN-I/O reference-stager
+bins in the outer test source roster at line331. Production receipts already bind
+both. #477 repairs the independent test roster and its exact private count163→165,
+with a regression proving both source bodies affect bound SHA values. All34ELF,
+38phase/fourlane original and exact source-set equality assertions remain intact.
+Repair acceptance awaits hosted focused/full execution.
+
+Card119537355780 passes38tests and fails only the old Python CI dependency-set
+assertion, which omitted the newly required `model-family-retirement` job. #475
+also tracks this inherited assertion update: retain exact aggregate equality and
+explicitly require MODEL_FAMILY's result binding and success test. The maintained
+native policy already includes that binding. Keep the still-used Card Python test
+family pending; updating one assertion is not retiring that family.
+
+Kalman native39693198645 at eb73be217514841536ea714f5ba304acc7a9fc02, workflow
+124855dd35e6d1ff5838841bc257e9b91e30fb5a passes seven pure tests, corpus numerics,
+fixed original byte/source seals, actual bin compilation and strict Clippy. Fresh
+Pose modules compile and pass all original constants/functions and boundary rows.
+Fresh Car modules compile but compare-all rejects zero-speed Jacobian[45]:
+original `-inf`, candidate `NaN`. The generic quotient-rule expression retains a
+removable zero denominator factor; simplification must preserve original singular
+classification. No boundary/tolerance/expectation is removed or changed. Parent
+checks all128CRCs in artifact12389427379:2429072B/8665394B expanded,
+SHA2566eeaad434dc2b3879816b4fecb49e1f000665e5ffd112db695bdc1cb2d86408c.
+This is retained failing evidence; neither Python generator is retired yet.
