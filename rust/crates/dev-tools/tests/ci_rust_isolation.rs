@@ -2570,3 +2570,21 @@ fn paramsd_fixture_conversion_keeps_fresh_original_wire_and_real_cli_proof() {
         true,
     );
 }
+
+#[test]
+fn paramsd_loop_native_controller_keeps_original_and_full_sealed_comparison() {
+    job_check(
+        "estimation-runtime",
+        &[
+            "python rust/tools/check_paramsd_loop.py --oracle",
+            "--features paramsd-loop-native --bin check-paramsd-loop-native --locked",
+            "PARAMSD_LOOP_NATIVE_RAW=",
+            "--features paramsd-loop-native --lib --test paramsd_loop_check --test paramsd_loop_reference --locked",
+            "--bin check-paramsd-loop-native --test paramsd_loop_check --test paramsd_loop_reference --locked -- -D warnings",
+            "PATH=/nonexistent /usr/bin/timeout --signal=TERM --kill-after=5s 200s /usr/bin/strace",
+            "sha256sum -c \"$proof/inputs.sha256\"",
+        ],
+        &["native-loop-controller"],
+        true,
+    );
+}

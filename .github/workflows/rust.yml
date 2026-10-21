@@ -3266,6 +3266,30 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-daemon-native --bin check-paramsd-daemon-native --test paramsd_daemon_check --test paramsd_daemon_reference --locked -- -D warnings
           sha256sum -c "$proof/inputs.sha256"
+      - name: Compare native paramsd loop checker against complete original observations
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/estimation/paramsd/native-loop-controller"
+          export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
+          export PARAMSD_LOOP_NATIVE_RAW="$proof/current/native-raw.json"
+          export PARAMSD_LOOP_NATIVE_CHECKER="$GITHUB_WORKSPACE/rust/target/debug/check-paramsd-loop-native"
+          export PARAMSD_LOOP_NATIVE_CANDIDATE="$GITHUB_WORKSPACE/rust/target/debug/examples/paramsd_loop"
+          export PARAMSD_LOOP_NATIVE_EXEC="$proof/native.exec"
+          checker="$GITHUB_WORKSPACE/rust/target/debug/check-paramsd-loop-native"
+          candidate="$GITHUB_WORKSPACE/rust/target/debug/examples/paramsd_loop"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-loop-native --bin check-paramsd-loop-native --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          mkdir -p "$proof"
+          git rev-parse HEAD > "$proof/SOURCE_COMMIT"
+          sha256sum "$checker" "$candidate" rust/tools/check_paramsd_loop.py rust/tools/paramsd_loop_fixture.py rust/tools/paramsd_fixture.py > "$proof/inputs.sha256"
+          PATH=/nonexistent /usr/bin/timeout --signal=TERM --kill-after=5s 200s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "$proof/native.exec" "$checker" --binary "$candidate" --evidence "$proof/current" > "$proof/native.stdout" 2> "$proof/native.stderr"
+          sha256sum -c "$proof/inputs.sha256"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-loop-native --lib --test paramsd_loop_check --test paramsd_loop_reference --locked -- --nocapture
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-loop-native --lib --bin check-paramsd-loop-native --test paramsd_loop_check --test paramsd_loop_reference --locked -- -D warnings
+          sha256sum -c "$proof/inputs.sha256"
       - name: Compare native paramsd fixture generator against all original wire inputs
         run: |
           set -euo pipefail
