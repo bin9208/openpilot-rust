@@ -2857,7 +2857,7 @@ fn desire_controller_preserves_shared_original_and_private_absence_cli_command_g
     assert_eq!(step["working-directory"], ".");
     required(step["run"].as_str().unwrap(), &[
         "test -f rust/tools/check_desire_reference.py", "test ! -L rust/tools/check_desire_reference.py",
-        "DESIRE_REFERENCE_EXPECT_ABSENT=0", "DESIRE_REFERENCE_CHECKER=", "DESIRE_REFERENCE_PROBE=",
+        "unset DESIRE_REFERENCE_EXPECT_ABSENT", "DESIRE_REFERENCE_CHECKER=", "DESIRE_REFERENCE_PROBE=",
         "DESIRE_REFERENCE_RETIREMENT_OUTPUT=", "DESIRE_REFERENCE_CLI_OUTPUT=",
         "--features desire-reference-native --bin check-desire-reference-native --locked",
         "--features desire-reference-native --lib desire_reference_check:: --locked -- --nocapture",
