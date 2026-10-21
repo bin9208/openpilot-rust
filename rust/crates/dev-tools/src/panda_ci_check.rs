@@ -560,21 +560,17 @@ impl<R: Runner> Controller<'_, R> {
         );
         spec.cwd = Some(self.options.root.clone());
         let observed = self.runner.run(&spec)?;
-        let recorded = spec
-            .effective_argv()
-            .iter()
-            .map(|arg| Ok(utf8(arg)?.to_owned()))
-            .collect::<Result<Vec<_>>>()?;
+        let recorded = json_args(spec.effective_argv())?;
         let observed_stdout = String::from_utf8(observed.stdout)?;
         let observed_stderr = String::from_utf8(observed.stderr)?;
-        save(
+        save_json_text(
             &self.output("python-dependency.json"),
-            &json!({
-                "argv": recorded,
-                "exit": observed.code,
-                "stdout": observed_stdout,
-                "stderr": observed_stderr
-            }),
+            &format!(
+                "{{\"argv\": {recorded}, \"exit\": {}, \"stdout\": {}, \"stderr\": {}}}",
+                observed.code,
+                serde_json::to_string(&observed_stdout)?,
+                serde_json::to_string(&observed_stderr)?,
+            ),
         )?;
         if observed.code != 0 {
             return Err(format!("Python ABI/usb1 discovery exited {}", observed.code).into());
