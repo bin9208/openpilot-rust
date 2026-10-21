@@ -68,3 +68,44 @@ ZIP SHA256 `8b238cb6be3358b77dec01628de34bae492b46b4eea016b40b6ad7794ec08fae`,
 original manifest `57a3a05c0a0fa5b3318fc3fb1e3c07e9a9838b3379c3cb2e50e96974ed7bfd4a`.
 Its successful unchanged traffic is reused; the new no-collector gate admits that
 history only for collector-mode rejection, never as fresh collector-positive data.
+
+Fresh current collector data39663412651 succeeds at source
+2ecf3f6813f601ea52e7a61ccf75219952daefa0, workflow
+36859fa6a121bc2038fcffd1f1b52524b64c3462. Parent and reviewer audit all331 CRCs
+of artifact12377006222 (60,612,963bytes), ZIP SHA256
+fd92d2ece5bfe69b23f4438a6bbef201c3ab2df19d1efacb85ca3e656111907e.
+Its43 sealed observations and14 independent source packets match; all four
+model PKLs,196 catalog files and1,662 unique source Git pins authenticate.
+The capture reuses admitted39652828256 PKLs after current ISA/library/source
+admission; no fresh compilation is claimed. All four original checker runs
+execute the Rust daemon, pass collector comparison and retain disk records.
+The expected packet files come independently from original get_driverstate.
+Manifest SHA256 is532281d6682b2d5a4ae8b8acf354b3a39d04eaf98cd49cc9a2c1432be30b8795.
+
+The durable native fixture preserves that collector data, the accepted ordinary
+no-collector data and the older unavailable-model collector history separately.
+Its8,254,920-byte archive has SHA256
+0b4cbeb4b8c6201c150ccc85c916e5ff979b66da433c217a2f198ad4bd8c1210;
+97 packed members plus42 exactly regenerated images form139 files/168,356,431
+bytes. Both current modes use the same exact four PKLs. Historical collector
+execution readiness remains false; native retirement acceptance remains false.
+
+Preflight39667528717 succeeds at source1d87b3f0daf02c8a49993af0596c7c427cff944e,
+workflow9d98e70d53bd805ff2c6434654ca2fe312bd19cf. Parent audits all12 CRCs in
+artifact12377714386 (7,181bytes), ZIP SHA256
+188492f8dee9a4632547b2071f8e612ad79e79a221506d3477651789bfcf6e5f.
+All registered native driver targets compile;15 family units, three parser
+admissions, actual staging CLI/archive integration and strict Clippy pass.
+The CLI regenerates every original image and rejects foreign/alias outputs.
+Source-roster symlink additions fail closed, and grouped retirement children
+have20-minute/1MiB stream bounds with retained failure receipts. This accepts
+preparation only, without rerunning model traffic or deleting driver sources.
+
+Actual retirement still requires a separate current-host IR export, both modes
+and both roots with the same native ELFs, source reappearance negatives and
+maintained caller replacement. check_model_startup.py and check_usbgpu_daemon.py
+import Lines/stop from check_driver_daemon.py; both consumers must migrate before
+that source disappears. usbgpu_reference.py also has another hardware consumer.
+The driving oracle manifest has six source pins (four deleted controllers and
+two runtime originals), not the two logging-helper pins; no invented provenance
+is added to that immutable oracle while resolving this shared dependency.
