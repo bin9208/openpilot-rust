@@ -212,15 +212,27 @@ fn normalize(value: &str, root: &Path, checkout_root: &Path, output: &Path) -> S
         .replace(root.to_str().unwrap(), "<ROOT>")
         .replace(checkout_root.to_str().unwrap(), "<ROOT>")
 }
+#[derive(Clone, Copy)]
+struct LaneInputs<'a> {
+    root: &'a Path,
+    checkout_root: &'a Path,
+    checker: &'a Path,
+    binaries: &'a Path,
+    messages: &'a Path,
+    python: &'a Path,
+    evidence: &'a Path,
+}
 fn run_lane(
     name: &str,
-    root: &Path,
-    checkout_root: &Path,
-    checker: &Path,
-    binaries: &Path,
-    messages: &Path,
-    python: &Path,
-    evidence: &Path,
+    LaneInputs {
+        root,
+        checkout_root,
+        checker,
+        binaries,
+        messages,
+        python,
+        evidence,
+    }: LaneInputs<'_>,
 ) -> (Value, Vec<Value>, Value) {
     let output = evidence.join(format!("{name}-output"));
     let argv = vec![
@@ -383,13 +395,24 @@ fn same_elf_checkout_and_private_checker_absent_roots_complete_all_original_phas
     let entry_sha = sha(&repo.join(entry));
     assert_eq!(sha(&private.join(entry)), entry_sha);
     let mut seals = elf_seals(&checker, &binaries);
-    let (checkout, checkout_commands, checkout_result) = run_lane(
-        "checkout", &repo, &repo, &checker, &binaries, &messages, &python, &evidence,
-    );
+    let shared = LaneInputs {
+        root: &repo,
+        checkout_root: &repo,
+        checker: &checker,
+        binaries: &binaries,
+        messages: &messages,
+        python: &python,
+        evidence: &evidence,
+    };
+    let (checkout, checkout_commands, checkout_result) = run_lane("checkout", shared);
     source_state(&repo, expect_absent);
     source_state(&private, true);
     let (absent_lane, absent_commands, private_result) = run_lane(
-        "private", &private, &repo, &checker, &binaries, &messages, &python, &evidence,
+        "private",
+        LaneInputs {
+            root: &private,
+            ..shared
+        },
     );
     source_state(&repo, expect_absent);
     source_state(&private, true);
@@ -403,6 +426,10 @@ fn same_elf_checkout_and_private_checker_absent_roots_complete_all_original_phas
     );
     let current_sources = checkout["source_sha256"].as_object().unwrap();
     let absent_sources = absent_lane["source_sha256"].as_object().unwrap();
+    let shared = "rust/crates/dev-tools/src/python_fs.rs";
+    let shared_sha = sha(&repo.join(shared));
+    assert_eq!(current_sources[shared].as_str(), Some(shared_sha.as_str()));
+    assert_eq!(absent_sources[shared].as_str(), Some(shared_sha.as_str()));
     assert_eq!(
         current_sources.len(),
         absent_sources.len() + usize::from(!expect_absent)
