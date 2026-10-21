@@ -1,12 +1,12 @@
 //! Bounded native materialization of externally sealed driving fixture data.
 use crate::{disk_space, driving_daemon_reference::fixture::Fixture, seal::Result};
-use flate2::read::GzDecoder;
+use flate2::bufread::GzDecoder;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::{
     collections::BTreeMap,
     fs::{self, File},
-    io::{Cursor, Read, Seek, SeekFrom, Write},
+    io::{BufRead, BufReader, Cursor, Read, Seek, SeekFrom, Write},
     os::unix::fs::MetadataExt,
     path::{Component, Path, PathBuf},
 };
@@ -134,18 +134,60 @@ fn generate_images(
     }
     Ok(generated)
 }
-fn decoder<'a>(mut reader: impl Read + 'a) -> Result<Box<dyn Read + 'a>> {
+enum SingleDecoder<'a> {
+    Gzip(Box<GzDecoder<Box<dyn BufRead + 'a>>>),
+    Xz(Box<xz2::bufread::XzDecoder<Box<dyn BufRead + 'a>>>),
+}
+impl Read for SingleDecoder<'_> {
+    fn read(&mut self, bytes: &mut [u8]) -> std::io::Result<usize> {
+        match self {
+            Self::Gzip(d) => d.read(bytes),
+            Self::Xz(d) => d.read(bytes),
+        }
+    }
+}
+impl<'a> SingleDecoder<'a> {
+    fn into_inner(self) -> Box<dyn BufRead + 'a> {
+        match self {
+            Self::Gzip(d) => (*d).into_inner(),
+            Self::Xz(d) => (*d).into_inner(),
+        }
+    }
+}
+fn decoder<'a>(mut reader: impl Read + 'a) -> Result<SingleDecoder<'a>> {
     let mut magic = [0u8; 6];
     reader.read_exact(&mut magic)?;
-    let input = Cursor::new(magic).chain(reader);
+    let input: Box<dyn BufRead + 'a> = Box::new(BufReader::new(Cursor::new(magic).chain(reader)));
     if magic.starts_with(&[0x1f, 0x8b, 0x08]) {
-        Ok(Box::new(GzDecoder::new(input)))
+        Ok(SingleDecoder::Gzip(Box::new(GzDecoder::new(input))))
     } else if magic == [0xfd, b'7', b'z', b'X', b'Z', 0x00] {
         let stream = xz2::stream::Stream::new_stream_decoder(XZ_MEMORY_LIMIT, 0)?;
-        Ok(Box::new(xz2::read::XzDecoder::new_stream(input, stream)))
+        Ok(SingleDecoder::Xz(Box::new(
+            xz2::bufread::XzDecoder::new_stream(input, stream),
+        )))
     } else {
         Err("driving archive must have gzip or XZ magic".into())
     }
+}
+fn finish_tar(mut remaining: std::io::Take<SingleDecoder<'_>>) -> Result<()> {
+    let mut bytes = [0u8; 65536];
+    loop {
+        let n = remaining.read(&mut bytes)?;
+        if n == 0 {
+            break;
+        }
+        if bytes[..n].iter().any(|&b| b != 0) {
+            return Err("nonzero content after driving tar terminator".into());
+        }
+    }
+    if remaining.limit() == 0 {
+        return Err("driving fixture archive expansion exceeds bound".into());
+    }
+    let mut compressed = remaining.into_inner().into_inner();
+    if compressed.read(&mut [0u8; 1])? != 0 {
+        return Err("trailing compressed bytes or second driving archive stream".into());
+    }
+    Ok(())
 }
 fn extract(reader: impl Read, output: &Path, compact_images: bool) -> Result<Vec<Value>> {
     let bounded = decoder(reader)?.take(MAX_UNPACKED + 1);
@@ -205,11 +247,7 @@ fn extract(reader: impl Read, output: &Path, compact_images: bool) -> Result<Vec
             json!({"bytes":copied,"sha256":format!("{:x}",digest.finalize())}),
         );
     }
-    let mut remaining = archive.into_inner();
-    std::io::copy(&mut remaining, &mut std::io::sink())?;
-    if remaining.limit() == 0 {
-        return Err("driving fixture archive expansion exceeds bound".into());
-    }
+    finish_tar(archive.into_inner())?;
     let pin = actual
         .remove("fixture.json")
         .ok_or("missing fixture.json")?;
@@ -364,6 +402,49 @@ pub fn cli() -> Result<()> {
 mod tests {
     use super::*;
     use flate2::{write::GzEncoder, Compression};
+    fn compress(data: &[u8], xz: bool) -> Vec<u8> {
+        if xz {
+            let mut encoder = xz2::write::XzEncoder::new(Vec::new(), 1);
+            encoder.write_all(data).unwrap();
+            encoder.finish().unwrap()
+        } else {
+            let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+            encoder.write_all(data).unwrap();
+            encoder.finish().unwrap()
+        }
+    }
+    // Exercise stream termination directly, before a missing/invalid fixture
+    // manifest could mask acceptance of appended archive data.
+    fn termination(data: &[u8]) -> Result<()> {
+        let mut tar = tar::Archive::new(decoder(data)?.take(MAX_UNPACKED + 1));
+        for entry in tar.entries()?.raw(true) {
+            let mut entry = entry?;
+            std::io::copy(&mut entry, &mut std::io::sink())?;
+        }
+        finish_tar(tar.into_inner())
+    }
+    #[test]
+    fn strict_single_stream_end_allows_only_zero_tar_padding() {
+        for xz in [false, true] {
+            let zeros = vec![0u8; 4096];
+            let good = compress(&zeros, xz);
+            assert!(termination(&good).is_ok());
+            let mut after_tar = zeros.clone();
+            after_tar.extend_from_slice(b"hidden tar member");
+            assert!(termination(&compress(&after_tar, xz)).is_err());
+            let mut second = good.clone();
+            second.extend_from_slice(&good);
+            assert!(termination(&second).is_err());
+            let mut junk = good.clone();
+            junk.extend_from_slice(b"junk");
+            assert!(termination(&junk).is_err());
+            assert!(termination(&good[..good.len() - 1]).is_err());
+            let mut corrupt = good;
+            let end = corrupt.len() - 1;
+            corrupt[end] ^= 1;
+            assert!(termination(&corrupt).is_err());
+        }
+    }
     fn packed(members: &[(&str, tar::EntryType, &[u8])]) -> Vec<u8> {
         let mut archive = tar::Builder::new(GzEncoder::new(Vec::new(), Compression::default()));
         for (name, kind, data) in members {
