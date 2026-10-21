@@ -39,10 +39,19 @@ UI_APPLICATION_DIAGNOSTIC_OUTPUT="$proof" UI_APPLICATION_FPS_DIAGNOSTIC=1 CARGO_
   cargo test --manifest-path "$diagnostic_root/rust/Cargo.toml" -p openpilot-dev-tools \
   --features ui-application-lifecycle-native --test ui_application_lifecycle_reference \
   --locked -- --exact twenty_original_environment_cases_preserve_admission_and_files --nocapture \
-  > "$proof/native.stdout" 2> "$proof/native.stderr"
+  > "$proof/native-test.stdout" 2> "$proof/native-test.stderr"
 native_status=$?
 set -e
 printf 'original=%s native_test=%s\n' "$original_status" "$native_status" > "$proof/status.txt"
 sha256sum "$proof"/*.png > "$proof/images.sha256" 2>/dev/null || true
 find "$proof" -maxdepth 1 -type f -printf '%f %s bytes\n' | sort > "$proof/contents.txt"
 cat "$proof/status.txt"
+
+# A completed diagnostic requires actual source/native FPS observations; a
+# compile error or test-only graft failure cannot masquerade as data.
+test -s "$proof/original-fps.json"
+test -s "$proof/native.exit"
+grep -F 'UI_APPLICATION_FPS_DIAGNOSTIC frame=' "$proof/native.stderr"
+! grep -F 'could not compile' "$proof/native-test.stderr"
+git rev-parse HEAD > "$proof/source-commit.txt"
+printf '%s\n' "$DIAGNOSTIC_WORKFLOW_SHA" > "$proof/workflow-commit.txt"

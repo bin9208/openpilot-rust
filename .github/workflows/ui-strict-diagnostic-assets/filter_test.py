@@ -15,7 +15,7 @@ text = text.replace(before_loop, before_loop + '''        if capture["name"].as_
 ''')
 after_run = '        let result = command.output().unwrap();\n'
 # One earlier test also uses command.output(); patch only the matrix body.
-assert text.count(after_run) == 2
+assert text[text.index(before_loop):].count(after_run) == 1
 position = text.index(after_run, text.index(before_loop)) + len(after_run)
 graft = '''        let destination = PathBuf::from(std::env::var_os("UI_APPLICATION_DIAGNOSTIC_OUTPUT").expect("diagnostic output"));
         fs::create_dir_all(&destination).unwrap();
