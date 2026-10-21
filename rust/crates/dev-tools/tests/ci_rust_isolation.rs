@@ -2588,3 +2588,53 @@ fn paramsd_loop_native_controller_keeps_original_and_full_sealed_comparison() {
         true,
     );
 }
+
+#[test]
+fn logmessaged_startup_retirement_keeps_live_original_and_same_elf_absent_proof() {
+    let data = workflow();
+    let job = &data["jobs"]["support-runtime"];
+    let steps = job["steps"].as_array().unwrap();
+    let selected: Vec<_> = steps
+        .iter()
+        .filter(|step| {
+            step["name"] == "Require same-ELF logmessaged startup with historical checker absent"
+        })
+        .collect();
+    assert_eq!(selected.len(), 1);
+    absent(selected[0], &["if", "continue-on-error"]);
+    required(
+        selected[0]["run"].as_str().unwrap(),
+        &[
+            "LOGMESSAGED_STARTUP_RETIREMENT_ORIGINAL=",
+            "for lane in present absent",
+            "test ! -e \"$roots/absent/rust/tools/check_logmessaged_startup.py\"",
+            "-e trace=execve,execveat",
+            "sha256sum -c \"$proof/inputs.sha256\"",
+            "cmp \"$proof/inputs.stat\" \"$proof/inputs-after.stat\"",
+            "--features logmessaged-startup-native --test logmessaged_startup_retirement --locked",
+        ],
+    );
+    let paired: Vec<_> = steps
+        .iter()
+        .filter(|step| {
+            step["name"]
+                == "Compare native log collector startup controller with unchanged original"
+        })
+        .collect();
+    assert_eq!(paired.len(), 1);
+    absent(paired[0], &["if", "continue-on-error"]);
+    let run = paired[0]["run"].as_str().unwrap();
+    let seal = run
+        .find("sha256sum \"$checker\" \"$collector\" \"${original_sources[@]}\"")
+        .unwrap();
+    let original = run
+        .find("python rust/tools/check_logmessaged_startup.py --collector")
+        .unwrap();
+    assert!(seal < original);
+    assert_eq!(
+        run.matches("sha256sum -c \"$proof/original-inputs.sha256\"")
+            .count(),
+        3
+    );
+    artifacts(job);
+}

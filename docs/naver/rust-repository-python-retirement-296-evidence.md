@@ -5022,3 +5022,38 @@ Panda reference/finalization Clippy. This establishes the repaired policy and
 reference compilation at this source, not a new actual Panda timestamp proof.
 It does not retire the Python fixture/source/controller family or substitute
 for the new paramsd sealed-numeric full daemon job.
+
+
+## Bluetooth post-deletion acceptance and LLVM 20 cloud evidence (2026-10-21)
+
+Actual checked source `b43ac10d78c20029c86028e96811678f8cff5a1d` passed
+[Bluetooth post-deletion run39521331522/job118965606861](https://github.com/bin9208/openpilot-rust/actions/runs/39521331522/job/118965606861).
+The diagnostic workflow commit is separately `cc560cf36a9b5ea302cba5910c2d1f525968b8e7`;
+artifact SOURCE_COMMIT and both checkout assertions identify b43ac10d.
+Artifact12311752216,51,565,169bytes, archive SHA256
+`c50973c0e3ca976acfdacc5cc55515c7f0872f21e9ff23b2186d1de75690e06b`
+contains all14 passing caller receipts,253config cases (97accepted),721journal
+operations,37gesture cases/260,012steps. Same-ELF native roots with the retired
+Python present/absent have identical config/journal reports and37gesture inputs.
+Exec traces contain exactly checker+fixture for config/journal and one generator
+for each gesture lane, with no failed exec. Journal pre/post ELF hashes agree.
+The source-policy companion job118965606642 passed13disk,68isolation,2lagd tests.
+This accepts the three removals from61f4f275; inventory remains218/3/3359.
+
+The older full PR
+[LLVM20 job118943760505](https://github.com/bin9208/openpilot-rust/actions/runs/39514415599/job/118943760505)
+passed108tests across30suites. Event head was62e8c235ccc1fa6e109d3c02d9bd76102047efba;
+actual merge checkout4a3336f564e5766b07627633a1b9d72038693d92.
+The graph/binding/cold-prefix suites passed92tests, primitive/provider suites16.
+Pinned LLVM archive/library hashes and ldd have been inspected. Artifact12311119743
+is423bytes, SHA256 `6e1de22f25d3528119ef699f20cbfe3a8644b4dd82c1c500d030adb5b45ad66c`;
+it contains the dependency listing; test evidence is the job log. These are
+selected compiler-path results, not complete Python retirement or device evidence.
+
+Source13d20653 registers the same-ELF logmessaged startup retirement test. The
+main workflow additionally requires live unchanged-original observations, native
+present/absent roots, all three packet/disk observations and seven exact native
+execs per lane; source/ELF seals precede the original invocation and are rechecked.
+The new469 disk-guard and mandatory-step policies await cloud execution. The
+historical checker remains until that proof passes. Local checks were Rust
+formatting, YAML/shell syntax and diff review only.

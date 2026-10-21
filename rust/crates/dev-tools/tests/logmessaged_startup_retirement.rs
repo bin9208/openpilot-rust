@@ -13,6 +13,7 @@ use std::{
 
 const CASES: [&str; 3] = ["legacy-source", "ready-source", "ready-native"];
 const HISTORICAL: &str = "rust/tools/check_logmessaged_startup.py";
+const ORIGINAL_MARKER: &str = r#"{"msg": "first-error-after-start", "levelnum": 40}"#;
 
 fn required(name: &str) -> PathBuf {
     let path = PathBuf::from(std::env::var_os(name).expect(name));
@@ -235,14 +236,19 @@ fn same_elf_present_and_absent_lanes_match_live_original_startup() {
         for case in CASES {
             let expected: Value = read_json(&original.join(case).join("observed.json"));
             assert_eq!(
+                expected,
+                json!({"logMessage":[ORIGINAL_MARKER], "errorLogMessage":
+                    if case == "legacy-source" { json!([]) } else { json!([ORIGINAL_MARKER]) }})
+            );
+            assert_eq!(
                 read_json(&output.join(case).join("observed.json")),
                 expected
             );
             for service in ["logMessage", "errorLogMessage"] {
-                assert_eq!(
-                    packets(&output.join(case), service),
-                    packets(&original.join(case), service)
-                );
+                let expected_packets: Vec<String> =
+                    serde_json::from_value(expected[service].clone()).unwrap();
+                assert_eq!(packets(&original.join(case), service), expected_packets);
+                assert_eq!(packets(&output.join(case), service), expected_packets);
             }
             assert_eq!(disk(&output.join(case)), disk(&original.join(case)));
             let exit = read_json(&output.join(case).join("collector/exit.json"));
