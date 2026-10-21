@@ -1,4 +1,4 @@
-name: 296 driver no-collector family with sealed model reuse
+name: 296 driver warmup diagnosis with unchanged deadline and sealed input reuse
 'on':
   push:
     branches:
@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
-      EXPECTED_SOURCE: 692af2dc3ea25cdf5a4c43c31f1fb509582b8d44
+      EXPECTED_SOURCE: 83f1da3f49ecffe9037c97476ae188ddcee9a562
       RUSTUP_TOOLCHAIN: 1.94.0
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
@@ -32,7 +32,7 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: 692af2dc3ea25cdf5a4c43c31f1fb509582b8d44
+        ref: 83f1da3f49ecffe9037c97476ae188ddcee9a562
     - name: Require exact source, disk room and native prerequisites
       shell: bash
       run: 'set -euo pipefail
@@ -299,6 +299,30 @@ jobs:
         },sort_keys=True))\nPY_HISTORICAL\nprintf 'DRIVER_DAEMON_HISTORICAL_COLLECTOR_CAPTURE=%s\\nDRIVER_DAEMON_HISTORICAL_COLLECTOR_MANIFEST_SHA256=%s\\\
         nDRIVER_DAEMON_HISTORICAL_COLLECTOR_SOURCE_COMMIT=%s\\n' \"$held/original\" 57a3a05c0a0fa5b3318fc3fb1e3c07e9a9838b3379c3cb2e50e96974ed7bfd4a\
         \ 34e5e052f7c19a2c2f22ef9a0298d228ab5ce949 >>\"$GITHUB_ENV\"\n"
+    - name: Observe only a second warmup TIMEOUT before unchanged cleanup
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driver-daemon-native-296"
+
+        python3 - <<''PY_OBSERVER''
+
+        import base64,hashlib,os
+
+        from pathlib import Path
+
+        raw=base64.b64decode("IiIiSG9zdGVkLW9ubHkgZGlhZ25vc3RpYyBsYXVuY2hlcjsgbmV2ZXIgY2hhbmdlcyBjaGVja2VyIHJlc3VsdHMgb3IgZGVhZGxpbmVzLgoKVXNhZ2U6IHB5dGhvbiBvYnNlcnZlX3dhcm11cF90aW1lb3V0LnB5IENBUFRVUkVfSEVMUEVSIFt1bmNoYW5nZWQgaGVscGVyIGFyZ3MuLi5dCkluc3RhbGwgYXJvdW5kIHRoZSBleGlzdGluZyBuby1jb2xsZWN0b3IgY2FwdHVyZSBvbmNlOyBubyBzZWNvbmQgbW9kZWwgcnVuLgoiIiIKaW1wb3J0IGltcG9ydGxpYi5tYWNoaW5lcnkKaW1wb3J0IGluc3BlY3QKaW1wb3J0IGpzb24KaW1wb3J0IG9zCmZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aAppbXBvcnQgcnVucHkKaW1wb3J0IHN5cwppbXBvcnQgdGltZQoKCmRlZiByZWFkKHBhdGgsIGxpbWl0PTY1NTM2KToKICAgIHRyeToKICAgICAgICB3aXRoIFBhdGgocGF0aCkub3BlbigicmIiKSBhcyBzb3VyY2U6CiAgICAgICAgICAgIGRhdGEgPSBzb3VyY2UucmVhZChsaW1pdCArIDEpCiAgICAgICAgcmV0dXJuIHsidGV4dCI6IGRhdGFbOmxpbWl0XS5kZWNvZGUoZXJyb3JzPSJyZXBsYWNlIiksICJ0cnVuY2F0ZWQiOiBsZW4oZGF0YSkgPiBsaW1pdH0KICAgIGV4Y2VwdCBPU0Vycm9yIGFzIGVycm9yOgogICAgICAgIHJldHVybiB7ImVycm9yIjogc3RyKGVycm9yKX0KCgpkZWYgc25hcHNob3QoZnJhbWUsIGRlc3RpbmF0aW9uKToKICAgIHdoaWxlIGZyYW1lIGlzIG5vdCBOb25lIGFuZCBmcmFtZS5mX2NvZGUuY29fbmFtZSAhPSAiY2hlY2siOgogICAgICAgIGZyYW1lID0gZnJhbWUuZl9iYWNrCiAgICBpZiBmcmFtZSBpcyBOb25lIG9yICJwcm9jZXNzZXMiIG5vdCBpbiBmcmFtZS5mX2xvY2FsczoKICAgICAgICByYWlzZSBSdW50aW1lRXJyb3IoInVuY2hhbmdlZCBjaGVja2VyIHByb2Nlc3Mgb3duZXIgZnJhbWUgbm90IGZvdW5kIikKICAgIHJlcG9ydCA9IHsib2JzZXJ2ZWRfbW9ub3RvbmljX25zIjogdGltZS5tb25vdG9uaWNfbnMoKSwKICAgICAgICAgICAgICAidHJpZ2dlciI6ICJzZWNvbmQgcGVlciBUSU1FT1VULCBiZWZvcmUgdW5jaGFuZ2VkIHdhcm11cCBhc3NlcnRpb24vZmluYWxseSIsCiAgICAgICAgICAgICAgImRlYWRsaW5lX2NoYW5nZWQiOiBGYWxzZSwgImNwdWluZm8iOiByZWFkKCIvcHJvYy9jcHVpbmZvIiwgMTMxMDcyKSwKICAgICAgICAgICAgICAicHJvY2Vzc2VzIjogW119CiAgICBmb3IgcHJvY2VzcyBpbiBmcmFtZS5mX2xvY2Fsc1sicHJvY2Vzc2VzIl06CiAgICAgICAgcm9vdCA9IFBhdGgoIi9wcm9jIikgLyBzdHIocHJvY2Vzcy5waWQpCiAgICAgICAgYXJndiA9IHByb2Nlc3MuYXJncwogICAgICAgIGl0ZW0gPSB7InBpZCI6IHByb2Nlc3MucGlkLCAiYXJndiI6IFtzdHIoYXJnKSBmb3IgYXJnIGluIGFyZ3ZdIGlmIGlzaW5zdGFuY2UoYXJndiwgKGxpc3QsIHR1cGxlKSkgZWxzZSBzdHIoYXJndiksCiAgICAgICAgICAgICAgICAicmV0dXJuY29kZV9iZWZvcmVfY2xlYW51cCI6IHByb2Nlc3MucG9sbCgpLCAidGFza3MiOiB7fX0KICAgICAgICBmb3IgbmFtZSBpbiAoInN0YXR1cyIsICJzdGF0IiwgIndjaGFuIiwgInN5c2NhbGwiLCAibWFwcyIsICJsaW1pdHMiKToKICAgICAgICAgICAgaXRlbVtuYW1lXSA9IHJlYWQocm9vdCAvIG5hbWUsIDI2MjE0NCBpZiBuYW1lID09ICJtYXBzIiBlbHNlIDY1NTM2KQogICAgICAgIHRyeToKICAgICAgICAgICAgZm9yIHRhc2sgaW4gc29ydGVkKChyb290IC8gInRhc2siKS5pdGVyZGlyKCkpWzoxMjhdOgogICAgICAgICAgICAgICAgaXRlbVsidGFza3MiXVt0YXNrLm5hbWVdID0gewogICAgICAgICAgICAgICAgICAgIG5hbWU6IHJlYWQodGFzayAvIG5hbWUpIGZvciBuYW1lIGluICgic3RhdHVzIiwgInN0YXQiLCAid2NoYW4iLCAic3lzY2FsbCIsICJzdGFjayIpfQogICAgICAgIGV4Y2VwdCBPU0Vycm9yIGFzIGVycm9yOgogICAgICAgICAgICBpdGVtWyJ0YXNrX2Vycm9yIl0gPSBzdHIoZXJyb3IpCiAgICAgICAgcmVwb3J0WyJwcm9jZXNzZXMiXS5hcHBlbmQoaXRlbSkKICAgIHdpdGggZGVzdGluYXRpb24ud2l0aF9uYW1lKCJ3YXJtdXAtYmVmb3JlLWNsZWFudXAuanNvbiIpLm9wZW4oIngiKSBhcyBzaW5rOgogICAgICAgIGpzb24uZHVtcChyZXBvcnQsIHNpbmssIGluZGVudD0yKQogICAgICAgIHNpbmsud3JpdGUoIlxuIikKCgpvcmlnaW5hbF9leGVjID0gaW1wb3J0bGliLm1hY2hpbmVyeS5Tb3VyY2VGaWxlTG9hZGVyLmV4ZWNfbW9kdWxlCgoKZGVmIGV4ZWNfbW9kdWxlKGxvYWRlciwgbW9kdWxlKToKICAgIG9yaWdpbmFsX2V4ZWMobG9hZGVyLCBtb2R1bGUpCiAgICBpZiBtb2R1bGUuX19uYW1lX18gIT0gIm9yaWdpbmFsX2RyaXZlcl9kYWVtb25fY2hlY2tlciI6CiAgICAgICAgcmV0dXJuCiAgICBvcmlnaW5hbF91bnRpbCA9IG1vZHVsZS5MaW5lcy51bnRpbAogICAgY291bnRzID0ge30KCiAgICBkZWYgdW50aWwobGluZXMsIGV4cGVjdGVkLCB0aW1lb3V0PTYwKToKICAgICAgICByZXN1bHQgPSBvcmlnaW5hbF91bnRpbChsaW5lcywgZXhwZWN0ZWQsIHRpbWVvdXQpCiAgICAgICAgaWYgbGluZXMuZGVzdGluYXRpb24ubmFtZSA9PSAicGVlci5sb2ciIGFuZCByZXN1bHQgPT0gIlRJTUVPVVQiOgogICAgICAgICAgICBrZXkgPSBzdHIobGluZXMuZGVzdGluYXRpb24pCiAgICAgICAgICAgIGNvdW50c1trZXldID0gY291bnRzLmdldChrZXksIDApICsgMQogICAgICAgICAgICBpZiBjb3VudHNba2V5XSA9PSAyOgogICAgICAgICAgICAgICAgdHJ5OgogICAgICAgICAgICAgICAgICAgIHNuYXBzaG90KGluc3BlY3QuY3VycmVudGZyYW1lKCkuZl9iYWNrLCBsaW5lcy5kZXN0aW5hdGlvbikKICAgICAgICAgICAgICAgIGV4Y2VwdCBFeGNlcHRpb24gYXMgZXJyb3I6CiAgICAgICAgICAgICAgICAgICAgIyBEaWFnbm9zdGljIGZhaWx1cmUgbXVzdCBuZWl0aGVyIHN1cHByZXNzIG5vciByZXBsYWNlIHRoZQogICAgICAgICAgICAgICAgICAgICMgb3JpZ2luYWwgY2hlY2tlcidzIGFzc2VydGlvbiBhbmQgcHJvY2VzcyBjbGVhbnVwLgogICAgICAgICAgICAgICAgICAgIGxpbmVzLmRlc3RpbmF0aW9uLndpdGhfbmFtZSgid2FybXVwLW9ic2VydmVyLWVycm9yLnR4dCIpLndyaXRlX3RleHQocmVwcihlcnJvcikgKyAiXG4iKQogICAgICAgIHJldHVybiByZXN1bHQKCiAgICBtb2R1bGUuTGluZXMudW50aWwgPSB1bnRpbAoKCmlmIF9fbmFtZV9fID09ICJfX21haW5fXyI6CiAgICBoZWxwZXIgPSBzeXMuYXJndlsxXQogICAgc3lzLmFyZ3YgPSBzeXMuYXJndlsxOl0KICAgIGltcG9ydGxpYi5tYWNoaW5lcnkuU291cmNlRmlsZUxvYWRlci5leGVjX21vZHVsZSA9IGV4ZWNfbW9kdWxlCiAgICB0cnk6CiAgICAgICAgcnVucHkucnVuX3BhdGgoaGVscGVyLCBydW5fbmFtZT0iX19tYWluX18iKQogICAgZmluYWxseToKICAgICAgICBpbXBvcnRsaWIubWFjaGluZXJ5LlNvdXJjZUZpbGVMb2FkZXIuZXhlY19tb2R1bGUgPSBvcmlnaW5hbF9leGVjCg==",validate=True)
+
+        assert hashlib.sha256(raw).hexdigest()=="90b4ca9bd22f2f518a310533aa6b48f19beb58798880d286dab1da7618ec4acc"
+
+        (Path(os.environ[''RUNNER_TEMP''])/''driver-daemon-native-296/observe_warmup_timeout.py'').write_bytes(raw)
+
+        PY_OBSERVER
+
+        cat /proc/cpuinfo >"$proof/current-host-cpuinfo.txt"
+
+        uname -a >"$proof/current-host-uname.txt"
+
+        '
     - name: Capture fresh independent no-collector original packets and source pins
       shell: bash
       run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/driver-daemon-native-296\"\nrust/tools/check-disk-space --path \"$RUNNER_TEMP\"\
@@ -307,31 +331,32 @@ jobs:
         root = (Path(os.environ[\"RUNNER_TEMP\"]) / \"model-msgq-python\").resolve(strict=True)\nlocations = [Path(ipc.__file__).resolve(strict=True),\
         \ Path(vision.__file__).resolve(strict=True)]\nassert all(path.is_relative_to(root) for path in locations), locations\n\
         print(json.dumps({\"binding_root\":str(root),\"extensions\":[str(path) for path in locations]},sort_keys=True))\n\
-        PY_BINDING\nPYTHONPATH=\"$RUNNER_TEMP/model-msgq-python:$PYTHONPATH\" python -P \"$proof/capture_original_driver_no_collector.py\"\
-        \ --root \"$GITHUB_WORKSPACE\" --source-commit \"$EXPECTED_SOURCE\" --expected-checker-sha256 ea1266dc395dab662319bd3637ad90440989db3d2937756dbf07fbb993520f5b\
-        \ --binary \"$GITHUB_WORKSPACE/rust/target/debug/openpilot-dmonitoringmodeld\" --catalog \"$RUNNER_TEMP/native-catalog\"\
-        \ --models \"$RUNNER_TEMP/original-models\" --binding \"$RUNNER_TEMP/model-msgq-python\" --output \"$proof/original-no-collector\"\
-        \ >\"$proof/original-no-collector.stdout\" 2>\"$proof/original-no-collector.stderr\" || { cat \"$proof/original-no-collector.stderr\"\
-        ; exit 1; }\npython - <<'PY_NO_COLLECTOR_MANIFEST' >\"$proof/original-no-collector-summary.json\"\nimport json, os\n\
-        from pathlib import Path\nproof = Path(os.environ[\"RUNNER_TEMP\"]) / \"driver-daemon-native-296\"\nmanifest = json.loads((proof\
-        \ / \"original-no-collector/reference-manifest.json\").read_text())\nassert manifest[\"policy\"][\"collector_mode\"\
-        ] == \"absent\"\nassert manifest[\"policy\"][\"requested_output_bytes_hex\"] == os.fsencode(proof / \"original-no-collector\"\
-        ).hex()\nassert [(case[\"width\"], case[\"raw\"], case[\"frame_count\"], case[\"reference_count\"]) for case in manifest[\"\
-        cases\"]] == [\n    (1344, True, 4, 5), (1344, False, 1, 2), (1928, True, 4, 5), (1928, False, 1, 2)]\nassert len(manifest[\"\
-        files\"]) == 43 and len(manifest[\"original_source_inputs\"]) == 15\nreports = json.loads((proof / \"original-no-collector/report.json\"\
-        ).read_text())[\"runs\"]\nassert len(reports) == 4 and all(report[\"logging\"] is None for report in reports)\nprint(json.dumps({\"\
-        cases\":4,\"expected_packets\":14,\"input_frames\":10,\"logging\":None,\n                  \"imported_python_sources\"\
-        :len(manifest[\"loaded_python_sources\"])},sort_keys=True))\nPY_NO_COLLECTOR_MANIFEST\nno_collector_sha=\"$(sha256sum\
-        \ \"$proof/original-no-collector/reference-manifest.json\" | cut -d ' ' -f1)\"\nprintf 'DRIVER_DAEMON_NO_COLLECTOR_ORIGINAL_CAPTURE=%s\\\
-        nDRIVER_DAEMON_NO_COLLECTOR_MANIFEST_SHA256=%s\\nDRIVER_DAEMON_NO_COLLECTOR_PEER=%s\\nDRIVER_DAEMON_NO_COLLECTOR_NATIVE_OUTPUT=%s\\\
-        n' \"$proof/original-no-collector\" \"$no_collector_sha\" \"$proof/original-no-collector/driver-daemon-peer\" \"$proof/native-no-collector\"\
-        \ >> \"$GITHUB_ENV\"\nsha256sum \"$proof/original-no-collector/driver-daemon-peer\" rust/target/debug/openpilot-dmonitoringmodeld\
-        \ rust/target/debug/openpilot-logmessaged \"$RUNNER_TEMP/native-catalog/current.json\" \"$proof/original-no-collector/reference-manifest.json\"\
-        \ >\"$proof/native-inputs-before.sha256\"\nprintf 'DRIVER_DAEMON_ORIGINAL_MANIFEST_SHA256=%s\\n' \"$no_collector_sha\"\
-        \ >> \"$GITHUB_ENV\"\nprintf 'DRIVER_DAEMON_BINARY=%s\\nDRIVER_DAEMON_CATALOG=%s\\nDRIVER_DAEMON_COLLECTOR=%s\\nDRIVER_DAEMON_PEER=%s\\\
-        nDRIVER_DAEMON_MODELS=%s\\nDRIVER_DAEMON_ROOT=%s\\nDRIVER_DAEMON_SOURCE_COMMIT=%s\\nDRIVER_DAEMON_ORIGINAL_CAPTURE=%s\\\
-        nDRIVER_DAEMON_ORIGINAL_MANIFEST_SHA256=%s\\nDRIVER_DAEMON_NATIVE_OUTPUT=%s\\n' \"$GITHUB_WORKSPACE/rust/target/debug/openpilot-dmonitoringmodeld\"\
-        \ \"$RUNNER_TEMP/native-catalog\" \"$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged\" \"$proof/original-no-collector/driver-daemon-peer\"\
+        PY_BINDING\nPYTHONPATH=\"$RUNNER_TEMP/model-msgq-python:$PYTHONPATH\" python -P \"$proof/observe_warmup_timeout.py\"\
+        \ \"$proof/capture_original_driver_no_collector.py\" --root \"$GITHUB_WORKSPACE\" --source-commit \"$EXPECTED_SOURCE\"\
+        \ --expected-checker-sha256 ea1266dc395dab662319bd3637ad90440989db3d2937756dbf07fbb993520f5b --binary \"$GITHUB_WORKSPACE/rust/target/debug/openpilot-dmonitoringmodeld\"\
+        \ --catalog \"$RUNNER_TEMP/native-catalog\" --models \"$RUNNER_TEMP/original-models\" --binding \"$RUNNER_TEMP/model-msgq-python\"\
+        \ --output \"$proof/original-no-collector\" >\"$proof/original-no-collector.stdout\" 2>\"$proof/original-no-collector.stderr\"\
+        \ || { cat \"$proof/original-no-collector.stderr\"; exit 1; }\npython - <<'PY_NO_COLLECTOR_MANIFEST' >\"$proof/original-no-collector-summary.json\"\
+        \nimport json, os\nfrom pathlib import Path\nproof = Path(os.environ[\"RUNNER_TEMP\"]) / \"driver-daemon-native-296\"\
+        \nmanifest = json.loads((proof / \"original-no-collector/reference-manifest.json\").read_text())\nassert manifest[\"\
+        policy\"][\"collector_mode\"] == \"absent\"\nassert manifest[\"policy\"][\"requested_output_bytes_hex\"] == os.fsencode(proof\
+        \ / \"original-no-collector\").hex()\nassert [(case[\"width\"], case[\"raw\"], case[\"frame_count\"], case[\"reference_count\"\
+        ]) for case in manifest[\"cases\"]] == [\n    (1344, True, 4, 5), (1344, False, 1, 2), (1928, True, 4, 5), (1928,\
+        \ False, 1, 2)]\nassert len(manifest[\"files\"]) == 43 and len(manifest[\"original_source_inputs\"]) == 15\nreports\
+        \ = json.loads((proof / \"original-no-collector/report.json\").read_text())[\"runs\"]\nassert len(reports) == 4 and\
+        \ all(report[\"logging\"] is None for report in reports)\nprint(json.dumps({\"cases\":4,\"expected_packets\":14,\"\
+        input_frames\":10,\"logging\":None,\n                  \"imported_python_sources\":len(manifest[\"loaded_python_sources\"\
+        ])},sort_keys=True))\nPY_NO_COLLECTOR_MANIFEST\nno_collector_sha=\"$(sha256sum \"$proof/original-no-collector/reference-manifest.json\"\
+        \ | cut -d ' ' -f1)\"\nprintf 'DRIVER_DAEMON_NO_COLLECTOR_ORIGINAL_CAPTURE=%s\\nDRIVER_DAEMON_NO_COLLECTOR_MANIFEST_SHA256=%s\\\
+        nDRIVER_DAEMON_NO_COLLECTOR_PEER=%s\\nDRIVER_DAEMON_NO_COLLECTOR_NATIVE_OUTPUT=%s\\n' \"$proof/original-no-collector\"\
+        \ \"$no_collector_sha\" \"$proof/original-no-collector/driver-daemon-peer\" \"$proof/native-no-collector\" >> \"$GITHUB_ENV\"\
+        \nsha256sum \"$proof/original-no-collector/driver-daemon-peer\" rust/target/debug/openpilot-dmonitoringmodeld rust/target/debug/openpilot-logmessaged\
+        \ \"$RUNNER_TEMP/native-catalog/current.json\" \"$proof/original-no-collector/reference-manifest.json\" >\"$proof/native-inputs-before.sha256\"\
+        \nprintf 'DRIVER_DAEMON_ORIGINAL_MANIFEST_SHA256=%s\\n' \"$no_collector_sha\" >> \"$GITHUB_ENV\"\nprintf 'DRIVER_DAEMON_BINARY=%s\\\
+        nDRIVER_DAEMON_CATALOG=%s\\nDRIVER_DAEMON_COLLECTOR=%s\\nDRIVER_DAEMON_PEER=%s\\nDRIVER_DAEMON_MODELS=%s\\nDRIVER_DAEMON_ROOT=%s\\\
+        nDRIVER_DAEMON_SOURCE_COMMIT=%s\\nDRIVER_DAEMON_ORIGINAL_CAPTURE=%s\\nDRIVER_DAEMON_ORIGINAL_MANIFEST_SHA256=%s\\\
+        nDRIVER_DAEMON_NATIVE_OUTPUT=%s\\n' \"$GITHUB_WORKSPACE/rust/target/debug/openpilot-dmonitoringmodeld\" \"$RUNNER_TEMP/native-catalog\"\
+        \ \"$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged\" \"$proof/original-no-collector/driver-daemon-peer\"\
         \ \"$RUNNER_TEMP/original-models\" \"$GITHUB_WORKSPACE\" \"$EXPECTED_SOURCE\" \"$proof/original-no-collector\" \"\
         $no_collector_sha\" \"$proof/native-unused\" >>\"$GITHUB_ENV\"\ncat \"$proof/original-no-collector.stdout\"\n"
     - name: Capture unchanged original driver CLI help and admission failures
