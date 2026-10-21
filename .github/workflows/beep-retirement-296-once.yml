@@ -16,11 +16,11 @@ jobs:
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
-      EXPECTED_SOURCE: 332d99bc2e8ae5f24be956284e5a65579fb1f632
+      EXPECTED_SOURCE: 9d30d353f476bb69b1fe1a1e8c304f7f41aa1bc6
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 332d99bc2e8ae5f24be956284e5a65579fb1f632
+        ref: 9d30d353f476bb69b1fe1a1e8c304f7f41aa1bc6
         persist-credentials: false
     - name: Admit exact source and native-only prerequisites
       run: 'set -euo pipefail
