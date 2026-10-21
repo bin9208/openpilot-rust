@@ -129,7 +129,7 @@ mod original {
 
 #[cfg(feature = "native-skip-miri")]
 fn native(frame: &Frame<'_>, rows: &mut Vec<Value>) -> Result<(), Box<dyn std::error::Error>> {
-    use openpilot_opencv_runtime::{self as cv, Dimensions};
+    use openpilot_opencv_runtime::{self as cv, Dimensions, DnnNet};
     use openpilot_xiaoge::{
         config::Config,
         inference::{lane_image, lane_tensor, Geometry, LaneModel},
@@ -183,6 +183,43 @@ fn native(frame: &Frame<'_>, rows: &mut Vec<Value>) -> Result<(), Box<dyn std::e
 
     let models = std::env::var("XIAOGE_BENCH_MODELS")?;
     let path = Path::new(&models).join("lane.onnx");
+    let input = lane_tensor(&image)?;
+    let mut forward_before = DnnNet::load(&path)?;
+    let mut forward_after = DnnNet::load(&path)?;
+    let names = forward_before.output_names()?;
+    let outputs = forward_before.forward(input.view(), &names)?;
+    let predictions = outputs[names.iter().position(|name| name == "output0").unwrap()].view();
+    let prototypes = outputs[names.iter().position(|name| name == "output1").unwrap()].view();
+    assert!(matches!(predictions.shape(), [1, 42, _]));
+    assert_eq!(prototypes.shape(), [1, 32, 104, 104]);
+    let old_head = baseline::Head::new(predictions.values(), prototypes.values())?;
+    let new_head = Head::new(predictions.values(), prototypes.values())?;
+    assert_eq!(
+        serde_json::to_value(old_head.result(0.25, 0.5)?)?,
+        serde_json::to_value(new_head.result(0.25, 0.5)?)?
+    );
+    rows.push(pair(
+        "lane-real-output-head",
+        32,
+        || {
+            black_box(old_head.result(black_box(0.25), 0.5).unwrap());
+        },
+        || {
+            black_box(new_head.result(black_box(0.25), 0.5).unwrap());
+        },
+    ));
+    // An unchanged-forward control separates model/backend cost and timing noise
+    // from preprocessing/head savings. No speedup is expected for this row.
+    rows.push(pair(
+        "lane-unchanged-dnn-forward-control",
+        2,
+        || {
+            black_box(forward_before.forward(input.view(), &names).unwrap());
+        },
+        || {
+            black_box(forward_after.forward(input.view(), &names).unwrap());
+        },
+    ));
     let mut before = original::lane::LaneModel::load(&path);
     let mut after = LaneModel::load(&path);
     assert!(before.loaded(), "{}", before.error());
@@ -263,6 +300,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "baseline_source": "0682e933d3fea06e8953ace63fc521a29ee02b6e",
             "architecture": std::env::consts::ARCH,
             "native_models": cfg!(feature = "native-skip-miri"),
+            "wait_policy": std::env::var("XIAOGE_BENCH_POLICY").unwrap_or_else(|_| "default".to_owned()),
             "nv12_full_frame_bytes_avoided_per_bsd_inference": layout.width * (layout.height + layout.height/2),
             "lane_normalizations_before": 3 * 416 * 416,
             "lane_normalizations_after": 416 * 416,

@@ -171,11 +171,18 @@ jobs:
         run: |
           rust/tools/check-disk-space --path "$RUNNER_TEMP" --growth-mib 4096
           cargo run --quiet --release --manifest-path rust/Cargo.toml -p openpilot-xiaoge --features native-skip-miri --example xiaoge_compute_bench --locked > "$RUNNER_TEMP/xiaoge-compute.json"
+      - name: Probe active-wait CPU cost without changing the shipped policy
+        env:
+          XIAOGE_BENCH_POLICY: no-active-wait-experiment
+          OPENCV_THREAD_POOL_ACTIVE_WAIT_WORKER: '0'
+          OPENCV_THREAD_POOL_ACTIVE_WAIT_MAIN: '0'
+        run: rust/target/release/examples/xiaoge_compute_bench > "$RUNNER_TEMP/xiaoge-compute-no-active-wait.json"
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: xiaoge-compute-${{ github.sha }}
           path: |
             ${{ runner.temp }}/xiaoge-compute.json
+            ${{ runner.temp }}/xiaoge-compute-no-active-wait.json
             ${{ runner.temp }}/xiaoge-compute-opencv/receipt.json
             ${{ runner.temp }}/xiaoge-compute-opencv/native-libraries.sha256

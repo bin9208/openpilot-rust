@@ -136,9 +136,10 @@ The follow-up candidate targets these existing redundant operations:
   f32 bits into the two identical channels. Division count falls from 519,168
   to 173,056 per lane input; model input shape and all three planes are unchanged.
 - Lane mask reduction visits contiguous prototype pixels while retaining the
-  original channel accumulation order for each pixel. It omits rows numbered less than 52,
-  which the existing acceptance boundary already rejects, and skips per-class suppression work for
-  classes that were already discarded. NMS compacts its existing vector instead
+  original channel accumulation order for each pixel. It omits rows numbered
+  less than 52, which the existing acceptance boundary already rejects, and
+  skips per-class suppression work for classes that were already discarded.
+  NMS compacts its existing vector instead
   of allocating a replacement after each selected detection. Candidate order,
   confidence ties, float cancellation, NaNs and invalid bounds remain regression
   requirements; there is no reduced-precision or fused arithmetic substitution.
@@ -157,15 +158,26 @@ new ROI API has not been implemented. All functional execution remains hosted.
 The manual `compute_only` fast-workflow job builds the pinned, unchanged OpenCV
 provider on a GitHub-hosted ARM runner. It compares both implementations on the
 same inputs, warms both and alternates measurement order over nine samples.
-Reports separate NV12 extraction, mask cases, normalization, BSD preprocessing
-and complete real-model lane inference. Native measurements include both wall
-time and CLOCK_PROCESS_CPUTIME_ID for all OpenCV worker threads; the runtime
-caller-only thread CPU metric is not treated as the inference process total. Synthetic/stage speedups must not be
+Reports separate NV12 extraction, mask cases, normalization, BSD preprocessing,
+real-model output reduction and complete real-model lane inference. An
+unchanged DNN-forward control separates neural/backend cost and timing noise
+from preprocessing/head work. Native measurements include both wall time and
+CLOCK_PROCESS_CPUTIME_ID for all OpenCV worker threads; the runtime caller-only
+thread CPU metric is not treated as the inference process total.
+Synthetic/stage speedups must not be
 reported as a proportional reduction in whole-process or vehicle CPU usage.
 These checks do not measure GPU headroom or establish real-device latency.
 Final exact-source receipts, release identity and pending device acceptance are
 recorded in issue #416 after source freeze, rather than changing source merely
 to update an older snapshot's CI status.
+
+A second hosted-only probe disables the OpenCV pthread pool's main/worker
+active-wait loops in that benchmark process. The pinned
+[pool implementation](https://github.com/opencv/opencv/blob/fe38fc608f6acb8b68953438a62305d8318f4fcd/modules/core/src/parallel_impl.cpp#L71)
+defaults to 10,000/2,000 iterations respectively. This is a measurement
+experiment, not a shipped scheduling change: lower CPU time alone would not
+justify a policy that worsens inference latency. The production wait policy
+remains unchanged.
 
 ### GPU audit and limits
 
