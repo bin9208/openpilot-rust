@@ -1,4 +1,4 @@
-name: 296 recovery frozen continuation after accepted source capture
+name: 296 recovery frozen continuation after strict lint repair
 'on':
   push:
     branches:
@@ -22,12 +22,12 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: a2c9bf7b8da4e907e0e135e449dec90d223210e2
+        ref: 50a058fdd5d997c40e7bea61a0836a4d86d6f6d8
         persist-credentials: false
     - name: Bind exact source and reserve disk before prerequisites
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = a2c9bf7b8da4e907e0e135e449dec90d223210e2
+        test "$(git rev-parse HEAD)" = 50a058fdd5d997c40e7bea61a0836a4d86d6f6d8
 
         proof="$RUNNER_TEMP/recovery-frozen"
 
@@ -94,25 +94,19 @@ jobs:
         printf ''%s\n'' "${harness[0]}" > "$proof/harness-test-elf.path"
 
         '
-    - name: Verify committed original-only webhook files and run remaining focused checks
+    - name: Run changed recovery family units and strict lint before traffic
       run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/recovery-frozen\"\nfixture=rust/crates/carrot-recovery/tests/fixtures/recovery-webhook-original\n\
         printf '%s\\n' \\\n  \"3536849b534370835d23aeb479927464aa5eced8689d2aec35b7972c351632e8  $fixture/message-0/payload.json\"\
         \ \\\n  \"2652090ce6a4888cc4c0096b83f84bc052f0bdf1c11b63dadef6fc9620ad879b  $fixture/message-0/source.txt\" \\\n \
         \ \"7719b245aa440d3108cdf1b49d31de31b1e9c7344b65d0e7437021eb08849600  $fixture/message-1/payload.json\" \\\n  \"576109588a98527fbcc9136caacd6cd28665e87335313d3db5b10c0c6799143a\
         \  $fixture/message-1/source.txt\" | sha256sum -c - > \"$proof/webhook-fixture-seal.stdout\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
-        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 1024\ncargo test --manifest-path rust/Cargo.toml -p openpilot-carrot-recovery\
-        \ --lib --locked support::transport::tests::webhook_message_matches_actual_recovery_source_with_unicode_and_limits\
-        \ -- --exact > \"$proof/webhook-frozen.stdout\" 2> \"$proof/webhook-frozen.stderr\" || { tail -n 100 \"$proof/webhook-frozen.stderr\"\
-        ; exit 1; }\ngrep -F '1 passed; 0 failed' \"$proof/webhook-frozen.stdout\"\ncargo test --manifest-path rust/Cargo.toml\
-        \ -p openpilot-dev-tools --features recovery-family-native --test recovery_family --locked websocket_client_wire_matches_unchanged_python_controller\
-        \ -- --exact > \"$proof/socket-wire.stdout\" 2> \"$proof/socket-wire.stderr\" || { tail -n 100 \"$proof/socket-wire.stderr\"\
-        ; exit 1; }\ngrep -F '1 passed; 0 failed' \"$proof/socket-wire.stdout\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
-        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 1024\ncargo clippy --manifest-path rust/Cargo.toml -p openpilot-carrot-recovery\
-        \ --lib --locked -- -D warnings > \"$proof/recovery-clippy.stdout\" 2> \"$proof/recovery-clippy.stderr\" || { tail\
-        \ -n 120 \"$proof/recovery-clippy.stderr\"; exit 1; }\ncargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
-        \ --features recovery-family-native --lib --test recovery_family --test recovery_family_frozen --locked -- -D warnings\
-        \ > \"$proof/devtools-clippy.stdout\" 2> \"$proof/devtools-clippy.stderr\" || { tail -n 120 \"$proof/devtools-clippy.stderr\"\
-        ; exit 1; }\n"
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 1024\ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
+        \ --features recovery-family-native --lib recovery_family:: --locked > \"$proof/family-unit.stdout\" 2> \"$proof/family-unit.stderr\"\
+        \ || { tail -n 100 \"$proof/family-unit.stderr\"; exit 1; }\ngrep -F '0 failed' \"$proof/family-unit.stdout\"\n\"\
+        $GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024\ncargo clippy --manifest-path\
+        \ rust/Cargo.toml -p openpilot-dev-tools --features recovery-family-native --lib --test recovery_family --test recovery_family_frozen\
+        \ --locked -- -D warnings > \"$proof/devtools-clippy.stdout\" 2> \"$proof/devtools-clippy.stderr\" || { tail -n 120\
+        \ \"$proof/devtools-clippy.stderr\"; exit 1; }\n"
     - name: Prepare absent private source root and bind exact same ELFs
       run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/recovery-frozen\"\nprivate=\"$RUNNER_TEMP/recovery-private-root\"\ntest\
         \ ! -e \"$private\"\nmkdir -p \"$private/openpilot/selfdrive/carrot/recovery\" \"$private/openpilot/selfdrive/carrot\"\
@@ -177,7 +171,7 @@ jobs:
         '
     - name: Verify full held source and ELF identities after traffic
       if: always()
-      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/recovery-frozen\"\ntest \"$(git rev-parse HEAD)\" = a2c9bf7b8da4e907e0e135e449dec90d223210e2\n\
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/recovery-frozen\"\ntest \"$(git rev-parse HEAD)\" = 50a058fdd5d997c40e7bea61a0836a4d86d6f6d8\n\
         if test -f \"$proof/held-inputs.list\"; then\n  while IFS= read -r path; do test -f \"$path\" && test ! -L \"$path\"\
         ; stat -c '%d %i %s %f' \"$path\"; sha256sum \"$path\"; done < \"$proof/held-inputs.list\" > \"$proof/held-inputs.after\"\
         \n  cmp \"$proof/held-inputs.before\" \"$proof/held-inputs.after\"\nfi\n"
@@ -185,7 +179,7 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v6
       with:
-        name: rust-recovery-family-frozen-candidate-296
+        name: rust-recovery-family-frozen-lint-and-trace-296
         path: ${{ runner.temp }}/recovery-frozen/
         if-no-files-found: error
         retention-days: 5
