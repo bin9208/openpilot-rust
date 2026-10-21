@@ -2006,7 +2006,7 @@ rust/tools/check_navd_http.py	0b5f1dd2b943cab38ba06aa964950d812fea282a	pending	-
 rust/tools/check_navd_ipc.py	68ae83fd7bba51b3388e56088bfafa9f3a0f284e	pending	-
 rust/tools/check_navd_policy.py	bee5a837040cc0a7b936167c68bae8b4db7120fd	pending	-
 rust/tools/check_pandad_can_io.py	45db973e4f3bddfbda24c7f5d208b85dc6001aa2	pending	-
-rust/tools/check_pandad_ci.py	18dffbda37f0967d912fb01c327ce3f4ebced322	pending	-
+rust/tools/check_pandad_ci.py	18dffbda37f0967d912fb01c327ce3f4ebced322	replaced-local	rust/crates/dev-tools/src/panda_ci_check.rs;rust/crates/dev-tools/tests/panda_ci_retirement.rs
 rust/tools/check_pandad_client.py	50db2d1b6994391696b002985810786aa9b40699	pending	-
 rust/tools/check_pandad_composed.py	28edcc8227e4ab83c8430e0da2ea94dc4d0b3573	pending	-
 rust/tools/check_pandad_device.py	1fc634f4b5f28b1e77e7aae313b01b7e19e5695e	pending	-
@@ -2546,7 +2546,7 @@ rust/tools/tests/test_offline_qcom_onnx.py	adeb265d0e1925d12ba3eab4c03e47dd78052
 rust/tools/tests/test_offline_qcom_pipeline.py	5e4c02bb3897e22138aeee6bf2b82bbc3433c248	pending	-
 rust/tools/tests/test_offline_qcom_publish.py	e1207abcc04e8be7212a39d93bbaa2406e4ebc71	pending	-
 rust/tools/tests/test_offline_qcom_schedule.py	2bd86023178b2728032eba0664716009c93827c4	pending	-
-rust/tools/tests/test_pandad_ci.py	be962fdc8ee1ea7a302f88357ffc4f4439703d9b	pending	-
+rust/tools/tests/test_pandad_ci.py	be962fdc8ee1ea7a302f88357ffc4f4439703d9b	replaced-local	rust/crates/dev-tools/tests/panda_ci_check.rs;rust/crates/dev-tools/tests/panda_ci_retirement.rs
 rust/tools/tests/test_pandad_spi.py	4e91bb726a1a9aeeb0affd1ddc5ac80171928d4d	pending	-
 rust/tools/tests/test_paramsd_atomic_gate.py	92cb6b8b0c058d5f0dbdc6904f960cbd51ef08ca	replaced-local	rust/crates/dev-tools/tests/paramsd_startup_gate.rs; docs/naver/rust-paramsd-daemon-controller-296.md
 rust/tools/tests/test_pipeline_export.py	8f47e0546e0a949f83fb880aff314df57ad00c35	pending	-

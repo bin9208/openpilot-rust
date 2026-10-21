@@ -1732,13 +1732,13 @@ fn panda_requires_native_transports_and_source_composition() {
     let data = workflow();
     let steps = data["jobs"]["panda-runtime"]["steps"].as_array().unwrap();
     let build = steps.iter().position(|step| step["run"].as_str().is_some_and(|run|
-        run.contains("--features openpilot-dev-tools/pandad-safety-padding-native --bins --examples --locked --message-format=json"))).expect("native padding checker must be included in the original all-binary build");
+        run.contains("--features openpilot-dev-tools/pandad-safety-padding-native,openpilot-dev-tools/panda-ci-native --bins --examples --locked --message-format=json"))).expect("native padding and orchestration checkers must be included in the all-binary build");
     let caller = steps
         .iter()
         .position(|step| {
-            step["run"]
-                .as_str()
-                .is_some_and(|run| run.contains("python rust/tools/check_pandad_ci.py"))
+            step["run"].as_str().is_some_and(|run| {
+                run.contains("--features panda-ci-native --test panda_ci_retirement --locked")
+            })
         })
         .unwrap();
     assert!(
@@ -1746,7 +1746,19 @@ fn panda_requires_native_transports_and_source_composition() {
         "native checker must exist before the full Panda orchestration"
     );
 
-    job_check("panda-runtime", &["check_pandad_ci.py","build_msgq_python.py","libusb1==3.4.0","-p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux","--message-format=json","--build-messages"], &["check_pandad_ci.py"],false);
+    job_check("panda-runtime", &["PANDA_CI_BINARIES=", "PANDA_CI_BUILD_MESSAGES=", "build_msgq_python.py","libusb1==3.4.0","-p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux","--message-format=json", "--features panda-ci-native --test panda_ci_check --locked", "--test panda_ci_check --test panda_ci_retirement --locked -- -D warnings", "--features panda-ci-native --test panda_ci_retirement --locked -- --test-threads=1 --nocapture", "PANDA_CI_EXPECT_ABSENT=1", "PANDA_CI_SOURCE_COMMIT=", "PANDA_CI_PRIVATE_ROOT=", "PANDA_CI_CHECKER_BINARY=", "PANDA_CI_RETIREMENT_EVIDENCE=", "PANDA_CI_CLI_EVIDENCE=", "PANDA_CI_ORIGINAL_CLI_RECEIPT=", "PANDA_CI_ORIGINAL_CLI_SHA256=02aa67da5d511a312fe30b7ebc058da5a8ada66098e14aef7b05a8b63eef700b", "test ! -e rust/tools/check_pandad_ci.py", "test ! -L rust/tools/check_pandad_ci.py", "test ! -e rust/tools/tests/test_pandad_ci.py", "test ! -L rust/tools/tests/test_pandad_ci.py"], &["--features panda-ci-native --test panda_ci_retirement"], false);
+    let commands = commands(&data["jobs"]["panda-runtime"]);
+    assert!(!commands.contains("python rust/tools/check_pandad_ci.py"));
+    assert!(!commands.contains("rust/tools/tests/test_pandad_ci.py -q"));
+    for path in [
+        "rust/tools/check_pandad_ci.py",
+        "rust/tools/tests/test_pandad_ci.py",
+    ] {
+        assert!(
+            matches!(std::fs::symlink_metadata(root().join(path)), Err(error) if error.kind() == std::io::ErrorKind::NotFound),
+            "retired Panda source reappeared or could not be inspected: {path}"
+        );
+    }
     some_artifact(&workflow()["jobs"]["panda-runtime"]);
 }
 #[test]
@@ -1767,7 +1779,7 @@ fn calibration_requires_sealed_retirement_and_panda_requires_original_pairs() {
         false,
     );
     job_check("panda-runtime", &[
-        "python rust/tools/check_pandad_ci.py",
+        "--features panda-ci-native --test panda_ci_retirement --locked",
         "--features pandad-safety-padding-native --bin check-pandad-safety-padding",
         "--features pandad-safety-padding-native --test pandad_safety_padding_check --locked",
         "--features pandad-safety-padding-native --test pandad_safety_padding_reference --locked",

@@ -1,5 +1,13 @@
 # 저장소 전체 Python 전환 작업 인수인계
 
+Current source integration: the outer Panda checker/test Python files are removed
+after accepted native-prepared153/152-source two38/11CLI proof39616860491.
+Inventory is233replaced-local/4partial/3343pending; two new entries await the
+actual deleted-checkout maintained gate. Prior231 accepted deletions remain
+unchanged evidence. See [Panda retirement](rust-panda-orchestration-retirement-296.md).
+Native driving/driver closure and remaining original phases continue.
+
+
 ## Supervised integration checkpoint (2026-10-21)
 
 Full PR [39567841179](https://github.com/bin9208/openpilot-rust/actions/runs/39567841179)
@@ -45,7 +53,7 @@ before/after input and runtime-alias seals. Source15 tests/five original
 scenarios, fixture5, daemon5unit/5integration/CLI/raw-path/4retirement checks,
 both strict Clippy gates and default CLI passed. Historical/current ELF hashes
 remain separately recorded; no fresh original execution after deletion is claimed.
-Current inventory:231replaced-local/4partially-replaced/3345pending. Shared Desire
+Prior updater-only inventory:231replaced-local/4partially-replaced/3345pending. Shared Desire
 is restored; driving/Panda conversion and whole-project validation remain unfinished.
 
 

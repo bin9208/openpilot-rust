@@ -20,3 +20,16 @@ Cargo manifest, alongside the previously added shared filesystem helper.
 Local formatting, TOML syntax and diff checks only. Hosted old-example RED,
 fixed GREEN/full Panda comparisons and affected ARM evidence are pending.
 [Issue458](https://github.com/bin9208/openpilot-rust/issues/458).
+
+
+Hosted [39616860491/job119280134322](https://github.com/bin9208/openpilot-rust/actions/runs/39616860491/job/119280134322)
+passed source1f7a182b0b9708340c5f16b5ed55d6c470f5ad8b/workflow
+adfd94d6a5278b927b99f427063aeaacfa6dd833. Exact old example exits1 with
+lone-leading-surrogate decode error and creates no root; fixed example exits0
+with results[] and creates the actual raw0xff Params root, independently checked
+in its GNU tar. Both focused tests and strict Clippy pass. Parent audited
+artifact12352849676 (6,960bytes/15members, all CRCs), ZIP SHA256
+`102c852332da6f62871a5253f797080d4c0aca46866bd98dfd2d8582fa30a759`.
+The full same-source Panda two38 lanes and11 CLI cases also pass. Current raw
+controllers advance through safety/padding/device and fail a later strict-text
+builder boundary; no full raw38 or physical Panda acceptance is inferred.
