@@ -1,0 +1,89 @@
+name: 296 native Kalman generators against independently captured originals
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/kalman-generators-native-296-once.yml
+permissions:
+  contents: read
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
+  CARGO_BUILD_JOBS: '2'
+  CARGO_INCREMENTAL: '0'
+  CARGO_PROFILE_DEV_DEBUG: '0'
+  CARGO_PROFILE_TEST_DEBUG: '0'
+jobs:
+  native-generator-pair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: eb73be217514841536ea714f5ba304acc7a9fc02
+        persist-credentials: false
+    - name: Bind exact source and reserve hosted capacity
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = eb73be217514841536ea714f5ba304acc7a9fc02
+
+        sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        mkdir "$RUNNER_TEMP/kalman-generators-native-296"
+
+        git rev-parse HEAD > "$RUNNER_TEMP/kalman-generators-native-296/SOURCE_COMMIT"
+
+        printf ''%s\n'' "$GITHUB_SHA" > "$RUNNER_TEMP/kalman-generators-native-296/WORKFLOW_COMMIT"
+
+        '
+    - name: Check native equations, parser, byte seals and deterministic generation
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 3072
+
+        cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features kalman-model-generator-native
+        --bin generate-pose-model --bin generate-car-model
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features kalman-model-generator-native
+        --test kalman_model_generator -- --nocapture
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features kalman-model-generator-native
+        --lib --bin generate-pose-model --bin generate-car-model --test kalman_model_generator -- -D warnings
+
+        '
+    - name: Compile fresh native and original files and compare every function and constant
+      run: 'set -euo pipefail
+
+        export KALMAN_ORIGINAL_ROOT="$GITHUB_WORKSPACE/rust/crates/dev-tools/tests/fixtures/kalman-generators-original"
+
+        export KALMAN_POSE_BINARY="$GITHUB_WORKSPACE/rust/target/debug/generate-pose-model"
+
+        export KALMAN_CAR_BINARY="$GITHUB_WORKSPACE/rust/target/debug/generate-car-model"
+
+        export KALMAN_GENERATOR_EVIDENCE="$RUNNER_TEMP/kalman-generators-native-296"
+
+        export KALMAN_RUSTC="$(rustup which rustc)"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 2048
+
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features kalman-model-generator-native
+        --test kalman_model_generator fresh_native_files_compile_and_match_original_functions_and_constant_bits -- --ignored
+        --exact --nocapture
+
+        '
+    - name: Preserve complete raw comparison and emitted sources
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: kalman-generators-native-296
+        path: ${{ runner.temp }}/kalman-generators-native-296/
+        include-hidden-files: true
+        if-no-files-found: warn
