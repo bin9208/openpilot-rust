@@ -48,3 +48,6 @@ rust/crates/process-limits/tests/fixtures/source-title-original.tsv -text whites
 rust/crates/dev-tools/tests/fixtures/model-family-original/** -text
 # The NAS installed marker was captured with CRLF, which its SHA includes.
 rust/crates/dev-tools/tests/fixtures/model-family-original/usbgpu/original/capture-evidence/installed.json whitespace=cr-at-eol
+# Captured empty values include their original space after the field label.
+rust/crates/dev-tools/tests/fixtures/model-family-original/startup/original/*/native.log whitespace=-blank-at-eol
+rust/crates/carrot-recovery/tests/fixtures/recovery-webhook-original/message-*/source.txt -text whitespace=-blank-at-eol
