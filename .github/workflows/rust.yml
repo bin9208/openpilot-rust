@@ -4604,7 +4604,7 @@ jobs:
           sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup
           rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 12288
       - run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
-      - run: sudo apt-get update && sudo apt-get install -y clang libllvm18 liblzma-dev git-lfs capnproto libcapnp-dev
+      - run: sudo apt-get update && sudo apt-get install -y clang libllvm18 liblzma-dev git-lfs capnproto libcapnp-dev jq
       - run: python -m pip install numpy==2.5.3 zstandard==0.25.0 pycapnp==2.1.0 pyzmq==27.2.0 Cython==3.2.4 setuptools==82.0.1 pytest==9.0.2
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-model-runtime --bins --locked
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-modeld --examples --locked
@@ -4675,6 +4675,7 @@ jobs:
           export DRIVING_SOURCE_POLICY=retired-driving
           export DRIVING_RETIREMENT_EXPECT_ABSENT=1
           export DRIVING_FIXTURE_DIRECTORY="$proof/historical-complete-fixture"
+          export DRIVING_FIXTURE_STAGE_RECEIPT="$proof/native-stage.json"
           export DRIVING_FIXTURE_MANIFEST_SHA256=afe1c795d7f609801eb4cd5a5a7748c3c996929403a3c0fa102f232f2a8d248d
           export DRIVING_FIXTURE_ARCHIVE="$GITHUB_WORKSPACE/rust/crates/dev-tools/tests/fixtures/driving-daemon-original/observations.tar.xz"
           export DRIVING_FIXTURE_ARCHIVE_SHA256=3ddfb1213cccbbf0d4d0ef7854b79cef5637acdfd7b59d883b13063d6968b4fe
@@ -4700,12 +4701,16 @@ jobs:
             --test driving_fixture_archive --test driving_daemon_reference --test driving_daemon_retirement -- -D warnings 2>&1 | tee "$proof/clippy.log"
           # All family unit/adversarial cases and host-ISA/held-receipt regressions precede traffic.
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --locked --lib driving_ -- --nocapture 2>&1 | tee "$proof/family-unit.log"
+          command -v jq > /dev/null
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --locked --test driving_fixture_archive -- --nocapture 2>&1 | tee "$proof/archive-adversarial-and-regeneration.log"
           printf '%s  %s\n' "$DRIVING_FIXTURE_MANIFEST_SHA256" rust/crates/dev-tools/tests/fixtures/driving-daemon-original/fixture.json \
             810f2c0f291178314c3c5c58d83e77700fa5e40977592da24a7e154276083e12 rust/crates/dev-tools/tests/fixtures/driving-daemon-original/packaging-receipt.json | sha256sum -c -
-          rust/target/debug/stage-driving-daemon-fixture --archive "$DRIVING_FIXTURE_ARCHIVE" \
-            --output "$DRIVING_FIXTURE_DIRECTORY" --blob-sha256 "$DRIVING_FIXTURE_ARCHIVE_SHA256" \
-            --blob-bytes "$DRIVING_FIXTURE_ARCHIVE_BYTES" --compact-images > "$proof/native-stage.json"
+          test -d "$DRIVING_FIXTURE_DIRECTORY"
+          test -s "$DRIVING_FIXTURE_STAGE_RECEIPT"
+          jq -e --arg output "$DRIVING_FIXTURE_DIRECTORY" --arg manifest "$DRIVING_FIXTURE_MANIFEST_SHA256" \
+            --arg blob "$DRIVING_FIXTURE_ARCHIVE_SHA256" --argjson bytes "$DRIVING_FIXTURE_ARCHIVE_BYTES" \
+            '.output == $output and .fixture_manifest_sha256 == $manifest and .blob_sha256 == $blob and .blob_bytes == $bytes and .historical_programs_executed == false and .compact_images == true and (.generated_images | length) == 86' \
+            "$DRIVING_FIXTURE_STAGE_RECEIPT" > /dev/null
           rust/target/debug/seal-driving-daemon-fixture --output "$DRIVING_FIXTURE_DIRECTORY" --verify-sha "$DRIVING_FIXTURE_MANIFEST_SHA256" > "$proof/historical-before.json"
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --locked --test driving_daemon_reference -- --nocapture 2>&1 | tee "$proof/original-observation-seals.log"
           # Parent generation embeds the reviewed exporter bytes here and pins their SHA.
