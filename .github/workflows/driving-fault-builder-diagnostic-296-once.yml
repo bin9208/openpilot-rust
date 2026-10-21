@@ -1,0 +1,104 @@
+name: 296 bounded native fault-builder restoration diagnosis
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/driving-fault-builder-diagnostic-296-once.yml
+permissions:
+  contents: read
+jobs:
+  fault-builder:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      EXPECTED_SOURCE: ce59159439648dddbe59904205bff97520904731
+      RUSTUP_TOOLCHAIN: 1.94.0
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CPU_COUNT: '2'
+      DEV: CPU:LLVM
+      JIT: '1'
+      JIT_BATCH_SIZE: '0'
+      OPENPILOT_HACKS: '1'
+      LLVM_PATH: /usr/lib/x86_64-linux-gnu/libLLVM-18.so
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: ce59159439648dddbe59904205bff97520904731
+        persist-credentials: false
+    - name: Diagnose only native private-target plain-fault-plain builds
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driving-fault-builder-diagnostic"
+
+        mkdir -p "$proof"
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 24576
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
+
+        sudo apt-get update
+
+        sudo apt-get install -y clang g++ libllvm18 liblzma-dev capnproto libcapnp-dev binutils
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --bin build-driving-logging-fault
+        --locked > "$proof/controller-build.log" 2>&1
+
+        base64 --decode <<''CARGO_OBSERVER_BASE64'' > "$proof/cargo-observer"
+
+        IyEvdXNyL2Jpbi9lbnYgYmFzaAojIEhvc3RlZCBkYXRhIG9ic2VydmVyOiBmb3J3YXJkcyBleGFjdCBDYXJnbyBhcmd2L3N0YXR1czsgbm8gbW9kZWwgZXhlY3V0aW9uLgpzZXQgLXVvIHBpcGVmYWlsCjogIiR7RElBR05PU1RJQ19SRUFMX0NBUkdPOj99IiAiJHtESUFHTk9TVElDX09VVFBVVDo/fSIKbWtkaXIgLXAgIiRESUFHTk9TVElDX09VVFBVVC9jYWxscyIKbnVtYmVyPTAKd2hpbGUgISBta2RpciAiJERJQUdOT1NUSUNfT1VUUFVUL2NhbGxzLyRudW1iZXIiIDI+L2Rldi9udWxsOyBkbyBudW1iZXI9JCgobnVtYmVyKzEpKTsgZG9uZQpyZWNvcmQ9IiRESUFHTk9TVElDX09VVFBVVC9jYWxscy8kbnVtYmVyIgpwcmludGYgJyVzXDAnICIkRElBR05PU1RJQ19SRUFMX0NBUkdPIiAiJEAiID4gIiRyZWNvcmQvYXJndi5udWwiCnRhcmdldD0KcHJldmlvdXM9CmZvciBhcmd1bWVudCBpbiAiJEAiOyBkbwogIGlmIFtbICIkcHJldmlvdXMiID09IC0tdGFyZ2V0LWRpciBdXTsgdGhlbiB0YXJnZXQ9IiRhcmd1bWVudCI7IGZpCiAgcHJldmlvdXM9IiRhcmd1bWVudCIKZG9uZQp0ZXN0IC1uICIkdGFyZ2V0IiB8fCBleGl0IDk4CnNuYXBzaG90KCkgewogIGxvY2FsIHBoYXNlPSIkMSIgZGlyZWN0b3J5PSIkcmVjb3JkLyQxIgogIG1rZGlyICIkZGlyZWN0b3J5IgogIGZvciBuYW1lIGluIENBUkdPX0lOQ1JFTUVOVEFMIENBUkdPX1BST0ZJTEVfREVWX0RFQlVHIENBUkdPX1BST0ZJTEVfVEVTVF9ERUJVRyBDQVJHT19FTkNPREVEX1JVU1RGTEFHUyBSVVNURkxBR1MgUlVTVFVQX1RPT0xDSEFJTiBDQVJHT19UQVJHRVRfRElSIENDIExMVk1fUEFUSCBDQVJHT19MT0cgQ0FSR09fVEVSTV9WRVJCT1NFOyBkbwogICAgcHJpbnRmICclcz0lcVxuJyAiJG5hbWUiICIkeyFuYW1lLX0iCiAgZG9uZSA+ICIkZGlyZWN0b3J5L2J1aWxkLWVudmlyb25tZW50LnR4dCIKICAjIEtlZXAgb2JzZXJ2YXRpb25hbCBnaXQgcmVhZHMgZnJvbSByZWZyZXNoaW5nIHRoZSB3YXRjaGVkIGluZGV4IHRoZW1zZWx2ZXMuCiAgR0lUX09QVElPTkFMX0xPQ0tTPTAgZ2l0IHN0YXR1cyAtLXBvcmNlbGFpbiAtLXVudHJhY2tlZC1maWxlcz1ub3JtYWwgPiAiJGRpcmVjdG9yeS9naXQtc3RhdHVzLnR4dCIKICBHSVRfT1BUSU9OQUxfTE9DS1M9MCBnaXQgcmV2LXBhcnNlIEhFQUQgPiAiJGRpcmVjdG9yeS9zb3VyY2UudHh0IgogIEdJVF9PUFRJT05BTF9MT0NLUz0wIGdpdCBkaWZmIC0tbmFtZS1zdGF0dXMgPiAiJGRpcmVjdG9yeS9zb3VyY2UtZGlmZi50eHQiCiAgbG9jYWwgaW5kZXhfcGF0aAogIGluZGV4X3BhdGg9IiQoR0lUX09QVElPTkFMX0xPQ0tTPTAgZ2l0IHJldi1wYXJzZSAtLWdpdC1wYXRoIGluZGV4KSIKICBzdGF0IC1jICclZCAlaSAlcyAleSAleicgIiRpbmRleF9wYXRoIiA+ICIkZGlyZWN0b3J5L2dpdC1pbmRleC5zdGF0IgogIHNoYTI1NnN1bSAiJGluZGV4X3BhdGgiID4gIiRkaXJlY3RvcnkvZ2l0LWluZGV4LnNoYTI1NiIKICBpZiBbWyAtZCAiJHRhcmdldC9kZWJ1Zy9idWlsZCIgXV07IHRoZW4KICAgIHdoaWxlIElGUz0gcmVhZCAtciAtZCAnJyBmaWxlOyBkbwogICAgICBsb2NhbCByZWxhdGl2ZT0iJHtmaWxlIyIkdGFyZ2V0LyJ9IgogICAgICBta2RpciAtcCAiJGRpcmVjdG9yeS8kKGRpcm5hbWUgIiRyZWxhdGl2ZSIpIgogICAgICBjcCAtLSAiJGZpbGUiICIkZGlyZWN0b3J5LyRyZWxhdGl2ZSIKICAgIGRvbmUgPCA8KGZpbmQgIiR0YXJnZXQvZGVidWcvYnVpbGQiIC1tYXhkZXB0aCAzIC10eXBlIGYgXCggLW5hbWUgb3V0cHV0IC1vIC1uYW1lIHN0ZGVyciBcKSAtcGF0aCAnKi9vcGVucGlsb3QtbG9nZ2luZy0qLyonIC1wcmludDApCiAgZmkKICBpZiBbWyAtZCAiJHRhcmdldC9kZWJ1Zy8uZmluZ2VycHJpbnQiIF1dOyB0aGVuCiAgICB3aGlsZSBJRlM9IHJlYWQgLXIgLWQgJycgZmlsZTsgZG8KICAgICAgbG9jYWwgcmVsYXRpdmU9IiR7ZmlsZSMiJHRhcmdldC8ifSIKICAgICAgbWtkaXIgLXAgIiRkaXJlY3RvcnkvJChkaXJuYW1lICIkcmVsYXRpdmUiKSIKICAgICAgY3AgLS0gIiRmaWxlIiAiJGRpcmVjdG9yeS8kcmVsYXRpdmUiCiAgICBkb25lIDwgPChmaW5kICIkdGFyZ2V0L2RlYnVnLy5maW5nZXJwcmludCIgLW1heGRlcHRoIDIgLXR5cGUgZiAtbmFtZSAnKi5qc29uJyBcKCAtcGF0aCAnKi9vcGVucGlsb3QtbG9nZ2luZy0qLyonIC1vIC1wYXRoICcqL29wZW5waWxvdC1kcml2aW5nLW1vZGVsZC0qLyonIFwpIC1wcmludDApCiAgZmkKICBpZiBbWyAtZiAiJHRhcmdldC9kZWJ1Zy9vcGVucGlsb3QtZHJpdmluZy1tb2RlbGQiIF1dOyB0aGVuCiAgICBjcCAtLXJlZmxpbms9YXV0byAtLSAiJHRhcmdldC9kZWJ1Zy9vcGVucGlsb3QtZHJpdmluZy1tb2RlbGQiICIkZGlyZWN0b3J5L29ic2VydmVkLW1vZGVsZC5lbGYiCiAgICBzaGEyNTZzdW0gIiRkaXJlY3Rvcnkvb2JzZXJ2ZWQtbW9kZWxkLmVsZiIgPiAiJGRpcmVjdG9yeS9vYnNlcnZlZC1tb2RlbGQuc2hhMjU2IgogICAgcmVhZGVsZiAtbiAiJGRpcmVjdG9yeS9vYnNlcnZlZC1tb2RlbGQuZWxmIiA+ICIkZGlyZWN0b3J5L2VsZi1ub3Rlcy50eHQiCiAgZmkKfQpzbmFwc2hvdCBiZWZvcmUKIiRESUFHTk9TVElDX1JFQUxfQ0FSR08iICIkQCIKc3RhdHVzPSQ/CnByaW50ZiAnJXNcbicgIiRzdGF0dXMiID4gIiRyZWNvcmQvZXhpdC1zdGF0dXMudHh0IgpzbmFwc2hvdCBhZnRlcgpleGl0ICIkc3RhdHVzIgo=
+
+        CARGO_OBSERVER_BASE64
+
+        printf ''%s  %s\n'' 462f7e1382e101b20bd189968c20b31086c0ec678efaafd36a2de08b74927c5d "$proof/cargo-observer" | sha256sum
+        -c -
+
+        chmod 755 "$proof/cargo-observer"
+
+        export DIAGNOSTIC_REAL_CARGO="$(command -v cargo)"
+
+        export DIAGNOSTIC_OUTPUT="$proof"
+
+        # Only diagnostic logging is added; exact Cargo argv and original status are forwarded.
+
+        export CARGO_LOG=cargo::core::compiler::fingerprint=info
+
+        export CARGO_TERM_VERBOSE=true
+
+        sha256sum rust/Cargo.toml rust/Cargo.lock rust/crates/dev-tools/src/driving_logging_fault_build.rs rust/crates/logging/build.rs
+        rust/tools/model_logging_fault.cc > "$proof/source-inputs.sha256"
+
+        set +e
+
+        rust/target/debug/build-driving-logging-fault --root "$GITHUB_WORKSPACE" --output "$proof/native-builder" --cargo
+        "$proof/cargo-observer" --compiler "$(command -v c++)" 2>&1 | tee "$proof/native-builder.log"
+
+        status=${PIPESTATUS[0]}
+
+        set -e
+
+        printf ''%s\n'' "$status" > "$proof/native-builder-status.txt"
+
+        sha256sum -c "$proof/source-inputs.sha256"
+
+        exit "$status"
+
+        '
+    - uses: actions/upload-artifact@v6
+      if: always()
+      with:
+        name: driving-fault-builder-diagnostic-296
+        if-no-files-found: error
+        path: '${{ runner.temp }}/driving-fault-builder-diagnostic/
+
+          !${{ runner.temp }}/driving-fault-builder-diagnostic/native-builder/target/**
+
+          '
