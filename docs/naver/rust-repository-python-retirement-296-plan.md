@@ -79,8 +79,7 @@ The statistics producer controller and its source helper are retired after
 independent wire captures, same-ELF removal proof, six regression tests and a
 fresh interpreter-free execution. Other statistics source consumers remain.
 
-Current next batch: finish actual deleted-checkout proof for the updater's three
-retired Python files; validate the complete desire reference and Panda orchestration
+Current next batch: validate the complete desire reference and Panda orchestration
 candidates before removing their originals; finish #448 direct packet publication
 verification and affected ARM checks. Accepted earlier bridge, soundd, logmessaged
 and Bluetooth removals remain recorded below. Remaining original helpers, model
@@ -416,5 +415,6 @@ artifact. The maintained startup-services caller now builds the native feature a
 runs full regressions/Clippy/default CLI, preserving process/daemon/AGNOS gates.
 Removed only check_updated.py, updated_source.py and test_updated_comparison.py;
 updated_fixtures.py and the other pinned original dependencies remain. The
-actual-deleted-checkout proof and whole startup-services rerun remain pending.
+actual-deleted-checkout run39547256419 at083f937a passed15tests/strictClippy/default
+CLI and both1,089exec audits. The whole startup-services rerun remains pending.
 Inventory229replaced-local/3partial/3348pending; entire project acceptance is open.

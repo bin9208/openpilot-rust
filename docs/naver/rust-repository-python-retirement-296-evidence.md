@@ -15,7 +15,30 @@ three partial entries and 3,348 pending entries. `replaced-local` does not mean 
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
-### Current cloud checkpoint and next source batch (2026-10-21)
+### Current accepted source checkpoint (2026-10-21)
+
+Updater three-source deletion at083f937a passed
+[39547256419](https://github.com/bin9208/openpilot-rust/actions/runs/39547256419):
+15native tests retaining16original cases, both1,089exec roots with no Python,
+strict Clippy and default CLI. Artifact12322531729 ZIP SHA256
+`c0f5ef8364da8907ae059f36201d45cd9ca31aea222d34b965eee88bd9bf2c6b`;
+parent compared all20native JSON and before/after seals. Source policy39547261512
+passed13disk/74isolation/2lagd/2timed. Full startup-services and latest full PR remain pending.
+
+#448 sourcea6c3201f full encoder39546722792 passed5codec/112packet hashes,
+32V4L/10runtime, complete fixed-clock wire controls and Clippy. Artifact12322940409
+ZIP `ed9838b0bbc902588128041ca445d3eb908451074921d442d90576fb0a2d1921`.
+Selected payload-copy accounting205400→102700bytes, allocations240→240; elapsed
+samples do not establish speedup. ARM/device acceptance remains pending.
+
+Desire sourcea20ad0fa passed the fresh original/native24585-frame raw pair,
+83library and4desire integration tests before4Panda fixture tests failed on optional
+TOMLsize indexing.1de0b0d7 fixes that panic and adds actual same-ELF desire
+private-absence proof. Both originals remain until cloud evidence and raw CLI
+admissions are accepted. Native Panda full38phase pair39548089041 and desire
+absence/CLI39548303946 are running. This checkpoint is not whole-project completion.
+
+### Historical cloud checkpoint and source batch (2026-10-21)
 
 Historical PR #343 checkpoint: `2d8d027932dc880bd0acd00288b256ac8d7f1b89`.
 The published source is now`a9933ed72fc1ca8c91cf5728d0345f1e4181104d`;

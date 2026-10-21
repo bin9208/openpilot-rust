@@ -1,6 +1,6 @@
 # 저장소 전체 Python 전환 작업 인수인계
 
-## 현재 감독·통합 상태: updater 실제삭제 준비, 2026-10-21
+## 현재 감독·통합 상태: updater 실제삭제 수용, 2026-10-21
 
 부모6.1 Sol이 감독·검토·통합하며6Sol 작업자가 분리된 구현/검토를 맡는다.
 #296 전용 작업트리와 PR343→dev만 사용한다. dev-md/주 작업폴더/.omo는 보존한다.
@@ -12,20 +12,27 @@ calibration estimator 두 도구의 실제 삭제 후 검증39542693865/39542699
 원본의 전체20beep사례/15,128calibration단계를 유지했다. Updater505cc30c의
 39543788680은 원본16/Rust15검사와 두root각1,089실행/Python0/Clippy를 통과했다.
 기존16case를 보존한 Rust caller로 전환하면서 checker/source/pytest 세 파일을
-삭제했다. updated_fixtures.py는 daemon caller 때문에 남는다. 실제삭제후 CI는 대기다.
+삭제했다. updated_fixtures.py는 daemon caller 때문에 남는다. 실제삭제후083f937a의
+39547256419도15검사/각root1,089exec/Clippy/defaultCLI를 통과했고 부모가20JSON과
+입력봉인을 검토했다. 같은소스 정책39547261512는13disk/74isolation/2lagd/2timed성공이다.
 
 새 desire/Panda controller049a3f9c는 두 실행파일 빌드 및 전체24,585프레임
 원본/native비교를 통과했으나 desire실패주입 fixture의 parent디렉터리 누락으로
-통합검사가 실패했다. a20ad0fa에서 fixture만 고쳐 재검증 중이다. 두 family의
-원본Python은 유지한다. Panda는 같은소스/같은ELF의38phase전체 비교가 남는다.
+통합검사가 실패했다. a20ad0fa의 재검증에서83lib/4desire통합은 성공했고 이어진
+Panda4실패는 optional TOMLsize indexing패닉이었다.1de0b0d7에서 수정했다.
+두 family의 원본Python은 유지한다. Desire부재/CLI39548303946과 Panda동일소스/
+동일ELF38phase39548089041이 진행 중이다.
 
 #447의 warmed scratch 경계는70→0할당/동일93,220복사bytes로 검증됐다.
 #448은 DMA→Capnp직접복사 후보이며 첫 cloud실패는 테스트 큐namespace누락이었다.
-a6c3201f에서 고유runtime큐로 수정해 전체encoder회귀를 재실행한다. #448의
-측정/전체wire/ARM 결과는 아직 없으며 차량CPU개선 주장을 하지 않는다.
+a6c3201f에서 고유runtime큐로 수정한39546722792는 전체wire/코덱/V4L/runtime/IPC/
+Clippy를 통과했다. 독립 검토도5codec/112packet hashes,32V4L,10runtime을 확인했다.
+선택payload복사205400→102700bytes,할당240→240이며 elapsed는 단일표본이다.
+#448 ARM/기기는 미확인이고 차량CPU개선 주장을 하지 않는다.
 
 원격 issue branch b5888cd6의 전체 run39541018977은 ARM/LLVM20/UI 장시간검사를
-보존 중이다. Panda/telemetry/navigation 세 실패는 수정후 전체집중작업
+보존 중이다. UI/LLVM20은 성공했고 workspace의 stale timed-policy 실패는 수리했다.
+Panda/telemetry/navigation 세 실패는 수정후 전체집중작업
 39542206911/39543237917/39543403573에서 각각 성공했다. Navigation의 지난
 간헐실패 원인은 미확정이며 새진단로그의 marker/source기록은 정상,cleanup후
 probe비실행 상태였다. 마감/허용조건은 바꾸지 않았다. 최신전체PR, 소스일치

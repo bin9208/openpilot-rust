@@ -24,3 +24,11 @@ accounting was205,400→102,700bytes, allocations240→240. The elapsed samples 
 fixture values, not hardware VIDC throughput or vehicle CPU/latency evidence.
 The selected accounting excludes serialized-message and queue copies. Affected
 ARM verification and user device acceptance remain pending.
+
+
+Artifact12322940409 ZIP SHA256
+`ed9838b0bbc902588128041ca445d3eb908451074921d442d90576fb0a2d1921`
+was independently inspected by parent and reviewer:5codec cases/112packet hashes,
+32V4L cases and10runtime cases preserve exact bytes and metadata. The8×3service/
+codec and variable-packet tests and strict Clippy also passed. No hardware VIDC,
+normal startup, recording/upload or device performance result is inferred.
