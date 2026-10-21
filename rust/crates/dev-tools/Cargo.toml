@@ -538,6 +538,7 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
+beep-reference-native = ["dep:zmq", "serde_json/float_roundtrip"]
 updated-fixture-native = []
 paramsd-loop-native = ["paramsd-fixture-native"]
 paramsd-fixture-native = ["dep:capnp", "dep:openpilot-cereal", "serde_json/float_roundtrip"]
@@ -1800,3 +1801,12 @@ required-features = ["updated-fixture-native"]
 [[test]]
 name = "updated_check"
 required-features = ["updated-fixture-native"]
+
+[[bin]]
+name = "check-beep-reference"
+path = "src/bin/check_beep_reference.rs"
+required-features = ["beep-reference-native"]
+
+[[test]]
+name = "beep_reference_check"
+required-features = ["beep-reference-native"]
