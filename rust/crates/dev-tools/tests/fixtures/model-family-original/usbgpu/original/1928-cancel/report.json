@@ -1,0 +1,46 @@
+{
+  "camera": [
+    1928,
+    1208
+  ],
+  "mode": "cancel",
+  "passed": true,
+  "final": {
+    "UsbGpuPresent": true,
+    "UsbGpuCompiled": true,
+    "UsbGpuHardwareSeen": true,
+    "UsbGpuLoading": false,
+    "UsbGpuActive": false,
+    "UsbGpuStartupFailed": false
+  },
+  "argv": [
+    "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/examples/usbgpu_daemon_fixture",
+    "/home/runner/work/_temp/model-family-preparation-296/current-catalog",
+    "/home/runner/work/_temp/model-family-original-296/usbgpu/original/1928-cancel",
+    "/home/runner/work/_temp/model-family-preparation-296/usb-assets",
+    "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/examples/worker_protocol_fixture",
+    "2"
+  ],
+  "peer_argv": [
+    "/home/runner/work/_temp/model-family-preparation-296/peer/driving-daemon-peer",
+    "1928",
+    "1208",
+    "2048",
+    "2490368",
+    "4804608",
+    "dual"
+  ],
+  "workers": [
+    {
+      "pid": 9989,
+      "shared": "/tmp/.tmpn1sD3J"
+    }
+  ],
+  "workers_reaped_and_shared_removed": true,
+  "commands": [
+    {
+      "command": "stop",
+      "response": "OK"
+    }
+  ]
+}

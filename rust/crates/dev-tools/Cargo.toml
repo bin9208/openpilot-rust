@@ -2066,3 +2066,17 @@ required-features = ["ci-receipt-metadata-native"]
 name = "audit-recovery-exec"
 path = "src/bin/audit_recovery_exec.rs"
 required-features = ["recovery-family-native"]
+
+[[bin]]
+name = "stage-model-family-usb-assets"
+path = "src/bin/stage_model_family_usb_assets.rs"
+required-features = ["driver-daemon-native"]
+
+[[bin]]
+name = "prepare-model-family-catalog"
+path = "src/bin/prepare_model_family_catalog.rs"
+required-features = ["driver-daemon-native"]
+
+[[test]]
+name = "model_family_prepare"
+required-features = ["driver-daemon-native"]

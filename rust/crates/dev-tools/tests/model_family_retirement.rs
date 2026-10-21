@@ -3,7 +3,7 @@
 #[path = "../src/model_family_retirement_support.rs"]
 mod support;
 use openpilot_dev_tools::{driver_daemon_check, model_startup_check, usbgpu_daemon_check};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::{
     collections::BTreeMap,
     ffi::OsString,
@@ -12,8 +12,8 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 use support::{
-    absence, pair, pin, read_json, replace, required, run, success, text, write_json, Held,
-    OwnedPath,
+    Held, OwnedPath, absence, pair, pin, read_json, replace, required, run, success, text,
+    write_json,
 };
 
 const COLLECTOR_SOURCE: &str = "2ecf3f6813f601ea52e7a61ccf75219952daefa0";
@@ -41,7 +41,7 @@ impl Inputs {
                 "--binary",
                 self.binaries.join("openpilot-dmonitoringmodeld"),
             ),
-            ("--catalog", self.preparation.join("driver-current-catalog")),
+            ("--catalog", self.preparation.join("driver-catalog/catalog")),
             ("--models", fixture.join("no-collector/models")),
             ("--output", output.to_owned()),
             (
@@ -97,7 +97,7 @@ impl Inputs {
     fn family_args(&self, root: &Path, startup: bool, output: &Path) -> Vec<OsString> {
         let mut args = Vec::new();
         for (key, value) in [
-            ("--catalog", self.preparation.join("current-catalog")),
+            ("--catalog", self.preparation.join("family-catalog/catalog")),
             (
                 "--native-original",
                 self.original.join(if startup {
@@ -153,13 +153,19 @@ impl Inputs {
                 (
                     "--model",
                     self.preparation.join(format!(
-                        "usb-assets/models/{}/model.pkl",
+                        "usb-bundle/usb-assets/models/{}/model.pkl",
                         usbgpu_daemon_check::MODEL_SHA
                     )),
                 ),
-                ("--runtime", self.preparation.join("usb-runtime.tar.gz")),
-                ("--installed", self.preparation.join("usb-installed.json")),
-                ("--assets", self.preparation.join("usb-assets")),
+                (
+                    "--runtime",
+                    self.preparation.join("usb-bundle/usb-runtime.tar.gz"),
+                ),
+                (
+                    "--installed",
+                    self.preparation.join("usb-bundle/usb-installed.json"),
+                ),
+                ("--assets", self.preparation.join("usb-bundle/usb-assets")),
                 ("--evidence", output.to_owned()),
             ] {
                 pair(&mut args, key, value);
@@ -188,9 +194,11 @@ fn admit_family_data(directory: &Path, expected: &str, kind: &str, held: &mut Ve
     let files = value["files"].as_object().unwrap();
     assert!(!files.is_empty() && files.len() <= 256 && files.contains_key("report.json"));
     for (name, seal) in files {
-        assert!(Path::new(name)
-            .components()
-            .all(|p| matches!(p, Component::Normal(_))));
+        assert!(
+            Path::new(name)
+                .components()
+                .all(|p| matches!(p, Component::Normal(_)))
+        );
         let file = Held::open(&directory.join(name));
         assert_eq!(file.seal, *seal, "independent data changed: {name}");
         held.push(file);
@@ -228,8 +236,8 @@ fn same_elf_replays_all_three_native_clis_in_both_absent_roots() {
         binaries: root.join("rust/target/debug"),
         root,
         original: required("MODEL_FAMILY_GATE_ORIGINAL"),
-        driver_receipt: preparation.join("driver-current-receipt.json"),
-        family_receipt: preparation.join("model-family-current-receipt.json"),
+        driver_receipt: preparation.join("driver-catalog/current-catalog-receipt.json"),
+        family_receipt: preparation.join("family-catalog/current-catalog-receipt.json"),
         preparation,
         startup_manifest: text("MODEL_FAMILY_STARTUP_MANIFEST_SHA256"),
         usb_manifest: text("MODEL_FAMILY_USBGPU_MANIFEST_SHA256"),
@@ -314,9 +322,11 @@ fn same_elf_replays_all_three_native_clis_in_both_absent_roots() {
         ),
     ] {
         for (name, seal) in read_json(receipt)["models"].as_object().unwrap() {
-            assert!(Path::new(name)
-                .components()
-                .all(|p| matches!(p, Component::Normal(_))));
+            assert!(
+                Path::new(name)
+                    .components()
+                    .all(|p| matches!(p, Component::Normal(_)))
+            );
             let model = Held::open(&models.join(name));
             assert_eq!(model.seal, *seal);
             held.push(model);
@@ -574,8 +584,10 @@ fn same_elf_replays_all_three_native_clis_in_both_absent_roots() {
                 };
                 assert!(String::from_utf8_lossy(&result.stderr).contains(expected));
                 drop(owner);
-                assert!(fs::symlink_metadata(&path)
-                    .is_err_and(|e| e.kind() == std::io::ErrorKind::NotFound));
+                assert!(
+                    fs::symlink_metadata(&path)
+                        .is_err_and(|e| e.kind() == std::io::ErrorKind::NotFound)
+                );
                 negatives += 1;
             }
         }

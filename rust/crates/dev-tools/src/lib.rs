@@ -412,3 +412,6 @@ pub mod teleop_version;
 
 #[cfg(feature = "ci-receipt-metadata-native")]
 pub mod ci_receipt_metadata;
+
+#[cfg(all(target_os = "linux", feature = "driver-daemon-native"))]
+pub mod model_family_prepare;
