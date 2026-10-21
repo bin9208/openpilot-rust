@@ -45,6 +45,7 @@ class SourcePolicyTests(unittest.TestCase):
             "openpilot/common/params_keys.h",
             "openpilot/selfdrive/carrot/xiaoge/v_asm_web.html",
             "docs/user/en/lane-change.md", "docs/user/ko/lane-change.md",
+            "docs/user/en/settings.md", "docs/user/ko/settings.md",
             "rust/ci/runtime/test_package_policy.py",
         ):
             with self.subTest(path=path):

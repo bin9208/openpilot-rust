@@ -23,11 +23,11 @@ All functional tests, native builds, ARM/AGNOS builds, sealing, installer checks
 
 > For agentic workers: execute these scoped tasks in parallel using explicitly selected GPT-6.1 Sol workers; the parent integrates Xiaoge policy, tests and delivery.
 
-- [ ] Native adapter: add `DnnTarget::{Cpu,OpenClFp32}`, `DnnNet::load_with_target` and truthful backend/device diagnostics; CPU `load` remains compatible. Test rejection of unsupported/CPU OpenCL and preserve existing ownership/exception contracts.
-- [ ] Provider/package: explicit OpenCL build option, positive capability receipt, fresh genuine-AGNOS five-library build and sealed staging; strict bounded source policy and tests preventing old CPU provider reuse.
-- [ ] Mode/executor: tests for absent/invalid/default/persistent mode, fallback latching, explicit re-selection, GPU serialization and bounded comparison schedule; implement owner-thread mode reload and same-input comparisons.
-- [ ] UI/telemetry: existing web settings selector, explicit backend/error status, structured bounded detection/resource/comparison logs and paired Korean/English docs. Preserve source-compatible baseline status when CPU/default and adapt focused tests to new optional settings.
-- [ ] Log reader: synthetic full-cereal mixed-mode/invalid/missing/truncated fixtures, streamed plain/zstd parsing, per-mode timing/result/resource summaries with explicit evidence limits.
+- [x] Native adapter: add `DnnTarget::{Cpu,OpenClFp32}`, `DnnNet::load_with_target` and truthful backend/device diagnostics; CPU `load` remains compatible. Test rejection of unsupported/CPU OpenCL and preserve existing ownership/exception contracts.
+- [x] Provider/package: explicit OpenCL build option, positive capability receipt, fresh genuine-AGNOS five-library build and sealed staging; strict bounded source policy and tests preventing old CPU provider reuse.
+- [x] Mode/executor: tests for absent/invalid/default/persistent mode, fallback latching, explicit re-selection, GPU serialization and bounded comparison schedule; implement owner-thread mode reload and same-input comparisons.
+- [x] UI/telemetry: existing web settings selector, explicit backend/error status, structured bounded detection/resource/comparison logs and paired Korean/English docs. Preserve source-compatible baseline status when CPU/default and adapt focused tests to new optional settings.
+- [x] Log reader: synthetic full-cereal mixed-mode/invalid/missing/truncated fixtures, streamed plain/zstd parsing, per-mode timing/result/resource summaries with explicit evidence limits.
 - [ ] Hosted validation: focused contracts then affected native CPU comparisons on host/ARM and unsupported-GPU behavior, all five required PR contexts, independent review; no gate weakening or local test workaround.
 - [ ] Delivery: checked PR to dev-md only, exact merged-source checks/build/seal/publish/public installation receipts; owner installation/drive acceptance remains open.
 
@@ -37,4 +37,8 @@ CPU mode must not initialize OpenCL; a GPU target request must not masquerade as
 
 ## Evidence and current state
 
-Implementation and hosted results are pending. This plan replaces the earlier analysis-only stopping point; the owner expressly authorized the opt-in candidate. Static AGNOS/FP32 feasibility evidence is retained in `dev-md-onnx-load-validation.md`. Actual device execution and simultaneous timing remain owner acceptance items even after candidate publication.
+Implementation is in [PR #459](https://github.com/bin9208/openpilot-rust/pull/459). Independent review at `4890d9c646232e393893d2a86e11861e58753170` found no remaining P1/P2 items after repairing context device-wrapper identity and real-library-before-alias staging. The new helpers have explicit regression tests, including genuine AGNOS/QEMU boundary execution.
+
+Hosted focused contracts, Clippy and nine package policy tests passed at that head ([run 39572941558](https://github.com/bin9208/openpilot-rust/actions/runs/39572941558)). Prior host/ARM preflight built the fresh OpenCL provider and passed native functional tests; Clippy findings were repaired. Exact final-source required checks and genuine AGNOS packaging are pending. The mapped settings documentation gate required the additional paired settings guide update. Continue receipts in [issue #453](https://github.com/bin9208/openpilot-rust/issues/453) through actual merged-source checks, release and public installation verification.
+
+Resource CPU measurements cover one-second windows; an initial window may straddle mode acceptance. Separate transitions/kernel warm-up from steady runs when comparing device observations; the reader emits observations without a performance verdict. This plan replaces the earlier analysis-only stopping point; the owner expressly authorized the opt-in candidate. Static AGNOS/FP32 feasibility evidence is retained in `dev-md-onnx-load-validation.md`. Actual device execution and simultaneous timing remain owner acceptance items even after candidate publication.
