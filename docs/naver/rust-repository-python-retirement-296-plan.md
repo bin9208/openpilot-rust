@@ -94,7 +94,8 @@ fresh interpreter-free execution. Other statistics source consumers remain.
 
 Current next batch: complete native driving/fault-builder and driver caller
 validation. Panda outer checker/test removal is integrated after153/152-source
-two-root/38-phase proof; its actual deleted-checkout maintained gate is pending. #448/#449/#450 host
+two-root/38-phase proof; its actual deleted-checkout maintained gate39625704015
+now passes with both152-source roots and all retained downstream checks. #448/#449/#450 host
 regressions are accepted and affected ARM39567841179 passed; the complete PR
 failed camera/navigation QA and JSON11 feature-order checks. Camera and JSON11
 focused repairs now passed cloud RED/GREEN; navigation startup remains under

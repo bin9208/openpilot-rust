@@ -39,5 +39,6 @@ or execute the retired Python files.
 
 The original capture and candidate hosted results remain pending. No Python
 source has been removed by this device-family candidate. The separate outer
-Panda controller source deletion and its38-phase gate have their own evidence
-and pending validation status.
+Panda controller source deletion and its38-phase gate are accepted in
+[39625704015](https://github.com/bin9208/openpilot-rust/actions/runs/39625704015);
+that evidence does not retire this separate device-family controller.

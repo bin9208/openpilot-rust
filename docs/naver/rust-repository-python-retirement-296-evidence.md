@@ -1,11 +1,14 @@
 # Repository-wide Python retirement: current evidence (#296)
 
-Current source integration: the outer Panda checker/test Python files are removed
-after accepted native-prepared153/152-source two38/11CLI proof39616860491.
-Inventory is233replaced-local/4partial/3343pending; two new entries await the
-actual deleted-checkout maintained gate. Prior231 accepted deletions remain
-unchanged evidence. See [Panda retirement](rust-panda-orchestration-retirement-296.md).
-Native driving/driver closure and remaining original phases continue.
+Current accepted source retirement: the outer Panda checker/test Python files
+are removed. Actual deleted-checkout maintained gate39625704015 passes at
+source249c1a08 after the prior153/152-source pre-deletion proof. Parent audited
+all16,108 artifact CRCs, both152-source rosters against Git,31 held ELFs, both
+38-phase/42-reservation lanes and11 original CLI admissions. See
+[Panda retirement](rust-panda-orchestration-retirement-296.md) for exact identities.
+Inventory is233replaced-local/4partial/3343pending. Native driving/driver and
+Panda device controller candidates retain their Python originals. Whole-project
+validation and remaining compiler/tool/vendor conversion remain unfinished.
 
 
 ## Supervised integration checkpoint (2026-10-21)
@@ -31,13 +34,13 @@ Recorded SOURCE_COMMIT values match the merge checkout. AArch64 ELF headers
 and binaries are inspected; these are generic cross-build outputs, not a sealed
 AGNOS runtime release or device startup/record/upload acceptance.
 
-Current source1f7a182b retains native driving/fault-builder and Panda orchestration
+Historical source1f7a182b retained native driving/fault-builder and Panda orchestration
 candidates with their original Python callers still present. Encoder #454 adds
 actual owned builder argv/command/exit checks beyond its accepted prior full gate;
-fresh hosted evidence is pending. #458 repairs the separate raw Params boundary
+later full hosted39618350715 passes. #458 repairs the separate raw Params boundary
 in the Panda safety QA example; old-example RED/current GREEN/full Panda proof
-is pending. No new source retirement is inferred from those candidates. Inventory
-remains231replaced-local/4partial/3345pending. User performs device verification
+passes bounded host evidence39616860491; latest affected ARM remains pending.
+This historical checkpoint counted231replaced-local/4partial/3345pending. User performs device verification
 after pulling; #296 remains unfinished and dev-md/#338 is unchanged.
 
 

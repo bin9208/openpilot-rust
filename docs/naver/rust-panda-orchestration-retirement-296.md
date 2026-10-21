@@ -44,7 +44,7 @@ builder strictly decodes captured compiler streams, retaining its original
 subprocess(text=True) boundary. This is current partial raw-path observation,
 not full38-phase raw success or evidence of a new native state-policy defect.
 
-## Actual deletion integration, validation pending
+## Accepted actual deletion integration
 
 The two Python sources are now removed and the maintained Panda job builds the
 native controller, runs its14 unit cases and strict Clippy, then requires both
@@ -54,9 +54,27 @@ redundant third orchestration. The75-minute job budget covers two full phase
 lanes, private copying and the retained padding/device regressions; individual
 command, signal and ownership deadlines are unchanged. Source-policy tests
 require the native build-before-caller order, actual source absence and all
-original downstream checks. The actual deleted-checkout hosted gate is pending.
+original downstream checks.
 
-Inventory now marks233replaced-local/4partial/3343pending. The additional two
-entries are source integration awaiting actual post-deletion validation; the
-previous accepted deletion count was231. Keep #296 open. User owns normal boot,
-recording, upload and driving checks; no AGNOS/device acceptance is inferred.
+[39625704015/job119310242750](https://github.com/bin9208/openpilot-rust/actions/runs/39625704015/job/119310242750)
+passed source249c1a0815e7b43d677065f3bd508b423e5ef6b5, workflow
+33f044de284c1d25e5a4ae50f2dbb4e7c983f15d. Parent audited artifact12358686227
+(88,463,658bytes/16,108members, all CRCs), ZIP SHA256
+`1dffb8ea17d36f68e02b3c59736effbf9667d6225fb13e35eec833f140f321cc`.
+Both source-absent roots contain the same152 authored source hashes; parent
+matched every hash to that exact Git commit. All31 held executable hashes agree.
+Each lane retains38 ordered passes,42 disk reservations,152 command/stream/exit
+files, all38 command exits0, empty controller stderr and final PASS. Eleven
+original CLI admissions retain matching exits and output channels. The complete
+job also passes source policies, controller units/Clippy and all retained
+padding/device/downstream checks.
+
+The first actual deletion run39621601211 failed its source policy before this
+proof: the reservation total still expected490 after three new native guards.
+Commit249c1a08 preserves the historical177-guard list/hash and adds an explicit
+three-guard group, requiring the new493 total rather than removing old guards.
+
+Inventory now marks233replaced-local/4partial/3343pending, including these two
+accepted source deletions. Keep #296 open. Remaining Python phase checkers and
+compiler/tool families are not covered by this retirement. User owns normal
+boot, recording, upload and driving checks; no AGNOS/device acceptance is inferred.
