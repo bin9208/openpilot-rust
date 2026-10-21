@@ -1,0 +1,169 @@
+name: One-time calibration getFloat original/native preproof 296
+permissions:
+  contents: read
+jobs:
+  calibration-getfloat-preproof:
+    name: Original 25 getFloat cases and native controller
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      OPENPILOT_RUST_ROOT: ${{ github.workspace }}
+      CALIBRATION_FLOAT_BINARY: ${{ github.workspace }}/rust/target/debug/examples/calibration_float
+    defaults:
+      run:
+        shell: bash
+        working-directory: rust
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: b43ac10d78c20029c86028e96811678f8cff5a1d
+        persist-credentials: false
+    - name: Verify pinned checkout and prepare bounded evidence
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = b43ac10d78c20029c86028e96811678f8cff5a1d
+
+        proof="$RUNNER_TEMP/calibration-preproof-296"
+
+        mkdir -p "$proof"
+
+        git rev-parse HEAD > "$proof/source-commit.txt"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        '
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Install minimum C++ and Cap'n Proto build prerequisites
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends g++ capnproto libcapnp-dev pkg-config
+
+        '
+    - name: Pin Rust and compile only the calibration example and checker
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/calibration-preproof-296"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo +1.94.0 build -p openpilot-calibrationd --example calibration_float --locked 2>&1 | tee "$proof/calibration-build.log"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo +1.94.0 build -p openpilot-dev-tools --features calibration-float-native --bin check-calibration-float --locked
+        2>&1 | tee "$proof/checker-build.log"
+
+        test -s "$CALIBRATION_FLOAT_BINARY"
+
+        test -s target/debug/check-calibration-float
+
+        '
+    - name: Run fresh unchanged original and native 25-case commands
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/calibration-preproof-296"
+
+        python_bin="$(command -v python)"
+
+        printf ''CALIBRATION_FLOAT_PYTHON=%s\n'' "$python_bin" >> "$GITHUB_ENV"
+
+        printf ''922e055f3e9b8fda4e732e83b5332105b5203bd9f56964bf5515e3557c9ff304  tools/check_calibration_float.py\n47d08fa1987c9150e55d09a2a533a0a115851aadb34bd1a0c82325e0be8726b3  ../openpilot/common/params.h\n''
+        | sha256sum --check --strict
+
+        sha256sum tools/check_calibration_float.py ../openpilot/common/params.h "$python_bin" "$(command -v g++)" "$CALIBRATION_FLOAT_BINARY"
+        target/debug/check-calibration-float rust-toolchain.toml Cargo.lock > "$proof/inputs.before.sha256"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        /usr/bin/timeout --kill-after=5s 180s "$python_bin" tools/check_calibration_float.py --binary "$CALIBRATION_FLOAT_BINARY"
+        --output "$proof/original" > "$proof/original.stdout" 2> "$proof/original.stderr"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        /usr/bin/timeout --kill-after=5s 180s target/debug/check-calibration-float --binary "$CALIBRATION_FLOAT_BINARY" --output
+        "$proof/native" > "$proof/native.stdout" 2> "$proof/native.stderr"
+
+        python - "$proof" <<''PY''
+
+        import json, pathlib, sys
+
+        root = pathlib.Path(sys.argv[1])
+
+        source = json.loads((root / ''original/report.json'').read_bytes())
+
+        native = json.loads((root / ''native/report.json'').read_bytes())
+
+        assert source == native
+
+        assert source[''result''] == ''pass'' and len(source[''cases'']) == 25
+
+        assert (root / ''original/source_get_float.cc'').read_bytes() == (root / ''native/source_get_float.cc'').read_bytes()
+
+        assert (root / ''original.stdout'').read_bytes() == (root / ''native.stdout'').read_bytes()
+
+        (root / ''comparison.json'').write_text(json.dumps({''result'':''pass'',''cases'':25,''report_equal'':True,''source_equal'':True,''stdout_equal'':True})+''\n'')
+
+        PY
+
+        sha256sum -c "$proof/inputs.before.sha256"
+
+        sha256sum "$proof"/original/report.json "$proof"/native/report.json "$proof"/original/source_get_float.cc "$proof"/native/source_get_float.cc
+        > "$proof/outputs.sha256"
+
+        '
+    - name: Require full paired tests, cancellation regressions and strict Clippy
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/calibration-preproof-296"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo +1.94.0 test -p openpilot-dev-tools --features calibration-float-native --test calibration_float_check --locked
+        -- --nocapture 2>&1 | tee "$proof/paired-tests.log"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo +1.94.0 test -p openpilot-dev-tools --features calibration-float-native --lib calibration_float_check::tests
+        --locked -- --nocapture 2>&1 | tee "$proof/unit-tests.log"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo +1.94.0 clippy -p openpilot-dev-tools --features calibration-float-native --lib --bin check-calibration-float
+        --test calibration_float_check --locked -- -D warnings 2>&1 | tee "$proof/clippy.log"
+
+        sha256sum -c "$proof/inputs.before.sha256"
+
+        test -s "$proof/comparison.json"
+
+        test -s "$proof/native/provenance.json"
+
+        test -s "$proof/native/report.json"
+
+        '
+    - name: Retain original, native, source and failure evidence
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: calibration-getfloat-preproof-296-b43
+        path: ${{ runner.temp }}/calibration-preproof-296/
+        if-no-files-found: warn
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/calibration-preproof-296-once.yml
