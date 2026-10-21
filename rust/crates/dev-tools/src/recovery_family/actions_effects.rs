@@ -936,7 +936,7 @@ fn run_inner(
         )
         .into());
     }
-    if let Some((cache, _)) = &rebuild {
+    if let Some((cache, _, _)) = &rebuild {
         let actual = json!({
             "scons":if checkout.join("scons.argv").exists(){fs::read_to_string(checkout.join("scons.argv"))?}else{String::new()},
             "prebuilt_removed":!checkout.join("prebuilt").exists(),
