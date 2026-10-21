@@ -1,4 +1,4 @@
-name: 296 native driving six scenario independent original IPC candidate
+name: 296 native driving complete collector and linked fault independent parity
 'on':
   push:
     branches:
@@ -11,7 +11,7 @@ permissions:
 jobs:
   driving-native:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 75
     env:
       CARGO_BUILD_JOBS: '2'
       CPU_COUNT: '2'
@@ -21,7 +21,7 @@ jobs:
       OPENPILOT_HACKS: '1'
       LLVM_PATH: /usr/lib/x86_64-linux-gnu/libLLVM-18.so
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
-      EXPECTED_SOURCE: d1c827fac2d0260878cc1f3a70bef812e40b4b4b
+      EXPECTED_SOURCE: 1b1703f65adf810d3da266854a4d40e0621a89a5
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -31,7 +31,7 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: d1c827fac2d0260878cc1f3a70bef812e40b4b4b
+        ref: 1b1703f65adf810d3da266854a4d40e0621a89a5
     - name: Require exact source and hosted controller prerequisites
       run: 'set -euo pipefail
 
@@ -56,10 +56,15 @@ jobs:
         rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 1024
 
         cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --bin check-driving-daemon
-        --locked 2>&1 | tee "$proof/controller-build.log"
+        --bin check-model-logging-faults --locked 2>&1 | tee "$proof/controller-build.log"
 
         cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --lib --bin check-driving-daemon
-        --test driving_daemon_reference --test driving_daemon_check --locked -- -D warnings 2>&1 | tee "$proof/controller-clippy.log"
+        --bin check-model-logging-faults --test driving_daemon_reference --test driving_daemon_check --test driving_logging_check
+        --test driving_logging_fault_check --locked -- -D warnings 2>&1 | tee "$proof/controller-clippy.log"
+
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --lib driving_daemon_check::line_tests
+        --locked -- --nocapture 2>&1 | tee "$proof/line-regression.log"
 
         '
     - name: Fetch only independently sealed original observation data
@@ -109,6 +114,12 @@ jobs:
         rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
 
         cargo build --manifest-path rust/Cargo.toml -p openpilot-driving-modeld --locked'
+    - name: Build unchanged original IPC imports for live comparison
+      run: 'set -euo pipefail
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/model-msgq-python"'
     - run: 'set -euo pipefail
 
         rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
@@ -135,6 +146,28 @@ jobs:
         rust/target/debug/model-run --check-catalog "$RUNNER_TEMP/native-catalog"
 
         '
+    - name: Build actual logging collector and seal the ordinary production ELF
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driving-native-296"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-logmessaged --bins --locked 2>&1 | tee "$proof/collector-build.log"
+
+        sha256sum rust/target/debug/openpilot-driving-modeld > "$proof/plain-before.sha256"
+
+        '
+    - name: Retain fresh unchanged original linked-fault and ordinary ENOTSOCK outcomes
+      run: "set -euo pipefail\nrust/tools/check-disk-space --path \"$GITHUB_WORKSPACE\" --growth-mib 2048\nPYTHONPATH=\"$RUNNER_TEMP/model-msgq-python:$PYTHONPATH\"\
+        \ python rust/tools/check_model_logging_faults.py \\\n  --catalog \"$RUNNER_TEMP/native-catalog\" --models \"$RUNNER_TEMP/original-models\"\
+        \ \\\n  --collector rust/target/debug/openpilot-logmessaged --output \"$RUNNER_TEMP/model-logging-faults\"\n\nsha256sum\
+        \ -c \"$RUNNER_TEMP/driving-native-296/plain-before.sha256\"\n"
+    - name: Retain fresh unchanged original six-scenario collector outcomes
+      run: "set -euo pipefail\nrust/tools/check-disk-space --path \"$GITHUB_WORKSPACE\" --growth-mib 2048\nPYTHONPATH=\"$RUNNER_TEMP/model-msgq-python:$PYTHONPATH\"\
+        \ python rust/tools/check_driving_daemon.py \\\n  --binary rust/target/debug/openpilot-driving-modeld --collector\
+        \ rust/target/debug/openpilot-logmessaged \\\n  --catalog \"$RUNNER_TEMP/native-catalog\" --models \"$RUNNER_TEMP/original-models\"\
+        \ --output \"$RUNNER_TEMP/driving-daemon\"\n"
     - name: Require native six-scenario real IPC against complete independent original inputs
       run: 'set -euo pipefail
 
@@ -146,11 +179,59 @@ jobs:
         --locked -- --nocapture 2>&1 | tee "$proof/live-tests.log"
 
         '
+    - name: Require native live collector and all source logging assertions over six scenarios
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driving-native-296"
+
+        export DRIVING_DAEMON_PEER="$DRIVING_DAEMON_OUTPUT/driving-daemon-peer"
+
+        export DRIVING_DAEMON_COLLECTOR="$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged"
+
+        export DRIVING_LOGGING_OUTPUT="$proof/logging-native"
+
+        printf ''DRIVING_DAEMON_PEER=%s\nDRIVING_DAEMON_COLLECTOR=%s\n'' "$DRIVING_DAEMON_PEER" "$DRIVING_DAEMON_COLLECTOR"
+        >> "$GITHUB_ENV"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --test driving_logging_check
+        --locked -- --nocapture 2>&1 | tee "$proof/logging-tests.log"
+
+        sha256sum -c "$proof/plain-before.sha256"
+
+        '
+    - name: Require native both linked faults with same unchanged wrapped ELF and real collector
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driving-native-296"
+
+        export DRIVING_LOGGING_FAULT_BINARY="$RUNNER_TEMP/model-logging-faults/openpilot-driving-modeld-fault"
+
+        export DRIVING_LOGGING_FAULT_OUTPUT="$proof/fault-native"
+
+        sha256sum "$DRIVING_LOGGING_FAULT_BINARY" "$DRIVING_DAEMON_PEER" "$DRIVING_DAEMON_COLLECTOR" rust/tools/model_logging_fault.cc
+        > "$proof/fault-inputs.sha256"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --test driving_logging_fault_check
+        --locked -- --nocapture 2>&1 | tee "$proof/fault-tests.log"
+
+        sha256sum -c "$proof/fault-inputs.sha256"
+
+        sha256sum -c "$proof/plain-before.sha256"
+
+        '
     - uses: actions/upload-artifact@v6
       if: always()
       with:
         name: driving-native-independent-296
         path: '${{ runner.temp }}/driving-native-296/
 
-          ${{ runner.temp }}/native-catalog/current.json'
+          ${{ runner.temp }}/native-catalog/current.json
+
+          ${{ runner.temp }}/driving-daemon/
+
+          ${{ runner.temp }}/model-logging-faults/'
         if-no-files-found: error
