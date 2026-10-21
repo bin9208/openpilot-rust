@@ -24,6 +24,14 @@ and after. The private admission root omits only the retired historical pair;
 five other original dependency pins still refer to the checkout and the retained
 fixture is copied into that root. This is no claim of a wholly Python-free tree.
 
-Actual deleted-checkout cloud proof and the complete updated startup-services job
-remain pending. No device, network uploader, AGNOS installation or driving result
+Actual deleted-checkout proof passed at source083f937a0eda7e05bd84f18bf68b0afce5a5956e:
+[run39547256419/job119048126004](https://github.com/bin9208/openpilot-rust/actions/runs/39547256419/job/119048126004),
+workflow759963f7387f6e24e3f7989d66b4a52ed8916acb,
+artifact12322531729 ZIP SHA256
+`c0f5ef8364da8907ae059f36201d45cd9ca31aea222d34b965eee88bd9bf2c6b`.
+The actual checkout historical pair is absent; both roots retain1,089 native-only
+execs and15 tests/Clippy/default CLI pass. Parent inspected all20 native JSON
+across checkout/private/test/default lanes and matching before/after input seals.
+Source policy run39547261512 at083f937a passed13 disk,74 isolation,2 lagd and2 timed checks.
+The complete updated startup-services job and latest full PR/ARM remain pending. No device, network uploader, AGNOS installation or driving result
 is established by these host fixtures.

@@ -462,7 +462,7 @@ impl<R: Runner> Controller<'_, R> {
         if actual != expected {
             return Err(format!("spidev source hash mismatch: {actual} != {expected}").into());
         }
-        if let Some(size) = sdist["size"].as_integer() {
+        if let Some(size) = sdist.get("size").and_then(toml::Value::as_integer) {
             if fs::metadata(&archive)?.len() != u64::try_from(size)? {
                 return Err("spidev archive size differs from uv.lock".into());
             }
