@@ -2080,3 +2080,12 @@ required-features = ["driver-daemon-native"]
 [[test]]
 name = "model_family_prepare"
 required-features = ["driver-daemon-native"]
+
+[[bin]]
+name = "stage-soundd-source"
+path = "src/bin/stage_soundd_source.rs"
+required-features = ["soundd-daemon-native"]
+
+[[test]]
+name = "soundd_source_stage"
+required-features = ["soundd-daemon-native"]

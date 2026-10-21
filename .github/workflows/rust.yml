@@ -3279,7 +3279,7 @@ jobs:
             printf '%s=%s\n' "$name" "${!name}" >> "$GITHUB_ENV"
           done
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --bin check-soundd-daemon --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --bin check-soundd-daemon --bin stage-soundd-source --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 64
           cc -std=c11 -shared -fPIC -pthread -Wall -Wextra -Werror rust/tools/fixtures/soundd/portaudio.c -o "$SOUNDD_PORTAUDIO_LIBRARY"
       - name: Require audio finalization baseline rejection
@@ -3322,6 +3322,8 @@ jobs:
           set -euo pipefail
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --lib soundd_daemon_check::worker::tests --locked -- --test-threads=1
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --test soundd_source_stage --locked
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --lib --bin stage-soundd-source --test soundd_source_stage --locked -- -D warnings
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --test soundd_daemon_check --test soundd_daemon_runtime --locked -- --test-threads=1
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
@@ -3344,26 +3346,9 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           mkdir -p "$proof"
           git rev-parse HEAD > "$proof/SOURCE_COMMIT"
-          sha256sum "$SOUNDD_DAEMON_BINARY" "$SOUNDD_DAEMON_WORKER_BINARY" "$SOUNDD_FIXTURE_ASSETS_BINARY" "$SOUNDD_PORTAUDIO_LIBRARY" > "$proof/executables.sha256"
+          sha256sum "$SOUNDD_DAEMON_BINARY" "$SOUNDD_DAEMON_WORKER_BINARY" "$SOUNDD_FIXTURE_ASSETS_BINARY" "$SOUNDD_PORTAUDIO_LIBRARY" "$PWD/rust/target/debug/stage-soundd-source" > "$proof/executables.sha256"
           # Stage only the exact retained source identities; do not copy the retired checker.
-          python - <<'STAGE'
-          import hashlib, json, os
-          from pathlib import Path
-          root = Path(os.environ['SOUNDD_NATIVE_PRESENT_ROOT'])
-          absent = Path(os.environ['SOUNDD_NATIVE_ABSENT_ROOT'])
-          pins = json.loads((root / 'rust/crates/dev-tools/tests/fixtures/soundd-daemon/manifest.json').read_text())['source_sha256']
-          assert len(pins) == 21
-          for name, digest in pins.items():
-            if name == 'rust/tools/check_soundd_daemon.py':
-              assert not (root / name).exists() and not (root / name).is_symlink()
-              continue
-            data = (root / name).read_bytes()
-            assert hashlib.sha256(data).hexdigest() == digest, name
-            path = absent / name
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_bytes(data)
-          assert len([p for p in absent.rglob('*') if p.is_file()]) == 20
-          STAGE
+          "$PWD/rust/target/debug/stage-soundd-source" --root "$SOUNDD_NATIVE_PRESENT_ROOT" --output "$SOUNDD_NATIVE_ABSENT_ROOT" > "$proof/source-stage.json"
           test ! -e "$SOUNDD_NATIVE_ABSENT_ROOT/rust/tools/check_soundd_daemon.py"
           test ! -L "$SOUNDD_NATIVE_ABSENT_ROOT/rust/tools/check_soundd_daemon.py"
           for lane in PRESENT ABSENT; do
@@ -4805,6 +4790,7 @@ jobs:
         if: always()
         with:
           name: model-family-six-source-native-296
+          include-hidden-files: true
           retention-days: 7
           if-no-files-found: error
           path: |
