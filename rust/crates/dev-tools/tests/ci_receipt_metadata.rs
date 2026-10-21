@@ -1,5 +1,5 @@
 use openpilot_dev_tools::ci_receipt_metadata::{
-    first_binding, module, prefix, read_receipt, MAX_RECEIPT_BYTES,
+    first_binding, first_binding_from_names, module, prefix, read_receipt, MAX_RECEIPT_BYTES,
 };
 use std::{
     fs,
@@ -85,6 +85,41 @@ fn bounded_receipt_read_follows_links_and_rejects_sparse_oversize_before_json() 
     assert_eq!(
         read_receipt(root.path()).unwrap_err().class,
         "IsADirectoryError"
+    );
+}
+#[test]
+fn ordered_selector_keeps_each_provider_order_instead_of_sorting() {
+    let directory = std::path::Path::new("/held/inputs");
+    for (names, expected) in [
+        (
+            ["params_pyx.z.so", "params_pyx.a.so"],
+            b"X=/held/inputs/params_pyx.z.so\n".as_slice(),
+        ),
+        (
+            ["params_pyx.a.so", "params_pyx.z.so"],
+            b"X=/held/inputs/params_pyx.a.so\n".as_slice(),
+        ),
+    ] {
+        let names: Vec<OsString> = names.into_iter().map(Into::into).collect();
+        assert_eq!(
+            first_binding_from_names(directory, "X", &names).unwrap(),
+            expected
+        );
+    }
+    let names = vec![
+        OsString::from(".params_pyx.hidden.so"),
+        OsString::from_vec(b"params_pyx.\xff.so".to_vec()),
+        "params_pyx.a.so".into(),
+    ];
+    assert_eq!(
+        first_binding_from_names(directory, "X", &names).unwrap(),
+        b"X=/held/inputs/params_pyx.\xff.so\n"
+    );
+    assert_eq!(
+        first_binding_from_names(directory, "X", &[])
+            .unwrap_err()
+            .class,
+        "StopIteration"
     );
 }
 #[test]
@@ -264,6 +299,67 @@ fn replace_root(bytes: &[u8], old: &[u8], new: &[u8]) -> Vec<u8> {
     out.extend_from_slice(rest);
     out
 }
+fn directory_order(directory: &Path) -> Vec<OsString> {
+    fs::read_dir(directory)
+        .unwrap()
+        .map(|e| e.unwrap().file_name())
+        .collect()
+}
+fn first_matching_name(names: &[OsString]) -> Option<&std::ffi::OsStr> {
+    names
+        .iter()
+        .find(|name| {
+            name.as_bytes().starts_with(b"params_pyx") && name.as_bytes().ends_with(b".so")
+        })
+        .map(OsString::as_os_str)
+}
+/// Only the first basename is provider-dependent. The captured ENV, directory
+/// bytes, separators and newline must remain exact, including raw Unix bytes.
+fn project_first_basename(
+    original: &[u8],
+    directory: &Path,
+    env: &str,
+    old: &std::ffi::OsStr,
+    new: &std::ffi::OsStr,
+) -> Vec<u8> {
+    let mut prefix = format!("{env}=").into_bytes();
+    prefix.extend_from_slice(directory.as_os_str().as_bytes());
+    prefix.push(b'/');
+    let mut original_contract = prefix.clone();
+    original_contract.extend_from_slice(old.as_bytes());
+    original_contract.push(b'\n');
+    assert_eq!(
+        original, original_contract,
+        "projection requires exact original path/output contract"
+    );
+    prefix.extend_from_slice(new.as_bytes());
+    prefix.push(b'\n');
+    prefix
+}
+#[test]
+fn provider_projection_preserves_raw_parent_bytes_env_and_newline() {
+    let dir = PathBuf::from(OsString::from_vec(b"/root/runner-\xff/inputs".to_vec()));
+    let old = std::ffi::OsStr::new("params_pyx.a.so");
+    let new = std::ffi::OsStr::new("params_pyx.z.so");
+    assert_eq!(
+        project_first_basename(
+            b"X=/root/runner-\xff/inputs/params_pyx.a.so\n",
+            &dir,
+            "X",
+            old,
+            new
+        ),
+        b"X=/root/runner-\xff/inputs/params_pyx.z.so\n"
+    );
+    assert!(std::panic::catch_unwind(|| project_first_basename(
+        b"WRONG=/root/runner-\xff/inputs/params_pyx.a.so\n",
+        &dir,
+        "X",
+        old,
+        new
+    ))
+    .is_err());
+}
 fn file_set(root: &Path) -> BTreeSet<String> {
     fn walk(root: &Path, dir: &Path, out: &mut BTreeSet<String>) {
         for entry in fs::read_dir(dir).unwrap() {
@@ -284,7 +380,9 @@ fn file_set(root: &Path) -> BTreeSet<String> {
 }
 /// Consumes independently captured actual snippets, never the native output as
 /// expected. Exact stdout/status, original failure class and no effects are
-/// checked; Python traceback wording/locations are intentionally not identical.
+/// checked; first-glob basename alone may project to the independently measured
+/// current provider order. The source-fixed selector is also compared exactly.
+/// Python traceback wording/locations are intentionally not identical.
 #[test]
 #[ignore = "hosted sealed original-only capture and registered CLI required"]
 fn all_fourteen_callers_and_original_failures() {
@@ -396,23 +494,80 @@ fn all_fourteen_callers_and_original_failures() {
         } else {
             assert_eq!(kind, "missing");
         }
+        let captured_stdout = replace_root(
+            &decode(&row["stdout_b64"]),
+            &decode(&row["capture_runner_b64"]),
+            runner.as_os_str().as_bytes(),
+        );
+        let mut expected_stdout = captured_stdout.clone();
+        let mut enumeration_projection = Value::Null;
+        let mut current_order = None;
         if op == "first-binding" && kind == "directory" {
-            let order: Vec<_> = fs::read_dir(&target)
+            let historical: Vec<OsString> = row["glob_order_b64"]
+                .as_array()
                 .unwrap()
-                .map(|e| STANDARD.encode(e.unwrap().file_name().as_bytes()))
+                .iter()
+                .map(|v| OsString::from_vec(decode(v)))
                 .collect();
+            let measured = directory_order(&target);
+            let set = |names: &[OsString]| {
+                names
+                    .iter()
+                    .map(|n| n.as_bytes().to_vec())
+                    .collect::<BTreeSet<_>>()
+            };
             assert_eq!(
-                serde_json::to_value(order).unwrap(),
-                row["glob_order_b64"],
-                "recreated enumeration order for {i}"
+                set(&historical).len(),
+                historical.len(),
+                "historical duplicate names"
             );
+            assert_eq!(
+                set(&measured),
+                set(&historical),
+                "provider order may differ, member roster must not"
+            );
+            enumeration_projection = json!({"scope":"filesystem-provider enumeration input; no selected basename change", "applied":false,
+                "original_order_b64":historical.iter().map(|n|STANDARD.encode(n.as_bytes())).collect::<Vec<_>>(),
+                "current_order_b64":measured.iter().map(|n|STANDARD.encode(n.as_bytes())).collect::<Vec<_>>()});
+            // Fixed original output is tested using its original raw enumeration.
+            // The real CLI below separately uses the actual current filesystem.
+            let replay =
+                first_binding_from_names(&target, row["env"].as_str().unwrap(), &historical);
+            if row["status"] == 0 {
+                assert_eq!(
+                    replay.unwrap(),
+                    captured_stdout,
+                    "source-fixed ordered selector for {i}"
+                );
+                let original_first = first_matching_name(&historical).unwrap();
+                let current_first = first_matching_name(&measured).unwrap();
+                expected_stdout = project_first_basename(
+                    &captured_stdout,
+                    &target,
+                    row["env"].as_str().unwrap(),
+                    original_first,
+                    current_first,
+                );
+                enumeration_projection = json!({"scope":"filesystem-provider order; only selected first basename may change", "applied":original_first != current_first,
+                    "original_order_b64":historical.iter().map(|n|STANDARD.encode(n.as_bytes())).collect::<Vec<_>>(),
+                    "current_order_b64":measured.iter().map(|n|STANDARD.encode(n.as_bytes())).collect::<Vec<_>>(),
+                    "original_first_b64":STANDARD.encode(original_first.as_bytes()), "current_first_b64":STANDARD.encode(current_first.as_bytes()),
+                    "original_stdout_b64":STANDARD.encode(&captured_stdout),"expected_projected_stdout_b64":STANDARD.encode(&expected_stdout)});
+            } else {
+                assert_eq!(
+                    replay.unwrap_err().class,
+                    original_error_class(&decode(&row["stderr_b64"])).unwrap()
+                );
+                assert!(first_matching_name(&measured).is_none());
+            }
+            current_order = Some(measured);
         }
         let before = snapshot(temp.path());
         let mut argv = vec![binary.clone().into_os_string(), op.into()];
         if op != "prefix" {
             argv.push(row["env"].as_str().unwrap().into());
         }
-        argv.push(target.into_os_string());
+        argv.push(target.as_os_str().to_owned());
         let mut spec = CommandSpec::new_os(argv.clone(), Duration::from_secs(10));
         spec.cwd = Some(temp.path().into());
         spec.env.insert("PATH".into(), "/nonexistent".into());
@@ -420,8 +575,15 @@ fn all_fourteen_callers_and_original_failures() {
         spec.stderr_limit = 1024 * 1024;
         let actual = NativeRunner.run(&spec).unwrap();
         // Retain actual bytes before any parity assertion can fail.
-        fs::write(evidence.join(format!("case-{i:03}.json")), serde_json::to_vec_pretty(&json!({"case":i,"argv_b64":argv.iter().map(|s|STANDARD.encode(s.as_bytes())).collect::<Vec<_>>(),"status":actual.code,"stdout_b64":STANDARD.encode(&actual.stdout),"stderr_b64":STANDARD.encode(&actual.stderr)})).unwrap()).unwrap();
+        fs::write(evidence.join(format!("case-{i:03}.json")), serde_json::to_vec_pretty(&json!({"case":i,"argv_b64":argv.iter().map(|s|STANDARD.encode(s.as_bytes())).collect::<Vec<_>>(),"status":actual.code,"stdout_b64":STANDARD.encode(&actual.stdout),"stderr_b64":STANDARD.encode(&actual.stderr),"enumeration_projection":enumeration_projection})).unwrap()).unwrap();
         assert_eq!(snapshot(temp.path()), before, "effects for {i}");
+        if let Some(order) = &current_order {
+            assert_eq!(
+                &directory_order(&target),
+                order,
+                "directory enumeration changed during native command {i}"
+            );
+        }
         let boundary = row["boundary_nonstring_prefix"] == true;
         if boundary {
             assert_eq!(
@@ -437,11 +599,7 @@ fn all_fourteen_callers_and_original_failures() {
                 row["status"].as_i64().unwrap() as i32,
                 "status for {i}"
             );
-            let expected_stdout = replace_root(
-                &decode(&row["stdout_b64"]),
-                &decode(&row["capture_runner_b64"]),
-                runner.as_os_str().as_bytes(),
-            );
+
             assert_eq!(actual.stdout, expected_stdout, "stdout for {i}");
             if actual.code == 0 {
                 assert!(actual.stderr.is_empty());
@@ -466,7 +624,7 @@ fn all_fourteen_callers_and_original_failures() {
             }
         }
         assert!(!actual.stdout.windows(4).any(|w| w == b"PASS"));
-        receipts.push(json!({"case":i,"argv_b64":argv.iter().map(|s|STANDARD.encode(s.as_bytes())).collect::<Vec<_>>(),"status":actual.code,"stdout_b64":STANDARD.encode(&actual.stdout),"stderr_b64":STANDARD.encode(&actual.stderr),"explicit_nonstring_boundary":boundary}));
+        receipts.push(json!({"case":i,"argv_b64":argv.iter().map(|s|STANDARD.encode(s.as_bytes())).collect::<Vec<_>>(),"status":actual.code,"stdout_b64":STANDARD.encode(&actual.stdout),"stderr_b64":STANDARD.encode(&actual.stderr),"explicit_nonstring_boundary":boundary,"enumeration_projection":enumeration_projection}));
     }
     assert_eq!(seen.len(), 14);
     verify();

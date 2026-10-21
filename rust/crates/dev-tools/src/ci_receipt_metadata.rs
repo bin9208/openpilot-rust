@@ -3,6 +3,7 @@
 //! schema only. Tracebacks and arbitrary Python print(non-string) are not emulated.
 use openpilot_log_format::{JsonValue, JsonView};
 use std::{
+    ffi::OsString,
     fmt, fs,
     io::{Read, Write},
     os::unix::ffi::OsStrExt,
@@ -158,24 +159,45 @@ fn pathlib_bytes(path: &Path) -> Vec<u8> {
     }
     out
 }
+fn select_binding(
+    directory: &Path,
+    env: &str,
+    names: impl IntoIterator<Item = Result<OsString>>,
+) -> Result<Vec<u8>> {
+    let mut out = label(env)?;
+    for name in names {
+        let name = name?;
+        let bytes = name.as_bytes();
+        if bytes.starts_with(b"params_pyx") && bytes.ends_with(b".so") {
+            out.extend(pathlib_bytes(&directory.join(name)));
+            out.push(b'\n');
+            return Ok(out);
+        }
+    }
+    Err(error("StopIteration", "no params_pyx*.so match"))
+}
+/// Replay an independently captured directory enumeration. The ordering is an
+/// input supplied by the filesystem provider, never a lexical sort policy.
+/// Production first_binding and source-observation tests use the same selector.
+pub fn first_binding_from_names(
+    directory: &Path,
+    env: &str,
+    names: &[OsString],
+) -> Result<Vec<u8>> {
+    select_binding(directory, env, names.iter().cloned().map(Ok))
+}
 /// pathlib glob does not sort and matches names regardless of file type. A
 /// dangling symlink or directory ending .so is a match. Missing/not-directory/
 /// unreadable directories produce the original next(...): StopIteration.
 pub fn first_binding(directory: &Path, env: &str) -> Result<Vec<u8>> {
-    let mut out = label(env)?;
-    if let Ok(entries) = fs::read_dir(directory) {
-        for entry in entries {
-            let entry = entry.map_err(io_error)?;
-            let name = entry.file_name();
-            let name = name.as_bytes();
-            if name.starts_with(b"params_pyx") && name.ends_with(b".so") {
-                out.extend(pathlib_bytes(&entry.path()));
-                out.push(b'\n');
-                return Ok(out);
-            }
-        }
+    match fs::read_dir(directory) {
+        Ok(entries) => select_binding(
+            directory,
+            env,
+            entries.map(|entry| entry.map(|e| e.file_name()).map_err(io_error)),
+        ),
+        Err(_) => select_binding(directory, env, std::iter::empty()),
     }
-    Err(error("StopIteration", "no params_pyx*.so match"))
 }
 /// Parent-owned bin should print this error to stderr and exit 1. All bytes are
 /// computed before writing stdout, so rejected receipts publish no partial ENV.
