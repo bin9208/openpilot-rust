@@ -59,6 +59,11 @@ also compiles its peer under the output directory, which is not yet a native
 CLI parity claim. Its original help/error
 observations are captured independently in the optional hosted CLI extension.
 The maintained Python checker stays until the remaining no-collector, CLI,
-source-absence, and caller proofs complete. The parser has a lossless raw Unix
-path test; a positive raw-byte output-directory invocation has not yet been
-paired with the unchanged Python checker and is not a retirement claim.
+source-absence, and caller proofs complete. The parser retains raw Unix
+argument bytes. The pending positive hosted gate passes a `0xff` parent alias
+that resolves to an owned ASCII directory. It records full argv bytes, alias
+identity and target before and after traffic, complete reports and streams,
+then removes only the owned alias. Direct `0xff` output-directory components
+remain outside the original checker's peer protocol: it calls UTF-8 `.encode()`
+on the full path. Native admission rejects such paths too. Neither raw lane
+has passed a hosted gate yet.

@@ -121,7 +121,7 @@ fn actual_native_driver_replays_all_four_original_cases() {
     let options = Options {
         binary: required("DRIVER_DAEMON_BINARY").into(),
         catalog: required("DRIVER_DAEMON_CATALOG").into(),
-        collector: required("DRIVER_DAEMON_COLLECTOR").into(),
+        collector: Some(required("DRIVER_DAEMON_COLLECTOR").into()),
         peer: required("DRIVER_DAEMON_PEER").into(),
         models: required("DRIVER_DAEMON_MODELS").into(),
         original_dir: required("DRIVER_DAEMON_ORIGINAL_CAPTURE").into(),

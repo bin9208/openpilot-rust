@@ -135,6 +135,7 @@ pub struct OriginalCapture {
     manifest: Value,
     manifest_sha256: String,
     root_identity: (u64, u64),
+    collector_enabled: bool,
 }
 
 impl OriginalCapture {
@@ -163,6 +164,15 @@ impl OriginalCapture {
         {
             return Err("driver capture provenance changed".into());
         }
+        let collector_enabled = match manifest["policy"]
+            .as_object()
+            .ok_or("driver original policy is not an object")?
+            .get("collector_mode")
+        {
+            None => true, // Existing independently captured collector-backed corpus.
+            Some(Value::String(mode)) if mode == "absent" => false,
+            Some(_) => return Err("driver original collector policy changed".into()),
+        };
         let cases = manifest["cases"].as_array().ok_or("missing driver cases")?;
         if cases.len() != CASES.len() {
             return Err("driver original case count changed".into());
@@ -239,18 +249,20 @@ impl OriginalCapture {
                 || run["queue_sizes"]
                     != serde_json::json!({"liveCalibration":256000,"driverStateV2":256000})
                 || run["queue_size_oracle"] != "original cereal.services.SERVICE_LIST"
-                || logging["result"] != "pass"
-                || logging["component"] != "dmonitoringmodeld"
-                || logging["log_messages"] != 5
-                || logging["error_messages"] != 0
-                || logging["runtime_timing_events"] != 0
-                || logging["disk_records"] != 5
-                || source_calls["result"] != "pass"
-                || source_calls["compared_records"] != 5
-                || source_calls["pending_egpu_lines"] != serde_json::json!([])
-                || source_calls["compared_lines"]
-                    .as_array()
-                    .is_none_or(|lines| lines.len() != 4)
+                || (collector_enabled
+                    && (logging["result"] != "pass"
+                        || logging["component"] != "dmonitoringmodeld"
+                        || logging["log_messages"] != 5
+                        || logging["error_messages"] != 0
+                        || logging["runtime_timing_events"] != 0
+                        || logging["disk_records"] != 5
+                        || source_calls["result"] != "pass"
+                        || source_calls["compared_records"] != 5
+                        || source_calls["pending_egpu_lines"] != serde_json::json!([])
+                        || source_calls["compared_lines"]
+                            .as_array()
+                            .is_none_or(|lines| lines.len() != 4)))
+                || (!collector_enabled && run.get("logging") != Some(&Value::Null))
             {
                 return Err("driver original report contract changed".into());
             }
@@ -269,6 +281,7 @@ impl OriginalCapture {
             manifest,
             manifest_sha256: manifest_sha256.into(),
             root_identity: (metadata.dev(), metadata.ino()),
+            collector_enabled,
         };
         capture.loaded_python_sources()?;
         capture.original_models()?;
@@ -531,10 +544,11 @@ const LOG_LIMIT: usize = 16 * 1024 * 1024;
 
 /// Four-case native replay. The peer and original-only capture are supplied by
 /// the hosted prerequisite; this controller never executes the Python checker.
+#[derive(Clone)]
 pub struct Options {
     pub binary: PathBuf,
     pub catalog: PathBuf,
-    pub collector: PathBuf,
+    pub collector: Option<PathBuf>,
     pub peer: PathBuf,
     pub models: PathBuf,
     pub original_dir: PathBuf,
@@ -542,6 +556,16 @@ pub struct Options {
     pub source_commit: String,
     pub output: PathBuf,
     pub root: PathBuf,
+}
+
+fn resolved_output(path: &Path) -> Result<PathBuf> {
+    let name = path
+        .file_name()
+        .ok_or("driver output directory has no final component")?;
+    let parent = path
+        .parent()
+        .ok_or("driver output directory has no parent")?;
+    Ok(fs::canonicalize(parent)?.join(name))
 }
 
 struct InputPin {
@@ -1228,14 +1252,20 @@ fn case(context: &CaseContext<'_>) -> Result<Value> {
     .into_iter()
     .chain(raw.then_some((OsString::from("SEND_RAW_PRED"), OsString::from("0"))))
     .collect::<Vec<_>>();
-    let mut collector = Collector::start(
-        &options.collector,
-        &destination.join("logging"),
-        &env,
-        &shm_prefix,
-        &options.root,
-        &options.source_commit,
-    )?;
+    let mut collector = options
+        .collector
+        .as_ref()
+        .map(|binary| {
+            Collector::start(
+                binary,
+                &destination.join("logging"),
+                &env,
+                &shm_prefix,
+                &options.root,
+                &options.source_commit,
+            )
+        })
+        .transpose()?;
     let daemon_args = [
         OsString::from("--trusted-catalog"),
         options.catalog.as_os_str().to_owned(),
@@ -1401,28 +1431,36 @@ fn case(context: &CaseContext<'_>) -> Result<Value> {
     let waiting_pid = waiting.child.id();
     waiting.wait_line(&["connecting to driver stream"], signals)?;
     waiting.stop(Some(Signal::INT), 0, SHUTDOWN, signals)?;
-    let mut logging = collector.finish_driver(&[daemon_pid, peer.child.id(), waiting_pid])?;
     let original_report: Value =
         serde_json::from_slice(&original.read(&format!("{prefix}/report.json"))?)?;
-    let records = collector
-        .records("logMessage")
-        .ok_or("driver logMessage collector missing")?;
-    logging["source_calls"] = source_calls(
-        records,
-        daemon_pid,
-        waiting_pid,
-        size,
-        &original_report["logging"]["source_calls"],
-    )?;
-    for (name, expected) in [
-        ("log_messages", 5),
-        ("error_messages", 0),
-        ("runtime_timing_events", 0),
-        ("disk_records", 5),
-    ] {
-        if logging[name] != expected {
-            return Err(format!("driver collector {name} changed").into());
+    let logging = if let Some(collector) = collector.as_mut() {
+        let mut report = collector.finish_driver(&[daemon_pid, peer.child.id(), waiting_pid])?;
+        let records = collector
+            .records("logMessage")
+            .ok_or("driver logMessage collector missing")?;
+        report["source_calls"] = source_calls(
+            records,
+            daemon_pid,
+            waiting_pid,
+            size,
+            &original_report["logging"]["source_calls"],
+        )?;
+        for (name, expected) in [
+            ("log_messages", 5),
+            ("error_messages", 0),
+            ("runtime_timing_events", 0),
+            ("disk_records", 5),
+        ] {
+            if report[name] != expected {
+                return Err(format!("driver collector {name} changed").into());
+            }
         }
+        report
+    } else {
+        Value::Null
+    };
+    if logging.is_null() != original_report["logging"].is_null() {
+        return Err("driver original collector mode differs from native replay".into());
     }
     let mut scenarios = vec![
         "original service queue capacities",
@@ -1488,16 +1526,26 @@ pub fn run(options: &Options) -> Result<Value> {
         &options.root,
         &options.binary,
         &options.catalog,
-        &options.collector,
         &options.peer,
         &options.models,
         &options.original_dir,
     ]
     .iter()
     .any(|path| !path.is_absolute())
+        || options
+            .collector
+            .as_ref()
+            .is_some_and(|path| !path.is_absolute())
     {
         return Err("driver controller paths must be absolute".into());
     }
+    // The unchanged Python CLI calls Path.resolve() before creating output.
+    // Resolve an existing parent once, so a raw-byte alias to an ASCII parent
+    // still gives the peer an encodable path while the requested name remains
+    // exclusive and cannot be clobbered.
+    let mut admitted = options.clone();
+    admitted.output = resolved_output(&options.output)?;
+    let options = &admitted;
     for path in [&options.root, &options.models] {
         let metadata = fs::symlink_metadata(path)?;
         if !metadata.is_dir() || metadata.file_type().is_symlink() {
@@ -1509,12 +1557,19 @@ pub fn run(options: &Options) -> Result<Value> {
         &options.original_manifest_sha256,
         &options.source_commit,
     )?;
+    if options.collector.is_some() != original.collector_enabled {
+        return Err("driver original capture collector mode differs from native option".into());
+    }
     if checkout_commit(&options.root)? != options.source_commit {
         return Err("driver source checkout changed from original capture".into());
     }
     let binary = InputPin::open(&options.binary, true)?;
     let peer = InputPin::open(&options.peer, true)?;
-    let collector = InputPin::open(&options.collector, true)?;
+    let collector = options
+        .collector
+        .as_ref()
+        .map(|path| InputPin::open(path, true))
+        .transpose()?;
     let mut model_pins = Vec::new();
     let mut model_hashes = BTreeMap::new();
     for (name, hash) in original.original_models()? {
@@ -1565,7 +1620,10 @@ pub fn run(options: &Options) -> Result<Value> {
         }
         reports.push(report);
         original.verify()?;
-        for pin in [&binary, &peer, &collector] {
+        for pin in [&binary, &peer] {
+            pin.verify()?;
+        }
+        if let Some(pin) = &collector {
             pin.verify()?;
         }
         for pin in &source_pins {
@@ -1596,14 +1654,17 @@ pub fn run(options: &Options) -> Result<Value> {
     }
     let output = json!({"runs":reports,"device_validation":false,
         "source_commit":options.source_commit,"original_manifest_sha256":options.original_manifest_sha256,
-        "inputs":{"binary":binary.receipt(),"peer":peer.receipt(),"collector":collector.receipt(),
+        "inputs":{"binary":binary.receipt(),"peer":peer.receipt(),"collector":collector.as_ref().map(InputPin::receipt),
             "source_inputs":source_pins.iter().map(InputPin::receipt).collect::<Vec<_>>(),
             "imported_python_sources":imported_pins.iter().map(InputPin::receipt).collect::<Vec<_>>(),
             "original_models":model_pins.iter().map(InputPin::receipt).collect::<Vec<_>>(),
             "catalog":catalog.receipt()}});
     signals.check()?;
     original.verify()?;
-    for pin in [&binary, &peer, &collector] {
+    for pin in [&binary, &peer] {
+        pin.verify()?;
+    }
+    if let Some(pin) = &collector {
         pin.verify()?;
     }
     for pin in &source_pins {
@@ -1642,8 +1703,8 @@ pub fn run(options: &Options) -> Result<Value> {
 }
 
 /// Parse the original checker switches plus a distinct native evidence namespace.
-/// This is an opt-in controller interface: `--collector` remains mandatory here
-/// because every accepted native case checks actual collector records.
+/// This is an opt-in controller interface. The original capture fixes whether
+/// collector-backed records or the original no-collector `null` are required.
 pub fn parse(args: &[std::ffi::OsString]) -> Result<Option<Options>> {
     let parsed = scan_os(
         args,
@@ -1652,7 +1713,7 @@ pub fn parse(args: &[std::ffi::OsString]) -> Result<Option<Options>> {
             OptionSpec::value("--catalog", true),
             OptionSpec::value("--models", true),
             OptionSpec::value("--output", true),
-            OptionSpec::value("--collector", true),
+            OptionSpec::value("--collector", false),
             OptionSpec::value("--native-peer", true),
             OptionSpec::value("--native-original-dir", true),
             OptionSpec::value("--native-original-manifest-sha256", true),
@@ -1680,12 +1741,24 @@ pub fn parse(args: &[std::ffi::OsString]) -> Result<Option<Options>> {
             .ok_or("driver digest or source commit is not UTF-8")?
             .to_owned())
     };
+    let collector = parsed
+        .values
+        .get("--collector")
+        .map(|value| -> Result<PathBuf> {
+            let selected = PathBuf::from(value);
+            Ok(if selected.is_absolute() {
+                selected
+            } else {
+                std::env::current_dir()?.join(selected)
+            })
+        })
+        .transpose()?;
     Ok(Some(Options {
         binary: path("--binary")?,
         catalog: path("--catalog")?,
         models: path("--models")?,
         output: path("--output")?,
-        collector: path("--collector")?,
+        collector,
         peer: path("--native-peer")?,
         original_dir: path("--native-original-dir")?,
         original_manifest_sha256: text("--native-original-manifest-sha256")?,
@@ -1696,7 +1769,7 @@ pub fn parse(args: &[std::ffi::OsString]) -> Result<Option<Options>> {
 
 pub fn cli() -> Result<()> {
     let Some(options) = parse(&std::env::args_os().skip(1).collect::<Vec<_>>())? else {
-        std::io::stdout().write_all(b"Usage: check-driver-daemon --binary ELF --catalog DIR --models DIR --output DIR --collector ELF --native-peer ELF --native-original-dir DIR --native-original-manifest-sha256 SHA256 --native-source-commit SHA --native-root DIR\n")?;
+        std::io::stdout().write_all(b"Usage: check-driver-daemon --binary ELF --catalog DIR --models DIR --output DIR [--collector ELF] --native-peer ELF --native-original-dir DIR --native-original-manifest-sha256 SHA256 --native-source-commit SHA --native-root DIR\n")?;
         return Ok(());
     };
     run(&options)?;
@@ -1706,17 +1779,23 @@ pub fn cli() -> Result<()> {
 #[cfg(test)]
 mod comparison_tests {
     use super::{
-        compare_value, verify_catalog_sources, CatalogPin, Lines, Signals, TransportNamespace,
+        compare_value, resolved_output, verify_catalog_sources, CatalogPin, Lines, Signals,
+        TransportNamespace,
     };
     use rustix::event::{poll, PollFd, PollFlags};
     use serde_json::json;
     use std::{
         collections::BTreeMap,
+        ffi::OsString,
         fs::{self, File},
         io::Write,
         os::{
             fd::OwnedFd,
-            unix::net::{UnixListener, UnixStream},
+            unix::{
+                ffi::OsStringExt,
+                fs::symlink,
+                net::{UnixListener, UnixStream},
+            },
         },
         sync::atomic::{AtomicU64, Ordering},
         thread,
@@ -1724,12 +1803,31 @@ mod comparison_tests {
     };
 
     static NEXT_NAMESPACE: AtomicU64 = AtomicU64::new(0);
+
     fn namespace_name() -> String {
         format!(
             "driver-cleanup-test-{}-{}",
             std::process::id(),
             NEXT_NAMESPACE.fetch_add(1, Ordering::Relaxed)
         )
+    }
+
+    #[test]
+    fn raw_byte_output_alias_resolves_to_existing_ascii_parent_without_creation() {
+        let temporary = tempfile::tempdir().unwrap();
+        let real = temporary.path().join("real-parent");
+        fs::create_dir(&real).unwrap();
+        let alias = temporary
+            .path()
+            .join(OsString::from_vec(b"raw-\xff-alias".to_vec()));
+        symlink(&real, &alias).unwrap();
+        let output = resolved_output(&alias.join("new-output")).unwrap();
+        assert_eq!(output, real.join("new-output"));
+        assert!(!output.exists());
+        assert!(fs::symlink_metadata(&alias)
+            .unwrap()
+            .file_type()
+            .is_symlink());
     }
 
     #[test]
