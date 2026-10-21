@@ -1,0 +1,260 @@
+name: 296 fresh independent driver collector capture
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/driver-collector-current-capture-once.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  driver-daemon-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      EXPECTED_SOURCE: 2ecf3f6813f601ea52e7a61ccf75219952daefa0
+      RUSTUP_TOOLCHAIN: 1.94.0
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CPU_COUNT: '2'
+      DEV: CPU:LLVM
+      JIT: '1'
+      JIT_BATCH_SIZE: '0'
+      OPENPILOT_HACKS: '1'
+      LLVM_PATH: /usr/lib/x86_64-linux-gnu/libLLVM-18.so
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
+      GH_TOKEN: ${{ github.token }}
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        fetch-depth: 1
+        ref: 2ecf3f6813f601ea52e7a61ccf75219952daefa0
+    - name: Require exact source, disk room and native prerequisites
+      shell: bash
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        mkdir -p "$RUNNER_TEMP/driver-daemon-native-296"
+
+        sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends g++ clang libclang-dev libllvm18 git-lfs capnproto libcapnp-dev libzmq3-dev
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
+
+        '
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Install pinned original Python observer dependencies
+      shell: bash
+      run: 'set -euo pipefail
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        python -m pip install numpy==2.5.3 zstandard==0.25.0 pycapnp==2.1.0 pyzmq==27.2.0 Cython==3.2.4 setuptools==82.0.1
+        pytest==9.0.2
+
+        '
+    - name: Build only driver daemon, model runner, log collector and original IPC bindings
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driver-daemon-native-296"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-model-runtime --bin model-run --locked >"$proof/model-run-build.log"
+        2>&1 || { cat "$proof/model-run-build.log"; exit 1; }
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dmonitoringmodeld --locked >"$proof/dmonitoring-build.log"
+        2>&1 || { cat "$proof/dmonitoring-build.log"; exit 1; }
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-logmessaged --bin openpilot-logmessaged --locked >"$proof/logmessaged-build.log"
+        2>&1 || { cat "$proof/logmessaged-build.log"; exit 1; }
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/model-msgq-python" >"$proof/msgq-build.log" 2>&1
+        || { cat "$proof/msgq-build.log"; exit 1; }
+
+        '
+    - name: Materialize pinned admit_driver_current_pkls.py
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driver-daemon-native-296"
+
+        base64 --decode <<''PAYLOAD'' > "$proof/admit_driver_current_pkls.py"
+
+        IiIiSG9zdGVkLW9ubHk6IGFkbWl0IGFjY2VwdGVkIFBLTHMgYmVmb3JlIGFueSBwaWNrbGUvSklUL21vZGVsIGltcG9ydC4KCkEgbWlzbWF0Y2ggc2VsZWN0cyBmcmVzaCBjb21waWxhdGlvbjsgaXQgbmV2ZXIgZXhlY3V0ZXMgYSBzcGVjdWxhdGl2ZSBvbGQgbW9kZWwuCiIiIgppbXBvcnQgYXJncGFyc2UKaW1wb3J0IGN0eXBlcwppbXBvcnQgaGFzaGxpYgppbXBvcnQgaW1wb3J0bGliLm1ldGFkYXRhCmltcG9ydCBqc29uCmltcG9ydCBvcwpmcm9tIHBhdGhsaWIgaW1wb3J0IFBhdGgKaW1wb3J0IHBsYXRmb3JtCmltcG9ydCBzdWJwcm9jZXNzCmltcG9ydCB6aXBmaWxlCgpBUkNISVZFX1NIQSA9ICI2OGJlNTQxYmE5ZDVjOTZjN2E3YjIxNzk4NWRkOGJlZmI4MzAxZGZhNmE2OTExYWFkYjhmNTM4M2JlZGVhNWQ0IgpTT1VSQ0UgPSAiNDgxYWU2ZmVjMzllY2M2ODc4NmM0YzI4MTNiMTIwNWZiNDU2NzE0MSIKTUFOSUZFU1QgPSAiMWI4ZTZjZWE1MTFlOWYyMTJjZDc3Mzc2ODhiM2UyZWMwYTE2NWI5ZmY5ODViNDkyZjBlOThjNDYzOWYxODM4MCIKUFJFRklYID0gImRyaXZlci1kYWVtb24tbmF0aXZlLTI5Ni8iCk1PREVMX05BTUVTID0gWyJkbW9uaXRvcmluZ19tb2RlbF90aW55Z3JhZC5wa2wiLCAiZG1vbml0b3JpbmdfbW9kZWxfbWV0YWRhdGEucGtsIiwKICAgICAgICAgICAgICAgImRtX3dhcnBfMTM0NHg3NjBfdGlueWdyYWQucGtsIiwgImRtX3dhcnBfMTkyOHgxMjA4X3RpbnlncmFkLnBrbCJdCiMgVGhlc2UgZW50aXJlIGRlcGVuZGVuY3kgdHJlZXMsIG5vdCBqdXN0IHRoZSBleGVjdXRhYmxlIGV4cG9ydGVyLCBtdXN0IG1hdGNoLgpERVBFTkRFTkNJRVMgPSBbInRpbnlncmFkX3JlcG8iLCAib3BlbnBpbG90L3NlbGZkcml2ZS9tb2RlbGQiLCAib3BlbnBpbG90L2NvbW1vbiIsCiAgICAgICAgICAgICAgICAib3BlbnBpbG90L3N5c3RlbS9jYW1lcmFkIiwgInJ1c3QvdG9vbHMvbW9kZWxfZXhwb3J0IiwgInV2LmxvY2siXQpWRVJTSU9OUyA9IHsibnVtcHkiOiAiMi41LjMiLCAienN0YW5kYXJkIjogIjAuMjUuMCJ9CgoKZGVmIHBpbihkYXRhKToKICAgIHJldHVybiB7ImJ5dGVzIjogbGVuKGRhdGEpLCAic2hhMjU2IjogaGFzaGxpYi5zaGEyNTYoZGF0YSkuaGV4ZGlnZXN0KCl9CgoKZGVmIGhvc3QoKToKICAgIGxpYnJhcnkgPSBQYXRoKG9zLmVudmlyb25bIkxMVk1fUEFUSCJdKS5yZXNvbHZlKHN0cmljdD1UcnVlKQogICAgbGx2bSA9IGN0eXBlcy5DRExMKHN0cihsaWJyYXJ5KSkKICAgIGZvciBuYW1lIGluICgiTExWTUdldEhvc3RDUFVOYW1lIiwgIkxMVk1HZXRIb3N0Q1BVRmVhdHVyZXMiKToKICAgICAgICBnZXRhdHRyKGxsdm0sIG5hbWUpLnJlc3R5cGUgPSBjdHlwZXMuY192b2lkX3AKICAgIGxsdm0uTExWTURpc3Bvc2VNZXNzYWdlLmFyZ3R5cGVzID0gW2N0eXBlcy5jX3ZvaWRfcF0KICAgIGRlZiB0ZXh0KG5hbWUpOgogICAgICAgIHZhbHVlID0gZ2V0YXR0cihsbHZtLCBuYW1lKSgpCiAgICAgICAgdHJ5OgogICAgICAgICAgICByZXR1cm4gY3R5cGVzLnN0cmluZ19hdCh2YWx1ZSkuZGVjb2RlKCkKICAgICAgICBmaW5hbGx5OgogICAgICAgICAgICBsbHZtLkxMVk1EaXNwb3NlTWVzc2FnZSh2YWx1ZSkKICAgIHByb2ZpbGVzID0gW10KICAgIGZvciBzZWN0aW9uIGluIFBhdGgoIi9wcm9jL2NwdWluZm8iKS5yZWFkX3RleHQoKS5zcGxpdCgiXG5cbiIpOgogICAgICAgIGZpZWxkcyA9IGRpY3QoKGsuc3RyaXAoKSwgdi5zdHJpcCgpKSBmb3IgbGluZSBpbiBzZWN0aW9uLnNwbGl0bGluZXMoKSBpZiAiOiIgaW4gbGluZSBmb3Igayx2IGluIFtsaW5lLnNwbGl0KCI6IiwxKV0pCiAgICAgICAgaWYgIm1vZGVsIG5hbWUiIGluIGZpZWxkcyBhbmQgImZsYWdzIiBpbiBmaWVsZHM6CiAgICAgICAgICAgIHByb2ZpbGUgPSB7Im1vZGVsX25hbWUiOiBmaWVsZHNbIm1vZGVsIG5hbWUiXSwgImZsYWdzIjogc29ydGVkKHNldChmaWVsZHNbImZsYWdzIl0uc3BsaXQoKSkpfQogICAgICAgICAgICBpZiBwcm9maWxlIG5vdCBpbiBwcm9maWxlczoKICAgICAgICAgICAgICAgIHByb2ZpbGVzLmFwcGVuZChwcm9maWxlKQogICAgYXNzZXJ0IHByb2ZpbGVzCiAgICByZXR1cm4geyJwcm9jX2NwdSI6IHByb2ZpbGVzLCAibGx2bV9wYXRoIjogc3RyKGxpYnJhcnkpLCAibWFjaGluZSI6IHBsYXRmb3JtLm1hY2hpbmUoKSwgImxsdm1fY3B1IjogdGV4dCgiTExWTUdldEhvc3RDUFVOYW1lIiksCiAgICAgICAgICAgICJsbHZtX2ZlYXR1cmVzIjogc29ydGVkKHRleHQoIkxMVk1HZXRIb3N0Q1BVRmVhdHVyZXMiKS5zcGxpdCgiLCIpKSwKICAgICAgICAgICAgImxsdm1fc2hhMjU2IjogcGluKGxpYnJhcnkucmVhZF9ieXRlcygpKVsic2hhMjU2Il0sCiAgICAgICAgICAgICJwYWNrYWdlcyI6IHtuYW1lOiBpbXBvcnRsaWIubWV0YWRhdGEudmVyc2lvbihuYW1lKSBmb3IgbmFtZSBpbiBWRVJTSU9OU319CgoKZGVmIG1haW4oKToKICAgIHBhcnNlciA9IGFyZ3BhcnNlLkFyZ3VtZW50UGFyc2VyKCkKICAgIHBhcnNlci5hZGRfYXJndW1lbnQoIi0tYXJjaGl2ZSIsIHR5cGU9UGF0aCwgcmVxdWlyZWQ9VHJ1ZSkKICAgIHBhcnNlci5hZGRfYXJndW1lbnQoIi0tcm9vdCIsIHR5cGU9UGF0aCwgcmVxdWlyZWQ9VHJ1ZSkKICAgIHBhcnNlci5hZGRfYXJndW1lbnQoIi0tbW9kZWxzIiwgdHlwZT1QYXRoLCByZXF1aXJlZD1UcnVlKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgiLS1yZWNlaXB0IiwgdHlwZT1QYXRoLCByZXF1aXJlZD1UcnVlKQogICAgYXJncyA9IHBhcnNlci5wYXJzZV9hcmdzKCkKICAgIGlmIGFyZ3MucmVjZWlwdC5leGlzdHMoKSBvciBhcmdzLnJlY2VpcHQuaXNfc3ltbGluaygpIG9yIGFyZ3MubW9kZWxzLmV4aXN0cygpIG9yIGFyZ3MubW9kZWxzLmlzX3N5bWxpbmsoKToKICAgICAgICByYWlzZSBGaWxlRXhpc3RzRXJyb3IoImFkbWlzc2lvbiBkZXN0aW5hdGlvbnMgbXVzdCBiZSBhYnNlbnQiKQogICAgc3RhdGUgPSBob3N0KCkKICAgIHJlYXNvbnMgPSBbXQogICAgaWYgcGluKGFyZ3MuYXJjaGl2ZS5yZWFkX2J5dGVzKCkpWyJzaGEyNTYiXSAhPSBBUkNISVZFX1NIQToKICAgICAgICByYWlzZSBBc3NlcnRpb25FcnJvcigiYWNjZXB0ZWQgYXJjaGl2ZSBpZGVudGl0eSBjaGFuZ2VkIikKICAgIHdpdGggemlwZmlsZS5aaXBGaWxlKGFyZ3MuYXJjaGl2ZSkgYXMgYXJjaGl2ZToKICAgICAgICBkZWYgc2VsZWN0ZWQobmFtZSwgYm91bmQpOgogICAgICAgICAgICBlbnRyaWVzID0gW2VudHJ5IGZvciBlbnRyeSBpbiBhcmNoaXZlLmluZm9saXN0KCkgaWYgZW50cnkuZmlsZW5hbWUgPT0gbmFtZV0KICAgICAgICAgICAgYXNzZXJ0IGxlbihlbnRyaWVzKSA9PSAxIGFuZCBlbnRyaWVzWzBdLmZpbGVfc2l6ZSA8PSBib3VuZAogICAgICAgICAgICByZXR1cm4gYXJjaGl2ZS5yZWFkKGVudHJpZXNbMF0pCiAgICAgICAgbWFuaWZlc3RfcmF3ID0gc2VsZWN0ZWQoUFJFRklYICsgIm9yaWdpbmFsLW5vLWNvbGxlY3Rvci9yZWZlcmVuY2UtbWFuaWZlc3QuanNvbiIsIDJfMDAwXzAwMCkKICAgICAgICBhc3NlcnQgcGluKG1hbmlmZXN0X3JhdylbInNoYTI1NiJdID09IE1BTklGRVNUCiAgICAgICAgbWFuaWZlc3QgPSBqc29uLmxvYWRzKG1hbmlmZXN0X3JhdykKICAgICAgICBvbGQgPSBqc29uLmxvYWRzKHNlbGVjdGVkKFBSRUZJWCArICJjdXJyZW50LWhvc3QtY29tcGlsZXIuanNvbiIsIDJfMDAwXzAwMCkpCiAgICAgICAgYXNzZXJ0IG9sZFsic291cmNlIl0gPT0gbWFuaWZlc3RbInNvdXJjZV9jb21taXQiXSA9PSBTT1VSQ0UKICAgICAgICBmb3Iga2V5IGluICgibWFjaGluZSIsICJsbHZtX2NwdSIsICJsbHZtX3NoYTI1NiIpOgogICAgICAgICAgICBpZiBvbGRba2V5XSAhPSBzdGF0ZVtrZXldOgogICAgICAgICAgICAgICAgcmVhc29ucy5hcHBlbmQoa2V5KQogICAgICAgIGlmIHNvcnRlZChvbGRbImxsdm1fZmVhdHVyZXMiXS5zcGxpdCgiLCIpKSAhPSBzdGF0ZVsibGx2bV9mZWF0dXJlcyJdOgogICAgICAgICAgICByZWFzb25zLmFwcGVuZCgibGx2bV9mZWF0dXJlcyIpCiAgICAgICAgaWYgc3RhdGVbInBhY2thZ2VzIl0gIT0gVkVSU0lPTlM6CiAgICAgICAgICAgIHJlYXNvbnMuYXBwZW5kKCJwYWNrYWdlcyIpCiAgICAgICAgZGlmZmVyZW5jZSA9IHN1YnByb2Nlc3MucnVuKFsiZ2l0IiwgIi1DIiwgc3RyKGFyZ3Mucm9vdCksICJkaWZmIiwgIi0tZXhpdC1jb2RlIiwgU09VUkNFLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIi0tIiwgKkRFUEVOREVOQ0lFU10sIHN0ZG91dD1zdWJwcm9jZXNzLlBJUEUsIHN0ZGVycj1zdWJwcm9jZXNzLlBJUEUpCiAgICAgICAgaWYgZGlmZmVyZW5jZS5yZXR1cm5jb2RlICE9IDA6CiAgICAgICAgICAgIHJlYXNvbnMuYXBwZW5kKCJjb21waWxlci9tb2RlbCBkZXBlbmRlbmN5IHNvdXJjZXMgZGlmZmVyIG9yIHVuYXZhaWxhYmxlIikKICAgICAgICBibG9icyA9IHt9CiAgICAgICAgZm9yIG5hbWUgaW4gTU9ERUxfTkFNRVM6CiAgICAgICAgICAgIGRhdGEgPSBzZWxlY3RlZCgib3JpZ2luYWwtbW9kZWxzLyIgKyBuYW1lLCAzMl8wMDBfMDAwKQogICAgICAgICAgICBhc3NlcnQgcGluKGRhdGEpID09IG1hbmlmZXN0WyJvcmlnaW5hbF9tb2RlbHMiXVtuYW1lXQogICAgICAgICAgICBibG9ic1tuYW1lXSA9IGRhdGEKICAgICAgICBpZiBub3QgcmVhc29uczoKICAgICAgICAgICAgYXJncy5tb2RlbHMubWtkaXIoKQogICAgICAgICAgICBmb3IgbmFtZSwgZGF0YSBpbiBibG9icy5pdGVtcygpOgogICAgICAgICAgICAgICAgd2l0aCAoYXJncy5tb2RlbHMgLyBuYW1lKS5vcGVuKCJ4YiIpIGFzIHNpbms6CiAgICAgICAgICAgICAgICAgICAgc2luay53cml0ZShkYXRhKQogICAgICAgIHJlcG9ydCA9IHsiYWNjZXB0ZWRfc291cmNlIjogU09VUkNFLCAiYWNjZXB0ZWRfYXJjaGl2ZV9zaGEyNTYiOiBBUkNISVZFX1NIQSwKICAgICAgICAgICAgICAgICAgIm9yaWdpbmFsX21hbmlmZXN0X3NoYTI1NiI6IE1BTklGRVNULCAibW9kZWxzIjogbWFuaWZlc3RbIm9yaWdpbmFsX21vZGVscyJdLAogICAgICAgICAgICAgICAgICAiaGlzdG9yaWNhbF9wcm92aWRlciI6IG9sZCwgImN1cnJlbnRfaG9zdCI6IHN0YXRlLAogICAgICAgICAgICAgICAgICAicmV1c2VfYWRtaXR0ZWQiOiBub3QgcmVhc29ucywgImZyZXNoX2NvbXBpbGVfcmVhc29ucyI6IHJlYXNvbnMsCiAgICAgICAgICAgICAgICAgICJzdG9yZWRfaml0X2V4ZWN1dGVkIjogRmFsc2V9CiAgICAgICAgd2l0aCBhcmdzLnJlY2VpcHQub3BlbigieCIpIGFzIHNpbms6CiAgICAgICAgICAgIGpzb24uZHVtcChyZXBvcnQsIHNpbmssIGluZGVudD0yLCBzb3J0X2tleXM9VHJ1ZSkKICAgICAgICAgICAgc2luay53cml0ZSgiXG4iKQogICAgcHJpbnQoInJldXNlIiBpZiBub3QgcmVhc29ucyBlbHNlICJmcmVzaCIpCgoKaWYgX19uYW1lX18gPT0gIl9fbWFpbl9fIjoKICAgIG1haW4oKQo=
+
+        PAYLOAD
+
+        printf ''%s  %s\n'' ''9ebe863835d508d5df2dba1ad5f7a91d9a88b55d5b361cb69ebfc2fd98afda75'' "$proof/admit_driver_current_pkls.py"
+        | sha256sum -c -
+
+        python -m py_compile "$proof/admit_driver_current_pkls.py"
+
+        '
+    - name: Materialize pinned export_driver_capture_catalog.py
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driver-daemon-native-296"
+
+        base64 --decode <<''PAYLOAD'' > "$proof/export_driver_capture_catalog.py"
+
+        IiIiSG9zdGVkLW9ubHkgdHdvLWJ1bmRsZSBJUiBleHBvcnQgd2l0aCBoZWxkIGN1cnJlbnQtdGFyZ2V0IG1vZGVsIHJlY2VpcHQuIiIiCmltcG9ydCBhcmdwYXJzZQppbXBvcnQgaGFzaGxpYgppbXBvcnQganNvbgpmcm9tIHBhdGhsaWIgaW1wb3J0IFBhdGgKaW1wb3J0IHN1YnByb2Nlc3MKaW1wb3J0IHN5cwpzeXMucGF0aC5pbnNlcnQoMCwgc3RyKFBhdGgoX19maWxlX18pLnJlc29sdmUoKS5wYXJlbnQpKQpmcm9tIGFkbWl0X2RyaXZlcl9jdXJyZW50X3BrbHMgaW1wb3J0IGhvc3QsIE1PREVMX05BTUVTLCBERVBFTkRFTkNJRVMKCgpkZWYgcGluKHBhdGgpOgogICAgYXNzZXJ0IHBhdGguaXNfZmlsZSgpIGFuZCBub3QgcGF0aC5pc19zeW1saW5rKCkKICAgIHJldHVybiB7ImJ5dGVzIjogcGF0aC5zdGF0KCkuc3Rfc2l6ZSwgInNoYTI1NiI6IGhhc2hsaWIuc2hhMjU2KHBhdGgucmVhZF9ieXRlcygpKS5oZXhkaWdlc3QoKX0KCgpkZWYgbWFpbigpOgogICAgcCA9IGFyZ3BhcnNlLkFyZ3VtZW50UGFyc2VyKCkKICAgIGZvciBuYW1lIGluICgicm9vdCIsICJtb2RlbHMiLCAiY2F0YWxvZyIsICJyZWNlaXB0IiwgImFkbWlzc2lvbiIpOgogICAgICAgIHAuYWRkX2FyZ3VtZW50KCItLSIgKyBuYW1lLCB0eXBlPVBhdGgsIHJlcXVpcmVkPVRydWUpCiAgICBhID0gcC5wYXJzZV9hcmdzKCkKICAgIGFzc2VydCBub3QgYS5jYXRhbG9nLmV4aXN0cygpIGFuZCBub3QgYS5jYXRhbG9nLmlzX3N5bWxpbmsoKQogICAgYXNzZXJ0IG5vdCBhLnJlY2VpcHQuZXhpc3RzKCkgYW5kIG5vdCBhLnJlY2VpcHQuaXNfc3ltbGluaygpCiAgICBzdGF0ZSA9IGhvc3QoKQogICAgbW9kZWxzID0ge25hbWU6IHBpbihhLm1vZGVscyAvIG5hbWUpIGZvciBuYW1lIGluIE1PREVMX05BTUVTfQogICAgc291cmNlX2NvbW1pdCA9IHN1YnByb2Nlc3MuY2hlY2tfb3V0cHV0KFsiZ2l0IiwgIi1DIiwgc3RyKGEucm9vdCksICJyZXYtcGFyc2UiLCAiSEVBRCJdLCB0ZXh0PVRydWUpLnN0cmlwKCkKICAgIHNvdXJjZXMgPSB7fQogICAgZm9yIG5hbWUgaW4gREVQRU5ERU5DSUVTOgogICAgICAgIHBhdGggPSBhLnJvb3QgLyBuYW1lCiAgICAgICAgZm9yIHNvdXJjZSBpbiBzb3J0ZWQocGF0aC5yZ2xvYigiKiIpKSBpZiBwYXRoLmlzX2RpcigpIGVsc2UgW3BhdGhdOgogICAgICAgICAgICBpZiBzb3VyY2UuaXNfZmlsZSgpIGFuZCBub3Qgc291cmNlLmlzX3N5bWxpbmsoKSBhbmQgIl9fcHljYWNoZV9fIiBub3QgaW4gc291cmNlLnBhcnRzOgogICAgICAgICAgICAgICAgc291cmNlc1tzb3VyY2UucmVsYXRpdmVfdG8oYS5yb290KS5hc19wb3NpeCgpXSA9IHBpbihzb3VyY2UpCiAgICBhZG1pc3Npb24gPSBwaW4oYS5hZG1pc3Npb24pCiAgICBzeXMucGF0aC5pbnNlcnQoMCwgc3RyKGEucm9vdCAvICJydXN0L3Rvb2xzIikpCiAgICBmcm9tIG1vZGVsX2V4cG9ydC5vcmlnaW5hbCBpbXBvcnQgRHJpdmVyQXJ0aWZhY3RzLCBkcml2ZXIKICAgIGZyb20gbW9kZWxfZXhwb3J0LnB1Ymxpc2ggaW1wb3J0IEJ1bmRsZVNwZWMsIHB1Ymxpc2gKICAgIHNwZWNzID0gW10KICAgIG1vZGVsID0gYS5tb2RlbHMgLyAiZG1vbml0b3JpbmdfbW9kZWxfdGlueWdyYWQucGtsIgogICAgbWV0YWRhdGEgPSBhLm1vZGVscyAvICJkbW9uaXRvcmluZ19tb2RlbF9tZXRhZGF0YS5wa2wiCiAgICBmb3IgcmVzb2x1dGlvbiBpbiAoKDE5MjgsIDEyMDgpLCAoMTM0NCwgNzYwKSk6CiAgICAgICAgd2FycCA9IGEubW9kZWxzIC8gZiJkbV93YXJwX3tyZXNvbHV0aW9uWzBdfXh7cmVzb2x1dGlvblsxXX1fdGlueWdyYWQucGtsIgogICAgICAgIHNwZWNzLmFwcGVuZChCdW5kbGVTcGVjKCJkcml2ZXIiLCByZXNvbHV0aW9uLCBkcml2ZXIoRHJpdmVyQXJ0aWZhY3RzKG1vZGVsLCB3YXJwLCBtZXRhZGF0YSkpLAogICAgICAgICAgICAgICAgICAgICB7Im1vZGVsIjogbW9kZWxzW21vZGVsLm5hbWVdWyJzaGEyNTYiXSwgIm1ldGFkYXRhIjogbW9kZWxzW21ldGFkYXRhLm5hbWVdWyJzaGEyNTYiXSwKICAgICAgICAgICAgICAgICAgICAgICJ3YXJwIjogbW9kZWxzW3dhcnAubmFtZV1bInNoYTI1NiJdfSkpCiAgICBwdWJsaXNoKGEuY2F0YWxvZywgc3BlY3MsICJjcHUiKQogICAgYXNzZXJ0IHN0YXRlID09IGhvc3QoKSBhbmQgbW9kZWxzID09IHtuYW1lOiBwaW4oYS5tb2RlbHMgLyBuYW1lKSBmb3IgbmFtZSBpbiBNT0RFTF9OQU1FU30KICAgIGFzc2VydCBhZG1pc3Npb24gPT0gcGluKGEuYWRtaXNzaW9uKQogICAgYXNzZXJ0IGFsbChwaW4oYS5yb290IC8gbmFtZSkgPT0gc2VhbCBmb3IgbmFtZSwgc2VhbCBpbiBzb3VyY2VzLml0ZW1zKCkpCiAgICBmaWxlcyA9IHt9CiAgICBmb3IgcGF0aCBpbiBzb3J0ZWQoYS5jYXRhbG9nLnJnbG9iKCIqIikpOgogICAgICAgIGFzc2VydCBub3QgcGF0aC5pc19zeW1saW5rKCkKICAgICAgICBpZiBwYXRoLmlzX2ZpbGUoKToKICAgICAgICAgICAgZmlsZXNbcGF0aC5yZWxhdGl2ZV90byhhLmNhdGFsb2cpLmFzX3Bvc2l4KCldID0gcGluKHBhdGgpCiAgICBnZW5lcmF0aW9uID0ganNvbi5sb2FkcygoYS5jYXRhbG9nIC8gImN1cnJlbnQuanNvbiIpLnJlYWRfYnl0ZXMoKSlbImdlbmVyYXRpb24iXQogICAgYXNzZXJ0IGZpbGVzW2dlbmVyYXRpb24gKyAiL2luZGV4Lmpzb24iXVsic2hhMjU2Il0gPT0gZ2VuZXJhdGlvbgogICAgcmVjZWlwdCA9IHsidmVyc2lvbiI6IDEsICJzb3VyY2VfY29tbWl0Ijogc291cmNlX2NvbW1pdCwgInByb3ZpZGVyIjogIkNQVTpMTFZNIiwgImhvc3QiOiBzdGF0ZSwKICAgICAgICAgICAgICAgIm1vZGVscyI6IG1vZGVscywgImV4cG9ydGVyX2RlcGVuZGVuY3lfZmlsZXMiOiBzb3VyY2VzLCAiYWRtaXNzaW9uIjogYWRtaXNzaW9uLAogICAgICAgICAgICAgICAiY2F0YWxvZ19nZW5lcmF0aW9uIjogZ2VuZXJhdGlvbiwgImNhdGFsb2dfZmlsZXMiOiBmaWxlcywgInN0b3JlZF9qaXRfZXhlY3V0ZWQiOiBGYWxzZX0KICAgIHdpdGggYS5yZWNlaXB0Lm9wZW4oIngiKSBhcyBzaW5rOgogICAgICAgIGpzb24uZHVtcChyZWNlaXB0LCBzaW5rLCBpbmRlbnQ9Miwgc29ydF9rZXlzPVRydWUpCiAgICAgICAgc2luay53cml0ZSgiXG4iKQoKCmlmIF9fbmFtZV9fID09ICJfX21haW5fXyI6CiAgICBtYWluKCkK
+
+        PAYLOAD
+
+        printf ''%s  %s\n'' ''75d901c93bd9ee9917e584d11b4c44a779e76ec122e557c310a917b0b4d1f1d7'' "$proof/export_driver_capture_catalog.py"
+        | sha256sum -c -
+
+        python -m py_compile "$proof/export_driver_capture_catalog.py"
+
+        '
+    - name: Materialize pinned capture_original_driver.py
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driver-daemon-native-296"
+
+        base64 --decode <<''PAYLOAD'' > "$proof/capture_original_driver.py"
+
+        IiIiQ2xvdWQtb25seSBvYnNlcnZlciBvZiB1bmNoYW5nZWQgY2hlY2tfZHJpdmVyX2RhZW1vbi5weSBzb3VyY2UtY29tcHV0ZWQgcGFja2V0cy4KClRoZSBtYWludGFpbmVkIGNoZWNrZXIgc3RpbGwgcnVucyBpdHMgZm91ciBjYXNlcyBhbmQgYXNzZXJ0cyBldmVyeSBjYW5kaWRhdGUgcGFja2V0LgpUaGlzIHdyYXBwZXIgb25seSByZWNvcmRzIGl0cyBpbmRlcGVuZGVudCBnZXRfZHJpdmVyc3RhdGVfcGFja2V0IHJlc3VsdCBhZnRlciB0aGUKY2hlY2tlciBpbnNlcnRzIHRoZSBvYnNlcnZlZCBtb25vdG9uaWMgdGltZXN0YW1wOyBjYW5kaWRhdGUgbWVzc2FnZS0qLmJpbiBmaWxlcwphcmUgZGVsaWJlcmF0ZWx5IGV4Y2x1ZGVkIGZyb20gdGhlIHJlZmVyZW5jZSBtYW5pZmVzdC4KIiIiCmZyb20gX19mdXR1cmVfXyBpbXBvcnQgYW5ub3RhdGlvbnMKCmltcG9ydCBhcmdwYXJzZQppbXBvcnQgaGFzaGxpYgppbXBvcnQgaW1wb3J0bGliLnV0aWwKaW1wb3J0IGpzb24KaW1wb3J0IG9zCmZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aAppbXBvcnQgc3RhdAppbXBvcnQgc3VicHJvY2VzcwppbXBvcnQgc3lzCgoKZGVmIGRpZ2VzdChwYXRoOiBQYXRoLCBsaW1pdDogaW50KSAtPiBkaWN0W3N0ciwgb2JqZWN0XToKICAgIGRlc2NyaXB0b3IgPSBvcy5vcGVuKHBhdGgsIG9zLk9fUkRPTkxZIHwgb3MuT19OT0ZPTExPVyB8IG9zLk9fTk9OQkxPQ0sgfCBvcy5PX0NMT0VYRUMpCiAgICB0cnk6CiAgICAgICAgYmVmb3JlID0gb3MuZnN0YXQoZGVzY3JpcHRvcikKICAgICAgICBpZiBub3Qgc3RhdC5TX0lTUkVHKGJlZm9yZS5zdF9tb2RlKSBvciBiZWZvcmUuc3Rfc2l6ZSA+IGxpbWl0OgogICAgICAgICAgICByYWlzZSBBc3NlcnRpb25FcnJvcihmIm5vbnJlZ3VsYXIgb3Igb3ZlcnNpemVkIGNhcHR1cmUgaW5wdXQ6IHtwYXRofSIpCiAgICAgICAgaGFzaF92YWx1ZSA9IGhhc2hsaWIuc2hhMjU2KCkKICAgICAgICBsZW5ndGggPSAwCiAgICAgICAgd2hpbGUgY2h1bmsgOj0gb3MucmVhZChkZXNjcmlwdG9yLCA2NTUzNik6CiAgICAgICAgICAgIGxlbmd0aCArPSBsZW4oY2h1bmspCiAgICAgICAgICAgIGlmIGxlbmd0aCA+IGxpbWl0OgogICAgICAgICAgICAgICAgcmFpc2UgQXNzZXJ0aW9uRXJyb3IoZiJjYXB0dXJlIGlucHV0IGdyZXc6IHtwYXRofSIpCiAgICAgICAgICAgIGhhc2hfdmFsdWUudXBkYXRlKGNodW5rKQogICAgICAgIGFmdGVyID0gb3MuZnN0YXQoZGVzY3JpcHRvcikKICAgICAgICBjdXJyZW50ID0gcGF0aC5sc3RhdCgpCiAgICAgICAgaWRlbnRpdHkgPSBsYW1iZGEgdmFsdWU6ICh2YWx1ZS5zdF9kZXYsIHZhbHVlLnN0X2lubywgdmFsdWUuc3Rfc2l6ZSwgdmFsdWUuc3RfbXRpbWVfbnMsIHZhbHVlLnN0X2N0aW1lX25zKQogICAgICAgIGlmIGlkZW50aXR5KGJlZm9yZSkgIT0gaWRlbnRpdHkoYWZ0ZXIpIG9yIGlkZW50aXR5KGJlZm9yZSkgIT0gaWRlbnRpdHkoY3VycmVudCkgb3IgbGVuZ3RoICE9IGJlZm9yZS5zdF9zaXplOgogICAgICAgICAgICByYWlzZSBBc3NlcnRpb25FcnJvcihmImNhcHR1cmUgaW5wdXQgY2hhbmdlZDoge3BhdGh9IikKICAgICAgICByZXR1cm4geyJieXRlcyI6IGxlbmd0aCwgInNoYTI1NiI6IGhhc2hfdmFsdWUuaGV4ZGlnZXN0KCl9CiAgICBmaW5hbGx5OgogICAgICAgIG9zLmNsb3NlKGRlc2NyaXB0b3IpCgoKZGVmIG1haW4oKSAtPiBOb25lOgogICAgcGFyc2VyID0gYXJncGFyc2UuQXJndW1lbnRQYXJzZXIoKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgiLS1yb290IiwgcmVxdWlyZWQ9VHJ1ZSwgdHlwZT1QYXRoKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgiLS1zb3VyY2UtY29tbWl0IiwgcmVxdWlyZWQ9VHJ1ZSkKICAgIHBhcnNlci5hZGRfYXJndW1lbnQoIi0tZXhwZWN0ZWQtY2hlY2tlci1zaGEyNTYiLCByZXF1aXJlZD1UcnVlKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgiLS1iaW5hcnkiLCByZXF1aXJlZD1UcnVlLCB0eXBlPVBhdGgpCiAgICBwYXJzZXIuYWRkX2FyZ3VtZW50KCItLWNhdGFsb2ciLCByZXF1aXJlZD1UcnVlLCB0eXBlPVBhdGgpCiAgICBwYXJzZXIuYWRkX2FyZ3VtZW50KCItLW1vZGVscyIsIHJlcXVpcmVkPVRydWUsIHR5cGU9UGF0aCkKICAgIHBhcnNlci5hZGRfYXJndW1lbnQoIi0tYmluZGluZyIsIHJlcXVpcmVkPVRydWUsIHR5cGU9UGF0aCkKICAgIHBhcnNlci5hZGRfYXJndW1lbnQoIi0tY29sbGVjdG9yIiwgdHlwZT1QYXRoKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgiLS1vdXRwdXQiLCByZXF1aXJlZD1UcnVlLCB0eXBlPVBhdGgpCiAgICBhcmdzID0gcGFyc2VyLnBhcnNlX2FyZ3MoKQogICAgcm9vdCA9IGFyZ3Mucm9vdC5yZXNvbHZlKHN0cmljdD1UcnVlKQogICAgYmluZGluZyA9IGFyZ3MuYmluZGluZy5yZXNvbHZlKHN0cmljdD1UcnVlKQogICAgb3V0cHV0ID0gYXJncy5vdXRwdXQucmVzb2x2ZSgpCiAgICBpZiBvdXRwdXQuZXhpc3RzKCk6CiAgICAgICAgcmFpc2UgRmlsZUV4aXN0c0Vycm9yKG91dHB1dCkKICAgIHdyYXBwZXJfYmVmb3JlID0gZGlnZXN0KFBhdGgoX19maWxlX18pLCAyXzAwMF8wMDApCiAgICBoZWFkID0gc3VicHJvY2Vzcy5jaGVja19vdXRwdXQoWyIvdXNyL2Jpbi9naXQiLCAiLUMiLCBzdHIocm9vdCksICJyZXYtcGFyc2UiLCAiSEVBRCJdLCB0ZXh0PVRydWUpLnN0cmlwKCkKICAgIGlmIGhlYWQgIT0gYXJncy5zb3VyY2VfY29tbWl0OgogICAgICAgIHJhaXNlIEFzc2VydGlvbkVycm9yKCJvcmlnaW5hbCBjaGVja2VyIGNoZWNrb3V0IGNoYW5nZWQiKQogICAgY2hlY2tlcl9wYXRoID0gcm9vdCAvICJydXN0L3Rvb2xzL2NoZWNrX2RyaXZlcl9kYWVtb24ucHkiCiAgICBjaGVja2VyX3BpbiA9IGRpZ2VzdChjaGVja2VyX3BhdGgsIDFfMDAwXzAwMCkKICAgIGlmIGNoZWNrZXJfcGluWyJzaGEyNTYiXSAhPSBhcmdzLmV4cGVjdGVkX2NoZWNrZXJfc2hhMjU2OgogICAgICAgIHJhaXNlIEFzc2VydGlvbkVycm9yKCJvcmlnaW5hbCBjaGVja2VyIGJ5dGVzIGNoYW5nZWQiKQogICAgc291cmNlX3BhdGhzID0gWwogICAgICAgICJydXN0L3Rvb2xzL2NoZWNrX2RyaXZlcl9kYWVtb24ucHkiLAogICAgICAgICJydXN0L3Rvb2xzL2NoZWNrX3BpcGVsaW5lX3JlZmVyZW5jZS5weSIsCiAgICAgICAgInJ1c3QvdG9vbHMvbW9kZWxfb3V0cHV0X3JlZmVyZW5jZS5weSIsCiAgICAgICAgInJ1c3QvdG9vbHMvbW9kZWxfbG9nZ2luZ19jYXB0dXJlLnB5IiwKICAgICAgICAicnVzdC90b29scy9tb2RlbF9sb2dnaW5nX3JlZmVyZW5jZS5weSIsCiAgICAgICAgInJ1c3QvdG9vbHMvZHJpdmVyX2RhZW1vbl9wZWVyLmNjIiwKICAgICAgICAicnVzdC90b29scy9tb2RlbF9leHBvcnQvb3JpZ2luYWwucHkiLAogICAgICAgICJydXN0L3Rvb2xzL21vZGVsX2V4cG9ydC9waXBlbGluZS5weSIsCiAgICAgICAgInJ1c3QvdG9vbHMvbW9kZWxfZXhwb3J0L3NjaGVtYS5weSIsCiAgICAgICAgIm9wZW5waWxvdC9zZWxmZHJpdmUvbW9kZWxkL2Rtb25pdG9yaW5nbW9kZWxkLnB5IiwKICAgICAgICAib3BlbnBpbG90L3NlbGZkcml2ZS9tb2RlbGQvcGFyc2VfbW9kZWxfb3V0cHV0cy5weSIsCiAgICAgICAgIm9wZW5waWxvdC9zZWxmZHJpdmUvbW9kZWxkL2NvbnN0YW50cy5weSIsCiAgICAgICAgIm9wZW5waWxvdC9jb21tb24vdHJhbnNmb3JtYXRpb25zL2NhbWVyYS5weSIsCiAgICAgICAgIm9wZW5waWxvdC9jb21tb24vdHJhbnNmb3JtYXRpb25zL21vZGVsLnB5IiwKICAgICAgICAib3BlbnBpbG90L3N5c3RlbS9jYW1lcmFkL2NhbWVyYXMvbnYxMl9pbmZvLnB5IiwKICAgIF0KICAgIHNvdXJjZXNfYmVmb3JlID0ge25hbWU6IGRpZ2VzdChyb290IC8gbmFtZSwgNF8wMDBfMDAwKSBmb3IgbmFtZSBpbiBzb3VyY2VfcGF0aHN9CiAgICBtb2RlbHMgPSBbCiAgICAgICAgImRtb25pdG9yaW5nX21vZGVsX3RpbnlncmFkLnBrbCIsCiAgICAgICAgImRtX3dhcnBfMTM0NHg3NjBfdGlueWdyYWQucGtsIiwKICAgICAgICAiZG1fd2FycF8xOTI4eDEyMDhfdGlueWdyYWQucGtsIiwKICAgICAgICAiZG1vbml0b3JpbmdfbW9kZWxfbWV0YWRhdGEucGtsIiwKICAgIF0KICAgIG1vZGVsc19iZWZvcmUgPSB7bmFtZTogZGlnZXN0KGFyZ3MubW9kZWxzIC8gbmFtZSwgMl8wMDBfMDAwXzAwMCkgZm9yIG5hbWUgaW4gbW9kZWxzfQogICAgZXh0ZW5zaW9ucyA9IFsKICAgICAgICBuZXh0KGl0ZXIoc29ydGVkKChiaW5kaW5nIC8gIm1zZ3EiKS5nbG9iKCJpcGNfcHl4Ki5zbyIpKSkpLAogICAgICAgIG5leHQoaXRlcihzb3J0ZWQoKGJpbmRpbmcgLyAibXNncS92aXNpb25pcGMiKS5nbG9iKCJ2aXNpb25pcGNfcHl4Ki5zbyIpKSkpLAogICAgXQogICAgaWYgYW55KGxlbihsaXN0KHBhdGgucGFyZW50Lmdsb2IocGF0aC5uYW1lLnNwbGl0KCIuIilbMF0gKyAiKi5zbyIpKSkgIT0gMSBmb3IgcGF0aCBpbiBleHRlbnNpb25zKToKICAgICAgICByYWlzZSBBc3NlcnRpb25FcnJvcigib3JpZ2luYWwgbXNncSBiaW5kaW5nIGV4dGVuc2lvbiByb3N0ZXIgY2hhbmdlZCIpCiAgICBleHRlbnNpb25zX2JlZm9yZSA9IHtwYXRoLnJlbGF0aXZlX3RvKGJpbmRpbmcpLmFzX3Bvc2l4KCk6IGRpZ2VzdChwYXRoLCAxMDBfMDAwXzAwMCkgZm9yIHBhdGggaW4gZXh0ZW5zaW9uc30KICAgICMgVGhlIGhvc3RlZCBQWVRIT05QQVRIIHN0YXJ0cyB3aXRoIHRoZSBmcmVzaGx5IGJ1aWx0IG9yaWdpbmFsIG1zZ3EgUHl0aG9uCiAgICAjIGJpbmRpbmcuIEtlZXAgdGhhdCBwYWNrYWdlIGFoZWFkIG9mIHRoZSByZXBvc2l0b3J5J3MgdW5idWlsdCBtc2dxIGFsaWFzLgogICAgZm9yIGRpcmVjdG9yeSBpbiAocm9vdCwgcm9vdCAvICJydXN0L3Rvb2xzIik6CiAgICAgICAgaWYgc3RyKGRpcmVjdG9yeSkgbm90IGluIHN5cy5wYXRoOgogICAgICAgICAgICBzeXMucGF0aC5hcHBlbmQoc3RyKGRpcmVjdG9yeSkpCiAgICBzcGVjID0gaW1wb3J0bGliLnV0aWwuc3BlY19mcm9tX2ZpbGVfbG9jYXRpb24oIm9yaWdpbmFsX2RyaXZlcl9kYWVtb25fY2hlY2tlciIsIGNoZWNrZXJfcGF0aCkKICAgIGlmIHNwZWMgaXMgTm9uZSBvciBzcGVjLmxvYWRlciBpcyBOb25lOgogICAgICAgIHJhaXNlIEFzc2VydGlvbkVycm9yKCJjYW5ub3QgbG9hZCB1bmNoYW5nZWQgb3JpZ2luYWwgY2hlY2tlciIpCiAgICBjaGVja2VyID0gaW1wb3J0bGliLnV0aWwubW9kdWxlX2Zyb21fc3BlYyhzcGVjKQogICAgc3BlYy5sb2FkZXIuZXhlY19tb2R1bGUoY2hlY2tlcikKICAgIGRlZiBsb2FkZWRfcHl0aG9uX3NvdXJjZXMoKToKICAgICAgICBwYXRocyA9IHNldCgpCiAgICAgICAgZm9yIG1vZHVsZSBpbiB0dXBsZShzeXMubW9kdWxlcy52YWx1ZXMoKSk6CiAgICAgICAgICAgIGxvY2F0aW9uID0gZ2V0YXR0cihtb2R1bGUsICJfX2ZpbGVfXyIsIE5vbmUpCiAgICAgICAgICAgIGlmIGxvY2F0aW9uIGlzIE5vbmU6CiAgICAgICAgICAgICAgICBjb250aW51ZQogICAgICAgICAgICBwYXRoID0gUGF0aChsb2NhdGlvbikucmVzb2x2ZSgpCiAgICAgICAgICAgIGlmIHBhdGguc3VmZml4ICE9ICIucHkiOgogICAgICAgICAgICAgICAgY29udGludWUKICAgICAgICAgICAgaWYgcGF0aC5pc19yZWxhdGl2ZV90byhiaW5kaW5nKToKICAgICAgICAgICAgICAgIHJlbGF0aXZlID0gcGF0aC5yZWxhdGl2ZV90byhiaW5kaW5nKQogICAgICAgICAgICAgICAgaWYgcmVsYXRpdmUucGFydHNbMF0gIT0gIm1zZ3EiOgogICAgICAgICAgICAgICAgICAgIHJhaXNlIEFzc2VydGlvbkVycm9yKCJ1bmV4cGVjdGVkIGNvcGllZCBiaW5kaW5nIFB5dGhvbiBzb3VyY2UiKQogICAgICAgICAgICAgICAgc291cmNlID0gcm9vdCAvICJtc2dxX3JlcG8iIC8gcmVsYXRpdmUKICAgICAgICAgICAgICAgIGlmIGRpZ2VzdChwYXRoLCA0XzAwMF8wMDApICE9IGRpZ2VzdChzb3VyY2UsIDRfMDAwXzAwMCk6CiAgICAgICAgICAgICAgICAgICAgcmFpc2UgQXNzZXJ0aW9uRXJyb3IoIm9yaWdpbmFsIGNvcGllZCBtc2dxIHNvdXJjZSBkaWZmZXJzIGZyb20gcmVwb3NpdG9yeSIpCiAgICAgICAgICAgICAgICBwYXRocy5hZGQoKFBhdGgoIm1zZ3FfcmVwbyIpIC8gcmVsYXRpdmUpLmFzX3Bvc2l4KCkpCiAgICAgICAgICAgIGVsaWYgcGF0aC5pc19yZWxhdGl2ZV90byhyb290KToKICAgICAgICAgICAgICAgIHBhdGhzLmFkZChwYXRoLnJlbGF0aXZlX3RvKHJvb3QpLmFzX3Bvc2l4KCkpCiAgICAgICAgcmV0dXJuIHtuYW1lOiBkaWdlc3Qocm9vdCAvIG5hbWUsIDRfMDAwXzAwMCkgZm9yIG5hbWUgaW4gc29ydGVkKHBhdGhzKX0KCiAgICBsb2FkZWRfYmVmb3JlID0gbG9hZGVkX3B5dGhvbl9zb3VyY2VzKCkKICAgIG9yaWdpbmFsX2ZhY3RvcnkgPSBjaGVja2VyLm9yaWdpbmFsX2Z1bmN0aW9ucwogICAgb3JpZ2luYWxfY2hlY2sgPSBjaGVja2VyLmNoZWNrCiAgICBhY3RpdmU6IGRpY3Rbc3RyLCBvYmplY3RdID0ge30KCiAgICBjbGFzcyBQYWNrZXQ6CiAgICAgICAgZGVmIF9faW5pdF9fKHNlbGYsIHBhY2tldCk6CiAgICAgICAgICAgIG9iamVjdC5fX3NldGF0dHJfXyhzZWxmLCAicGFja2V0IiwgcGFja2V0KQoKICAgICAgICBkZWYgX19zZXRhdHRyX18oc2VsZiwgbmFtZSwgdmFsdWUpOgogICAgICAgICAgICBzZXRhdHRyKHNlbGYucGFja2V0LCBuYW1lLCB2YWx1ZSkKCiAgICAgICAgZGVmIHRvX2RpY3Qoc2VsZik6CiAgICAgICAgICAgIGluZGV4ID0gYWN0aXZlWyJjb3VudCJdCiAgICAgICAgICAgIHRhcmdldCA9IGFjdGl2ZVsicmVmZXJlbmNlIl0gLyBmImV4cGVjdGVkLXtpbmRleH0uYmluIgogICAgICAgICAgICB0YXJnZXQucGFyZW50Lm1rZGlyKGV4aXN0X29rPVRydWUpCiAgICAgICAgICAgIHdpdGggdGFyZ2V0Lm9wZW4oInhiIikgYXMgc2luazoKICAgICAgICAgICAgICAgIHNpbmsud3JpdGUoc2VsZi5wYWNrZXQudG9fYnl0ZXMoKSkKICAgICAgICAgICAgYWN0aXZlWyJjb3VudCJdID0gaW5kZXggKyAxCiAgICAgICAgICAgIHJldHVybiBzZWxmLnBhY2tldC50b19kaWN0KCkKCiAgICAgICAgZGVmIHRvX2J5dGVzKHNlbGYpOgogICAgICAgICAgICByZXR1cm4gc2VsZi5wYWNrZXQudG9fYnl0ZXMoKQoKICAgIGNsYXNzIFJlZmVyZW5jZToKICAgICAgICBkZWYgX19pbml0X18oc2VsZiwgcmVmZXJlbmNlKToKICAgICAgICAgICAgc2VsZi5yZWZlcmVuY2UgPSByZWZlcmVuY2UKCiAgICAgICAgZGVmIHBhcnNlX21vZGVsX291dHB1dChzZWxmLCB2YWx1ZXMpOgogICAgICAgICAgICByZXR1cm4gc2VsZi5yZWZlcmVuY2UucGFyc2VfbW9kZWxfb3V0cHV0KHZhbHVlcykKCiAgICAgICAgZGVmIGdldF9kcml2ZXJzdGF0ZV9wYWNrZXQoc2VsZiwgKnZhbHVlcyk6CiAgICAgICAgICAgIHJldHVybiBQYWNrZXQoc2VsZi5yZWZlcmVuY2UuZ2V0X2RyaXZlcnN0YXRlX3BhY2tldCgqdmFsdWVzKSkKCiAgICBkZWYgZmFjdG9yeSgpOgogICAgICAgIGRyaXZpbmcsIHJlZmVyZW5jZSA9IG9yaWdpbmFsX2ZhY3RvcnkoKQogICAgICAgIHJldHVybiBkcml2aW5nLCBSZWZlcmVuY2UocmVmZXJlbmNlKQoKICAgIGRlZiBjaGVjayhvcmlnaW5hbF9hcmdzLCB3aWR0aCwgaGVpZ2h0LCByYXcpOgogICAgICAgIGxhYmVsID0gZiJ7d2lkdGh9LXJhdy17aW50KHJhdyl9IgogICAgICAgIHJlZmVyZW5jZSA9IG91dHB1dCAvIGxhYmVsIC8gInJlZmVyZW5jZSIKICAgICAgICAjIFRoZSB1bmNoYW5nZWQgY2hlY2tlciBjcmVhdGVzIHRoZSBjYXNlIGRpcmVjdG9yeSBhdCBlbnRyeS4gS2VlcCB0aGUKICAgICAgICAjIHJlZmVyZW5jZSBzdWJkaXJlY3RvcnkgbGF6eSB1bnRpbCBpdHMgZmlyc3Qgb3JpZ2luYWwgcGFja2V0IGlzIGJ1aWx0LgogICAgICAgIGFjdGl2ZS5jbGVhcigpCiAgICAgICAgYWN0aXZlLnVwZGF0ZSh7ImNvdW50IjogMCwgInJlZmVyZW5jZSI6IHJlZmVyZW5jZX0pCiAgICAgICAgcmVwb3J0ID0gb3JpZ2luYWxfY2hlY2sob3JpZ2luYWxfYXJncywgd2lkdGgsIGhlaWdodCwgcmF3KQogICAgICAgIGV4cGVjdGVkX2NvdW50ID0gNSBpZiByYXcgZWxzZSAyCiAgICAgICAgaWYgYWN0aXZlWyJjb3VudCJdICE9IGV4cGVjdGVkX2NvdW50OgogICAgICAgICAgICByYWlzZSBBc3NlcnRpb25FcnJvcihmIm9yaWdpbmFsIHNvdXJjZSBwYWNrZXQgY291bnQgY2hhbmdlZCBmb3Ige2xhYmVsfSIpCiAgICAgICAgaWYgKHJlZmVyZW5jZSAvICJleHBlY3RlZC0wLmJpbiIpLnJlYWRfYnl0ZXMoKSAhPSAob3V0cHV0IC8gbGFiZWwgLyAid2FybXVwLWV4cGVjdGVkLmJpbiIpLnJlYWRfYnl0ZXMoKToKICAgICAgICAgICAgcmFpc2UgQXNzZXJ0aW9uRXJyb3IoZiJvcmlnaW5hbCB3YXJtdXAgcGFja2V0IGRpZmZlcnMgZnJvbSB1bmNoYW5nZWQgY2hlY2tlciIpCiAgICAgICAgcmV0dXJuIHJlcG9ydAoKICAgIGNoZWNrZXIub3JpZ2luYWxfZnVuY3Rpb25zID0gZmFjdG9yeQogICAgY2hlY2tlci5jaGVjayA9IGNoZWNrCiAgICBvcmlnaW5hbF9hcmd2ID0gWwogICAgICAgIHN0cihjaGVja2VyX3BhdGgpLCAiLS1iaW5hcnkiLCBzdHIoYXJncy5iaW5hcnkpLCAiLS1jYXRhbG9nIiwgc3RyKGFyZ3MuY2F0YWxvZyksCiAgICAgICAgIi0tbW9kZWxzIiwgc3RyKGFyZ3MubW9kZWxzKSwgIi0tb3V0cHV0Iiwgc3RyKG91dHB1dCksCiAgICBdCiAgICBpZiBhcmdzLmNvbGxlY3RvciBpcyBub3QgTm9uZToKICAgICAgICBvcmlnaW5hbF9hcmd2LmV4dGVuZChbIi0tY29sbGVjdG9yIiwgc3RyKGFyZ3MuY29sbGVjdG9yKV0pCiAgICBwcmV2aW91c19hcmd2ID0gc3lzLmFyZ3YKICAgIHRyeToKICAgICAgICBzeXMuYXJndiA9IG9yaWdpbmFsX2FyZ3YKICAgICAgICBjaGVja2VyLm1haW4oKQogICAgZmluYWxseToKICAgICAgICBzeXMuYXJndiA9IHByZXZpb3VzX2FyZ3YKICAgIGZvciBuYW1lIGluICgibXNncS5pcGNfcHl4IiwpOgogICAgICAgIG1vZHVsZSA9IHN5cy5tb2R1bGVzLmdldChuYW1lKQogICAgICAgIGxvY2F0aW9uID0gZ2V0YXR0cihtb2R1bGUsICJfX2ZpbGVfXyIsIE5vbmUpCiAgICAgICAgaWYgbG9jYXRpb24gaXMgTm9uZSBvciBub3QgUGF0aChsb2NhdGlvbikucmVzb2x2ZShzdHJpY3Q9VHJ1ZSkuaXNfcmVsYXRpdmVfdG8oYmluZGluZyk6CiAgICAgICAgICAgIHJhaXNlIEFzc2VydGlvbkVycm9yKGYib3JpZ2luYWwgY2hlY2tlciBkaWQgbm90IHVzZSBoZWxkIGJ1aWx0IGJpbmRpbmc6IHtuYW1lfSIpCiAgICBjYXNlcyA9IFtdCiAgICBmaWxlcyA9IHt9CiAgICBmb3Igd2lkdGgsIGhlaWdodCBpbiBbKDEzNDQsIDc2MCksICgxOTI4LCAxMjA4KV06CiAgICAgICAgZm9yIHJhdyBpbiBbVHJ1ZSwgRmFsc2VdOgogICAgICAgICAgICBsYWJlbCA9IGYie3dpZHRofS1yYXcte2ludChyYXcpfSIKICAgICAgICAgICAgZGlyZWN0b3J5ID0gb3V0cHV0IC8gbGFiZWwKICAgICAgICAgICAgY291bnQgPSA0IGlmIHJhdyBlbHNlIDEKICAgICAgICAgICAgc2VsZWN0ZWQgPSBbIndhcm11cC5iaW4iLCAid2FybXVwLWV4cGVjdGVkLmJpbiIsICJyZXBvcnQuanNvbiJdCiAgICAgICAgICAgIHNlbGVjdGVkICs9IFtmImZyYW1lLXtpfS5iaW4iIGZvciBpIGluIHJhbmdlKGNvdW50KV0KICAgICAgICAgICAgc2VsZWN0ZWQgKz0gW2YicmVmZXJlbmNlL2V4cGVjdGVkLXtpfS5iaW4iIGZvciBpIGluIHJhbmdlKGNvdW50ICsgMSldCiAgICAgICAgICAgIGlmIHJhdzoKICAgICAgICAgICAgICAgIHNlbGVjdGVkICs9IFsiY2FsaWItMS5iaW4iLCAiY2FsaWItMy5iaW4iLCAiaW52YWxpZC1jYWxpYi5iaW4iXQogICAgICAgICAgICBmb3IgbmFtZSBpbiBzZWxlY3RlZDoKICAgICAgICAgICAgICAgIHJlbGF0aXZlID0gZiJ7bGFiZWx9L3tuYW1lfSIKICAgICAgICAgICAgICAgIGZpbGVzW3JlbGF0aXZlXSA9IGRpZ2VzdChkaXJlY3RvcnkgLyBuYW1lLCAxNl8wMDBfMDAwKQogICAgICAgICAgICBjYXNlcy5hcHBlbmQoeyJuYW1lIjogbGFiZWwsICJ3aWR0aCI6IHdpZHRoLCAiaGVpZ2h0IjogaGVpZ2h0LCAicmF3IjogcmF3LAogICAgICAgICAgICAgICAgICAgICAgICAgICJmcmFtZV9jb3VudCI6IGNvdW50LCAicmVmZXJlbmNlX2NvdW50IjogY291bnQgKyAxfSkKICAgIGZpbGVzWyJyZXBvcnQuanNvbiJdID0gZGlnZXN0KG91dHB1dCAvICJyZXBvcnQuanNvbiIsIDFfMDAwXzAwMCkKICAgIHNvdXJjZXNfYWZ0ZXIgPSB7bmFtZTogZGlnZXN0KHJvb3QgLyBuYW1lLCA0XzAwMF8wMDApIGZvciBuYW1lIGluIHNvdXJjZV9wYXRoc30KICAgIG1vZGVsc19hZnRlciA9IHtuYW1lOiBkaWdlc3QoYXJncy5tb2RlbHMgLyBuYW1lLCAyXzAwMF8wMDBfMDAwKSBmb3IgbmFtZSBpbiBtb2RlbHN9CiAgICBleHRlbnNpb25zX2FmdGVyID0ge3BhdGgucmVsYXRpdmVfdG8oYmluZGluZykuYXNfcG9zaXgoKTogZGlnZXN0KHBhdGgsIDEwMF8wMDBfMDAwKSBmb3IgcGF0aCBpbiBleHRlbnNpb25zfQogICAgbG9hZGVkX2FmdGVyID0gbG9hZGVkX3B5dGhvbl9zb3VyY2VzKCkKICAgIGlmIHNvdXJjZXNfYWZ0ZXIgIT0gc291cmNlc19iZWZvcmUgb3IgbW9kZWxzX2FmdGVyICE9IG1vZGVsc19iZWZvcmUgb3IgZXh0ZW5zaW9uc19hZnRlciAhPSBleHRlbnNpb25zX2JlZm9yZSBvciB3cmFwcGVyX2JlZm9yZSAhPSBkaWdlc3QoUGF0aChfX2ZpbGVfXyksIDJfMDAwXzAwMCkgb3IgYW55KAogICAgICAgIGxvYWRlZF9hZnRlci5nZXQobmFtZSkgIT0gcGluIGZvciBuYW1lLCBwaW4gaW4gbG9hZGVkX2JlZm9yZS5pdGVtcygpCiAgICApOgogICAgICAgIHJhaXNlIEFzc2VydGlvbkVycm9yKCJvcmlnaW5hbCBpbXBvcnRzIG9yIG1vZGVsIGFydGlmYWN0cyBjaGFuZ2VkIGR1cmluZyBjYXB0dXJlIikKICAgIGlmIHN1YnByb2Nlc3MuY2hlY2tfb3V0cHV0KFsiL3Vzci9iaW4vZ2l0IiwgIi1DIiwgc3RyKHJvb3QpLCAicmV2LXBhcnNlIiwgIkhFQUQiXSwgdGV4dD1UcnVlKS5zdHJpcCgpICE9IGhlYWQ6CiAgICAgICAgcmFpc2UgQXNzZXJ0aW9uRXJyb3IoInNvdXJjZSBjaGVja291dCBjaGFuZ2VkIGR1cmluZyBjYXB0dXJlIikKICAgIG1hbmlmZXN0ID0geyJzb3VyY2VfY29tbWl0IjogaGVhZCwgImNhcHR1cmVfd3JhcHBlciI6IHdyYXBwZXJfYmVmb3JlLAogICAgICAgICAgICAgICAgIm9yaWdpbmFsX2NoZWNrZXIiOiBjaGVja2VyX3BpbiwKICAgICAgICAgICAgICAgICJvcmlnaW5hbF9zb3VyY2VfaW5wdXRzIjogc291cmNlc19iZWZvcmUsICJsb2FkZWRfcHl0aG9uX3NvdXJjZXMiOiBsb2FkZWRfYWZ0ZXIsCiAgICAgICAgICAgICAgICAib3JpZ2luYWxfbXNncV9iaW5kaW5nX2V4dGVuc2lvbnMiOiBleHRlbnNpb25zX2FmdGVyLAogICAgICAgICAgICAgICAgIm9yaWdpbmFsX21vZGVscyI6IG1vZGVsc19iZWZvcmUsCiAgICAgICAgICAgICAgICAiY2FzZXMiOiBjYXNlcywgImZpbGVzIjogZmlsZXMsCiAgICAgICAgICAgICAgICAicG9saWN5IjogeyJleHBlY3RlZF9wYWNrZXRfb3JpZ2luIjogInVuY2hhbmdlZCBQeXRob24gcmVmZXJlbmNlLmdldF9kcml2ZXJzdGF0ZV9wYWNrZXQiLAogICAgICAgICAgICAgICAgICAgICAgICAgICAiY2FuZGlkYXRlX21lc3NhZ2VfZmlsZXNfYXJlX25vdF9vcmFjbGUiOiBUcnVlfX0KICAgIHdpdGggKG91dHB1dCAvICJyZWZlcmVuY2UtbWFuaWZlc3QuanNvbiIpLm9wZW4oIngiKSBhcyBzaW5rOgogICAgICAgIGpzb24uZHVtcChtYW5pZmVzdCwgc2luaywgaW5kZW50PTIsIHNvcnRfa2V5cz1UcnVlKQogICAgICAgIHNpbmsud3JpdGUoIlxuIikKICAgIHByaW50KGpzb24uZHVtcHMoeyJzb3VyY2VfY29tbWl0IjogaGVhZCwgImNhc2VzIjogbGVuKGNhc2VzKSwKICAgICAgICAgICAgICAgICAgICAgICJleHBlY3RlZF9wYWNrZXRzIjogc3VtKGNhc2VbInJlZmVyZW5jZV9jb3VudCJdIGZvciBjYXNlIGluIGNhc2VzKSwKICAgICAgICAgICAgICAgICAgICAgICJtYW5pZmVzdF9zaGEyNTYiOiBkaWdlc3Qob3V0cHV0IC8gInJlZmVyZW5jZS1tYW5pZmVzdC5qc29uIiwgMV8wMDBfMDAwKVsic2hhMjU2Il19KSkKCgppZiBfX25hbWVfXyA9PSAiX19tYWluX18iOgogICAgbWFpbigpCg==
+
+        PAYLOAD
+
+        printf ''%s  %s\n'' ''95128a39966819e738e76bcd63e16fe5195385b6c3f17ed1424c10200ee65e1e'' "$proof/capture_original_driver.py"
+        | sha256sum -c -
+
+        python -m py_compile "$proof/capture_original_driver.py"
+
+        '
+    - name: Admit accepted model reuse before any stored JIT execution
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/driver-daemon-native-296\"\nrust/tools/check-disk-space --path \"$RUNNER_TEMP\"\
+        \ --growth-mib 512\nif ! git cat-file -e 481ae6fec39ecc68786c4c2813b1205fb4567141^{commit} 2>/dev/null; then\n  git\
+        \ fetch --no-tags --depth=1 origin 481ae6fec39ecc68786c4c2813b1205fb4567141\nfi\ngh api /repos/bin9208/openpilot-rust/actions/artifacts/12369678295/zip\
+        \ > \"$proof/accepted-models.zip\"\npython -P \"$proof/admit_driver_current_pkls.py\" --archive \"$proof/accepted-models.zip\"\
+        \ --root \"$GITHUB_WORKSPACE\" --models \"$RUNNER_TEMP/original-models\" --receipt \"$proof/model-admission.json\"\
+        \ > \"$proof/model-admission.txt\"\n"
+    - name: Compile only original driver model and warps if target differs
+      shell: bash
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/driver-daemon-native-296\"\nif test \"$(cat \"$proof/model-admission.txt\"\
+        )\" = reuse; then exit 0; fi\ntest \"$(cat \"$proof/model-admission.txt\")\" = fresh\nrust/tools/check-disk-space\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 4096\nmkdir \"$RUNNER_TEMP/original-models\"\npython tinygrad_repo/examples/openpilot/compile3.py\
+        \ \"$GITHUB_WORKSPACE/openpilot/selfdrive/modeld/models/dmonitoring_model.onnx\" \"$RUNNER_TEMP/original-models/dmonitoring_model_tinygrad.pkl\"\
+        \ > \"$proof/driver-model-compile.log\" 2>&1\npython openpilot/selfdrive/modeld/get_model_metadata.py openpilot/selfdrive/modeld/models/dmonitoring_model.onnx\
+        \ > \"$proof/metadata-compile.log\" 2>&1\ncp openpilot/selfdrive/modeld/models/dmonitoring_model_metadata.pkl \"$RUNNER_TEMP/original-models/\"\
+        \nfor resolution in 1928x1208 1344x760; do\n rust/tools/check-disk-space --path \"$GITHUB_WORKSPACE\" --growth-mib\
+        \ 2048\n python openpilot/selfdrive/modeld/compile_dm_warp.py --camera-resolution \"$resolution\" --warp-to 1440x960\
+        \ --output \"$RUNNER_TEMP/original-models/dm_warp_${resolution}_tinygrad.pkl\" > \"$proof/warp-${resolution}.log\"\
+        \ 2>&1\ndone\n"
+    - name: Export held current target catalog
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driver-daemon-native-296"
+
+        python -P "$proof/export_driver_capture_catalog.py" --root "$GITHUB_WORKSPACE" --models "$RUNNER_TEMP/original-models"
+        --catalog "$RUNNER_TEMP/native-catalog" --receipt "$proof/current-target-catalog.json" --admission "$proof/model-admission.json"
+        > "$proof/catalog-export.stdout" 2> "$proof/catalog-export.stderr"
+
+        rust/target/debug/model-run --check-catalog "$RUNNER_TEMP/native-catalog" > "$proof/catalog-check.log" 2>&1
+
+        sha256sum "$proof/current-target-catalog.json" "$proof/model-admission.json" rust/target/debug/openpilot-dmonitoringmodeld
+        rust/target/debug/openpilot-logmessaged > "$proof/held-before.sha256"
+
+        '
+    - name: Capture independent original collector four cases once
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driver-daemon-native-296"
+
+        PYTHONPATH="$RUNNER_TEMP/model-msgq-python:$PYTHONPATH" python -P "$proof/capture_original_driver.py" --root "$GITHUB_WORKSPACE"
+        --source-commit "$EXPECTED_SOURCE" --expected-checker-sha256 ea1266dc395dab662319bd3637ad90440989db3d2937756dbf07fbb993520f5b
+        --binary "$GITHUB_WORKSPACE/rust/target/debug/openpilot-dmonitoringmodeld" --catalog "$RUNNER_TEMP/native-catalog"
+        --models "$RUNNER_TEMP/original-models" --binding "$RUNNER_TEMP/model-msgq-python" --collector "$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged"
+        --output "$proof/original-collector-current" > "$proof/original.stdout" 2> "$proof/original.stderr"
+
+        sha256sum -c "$proof/held-before.sha256"
+
+        python -P - <<''VERIFY''
+
+        import json,os,sys
+
+        from pathlib import Path
+
+        proof=Path(os.environ[''RUNNER_TEMP''])/''driver-daemon-native-296''
+
+        sys.path.insert(0,str(proof))
+
+        from admit_driver_current_pkls import host
+
+        from export_driver_capture_catalog import pin
+
+        receipt=json.loads((proof/''current-target-catalog.json'').read_bytes())
+
+        assert host()==receipt[''host'']
+
+        root=Path(os.environ[''GITHUB_WORKSPACE''])
+
+        assert all(pin(root/name)==seal for name,seal in receipt[''exporter_dependency_files''].items())
+
+        assert all(pin(Path(os.environ[''RUNNER_TEMP''])/''original-models''/name)==seal for name,seal in receipt[''models''].items())
+
+        assert all(pin(Path(os.environ[''RUNNER_TEMP''])/''native-catalog''/name)==seal for name,seal in receipt[''catalog_files''].items())
+
+        original=proof/''original-collector-current''
+
+        m=json.loads((original/''reference-manifest.json'').read_bytes())
+
+        assert m[''original_models'']==receipt[''models''] and len(m[''files''])==43
+
+        assert all(pin(original/name)==seal for name,seal in m[''files''].items())
+
+        assert sum(case[''reference_count''] for case in m[''cases''])==14
+
+        report=json.loads((original/''report.json'').read_bytes())
+
+        assert len(report[''runs''])==4 and all(run[''logging''][''result'']==''pass'' for run in report[''runs''])
+
+        VERIFY
+
+        '
+    - name: Retain original evidence and exact model payloads
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: driver-collector-current-original-296
+        retention-days: 7
+        if-no-files-found: error
+        path: '${{ runner.temp }}/driver-daemon-native-296/
+
+          !${{ runner.temp }}/driver-daemon-native-296/accepted-models.zip
+
+          ${{ runner.temp }}/original-models/
+
+          ${{ runner.temp }}/native-catalog/
+
+          '
