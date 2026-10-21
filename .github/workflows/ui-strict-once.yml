@@ -1,0 +1,109 @@
+name: One-time UI strict FPS diagnosis 296
+permissions:
+  contents: read
+jobs:
+  strict-fps:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      EXPECTED_SOURCE_SHA: 88e24c56a3bbdc78270762a67232045f2c53f087
+      DIAGNOSTIC_WORKFLOW_SHA: ${{ github.sha }}
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CXX: clang++
+      LIBGL_ALWAYS_SOFTWARE: '1'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: 88e24c56a3bbdc78270762a67232045f2c53f087
+        persist-credentials: false
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Restore diagnostic-only assets from exact workflow commit
+      run: "set -euo pipefail\ntest \"$(git rev-parse HEAD)\" = \"$EXPECTED_SOURCE_SHA\"\ngit fetch --no-tags --depth=1 origin\
+        \ \"$DIAGNOSTIC_WORKFLOW_SHA\"\nmkdir -p \"$RUNNER_TEMP/ui-strict-assets\"\nfor file in diagnose.sh instrument_original.py\
+        \ filter_test.py; do\n  git show \"$DIAGNOSTIC_WORKFLOW_SHA:.github/workflows/ui-strict-diagnostic-assets/$file\"\
+        \ > \"$RUNNER_TEMP/ui-strict-assets/$file\"\ndone\nprintf 'DIAGNOSTIC_ASSETS=%s/ui-strict-assets\\n' \"$RUNNER_TEMP\"\
+        \ >> \"$GITHUB_ENV\"\nsha256sum \"$RUNNER_TEMP\"/ui-strict-assets/*\n"
+    - run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        '
+    - run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
+
+        sudo apt-get update && sudo apt-get install -y g++ clang cmake make libclang-dev capnproto libcapnp-dev libzmq3-dev
+        libgl-dev libx11-dev libxrandr2 libxinerama1 libxcursor1 libxi6 libxtst6 xvfb xauth ffmpeg
+
+        '
+    - run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 cffi==2.1.1 pillow==12.3.0
+        python-xlib==0.33 jeepney==0.9.0 comma-deps-raylib==6.0.0.1.post103 setproctitle==1.3.7 psutil==7.2.2 zstandard==0.25.0
+        requests==2.34.2 pyserial==3.5
+
+        '
+    - name: Stage source-pinned renderer
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo +1.94.0 run --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --bin stage-startup-ui-raylib --
+        --arch x86_64 --output "$RUNNER_TEMP/ui-raylib" --shared
+
+        printf ''STARTUP_UI_RAYLIB_ROOT=%s/ui-raylib\nSTARTUP_UI_RAYLIB_LIBRARY=%s/ui-raylib/lib/libopenpilot-raylib.so\n''
+        "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
+
+        '
+    - uses: ./.github/actions/native-json11
+    - uses: ./.github/actions/native-image-sdk
+    - name: Build exact native reference and mechanical raylib boundary
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features ui-application-lifecycle-native --bin
+        build-ui-application-reference --locked
+
+        rust/target/debug/build-ui-application-reference --output "$RUNNER_TEMP/ui-application-raw" --raylib-root "$STARTUP_UI_RAYLIB_ROOT"
+
+        printf ''UI_APPLICATION_RAW_HELPER=%s/ui-application-raw/ui-application-raw\n'' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+
+        '
+    - name: Observe unchanged strict decision on source and native
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE_SHA"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
+
+        xvfb-run -a -e "$RUNNER_TEMP/ui-strict-xvfb.stderr" -s ''-screen 0 2160x1080x24 -noreset'' bash "$DIAGNOSTIC_ASSETS/diagnose.sh"
+
+        '
+    - name: Retain raw FPS, exits, images, and host metadata
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: ui-strict-fps-${{ env.EXPECTED_SOURCE_SHA }}
+        path: '${{ runner.temp }}/ui-strict-fps-diagnostic/
+
+          ${{ runner.temp }}/ui-strict-xvfb.stderr
+
+          '
+        if-no-files-found: warn
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/ui-strict-once.yml
