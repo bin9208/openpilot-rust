@@ -25,9 +25,9 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: 6f72881b12be37762e1e34af5dcd31e3d0c0181b
+        ref: 20a8f52e83d85c7c5113c5484179b0c016a034eb
     - name: Require exact complete estimator source
-      run: 'test "$(git rev-parse HEAD)" = 6f72881b12be37762e1e34af5dcd31e3d0c0181b
+      run: 'test "$(git rev-parse HEAD)" = 20a8f52e83d85c7c5113c5484179b0c016a034eb
 
         test -z "$(git status --porcelain)"
 
