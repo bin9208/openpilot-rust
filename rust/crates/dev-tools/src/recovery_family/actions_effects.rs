@@ -382,7 +382,15 @@ pub(super) fn run(
     )?;
     let initial = git(&bare, &["rev-parse", "refs/heads/topic"])?;
     let advanced = git(&bare, &["rev-parse", "refs/heads/main"])?;
-    git(&bare, &["update-ref", "refs/heads/main", &initial])?;
+    // The unchanged controller advances its shared remote in git_pull, the
+    // fifth scenario. Earlier clones see the initial commit; every later
+    // scenario, including git_rebuild, starts from the advanced commit.
+    if matches!(
+        name,
+        "git_branches" | "git_log" | "git_reset" | "git_sync" | "git_pull"
+    ) {
+        git(&bare, &["update-ref", "refs/heads/main", &initial])?;
+    }
     let checkout = output.join("repo");
     git(
         output,
