@@ -20,12 +20,12 @@ jobs:
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
-      EXPECTED_SOURCE: 41ed952f4507a7f6727529565933ce75fca241e5
+      EXPECTED_SOURCE: 249c1a0815e7b43d677065f3bd508b423e5ef6b5
     steps:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: 41ed952f4507a7f6727529565933ce75fca241e5
+        ref: 249c1a0815e7b43d677065f3bd508b423e5ef6b5
     - name: Require exact deleted-checkout source
       run: 'set -euo pipefail
 
