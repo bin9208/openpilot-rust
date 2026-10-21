@@ -41,3 +41,20 @@ execute the actual Python server. Their source-only outputs and input/source
 seals are being captured separately for native assertion retirement. They are
 an explicit pending embedded execution edge, rather than hidden behind removal
 of the13 controller/helper files. The server itself has other live consumers.
+
+Follow-up39660686811 at a6bab7a7906da0a21d361567430c7d12c0c8516a compiled
+successfully and passed20 runtime units (three subprocess drivers ignored),
+four terminal-framing cases, four staged-update failure scenarios and11 family
+units. The latter include the real closed-socket/trickled-frame regressions
+for #466/#467. The overall run fails only because the scratch socket command
+passes --exact to Cargo; socket/Clippy and frozen traffic have not run.
+Artifact12372898539, ZIP SHA256
+ddbfe61dda9516197b884984f7c6aa572949c342cbe689c902f8fc143c57ebcb,
+contains47 CRC-checked members. Parent independently audits both original
+webhook payloads/outputs, all eight actual source-member manifest entries and
+unchanged server source identity/SHA256. The manifest's self-entry is invalid
+and not used. Commit a2c9bf7b replaces the embedded Python call with exact
+original-only static bytes while retaining both payloads and the1,900-scalar
+bound. The bounded continuation runs that new native unit, the corrected socket
+test, strict lint and eight-controller traffic without repeating the accepted
+source capture or unchanged passing sets. Hosted native acceptance is pending.

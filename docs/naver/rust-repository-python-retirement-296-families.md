@@ -73,10 +73,13 @@ four partial baseline entries.
    a shared Git remote and the original number_commit nonexecution policy.
    Source fixes retain all seven Git snapshot fields and aggregate independent
    failures. The next full frozen candidate39658903638 failed while compiling
-   the new harness, before unit/Clippy or functional traffic; repair and rerun
-   the affected grouped gate. A separate runtime unit still embeds Python for
-   two Unicode/truncation webhook source comparisons and is now explicitly
-   inventoried. Preserve its independent outputs before retiring that edge.
+   the new harness. Follow-up39660686811 compiled, captured both original webhook
+   cases and passed20 runtime units,4 framing cases,4 staged-update scenarios
+   and11 family units; a scratch Cargo argument error prevented socket/Clippy
+   and traffic. The argument is corrected. The embedded webhook source call is
+   replaced with independently audited exact input/output bytes in a2c9bf7b;
+   its hosted native acceptance is pending. Reuse unchanged successful test
+   sets and run remaining/new checks before both-root family traffic.
    Follow with binding generation and shared runtime comparator dependencies.
 
 ## Evidence reuse and delivery

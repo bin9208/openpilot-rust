@@ -12,3 +12,9 @@ The original `server.py` SHA256 was `7e1e79b5459f0b85b61cf91b6227e35681790fe06ac
 | `message-1/source.txt` | 7016 | `576109588a98527fbcc9136caacd6cd28665e87335313d3db5b10c0c6799143a` |
 
 The first case covers Korean/emoji truncation and unlimited TTL; the second covers a long emoji car name, unknown commit and the nonstandard permission value. `source.txt` includes the newline from the original `print`. The unit retains its fixed input construction and requires its encoded bytes to match these original payloads before comparing the entire output and the 1,900-scalar limit. No Python implementation bytes are stored in this fixture.
+
+The capture's `SHA256SUMS` accidentally includes itself with a pre-write digest;
+that self-entry is invalid and is not used as evidence. All eight actual
+source-only member entries match. Acceptance here uses direct hashes of the
+four committed original files, unchanged source identity/hash and independent
+parent/reviewer archive audits; the historical capture is preserved unchanged.
