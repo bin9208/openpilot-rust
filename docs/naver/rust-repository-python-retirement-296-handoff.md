@@ -77,7 +77,7 @@ Do not modify the shared production launcher merely for this audit.
 Policy/bin registration, two-phase maintained workflow integration and the13-source
 cleanup are now in the same candidate, avoiding a redundant intermediate heavy
 traffic run. The cleanup patch was manually rebased for both action leaves;
-all seven Git snapshot checks and new creation hooks remain. Hosted39683756196 at9cf0bfe5a caught one leftover two-element rebuild destructure after guards made its tuple three elements.81d418655 fixes that consumer; hosted39684855488 runs the same full post-deletion gate. No retirement count is accepted until it finishes and its executable audit is inspected.
+all seven Git snapshot checks and new creation hooks remain. Hosted39683756196 at9cf0bfe5a caught one leftover two-element rebuild destructure after guards made its tuple three elements.81d418655 fixes that consumer; hosted39684855488 passes all grouped functional traffic/units/Clippy, then post-exec admission rejects the source-created tmux symlink at `actions/rust-owned-tmux/tools/tmux`. Correction must bind the symlink to the sealed host provider and source creation lifecycle; it must not invent script bytes or learn an allowlist from traces. Artifact12387105568 is parent CRC-audited (34768238B/7340CRCs/SHA5cb15ec0aa9e42dbd674860550fb79d0bff4fbc67cd61da0642053e953bef333). No13-source acceptance yet.
 
 ## Metadata:14 maintained callers migrated, provider-order correction accepted
 
@@ -138,7 +138,7 @@ no pin was relaxed. Never execute ARM release binaries to stage these data.
 
 Parent independently audited capture artifact12383214627 (130,144,004bytes/735CRCs), all34startup and80USB sealed data files, eight/six case rows, and68byte-identical original USB observation bodies. Durable pure data is `tests/fixtures/model-family-original`; startup manifest4c54c0d6/USB8774d675. USB original controller exited0; wrapper failed only the late unused-msgq import inventory assertion after its before/after equality checks. Data-only finalization explicitly retains original-wrapper-incomplete status and three SHA-bound ELF entries with unknown lengths (`bytes:null`); it never invents observations, reruns source or substitutes native output.
 
-Native preparation aaf5efa0e provides archive staging and separate driver/family catalog bundles, current model/source/CPU/LLVM seals and atomic publication. Bounded compiler execution preserves timeout partials and states when limit-error partials are unavailable. Hosted preflight39685067872 covers new pure controls/compilation/strict Clippy. Current candidate removes the actual six Python sources and two old workflow calls, adds required `model-family-retirement` to the aggregate gate, and binds explicit atomic bundle paths. The independent review caught and excluded USB cache model hardlinks from artifact upload (about18.6GB of duplicate input). Acceptance remains pending the full grouped gate; counts are unchanged.
+Native preparation aaf5efa0e provides archive staging and separate driver/family catalog bundles, current model/source/CPU/LLVM seals and atomic publication. Bounded compiler execution preserves timeout partials and states when limit-error partials are unavailable. Hosted preflight39685067872 passes four new preparation and four grouped support regressions/compilation/strict Clippy; parent audited artifact12385584115 (6443B/eightCRCs/SHA26e41bc9d39505830a7bf10ea936a893c3781d1b41465eda1d0d656e21c8ab96). Full maintained-job steps run39686001854 atcb9f508e0; actual traffic acceptance is pending. Current candidate removes the actual six Python sources and two old workflow calls, adds required `model-family-retirement` to the aggregate gate, and binds explicit atomic bundle paths. The independent review caught and excluded USB cache model hardlinks from artifact upload (about18.6GB of duplicate input). Acceptance remains pending the full grouped gate; counts are unchanged.
 The existing unconverted model compiler remains explicit pending scope; invoking
 it from a Rust preparation command does not count as compiler retirement.
 
@@ -149,7 +149,7 @@ required/full checks. Diagnostic candidate workflows execute an explicitly pinne
 checkout; their unrelated Fast checks use the diagnostic tree and are not proof
 for that checkout. Serialize diagnostic branch pushes.
 
-Latest #296 checkpoint comment6327280537 links the above evidence. Keep #296 open
+Latest #296 checkpoint comment6327837803 links the above evidence. Keep #296 open
 until full criteria are met; no source inventory, partial gate, queued CI or PR
 creation is completion. Detailed functional ownership and next families are in
 [the grouped ledger](rust-repository-python-retirement-296-families.md).
