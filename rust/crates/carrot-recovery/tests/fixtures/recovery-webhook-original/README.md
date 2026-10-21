@@ -11,10 +11,18 @@ The original `server.py` SHA256 was `7e1e79b5459f0b85b61cf91b6227e35681790fe06ac
 | `message-1/payload.json` | 24109 | `7719b245aa440d3108cdf1b49d31de31b1e9c7344b65d0e7437021eb08849600` |
 | `message-1/source.txt` | 7016 | `576109588a98527fbcc9136caacd6cd28665e87335313d3db5b10c0c6799143a` |
 
-The first case covers Korean/emoji truncation and unlimited TTL; the second covers a long emoji car name, unknown commit and the nonstandard permission value. `source.txt` includes the newline from the original `print`. The unit retains its fixed input construction and requires its encoded bytes to match these original payloads before comparing the entire output and the 1,900-scalar limit. No Python implementation bytes are stored in this fixture.
+The first case covers a Korean/emoji note and unlimited TTL; the second covers final message truncation with a long emoji car name, unknown commit and the nonstandard permission value. `source.txt` includes the newline from the original `print`. The unit retains its fixed input construction and requires its encoded bytes to match these original payloads before comparing the entire output and the 1,900-scalar limit. No Python implementation bytes are stored in this fixture.
 
 The capture's `SHA256SUMS` accidentally includes itself with a pre-write digest;
 that self-entry is invalid and is not used as evidence. All eight actual
 source-only member entries match. Acceptance here uses direct hashes of the
 four committed original files, unchanged source identity/hash and independent
 parent/reviewer archive audits; the historical capture is preserved unchanged.
+
+Native acceptance: the unchanged payload constructions and both full source
+outputs pass in Actions39662187794 at a2c9bf7b8da4e907e0e135e449dec90d223210e2;
+the recovery library also passes strict Clippy. Artifact12376375401, ZIP
+SHA256005a27edbd7956ec420113f42e101cf510e79e9e1530221aa66db0f83286763f,
+contains19 CRC-checked members. The overall continuation fails separate new
+dev-tools lint findings before full controller traffic; this is acceptance of
+the two-case embedded-oracle retirement only.

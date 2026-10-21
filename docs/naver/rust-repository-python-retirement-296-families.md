@@ -26,7 +26,7 @@ they are not completed functionality. All families below still contain work.
 Additional scope outside the baseline source inventory remains explicit:
 `selfdrived_helpers_source.py`, `tests/test_selfdrived_source.py`,
 `tests/test_params_native_stager.py` under `rust/tools`, six car-porting notebooks,
-and the 20 pending entries in the [execution-edge inventory](rust-repository-python-retirement-296-execution-edges.tsv).
+and the 19 pending entries in the [execution-edge inventory](rust-repository-python-retirement-296-execution-edges.tsv).
 Those include generated extensionless helpers, dynamic launch, embedded Python
 and vendor release/build paths. Relocation and missing files do not close the
 four partial baseline entries.
@@ -80,8 +80,11 @@ four partial baseline entries.
    and11 family units; a scratch Cargo argument error prevented socket/Clippy
    and traffic. The argument is corrected. The embedded webhook source call is
    replaced with independently audited exact input/output bytes in a2c9bf7b;
-   its hosted native acceptance is pending. Reuse unchanged successful test
-   sets and run remaining/new checks before both-root family traffic.
+   its native unit and runtime strictClippy pass39662187794. That continuation
+   stops before traffic on nine new dev-tools lint findings, being fixed as
+   one group. The independent literal WebSocket mask/boundary assertions also
+   passed and must move intact before removing the old bootstrap test target.
+   Reuse unchanged successful sets before both-root family traffic.
    Follow with binding generation and shared runtime comparator dependencies.
 
 ## Evidence reuse and delivery
