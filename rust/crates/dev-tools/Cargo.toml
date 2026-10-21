@@ -1630,7 +1630,7 @@ name = "calibration_float_check"
 required-features = ["calibration-float-native"]
 
 [[test]]
-name = "calibration_float_retirement"
+name = "calibration_float_postdelete"
 required-features = ["calibration-float-native"]
 
 [[bin]]

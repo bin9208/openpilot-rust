@@ -875,21 +875,22 @@ jobs:
           cargo build -p openpilot-calibrationd --bins --examples --locked
           python tools/check_calibration_reference.py --binary target/debug/examples/calibration_trace --output "$RUNNER_TEMP/calibration-estimator"
           python tools/check_calibration_loop.py --binary target/debug/examples/calibration_loop --output "$RUNNER_TEMP/calibration-loop"
-          python tools/check_calibration_float.py --binary target/debug/examples/calibration_float --output "$RUNNER_TEMP/calibration-float"
-      - name: Compare native calibration float controller with unchanged original
+      - name: Verify retired calibration float controller against sealed original observations
         working-directory: .
         run: |
           export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
           export CALIBRATION_FLOAT_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/calibration_float"
-          export CALIBRATION_FLOAT_PYTHON="$(command -v python)"
+          export CALIBRATION_POSTDELETE_EVIDENCE="$RUNNER_TEMP/calibration-float-postdelete"
+          test ! -e rust/tools/check_calibration_float.py
+          test ! -L rust/tools/check_calibration_float.py
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features calibration-float-native --bin check-calibration-float --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features calibration-float-native --test calibration_float_check --locked --test qa_process --test argparse_scan
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features calibration-float-native --test calibration_float_check --test calibration_float_postdelete --locked --test qa_process --test argparse_scan
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features calibration-float-native --lib calibration_float_check::tests --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features calibration-float-native --lib --bin check-calibration-float --test calibration_float_check --locked --test qa_process --test argparse_scan -- -D warnings
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features calibration-float-native --lib --bin check-calibration-float --test calibration_float_check --test calibration_float_postdelete --locked --test qa_process --test argparse_scan -- -D warnings
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           rust/target/debug/check-calibration-float --binary "$CALIBRATION_FLOAT_BINARY" --output "$RUNNER_TEMP/calibration-float-native"
       - name: Retain calibration float controller evidence
@@ -897,7 +898,9 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: rust-calibration-float-controller
-          path: ${{ runner.temp }}/calibration-float-native/
+          path: |
+            ${{ runner.temp }}/calibration-float-native/
+            ${{ runner.temp }}/calibration-float-postdelete/
           if-no-files-found: warn
       - name: Compare model desire state and Bluetooth command consumption with original source
         run: |

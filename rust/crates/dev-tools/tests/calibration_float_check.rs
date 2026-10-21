@@ -1,4 +1,4 @@
-//! Cloud-only real original comparison plus controlled process-boundary failures.
+//! Sealed original observations plus controlled process-boundary failures after Python retirement.
 #![cfg(all(unix, feature = "calibration-float-native"))]
 use openpilot_dev_tools::{
     calibration_float_check as checker,
@@ -40,40 +40,26 @@ fn options(binary: PathBuf, output: PathBuf) -> checker::Options {
 fn value(path: &Path) -> Value {
     serde_json::from_slice(&fs::read(path).unwrap()).unwrap()
 }
+fn require_retired() {
+    assert!(
+        matches!(fs::symlink_metadata(root().join(checker::CHECKER)),
+        Err(error) if error.kind() == io::ErrorKind::NotFound)
+    );
+}
+fn sealed_original_report() -> Value {
+    let bytes = include_bytes!("fixtures/calibration-float-original-7b5/report.json");
+    assert_eq!(
+        format!("{:x}", Sha256::digest(bytes)),
+        "c196cadfd49fa7ce417b4987ec2c03ce1d048d3d9c686fca1ecc0aebef24e6e2"
+    );
+    serde_json::from_slice(bytes).unwrap()
+}
 
 #[test]
-fn unchanged_checker_in_cloud_and_native_have_all_25_identical_results_and_generated_source() {
+fn native_retains_all_25_sealed_original_results_and_generated_source() {
     let directory = tempfile::tempdir().unwrap();
-    let python = std::env::var_os("CALIBRATION_FLOAT_PYTHON")
-        .expect("CALIBRATION_FLOAT_PYTHON must name the cloud original-control interpreter");
-    let original = directory.path().join("original");
+    require_retired();
     let native = directory.path().join("native");
-    let original_bytes =
-        fs::read(root().join(checker::CHECKER)).expect("original must remain for cloud comparison");
-    assert_eq!(
-        format!("{:x}", Sha256::digest(&original_bytes)),
-        checker::CHECKER_SHA256
-    );
-    let result = NativeRunner
-        .run(&CommandSpec::new_os(
-            vec![
-                python,
-                root().join(checker::CHECKER).into_os_string(),
-                "--binary".into(),
-                binary().into_os_string(),
-                "--output".into(),
-                original.clone().into_os_string(),
-            ],
-            Duration::from_secs(180),
-        ))
-        .unwrap();
-    assert_eq!(
-        result.code,
-        0,
-        "original stdout={} stderr={}",
-        String::from_utf8_lossy(&result.stdout),
-        String::from_utf8_lossy(&result.stderr)
-    );
     let mut stdout = Vec::new();
     let report = checker::check(
         &options(binary(), native.clone()),
@@ -82,26 +68,27 @@ fn unchanged_checker_in_cloud_and_native_have_all_25_identical_results_and_gener
         &AtomicBool::new(false),
     )
     .unwrap();
-    assert_eq!(report, value(&original.join("report.json")));
+    assert_eq!(report, sealed_original_report());
     assert_eq!(report, value(&native.join("report.json")));
     assert_eq!(report["cases"].as_array().unwrap().len(), 25);
-    assert_eq!(stdout, result.stdout);
     assert_eq!(stdout, checker::SUCCESS.as_bytes());
+    let cpp = include_bytes!("fixtures/calibration-float-original-7b5/source_get_float.cc");
     assert_eq!(
-        fs::read(native.join("source_get_float.cc")).unwrap(),
-        fs::read(original.join("source_get_float.cc")).unwrap()
+        format!("{:x}", Sha256::digest(cpp)),
+        "71e73caa64a4dcc851edc57dc4167b38b01758ba9e16159e5a6a24fe430ce803"
     );
-    assert_eq!(
-        fs::read(root().join(checker::CHECKER)).unwrap(),
-        original_bytes
-    );
+    assert_eq!(fs::read(native.join("source_get_float.cc")).unwrap(), cpp);
+    require_retired();
     let provenance = value(&native.join("provenance.json"));
     assert_eq!(
         provenance["sources"]["source_sha256"][checker::HEADER],
         checker::HEADER_SHA256
     );
+    assert!(provenance["sources"]["source_sha256"]
+        .get(checker::CHECKER)
+        .is_none());
     assert_eq!(
-        provenance["sources"]["source_sha256"][checker::CHECKER],
+        provenance["sources"]["historical_source_sha256"][checker::CHECKER],
         checker::CHECKER_SHA256
     );
     assert_eq!(
@@ -210,9 +197,8 @@ fn original_flags_abbreviations_repeated_options_and_raw_paths_are_admitted() {
 }
 
 #[test]
-fn cloud_original_and_native_cli_have_the_same_help_and_error_admission() {
-    let python = std::env::var_os("CALIBRATION_FLOAT_PYTHON")
-        .expect("cloud original-control interpreter is mandatory");
+fn native_retains_twenty_original_help_and_error_admission_cases() {
+    require_retired();
     for arguments in [
         vec![],
         vec!["--binary", "x"],
@@ -235,26 +221,33 @@ fn cloud_original_and_native_cli_have_the_same_help_and_error_admission() {
         vec!["--help", "--unknown"],
         vec!["-h", "-hfoo"],
     ] {
-        let mut source = vec![
-            python.clone(),
-            root().join(checker::CHECKER).into_os_string(),
-        ];
-        source.extend(arguments.iter().map(OsString::from));
         let mut native = vec![env!("CARGO_BIN_EXE_check-calibration-float").into()];
         native.extend(arguments.iter().map(OsString::from));
-        let source = NativeRunner
-            .run(&CommandSpec::new_os(source, Duration::from_secs(10)))
-            .unwrap();
         let native = NativeRunner
             .run(&CommandSpec::new_os(native, Duration::from_secs(10)))
             .unwrap();
-        assert_eq!(native.code, source.code, "{arguments:?}");
-        assert!(
-            source.code == 0 || source.code == 2,
-            "must not invoke the workload: {arguments:?}"
-        );
-        if source.code == 0 {
+        let historical_code = if arguments
+            .iter()
+            .any(|arg| ["--help", "-h", "--hel", "-hfoo", "-hh", "-hhh"].contains(arg))
+            && !arguments
+                .iter()
+                .any(|arg| ["-h-h", "-hh=foo", "-h=foo", "--help=foo"].contains(arg))
+        {
+            // The fresh original admission for this full roster passed before
+            // deletion; the twelve raw original CLI receipts are separately
+            // pinned by calibration_float_postdelete.
+            0
+        } else {
+            2
+        };
+        assert_eq!(native.code, historical_code, "{arguments:?}");
+        assert!(matches!(native.code, 0 | 2), "must not invoke workload");
+        if native.code == 0 {
             assert!(!native.stdout.is_empty());
+            assert!(native.stderr.is_empty());
+        } else {
+            assert!(native.stdout.is_empty());
+            assert!(!native.stderr.is_empty());
         }
     }
 }
@@ -294,11 +287,10 @@ fn foreign_existing_output_and_cancelled_admission_do_not_touch_a_success_receip
 }
 
 fn copy_sources(root_copy: &Path) {
-    for path in [checker::HEADER, checker::CHECKER] {
-        let target = root_copy.join(path);
-        fs::create_dir_all(target.parent().unwrap()).unwrap();
-        fs::copy(root().join(path), target).unwrap();
-    }
+    let target = root_copy.join(checker::HEADER);
+    fs::create_dir_all(target.parent().unwrap()).unwrap();
+    fs::copy(root().join(checker::HEADER), target).unwrap();
+    fs::create_dir_all(root_copy.join(checker::CHECKER).parent().unwrap()).unwrap();
 }
 #[test]
 fn source_guard_rejects_drift_and_dangling_objects_and_splits_genuine_retirement() {
@@ -307,8 +299,8 @@ fn source_guard_rejects_drift_and_dangling_objects_and_splits_genuine_retirement
     assert!(checker::sources(directory.path()).is_ok());
     let checker_path = directory.path().join(checker::CHECKER);
     let checker_copy = directory.path().join("checker-copy");
-    fs::copy(&checker_path, &checker_copy).unwrap();
-    fs::remove_file(&checker_path).unwrap();
+    assert!(!checker_path.exists());
+    fs::write(&checker_copy, b"private unexpected reappearance").unwrap();
     symlink(&checker_copy, &checker_path).unwrap();
     assert!(checker::sources(directory.path()).is_err());
     fs::remove_file(&checker_path).unwrap();
@@ -399,8 +391,13 @@ impl Runner for Boundary<'_> {
                         )
                         .unwrap();
                     }
-                    "source-absence" => {
-                        fs::remove_file(self.options.root.join(checker::CHECKER)).unwrap();
+                    "source-identity-change" => {
+                        let source = self.options.root.join(checker::CHECKER);
+                        if source.exists() {
+                            fs::remove_file(&source).unwrap();
+                        } else {
+                            fs::write(&source, b"unexpected checker reappearance").unwrap();
+                        }
                     }
                     "cancel" => self.cancel.store(true, Ordering::Relaxed),
                     "candidate-failure" => {
@@ -445,7 +442,7 @@ fn controlled_failures_and_postexecution_identity_changes_never_publish_success(
         "mismatch",
         "replace-candidate",
         "source-drift",
-        "source-absence",
+        "source-identity-change",
         "cancel",
         "closed-stdout",
     ] {
@@ -586,25 +583,20 @@ fn actual_native_cli_runs_on_lossless_paths_and_rejects_a_failing_probe() {
 }
 
 #[test]
-fn cloud_original_and_native_distinguish_unset_path_from_explicitly_empty_path() {
+fn native_retains_original_unset_path_and_explicitly_empty_path_failures() {
     let directory = tempfile::tempdir().unwrap();
-    let python = fs::canonicalize(PathBuf::from(
-        std::env::var_os("CALIBRATION_FLOAT_PYTHON")
-            .expect("cloud original-control interpreter is mandatory"),
-    ))
-    .unwrap();
+    require_retired();
+    let receipt = include_bytes!("fixtures/calibration-float-original-7b5/cli-original.json");
+    assert_eq!(
+        format!("{:x}", Sha256::digest(receipt)),
+        "48504f07bbae0dc0ae768b0d6d132a42bf148808a93d92c901f73b5f7aadb84f"
+    );
+    let receipt: Value = serde_json::from_slice(receipt).unwrap();
     for unset in [true, false] {
         let mut outcomes = Vec::new();
-        for original in [true, false] {
-            let output = directory.path().join(format!("path-{unset}-{original}"));
-            let mut argv = if original {
-                vec![
-                    python.clone().into_os_string(),
-                    root().join(checker::CHECKER).into_os_string(),
-                ]
-            } else {
-                vec![env!("CARGO_BIN_EXE_check-calibration-float").into()]
-            };
+        {
+            let output = directory.path().join(format!("path-{unset}"));
+            let mut argv = vec![env!("CARGO_BIN_EXE_check-calibration-float").into()];
             argv.extend([
                 "--binary".into(),
                 binary().into_os_string(),
@@ -628,7 +620,7 @@ fn cloud_original_and_native_distinguish_unset_path_from_explicitly_empty_path()
             let observed = NativeRunner.run(&command).unwrap();
             assert!(
                 matches!(observed.code, 0 | 1),
-                "unset={unset}, original={original}: {}",
+                "unset={unset}: {}",
                 String::from_utf8_lossy(&observed.stderr)
             );
             if !unset {
@@ -645,9 +637,29 @@ fn cloud_original_and_native_distinguish_unset_path_from_explicitly_empty_path()
             };
             outcomes.push((observed.code, observed.stdout, report));
         }
-        assert_eq!(
-            outcomes[0], outcomes[1],
-            "original/native PATH parity: unset={unset}"
-        );
+        {
+            let name = if unset { "path-unset" } else { "path-empty" };
+            let original = receipt["cases"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|row| row["name"] == name)
+                .unwrap();
+            assert_eq!(
+                outcomes[0].0,
+                original["code"].as_i64().unwrap() as i32,
+                "{name}"
+            );
+            assert_eq!(
+                outcomes[0].2.is_some(),
+                original["report_present"].as_bool().unwrap(),
+                "{name}"
+            );
+            assert_eq!(
+                outcomes[0].1.is_empty(),
+                original["stdout_hex"] == "",
+                "{name}"
+            );
+        }
     }
 }

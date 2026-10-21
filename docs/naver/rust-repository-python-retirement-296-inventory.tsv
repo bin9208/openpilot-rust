@@ -1845,7 +1845,7 @@ rust/tools/check_bootlog.py	821fae976671407cca3c239f0cb23b3f7ca1fa22	replaced-lo
 rust/tools/check_bootlog_snapshot.py	9c5e4623e898a2dfea3647027b939f1fd2732c9a	replaced-local	rust/crates/dev-tools/src/bootlog_snapshot_check.rs
 rust/tools/check_bridge.py	837e2ab770658577c5f564a77a563aed814ceb59	replaced-local	openpilot-dev-tools check-bridge; independent sealed original reports and same-ELF absent-root 17-native-exec cloud proof; post-deletion exact-SHA gate pending
 rust/tools/check_calibration_daemon.py	59ff14326c59ac7fcf2e4f26a1af76456072041f	pending	-
-rust/tools/check_calibration_float.py	38e332e2cc7fb8fcca65e305afb8d6ea0b1e6779	pending	-
+rust/tools/check_calibration_float.py	38e332e2cc7fb8fcca65e305afb8d6ea0b1e6779	replaced-local	Native check-calibration-float; accepted fresh original25-row/12CLI and56exec same-ELF source-present/absent gate; exact deleted-checkout proof pending
 rust/tools/check_calibration_loop.py	4a64bcf62f5e155b2da5be5fc4f6f62f84935906	pending	-
 rust/tools/check_calibration_reference.py	081106a094b16c35dbde0cce3769910f1b90512f	pending	-
 rust/tools/check_camerad_camera_lifecycle.py	1d1df7ff42c948731a0d5ea54be27f49a0520f06	replaced-local	rust/crates/dev-tools/src/camera_lifecycle_check.rs

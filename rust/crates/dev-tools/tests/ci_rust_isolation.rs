@@ -1733,17 +1733,18 @@ fn panda_requires_native_transports_and_source_composition() {
     some_artifact(&workflow()["jobs"]["panda-runtime"]);
 }
 #[test]
-fn new_calibration_and_panda_controllers_require_unchanged_original_pairs() {
+fn calibration_requires_sealed_retirement_and_panda_requires_original_pairs() {
     job_check(
         "workspace",
         &[
-            "python tools/check_calibration_float.py --binary",
+            "test ! -e rust/tools/check_calibration_float.py",
+            "test ! -L rust/tools/check_calibration_float.py",
             "--features calibration-float-native --bin check-calibration-float",
-            "--features calibration-float-native --test calibration_float_check --locked",
+            "--features calibration-float-native --test calibration_float_check --test calibration_float_postdelete --locked",
             "--lib calibration_float_check::tests --locked",
             "rust/target/debug/check-calibration-float --binary",
             "CALIBRATION_FLOAT_BINARY=",
-            "CALIBRATION_FLOAT_PYTHON=",
+            "CALIBRATION_POSTDELETE_EVIDENCE=",
         ],
         &["--features calibration-float-native"],
         false,

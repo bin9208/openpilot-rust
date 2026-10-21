@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. The current source inventory has 220 replaced-local entries,
-three partial entries and 3,357 pending entries. `replaced-local` does not mean merged,
+SCons entrypoints. The current source inventory has 221 replaced-local entries,
+three partial entries and 3,356 pending entries. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -5112,3 +5112,10 @@ Source20a8f52e cloud run39529140105/job118990740395 succeeded with fresh origina
 The actual Python checker is now removed. Maintained reference/retirement tests verify the SHA-sealed12original-only raw data files; no Python is copied, downloaded or executed for the removed controller. The original negative artifact phase matrix is separately sealed: all18entries independently match edb42bf0 artifact SHA256 `40026fdfe4f4a6dcd804f1e48208a1e41c38ddd9cff025fd83c6cb19da996d01`. Native CLI exits, all failure phases, cancellation, finalization and mandatory interpreter-free absence checks remain. The historical live-original proof is recorded separately from postdelete captured observations, without fabricating a fresh original exit status.
 
 Inventory220replaced-local/3partial/3357pending. Actual deleted-checkout cloud proof, latest whole PR and device acceptance remain pending.
+
+
+## Calibration float checker retirement after fresh original proof (2026-10-21)
+
+Accepted pre-deletion [run39533224232/job119003782752](https://github.com/bin9208/openpilot-rust/actions/runs/39533224232/job/119003782752), source7b5ebbb7243a0f74cb3b075067a5dd50506b4927, workflow80113fb7c98081e1cbfae401a60350a6aa9525b9. Artifact12317055106 ZIP SHA256 c169d7ef9864c0c3ccc3d1a23e91cf56d02962d3153b5cf185734a79052871d2. Fresh original25-row report, generated C++ and stdout,12 raw CLI phases, same native checker/candidate ELFs across real source-present/private source-absent roots and56 successful execs per lane passed; helper admission includes actual GCC libexec paths. Parent independently compared retained report, C++, original stdout and all100 supplementary native stream files to the downloaded archive. Supplementary streams are explicitly native-lane data, not original-only outputs.
+
+Removed rust/tools/check_calibration_float.py and its obsolete source-present retirement target. Native tests keep the independent original report/CPP/CLI receipts, all20 CLI admission cases and failure injection. New postdelete target requires actual repository/private-root source absence, both current ELFs sealed before/after, cold C++ execution, full25-row comparison,100 streams and56-exec audit in each root. Current rebuilt ELF hashes are measured; historical ELF hashes are provenance only. Main workflow publishes postdelete evidence in a sibling directory so the later exclusive CLI output remains fresh. Local Rust syntax/format/diff and archive-data inspection only. Exact deleted-checkout cloud proof, latest full PR, whole project conversion and device acceptance remain pending. Inventory221replaced-local/3partial/3356pending.
