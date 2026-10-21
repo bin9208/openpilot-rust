@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 467);
+    assert_eq!(text.matches(marker).count(), 469);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -322,6 +322,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut eigen_staging = vec![];
     let mut paramsd_gate = vec![];
     let mut logmessaged_startup_retirement = vec![];
+    let mut lpa_cookie_header = vec![];
     let mut bluetooth_journal_controller = vec![];
     let mut calibration_float_controller = vec![];
     let mut pandad_padding_controller = vec![];
@@ -337,6 +338,14 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 .iter()
                 .rev()
                 .find(|line| line.starts_with("      - name:"));
+            if step
+                == Some(
+                    &"      - name: Require LPA cookie header byte parity and allocation reduction",
+                )
+            {
+                lpa_cookie_header.push(tail.to_owned());
+                continue;
+            }
             if step == Some(&"      - name: Require same-ELF logmessaged startup with historical checker absent") {
                 logmessaged_startup_retirement.push(tail.to_owned());
                 continue;
@@ -1071,6 +1080,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     assert_eq!(
         native_architecture,
         vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024"]
+    );
+    assert_eq!(
+        lpa_cookie_header,
+        [512, 128].map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     assert_eq!(
         logmessaged_startup_retirement,

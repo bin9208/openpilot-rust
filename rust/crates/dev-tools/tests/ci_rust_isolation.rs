@@ -2637,3 +2637,23 @@ fn logmessaged_startup_retirement_keeps_sealed_original_and_same_elf_absent_proo
     );
     artifacts(job);
 }
+
+#[test]
+fn lpa_cookie_header_keeps_original_tls_and_requires_measured_byte_exact_improvement() {
+    job_check("startup-services", &[
+        "python rust/tools/check_lpa.py --target",
+        "cargo clippy --manifest-path rust/Cargo.toml -p openpilot-lpa --all-targets --locked -- -D warnings",
+        "rustc --edition=2021 -O -D warnings rust/tools/lpa_cookie_header_allocation_probe.rs",
+        "\"$proof/lpa-cookie-header-allocation-probe\" --require-improvement",
+        "sha256sum -c \"$proof/source.sha256\"",
+        "sha256sum -c \"$proof/binary.sha256\"",
+    ], &["lpa_cookie_header_allocation_probe.rs"], true);
+    required(
+        &read("rust/crates/lpa/src/http.rs"),
+        &[
+            "matched.retain(|cookie| cookie.secure() != Some(true) || url.scheme() == \"https\")",
+            "matched.sort_by_key(|cookie| std::cmp::Reverse(cookie.path.as_ref().len()))",
+            "cookies::header(matched.iter().map(|cookie| (cookie.name(), cookie.value())))",
+        ],
+    );
+}

@@ -2851,6 +2851,21 @@ jobs:
           python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/services-params-binding"
       - name: Compare LPA serial, TLS, profile and notification lifecycle
         run: python rust/tools/check_lpa.py --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/startup-services/lpa"
+      - name: Require LPA cookie header byte parity and allocation reduction
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/startup-services/lpa-cookie-header"
+          mkdir -p "$proof"
+          git rev-parse HEAD > "$proof/SOURCE_COMMIT"
+          sha256sum rust/crates/lpa/src/http.rs rust/crates/lpa/src/http/cookies.rs rust/tools/lpa_cookie_header_allocation_probe.rs > "$proof/source.sha256"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-lpa --all-targets --locked -- -D warnings
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          rustc --edition=2021 -O -D warnings rust/tools/lpa_cookie_header_allocation_probe.rs -o "$proof/lpa-cookie-header-allocation-probe"
+          sha256sum "$proof/lpa-cookie-header-allocation-probe" > "$proof/binary.sha256"
+          "$proof/lpa-cookie-header-allocation-probe" --require-improvement | tee "$proof/measurement.jsonl"
+          sha256sum -c "$proof/source.sha256"
+          sha256sum -c "$proof/binary.sha256"
       - name: Require native bridge controller against sealed original observations
         run: |
           # The namespace controller runs as root; keep its private 0600 reports
