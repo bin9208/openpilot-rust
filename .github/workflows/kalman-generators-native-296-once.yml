@@ -20,12 +20,12 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: eb73be217514841536ea714f5ba304acc7a9fc02
+        ref: 44ece72556360fa43cd1a1fd14946b11e79aef34
         persist-credentials: false
     - name: Bind exact source and reserve hosted capacity
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = eb73be217514841536ea714f5ba304acc7a9fc02
+        test "$(git rev-parse HEAD)" = 44ece72556360fa43cd1a1fd14946b11e79aef34
 
         sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
 
