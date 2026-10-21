@@ -26,7 +26,7 @@ they are not completed functionality. All families below still contain work.
 Additional scope outside the baseline source inventory remains explicit:
 `selfdrived_helpers_source.py`, `tests/test_selfdrived_source.py`,
 `tests/test_params_native_stager.py` under `rust/tools`, six car-porting notebooks,
-and the 19 pending entries in the [execution-edge inventory](rust-repository-python-retirement-296-execution-edges.tsv).
+and the 20 pending entries in the [execution-edge inventory](rust-repository-python-retirement-296-execution-edges.tsv).
 Those include generated extensionless helpers, dynamic launch, embedded Python
 and vendor release/build paths. Relocation and missing files do not close the
 four partial baseline entries.
@@ -64,16 +64,19 @@ four partial baseline entries.
    successful checks and retain required final integration.
    The aggregate remains failed. Navigation #457 also remains open because its
    earlier startup stall has not been explained by successful diagnostics.
-4. Next general-tool batch: recovery's eight configured controllers and shared
-   HTTP/WebSocket/PTY/process helpers. Native runtime implementations and the eight-controller Rust candidate exist;
-   the first grouped gate39648823814 passed the six external source controllers
-   and eight native integration tests but actions never entered its scenarios:
-   Rust pre-created the output owned by the original controller. Commit240a2bf6
-   removes only that premature creation. Focused gate39652746415 runs the corrected
-   actions comparison, skipped native units and strict Clippy; unchanged successful
-   controller evidence is retained. A78-receipt source-only adapter is partial,
-   deliberately refusing complete-family admission. Original controllers remain
-   until accepted comparisons and active caller/source removal close the family.
+4. Recovery's eight configured controllers share HTTP/WebSocket/PTY/process
+   helpers. The independent fixture now contains213 records (207 original
+   observations, one controller receipt and five explicitly native-only shutdown
+   contracts); data completeness does not mean native acceptance. The13 Python
+   controllers/helpers remain until all eight native paths and both roots pass.
+   Earlier actions failures exposed output-directory ownership, progression of
+   a shared Git remote and the original number_commit nonexecution policy.
+   Source fixes retain all seven Git snapshot fields and aggregate independent
+   failures. The next full frozen candidate39658903638 failed while compiling
+   the new harness, before unit/Clippy or functional traffic; repair and rerun
+   the affected grouped gate. A separate runtime unit still embeds Python for
+   two Unicode/truncation webhook source comparisons and is now explicitly
+   inventoried. Preserve its independent outputs before retiring that edge.
    Follow with binding generation and shared runtime comparator dependencies.
 
 ## Evidence reuse and delivery
