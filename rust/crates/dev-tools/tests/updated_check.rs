@@ -1,4 +1,4 @@
-//! Mandatory fresh five-case comparison to the retained Python updater oracle.
+//! Mandatory five-case native comparison to sealed original-only observations.
 #![cfg(target_os = "linux")]
 use openpilot_dev_tools::{
     qa_process::{CommandSpec, NativeRunner, Runner},
@@ -27,19 +27,18 @@ fn hex(bytes: &[u8]) -> String {
 }
 
 #[test]
-fn fresh_original_and_native_all_five_cases() {
+fn native_all_five_cases_match_sealed_original() {
     let output = required("UPDATED_CHECK_OUTPUT");
     let report = run(
         &required("UPDATED_CHECK_BINARY"),
         &required("UPDATED_CHECK_LAUNCHER"),
-        &required("UPDATED_CHECK_BINDING"),
         &output,
-        &required("UPDATED_CHECK_PYTHON"),
         &required("UPDATED_CHECK_SHIM"),
+        &repo(),
     )
     .unwrap();
     assert_eq!(report["passed"], true);
-    assert_eq!(report["fresh_original_python_executed"], true);
+    assert_eq!(report["original_observation"], "sealed_df0128aa_capture");
     let names = cases().into_iter().map(|case| case.0).collect::<Vec<_>>();
     assert_eq!(
         names,
@@ -53,9 +52,7 @@ fn fresh_original_and_native_all_five_cases() {
     );
     assert_eq!(report["scenarios"].as_array().unwrap().len(), names.len());
     for name in names {
-        let source: Value =
-            serde_json::from_slice(&fs::read(output.join(format!("{name}-source.json"))).unwrap())
-                .unwrap();
+        let source = sealed_case(name);
         let native: Value =
             serde_json::from_slice(&fs::read(output.join(format!("{name}-native.json"))).unwrap())
                 .unwrap();
@@ -65,6 +62,62 @@ fn fresh_original_and_native_all_five_cases() {
             .unwrap()
             .iter()
             .any(|row| row["scenario"] == name && row["passed"] == true));
+    }
+}
+
+fn repo() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .nth(3)
+        .unwrap()
+        .to_path_buf()
+}
+fn sealed_case(name: &str) -> Value {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/updated-original-df0128aa")
+        .join(format!("{name}.json"));
+    let expected = match name {
+        "check-fetch-metered" => "051f172d2934a3f245736f48df1139f8cb108197e4b430cdf8cbc13ce251437d",
+        "missing-branch-failure" => {
+            "2ac87b6b182010fc835b22f1a00a4114fd512ee9c05ca3cd2aa147d350b2ee42"
+        }
+        "tizi-branch-map-agnos-same-version" => {
+            "59532593affbe4e2ffae3449164c78b36a51e4ab2273bead306f7262d0a1e85f"
+        }
+        "agnos-model-manifest-boundary" => {
+            "216cbde9a519bafab097714e7a4b8efd63f0a73a4a28ef3525508e832bfb71ce"
+        }
+        "connectivity-thresholds" => {
+            "ced55dbb2f37b9f381925466fcd0b1b169806002e81c7d43bca30a3ed5a82c40"
+        }
+        _ => panic!("unknown scenario"),
+    };
+    let bytes = fs::read(path).unwrap();
+    assert_eq!(format!("{:x}", Sha256::digest(&bytes)), expected);
+    serde_json::from_slice(&bytes).unwrap()
+}
+
+#[test]
+fn raw_original_scenario_streams_keep_their_independent_capture_hashes() {
+    let folder = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/updated-original-df0128aa/raw-original");
+    let manifest = fs::read(folder.join("SHA256SUMS")).unwrap();
+    assert_eq!(
+        format!("{:x}", Sha256::digest(&manifest)),
+        "c7100b2d3b706cc76e7c115835707ecbde46ab3c2a6051e17ba4b731fd44e29b"
+    );
+    let lines = std::str::from_utf8(&manifest)
+        .unwrap()
+        .lines()
+        .collect::<Vec<_>>();
+    assert_eq!(lines.len(), 10);
+    for line in lines {
+        let (digest, file) = line.split_once("  ").unwrap();
+        assert!(!file.contains('/') && !file.contains(".."));
+        assert_eq!(
+            format!("{:x}", Sha256::digest(fs::read(folder.join(file)).unwrap())),
+            digest
+        );
     }
 }
 
@@ -106,22 +159,18 @@ fn python_integral_wait_equality_does_not_change_other_snapshot_fields() {
 }
 
 #[test]
-fn original_and_native_cli_reject_and_help_actions_match() {
+fn native_cli_retains_eleven_sealed_original_admissions() {
     let receipts = required("UPDATED_CHECK_CLI_OUTPUT");
     fs::create_dir_all(&receipts).unwrap();
-    let repo = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .ancestors()
-        .nth(3)
-        .unwrap();
-    let original = repo.join("rust/tools/check_updated.py");
+    let sealed = include_bytes!("fixtures/updated-original-df0128aa/cli-original.json");
     assert_eq!(
-        format!("{:x}", Sha256::digest(fs::read(&original).unwrap())),
-        "bfa1686e464e5457b9a9bdc66b954e81f5994db24860d7f7b2869999f4e29b7d"
+        format!("{:x}", Sha256::digest(sealed)),
+        "a9806418ef44248e24a494f37ec387195f6d87996e5de7278c0fc8205cf8372f"
     );
-    let python = required("UPDATED_CHECK_PYTHON");
+    let sealed: Value = serde_json::from_slice(sealed).unwrap();
+    let originals = sealed.as_array().unwrap();
+    assert_eq!(originals.len(), 11);
     let native = PathBuf::from(env!("CARGO_BIN_EXE_check-updated"));
-    let source_sha = format!("{:x}", Sha256::digest(fs::read(&original).unwrap()));
-    let python_sha = format!("{:x}", Sha256::digest(fs::read(&python).unwrap()));
     let native_sha = format!("{:x}", Sha256::digest(fs::read(&native).unwrap()));
     for (index, (name, args)) in [
         ("help", vec!["--help"]),
@@ -150,17 +199,6 @@ fn original_and_native_cli_reject_and_help_actions_match() {
     .into_iter()
     .enumerate()
     {
-        let mut source_args = vec![
-            python.as_os_str().to_owned(),
-            original.as_os_str().to_owned(),
-        ];
-        source_args.extend(args.iter().map(OsString::from));
-        let source = NativeRunner
-            .run(&CommandSpec::new_os(
-                source_args.clone(),
-                Duration::from_secs(5),
-            ))
-            .unwrap();
         let mut native_args = vec![native.as_os_str().to_owned()];
         native_args.extend(args.iter().map(OsString::from));
         let candidate = NativeRunner
@@ -169,20 +207,26 @@ fn original_and_native_cli_reject_and_help_actions_match() {
                 Duration::from_secs(5),
             ))
             .unwrap();
+        let original = &originals[index];
+        assert_eq!(original["case"], name);
+        assert_eq!(
+            original["source_checker_sha256"],
+            "bfa1686e464e5457b9a9bdc66b954e81f5994db24860d7f7b2869999f4e29b7d"
+        );
+        assert_eq!(
+            original["source_python_sha256"],
+            "53dab24bf9e0e9c490088a53d71770b6f027b057678b313648e75f7fc87a675e"
+        );
+        let historical = &original["original"];
+        let old_args = historical["argv"].as_array().unwrap();
+        assert_eq!(old_args.len(), args.len() + 2);
+        for (actual, expected) in old_args.iter().skip(2).zip(&args) {
+            assert_eq!(actual.as_str(), Some(*expected));
+        }
         let receipt = json!({
             "case":name,
-            "source_checker_sha256":source_sha,
-            "source_python_sha256":python_sha,
+            "sealed_original":original,
             "native_checker_sha256":native_sha,
-            "source":{
-                "argv":source_args.iter().map(|arg| arg.to_string_lossy().into_owned()).collect::<Vec<_>>(),
-                "argv_hex":source_args.iter().map(|arg| hex(arg.as_bytes())).collect::<Vec<_>>(),
-                "code":source.code,
-                "stdout":String::from_utf8_lossy(&source.stdout),
-                "stderr":String::from_utf8_lossy(&source.stderr),
-                "stdout_hex":hex(&source.stdout),
-                "stderr_hex":hex(&source.stderr),
-            },
             "native":{
                 "argv":native_args.iter().map(|arg| arg.to_string_lossy().into_owned()).collect::<Vec<_>>(),
                 "argv_hex":native_args.iter().map(|arg| hex(arg.as_bytes())).collect::<Vec<_>>(),
@@ -204,14 +248,20 @@ fn original_and_native_cli_reject_and_help_actions_match() {
         file.sync_all().unwrap();
         assert_eq!(
             candidate.code,
-            source.code,
-            "CLI status for {args:?}: original stderr={} native stderr={}",
-            String::from_utf8_lossy(&source.stderr),
+            historical["code"].as_i64().unwrap() as i32,
+            "CLI status for {args:?}: native stderr={}",
             String::from_utf8_lossy(&candidate.stderr)
         );
         assert!(matches!(candidate.code, 0 | 2));
         if candidate.code == 0 {
             assert!(String::from_utf8_lossy(&candidate.stdout).contains("usage:"));
+            assert_eq!(historical["stderr_hex"], "");
+            assert!(candidate.stderr.is_empty());
+        } else {
+            assert_eq!(historical["stdout_hex"], "");
+            assert!(candidate.stdout.is_empty());
+            assert!(!historical["stderr_hex"].as_str().unwrap().is_empty());
+            assert!(!candidate.stderr.is_empty());
         }
     }
     assert_eq!(fs::read_dir(&receipts).unwrap().count(), 11);
@@ -231,7 +281,6 @@ fn original_and_native_cli_reject_and_help_actions_match() {
     .unwrap();
     assert_eq!(parsed.binary, PathBuf::from("last"));
     assert_eq!(parsed.launcher, PathBuf::from("launcher"));
-    assert_eq!(parsed.binding, PathBuf::from("binding"));
     assert_eq!(parsed.output, PathBuf::from("output"));
 }
 
@@ -241,15 +290,7 @@ fn preexisting_result_is_not_reused_as_pass() {
     let receipt = directory.path().join("result.json");
     fs::write(&receipt, b"{\"passed\":true}\n").unwrap();
     let missing = directory.path().join("missing");
-    assert!(run(
-        &missing,
-        &missing,
-        &missing,
-        directory.path(),
-        &missing,
-        &missing
-    )
-    .is_err());
+    assert!(run(&missing, &missing, directory.path(), &missing, &repo()).is_err());
     assert_eq!(fs::read(receipt).unwrap(), b"{\"passed\":true}\n");
 }
 
@@ -258,27 +299,240 @@ fn missing_candidate_cannot_leave_a_success_receipt() {
     let directory = tempfile::tempdir().unwrap();
     let output = directory.path().join("proof");
     let missing = directory.path().join("missing");
-    assert!(run(&missing, &missing, &missing, &output, &missing, &missing).is_err());
+    assert!(run(&missing, &missing, &output, &missing, &repo()).is_err());
     assert!(output.is_dir());
     assert!(!output.join("result.json").exists());
 }
 
 #[test]
-fn failed_fresh_original_cannot_finalize_a_pass() {
+fn missing_native_shim_cannot_finalize_a_pass() {
     let directory = tempfile::tempdir().unwrap();
-    let output = directory.path().join("failed-original");
+    let output = directory.path().join("failed-shim");
     assert!(run(
         &required("UPDATED_CHECK_BINARY"),
         &required("UPDATED_CHECK_LAUNCHER"),
-        &required("UPDATED_CHECK_BINDING"),
         &output,
-        Path::new("/bin/false"),
-        &required("UPDATED_CHECK_SHIM"),
+        &directory.path().join("missing-shim"),
+        &repo(),
     )
     .is_err());
     assert!(!output.join("result.json").exists());
+}
+
+#[test]
+fn historical_source_reappearance_mutation_and_symlink_fail_before_receipt() {
+    use std::os::unix::fs::symlink;
+    let directory = tempfile::tempdir().unwrap();
+    let source_root = directory.path().join("root");
+    let tools = source_root.join("rust/tools");
+    fs::create_dir_all(&tools).unwrap();
+    fs::copy(
+        repo().join("rust/tools/updated_fixtures.py"),
+        tools.join("updated_fixtures.py"),
+    )
+    .unwrap();
+    let missing = directory.path().join("missing-binary");
+    let attempt = |label: &str| {
+        run(
+            &missing,
+            &missing,
+            &directory.path().join(label),
+            &missing,
+            &source_root,
+        )
+        .unwrap_err()
+        .to_string()
+    };
+    assert!(attempt("valid-absence").contains("No such file"));
+    let reappeared = tools.join("updated_source.py");
+    fs::write(&reappeared, b"unexpected source reappearance").unwrap();
+    assert!(attempt("reappeared").contains("historical source changed"));
+    fs::remove_file(&reappeared).unwrap();
+    symlink("updated_fixtures.py", &reappeared).unwrap();
+    assert!(attempt("symlink").contains("not regular"));
+    fs::remove_file(&reappeared).unwrap();
+    rustix::fs::mkfifoat(
+        rustix::fs::CWD,
+        &reappeared,
+        rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR,
+    )
+    .unwrap();
+    assert!(attempt("fifo").contains("not regular"));
+    fs::remove_file(&reappeared).unwrap();
+    fs::write(tools.join("updated_fixtures.py"), b"mutated fixture").unwrap();
+    assert!(attempt("fixture-drift").contains("historical source changed"));
+    fs::write(
+        tools.join("updated_fixtures.py"),
+        vec![b'x'; 2 * 1024 * 1024 + 1],
+    )
+    .unwrap();
+    assert!(attempt("oversized-fixture").contains("bounded admission"));
+    fs::remove_dir_all(&tools).unwrap();
+    assert!(attempt("missing-parent").contains("No such file"));
+}
+
+#[test]
+fn same_elves_run_checkout_and_genuinely_absent_historical_roots() {
+    let evidence = required("UPDATED_CHECK_ABSENCE_EVIDENCE");
+    assert!(!evidence.exists(), "fresh absence evidence required");
+    fs::create_dir_all(&evidence).unwrap();
+    let absent = evidence.join("absent-root");
+    let tools = absent.join("rust/tools");
+    fs::create_dir_all(&tools).unwrap();
+    fs::copy(
+        repo().join("rust/tools/updated_fixtures.py"),
+        tools.join("updated_fixtures.py"),
+    )
+    .unwrap();
+    for name in ["check_updated.py", "updated_source.py"] {
+        assert!(
+            matches!(fs::symlink_metadata(tools.join(name)), Err(error) if error.kind() == std::io::ErrorKind::NotFound)
+        );
+    }
+    let checker_present = repo().join("rust/tools/check_updated.py").exists();
+    let source_present = repo().join("rust/tools/updated_source.py").exists();
     assert_eq!(
-        fs::read(output.join("check-fetch-metered-source.stdout")).unwrap(),
-        b"<empty>\n"
+        checker_present, source_present,
+        "historical pair partially retired"
     );
+    fs::write(
+        evidence.join("checkout-historical-presence.json"),
+        serde_json::to_vec_pretty(&json!({
+            "checker":checker_present,
+            "source":source_present,
+            "admission_root_scope":["rust/tools/check_updated.py","rust/tools/updated_source.py","rust/tools/updated_fixtures.py"],
+            "other_original_dependency_pins":"current checkout root, not private admission root"
+        }))
+            .unwrap(),
+    )
+    .unwrap();
+    let checker = PathBuf::from(env!("CARGO_BIN_EXE_check-updated"));
+    let binary = required("UPDATED_CHECK_BINARY");
+    let launcher = required("UPDATED_CHECK_LAUNCHER");
+    let shim = required("UPDATED_CHECK_SHIM");
+    let strace = PathBuf::from("/usr/bin/strace");
+    assert!(strace.is_file(), "cloud must install strace");
+    let mut seals = Vec::new();
+    for path in [
+        &checker,
+        &binary,
+        &launcher,
+        &shim,
+        &strace,
+        &tools.join("updated_fixtures.py"),
+    ] {
+        let bytes = fs::read(path).unwrap();
+        seals.push((
+            path.display().to_string(),
+            format!("{:x}", Sha256::digest(bytes)),
+        ));
+    }
+    fs::write(
+        evidence.join("inputs-before.json"),
+        serde_json::to_vec_pretty(&seals).unwrap(),
+    )
+    .unwrap();
+    let mut reports = Vec::new();
+    for (name, root) in [("checkout", repo()), ("absent", absent.clone())] {
+        let output = evidence.join(format!("{name}-output"));
+        let trace = evidence.join(format!("{name}.exec"));
+        let command = CommandSpec::new_os(
+            vec![
+                strace.as_os_str().to_owned(),
+                "-f".into(),
+                "-qq".into(),
+                "-s65535".into(),
+                "-e".into(),
+                "trace=execve,execveat".into(),
+                "-o".into(),
+                trace.clone().into(),
+                checker.clone().into(),
+                "--binary".into(),
+                binary.clone().into(),
+                "--launcher".into(),
+                launcher.clone().into(),
+                "--output".into(),
+                output.clone().into(),
+                "--root".into(),
+                root.clone().into(),
+            ],
+            Duration::from_secs(180),
+        );
+        let result = NativeRunner.run(&command).unwrap();
+        fs::write(evidence.join(format!("{name}.stdout")), &result.stdout).unwrap();
+        fs::write(evidence.join(format!("{name}.stderr")), &result.stderr).unwrap();
+        assert_eq!(
+            result.code,
+            0,
+            "{name}: {}",
+            String::from_utf8_lossy(&result.stderr)
+        );
+        let actual: Value =
+            serde_json::from_slice(&fs::read(output.join("result.json")).unwrap()).unwrap();
+        assert_eq!(actual["original_observation"], "sealed_df0128aa_capture");
+        let trace_bytes = fs::read_to_string(&trace).unwrap();
+        let exec =
+            regex::Regex::new(r#"\bexecve\("((?:[^"\\]|\\.)*)", (\[.*\]), .*\) = 0$"#).unwrap();
+        let attempted = regex::Regex::new(r#"\bexecve\("((?:[^"\\]|\\.)*)", "#).unwrap();
+        let mut first = None;
+        let mut successful = 0;
+        let mut candidate_execs = 0;
+        for line in trace_bytes.lines().filter(|line| line.contains("execve")) {
+            assert!(!line.contains("execveat("), "opaque execution: {line}");
+            let program =
+                attempted.captures(line).expect("opaque executable attempt")[1].to_owned();
+            assert!(!program.contains("python"), "Python attempted: {line}");
+            if exec.is_match(line) {
+                if first.is_none() {
+                    first = Some(program.to_owned());
+                }
+                if program == binary.to_str().unwrap() {
+                    candidate_execs += 1;
+                }
+                successful += 1;
+            } else {
+                assert!(
+                    line.contains("ENOENT"),
+                    "unclassified executable attempt: {line}"
+                );
+            }
+        }
+        assert_eq!(first.as_deref(), checker.to_str());
+        assert!(successful > 1, "fixture never executed");
+        assert_eq!(
+            candidate_execs, 5,
+            "each scenario must execute the native candidate once"
+        );
+        for path in [
+            &checker,
+            &binary,
+            &launcher,
+            &shim,
+            &strace,
+            &tools.join("updated_fixtures.py"),
+        ] {
+            let digest = format!("{:x}", Sha256::digest(fs::read(path).unwrap()));
+            assert_eq!(
+                seals
+                    .iter()
+                    .find(|(p, _)| p == &path.display().to_string())
+                    .unwrap()
+                    .1,
+                digest
+            );
+        }
+        reports.push(actual["scenarios"].clone());
+        for case in cases() {
+            let file = format!("{}-native.json", case.0);
+            let value: Value =
+                serde_json::from_slice(&fs::read(output.join(file)).unwrap()).unwrap();
+            assert!(assert_equivalent(&sealed_case(case.0), &value).is_ok());
+        }
+    }
+    assert_eq!(reports[0], reports[1]);
+    fs::write(
+        evidence.join("inputs-after.json"),
+        serde_json::to_vec_pretty(&seals).unwrap(),
+    )
+    .unwrap();
 }

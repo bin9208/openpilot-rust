@@ -1,4 +1,4 @@
-//! Fresh original/native updater comparison. The Python source remains an oracle.
+//! Native updater comparison against sealed, independently captured original results.
 use crate::{
     argparse_scan::{scan_os, OptionSpec},
     qa_process::{CommandSpec, NativeRunner, Runner},
@@ -11,6 +11,7 @@ use std::{
     env,
     ffi::OsString,
     fs::{self, File},
+    io::{self, Read},
     os::unix::fs::MetadataExt,
     path::{Path, PathBuf},
     time::Duration,
@@ -20,6 +21,8 @@ const ROLLBACK: &[u8] = b"complete previous source/package pair\n";
 const LOCK: &[u8] = b"owned shared transaction lock\n";
 const SOURCE_SHA: &str = "bb52c5227c08d70cace263c84778d9a8d87cf92ea6e30f6770d57788da1ebc80";
 const FIXTURE_SHA: &str = "76607e02520f383227264257de0ed8505b9dc12e462227b176f2c919dfec2d60";
+const CHECKER_SHA: &str = "bfa1686e464e5457b9a9bdc66b954e81f5994db24860d7f7b2869999f4e29b7d";
+const MAX_HISTORICAL_SOURCE_BYTES: u64 = 2 * 1024 * 1024;
 const ORIGINAL_INPUTS: [(&str, &str); 5] = [
     (
         "rust/tools/original_params_binding.py",
@@ -67,6 +70,79 @@ fn unchanged(path: &Path, digest: &str) -> Result<()> {
         fs::symlink_metadata(path)?.is_file() && hash(path)? == digest,
         "updated checker source/input changed during run",
     )
+}
+
+fn historical_sources(root: &Path) -> Result<Value> {
+    let mut admitted = serde_json::Map::new();
+    for (name, digest, required) in [
+        ("rust/tools/check_updated.py", CHECKER_SHA, false),
+        ("rust/tools/updated_source.py", SOURCE_SHA, false),
+        ("rust/tools/updated_fixtures.py", FIXTURE_SHA, true),
+    ] {
+        let path = root.join(name);
+        require(
+            fs::symlink_metadata(path.parent().ok_or("missing updater source parent")?)?.is_dir(),
+            "updater source parent is not a directory",
+        )?;
+        match fs::symlink_metadata(&path) {
+            Ok(metadata) => {
+                require(
+                    metadata.is_file(),
+                    "updater historical source is not regular",
+                )?;
+                let mut held = File::from(rustix::fs::open(
+                    &path,
+                    rustix::fs::OFlags::RDONLY
+                        | rustix::fs::OFlags::NONBLOCK
+                        | rustix::fs::OFlags::NOFOLLOW
+                        | rustix::fs::OFlags::CLOEXEC,
+                    rustix::fs::Mode::empty(),
+                )?);
+                let actual = held.metadata()?;
+                require(
+                    actual.is_file()
+                        && (metadata.dev(), metadata.ino()) == (actual.dev(), actual.ino()),
+                    "updater historical source identity changed",
+                )?;
+                require(
+                    actual.len() <= MAX_HISTORICAL_SOURCE_BYTES,
+                    "updater historical source exceeds bounded admission",
+                )?;
+                let mut bytes = Vec::new();
+                (&mut held)
+                    .take(MAX_HISTORICAL_SOURCE_BYTES + 1)
+                    .read_to_end(&mut bytes)?;
+                require(
+                    bytes.len() as u64 <= MAX_HISTORICAL_SOURCE_BYTES,
+                    "updater historical source grew beyond bounded admission",
+                )?;
+                require(
+                    format!("{:x}", Sha256::digest(bytes)) == digest,
+                    "updater historical source changed",
+                )?;
+                admitted.insert(name.into(), json!(digest));
+            }
+            Err(error) if error.kind() == io::ErrorKind::NotFound && !required => {}
+            Err(error) => return Err(error.into()),
+        }
+    }
+    Ok(Value::Object(admitted))
+}
+
+fn sealed_original(name: &str) -> Result<Value> {
+    let (bytes, digest): (&[u8], &str) = match name {
+        "check-fetch-metered" => (include_bytes!("../tests/fixtures/updated-original-df0128aa/check-fetch-metered.json"), "051f172d2934a3f245736f48df1139f8cb108197e4b430cdf8cbc13ce251437d"),
+        "missing-branch-failure" => (include_bytes!("../tests/fixtures/updated-original-df0128aa/missing-branch-failure.json"), "2ac87b6b182010fc835b22f1a00a4114fd512ee9c05ca3cd2aa147d350b2ee42"),
+        "tizi-branch-map-agnos-same-version" => (include_bytes!("../tests/fixtures/updated-original-df0128aa/tizi-branch-map-agnos-same-version.json"), "59532593affbe4e2ffae3449164c78b36a51e4ab2273bead306f7262d0a1e85f"),
+        "agnos-model-manifest-boundary" => (include_bytes!("../tests/fixtures/updated-original-df0128aa/agnos-model-manifest-boundary.json"), "216cbde9a519bafab097714e7a4b8efd63f0a73a4a28ef3525508e832bfb71ce"),
+        "connectivity-thresholds" => (include_bytes!("../tests/fixtures/updated-original-df0128aa/connectivity-thresholds.json"), "ced55dbb2f37b9f381925466fcd0b1b169806002e81c7d43bca30a3ed5a82c40"),
+        _ => return Err("unknown sealed updater scenario".into()),
+    };
+    require(
+        format!("{:x}", Sha256::digest(bytes)) == digest,
+        "sealed original updater observation changed",
+    )?;
+    Ok(serde_json::from_slice(bytes)?)
 }
 
 pub fn cases() -> Vec<(&'static str, Value, Value)> {
@@ -241,14 +317,10 @@ struct Execution<'a> {
     root: &'a Path,
     output: &'a Path,
     name: &'a str,
-    source: bool,
     seed: &'a updated_fixture::Seed,
     launcher: &'a Path,
     binary: &'a Path,
-    binding: &'a Path,
-    python: &'a Path,
     shim: &'a Path,
-    source_script: &'a Path,
     options: &'a Value,
     steps: &'a Value,
 }
@@ -257,14 +329,10 @@ fn one(execution: &Execution<'_>) -> Result<Value> {
         root,
         output,
         name,
-        source,
         seed,
         launcher,
         binary,
-        binding,
-        python,
         shim,
-        source_script,
         options,
         steps,
     } = execution;
@@ -295,24 +363,13 @@ fn one(execution: &Execution<'_>) -> Result<Value> {
         OsString::from("PYTHONPATH"),
         repository.as_os_str().to_owned(),
     );
-    let argv = if *source {
-        vec![
-            python.as_os_str().to_owned(),
-            source_script.as_os_str().to_owned(),
-            binding.as_os_str().to_owned(),
-        ]
-    } else {
-        vec![binary.as_os_str().to_owned()]
-    };
-    let mut command = CommandSpec::new_os(argv, Duration::from_secs(60));
+    let mut command =
+        CommandSpec::new_os(vec![binary.as_os_str().to_owned()], Duration::from_secs(60));
     command.input = Some(serde_json::to_vec(&config)?);
     command.set_os_env(environment);
     command.env_remove.push(OsString::from("OPENPILOT_PREFIX"));
     let result = NativeRunner.run(&command)?;
-    let stem = output.join(format!(
-        "{name}-{}",
-        if *source { "source" } else { "native" }
-    ));
+    let stem = output.join(format!("{name}-native"));
     fs::write(
         stem.with_extension("stdout"),
         if result.stdout.is_empty() {
@@ -337,21 +394,14 @@ fn one(execution: &Execution<'_>) -> Result<Value> {
         git_head(&root.join("base"))? == seed.previous,
         "updater changed active Git HEAD",
     )?;
-    if *source {
-        require(
-            !retained.exists() && !lock.exists(),
-            "original did not exercise destructive staging cleanup",
-        )?;
-    } else {
-        require(
-            fs::read(&retained)? == ROLLBACK && fs::read(&lock)? == LOCK,
-            "native lost rollback or lock bytes",
-        )?;
-        require(
-            fs::symlink_metadata(&lock)?.ino() == inode && held.metadata()?.ino() == inode,
-            "native replaced held lock inode",
-        )?;
-    }
+    require(
+        fs::read(&retained)? == ROLLBACK && fs::read(&lock)? == LOCK,
+        "native lost rollback or lock bytes",
+    )?;
+    require(
+        fs::symlink_metadata(&lock)?.ino() == inode && held.metadata()?.ino() == inode,
+        "native replaced held lock inode",
+    )?;
     let last = result
         .stdout
         .split(|byte| *byte == b'\n')
@@ -365,10 +415,9 @@ fn one(execution: &Execution<'_>) -> Result<Value> {
 pub fn run(
     binary: &Path,
     launcher: &Path,
-    binding: &Path,
     output: &Path,
-    python: &Path,
     shim: &Path,
+    admission_root: &Path,
 ) -> Result<Value> {
     fs::create_dir_all(output)?;
     match fs::symlink_metadata(output.join("result.json")) {
@@ -380,12 +429,7 @@ pub fn run(
         .ancestors()
         .nth(3)
         .ok_or("repository root missing")?;
-    let (source_script, source_sha) = bound(&repo.join("rust/tools/updated_source.py"))?;
-    let (source_fixture, fixture_sha) = bound(&repo.join("rust/tools/updated_fixtures.py"))?;
-    require(
-        source_sha == SOURCE_SHA && fixture_sha == FIXTURE_SHA,
-        "updated original source pin mismatch",
-    )?;
+    let historical = historical_sources(admission_root)?;
     let mut original_inputs = Vec::new();
     let mut original_pins = serde_json::Map::new();
     for (relative, expected) in ORIGINAL_INPUTS {
@@ -399,8 +443,6 @@ pub fn run(
     }
     let (binary, binary_sha) = bound(binary)?;
     let (launcher, launcher_sha) = bound(launcher)?;
-    let (binding, binding_sha) = bound(binding)?;
-    let (python, python_sha) = bound(python)?;
     let (shim, shim_sha) = bound(shim)?;
     let temporary = tempfile::Builder::new()
         .prefix("updated-source-")
@@ -408,26 +450,19 @@ pub fn run(
     let seed = updated_fixture::seed(temporary.path())?;
     let mut rows = Vec::new();
     for (name, options, steps) in cases() {
-        let source_root = temporary.path().join(format!("{name}-source"));
         let native_root = temporary.path().join(format!("{name}-native"));
-        let mut execution = Execution {
-            root: &source_root,
+        let execution = Execution {
+            root: &native_root,
             output,
             name,
-            source: true,
             seed: &seed,
             launcher: &launcher,
             binary: &binary,
-            binding: &binding,
-            python: &python,
             shim: &shim,
-            source_script: &source_script,
             options: &options,
             steps: &steps,
         };
-        let original = one(&execution)?;
-        execution.root = &native_root;
-        execution.source = false;
+        let original = sealed_original(name)?;
         let native = one(&execution)?;
         let removed = assert_equivalent(&original, &native)?;
         verify_case(name, &native)?;
@@ -438,21 +473,25 @@ pub fn run(
         );
         rows.push(row);
         for (path, digest) in [
-            (&source_script, &source_sha),
-            (&source_fixture, &fixture_sha),
             (&binary, &binary_sha),
             (&launcher, &launcher_sha),
-            (&binding, &binding_sha),
-            (&python, &python_sha),
             (&shim, &shim_sha),
         ] {
             unchanged(path, digest)?;
         }
+        require(
+            historical_sources(admission_root)? == historical,
+            "updater historical source presence changed",
+        )?;
         for (path, digest) in &original_inputs {
             unchanged(path, digest)?;
         }
     }
-    let report = json!({"passed":true,"scenarios":rows,"device_access":false,"fresh_original_python_executed":true,"pins":{"updated_source_py":source_sha,"updated_fixtures_py":fixture_sha,"original_dependencies":original_pins,"native_binary":binary_sha,"launcher":launcher_sha,"binding":binding_sha,"python":python_sha,"overlay_shim":shim_sha}});
+    let report = json!({"passed":true,"scenarios":rows,"device_access":false,"original_observation":"sealed_df0128aa_capture","pins":{"historical_source_sha256":historical,"original_dependencies":original_pins,"native_binary":binary_sha,"launcher":launcher_sha,"overlay_shim":shim_sha}});
+    require(
+        historical_sources(admission_root)? == historical,
+        "updater historical source presence changed before receipt",
+    )?;
     output_value(&report, &output.join("result.json"))?;
     Ok(report)
 }
@@ -461,8 +500,8 @@ pub fn run(
 pub struct CliOptions {
     pub binary: PathBuf,
     pub launcher: PathBuf,
-    pub binding: PathBuf,
     pub output: PathBuf,
+    pub root: PathBuf,
 }
 
 pub fn parse(args: &[OsString]) -> Result<Option<CliOptions>> {
@@ -471,8 +510,9 @@ pub fn parse(args: &[OsString]) -> Result<Option<CliOptions>> {
         &[
             OptionSpec::value("--binary", true),
             OptionSpec::value("--launcher", true),
-            OptionSpec::value("--binding", true),
+            OptionSpec::value("--binding", false),
             OptionSpec::value("--output", true),
+            OptionSpec::value("--root", false),
         ],
     )?;
     if parsed.help {
@@ -490,28 +530,33 @@ pub fn parse(args: &[OsString]) -> Result<Option<CliOptions>> {
     Ok(Some(CliOptions {
         binary: get("--binary")?,
         launcher: get("--launcher")?,
-        binding: get("--binding")?,
         output: get("--output")?,
+        root: parsed
+            .values
+            .get("--root")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| {
+                Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .ancestors()
+                    .nth(3)
+                    .unwrap()
+                    .to_path_buf()
+            }),
     }))
 }
 
 pub fn cli() -> Result<()> {
     let Some(options) = parse(&env::args_os().skip(1).collect::<Vec<_>>())? else {
-        println!("usage: check-updated --binary BINARY --launcher LAUNCHER --binding BINDING --output OUTPUT");
+        println!("usage: check-updated --binary BINARY --launcher LAUNCHER --output OUTPUT [--root ROOT]");
         return Ok(());
     };
-    let python = PathBuf::from(
-        env::var_os("UPDATED_CHECK_PYTHON")
-            .ok_or("UPDATED_CHECK_PYTHON required for fresh original oracle")?,
-    );
     let shim = env::current_exe()?.with_file_name("updated-fixture");
     run(
         &options.binary,
         &options.launcher,
-        &options.binding,
         &options.output,
-        &python,
         &shim,
+        &options.root,
     )?;
     Ok(())
 }
