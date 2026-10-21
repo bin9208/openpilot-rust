@@ -25,6 +25,10 @@ const BUILD: &str = "Build and test native lagd QA tools";
 const RUN: &str = "Compare delay numerical policy, full source loop, cache and native IPC";
 const ESTIMATORS: &str = "Build native estimators and unchanged source oracle";
 const EIGEN: &str = "Require native Eigen header staging against sealed original install";
+const ATOMIC: &str = "Check native paramsd atomic gate foundation alongside original cases";
+const OLD_ATOMIC: &str = "python -P -m pytest -c /dev/null --noconftest -p no:cacheprovider -q rust/tools/tests/test_paramsd_atomic_gate.py";
+const NATIVE_ATOMIC: &str = "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features paramsd-startup-gate-native --test paramsd_startup_gate";
+const NATIVE_ATOMIC_CLIPPY: &str = "cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features paramsd-startup-gate-native --lib --test paramsd_startup_gate -- -D warnings";
 const OLD_EIGEN_INSTALL: &str = "python -m pip install 'git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen'";
 const OLD_EIGEN_IMPORT: &str = "python -c 'import eigen; print(\"LOCATIOND_EIGEN_INCLUDE=\" + eigen.INCLUDE_DIR); print(\"PARAMSD_EIGEN_INCLUDE=\" + eigen.INCLUDE_DIR)' >> \"$GITHUB_ENV\"";
 const NATIVE_EIGEN_BUILD: &str = "cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features eigen-tools-native --bin stage-eigen-headers";
@@ -130,6 +134,57 @@ fn validate(workflow: &Value) -> Result<(), String> {
             )?;
         }
     }
+    let atomic_steps = steps
+        .iter()
+        .filter(|step| step["name"] == ATOMIC)
+        .collect::<Vec<_>>();
+    require(
+        atomic_steps.len() == 1,
+        "native paramsd atomic step missing or duplicated",
+    )?;
+    let atomic = atomic_steps[0];
+    mandatory(atomic)?;
+    let atomic_lines = atomic["run"]
+        .as_str()
+        .ok_or("native paramsd atomic commands missing")?
+        .lines()
+        .map(str::trim)
+        .collect::<Vec<_>>();
+    for line in [
+        "set -euo pipefail",
+        "test ! -e rust/tools/tests/test_paramsd_atomic_gate.py",
+        "test ! -L rust/tools/tests/test_paramsd_atomic_gate.py",
+        NATIVE_ATOMIC,
+        NATIVE_ATOMIC_CLIPPY,
+    ] {
+        require(
+            atomic_lines
+                .iter()
+                .filter(|current| **current == line)
+                .count()
+                == 1,
+            "native paramsd atomic absence or suite command changed",
+        )?;
+    }
+    let atomic_test = atomic_lines
+        .iter()
+        .position(|line| *line == NATIVE_ATOMIC)
+        .ok_or("native paramsd atomic test missing")?;
+    require(
+        atomic_test > 0
+            && atomic_lines[..atomic_test]
+                .iter()
+                .any(|line| line.starts_with(GUARD))
+            && atomic_lines
+                .iter()
+                .position(|line| *line == "test ! -e rust/tools/tests/test_paramsd_atomic_gate.py")
+                .is_some_and(|index| index < atomic_test)
+            && atomic_lines
+                .iter()
+                .position(|line| *line == "test ! -L rust/tools/tests/test_paramsd_atomic_gate.py")
+                .is_some_and(|index| index < atomic_test),
+        "native paramsd atomic absence or test reserve missing before suite",
+    )?;
     let build = steps
         .iter()
         .position(|step| step["name"] == BUILD)
@@ -235,10 +290,15 @@ fn validate(workflow: &Value) -> Result<(), String> {
     }
     let current = lines(steps);
     let original = lines(old["steps"].as_array().unwrap());
+    require(
+        original.get(OLD_ATOMIC) == Some(&1),
+        "frozen baseline paramsd atomic command changed",
+    )?;
     for (line, count) in original {
         if !line.starts_with("python rust/tools/check_lagd_")
             && line != OLD_EIGEN_INSTALL
             && line != OLD_EIGEN_IMPORT
+            && line != OLD_ATOMIC
         {
             require(
                 current.get(&line) == Some(&count),
@@ -252,6 +312,10 @@ fn validate(workflow: &Value) -> Result<(), String> {
             "retired Eigen pip/import caller reappeared",
         )?;
     }
+    require(
+        !current.contains_key(OLD_ATOMIC) && current.get(NATIVE_ATOMIC) == Some(&1),
+        "retired paramsd atomic Python command returned or native suite duplicated",
+    )?;
     for step in steps {
         if let Some(script) = step["run"].as_str() {
             require(
@@ -294,6 +358,43 @@ fn missing_native_tools_tests_guards_or_unrelated_gates_cannot_pass() {
         .iter()
         .position(|step| step["name"] == ESTIMATORS)
         .unwrap();
+    let atomic = steps
+        .iter()
+        .position(|step| step["name"] == ATOMIC)
+        .unwrap();
+    let mut changed = current.clone();
+    let script = changed["jobs"]["estimation-runtime"]["steps"][atomic]["run"]
+        .as_str()
+        .unwrap()
+        .replace(NATIVE_ATOMIC, "removed-by-regression");
+    changed["jobs"]["estimation-runtime"]["steps"][atomic]["run"] = script.into();
+    assert!(
+        validate(&changed).is_err(),
+        "accepted missing native paramsd atomic suite"
+    );
+    let mut changed = current.clone();
+    let script = changed["jobs"]["estimation-runtime"]["steps"][atomic]["run"]
+        .as_str()
+        .unwrap()
+        .replace(
+            "test ! -e rust/tools/tests/test_paramsd_atomic_gate.py",
+            "removed-by-regression",
+        );
+    changed["jobs"]["estimation-runtime"]["steps"][atomic]["run"] = script.into();
+    assert!(
+        validate(&changed).is_err(),
+        "accepted missing retired paramsd source absence check"
+    );
+    let mut changed = current.clone();
+    let script = changed["jobs"]["estimation-runtime"]["steps"][atomic]["run"]
+        .as_str()
+        .unwrap();
+    changed["jobs"]["estimation-runtime"]["steps"][atomic]["run"] =
+        format!("{script}\n{OLD_ATOMIC}\n").into();
+    assert!(
+        validate(&changed).is_err(),
+        "accepted restored paramsd atomic Python test"
+    );
     let mut changed = current.clone();
     let moved = changed["jobs"]["estimation-runtime"]["steps"]
         .as_array_mut()

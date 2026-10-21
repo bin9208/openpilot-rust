@@ -5015,7 +5015,7 @@ from run39514415599/job118943760823, artifact12306774260, capture source
 `4a3336f564e5766b07627633a1b9d72038693d92`.
 
 All five generator tests and strict Clippy passed. The same job passed all13
-disk guards,66 Rust workflow policies, the lagd policy, seven atomic-gate unit
+disk guards,66 Rust workflow policies, the soundd policy, seven atomic-gate unit
 cases (the hardware/IPC-dependent ignored case remains separately exercised
 by the full daemon proof), four Panda finalization regressions and strict
 Panda reference/finalization Clippy. This establishes the repaired policy and
