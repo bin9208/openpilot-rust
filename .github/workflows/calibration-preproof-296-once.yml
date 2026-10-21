@@ -20,12 +20,12 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: b43ac10d78c20029c86028e96811678f8cff5a1d
+        ref: 60e3711e09d6b45b66a3f5ac30d79d6521f86e0c
         persist-credentials: false
     - name: Verify pinned checkout and prepare bounded evidence
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = b43ac10d78c20029c86028e96811678f8cff5a1d
+        test "$(git rev-parse HEAD)" = 60e3711e09d6b45b66a3f5ac30d79d6521f86e0c
 
         proof="$RUNNER_TEMP/calibration-preproof-296"
 
@@ -132,8 +132,8 @@ jobs:
 
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
 
-        cargo +1.94.0 test -p openpilot-dev-tools --features calibration-float-native --test calibration_float_check --locked
-        -- --nocapture 2>&1 | tee "$proof/paired-tests.log"
+        cargo +1.94.0 test -p openpilot-dev-tools --features calibration-float-native --test calibration_float_check --test
+        qa_process --test argparse_scan --locked -- --nocapture 2>&1 | tee "$proof/paired-tests.log"
 
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
 
@@ -143,7 +143,7 @@ jobs:
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
 
         cargo +1.94.0 clippy -p openpilot-dev-tools --features calibration-float-native --lib --bin check-calibration-float
-        --test calibration_float_check --locked -- -D warnings 2>&1 | tee "$proof/clippy.log"
+        --test calibration_float_check --test qa_process --test argparse_scan --locked -- -D warnings 2>&1 | tee "$proof/clippy.log"
 
         sha256sum -c "$proof/inputs.before.sha256"
 
@@ -158,7 +158,7 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v6
       with:
-        name: calibration-getfloat-preproof-296-b43
+        name: calibration-getfloat-preproof-296-60e
         path: ${{ runner.temp }}/calibration-preproof-296/
         if-no-files-found: warn
 'on':
