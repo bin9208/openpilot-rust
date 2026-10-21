@@ -1,0 +1,246 @@
+name: 296 paramsd loop retirement and finalization proof
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/paramsd-loop-retirement-441-once.yml
+permissions:
+  contents: read
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
+jobs:
+  paramsd-loop:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+      CXX: clang++
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        ref: 20a8f52e83d85c7c5113c5484179b0c016a034eb
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        ref: 04d29123a38dfb9800954090c58c6c6642bad531
+        path: old-04d
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Install exact loop prerequisites
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = 20a8f52e83d85c7c5113c5484179b0c016a034eb
+
+        test "$(git -C old-04d rev-parse HEAD)" = 04d29123a38dfb9800954090c58c6c6642bad531
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        sudo apt-get update
+
+        sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev strace
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 cffi==2.1.1 sympy==1.14.0 pyzmq==27.2.0
+        zstandard==0.25.0
+
+        '
+    - uses: ./.github/actions/native-eigen
+      with:
+        architecture: x86_64
+    - name: Build unchanged source oracle and actual native loop
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/paramsd-loop-441"
+
+        mkdir -p "$proof"
+
+        git rev-parse HEAD > "$proof/source-commit.txt"
+
+        git -C old-04d rev-parse HEAD > "$proof/old-source-commit.txt"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        python rust/tools/build_paramsd_oracle.py --output "$RUNNER_TEMP/paramsd-oracle" --eigen-include "$PARAMSD_EIGEN_INCLUDE"
+        > "$proof/oracle-build.stdout" 2> "$proof/oracle-build.stderr"
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-paramsd --example paramsd_loop --locked > "$proof/example-build.stdout"
+        2> "$proof/example-build.stderr"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-loop-native --bin check-paramsd-loop-native
+        --locked > "$proof/checker-build.stdout" 2> "$proof/checker-build.stderr"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-fixture-native --bin generate-paramsd-loop-fixture
+        --locked > "$proof/generator-build.stdout" 2> "$proof/generator-build.stderr"
+
+        sha256sum rust/tools/check_paramsd_loop.py rust/tools/paramsd_loop_fixture.py rust/tools/paramsd_fixture.py rust/tools/paramsd_loop_source.py
+        rust/crates/dev-tools/src/paramsd_loop_check.rs rust/crates/dev-tools/src/paramsd_loop_reference.rs rust/crates/dev-tools/src/paramsd_loop_fixture_generate.rs
+        rust/crates/dev-tools/tests/paramsd_loop_retirement.rs rust/crates/dev-tools/tests/paramsd_loop_reference.rs rust/crates/dev-tools/tests/paramsd_loop_fixture_generate.rs
+        rust/target/debug/check-paramsd-loop-native rust/target/debug/generate-paramsd-loop-fixture rust/target/debug/examples/paramsd_loop
+        > "$proof/inputs.sha256"
+
+        sha256sum "$(command -v python)" > "$proof/python.sha256"
+
+        find "$RUNNER_TEMP/paramsd-oracle" -type f -print0 | sort -z | xargs -0 sha256sum > "$proof/oracle.sha256"
+
+        test -s "$proof/oracle.sha256"
+
+        '
+    - name: Run ordinary controller, full source comparison and controls
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/paramsd-loop-441"
+
+        export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
+
+        export PARAMSD_LOOP_NATIVE_RAW="$proof/current/native-raw.json"
+
+        export PARAMSD_LOOP_NATIVE_CHECKER="$GITHUB_WORKSPACE/rust/target/debug/check-paramsd-loop-native"
+
+        export PARAMSD_LOOP_NATIVE_CANDIDATE="$GITHUB_WORKSPACE/rust/target/debug/examples/paramsd_loop"
+
+        export PARAMSD_LOOP_NATIVE_EXEC="$proof/native.exec"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        PATH=/nonexistent /usr/bin/timeout --signal=TERM --kill-after=5s 200s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat
+        -o "$PARAMSD_LOOP_NATIVE_EXEC" "$PARAMSD_LOOP_NATIVE_CHECKER" --binary "$PARAMSD_LOOP_NATIVE_CANDIDATE" --evidence
+        "$proof/current" > "$proof/native.stdout" 2> "$proof/native.stderr"
+
+        sha256sum -c "$proof/inputs.sha256"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-loop-native --lib --test paramsd_loop_check
+        --test paramsd_loop_reference --locked -- --nocapture > "$proof/ordinary-test.stdout" 2> "$proof/ordinary-test.stderr"
+
+        sha256sum -c "$proof/inputs.sha256"
+
+        '
+    - name: Require fresh original, same ELF present and absent source lanes
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/paramsd-loop-441"
+
+        mkdir -p "$proof/retirement"
+
+        export PARAMSD_LOOP_RETIREMENT_OUTPUT="$proof/retirement"
+
+        export PARAMSD_LOOP_NATIVE_CANDIDATE="$GITHUB_WORKSPACE/rust/target/debug/examples/paramsd_loop"
+
+        export PARAMSD_LOOP_ORACLE="$RUNNER_TEMP/paramsd-oracle"
+
+        export PARAMSD_LOOP_ORIGINAL_PYTHON="$(command -v python)"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-loop-native --test paramsd_loop_retirement
+        --locked -- --nocapture > "$proof/retirement-test.stdout" 2> "$proof/retirement-test.stderr"
+
+        sha256sum -c "$proof/inputs.sha256"
+
+        sha256sum -c "$proof/python.sha256"
+
+        sha256sum -c "$proof/oracle.sha256"
+
+        '
+    - name: Require CLI and library generator parity with fresh original input
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/paramsd-loop-441"
+
+        mapfile -t lanes < <(find "$proof/retirement" -mindepth 1 -maxdepth 1 -type d -name ''retirement-*'' -print)
+
+        test "${#lanes[@]}" -eq 1
+
+        export PARAMSD_LOOP_ROOT="$GITHUB_WORKSPACE"
+
+        export PARAMSD_LOOP_ORIGINAL_INPUT="${lanes[0]}/original/input.json"
+
+        export PARAMSD_LOOP_NATIVE_OUTPUT="$proof/generated"
+
+        export PARAMSD_LOOP_NATIVE_EXEC="$proof/generator.exec"
+
+        export PARAMSD_LOOP_NATIVE_BINARY="$GITHUB_WORKSPACE/rust/target/debug/generate-paramsd-loop-fixture"
+
+        test -s "$PARAMSD_LOOP_ORIGINAL_INPUT"
+
+        sha256sum "$PARAMSD_LOOP_ORIGINAL_INPUT" > "$proof/original-input.sha256"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        PATH=/nonexistent /usr/bin/timeout --signal=TERM --kill-after=5s 30s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat
+        -o "$PARAMSD_LOOP_NATIVE_EXEC" "$PARAMSD_LOOP_NATIVE_BINARY" --root "$PARAMSD_LOOP_ROOT" --output "$PARAMSD_LOOP_NATIVE_OUTPUT"
+        > "$proof/generator.stdout" 2> "$proof/generator.stderr"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-fixture-native --test paramsd_loop_fixture_generate
+        --locked -- --nocapture > "$proof/generator-test.stdout" 2> "$proof/generator-test.stderr"
+
+        sha256sum -c "$proof/original-input.sha256"
+
+        sha256sum -c "$proof/inputs.sha256"
+
+        '
+    - name: Strict Clippy for all new leaf code and tests
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/paramsd-loop-441"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-loop-native --lib --bin check-paramsd-loop-native
+        --bin generate-paramsd-loop-fixture --test paramsd_loop_check --test paramsd_loop_reference --test paramsd_loop_retirement
+        --test paramsd_loop_fixture_generate --locked -- -D warnings > "$proof/clippy.stdout" 2> "$proof/clippy.stderr"
+
+        sha256sum -c "$proof/inputs.sha256"
+
+        '
+    - name: Require old finalizer RED from genuine assertion failure
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/paramsd-loop-441/old-red\"\nold=\"$GITHUB_WORKSPACE/old-04d\"\nmkdir -p\
+        \ \"$proof\"\ntest \"$(git -C \"$old\" rev-parse HEAD)\" = 04d29123a38dfb9800954090c58c6c6642bad531\ntest -z \"$(git\
+        \ -C \"$old\" status --porcelain)\"\nsource=\"$old/rust/crates/dev-tools/src/paramsd_loop_check.rs\"\nsha256sum \"\
+        $source\" > \"$proof/old-source-before.sha256\"\ncp \"$source\" \"$proof/old-source-before.rs\"\npython - \"$source\"\
+        \ <<'PATCH_OLD_TEST_ONLY'\nfrom pathlib import Path\nimport sys\npath = Path(sys.argv[1])\ncontent = path.read_text()\n\
+        needle = '''    let held = pending\n        .persist_noclobber(&path)\n        .map_err(|error| error.error)?;\n'''\n\
+        assert content.count(needle) == 1\ncallback = needle + '''    #[cfg(test)]\n    {\n        fs::remove_file(&path)?;\n\
+        \        fs::write(&path, b\"foreign receipt\")?;\n    }\n'''\ncontent = content.replace(needle, callback)\ncontent\
+        \ += '''\n#[cfg(test)]\nmod old_receipt_baseline {\n    use super::*;\n    #[test]\n    fn replaced_result_must_not_be_success()\
+        \ {\n        let directory = tempfile::tempdir().unwrap();\n        let input = directory.path().join(\"held-input\"\
+        );\n        fs::write(&input, b\"held input\").unwrap();\n        let evidence = directory.path().join(\"evidence\"\
+        );\n        fs::create_dir(&evidence).unwrap();\n        let done = Completed {\n            report: json!({\"result\"\
+        :\"pass\"}),\n            evidence: evidence.clone(),\n            bounds: vec![Bound::open(input, None).unwrap()],\n\
+        \        };\n        let result = finish(done, &mut Vec::new(), &AtomicBool::new(false));\n        assert!(result.is_err(),\
+        \ \"old finalizer accepted a foreign result receipt\");\n        assert_eq!(fs::read(evidence.join(\"result.json\"\
+        )).unwrap(), b\"foreign receipt\");\n    }\n}\n'''\npath.write_text(content)\nPATCH_OLD_TEST_ONLY\ngit -C \"$old\"\
+        \ diff -- rust/crates/dev-tools/src/paramsd_loop_check.rs > \"$proof/test-only.patch\"\ntest -s \"$proof/test-only.patch\"\
+        \n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$RUNNER_TEMP\" --growth-mib 4096\nset +e\nCARGO_TARGET_DIR=\"\
+        $RUNNER_TEMP/paramsd-loop-old-target\" cargo test --manifest-path \"$old/rust/Cargo.toml\" -p openpilot-dev-tools\
+        \ --features paramsd-loop-native --lib paramsd_loop_check::old_receipt_baseline::replaced_result_must_not_be_success\
+        \ --locked -- --exact > \"$proof/test.stdout\" 2> \"$proof/test.stderr\"\nstatus=$?\nset -e\nprintf '%s\\n' \"$status\"\
+        \ > \"$proof/exit-code.txt\"\ntest \"$status\" -ne 0\ngrep -Fq 'old finalizer accepted a foreign result receipt' \"\
+        $proof/test.stdout\" \"$proof/test.stderr\"\ngrep -Fq 'test result: FAILED' \"$proof/test.stdout\" \"$proof/test.stderr\"\
+        \ngrep -Fq 'paramsd_loop_check::old_receipt_baseline::replaced_result_must_not_be_success' \"$proof/test.stdout\"\
+        \ \"$proof/test.stderr\"\nif sha256sum -c \"$proof/old-source-before.sha256\" --status; then\n  echo 'old test-only\
+        \ source was not modified' >&2\n  exit 1\nfi\nif cmp -s \"$proof/old-source-before.rs\" \"$source\"; then\n  echo\
+        \ 'old test-only source was not modified' >&2\n  exit 1\nfi\nprintf 'old source assertion failure, not compile failure:\
+        \ confirmed\\n' > \"$proof/result.txt\"\n"
+    - if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: paramsd-loop-retirement-441-evidence
+        path: ${{ runner.temp }}/paramsd-loop-441/
+        if-no-files-found: warn
+        retention-days: 14

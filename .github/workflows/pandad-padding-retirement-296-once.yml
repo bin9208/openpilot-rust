@@ -1,4 +1,4 @@
-name: One-time Panda safety padding retirement proof 296
+name: One-time Panda safety padding sanitizer and trace proof 440
 permissions:
   contents: read
 jobs:
@@ -16,7 +16,7 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: afe446e3ff0625253ce7ebddad47e8f6e252387e
+        ref: 20a8f52e83d85c7c5113c5484179b0c016a034eb
     - uses: actions/setup-python@v6
       with:
         python-version: '3.12'
@@ -35,7 +35,15 @@ jobs:
 
         printf ''PANDAD_PADDING_SOURCE_MANIFEST=%s\n'' "$PANDAD_PADDING_SOURCE_MANIFEST" >> "$GITHUB_ENV"
 
-        test "$(git rev-parse HEAD)" = afe446e3ff0625253ce7ebddad47e8f6e252387e
+        export PANDAD_PADDING_TRACE_SOURCE_BINARY="$RUNNER_TEMP/padding-retirement-296/trace-source/pandad-protocol-source"
+
+        printf ''PANDAD_PADDING_TRACE_SOURCE_BINARY=%s\n'' "$PANDAD_PADDING_TRACE_SOURCE_BINARY" >> "$GITHUB_ENV"
+
+        export PANDAD_PADDING_TRACE_SOURCE_MANIFEST="$RUNNER_TEMP/padding-retirement-296/trace-source/manifest.json"
+
+        printf ''PANDAD_PADDING_TRACE_SOURCE_MANIFEST=%s\n'' "$PANDAD_PADDING_TRACE_SOURCE_MANIFEST" >> "$GITHUB_ENV"
+
+        test "$(git rev-parse HEAD)" = 20a8f52e83d85c7c5113c5484179b0c016a034eb
 
         mkdir -p "$PANDAD_PADDING_TEST_OUTPUT"
 
@@ -81,7 +89,16 @@ jobs:
         rust/target/debug/build-pandad-protocol-source --root "$GITHUB_WORKSPACE" --output "$proof/source" --capnp-prefix
         /usr --json11-prefix "$json11_prefix" --sanitize --safety > "$proof/source-build.stdout" 2> "$proof/source-build.stderr"
 
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        rust/target/debug/build-pandad-protocol-source --root "$GITHUB_WORKSPACE" --output "$proof/trace-source" --capnp-prefix
+        /usr --json11-prefix "$json11_prefix" --safety > "$proof/trace-source-build.stdout" 2> "$proof/trace-source-build.stderr"
+
         test -s "$PANDAD_PADDING_SOURCE_BINARY"
+
+        test -s "$PANDAD_PADDING_TRACE_SOURCE_BINARY"
+
+        test -s "$PANDAD_PADDING_TRACE_SOURCE_MANIFEST"
 
         test -s "$PANDAD_PADDING_NATIVE_BINARY"
 
@@ -89,9 +106,9 @@ jobs:
 
         printf ''PANDAD_PADDING_PYTHON=%s\n'' "$(command -v python)" >> "$GITHUB_ENV"
 
-        sha256sum "$PANDAD_PADDING_SOURCE_BINARY" "$PANDAD_PADDING_NATIVE_BINARY" "$PANDAD_PADDING_SOURCE_MANIFEST" rust/target/debug/check-pandad-safety-padding
-        rust/tools/check_pandad_safety_padding.py rust/tools/check_pandad_safety.py openpilot/selfdrive/pandad/panda_safety.cc
-        openpilot/common/params.h > "$proof/inputs.before.sha256"
+        sha256sum "$PANDAD_PADDING_SOURCE_BINARY" "$PANDAD_PADDING_TRACE_SOURCE_BINARY" "$PANDAD_PADDING_NATIVE_BINARY" "$PANDAD_PADDING_SOURCE_MANIFEST"
+        "$PANDAD_PADDING_TRACE_SOURCE_MANIFEST" rust/target/debug/check-pandad-safety-padding rust/tools/check_pandad_safety_padding.py
+        rust/tools/check_pandad_safety.py openpilot/selfdrive/pandad/panda_safety.cc openpilot/common/params.h > "$proof/inputs.before.sha256"
 
         '
     - name: Require actual old finalization failure on edb42bf0
@@ -149,13 +166,14 @@ jobs:
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
 
         cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native
-        --test pandad_safety_padding_retirement --test pandad_safety_padding_finalize --locked -- --nocapture 2>&1 | tee "$proof/current-green.log"
+        --test pandad_safety_padding_absence --test pandad_safety_padding_retirement --test pandad_safety_padding_finalize
+        --locked -- --nocapture 2>&1 | tee "$proof/current-green.log"
 
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
 
         cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native
-        --lib --bin check-pandad-safety-padding --test pandad_safety_padding_retirement --test pandad_safety_padding_finalize
-        --locked -- -D warnings 2>&1 | tee "$proof/current-clippy.log"
+        --lib --bin check-pandad-safety-padding --test pandad_safety_padding_absence --test pandad_safety_padding_retirement
+        --test pandad_safety_padding_finalize --locked -- -D warnings 2>&1 | tee "$proof/current-clippy.log"
 
         sha256sum -c "$proof/inputs.before.sha256"
 
@@ -166,6 +184,10 @@ jobs:
         test "$(find "$proof" -name native-present-exec-audit.json -type f | wc -l)" -eq 1
 
         test "$(find "$proof" -name native-absent-exec-audit.json -type f | wc -l)" -eq 1
+
+        test "$(find "$proof" -name sanitized-gate.json -type f | wc -l)" -eq 1
+
+        test "$(find "$proof" -name native-exec-audit.json -type f | wc -l)" -eq 1
 
         '
     - name: Preserve original, present, absent, old-red and fixed-green evidence
