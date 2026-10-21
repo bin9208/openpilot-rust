@@ -243,7 +243,7 @@ struct Receipt {
 }
 impl Receipt {
     fn write(path: PathBuf, bytes: &[u8]) -> Result<Self> {
-        let mut held = OpenOptions::new()
+        let held = OpenOptions::new()
             .write(true)
             .create_new(true)
             .open(&path)?;
@@ -608,7 +608,7 @@ fn execute(options: &Options, signals: &Signals) -> Result<Completed> {
         child: command.spawn()?,
         reaped: false,
     };
-    wait_for(&mut daemon, &log, &signals, || {
+    wait_for(&mut daemon, &log, signals, || {
         Ok(params.join("UpdaterCurrentDescription").exists()
             && params.join("UpdaterFetchAvailable").exists())
     })?;
@@ -627,7 +627,7 @@ fn execute(options: &Options, signals: &Signals) -> Result<Completed> {
     )?;
     fs::write(options.output.join("duplicate.log"), &duplicate.stderr)?;
     daemon.signal(Signal::USR1)?;
-    wait_for(&mut daemon, &log, &signals, || {
+    wait_for(&mut daemon, &log, signals, || {
         Ok(
             text(&params.join("UpdaterFetchAvailable")).ok().as_deref() == Some("1")
                 && text(&params.join("UpdaterState")).ok().as_deref() == Some("idle"),
@@ -638,7 +638,7 @@ fn execute(options: &Options, signals: &Signals) -> Result<Completed> {
         "UpdateAvailable before SIGHUP was not zero",
     )?;
     daemon.signal(Signal::HUP)?;
-    wait_for(&mut daemon, &log, &signals, || {
+    wait_for(&mut daemon, &log, signals, || {
         Ok(
             text(&params.join("UpdateAvailable")).ok().as_deref() == Some("1")
                 && text(&params.join("UpdaterState")).ok().as_deref() == Some("idle"),
@@ -681,11 +681,11 @@ fn execute(options: &Options, signals: &Signals) -> Result<Completed> {
         params.join("UpdaterLastFetchTime").exists(),
         "last fetch time missing",
     )?;
-    let status = daemon.stop(&signals)?;
+    let status = daemon.stop(signals)?;
     if fs::metadata(&log)?.len() == 0 {
         fs::write(&log, b"<empty>\n")?;
     }
-    let records = collector.records(&signals)?;
+    let records = collector.records(signals)?;
     let messages = records
         .iter()
         .filter_map(|row| row["msg"].as_str())
