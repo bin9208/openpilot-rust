@@ -8,6 +8,7 @@ use openpilot_dev_tools::{
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::{
+    collections::BTreeMap,
     ffi::OsString,
     fs,
     os::unix::{ffi::OsStringExt, fs::symlink},
@@ -54,6 +55,61 @@ const ROSTER: [&str; 38] = [
     "check-composed-explicit",
     "check-composed-default",
 ];
+fn assert_stdout_receipts(
+    stdout: &[u8],
+    passes: &[&str],
+    expected_growth_mib: &[(u64, usize)],
+    failed_after_guard: bool,
+) {
+    let mut seen = Vec::new();
+    let mut growths = BTreeMap::<u64, usize>::new();
+    let mut pending_guards = Vec::new();
+    for line in std::str::from_utf8(stdout).unwrap().lines() {
+        if let Some(name) = line.strip_prefix("PASS ") {
+            let expected: &[u64] = match name {
+                "stage-json11" => &[2048, 256, 256],
+                "download-spidev" | "build-supervisor-child" => &[64],
+                "build-spidev" | "check-usb_raw" => &[64, 512],
+                _ => &[512],
+            };
+            assert_eq!(
+                pending_guards.as_slice(),
+                expected,
+                "{name}: disk reservations differ"
+            );
+            seen.push(name);
+            pending_guards.clear();
+            continue;
+        }
+        let receipt: Value = serde_json::from_str(line).unwrap();
+        let object = receipt.as_object().unwrap();
+        assert_eq!(object.len(), 3, "unexpected disk receipt fields");
+        let free = receipt["free_bytes"].as_u64().unwrap();
+        let required = receipt["required_bytes"].as_u64().unwrap();
+        let growth = receipt["growth_bytes"].as_u64().unwrap();
+        assert_eq!(required, 25 * 1024_u64.pow(3) + growth);
+        assert!(free >= required, "successful phase had insufficient disk");
+        assert_eq!(growth % (1024 * 1024), 0);
+        *growths.entry(growth / (1024 * 1024)).or_default() += 1;
+        pending_guards.push(growth / (1024 * 1024));
+    }
+    assert_eq!(seen, passes);
+    assert_eq!(
+        pending_guards,
+        if failed_after_guard {
+            vec![512]
+        } else {
+            vec![]
+        }
+    );
+    assert_eq!(
+        growths,
+        expected_growth_mib
+            .iter()
+            .copied()
+            .collect::<BTreeMap<_, _>>()
+    );
+}
 fn put(path: &Path, content: impl AsRef<[u8]>) {
     fs::create_dir_all(path.parent().unwrap()).unwrap();
     fs::write(path, content).unwrap();
@@ -258,12 +314,11 @@ fn original_roster_receipts_and_final_publication_are_complete() {
     assert!(proof.join("invocation.json").is_file());
     assert!(proof.join("python-dependency.json").is_file());
     assert!(proof.join("spidev-dependency.json").is_file());
-    assert_eq!(
-        String::from_utf8(cli_stdout).unwrap(),
-        ROSTER
-            .iter()
-            .map(|name| format!("PASS {name}\n"))
-            .collect::<String>()
+    assert_stdout_receipts(
+        &cli_stdout,
+        &ROSTER,
+        &[(2048, 1), (256, 2), (512, 35), (64, 4)],
+        false,
     );
     assert!(cli_stderr.is_empty());
 }
@@ -297,12 +352,11 @@ fn first_failed_phase_stops_and_cannot_publish_pass() {
     )
     .unwrap();
     assert_eq!(exit["returncode"], 1);
-    assert_eq!(
-        String::from_utf8(cli_stdout).unwrap(),
-        ROSTER[..5]
-            .iter()
-            .map(|name| format!("PASS {name}\n"))
-            .collect::<String>()
+    assert_stdout_receipts(
+        &cli_stdout,
+        &ROSTER[..5],
+        &[(2048, 1), (256, 2), (512, 5)],
+        true,
     );
     assert_eq!(cli_stderr, b"original child error\n");
 }
@@ -328,12 +382,11 @@ fn text_capture_rejects_invalid_stdout_or_stderr_before_success_receipt() {
         assert!(commands.join("check-safety_padding.failure.json").is_file());
         assert!(!commands.join("check-safety_padding.exit.json").exists());
         assert!(!fixture.options.output.join("result.json").exists());
-        assert_eq!(
-            String::from_utf8(cli_stdout).unwrap(),
-            ROSTER[..5]
-                .iter()
-                .map(|name| format!("PASS {name}\n"))
-                .collect::<String>()
+        assert_stdout_receipts(
+            &cli_stdout,
+            &ROSTER[..5],
+            &[(2048, 1), (256, 2), (512, 5)],
+            true,
         );
     }
 }
@@ -358,6 +411,12 @@ fn noisy_child_hits_active_stream_limit_without_pass() {
     assert!(commands.join("check-safety_padding.stdout").is_file());
     assert!(!commands.join("check-safety_padding.exit.json").exists());
     assert!(!fixture.options.output.join("result.json").exists());
+    assert_stdout_receipts(
+        &cli_stdout,
+        &ROSTER[..5],
+        &[(2048, 1), (256, 2), (512, 5)],
+        true,
+    );
 }
 #[test]
 fn source_symlink_to_regular_file_is_hashed_under_original_glob_name() {

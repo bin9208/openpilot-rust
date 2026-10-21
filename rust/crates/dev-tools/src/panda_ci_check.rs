@@ -96,9 +96,21 @@ fn save(path: &Path, value: &Value) -> Result<()> {
     file.write_all(b"\n")?;
     Ok(())
 }
-fn space(path: &Path, mib: u64) -> Result<()> {
-    disk_space::inspect(path, mib * MIB)?.require()?;
+fn space_receipt(reservation: &disk_space::Space, stdout: &mut dyn Write) -> Result<()> {
+    // The original require_space publishes its observation before rejecting a
+    // low-capacity filesystem. Keep the attempted reservation in failed output.
+    writeln!(
+        stdout,
+        "{{\"free_bytes\": {}, \"required_bytes\": {}, \"growth_bytes\": {}}}",
+        reservation.free_bytes, reservation.required_bytes, reservation.growth_bytes
+    )?;
+    stdout.flush()?;
+    reservation.require()?;
     Ok(())
+}
+fn space(path: &Path, mib: u64, stdout: &mut dyn Write) -> Result<()> {
+    let reservation = disk_space::inspect(path, mib * MIB)?;
+    space_receipt(&reservation, stdout)
 }
 fn os(path: &Path) -> OsString {
     path.as_os_str().to_owned()
@@ -327,7 +339,7 @@ impl<R: Runner> Controller<'_, R> {
         self.options.binaries.join("examples").join(name)
     }
     fn command(&mut self, name: &str, argv: Vec<OsString>, growth: u64) -> Result<Vec<u8>> {
-        space(&self.options.output, growth)?;
+        space(&self.options.output, growth, &mut *self.stdout)?;
         fs::create_dir_all(&self.commands)?;
         let recorded = argv
             .iter()
@@ -467,7 +479,7 @@ impl<R: Runner> Controller<'_, R> {
                 return Err("spidev archive size differs from uv.lock".into());
             }
         }
-        space(&self.options.output, 64)?;
+        space(&self.options.output, 64, &mut *self.stdout)?;
         let extracted = self.output("spidev-source");
         fs::create_dir(&extracted)?;
         let archive_file = File::open(&archive)?;
@@ -516,7 +528,9 @@ impl<R: Runner> Controller<'_, R> {
     fn python_metadata(&mut self) -> Result<(String, String, PathBuf)> {
         // Metadata only: no Python orchestration or checker body is imported.
         let program = "import json,sysconfig,pathlib,usb1; print(json.dumps({'include':sysconfig.get_paths()['include'],'suffix':sysconfig.get_config_var('EXT_SUFFIX'),'usb1':str(pathlib.Path(usb1.__file__).resolve())}))";
-        space(&self.options.output, 64)?;
+        // The native metadata probe reserves one additional 64 MiB. It is a
+        // deliberate 42nd receipt, distinct from the original 41 checks.
+        space(&self.options.output, 64, &mut *self.stdout)?;
         let mut spec = CommandSpec::new_os(
             vec![
                 self.options.python.clone(),
@@ -561,7 +575,7 @@ impl<R: Runner> Controller<'_, R> {
         ))
     }
     fn execute(&mut self, zmq: &Path) -> Result<()> {
-        space(&self.options.output, 256)?;
+        space(&self.options.output, 256, &mut *self.stdout)?;
         let json11 = self.json11()?;
         let common = arg_path("--json11-prefix", &json11);
         for mode in ["protocol", "safety", "device", "state", "can-io"] {
@@ -866,7 +880,7 @@ pub fn run_with_output<R: Runner>(
     ] {
         let _ = utf8(value)?;
     }
-    space(&options.output, 2048)?;
+    space(&options.output, 2048, stdout)?;
     if options.output.exists() {
         return Err(format!("Panda output already exists: {}", options.output.display()).into());
     }
@@ -899,7 +913,7 @@ pub fn run_with<R: Runner>(options: &Options, runner: &mut R) -> Result<Value> {
 pub fn run(options: &Options) -> Result<Value> {
     run_with(options, &mut NativeRunner)
 }
-/// The bin prints only the historical PASS lines; result.json is the final receipt.
+/// The bin prints disk reservations and ordered PASS lines; result.json is final.
 pub fn cli() -> Result<()> {
     let root = std::env::var_os("OPENPILOT_RUST_ROOT").map_or_else(
         || Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.."),
@@ -914,5 +928,42 @@ pub fn cli() -> Result<()> {
             run(&options)?;
             Ok(())
         }
+    }
+}
+
+#[cfg(test)]
+mod space_receipt_tests {
+    use super::*;
+
+    #[test]
+    fn rejected_reservation_is_published_before_failure() {
+        let growth = 64 * MIB;
+        let required = disk_space::RESERVE_BYTES + growth;
+        let reservation = disk_space::Space::new(required - 1, growth).unwrap();
+        let mut stdout = Vec::new();
+        assert!(space_receipt(&reservation, &mut stdout).is_err());
+        let observed: Value = serde_json::from_slice(&stdout).unwrap();
+        assert_eq!(observed["free_bytes"], required - 1);
+        assert_eq!(observed["required_bytes"], required);
+        assert_eq!(observed["growth_bytes"], growth);
+        assert!(stdout.ends_with(b"\n"));
+    }
+
+    #[test]
+    fn failed_receipt_write_does_not_accept_reservation() {
+        struct Refuse;
+        impl Write for Refuse {
+            fn write(&mut self, _: &[u8]) -> io::Result<usize> {
+                Err(io::Error::new(
+                    io::ErrorKind::BrokenPipe,
+                    "receipt sink failed",
+                ))
+            }
+            fn flush(&mut self) -> io::Result<()> {
+                Ok(())
+            }
+        }
+        let reservation = disk_space::Space::new(disk_space::RESERVE_BYTES + MIB, MIB).unwrap();
+        assert!(space_receipt(&reservation, &mut Refuse).is_err());
     }
 }
