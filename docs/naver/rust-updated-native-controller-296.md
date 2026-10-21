@@ -9,8 +9,9 @@ the previously documented exact obsolete-staging removal difference is allowed.
 The old controller, source probe and16-case pytest file were removed together.
 All16 original comparator and held-lock cases are retained by the Rust suite;
 11 independent CLI admissions, source drift/reappearance/symlink rejection and
-failed-run receipt controls remain mandatory. `updated_fixtures.py` still serves
-the original daemon comparator and remains explicitly pending.
+failed-run receipt controls remain mandatory. The shared daemon comparator and
+`updated_fixtures.py` were subsequently retired together; accepted postdelete
+evidence follows below.
 
 Before removal, source505cc30c520ddb4a0bbbd3fbe82e7cd8c2584eb3 passed
 [run39543788680](https://github.com/bin9208/openpilot-rust/actions/runs/39543788680),
@@ -35,3 +36,19 @@ across checkout/private/test/default lanes and matching before/after input seals
 Source policy run39547261512 at083f937a passed13 disk,74 isolation,2 lagd and2 timed checks.
 The complete updated startup-services job and latest full PR/ARM remain pending. No device, network uploader, AGNOS installation or driving result
 is established by these host fixtures.
+
+Current accepted updater retirement: `check_updated_daemon.py` and
+`updated_fixtures.py` are removed. Actual deleted-checkout
+[39566007859/job119108328143](https://github.com/bin9208/openpilot-rust/actions/runs/39566007859/job/119108328143)
+passed at source `1b1703f65adf810d3da266854a4d40e0621a89a5`, diagnostic workflow
+`2236c6b1d29dc85b1385b581cca32903321756f6` (Rust1.94). Artifact12329558689,
+198,160bytes, ZIP SHA256 `da7248343258cc2cc71527b493733b8780a18dd3af62a94b85a6395e6a651016`,
+has159CRC-checked members. Parent inspected all result logs,11 source CLI
+receipts, both daemon267-exec/Python0 lanes,22records/16Params and unchanged
+before/after input and runtime-alias seals. Source15 tests/five original
+scenarios, fixture5, daemon5unit/5integration/CLI/raw-path/4retirement checks,
+both strict Clippy gates and default CLI passed. Historical/current ELF hashes
+remain separately recorded; no fresh original execution after deletion is claimed.
+Current inventory:231replaced-local/4partially-replaced/3345pending. Shared Desire
+is restored; driving/Panda conversion and whole-project validation remain unfinished.
+

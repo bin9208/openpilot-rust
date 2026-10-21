@@ -1,12 +1,21 @@
 # Repository-wide Python retirement: current evidence (#296)
 
-Current source retirement candidate: after accepted joint proof39559793259,
-`check_updated_daemon.py` and `updated_fixtures.py` are removed. Their maintained
-callers and all original lifecycle/CLI/raw-path/fixture checks use native Rust
-with pinned original-only data. The actual deleted-checkout rerun is still required;
-this source commit is not yet an accepted postdelete gate. Current inventory is
-231replaced-local/4partially-replaced/3345pending. Shared Desire stays restored.
-The earlier229/4/3347 checkpoint below predates these two local deletions.
+Current accepted updater retirement: `check_updated_daemon.py` and
+`updated_fixtures.py` are removed. Actual deleted-checkout
+[39566007859/job119108328143](https://github.com/bin9208/openpilot-rust/actions/runs/39566007859/job/119108328143)
+passed at source `1b1703f65adf810d3da266854a4d40e0621a89a5`, diagnostic workflow
+`2236c6b1d29dc85b1385b581cca32903321756f6` (Rust1.94). Artifact12329558689,
+198,160bytes, ZIP SHA256 `da7248343258cc2cc71527b493733b8780a18dd3af62a94b85a6395e6a651016`,
+has159CRC-checked members. Parent inspected all result logs,11 source CLI
+receipts, both daemon267-exec/Python0 lanes,22records/16Params and unchanged
+before/after input and runtime-alias seals. Source15 tests/five original
+scenarios, fixture5, daemon5unit/5integration/CLI/raw-path/4retirement checks,
+both strict Clippy gates and default CLI passed. Historical/current ELF hashes
+remain separately recorded; no fresh original execution after deletion is claimed.
+Current inventory:231replaced-local/4partially-replaced/3345pending. Shared Desire
+is restored; driving/Panda conversion and whole-project validation remain unfinished.
+
+
 
 
 This is an unfinished conversion, not a completion report. Base commit:
@@ -15,7 +24,7 @@ This is an unfinished conversion, not a completion report. Base commit:
 part of this candidate. No device validation or release is claimed here.
 
 
-Current correction: full PR39552825804/job119065662638 found that
+Historical shared-oracle correction: full PR39552825804/job119065662638 found that
 `driving_daemon_reference.py` still imports `Commands` and `original_class` from
 `check_desire_reference.py`. The focused deleted-checkout proof passed, but did
 not cover this shared original oracle. The exact original file is restored,

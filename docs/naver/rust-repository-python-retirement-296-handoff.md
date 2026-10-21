@@ -1,16 +1,25 @@
 # 저장소 전체 Python 전환 작업 인수인계
 
-Current source retirement candidate: after accepted joint proof39559793259,
-`check_updated_daemon.py` and `updated_fixtures.py` are removed. Their maintained
-callers and all original lifecycle/CLI/raw-path/fixture checks use native Rust
-with pinned original-only data. The actual deleted-checkout rerun is still required;
-this source commit is not yet an accepted postdelete gate. Current inventory is
-231replaced-local/4partially-replaced/3345pending. Shared Desire stays restored.
-The earlier229/4/3347 checkpoint below predates these two local deletions.
+Current accepted updater retirement: `check_updated_daemon.py` and
+`updated_fixtures.py` are removed. Actual deleted-checkout
+[39566007859/job119108328143](https://github.com/bin9208/openpilot-rust/actions/runs/39566007859/job/119108328143)
+passed at source `1b1703f65adf810d3da266854a4d40e0621a89a5`, diagnostic workflow
+`2236c6b1d29dc85b1385b581cca32903321756f6` (Rust1.94). Artifact12329558689,
+198,160bytes, ZIP SHA256 `da7248343258cc2cc71527b493733b8780a18dd3af62a94b85a6395e6a651016`,
+has159CRC-checked members. Parent inspected all result logs,11 source CLI
+receipts, both daemon267-exec/Python0 lanes,22records/16Params and unchanged
+before/after input and runtime-alias seals. Source15 tests/five original
+scenarios, fixture5, daemon5unit/5integration/CLI/raw-path/4retirement checks,
+both strict Clippy gates and default CLI passed. Historical/current ELF hashes
+remain separately recorded; no fresh original execution after deletion is claimed.
+Current inventory:231replaced-local/4partially-replaced/3345pending. Shared Desire
+is restored; driving/Panda conversion and whole-project validation remain unfinished.
 
 
 
-Current correction: full PR39552825804/job119065662638 found that
+
+
+Historical shared-oracle correction: full PR39552825804/job119065662638 found that
 `driving_daemon_reference.py` still imports `Commands` and `original_class` from
 `check_desire_reference.py`. The focused deleted-checkout proof passed, but did
 not cover this shared original oracle. The exact original file is restored,
@@ -28,7 +37,7 @@ below are historical focused evidence, not current repository-wide retirement.
 #296 전용 작업트리와 PR343→dev만 사용한다. dev-md/주 작업폴더/.omo는 보존한다.
 사용자가 pull 후 기기 부팅·녹화·업로드·주행을 확인한다. 로컬은 문법·포맷·diff·
 저장된 데이터 판독만 수행하며 기능 실행/빌드/Clippy는 GitHub-hosted Actions에서 한다.
-인벤토리는229replaced-local/4partially-replaced/3347pending이고 전체 전환은 미완료다.
+인벤토리는231replaced-local/4partially-replaced/3345pending이고 전체 전환은 미완료다.
 
 공유 Desire 원본을 복원한3cf61ad9의 전체 original-model-pipelines
 39555079988/job119072867369는 성공했다. 여섯 driving 시나리오와 연결된 logging
@@ -46,7 +55,7 @@ Python0/Clippy/defaultCLI를 통과했다. daemon ec95aec6의39558099959는 원�
 성공했지만 strict Clippy의 인자 수 오류로 전체 실패했다. b91c1bd3에서 수정하고
 helper도 빠진 private root, 기존 다섯 updater 시나리오 및 다섯 fixture 검사를 함께
 요구한다. 새 joint proof는 workflow2bac6b1c36c951772802b969f87c890211ada770이다.
-원본 daemon/helper는 아직 삭제하지 않았다. 원본 fixture의 Python 구현 hex14개만
+이 단락은 삭제 전 checkpoint다. 이후 daemon/helper 실제 삭제와 검증은 상단 기록을 따른다. 원본 fixture의 Python 구현 hex14개만
 제외한 projection을 부모가 원본 artifact와 독립 비교해 나머지 전체 값 일치를 확인했다.
 
 #450 cweb3a90dc52의39554813792/job119072003793는 전체 package/HTTP/daemon,
