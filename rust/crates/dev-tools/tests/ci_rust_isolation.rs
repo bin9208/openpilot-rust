@@ -2687,12 +2687,65 @@ fn lpa_cookie_header_keeps_original_tls_and_requires_measured_byte_exact_improve
 #[test]
 fn beep_native_controller_keeps_all_twenty_original_cases_and_real_caller() {
     job_check("telemetry-runtime", &[
-        "python rust/tools/check_beepd_reference.py --binary",
         "openpilot-dev-tools/beep-reference-native",
         "BEEP_REFERENCE_ORIGINAL_MANIFEST_SHA256=0a02d6aacb5b930012a47886c389571d9cf3ff404ecd796171045f10734a9188",
         "BEEP_REFERENCE_EVIDENCE=",
-        "--locked --lib --test beep_reference_check",
-        "--bin check-beep-reference --test beep_reference_check",
+        "BEEP_REFERENCE_RETIREMENT_EVIDENCE=",
+        "BEEP_REFERENCE_EXPECT_ABSENT=1",
+        "BEEP_REFERENCE_CHECKER_ABSENT=1",
+        "test ! -e rust/tools/check_beepd_reference.py",
+        "test ! -L rust/tools/check_beepd_reference.py",
+        "--locked --lib --test beep_reference_check --test beep_reference_retirement",
+        "--bin check-beep-reference --test beep_reference_check --test beep_reference_retirement",
         "rust/target/debug/check-beep-reference --binary",
-    ], &["--test beep_reference_check"], false);
+    ], &["--test beep_reference_check", "--test beep_reference_retirement"], false);
+    let run = commands(&workflow()["jobs"]["telemetry-runtime"]);
+    assert!(!run.contains("python rust/tools/check_beepd_reference.py"));
+}
+
+#[test]
+fn calibration_estimator_retirement_keeps_complete_sealed_oracle_and_native_caller() {
+    let data = workflow();
+    let job = &data["jobs"]["workspace"];
+    let steps = job["steps"].as_array().unwrap();
+    let selected = steps
+        .iter()
+        .filter(|step| {
+            step["name"]
+                == "Verify retired calibration estimator against full original observations"
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(selected.len(), 1);
+    absent(selected[0], &["if", "continue-on-error"]);
+    required(selected[0]["run"].as_str().unwrap(), &[
+        "CALIBRATION_REFERENCE_BINARY=",
+        "CALIBRATION_REFERENCE_CHECKER_BINARY=",
+        "CALIBRATION_REFERENCE_EVIDENCE=",
+        "CALIBRATION_REFERENCE_RETIREMENT_EVIDENCE=",
+        "CALIBRATION_REFERENCE_EXPECT_ABSENT=1",
+        "test ! -e rust/tools/check_calibration_reference.py",
+        "test ! -L rust/tools/check_calibration_reference.py",
+        "test ! -e rust/tools/calibration_cases.py",
+        "test ! -L rust/tools/calibration_cases.py",
+        "--features calibration-reference-native --bin check-calibration-reference --locked",
+        "--features calibration-reference-native --lib --test calibration_reference_check --test calibration_reference_retirement --locked -- --nocapture",
+        "--features calibration-reference-native --lib --bin check-calibration-reference --test calibration_reference_check --test calibration_reference_retirement --locked -- -D warnings",
+        "rust/target/debug/check-calibration-reference --binary \"$CALIBRATION_REFERENCE_BINARY\" --output",
+    ]);
+    assert!(!commands(job).contains("python tools/check_calibration_reference.py"));
+    let artifacts = steps
+        .iter()
+        .filter(|step| step["name"] == "Retain complete calibration estimator retirement evidence")
+        .collect::<Vec<_>>();
+    assert_eq!(artifacts.len(), 1);
+    assert_eq!(artifacts[0]["if"], "always()");
+    assert_eq!(artifacts[0]["uses"], "actions/upload-artifact@v6");
+    assert_eq!(
+        artifacts[0]["with"]["name"],
+        "rust-calibration-estimator-retirement"
+    );
+    assert_eq!(
+        artifacts[0]["with"]["path"],
+        "${{ runner.temp }}/calibration-estimator-native/"
+    );
 }

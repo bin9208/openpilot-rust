@@ -873,8 +873,37 @@ jobs:
       - name: Compare calibration estimator, loop and Params floats with original source
         run: |
           cargo build -p openpilot-calibrationd --bins --examples --locked
-          python tools/check_calibration_reference.py --binary target/debug/examples/calibration_trace --output "$RUNNER_TEMP/calibration-estimator"
           python tools/check_calibration_loop.py --binary target/debug/examples/calibration_loop --output "$RUNNER_TEMP/calibration-loop"
+      - name: Verify retired calibration estimator against full original observations
+        working-directory: .
+        run: |
+          set -euo pipefail
+          export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
+          export CALIBRATION_REFERENCE_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/calibration_trace"
+          export CALIBRATION_REFERENCE_CHECKER_BINARY="$GITHUB_WORKSPACE/rust/target/debug/check-calibration-reference"
+          export CALIBRATION_REFERENCE_EVIDENCE="$RUNNER_TEMP/calibration-estimator-native/test-output"
+          export CALIBRATION_REFERENCE_RETIREMENT_EVIDENCE="$RUNNER_TEMP/calibration-estimator-native/retirement"
+          export CALIBRATION_REFERENCE_EXPECT_ABSENT=1
+          test ! -e rust/tools/check_calibration_reference.py
+          test ! -L rust/tools/check_calibration_reference.py
+          test ! -e rust/tools/calibration_cases.py
+          test ! -L rust/tools/calibration_cases.py
+          mkdir -p "$RUNNER_TEMP/calibration-estimator-native"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features calibration-reference-native --bin check-calibration-reference --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features calibration-reference-native --lib --test calibration_reference_check --test calibration_reference_retirement --locked -- --nocapture
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features calibration-reference-native --lib --bin check-calibration-reference --test calibration_reference_check --test calibration_reference_retirement --locked -- -D warnings
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          rust/target/debug/check-calibration-reference --binary "$CALIBRATION_REFERENCE_BINARY" --output "$RUNNER_TEMP/calibration-estimator-native/cli-output"
+      - name: Retain complete calibration estimator retirement evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-calibration-estimator-retirement
+          path: ${{ runner.temp }}/calibration-estimator-native/
+          if-no-files-found: warn
       - name: Verify retired calibration float controller against sealed original observations
         working-directory: .
         run: |
@@ -2522,7 +2551,10 @@ jobs:
           export BEEP_REFERENCE_EVIDENCE="$RUNNER_TEMP/telemetry-runtime/beep-native-test"
           export BEEP_REFERENCE_CHECKER_BINARY="$GITHUB_WORKSPACE/rust/target/debug/check-beep-reference"
           export BEEP_REFERENCE_RETIREMENT_EVIDENCE="$RUNNER_TEMP/telemetry-runtime/beep-native-retirement"
-          export BEEP_REFERENCE_EXPECT_ABSENT=0
+          export BEEP_REFERENCE_EXPECT_ABSENT=1
+          export BEEP_REFERENCE_CHECKER_ABSENT=1
+          test ! -e rust/tools/check_beepd_reference.py
+          test ! -L rust/tools/check_beepd_reference.py
           export VERSION_PROBE_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/version_trace"
           export VERSION_COLLECTOR_BINARY="$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged"
           export VERSION_WORKER_BINARY="$GITHUB_WORKSPACE/rust/target/debug/version-runtime-worker"
@@ -2537,7 +2569,6 @@ jobs:
         run: python -m unittest discover -s rust/tools/tests -p test_beep_worker_report.py -v
       - name: Compare alert policy, Params failures and clock conversion
         run: |
-          python rust/tools/check_beepd_reference.py --binary rust/target/debug/examples/beep_trace --binding "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so --output "$RUNNER_TEMP/telemetry-runtime/beep-reference"
           rust/target/debug/build-beep-integer-reference --output "$RUNNER_TEMP/telemetry-integer-reference"
           rust/target/debug/check-beep-integer --binary rust/target/debug/examples/beep_trace --reference "$RUNNER_TEMP/telemetry-integer-reference/beep-integer-reference" --output "$RUNNER_TEMP/telemetry-runtime/beep-integer"
           rust/target/debug/check-beep-clock --binary rust/target/debug/examples/beep_trace --output "$RUNNER_TEMP/telemetry-runtime/beep-clock"
