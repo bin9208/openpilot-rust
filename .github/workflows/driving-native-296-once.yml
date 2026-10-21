@@ -21,7 +21,7 @@ jobs:
       OPENPILOT_HACKS: '1'
       LLVM_PATH: /usr/lib/x86_64-linux-gnu/libLLVM-18.so
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
-      EXPECTED_SOURCE: 96949ecead1b5d377f8b3302680d0191d7cdb6ea
+      EXPECTED_SOURCE: f5c8ee8de76c038883f65668a45c49ad559ca83b
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -31,7 +31,7 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: 96949ecead1b5d377f8b3302680d0191d7cdb6ea
+        ref: f5c8ee8de76c038883f65668a45c49ad559ca83b
     - name: Require exact source and hosted controller prerequisites
       run: 'set -euo pipefail
 
@@ -156,6 +156,31 @@ jobs:
         --output "$RUNNER_TEMP/native-catalog"
 
         rust/target/debug/model-run --check-catalog "$RUNNER_TEMP/native-catalog"
+
+        '
+    - name: Capture exact independent original outputs for this compiled model
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/driving-native-296\"\nrust/tools/check-disk-space --path \"$RUNNER_TEMP\"\
+        \ --growth-mib 1024\npython3 - <<'PY_CAPTURE'\nimport hashlib,json,os\nfrom pathlib import Path\nimport zipfile\n\
+        proof=Path(os.environ['RUNNER_TEMP'])/'driving-native-296'\nwith zipfile.ZipFile(proof/'original.zip') as z:\n  names=[n\
+        \ for n in z.namelist() if n.endswith('original_only.py')]\n  assert len(names)==1\n  script=z.read(names[0])\nassert\
+        \ hashlib.sha256(script).hexdigest()=='bfe55536e9bf47cda093d9986247cf338f978c3c82b0cc6e1000731008697206'\n(proof/'original_only.py').write_bytes(script)\n\
+        PY_CAPTURE\npython3 \"$proof/original_only.py\" --repo \"$GITHUB_WORKSPACE\" \\\n  --models \"$RUNNER_TEMP/original-models\"\
+        \ --output \"$proof/fresh-original-observation\" \\\n  > \"$proof/fresh-original.stdout\" 2> \"$proof/fresh-original.stderr\"\
+        \npython3 - <<'PY_SEAL'\nimport hashlib,json,os\nfrom pathlib import Path\nproof=Path(os.environ['RUNNER_TEMP'])/'driving-native-296'\n\
+        directory=proof/'fresh-original-observation';raw=(directory/'manifest.json').read_bytes();m=json.loads(raw)\nassert\
+        \ m['checked_out_commit']==os.environ['EXPECTED_SOURCE']\nassert len(m['files'])==1069 and len(m['scenarios'])==6\n\
+        assert m['script_sha256']=='bfe55536e9bf47cda093d9986247cf338f978c3c82b0cc6e1000731008697206'\nassert m['scope']=='original-only,\
+        \ no candidate or native daemon process'\nmodel=Path(os.environ['RUNNER_TEMP'])/'original-models/driving_tinygrad.pkl'\n\
+        assert hashlib.sha256(model.read_bytes()).hexdigest()==m['model']['sha256']\nwith open(os.environ['GITHUB_ENV'],'a')\
+        \ as f:\n  f.write('DRIVING_ORIGINAL_OBSERVATION='+str(directory)+'\\n')\n  f.write('DRIVING_ORIGINAL_MANIFEST_SHA256='+hashlib.sha256(raw).hexdigest()+'\\\
+        n')\nPY_SEAL\n"
+    - name: Require fresh original packet projections and mutation controls
+      run: 'set -euo pipefail
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 256
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --test driving_daemon_reference
+        --locked -- --nocapture
 
         '
     - name: Build actual logging collector and seal the ordinary production ELF
