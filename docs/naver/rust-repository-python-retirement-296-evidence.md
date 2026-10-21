@@ -1,5 +1,38 @@
 # Repository-wide Python retirement: current evidence (#296)
 
+## Supervised integration checkpoint (2026-10-21)
+
+Full PR [39567841179](https://github.com/bin9208/openpilot-rust/actions/runs/39567841179)
+for issue-branch head917cd7db finished with camera QA, navigation startup and the
+workspace JSON11 receipt-order failures; its aggregate is failed. Integration
+39567841148 passed. Camera #456 now has controlled old-join RED and complete
+fixed camera GREEN39572857596. JSON11 #452 now has old unified-feature RED,
+all83 fixed unified-feature library tests and actual locked-wheel raw staging
+GREEN39614534323. Detailed records retain source/workflow/artifact identities.
+Navigation #457 full diagnostic39571317568 passes but does not reproduce or
+explain the earlier pre-child startup stall; keep the defect open.
+
+The same full PR's ARM job119114353753 passed at synthetic merge checkout
+`a9d151ef1bc4486157d40179b3057644938c62b7`, which merges head917cd7db into
+dev b55552db and includes #448/#449/#450. Parent audited generic artifact12335202195
+(75,727,928bytes/83members) and encoder artifact12335387552
+(86,784,870bytes/17,341members), all ZIP CRCs. ZIP SHA256 values respectively:
+`8c6ebec18f0302e0bf9117bec8e6a49bd4a12f47c723f23f1676feb14e424d36` and
+`425b0e83673d9296368bc90c5d125b2bc97f9d4d50ab0c4dcbf395e05f623d35`.
+Recorded SOURCE_COMMIT values match the merge checkout. AArch64 ELF headers
+and binaries are inspected; these are generic cross-build outputs, not a sealed
+AGNOS runtime release or device startup/record/upload acceptance.
+
+Current source1f7a182b retains native driving/fault-builder and Panda orchestration
+candidates with their original Python callers still present. Encoder #454 adds
+actual owned builder argv/command/exit checks beyond its accepted prior full gate;
+fresh hosted evidence is pending. #458 repairs the separate raw Params boundary
+in the Panda safety QA example; old-example RED/current GREEN/full Panda proof
+is pending. No new source retirement is inferred from those candidates. Inventory
+remains231replaced-local/4partial/3345pending. User performs device verification
+after pulling; #296 remains unfinished and dev-md/#338 is unchanged.
+
+
 Current accepted updater retirement: `check_updated_daemon.py` and
 `updated_fixtures.py` are removed. Actual deleted-checkout
 [39566007859/job119108328143](https://github.com/bin9208/openpilot-rust/actions/runs/39566007859/job/119108328143)

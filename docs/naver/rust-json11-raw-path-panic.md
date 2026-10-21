@@ -53,3 +53,33 @@ fresh original/native raw observation, eleven CLI cases and strict Clippy are
 queued separately. Do not reuse the old first-stage panic101 as the current
 controller outcome after the child repair. Keep #452 open until that current
 caller evidence is inspected. No full Panda raw success or device result is claimed.
+
+
+## Current caller and unified-feature evidence (2026-10-21)
+
+The current original/native Panda raw observation at source312f4827 in
+[39568840592/job119117661612](https://github.com/bin9208/openpilot-rust/actions/runs/39568840592/job/119117661612)
+reaches stage-json11, build-protocol, check-protocol and build-safety successfully
+on both sides, holding the same30 ELFs. Both then fail check-safety on its separate
+raw Params JSON boundary (#458). This supersedes the old first-stage101 as the
+current controller result; it is not full38-phase raw success. Artifact12332475688
+ZIP SHA256 `924ef4c54df0299cc923fc41d8fbaf9de83f3c38e16f27bab8f02bf86d10c2cf`
+has14 parent-CRC-checked members and an independently inspected raw-name tar.
+
+Whole PR39567841179 subsequently exposed normal receipt byte-order divergence
+when another workspace crate enables serde_json/preserve_order. Commit100b004d
+constructs the receipt in the same map order as the original json! value while
+inserting the lossless raw path. The byte-equality assertion is retained. Hosted
+[39614534323](https://github.com/bin9208/openpilot-rust/actions/runs/39614534323)
+passed source `2c004e0e7dccc4258b13e436b2d2961ced74ddca`, workflow
+`056b7b87839d740d53ace40864ab77a017e793a0`: old-source unified-feature RED,
+fixed default test, all83 library tests with preserve_order, both strict Clippy
+gates, seven closure tests and actual locked-wheel raw staging.
+
+Parent checked artifact12350954796 (98,156bytes/14members, all CRCs), ZIP
+SHA256 `60c9c95e19977cc69e9a1a3df7eb340467b0e5a7f2b965855d6f6854bf8d4675`.
+All seven extracted members equal the independently read locked wheel, whose
+SHA256 remains a309d401dd22b758455dafd3c28b72c4bd88c7482ddd70fe8653e53efc745a83.
+The archived raw0xff root and absolute receipt prefix bytes match. The bounded
+JSON11 child/caller defect is verified; Panda retirement and later phase defects
+remain separate #296/#458 work.

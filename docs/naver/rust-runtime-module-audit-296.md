@@ -1781,3 +1781,22 @@ Full CI also exposed a test-helper readiness publication race (#451), corrected
 by closing a private sibling before rename while retaining all pidfd/ownership/
 cleanup deadlines, and a native JSON11 raw-path panic (#452), still pending its
 separate fix. These are specific observed boundaries, not an exhaustive bug audit.
+
+
+### Latest bounded validation checkpoint (2026-10-21)
+
+The full917cd7db PR39567841179 failed QA/workspace checks, while its ARM
+job119114353753 passed at merge checkout a9d151ef1bc4486157d40179b3057644938c62b7.
+That checkout includes #448/#449/#450. Generic and encoder artifacts are parent
+CRC/source/AArch64-audited in the repository retirement evidence ledger. Cweb-push
+is compiled for GNU and musl in that job; no standalone cweb executable identity
+is inferred from the generic archive. Host allocation measurements retain their
+original scope and are not device CPU, timing or module-wide clearance.
+
+Camera QA #456 controlled missing-image RED and the complete camera regression
+now pass39572857596. JSON11 #452 old unified-feature receipt-order RED, all83
+fixed library tests and actual locked-wheel/raw-path comparison pass39614534323.
+Navigation #457 instrumentation passes its full gate but has not explained the
+intermittent pre-child startup barrier failure. Native driving/fault-builder,
+Panda retirement, encoder owned-builder raw-path and safety example #458
+validation continue; original shared comparison dependencies remain explicit.

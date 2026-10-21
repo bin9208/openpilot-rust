@@ -13,10 +13,9 @@ empty before releasing the sole publication. This matches the existing message
 handshake and preserves queue semantics. Missing-stream diagnostics expose the
 message/image/log booleans without changing the deadline or exact fixture values.
 
-A hosted negative control will remove only the new Vision join while retaining
-the diagnostic, then require message=true/image=false/log=true. Fixed-source
-native tests, complete camera regression and strict Clippy are pending. No camera
-runtime, loaded vehicle or device timing failure/fix is claimed from this QA peer.
+The hosted negative control removes only the new Vision join while retaining
+the diagnostic and requires message=true/image=false/log=true. No camera runtime,
+loaded vehicle or device timing failure/fix is claimed from this QA peer.
 Tracked in [456](https://github.com/bin9208/openpilot-rust/issues/456).
 
 The first negative control39570788103 passed rather than reproducing the race:
@@ -24,4 +23,13 @@ the parent could poll and join before the child published. It is not RED evidenc
 The candidate now waits for an explicit publication marker before collection,
 using the same single five-second collection deadline across both waits. Removing
 only the Vision join must then expose the missing first image deterministically;
-no production transport or timeout is changed. Hosted validation remains pending.
+no production transport or timeout is changed.
+
+Full hosted run [39572857596](https://github.com/bin9208/openpilot-rust/actions/runs/39572857596)
+passed source `2c50f2a1162b13fcf1e0be1eecf1efbbd556ddd5`, workflow
+`a86f319621e4949f06da30ab411bc3a8e9c078df` (Rust1.94). The controlled old join fails after5.01s with exactly
+message=true/image=false/log=true. Restored-source native tests, the entire camera
+regression including source generation and IPC comparisons, and strict Clippy pass.
+Parent checked artifact12333043036 (26,861,456bytes/5,197members, all CRCs), ZIP
+SHA256 `a1453db67baf27b55ae3b44fffa330016d0aa90ac6ed67fbbeb65b5918121c27`.
+This closes the bounded QA peer defect; it does not establish device camera timing.

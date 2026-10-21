@@ -41,3 +41,12 @@ The maintained UI/connectivity job now requires full package tests/Clippy before
 all four existing original/native cweb comparison commands. Latest full PR and
 affected ARM verification remain pending. No Python cweb tool was removed here;
 those still execute the original comparisons. No local functional test was run.
+
+
+Affected ARM job119114353753 in full PR39567841179 passed at merge checkout
+a9d151ef1bc4486157d40179b3057644938c62b7 (head917cd7db plus dev b55552db),
+which includes this change. Its logs record cweb-push compilation for GNU and
+musl; the generic artifact is not a separately sealed cweb executable. The
+complete PR remains failed on separate camera/navigation QA and workspace
+receipt-order tests, with focused repairs tracked separately. Device validation
+remains user-owned.

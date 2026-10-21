@@ -11,7 +11,7 @@
 **Spec:** `docs/rust-port/design.md`, `docs/naver/rust-python-tools-retirement-296.md`, and the user's 2026-10-15 repository-wide clarification. Tracking: #296 and #1.
 
 
-Current correction: full PR39552825804/job119065662638 found that
+Historical shared-oracle correction: full PR39552825804/job119065662638 found that
 `driving_daemon_reference.py` still imports `Commands` and `original_class` from
 `check_desire_reference.py`. The focused deleted-checkout proof passed, but did
 not cover this shared original oracle. The exact original file is restored,
@@ -77,11 +77,11 @@ Interface: protocol (all five modes), USB, SPI, peripheral and runtime-fixture b
 - [x] Wire native commands, verify all callers and remove the five replaced Python builders.
 - [ ] Keep remaining Panda/runtime-source/Cython helpers explicitly pending until their own native replacements pass.
 
-Additional locally verified replacements and current failures are recorded in the
+Additional accepted replacements and current failures are recorded in the
 [evidence ledger](rust-repository-python-retirement-296-evidence.md) and inventory.
-230 baseline sources are fully replaced locally, three baseline sources are
+231 baseline sources are replaced-local, four baseline sources are
 partially replaced because live-source helpers or unrelated Params tests remain Python,
-and 3,347 baseline sources remain pending. The added
+and 3,345 baseline sources remain pending. The added
 rust/tools/selfdrived_helpers_source.py retains those helpers; relocation is
 not retirement. Remaining families and final delivery gates stay open.
 The Bluetooth input decoder checker is now native after exact10,049-record,
@@ -92,9 +92,12 @@ The statistics producer controller and its source helper are retired after
 independent wire captures, same-ELF removal proof, six regression tests and a
 fresh interpreter-free execution. Other statistics source consumers remain.
 
-Current next batch: validate the complete desire reference and Panda orchestration
-candidates before removing their originals; finish #448 direct packet publication
-verification and affected ARM checks. Accepted earlier bridge, soundd, logmessaged
+Current next batch: complete native driving/fault-builder caller validation and
+Panda two-root retirement before removing their originals. #448/#449/#450 host
+regressions are accepted and affected ARM39567841179 passed; the complete PR
+failed camera/navigation QA and JSON11 feature-order checks. Camera and JSON11
+focused repairs now passed cloud RED/GREEN; navigation startup remains under
+diagnosis. Shared Desire remains restored until its driving caller is replaced. Accepted earlier bridge, soundd, logmessaged
 and Bluetooth removals remain recorded below. Remaining original helpers, model
 compiler/tool families and vendor Python are still explicit pending scope. Keep
 functional execution in GitHub-hosted Actions and inspect each exact source result.
