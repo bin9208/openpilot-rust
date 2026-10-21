@@ -538,6 +538,7 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
+kalman-model-generator-native = []
 ci-receipt-metadata-native = []
 beep-reference-native = ["dep:zmq", "serde_json/float_roundtrip"]
 updated-fixture-native = []
@@ -2089,3 +2090,17 @@ required-features = ["soundd-daemon-native"]
 [[test]]
 name = "soundd_source_stage"
 required-features = ["soundd-daemon-native"]
+
+[[bin]]
+name = "generate-pose-model"
+path = "src/bin/generate_pose_model.rs"
+required-features = ["kalman-model-generator-native"]
+
+[[bin]]
+name = "generate-car-model"
+path = "src/bin/generate_car_model.rs"
+required-features = ["kalman-model-generator-native"]
+
+[[test]]
+name = "kalman_model_generator"
+required-features = ["kalman-model-generator-native"]

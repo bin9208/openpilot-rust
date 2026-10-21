@@ -5588,3 +5588,36 @@ Parent validates all916CRCs in artifact12388742179:154355439B compressed,
 198258091B expanded, SHA256d66ba15781b6833a36facb08e5899a54900171deb1ee6bf46d52ab04c0ad5361.
 Raw failed packets, receipts and compiler diagnostics remain in private scratch;
 no captured native value replaces an independent original expectation.
+
+
+### Independent Kalman generator originals and native candidate (2026-10-22)
+
+Original capture[39692474248](https://github.com/bin9208/openpilot-rust/actions/runs/39692474248)
+passes at exact sourcef913de3aa3c0f2c261f4ae4b87e41f3eb317fb82, diagnostic workflow
+9af62735e46effa5727c10f76a4a6a159ccaaf4a. Both unchanged Python generators execute
+once, exit0 and produce complete11pose/19car raw file rosters. No native code
+produces the expected files. Parent independently compares all3298 recorded
+tracked Python/schema hashes to Git blobs at that source, all42 declared source
+closure hashes/lengths and before/after equality, provider versions, statuses and
+all30 raw output bodies. Artifact12389331274:333551B/58CRCs/933485B expanded,
+SHA256be9be561579f2b40be6800741dc7013492a56998b4baa293233343689b54daea.
+Fixed data lives at `tests/fixtures/kalman-generators-original`, manifest
+SHA256005f7421cd11cbc2de77675b65d5ad1d1d8644f030c09e48c07e642548bdbc9b.
+Initial diagnostic158c242f0/39692221305 is rejected before jobs for workflow
+configuration; moving runner.temp resolution from job env into the shell fixes
+that setup. It is not original functional evidence.
+
+Native candidate explicitly ports typed equations, symbolic derivatives and Rust
+emission, with no new dependencies, Python invocation or generated-file copying.
+Ten pose/eighteen car functions, original observation order, row-major Jacobians
+and constants are retained. CLI uses the already source-compared lossless argparse
+scanner; parse errors exit2, generation errors exit1. Live original mathematical
+definition hashes require explicit review on future drift. Pure corpus checks use
+independent16pose/24car samples at unchanged1e-9abs+relative tolerance. Hosted
+end-to-end gate compiles freshly generated native and frozen original modules,
+compares constant bits, complete function outputs, targeted finite/singular and
+NaN/infinite classification, and deterministic11/19-file rosters. Bounded worker
+streams/statuses/argv are retained. These candidate tests have **not run yet**.
+Existing installed runtime model modules remain unchanged; Python model definitions
+and other oracle/build consumers remain pending. Neither generator is deleted or
+accepted in inventory yet.

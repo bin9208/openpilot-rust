@@ -83,6 +83,8 @@ pub mod dbc_generator;
 pub mod filter_reference;
 pub mod journald_check;
 pub mod journald_fixture;
+#[cfg(feature = "kalman-model-generator-native")]
+pub mod kalman_model_generator;
 #[cfg(feature = "logmessaged-startup-native")]
 pub mod logmessaged_startup_check;
 #[cfg(feature = "managed-entry-native")]

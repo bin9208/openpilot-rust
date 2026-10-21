@@ -148,8 +148,11 @@ Full39686001854 atcb9f508e0 passes separate4/5-model catalog exports and
 genuine45-asset/three-license USB staging, then catches Git CRLF normalization of a
 sealed installed marker (879→849B).1ccf8437c sets byte-preserving attributes and
 restores original bytes without changing either manifest; all114sealed staged Git blobs
-match original pins. Retry39689390187 source1ccf8437c/workflowba2ca41f4 is pending
-actual traffic acceptance. Current candidate removes the actual six Python sources and
+match original pins. Retry39689390187 source1ccf8437c/workflowba2ca41f4 passes byte
+admission/preparation, then fails the first nonuniform driver image comparison
+(#476). Frozen input hashes and warmup orientation match; retain all packet
+tolerances/original observations and diagnose warp/raw-model boundaries before
+accepting these six sources. Current candidate removes the actual six Python sources and
 two old workflow calls, adds required `model-family-retirement` to the aggregate gate,
 and binds explicit atomic bundle paths. The independent review caught and excluded USB
 cache model hardlinks from artifact upload (about18.6GB of duplicate input). Acceptance

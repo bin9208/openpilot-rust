@@ -51,3 +51,5 @@ rust/crates/dev-tools/tests/fixtures/model-family-original/usbgpu/original/captu
 # Captured empty values include their original space after the field label.
 rust/crates/dev-tools/tests/fixtures/model-family-original/startup/original/*/native.log whitespace=-blank-at-eol
 rust/crates/carrot-recovery/tests/fixtures/recovery-webhook-original/message-*/source.txt -text whitespace=-blank-at-eol
+# Fresh original generator source is fixed oracle data, never reformatted input.
+rust/crates/dev-tools/tests/fixtures/kalman-generators-original/** -text

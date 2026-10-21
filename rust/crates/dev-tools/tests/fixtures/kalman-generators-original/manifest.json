@@ -1,0 +1,329 @@
+{
+  "artifact": 12389331274,
+  "artifact_sha256": "be9be561579f2b40be6800741dc7013492a56998b4baa293233343689b54daea",
+  "files": {
+    "car-original/jacobian_24.rs": {
+      "bytes": 230,
+      "sha256": "5ff711ebceab95b451e66e91070a73a280875c454a416e68273c4cd9d1cc5ff4"
+    },
+    "car-original/jacobian_25.rs": {
+      "bytes": 209,
+      "sha256": "41a72e733c9ed9ccc979a74db1f47913fb9f9bbc43ed1f464300b2613dc9973e"
+    },
+    "car-original/jacobian_26.rs": {
+      "bytes": 209,
+      "sha256": "9a211877a2a214d2007595a3c3bf869434d580852cd13760ec58d357049ca102"
+    },
+    "car-original/jacobian_27.rs": {
+      "bytes": 209,
+      "sha256": "df69ccd2cd2cfb30401b6a7fe97f0ea5118107d20c42ebdaaa67ea44f6abad80"
+    },
+    "car-original/jacobian_28.rs": {
+      "bytes": 209,
+      "sha256": "02db0a6cbd39ff2fdeb84aa85e0325ca24e81e1d0a41b9c23182ec092cd72dba"
+    },
+    "car-original/jacobian_29.rs": {
+      "bytes": 209,
+      "sha256": "96baa467e2d29539179141f95eaeb639169a88621b11fcc5aa3072e95613796a"
+    },
+    "car-original/jacobian_30.rs": {
+      "bytes": 209,
+      "sha256": "c910489a2e437daeab8701d235914b202e1033f2769761abb1feba0a9b0d6007"
+    },
+    "car-original/jacobian_31.rs": {
+      "bytes": 209,
+      "sha256": "0636b00ca934b0c3af8b140232f5bcb456cb65256cb30cc7337c09baefb01e88"
+    },
+    "car-original/mod.rs": {
+      "bytes": 1657,
+      "sha256": "c04f634ca455c80550ace5ea9e2755db4cafa585a4e952e543b1f15b84a12762"
+    },
+    "car-original/observe_24.rs": {
+      "bytes": 217,
+      "sha256": "3299d8a0d56d875a3ed224b65c6a75f674e0bc9a4410ac491ae765571875dd1a"
+    },
+    "car-original/observe_25.rs": {
+      "bytes": 194,
+      "sha256": "96cf798e548cd31d8472192c13da7ae5954e06def38b9c93f0efe6d805145eaa"
+    },
+    "car-original/observe_26.rs": {
+      "bytes": 194,
+      "sha256": "fc8b7d851c0ae7fdddbdac60e35f70269c58381712e0959c390dea5fadd489b7"
+    },
+    "car-original/observe_27.rs": {
+      "bytes": 194,
+      "sha256": "ac5e0f00580456772219aba1431cd1e750d5ee6f3357ba195810086eddfb8cd3"
+    },
+    "car-original/observe_28.rs": {
+      "bytes": 194,
+      "sha256": "26858f3c62f84093f230277cf97d89e5f0308ad2894b5e4f009713813b5917ab"
+    },
+    "car-original/observe_29.rs": {
+      "bytes": 194,
+      "sha256": "2518c2d2c648668b5040fe529ae89ab853635c79a4c89cad8032665eb320bf4c"
+    },
+    "car-original/observe_30.rs": {
+      "bytes": 194,
+      "sha256": "0f447e8fc47fc641825abac8e6dc626f11d1ebace2e7cc54208fad3887e5522a"
+    },
+    "car-original/observe_31.rs": {
+      "bytes": 194,
+      "sha256": "81a93912258acaf5b8e1db24ed1fe2d92930135da3d2d53bd491e0b17f394c57"
+    },
+    "car-original/transition.rs": {
+      "bytes": 1314,
+      "sha256": "50e6de5a17f729eb568ce58f794afecfe48d4edf01e15d3c5f49b3971de6a980"
+    },
+    "car-original/transition_jacobian.rs": {
+      "bytes": 2936,
+      "sha256": "462c079dba50ea539bb1ecbd8a1a15400586e96348b7e8ed30f91f640d8e6154"
+    },
+    "pose-original/jacobian_10.rs": {
+      "bytes": 834,
+      "sha256": "73f0997929d48bf0e6ff647a343c748fcb3d9d2d5489252f9fba5dc7326b9a8a"
+    },
+    "pose-original/jacobian_13.rs": {
+      "bytes": 252,
+      "sha256": "a242d725d6899a8061342d02f5d6343cfb9dcd01bfe589ae0eeaa5cc5cfa4746"
+    },
+    "pose-original/jacobian_14.rs": {
+      "bytes": 252,
+      "sha256": "9963ce500be6f80bb60093322fd64655c470aa68543e1354df3505a5590183f3"
+    },
+    "pose-original/jacobian_4.rs": {
+      "bytes": 307,
+      "sha256": "9c57abd198b5085d95b5f5fe490c800ea9ebcfc4f04c2562c3c090d665f5da87"
+    },
+    "pose-original/mod.rs": {
+      "bytes": 1329,
+      "sha256": "b10a35b5255be68cfa185b3775d5cf48cc8864273574711adf85fc61db7a1388"
+    },
+    "pose-original/observe_10.rs": {
+      "bytes": 510,
+      "sha256": "4f61eb25a42a3c31b9703cfa1280371949f25751b6e10f3b188432d761a88e9b"
+    },
+    "pose-original/observe_13.rs": {
+      "bytes": 243,
+      "sha256": "6c21c984d9051185c863fc94e289a702cc18dbbf7eb16ca7784a9a975cbb09b1"
+    },
+    "pose-original/observe_14.rs": {
+      "bytes": 243,
+      "sha256": "16a2deae31094a29435b5f05156fcd07c8717af6abd4bbdfb3c6ca49a9ab9f0a"
+    },
+    "pose-original/observe_4.rs": {
+      "bytes": 277,
+      "sha256": "6659d4f24652ef01cd0bc7bd7aba602d983766461f90022a8dc29473dcf3d51e"
+    },
+    "pose-original/transition.rs": {
+      "bytes": 2160,
+      "sha256": "cc8293c56858be3528b4854193dbbab54ca8dda51e5d7b5cf1a310fb7abb893b"
+    },
+    "pose-original/transition_jacobian.rs": {
+      "bytes": 28072,
+      "sha256": "409fff74ae983397bf51d6475d3fd18adc4b0493f19888aa2008175e584e1be1"
+    }
+  },
+  "kind": "unchanged Python Kalman generators",
+  "native_port_generated_expected": false,
+  "original_argv": {
+    "car": [
+      "python",
+      "rust/tools/generate_car_model.py",
+      "--output",
+      "car-original"
+    ],
+    "pose": [
+      "python",
+      "rust/tools/generate_pose_model.py",
+      "--output",
+      "pose-original"
+    ]
+  },
+  "project_source_files_before_after_verified": 3298,
+  "provider_versions": [
+    "numpy==2.5.3",
+    "sympy==1.14.0",
+    "mpmath==1.3.0",
+    "cffi==2.1.1",
+    "pycparser==3.0",
+    "pyzmq==27.2.0",
+    "pycapnp==2.1.0",
+    "requests==2.34.2",
+    "pyserial==3.5",
+    "zstandard==0.25.0"
+  ],
+  "run": 39692474248,
+  "source_closure": {
+    "opendbc_repo/opendbc/car/car.capnp": {
+      "bytes": 26049,
+      "sha256": "6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda"
+    },
+    "opendbc_repo/opendbc/car/include/c++.capnp": {
+      "bytes": 1354,
+      "sha256": "fb306076cd38c27af1aed20fac6395e9a46fbe5b5df6a248b5f1b6845a079c44"
+    },
+    "openpilot/cereal/__init__.py": {
+      "bytes": 992,
+      "sha256": "c8e54d7417631916d8c5842d0d509d8c573ca8089e9cad6fc7acad849503fb60"
+    },
+    "openpilot/cereal/custom.capnp": {
+      "bytes": 6365,
+      "sha256": "102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693"
+    },
+    "openpilot/cereal/deprecated.capnp": {
+      "bytes": 17671,
+      "sha256": "65079ff035a29c4c267d07ef7240c316c7eaa81b52f795142ed7603489a61355"
+    },
+    "openpilot/cereal/include/c++.capnp": {
+      "bytes": 1354,
+      "sha256": "fb306076cd38c27af1aed20fac6395e9a46fbe5b5df6a248b5f1b6845a079c44"
+    },
+    "openpilot/cereal/log.capnp": {
+      "bytes": 69627,
+      "sha256": "fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620"
+    },
+    "openpilot/common/__init__.py": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "openpilot/common/constants.py": {
+      "bytes": 434,
+      "sha256": "fc439d59c24b95ed349b84f1a5862df3ea50e0891dbec4ea3cf5e1e0ccff6513"
+    },
+    "openpilot/common/gpio.py": {
+      "bytes": 2408,
+      "sha256": "01ba8cb32a644a2df545e764ba19bf1c7a320a217f983f8bac73b45d3a6891cf"
+    },
+    "openpilot/common/i2c.py": {
+      "bytes": 2449,
+      "sha256": "4af8f9da7504a548d15f18b91d71c1379cb7c05c84be031448764cc49920ce68"
+    },
+    "openpilot/common/logging_extra.py": {
+      "bytes": 6628,
+      "sha256": "ce9b3b3d8498d76e1c4c0352a3e98e72759bb7f367ff8629c1329c46040595c3"
+    },
+    "openpilot/common/swaglog.py": {
+      "bytes": 4412,
+      "sha256": "d37b623bd9418b72ffd3c4800a1da192c49856cb63bbbc1c09bb24a5ec6f8616"
+    },
+    "openpilot/common/time_helpers.py": {
+      "bytes": 541,
+      "sha256": "7e846c4963dc4950c2b2fc96307e21628add9552d19c91dbbca51140cf8caf81"
+    },
+    "openpilot/common/utils.py": {
+      "bytes": 8190,
+      "sha256": "b1cc68b63cff1386ba397c0cc527dbb38fb50b154043ffcb066ed7acce65ec83"
+    },
+    "openpilot/selfdrive/__init__.py": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "openpilot/selfdrive/locationd/__init__.py": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "openpilot/selfdrive/locationd/models/__init__.py": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "openpilot/selfdrive/locationd/models/car_kf.py": {
+      "bytes": 5478,
+      "sha256": "b364263f2003a8162b68e3769e3defcdfacc034c1b9fa0687a639621597d9a40"
+    },
+    "openpilot/selfdrive/locationd/models/constants.py": {
+      "bytes": 2050,
+      "sha256": "4745c181a345b14accbcb044b1db73e131c78229a535f97cf34c5820f22a1f1a"
+    },
+    "openpilot/selfdrive/locationd/models/pose_kf.py": {
+      "bytes": 4289,
+      "sha256": "87537411a1cd2851548eb18be84117a592f60285bbec45b8b14e8460c59a1404"
+    },
+    "openpilot/system/hardware/__init__.py": {
+      "bytes": 375,
+      "sha256": "7d04c34ebaa7158fb5e6c465f1b92a91c22aaa14bf6dc8a2140a8adfdb24c048"
+    },
+    "openpilot/system/hardware/base.py": {
+      "bytes": 4922,
+      "sha256": "7701a679094921f7c1aaba7d2d43d460c7d754ee6d1065e12f06639158abca43"
+    },
+    "openpilot/system/hardware/hw.py": {
+      "bytes": 1679,
+      "sha256": "ce93d27d57ca5082782394a5c8f147332d656b8a04fd64dc77bb154b56123ea6"
+    },
+    "openpilot/system/hardware/pc/__init__.py": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "openpilot/system/hardware/pc/hardware.py": {
+      "bytes": 262,
+      "sha256": "56bcbdaa189dd0a5f78b60fc8f78b779304d602b62dccbda38db3b61b778ed6a"
+    },
+    "openpilot/system/hardware/tici/__init__.py": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "openpilot/system/hardware/tici/amplifier.py": {
+      "bytes": 7629,
+      "sha256": "e2767f9ecf11a03123707022c1c9911b6f0b09516ad3dcacb1e5225986596fc7"
+    },
+    "openpilot/system/hardware/tici/hardware.py": {
+      "bytes": 15664,
+      "sha256": "cf51658b4f19afdb61de24fe83ef85949c46c8265918dcf07d6b4c4dfb98cabd"
+    },
+    "openpilot/system/hardware/tici/iwlist.py": {
+      "bytes": 890,
+      "sha256": "d22858982705531732d5a20a45a73795496e5bbd9e23028c24609a7e58ac7aed"
+    },
+    "openpilot/system/hardware/tici/lpa.py": {
+      "bytes": 29657,
+      "sha256": "fe3697a3329662a9daf1c9d338d8a8282d128ffdc01c465183228e651cb15f4f"
+    },
+    "openpilot/system/hardware/tici/pins.py": {
+      "bytes": 608,
+      "sha256": "def83c98abf79b14529fca143768b9aa24c79a1854d281820491a6fd79f2f590"
+    },
+    "pyproject.toml": {
+      "bytes": 8639,
+      "sha256": "393ce3bd5eb0c497bc0454a8336d0745b59c0253055864f94c89585a1cd81076"
+    },
+    "rednose_repo/rednose/__init__.py": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "rednose_repo/rednose/helpers/__init__.py": {
+      "bytes": 958,
+      "sha256": "7d1fd75d2319c1e86bc08809de3233f9966af7a9bb2dbc0ff2c11d6ae3125222"
+    },
+    "rednose_repo/rednose/helpers/chi2_lookup.py": {
+      "bytes": 508,
+      "sha256": "e54673198b15657598abd648da1d292d11fb401d603779b7f3b9b7b798cc8488"
+    },
+    "rednose_repo/rednose/helpers/ekf_sym.py": {
+      "bytes": 24001,
+      "sha256": "d53b802f823c92c68c0e6bca86f31472d7d25d8cba47111bd439d73138438f20"
+    },
+    "rednose_repo/rednose/helpers/kalmanfilter.py": {
+      "bytes": 1206,
+      "sha256": "103e29e336d87ad23134495d5db4853a3f72c9677a8422d0697d70ec1ae1cd4e"
+    },
+    "rednose_repo/rednose/helpers/sympy_helpers.py": {
+      "bytes": 5378,
+      "sha256": "27c21dfda92e3747e6391bd92e32b60bb7e0ef1f1b887f6fcf5687f09702b7f0"
+    },
+    "rust/tools/generate_car_model.py": {
+      "bytes": 2576,
+      "sha256": "8de78b8bc8b41611a1bd57f13cfb77e391dbad2c1bed58d711a7a97e9fd62c1e"
+    },
+    "rust/tools/generate_pose_model.py": {
+      "bytes": 3153,
+      "sha256": "7b7b0e7cadac5b05634463954335d0597ea8ca07034c441a80041e69ca7d8dcf"
+    },
+    "uv.lock": {
+      "bytes": 227279,
+      "sha256": "3d3a7e31e04e654a86ed332fb8b97d67f5648905ee0b276bc53cfbc87fe5dcdf"
+    }
+  },
+  "source_commit": "f913de3aa3c0f2c261f4ae4b87e41f3eb317fb82",
+  "version": 1,
+  "workflow_commit": "9af62735e46effa5727c10f76a4a6a159ccaaf4a"
+}
