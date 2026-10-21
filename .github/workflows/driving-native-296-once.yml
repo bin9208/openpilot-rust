@@ -66,6 +66,12 @@ jobs:
         cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --lib driving_daemon_check::line_tests
         --locked -- --nocapture 2>&1 | tee "$proof/line-regression.log"
 
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 256
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --lib driving_logging_check::queue_readiness_tests
+        --locked -- --nocapture
+
         '
     - name: Fetch only independently sealed original observation data
       env:
