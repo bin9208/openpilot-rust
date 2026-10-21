@@ -1,4 +1,4 @@
-name: 296 driver warmup diagnosis with unchanged deadline and sealed input reuse
+name: 296 driver original and native family with current CPU model compilation
 'on':
   push:
     branches:
@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
-      EXPECTED_SOURCE: 83f1da3f49ecffe9037c97476ae188ddcee9a562
+      EXPECTED_SOURCE: 22418697cc1ac4fb6bb6c9380e053a5bf3a28bd8
       RUSTUP_TOOLCHAIN: 1.94.0
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
@@ -32,7 +32,7 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: 83f1da3f49ecffe9037c97476ae188ddcee9a562
+        ref: 22418697cc1ac4fb6bb6c9380e053a5bf3a28bd8
     - name: Require exact source, disk room and native prerequisites
       shell: bash
       run: 'set -euo pipefail
@@ -143,51 +143,33 @@ jobs:
         || { cat "$proof/msgq-build.log"; exit 1; }
 
         '
-    - name: Reuse sealed original model and complete catalog inputs without recompilation
+    - name: Compile only original driver model, metadata and both camera warps
       shell: bash
-      run: 'set -euo pipefail
-
-        proof="$RUNNER_TEMP/driver-daemon-native-296"
-
-        rust/tools/check-disk-space --path "$RUNNER_TEMP" --growth-mib 1024
-
-        git fetch --no-tags --depth=1 origin e25a14386582858dae25c6daca5ced3bfb4bacab
-
-        # The compiled-model source closure and locked dependencies must be unchanged.
-
-        paths=(tinygrad_repo rust/tools/model_export openpilot/selfdrive/modeld/compile_dm_warp.py openpilot/selfdrive/modeld/get_model_metadata.py
-        openpilot/selfdrive/modeld/models uv.lock)
-
-        git diff --exit-code e25a14386582858dae25c6daca5ced3bfb4bacab HEAD -- "${paths[@]}" >"$proof/reused-model-source-history.diff"
-
-        git diff --exit-code HEAD -- "${paths[@]}" >"$proof/reused-model-working-tree.diff"
-
-        git ls-tree -r HEAD -- "${paths[@]}" >"$proof/reused-model-source-tree.txt"
-
-        python3 - <<''PY_REUSE_WRAPPER''
-
-        import base64,hashlib,os
-
-        from pathlib import Path
-
-        raw=base64.b64decode("IiIiQ2xvdWQtb25seSBzZWxlY3RpdmUgWklQIHJldXNlIG9mIHNlYWxlZCBtb2RlbC9jYXRhbG9nIGRhdGE7IHJ1bnMgbm8gbW9kZWwgY29tcGlsZXIuIiIiCmltcG9ydCBjb25jdXJyZW50LmZ1dHVyZXMsaGFzaGxpYixpbyxqc29uLG9zLHBhdGhsaWIsc3VicHJvY2Vzcyx0aHJlYWRpbmcsdXJsbGliLmVycm9yLHVybGxpYi5yZXF1ZXN0LHppcGZpbGUKQVJUSUZBQ1Q9MTIzNjU1MjI4OTQKU0laRT00Mzg4NjE4NjYyClBSRUZJWD0nZHJpdmluZy1uYXRpdmUtMjk2L2NvbXBsZXRlLWZpeHR1cmUvJwpQSU49J2FmZTFjNzk1ZDdmNjA5ODAxZWI0Y2Q1YTVhNzc0OGMzYzk5NjkyOTQwM2EzYzBmYTEwMmYyMzJmMmE4ZDI0OGQnClNPVVJDRT0nZTI1YTE0Mzg2NTgyODU4ZGFlMjVjNmRhY2E1Y2VkM2JmYjRiYWNhYicKY2xhc3MgTm9SZWRpcmVjdCh1cmxsaWIucmVxdWVzdC5IVFRQUmVkaXJlY3RIYW5kbGVyKToKIGRlZiByZWRpcmVjdF9yZXF1ZXN0KHNlbGYsKmFyZ3MpOnJldHVybiBOb25lCmhlYWRlcnM9eydBdXRob3JpemF0aW9uJzonQmVhcmVyICcrb3MuZW52aXJvblsnR0hfVE9LRU4nXX0KcmVxdWVzdD11cmxsaWIucmVxdWVzdC5SZXF1ZXN0KGYnaHR0cHM6Ly9hcGkuZ2l0aHViLmNvbS9yZXBvcy9iaW45MjA4L29wZW5waWxvdC1ydXN0L2FjdGlvbnMvYXJ0aWZhY3RzL3tBUlRJRkFDVH0vemlwJyxoZWFkZXJzPWhlYWRlcnMpCnRyeTp1cmxsaWIucmVxdWVzdC5idWlsZF9vcGVuZXIoTm9SZWRpcmVjdCkub3BlbihyZXF1ZXN0KQpleGNlcHQgdXJsbGliLmVycm9yLkhUVFBFcnJvciBhcyBlcnJvcjoKIGlmIGVycm9yLmNvZGUhPTMwMjpyYWlzZQogdXJsPWVycm9yLmhlYWRlcnNbJ0xvY2F0aW9uJ10KY2h1bms9MioxMDI0KjEwMjQKY2FjaGU9e30KbG9jaz10aHJlYWRpbmcuTG9jaygpCmRlZiBibG9jayhpbmRleCk6CiB3aXRoIGxvY2s6aGVsZD1jYWNoZS5nZXQoaW5kZXgpCiBpZiBoZWxkIGlzIG5vdCBOb25lOnJldHVybiBoZWxkCiBiZWdpbj1pbmRleCpjaHVuaztlbmQ9bWluKFNJWkUsYmVnaW4rY2h1bmspCiByZXE9dXJsbGliLnJlcXVlc3QuUmVxdWVzdCh1cmwsaGVhZGVycz17J1JhbmdlJzpmJ2J5dGVzPXtiZWdpbn0te2VuZC0xfSd9KQogd2l0aCB1cmxsaWIucmVxdWVzdC51cmxvcGVuKHJlcSx0aW1lb3V0PTkwKSBhcyByZXN1bHQ6CiAgaWYgcmVzdWx0LnN0YXR1cyE9MjA2OnJhaXNlIFJ1bnRpbWVFcnJvcigncmFuZ2UgcmVzcG9uc2UgcmVxdWlyZWQnKQogIGRhdGE9cmVzdWx0LnJlYWQoKQogaWYgbGVuKGRhdGEpIT1lbmQtYmVnaW46cmFpc2UgUnVudGltZUVycm9yKCdzaG9ydCBhcmNoaXZlIHJhbmdlJykKIHdpdGggbG9jazpjYWNoZVtpbmRleF09ZGF0YQogcmV0dXJuIGRhdGEKY2xhc3MgUmVtb3RlKGlvLlJhd0lPQmFzZSk6CiBkZWYgX19pbml0X18oc2VsZik6c2VsZi5wb3M9MAogZGVmIHNlZWthYmxlKHNlbGYpOnJldHVybiBUcnVlCiBkZWYgdGVsbChzZWxmKTpyZXR1cm4gc2VsZi5wb3MKIGRlZiBzZWVrKHNlbGYsb2Zmc2V0LHdoZW5jZT0wKToKICBzZWxmLnBvcz1vZmZzZXQrKDAgaWYgd2hlbmNlPT0wIGVsc2Ugc2VsZi5wb3MgaWYgd2hlbmNlPT0xIGVsc2UgU0laRSkKICByZXR1cm4gc2VsZi5wb3MKIGRlZiByZWFkKHNlbGYsbj0tMSk6CiAgbj1taW4oU0laRS1zZWxmLnBvcyxuIGlmIG4+PTAgZWxzZSBTSVpFLXNlbGYucG9zKQogIGlmIG48PTA6cmV0dXJuIGInJwogIGVuZD1zZWxmLnBvcytuO3BpZWNlcz1bXQogIHdoaWxlIHNlbGYucG9zPGVuZDoKICAgaW5kZXg9c2VsZi5wb3MvL2NodW5rO2RhdGE9YmxvY2soaW5kZXgpO29mZnNldD1zZWxmLnBvcyVjaHVuawogICB0YWtlPW1pbihlbmQtc2VsZi5wb3MsbGVuKGRhdGEpLW9mZnNldCkKICAgaWYgdGFrZTw9MDpyYWlzZSBSdW50aW1lRXJyb3IoJ2ludmFsaWQgYXJjaGl2ZSBwb3NpdGlvbicpCiAgIHBpZWNlcy5hcHBlbmQoZGF0YVtvZmZzZXQ6b2Zmc2V0K3Rha2VdKTtzZWxmLnBvcys9dGFrZQogIHJldHVybiBiJycuam9pbihwaWVjZXMpCnNoYT1sYW1iZGEgZGF0YTpoYXNobGliLnNoYTI1NihkYXRhKS5oZXhkaWdlc3QoKQpiYXNlPXBhdGhsaWIuUGF0aChvcy5lbnZpcm9uWydSVU5ORVJfVEVNUCddKQpwcm9vZj1iYXNlLydkcml2ZXItZGFlbW9uLW5hdGl2ZS0yOTYnCnByb29mLm1rZGlyKGV4aXN0X29rPVRydWUpCm1vZGVscz17Zidtb2RlbHMve259JyBmb3IgbiBpbiBbJ2Rtb25pdG9yaW5nX21vZGVsX3RpbnlncmFkLnBrbCcsJ2Rtb25pdG9yaW5nX21vZGVsX21ldGFkYXRhLnBrbCcsJ2RtX3dhcnBfMTM0NHg3NjBfdGlueWdyYWQucGtsJywnZG1fd2FycF8xOTI4eDEyMDhfdGlueWdyYWQucGtsJ119CndpdGggemlwZmlsZS5aaXBGaWxlKFJlbW90ZSgpKSBhcyBhcmNoaXZlOgogcmF3PWFyY2hpdmUucmVhZChQUkVGSVgrJ2ZpeHR1cmUuanNvbicpCiBhc3NlcnQgc2hhKHJhdyk9PVBJTgogbWFuaWZlc3Q9anNvbi5sb2FkcyhyYXcpCiBhc3NlcnQgbWFuaWZlc3RbJ3NvdXJjZV9jb21taXQnXT09U09VUkNFIGFuZCBtYW5pZmVzdFsndmVyc2lvbiddPT0xCiBhc3NlcnQgbWFuaWZlc3RbJ3Njb3BlJ109PSdvcmlnaW5hbC1vbmx5IGNvbXBpbGVkLW1vZGVsIGZpeHR1cmU7IG5vIG5hdGl2ZSBleHBlY3RlZCBvdXRwdXRzJwogc2VsZWN0ZWQ9e246cGluIGZvciBuLHBpbiBpbiBtYW5pZmVzdFsnZmlsZXMnXS5pdGVtcygpIGlmIG4gaW4gbW9kZWxzIG9yIG4uc3RhcnRzd2l0aCgnY2F0YWxvZy8nKX0KIGFzc2VydCBtb2RlbHM8PXNlbGVjdGVkLmtleXMoKSBhbmQgbGVuKHNlbGVjdGVkKT09NTc4CiBpbmZvcz17aS5maWxlbmFtZTppIGZvciBpIGluIGFyY2hpdmUuaW5mb2xpc3QoKX0KIGJsb2Nrcz1zZXQoKQogZm9yIHJlbGF0aXZlLHBpbiBpbiBzZWxlY3RlZC5pdGVtcygpOgogIHBhcnRzPXBhdGhsaWIuUHVyZVBvc2l4UGF0aChyZWxhdGl2ZSkucGFydHMKICBhc3NlcnQgbm90IHJlbGF0aXZlLnN0YXJ0c3dpdGgoJy8nKSBhbmQgYWxsKHAgbm90IGluICgnJywnLi4nLCcuJykgZm9yIHAgaW4gcGFydHMpCiAgaW5mbz1pbmZvc1tQUkVGSVgrcmVsYXRpdmVdCiAgYXNzZXJ0IGluZm8uZmlsZV9zaXplPT1waW5bJ2J5dGVzJ10gYW5kIChpbmZvLmV4dGVybmFsX2F0dHI+PjE2KSYwbzE3MDAwMCE9MG8xMjAwMDAKICBzdGFydD1pbmZvLmhlYWRlcl9vZmZzZXQ7ZW5kPXN0YXJ0KzMwK2xlbihpbmZvLmZpbGVuYW1lLmVuY29kZSgpKStsZW4oaW5mby5leHRyYSkraW5mby5jb21wcmVzc19zaXplKzMyCiAgYmxvY2tzLnVwZGF0ZShyYW5nZShzdGFydC8vY2h1bmssbWluKFNJWkUtMSxlbmQpLy9jaHVuaysxKSkKIHdpdGggY29uY3VycmVudC5mdXR1cmVzLlRocmVhZFBvb2xFeGVjdXRvcihtYXhfd29ya2Vycz04KSBhcyBleGVjdXRvcjpsaXN0KGV4ZWN1dG9yLm1hcChibG9jayxzb3J0ZWQoYmxvY2tzKSkpCiByZWNlaXB0cz1bXQogZm9yIHJlbGF0aXZlLHBpbiBpbiBzZWxlY3RlZC5pdGVtcygpOgogIGRhdGE9YXJjaGl2ZS5yZWFkKFBSRUZJWCtyZWxhdGl2ZSkKICBhc3NlcnQgbGVuKGRhdGEpPT1waW5bJ2J5dGVzJ10gYW5kIHNoYShkYXRhKT09cGluWydzaGEyNTYnXSxyZWxhdGl2ZQogIGlmIHJlbGF0aXZlLnN0YXJ0c3dpdGgoJ21vZGVscy8nKToKICAgdGFyZ2V0PWJhc2UvJ29yaWdpbmFsLW1vZGVscycvcGF0aGxpYi5QdXJlUG9zaXhQYXRoKHJlbGF0aXZlKS5uYW1lCiAgZWxzZTp0YXJnZXQ9YmFzZS8nbmF0aXZlLWNhdGFsb2cnL3JlbGF0aXZlLnJlbW92ZXByZWZpeCgnY2F0YWxvZy8nKQogIHRhcmdldC5wYXJlbnQubWtkaXIocGFyZW50cz1UcnVlLGV4aXN0X29rPVRydWUpCiAgd2l0aCB0YXJnZXQub3BlbigneGInKSBhcyBzaW5rOnNpbmsud3JpdGUoZGF0YSkKICByZWNlaXB0cy5hcHBlbmQoeydtZW1iZXInOlBSRUZJWCtyZWxhdGl2ZSwqKnBpbiwnY3JjX3ZlcmlmaWVkJzpUcnVlfSkKIHBvaW50ZXI9anNvbi5sb2FkcygoYmFzZS8nbmF0aXZlLWNhdGFsb2cvY3VycmVudC5qc29uJykucmVhZF9ieXRlcygpKQogYXNzZXJ0IHBvaW50ZXJbJ2dlbmVyYXRpb24nXT09bWFuaWZlc3RbJ2NhdGFsb2dfZ2VuZXJhdGlvbiddCiAocHJvb2YvJ3JldXNlZC1tb2RlbC1maXh0dXJlLW1hbmlmZXN0Lmpzb24nKS53cml0ZV9ieXRlcyhyYXcpCiAocHJvb2YvJ3JldXNlZC1tb2RlbC1maXh0dXJlLmpzb24nKS53cml0ZV90ZXh0KGpzb24uZHVtcHMoeydhcnRpZmFjdCc6QVJUSUZBQ1QsJ3J1bic6Mzk2MzU1OTYxODgsJ2FydGlmYWN0X3NpemUnOlNJWkUsJ2hpc3RvcmljYWxfc291cmNlJzpTT1VSQ0UsJ2ZpeHR1cmVfbWFuaWZlc3Rfc2hhMjU2JzpQSU4sJ2NhdGFsb2dfZ2VuZXJhdGlvbic6cG9pbnRlclsnZ2VuZXJhdGlvbiddLCdmdWxsX3ppcF9jcmNfY2xhaW0nOkZhbHNlLCdzZWxlY3RlZF9tZW1iZXJzJzpyZWNlaXB0cywnZmV0Y2hlZF9hcmNoaXZlX3JhbmdlX2J5dGVzJzpzdW0obWFwKGxlbixjYWNoZS52YWx1ZXMoKSkpLCdvcmlnaW5hbF9tb2RlbF9jb21waWxhdGlvbl9yZXBlYXRlZCc6RmFsc2UsJ3Byb3ZpZGVyJzonQ1BVOkxMVk0gd2l0aCBsaWJMTFZNLTE4OyBjdXJyZW50IGNhdGFsb2cgdmFsaWRhdGlvbiBhbmQgbGl2ZSBjb21wYXJpc29uIHJlcXVpcmVkJ30saW5kZW50PTIpKydcbicpCiBwcmludChqc29uLmR1bXBzKHsncmV1c2VkX21vZGVsX2ZpbGVzJzo0LCdyZXVzZWRfY2F0YWxvZ19maWxlcyc6NTc0LCdzZWxlY3RlZF9jcmNfdmVyaWZpZWQnOmxlbihyZWNlaXB0cyksJ3JhbmdlX2J5dGVzJzpzdW0obWFwKGxlbixjYWNoZS52YWx1ZXMoKSkpfSkpCg==",validate=True)
-
-        assert hashlib.sha256(raw).hexdigest()=="7f3e0150116394ef84024ba2891719d6fd07243499e187acf8f23275e718d420"
-
-        p=Path(os.environ[''RUNNER_TEMP''])/''driver-daemon-native-296/reuse_driving_model_fixture.py''
-
-        p.write_bytes(raw)
-
-        PY_REUSE_WRAPPER
-
-        python3 "$proof/reuse_driving_model_fixture.py" >"$proof/reused-model-summary.json"
-
-        rust/target/debug/model-run --check-catalog "$RUNNER_TEMP/native-catalog" >"$proof/catalog-check.log" 2>&1 || { cat
-        "$proof/catalog-check.log"; exit 1; }
-
-        dpkg-query -W libllvm18 >"$proof/reused-model-current-llvm-package.txt"
-
-        '
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/driver-daemon-native-296\"\nrust/tools/check-disk-space --path \"$GITHUB_WORKSPACE\"\
+        \ --growth-mib 4096\nmkdir -p \"$RUNNER_TEMP/original-models\"\npython tinygrad_repo/examples/openpilot/compile3.py\
+        \ \"$GITHUB_WORKSPACE/openpilot/selfdrive/modeld/models/dmonitoring_model.onnx\" \"$RUNNER_TEMP/original-models/dmonitoring_model_tinygrad.pkl\"\
+        \ >\"$proof/driver-model-compile.log\" 2>&1 || { cat \"$proof/driver-model-compile.log\"; exit 1; }\npython openpilot/selfdrive/modeld/get_model_metadata.py\
+        \ openpilot/selfdrive/modeld/models/dmonitoring_model.onnx >\"$proof/metadata-compile.log\" 2>&1 || { cat \"$proof/metadata-compile.log\"\
+        ; exit 1; }\ncp openpilot/selfdrive/modeld/models/dmonitoring_model_metadata.pkl \"$RUNNER_TEMP/original-models/\"\
+        \nfor resolution in 1928x1208 1344x760; do\n  rust/tools/check-disk-space --path \"$GITHUB_WORKSPACE\" --growth-mib\
+        \ 2048\n  python openpilot/selfdrive/modeld/compile_dm_warp.py --camera-resolution \"$resolution\" --warp-to 1440x960\
+        \ --output \"$RUNNER_TEMP/original-models/dm_warp_${resolution}_tinygrad.pkl\" >\"$proof/warp-${resolution}.log\"\
+        \ 2>&1 || { cat \"$proof/warp-${resolution}.log\"; exit 1; }\ndone\n"
+    - name: Publish driver-only native catalog from sealed original PKLs
+      shell: bash
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/driver-daemon-native-296\"\nrust/tools/check-disk-space --path \"$GITHUB_WORKSPACE\"\
+        \ --growth-mib 4096\npython - <<'PY_CATALOG' >\"$proof/catalog-build.log\" 2>&1\nimport hashlib\nimport os\nfrom pathlib\
+        \ import Path\nfrom model_export.original import DriverArtifacts, driver\nfrom model_export.publish import BundleSpec,\
+        \ publish\nfrom openpilot.common.file_chunker import open_file_chunked\n\nroot = Path(os.environ[\"RUNNER_TEMP\"])\
+        \ / \"original-models\"\noutput = Path(os.environ[\"RUNNER_TEMP\"]) / \"native-catalog\"\ndef source_hash(path):\n\
+        \    with open_file_chunked(str(path)) as source:\n        return hashlib.file_digest(source, \"sha256\").hexdigest()\n\
+        model = root / \"dmonitoring_model_tinygrad.pkl\"\nmetadata = root / \"dmonitoring_model_metadata.pkl\"\nbase_sources\
+        \ = {\"model\": source_hash(model), \"metadata\": source_hash(metadata)}\nspecs = []\nfor resolution in ((1928, 1208),\
+        \ (1344, 760)):\n    warp = root / f\"dm_warp_{resolution[0]}x{resolution[1]}_tinygrad.pkl\"\n    specs.append(BundleSpec(\"\
+        driver\", resolution, driver(DriverArtifacts(model, warp, metadata)),\n                            base_sources |\
+        \ {\"warp\": source_hash(warp)}))\npublish(output, specs, \"cpu\")\nprint(output / \"current.json\")\nPY_CATALOG\n\
+        rust/target/debug/model-run --check-catalog \"$RUNNER_TEMP/native-catalog\" >\"$proof/catalog-check.log\" 2>&1 ||\
+        \ { cat \"$proof/catalog-build.log\" \"$proof/catalog-check.log\"; exit 1; }\n"
     - name: Materialize SHA-pinned independent original-only capture wrapper
       shell: bash
       run: 'set -euo pipefail
@@ -300,29 +282,17 @@ jobs:
         nDRIVER_DAEMON_HISTORICAL_COLLECTOR_SOURCE_COMMIT=%s\\n' \"$held/original\" 57a3a05c0a0fa5b3318fc3fb1e3c07e9a9838b3379c3cb2e50e96974ed7bfd4a\
         \ 34e5e052f7c19a2c2f22ef9a0298d228ab5ce949 >>\"$GITHUB_ENV\"\n"
     - name: Observe only a second warmup TIMEOUT before unchanged cleanup
-      run: 'set -euo pipefail
-
-        proof="$RUNNER_TEMP/driver-daemon-native-296"
-
-        python3 - <<''PY_OBSERVER''
-
-        import base64,hashlib,os
-
-        from pathlib import Path
-
-        raw=base64.b64decode("IiIiSG9zdGVkLW9ubHkgZGlhZ25vc3RpYyBsYXVuY2hlcjsgbmV2ZXIgY2hhbmdlcyBjaGVja2VyIHJlc3VsdHMgb3IgZGVhZGxpbmVzLgoKVXNhZ2U6IHB5dGhvbiBvYnNlcnZlX3dhcm11cF90aW1lb3V0LnB5IENBUFRVUkVfSEVMUEVSIFt1bmNoYW5nZWQgaGVscGVyIGFyZ3MuLi5dCkluc3RhbGwgYXJvdW5kIHRoZSBleGlzdGluZyBuby1jb2xsZWN0b3IgY2FwdHVyZSBvbmNlOyBubyBzZWNvbmQgbW9kZWwgcnVuLgoiIiIKaW1wb3J0IGltcG9ydGxpYi5tYWNoaW5lcnkKaW1wb3J0IGluc3BlY3QKaW1wb3J0IGpzb24KaW1wb3J0IG9zCmZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aAppbXBvcnQgcnVucHkKaW1wb3J0IHN5cwppbXBvcnQgdGltZQoKCmRlZiByZWFkKHBhdGgsIGxpbWl0PTY1NTM2KToKICAgIHRyeToKICAgICAgICB3aXRoIFBhdGgocGF0aCkub3BlbigicmIiKSBhcyBzb3VyY2U6CiAgICAgICAgICAgIGRhdGEgPSBzb3VyY2UucmVhZChsaW1pdCArIDEpCiAgICAgICAgcmV0dXJuIHsidGV4dCI6IGRhdGFbOmxpbWl0XS5kZWNvZGUoZXJyb3JzPSJyZXBsYWNlIiksICJ0cnVuY2F0ZWQiOiBsZW4oZGF0YSkgPiBsaW1pdH0KICAgIGV4Y2VwdCBPU0Vycm9yIGFzIGVycm9yOgogICAgICAgIHJldHVybiB7ImVycm9yIjogc3RyKGVycm9yKX0KCgpkZWYgc25hcHNob3QoZnJhbWUsIGRlc3RpbmF0aW9uKToKICAgIHdoaWxlIGZyYW1lIGlzIG5vdCBOb25lIGFuZCBmcmFtZS5mX2NvZGUuY29fbmFtZSAhPSAiY2hlY2siOgogICAgICAgIGZyYW1lID0gZnJhbWUuZl9iYWNrCiAgICBpZiBmcmFtZSBpcyBOb25lIG9yICJwcm9jZXNzZXMiIG5vdCBpbiBmcmFtZS5mX2xvY2FsczoKICAgICAgICByYWlzZSBSdW50aW1lRXJyb3IoInVuY2hhbmdlZCBjaGVja2VyIHByb2Nlc3Mgb3duZXIgZnJhbWUgbm90IGZvdW5kIikKICAgIHJlcG9ydCA9IHsib2JzZXJ2ZWRfbW9ub3RvbmljX25zIjogdGltZS5tb25vdG9uaWNfbnMoKSwKICAgICAgICAgICAgICAidHJpZ2dlciI6ICJzZWNvbmQgcGVlciBUSU1FT1VULCBiZWZvcmUgdW5jaGFuZ2VkIHdhcm11cCBhc3NlcnRpb24vZmluYWxseSIsCiAgICAgICAgICAgICAgImRlYWRsaW5lX2NoYW5nZWQiOiBGYWxzZSwgImNwdWluZm8iOiByZWFkKCIvcHJvYy9jcHVpbmZvIiwgMTMxMDcyKSwKICAgICAgICAgICAgICAicHJvY2Vzc2VzIjogW119CiAgICBmb3IgcHJvY2VzcyBpbiBmcmFtZS5mX2xvY2Fsc1sicHJvY2Vzc2VzIl06CiAgICAgICAgcm9vdCA9IFBhdGgoIi9wcm9jIikgLyBzdHIocHJvY2Vzcy5waWQpCiAgICAgICAgYXJndiA9IHByb2Nlc3MuYXJncwogICAgICAgIGl0ZW0gPSB7InBpZCI6IHByb2Nlc3MucGlkLCAiYXJndiI6IFtzdHIoYXJnKSBmb3IgYXJnIGluIGFyZ3ZdIGlmIGlzaW5zdGFuY2UoYXJndiwgKGxpc3QsIHR1cGxlKSkgZWxzZSBzdHIoYXJndiksCiAgICAgICAgICAgICAgICAicmV0dXJuY29kZV9iZWZvcmVfY2xlYW51cCI6IHByb2Nlc3MucG9sbCgpLCAidGFza3MiOiB7fX0KICAgICAgICBmb3IgbmFtZSBpbiAoInN0YXR1cyIsICJzdGF0IiwgIndjaGFuIiwgInN5c2NhbGwiLCAibWFwcyIsICJsaW1pdHMiKToKICAgICAgICAgICAgaXRlbVtuYW1lXSA9IHJlYWQocm9vdCAvIG5hbWUsIDI2MjE0NCBpZiBuYW1lID09ICJtYXBzIiBlbHNlIDY1NTM2KQogICAgICAgIHRyeToKICAgICAgICAgICAgZm9yIHRhc2sgaW4gc29ydGVkKChyb290IC8gInRhc2siKS5pdGVyZGlyKCkpWzoxMjhdOgogICAgICAgICAgICAgICAgaXRlbVsidGFza3MiXVt0YXNrLm5hbWVdID0gewogICAgICAgICAgICAgICAgICAgIG5hbWU6IHJlYWQodGFzayAvIG5hbWUpIGZvciBuYW1lIGluICgic3RhdHVzIiwgInN0YXQiLCAid2NoYW4iLCAic3lzY2FsbCIsICJzdGFjayIpfQogICAgICAgIGV4Y2VwdCBPU0Vycm9yIGFzIGVycm9yOgogICAgICAgICAgICBpdGVtWyJ0YXNrX2Vycm9yIl0gPSBzdHIoZXJyb3IpCiAgICAgICAgcmVwb3J0WyJwcm9jZXNzZXMiXS5hcHBlbmQoaXRlbSkKICAgIHdpdGggZGVzdGluYXRpb24ud2l0aF9uYW1lKCJ3YXJtdXAtYmVmb3JlLWNsZWFudXAuanNvbiIpLm9wZW4oIngiKSBhcyBzaW5rOgogICAgICAgIGpzb24uZHVtcChyZXBvcnQsIHNpbmssIGluZGVudD0yKQogICAgICAgIHNpbmsud3JpdGUoIlxuIikKCgpvcmlnaW5hbF9leGVjID0gaW1wb3J0bGliLm1hY2hpbmVyeS5Tb3VyY2VGaWxlTG9hZGVyLmV4ZWNfbW9kdWxlCgoKZGVmIGV4ZWNfbW9kdWxlKGxvYWRlciwgbW9kdWxlKToKICAgIG9yaWdpbmFsX2V4ZWMobG9hZGVyLCBtb2R1bGUpCiAgICBpZiBtb2R1bGUuX19uYW1lX18gIT0gIm9yaWdpbmFsX2RyaXZlcl9kYWVtb25fY2hlY2tlciI6CiAgICAgICAgcmV0dXJuCiAgICBvcmlnaW5hbF91bnRpbCA9IG1vZHVsZS5MaW5lcy51bnRpbAogICAgY291bnRzID0ge30KCiAgICBkZWYgdW50aWwobGluZXMsIGV4cGVjdGVkLCB0aW1lb3V0PTYwKToKICAgICAgICByZXN1bHQgPSBvcmlnaW5hbF91bnRpbChsaW5lcywgZXhwZWN0ZWQsIHRpbWVvdXQpCiAgICAgICAgaWYgbGluZXMuZGVzdGluYXRpb24ubmFtZSA9PSAicGVlci5sb2ciIGFuZCByZXN1bHQgPT0gIlRJTUVPVVQiOgogICAgICAgICAgICBrZXkgPSBzdHIobGluZXMuZGVzdGluYXRpb24pCiAgICAgICAgICAgIGNvdW50c1trZXldID0gY291bnRzLmdldChrZXksIDApICsgMQogICAgICAgICAgICBpZiBjb3VudHNba2V5XSA9PSAyOgogICAgICAgICAgICAgICAgdHJ5OgogICAgICAgICAgICAgICAgICAgIHNuYXBzaG90KGluc3BlY3QuY3VycmVudGZyYW1lKCkuZl9iYWNrLCBsaW5lcy5kZXN0aW5hdGlvbikKICAgICAgICAgICAgICAgIGV4Y2VwdCBFeGNlcHRpb24gYXMgZXJyb3I6CiAgICAgICAgICAgICAgICAgICAgIyBEaWFnbm9zdGljIGZhaWx1cmUgbXVzdCBuZWl0aGVyIHN1cHByZXNzIG5vciByZXBsYWNlIHRoZQogICAgICAgICAgICAgICAgICAgICMgb3JpZ2luYWwgY2hlY2tlcidzIGFzc2VydGlvbiBhbmQgcHJvY2VzcyBjbGVhbnVwLgogICAgICAgICAgICAgICAgICAgIGxpbmVzLmRlc3RpbmF0aW9uLndpdGhfbmFtZSgid2FybXVwLW9ic2VydmVyLWVycm9yLnR4dCIpLndyaXRlX3RleHQocmVwcihlcnJvcikgKyAiXG4iKQogICAgICAgIHJldHVybiByZXN1bHQKCiAgICBtb2R1bGUuTGluZXMudW50aWwgPSB1bnRpbAoKCmlmIF9fbmFtZV9fID09ICJfX21haW5fXyI6CiAgICBoZWxwZXIgPSBzeXMuYXJndlsxXQogICAgc3lzLmFyZ3YgPSBzeXMuYXJndlsxOl0KICAgIGltcG9ydGxpYi5tYWNoaW5lcnkuU291cmNlRmlsZUxvYWRlci5leGVjX21vZHVsZSA9IGV4ZWNfbW9kdWxlCiAgICB0cnk6CiAgICAgICAgcnVucHkucnVuX3BhdGgoaGVscGVyLCBydW5fbmFtZT0iX19tYWluX18iKQogICAgZmluYWxseToKICAgICAgICBpbXBvcnRsaWIubWFjaGluZXJ5LlNvdXJjZUZpbGVMb2FkZXIuZXhlY19tb2R1bGUgPSBvcmlnaW5hbF9leGVjCg==",validate=True)
-
-        assert hashlib.sha256(raw).hexdigest()=="90b4ca9bd22f2f518a310533aa6b48f19beb58798880d286dab1da7618ec4acc"
-
-        (Path(os.environ[''RUNNER_TEMP''])/''driver-daemon-native-296/observe_warmup_timeout.py'').write_bytes(raw)
-
-        PY_OBSERVER
-
-        cat /proc/cpuinfo >"$proof/current-host-cpuinfo.txt"
-
-        uname -a >"$proof/current-host-uname.txt"
-
-        '
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/driver-daemon-native-296\"\npython3 - <<'PY_OBSERVER'\nimport base64,hashlib,os,ctypes,json,platform\n\
+        from pathlib import Path\nfrom tinygrad.runtime.autogen import llvm\nraw=base64.b64decode(\"IiIiSG9zdGVkLW9ubHkgZGlhZ25vc3RpYyBsYXVuY2hlcjsgbmV2ZXIgY2hhbmdlcyBjaGVja2VyIHJlc3VsdHMgb3IgZGVhZGxpbmVzLgoKVXNhZ2U6IHB5dGhvbiBvYnNlcnZlX3dhcm11cF90aW1lb3V0LnB5IENBUFRVUkVfSEVMUEVSIFt1bmNoYW5nZWQgaGVscGVyIGFyZ3MuLi5dCkluc3RhbGwgYXJvdW5kIHRoZSBleGlzdGluZyBuby1jb2xsZWN0b3IgY2FwdHVyZSBvbmNlOyBubyBzZWNvbmQgbW9kZWwgcnVuLgoiIiIKaW1wb3J0IGltcG9ydGxpYi5tYWNoaW5lcnkKaW1wb3J0IGluc3BlY3QKaW1wb3J0IGpzb24KaW1wb3J0IG9zCmZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aAppbXBvcnQgcnVucHkKaW1wb3J0IHN5cwppbXBvcnQgdGltZQoKCmRlZiByZWFkKHBhdGgsIGxpbWl0PTY1NTM2KToKICAgIHRyeToKICAgICAgICB3aXRoIFBhdGgocGF0aCkub3BlbigicmIiKSBhcyBzb3VyY2U6CiAgICAgICAgICAgIGRhdGEgPSBzb3VyY2UucmVhZChsaW1pdCArIDEpCiAgICAgICAgcmV0dXJuIHsidGV4dCI6IGRhdGFbOmxpbWl0XS5kZWNvZGUoZXJyb3JzPSJyZXBsYWNlIiksICJ0cnVuY2F0ZWQiOiBsZW4oZGF0YSkgPiBsaW1pdH0KICAgIGV4Y2VwdCBPU0Vycm9yIGFzIGVycm9yOgogICAgICAgIHJldHVybiB7ImVycm9yIjogc3RyKGVycm9yKX0KCgpkZWYgc25hcHNob3QoZnJhbWUsIGRlc3RpbmF0aW9uKToKICAgIHdoaWxlIGZyYW1lIGlzIG5vdCBOb25lIGFuZCBmcmFtZS5mX2NvZGUuY29fbmFtZSAhPSAiY2hlY2siOgogICAgICAgIGZyYW1lID0gZnJhbWUuZl9iYWNrCiAgICBpZiBmcmFtZSBpcyBOb25lIG9yICJwcm9jZXNzZXMiIG5vdCBpbiBmcmFtZS5mX2xvY2FsczoKICAgICAgICByYWlzZSBSdW50aW1lRXJyb3IoInVuY2hhbmdlZCBjaGVja2VyIHByb2Nlc3Mgb3duZXIgZnJhbWUgbm90IGZvdW5kIikKICAgIHJlcG9ydCA9IHsib2JzZXJ2ZWRfbW9ub3RvbmljX25zIjogdGltZS5tb25vdG9uaWNfbnMoKSwKICAgICAgICAgICAgICAidHJpZ2dlciI6ICJzZWNvbmQgcGVlciBUSU1FT1VULCBiZWZvcmUgdW5jaGFuZ2VkIHdhcm11cCBhc3NlcnRpb24vZmluYWxseSIsCiAgICAgICAgICAgICAgImRlYWRsaW5lX2NoYW5nZWQiOiBGYWxzZSwgImNwdWluZm8iOiByZWFkKCIvcHJvYy9jcHVpbmZvIiwgMTMxMDcyKSwKICAgICAgICAgICAgICAicHJvY2Vzc2VzIjogW119CiAgICBmb3IgcHJvY2VzcyBpbiBmcmFtZS5mX2xvY2Fsc1sicHJvY2Vzc2VzIl06CiAgICAgICAgcm9vdCA9IFBhdGgoIi9wcm9jIikgLyBzdHIocHJvY2Vzcy5waWQpCiAgICAgICAgYXJndiA9IHByb2Nlc3MuYXJncwogICAgICAgIGl0ZW0gPSB7InBpZCI6IHByb2Nlc3MucGlkLCAiYXJndiI6IFtzdHIoYXJnKSBmb3IgYXJnIGluIGFyZ3ZdIGlmIGlzaW5zdGFuY2UoYXJndiwgKGxpc3QsIHR1cGxlKSkgZWxzZSBzdHIoYXJndiksCiAgICAgICAgICAgICAgICAicmV0dXJuY29kZV9iZWZvcmVfY2xlYW51cCI6IHByb2Nlc3MucG9sbCgpLCAidGFza3MiOiB7fX0KICAgICAgICBmb3IgbmFtZSBpbiAoInN0YXR1cyIsICJzdGF0IiwgIndjaGFuIiwgInN5c2NhbGwiLCAibWFwcyIsICJsaW1pdHMiKToKICAgICAgICAgICAgaXRlbVtuYW1lXSA9IHJlYWQocm9vdCAvIG5hbWUsIDI2MjE0NCBpZiBuYW1lID09ICJtYXBzIiBlbHNlIDY1NTM2KQogICAgICAgIHRyeToKICAgICAgICAgICAgZm9yIHRhc2sgaW4gc29ydGVkKChyb290IC8gInRhc2siKS5pdGVyZGlyKCkpWzoxMjhdOgogICAgICAgICAgICAgICAgaXRlbVsidGFza3MiXVt0YXNrLm5hbWVdID0gewogICAgICAgICAgICAgICAgICAgIG5hbWU6IHJlYWQodGFzayAvIG5hbWUpIGZvciBuYW1lIGluICgic3RhdHVzIiwgInN0YXQiLCAid2NoYW4iLCAic3lzY2FsbCIsICJzdGFjayIpfQogICAgICAgIGV4Y2VwdCBPU0Vycm9yIGFzIGVycm9yOgogICAgICAgICAgICBpdGVtWyJ0YXNrX2Vycm9yIl0gPSBzdHIoZXJyb3IpCiAgICAgICAgcmVwb3J0WyJwcm9jZXNzZXMiXS5hcHBlbmQoaXRlbSkKICAgIHdpdGggZGVzdGluYXRpb24ud2l0aF9uYW1lKCJ3YXJtdXAtYmVmb3JlLWNsZWFudXAuanNvbiIpLm9wZW4oIngiKSBhcyBzaW5rOgogICAgICAgIGpzb24uZHVtcChyZXBvcnQsIHNpbmssIGluZGVudD0yKQogICAgICAgIHNpbmsud3JpdGUoIlxuIikKCgpvcmlnaW5hbF9leGVjID0gaW1wb3J0bGliLm1hY2hpbmVyeS5Tb3VyY2VGaWxlTG9hZGVyLmV4ZWNfbW9kdWxlCgoKZGVmIGV4ZWNfbW9kdWxlKGxvYWRlciwgbW9kdWxlKToKICAgIG9yaWdpbmFsX2V4ZWMobG9hZGVyLCBtb2R1bGUpCiAgICBpZiBtb2R1bGUuX19uYW1lX18gIT0gIm9yaWdpbmFsX2RyaXZlcl9kYWVtb25fY2hlY2tlciI6CiAgICAgICAgcmV0dXJuCiAgICBvcmlnaW5hbF91bnRpbCA9IG1vZHVsZS5MaW5lcy51bnRpbAogICAgY291bnRzID0ge30KCiAgICBkZWYgdW50aWwobGluZXMsIGV4cGVjdGVkLCB0aW1lb3V0PTYwKToKICAgICAgICByZXN1bHQgPSBvcmlnaW5hbF91bnRpbChsaW5lcywgZXhwZWN0ZWQsIHRpbWVvdXQpCiAgICAgICAgaWYgbGluZXMuZGVzdGluYXRpb24ubmFtZSA9PSAicGVlci5sb2ciIGFuZCByZXN1bHQgPT0gIlRJTUVPVVQiOgogICAgICAgICAgICBrZXkgPSBzdHIobGluZXMuZGVzdGluYXRpb24pCiAgICAgICAgICAgIGNvdW50c1trZXldID0gY291bnRzLmdldChrZXksIDApICsgMQogICAgICAgICAgICBpZiBjb3VudHNba2V5XSA9PSAyIGFuZCAid2FybXVwLW1lc3NhZ2UuYmluIiBpbiBzdHIoaW5zcGVjdC5jdXJyZW50ZnJhbWUoKS5mX2JhY2suZl9sb2NhbHMuZ2V0KCJ2YWx1ZSIsICIiKSk6CiAgICAgICAgICAgICAgICB0cnk6CiAgICAgICAgICAgICAgICAgICAgc25hcHNob3QoaW5zcGVjdC5jdXJyZW50ZnJhbWUoKS5mX2JhY2ssIGxpbmVzLmRlc3RpbmF0aW9uKQogICAgICAgICAgICAgICAgZXhjZXB0IEV4Y2VwdGlvbiBhcyBlcnJvcjoKICAgICAgICAgICAgICAgICAgICAjIERpYWdub3N0aWMgZmFpbHVyZSBtdXN0IG5laXRoZXIgc3VwcHJlc3Mgbm9yIHJlcGxhY2UgdGhlCiAgICAgICAgICAgICAgICAgICAgIyBvcmlnaW5hbCBjaGVja2VyJ3MgYXNzZXJ0aW9uIGFuZCBwcm9jZXNzIGNsZWFudXAuCiAgICAgICAgICAgICAgICAgICAgbGluZXMuZGVzdGluYXRpb24ud2l0aF9uYW1lKCJ3YXJtdXAtb2JzZXJ2ZXItZXJyb3IudHh0Iikud3JpdGVfdGV4dChyZXByKGVycm9yKSArICJcbiIpCiAgICAgICAgcmV0dXJuIHJlc3VsdAoKICAgIG1vZHVsZS5MaW5lcy51bnRpbCA9IHVudGlsCgoKaWYgX19uYW1lX18gPT0gIl9fbWFpbl9fIjoKICAgIGhlbHBlciA9IHN5cy5hcmd2WzFdCiAgICBzeXMuYXJndiA9IHN5cy5hcmd2WzE6XQogICAgaW1wb3J0bGliLm1hY2hpbmVyeS5Tb3VyY2VGaWxlTG9hZGVyLmV4ZWNfbW9kdWxlID0gZXhlY19tb2R1bGUKICAgIHRyeToKICAgICAgICBydW5weS5ydW5fcGF0aChoZWxwZXIsIHJ1bl9uYW1lPSJfX21haW5fXyIpCiAgICBmaW5hbGx5OgogICAgICAgIGltcG9ydGxpYi5tYWNoaW5lcnkuU291cmNlRmlsZUxvYWRlci5leGVjX21vZHVsZSA9IG9yaWdpbmFsX2V4ZWMK\"\
+        ,validate=True)\nassert hashlib.sha256(raw).hexdigest()==\"1ac738dabff493cc1cfb26c1ae9f2ef6fcd740e98c13d0352348f242a9f58b38\"\
+        \nproof=Path(os.environ['RUNNER_TEMP'])/'driver-daemon-native-296'\n(proof/'observe_warmup_timeout.py').write_bytes(raw)\n\
+        library=Path(os.environ['LLVM_PATH']).resolve(strict=True)\nreceipt={'target_kind':'current-host native objects; not\
+        \ reusable across unspecified CPU ISA',\n         'machine':platform.machine(),'llvm_cpu':ctypes.string_at(llvm.LLVMGetHostCPUName()).decode(),\n\
+        \         'llvm_features':ctypes.string_at(llvm.LLVMGetHostCPUFeatures()).decode(),\n         'llvm_path':str(library),'llvm_sha256':hashlib.sha256(library.read_bytes()).hexdigest(),\n\
+        \         'source':os.environ['EXPECTED_SOURCE'],'model_compilation':'fresh on this CPU due confirmed cross-host SIGILL',\n\
+        \         'prior_failed_run':39648160140,'prior_daemon_exit':-4}\n(proof/'current-host-compiler.json').write_text(json.dumps(receipt,indent=2)+'\\\
+        n')\nPY_OBSERVER\ncat /proc/cpuinfo >\"$proof/current-host-cpuinfo.txt\"\ndpkg-query -W libllvm18 >\"$proof/current-host-llvm-package.txt\"\
+        \n"
     - name: Capture fresh independent no-collector original packets and source pins
       shell: bash
       run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/driver-daemon-native-296\"\nrust/tools/check-disk-space --path \"$RUNNER_TEMP\"\
