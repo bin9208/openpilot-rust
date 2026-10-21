@@ -18,3 +18,10 @@ the diagnostic, then require message=true/image=false/log=true. Fixed-source
 native tests, complete camera regression and strict Clippy are pending. No camera
 runtime, loaded vehicle or device timing failure/fix is claimed from this QA peer.
 Tracked in [456](https://github.com/bin9208/openpilot-rust/issues/456).
+
+The first negative control39570788103 passed rather than reproducing the race:
+the parent could poll and join before the child published. It is not RED evidence.
+The candidate now waits for an explicit publication marker before collection,
+using the same single five-second collection deadline across both waits. Removing
+only the Vision join must then expose the missing first image deterministically;
+no production transport or timeout is changed. Hosted validation remains pending.

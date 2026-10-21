@@ -12,8 +12,10 @@ use std::{
     process::{Command, Stdio},
     time::{Duration, Instant},
 };
-fn until(mut condition: impl FnMut() -> Result<bool>) -> Result<()> {
-    let deadline = Instant::now() + Duration::from_secs(5);
+fn until(condition: impl FnMut() -> Result<bool>) -> Result<()> {
+    until_deadline(Instant::now() + Duration::from_secs(5), condition)
+}
+fn until_deadline(deadline: Instant, mut condition: impl FnMut() -> Result<bool>) -> Result<()> {
     while !condition()? {
         if Instant::now() >= deadline {
             return Err("native test peer deadline".into());
@@ -114,6 +116,7 @@ fn main_result() -> Result<()> {
                 fd: -1,
             })?;
             logger.send(b"\x14{\"levelnum\":20}".as_slice(), 0)?;
+            fs::write(root.join("published"), "published")?;
             until(|| Ok(root.join("finish").exists()))?;
         }
         "backend-ipc" => {
@@ -139,11 +142,15 @@ fn main_result() -> Result<()> {
             // Join the actual publisher generation before its first message.
             assert!(backend.receive_message(0)?.is_none());
             assert!(backend.receive_image(0)?.is_none());
+            let collection_deadline = Instant::now() + Duration::from_secs(5);
             fs::write(root.join("go"), "go")?;
+            // Force publication before collection so the one-shot test covers
+            // a reader that would otherwise rejoin only after the first frame.
+            until_deadline(collection_deadline, || Ok(root.join("published").exists()))?;
             let mut message = None;
             let mut image = None;
             let mut log = None;
-            let collected = until(|| {
+            let collected = until_deadline(collection_deadline, || {
                 if message.is_none() {
                     message = backend.receive_message(0)?;
                 }
