@@ -140,7 +140,7 @@ Related: [Understanding Settings](settings.md) · [Cruise and Following Gap](cru
 
 ### CPU / GPU comparison candidate
 
-Select **ONNX compute** on the ONNX diagnostic page. `OnnxComputeMode` defaults to 0 (CPU); 1 selects the GPU FP32 test and 2 adds GPU/CPU comparison diagnostics. Models, resolution, precision, confidence thresholds and inference intervals remain unchanged. Select CPU to revert.
+Open the diagnostic page by appending `/xiaoge/?lang=en` to the Carrot Web address, then select **ONNX compute**. `OnnxComputeMode` defaults to 0 (CPU); 1 selects the GPU FP32 test and 2 adds GPU/CPU comparison diagnostics. Models, resolution, precision, confidence thresholds and inference intervals remain unchanged. Select CPU to revert.
 
 If GPU initialization or execution fails, inference returns to CPU and the page/log reports the reason. Select CPU and then GPU to retry. GPU inference shares internal GPU resources with driving workloads; target detection equivalence and concurrent latency are not yet validated for this candidate.
 
