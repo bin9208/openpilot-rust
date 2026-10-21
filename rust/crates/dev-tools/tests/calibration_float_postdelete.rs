@@ -285,6 +285,9 @@ fn absent_python_checker_still_runs_all_25_cold_original_cpp_and_native_cases() 
         command
             .env
             .insert("OPENPILOT_RUST_ROOT".into(), root.to_str().unwrap().into());
+        // Preserve the admitted pre-deletion compiler/helper search environment.
+        // Unset and empty PATH are separately exercised by the CLI regressions.
+        command.env.insert("PATH".into(), "/usr/bin:/bin".into());
         let result = NativeRunner.run(&command).unwrap();
         fs::write(
             evidence.join(format!("{name}.code")),
