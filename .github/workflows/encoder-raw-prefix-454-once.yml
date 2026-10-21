@@ -20,16 +20,16 @@ jobs:
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       ENCODER_LIBYUV_LIB: /usr/lib/x86_64-linux-gnu
-      EXPECTED_SOURCE: 312f48274043fb0b84cbf02430efc52899e74077
+      EXPECTED_SOURCE: 79365a1e469b2146c360452d206dc8f9a930f046
     steps:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: 312f48274043fb0b84cbf02430efc52899e74077
+        ref: 79365a1e469b2146c360452d206dc8f9a930f046
     - name: Require exact candidate source
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = 312f48274043fb0b84cbf02430efc52899e74077
+        test "$(git rev-parse HEAD)" = 79365a1e469b2146c360452d206dc8f9a930f046
 
         '
     - name: Reserve capacity and install native codec prerequisites
