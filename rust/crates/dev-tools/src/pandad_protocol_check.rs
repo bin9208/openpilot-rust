@@ -1,6 +1,6 @@
 //! Original Panda CAN codec/SPI alert QA controller; fixture transports only.
 use crate::{
-    argparse_scan::{scan_os, ArgumentError, OptionSpec},
+    argparse_scan::{scan_os_required_first, ArgumentError, OptionSpec},
     path_resolve::resolve_non_strict,
     qa_process::{CommandSpec, NativeRunner, Runner},
     seal::Result,
@@ -59,7 +59,7 @@ pub struct Options {
     pub sysroot: Option<PathBuf>,
 }
 pub fn parse(args: &[OsString], root: &Path) -> Result<Option<Options>> {
-    let parsed = scan_os(
+    let parsed = scan_os_required_first(
         args,
         &[
             OptionSpec::value("--source", true),

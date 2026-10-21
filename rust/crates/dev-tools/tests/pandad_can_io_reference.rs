@@ -265,7 +265,7 @@ fn full_original_both_modes_all_fields_match_checkout_absent_and_actual_raw_runn
             "raw",
             private,
             raw_native.clone(),
-            vec![raw_runner.clone().into_os_string(), "--".into()],
+            vec![raw_runner.clone().into_os_string()],
             "raw-native-output",
         ),
     ] {
@@ -350,7 +350,7 @@ fn full_original_both_modes_all_fields_match_checkout_absent_and_actual_raw_runn
                     let JsonView::Array(original_args) = want.view() else {
                         panic!("original raw command missing")
                     };
-                    assert_eq!(original_args.len(), 3);
+                    assert_eq!(original_args.len(), 2);
                     assert_eq!(
                         openpilot_dev_tools::python_fs::from_json(&original_args[0])
                             .unwrap()
@@ -360,7 +360,7 @@ fn full_original_both_modes_all_fields_match_checkout_absent_and_actual_raw_runn
                             .unwrap()
                     );
                     assert_eq!(
-                        openpilot_dev_tools::python_fs::from_json(&original_args[2])
+                        openpilot_dev_tools::python_fs::from_json(&original_args[1])
                             .unwrap()
                             .as_bytes(),
                         STANDARD
@@ -425,7 +425,8 @@ fn original_cli_admissions_meaning_channels_and_no_effects_match() {
             let original = String::from_utf8_lossy(&stderr);
             match name {
                 "unknown" => {
-                    assert!(actual.contains("unrecognized") && original.contains("unrecognized"))
+                    assert!(actual.contains("required") && original.contains("required"));
+                    assert!(actual.contains("--source") && original.contains("--source"));
                 }
                 "source-option-missing" => {
                     assert!(actual.contains("--source") && actual.contains("value"));
@@ -435,6 +436,164 @@ fn original_cli_admissions_meaning_channels_and_no_effects_match() {
             }
         }
         assert_eq!(fs::read_dir(cwd.path()).unwrap().count(), 0);
+    }
+    assert_eq!(original(), (capture, manifest));
+    assert_eq!(mode(), before_mode);
+}
+
+#[test]
+fn independently_captured_runner_separator_attached_values_and_help_order_match() {
+    let before_mode = mode();
+    let (capture, manifest) = original();
+    let evidence = tempfile::Builder::new()
+        .prefix("can-io-runner-admissions-")
+        .tempdir_in(required("PANDAD_CAN_IO_TEST_OUTPUT"))
+        .unwrap()
+        .keep();
+    let old = value(&capture.join("admissions/runner-separator-rejected.json"));
+    let old_args = old["argv_b64"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .skip(3)
+        .map(|v| OsString::from_vec(STANDARD.decode(v.as_str().unwrap()).unwrap()))
+        .collect::<Vec<_>>();
+    assert_eq!(old_args.len(), 9);
+    assert_eq!(old_args[0], "--source");
+    assert_eq!(old_args[2], "--native");
+    assert_eq!(old_args[4], "--output");
+    assert_eq!(old_args[6], "--runner");
+    assert_eq!(old_args[8], "--");
+    assert_eq!(old["exit"], 2);
+    assert!(old["files_b64"].is_null());
+    assert!(STANDARD
+        .decode(old["stdout_b64"].as_str().unwrap())
+        .unwrap()
+        .is_empty());
+    assert!(String::from_utf8_lossy(
+        &STANDARD
+            .decode(old["stderr_b64"].as_str().unwrap())
+            .unwrap()
+    )
+    .contains("unrecognized arguments: --"));
+    let source = required("PANDAD_CAN_IO_SOURCE_BINARY");
+    let native = required("PANDAD_CAN_IO_NATIVE_BINARY");
+    let rejected_output = evidence.join("separator-output");
+    let child = retained(
+        &evidence,
+        "actual-captured-separator",
+        &invoke(
+            &root(),
+            &source,
+            &native,
+            &rejected_output,
+            &["/usr/bin/env".into(), "--".into()],
+        ),
+    );
+    assert_eq!(child.code, 2);
+    assert!(child.stdout.is_empty());
+    assert!(String::from_utf8_lossy(&child.stderr).contains("unrecognized arguments: --"));
+    assert!(!rejected_output.exists());
+    let probes = manifest["parser_probes"]
+        .as_array()
+        .expect("fresh original attached/bare parser admissions are mandatory");
+    assert_eq!(probes.len(), 12);
+    for probe in probes {
+        let name = probe.as_str().unwrap();
+        let receipt = value(&capture.join(format!("admissions/parser-{name}.json")));
+        assert_eq!(receipt["name"], name);
+        let mut args = receipt["argv_b64"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .skip(3)
+            .map(|v| OsString::from_vec(STANDARD.decode(v.as_str().unwrap()).unwrap()))
+            .collect::<Vec<_>>();
+        assert!(args.len() >= 6);
+        assert_eq!(args[0], "--source");
+        assert_eq!(args[2], "--native");
+        assert_eq!(args[4], "--output");
+        let directory = evidence.join(name);
+        fs::create_dir(&directory).unwrap();
+        let output = directory.join("output");
+        // Only the three already-classified source/native/output roles change.
+        // All attached/bare/separator/help tokens replay byte-for-byte.
+        args[1] = evidence.join("absent-source").into_os_string();
+        args[3] = evidence.join("absent-native").into_os_string();
+        args[5] = output.clone().into_os_string();
+        let child = retained(
+            &evidence,
+            &format!("parser-{name}"),
+            &command(&root(), args),
+        );
+        assert_eq!(
+            i64::from(child.code),
+            receipt["exit"].as_i64().unwrap(),
+            "{name}: independent original exit"
+        );
+        let stdout = STANDARD
+            .decode(receipt["stdout_b64"].as_str().unwrap())
+            .unwrap();
+        let stderr = STANDARD
+            .decode(receipt["stderr_b64"].as_str().unwrap())
+            .unwrap();
+        assert_eq!(
+            child.stdout.is_empty(),
+            stdout.is_empty(),
+            "{name}: stdout channel"
+        );
+        assert_eq!(
+            child.stderr.is_empty(),
+            stderr.is_empty(),
+            "{name}: stderr channel"
+        );
+        for bytes in [&child.stdout, &child.stderr, &stdout, &stderr] {
+            assert!(!bytes.windows(4).any(|part| part == b"PASS"));
+        }
+        match child.code {
+            0 => {
+                assert!(receipt["files_b64"].is_null());
+                for flag in ["--source", "--native", "--output", "--runner"] {
+                    assert!(String::from_utf8_lossy(&child.stdout).contains(flag));
+                    assert!(String::from_utf8_lossy(&stdout).contains(flag));
+                }
+            }
+            2 => {
+                assert!(receipt["files_b64"].is_null());
+                assert!(String::from_utf8_lossy(&child.stderr).contains("unrecognized"));
+                assert!(String::from_utf8_lossy(&stderr).contains("unrecognized"));
+            }
+            1 => {
+                let seals = receipt["files_b64"].as_object().unwrap();
+                assert_eq!(seals.len(), 1);
+                assert!(seals.contains_key(&STANDARD.encode(b"seeds.input.jsonl")));
+                let mut files = BTreeSet::new();
+                roster(&output, &output, &mut files);
+                assert_eq!(
+                    files,
+                    [PathBuf::from("seeds.input.jsonl")]
+                        .into_iter()
+                        .collect::<BTreeSet<_>>()
+                );
+                assert_eq!(
+                    rows(&output.join("seeds.input.jsonl")),
+                    rows(
+                        &capture
+                            .join("parser-effects")
+                            .join(name)
+                            .join("seeds.input.jsonl")
+                    )
+                );
+                assert!(String::from_utf8_lossy(&child.stderr).contains("No such file"));
+                assert!(String::from_utf8_lossy(&stderr).contains("No such file"));
+            }
+            code => panic!("unexpected original parser status {code}"),
+        }
+        if child.code != 1 {
+            assert_eq!(fs::read_dir(&directory).unwrap().count(), 0);
+        }
+        assert!(!output.join("report.json").exists());
+        assert!(!output.join("provenance.json").exists());
     }
     assert_eq!(original(), (capture, manifest));
     assert_eq!(mode(), before_mode);

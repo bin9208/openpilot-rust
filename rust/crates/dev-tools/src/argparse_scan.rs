@@ -90,6 +90,14 @@ pub fn scan_with_positionals(
     specs: &[OptionSpec],
     required_positionals: usize,
 ) -> Result<Parsed, ArgumentError> {
+    scan_with_policy(args, specs, required_positionals, false)
+}
+fn scan_with_policy(
+    args: &[String],
+    specs: &[OptionSpec],
+    required_positionals: usize,
+    required_first: bool,
+) -> Result<Parsed, ArgumentError> {
     let mut all = specs.to_vec();
     all.push(OptionSpec::flag("--help", None));
     let resolve = |name: &str| -> Result<Option<usize>, ArgumentError> {
@@ -206,16 +214,19 @@ pub fn scan_with_positionals(
         }
         i += 1;
     }
-    if extras || positionals.len() != required_positionals {
-        return Err(ArgumentError("unrecognized arguments".into()));
-    }
-    for spec in specs {
-        if spec.required
-            && !values.contains_key(spec.name)
-            && !append_values.contains_key(spec.name)
-        {
-            return Err(ArgumentError(format!("{} required", spec.name)));
+    let unexpected = extras || positionals.len() != required_positionals;
+    if required_first || !unexpected {
+        for spec in specs {
+            if spec.required
+                && !values.contains_key(spec.name)
+                && !append_values.contains_key(spec.name)
+            {
+                return Err(ArgumentError(format!("{} required", spec.name)));
+            }
         }
+    }
+    if unexpected {
+        return Err(ArgumentError("unrecognized arguments".into()));
     }
     Ok(Parsed {
         values,
@@ -245,6 +256,22 @@ pub fn scan_os_with_positionals(
     args: &[std::ffi::OsString],
     specs: &[OptionSpec],
     required_positionals: usize,
+) -> Result<ParsedOs, ArgumentError> {
+    scan_os_with_policy(args, specs, required_positionals, false)
+}
+/// Opt-in to argparse's required-option check before its final unknown-argument
+/// check. Existing scanners retain their historical error-order contract.
+pub fn scan_os_required_first(
+    args: &[std::ffi::OsString],
+    specs: &[OptionSpec],
+) -> Result<ParsedOs, ArgumentError> {
+    scan_os_with_policy(args, specs, 0, true)
+}
+fn scan_os_with_policy(
+    args: &[std::ffi::OsString],
+    specs: &[OptionSpec],
+    required_positionals: usize,
+    required_first: bool,
 ) -> Result<ParsedOs, ArgumentError> {
     use std::{
         ffi::OsString,
@@ -296,10 +323,11 @@ pub fn scan_os_with_positionals(
         output.extend_from_slice(rest.as_bytes());
         OsString::from_vec(output)
     };
-    let parsed = scan_with_positionals(
+    let parsed = scan_with_policy(
         &args.iter().map(encode).collect::<Vec<_>>(),
         specs,
         required_positionals,
+        required_first,
     )?;
     Ok(ParsedOs {
         values: parsed
@@ -340,5 +368,39 @@ mod decimal_tests {
         for ch in ['\u{10d40}', '\u{1ccf0}', '²', '①', '-', '.'] {
             assert_eq!(super::decimal_value(ch), None);
         }
+    }
+}
+
+#[cfg(test)]
+mod required_first_tests {
+    use super::*;
+    use std::ffi::OsString;
+    #[test]
+    fn required_order_is_opt_in_and_does_not_override_help_or_value_errors() {
+        let specs = [OptionSpec::value("--source", true)];
+        let unknown = [OsString::from("--unknown")];
+        assert_eq!(
+            scan_os(&unknown, &specs).err().unwrap().0,
+            "unrecognized arguments"
+        );
+        assert_eq!(
+            scan_os_required_first(&unknown, &specs).err().unwrap().0,
+            "--source required"
+        );
+        let complete = ["--source", "value", "--unknown"].map(OsString::from);
+        assert_eq!(
+            scan_os_required_first(&complete, &specs).err().unwrap().0,
+            "unrecognized arguments"
+        );
+        let help = ["--unknown", "--help"].map(OsString::from);
+        assert!(scan_os_required_first(&help, &specs).unwrap().help);
+        let missing_value = ["--source", "--unknown"].map(OsString::from);
+        assert_eq!(
+            scan_os_required_first(&missing_value, &specs)
+                .err()
+                .unwrap()
+                .0,
+            "--source requires a value"
+        );
     }
 }

@@ -1,6 +1,6 @@
 //! Original Panda bulk CAN transport QA controller, without physical transports.
 use crate::{
-    argparse_scan::{scan_os, OptionSpec},
+    argparse_scan::{scan_os_required_first, ArgumentError, OptionSpec},
     path_resolve::resolve_non_strict,
     qa_process::{Captured, CommandSpec, NativeRunner, Runner},
     seal::Result,
@@ -55,32 +55,41 @@ pub fn parse(args: &[OsString], root: &Path) -> Result<Option<Options>> {
             break;
         }
         let name = bytes.split(|b| *b == b'=').next().unwrap_or(bytes);
-        if name.len() > 2 && b"--runner".starts_with(name) {
+        // argparse consumes only the explicit value in --runner=VALUE; later
+        // options still act normally. A bare runner consumes the remainder.
+        if name.len() > 2 && b"--runner".starts_with(name) && !bytes.contains(&b'=') {
             boundary = Some(index);
             break;
         }
     }
-    let (prefix, runner) = if let Some(index) = boundary {
-        let mut rest = Vec::new();
-        if let Some(at) = args[index].as_bytes().iter().position(|b| *b == b'=') {
-            rest.push(std::ffi::OsStr::from_bytes(&args[index].as_bytes()[at + 1..]).to_owned());
-        }
-        rest.extend_from_slice(&args[index + 1..]);
-        (&args[..index], rest)
+    let (prefix, remainder) = if let Some(index) = boundary {
+        (&args[..index], Some(args[index + 1..].to_vec()))
     } else {
-        (args, vec![])
+        (args, None)
     };
-    let parsed = scan_os(
+    let parsed = scan_os_required_first(
         prefix,
         &[
             OptionSpec::value("--source", true),
             OptionSpec::value("--native", true),
             OptionSpec::value("--output", true),
+            OptionSpec::value("--runner", false),
         ],
     )?;
     if parsed.help {
         return Ok(None);
     }
+    let runner = if let Some(remainder) = remainder {
+        // argparse's optional REMAINDER excludes the standalone option
+        // separator. Preserve earlier help actions; an attached value of "--"
+        // is a literal runner value and does not enter this branch.
+        if remainder.iter().any(|value| value == "--") {
+            return Err(ArgumentError("unrecognized arguments: --".into()).into());
+        }
+        remainder
+    } else {
+        parsed.values.get("--runner").cloned().into_iter().collect()
+    };
     Ok(Some(Options {
         root: root.into(),
         source: PathBuf::from(&parsed.values["--source"]),

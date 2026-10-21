@@ -62,28 +62,47 @@ fn independently_executed_source_requests_preserve_all_rosters_rng_and_exclusion
     assert!(check::cases(&[vec![]], false).is_err());
 }
 #[test]
-fn runner_remainder_help_abbreviations_and_raw_arguments_preserve_consumption() {
-    let args = vec![
-        "--s".into(),
-        "source".into(),
-        "--n".into(),
-        "native".into(),
-        "--o".into(),
-        "output".into(),
-        "--r=/usr/bin/env".into(),
-        "--".into(),
-        OsString::from_vec(b"raw-\xff".to_vec()),
-    ];
-    let parsed = check::parse(&args, &root()).unwrap().unwrap();
+fn runner_remainder_attached_values_separator_and_help_order_match_argparse() {
+    let prefix = [
+        "--source", "source", "--native", "native", "--output", "output",
+    ]
+    .map(OsString::from)
+    .to_vec();
+    let parse = |tail: Vec<OsString>| {
+        let mut args = prefix.clone();
+        args.extend(tail);
+        check::parse(&args, &root())
+    };
+    let raw = OsString::from_vec(b"raw-\xff".to_vec());
+    let parsed = parse(vec!["--r".into(), "/usr/bin/env".into(), raw.clone()])
+        .unwrap()
+        .unwrap();
+    assert_eq!(parsed.runner, vec![OsString::from("/usr/bin/env"), raw]);
+    assert!(parse(vec!["--runner".into(), "r".into(), "--".into()]).is_err());
+    assert!(parse(vec![
+        "--help".into(),
+        "--runner".into(),
+        "r".into(),
+        "--".into()
+    ])
+    .unwrap()
+    .is_none());
+    assert!(parse(vec!["--runner=r".into(), "--help".into()])
+        .unwrap()
+        .is_none());
     assert_eq!(
-        parsed.runner,
-        vec![
-            "/usr/bin/env".into(),
-            "--".into(),
-            OsString::from_vec(b"raw-\xff".to_vec())
-        ]
+        parse(vec!["--runner=--".into()]).unwrap().unwrap().runner,
+        vec![OsString::from("--")]
     );
-    assert!(check::parse(&["--help".into()], &root()).unwrap().is_none());
+    assert!(parse(vec!["--runner=r".into(), "tail".into()]).is_err());
+    assert!(parse(vec!["--runner=r".into(), "--".into(), "--help".into()]).is_err());
+    assert_eq!(
+        parse(vec!["--runner=first".into(), "--runner=last".into()])
+            .unwrap()
+            .unwrap()
+            .runner,
+        vec![OsString::from("last")]
+    );
     assert!(check::parse(&[], &root()).is_err());
 }
 fn options(directory: &Path) -> check::Options {
@@ -264,7 +283,7 @@ fn raw_native_and_runner_paths_survive_complete_report_and_both_retired_inputs_m
         .path()
         .join(OsString::from_vec(b"runner-\xfe".to_vec()));
     fs::write(&runner, b"mocked held runner").unwrap();
-    options.runner = vec![runner.clone().into_os_string(), "--".into()];
+    options.runner = vec![runner.clone().into_os_string()];
     let flag = AtomicBool::new(false);
     let mut replay = Replay {
         calls: 0,
@@ -283,11 +302,7 @@ fn raw_native_and_runner_paths_survive_complete_report_and_both_retired_inputs_m
             .iter()
             .map(|v| openpilot_dev_tools::python_fs::from_json(v).unwrap())
             .collect::<Vec<_>>(),
-        vec![
-            runner.into_os_string(),
-            "--".into(),
-            options.native.into_os_string()
-        ]
+        vec![runner.into_os_string(), options.native.into_os_string()]
     );
     assert_eq!(
         report.to_json().unwrap(),
@@ -296,4 +311,39 @@ fn raw_native_and_runner_paths_survive_complete_report_and_both_retired_inputs_m
             .to_json()
             .unwrap()
     );
+}
+
+#[test]
+fn absent_shared_corpus_rejects_a_remaining_original_protocol_caller_before_children() {
+    let directory = tempfile::tempdir().unwrap();
+    let options = options(directory.path());
+    for name in [
+        "rust/tools/check_pandad_can_io.py",
+        "rust/tools/pandad_protocol_cases.py",
+    ] {
+        let path = options.root.join(name);
+        if path.exists() {
+            fs::remove_file(path).unwrap();
+        }
+    }
+    fs::write(
+        options.root.join("rust/tools/check_pandad_protocol.py"),
+        b"remaining original caller",
+    )
+    .unwrap();
+    let flag = AtomicBool::new(false);
+    let mut replay = Replay {
+        calls: 0,
+        mutation: "",
+        options: &options,
+        flag: &flag,
+    };
+    let mut stdout = Vec::new();
+    let error = check::check(&options, &mut replay, &mut stdout, &flag)
+        .err()
+        .unwrap();
+    assert!(error.to_string().contains("still requires shared corpus"));
+    assert_eq!(replay.calls, 0);
+    assert!(stdout.is_empty());
+    assert!(!options.output.join("report.json").exists());
 }

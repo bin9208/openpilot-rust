@@ -34,8 +34,12 @@ pub(super) const PINS: &[(&str, &str)] = &[
         "40b34417b4c6c19185f2f3f7f03a0b34e7a4127953b587358d0c841d052d5063",
     ),
 ];
-// The corpus module remains owned by the still-active CAN-I/O Python caller.
-const RETIRED: [&str; 1] = ["rust/tools/check_pandad_protocol.py"];
+// The shared corpus can disappear only after both original callers disappear.
+const RETIRED: [&str; 3] = [
+    "rust/tools/check_pandad_protocol.py",
+    "rust/tools/pandad_protocol_cases.py",
+    "rust/tools/check_pandad_can_io.py",
+];
 pub(super) struct Bound {
     path: PathBuf,
     file: File,
@@ -82,17 +86,24 @@ impl Bound {
         Ok(())
     }
 }
-fn retired_absent(root: &Path) -> Result<bool> {
-    match fs::symlink_metadata(root.join(RETIRED[0])) {
-        Ok(metadata) if metadata.file_type().is_file() => Ok(false),
-        Ok(_) => Err("Panda protocol historical checker is not regular".into()),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(true),
-        Err(error) => Err(error.into()),
+fn retired_absent(root: &Path) -> Result<[bool; 3]> {
+    let read = |name| -> Result<bool> {
+        match fs::symlink_metadata(root.join(name)) {
+            Ok(metadata) if metadata.file_type().is_file() => Ok(false),
+            Ok(_) => Err("Panda protocol historical source is not regular".into()),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(true),
+            Err(error) => Err(error.into()),
+        }
+    };
+    let state = [read(RETIRED[0])?, read(RETIRED[1])?, read(RETIRED[2])?];
+    if state[1] && (!state[0] || !state[2]) {
+        return Err("original protocol/CAN-I/O checker still requires shared corpus".into());
     }
+    Ok(state)
 }
 pub(super) struct Sources {
     root: PathBuf,
-    absent: bool,
+    absent: [bool; 3],
     entries: Vec<(&'static str, Bound)>,
 }
 impl Sources {
@@ -106,7 +117,7 @@ impl Sources {
             .collect()
     }
     pub fn absent(&self) -> bool {
-        self.absent
+        self.absent[0]
     }
     pub fn verify(&self) -> Result<()> {
         if retired_absent(&self.root)? != self.absent {
@@ -124,7 +135,11 @@ pub(super) fn sources(root: &Path) -> Result<Sources> {
     let absent = retired_absent(root)?;
     let mut entries = Vec::new();
     for &(name, hash) in PINS {
-        if absent && RETIRED.contains(&name) {
+        if RETIRED
+            .iter()
+            .zip(absent)
+            .any(|(retired, missing)| missing && *retired == name)
+        {
             continue;
         }
         let bound = Bound::open(&root.join(name))?;
@@ -178,5 +193,48 @@ impl Drop for Publication {
         if !self.committed && self.owns() {
             let _ = fs::remove_file(&self.path);
         }
+    }
+}
+
+#[cfg(test)]
+mod absence_tests {
+    use super::*;
+    #[test]
+    fn shared_corpus_needs_both_callers_absent_and_reappearance_is_rejected() {
+        for protocol_absent in [false, true] {
+            for corpus_absent in [false, true] {
+                for canio_absent in [false, true] {
+                    let root = tempfile::tempdir().unwrap();
+                    fs::create_dir(root.path().join("rust")).unwrap();
+                    fs::create_dir(root.path().join("rust/tools")).unwrap();
+                    let state = [protocol_absent, corpus_absent, canio_absent];
+                    for (name, missing) in RETIRED.iter().zip(state) {
+                        if !missing {
+                            fs::write(root.path().join(name), b"present").unwrap();
+                        }
+                    }
+                    assert_eq!(
+                        retired_absent(root.path()).is_ok(),
+                        !corpus_absent || (protocol_absent && canio_absent)
+                    );
+                }
+            }
+        }
+        let root = tempfile::tempdir().unwrap();
+        let sources = Sources {
+            root: root.path().into(),
+            absent: [true; 3],
+            entries: Vec::new(),
+        };
+        sources.verify().unwrap();
+        fs::create_dir_all(root.path().join("rust/tools")).unwrap();
+        for name in RETIRED {
+            fs::write(root.path().join(name), b"reappeared").unwrap();
+            assert!(sources.verify().is_err());
+            fs::remove_file(root.path().join(name)).unwrap();
+        }
+        // A dangling link is presence too, never an absence bypass.
+        std::os::unix::fs::symlink("missing", root.path().join(RETIRED[1])).unwrap();
+        assert!(sources.verify().is_err());
     }
 }

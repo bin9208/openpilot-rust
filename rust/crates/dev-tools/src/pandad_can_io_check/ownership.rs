@@ -30,9 +30,10 @@ pub(super) const PINS: &[(&str, &str)] = &[
         "faebd7a679a0fc8b44ca6b42fe0c6ed9aeddb52f3d4980db5dc025e05dbdc15a",
     ),
 ];
-const RETIRED: [&str; 2] = [
+const RETIRED: [&str; 3] = [
     "rust/tools/check_pandad_can_io.py",
     "rust/tools/pandad_protocol_cases.py",
+    "rust/tools/check_pandad_protocol.py",
 ];
 pub(super) struct Bound {
     path: PathBuf,
@@ -80,7 +81,7 @@ impl Bound {
         Ok(())
     }
 }
-fn retired_absent(root: &Path) -> Result<[bool; 2]> {
+fn retired_absent(root: &Path) -> Result<[bool; 3]> {
     let read = |name| -> Result<bool> {
         match fs::symlink_metadata(root.join(name)) {
             Ok(metadata) if metadata.file_type().is_file() => Ok(false),
@@ -89,15 +90,15 @@ fn retired_absent(root: &Path) -> Result<[bool; 2]> {
             Err(error) => Err(error.into()),
         }
     };
-    let state = [read(RETIRED[0])?, read(RETIRED[1])?];
-    if !state[0] && state[1] {
-        return Err("CAN-I/O original checker still requires its shared corpus".into());
+    let state = [read(RETIRED[0])?, read(RETIRED[1])?, read(RETIRED[2])?];
+    if state[1] && (!state[0] || !state[2]) {
+        return Err("original protocol/CAN-I/O checker still requires shared corpus".into());
     }
     Ok(state)
 }
 pub(super) struct Sources {
     root: PathBuf,
-    absent: [bool; 2],
+    absent: [bool; 3],
     entries: Vec<(&'static str, Bound)>,
 }
 impl Sources {

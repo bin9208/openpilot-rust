@@ -93,7 +93,40 @@ fn original() -> (PathBuf, Value) {
     );
     assert_eq!(
         manifest["original_source_sha256"]["rust/tools/pandad_protocol_cases.py"],
-        hash(&root().join("rust/tools/pandad_protocol_cases.py"))
+        "3eac4a39401de9311c5a5ea5211afebac1deede3a055f9d15fdb45d7576ee5bf"
+    );
+    let corpus = root().join("rust/tools/pandad_protocol_cases.py");
+    match fs::symlink_metadata(&corpus) {
+        Ok(_) => assert_eq!(
+            hash(&corpus),
+            manifest["original_source_sha256"]["rust/tools/pandad_protocol_cases.py"]
+        ),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            for name in ["check_pandad_protocol.py", "check_pandad_can_io.py"] {
+                assert_eq!(
+                    fs::symlink_metadata(root().join("rust/tools").join(name))
+                        .unwrap_err()
+                        .kind(),
+                    std::io::ErrorKind::NotFound,
+                    "shared corpus still has an original caller"
+                );
+            }
+        }
+        Err(error) => panic!("cannot inspect original corpus: {error}"),
+    }
+    let historical_builder_path = required("PANDAD_PROTOCOL_CAPTURE_BUILDER_MANIFEST");
+    assert_eq!(
+        hash(&historical_builder_path),
+        manifest["source_builder_manifest_sha256"]
+    );
+    let historical_builder = value(&historical_builder_path);
+    assert_eq!(
+        historical_builder["binary_sha256"],
+        manifest["source_binary_sha256"]
+    );
+    assert_eq!(
+        historical_builder["sources"],
+        manifest["source_builder_sources"]
     );
     let sources = manifest["source_builder_sources"].as_object().unwrap();
     assert_eq!(sources.len(), 14);
@@ -149,6 +182,55 @@ fn original() -> (PathBuf, Value) {
     assert_eq!(actual, sealed);
     (capture, manifest)
 }
+// Historical builder identity is verified by original(). This independently
+// binds the current executed ELF to its current build receipt and all14 inputs.
+fn current_source_binding(historical: &Value, source: &Path) -> Value {
+    let path = required("PANDAD_PROTOCOL_SOURCE_MANIFEST");
+    let manifest_sha256 = hash(&path);
+    let build = value(&path);
+    let actual_sha256 = hash(source);
+    assert_eq!(build["binary_sha256"], actual_sha256);
+    assert_eq!(build["sources"], historical["source_builder_sources"]);
+    let sources = build["sources"].as_object().unwrap();
+    assert_eq!(sources.len(), 14);
+    for (name, expected) in sources {
+        assert_eq!(
+            hash(&root().join(name)),
+            expected.as_str().unwrap(),
+            "{name}"
+        );
+    }
+    let kind = std::env::var("PANDAD_PROTOCOL_SOURCE_BUILD_KIND")
+        .expect("mandatory explicit fresh/borrowed source build kind");
+    match kind.as_str() {
+        "fresh" => {
+            // A fresh build must name this runner's actual executed binary;
+            // matching source hashes alone cannot substitute an arbitrary ELF.
+            assert_eq!(Path::new(build["binary"].as_str().unwrap()), source);
+        }
+        "borrowed" => {
+            assert_eq!(
+                manifest_sha256,
+                historical["source_builder_manifest_sha256"]
+            );
+            assert_eq!(actual_sha256, historical["source_binary_sha256"]);
+            let captured = value(&required("PANDAD_PROTOCOL_CAPTURE_BUILDER_MANIFEST"));
+            assert_eq!(build, captured);
+        }
+        _ => panic!("source build kind must be fresh or borrowed"),
+    }
+    assert_eq!(
+        hash(&path),
+        manifest_sha256,
+        "current build receipt changed"
+    );
+    assert_eq!(hash(source), actual_sha256, "current source ELF changed");
+    json!({"kind":kind,"manifest_path":path,"manifest_sha256":manifest_sha256,
+        "executed_binary":source,"executed_binary_sha256":actual_sha256,
+        "historical_binary_sha256":historical["source_binary_sha256"],
+        "historical_builder_manifest_sha256":historical["source_builder_manifest_sha256"],
+        "current_build":build})
+}
 fn normalized(path: &Path, requests: &[Value]) -> Vec<Value> {
     let mut values = rows(path);
     assert_eq!(values.len(), requests.len());
@@ -198,10 +280,20 @@ fn checkout_mode() -> String {
             hash(&checker),
             "927164a1021139642d4e17f2f35d3b531dbafc989161fe871ccc614a7c7e51bf"
         ),
-        "postdelete" => assert_eq!(
-            fs::symlink_metadata(checker).unwrap_err().kind(),
-            std::io::ErrorKind::NotFound
-        ),
+        "postdelete" => {
+            for name in [
+                "check_pandad_protocol.py",
+                "check_pandad_can_io.py",
+                "pandad_protocol_cases.py",
+            ] {
+                assert_eq!(
+                    fs::symlink_metadata(root().join("rust/tools").join(name))
+                        .unwrap_err()
+                        .kind(),
+                    std::io::ErrorKind::NotFound
+                );
+            }
+        }
         _ => panic!("unknown protocol retirement mode"),
     };
     mode
@@ -220,13 +312,22 @@ fn full_original_requests_source_responses_invalid_controls_and_reports_match_ch
     let native = required("PANDAD_PROTOCOL_NATIVE_BINARY");
     let checker = PathBuf::from(env!("CARGO_BIN_EXE_check-pandad-protocol"));
     let pins = [hash(&source), hash(&native), hash(&checker)];
-    assert_eq!(pins[0], manifest["source_binary_sha256"]);
+    let source_binding = current_source_binding(&manifest, &source);
+    fs::write(
+        evidence.join("source-build-current.json"),
+        serde_json::to_vec_pretty(&source_binding).unwrap(),
+    )
+    .unwrap();
     let absent = evidence.join("absent-root");
     for name in manifest["source_builder_sources"]
         .as_object()
         .unwrap()
         .keys()
-        .chain(["rust/tools/pandad_protocol_cases.py".to_owned()].iter())
+        .chain(
+            ["rust/tools/pandad_protocol_cases.py".to_owned()]
+                .iter()
+                .filter(|name| root().join(name).is_file()),
+        )
     {
         let target = absent.join(name);
         fs::create_dir_all(target.parent().unwrap()).unwrap();
@@ -292,6 +393,15 @@ fn full_original_requests_source_responses_invalid_controls_and_reports_match_ch
             }
         }
         let mut report = value(&capture.join("positive/report.json"));
+        assert_eq!(
+            report["source_binary_sha256"],
+            manifest["source_binary_sha256"]
+        );
+        assert_eq!(
+            report["native_binary_sha256"],
+            manifest["native_binary_sha256"]
+        );
+        report["source_binary_sha256"] = json!(pins[0]);
         report["native_binary_sha256"] = json!(pins[1]);
         report["native_command"] = json!([native]);
         assert_eq!(value(&output.join("report.json")), report);
@@ -300,6 +410,7 @@ fn full_original_requests_source_responses_invalid_controls_and_reports_match_ch
             report
         );
         assert_eq!([hash(&source), hash(&native), hash(&checker)], pins);
+        assert_eq!(current_source_binding(&manifest, &source), source_binding);
     }
     assert_eq!(original(), (capture, manifest));
     assert_eq!(checkout_mode(), mode);
@@ -371,8 +482,7 @@ fn captured_original_cli_admissions_channels_and_absence_of_effects_match() {
                 }
                 "unknown" => {
                     assert!(
-                        native_error.contains("unrecognized")
-                            && original_error.contains("unrecognized")
+                        native_error.contains("required") && original_error.contains("required")
                     );
                 }
                 "missing-source-value" => {
@@ -410,6 +520,12 @@ fn original_failure_order_and_foreign_receipt_effects_match_native() {
         .keep();
     let source = required("PANDAD_PROTOCOL_SOURCE_BINARY");
     let native = required("PANDAD_PROTOCOL_NATIVE_BINARY");
+    let source_binding = current_source_binding(&manifest, &source);
+    fs::write(
+        evidence.join("source-build-current.json"),
+        serde_json::to_vec_pretty(&source_binding).unwrap(),
+    )
+    .unwrap();
     let absent = evidence.join("absent-probe");
     for name in ["missing-source", "missing-native", "existing-output"] {
         let receipt = value(&capture.join(format!("admissions/{name}.json")));
@@ -478,6 +594,7 @@ fn original_failure_order_and_foreign_receipt_effects_match_native() {
                 );
             }
         }
+        assert_eq!(current_source_binding(&manifest, &source), source_binding);
         assert!(!output.join("provenance.json").exists());
         if name == "existing-output" {
             assert_eq!(
@@ -509,6 +626,12 @@ fn captured_actual_raw_native_executable_preserves_full_command_and_report() {
     let native = required("PANDAD_PROTOCOL_NATIVE_BINARY");
     let native_pin = hash(&native);
     let source_pin = hash(&source);
+    let source_binding = current_source_binding(&manifest, &source);
+    fs::write(
+        evidence.join("source-build-current.json"),
+        serde_json::to_vec_pretty(&source_binding).unwrap(),
+    )
+    .unwrap();
     let original_path = OsString::from_vec(
         STANDARD
             .decode(manifest["raw_native"]["path_b64"].as_str().unwrap())
@@ -586,6 +709,12 @@ fn captured_actual_raw_native_executable_preserves_full_command_and_report() {
             );
         } else if name == "native_binary_sha256" {
             assert_eq!(got.to_utf8().unwrap(), native_pin);
+        } else if name == "source_binary_sha256" {
+            assert_eq!(
+                want.to_utf8().unwrap(),
+                manifest["source_binary_sha256"].as_str().unwrap()
+            );
+            assert_eq!(got.to_utf8().unwrap(), source_pin);
         } else {
             assert_eq!(
                 got.to_json().unwrap(),
@@ -607,6 +736,7 @@ fn captured_actual_raw_native_executable_preserves_full_command_and_report() {
     assert_eq!(hash(&raw_native), native_pin);
     assert_eq!(hash(&native), native_pin);
     assert_eq!(hash(&source), source_pin);
+    assert_eq!(current_source_binding(&manifest, &source), source_binding);
     fs::rename(raw_native, evidence.join("raw-native-elf")).unwrap();
     assert_eq!(original(), (capture, manifest));
     assert_eq!(checkout_mode(), mode);
