@@ -1,0 +1,666 @@
+name: 451 full UI connectivity after complete Wi-Fi acknowledgement publication
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/wifi-acknowledgement-451-once.yml
+permissions:
+  contents: read
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
+jobs:
+  ui-connectivity:
+    name: rust UI and connectivity
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CXX: clang++
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        ref: 3a90dc52732b9afcde31c31ae20578bf3109e532
+    - name: Require exact private acknowledgement repair source
+      run: 'test "$(git rev-parse HEAD)" = 3a90dc52732b9afcde31c31ae20578bf3109e532
+
+        '
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - run: rustup toolchain install 1.94.0 --profile minimal --component clippy
+    - run: sudo apt-get update && sudo apt-get install -y g++ clang cmake make jq curl ghostscript libclang-dev capnproto
+        libcapnp-dev libzmq3-dev libgl-dev libx11-dev libxrandr2 libxinerama1 libxcursor1 libxi6 libxtst6 xvfb xauth ffmpeg
+        dbus-daemon strace
+    - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 cffi==2.1.1 pillow==12.3.0
+        python-xlib==0.33 jeepney==0.9.0 comma-deps-raylib==6.0.0.1.post103 setproctitle==1.3.7 psutil==7.2.2 zstandard==0.25.0
+        requests==2.34.2 pyserial==3.5 pytest==9.0.2 anyio==4.12.1
+    - name: Stage source-pinned native renderer
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo +1.94.0 run --manifest-path "$GITHUB_WORKSPACE/rust/Cargo.toml" -p openpilot-dev-tools --locked --bin stage-startup-ui-raylib
+        -- --arch x86_64 --output "$RUNNER_TEMP/ui-raylib" --shared
+
+        printf ''STARTUP_UI_RAYLIB_ROOT=%s/ui-raylib\nSTARTUP_UI_RAYLIB_LIBRARY=%s/ui-raylib/lib/libopenpilot-raylib.so\n''
+        "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
+
+        '
+    - name: Build current native dependency stager
+      uses: ./.github/actions/native-json11
+    - name: Stage native image decoder SDK
+      uses: ./.github/actions/native-image-sdk
+    - name: Build native UI validation checkers
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ui-translations --bin check-ui-fps
+        --bin check-ui-stack --bin check-ui-widgets --bin check-ui-navigation --bin check-ui-scroll --bin check-ui-scroller
+        --features egl-reference,polygon-reference,ui-application-lifecycle-native --bin check-ui-egl --bin ui-egl-reference
+        --bin check-ui-polygon --bin ui-polygon-reference --bin check-ui-diagnostics --bin ui-diagnostic-reference --bin build-ui-diagnostic-reference
+        --bin check-ui-emoji --bin check-ui-forms --bin ui-forms-reference --bin check-ui-render --bin ui-render-reference
+        --bin check-ui-network --bin ui-network-reference --bin check-ui-framework --bin check-ui-application --bin ui-application-reference
+        --bin build-ui-application-reference --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features egl-reference --test ui_egl_reference
+        --test ui_egl_check --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features polygon-reference --test image_array
+        --test ui_polygon_reference --test ui_polygon_check --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-image-codecs --features native-sdk --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features image-array-native --test ui_diagnostic_reference
+        --test ui_diagnostic_check --test ui_emoji_check --test ui_emoji_ci --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 16
+
+        rust/target/debug/build-ui-diagnostic-reference --output "$RUNNER_TEMP/ui-diagnostic-raw" --raylib-root "$STARTUP_UI_RAYLIB_ROOT"
+
+        printf ''UI_DIAGNOSTIC_RAW_HELPER=%s/ui-diagnostic-raw/ui-diagnostic-raw\n'' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+
+        '
+    - name: Build independent application lifecycle and XTest boundary
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 16
+
+        rust/target/debug/build-ui-application-reference --output "$RUNNER_TEMP/ui-application-raw" --raylib-root "$STARTUP_UI_RAYLIB_ROOT"
+
+        printf ''UI_APPLICATION_RAW_HELPER=%s/ui-application-raw/ui-application-raw\n'' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+
+        '
+    - name: Build independent Forms drawing boundary
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 16
+
+        mkdir -p "$RUNNER_TEMP/ui-forms-raw"
+
+        "${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -O2 -I "$STARTUP_UI_RAYLIB_ROOT/include" rust/crates/dev-tools/tests/fixtures/ui-forms/raw-raylib.cc
+        -ldl -o "$RUNNER_TEMP/ui-forms-raw/ui-forms-raw"
+
+        printf ''UI_FORMS_RAW_HELPER=%s/ui-forms-raw/ui-forms-raw\n'' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+
+        "${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -O2 -I "$STARTUP_UI_RAYLIB_ROOT/include" rust/crates/dev-tools/tests/fixtures/ui-render/raw-raylib.cc
+        -ldl -o "$RUNNER_TEMP/ui-forms-raw/ui-render-raw"
+
+        printf ''UI_RENDER_RAW_HELPER=%s/ui-forms-raw/ui-render-raw\n'' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+
+        '
+    - name: Build native UI and connectivity with original Params oracle
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-ui-framework -p openpilot-startup-ui -p openpilot-wifi -p
+        openpilot-cweb-push -p openpilot-process-supervision -p openpilot-bluetooth --bins --examples --locked
+
+        export WIFI_PROCESS_CHILD_BINARY="$GITHUB_WORKSPACE/rust/target/debug/openpilot-process-child"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-bluetooth -p openpilot-wifi --all-targets --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-bluetooth -p openpilot-wifi --all-targets --locked -- -D
+        warnings
+
+        python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/ui-params-binding"
+
+        python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/connectivity-msgq-python"
+
+        '
+    - name: Require Wi-Fi snapshot semantic and allocation regression
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-wifi --lib --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 64
+
+        rustc --edition=2021 rust/tools/wifi_snapshot_allocation_probe.rs --extern "openpilot_wifi=$GITHUB_WORKSPACE/rust/target/debug/libopenpilot_wifi.rlib"
+        -L "dependency=$GITHUB_WORKSPACE/rust/target/debug/deps" -o "$RUNNER_TEMP/wifi-snapshot-allocation-probe"
+
+        mkdir -p "$RUNNER_TEMP/ui-connectivity"
+
+        "$RUNNER_TEMP/wifi-snapshot-allocation-probe" --require-improvement | tee "$RUNNER_TEMP/ui-connectivity/wifi-snapshot-allocation.tsv"
+
+        '
+    - name: Compare native BlueZ policy controller against sealed original observations
+      run: "set -euo pipefail\ntest ! -e rust/tools/check_bluetooth_bluez_policy.py\ntest ! -L rust/tools/check_bluetooth_bluez_policy.py\n\
+        export OPENPILOT_RUST_ROOT=\"$GITHUB_WORKSPACE\"\nproof=\"$RUNNER_TEMP/ui-connectivity/bluetooth-bluez-policy\"\n\
+        candidate=\"$GITHUB_WORKSPACE/rust/target/debug/examples/bluez_policy\"\nexport BLUEZ_POLICY_NATIVE_OUTPUT=\"$proof/native\"\
+        \nexport BLUEZ_POLICY_NATIVE_STDOUT=\"$proof/native.stdout\"\nexport BLUEZ_POLICY_NATIVE_STDERR=\"$proof/native.stderr\"\
+        \n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo build --manifest-path\
+        \ rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-bluez-policy-native --bin check-bluetooth-bluez-policy\
+        \ --locked\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo\
+        \ test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-bluez-policy-native --test bluetooth_bluez_policy_check\
+        \ --locked\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo\
+        \ test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-bluez-policy-native --lib bluetooth_bluez_policy_check::\
+        \ --locked\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo\
+        \ clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-bluez-policy-native --lib --bin\
+        \ check-bluetooth-bluez-policy --test bluetooth_bluez_policy_check --test bluetooth_bluez_policy_reference --locked\
+        \ -- -D warnings\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 128\n\
+        mkdir -p \"$proof\"\nsha256sum \"$candidate\" rust/target/debug/check-bluetooth-bluez-policy openpilot/selfdrive/carrot/bluetooth/bluez.py\
+        \ > \"$proof/artifacts.sha256\"\ntimeout --kill-after=5s 120s rust/target/debug/check-bluetooth-bluez-policy --binary\
+        \ \"$candidate\" --output \"$BLUEZ_POLICY_NATIVE_OUTPUT\" > \"$BLUEZ_POLICY_NATIVE_STDOUT\" 2> \"$BLUEZ_POLICY_NATIVE_STDERR\"\
+        \nsha256sum -c \"$proof/artifacts.sha256\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\"\
+        \ --growth-mib 128\nabsence=\"$proof/absence\"\nmkdir -p \"$absence/root/rust/tools\"\nfor source in openpilot/selfdrive/carrot/bluetooth/bluez.py\
+        \ rust/crates/bluetooth/examples/bluez_policy.rs rust/crates/bluetooth/src/bluez/policy.rs; do\n  mkdir -p \"$absence/root/$(dirname\
+        \ \"$source\")\"\n  cp \"$GITHUB_WORKSPACE/$source\" \"$absence/root/$source\"\ndone\nchecker=\"$GITHUB_WORKSPACE/rust/target/debug/check-bluetooth-bluez-policy\"\
+        \nprintf '%s\\n' \"$checker\" > \"$absence/checker.path\"\nprintf '%s\\n' \"$candidate\" > \"$absence/candidate.path\"\
+        \ntest ! -e \"$absence/root/rust/tools/check_bluetooth_bluez_policy.py\"\ntest ! -L \"$absence/root/rust/tools/check_bluetooth_bluez_policy.py\"\
+        \nOPENPILOT_RUST_ROOT=\"$absence/root\" PATH=/nonexistent /usr/bin/timeout --signal=TERM --kill-after=5s 120s /usr/bin/strace\
+        \ -f -qq -s 65535 -e trace=execve,execveat -o \"$absence/native.exec\" \"$checker\" --binary \"$candidate\" --output\
+        \ \"$absence/output\" > \"$absence/native.stdout\" 2> \"$absence/native.stderr\"\nfor name in cases.jsonl source.json\
+        \ native.jsonl native.stderr digits.stdout digits.stderr result.json; do\n  cmp \"$BLUEZ_POLICY_NATIVE_OUTPUT/$name\"\
+        \ \"$absence/output/$name\"\ndone\ncmp \"$BLUEZ_POLICY_NATIVE_STDOUT\" \"$absence/native.stdout\"\ncmp \"$BLUEZ_POLICY_NATIVE_STDERR\"\
+        \ \"$absence/native.stderr\"\nsha256sum -c \"$proof/artifacts.sha256\"\nexport BLUEZ_POLICY_ABSENCE_PROOF=\"$absence\"\
+        \n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 128\ncargo test --manifest-path\
+        \ rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-bluez-policy-native --test bluetooth_bluez_policy_reference\
+        \ --locked -- --nocapture\n"
+    - name: Compare native Bluetooth enumeration controller against sealed original observations
+      run: "set -euo pipefail\ntest ! -e rust/tools/check_bluetooth_enumerate.py\ntest ! -L rust/tools/check_bluetooth_enumerate.py\n\
+        export OPENPILOT_RUST_ROOT=\"$GITHUB_WORKSPACE\"\nproof=\"$RUNNER_TEMP/ui-connectivity/bluetooth-enumerate\"\ncandidate=\"\
+        $GITHUB_WORKSPACE/rust/target/debug/examples/input_fixture\"\nexport BLUETOOTH_ENUMERATE_NATIVE_OUTPUT=\"$proof/native\"\
+        \nexport BLUETOOTH_ENUMERATE_NATIVE_STDOUT=\"$proof/native.stdout\"\nexport BLUETOOTH_ENUMERATE_NATIVE_STDERR=\"$proof/native.stderr\"\
+        \nexport BLUETOOTH_ENUMERATE_ABSENT_ROOT=\"$proof/absent-root\"\nexport BLUETOOTH_ENUMERATE_ABSENT_OUTPUT=\"$proof/absent-native\"\
+        \nexport BLUETOOTH_ENUMERATE_ABSENT_STDOUT=\"$proof/absent-native.stdout\"\nexport BLUETOOTH_ENUMERATE_ABSENT_STDERR=\"\
+        $proof/absent-native.stderr\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib\
+        \ 512\ncargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-enumerate-native --bin\
+        \ check-bluetooth-enumerate --locked\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\"\
+        \ --growth-mib 512\ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-enumerate-native\
+        \ --lib bluetooth_enumerate_check:: --locked\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\"\
+        \ --growth-mib 512\ncargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-enumerate-native\
+        \ --lib --bin check-bluetooth-enumerate --test bluetooth_enumerate_reference --locked -- -D warnings\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 128\nmkdir -p \"$proof\"\nsha256sum \"$candidate\" rust/target/debug/check-bluetooth-enumerate\
+        \ openpilot/selfdrive/carrot/bluetooth/daemon.py > \"$proof/artifacts.sha256\"\ntimeout --kill-after=5s 30s rust/target/debug/check-bluetooth-enumerate\
+        \ --binary \"$candidate\" --output \"$BLUETOOTH_ENUMERATE_NATIVE_OUTPUT\" > \"$BLUETOOTH_ENUMERATE_NATIVE_STDOUT\"\
+        \ 2> \"$BLUETOOTH_ENUMERATE_NATIVE_STDERR\"\nsha256sum -c \"$proof/artifacts.sha256\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 128\nabsent_sources=(\n  openpilot/selfdrive/carrot/bluetooth/daemon.py\n\
+        \  openpilot/selfdrive/carrot/bluetooth/model.py\n  rust/tools/bluetooth_engine_source.py\n  rust/crates/bluetooth/examples/input_fixture.rs\n\
+        \  rust/crates/bluetooth/src/input.rs\n)\nmkdir -p \"$BLUETOOTH_ENUMERATE_ABSENT_ROOT\" \"$proof/empty-path\"\nsha256sum\
+        \ \"${absent_sources[@]}\" > \"$proof/present-sources.sha256\"\nfor name in \"${absent_sources[@]}\"; do\n  cp --parents\
+        \ -- \"$name\" \"$BLUETOOTH_ENUMERATE_ABSENT_ROOT\"\n  cmp -- \"$name\" \"$BLUETOOTH_ENUMERATE_ABSENT_ROOT/$name\"\
+        \ndone\n(cd \"$BLUETOOTH_ENUMERATE_ABSENT_ROOT\" && sha256sum \"${absent_sources[@]}\") > \"$proof/absent-sources.sha256\"\
+        \ntest -d \"$BLUETOOTH_ENUMERATE_ABSENT_ROOT/rust/tools\"\ntest ! -e \"$BLUETOOTH_ENUMERATE_ABSENT_ROOT/rust/tools/check_bluetooth_enumerate.py\"\
+        \ntest ! -L \"$BLUETOOTH_ENUMERATE_ABSENT_ROOT/rust/tools/check_bluetooth_enumerate.py\"\nchecker=\"$GITHUB_WORKSPACE/rust/target/debug/check-bluetooth-enumerate\"\
+        \nOPENPILOT_RUST_ROOT=\"$BLUETOOTH_ENUMERATE_ABSENT_ROOT\" PATH=\"$proof/empty-path\" /usr/bin/timeout --signal=TERM\
+        \ --kill-after=5s 30s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o \"$proof/absent.exec\" \"$checker\"\
+        \ --binary \"$candidate\" --output \"$BLUETOOTH_ENUMERATE_ABSENT_OUTPUT\" > \"$BLUETOOTH_ENUMERATE_ABSENT_STDOUT\"\
+        \ 2> \"$BLUETOOTH_ENUMERATE_ABSENT_STDERR\"\nawk -v checker=\"$checker\" -v candidate=\"$candidate\" '\n  /execveat\\\
+        (/ { unexpected++; next }\n  /execve\\(/ {\n    if (index($0, \"execve(\\\"\" checker \"\\\",\") > 0) controller++;\n\
+        \    else if (index($0, \"execve(\\\"\" candidate \"\\\",\") > 0) fixture++;\n    else unexpected++;\n  }\n  END {\n\
+        \    printf \"checker=%d fixture=%d unexpected=%d\\n\", controller, fixture, unexpected;\n    exit !(controller ==\
+        \ 1 && fixture == 2 && unexpected == 0);\n  }\n' \"$proof/absent.exec\" | tee \"$proof/absent-exec-roster.txt\"\n\
+        sha256sum -c \"$proof/artifacts.sha256\"\nsha256sum -c \"$proof/present-sources.sha256\"\n(cd \"$BLUETOOTH_ENUMERATE_ABSENT_ROOT\"\
+        \ && sha256sum -c \"$proof/absent-sources.sha256\")\nfor name in \"${absent_sources[@]}\"; do cmp -- \"$name\" \"\
+        $BLUETOOTH_ENUMERATE_ABSENT_ROOT/$name\"; done\ntest ! -e \"$BLUETOOTH_ENUMERATE_ABSENT_ROOT/rust/tools/check_bluetooth_enumerate.py\"\
+        \ntest ! -L \"$BLUETOOTH_ENUMERATE_ABSENT_ROOT/rust/tools/check_bluetooth_enumerate.py\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 128\ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
+        \ --features bluetooth-enumerate-native --test bluetooth_enumerate_reference --locked -- --nocapture\n"
+    - name: Compare native Bluetooth sudo fixture with unchanged original
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/ui-connectivity/bluetooth-sudo-fixture"
+
+        export BLUETOOTH_SUDO_ORIGINAL_PYTHON="$GITHUB_WORKSPACE/rust/tools/bluetooth_sudo_fixture.py"
+
+        export BLUETOOTH_SUDO_EVIDENCE="$proof/cases"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-sudo-fixture-native --bin
+        bluetooth-sudo-fixture --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-sudo-fixture-native --test
+        bluetooth_sudo_fixture --locked --no-run
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        mkdir -p "$proof"
+
+        interpreter="$(readlink -f "$(command -v python)")"
+
+        sha256sum "$interpreter" rust/tools/bluetooth_sudo_fixture.py rust/target/debug/bluetooth-sudo-fixture > "$proof/artifacts.sha256"
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-sudo-fixture-native --test
+        bluetooth_sudo_fixture --locked -- --nocapture
+
+        sha256sum -c "$proof/artifacts.sha256"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-sudo-fixture-native --lib
+        --bin bluetooth-sudo-fixture --test bluetooth_sudo_fixture --locked -- -D warnings
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        native_sudo="$proof/bluetooth-sudo-fixture"
+
+        cp --no-clobber rust/target/debug/bluetooth-sudo-fixture "$native_sudo"
+
+        cmp rust/target/debug/bluetooth-sudo-fixture "$native_sudo"
+
+        native_sha=$(sha256sum "$native_sudo" | cut -d '' '' -f1)
+
+        printf ''BLUETOOTH_SUDO_NATIVE_BINARY=%s\nBLUETOOTH_SUDO_NATIVE_SHA256=%s\n'' "$native_sudo" "$native_sha" >> "$GITHUB_ENV"
+
+        sha256sum "$native_sudo" rust/tools/bluetooth_sudo_fixture.py rust/tools/check_bluetooth_input.py rust/tools/bluetooth_daemon_fixture.py
+        > "$proof/caller-artifacts.sha256"
+
+        '
+    - name: Compare native Bluetooth gesture corpus with unchanged original
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/ui-connectivity/bluetooth-gesture-cases"
+
+        candidate="$GITHUB_WORKSPACE/rust/target/debug/examples/gesture_fixture"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-gesture-cases-native --bin
+        generate-bluetooth-gesture-cases --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-gesture-cases-native --test
+        bluetooth_gesture_cases_generate --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-gesture-cases-native --lib
+        --bin generate-bluetooth-gesture-cases --test bluetooth_gesture_cases_generate --test bluetooth_gesture_cases_retirement
+        --locked -- -D warnings
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        mkdir -p "$proof"
+
+        sha256sum "$candidate" rust/target/debug/generate-bluetooth-gesture-cases rust/tools/check_bluetooth_gestures.py openpilot/selfdrive/carrot/bluetooth/model.py
+        openpilot/selfdrive/carrot/bluetooth/tests/yiser_j6.json > "$proof/artifacts.sha256"
+
+        test ! -e rust/tools/bluetooth_gesture_cases.py
+
+        test ! -L rust/tools/bluetooth_gesture_cases.py
+
+        PATH=/nonexistent /usr/bin/timeout --kill-after=5s 30s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o
+        "$proof/generator.exec" "$GITHUB_WORKSPACE/rust/target/debug/generate-bluetooth-gesture-cases" --root "$GITHUB_WORKSPACE"
+        --output "$proof/native-input.jsonl" > "$proof/generator.stdout" 2> "$proof/generator.stderr"
+
+        printf ''%s  %s\n'' b5eefe42e5f5fb135b71ef50e97a7905d5f41a4d943b7b5e3bcebddf1d0d8166 "$proof/native-input.jsonl" |
+        sha256sum -c -
+
+        cp --no-clobber "$proof/native-input.jsonl" "$proof/original-input.jsonl"
+
+        timeout --kill-after=5s 120s python rust/tools/check_bluetooth_gestures.py --binary "$candidate" --input "$proof/original-input.jsonl"
+        --output "$proof/original" > "$proof/original.stdout" 2> "$proof/original.stderr"
+
+        cmp "$proof/original/input.jsonl" "$proof/native-input.jsonl"
+
+        timeout --kill-after=5s 65s "$candidate" < "$proof/native-input.jsonl" > "$proof/native-result.jsonl" 2> "$proof/native-result.stderr"
+
+        cmp "$proof/original/native.jsonl" "$proof/native-result.jsonl"
+
+        cmp "$proof/original/native.stderr" "$proof/native-result.stderr"
+
+        sha256sum -c "$proof/artifacts.sha256"
+
+        '
+    - name: Require Bluetooth gesture generator source absence and native callers
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/ui-connectivity/bluetooth-gesture-cases\"\nexport BLUETOOTH_GESTURE_ORIGINAL_OUTPUT=\"\
+        $proof/original\"\nexport BLUETOOTH_GESTURE_ABSENT_CHECK_OUTPUT=\"$proof/absent-check\"\nexport BLUETOOTH_GESTURE_PRESENT_ROOT=\"\
+        $GITHUB_WORKSPACE\"\nexport BLUETOOTH_GESTURE_ABSENT_ROOT=\"$proof/absent-root\"\nexport BLUETOOTH_GESTURE_PRESENT_INPUT=\"\
+        $proof/native-input.jsonl\"\nexport BLUETOOTH_GESTURE_ABSENT_INPUT=\"$proof/absent-input.jsonl\"\nexport BLUETOOTH_GESTURE_GENERATOR_BINARY=\"\
+        $GITHUB_WORKSPACE/rust/target/debug/generate-bluetooth-gesture-cases\"\nexport BLUETOOTH_GESTURE_CANDIDATE_BINARY=\"\
+        $GITHUB_WORKSPACE/rust/target/debug/examples/gesture_fixture\"\nexport BLUETOOTH_GESTURE_PRESENT_EXEC=\"$proof/generator.exec\"\
+        \nexport BLUETOOTH_GESTURE_ABSENT_EXEC=\"$proof/absent-generator.exec\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 128\nmkdir -p \"$BLUETOOTH_GESTURE_ABSENT_ROOT\"\nfor source in rust/tools/check_bluetooth_gestures.py\
+        \ openpilot/__init__.py openpilot/selfdrive/__init__.py openpilot/selfdrive/carrot/bluetooth/__init__.py openpilot/selfdrive/carrot/bluetooth/model.py\
+        \ openpilot/selfdrive/carrot/bluetooth/tests/yiser_j6.json; do\n  cp --parents -- \"$source\" \"$BLUETOOTH_GESTURE_ABSENT_ROOT\"\
+        \n  cmp \"$source\" \"$BLUETOOTH_GESTURE_ABSENT_ROOT/$source\"\ndone\ntest ! -e \"$BLUETOOTH_GESTURE_ABSENT_ROOT/rust/tools/bluetooth_gesture_cases.py\"\
+        \ntest ! -L \"$BLUETOOTH_GESTURE_ABSENT_ROOT/rust/tools/bluetooth_gesture_cases.py\"\nfind \"$proof/original\" -type\
+        \ f -print0 | sort -z | xargs -0 sha256sum > \"$proof/original-output.sha256\"\nPATH=/nonexistent /usr/bin/timeout\
+        \ --kill-after=5s 30s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o \"$BLUETOOTH_GESTURE_ABSENT_EXEC\"\
+        \ \"$BLUETOOTH_GESTURE_GENERATOR_BINARY\" --root \"$BLUETOOTH_GESTURE_ABSENT_ROOT\" --output \"$BLUETOOTH_GESTURE_ABSENT_INPUT\"\
+        \ > \"$proof/absent-generator.stdout\" 2> \"$proof/absent-generator.stderr\"\ninterpreter=\"$(readlink -f \"$(command\
+        \ -v python)\")\"\n(cd \"$BLUETOOTH_GESTURE_ABSENT_ROOT\" && PYTHONPATH=\"$BLUETOOTH_GESTURE_ABSENT_ROOT\" PYTHONDONTWRITEBYTECODE=1\
+        \ /usr/bin/timeout --kill-after=5s 120s \"$interpreter\" rust/tools/check_bluetooth_gestures.py --binary \"$BLUETOOTH_GESTURE_CANDIDATE_BINARY\"\
+        \ --input \"$BLUETOOTH_GESTURE_ABSENT_INPUT\" --output \"$BLUETOOTH_GESTURE_ABSENT_CHECK_OUTPUT\") > \"$proof/absent-check.stdout\"\
+        \ 2> \"$proof/absent-check.stderr\"\nsha256sum -c \"$proof/artifacts.sha256\"\nsha256sum -c \"$proof/original-output.sha256\"\
+        \n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo test --manifest-path\
+        \ rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-gesture-cases-native --test bluetooth_gesture_cases_retirement\
+        \ --locked -- --nocapture\n"
+    - name: Compare native Bluetooth config controller with unchanged original
+      run: 'set -euo pipefail
+
+        export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
+
+        export BLUETOOTH_CONFIG_FIXTURE="$GITHUB_WORKSPACE/rust/target/debug/examples/config_fixture"
+
+        test ! -e rust/tools/check_bluetooth_config.py
+
+        test ! -L rust/tools/check_bluetooth_config.py
+
+        export BLUETOOTH_CONFIG_EVIDENCE="$RUNNER_TEMP/ui-connectivity/bluetooth-config-original"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-config-native --bin check-bluetooth-config
+        --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-config-native --test bluetooth_config_check
+        --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-config-native --lib --bin
+        check-bluetooth-config --test bluetooth_config_check --test bluetooth_config_reference --locked -- -D warnings
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        proof="$RUNNER_TEMP/ui-connectivity/bluetooth-config-present"
+
+        mkdir -p "$proof"
+
+        sha256sum "$GITHUB_WORKSPACE/rust/target/debug/check-bluetooth-config" "$BLUETOOTH_CONFIG_FIXTURE" "$GITHUB_WORKSPACE/openpilot/selfdrive/carrot/bluetooth/model.py"
+        > "$proof/artifacts.sha256"
+
+        PATH=/nonexistent /usr/bin/timeout --kill-after=5s 35s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o
+        "$proof/native.exec" "$GITHUB_WORKSPACE/rust/target/debug/check-bluetooth-config" --binary "$BLUETOOTH_CONFIG_FIXTURE"
+        --output "$RUNNER_TEMP/ui-connectivity/bluetooth-config-current" > "$proof/native.stdout" 2> "$proof/native.stderr"
+
+        '
+    - name: Require Bluetooth config same-ELF source absence proof
+      run: "set -euo pipefail\nexport BLUETOOTH_CONFIG_FIXTURE=\"$GITHUB_WORKSPACE/rust/target/debug/examples/config_fixture\"\
+        \nproof=\"$RUNNER_TEMP/ui-connectivity/bluetooth-config-retirement\"\nexport BLUETOOTH_CONFIG_PRESENT_OUTPUT=\"$RUNNER_TEMP/ui-connectivity/bluetooth-config-current\"\
+        \nexport BLUETOOTH_CONFIG_ABSENT_OUTPUT=\"$proof/absent\"\nexport BLUETOOTH_CONFIG_ABSENT_ROOT=\"$proof/absent-root\"\
+        \nexport BLUETOOTH_CONFIG_CHECKER=\"$GITHUB_WORKSPACE/rust/target/debug/check-bluetooth-config\"\nexport BLUETOOTH_CONFIG_PRESENT_STDOUT=\"\
+        $RUNNER_TEMP/ui-connectivity/bluetooth-config-present/native.stdout\"\nexport BLUETOOTH_CONFIG_PRESENT_STDERR=\"$RUNNER_TEMP/ui-connectivity/bluetooth-config-present/native.stderr\"\
+        \nexport BLUETOOTH_CONFIG_PRESENT_EXEC=\"$RUNNER_TEMP/ui-connectivity/bluetooth-config-present/native.exec\"\nexport\
+        \ BLUETOOTH_CONFIG_ABSENT_STDOUT=\"$proof/native.stdout\"\nexport BLUETOOTH_CONFIG_ABSENT_STDERR=\"$proof/native.stderr\"\
+        \nexport BLUETOOTH_CONFIG_ABSENT_EXEC=\"$proof/native.exec\"\nexport BLUETOOTH_CONFIG_ARTIFACTS_SHA256=\"$RUNNER_TEMP/ui-connectivity/bluetooth-config-present/artifacts.sha256\"\
+        \n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 128\nmkdir -p \"$BLUETOOTH_CONFIG_ABSENT_ROOT/rust/tools\"\
+        \nfor source in openpilot/selfdrive/carrot/bluetooth/model.py rust/crates/bluetooth/examples/config_fixture.rs; do\n\
+        \  cp --parents -- \"$source\" \"$BLUETOOTH_CONFIG_ABSENT_ROOT\"\n  cmp \"$source\" \"$BLUETOOTH_CONFIG_ABSENT_ROOT/$source\"\
+        \ndone\ntest ! -e \"$BLUETOOTH_CONFIG_ABSENT_ROOT/rust/tools/check_bluetooth_config.py\"\ntest ! -L \"$BLUETOOTH_CONFIG_ABSENT_ROOT/rust/tools/check_bluetooth_config.py\"\
+        \nsha256sum -c \"$BLUETOOTH_CONFIG_ARTIFACTS_SHA256\"\nOPENPILOT_RUST_ROOT=\"$BLUETOOTH_CONFIG_ABSENT_ROOT\" PATH=/nonexistent\
+        \ /usr/bin/timeout --kill-after=5s 35s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o \"$BLUETOOTH_CONFIG_ABSENT_EXEC\"\
+        \ \"$BLUETOOTH_CONFIG_CHECKER\" --binary \"$BLUETOOTH_CONFIG_FIXTURE\" --output \"$BLUETOOTH_CONFIG_ABSENT_OUTPUT\"\
+        \ > \"$BLUETOOTH_CONFIG_ABSENT_STDOUT\" 2> \"$BLUETOOTH_CONFIG_ABSENT_STDERR\"\nsha256sum -c \"$BLUETOOTH_CONFIG_ARTIFACTS_SHA256\"\
+        \n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo test --manifest-path\
+        \ rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-config-native --test bluetooth_config_reference --locked\
+        \ -- --nocapture\n"
+    - name: Require native Bluetooth file controller with sealed original observations
+      run: 'set -euo pipefail
+
+        export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
+
+        export BLUETOOTH_FILE_FIXTURE="$GITHUB_WORKSPACE/rust/target/debug/examples/file_fixture"
+
+        export BLUETOOTH_FILES_EVIDENCE="$RUNNER_TEMP/ui-connectivity/bluetooth-files-original"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-files-native --bin check-bluetooth-files
+        --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-files-native --test bluetooth_files_check
+        --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-files-native --lib --bin
+        check-bluetooth-files --test bluetooth_files_check --locked -- -D warnings
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        proof="$RUNNER_TEMP/ui-connectivity/bluetooth-files-retirement"
+
+        checker="$GITHUB_WORKSPACE/rust/target/debug/check-bluetooth-files"
+
+        test ! -e rust/tools/check_bluetooth_files.py
+
+        test ! -L rust/tools/check_bluetooth_files.py
+
+        mkdir -p "$proof"
+
+        sha256sum "$checker" "$BLUETOOTH_FILE_FIXTURE" > "$proof/artifacts.sha256"
+
+        env PATH=/nonexistent "$checker" --binary "$BLUETOOTH_FILE_FIXTURE" --output "$proof/absent"
+
+        sha256sum -c "$proof/artifacts.sha256"
+
+        '
+    - name: Compare native Bluetooth journal controller with unchanged original
+      run: 'export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
+
+        export BLUETOOTH_JOURNAL_FIXTURE="$GITHUB_WORKSPACE/rust/target/debug/examples/journal_fixture"
+
+        test ! -e rust/tools/check_bluetooth_journal.py
+
+        test ! -L rust/tools/check_bluetooth_journal.py
+
+        export BLUETOOTH_JOURNAL_EVIDENCE="$RUNNER_TEMP/ui-connectivity/bluetooth-journal-original"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-journal-native --bin check-bluetooth-journal
+        --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-journal-native --test bluetooth_journal_check
+        --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-journal-native --lib --test
+        bluetooth_journal_check --test bluetooth_journal_reference --bin check-bluetooth-journal --locked -- -D warnings
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        rust/target/debug/check-bluetooth-journal --binary "$BLUETOOTH_JOURNAL_FIXTURE" --output "$RUNNER_TEMP/ui-connectivity/bluetooth-journal-current"
+
+        '
+    - name: Require Bluetooth journal same-ELF source absence proof
+      run: "set -euo pipefail\nexport BLUETOOTH_JOURNAL_FIXTURE=\"$GITHUB_WORKSPACE/rust/target/debug/examples/journal_fixture\"\
+        \nproof=\"$RUNNER_TEMP/ui-connectivity/bluetooth-journal-retirement\"\nexport BLUETOOTH_JOURNAL_PRESENT_OUTPUT=\"\
+        $proof/present\"\nexport BLUETOOTH_JOURNAL_ABSENT_OUTPUT=\"$proof/absent\"\nexport BLUETOOTH_JOURNAL_PRESENT_ROOT=\"\
+        $GITHUB_WORKSPACE\"\nexport BLUETOOTH_JOURNAL_ABSENCE_ROOT=\"$proof/absent-root\"\nexport BLUETOOTH_JOURNAL_CHECKER=\"\
+        $GITHUB_WORKSPACE/rust/target/debug/check-bluetooth-journal\"\nexport BLUETOOTH_JOURNAL_PRESENT_EXEC=\"$proof/present.exec\"\
+        \nexport BLUETOOTH_JOURNAL_ABSENT_EXEC=\"$proof/absent.exec\"\nexport BLUETOOTH_JOURNAL_ARTIFACTS_BEFORE=\"$proof/before.json\"\
+        \nexport BLUETOOTH_JOURNAL_ARTIFACTS_AFTER=\"$proof/after.json\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 128\nmkdir -p \"$proof/absent-root/rust/tools\"\ngit rev-parse HEAD >\
+        \ \"$proof/SOURCE_COMMIT\"\nseal_artifacts() {\n  printf '{\"%s\":\"%s\",\"%s\":\"%s\"}\\n' \"$BLUETOOTH_JOURNAL_CHECKER\"\
+        \ \"$(sha256sum \"$BLUETOOTH_JOURNAL_CHECKER\" | cut -d ' ' -f1)\" \"$BLUETOOTH_JOURNAL_FIXTURE\" \"$(sha256sum \"\
+        $BLUETOOTH_JOURNAL_FIXTURE\" | cut -d ' ' -f1)\"\n}\nseal_artifacts > \"$BLUETOOTH_JOURNAL_ARTIFACTS_BEFORE\"\nsha256sum\
+        \ rust/crates/dev-tools/tests/fixtures/bluetooth-journal/original-observation-39507901490.json openpilot/selfdrive/carrot/bluetooth/model.py\
+        \ rust/crates/bluetooth/examples/journal_fixture.rs > \"$proof/source.sha256\"\nfor source in openpilot/selfdrive/carrot/bluetooth/model.py\
+        \ rust/crates/bluetooth/examples/journal_fixture.rs; do\n  cp --parents -- \"$source\" \"$BLUETOOTH_JOURNAL_ABSENCE_ROOT\"\
+        \n  cmp \"$source\" \"$BLUETOOTH_JOURNAL_ABSENCE_ROOT/$source\"\ndone\ntest ! -e \"$BLUETOOTH_JOURNAL_ABSENCE_ROOT/rust/tools/check_bluetooth_journal.py\"\
+        \ntest ! -L \"$BLUETOOTH_JOURNAL_ABSENCE_ROOT/rust/tools/check_bluetooth_journal.py\"\nfor lane in PRESENT ABSENT;\
+        \ do\n  if [ \"$lane\" = PRESENT ]; then root=\"$BLUETOOTH_JOURNAL_PRESENT_ROOT\"; else root=\"$BLUETOOTH_JOURNAL_ABSENCE_ROOT\"\
+        ; fi\n  output_var=\"BLUETOOTH_JOURNAL_${lane}_OUTPUT\"\n  exec_var=\"BLUETOOTH_JOURNAL_${lane}_EXEC\"\n  OPENPILOT_RUST_ROOT=\"\
+        $root\" PATH=/nonexistent /usr/bin/timeout --signal=TERM --kill-after=5s 45s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat\
+        \ -o \"${!exec_var}\" \"$BLUETOOTH_JOURNAL_CHECKER\" --binary \"$BLUETOOTH_JOURNAL_FIXTURE\" --output \"${!output_var}\"\
+        \ > \"$proof/$lane.stdout\" 2> \"$proof/$lane.stderr\"\ndone\nseal_artifacts > \"$BLUETOOTH_JOURNAL_ARTIFACTS_AFTER\"\
+        \nsha256sum -c \"$proof/source.sha256\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\"\
+        \ --growth-mib 512\ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-journal-native\
+        \ --test bluetooth_journal_reference --locked -- --nocapture\n"
+    - name: Check native Bluetooth input decoder against original records
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-input-native --bin check-bluetooth-input-decode
+        --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        BLUETOOTH_INPUT_FIXTURE="$PWD/rust/target/debug/examples/input_fixture" cargo test --manifest-path rust/Cargo.toml
+        -p openpilot-dev-tools --features bluetooth-input-native --test bluetooth_input_check --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-input-native --lib --test
+        bluetooth_input_check --bin check-bluetooth-input-decode --locked -- -D warnings
+
+        '
+    - name: Reproduce incomplete buffered frame writes on old native adapter
+      run: "set -euo pipefail\nexport CARGO_TARGET_DIR=\"$GITHUB_WORKSPACE/rust/target\"\nbaseline=\"$RUNNER_TEMP/ui423-baseline\"\
+        \nproof=\"$RUNNER_TEMP/ui-connectivity/recording-partial-write\"\nmkdir -p \"$proof\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 1024\ngit fetch --no-tags --depth=1 origin 11f3dec411662baa961733b363c0b38d7082fcfa\n\
+        git worktree add --detach \"$baseline\" 11f3dec411662baa961733b363c0b38d7082fcfa\ncp rust/crates/dev-tools/tests/ui_application_lifecycle_recording.rs\
+        \ \"$baseline/rust/crates/dev-tools/tests/\"\n# CMake caches contain absolute source paths. Keep the immutable old\n\
+        # checkout in its own bounded target rather than sharing current OUT_DIR.\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 8192\nif CARGO_TARGET_DIR=\"$RUNNER_TEMP/ui423-target\" cargo test --manifest-path\
+        \ \"$baseline/rust/Cargo.toml\" -p openpilot-dev-tools --features ui-application-lifecycle-native --test ui_application_lifecycle_recording\
+        \ --locked -- --exact actual_short_reading_encoder_rejects_partial_frame_and_keeps_queue_capacity --nocapture 2>&1\
+        \ | tee \"$proof/baseline.log\"; then\n  echo 'Expected the old buffered adapter assertion to fail' >&2\n  exit 1\n\
+        fi\ngrep -F 'test result: FAILED' \"$proof/baseline.log\"\ngrep -F 'short-reading child left a partial frame accepted\
+        \ as complete' \"$proof/baseline.log\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\"\
+        \ --growth-mib 512\ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features ui-application-lifecycle-native\
+        \ --test ui_application_lifecycle_recording --locked\n"
+    - name: Compare shared UI state, pixels, real input and native lifecycle
+      env:
+        UI_FORMS_FAILURE_OUTPUT: ${{ runner.temp }}/ui-connectivity/forms-failures
+      run: "mkdir -p \"$RUNNER_TEMP/ui-connectivity\"\nxvfb-run -a -e \"$RUNNER_TEMP/ui-connectivity/xvfb.stderr.log\" -s\
+        \ '-screen 0 2160x1080x24 -noreset' bash -euc '\n  test -x \"$UI_FORMS_RAW_HELPER\"\n  test -x \"$UI_RENDER_RAW_HELPER\"\
+        \n  test -x \"$UI_APPLICATION_RAW_HELPER\"\n  test -f \"$STARTUP_UI_RAYLIB_LIBRARY\"\n  \"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\n  cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
+        \ --features image-array-native --test ui_forms_check --test ui_forms_reference --test ui_forms_admission --test ui_forms_family_text\
+        \ --test ui_forms_snapshot_order --test ui_render_check --test ui_render_reference --test ui_network_check --test\
+        \ ui_network_reference --test ui_framework_check --locked\n  \"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path\
+        \ \"$GITHUB_WORKSPACE\" --growth-mib 512\n  cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features\
+        \ ui-application-lifecycle-native --test ui_application_lifecycle_loop --test ui_application_lifecycle_recording --test\
+        \ ui_application_lifecycle_reference --test ui_application_lifecycle_raw --test ui_application_lifecycle_check --test\
+        \ ui_application_lifecycle_native --locked\n  \"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\"\
+        \ --growth-mib 512\n  cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features ui-application-lifecycle-native\
+        \ --lib --test ui_application_lifecycle_loop --test ui_application_lifecycle_recording --test ui_application_lifecycle_reference\
+        \ --test ui_application_lifecycle_raw --test ui_application_lifecycle_check --test ui_application_lifecycle_native\
+        \ --bin check-ui-application --bin ui-application-reference --bin build-ui-application-reference --locked -- -D warnings\n\
+        \  rust/target/debug/check-ui-framework --python python --target \"$PWD/rust/target/debug\" --output \"$RUNNER_TEMP/ui-connectivity/framework\"\
+        \ --display \"$DISPLAY\"\n  python rust/tools/check_startup_ui.py --target \"$PWD/rust/target/debug\" --output \"\
+        $RUNNER_TEMP/ui-connectivity/startup\" --display \"$DISPLAY\" --raylib-root \"$STARTUP_UI_RAYLIB_ROOT\" --raylib-library\
+        \ \"$STARTUP_UI_RAYLIB_LIBRARY\"\n'\nrust/target/debug/check-ui-emoji --binary \"$PWD/rust/target/debug/examples/emoji_raster\"\
+        \ --output \"$RUNNER_TEMP/ui-connectivity/emoji\"\nrust/target/debug/check-ui-translations --binary \"$PWD/rust/target/debug/examples/translation_trace\"\
+        \ --output \"$RUNNER_TEMP/ui-connectivity/translations\"\n"
+    - name: Diagnose failed Confirm against immutable original on one display
+      if: failure()
+      env:
+        UI_FORMS_FAILURE_OUTPUT: ${{ runner.temp }}/ui-connectivity/forms-failures
+      run: "#!/usr/bin/env bash\n# TEMPORARY, failure-only CI investigation. Never a maintained source fallback.\nset -euo\
+        \ pipefail\nroot=\"${GITHUB_WORKSPACE:-$PWD}\"\nevidence=\"${UI_FORMS_FAILURE_OUTPUT:?}/irrelevant-input-prop\"\n\
+        [ -f \"$evidence/scene.json\" ] || exit 0\noutput=\"${RUNNER_TEMP:?}/ui-connectivity/confirm-original-diagnostic\"\
+        \nmkdir -p \"$output\"\nrevision=3669ec8c6f391275316db31bfd715ab23f0da5da\n# Exact parent of f0197806; fetch only\
+        \ immutable commit if checkout is shallow.\nif ! git -C \"$root\" cat-file -e \"$revision:rust/tools/ui_forms_source.py\"\
+        ; then\n  git -C \"$root\" fetch --no-tags --depth=1 origin \"$revision\"\nfi\ngit -C \"$root\" show \"$revision:rust/tools/ui_forms_source.py\"\
+        \ > \"$output/original.py\"\nprintf '%s  %s\\n' 2220f3192136ead8d283cf8276ca2120a85198978bbca79c0f1286b8690dc365 \"\
+        $output/original.py\" | sha256sum -c -\ncp \"$evidence/scene.json\" \"$output/scene.json\"\nprintf '%s\\n' \"$revision\"\
+        \ > \"$output/original-commit.txt\"\nlscpu > \"$output/lscpu.txt\"\nexport OPENPILOT_RUST_ROOT=\"$root\" PYTHONPATH=\"\
+        $root${PYTHONPATH:+:$PYTHONPATH}\" GALLIUM_DUMP_CPU=1\n# One Xvfb server and inherited renderer environment for BOTH\
+        \ independent lanes.\n# Capture failures as data; still run the other lane and retain exact files.\ncat > \"$output/run-lanes.sh\"\
+        \ <<'LANES'\nset -u\noutput=\"$1\"; reference=\"$2\"; interpreter=\"$3\"\nprintf \"%s\\n\" \"$DISPLAY\" > \"$output/display.txt\"\
+        \n\"$interpreter\" \"$output/original.py\" \"$output/scene.json\" \"$output/original.png\" > \"$output/original.stdout.log\"\
+        \ 2> \"$output/original.stderr.log\"\nprintf \"%s\\n\" \"$?\" > \"$output/original.exit\"\n\"$reference\" \"$output/scene.json\"\
+        \ \"$output/native.png\" > \"$output/native.stdout.log\" 2> \"$output/native.stderr.log\"\nprintf \"%s\\n\" \"$?\"\
+        \ > \"$output/native.exit\"\nLANES\nreference=\"${UI_CONFIRM_REFERENCE:-$root/rust/target/debug/ui-forms-reference}\"\
+        \ninterpreter=\"${UI_CONFIRM_PYTHON:-python}\"\nif [ -n \"${UI_CONFIRM_DIAGNOSTIC_DISPLAY:-}\" ]; then\n  DISPLAY=\"\
+        $UI_CONFIRM_DIAGNOSTIC_DISPLAY\" bash \"$output/run-lanes.sh\" \"$output\" \"$reference\" \"$interpreter\"\nelse\n\
+        \  xvfb-run -a -s '-screen 0 2160x1080x24 -nolisten tcp' bash \"$output/run-lanes.sh\" \"$output\" \"$reference\"\
+        \ \"$interpreter\"\nfi\n\"$interpreter\" - \"$output\" <<'PY'\nimport hashlib,json,os,sys\nfrom pathlib import Path\n\
+        import numpy as np\nfrom PIL import Image\np=Path(sys.argv[1]); result={\"environment\":{key:os.environ.get(key)for\
+        \ key in [\"LIBGL_ALWAYS_SOFTWARE\",\"GALLIUM_DRIVER\",\"GALLIUM_OVERRIDE_CPU_CAPS\",\"LP_NATIVE_VECTOR_WIDTH\",\"\
+        LP_NUM_THREADS\",\"GALLIUM_DUMP_CPU\",\"LANG\",\"LC_ALL\",\"LC_NUMERIC\"]},\"lanes\":{}}\narrays={}\nfor lane in (\"\
+        original\",\"native\"):\n image=p/(lane+\".png\");state=p/(lane+\".json\");row={\"exit\":int((p/(lane+\".exit\")).read_text()),\"\
+        png\":image.exists(),\"state\":state.exists()}\n if image.exists():\n  im=Image.open(image);a=np.asarray(im).astype(\"\
+        <i8\");arrays[lane]=a;row.update(png_sha256=hashlib.sha256(image.read_bytes()).hexdigest(),mode=im.mode,shape=list(a.shape),i64_sha256=hashlib.sha256(a.tobytes()).hexdigest())\n\
+        \ if state.exists():row[\"state_sha256\"]=hashlib.sha256(state.read_bytes()).hexdigest()\n result[\"lanes\"][lane]=row\n\
+        if len(arrays)==2:\n a,b=arrays[\"original\"],arrays[\"native\"]; result[\"same_shape\"]=a.shape==b.shape\n if a.shape==b.shape:result.update(different_pixels=int(np.any(a!=b,axis=-1).sum()),max_channel_difference=int(np.abs(a-b).max()))\n\
+        \ if all((p/(lane+\".json\")).exists()for lane in (\"original\",\"native\")):result[\"state_equal\"]=json.loads((p/\"\
+        original.json\").read_text())==json.loads((p/\"native.json\").read_text())\n(p/\"comparison.json\").write_text(json.dumps(result,indent=2)+\"\
+        \\n\");print(json.dumps(result,indent=2))\nPY\n"
+    - name: Compare Wi-Fi policy and original/native private NetworkManager protocol
+      run: 'python rust/tools/check_wifi_policy.py --binary "$PWD/rust/target/debug/examples/wifi_trace" --output "$RUNNER_TEMP/ui-connectivity/wifi-policy.json"
+
+        python rust/tools/check_wifi_runtime.py --binary "$PWD/rust/target/debug/examples/wifi_native" --launcher "$PWD/rust/target/debug/openpilot-process-child"
+        --binding "$RUNNER_TEMP/ui-params-binding"/params_pyx*.so --output "$RUNNER_TEMP/ui-connectivity/wifi"
+
+        python rust/tools/check_wifi_callback_ordering.py --binary "$PWD/rust/target/debug/examples/wifi_native" --launcher
+        "$PWD/rust/target/debug/openpilot-process-child" --binding "$RUNNER_TEMP/ui-params-binding"/params_pyx*.so --output
+        "$RUNNER_TEMP/ui-connectivity/wifi-callback-ordering"
+
+        '
+    - name: Compare discovery policy, HTTP, continuous process and address ABI
+      run: 'python rust/tools/check_cweb_policy.py --binary "$PWD/rust/target/debug/examples/cweb_trace" --output "$RUNNER_TEMP/ui-connectivity/cweb/policy"
+
+        python rust/tools/check_cweb_http.py --binary "$PWD/rust/target/debug/examples/cweb_http" --output "$RUNNER_TEMP/ui-connectivity/cweb/http"
+
+        python rust/tools/check_cweb_daemon.py --binary "$PWD/rust/target/debug/openpilot-cweb-push" --binding "$RUNNER_TEMP/ui-params-binding"/params_pyx*.so
+        --output "$RUNNER_TEMP/ui-connectivity/cweb/daemon"
+
+        python rust/tools/check_cweb_address.py --binary "$PWD/rust/target/debug/examples/cweb_address" --output "$RUNNER_TEMP/ui-connectivity/cweb/address"
+
+        '
+    - name: Compare Bluetooth input, continuous IPC and private BlueZ lifecycle
+      run: 'set -euo pipefail
+
+        test -x "$BLUETOOTH_SUDO_NATIVE_BINARY"
+
+        sha256sum -c "$RUNNER_TEMP/ui-connectivity/bluetooth-sudo-fixture/caller-artifacts.sha256"
+
+        python rust/tools/check_bluetooth_runtime.py --bin-dir "$PWD/rust/target/debug" --msgq-python "$RUNNER_TEMP/connectivity-msgq-python"
+        --output "$RUNNER_TEMP/ui-connectivity/bluetooth"
+
+        sha256sum -c "$RUNNER_TEMP/ui-connectivity/bluetooth-sudo-fixture/caller-artifacts.sha256"
+
+        '
+    - name: Retain source/native images and connectivity evidence
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: rust-ui-connectivity-evidence
+        path: '${{ runner.temp }}/ui-connectivity/
+
+          ${{ runner.temp }}/ui-params-binding/provenance.json
+
+          ${{ runner.temp }}/ui-raylib/SOURCE_SHA256
+
+          ${{ runner.temp }}/ui-raylib/plugin-build.json
+
+          ${{ runner.temp }}/image-sdk.*/install/openpilot-image-codecs-sdk.txt
+
+          '
