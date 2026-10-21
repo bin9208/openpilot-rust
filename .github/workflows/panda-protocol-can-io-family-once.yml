@@ -1,4 +1,4 @@
-name: 296 combined protocol CAN-I/O native retirement retry
+name: 296 Panda protocol CAN-I-O actual deletion and native fixture closure
 permissions:
   contents: read
   actions: read
@@ -22,12 +22,12 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 36e35645d9cace4db0770583e9f62c18ad106e0e
+        ref: 83f1da3f49ecffe9037c97476ae188ddcee9a562
         persist-credentials: false
     - name: Reserve disk and prepare minimal device compiler inputs
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = 36e35645d9cace4db0770583e9f62c18ad106e0e
+        test "$(git rev-parse HEAD)" = 83f1da3f49ecffe9037c97476ae188ddcee9a562
 
         sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
 
@@ -40,30 +40,26 @@ jobs:
         rustup toolchain install 1.94.0 --profile minimal --component clippy
 
         '
-    - name: Fetch immutable original captures and source ELFs once
+    - name: Reuse only two authenticated independent C++ source members
       run: 'set -euo pipefail
 
         mkdir -p "$RUNNER_TEMP/panda-family"
 
-        cd "$RUNNER_TEMP/panda-family"
+        python3 - <<''PY_FETCH_SCRIPT''
 
-        curl -fLsS --retry 3 -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/bin9208/openpilot-rust/actions/artifacts/12365930346/zip
-        -o complete-originals.zip
+        import base64,hashlib,os
 
-        curl -fLsS --retry 3 -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/bin9208/openpilot-rust/actions/artifacts/12358686227/zip
-        -o source-elves.zip
+        from pathlib import Path
 
-        printf ''%s  %s\n'' 1efa0edb524a893ebda1968a4556c12b3636dfd173ff6301bdc121f6f5e63c94 complete-originals.zip 1dffb8ea17d36f68e02b3c59736effbf9667d6225fb13e35eec833f140f321cc
-        source-elves.zip | sha256sum -c -
+        raw=base64.b64decode("aW1wb3J0IGhhc2hsaWIsaW8sanNvbixvcyxwYXRobGliLHVybGxpYi5yZXF1ZXN0LHVybGxpYi5lcnJvcix6aXBmaWxlCmFydGlmYWN0PTEyMzU4Njg2MjI3CmhlYWRlcnM9eydBdXRob3JpemF0aW9uJzonQmVhcmVyICcrb3MuZW52aXJvblsnR0hfVE9LRU4nXX0KbWV0YWRhdGE9anNvbi5sb2FkKHVybGxpYi5yZXF1ZXN0LnVybG9wZW4odXJsbGliLnJlcXVlc3QuUmVxdWVzdChmJ2h0dHBzOi8vYXBpLmdpdGh1Yi5jb20vcmVwb3MvYmluOTIwOC9vcGVucGlsb3QtcnVzdC9hY3Rpb25zL2FydGlmYWN0cy97YXJ0aWZhY3R9JyxoZWFkZXJzPWhlYWRlcnMpKSkKYXNzZXJ0IG1ldGFkYXRhWydpZCddPT1hcnRpZmFjdCBhbmQgbWV0YWRhdGFbJ3dvcmtmbG93X3J1biddWydpZCddPT0zOTYyNTcwNDAxNQpzaXplPW1ldGFkYXRhWydzaXplX2luX2J5dGVzJ10KY2xhc3MgTm9SZWRpcmVjdCh1cmxsaWIucmVxdWVzdC5IVFRQUmVkaXJlY3RIYW5kbGVyKToKIGRlZiByZWRpcmVjdF9yZXF1ZXN0KHNlbGYsKmFyZ3MpOnJldHVybiBOb25lCnRyeTp1cmxsaWIucmVxdWVzdC5idWlsZF9vcGVuZXIoTm9SZWRpcmVjdCkub3Blbih1cmxsaWIucmVxdWVzdC5SZXF1ZXN0KGYnaHR0cHM6Ly9hcGkuZ2l0aHViLmNvbS9yZXBvcy9iaW45MjA4L29wZW5waWxvdC1ydXN0L2FjdGlvbnMvYXJ0aWZhY3RzL3thcnRpZmFjdH0vemlwJyxoZWFkZXJzPWhlYWRlcnMpKQpleGNlcHQgdXJsbGliLmVycm9yLkhUVFBFcnJvciBhcyBlOgogYXNzZXJ0IGUuY29kZT09MzAyCiB1cmw9ZS5oZWFkZXJzWydMb2NhdGlvbiddCmNsYXNzIFJlbW90ZShpby5SYXdJT0Jhc2UpOgogZGVmIF9faW5pdF9fKHNlbGYpOnNlbGYucG9zPTAKIGRlZiBzZWVrYWJsZShzZWxmKTpyZXR1cm4gVHJ1ZQogZGVmIHNlZWsoc2VsZixvLHc9MCk6c2VsZi5wb3M9bysoMCBpZiB3PT0wIGVsc2Ugc2VsZi5wb3MgaWYgdz09MSBlbHNlIHNpemUpO3JldHVybiBzZWxmLnBvcwogZGVmIHRlbGwoc2VsZik6cmV0dXJuIHNlbGYucG9zCiBkZWYgcmVhZChzZWxmLG49LTEpOgogIG49bWluKG4gaWYgbj49MCBlbHNlIHNpemUsc2l6ZS1zZWxmLnBvcykKICBpZiBuPD0wOnJldHVybiBiJycKICB3aXRoIHVybGxpYi5yZXF1ZXN0LnVybG9wZW4odXJsbGliLnJlcXVlc3QuUmVxdWVzdCh1cmwsaGVhZGVycz17J1JhbmdlJzpmJ2J5dGVzPXtzZWxmLnBvc30te3NlbGYucG9zK24tMX0nfSksdGltZW91dD05MCkgYXMgcmVzdWx0OgogICBhc3NlcnQgcmVzdWx0LnN0YXR1cz09MjA2CiAgIGRhdGE9cmVzdWx0LnJlYWQoKQogIGFzc2VydCBsZW4oZGF0YSk9PW47c2VsZi5wb3MrPW47cmV0dXJuIGRhdGEKYmFzZT1wYXRobGliLlBhdGgob3MuZW52aXJvblsnUlVOTkVSX1RFTVAnXSkvJ3BhbmRhLWZhbWlseSc7YmFzZS5ta2RpcihleGlzdF9vaz1UcnVlKQpyZWNlaXB0PVtdCndpdGggemlwZmlsZS5aaXBGaWxlKFJlbW90ZSgpKSBhcyBhcmNoaXZlOgogZm9yIGxhbmUscGluIGluIFsoJ3Byb3RvY29sJywnYmM0YjEzM2ZhZDI0MGE5NjIxMjE0NGJlODJmOTk0NmVlNDE3MzkwYWQxY2Q0MDgyYjBjMDA5ZWU2ODBjZDE0ZCcpLCgnY2FuLWlvJywnZmFkZjZjNDU4ODI2ODY2NTg0ZWI2NmQ1Y2IxOTc5NGEzNmFlZGU4OTVkNWJiYjNmNTg4ZDIzNjhmZWNkOWZmYycpXToKICBuYW1lPWYncmV0aXJlbWVudC9jaGVja291dC1vdXRwdXQve2xhbmV9LXNyYy9wYW5kYWQtcHJvdG9jb2wtc291cmNlJwogIGRhdGE9YXJjaGl2ZS5yZWFkKG5hbWUpO2Fzc2VydCBoYXNobGliLnNoYTI1NihkYXRhKS5oZXhkaWdlc3QoKT09cGluCiAgdGFyZ2V0PWJhc2UvZid7bGFuZX0tc291cmNlJzt0YXJnZXQud3JpdGVfYnl0ZXMoZGF0YSk7dGFyZ2V0LmNobW9kKDBvNzU1KQogIHJlY2VpcHQuYXBwZW5kKHsnbWVtYmVyJzpuYW1lLCdieXRlcyc6bGVuKGRhdGEpLCdzaGEyNTYnOnBpbiwnY3JjX3ZlcmlmaWVkJzpUcnVlfSkKKGJhc2UvJ3NvdXJjZS1tZW1iZXItcmV1c2UuanNvbicpLndyaXRlX3RleHQoanNvbi5kdW1wcyh7J2FydGlmYWN0JzphcnRpZmFjdCwncnVuJzozOTYyNTcwNDAxNSwnc2VsZWN0ZWRfbWVtYmVycyc6cmVjZWlwdCwnZnVsbF96aXBfY3JjX2NsYWltJzpGYWxzZSwnZXhwZWN0ZWRfaGlzdG9yaWNhbF9mdWxsX3ppcF9zaGEyNTYnOicxZGZmYjhlYTE3ZDM2ZjY4ZTAyYjNjNTk3MzZlZmZiZjk2NjdkNjIyNWZiMTNlMzVlZWM4MzNmMTQwZjMyMWNjJ30saW5kZW50PTIpKydcbicpCg==",validate=True)
 
-        unzip -p source-elves.zip retirement/checkout-output/protocol-src/pandad-protocol-source > protocol-source
+        assert hashlib.sha256(raw).hexdigest()=="aaee70fe57a991522885b2c0f5d99ffb881730d740690a9d0c8c033230cee08c"
 
-        unzip -p source-elves.zip retirement/checkout-output/can-io-src/pandad-protocol-source > can-io-source
+        (Path(os.environ[''RUNNER_TEMP''])/''panda-family/fetch.py'').write_bytes(raw)
 
-        printf ''%s  %s\n'' bc4b133fad240a96212144be82f9946ee417390ad1cd4082b0c009ee680cd14d protocol-source fadf6c458826866584eb66d5cb19794a36aede895d5bbb3f588d2368fecd9ffc
-        can-io-source | sha256sum -c -
+        PY_FETCH_SCRIPT
 
-        chmod 755 protocol-source can-io-source
+        python3 "$RUNNER_TEMP/panda-family/fetch.py"
 
         '
     - name: Build both small current native examples in one package invocation
@@ -71,45 +67,40 @@ jobs:
         \ 4096\ncargo build --manifest-path rust/Cargo.toml -p openpilot-pandad --example panda_protocol --example can_io\
         \ --locked \\\n > \"$RUNNER_TEMP/panda-family/native-examples.stdout\" \\\n 2> \"$RUNNER_TEMP/panda-family/native-examples.stderr\"\
         \n"
-    - name: Bind both complete original captures without original execution
-      env:
-        PANDA_FAMILY_OUTPUT: ${{ runner.temp }}/panda-family
-      run: 'set -euo pipefail
-
-        export PANDA_FAMILY_OUTPUT="$RUNNER_TEMP/panda-family"
-
-        printf ''%s'' ''ewogICJwcm90b2NvbCI6IHsKICAgICJtYW5pZmVzdF9zaGEyNTYiOiAiYmI2M2M3ZjRjZjBhMzk5NzFhZThiMjMwNjI5NDE3OTM4N2ZhZDE0NzRiNWVjMGUwY2NlNWMyOThkZTQ4NjkwMiIsCiAgICAiZmlsZXMiOiAzMTcsCiAgICAiYWRtaXNzaW9ucyI6IDE1LAogICAgInNvdXJjZV9jb21taXQiOiAiZTdiZDhhMmZjOWIxZTNiOTk4NDA0MzIxNDc3OTU4M2JjMTIzN2U1ZSIsCiAgICAic291cmNlX3BpbnMiOiAxNAogIH0sCiAgImNhbi1pbyI6IHsKICAgICJtYW5pZmVzdF9zaGEyNTYiOiAiMjM1MzQwNzZhZWM5NDBiOTFkMjgyYzgyOTg2MDlkNGI1ZGI0Njk3NGFiMzk0ZDBlYTA1YTdjNGYzYmU4MTUzMSIsCiAgICAiZmlsZXMiOiA3OCwKICAgICJhZG1pc3Npb25zIjogMjksCiAgICAic291cmNlX2NvbW1pdCI6ICIwOGYyMWQ0YWVhOGIxYmU0YzU5OTI1ZTJiNjdhMzAyZWRhNGRiNjIzIiwKICAgICJzb3VyY2VfcGlucyI6IDE0CiAgfSwKICAiemlwIjogewogICAgInNoYTI1NiI6ICIxZWZhMGVkYjUyNGE4OTNlYmRhMTk2OGE0NTU2YzEyYjM2MzZkZmQxNzNmZjYzMDFiZGMxMjFmNmY1ZTYzYzk0IiwKICAgICJtZW1iZXJzIjogNDc3LAogICAgImFydGlmYWN0IjogMTIzNjU5MzAzNDYsCiAgICAicnVuIjogMzk2NDA3NDY5ODUKICB9Cn0K''
-        | base64 -d > "$RUNNER_TEMP/panda-family/complete-capture-audit.json"
-
-        printf ''%s  %s\n'' ae4793d216cd3df917fce0dbec600ad57b438a4e62cf140287fcac5408fcff05 "$RUNNER_TEMP/panda-family/complete-capture-audit.json"
-        | sha256sum -c -
-
-        printf ''%s'' ''IiIiQmluZCBpbW11dGFibGUgY29tcGxldGUgY2FwdHVyZXM7IGV4ZWN1dGVzIG5vIG9yaWdpbmFsIGNoZWNrZXIgb3IgY29ycHVzLiIiIgppbXBvcnQgYmFzZTY0LGhhc2hsaWIsanNvbixvcyxwYXRobGliLHppcGZpbGUKcm9vdD1wYXRobGliLlBhdGgob3MuZW52aXJvblsnR0lUSFVCX1dPUktTUEFDRSddKTtiYXNlPXBhdGhsaWIuUGF0aChvcy5lbnZpcm9uWydQQU5EQV9GQU1JTFlfT1VUUFVUJ10pCnNoYT1sYW1iZGEgcDpoYXNobGliLnNoYTI1NihwLnJlYWRfYnl0ZXMoKSkuaGV4ZGlnZXN0KCkKYXVkaXQ9anNvbi5sb2FkcygoYmFzZS8nY29tcGxldGUtY2FwdHVyZS1hdWRpdC5qc29uJykucmVhZF9ieXRlcygpKQp6PWJhc2UvJ2NvbXBsZXRlLW9yaWdpbmFscy56aXAnO2Fzc2VydCBzaGEoeik9PWF1ZGl0Wyd6aXAnXVsnc2hhMjU2J10Kd2l0aCB6aXBmaWxlLlppcEZpbGUoeikgYXMgYXJjaGl2ZToKIGFzc2VydCBhcmNoaXZlLnRlc3R6aXAoKSBpcyBOb25lCiBmb3IgZSBpbiBhcmNoaXZlLmluZm9saXN0KCk6CiAgYXNzZXJ0IG5vdCBwYXRobGliLlB1cmVQb3NpeFBhdGgoZS5maWxlbmFtZSkuaXNfYWJzb2x1dGUoKSBhbmQgJy4uJyBub3QgaW4gcGF0aGxpYi5QdXJlUG9zaXhQYXRoKGUuZmlsZW5hbWUpLnBhcnRzCiAgYXNzZXJ0ICgoZS5leHRlcm5hbF9hdHRyPj4xNikmMG8xNzAwMDApIT0wbzEyMDAwMAogIGlmIGFueShlLmZpbGVuYW1lLnN0YXJ0c3dpdGgoZid7ZmFtaWx5fS1vcmlnaW5hbC8nKSBmb3IgZmFtaWx5IGluIFsncHJvdG9jb2wnLCdjYW4taW8nXSkgb3IgZS5maWxlbmFtZT09J3Byb3RvY29sLWJ1aWxkZXIuanNvbic6YXJjaGl2ZS5leHRyYWN0KGUsYmFzZSkKZm9yIGZhbWlseSxwcmVmaXggaW4gWygncHJvdG9jb2wnLCdQQU5EQURfUFJPVE9DT0wnKSwoJ2Nhbi1pbycsJ1BBTkRBRF9DQU5fSU8nKV06CiBkPWJhc2UvZid7ZmFtaWx5fS1vcmlnaW5hbCc7bT1qc29uLmxvYWRzKChkLydjYXB0dXJlLW1hbmlmZXN0Lmpzb24nKS5yZWFkX2J5dGVzKCkpO2Fzc2VydCBzaGEoZC8nY2FwdHVyZS1tYW5pZmVzdC5qc29uJyk9PWF1ZGl0W2ZhbWlseV1bJ21hbmlmZXN0X3NoYTI1NiddCiBmaWxlcz17YmFzZTY0LmI2NGVuY29kZShwLnJlbGF0aXZlX3RvKGQpLmFzX3Bvc2l4KCkuZW5jb2RlKCkpLmRlY29kZSgpOnsnc2l6ZSc6cC5zdGF0KCkuc3Rfc2l6ZSwnc2hhMjU2JzpzaGEocCl9IGZvciBwIGluIGQucmdsb2IoJyonKSBpZiBwLmlzX2ZpbGUoKSBhbmQgcC5uYW1lIT0nY2FwdHVyZS1tYW5pZmVzdC5qc29uJ30KIGFzc2VydCBmaWxlcz09bVsnZmlsZXNfYjY0J10gYW5kIGxlbihmaWxlcyk9PWF1ZGl0W2ZhbWlseV1bJ2ZpbGVzJ10KIGZvciBuYW1lLHBpbiBpbiB7KiptWydzb3VyY2VfYnVpbGRlcl9zb3VyY2VzJ10sKiptWydvcmlnaW5hbF9zb3VyY2Vfc2hhMjU2J119Lml0ZW1zKCk6YXNzZXJ0IHNoYShyb290L25hbWUpPT1waW4sbmFtZQogd2l0aCBwYXRobGliLlBhdGgob3MuZW52aXJvblsnR0lUSFVCX0VOViddKS5vcGVuKCdhJykgYXMgb3V0OgogIG91dC53cml0ZShmJ3twcmVmaXh9X09SSUdJTkFMX0NBUFRVUkU9e2R9XG57cHJlZml4fV9DQVBUVVJFX01BTklGRVNUX1NIQTI1Nj17c2hhKGQvImNhcHR1cmUtbWFuaWZlc3QuanNvbiIpfVxue3ByZWZpeH1fQ0FQVFVSRV9TT1VSQ0VfQ09NTUlUPXttWyJzb3VyY2VfY29tbWl0Il19XG4nKQp3aXRoIHBhdGhsaWIuUGF0aChvcy5lbnZpcm9uWydHSVRIVUJfRU5WJ10pLm9wZW4oJ2EnKSBhcyBvdXQ6CiBvdXQud3JpdGUoZidQQU5EQURfUFJPVE9DT0xfQ0FQVFVSRV9CVUlMREVSX01BTklGRVNUPXtiYXNlLyJwcm90b2NvbC1idWlsZGVyLmpzb24ifVxuUEFOREFEX1BST1RPQ09MX1NPVVJDRV9NQU5JRkVTVD17YmFzZS8icHJvdG9jb2wtYnVpbGRlci5qc29uIn1cblBBTkRBRF9QUk9UT0NPTF9TT1VSQ0VfQlVJTERfS0lORD1ib3Jyb3dlZFxuJykKKGJhc2UvJ2JpbmRpbmctYXVkaXQuanNvbicpLndyaXRlX3RleHQoanNvbi5kdW1wcyh7J29yaWdpbmFsX3JlZXhlY3V0aW9uJzpGYWxzZSwncmV1c2VkX3J1bic6Mzk2NDA3NDY5ODUsJ3JldXNlZF9hcnRpZmFjdCc6MTIzNjU5MzAzNDYsJ2NhcHR1cmVzJzphdWRpdH0saW5kZW50PTIpKydcbicpCg==''
-        | base64 -d > "$RUNNER_TEMP/panda-family/reuse-complete-captures.py"
-
-        printf ''%s  %s\n'' 9adea5a6b50972be995691f9dfe84195ddaf4601513e3c9cc40452ca724f589b "$RUNNER_TEMP/panda-family/reuse-complete-captures.py"
-        | sha256sum -c -
-
-        PYTHONDONTWRITEBYTECODE=1 python3 "$RUNNER_TEMP/panda-family/reuse-complete-captures.py"
-
-        '
+    - name: Build and stage both native maintained fixtures without historical programs
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/panda-family\"\nrust/tools/check-disk-space --path \"$GITHUB_WORKSPACE\"\
+        \ --growth-mib 4096\ncargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features panda-ci-native,pandad-protocol-native,pandad-can-io-native\
+        \ --bin stage-pandad-protocol-reference --bin stage-pandad-can-io-reference --locked >\"$proof/fixture-build.stdout\"\
+        \ 2>\"$proof/fixture-build.stderr\" || { tail -n 50 \"$proof/fixture-build.stderr\"; exit 1; }\nfor family in protocol\
+        \ can-io; do\n rust/target/debug/stage-pandad-$family-reference --root \"$GITHUB_WORKSPACE\" --output \"$proof/$family-reference\"\
+        \ >\"$proof/$family-stage.json\"\n cat \"$proof/$family-reference/environment.env\" >>\"$GITHUB_ENV\"\ndone\nprintf\
+        \ 'PANDAD_PROTOCOL_SOURCE_MANIFEST=%s/protocol-reference/builder.json\nPANDAD_PROTOCOL_SOURCE_BUILD_KIND=borrowed\n\
+        PANDAD_CAN_IO_SOURCE_MANIFEST=%s/can-io-reference/historical-builder.json\nPANDAD_CAN_IO_SOURCE_BUILD_KIND=borrowed\n\
+        ' \"$proof\" \"$proof\" >>\"$GITHUB_ENV\"\nfor name in check_pandad_protocol.py check_pandad_can_io.py pandad_protocol_cases.py;\
+        \ do test ! -e \"rust/tools/$name\" && test ! -L \"rust/tools/$name\"; done\n"
     - name: Combined focused native controls and independent protocol/CAN-I/O comparisons
       env:
-        PANDAD_PROTOCOL_RETIREMENT_MODE: predelete
+        PANDAD_PROTOCOL_RETIREMENT_MODE: postdelete
         PANDAD_PROTOCOL_SOURCE_BINARY: ${{ runner.temp }}/panda-family/protocol-source
         PANDAD_PROTOCOL_NATIVE_BINARY: ${{ github.workspace }}/rust/target/debug/examples/panda_protocol
         PANDAD_PROTOCOL_TEST_OUTPUT: ${{ runner.temp }}/panda-family/protocol-native
-        PANDAD_CAN_IO_RETIREMENT_MODE: predelete
+        PANDAD_CAN_IO_RETIREMENT_MODE: postdelete
         PANDAD_CAN_IO_SOURCE_BINARY: ${{ runner.temp }}/panda-family/can-io-source
         PANDAD_CAN_IO_NATIVE_BINARY: ${{ github.workspace }}/rust/target/debug/examples/can_io
         PANDAD_CAN_IO_TEST_OUTPUT: ${{ runner.temp }}/panda-family/can-io-native
       run: "set -euo pipefail\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib\
         \ 8192\nmkdir -p \"$PANDAD_PROTOCOL_TEST_OUTPUT\" \"$PANDAD_CAN_IO_TEST_OUTPUT\"\ncargo test --manifest-path rust/Cargo.toml\
         \ -p openpilot-dev-tools --features panda-ci-native,pandad-protocol-native,pandad-can-io-native --test panda_ci_check\
-        \ --test pandad_protocol_check --test pandad_protocol_reference --test pandad_can_io_check --test pandad_can_io_reference\
-        \ --locked \\\n > \"$RUNNER_TEMP/panda-family/native-tests.stdout\" \\\n 2> \"$RUNNER_TEMP/panda-family/native-tests.stderr\"\
-        \n\ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features panda-ci-native,pandad-protocol-native,pandad-can-io-native\
-        \ --lib argparse_scan::required_first_tests --locked > \"$RUNNER_TEMP/panda-family/scanner-policy.stdout\" 2> \"$RUNNER_TEMP/panda-family/scanner-policy.stderr\"\
+        \ --test pandad_protocol_check --test pandad_protocol_reference --test pandad_protocol_fixture --test pandad_can_io_check\
+        \ --test pandad_can_io_reference --test pandad_can_io_fixture --locked \\\n > \"$RUNNER_TEMP/panda-family/native-tests.stdout\"\
+        \ \\\n 2> \"$RUNNER_TEMP/panda-family/native-tests.stderr\" || { tail -n 50 \"$RUNNER_TEMP/panda-family/native-tests.stderr\"\
+        \ \"$RUNNER_TEMP/panda-family/native-tests.stdout\" | cut -c 1-1500; exit 1; }\n\ncargo test --manifest-path rust/Cargo.toml\
+        \ -p openpilot-dev-tools --features panda-ci-native,pandad-protocol-native,pandad-can-io-native --lib argparse_scan::required_first_tests\
+        \ --locked > \"$RUNNER_TEMP/panda-family/scanner-policy.stdout\" 2> \"$RUNNER_TEMP/panda-family/scanner-policy.stderr\"\
+        \n\ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-protocol-native,pandad-can-io-native\
+        \ --lib pandad_protocol_fixture:: --locked >\"$RUNNER_TEMP/panda-family/protocol-extractor.stdout\" 2>\"$RUNNER_TEMP/panda-family/protocol-extractor.stderr\"\
+        \ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-protocol-native,pandad-can-io-native\
+        \ --lib pandad_can_io_fixture:: --locked >\"$RUNNER_TEMP/panda-family/can-io-extractor.stdout\" 2>\"$RUNNER_TEMP/panda-family/can-io-extractor.stderr\"\
         \n"
     - name: Require original standalone separator rejection before effects
       run: "set -euo pipefail\nchecker=\"$GITHUB_WORKSPACE/rust/target/debug/check-pandad-can-io\"\noutput=\"$RUNNER_TEMP/panda-family/rejected-separator-output\"\
@@ -120,19 +111,17 @@ jobs:
         \ntest ! -e \"$output\" && test ! -L \"$output\"\n"
     - name: One strict Clippy pass for the combined family
       run: "set -euo pipefail\ncargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features panda-ci-native,pandad-protocol-native,pandad-can-io-native\
-        \ --lib --bin check-pandad-protocol --bin check-pandad-can-io --test panda_ci_check --test pandad_protocol_check --test\
-        \ pandad_protocol_reference --test pandad_can_io_check --test pandad_can_io_reference --locked -- -D warnings \\\n\
-        \ > \"$RUNNER_TEMP/panda-family/native-clippy.stdout\" \\\n 2> \"$RUNNER_TEMP/panda-family/native-clippy.stderr\"\n"
+        \ --lib --bin check-pandad-protocol --bin check-pandad-can-io --bin stage-pandad-protocol-reference --bin stage-pandad-can-io-reference\
+        \ --test panda_ci_check --test pandad_protocol_check --test pandad_protocol_reference --test pandad_protocol_fixture\
+        \ --test pandad_can_io_check --test pandad_can_io_reference --test pandad_can_io_fixture --locked -- -D warnings \\\
+        \n > \"$RUNNER_TEMP/panda-family/native-clippy.stdout\" \\\n 2> \"$RUNNER_TEMP/panda-family/native-clippy.stderr\"\
+        \ || { tail -n 65 \"$RUNNER_TEMP/panda-family/native-clippy.stderr\" | cut -c 1-1500; exit 1; }\n"
     - name: Preserve complete bound originals native comparisons and failure diagnostics
       if: always()
       uses: actions/upload-artifact@v6
       with:
         name: panda-protocol-can-io-family
-        path: '${{ runner.temp }}/panda-family/protocol-original/
-
-          ${{ runner.temp }}/panda-family/can-io-original/
-
-          ${{ runner.temp }}/panda-family/protocol-native/
+        path: '${{ runner.temp }}/panda-family/protocol-native/
 
           ${{ runner.temp }}/panda-family/can-io-native/
 
