@@ -20,16 +20,20 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 706e2686153632304dd0d01286f8d117039f8f71
+        ref: df374b0abde72e93759bc2a2168505b5615f4d7a
         persist-credentials: false
     - name: Bind exact source and reserve hosted capacity
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = 706e2686153632304dd0d01286f8d117039f8f71
+        test "$(git rev-parse HEAD)" = df374b0abde72e93759bc2a2168505b5615f4d7a
 
         sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
 
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends capnproto libcapnp-dev libzmq3-dev
 
         rustup toolchain install 1.94.0 --profile minimal --component clippy --component rustfmt
 
