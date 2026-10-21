@@ -158,7 +158,7 @@ fn fresh_original_and_same_elf_present_absent_are_equivalent_and_interpreter_fre
         assert_eq!(sha(&path), digest.as_str().unwrap(), "source pin: {name}");
         let target = absent_root.join(name);
         fs::create_dir_all(target.parent().unwrap()).unwrap();
-        fs::copy(path, target).unwrap();
+        fs::copy(path, &target).unwrap();
         assert_eq!(sha(&target), digest.as_str().unwrap());
     }
     missing(&absent_root.join(HISTORICAL));
