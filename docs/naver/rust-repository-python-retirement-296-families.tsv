@@ -2727,18 +2727,6 @@ F04-web-recovery-upload	openpilot/system/webrtc/webrtcd.py	pending
 F04-web-recovery-upload	rust/tools/athena_fixture.py	pending
 F04-web-recovery-upload	rust/tools/athena_reference.py	pending
 F04-web-recovery-upload	rust/tools/athena_tracer_fixture.py	pending
-F04-web-recovery-upload	rust/tools/carrot_recovery_actions_control.py	pending
-F04-web-recovery-upload	rust/tools/carrot_recovery_actions_fixtures.py	pending
-F04-web-recovery-upload	rust/tools/carrot_recovery_actions_tools.py	pending
-F04-web-recovery-upload	rust/tools/carrot_recovery_cwp_check.py	pending
-F04-web-recovery-upload	rust/tools/carrot_recovery_cwp_source.py	pending
-F04-web-recovery-upload	rust/tools/carrot_recovery_http_control.py	pending
-F04-web-recovery-upload	rust/tools/carrot_recovery_source.py	pending
-F04-web-recovery-upload	rust/tools/carrot_recovery_support_control.py	pending
-F04-web-recovery-upload	rust/tools/carrot_recovery_support_shutdown.py	pending
-F04-web-recovery-upload	rust/tools/carrot_recovery_support_source.py	pending
-F04-web-recovery-upload	rust/tools/carrot_recovery_terminal_control.py	pending
-F04-web-recovery-upload	rust/tools/carrot_recovery_terminal_lifecycle.py	pending
 F04-web-recovery-upload	rust/tools/carrot_server_auto_update_attempt.py	pending
 F04-web-recovery-upload	rust/tools/carrot_server_auto_update_attempt_cases.py	pending
 F04-web-recovery-upload	rust/tools/carrot_server_auto_update_attempt_git.py	pending
@@ -2951,7 +2939,6 @@ F04-web-recovery-upload	rust/tools/check_athena_snapshot.py	pending
 F04-web-recovery-upload	rust/tools/check_athena_supervisor.py	pending
 F04-web-recovery-upload	rust/tools/check_athena_transfers.py	pending
 F04-web-recovery-upload	rust/tools/check_athena_upload_edges.py	pending
-F04-web-recovery-upload	rust/tools/check_carrot_recovery_upload.py	pending
 F04-web-recovery-upload	rust/tools/check_dashcam_catalog.py	pending
 F04-web-recovery-upload	rust/tools/check_dashcam_jobs.py	pending
 F04-web-recovery-upload	rust/tools/check_dashcam_lifecycle.py	pending

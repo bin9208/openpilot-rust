@@ -26,7 +26,7 @@ they are not completed functionality. All families below still contain work.
 Additional scope outside the baseline source inventory remains explicit:
 `selfdrived_helpers_source.py`, `tests/test_selfdrived_source.py`,
 `tests/test_params_native_stager.py` under `rust/tools`, six car-porting notebooks,
-and the 53 currently recorded pending entries in the [execution-edge inventory](rust-repository-python-retirement-296-execution-edges.tsv).
+and the 38 currently recorded pending entries in the [execution-edge inventory](rust-repository-python-retirement-296-execution-edges.tsv).
 Those include generated extensionless helpers, dynamic launch, embedded Python
 and vendor release/build paths. The22October follow-up adds34 explicit sites
 (30 missed paths, one generated-exporter subedge and three bootstrap retry sites).
@@ -68,33 +68,31 @@ three partial baseline entries.
    successful checks and retain required final integration.
    The aggregate remains failed. Navigation #457 also remains open because its
    earlier startup stall has not been explained by successful diagnostics.
-4. Recovery's eight configured controllers share HTTP/WebSocket/PTY/process
-   helpers. The independent fixture now contains213 records (207 original
-   observations, one controller receipt and five explicitly native-only shutdown
-   contracts); data completeness does not mean native acceptance. The13 Python
-   controllers/helpers remain until all eight native paths and both roots pass.
-   Frozen gate39663706166 passed six controllers in both roots and identified
-   actions directory ownership and upload fixture setup defects. The repair
-   preserved source semantics. Traced39667756626 then stopped in strace's
-   PTRACE_LISTEN/EIO path (#474); untraced39669218530 separately exposed the
-   action executable/sibling layout and one owned missing-file error path.
-   Those failures are distinct. Commit047b1ea40 binds the action executable and
-   process-child as held same-inode aliases and projects only the independently
-   recorded missing-file absolute path. Full untraced and traced eight-controller
-   rerun39672931897 is pending; no Python deletion is accepted yet. Complete
-   execution classification, old bootstrap API cleanup and actual caller migration
-   remain gates after functional success. Literal WebSocket mask/boundary tests
-   and frozen webhook bytes are already native and must remain intact.
-5. Startup/USB daemon comparator ports are registered in4a3cad747. They reuse
-   authenticated current-host catalog admission, reap descendants after leader
-   exit and reject replaced/modified success reports. Hosted compile/regression/
-   strict-Clippy preflight39673003192 is pending. Independent original capture,
-   complete two-root functional comparison and source absence remain required;
-   driver/shared logging sources stay until these consumers are retired.
+4. Recovery13 Python controllers/helpers are actually deleted and accepted by
+   [39687004413](https://github.com/bin9208/openpilot-rust/actions/runs/39687004413),
+   source57594f054, after all eight controllers in both absent roots, new ownership
+   regressions, strict Clippy and13disk/6workflow policy cases. The parent audited
+   7,346ZIP members,2,508trace seals/roster,4,795exec attempts (2,393success,
+   2,402explicit failures; observed Python exec0),25unchanged presealed programs,
+   96created bodies and both52-row owned-alias receipts. Source-authored tmux links
+   now hold their own O_PATH inode and bind the presealed provider with two-phase
+   receipts. Unknown execs remain rejected; raw argv is retained without claiming
+   argv parity. Eight callers and the CWP selector are native, and old APIs are
+   removed. server.py/repo_update.py remain live outside this closure. #474's
+   historical PTRACE_LISTEN/EIO cause remains unexplained despite this pass.
+5. Driver/startup/USB six-source candidate is actually absent and integrated into
+   the required model-family-retirement job. Native preparation39685067872 passes
+   eight regressions/strict Clippy. Full39686001854 passes separate4/5-model current
+   catalog exports and genuine45-asset/three-license USB staging, then fails sealed
+   fixture admission because Git text=auto normalized the NAS installed marker's
+   30CRLFs (879→849bytes).1ccf8437c preserves original bytes; all114sealed staged
+   Git blobs and both original manifest hashes are independently checked unchanged.
+   Full replay remains pending; six-source acceptance is not claimed. Compiler
+   functionality remains Python and is a separate open family dependency.
 6. Teleop's two embedded release computations are accepted in39670630661:
    independent34 computations and10 disposable Git scenarios match. The native
-   CLI and maintained script caller are present; main CI policy integration
-   remains pending. This closes one execution edge without changing the baseline
+   CLI, maintained script caller and main CI policy integration are accepted
+   in39674181956. This closes one execution edge without changing the baseline
    source count.
 
 ## Evidence reuse and delivery

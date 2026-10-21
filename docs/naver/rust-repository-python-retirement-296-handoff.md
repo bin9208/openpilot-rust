@@ -27,9 +27,9 @@ family records. Git retains earlier handoff versions.
 
 ## Accepted source retirement and open global gates
 
-Inventory:242replaced-local/3partial/3335pending of3580 baseline entries. Additional
+Inventory:255replaced-local/3partial/3322pending of3580 baseline entries. Additional
 helpers/notebooks and observed execution edges are tracked separately. The latter
-has39pending sites after the14-caller metadata integration accepted in39681730943.
+has38pending sites after metadata14caller acceptance and the native recovery CWP selector.
 
 Accepted focused families include outer Panda39625704015, device39640526320,
 protocol/CAN-I/O39647358174, and actual four-source Driving/Desire39663027128.
@@ -48,36 +48,28 @@ new exact-source final validation. Generic ARM/QEMU outputs are not sealed AGNOS
 release/device evidence. #457 startup stall and #474 PTRACE_LISTEN EIO remain
 unexplained; later successful runs do not establish root causes.
 
-## Recovery: functional success, executable provenance integration pending
+## Recovery:13-source retirement accepted
 
-Full39677229740 passes eight controllers in checkout/private roots, both ordinary
-and traced,17 focused units and strict Clippy at source
-`0501612741fe402bedf50ead847f2f85fc9f5587`, workflow
-`638e08ed71644364841b895371b4da73c8fd2bc5`. Parent audited artifact12382569025:
-68,489,895bytes,11,992CRC members, SHA256
-`05c62eecbe6debdd8a4b90e57dc67a12c3bc363e581f91e2552fb187cbd3296a`;
-all32 controller admissions,26 unchanged held inputs and4×52 owned alias rows.
-#472 fixture sequencing/complete Git-repair snapshot defect is closed by that proof.
+[39687004413](https://github.com/bin9208/openpilot-rust/actions/runs/39687004413)
+passes at57594f054a4454d09247f88d0630c39145853dd7, workflow
+ba1cfe4dd7a61f82b70988477fcd245a27faaf18. Eight controllers in two actual
+13-source-absent roots, ownership regressions, strict Clippy and13disk/6workflow
+policy cases pass. Eight maintained calls/CWP selector are native; obsolete
+Python-only APIs/test were removed. server.py/repo_update.py remain live elsewhere.
 
-The current candidate deletes13 recovery Python tools, the old `recovery_family.rs`
-test and Python-only APIs, and migrates eight maintained calls plus the CWP Cargo
-selector. These are pending acceptance by the new grouped gate, not13 additional
-accepted inventory retirements. server.py/repo_update.py remain live original consumers.
+Parent audits artifact12386833535:35,078,352B/7,346CRCs, SHA256
+41891171b8c74c2c1dc9e7965e4d9645bdbb989dba55dfa4690d7ddc18da31d8.
+All2,508trace files/roster/SHA and4,795exec attempts are independently counted:
+2,393success/2,402explicit failures, observed Python exec0.25unchanged presealed
+program pairs,96created executable bodies (86scripts/4copies/4hardlink aliases/
+2tmux symlinks), two52-row owned-alias receipts and symlink creation/final rows
+are independently checked. The exact executable/result contract retains raw argv
+without claiming argv parity. tmux source-created symlinks hold O_PATH inodes and
+bind the presealed provider; unknown exec rejection remains unchanged.
 
-Worker owns creation receipts in eight recovery leaves and
-`recovery_exec_audit.rs`/`recovery_family_exec_policy.rs`/audit CLI. A created file
-cannot be labelled pre-harness sealed: native alias rows bind held source inodes;
-copies/scripts get actual pre-exec creation and final held-descriptor receipts.
-The trace parser holds complete PID/file/SHA rosters, rejects Python/unknown or
-truncated execs, and preserves all raw argv. The first complete contract is closed
-executable provenance, explicitly **not exact argv parity**. Bound the ephemeral
-process-child JSON argument; all resulting child executables still need admission.
-Do not modify the shared production launcher merely for this audit.
-
-Policy/bin registration, two-phase maintained workflow integration and the13-source
-cleanup are now in the same candidate, avoiding a redundant intermediate heavy
-traffic run. The cleanup patch was manually rebased for both action leaves;
-all seven Git snapshot checks and new creation hooks remain. Hosted39683756196 at9cf0bfe5a caught one leftover two-element rebuild destructure after guards made its tuple three elements.81d418655 fixes that consumer; hosted39684855488 passes all grouped functional traffic/units/Clippy, then post-exec admission rejects the source-created tmux symlink at `actions/rust-owned-tmux/tools/tmux`. Correction must bind the symlink to the sealed host provider and source creation lifecycle; it must not invent script bytes or learn an allowlist from traces. Artifact12387105568 is parent CRC-audited (34768238B/7340CRCs/SHA5cb15ec0aa9e42dbd674860550fb79d0bff4fbc67cd61da0642053e953bef333). No13-source acceptance yet.
+Earlier compile-tuple and missing tmux-alias admission failures are retained in
+the evidence ledger. #472 functional closure stays accepted; #474 historical
+PTRACE_LISTEN/EIO root cause remains unexplained. This proves no device behavior.
 
 ## Metadata:14 maintained callers migrated, provider-order correction accepted
 
@@ -105,7 +97,7 @@ all67original observations,13disk/6workflow policy cases and strict Clippy.
 Parent audited all83CRCs and independently recomputed every case. Artifact
 12384097663 is44,650bytes, SHA256
 `3e7b85fe188eeb151983fad2540b7c4cb406fb6cb6ba920642084fe7d13369ea`.
-The14 execution edges are accepted (53→39pending); baseline file counts unchanged.
+The14 metadata execution edges are accepted; recovery CWP subsequently reduces pending sites39→38. Metadata baseline file counts are unchanged.
 
 ## Driver/startup/USB six-source gate
 
@@ -138,7 +130,7 @@ no pin was relaxed. Never execute ARM release binaries to stage these data.
 
 Parent independently audited capture artifact12383214627 (130,144,004bytes/735CRCs), all34startup and80USB sealed data files, eight/six case rows, and68byte-identical original USB observation bodies. Durable pure data is `tests/fixtures/model-family-original`; startup manifest4c54c0d6/USB8774d675. USB original controller exited0; wrapper failed only the late unused-msgq import inventory assertion after its before/after equality checks. Data-only finalization explicitly retains original-wrapper-incomplete status and three SHA-bound ELF entries with unknown lengths (`bytes:null`); it never invents observations, reruns source or substitutes native output.
 
-Native preparation aaf5efa0e provides archive staging and separate driver/family catalog bundles, current model/source/CPU/LLVM seals and atomic publication. Bounded compiler execution preserves timeout partials and states when limit-error partials are unavailable. Hosted preflight39685067872 passes four new preparation and four grouped support regressions/compilation/strict Clippy; parent audited artifact12385584115 (6443B/eightCRCs/SHA26e41bc9d39505830a7bf10ea936a893c3781d1b41465eda1d0d656e21c8ab96). Full maintained-job steps run39686001854 atcb9f508e0; actual traffic acceptance is pending. Current candidate removes the actual six Python sources and two old workflow calls, adds required `model-family-retirement` to the aggregate gate, and binds explicit atomic bundle paths. The independent review caught and excluded USB cache model hardlinks from artifact upload (about18.6GB of duplicate input). Acceptance remains pending the full grouped gate; counts are unchanged.
+Native preparation aaf5efa0e provides archive staging and separate driver/family catalog bundles, current model/source/CPU/LLVM seals and atomic publication. Bounded compiler execution preserves timeout partials and states when limit-error partials are unavailable. Hosted preflight39685067872 passes four new preparation and four grouped support regressions/compilation/strict Clippy; parent audited artifact12385584115 (6443B/eightCRCs/SHA26e41bc9d39505830a7bf10ea936a893c3781d1b41465eda1d0d656e21c8ab96). Full39686001854 atcb9f508e0 passes separate4/5-model catalog exports and genuine45-asset/three-license USB staging, then catches Git CRLF normalization of a sealed installed marker (879→849B).1ccf8437c sets byte-preserving attributes and restores original bytes without changing either manifest; all114sealed staged Git blobs match original pins. Retry39689390187 source1ccf8437c/workflowba2ca41f4 is pending actual traffic acceptance. Current candidate removes the actual six Python sources and two old workflow calls, adds required `model-family-retirement` to the aggregate gate, and binds explicit atomic bundle paths. The independent review caught and excluded USB cache model hardlinks from artifact upload (about18.6GB of duplicate input). Acceptance remains pending the full grouped gate; six-source counts are unchanged. Native soundd source staging7219cf5e7 replaces one remaining21-pin/20-file inline staging edge; original-vs-native CLI and retained audio two-root gate39688832018 are pending. It preserves exact source bytes, source absence and existing runtime/exec checks; no receipt is inserted into the20-file root.
 The existing unconverted model compiler remains explicit pending scope; invoking
 it from a Rust preparation command does not count as compiler retirement.
 
