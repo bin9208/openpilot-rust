@@ -584,7 +584,7 @@ fn original_overlay_error_cases_retain_ordered_spaced_logs_and_owned_tree() {
     fs::write(&sentinel, b"private sibling, never a host path\n").unwrap();
     let before = fs::read(&sentinel).unwrap();
     let stage = root.join("data/stage");
-    let cases = vec![
+    let cases = [
         vec!["echo".into(), "forbidden".into()],
         vec![
             "rm".into(),
