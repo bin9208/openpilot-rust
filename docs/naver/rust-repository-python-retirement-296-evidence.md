@@ -5240,3 +5240,15 @@ gates. Actual deleted-checkout proof now explicitly requires checkout source
 absence and replays all20 independently captured admissions. That postdelete
 cloud proof remains pending; no model behavior/device acceptance is claimed.
 Inventory229replaced-local/4partial/3347pending.
+
+
+### Current source-policy execution scope (2026-10-21)
+
+Sourceb91c1bd30b9ee4c15a6b1ad521173412cb6fa63a passed
+[39559833011/job119088133031](https://github.com/bin9208/openpilot-rust/actions/runs/39559833011/job/119088133031),
+workflow93cdadd2c23671f0761bb2dd98f7e437002864a8:13disk,77CI isolation,
+2lagd and2timed policy tests. The parent inspected the complete job log. Despite
+the inherited diagnostic job label mentioning Clippy, this recipe only installs
+that component and executes those tests; it does **not** execute cargo clippy.
+Do not infer a current strict-Clippy result from that label or policy pass.
+The joint updater proof separately runs strict Clippy on both controller/test sets.

@@ -1764,3 +1764,20 @@ A new source-only cweb redirect review confirms per-byte temporary Strings in
 http.rs location encoding. A single owned String is a candidate; preserve all
 256 byte mappings, URL joining, methods, redirect limits and actual HTTP/lifecycle
 comparisons before accepting it. No new runtime bug or measured benefit is claimed.
+
+
+### Accepted cweb allocation boundary and tooling defects (2026-10-21)
+
+#450 source3a90dc52 full hosted run39554813792/job119072003793 passed the entire
+cweb package,20actual HTTP cases,6daemon modes,32policy cases/16,000frames,
+ASan/UBSan and strict Clippy. The isolated exact256-byte mapping probe records
+256,000→1,000 allocations and169,000→0 reallocations over1,000 calls; its
+fingerprint6501791830646170789 is unchanged. This supersedes the preceding
+source-only candidate status. Latest affected ARM and device results remain
+pending; no CPU, peak-memory or whole-module clearance is inferred. See
+[rust-cweb-redirect-allocation-450.md](rust-cweb-redirect-allocation-450.md).
+
+Full CI also exposed a test-helper readiness publication race (#451), corrected
+by closing a private sibling before rename while retaining all pidfd/ownership/
+cleanup deadlines, and a native JSON11 raw-path panic (#452), still pending its
+separate fix. These are specific observed boundaries, not an exhaustive bug audit.
