@@ -143,6 +143,30 @@ fn requests_match_original(
     ))
 }
 
+fn missing_file_result_matches(source: &Value, native: &Value, owned_file: &Path) -> bool {
+    const PREFIX: &str = "tmux log read failed: [Errno 2] No such file or directory: '";
+    let Some(historical) = source["error"]
+        .as_str()
+        .and_then(|text| text.strip_prefix(PREFIX))
+        .and_then(|text| text.strip_suffix('\''))
+    else {
+        return false;
+    };
+    let Some(owned) = owned_file.to_str() else {
+        return false;
+    };
+    if !owned_file.is_absolute()
+        || !Path::new(historical).is_absolute()
+        || !Path::new(historical).ends_with("native/upload/tmux.log")
+        || native["error"].as_str() != Some(format!("{PREFIX}{owned}'").as_str())
+    {
+        return false;
+    }
+    let mut projected = source.clone();
+    projected["error"] = native["error"].clone();
+    &projected == native
+}
+
 fn run_http_action(
     config: &UploadNativeInputs<'_>,
     row: &Value,
@@ -492,8 +516,13 @@ fn run_native_upload_cases(config: &UploadNativeInputs<'_>, rows: &[Value]) -> R
         let actual: Value = serde_json::from_slice(&rerun.stdout)?;
         let (requests_match, route_ip) =
             requests_match_original(expected_requests, &observed_requests)?;
+        let result_matches = if *name == "missing-file" {
+            missing_file_result_matches(&row["source"], &actual, &tmux)
+        } else {
+            actual == row["source"]
+        };
         let matching = rerun.code == 0
-            && actual == row["source"]
+            && result_matches
             && requests_match
             && recipient.pending_replies()? == 0;
         direct_rows.push(json!({"scenario":name,"source":row["source"],"native":actual,"source_requests":expected_requests,"native_requests":observed_requests,"exit":rerun.code,"measured_route_ip":route_ip}));
@@ -627,5 +656,32 @@ mod frozen_source_tests {
         let path = temp.path().join("server.py");
         fs::write(&path, b"changed server source").unwrap();
         assert!(require_frozen_upload_source(&Pin::open(&path, 1024).unwrap()).is_err());
+    }
+
+    #[test]
+    fn missing_file_projection_changes_only_the_owned_absolute_path() {
+        let original = json!({"ok":false,"error":"tmux log read failed: [Errno 2] No such file or directory: '/home/runner/work/_temp/recovery-family/native/upload/tmux.log'"});
+        let owned = Path::new("/tmp/frozen/upload/tmux.log");
+        let native = json!({"ok":false,"error":"tmux log read failed: [Errno 2] No such file or directory: '/tmp/frozen/upload/tmux.log'"});
+        assert!(missing_file_result_matches(&original, &native, owned));
+        let mut changed = native.clone();
+        changed["ok"] = json!(true);
+        assert!(!missing_file_result_matches(&original, &changed, owned));
+        changed = native.clone();
+        changed["error"] = json!("tmux log read failed: [Errno 2] No such file or directory: '/tmp/other/upload/tmux.log'");
+        assert!(!missing_file_result_matches(&original, &changed, owned));
+        let mut changed_source = original.clone();
+        changed_source["error"] =
+            json!("tmux log read failed: [Errno 2] No such file or directory: '/tmp/other/file'");
+        assert!(!missing_file_result_matches(
+            &changed_source,
+            &native,
+            owned
+        ));
+        assert!(!missing_file_result_matches(
+            &original,
+            &native,
+            Path::new("relative/upload/tmux.log")
+        ));
     }
 }

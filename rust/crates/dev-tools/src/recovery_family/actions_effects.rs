@@ -7,14 +7,127 @@ use rustix::process::Signal;
 use serde_json::{json, Value};
 use std::{
     ffi::OsString,
-    fs::{self, OpenOptions},
+    fs::{self, File, OpenOptions},
+    io::Write,
     net::TcpListener,
-    os::unix::fs::{symlink, PermissionsExt},
+    os::unix::fs::{symlink, MetadataExt, PermissionsExt},
     path::{Path, PathBuf},
+    sync::Mutex,
     time::Duration,
 };
 
 type OriginalObservation<'a> = dyn Fn(&str) -> Result<Value> + 'a;
+
+pub(super) struct OwnedExecutablePair {
+    candidate_source: PathBuf,
+    child_source: PathBuf,
+    candidate: PathBuf,
+    process_child: PathBuf,
+    source_candidate: Pin,
+    source_child: Pin,
+    alias_candidate: Pin,
+    alias_child: Pin,
+    receipt_path: PathBuf,
+    receipt: Mutex<File>,
+}
+
+impl OwnedExecutablePair {
+    pub(super) fn create(candidate: &Path, process_child: &Path, output: &Path) -> Result<Self> {
+        let bin = output.join("native-bin");
+        fs::create_dir(&bin)?;
+        let owned_candidate = bin.join("recovery_actions");
+        let owned_child = bin.join("openpilot-process-child");
+        let source_candidate = Pin::open(candidate, 256 * 1024 * 1024)?;
+        let source_child = Pin::open(process_child, 256 * 1024 * 1024)?;
+        fs::hard_link(candidate, &owned_candidate)?;
+        fs::hard_link(process_child, &owned_child)?;
+        let receipt_path = output.join("owned-native-bin-bindings.jsonl");
+        let receipt = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&receipt_path)?;
+        let pair = Self {
+            candidate_source: candidate.to_owned(),
+            child_source: process_child.to_owned(),
+            candidate: owned_candidate.clone(),
+            process_child: owned_child.clone(),
+            source_candidate,
+            source_child,
+            alias_candidate: Pin::open(&owned_candidate, 256 * 1024 * 1024)?,
+            alias_child: Pin::open(&owned_child, 256 * 1024 * 1024)?,
+            receipt_path,
+            receipt: Mutex::new(receipt),
+        };
+        pair.record("created")?;
+        Ok(pair)
+    }
+
+    pub(super) fn candidate(&self) -> &Path {
+        &self.candidate
+    }
+
+    pub(super) fn process_child(&self) -> &Path {
+        &self.process_child
+    }
+
+    pub(super) fn record(&self, stage: &str) -> Result<()> {
+        for pin in [
+            &self.source_candidate,
+            &self.source_child,
+            &self.alias_candidate,
+            &self.alias_child,
+        ] {
+            pin.verify()?;
+        }
+        let binding = |source: &Pin,
+                       alias: &Pin,
+                       source_path: &Path,
+                       alias_path: &Path|
+         -> Result<Value> {
+            let original = fs::symlink_metadata(source_path)?;
+            let linked = fs::symlink_metadata(alias_path)?;
+            if original.dev() != linked.dev()
+                || original.ino() != linked.ino()
+                || original.len() != linked.len()
+                || source.digest() != alias.digest()
+            {
+                return Err("owned native executable alias identity changed".into());
+            }
+            Ok(
+                json!({"source":source_path.display().to_string(),"alias":alias_path.display().to_string(),"dev":original.dev(),
+                "ino":original.ino(),"len":original.len(),"sha256":source.digest()}),
+            )
+        };
+        let candidate = binding(
+            &self.source_candidate,
+            &self.alias_candidate,
+            &self.candidate_source,
+            &self.candidate,
+        )?;
+        let child = binding(
+            &self.source_child,
+            &self.alias_child,
+            &self.child_source,
+            &self.process_child,
+        )?;
+        let mut receipt = self
+            .receipt
+            .lock()
+            .map_err(|_| "owned executable receipt lock poisoned")?;
+        let held = receipt.metadata()?;
+        let named = fs::symlink_metadata(&self.receipt_path)?;
+        if !named.is_file() || held.dev() != named.dev() || held.ino() != named.ino() {
+            return Err("owned executable receipt identity changed".into());
+        }
+        serde_json::to_writer(
+            &mut *receipt,
+            &json!({"stage":stage,"candidate":candidate,"process_child":child}),
+        )?;
+        receipt.write_all(b"\n")?;
+        receipt.flush()?;
+        Ok(())
+    }
+}
 
 fn command(
     argv: Vec<String>,
@@ -371,12 +484,11 @@ pub(super) fn capture_tmux(
     Ok(receipt)
 }
 
-pub(super) fn inherited_pty(
-    candidate: &Path,
+pub(super) fn inherited_pty_bound(
+    pair: &OwnedExecutablePair,
     original_bare: &Path,
     output: &Path,
 ) -> Result<Value> {
-    fs::create_dir(output)?;
     let script_binary = Path::new("/usr/bin/script");
     let script_pin = Pin::open(script_binary, 1024 * 1024)?;
     let checkout = output.join("repo");
@@ -395,7 +507,7 @@ pub(super) fn inherited_pty(
     let child_script = "test -t 0 && test -t 1 && test -t 2 && printf tty-ready; read -r line; printf '%s' \"$line\" > tty-input";
     let shell = format!(
         "{} __repo-update --repo {} bash -c '{}'",
-        quote(candidate),
+        quote(pair.candidate()),
         quote(&checkout),
         child_script.replace('\'', "'\"'\"'")
     );
@@ -442,8 +554,7 @@ pub(super) fn inherited_pty(
 
 pub(super) fn run(
     repository: &Path,
-    candidate: &Path,
-    process_child: &Path,
+    pair: &OwnedExecutablePair,
     original_bare: &Path,
     original_row: &Value,
     name: &str,
@@ -451,8 +562,7 @@ pub(super) fn run(
 ) -> Result<Value> {
     run_inner(
         repository,
-        candidate,
-        process_child,
+        pair,
         original_bare,
         original_row,
         name,
@@ -466,8 +576,7 @@ pub(super) fn run(
 #[allow(clippy::too_many_arguments)]
 pub(super) fn run_frozen(
     repository: &Path,
-    candidate: &Path,
-    process_child: &Path,
+    pair: &OwnedExecutablePair,
     source_bare: &Path,
     original_row: &Value,
     name: &str,
@@ -476,8 +585,7 @@ pub(super) fn run_frozen(
 ) -> Result<Value> {
     run_inner(
         repository,
-        candidate,
-        process_child,
+        pair,
         source_bare,
         original_row,
         name,
@@ -489,15 +597,13 @@ pub(super) fn run_frozen(
 #[allow(clippy::too_many_arguments)]
 fn run_inner(
     repository: &Path,
-    candidate: &Path,
-    process_child: &Path,
+    pair: &OwnedExecutablePair,
     original_bare: &Path,
     original_row: &Value,
     name: &str,
     output: &Path,
     frozen: Option<&OriginalObservation<'_>>,
 ) -> Result<Value> {
-    fs::create_dir(output)?;
     let bare = output.join("origin.git");
     git(
         output,
@@ -582,10 +688,10 @@ fn run_inner(
     };
     let port = TcpListener::bind(("127.0.0.1", 0))?.local_addr()?.port();
     let argv = [
-        OsString::from(candidate),
+        pair.candidate().as_os_str().to_os_string(),
         checkout.as_os_str().to_os_string(),
         OsString::from(output.join("tmux.log")),
-        OsString::from(process_child),
+        pair.process_child().as_os_str().to_os_string(),
         OsString::from(port.to_string()),
     ];
     let environment = [
@@ -893,4 +999,58 @@ fn run_inner(
         serde_json::to_vec_pretty(&receipt)?,
     )?;
     Ok(receipt)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn owned_aliases_bind_both_sources_and_reject_replacement() {
+        let temp = tempfile::tempdir().unwrap();
+        let candidate = temp.path().join("candidate");
+        let child = temp.path().join("child");
+        let output = temp.path().join("owned");
+        fs::write(&candidate, b"candidate ELF fixture").unwrap();
+        fs::write(&child, b"process child ELF fixture").unwrap();
+        fs::create_dir(&output).unwrap();
+        let pair = OwnedExecutablePair::create(&candidate, &child, &output).unwrap();
+        pair.record("before-invocation").unwrap();
+        let lines = fs::read_to_string(&pair.receipt_path).unwrap();
+        let row: Value = serde_json::from_str(lines.lines().last().unwrap()).unwrap();
+        assert_eq!(row["candidate"]["source"], candidate.display().to_string());
+        assert_eq!(
+            row["candidate"]["alias"],
+            pair.candidate().display().to_string()
+        );
+        assert_eq!(row["candidate"]["sha256"], pair.source_candidate.digest());
+        assert_eq!(
+            row["candidate"]["ino"],
+            fs::metadata(&candidate).unwrap().ino()
+        );
+        assert_eq!(row["process_child"]["sha256"], pair.source_child.digest());
+        fs::remove_file(pair.process_child()).unwrap();
+        fs::write(pair.process_child(), b"foreign replacement").unwrap();
+        assert!(pair.record("after-invocation").is_err());
+        assert_eq!(
+            fs::read(pair.process_child()).unwrap(),
+            b"foreign replacement"
+        );
+    }
+
+    #[test]
+    fn owned_alias_receipt_replacement_is_not_clobbered() {
+        let temp = tempfile::tempdir().unwrap();
+        let candidate = temp.path().join("candidate");
+        let child = temp.path().join("child");
+        let output = temp.path().join("owned");
+        fs::write(&candidate, b"candidate ELF fixture").unwrap();
+        fs::write(&child, b"process child ELF fixture").unwrap();
+        fs::create_dir(&output).unwrap();
+        let pair = OwnedExecutablePair::create(&candidate, &child, &output).unwrap();
+        fs::remove_file(&pair.receipt_path).unwrap();
+        fs::write(&pair.receipt_path, b"foreign receipt").unwrap();
+        assert!(pair.record("after-invocation").is_err());
+        assert_eq!(fs::read(&pair.receipt_path).unwrap(), b"foreign receipt");
+    }
 }

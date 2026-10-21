@@ -111,6 +111,7 @@ fn replay_frozen_primary(
     config: &ActionsFrozenConfig<'_>,
     original: &OriginalFixture,
     bare: &Path,
+    pair: &actions_effects::OwnedExecutablePair,
 ) -> Result<(Vec<Value>, Vec<String>)> {
     let effects_root = config.output.join("rust-owned-effects");
     fs::create_dir(&effects_root)?;
@@ -138,16 +139,20 @@ fn replay_frozen_primary(
                 return Err(format!("frozen original action shell exit changed: {name}").into());
             }
         }
-        match actions_effects::run_frozen(
+        let effect_output = effects_root.join(name);
+        fs::create_dir(&effect_output)?;
+        pair.record(&format!("before-{name}"))?;
+        let attempt = actions_effects::run_frozen(
             config.repository,
-            config.candidate,
-            config.process_child,
+            pair,
             bare,
             &row,
             name,
-            &effects_root.join(name),
+            &effect_output,
             &|path| original.observation(path),
-        ) {
+        );
+        pair.record(&format!("after-{name}"))?;
+        match attempt {
             Ok(receipt) => effects.push(receipt),
             Err(error) => failures.push(format!("owned effect {name}: {error}")),
         }
@@ -554,8 +559,15 @@ pub fn run_actions_frozen(
     {
         return Err("frozen actions independent capture changed".into());
     }
+    let pair_output = config.output.join("rust-owned-native-bin");
+    fs::create_dir(&pair_output)?;
+    let pair = actions_effects::OwnedExecutablePair::create(
+        config.candidate,
+        config.process_child,
+        &pair_output,
+    )?;
     let bare = actions_effects::frozen_bare(config.output)?;
-    let (primary, mut failures) = replay_frozen_primary(config, original, &bare)?;
+    let (primary, mut failures) = replay_frozen_primary(config, original, &bare, &pair)?;
     let source_log = original.opaque_payload("actions/tmux_capture/source.log.json")?;
     let source_log_path = config.output.join("source-tmux.log");
     fs::write(&source_log_path, source_log)?;
@@ -574,11 +586,11 @@ pub fn run_actions_frozen(
         Ok(_) => failures.push("frozen original tmux response changed".into()),
         Err(error) => failures.push(format!("real tmux capture: {error}")),
     }
-    let pty_receipt = actions_effects::inherited_pty(
-        config.candidate,
-        &bare,
-        &config.output.join("rust-owned-pty"),
-    );
+    let pty_output = config.output.join("rust-owned-pty");
+    fs::create_dir(&pty_output)?;
+    pair.record("before-pty")?;
+    let pty_receipt = actions_effects::inherited_pty_bound(&pair, &bare, &pty_output);
+    pair.record("after-pty")?;
     let source_pty = original.observation("actions/inherited_pty/comparison.json")?;
     match &pty_receipt {
         Ok(receipt)
@@ -619,6 +631,7 @@ pub fn run_actions_frozen(
     for pin in [&source, &repo_update, &candidate, &child, &tmux] {
         pin.verify()?;
     }
+    pair.record("after-family")?;
     fs::write(
         config.output.join("rust-owned-failures.json"),
         serde_json::to_vec_pretty(&failures)?,
@@ -842,11 +855,19 @@ pub fn admit_actions_corpus(config: &ActionsCorpusConfig<'_>) -> Result<()> {
     if let Err(error) = &tmux_receipt {
         failures.push(format!("tmux capture: {error}"));
     }
-    let pty_receipt = actions_effects::inherited_pty(
+    let pair_output = config.output.join("rust-owned-native-bin");
+    fs::create_dir(&pair_output)?;
+    let pair = actions_effects::OwnedExecutablePair::create(
         config.candidate,
-        &config.output.join("origin.git"),
-        &config.output.join("rust-owned-pty"),
-    );
+        config.process_child,
+        &pair_output,
+    )?;
+    let pty_output = config.output.join("rust-owned-pty");
+    fs::create_dir(&pty_output)?;
+    pair.record("before-pty")?;
+    let pty_receipt =
+        actions_effects::inherited_pty_bound(&pair, &config.output.join("origin.git"), &pty_output);
+    pair.record("after-pty")?;
     if let Err(error) = &pty_receipt {
         failures.push(format!("inherited PTY: {error}"));
     }
@@ -854,20 +875,23 @@ pub fn admit_actions_corpus(config: &ActionsCorpusConfig<'_>) -> Result<()> {
     fs::create_dir(&owned_effects)?;
     let mut effects = Vec::new();
     for name in SCENARIOS {
+        let effect_output = owned_effects.join(name);
+        fs::create_dir(&effect_output)?;
+        pair.record(&format!("before-{name}"))?;
         let attempt = (|| -> Result<Value> {
             let comparison: Value = serde_json::from_slice(&fs::read(
                 config.output.join(name).join("comparison.json"),
             )?)?;
             actions_effects::run(
                 config.repository,
-                config.candidate,
-                config.process_child,
+                &pair,
                 &config.output.join("origin.git"),
                 &comparison,
                 name,
-                &owned_effects.join(name),
+                &effect_output,
             )
         })();
+        pair.record(&format!("after-{name}"))?;
         match attempt {
             Ok(receipt) => effects.push(receipt),
             Err(error) => failures.push(format!("owned effect {name}: {error}")),
@@ -890,6 +914,7 @@ pub fn admit_actions_corpus(config: &ActionsCorpusConfig<'_>) -> Result<()> {
     for pin in &pins {
         pin.verify()?;
     }
+    pair.record("after-family")?;
     fs::write(
         config.output.join("rust-owned-failures.json"),
         serde_json::to_vec_pretty(&failures)?,
