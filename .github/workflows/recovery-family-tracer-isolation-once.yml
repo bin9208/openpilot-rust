@@ -1,0 +1,208 @@
+name: 296 recovery functional and tracer isolation at unchanged source
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/recovery-family-tracer-isolation-once.yml
+  workflow_dispatch: null
+permissions:
+  contents: read
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
+  CARGO_BUILD_JOBS: '2'
+  CARGO_INCREMENTAL: '0'
+  CARGO_PROFILE_DEV_DEBUG: '0'
+  CARGO_PROFILE_TEST_DEBUG: '0'
+  CARGO_TARGET_DIR: ${{ github.workspace }}/rust/target
+jobs:
+  recovery-family:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: 010f521bb3d1f8399a13e6e150093eab11c9106c
+        persist-credentials: false
+    - name: Bind exact source and reserve disk before prerequisites
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = 010f521bb3d1f8399a13e6e150093eab11c9106c
+
+        proof="$RUNNER_TEMP/recovery-frozen"
+
+        mkdir -p "$proof"
+
+        git rev-parse HEAD > "$proof/SOURCE_COMMIT"
+
+        printf ''%s\n'' "$GITHUB_SHA" > "$proof/WORKFLOW_COMMIT"
+
+        sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
+
+        '
+    - name: Install native recovery prerequisites only
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        sudo apt-get update
+
+        sudo apt-get install -y tmux util-linux strace binutils capnproto libcapnp-dev g++ pkg-config cmake jq
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
+
+        '
+    - name: Compile all selected family code and test harness without traffic
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/recovery-frozen"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 6144
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-carrot-recovery -p openpilot-process-supervision --bins --examples
+        --locked > "$proof/build.stdout" 2> "$proof/build.stderr" || { tail -n 100 "$proof/build.stderr"; exit 1; }
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-carrot-recovery --lib --no-run --locked --message-format=json
+        > "$proof/cwp-build.jsonl" 2> "$proof/cwp-build.stderr" || { tail -n 100 "$proof/cwp-build.stderr"; exit 1; }
+
+        mapfile -t cwp < <(jq -r ''select(.reason=="compiler-artifact" and .profile.test==true and .target.name=="openpilot_carrot_recovery")
+        | .executable // empty'' "$proof/cwp-build.jsonl")
+
+        test "${#cwp[@]}" -eq 1
+
+        test -f "${cwp[0]}"
+
+        printf ''%s\n'' "${cwp[0]}" > "$proof/cwp-test-elf.path"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features recovery-family-native --test recovery_family_frozen
+        --no-run --locked --message-format=json > "$proof/harness-build.jsonl" 2> "$proof/harness-build.stderr" || { tail
+        -n 100 "$proof/harness-build.stderr"; exit 1; }
+
+        mapfile -t harness < <(jq -r ''select(.reason=="compiler-artifact" and .profile.test==true and .target.name=="recovery_family_frozen")
+        | .executable // empty'' "$proof/harness-build.jsonl")
+
+        test "${#harness[@]}" -eq 1
+
+        test -f "${harness[0]}"
+
+        printf ''%s\n'' "${harness[0]}" > "$proof/harness-test-elf.path"
+
+        '
+    - name: Prepare absent private source root and bind exact same ELFs
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/recovery-frozen\"\nprivate=\"$RUNNER_TEMP/recovery-private-root\"\ntest\
+        \ ! -e \"$private\"\nmkdir -p \"$private/openpilot/selfdrive/carrot/recovery\" \"$private/openpilot/selfdrive/carrot\"\
+        \ \"$private/openpilot/common\" \"$private/rust/tools\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path\
+        \ \"$GITHUB_WORKSPACE\" --growth-mib 2048\ncp -a openpilot/selfdrive/carrot/recovery/server.py \"$private/openpilot/selfdrive/carrot/recovery/server.py\"\
+        \ncp -a openpilot/common/repo_update.py \"$private/openpilot/common/repo_update.py\"\ncp -a openpilot/selfdrive/carrot/web\
+        \ \"$private/openpilot/selfdrive/carrot/web\"\nprintf '%s\\n' \"$private\" > \"$proof/private-root.path\"\ntest -f\
+        \ \"$private/openpilot/selfdrive/carrot/recovery/server.py\"\ntest \"$(find \"$private/rust/tools\" -mindepth 1 |\
+        \ wc -l)\" -eq 0\ncwp=\"$(cat \"$proof/cwp-test-elf.path\")\"\nharness=\"$(cat \"$proof/harness-test-elf.path\")\"\
+        \ncat > \"$proof/held-inputs.list\" <<EOF\n$GITHUB_WORKSPACE/openpilot/selfdrive/carrot/recovery/server.py\n$GITHUB_WORKSPACE/openpilot/common/repo_update.py\n\
+        $GITHUB_WORKSPACE/rust/target/debug/openpilot-carrot-recovery\n$GITHUB_WORKSPACE/rust/target/debug/examples/recovery_actions\n\
+        $GITHUB_WORKSPACE/rust/target/debug/examples/upload\n$GITHUB_WORKSPACE/rust/target/debug/openpilot-process-child\n\
+        $cwp\n$harness\n/usr/bin/tmux\n/usr/bin/git\n/usr/bin/script\n$private/openpilot/selfdrive/carrot/recovery/server.py\n\
+        $private/openpilot/common/repo_update.py\nEOF\nfor relative in rust/tools/carrot_recovery_http_control.py rust/tools/carrot_recovery_terminal_control.py\
+        \ rust/tools/carrot_recovery_terminal_lifecycle.py rust/tools/carrot_recovery_support_control.py rust/tools/carrot_recovery_support_shutdown.py\
+        \ rust/tools/carrot_recovery_actions_control.py rust/tools/check_carrot_recovery_upload.py rust/tools/carrot_recovery_cwp_check.py\
+        \ rust/tools/carrot_recovery_source.py rust/tools/carrot_recovery_support_source.py rust/tools/carrot_recovery_cwp_source.py\
+        \ rust/tools/carrot_recovery_actions_fixtures.py rust/tools/carrot_recovery_actions_tools.py; do\n  test -f \"$GITHUB_WORKSPACE/$relative\"\
+        \n  test ! -e \"$private/$relative\"\n  printf '%s\\n' \"$GITHUB_WORKSPACE/$relative\" >> \"$proof/held-inputs.list\"\
+        \ndone\nfor elf in \"$GITHUB_WORKSPACE/rust/target/debug/openpilot-carrot-recovery\" \"$GITHUB_WORKSPACE/rust/target/debug/examples/recovery_actions\"\
+        \ \"$GITHUB_WORKSPACE/rust/target/debug/examples/upload\" \"$GITHUB_WORKSPACE/rust/target/debug/openpilot-process-child\"\
+        \ \"$cwp\" \"$harness\"; do\n  readelf -h \"$elf\" | grep -Fq 'ELF64'\n  readelf -h \"$elf\" | grep -Fq 'Advanced\
+        \ Micro Devices X86-64'\ndone\nwhile IFS= read -r path; do test -f \"$path\" && test ! -L \"$path\"; stat -c '%d %i\
+        \ %s %f' \"$path\"; sha256sum \"$path\"; done < \"$proof/held-inputs.list\" > \"$proof/held-inputs.before\"\n"
+    - name: Run unchanged complete family without ptrace before independent trace probe
+      env:
+        RECOVERY_FAMILY_CHECKOUT_ROOT: ${{ github.workspace }}
+        RECOVERY_FAMILY_BINARY: ${{ github.workspace }}/rust/target/debug/openpilot-carrot-recovery
+        RECOVERY_FAMILY_ACTIONS_EXAMPLE: ${{ github.workspace }}/rust/target/debug/examples/recovery_actions
+        RECOVERY_FAMILY_UPLOAD_EXAMPLE: ${{ github.workspace }}/rust/target/debug/examples/upload
+        RECOVERY_FAMILY_PROCESS_CHILD: ${{ github.workspace }}/rust/target/debug/openpilot-process-child
+        RECOVERY_FAMILY_TMUX: /usr/bin/tmux
+        RECOVERY_FAMILY_HISTORICAL_PRESENT: '1'
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/recovery-frozen"
+
+        export RECOVERY_FAMILY_PRIVATE_ROOT="$(cat "$proof/private-root.path")"
+
+        export RECOVERY_FAMILY_CWP_TEST_BINARY="$(cat "$proof/cwp-test-elf.path")"
+
+        export RECOVERY_FAMILY_FROZEN_EVIDENCE="$proof/functional-native"
+
+        harness="$(cat "$proof/harness-test-elf.path")"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        "$harness" --exact eight_native_recovery_controllers_same_elf_present_and_absent --test-threads=1 --nocapture > "$proof/functional-harness.stdout"
+        2> "$proof/functional-harness.stderr" || { tail -n 100 "$proof/functional-harness.stderr" "$proof/functional-harness.stdout";
+        exit 1; }
+
+        grep -F ''1 passed; 0 failed'' "$proof/functional-harness.stdout"
+
+        test -f "$proof/functional-native/admission.json"
+
+        du -sm "$proof" > "$proof/functional-artifact-size-mib.txt"
+
+        test "$(cut -f1 "$proof/functional-artifact-size-mib.txt")" -le 200
+
+        '
+    - name: Run both roots through one exact native harness under exec trace
+      env:
+        RECOVERY_FAMILY_CHECKOUT_ROOT: ${{ github.workspace }}
+        RECOVERY_FAMILY_BINARY: ${{ github.workspace }}/rust/target/debug/openpilot-carrot-recovery
+        RECOVERY_FAMILY_ACTIONS_EXAMPLE: ${{ github.workspace }}/rust/target/debug/examples/recovery_actions
+        RECOVERY_FAMILY_UPLOAD_EXAMPLE: ${{ github.workspace }}/rust/target/debug/examples/upload
+        RECOVERY_FAMILY_PROCESS_CHILD: ${{ github.workspace }}/rust/target/debug/openpilot-process-child
+        RECOVERY_FAMILY_TMUX: /usr/bin/tmux
+        RECOVERY_FAMILY_HISTORICAL_PRESENT: '1'
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/recovery-frozen"
+
+        export RECOVERY_FAMILY_PRIVATE_ROOT="$(cat "$proof/private-root.path")"
+
+        export RECOVERY_FAMILY_CWP_TEST_BINARY="$(cat "$proof/cwp-test-elf.path")"
+
+        export RECOVERY_FAMILY_FROZEN_EVIDENCE="$proof/native"
+
+        harness="$(cat "$proof/harness-test-elf.path")"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        strace -ff -qq -s 32768 -xx -e trace=execve,execveat -o "$proof/exec" "$harness" --exact eight_native_recovery_controllers_same_elf_present_and_absent
+        --test-threads=1 --nocapture > "$proof/harness.stdout" 2> "$proof/harness.stderr" || { tail -n 100 "$proof/harness.stderr"
+        "$proof/harness.stdout"; exit 1; }
+
+        grep -F ''1 passed; 0 failed'' "$proof/harness.stdout"
+
+        test -f "$proof/native/admission.json"
+
+        test "$(find "$proof" -maxdepth 1 -name ''exec.*'' -size +0c | wc -l)" -gt 0
+
+        du -sm "$proof" > "$proof/artifact-size-mib.txt"
+
+        test "$(cut -f1 "$proof/artifact-size-mib.txt")" -le 400
+
+        '
+    - name: Verify full held source and ELF identities after traffic
+      if: always()
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/recovery-frozen\"\ntest \"$(git rev-parse HEAD)\" = 010f521bb3d1f8399a13e6e150093eab11c9106c\n\
+        if test -f \"$proof/held-inputs.list\"; then\n  while IFS= read -r path; do test -f \"$path\" && test ! -L \"$path\"\
+        ; stat -c '%d %i %s %f' \"$path\"; sha256sum \"$path\"; done < \"$proof/held-inputs.list\" > \"$proof/held-inputs.after\"\
+        \n  cmp \"$proof/held-inputs.before\" \"$proof/held-inputs.after\"\nfi\n"
+    - name: Preserve bounded source, native, unit and trace evidence
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: rust-recovery-family-tracer-isolation-296
+        path: ${{ runner.temp }}/recovery-frozen/
+        if-no-files-found: error
+        retention-days: 5
