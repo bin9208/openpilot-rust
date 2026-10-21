@@ -21,12 +21,12 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 3851ac65de0155a8b420d798da779232f214e80f
+        ref: 9076ccc410233b8ee9e2add38ff5f3de551ec3ec
         persist-credentials: false
     - name: Reserve disk and install hosted native prerequisites
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = 3851ac65de0155a8b420d798da779232f214e80f
+        test "$(git rev-parse HEAD)" = 9076ccc410233b8ee9e2add38ff5f3de551ec3ec
 
         proof="$RUNNER_TEMP/driver-fixture-preflight"
 
@@ -68,7 +68,7 @@ jobs:
     - name: Compile, compare retained originals and lint native metadata CLI
       env:
         CI_RECEIPT_ORIGINAL: ${{ github.workspace }}/rust/crates/dev-tools/tests/fixtures/ci-receipt-original/original
-        CI_RECEIPT_BINARY: ${{ github.workspace }}/rust/target/debug/ci-receipt-metadata
+        CI_RECEIPT_BINARY: ${{ env.CI_RECEIPT_METADATA }}
         CI_RECEIPT_EVIDENCE: ${{ runner.temp }}/driver-fixture-preflight/native-comparison
         CI_RECEIPT_MANIFEST_SHA256: 71d33e6e25f62c7a51240ecb4eb908acd35351a911b482869181fbfdffd130c1
       run: 'set -euo pipefail
