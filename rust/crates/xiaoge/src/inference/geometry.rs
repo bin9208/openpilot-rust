@@ -119,17 +119,8 @@ impl Geometry {
                 "blindspot geometry differs from frame dimensions",
             ));
         }
-        let packed = frame.pack()?;
-        let [x, y, width, height] = region.bounds;
-        let mut cropped = Vec::with_capacity(width * (height + height / 2));
-        for row in y..y + height {
-            let offset = row * layout.width + x;
-            cropped.extend_from_slice(&packed[offset..offset + width]);
-        }
-        for row in layout.height + y / 2..layout.height + (y + height) / 2 {
-            let offset = row * layout.width + x;
-            cropped.extend_from_slice(&packed[offset..offset + width]);
-        }
+        let cropped = frame.crop_nv12(region.bounds)?;
+        let [_, _, width, height] = region.bounds;
         let rgb = cv::nv12_to_rgb(&cropped, region.mask.view().layout().dimensions())?;
         let masked = cv::apply_mask(rgb.view(), region.mask.view())?;
         let scale = 352.0

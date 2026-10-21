@@ -90,27 +90,29 @@ impl<'a> Head<'a> {
     pub fn candidates(&self, confidence: f32, iou: f32) -> Result<Vec<Candidate>, Error> {
         let detections = self.detections(confidence);
         let mut kept = Vec::new();
-        for class in 0..6 {
+        // These classes never become lane candidates, and NMS is per class.
+        for class in [0, 1, 2, 5] {
             let mut order: Vec<_> = detections
                 .iter()
                 .filter(|detection| detection.class_id == class)
                 .collect();
             order.sort_by(|left, right| right.score.total_cmp(&left.score));
-            while let Some((&current, remaining)) = order.split_first() {
+            while let Some(&current) = order.first() {
                 kept.push(current);
-                order = remaining
-                    .iter()
-                    .copied()
-                    .filter(|other| current.iou(other) <= iou)
-                    .collect();
+                let mut retained = 0;
+                for index in 1..order.len() {
+                    let other = order[index];
+                    if current.iou(other) <= iou {
+                        order[retained] = other;
+                        retained += 1;
+                    }
+                }
+                order.truncate(retained);
             }
         }
         kept.sort_by(|left, right| right.score.total_cmp(&left.score));
         let mut candidates = Vec::with_capacity(kept.len());
         for detection in kept {
-            if matches!(detection.class_id, 3 | 4) {
-                continue;
-            }
             if let Some(candidate) = self.mask(detection)? {
                 candidates.push(candidate);
             }
@@ -132,24 +134,35 @@ impl<'a> Head<'a> {
         }
         let coefficients: [f32; MASK_CHANNELS] =
             std::array::from_fn(|channel| self.at(10 + channel, detection.anchor));
-        for row in (top..=bottom).rev() {
+        // Rows above the existing cutoff can never produce an accepted candidate.
+        for row in (top.max(52)..=bottom).rev() {
             let mut count = 0;
             let mut total = 0;
-            for column in left..=right {
-                let pixel = usize::try_from(row * 104 + column)
-                    .map_err(|_| Error::Invalid("lane mask offset exceeds address space"))?;
-                let mut value = 0.0f32;
-                for (channel, coefficient) in coefficients.iter().enumerate() {
-                    value +=
-                        coefficient * self.prototypes[channel * PROTO_SIZE * PROTO_SIZE + pixel];
+            let first = usize::try_from(row * 104 + left)
+                .map_err(|_| Error::Invalid("lane mask offset exceeds address space"))?;
+            let width = usize::try_from(right - left + 1)
+                .map_err(|_| Error::Invalid("lane mask width exceeds address space"))?;
+            let mut values = [0.0f32; PROTO_SIZE];
+            // Visit contiguous pixels while retaining the original 32-channel
+            // accumulation order for each pixel (no reassociation or fused math).
+            for (channel, coefficient) in coefficients.iter().enumerate() {
+                let start = channel * PROTO_SIZE * PROTO_SIZE + first;
+                for (value, sample) in values[..width]
+                    .iter_mut()
+                    .zip(&self.prototypes[start..start + width])
+                {
+                    *value += coefficient * sample;
                 }
+            }
+            for (offset, &value) in values[..width].iter().enumerate() {
                 if value > 0.0 {
                     count += 1;
-                    total += column - left;
+                    total += u32::try_from(offset)
+                        .map_err(|_| Error::Invalid("lane column exceeds integer range"))?;
                 }
             }
             if count > 0 {
-                return Ok((row >= 52).then_some(Candidate {
+                return Ok(Some(Candidate {
                     class_id: detection.class_id,
                     score: detection.score,
                     bottom: row,

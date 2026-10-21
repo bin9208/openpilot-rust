@@ -116,3 +116,84 @@ access, as well as after an owned copy, and prove skipped frames stay uncopied.
 Native/ARM comparisons use the existing PR jobs rather than duplicating that
 matrix in the branch's focused cadence dispatch. Final package/release evidence
 remains pending on the reviewed source.
+
+## Compute-only follow-up (October 21)
+
+The owner explicitly requires actual computation/memory reduction without
+changing detection quality, models, input resolution, thresholds, cadence or
+CPU placement. OFF/ON photos show substantial residual load; the system-wide
+instantaneous difference is not a Xiaoge process measurement. The private
+photo calculations and current acceptance status are linked from issue #416.
+
+The follow-up candidate targets these existing redundant operations:
+
+- BSD previously packed the entire visible NV12 frame before packing the
+  configured ROI. Direct ROI extraction preserves visible Y/UV byte ordering,
+  padding/gap handling, even chroma alignment and complete original frame
+  validation. At 1928x1208 this avoids exactly 3,493,536 copied/allocated bytes
+  per BSD preprocessing operation; it does not remove the camera ownership copy.
+- Lane tensor construction normalizes one grayscale plane and copies its exact
+  f32 bits into the two identical channels. Division count falls from 519,168
+  to 173,056 per lane input; model input shape and all three planes are unchanged.
+- Lane mask reduction visits contiguous prototype pixels while retaining the
+  original channel accumulation order for each pixel. It omits rows numbered less than 52,
+  which the existing acceptance boundary already rejects, and skips per-class suppression work for
+  classes that were already discarded. NMS compacts its existing vector instead
+  of allocating a replacement after each selected detection. Candidate order,
+  confidence ties, float cancellation, NaNs and invalid bounds remain regression
+  requirements; there is no reduced-precision or fused arithmetic substitution.
+
+Frozen production references from `0682e933d3fea06e8953ace63fc521a29ee02b6e`
+are retained under `rust/crates/xiaoge/tests/support/`. The hosted comparison
+checks each reference against that exact Git source before use. The frozen lane
+inference reference uses the frozen head rather than the candidate head.
+Literal NV12 crops and bitwise grayscale-channel checks supplement existing
+original-Python pixel/tensor/model/IPC comparisons on host and ARM.
+
+Hosted RED [39535514028](https://github.com/bin9208/openpilot-rust/actions/runs/39535514028)
+on `ed9f37d86f608befa1add88d641908768f09e411` fails with E0599 because the
+new ROI API has not been implemented. All functional execution remains hosted.
+
+The manual `compute_only` fast-workflow job builds the pinned, unchanged OpenCV
+provider on a GitHub-hosted ARM runner. It compares both implementations on the
+same inputs, warms both and alternates measurement order over nine samples.
+Reports separate NV12 extraction, mask cases, normalization, BSD preprocessing
+and complete real-model lane inference. Synthetic/stage speedups must not be
+reported as a proportional reduction in whole-process or vehicle CPU usage.
+These checks do not measure GPU headroom or establish real-device latency.
+Final exact-source receipts, release identity and pending device acceptance are
+recorded in issue #416 after source freeze, rather than changing source merely
+to update an older snapshot's CI status.
+
+### GPU audit and limits
+
+The CPU photos do not report GPU occupancy. The shipped OpenCV recipe
+(`rust/crates/dev-tools/src/opencv_build.rs`) sets `WITH_OPENCL=OFF`, and its
+Xiaoge profile also disables DNN CUDA. The CXX network adapter explicitly
+selects OpenCV/CPU. Requesting another target without a capable verified
+provider does not establish acceleration. The pinned
+[backend implementation](https://github.com/opencv/opencv/blob/fe38fc608f6acb8b68953438a62305d8318f4fcd/modules/dnn/src/net_impl_backend.cpp#L224)
+contains its CPU fallback. CPU optimized dispatch, fusion and Winograd are
+already enabled by the pinned defaults; repeating those settings is not an
+established optimization.
+
+Internal KGSL/Adreno graphs and GLES display work, AMD external-GPU execution
+through the custom USB runtime, and DSP execution are distinct paths. Existing
+QCOM model execution is a GPU graph path, not evidence of an available Xiaoge
+DSP executor; the current ONNX Runtime adapter also selects CPU. There is no
+validated GPU/DSP Xiaoge route in this candidate.
+
+The historical full-cereal audit found 325 GPU samples equal to zero across
+three retained `96258ca2` captures, with `usbgpu=false` in model diagnostics.
+This does not prove present GPU headroom: `hardware-info/src/tici.rs` returns
+zero when reading/parsing the internal KGSL busy counters fails, and those
+counters do not describe an AMD external GPU. Today's photo device identity
+and current GPU utilization are unconfirmed.
+
+An isolated FP32 OpenCL experiment would first need a confirmed device runtime,
+a different verified provider, exact model-output checks and concurrent
+camera/driving/DM timing evidence. Camera buffers are not producer leases;
+input/output ownership, synchronization and transfers also require accounting.
+This follow-up therefore does not enable an unvalidated GPU backend, weaken
+precision, or claim that the GPU is full or idle. The actual CPU memory and
+arithmetic reductions above remain independent of that unknown headroom.
