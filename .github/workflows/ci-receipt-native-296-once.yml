@@ -21,12 +21,12 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 3abd3a50b3e6769c9d4baa42954e18647fbeb4f6
+        ref: c32cc4c3b4bf321090b11870f6c46cd0ed6e6427
         persist-credentials: false
     - name: Reserve disk and install hosted native prerequisites
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = 3abd3a50b3e6769c9d4baa42954e18647fbeb4f6
+        test "$(git rev-parse HEAD)" = c32cc4c3b4bf321090b11870f6c46cd0ed6e6427
 
         proof="$RUNNER_TEMP/driver-fixture-preflight"
 
@@ -45,6 +45,24 @@ jobs:
         sudo apt-get install -y g++ capnproto libcapnp-dev pkg-config liblzma-dev
 
         rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        '
+    - name: Build current host metadata producer before maintained consumers
+      uses: ./.github/actions/native-json11
+    - name: Exercise composite-exported native metadata reader
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driver-fixture-preflight"
+
+        test -x "$CI_RECEIPT_METADATA"
+
+        printf ''{"module":"native-host-boundary"}\n'' > "$proof/producer-input.json"
+
+        "$CI_RECEIPT_METADATA" module PRODUCER_TEST "$proof/producer-input.json" > "$proof/producer-output.txt"
+
+        printf ''PRODUCER_TEST=native-host-boundary\n'' > "$proof/producer-expected.txt"
+
+        cmp "$proof/producer-output.txt" "$proof/producer-expected.txt"
 
         '
     - name: Compile, compare retained originals and lint native metadata CLI
@@ -69,6 +87,11 @@ jobs:
         cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features ci-receipt-metadata-native --test ci_receipt_metadata
         --locked -- --ignored --nocapture > "$proof/original.stdout" 2> "$proof/original.stderr" || { tail -n 100 "$proof/original.stderr"
         "$proof/original.stdout"; exit 1; }
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --test ci_disk_bootstrap --test ci_workflow_policy
+        --locked > "$proof/workflow-policy.stdout" 2> "$proof/workflow-policy.stderr" || { tail -n 100 "$proof/workflow-policy.stdout"
+        "$proof/workflow-policy.stderr"; exit 1; }
+
 
         rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 1024
 
