@@ -7,6 +7,7 @@ use openpilot_dev_tools::{
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::{
+    collections::{BTreeMap, HashMap},
     env,
     ffi::OsString,
     fs::{self, OpenOptions},
@@ -24,6 +25,249 @@ fn required(name: &str) -> PathBuf {
 
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+fn exec_attempts(trace: &str) -> Vec<(String, Vec<String>)> {
+    let start = regex::Regex::new(r#"^(\d+)\s+execve\("((?:[^"\\]|\\.)*)", (\[.*\]), "#).unwrap();
+    let resumed = regex::Regex::new(r"^(\d+)\s+<\.\.\. execve resumed>\)\s+= 0$").unwrap();
+    let mut pending = HashMap::<String, (String, Vec<String>)>::new();
+    let mut result = Vec::new();
+    for line in trace.lines().filter(|line| line.contains("execve")) {
+        assert!(!line.contains("execveat("), "opaque execution: {line}");
+        if let Some(fields) = start.captures(line) {
+            let pid = fields[1].to_owned();
+            let program: String = serde_json::from_str(&format!("\"{}\"", &fields[2])).unwrap();
+            let argv: Vec<String> = serde_json::from_str(&fields[3]).unwrap();
+            assert!(!argv.is_empty(), "empty executable argv: {line}");
+            if line.ends_with("<unfinished ...>") {
+                assert!(pending.insert(pid, (program, argv)).is_none());
+            } else {
+                assert!(line.ends_with(") = 0"), "failed executable attempt: {line}");
+                result.push((program, argv));
+            }
+        } else if let Some(fields) = resumed.captures(line) {
+            result.push(pending.remove(&fields[1]).expect("orphan resumed execve"));
+        } else {
+            panic!("unclassified executable attempt: {line}");
+        }
+    }
+    assert!(pending.is_empty(), "unfinished executable attempts");
+    result
+}
+
+#[test]
+fn exec_trace_parser_requires_complete_successful_calls() {
+    let direct = "7 execve(\"/usr/bin/git\", [\"/usr/bin/git\", \"status\"], 0x1 /* 1 vars */) = 0";
+    let split = "8  execve(\"/usr/bin/basename\", [\"basename\", \"--\", \"/usr/lib/git-core/git-submodule\"], 0x2 /* 1 vars */ <unfinished ...>\n8 <... execve resumed>) = 0";
+    assert_eq!(
+        exec_attempts(&format!("{direct}\n{split}")),
+        vec![
+            (
+                "/usr/bin/git".into(),
+                vec!["/usr/bin/git".into(), "status".into()]
+            ),
+            (
+                "/usr/bin/basename".into(),
+                vec![
+                    "basename".into(),
+                    "--".into(),
+                    "/usr/lib/git-core/git-submodule".into()
+                ]
+            ),
+        ]
+    );
+    for malformed in [
+        "8 <... execve resumed>) = 0",
+        "8 execve(\"/usr/bin/git\", [\"git\"], 0x1 /* 1 vars */ <unfinished ...>\n8 <... execve resumed>) = -1 ENOENT (No such file or directory)",
+        "8 execve(\"/usr/bin/git\", [\"git\"], 0x1 /* 1 vars */ <unfinished ...>",
+        "8 execve(\"/usr/bin/git\", [\"git\"], 0x1 /* 1 vars */ <unfinished ...>\n9 <... execve resumed>) = 0",
+        "8 execveat(AT_FDCWD, \"/usr/bin/git\", [\"git\"], 0x1, 0) = 0",
+        "8 execve(\"/usr/bin/git\", [\"git\"], 0x1 /* 1 vars */) = -1 ENOENT (No such file or directory)",
+    ] {
+        assert!(
+            std::panic::catch_unwind(|| exec_attempts(malformed)).is_err(),
+            "malformed trace accepted: {malformed}"
+        );
+    }
+}
+
+fn exec_kind(
+    program: &str,
+    argv: &[String],
+    checker: &Path,
+    binary: &Path,
+    launcher: &Path,
+) -> &'static str {
+    let first = argv.first().map(String::as_str);
+    let args = argv.iter().map(String::as_str).collect::<Vec<_>>();
+    if program == checker.to_str().unwrap() {
+        assert_eq!(first, Some(program));
+        return "checker";
+    }
+    if program == binary.to_str().unwrap() {
+        assert_eq!(argv.len(), 1);
+        assert_eq!(first, Some(program));
+        return "candidate";
+    }
+    if program == launcher.to_str().unwrap() {
+        assert_eq!(first, Some(program));
+        assert_eq!(argv.len(), 2);
+        assert!(argv[1].starts_with("/tmp/op-exec-"));
+        return "launcher";
+    }
+    if program.starts_with("/tmp/updated-source-") {
+        let (case, tool) = [
+            "check-fetch-metered",
+            "missing-branch-failure",
+            "tizi-branch-map-agnos-same-version",
+            "agnos-model-manifest-boundary",
+            "connectivity-thresholds",
+        ]
+        .into_iter()
+        .find_map(|name| {
+            ["git", "sudo", "bash"].into_iter().find_map(|tool| {
+                program
+                    .ends_with(&format!("/{name}-native/bin/{tool}"))
+                    .then_some((name, tool))
+            })
+        })
+        .unwrap_or_else(|| panic!("unrecognized private fixture executable: {program}"));
+        assert!(!case.is_empty());
+        assert_eq!(first, Some(tool));
+        match tool {
+            "git" => assert!(matches!(
+                argv.get(1).map(String::as_str),
+                Some(
+                    "rev-parse"
+                        | "show"
+                        | "diff"
+                        | "config"
+                        | "ls-remote"
+                        | "reset"
+                        | "submodule"
+                        | "checkout"
+                        | "clean"
+                        | "lfs"
+                        | "fetch"
+                        | "branch"
+                )
+            )),
+            "sudo" => assert!(matches!(
+                argv.get(1).map(String::as_str),
+                Some("mount" | "chmod")
+            )),
+            "bash" => {
+                assert_eq!(argv.len(), 3);
+                assert_eq!(argv.get(1).map(String::as_str), Some("-c"));
+                assert!(argv[2].starts_with("unset AGNOS_VERSION && source launch_env.sh"));
+            }
+            _ => unreachable!(),
+        }
+        return match tool {
+            "git" => "fixture-git",
+            "sudo" => "fixture-sudo",
+            _ => "fixture-bash",
+        };
+    }
+    match program {
+        "/usr/bin/git" => {
+            assert_eq!(first, Some(program));
+            assert!(matches!(
+                argv.get(1).map(String::as_str),
+                Some(
+                    "init"
+                        | "config"
+                        | "add"
+                        | "commit"
+                        | "rev-parse"
+                        | "branch"
+                        | "clone"
+                        | "reset"
+                )
+            ));
+            "system-git"
+        }
+        "/usr/lib/git-core/git" => {
+            assert!(matches!(first, Some("git" | "/usr/lib/git-core/git")));
+            assert!(matches!(
+                argv.get(1).map(String::as_str),
+                Some(
+                    "-c" | "--exec-path"
+                        | "rev-parse"
+                        | "submodule--helper"
+                        | "config"
+                        | "version"
+                        | "-C"
+                        | "maintenance"
+                        | "rev-list"
+                )
+            ));
+            "git-core"
+        }
+        "/usr/lib/git-core/git-upload-pack" => {
+            assert_eq!(first, Some("git-upload-pack"));
+            assert_eq!(argv.len(), 2);
+            assert!(argv[1].starts_with("/tmp/updated-source-"));
+            assert!(argv[1].ends_with("/remote") || argv[1].ends_with("/remote/.git"));
+            "git-upload-pack"
+        }
+        "/usr/lib/git-core/git-submodule" => {
+            assert_eq!(first, Some(program));
+            assert!(matches!(
+                argv.get(1).map(String::as_str),
+                Some("foreach" | "sync" | "update")
+            ));
+            "git-submodule"
+        }
+        "/usr/bin/git-lfs" => {
+            assert_eq!(argv.len(), 2);
+            assert_eq!(first, Some(program));
+            assert_eq!(argv[1], "prune");
+            "git-lfs"
+        }
+        "/bin/sh" => {
+            assert_eq!(first, Some(program));
+            assert_eq!(argv.get(1).map(String::as_str), Some("-c"));
+            assert!(argv
+                .get(2)
+                .is_some_and(|arg| arg.starts_with("git-upload-pack '/tmp/updated-source-")));
+            assert_eq!(argv.len(), 4);
+            assert_eq!(argv[2], argv[3]);
+            "shell-upload-pack"
+        }
+        "/usr/bin/basename" => {
+            assert!(matches!(
+                args.as_slice(),
+                ["basename", "/usr/lib/git-core/git-submodule"]
+                    | ["basename", "--", "/usr/lib/git-core/git-submodule"]
+            ));
+            "basename"
+        }
+        "/usr/bin/envsubst" => {
+            assert!(matches!(
+                args.as_slice(),
+                ["envsubst", "usage: $dashless $USAGE"]
+                    | ["envsubst", "--variables", "usage: $dashless $USAGE"]
+            ));
+            "envsubst"
+        }
+        "/usr/bin/gettext" => {
+            assert_eq!(args, ["gettext", "usage: $dashless $USAGE"]);
+            "gettext"
+        }
+        "/usr/bin/sed" => {
+            assert!(matches!(
+                args.as_slice(),
+                ["sed", "-e", "s/-/ /"] | ["sed", "-e", "s/-/_/g"]
+            ));
+            "sed"
+        }
+        "/usr/bin/uname" => {
+            assert_eq!(args, ["uname", "-s"]);
+            "uname"
+        }
+        _ => panic!("unrecognized executable: {program} {argv:?}"),
+    }
 }
 
 #[test]
@@ -412,15 +656,26 @@ fn same_elves_run_checkout_and_genuinely_absent_historical_roots() {
     let shim = required("UPDATED_CHECK_SHIM");
     let strace = PathBuf::from("/usr/bin/strace");
     assert!(strace.is_file(), "cloud must install strace");
+    let helper_source = tools.join("updated_fixtures.py");
+    let system_execs = [
+        "/usr/bin/git",
+        "/usr/bin/git-lfs",
+        "/usr/lib/git-core/git",
+        "/usr/lib/git-core/git-submodule",
+        "/usr/lib/git-core/git-upload-pack",
+        "/bin/sh",
+        "/usr/bin/basename",
+        "/usr/bin/envsubst",
+        "/usr/bin/gettext",
+        "/usr/bin/sed",
+        "/usr/bin/uname",
+    ]
+    .map(PathBuf::from);
     let mut seals = Vec::new();
-    for path in [
-        &checker,
-        &binary,
-        &launcher,
-        &shim,
-        &strace,
-        &tools.join("updated_fixtures.py"),
-    ] {
+    for path in [&checker, &binary, &launcher, &shim, &strace, &helper_source]
+        .into_iter()
+        .chain(system_execs.iter())
+    {
         let bytes = fs::read(path).unwrap();
         seals.push((
             path.display().to_string(),
@@ -471,46 +726,59 @@ fn same_elves_run_checkout_and_genuinely_absent_historical_roots() {
             serde_json::from_slice(&fs::read(output.join("result.json")).unwrap()).unwrap();
         assert_eq!(actual["original_observation"], "sealed_df0128aa_capture");
         let trace_bytes = fs::read_to_string(&trace).unwrap();
-        let exec =
-            regex::Regex::new(r#"\bexecve\("((?:[^"\\]|\\.)*)", (\[.*\]), .*\) = 0$"#).unwrap();
-        let attempted = regex::Regex::new(r#"\bexecve\("((?:[^"\\]|\\.)*)", "#).unwrap();
-        let mut first = None;
-        let mut successful = 0;
-        let mut candidate_execs = 0;
-        for line in trace_bytes.lines().filter(|line| line.contains("execve")) {
-            assert!(!line.contains("execveat("), "opaque execution: {line}");
-            let program =
-                attempted.captures(line).expect("opaque executable attempt")[1].to_owned();
-            assert!(!program.contains("python"), "Python attempted: {line}");
-            if exec.is_match(line) {
-                if first.is_none() {
-                    first = Some(program.to_owned());
-                }
-                if program == binary.to_str().unwrap() {
-                    candidate_execs += 1;
-                }
-                successful += 1;
-            } else {
-                assert!(
-                    line.contains("ENOENT"),
-                    "unclassified executable attempt: {line}"
+        let attempts = exec_attempts(&trace_bytes);
+        assert_eq!(attempts.first().map(|row| row.0.as_str()), checker.to_str());
+        let mut kinds = BTreeMap::<&str, usize>::new();
+        for (program, argv) in &attempts {
+            assert!(!program.contains("python"), "Python attempted: {program}");
+            let kind = exec_kind(program, argv, &checker, &binary, &launcher);
+            if kind == "checker" {
+                assert_eq!(
+                    argv,
+                    &vec![
+                        checker.display().to_string(),
+                        "--binary".into(),
+                        binary.display().to_string(),
+                        "--launcher".into(),
+                        launcher.display().to_string(),
+                        "--output".into(),
+                        output.display().to_string(),
+                        "--root".into(),
+                        root.display().to_string(),
+                    ]
                 );
             }
+            *kinds.entry(kind).or_default() += 1;
         }
-        assert_eq!(first.as_deref(), checker.to_str());
-        assert!(successful > 1, "fixture never executed");
+        // First native-only checkout trace: run 39540243688, job 119026080148,
+        // artifact 12319827082. The 71 unfinished calls all resumed with = 0.
         assert_eq!(
-            candidate_execs, 5,
-            "each scenario must execute the native candidate once"
+            kinds,
+            BTreeMap::from([
+                ("checker", 1),
+                ("candidate", 5),
+                ("launcher", 322),
+                ("fixture-git", 294),
+                ("fixture-sudo", 26),
+                ("fixture-bash", 2),
+                ("system-git", 25),
+                ("git-core", 198),
+                ("git-upload-pack", 26),
+                ("git-submodule", 16),
+                ("git-lfs", 4),
+                ("shell-upload-pack", 26),
+                ("basename", 32),
+                ("envsubst", 32),
+                ("gettext", 16),
+                ("sed", 48),
+                ("uname", 16),
+            ]),
+            "actual native executable roster changed"
         );
-        for path in [
-            &checker,
-            &binary,
-            &launcher,
-            &shim,
-            &strace,
-            &tools.join("updated_fixtures.py"),
-        ] {
+        for path in [&checker, &binary, &launcher, &shim, &strace, &helper_source]
+            .into_iter()
+            .chain(system_execs.iter())
+        {
             let digest = format!("{:x}", Sha256::digest(fs::read(path).unwrap()));
             assert_eq!(
                 seals
