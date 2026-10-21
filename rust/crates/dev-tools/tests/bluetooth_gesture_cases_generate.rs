@@ -12,18 +12,11 @@ fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..")
 }
 fn copied_root(destination: &Path) {
-    for name in [
-        "rust/tools/bluetooth_gesture_cases.py",
-        "openpilot/selfdrive/carrot/bluetooth/tests/yiser_j6.json",
-    ] {
-        let target = destination.join(name);
-        fs::create_dir_all(target.parent().unwrap()).unwrap();
-        if root().join(name).is_file() {
-            fs::copy(root().join(name), target).unwrap();
-        } else {
-            assert_eq!(name, "rust/tools/bluetooth_gesture_cases.py");
-        }
-    }
+    fs::create_dir_all(destination.join("rust/tools")).unwrap();
+    let name = "openpilot/selfdrive/carrot/bluetooth/tests/yiser_j6.json";
+    let target = destination.join(name);
+    fs::create_dir_all(target.parent().unwrap()).unwrap();
+    fs::copy(root().join(name), target).unwrap();
 }
 #[derive(Deserialize)]
 struct RawEvent {
@@ -195,9 +188,6 @@ fn exact_historical_helper_absence_keeps_corpus_and_other_sources_strict() {
     copied_root(&private);
     let expected = generator::generate(&private).unwrap();
     let helper = private.join("rust/tools/bluetooth_gesture_cases.py");
-    if helper.exists() {
-        fs::remove_file(&helper).unwrap();
-    }
     let absent = generator::generate(&private).unwrap();
     assert_eq!(absent.as_bytes(), expected.as_bytes());
     let output = temp.path().join("absent.jsonl");
@@ -206,11 +196,7 @@ fn exact_historical_helper_absence_keeps_corpus_and_other_sources_strict() {
     fs::write(&helper, b"unexpected reappearance").unwrap();
     assert!(generator::generate(&private).is_err());
     fs::remove_file(&helper).unwrap();
-    std::os::unix::fs::symlink(
-        root().join("rust/tools/bluetooth_gesture_cases.py"),
-        &helper,
-    )
-    .unwrap();
+    std::os::unix::fs::symlink(private.join("missing-symlink-target"), &helper).unwrap();
     assert!(generator::generate(&private).is_err());
     fs::remove_file(&helper).unwrap();
     fs::remove_file(private.join("openpilot/selfdrive/carrot/bluetooth/tests/yiser_j6.json"))

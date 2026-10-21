@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. The current source inventory has 215 replaced-local entries,
-three partial entries and 3,362 pending entries. `replaced-local` does not mean merged,
+SCons entrypoints. The current source inventory has 218 replaced-local entries,
+three partial entries and 3,359 pending entries. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -4970,3 +4970,32 @@ source pins. The retired Python checker is absent in both roots; only its
 historical hash remains in provenance. Native finalization/process contracts,
 the median-bit regression, full mode reference and strictClippy passed.
 Physical audio and vehicle boot/recording/upload remain user-device evidence.
+
+## Bluetooth config, journal and gesture generator retirement (2026-10-21)
+
+The complete pre-deletion Bluetooth proof at source
+`d21944e6391344d5b807fafe503c8853ea245b1b` passed
+[run39516609369/job118950166100](https://github.com/bin9208/openpilot-rust/actions/runs/39516609369/job/118950166100).
+The parent downloaded artifact12310560213 (51,785,801bytes), ZIP SHA256
+`f4992ccbd9712d041de1369b23394978cc994c28329b58c21b9e797cfdb6861e`,
+and independently checked the exact source, all14 actual suite receipts,
+253 config cases,721 journal operations in each native lane, two successful
+execs per journal lane and unchanged ELF seals. All37 gesture cases retained
+260,012 steps and1,024 tokens. Original/native/absence input bytes match
+`b5eefe42e5f5fb135b71ef50e97a7905d5f41a4d943b7b5e3bcebddf1d0d8166`;
+both live original Decoder outputs match
+`ddbdc78183b07d39e77f61002153c935c32a25becf71601e28f6c94c0c703705`.
+
+Only after that proof, three Python files were removed:
+`check_bluetooth_config.py`, `check_bluetooth_journal.py`, and
+`bluetooth_gesture_cases.py`. Their native tools now require absence at
+admission and during evidence publication. Config compares the independent
+sealed253-case input/response corpus; journal retains all721 original row
+digests, every rewrite decision and source identities. The gesture generator
+requires the sealed original raw input hash; the independent original Decoder
+still executes freshly in both roots. The14-case suite now dispatches journal
+through its native checker. No Python source was embedded or renamed.
+
+Inventory218replaced-local /3partial /3359pending. Post-deletion exact-source
+cloud execution is pending. This does not establish repository-wide retirement,
+full model/compiler coverage, dev integration, ARM packaging or device acceptance.

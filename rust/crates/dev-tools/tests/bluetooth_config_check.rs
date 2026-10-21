@@ -23,32 +23,11 @@ fn candidate() -> PathBuf {
     )
     .unwrap()
 }
-fn original(output: &Path) -> Value {
-    let mut command = CommandSpec::new_os(
-        vec![
-            std::env::var_os("BLUETOOTH_CONFIG_PYTHON")
-                .expect("mandatory Python 3.12 original oracle"),
-            root()
-                .join("rust/tools/check_bluetooth_config.py")
-                .into_os_string(),
-            "--binary".into(),
-            candidate().into_os_string(),
-            "--output".into(),
-            output.as_os_str().into(),
-        ],
-        Duration::from_secs(60),
-    );
-    command.cwd = Some(root());
-    command.stdout_limit = usize::MAX;
-    command.stderr_limit = usize::MAX;
-    let result = NativeRunner.run(&command).unwrap();
-    assert_eq!(
-        result.code,
-        0,
-        "{}",
-        String::from_utf8_lossy(&result.stderr)
-    );
-    serde_json::from_slice(&fs::read(output.join("result.json")).unwrap()).unwrap()
+fn sealed(name: &str) -> Vec<u8> {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/bluetooth-config/original-observation-39507901490")
+        .join(name);
+    fs::read(path).unwrap()
 }
 fn rows(path: &Path) -> Vec<JsonValue> {
     fs::read_to_string(path)
@@ -64,10 +43,8 @@ fn order(value: &JsonValue) -> Vec<Vec<u32>> {
     }
 }
 #[test]
-fn unchanged_original_dynamic_full_schedule_response_order_and_report_match_native() {
+fn sealed_original_full_schedule_response_order_and_report_match_native() {
     let dir = tempfile::tempdir().unwrap();
-    let original_dir = dir.path().join("python-original");
-    let report = original(&original_dir);
     let native_dir = dir.path().join("rust-native");
     let native = checker::check(
         &Options {
@@ -80,79 +57,55 @@ fn unchanged_original_dynamic_full_schedule_response_order_and_report_match_nati
         &AtomicBool::new(false),
     )
     .unwrap();
-    let source_input = rows(&original_dir.join("input.jsonl"));
-    let native_input = checker::cases().unwrap();
-    assert_eq!(source_input.len(), 253, "complete pinned original roster");
-    assert_eq!(source_input.len(), native_input.len());
+    let source_input = sealed("input.jsonl");
+    let source_response = sealed("original.jsonl");
     assert_eq!(
-        fs::read(original_dir.join("input.jsonl")).unwrap(),
-        fs::read(native_dir.join("input.jsonl")).unwrap(),
-        "full input JSONL bytes"
+        source_input.iter().filter(|&&byte| byte == b'\n').count(),
+        253
     );
-    for (index, (source, native)) in source_input.iter().zip(&native_input).enumerate() {
-        assert_eq!(
-            source.to_json().unwrap(),
-            native.to_json().unwrap(),
-            "input {index}"
-        );
-    }
-    let source = rows(&original_dir.join("original.jsonl"));
-    let expected = rows(&native_dir.join("original.jsonl"));
+    assert_eq!(
+        fs::read(native_dir.join("input.jsonl")).unwrap(),
+        source_input
+    );
+    assert_eq!(
+        fs::read(native_dir.join("original.jsonl")).unwrap(),
+        source_response
+    );
+    let source = rows(&native_dir.join("original.jsonl"));
     let actual = rows(&native_dir.join("native.jsonl"));
-    assert_eq!(source.len(), expected.len());
     assert_eq!(source.len(), actual.len());
-    for (index, ((source, expected), actual)) in
-        source.iter().zip(&expected).zip(&actual).enumerate()
-    {
-        assert_eq!(
-            source.to_json().unwrap(),
-            expected.to_json().unwrap(),
-            "original response {index}"
-        );
+    for (index, (source, actual)) in source.iter().zip(&actual).enumerate() {
         assert_eq!(
             source.to_json().unwrap(),
             actual.to_json().unwrap(),
-            "native response {index}"
+            "response {index}"
         );
         if let Some(devices) = source.get("devices") {
-            for other in [expected, actual] {
-                let other_devices = other.get("devices").unwrap();
-                assert_eq!(order(&devices), order(&other_devices), "devices {index}");
-                let JsonView::Object(left) = devices.view() else {
-                    panic!()
-                };
-                let JsonView::Object(right) = other_devices.view() else {
-                    panic!()
-                };
-                for ((_, a), (_, b)) in left.into_iter().zip(right) {
-                    assert_eq!(
-                        order(&a.get("mapping").unwrap()),
-                        order(&b.get("mapping").unwrap()),
-                        "mapping {index}"
-                    );
-                }
+            let other_devices = actual.get("devices").unwrap();
+            assert_eq!(order(&devices), order(&other_devices), "devices {index}");
+            let JsonView::Object(left) = devices.view() else {
+                panic!()
+            };
+            let JsonView::Object(right) = other_devices.view() else {
+                panic!()
+            };
+            for ((_, a), (_, b)) in left.into_iter().zip(right) {
+                assert_eq!(
+                    order(&a.get("mapping").unwrap()),
+                    order(&b.get("mapping").unwrap()),
+                    "mapping {index}"
+                );
             }
         }
     }
+    let original: Value = serde_json::from_slice(&sealed("result.json")).unwrap();
     for key in ["cases", "accepted", "source_sha256", "binary_sha256"] {
-        assert_eq!(report[key], native[key], "summary {key}");
+        if key != "binary_sha256" {
+            assert_eq!(original[key], native[key], "summary {key}");
+        }
     }
-    let evidence = PathBuf::from(
-        std::env::var_os("BLUETOOTH_CONFIG_EVIDENCE").expect("mandatory CI evidence output"),
-    );
-    fs::create_dir_all(&evidence).unwrap();
-    for name in ["input.jsonl", "original.jsonl", "result.json"] {
-        fs::copy(
-            original_dir.join(name),
-            evidence.join(format!("python-{name}")),
-        )
-        .unwrap();
-    }
-    fs::copy(
-        native_dir.join("result.json"),
-        evidence.join("native-result.json"),
-    )
-    .unwrap();
+    assert_eq!(native["cases"], 253);
+    assert_eq!(native["accepted"], 97);
 }
 
 struct Peer {
@@ -207,10 +160,8 @@ impl Runner for Peer {
 #[test]
 fn original_sourced_failure_boundaries_keep_receipt_unpublished() {
     let dir = tempfile::tempdir().unwrap();
-    let source_dir = dir.path().join("original");
-    original(&source_dir);
-    let input = fs::read(source_dir.join("input.jsonl")).unwrap();
-    let response = fs::read(source_dir.join("original.jsonl")).unwrap();
+    let input = sealed("input.jsonl");
+    let response = sealed("original.jsonl");
     for mode in [
         "ok", "missing", "extra", "invalid", "mismatch", "reorder", "exit", "timeout", "foreign",
     ] {
@@ -314,19 +265,15 @@ fn required_sources_and_cancellation_reject_before_candidate_invocation() {
     }
     let dir = tempfile::tempdir().unwrap();
     for source in [
-        "rust/tools/check_bluetooth_config.py",
         "openpilot/selfdrive/carrot/bluetooth/model.py",
         "rust/crates/bluetooth/examples/config_fixture.rs",
     ] {
         for kind in ["missing", "changed"] {
-            if source == "rust/tools/check_bluetooth_config.py" && kind == "missing" {
-                continue; // The retired checker is the sole optional historical source.
-            }
             let private = dir
                 .path()
                 .join(format!("{}-{kind}", source.replace('/', "-")));
+            fs::create_dir_all(private.join("rust/tools")).unwrap();
             for name in [
-                "rust/tools/check_bluetooth_config.py",
                 "openpilot/selfdrive/carrot/bluetooth/model.py",
                 "rust/crates/bluetooth/examples/config_fixture.rs",
             ] {
@@ -356,6 +303,34 @@ fn required_sources_and_cancellation_reject_before_candidate_invocation() {
             assert!(!output.exists());
         }
     }
+    let private = dir.path().join("reappeared-historical");
+    fs::create_dir_all(private.join("rust/tools")).unwrap();
+    for name in [
+        "openpilot/selfdrive/carrot/bluetooth/model.py",
+        "rust/crates/bluetooth/examples/config_fixture.rs",
+    ] {
+        let target = private.join(name);
+        fs::create_dir_all(target.parent().unwrap()).unwrap();
+        fs::copy(root().join(name), target).unwrap();
+    }
+    fs::write(
+        private.join("rust/tools/check_bluetooth_config.py"),
+        b"wrong historical source",
+    )
+    .unwrap();
+    let output = dir.path().join("reappeared-historical-output");
+    assert!(checker::check(
+        &Options {
+            root: private,
+            binary: candidate(),
+            output: output.clone()
+        },
+        &mut Never,
+        &mut vec![],
+        &AtomicBool::new(false)
+    )
+    .is_err());
+    assert!(!output.exists());
     let output = dir.path().join("cancelled");
     assert!(checker::check(
         &Options {
@@ -428,11 +403,7 @@ fn absent_historical_checker_is_held_through_publication_and_reappearance_fails(
     assert!(!output.output.join("result.json").exists());
 
     fs::remove_file(&historical).unwrap();
-    std::os::unix::fs::symlink(
-        root().join("rust/tools/check_bluetooth_config.py"),
-        &historical,
-    )
-    .unwrap();
+    std::os::unix::fs::symlink(private.join("missing-symlink-target"), &historical).unwrap();
     struct Never;
     impl Runner for Never {
         fn run(&mut self, _: &CommandSpec) -> Result<Captured> {

@@ -3695,17 +3695,13 @@ jobs:
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-gesture-cases-native --lib --bin generate-bluetooth-gesture-cases --test bluetooth_gesture_cases_generate --test bluetooth_gesture_cases_retirement --locked -- -D warnings
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           mkdir -p "$proof"
-          sha256sum "$candidate" rust/target/debug/generate-bluetooth-gesture-cases rust/tools/check_bluetooth_gestures.py rust/tools/bluetooth_gesture_cases.py openpilot/selfdrive/carrot/bluetooth/model.py openpilot/selfdrive/carrot/bluetooth/tests/yiser_j6.json > "$proof/artifacts.sha256"
-          timeout --kill-after=5s 30s python - "$GITHUB_WORKSPACE" > "$proof/original-input.jsonl" <<'ORIGINAL'
-          from dataclasses import asdict
-          import json, sys
-          from pathlib import Path
-          from bluetooth_gesture_cases import cases
-          for case in cases(Path(sys.argv[1])):
-            print(json.dumps(asdict(case)))
-          ORIGINAL
-          timeout --kill-after=5s 120s python rust/tools/check_bluetooth_gestures.py --binary "$candidate" --input "$proof/original-input.jsonl" --output "$proof/original" > "$proof/original.stdout" 2> "$proof/original.stderr"
+          sha256sum "$candidate" rust/target/debug/generate-bluetooth-gesture-cases rust/tools/check_bluetooth_gestures.py openpilot/selfdrive/carrot/bluetooth/model.py openpilot/selfdrive/carrot/bluetooth/tests/yiser_j6.json > "$proof/artifacts.sha256"
+          test ! -e rust/tools/bluetooth_gesture_cases.py
+          test ! -L rust/tools/bluetooth_gesture_cases.py
           PATH=/nonexistent /usr/bin/timeout --kill-after=5s 30s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "$proof/generator.exec" "$GITHUB_WORKSPACE/rust/target/debug/generate-bluetooth-gesture-cases" --root "$GITHUB_WORKSPACE" --output "$proof/native-input.jsonl" > "$proof/generator.stdout" 2> "$proof/generator.stderr"
+          printf '%s  %s\n' b5eefe42e5f5fb135b71ef50e97a7905d5f41a4d943b7b5e3bcebddf1d0d8166 "$proof/native-input.jsonl" | sha256sum -c -
+          cp --no-clobber "$proof/native-input.jsonl" "$proof/original-input.jsonl"
+          timeout --kill-after=5s 120s python rust/tools/check_bluetooth_gestures.py --binary "$candidate" --input "$proof/original-input.jsonl" --output "$proof/original" > "$proof/original.stdout" 2> "$proof/original.stderr"
           cmp "$proof/original/input.jsonl" "$proof/native-input.jsonl"
           timeout --kill-after=5s 65s "$candidate" < "$proof/native-input.jsonl" > "$proof/native-result.jsonl" 2> "$proof/native-result.stderr"
           cmp "$proof/original/native.jsonl" "$proof/native-result.jsonl"
@@ -3746,7 +3742,8 @@ jobs:
           set -euo pipefail
           export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
           export BLUETOOTH_CONFIG_FIXTURE="$GITHUB_WORKSPACE/rust/target/debug/examples/config_fixture"
-          export BLUETOOTH_CONFIG_PYTHON=python
+          test ! -e rust/tools/check_bluetooth_config.py
+          test ! -L rust/tools/check_bluetooth_config.py
           export BLUETOOTH_CONFIG_EVIDENCE="$RUNNER_TEMP/ui-connectivity/bluetooth-config-original"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-config-native --bin check-bluetooth-config --locked
@@ -3813,7 +3810,8 @@ jobs:
         run: |
           export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
           export BLUETOOTH_JOURNAL_FIXTURE="$GITHUB_WORKSPACE/rust/target/debug/examples/journal_fixture"
-          export BLUETOOTH_JOURNAL_PYTHON=python
+          test ! -e rust/tools/check_bluetooth_journal.py
+          test ! -L rust/tools/check_bluetooth_journal.py
           export BLUETOOTH_JOURNAL_EVIDENCE="$RUNNER_TEMP/ui-connectivity/bluetooth-journal-original"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-journal-native --bin check-bluetooth-journal --locked
@@ -3828,7 +3826,6 @@ jobs:
           set -euo pipefail
           export BLUETOOTH_JOURNAL_FIXTURE="$GITHUB_WORKSPACE/rust/target/debug/examples/journal_fixture"
           proof="$RUNNER_TEMP/ui-connectivity/bluetooth-journal-retirement"
-          export BLUETOOTH_JOURNAL_ORIGINAL_OUTPUT="$proof/original"
           export BLUETOOTH_JOURNAL_PRESENT_OUTPUT="$proof/present"
           export BLUETOOTH_JOURNAL_ABSENT_OUTPUT="$proof/absent"
           export BLUETOOTH_JOURNAL_PRESENT_ROOT="$GITHUB_WORKSPACE"
@@ -3845,15 +3842,13 @@ jobs:
             printf '{"%s":"%s","%s":"%s"}\n' "$BLUETOOTH_JOURNAL_CHECKER" "$(sha256sum "$BLUETOOTH_JOURNAL_CHECKER" | cut -d ' ' -f1)" "$BLUETOOTH_JOURNAL_FIXTURE" "$(sha256sum "$BLUETOOTH_JOURNAL_FIXTURE" | cut -d ' ' -f1)"
           }
           seal_artifacts > "$BLUETOOTH_JOURNAL_ARTIFACTS_BEFORE"
-          sha256sum rust/tools/check_bluetooth_journal.py openpilot/selfdrive/carrot/bluetooth/model.py rust/crates/bluetooth/examples/journal_fixture.rs > "$proof/source.sha256"
+          sha256sum rust/crates/dev-tools/tests/fixtures/bluetooth-journal/original-observation-39507901490.json openpilot/selfdrive/carrot/bluetooth/model.py rust/crates/bluetooth/examples/journal_fixture.rs > "$proof/source.sha256"
           for source in openpilot/selfdrive/carrot/bluetooth/model.py rust/crates/bluetooth/examples/journal_fixture.rs; do
             cp --parents -- "$source" "$BLUETOOTH_JOURNAL_ABSENCE_ROOT"
             cmp "$source" "$BLUETOOTH_JOURNAL_ABSENCE_ROOT/$source"
           done
           test ! -e "$BLUETOOTH_JOURNAL_ABSENCE_ROOT/rust/tools/check_bluetooth_journal.py"
           test ! -L "$BLUETOOTH_JOURNAL_ABSENCE_ROOT/rust/tools/check_bluetooth_journal.py"
-          timeout --kill-after=5s 45s python rust/tools/check_bluetooth_journal.py --binary "$BLUETOOTH_JOURNAL_FIXTURE" --output "$BLUETOOTH_JOURNAL_ORIGINAL_OUTPUT" > "$proof/original.stdout" 2> "$proof/original.stderr"
-          find "$BLUETOOTH_JOURNAL_ORIGINAL_OUTPUT" -type f -print0 | sort -z | xargs -0 sha256sum > "$proof/original-output.sha256"
           for lane in PRESENT ABSENT; do
             if [ "$lane" = PRESENT ]; then root="$BLUETOOTH_JOURNAL_PRESENT_ROOT"; else root="$BLUETOOTH_JOURNAL_ABSENCE_ROOT"; fi
             output_var="BLUETOOTH_JOURNAL_${lane}_OUTPUT"
@@ -3862,7 +3857,6 @@ jobs:
           done
           seal_artifacts > "$BLUETOOTH_JOURNAL_ARTIFACTS_AFTER"
           sha256sum -c "$proof/source.sha256"
-          sha256sum -c "$proof/original-output.sha256"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-journal-native --test bluetooth_journal_reference --locked -- --nocapture
       - name: Check native Bluetooth input decoder against original records

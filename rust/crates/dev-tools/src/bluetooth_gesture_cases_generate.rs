@@ -14,7 +14,6 @@ use crate::journald_check::Random;
 
 const HELPER: &str = "rust/tools/bluetooth_gesture_cases.py";
 const RECORDING: &str = "openpilot/selfdrive/carrot/bluetooth/tests/yiser_j6.json";
-const HELPER_SHA: &str = "66810b7ba9f149785d872ea4f4b5ab8ccdce19d26ba30e065f7fc54f1d388253";
 const RECORDING_SHA: &str = "e68fb82c2b4927f02c6fc54363ce92fc443893c86e9ae25a006eb8b8dfc0440f";
 
 fn identity(metadata: &Metadata) -> (u64, u64, u64, i64, i64, i64, i64) {
@@ -78,14 +77,13 @@ impl Pin {
     }
 }
 
-// Only the historical Python generator may be absent. Hold its real parent
-// directory so a missing leaf cannot be confused with a missing/replaced root.
+// Hold the retired generator's real parent directory so a missing leaf cannot
+// be confused with a missing or replaced root.
 struct Historical {
     path: PathBuf,
     parent_path: PathBuf,
     parent: File,
     parent_metadata: Metadata,
-    present: Option<Pin>,
 }
 impl Historical {
     fn capture(path: PathBuf) -> Result<Self> {
@@ -102,20 +100,16 @@ impl Historical {
             rustix::fs::Mode::empty(),
         )?);
         let parent_metadata = parent.metadata()?;
-        let present = match fs::symlink_metadata(&path) {
-            Ok(metadata) if metadata.file_type().is_file() => {
-                Some(Pin::open(path.clone(), HELPER_SHA)?)
-            }
-            Ok(_) => return Err("historical gesture helper is not a regular file".into()),
-            Err(error) if error.kind() == io::ErrorKind::NotFound => None,
+        match fs::symlink_metadata(&path) {
+            Ok(_) => return Err("retired gesture helper reappeared".into()),
+            Err(error) if error.kind() == io::ErrorKind::NotFound => {}
             Err(error) => return Err(error.into()),
-        };
+        }
         Ok(Self {
             path,
             parent_path,
             parent,
             parent_metadata,
-            present,
         })
     }
     fn verify(&self) -> Result<()> {
@@ -132,23 +126,10 @@ impl Historical {
         {
             return Err("historical gesture helper parent changed".into());
         }
-        match &self.present {
-            Some(pin) => {
-                match fs::symlink_metadata(&self.path) {
-                    Ok(metadata) if metadata.file_type().is_file() => {}
-                    Err(error) if error.kind() == io::ErrorKind::NotFound => {
-                        return Err("historical gesture helper presence changed".into());
-                    }
-                    Ok(_) => return Err("historical gesture helper file type changed".into()),
-                    Err(error) => return Err(error.into()),
-                }
-                pin.verify()?;
-            }
-            None => match fs::symlink_metadata(&self.path) {
-                Err(error) if error.kind() == io::ErrorKind::NotFound => {}
-                Err(error) => return Err(error.into()),
-                Ok(_) => return Err("historical gesture helper reappeared".into()),
-            },
+        match fs::symlink_metadata(&self.path) {
+            Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error.into()),
+            Ok(_) => return Err("retired gesture helper reappeared".into()),
         }
         Ok(())
     }

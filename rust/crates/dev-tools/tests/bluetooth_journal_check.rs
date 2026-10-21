@@ -4,7 +4,7 @@ use openpilot_dev_tools::{
     qa_process::{Captured, CommandSpec, NativeRunner, Runner},
     seal::Result,
 };
-use openpilot_log_format::JsonValue;
+use openpilot_log_format::{JsonValue, JsonView};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::{
@@ -45,59 +45,35 @@ fn public_trace_parser_keeps_python_crlf_and_other_line_boundaries() {
         assert!(checker::parse_trace(text).is_err(), "{text:?}");
     }
 }
-struct Original {
+struct Corpus {
     directory: tempfile::TempDir,
     rows: Vec<JsonValue>,
     input: Vec<u8>,
-    report: Value,
 }
-fn original() -> Original {
+fn corpus() -> Corpus {
     let directory = tempfile::tempdir().unwrap();
-    let output = directory.path().join("source-run");
-    let mut spec = CommandSpec::new_os(
-        vec![
-            std::env::var_os("BLUETOOTH_JOURNAL_PYTHON")
-                .expect("mandatory Python3.12 unchanged CI oracle"),
-            repository()
-                .join("rust/tools/check_bluetooth_journal.py")
-                .into_os_string(),
-            "--binary".into(),
-            candidate().into_os_string(),
-            "--output".into(),
-            output.as_os_str().into(),
-        ],
-        Duration::from_secs(60),
-    );
-    spec.cwd = Some(repository());
-    spec.stdout_limit = usize::MAX;
-    spec.stderr_limit = usize::MAX;
-    let observed = NativeRunner.run(&spec).unwrap();
-    assert_eq!(
-        observed.code,
-        0,
-        "unchanged original failed: {}",
-        String::from_utf8_lossy(&observed.stderr)
-    );
-    let input = fs::read(output.join("input.jsonl")).unwrap();
-    let rows =
-        checker::parse_trace(&fs::read_to_string(output.join("original.jsonl")).unwrap()).unwrap();
-    assert_eq!(rows.len(), 721);
-    assert_eq!(
-        checker::payload(&checker::operations()).unwrap(),
-        input,
-        "complete unchanged input schedule"
-    );
-    checker::compare(
-        &checker::source_trace(&checker::operations()).unwrap(),
-        &rows,
-    )
-    .unwrap();
-    let report = serde_json::from_slice(&fs::read(output.join("result.json")).unwrap()).unwrap();
-    Original {
+    let original = directory.path().join("source-run/original");
+    fs::create_dir_all(&original).unwrap();
+    let operations = checker::operations();
+    let input = checker::payload(&operations).unwrap();
+    let rows = checker::source_trace(&operations).unwrap();
+    assert_eq!(rows.len(), OPERATIONS);
+    let final_row = rows.last().unwrap();
+    let JsonView::Array(files) = final_row.view() else {
+        panic!("source snapshot array")
+    };
+    for file in files {
+        let channel = file
+            .get("channel")
+            .and_then(|value| value.to_utf8())
+            .unwrap();
+        let bytes = file.get("bytes").and_then(|value| value.to_utf8()).unwrap();
+        fs::write(original.join(format!("{channel}.json")), bytes).unwrap();
+    }
+    Corpus {
         directory,
         rows,
         input,
-        report,
     }
 }
 fn options(root: &Path, binary: &Path, output: &Path) -> Options {
@@ -108,9 +84,27 @@ fn options(root: &Path, binary: &Path, output: &Path) -> Options {
     }
 }
 #[test]
-fn all_721_original_operations_and_rewrite_decisions_match_independent_source_and_real_native() {
-    let original = original();
-    let output = original.directory.path().join("native-checker");
+fn all_721_fixed_operations_and_rewrite_decisions_match_sealed_original_rows() {
+    let source = corpus();
+    let observed = checker::normalize_trace(&source.rows).unwrap();
+    let sealed: Value = serde_json::from_str(include_str!(
+        "fixtures/bluetooth-journal/original-observation-39507901490.json"
+    ))
+    .unwrap();
+    assert_eq!(
+        sha(&source.input),
+        sealed["observation"]["input_sha256"].as_str().unwrap()
+    );
+    assert_eq!(observed.rows.len(), 721);
+    let expected = sealed["row_sha256"].as_array().unwrap();
+    assert_eq!(expected.len(), 721);
+    for (row, expected) in observed.rows.iter().zip(expected) {
+        assert_eq!(
+            sha(row.to_json().unwrap().as_bytes()),
+            expected.as_str().unwrap()
+        );
+    }
+    let output = source.directory.path().join("native-checker");
     let report = checker::check(
         &options(&repository(), &candidate(), &output),
         &mut NativeRunner,
@@ -118,43 +112,16 @@ fn all_721_original_operations_and_rewrite_decisions_match_independent_source_an
         &AtomicBool::new(false),
     )
     .unwrap();
-    for key in [
-        "operations",
-        "max_events_per_channel",
-        "mode",
-        "values_and_rewrite_decisions",
-        "source_sha256",
-        "binary_sha256",
-    ] {
-        assert_eq!(report[key], original.report[key], "{key}");
-    }
-    assert_eq!(report["operations"], 721);
+    assert_eq!(report["operations"], OPERATIONS);
     assert_eq!(report["max_events_per_channel"], 64);
-    let evidence = PathBuf::from(
-        std::env::var_os("BLUETOOTH_JOURNAL_EVIDENCE").expect("mandatory CI capture output"),
+    assert_eq!(
+        report["source_sha256"],
+        sealed["observation"]["model_sha256"]
     );
-    fs::create_dir_all(&evidence).unwrap();
-    // Preserve the unchanged Python checker's raw trace before its temporary
-    // source run is dropped. The Rust checker's original.jsonl is synthetic.
-    let raw = fs::read(original.directory.path().join("source-run/original.jsonl")).unwrap();
-    fs::write(evidence.join("original-raw.jsonl"), &raw).unwrap();
-    let normalized = checker::normalize_trace(&original.rows).unwrap();
-    let text = normalized
-        .rows
-        .iter()
-        .map(|r| r.to_json().unwrap() + "\n")
-        .collect::<String>();
-    fs::write(evidence.join("original-normalized.jsonl"), &text).unwrap();
-    fs::write(evidence.join("original-observation.json"),serde_json::to_vec_pretty(&json!({"kind":"actual unchanged Python source trace, never native candidate observations","operations":721,"source_checker_sha256":sha(&fs::read(repository().join("rust/tools/check_bluetooth_journal.py")).unwrap()),"model_sha256":original.report["source_sha256"],"input_sha256":sha(&original.input),"raw_trace_sha256":sha(&raw),"raw_trace_bytes":raw.len(),"normalized_trace_sha256":sha(text.as_bytes()),"normalized_trace_bytes":text.len(),"sessions":normalized.sessions.len(),"max_events":normalized.max_events})).unwrap()).unwrap();
-    fs::write(
-        evidence.join("native-report.json"),
-        serde_json::to_vec_pretty(&report).unwrap(),
-    )
-    .unwrap();
 }
 #[test]
-fn actual_original_trace_mutations_preserve_every_field_and_original_acceptance_guard() {
-    let original = original();
+fn fixed_trace_mutations_preserve_every_field_and_original_acceptance_guard() {
+    let original = corpus();
     let expected = checker::source_trace(&checker::operations()).unwrap();
     let original_lines = original
         .rows
@@ -179,7 +146,7 @@ fn actual_original_trace_mutations_preserve_every_field_and_original_acceptance_
         "extra-file",
         "over64",
     ] {
-        // Mutations are based only on the actual original trace returned above.
+        // Mutations use the translated schedule checked against sealed original row digests above.
         let mut lines = original_lines.clone();
         match mode {
             "missing-row" => {
@@ -261,11 +228,13 @@ fn source_copy(root: &Path) {
     for name in pins.as_object().unwrap().keys() {
         let path = root.join(name);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
-        fs::copy(repository().join(name), path).unwrap();
+        if name != "rust/tools/check_bluetooth_journal.py" {
+            fs::copy(repository().join(name), path).unwrap();
+        }
     }
 }
 struct Peer<'a> {
-    original: &'a Original,
+    original: &'a Corpus,
     mode: &'a str,
     source: PathBuf,
     alias: PathBuf,
@@ -323,7 +292,7 @@ impl Runner for Peer<'_> {
 }
 #[test]
 fn original_sourced_process_identity_and_receipt_failures_cannot_publish_success() {
-    let original = original();
+    let original = corpus();
     for mode in [
         "ok",
         "temporary",

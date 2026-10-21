@@ -16,6 +16,7 @@ def main():
   parser.add_argument('--input-decode-checker', type=Path)
   parser.add_argument('--files-checker', type=Path)
   parser.add_argument('--config-checker', type=Path)
+  parser.add_argument('--journal-checker', type=Path)
   parser.add_argument('--enumerate-checker', type=Path)
   parser.add_argument('--bluez-policy-checker', type=Path)
   parser.add_argument('--gesture-generator', type=Path)
@@ -24,6 +25,7 @@ def main():
   input_checker = args.input_decode_checker.resolve() if args.input_decode_checker is not None else binary / 'check-bluetooth-input-decode'
   files_checker = args.files_checker.resolve() if args.files_checker is not None else binary / 'check-bluetooth-files'
   config_checker = args.config_checker.resolve() if args.config_checker is not None else binary / 'check-bluetooth-config'
+  journal_checker = args.journal_checker.resolve() if args.journal_checker is not None else binary / 'check-bluetooth-journal'
   enumerate_checker = args.enumerate_checker.resolve() if args.enumerate_checker is not None else binary / 'check-bluetooth-enumerate'
   bluez_policy_checker = args.bluez_policy_checker.resolve() if args.bluez_policy_checker is not None else binary / 'check-bluetooth-bluez-policy'
   gesture_generator = args.gesture_generator.resolve() if args.gesture_generator is not None else binary / 'generate-bluetooth-gesture-cases'
@@ -70,6 +72,9 @@ def main():
                  '--output', str(output / name), *extra]
     elif name == 'config':
       command = [str(config_checker), '--binary', str((binary / 'examples' / example).resolve()),
+                 '--output', str(output / name), *extra]
+    elif name == 'journal':
+      command = [str(journal_checker), '--binary', str((binary / 'examples' / example).resolve()),
                  '--output', str(output / name), *extra]
     elif name == 'enumerate':
       command = [str(enumerate_checker), '--binary', str((binary / 'examples' / example).resolve()),

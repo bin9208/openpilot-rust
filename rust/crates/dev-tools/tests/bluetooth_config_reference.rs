@@ -56,10 +56,15 @@ fn sealed_original_and_two_fresh_native_lanes_keep_full_253_case_corpus() {
     let present = required("BLUETOOTH_CONFIG_PRESENT_OUTPUT");
     let absent = required("BLUETOOTH_CONFIG_ABSENT_OUTPUT");
     let absent_root = required("BLUETOOTH_CONFIG_ABSENT_ROOT");
-    assert!(matches!(
-        fs::symlink_metadata(absent_root.join("rust/tools/check_bluetooth_config.py")),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound
-    ));
+    for root in [
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.."),
+        absent_root,
+    ] {
+        assert!(matches!(
+            fs::symlink_metadata(root.join("rust/tools/check_bluetooth_config.py")),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound
+        ));
+    }
     for (name, hash) in original {
         let bytes = fixture(name);
         assert_eq!(digest(&bytes), hash, "original {name}");

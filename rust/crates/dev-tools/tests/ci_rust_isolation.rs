@@ -623,8 +623,21 @@ fn ui_connectivity_requires_source_render_and_private_protocol_checks() {
         ],
     );
     assert!(!caller.contains("check_bluetooth_config.py"));
+    assert!(!caller.contains("check_bluetooth_journal.py"));
+    assert!(caller.contains("str(journal_checker)"));
     let config = workflow();
     let native = commands(&config["jobs"]["ui-connectivity"]);
+    for retired in [
+        "BLUETOOTH_CONFIG_PYTHON=",
+        "BLUETOOTH_JOURNAL_PYTHON=",
+        "python rust/tools/check_bluetooth_journal.py --binary",
+        "from bluetooth_gesture_cases import cases",
+    ] {
+        assert!(
+            !native.contains(retired),
+            "retired helper path remains: {retired}"
+        );
+    }
     let ownership_tests = "cargo test --manifest-path rust/Cargo.toml -p openpilot-bluetooth -p openpilot-wifi --all-targets --locked";
     let launcher_env = "export WIFI_PROCESS_CHILD_BINARY=\"$GITHUB_WORKSPACE/rust/target/debug/openpilot-process-child\"";
     required(&native, &[ownership_tests, launcher_env,
@@ -674,7 +687,6 @@ fn ui_connectivity_requires_source_render_and_private_protocol_checks() {
             "--features bluetooth-config-native --bin check-bluetooth-config",
             "--features bluetooth-config-native --test bluetooth_config_check --locked",
             "--features bluetooth-config-native --lib --bin check-bluetooth-config",
-            "BLUETOOTH_CONFIG_PYTHON=python",
             "rust/target/debug/check-bluetooth-config\" --binary",
             "--features bluetooth-files-native --bin check-bluetooth-files",
             "--features bluetooth-files-native --test bluetooth_files_check --locked",
@@ -2457,15 +2469,17 @@ fn soundd_retirement_requires_both_traced_native_lanes_and_raw_reference() {
 }
 
 #[test]
-fn journal_retirement_requires_live_original_all_rows_and_two_native_exec_lanes() {
+fn journal_retirement_requires_sealed_original_all_rows_and_two_native_exec_lanes() {
     job_check(
         "ui-connectivity",
         &[
-            "python rust/tools/check_bluetooth_journal.py --binary",
+            "test ! -e rust/tools/check_bluetooth_journal.py",
+            "test ! -L rust/tools/check_bluetooth_journal.py",
             "BLUETOOTH_JOURNAL_ARTIFACTS_BEFORE=",
             "BLUETOOTH_JOURNAL_ARTIFACTS_AFTER=",
             "BLUETOOTH_JOURNAL_ABSENCE_ROOT=",
-            "BLUETOOTH_JOURNAL_ORIGINAL_OUTPUT=",
+            "original-observation-39507901490.json",
+            "openpilot/selfdrive/carrot/bluetooth/model.py rust/crates/bluetooth/examples/journal_fixture.rs",
             "for lane in PRESENT ABSENT; do",
             "-e trace=execve,execveat -o \"${!exec_var}\"",
             "--test bluetooth_journal_reference --locked -- --nocapture",
@@ -2476,11 +2490,12 @@ fn journal_retirement_requires_live_original_all_rows_and_two_native_exec_lanes(
 }
 
 #[test]
-fn gesture_retirement_keeps_original_inputs_and_fresh_private_consumer() {
+fn gesture_retirement_keeps_sealed_original_inputs_and_fresh_private_consumer() {
     job_check(
         "ui-connectivity",
         &[
-            "from bluetooth_gesture_cases import cases",
+            "test ! -e rust/tools/bluetooth_gesture_cases.py",
+            "b5eefe42e5f5fb135b71ef50e97a7905d5f41a4d943b7b5e3bcebddf1d0d8166",
             "--input \"$proof/original-input.jsonl\"",
             "BLUETOOTH_GESTURE_GENERATOR_BINARY=",
             "BLUETOOTH_GESTURE_ABSENT_CHECK_OUTPUT=",
@@ -2498,6 +2513,7 @@ fn config_retirement_requires_sealed_original_all_cases_and_both_exec_lanes() {
     job_check(
         "ui-connectivity",
         &[
+            "test ! -e rust/tools/check_bluetooth_config.py",
             "BLUETOOTH_CONFIG_ARTIFACTS_SHA256=",
             "BLUETOOTH_CONFIG_PRESENT_EXEC=",
             "BLUETOOTH_CONFIG_ABSENT_EXEC=",
@@ -2509,6 +2525,23 @@ fn config_retirement_requires_sealed_original_all_cases_and_both_exec_lanes() {
         &["bluetooth-config-retirement"],
         false,
     );
+}
+
+#[test]
+fn retired_bluetooth_helpers_are_absent_at_checkout() {
+    for helper in [
+        "rust/tools/check_bluetooth_config.py",
+        "rust/tools/check_bluetooth_journal.py",
+        "rust/tools/bluetooth_gesture_cases.py",
+    ] {
+        assert!(
+            matches!(
+                fs::symlink_metadata(root().join(helper)),
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound
+            ),
+            "retired helper still present: {helper}"
+        );
+    }
 }
 
 #[test]

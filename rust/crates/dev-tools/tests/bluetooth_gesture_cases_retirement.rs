@@ -70,10 +70,12 @@ fn original_observation_present_and_absent_same_elf() {
     let absent = required("BLUETOOTH_GESTURE_ABSENT_INPUT");
     let binary = required("BLUETOOTH_GESTURE_GENERATOR_BINARY");
     let candidate = required("BLUETOOTH_GESTURE_CANDIDATE_BINARY");
-    assert!(present_root.join(HELPER).is_file());
     assert_eq!(
-        sha(&present_root.join(HELPER)),
-        observation["original_generator_sha256"]
+        observation["original_generator_sha256"],
+        "66810b7ba9f149785d872ea4f4b5ab8ccdce19d26ba30e065f7fc54f1d388253"
+    );
+    assert!(
+        matches!(fs::symlink_metadata(present_root.join(HELPER)), Err(error) if error.kind() == io::ErrorKind::NotFound)
     );
     assert_eq!(
         sha(&present_root.join(RECORDING)),

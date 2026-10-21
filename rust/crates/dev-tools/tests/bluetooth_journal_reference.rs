@@ -81,40 +81,28 @@ fn audit_exec(trace: &Path, checker: &Path, fixture: &Path, output: &Path) {
 
 #[test]
 fn sealed_original_and_fresh_present_absent_lanes_match_all_721_decisions() {
-    let sealed: Value = serde_json::from_str(include_str!(
-        "fixtures/bluetooth-journal/original-observation-39507901490.json"
-    ))
-    .unwrap();
-    let original = required("BLUETOOTH_JOURNAL_ORIGINAL_OUTPUT");
+    let sealed_bytes =
+        include_bytes!("fixtures/bluetooth-journal/original-observation-39507901490.json");
+    assert_eq!(
+        hash(sealed_bytes),
+        "a2e2ad3e239db8ab886e1a7b4edde1d3888a6de76215783940c805d9e8d9522d"
+    );
+    let sealed: Value = serde_json::from_slice(sealed_bytes).unwrap();
     let present = required("BLUETOOTH_JOURNAL_PRESENT_OUTPUT");
     let absent = required("BLUETOOTH_JOURNAL_ABSENT_OUTPUT");
-    let historical =
-        required("BLUETOOTH_JOURNAL_PRESENT_ROOT").join("rust/tools/check_bluetooth_journal.py");
-    assert_eq!(
-        hash(&fs::read(historical).unwrap()),
-        sealed["observation"]["source_checker_sha256"]
-            .as_str()
-            .unwrap(),
-        "present lane must retain the unchanged historical checker"
-    );
-    // Fresh original UUIDs and inode numbers differ from the sealed run;
-    // compare every normalized source row with its independent digest below.
-    assert_eq!(
-        hash(&fs::read(original.join("input.jsonl")).unwrap()),
-        sealed["observation"]["input_sha256"].as_str().unwrap()
-    );
+    for root in [
+        required("BLUETOOTH_JOURNAL_PRESENT_ROOT"),
+        required("BLUETOOTH_JOURNAL_ABSENCE_ROOT"),
+    ] {
+        assert!(matches!(
+            fs::symlink_metadata(root.join("rust/tools/check_bluetooth_journal.py")),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound
+        ));
+    }
     let expected = sealed["row_sha256"].as_array().unwrap();
     assert_eq!(expected.len(), OPERATIONS);
-    for (name, path) in [
-        ("original", &original),
-        ("present", &present),
-        ("absent", &absent),
-    ] {
-        let observed = rows(&path.join(if name == "original" {
-            "original.jsonl"
-        } else {
-            "native.jsonl"
-        }));
+    for (name, path) in [("present", &present), ("absent", &absent)] {
+        let observed = rows(&path.join("native.jsonl"));
         let observed = observed.into_iter().map(Value::String).collect::<Vec<_>>();
         assert_eq!(
             &observed, expected,
@@ -127,7 +115,6 @@ fn sealed_original_and_fresh_present_absent_lanes_match_all_721_decisions() {
             "{name}: input schedule"
         );
     }
-    let original_report = report(&original);
     let present_report = report(&present);
     let absent_report = report(&absent);
     for key in [
@@ -138,14 +125,22 @@ fn sealed_original_and_fresh_present_absent_lanes_match_all_721_decisions() {
         "source_sha256",
         "binary_sha256",
     ] {
-        assert_eq!(present_report[key], original_report[key], "present {key}");
-        assert_eq!(absent_report[key], original_report[key], "absent {key}");
+        assert_eq!(present_report[key], absent_report[key], "same-ELF {key}");
     }
     assert_eq!(present_report["operations"], OPERATIONS);
     assert_eq!(present_report["max_events_per_channel"], 64);
+    assert_eq!(present_report["mode"], "0600");
     assert_eq!(
-        original_report["source_sha256"],
+        present_report["values_and_rewrite_decisions"],
+        "exact after UUID session normalization"
+    );
+    assert_eq!(
+        present_report["source_sha256"],
         sealed["observation"]["model_sha256"]
+    );
+    assert_eq!(
+        present_report["binary_sha256"],
+        hash(&fs::read(required("BLUETOOTH_JOURNAL_FIXTURE")).unwrap())
     );
     for path in [&present, &absent] {
         let mut names = fs::read_dir(path.join("native"))

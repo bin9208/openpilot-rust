@@ -1453,7 +1453,7 @@ rust/tools/bluetooth_daemon_fixture.py	5de91f09f00848e17ea917f1afd07b57583057b0	
 rust/tools/bluetooth_daemon_source.py	156d3c3ee32a17b9fa9473620f34dcf818f35683	pending	-
 rust/tools/bluetooth_engine_scenarios.py	847e1888d700a52f63a284e407fe5bce747f3325	pending	-
 rust/tools/bluetooth_engine_source.py	8b87c14f28abd35c5a2e286874aec2198186bf64	pending	-
-rust/tools/bluetooth_gesture_cases.py	c526bf0d1d1aa7a018224509fb68443b008fd420	pending	-
+rust/tools/bluetooth_gesture_cases.py	c526bf0d1d1aa7a018224509fb68443b008fd420	replaced-local	rust/crates/dev-tools/src/bluetooth_gesture_cases_generate.rs
 rust/tools/bluetooth_input_source.py	1922c2d0b8e1f2a4a417065f77e29641dc23f690	pending	-
 rust/tools/bluetooth_sudo_fixture.py	9002b50955f374ce1db55810a6a89390d449e494	pending	-
 rust/tools/bootlog_snapshot_source.py	071111d1b1b1b16edb03e0ad3ff5e1d397be7023	replaced-local	rust/crates/dev-tools/src/bootlog_snapshot_reference.rs
@@ -1830,7 +1830,7 @@ rust/tools/check_bluetooth_bluez.py	2297e17c8ae4ef900a03e1881491d7d095ca396d	pen
 rust/tools/check_bluetooth_bluez_invalid.py	f716b51b31a38b3d40bdaedec16ab212388f9431	pending	-
 rust/tools/check_bluetooth_bluez_policy.py	75eab59306ae9493170379e8c4a6dc0cfdd70aea	replaced-local	openpilot-dev-tools check-bluetooth-bluez-policy; sealed original corpus and same-ELF c7005ce1 cloud absence proof; post-deletion exact-SHA gate pending
 rust/tools/check_bluetooth_bluez_prompts.py	ab82243d28dd418a240c5ef0cbd8b75de17b74e7	pending	-
-rust/tools/check_bluetooth_config.py	42716fc0761ced8740869ee2d125c8286f286c68	pending	-
+rust/tools/check_bluetooth_config.py	42716fc0761ced8740869ee2d125c8286f286c68	replaced-local	rust/crates/dev-tools/src/bluetooth_config_check.rs
 rust/tools/check_bluetooth_daemon.py	c0a5f09a67d743995ae93c0a6d836ea91341735a	pending	-
 rust/tools/check_bluetooth_engine.py	37d8c109bb4b0f46434caa78c5530e7f54cedae3	pending	-
 rust/tools/check_bluetooth_enumerate.py	f53659596be666481634eb65c0b0ab8e6c291373	replaced-local	openpilot-dev-tools check-bluetooth-enumerate; sealed original corpus and same-ELF c7005ce1 cloud absence proof; post-deletion exact-SHA gate pending
@@ -1838,7 +1838,7 @@ rust/tools/check_bluetooth_files.py	13fbac529c082d368a1e3b8c6ecf5d359afe701f	rep
 rust/tools/check_bluetooth_gestures.py	aabe3e2b0a235e00d7023e4b1569be9ac530c06a	pending	-
 rust/tools/check_bluetooth_input.py	0a614d789b56b4e93c5d8cb6e4711b9e673c121e	pending	-
 rust/tools/check_bluetooth_input_decode.py	0feecb81c9459913e11fafc48dd58a25ad057f4b	replaced-local	openpilot-dev-tools check-bluetooth-input-decode; independent 10049 source records, exact signed fields/binary64 timestamp bits, actual input_fixture and owned cancellation
-rust/tools/check_bluetooth_journal.py	28b3448b08450ea78535c7f0fa58484daa807788	pending	-
+rust/tools/check_bluetooth_journal.py	28b3448b08450ea78535c7f0fa58484daa807788	replaced-local	rust/crates/dev-tools/src/bluetooth_journal_check.rs
 rust/tools/check_bluetooth_runtime.py	8e0b0823f13de931b828cd7869604b5921e40d63	pending	-
 rust/tools/check_bluetooth_shutdown.py	9e56edaab6a899753fbd535ca1b3895c92ab44e6	pending	-
 rust/tools/check_bootlog.py	821fae976671407cca3c239f0cb23b3f7ca1fa22	replaced-local	openpilot-dev-tools check-bootlog-artifacts; independent full-schema artifact and uploader selection checker

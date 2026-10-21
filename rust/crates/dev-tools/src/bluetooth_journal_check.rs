@@ -41,24 +41,23 @@ fn check_cancel(stop: &AtomicBool) -> Result<()> {
         Ok(())
     }
 }
-fn verify(files: &[Bound], historical_absent: Option<&Path>, stop: &AtomicBool) -> Result<()> {
+fn verify(files: &[Bound], historical_absent: &Path, stop: &AtomicBool) -> Result<()> {
     check_cancel(stop)?;
-    if let Some(path) = historical_absent {
-        if !fs::symlink_metadata(path.parent().ok_or("checker parent missing")?)?.is_dir() {
-            return Err("Bluetooth journal checker parent is not a directory".into());
-        }
-        match fs::symlink_metadata(path) {
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-            Ok(_) => return Err("Bluetooth journal historical checker reappeared".into()),
-            Err(error) => return Err(error.into()),
-        }
+    if !fs::symlink_metadata(historical_absent.parent().ok_or("checker parent missing")?)?.is_dir()
+    {
+        return Err("Bluetooth journal checker parent is not a directory".into());
+    }
+    match fs::symlink_metadata(historical_absent) {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Ok(_) => return Err("Bluetooth journal historical checker reappeared".into()),
+        Err(error) => return Err(error.into()),
     }
     for file in files {
         file.verify()?;
     }
     Ok(())
 }
-fn sources(root: &Path) -> Result<(Vec<Bound>, Option<PathBuf>)> {
+fn sources(root: &Path) -> Result<(Vec<Bound>, PathBuf)> {
     let pins: BTreeMap<String, String> = serde_json::from_str(include_str!(
         "../tests/fixtures/bluetooth-journal/source-pins.json"
     ))?;
@@ -67,8 +66,7 @@ fn sources(root: &Path) -> Result<(Vec<Bound>, Option<PathBuf>)> {
     for (name, expected) in pins {
         let path = root.join(&name);
         if name == "rust/tools/check_bluetooth_journal.py" {
-            // Only this exact historical checker may be absent during the
-            // same-ELF original/present/absent comparison.
+            // The retired checker must be absent from admission onward.
             match fs::symlink_metadata(&path) {
                 Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
                     if !fs::symlink_metadata(path.parent().ok_or("checker parent missing")?)?
@@ -79,7 +77,7 @@ fn sources(root: &Path) -> Result<(Vec<Bound>, Option<PathBuf>)> {
                     historical_absent = Some(path);
                     continue;
                 }
-                Ok(_) => {}
+                Ok(_) => return Err("Bluetooth journal historical checker reappeared".into()),
                 Err(error) => return Err(error.into()),
             }
         }
@@ -89,7 +87,10 @@ fn sources(root: &Path) -> Result<(Vec<Bound>, Option<PathBuf>)> {
         }
         live.push(file);
     }
-    Ok((live, historical_absent))
+    Ok((
+        live,
+        historical_absent.ok_or("Bluetooth journal historical source pin missing")?,
+    ))
 }
 pub fn parse_trace(text: &str) -> Result<Vec<JsonValue>> {
     // Python str.splitlines treats CRLF as one boundary. Public callers may
@@ -133,7 +134,7 @@ fn publish(
     path: &Path,
     report: &Value,
     inputs: &[Bound],
-    historical_absent: Option<&Path>,
+    historical_absent: &Path,
     stop: &AtomicBool,
 ) -> Result<()> {
     verify(inputs, historical_absent, stop)?;
@@ -158,7 +159,7 @@ pub fn check(
     stop: &AtomicBool,
 ) -> Result<Value> {
     let (mut inputs, historical_absent) = sources(&options.root)?;
-    verify(&inputs, historical_absent.as_deref(), stop)?;
+    verify(&inputs, &historical_absent, stop)?;
     fs::create_dir_all(&options.output)?;
     let operations = operations();
     if operations.len() != OPERATIONS {
@@ -209,7 +210,7 @@ pub fn check(
     command.input = Some(payload);
     command.stdout_limit = usize::MAX;
     command.stderr_limit = usize::MAX;
-    verify(&inputs, historical_absent.as_deref(), stop)?;
+    verify(&inputs, &historical_absent, stop)?;
     let observed = runner.run(&command)?;
     let stdout = text(observed.stdout)?;
     let stderr = text(observed.stderr)?;
@@ -227,7 +228,7 @@ pub fn check(
     let hash = artifact.hash.clone();
     inputs.push(artifact);
     inputs.push(alias);
-    verify(&inputs, historical_absent.as_deref(), stop)?;
+    verify(&inputs, &historical_absent, stop)?;
     let pins = inputs
         .iter()
         .map(|f| {
@@ -246,7 +247,7 @@ pub fn check(
         &options.output.join("result.json"),
         &report,
         &inputs,
-        historical_absent.as_deref(),
+        &historical_absent,
         stop,
     )?;
     Ok(report)

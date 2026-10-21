@@ -103,7 +103,6 @@ struct Historical {
     directory: File,
     device: u64,
     inode: u64,
-    present: Option<Bound>,
 }
 impl Historical {
     fn open(root: &Path) -> Result<Self> {
@@ -121,25 +120,17 @@ impl Historical {
             rustix::fs::Mode::empty(),
         )?);
         let metadata = directory.metadata()?;
-        let present = match fs::symlink_metadata(&path) {
-            Ok(entry) if entry.file_type().is_file() => {
-                let bound = Bound::open(&path)?;
-                if bound.hash != SOURCES[0].1 {
-                    return Err("Bluetooth config historical checker changed".into());
-                }
-                Some(bound)
-            }
-            Ok(_) => return Err("Bluetooth config historical checker is not regular".into()),
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+        match fs::symlink_metadata(&path) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Ok(_) => return Err("Bluetooth config retired checker reappeared".into()),
             Err(error) => return Err(error.into()),
-        };
+        }
         let historical = Self {
             path,
             parent,
             directory,
             device: metadata.dev(),
             inode: metadata.ino(),
-            present,
         };
         historical.verify()?;
         Ok(historical)
@@ -154,10 +145,10 @@ impl Historical {
         {
             return Err("Bluetooth config historical checker parent changed".into());
         }
-        match (&self.present, fs::symlink_metadata(&self.path)) {
-            (Some(bound), Ok(entry)) if entry.file_type().is_file() => bound.verify(),
-            (None, Err(error)) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
-            _ => Err("Bluetooth config historical checker changed presence".into()),
+        match fs::symlink_metadata(&self.path) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            Ok(_) => Err("Bluetooth config retired checker reappeared".into()),
+            Err(error) => Err(error.into()),
         }
     }
 }
