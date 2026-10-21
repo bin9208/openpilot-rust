@@ -197,9 +197,11 @@ struct Pending {
     report: Value,
     proof: Publication,
     result: Publication,
+    pins: ownership::Sources,
 }
 impl Pending {
     fn commit(mut self) -> Result<Value> {
+        self.pins.verify()?;
         self.proof.commit()?;
         self.result.commit()?;
         Ok(self.report)
@@ -279,10 +281,8 @@ fn execute(
         return Err("Panda source PATH executable differs from supplied hash path".into());
     }
     let verify = || -> Result<()> {
-        for bound in pins
-            .iter()
-            .chain([&source, &native, &source_exec, &native_exec, &current])
-        {
+        pins.verify()?;
+        for bound in [&source, &native, &source_exec, &native_exec, &current] {
             bound.verify()?;
         }
         check_cancel(cancel)
@@ -298,12 +298,12 @@ fn execute(
         })
         .sum::<usize>();
     let report = json!({"status":"PASS","scenarios":corpus.len(),"operations":operations,"scope":SCOPE,"source_sha256":source.hash,"native_sha256":native.hash});
-    let source_hashes = ownership::PINS
+    let source_hashes = pins.hashes();
+    let historical_source_sha256 = ownership::PINS[..2]
         .iter()
-        .zip(&pins)
-        .map(|((name, _), pin)| ((*name).to_owned(), json!(pin.hash)))
+        .map(|(name, hash)| ((*name).to_owned(), json!(hash)))
         .collect::<serde_json::Map<_, _>>();
-    let proof = json!({"source_sha256":source_hashes,"executing_checker_sha256":current.hash,"source_executable_sha256":source_exec.hash,"native_runner_executable_sha256":native_exec.hash,"timeout_seconds":60,"source_path_bytes":options.source.as_os_str().as_bytes(),"native_path_bytes":options.native.as_os_str().as_bytes(),"runner_bytes":options.runner.iter().map(|v|v.as_bytes().to_vec()).collect::<Vec<_>>()});
+    let proof = json!({"source_sha256":source_hashes,"historical_source_sha256":historical_source_sha256,"historical_checker_absent":pins.absent(),"executing_checker_sha256":current.hash,"source_executable_sha256":source_exec.hash,"native_runner_executable_sha256":native_exec.hash,"timeout_seconds":60,"source_path_bytes":options.source.as_os_str().as_bytes(),"native_path_bytes":options.native.as_os_str().as_bytes(),"runner_bytes":options.runner.iter().map(|v|v.as_bytes().to_vec()).collect::<Vec<_>>()});
     serde_json::to_writer(&mut *stdout, &report)?;
     stdout.write_all(b"\n")?;
     stdout.flush()?;
@@ -315,6 +315,7 @@ fn execute(
         report,
         proof,
         result,
+        pins,
     })
 }
 pub fn check(

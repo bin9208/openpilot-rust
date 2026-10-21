@@ -19,11 +19,29 @@ use std::{
 fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..")
 }
+fn remove_if_present(path: &Path) {
+    match fs::remove_file(path) {
+        Ok(()) => {}
+        Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+        Err(error) => panic!("{}: {error}", path.display()),
+    }
+}
 fn options(path: &Path) -> check::Options {
     let copied = path.join("source");
     let contract: Value =
         serde_json::from_str(include_str!("fixtures/pandad-device/contract.json")).unwrap();
+    let retired = [
+        "rust/tools/check_pandad_device.py",
+        "rust/tools/pandad_device_cases.py",
+    ];
+    let absent = retired.iter().all(|name| {
+        fs::symlink_metadata(root().join(name))
+            .is_err_and(|error| error.kind() == io::ErrorKind::NotFound)
+    });
     for name in contract["sources"].as_object().unwrap().keys() {
+        if absent && retired.contains(&name.as_str()) {
+            continue;
+        }
         let target = copied.join(name);
         fs::create_dir_all(target.parent().unwrap()).unwrap();
         fs::copy(root().join(name), target).unwrap();
@@ -210,6 +228,13 @@ impl Runner for Replay<'_> {
                     )
                     .unwrap();
                 }
+                "reappear-retired" => {
+                    fs::write(
+                        self.options.root.join("rust/tools/check_pandad_device.py"),
+                        b"unexpected replacement",
+                    )
+                    .unwrap();
+                }
                 "cancel" => self.cancel.store(true, Ordering::Relaxed),
                 _ => {}
             }
@@ -220,6 +245,76 @@ impl Runner for Replay<'_> {
             stdout: format!("{result}\n").repeat(count).into_bytes(),
             stderr: vec![],
         })
+    }
+}
+#[test]
+fn both_historical_python_sources_may_be_absent_but_reappearance_rejects_before_pass() {
+    const RETIRED: [&str; 2] = [
+        "rust/tools/check_pandad_device.py",
+        "rust/tools/pandad_device_cases.py",
+    ];
+    for mutation in ["", "reappear-retired"] {
+        let temp = tempfile::tempdir().unwrap();
+        let options = options(temp.path());
+        for name in RETIRED {
+            remove_if_present(&options.root.join(name));
+        }
+        let cancel = AtomicBool::new(false);
+        let mut replay = Replay {
+            calls: vec![],
+            options: &options,
+            mutation,
+            cancel: &cancel,
+        };
+        let result = check::check(&options, &mut replay, &mut vec![], &cancel);
+        assert_eq!(replay.calls.len(), 2);
+        if mutation.is_empty() {
+            assert_eq!(result.unwrap()["status"], "PASS");
+            let proof: Value =
+                serde_json::from_slice(&fs::read(options.output.join("provenance.json")).unwrap())
+                    .unwrap();
+            assert_eq!(proof["historical_checker_absent"], true);
+            assert_eq!(
+                proof["historical_source_sha256"].as_object().unwrap().len(),
+                2
+            );
+            for name in RETIRED {
+                assert!(proof["source_sha256"].get(name).is_none());
+            }
+            assert_eq!(proof["source_sha256"].as_object().unwrap().len(), 3);
+        } else {
+            assert!(result.is_err());
+            assert!(!options.output.join("report.json").exists());
+            assert!(!options.output.join("provenance.json").exists());
+        }
+    }
+}
+
+#[test]
+fn mixed_or_nonregular_historical_sources_reject_before_child_execution() {
+    struct Never;
+    impl Runner for Never {
+        fn run(&mut self, _: &CommandSpec) -> Result<Captured> {
+            panic!("historical source admission must reject before child")
+        }
+    }
+    for mutation in ["one-missing", "one-dangling", "both-dangling"] {
+        let temp = tempfile::tempdir().unwrap();
+        let options = options(temp.path());
+        let checker = options.root.join("rust/tools/check_pandad_device.py");
+        let cases = options.root.join("rust/tools/pandad_device_cases.py");
+        remove_if_present(&checker);
+        remove_if_present(&cases);
+        fs::write(&cases, b"regular historical source admission control").unwrap();
+        if mutation == "one-dangling" || mutation == "both-dangling" {
+            symlink("missing-target", &checker).unwrap();
+        }
+        if mutation == "both-dangling" {
+            fs::remove_file(&cases).unwrap();
+            symlink("missing-target", &cases).unwrap();
+        }
+        assert!(check::check(&options, &mut Never, &mut vec![], &AtomicBool::new(false)).is_err());
+        assert!(!options.output.join("report.json").exists());
     }
 }
 #[test]
@@ -332,7 +427,7 @@ fn exclusive_output_and_changed_dangling_or_fifo_source_pins_reject_before_spawn
             fs::create_dir(&options.output).unwrap();
             fs::write(options.output.join("report.json"), b"foreign receipt").unwrap();
         } else {
-            fs::remove_file(&path).unwrap();
+            remove_if_present(&path);
             match mutation {
                 "changed" => fs::write(&path, b"changed source").unwrap(),
                 "dangling" => symlink("missing-target", &path).unwrap(),

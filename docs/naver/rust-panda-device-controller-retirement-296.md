@@ -1,0 +1,43 @@
+# Panda device comparison controller retirement candidate (#296)
+
+This candidate replaces the comparison controller and its generated case corpus,
+`check_pandad_device.py` and `pandad_device_cases.py`. Both remain in the checkout
+until independent original observations, native caller checks and actual deleted
+checkout validation pass. The inventory remains233 replaced-local; this candidate
+does not add accepted deletions or establish physical Panda/USB/device behavior.
+
+The original-only capture executes the unchanged Python checker against the
+original C++ device probe and current Rust device example. It retains all1,746
+requests, 2,490 operations, both responses, parser admissions and failure effects.
+Only the C++ `source.jsonl` is an expected-response provider. Captured native
+responses cannot populate or repair expected answers. The original C++ ELF is
+borrowed from accepted run39616860491/artifact12352894540, with its immutable ZIP,
+ELF and14 build-source hashes checked against the current checkout. This is
+explicit reuse of that source-matched probe, not a newly rebuilt C++ claim.
+
+The native retirement test requires the complete consumed-file roster in an
+externally pinned original capture manifest. It rejects symlink files/directories,
+missing seals, changed source inputs and changed executable identities, then
+revalidates those seals before acceptance. It compares all request and response
+fields and case order, retaining only the original normalization of unspecified
+health `interrupt_load`. The separately recorded `interrupt_bits` remains checked.
+
+Actual native CLI lanes cover checkout, private source absence and a raw0xff
+output path, with an additional present-source lane before deletion. Eleven
+parser admissions check independently observed exits and output channels, no
+false PASS or filesystem effects. Missing source/native probes additionally
+check source-first failure order and exact retained files. A preexisting foreign
+report must remain byte-for-byte unchanged. Help/error wording is native; these
+checks do not claim identical Python traceback text.
+
+The controller admits the two historical files only together as regular files
+with the original hashes, or together absent. Mixed presence, dangling links,
+other file types and mid-run reappearance reject before final success receipts.
+Explicit `predelete`/`postdelete` test modes distinguish present-source validation
+from required actual absence. The final deletion gate must not restore, download
+or execute the retired Python files.
+
+The original capture and candidate hosted results remain pending. No Python
+source has been removed by this device-family candidate. The separate outer
+Panda controller source deletion and its38-phase gate have their own evidence
+and pending validation status.

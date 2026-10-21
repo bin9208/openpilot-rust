@@ -30,6 +30,10 @@ pub(super) const PINS: &[(&str, &str)] = &[
         "faebd7a679a0fc8b44ca6b42fe0c6ed9aeddb52f3d4980db5dc025e05dbdc15a",
     ),
 ];
+const RETIRED: [&str; 2] = [
+    "rust/tools/check_pandad_device.py",
+    "rust/tools/pandad_device_cases.py",
+];
 pub(super) struct Bound {
     path: PathBuf,
     file: File,
@@ -76,16 +80,68 @@ impl Bound {
         Ok(())
     }
 }
-pub(super) fn sources(root: &Path) -> Result<Vec<Bound>> {
-    PINS.iter()
-        .map(|(path, hash)| {
-            let bound = Bound::open(&root.join(path))?;
-            if bound.hash != *hash {
-                return Err(format!("Panda device source changed: {path}").into());
-            }
-            Ok(bound)
-        })
-        .collect()
+fn retired_absent(root: &Path) -> Result<bool> {
+    let states = RETIRED.map(|name| -> Result<bool> {
+        match fs::symlink_metadata(root.join(name)) {
+            Ok(metadata) if metadata.file_type().is_file() => Ok(false),
+            Ok(_) => Err(format!("Panda device historical source is not regular: {name}").into()),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(true),
+            Err(error) => Err(error.into()),
+        }
+    });
+    let [first, second] = states;
+    let (first, second) = (first?, second?);
+    if first != second {
+        return Err("Panda device historical checker and cases must have the same presence".into());
+    }
+    Ok(first)
+}
+pub(super) struct Sources {
+    root: PathBuf,
+    absent: bool,
+    entries: Vec<(&'static str, Bound)>,
+}
+impl Sources {
+    pub fn iter(&self) -> impl Iterator<Item = &Bound> {
+        self.entries.iter().map(|(_, bound)| bound)
+    }
+    pub fn hashes(&self) -> serde_json::Map<String, Value> {
+        self.entries
+            .iter()
+            .map(|(name, bound)| ((*name).into(), Value::String(bound.hash.clone())))
+            .collect()
+    }
+    pub fn absent(&self) -> bool {
+        self.absent
+    }
+    pub fn verify(&self) -> Result<()> {
+        if retired_absent(&self.root)? != self.absent {
+            return Err("Panda device historical source presence changed during execution".into());
+        }
+        for bound in self.iter() {
+            bound.verify()?;
+        }
+        Ok(())
+    }
+}
+pub(super) fn sources(root: &Path) -> Result<Sources> {
+    let absent = retired_absent(root)?;
+    let mut entries = Vec::new();
+    for &(name, hash) in PINS {
+        if absent && RETIRED.contains(&name) {
+            continue;
+        }
+        let bound = Bound::open(&root.join(name))?;
+        if bound.hash != hash {
+            return Err(format!("Panda device source changed: {name}").into());
+        }
+        entries.push((name, bound));
+    }
+    Ok(Sources {
+        root: root.into(),
+        absent,
+        entries,
+    })
 }
 pub(super) struct Publication {
     path: PathBuf,

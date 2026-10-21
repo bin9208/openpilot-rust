@@ -1666,6 +1666,10 @@ name = "pandad_device_check"
 required-features = ["pandad-device-native"]
 
 [[test]]
+name = "pandad_device_retirement"
+required-features = ["pandad-device-native"]
+
+[[test]]
 name = "pandad_device_reference"
 required-features = ["pandad-device-native"]
 
