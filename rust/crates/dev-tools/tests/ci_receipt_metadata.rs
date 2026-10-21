@@ -170,6 +170,68 @@ fn original_error_class(stderr: &[u8]) -> Option<&str> {
     (class.ends_with("Error") || class == "StopIteration").then_some(class)
 }
 #[test]
+fn maintained_callers_build_native_metadata_before_all_fourteen_uses() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let action = fs::read_to_string(root.join(".github/actions/native-json11/action.yml")).unwrap();
+    assert!(action.contains("--features ci-receipt-metadata-native --bin stage-json11 --bin ci-receipt-metadata --target \"$native_host\""));
+    assert!(action.contains("CI_RECEIPT_METADATA=%s/rust/target/%s/debug/ci-receipt-metadata"));
+    assert!(action.contains("env -u RUSTFLAGS -u CARGO_ENCODED_RUSTFLAGS -u CARGO_BUILD_TARGET"));
+    let original =
+        root.join("rust/crates/dev-tools/tests/fixtures/ci-receipt-original/original/sources.json");
+    let rows: Value = serde_json::from_slice(&fs::read(original).unwrap()).unwrap();
+    let mut uses = 0;
+    for relative in [
+        ".github/workflows/rust.yml",
+        "rust/crates/carrot-man/ci-jobs.yml",
+    ] {
+        let source = fs::read_to_string(root.join(relative)).unwrap();
+        for row in rows
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|row| row["path"] == relative)
+        {
+            assert!(
+                !source.contains(row["snippet"].as_str().unwrap()),
+                "old interpreter caller remains: {}",
+                row["id"]
+            );
+        }
+        let parsed = openpilot_dev_tools::ci_policy::parse(&source).unwrap();
+        let jobs = if relative.ends_with("rust.yml") {
+            &parsed["jobs"]
+        } else {
+            &parsed
+        };
+        for job in jobs.as_object().unwrap().values() {
+            let Some(steps) = job["steps"].as_array() else {
+                continue;
+            };
+            let mut built = false;
+            for step in steps {
+                if step["uses"] == "./.github/actions/native-json11" {
+                    built = true;
+                }
+                let Some(run) = step["run"].as_str() else {
+                    continue;
+                };
+                for line in run
+                    .lines()
+                    .filter(|line| line.contains("$CI_RECEIPT_METADATA"))
+                {
+                    assert!(
+                        built,
+                        "native receipt consumer precedes its host producer: {relative}: {line}"
+                    );
+                    assert!(!line.contains("python"));
+                    uses += 1;
+                }
+            }
+        }
+    }
+    assert_eq!(uses, 14);
+}
+#[test]
 fn qualified_original_traceback_class_is_recovered_without_an_optional_summary() {
     // Actual source receipts015/027/037/049 use json.decoder.JSONDecodeError;
     // their capture error_class field is null, but stderr remains sealed.

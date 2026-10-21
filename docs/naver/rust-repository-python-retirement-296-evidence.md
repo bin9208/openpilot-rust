@@ -17,6 +17,49 @@ Desire24,585-row/47-scenario comparisons. Inventory is242replaced-local/3partial
 Driver/shared logging helpers and recovery controllers still require their
 complete caller/absence gates. Whole-project compiler/tool/vendor conversion remains unfinished.
 
+## Recovery functional closure and metadata integration (2026-10-22)
+
+Recovery [39677229740](https://github.com/bin9208/openpilot-rust/actions/runs/39677229740)
+passes all eight native controllers in both checkout/private lanes, independently
+without and with tracing, plus17 focused units and strict Clippy. Executed source
+`0501612741fe402bedf50ead847f2f85fc9f5587`, workflow
+`638e08ed71644364841b895371b4da73c8fd2bc5`. Parent audited all11,992 ZIP member
+CRCs for artifact12382569025 (68,489,895bytes), SHA256
+`05c62eecbe6debdd8a4b90e57dc67a12c3bc363e581f91e2552fb187cbd3296a`,
+all32 controller admissions,26 unchanged held inputs, and each lane's52 action
+alias binding rows against held source identities and retained alias bytes.
+The Git-repair contract now compares all seven snapshot fields against original
+observations; raw snapshots are retained before comparisons. This functional
+result does not yet accept the complete interpreter-free exec audit or retire
+13 Python sources. Created-program temporal receipts and a source-authored argv
+policy remain required. The prior PTRACE_LISTEN EIO (#474) is unexplained;
+a later successful trace is not a demonstrated root-cause fix.
+
+Metadata independent-original [39677845650](https://github.com/bin9208/openpilot-rust/actions/runs/39677845650)
+retains67 observations for14 actual embedded callers, with68 sealed source/input
+members and identical before/after data. Artifact12382383318 is86,768bytes/
+75CRC members; ZIP SHA256
+`3d886c6ec39f80bd338d6e23e52510992a9bb5006b4c0f49b5434a614fca9dd0`;
+manifest SHA256
+`71d33e6e25f62c7a51240ecb4eb908acd35351a911b482869181fbfdffd130c1`.
+Native39678813421 compiled and passed three units but exposed an optional
+original `error_class` summary missing qualified JSONDecodeError names in four
+receipts. Commit3abd3a50b instead validates the sealed final exception line,
+without modifying the original capture; the corrected hosted comparison is
+pending. Maintained callers now use the host-native receipt binary from the
+existing native-json11 producer. Its focused native comparison and workflow
+integration gates must pass before marking these14 execution edges accepted.
+Six non-string prefix print cases are explicit rejected schema boundaries,
+not claimed arbitrary-Python-print parity; reads are bounded to4MiB.
+
+USB source capture39676933768 stopped before original traffic because the
+selected release carries model `d4c7a3fc…`, while the fixture requires
+`e758b96d…`. Independent immutable archive inspection39678412348 confirms the
+mismatch (artifact12381738836,3,282bytes/one CRC member, ZIP SHA256
+`10559718250a1c9036b208d0b5c4117df8ee72bfc18ad8e13ba8420154f5d208`).
+No expected model/hash was relaxed. Correct matching model/runtime/companion
+provenance remains a prerequisite for the six-source family gate.
+
 ## Teleop embedded release computations accepted (2026-10-22)
 
 Both inline Python computations in `teleoprtc_repo/scripts/bump_tag.sh` now

@@ -306,7 +306,7 @@ jobs:
           python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/planner-original/params"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/planner-original/ipc"
-          python -P -c 'import json,os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"planner-original/params/provenance.json"; print("PLANNER_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+          "$CI_RECEIPT_METADATA" module PLANNER_PARAMS_BINDING "$RUNNER_TEMP/planner-original/params/provenance.json" >> "$GITHUB_ENV"
           printf 'PYTHONPATH=%s/planner-original/ipc:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Compile and check the complete native planner
         run: |
@@ -404,7 +404,7 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml -p openpilot-control-tools --locked
           python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/joystickd/params-binding"
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/joystickd/msgq-binding"
-          python -c 'from pathlib import Path; import os; print("JOYSTICKD_PARAMS_BINDING=" + str(next((Path(os.environ["RUNNER_TEMP"]) / "joystickd/params-binding").glob("params_pyx*.so"))))' >> "$GITHUB_ENV"
+          "$CI_RECEIPT_METADATA" first-binding JOYSTICKD_PARAMS_BINDING "$RUNNER_TEMP/joystickd/params-binding" >> "$GITHUB_ENV"
       - name: Compare original control states and actual IPC lifecycle
         run: |
           export PYTHONPATH="$RUNNER_TEMP/joystickd/msgq-binding:$PYTHONPATH"
@@ -482,7 +482,7 @@ jobs:
           python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/carrot-man-params"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/carrot-man-msgq"
-          python -c 'from pathlib import Path; import os; print("CARROT_PARAMS_BINDING="+str(next((Path(os.environ["RUNNER_TEMP"])/"carrot-man-params").glob("params_pyx*.so"))))' >> "$GITHUB_ENV"
+          "$CI_RECEIPT_METADATA" first-binding CARROT_PARAMS_BINDING "$RUNNER_TEMP/carrot-man-params" >> "$GITHUB_ENV"
       - name: Compare affected original policy, cereal and time boundaries
         if: matrix.arch == 'x86_64'
         run: |
@@ -556,7 +556,7 @@ jobs:
           python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/webrtc/params"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/webrtc/msgq"
-          python -P -c 'import json,os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"webrtc/params/provenance.json"; print("WEBRTC_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+          "$CI_RECEIPT_METADATA" module WEBRTC_PARAMS_BINDING "$RUNNER_TEMP/webrtc/params/provenance.json" >> "$GITHUB_ENV"
           printf 'PYTHONPATH=%s/webrtc/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Compile and check both native service entrypoints
         run: |
@@ -710,6 +710,30 @@ jobs:
         with:
           name: rust-teleop-version-evidence
           path: ${{ runner.temp }}/teleop-version/
+          if-no-files-found: warn
+      - name: Verify native workflow receipt metadata against fixed original observations
+        env:
+          CI_RECEIPT_ORIGINAL: ${{ github.workspace }}/rust/crates/dev-tools/tests/fixtures/ci-receipt-original/original
+          CI_RECEIPT_BINARY: ${{ github.workspace }}/rust/target/debug/ci-receipt-metadata
+          CI_RECEIPT_EVIDENCE: ${{ runner.temp }}/ci-receipt-metadata/comparisons
+          CI_RECEIPT_MANIFEST_SHA256: 71d33e6e25f62c7a51240ecb4eb908acd35351a911b482869181fbfdffd130c1
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ci-receipt-metadata"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --locked -p openpilot-dev-tools --features ci-receipt-metadata-native --bin ci-receipt-metadata
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --locked -p openpilot-dev-tools --features ci-receipt-metadata-native --test ci_receipt_metadata
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --locked -p openpilot-dev-tools --features ci-receipt-metadata-native --test ci_receipt_metadata -- --ignored --nocapture
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --locked -p openpilot-dev-tools --features ci-receipt-metadata-native --lib --bin ci-receipt-metadata --test ci_receipt_metadata -- -D warnings
+      - name: Preserve native workflow receipt comparisons
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-ci-receipt-metadata-evidence
+          path: ${{ runner.temp }}/ci-receipt-metadata/
           if-no-files-found: warn
       - name: Check process-stat parser allocation regression
         run: |
@@ -1160,7 +1184,7 @@ jobs:
           python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/xiaoge-original/params"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/xiaoge-original/ipc"
-          python -P -c 'import json,os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"xiaoge-original/params/provenance.json"; print("XIAOGE_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+          "$CI_RECEIPT_METADATA" module XIAOGE_PARAMS_BINDING "$RUNNER_TEMP/xiaoge-original/params/provenance.json" >> "$GITHUB_ENV"
           printf 'OPENPILOT_OPENCV_ROOT=%s/xiaoge-opencv\nLD_LIBRARY_PATH=%s/xiaoge-opencv/install/lib\nPYTHONPATH=%s/xiaoge-original/ipc:%s\nOPENCV_TEST_LANE_MODEL=%s/openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx\n' "$RUNNER_TEMP" "$RUNNER_TEMP" "$RUNNER_TEMP" "$PYTHONPATH" "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
       - name: Compile and check all native Xiaoge targets
         run: |
@@ -1478,7 +1502,7 @@ jobs:
           mkdir -p "$PANDAD_PADDING_TEST_OUTPUT"
           export PANDAD_PADDING_TRACE_SOURCE_BINARY="$PANDAD_PADDING_TEST_OUTPUT/trace-source/pandad-protocol-source"
           export PANDAD_PADDING_TRACE_SOURCE_MANIFEST="$PANDAD_PADDING_TEST_OUTPUT/trace-source/manifest.json"
-          json11_prefix="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["prefix"])' "$RUNNER_TEMP/panda-native/retirement/checkout-output/commands/stage-json11.stdout")"
+          json11_prefix="$("$CI_RECEIPT_METADATA" prefix "$RUNNER_TEMP/panda-native/retirement/checkout-output/commands/stage-json11.stdout")"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           rust/target/debug/build-pandad-protocol-source --root "$GITHUB_WORKSPACE" --output "$PANDAD_PADDING_TEST_OUTPUT/trace-source" --capnp-prefix /usr --json11-prefix "$json11_prefix" --safety > "$PANDAD_PADDING_TEST_OUTPUT/trace-build.stdout" 2> "$PANDAD_PADDING_TEST_OUTPUT/trace-build.stderr"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
@@ -1592,7 +1616,7 @@ jobs:
           python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/selfdrived-native/params"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/selfdrived-native/msgq"
-          python -P -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"selfdrived-native/params/provenance.json"; print("SELFDRIVE_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+          "$CI_RECEIPT_METADATA" module SELFDRIVE_PARAMS_BINDING "$RUNNER_TEMP/selfdrived-native/params/provenance.json" >> "$GITHUB_ENV"
       - name: Build native selfdrived and source-comparison probes
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
@@ -1735,7 +1759,7 @@ jobs:
           python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/card-native/params"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/card-native/msgq"
-          python -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"card-native/params/provenance.json"; print("CARD_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+          "$CI_RECEIPT_METADATA" module CARD_PARAMS_BINDING "$RUNNER_TEMP/card-native/params/provenance.json" >> "$GITHUB_ENV"
       - name: Stage pinned numerical dependency
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
@@ -1827,7 +1851,7 @@ jobs:
           python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/radar-native/params"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/radar-native/msgq"
-          python -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"radar-native/params/provenance.json"; print("RADAR_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+          "$CI_RECEIPT_METADATA" module RADAR_PARAMS_BINDING "$RUNNER_TEMP/radar-native/params/provenance.json" >> "$GITHUB_ENV"
       - name: Generate native DBC assets and stage pinned numerical libraries
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -1897,7 +1921,7 @@ jobs:
           python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/radar-native/params"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/radar-native/msgq"
-          python -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"radar-native/params/provenance.json"; print("RADAR_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+          "$CI_RECEIPT_METADATA" module RADAR_PARAMS_BINDING "$RUNNER_TEMP/radar-native/params/provenance.json" >> "$GITHUB_ENV"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features dbc-generator-native --bin dbc-generator --bin prepare-radarcan-assets
           printf 'OPENPILOT_DBC_GENERATOR=%s/rust/target/debug/dbc-generator\n' "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
@@ -2037,7 +2061,7 @@ jobs:
           python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/navd-native/params"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/navd-native/msgq"
-          python -P -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"navd-native/params/provenance.json"; print("NAVD_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+          "$CI_RECEIPT_METADATA" module NAVD_PARAMS_BINDING "$RUNNER_TEMP/navd-native/params/provenance.json" >> "$GITHUB_ENV"
       - name: Build and test native navigation and its source probes
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
@@ -2133,7 +2157,7 @@ jobs:
           python -P rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/radard-native/params" 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/params-build.log"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python -P rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/radard-native/msgq" 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/msgq-build.log"
-          python -P -c 'import json,os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"radard-native/params/provenance.json"; print("RADARD_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+          "$CI_RECEIPT_METADATA" module RADARD_PARAMS_BINDING "$RUNNER_TEMP/radard-native/params/provenance.json" >> "$GITHUB_ENV"
           printf 'PYTHONPATH=%s/radard-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
           printf 'RADARD_BINARY=%s/rust/target/debug/openpilot-radard\n' "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
       - name: Require actual native imports and declared source helper imports
@@ -2271,7 +2295,7 @@ jobs:
           python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/carrot-navi/bindings/params"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/carrot-navi/bindings/msgq"
-          python -P -c 'import json,os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"carrot-navi/bindings/params/provenance.json"; print("CARROT_NAVI_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+          "$CI_RECEIPT_METADATA" module CARROT_NAVI_PARAMS_BINDING "$RUNNER_TEMP/carrot-navi/bindings/params/provenance.json" >> "$GITHUB_ENV"
           python -P -c 'import msgq.ipc_pyx,capnp,aiohttp,psutil,zstandard; from openpilot.cereal import log,messaging; log.Event.new_message(); print(msgq.ipc_pyx.__file__); print(capnp.__version__,aiohttp.__version__,psutil.__version__,zstandard.__version__)' > "$RUNNER_TEMP/carrot-navi/imports.txt"
       - name: Verify complete original Params and receiver imports
         run: |

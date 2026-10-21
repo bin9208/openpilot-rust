@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 502);
+    assert_eq!(text.matches(marker).count(), 506);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -340,6 +340,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut recording_partial_write = vec![];
     let mut launcher_handoff = vec![];
     let mut teleop_version = vec![];
+    let mut receipt_metadata = vec![];
     let mut driving_retirement = vec![];
     let mut model_build_reserve = vec![];
     let mut panda_protocol_retirement = vec![];
@@ -363,6 +364,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             }
             if step == Some(&"      - name: Verify native Panda protocol and CAN-I/O closure against sealed original observations") {
                 panda_protocol_retirement.push(tail.to_owned());
+                continue;
+            }
+            if step == Some(&"      - name: Verify native workflow receipt metadata against fixed original observations") {
+                receipt_metadata.push(tail.to_owned());
                 continue;
             }
             if step == Some(&"      - name: Verify native release version computations and disposable Git effects") {
@@ -903,6 +908,11 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     assert_eq!(
         panda_protocol_retirement,
         [" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024"]
+    );
+    assert_eq!(
+        receipt_metadata,
+        [1024, 512, 512, 512]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     assert_eq!(
         teleop_version,

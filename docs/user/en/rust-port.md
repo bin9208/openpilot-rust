@@ -25,3 +25,9 @@ The teleoprtc release script also uses Rust for version computations. From the r
 prepare it with `cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features teleop-version-native --bin teleop-version`.
 Set `TELEOP_VERSION_BIN` when using a binary installed elsewhere.
 `project.version` must be a string; existing branch checks, version sorting, commits and tags remain unchanged.
+
+`ci-receipt-metadata` reads CI Params module paths and JSON11 receipt prefixes.
+Build it with `cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features ci-receipt-metadata-native --bin ci-receipt-metadata`.
+It supports `module ENV FILE`, `first-binding ENV DIRECTORY`, and `prefix FILE`.
+Receipts are limited to 4MiB; JSON11 `prefix` must be a string. CI builds the
+native binary for each host first and exports its path as `CI_RECEIPT_METADATA`.

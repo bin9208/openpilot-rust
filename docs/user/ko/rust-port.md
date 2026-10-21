@@ -25,3 +25,9 @@ teleoprtc 릴리스 스크립트의 버전 계산도 Rust 도구를 사용합니
 `cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features teleop-version-native --bin teleop-version`으로 준비합니다.
 다른 위치에 설치했다면 `TELEOP_VERSION_BIN`으로 실행 파일을 지정합니다.
 `project.version`은 문자열이어야 하며, 기존 브랜치 검사·버전 정렬·커밋·태그 동작은 유지됩니다.
+
+CI의 Params 경로와 JSON11 receipt 경로를 읽는 도구는 `ci-receipt-metadata`입니다.
+`cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features ci-receipt-metadata-native --bin ci-receipt-metadata`으로 빌드합니다.
+`module ENV FILE`, `first-binding ENV DIRECTORY`, `prefix FILE`을 지원합니다.
+receipt는 최대 4MiB이며, JSON11의 `prefix`는 문자열이어야 합니다. CI는 각 호스트용
+실행 파일을 먼저 빌드하고 `CI_RECEIPT_METADATA`로 경로를 전달합니다.
