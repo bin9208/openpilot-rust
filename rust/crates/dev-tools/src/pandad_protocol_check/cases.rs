@@ -112,7 +112,8 @@ pub fn decoding(encoded: &[Value]) -> Result<Vec<Value>> {
     for checksum in 0..256_u16 {
         let mut broken = packets[8].clone();
         broken[5] = checksum as u8;
-        result.push(json!({"op":"decode","offset":0,"chunks":[[packets[0].clone(),broken,packets[15].clone()].concat(),packets[3]]}));
+        let corrupted_stream = [packets[0].clone(), broken, packets[15].clone()].concat();
+        result.push(json!({"op":"decode","offset":0,"chunks":[corrupted_stream,packets[3]]}));
     }
     for split in 0..=packets[15].len() {
         result.push(
