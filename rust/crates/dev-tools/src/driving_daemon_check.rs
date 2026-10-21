@@ -377,10 +377,16 @@ impl Lines {
                 return Err("driving child line wait exceeded 60 seconds".into());
             }
             let timeout = Timespec::try_from(Duration::from_millis(20))?;
-            poll(
+            match poll(
                 &mut [PollFd::new(&self.pipe, PollFlags::IN)],
                 Some(&timeout),
-            )?;
+            ) {
+                Ok(_) => {}
+                // Collector msgq publications notify this thread with SIGUSR2.
+                // Recheck cancellation and the original deadline before waiting again.
+                Err(rustix::io::Errno::INTR) => continue,
+                Err(error) => return Err(error.into()),
+            }
             let mut chunk = [0; 4096];
             match self.pipe.read(&mut chunk) {
                 Ok(0) => return Err("driving child stream ended before required line".into()),
@@ -395,7 +401,11 @@ impl Lines {
                     self.log.write_all(&chunk[..n])?;
                     self.pending.extend_from_slice(&chunk[..n]);
                 }
-                Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {}
+                Err(error)
+                    if matches!(
+                        error.kind(),
+                        std::io::ErrorKind::WouldBlock | std::io::ErrorKind::Interrupted
+                    ) => {}
                 Err(error) => return Err(error.into()),
             }
         }
@@ -1213,5 +1223,69 @@ mod line_tests {
         };
         let signals = Signals::new().unwrap();
         assert_eq!(lines.until(&["READY"], &signals).unwrap(), "READY");
+    }
+
+    #[test]
+    fn msgq_notification_signals_do_not_abort_a_child_line_wait() {
+        use std::{
+            os::unix::thread::JoinHandleExt,
+            sync::{
+                atomic::{AtomicBool, Ordering},
+                mpsc, Arc,
+            },
+            thread,
+            time::Duration,
+        };
+        unsafe extern "C" {
+            fn pthread_kill(thread: usize, signal: i32) -> i32;
+        }
+        let notified = Arc::new(AtomicBool::new(false));
+        let registration =
+            signal_hook::flag::register(signal_hook::consts::SIGUSR2, Arc::clone(&notified))
+                .unwrap();
+        struct Handler(signal_hook::SigId);
+        impl Drop for Handler {
+            fn drop(&mut self) {
+                signal_hook::low_level::unregister(self.0);
+            }
+        }
+        let _handler = Handler(registration);
+        let directory = tempfile::tempdir().unwrap();
+        let (mut writer, reader) = UnixStream::pair().unwrap();
+        reader.set_nonblocking(true).unwrap();
+        let descriptor: OwnedFd = reader.into();
+        let log = File::create(directory.path().join("signal.log")).unwrap();
+        let (ready, started) = mpsc::channel();
+        let waiting = thread::spawn(move || {
+            let mut lines = Lines {
+                pipe: File::from(descriptor),
+                log,
+                pending: Vec::new(),
+                total: 0,
+            };
+            let signals = Signals::new().unwrap();
+            ready.send(()).unwrap();
+            lines
+                .until(&["READY"], &signals)
+                .map_err(|error| error.to_string())
+        });
+        started.recv().unwrap();
+        for _ in 0..5 {
+            thread::sleep(Duration::from_millis(10));
+            // SAFETY: the join handle owns this live thread until after the READY write.
+            // SIGUSR2 has the harmless flag handler installed above.
+            assert_eq!(
+                unsafe {
+                    pthread_kill(
+                        waiting.as_pthread_t() as usize,
+                        signal_hook::consts::SIGUSR2,
+                    )
+                },
+                0
+            );
+        }
+        writer.write_all(b"READY\n").unwrap();
+        assert_eq!(waiting.join().unwrap().unwrap(), "READY");
+        assert!(notified.load(Ordering::Relaxed));
     }
 }
