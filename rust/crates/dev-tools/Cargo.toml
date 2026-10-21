@@ -1901,3 +1901,7 @@ required-features = ["driving-daemon-native"]
 [[test]]
 name = "driving_logging_fault_check"
 required-features = ["driving-daemon-native"]
+
+[[test]]
+name = "panda_ci_retirement"
+required-features = ["panda-ci-native"]
