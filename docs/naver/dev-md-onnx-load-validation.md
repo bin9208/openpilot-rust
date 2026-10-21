@@ -211,3 +211,112 @@ input/output ownership, synchronization and transfers also require accounting.
 This follow-up therefore does not enable an unvalidated GPU backend, weaken
 precision, or claim that the GPU is full or idle. The actual CPU memory and
 arithmetic reductions above remain independent of that unknown headroom.
+
+### GPU feasibility follow-up (2026-10-21, issue #416)
+
+The owner requested GPU Xiaoge inference while preserving detection and avoiding
+additional driving-model delay. **FP32 acceleration is technically plausible on
+this target, but the two behavioral conditions are not verified. No GPU runtime
+change or new device candidate is delivered by this investigation.** The current
+installable source remains `f060fc423a02989acc088144ebccd7454545df65`.
+[Investigation receipt](https://github.com/bin9208/openpilot-rust/issues/416#issuecomment-6310967565).
+
+#### Target support and model inventory
+
+Read-only inspection used the already retained AGNOS `19.8-carrot-bt1` image,
+raw SHA256 `375c5d22335770ac08750660bb5b29a3331c550d6a9875b35f36b88af792ea44`,
+matching the repository's `agnos-tici.json` pin. No OS image was downloaded,
+installed, or executed. The cached SDK and raw-image bytes agree for these
+AArch64 libraries:
+
+| Target library | Bytes | Role |
+| --- | ---: | --- |
+| `libOpenCL.so` | 89,000 | Qualcomm OpenCL API shim; platform/device queries, compilation and enqueue exports |
+| `libCB.so` | 2,066,440 | Dynamically loaded Qualcomm compute implementation |
+| `libgsl.so` | 1,129,912 | GPU support, including KGSL access |
+| `libllvm-qcom.so` | 36,961,040 | Existing pinned Qualcomm kernel compiler |
+
+The OpenCL shim SHA256 is
+`3ee7a796512d1d63bd2d54d5864a954852aab58d2c2958d62e4a9c660799b64d`.
+Static ELF inspection resolves all 18 dependency files and required version tags
+inside that SDK. This establishes library/ABI feasibility, **not** successful
+platform initialization or kernel execution. An absent ICD vendors directory
+alone is not evidence that this Qualcomm shim is unavailable.
+
+The [Qualcomm programming guide](https://docs.qualcomm.com/doc/80-NB295-11/80-NB295-11_REV_C_Qualcomm_Snapdragon_Mobile_Platform_Opencl_General_Programming_and_Optimization.pdf)
+sections 3.4 and 8.3 document A6x full-profile OpenCL and FP32 support. FP16 is
+not required by that hardware/API capability. Section 9.1.2 describes a vendor
+context-priority hint; availability and behavior on this exact driver remain
+unmeasured.
+
+The SHA-verified LFS objects were parsed as protobuf metadata only, without
+loading an inference provider:
+
+| Model | ONNX nodes / opset | Input | Outputs |
+| --- | --- | --- | --- |
+| lane, `d3761c185daf33897ff3ff5edf28115c5dc829c06c538033accb616d6c67528c` | 268 / 17 | FP32 `[1,3,416,416]` | FP32 `[1,42,3549]`, `[1,32,104,104]` |
+| BSD, `5d20cdbb457ba18db51a537ee2e305bbe442264b1613956068d473e35d15900d` | 144 / 19 | FP32 `[1,3,352,352]` | FP32 `[1,3]` |
+
+Both have FP32 weight tensors and integer shape tensors, with no external
+initializers. The lane graph includes 76 Conv nodes and one ConvTranspose;
+BSD includes 39 Conv, two MatMul and one Gemm. Metadata does not establish
+OpenCL coverage for their shapes/attributes, numerical equivalence, or speed.
+FP32 execution still needs output and detection comparison; it does not imply
+identical floating-point accumulation across backends.
+
+#### Driving-model interference is an unresolved adoption gate
+
+- `drivingd/src/runtime.rs` selects the internal `QcomModel` for `qcom-cl` and
+  uses the USB model while attached. `drivingd/src/daemon.rs` retains internal
+  fallback after external-model failure. `drivingd/src/process.rs` defaults
+  QCOM context priority to 8.
+- `dmonitoringmodeld/src/main.rs` also defaults its QCOM priority to 8 when
+  monitoring inference is enabled. `usbgpu/src/qcom_warp.rs` uses internal
+  QCOM preparation at priority 8 where selected. External AMD inference does
+  not establish that the internal GPU is unused.
+- `model-runtime/src/qcom/device/linux.rs` creates a KGSL context with a priority
+  field, but supplies no bound on cross-context preemption or memory contention.
+  UI GPU textures/shaders also remain consumers. Camera IFE/BPS capture is a
+  separate hardware path; its existence does not establish memory headroom.
+- The pinned [OpenCV default queue](https://github.com/opencv/opencv/blob/fe38fc608f6acb8b68953438a62305d8318f4fcd/modules/core/src/ocl.cpp#L3071)
+  uses `clCreateCommandQueue`, with optional profiling flags and no requested
+  GPU priority. Its [default context creation](https://github.com/opencv/opencv/blob/fe38fc608f6acb8b68953438a62305d8318f4fcd/modules/core/src/ocl.cpp)
+  must not be assumed to inherit the driving runtime's explicit KGSL policy.
+  Xiaoge has no cross-process GPU admission agreement with drivingd.
+- CPU affinity/nice, a low-priority hint, or stopping future submissions after
+  a health warning cannot prove that already submitted GPU work will not delay
+  driving. `UsbGpuActive` reports selection, not spare compute or bandwidth.
+
+#### Decision and required evidence
+
+Simply changing `DNN_TARGET_CPU` to `DNN_TARGET_OPENCL` is rejected: the shipped
+provider has OpenCL disabled and the pinned backend can silently choose CPU.
+The [backend source](https://github.com/opencv/opencv/blob/fe38fc608f6acb8b68953438a62305d8318f4fcd/modules/dnn/src/net_impl_backend.cpp#L224)
+and [setup checks](https://github.com/opencv/opencv/blob/fe38fc608f6acb8b68953438a62305d8318f4fcd/modules/dnn/src/net_impl.cpp#L131)
+show that distinction. A native QCOM export would reuse execution machinery but
+introduce another graph compiler/numerical validation path; an AMD path would
+add a separate USB transport and shared external-GPU workload. Neither provides
+a verified shortcut to these conditions.
+
+The least graph-changing experiment would retain both ONNX models and FP32,
+with a separately built/sealed OpenCL-capable provider and explicit device and
+actual execution reporting. It must first establish target initialization,
+per-layer CPU fallback and transfer costs, supported context policy, and bounded
+concurrent Xiaoge submissions. Kernel tuning/warm-up must be included in the
+resource assessment. The existing provider-reuse policy correctly refuses
+provider source changes; it must not be loosened to relabel the old CPU binaries.
+
+Before adoption, compare the same representative inputs through CPU and GPU,
+including tensor errors, decoded classes/masks/geometry, threshold/NMS boundary
+cases and temporal output freshness. Preserve resolution, model, precision,
+thresholds, cadence and expiry. Measure concurrent driving/DM execution tails,
+camera/frame gaps, pose validity, system/process CPU, GPU counters, memory and
+thermal behavior in controlled repeated comparisons, including external-GPU
+fallback if applicable. No current result supplies those measurements.
+
+Per this track's AGENTS instructions, target tests and installation remain
+owner-owned; hosted CPU/ARM/QEMU checks cannot execute the Adreno or prove
+absence of driving delay. No physical device was accessed. Local work was
+limited to source review, model/ELF metadata and retained evidence analysis;
+no functional tests, builds, dependency installs or runtime activation ran.
+Issue #416 remains open. GPU capacity is not established as full or idle.
