@@ -371,7 +371,11 @@ fn full_original_both_modes_all_fields_match_checkout_absent_and_actual_raw_runn
             } else if name == "native_sha256" {
                 assert_eq!(got.to_utf8().unwrap(), pins[1]);
             } else {
-                assert_eq!(got.to_json().unwrap(), want.to_json().unwrap(), "{name}");
+                assert_eq!(
+                    serde_json::from_str::<Value>(&got.to_json().unwrap()).unwrap(),
+                    serde_json::from_str::<Value>(&want.to_json().unwrap()).unwrap(),
+                    "{name}"
+                );
             }
         }
         assert_eq!([hash(&source), hash(&native), hash(&checker)], pins);
