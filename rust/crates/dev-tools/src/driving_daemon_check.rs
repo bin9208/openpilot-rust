@@ -512,7 +512,6 @@ fn expected(response: String, required: &str) -> Result<()> {
     }
 }
 fn write_params(directory: &Path) -> Result<()> {
-    fs::create_dir(directory)?;
     let mut message = capnp::message::Builder::new_default();
     message
         .init_root::<car_params::Builder<'_>>()
@@ -636,6 +635,9 @@ fn scenario(
     let params_root = destination.join("params");
     fs::create_dir(&params_root)?;
     let parameters = params_root.join(&prefix);
+    // Match the original checker: establish the real namespace directory before
+    // modeld starts, so Params does not create its own symlink at this path.
+    fs::create_dir(&parameters)?;
     let mut env = vec![
         (OsString::from("OPENPILOT_PREFIX"), OsString::from(&prefix)),
         (
