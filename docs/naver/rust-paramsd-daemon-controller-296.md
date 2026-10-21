@@ -104,3 +104,23 @@ Parent-owned source-policy registrations likely affected are
 `ci_rust_isolation.rs` (new required exact source/native comparison step) and
 `ci_disk_bootstrap.rs` (new guarded Cargo test marker). Keep the existing
 original checker, atomic gate test and five original pytest cases.
+
+## Native success receipt requires sealed original agreement (2026-10-21)
+
+The native controller now calls a fallible independent comparator before writing
+each phase receipt, and repeats the complete comparison before its top-level
+success receipt. The expected input and 1,210 source publications come only from
+the original-only ba5def0 capture in Actions run 39510538880, job 118930155954,
+artifact 12305212845. The compressed observations and all original raw hashes
+are recorded in `rust/crates/dev-tools/tests/fixtures/paramsd-daemon-original/README.md`.
+Native output is never used to construct expected source values.
+
+The complete parsed input remains exact, including packet bytes and service
+order. The restart seed permits only its validated Event.logMonoTime word to
+vary; every other serialized seed byte remains exact. Publication comparison
+retains the original Event/debug numeric policy. GPS, persistence, all packet
+journal entries, gate, signal, exit, cancellation and bounded shutdown remain
+required. Corruption tests include input changes, a sub-tolerance one-bit seed
+float change, framing, saved state, GPS and phase receipt changes. Fresh cloud
+validation of this change is pending; the original Python comparator and
+fixture helpers are still retained.

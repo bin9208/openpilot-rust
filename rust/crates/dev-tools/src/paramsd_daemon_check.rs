@@ -477,16 +477,28 @@ fn phase(
     fs::write(output.join("gps.json"), &gps)?;
     fs::write(output.join("saved.bin"), &saved)?;
     fs::write(output.join("packets.json"), serde_json::to_vec(&packets)?)?;
+    let report = json!({
+        "pass":true,"case":case.name,"publications":packets.len(),"native_executable":executable,
+        "persisted_packet_index":persisted_index,"gps_service":case.gps,
+        "signal":if restart {15} else {2},"exit":exit,"shutdown_seconds":shutdown_seconds,
+        "no_python_runtime":true,"startup_poll":gate.report(),
+        "input_queued_before_release":gate.report().input_queued_before_release,
+        "batches_queued_before_release":gate.report().batches_queued_before_release,
+    });
+    openpilot_dev_tools::paramsd_daemon_reference::compare_phase_before_receipt(
+        &case.name,
+        if restart {
+            &options.restart_input
+        } else {
+            &options.continuous_input
+        },
+        &output,
+        &report,
+    )?;
+    signals.check()?;
     fs::write(
         output.join("result.json"),
-        serde_json::to_vec_pretty(&json!({
-            "pass":true,"case":case.name,"publications":packets.len(),"native_executable":executable,
-            "persisted_packet_index":persisted_index,"gps_service":case.gps,
-            "signal":if restart {15} else {2},"exit":exit,"shutdown_seconds":shutdown_seconds,
-            "no_python_runtime":true,"startup_poll":gate.report(),
-            "input_queued_before_release":gate.report().input_queued_before_release,
-            "batches_queued_before_release":gate.report().batches_queued_before_release,
-        }))?,
+        serde_json::to_vec_pretty(&report)?,
     )?;
     Ok(saved)
 }
@@ -539,6 +551,14 @@ pub fn run(options: &Options) -> Result<()> {
             "unchanged_after_run":true
         }))?,
     )?;
+    openpilot_dev_tools::paramsd_daemon_reference::compare_before_receipt(
+        &options.evidence,
+        &options.daemon,
+        &options.library,
+        &options.continuous_input,
+        &options.restart_input,
+    )?;
+    signals.check()?;
     fs::write(
         options.evidence.join("result.json"),
         serde_json::to_vec_pretty(&json!({
@@ -546,7 +566,7 @@ pub fn run(options: &Options) -> Result<()> {
             "continuous_publications":1202,
             "restart_publications":8,
             "native_source_inputs_unchanged":true,
-            "source_comparison":"pending independent original comparator"
+            "source_comparison":"sealed unchanged original; all 1210 publications verified"
         }))?,
     )?;
     Ok(())

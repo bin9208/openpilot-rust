@@ -228,6 +228,8 @@ pub mod encoder_target_check;
 #[cfg(feature = "camera-sensor-native")]
 pub mod encoder_v4l_check;
 
+#[cfg(feature = "paramsd-daemon-native")]
+pub mod paramsd_daemon_reference;
 #[cfg(feature = "paramsd-fixture-native")]
 pub mod paramsd_fixture_generate;
 #[cfg(feature = "paramsd-fixture-native")]

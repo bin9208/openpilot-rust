@@ -3253,7 +3253,7 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-daemon-native --bin check-paramsd-daemon-native --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-daemon-native --test paramsd_daemon_check --locked
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-daemon-native --lib --test paramsd_daemon_check --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           mkdir -p "$proof"
           git rev-parse HEAD > "$proof/SOURCE_COMMIT"
