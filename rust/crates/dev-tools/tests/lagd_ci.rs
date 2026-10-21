@@ -84,12 +84,26 @@ fn validate(workflow: &Value) -> Result<(), String> {
     mandatory(job)?;
     let baseline = original();
     let old = &baseline["job"];
-    for key in ["name", "runs-on", "timeout-minutes", "env"] {
+    for key in ["name", "runs-on", "timeout-minutes"] {
         require(
             job[key] == old[key],
             "unrelated estimation job metadata/environment changed",
         )?;
     }
+    // #438 changes only these two debug-output settings. Every original
+    // environment entry and every other job metadata field stays exact.
+    let mut expected_env = old["env"].clone();
+    for key in ["CARGO_PROFILE_DEV_DEBUG", "CARGO_PROFILE_TEST_DEBUG"] {
+        require(
+            expected_env.get(key).is_none(),
+            "frozen debug baseline changed",
+        )?;
+        expected_env[key] = "0".into();
+    }
+    require(
+        job["env"] == expected_env,
+        "unrelated estimation environment or bounded debug settings changed",
+    )?;
     let steps = job["steps"].as_array().ok_or("missing estimation steps")?;
     let eigen = steps
         .iter()
@@ -348,6 +362,19 @@ fn six_native_lagd_checkers_full_references_and_existing_estimators_are_mandator
 fn missing_native_tools_tests_guards_or_unrelated_gates_cannot_pass() {
     let current = workflow();
     validate(&current).unwrap();
+    for key in ["CARGO_PROFILE_DEV_DEBUG", "CARGO_PROFILE_TEST_DEBUG"] {
+        for value in [Value::Null, Value::String("1".into())] {
+            let mut changed = current.clone();
+            changed["jobs"]["estimation-runtime"]["env"][key] = value;
+            assert!(validate(&changed).is_err(), "accepted changed {key}");
+        }
+    }
+    let mut changed = current.clone();
+    changed["jobs"]["estimation-runtime"]["env"]["UNRELATED_OVERRIDE"] = "1".into();
+    assert!(
+        validate(&changed).is_err(),
+        "accepted unrelated environment override"
+    );
     let steps = current["jobs"]["estimation-runtime"]["steps"]
         .as_array()
         .unwrap();
