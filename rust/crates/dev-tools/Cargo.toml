@@ -1605,6 +1605,10 @@ required-features = ["logmessaged-startup-native"]
 name = "logmessaged_startup_reference"
 required-features = ["logmessaged-startup-native"]
 
+[[test]]
+name = "logmessaged_startup_retirement"
+required-features = ["logmessaged-startup-native"]
+
 [[bin]]
 name = "check-bluetooth-journal"
 path = "src/bin/check_bluetooth_journal.rs"
