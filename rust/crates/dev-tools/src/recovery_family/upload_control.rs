@@ -8,7 +8,12 @@ use rustix::process::Signal;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::{
-    ffi::OsString, fs, net::TcpListener, os::unix::fs::PermissionsExt, path::Path, time::Duration,
+    ffi::OsString,
+    fs,
+    net::{IpAddr, Ipv4Addr, TcpListener, UdpSocket},
+    os::unix::fs::{symlink, PermissionsExt},
+    path::Path,
+    time::Duration,
 };
 
 pub struct UploadCorpusConfig<'a> {
@@ -38,6 +43,104 @@ struct UploadNativeInputs<'a> {
     actions_binary: &'a Path,
     process_child: &'a Path,
     output: &'a Path,
+}
+
+fn seed_frozen_params(root: &Path, captured_source: &Value) -> Result<()> {
+    let session = &captured_source["source_requests"][0];
+    if session["path"] != "/api/v1/session" {
+        return Err("frozen upload source session request changed".into());
+    }
+    let params = root.join("params/d");
+    fs::create_dir_all(&params)?;
+    for (key, field, value) in [
+        ("CarName", "car_name", "owned 차량"),
+        ("GitBranch", "git_branch", "feature/owned"),
+        ("GithubUsername", "github_id", "owned"),
+        ("GitRemote", "git_remote", "git@github.com:owned/repo.git"),
+        ("GitCommit", "git_commit", "0123456789abcdef"),
+        ("DongleId", "dongle_id", "owned-device"),
+        ("HardwareSerial", "device_serial", "owned-serial"),
+    ] {
+        if session["body"][field] != value {
+            return Err(format!("frozen upload source Params field changed: {field}").into());
+        }
+        fs::write(params.join(key), value)?;
+    }
+    symlink("params", root.join("fixture-params"))?;
+    Ok(())
+}
+
+// The original capture and replay ran on different hosts. Only the UDP-selected
+// private IPv4 in these three metadata fields is host-dependent; all remaining
+// request bytes and field order are still compared against the original.
+fn projected_requests(requests: &[Value]) -> Result<(Vec<Value>, Option<String>)> {
+    let mut projected = requests.to_vec();
+    let mut selected_ip: Option<String> = None;
+    for request in &mut projected {
+        let path = request["path"]
+            .as_str()
+            .ok_or("missing upload request path")?
+            .to_owned();
+        let body = request
+            .get_mut("body")
+            .ok_or("missing upload request body")?;
+        let field = if path == "/api/v1/session" {
+            body.as_object_mut()
+                .and_then(|fields| fields.get_mut("local_ip"))
+        } else if matches!(path.as_str(), "/api/v1/tmux/upload" | "/logs") {
+            body.as_array_mut()
+                .and_then(|parts| parts.iter_mut().find(|part| part["name"] == "local_ip"))
+                .and_then(|part| part.get_mut("text"))
+        } else {
+            None
+        };
+        if let Some(field) = field {
+            let raw = field.as_str().ok_or("invalid upload local_ip field")?;
+            let ip: Ipv4Addr = raw.parse()?;
+            if !ip.is_private() || selected_ip.as_deref().is_some_and(|old| old != raw) {
+                return Err("upload metadata local_ip changed within one replay".into());
+            }
+            selected_ip = Some(raw.to_owned());
+            *field = Value::String("<private-ip>".into());
+        }
+    }
+    Ok((projected, selected_ip))
+}
+
+fn requests_match_with_route(
+    expected: &[Value],
+    observed: &[Value],
+    route_ip: &str,
+) -> Result<bool> {
+    let (source, source_ip) = projected_requests(expected)?;
+    let (native, native_ip) = projected_requests(observed)?;
+    Ok(source == native
+        && source_ip.is_some() == native_ip.is_some()
+        && native_ip.as_deref().is_none_or(|ip| ip == route_ip))
+}
+
+fn current_route_ip() -> Result<String> {
+    let socket = UdpSocket::bind("0.0.0.0:0")?;
+    socket.connect("8.8.8.8:80")?;
+    match socket.local_addr()?.ip() {
+        IpAddr::V4(ip) if ip.is_private() => Ok(ip.to_string()),
+        _ => Err("recovery upload route has no private IPv4 address".into()),
+    }
+}
+
+fn requests_match_original(
+    expected: &[Value],
+    observed: &[Value],
+) -> Result<(bool, Option<String>)> {
+    let route_ip = if expected.is_empty() {
+        None
+    } else {
+        Some(current_route_ip()?)
+    };
+    Ok((
+        requests_match_with_route(expected, observed, route_ip.as_deref().unwrap_or_default())?,
+        route_ip,
+    ))
 }
 
 fn run_http_action(
@@ -135,14 +238,15 @@ fn run_http_action(
         .map(upload_wire::normalized)
         .collect::<Result<Vec<_>>>()?;
     let capture = fs::read(output.join("tmux.log"))?;
+    let (requests_match, route_ip) = requests_match_original(expected_requests, &requests)?;
     let pass = status == 200
         && actual == row["source"]
-        && requests.as_slice() == expected_requests.as_slice()
+        && requests_match
         && recipient.pending_replies()? == 0
         && capture == b"owned capture\xef\xbf\xbd\n";
     let receipt = json!({"scenario":name,"source":row["source"],"native":actual,
         "source_requests":expected_requests,"native_requests":requests,"http_status":status,
-        "exit":exit,"capture_sha256":format!("{:x}",Sha256::digest(&capture)),"capture_len":capture.len(),"pass":pass});
+        "exit":exit,"capture_sha256":format!("{:x}",Sha256::digest(&capture)),"capture_len":capture.len(),"measured_route_ip":route_ip,"pass":pass});
     fs::write(
         output.join("comparison.json"),
         serde_json::to_vec_pretty(&receipt)?,
@@ -386,11 +490,13 @@ fn run_native_upload_cases(config: &UploadNativeInputs<'_>, rows: &[Value]) -> R
             .map(upload_wire::normalized)
             .collect::<Result<Vec<_>>>()?;
         let actual: Value = serde_json::from_slice(&rerun.stdout)?;
+        let (requests_match, route_ip) =
+            requests_match_original(expected_requests, &observed_requests)?;
         let matching = rerun.code == 0
             && actual == row["source"]
-            && observed_requests.as_slice() == expected_requests.as_slice()
+            && requests_match
             && recipient.pending_replies()? == 0;
-        direct_rows.push(json!({"scenario":name,"source":row["source"],"native":actual,"source_requests":expected_requests,"native_requests":observed_requests,"exit":rerun.code}));
+        direct_rows.push(json!({"scenario":name,"source":row["source"],"native":actual,"source_requests":expected_requests,"native_requests":observed_requests,"exit":rerun.code,"measured_route_ip":route_ip}));
         fs::write(
             config.output.join("direct-native.json"),
             serde_json::to_vec_pretty(&direct_rows)?,
@@ -444,6 +550,7 @@ pub fn run_upload_frozen(
             return Err(format!("frozen upload HTTP source changed: {name}").into());
         }
     }
+    seed_frozen_params(config.output, &http[0])?;
     let inputs = UploadNativeInputs {
         repository: config.repository,
         candidate: config.candidate,
@@ -493,6 +600,27 @@ fn require_frozen_upload_source(source: &Pin) -> Result<()> {
 #[cfg(test)]
 mod frozen_source_tests {
     use super::*;
+
+    #[test]
+    fn host_ip_projection_keeps_all_other_upload_fields_exact() {
+        let expected = vec![
+            json!({"path":"/api/v1/session","body":{"local_ip":"10.1.1.218","deviceId":"owned-device"}}),
+            json!({"path":"/logs","body":[{"name":"local_ip","text":"10.1.1.218"},{"name":"dongle_id","text":"owned-device"}]}),
+        ];
+        let mut observed = expected.clone();
+        observed[0]["body"]["local_ip"] = json!("10.1.0.178");
+        observed[1]["body"][0]["text"] = json!("10.1.0.178");
+        assert!(requests_match_with_route(&expected, &observed, "10.1.0.178").unwrap());
+        assert!(!requests_match_with_route(&expected, &observed, "10.1.0.179").unwrap());
+        observed[1]["body"][1]["text"] = json!("different-device");
+        assert!(!requests_match_with_route(&expected, &observed, "10.1.0.178").unwrap());
+        observed[1]["body"][1]["text"] = json!("owned-device");
+        observed[1]["body"][0]["text"] = json!("10.1.0.179");
+        assert!(requests_match_with_route(&expected, &observed, "10.1.0.178").is_err());
+        observed[1]["body"][0]["text"] = json!("8.8.8.8");
+        assert!(requests_match_with_route(&expected, &observed, "10.1.0.178").is_err());
+    }
+
     #[test]
     fn changed_source_cannot_admit_old_upload_observations() {
         let temp = tempfile::tempdir().unwrap();

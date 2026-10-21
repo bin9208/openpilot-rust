@@ -88,7 +88,6 @@ pub(super) fn frozen_bare(output: &Path) -> Result<PathBuf> {
     const INITIAL_TREE: &str = "91251e1e364089d034ee30a48f18b10b79527ca1";
     const ADVANCED_TREE: &str = "9cd82ef0b2511f642255f0a2b066bd7529557f4d";
     let bare = output.join("source-data.git");
-    fs::create_dir(output)?;
     git(
         output,
         &[
