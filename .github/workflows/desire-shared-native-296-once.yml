@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
-      EXPECTED_SOURCE: 3e4011cc3b9f62445a04c608f84c0f6badd6e2d3
+      EXPECTED_SOURCE: 80adc74bd80621f3a3dea0c6a349ad85d1952cf2
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
@@ -22,7 +22,7 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 3e4011cc3b9f62445a04c608f84c0f6badd6e2d3
+        ref: 80adc74bd80621f3a3dea0c6a349ad85d1952cf2
         persist-credentials: false
     - name: Require exact actual-deleted checkout and native tools
       run: 'set -euo pipefail
@@ -63,7 +63,7 @@ jobs:
 
         export DESIRE_REFERENCE_PROBE="$GITHUB_WORKSPACE/rust/target/debug/examples/desire_probe"
 
-        export DESIRE_REFERENCE_EXPECT_ABSENT=0
+        unset DESIRE_REFERENCE_EXPECT_ABSENT
 
         export DESIRE_REFERENCE_RETIREMENT_OUTPUT="$proof/retirement"
 
