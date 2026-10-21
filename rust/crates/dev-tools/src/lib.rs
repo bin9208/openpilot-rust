@@ -83,6 +83,8 @@ pub mod dbc_generator;
 pub mod filter_reference;
 pub mod journald_check;
 pub mod journald_fixture;
+#[cfg(all(unix, feature = "kalman-corpus-generator-native"))]
+pub mod kalman_corpus_generator;
 #[cfg(feature = "kalman-model-generator-native")]
 pub mod kalman_model_generator;
 #[cfg(feature = "logmessaged-startup-native")]
@@ -329,7 +331,11 @@ pub mod lagd_loop_reference;
 pub mod lagd_numeric_cases;
 #[cfg(feature = "lagd-tools-native")]
 pub mod lagd_packet_reference;
-#[cfg(any(feature = "lagd-tools-native", feature = "driving-daemon-native"))]
+#[cfg(any(
+    feature = "lagd-tools-native",
+    feature = "driving-daemon-native",
+    feature = "kalman-corpus-generator-native"
+))]
 pub mod lagd_random;
 #[cfg(feature = "lagd-tools-native")]
 pub mod lagd_reference;

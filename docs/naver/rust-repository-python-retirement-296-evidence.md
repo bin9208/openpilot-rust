@@ -5749,3 +5749,26 @@ Panda-enabled source-contract build and exposes missing hosted capnp dependencie
 These are diagnostic recipe prerequisites, not numerical acceptance failures;
 both failures remain recorded and neither deleted generator is accepted yet.
 The recipe now installs capnproto/libcapnp-dev/libzmq3-dev before that build.
+
+### Next development corpus candidate, not accepted retirement (2026-10-22)
+
+Two feature-gated native corpus CLIs retain Pose16/Car24 PCG64 draw order,
+including discarded Pose row0 draws and sequential Car globals, and evaluate
+through the explicitly supplied **original C++** libpose/libcar provider. No
+native candidate equation supplies an expected value. The private FFI module
+holds header/library files, validates every closed ABI prototype and exact
+input/output width, keeps the Library alive, and serializes all load/set/call/
+verify/drop operations across this process because Car setters use shared globals.
+Existing libloading0.8.9 is directly locked without other dependency changes.
+Dev-tools keeps unsafe denied by default and limits its allow to this private
+provider boundary; unsafe operations in unsafe functions remain denied.
+
+CLI paths retain raw Unix bytes; parse errors exit2 and runtime errors exit1.
+Generation validates/evaluates before atomic publication. An existing output
+symlink is deliberately rejected before provider load, preserving its target;
+this is an explicit difference from Python's symlink-following write behavior,
+not an assertion of full filesystem parity. Pending hosted controls compare all
+original input bits, full key/function order and complete fresh C++ output bits;
+raw JSON equality is recorded separately and is not yet established. Both Python
+corpus commands and original C++ builders/model definitions remain present and
+pending. No inventory count changes for these candidates.

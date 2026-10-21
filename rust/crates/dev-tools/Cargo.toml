@@ -539,6 +539,7 @@ required-features = ["manager-catalog-tools-native"]
 
 [features]
 kalman-model-generator-native = []
+kalman-corpus-generator-native = ["dep:libloading", "dep:openpilot-runtime-core", "serde_json/float_roundtrip"]
 ci-receipt-metadata-native = []
 beep-reference-native = ["dep:zmq", "serde_json/float_roundtrip"]
 updated-fixture-native = []
@@ -711,10 +712,14 @@ path = "src/bin/check_ui_updater_handshake.rs"
 name = "check-hardware-command"
 path = "src/bin/check_hardware_command.rs"
 
-[lints]
-workspace = true
+# Keep unsafe denied across tools; only the reviewed C++ oracle loader module
+# permits the explicit FFI calls needed by kalman-corpus-generator-native.
+[lints.rust]
+unsafe_code = "deny"
+unsafe_op_in_unsafe_fn = "deny"
 
 [dependencies]
+libloading = { version = "=0.8.9", optional = true }
 openpilot-messaging = { path = "../messaging", default-features = false, optional = true }
 brotli = { version = "=8.0.2", optional = true }
 p256 = { version = "=0.13.2", features = ["ecdsa", "pem"], optional = true }
@@ -2104,3 +2109,17 @@ required-features = ["kalman-model-generator-native"]
 [[test]]
 name = "kalman_model_generator"
 required-features = ["kalman-model-generator-native"]
+
+[[bin]]
+name = "generate-pose-corpus"
+path = "src/bin/generate_pose_corpus.rs"
+required-features = ["kalman-corpus-generator-native"]
+
+[[bin]]
+name = "generate-car-corpus"
+path = "src/bin/generate_car_corpus.rs"
+required-features = ["kalman-corpus-generator-native"]
+
+[[test]]
+name = "kalman_corpus_generator"
+required-features = ["kalman-corpus-generator-native"]
