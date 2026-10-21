@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 490);
+    assert_eq!(text.matches(marker).count(), 493);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -334,6 +334,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut pandad_padding_controller = vec![];
     let mut pandad_padding_finalization = vec![];
     let mut pandad_device_controller = vec![];
+    let mut panda_orchestration_retirement = vec![];
     let mut modem_helper_lifetime = vec![];
     let mut jetlink_owner = vec![];
     let mut recording_partial_write = vec![];
@@ -344,6 +345,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 .iter()
                 .rev()
                 .find(|line| line.starts_with("      - name:"));
+            if step == Some(&"      - name: Require native Panda orchestration, original admissions and absent-source comparisons") {
+                panda_orchestration_retirement.push(tail.to_owned());
+                continue;
+            }
             if step == Some(&"      - name: Verify native desire controller while retaining the shared original driving oracle") {
                 desire_controller_retirement.push(tail.to_owned());
                 continue;
@@ -859,6 +864,15 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             }
         }
     }
+    assert_eq!(
+        panda_orchestration_retirement,
+        [
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 1024",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 1024",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 4096",
+        ]
+    );
+
     // The removed camera pip install and Cython build had 512/1024 MiB
     // guards. Native camera operations retain every required reserve.
     assert_eq!(arguments.len(), 177);
