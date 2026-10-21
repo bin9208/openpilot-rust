@@ -560,6 +560,7 @@ desire-reference-native = ["serde_json/float_roundtrip"]
 panda-ci-native = ["serde_json/float_roundtrip", "dep:openpilot-runtime-version"]
 pandad-safety-padding-native = []
 pandad-device-native = []
+pandad-protocol-native = []
 logmessaged-startup-native = ["stats-daemon-native"]
 bluetooth-files-native = []
 soundd-daemon-native = ["serde_json/float_roundtrip", "dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri"]
@@ -1933,3 +1934,16 @@ required-features = ["driving-daemon-native"]
 name = "check-driver-daemon"
 path = "src/bin/check_driver_daemon.rs"
 required-features = ["driver-daemon-native"]
+
+[[bin]]
+name = "check-pandad-protocol"
+path = "src/bin/check_pandad_protocol.rs"
+required-features = ["pandad-protocol-native"]
+
+[[test]]
+name = "pandad_protocol_check"
+required-features = ["pandad-protocol-native"]
+
+[[test]]
+name = "pandad_protocol_reference"
+required-features = ["pandad-protocol-native"]

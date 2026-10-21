@@ -229,6 +229,11 @@ fn source_paths(root: &Path) -> Result<BTreeSet<PathBuf>> {
         "bin/stage_json11.rs",
         "bin/check_pandad_safety_padding.rs",
         "pandad_safety_padding_check/ownership.rs",
+        "bin/check_pandad_device.rs",
+        "pandad_device_check/ownership.rs",
+        "bin/check_pandad_protocol.rs",
+        "pandad_protocol_check/cases.rs",
+        "pandad_protocol_check/ownership.rs",
     ] {
         paths.insert(PathBuf::from("rust/crates/dev-tools/src").join(name));
     }

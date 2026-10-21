@@ -164,6 +164,11 @@ fn source_paths(root: &Path) -> BTreeSet<PathBuf> {
         "bin/stage_json11.rs",
         "bin/check_pandad_safety_padding.rs",
         "pandad_safety_padding_check/ownership.rs",
+        "bin/check_pandad_device.rs",
+        "pandad_device_check/ownership.rs",
+        "bin/check_pandad_protocol.rs",
+        "pandad_protocol_check/cases.rs",
+        "pandad_protocol_check/ownership.rs",
     ] {
         paths.insert(PathBuf::from("rust/crates/dev-tools/src").join(name));
     }
@@ -277,7 +282,18 @@ fn prepare_private_root(repo: &Path, private: &Path, expect_absent: bool) -> Val
     assert!(expected.contains(RETIRED[0]));
     assert!(!expected.contains("rust/crates/dev-tools/src/python_fs.rs"));
     let mut current_names = expected.clone();
-    current_names.insert("rust/crates/dev-tools/src/python_fs.rs".into());
+    // Explicit extensions to the immutable historical source roster.
+    for name in [
+        "python_fs.rs",
+        "bin/check_pandad_device.rs",
+        "pandad_device_check/ownership.rs",
+        "pandad_protocol_check.rs",
+        "bin/check_pandad_protocol.rs",
+        "pandad_protocol_check/cases.rs",
+        "pandad_protocol_check/ownership.rs",
+    ] {
+        assert!(current_names.insert(format!("rust/crates/dev-tools/src/{name}")));
+    }
     current_names.insert("rust/crates/pandad/Cargo.toml".into());
     if expect_absent {
         current_names.remove(RETIRED[0]);
@@ -312,7 +328,7 @@ fn prepare_private_root(repo: &Path, private: &Path, expect_absent: bool) -> Val
         .map(|(name, hash)| (name.clone(), hash.clone()))
         .collect::<BTreeMap<_, _>>();
     assert_eq!(copied, expected_copied);
-    assert_eq!(copied.len(), 152);
+    assert_eq!(copied.len(), 158);
     openpilot_disk_space::inspect(private, 2 * GIB)
         .unwrap()
         .require()
