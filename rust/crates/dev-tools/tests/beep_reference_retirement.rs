@@ -98,16 +98,24 @@ fn audit_exec(trace: &Path, checker: &Path, candidate: &Path, argv: &[String]) -
     records
 }
 
+struct LaneInputs<'a> {
+    checker: &'a Path,
+    candidate: &'a Path,
+    original: &'a Path,
+    original_hash: &'a str,
+}
+
 fn run_lane(
     lane: &str,
     root: &Path,
     checker_absent: bool,
     proof: &Path,
-    checker: &Path,
-    candidate: &Path,
-    original: &Path,
-    original_hash: &str,
+    inputs: &LaneInputs<'_>,
 ) -> Result<Value> {
+    let checker = inputs.checker;
+    let candidate = inputs.candidate;
+    let original = inputs.original;
+    let original_hash = inputs.original_hash;
     let output = proof.join(format!("{lane}-output"));
     let trace = proof.join(format!("{lane}.exec"));
     let mut argv = vec![
@@ -209,28 +217,14 @@ fn same_elf_present_or_deleted_checkout_and_private_absent_roots_match_original_
     ]);
     let private = tempfile::tempdir().unwrap();
     private_root(&repo, private.path());
-    let checkout = run_lane(
-        "checkout",
-        &repo,
-        expected_absent,
-        &proof,
-        &checker,
-        &candidate,
-        &original,
-        &original_hash,
-    )
-    .unwrap();
-    let absent_lane = run_lane(
-        "private",
-        private.path(),
-        true,
-        &proof,
-        &checker,
-        &candidate,
-        &original,
-        &original_hash,
-    )
-    .unwrap();
+    let inputs = LaneInputs {
+        checker: &checker,
+        candidate: &candidate,
+        original: &original,
+        original_hash: &original_hash,
+    };
+    let checkout = run_lane("checkout", &repo, expected_absent, &proof, &inputs).unwrap();
+    let absent_lane = run_lane("private", private.path(), true, &proof, &inputs).unwrap();
     assert_eq!(checkout, absent_lane);
     for (name, digest) in &current_elf {
         assert_eq!(sha(Path::new(name)), *digest, "ELF changed: {name}");
