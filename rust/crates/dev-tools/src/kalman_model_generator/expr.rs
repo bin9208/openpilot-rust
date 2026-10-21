@@ -157,6 +157,31 @@ impl Expressions {
         self.intern(Node::Sqrt(value))
     }
 
+    // For a denominator such as mass * speed, keep the state-independent
+    // factor outside the squared varying factor. The frozen generated model
+    // does the same cancellation; without it, mass=0 evaluates as 0/0.
+    fn constant_times_varying(
+        &mut self,
+        denominator: Id,
+        state_index: usize,
+    ) -> Option<(Id, Id, Id)> {
+        let Node::Mul(parts) = self.nodes[denominator].clone() else {
+            return None;
+        };
+        let mut constant = Vec::new();
+        let mut varying = None;
+        for part in parts {
+            let derivative = self.derivative(part, state_index);
+            if self.is_zero(derivative) {
+                constant.push(part);
+            } else if varying.replace((part, derivative)).is_some() {
+                return None;
+            }
+        }
+        let (variable, derivative) = varying?;
+        Some((self.mul(constant), variable, derivative))
+    }
+
     pub(super) fn derivative(&mut self, id: Id, state_index: usize) -> Id {
         if let Some(&cached) = self.derivatives.get(&(id, state_index)) {
             return cached;
@@ -186,11 +211,26 @@ impl Expressions {
             Node::Div(top, bottom) => {
                 let d_top = self.derivative(top, state_index);
                 let d_bottom = self.derivative(bottom, state_index);
-                let left = self.mul([d_top, bottom]);
-                let right = self.mul([top, d_bottom]);
-                let numerator = self.sub(left, right);
-                let denominator = self.powi(bottom, 2);
-                self.div(numerator, denominator)
+                if self.is_zero(d_bottom) {
+                    self.div(d_top, bottom)
+                } else if self.is_zero(d_top) {
+                    let (right, denominator) = if let Some((constant, variable, derivative)) =
+                        self.constant_times_varying(bottom, state_index)
+                    {
+                        let squared = self.powi(variable, 2);
+                        (self.mul([top, derivative]), self.mul([constant, squared]))
+                    } else {
+                        (self.mul([top, d_bottom]), self.powi(bottom, 2))
+                    };
+                    let negative = self.neg(right);
+                    self.div(negative, denominator)
+                } else {
+                    let left = self.mul([d_top, bottom]);
+                    let right = self.mul([top, d_bottom]);
+                    let numerator = self.sub(left, right);
+                    let denominator = self.powi(bottom, 2);
+                    self.div(numerator, denominator)
+                }
             }
             Node::PowI(base, exponent) => {
                 let factor = self.constant(f64::from(exponent));

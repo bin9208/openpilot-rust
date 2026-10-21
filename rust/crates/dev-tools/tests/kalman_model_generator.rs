@@ -219,6 +219,29 @@ fn pose_asin_jacobian_tracks_a_nonsingular_pitch_perturbation() {
 }
 
 #[test]
+fn car_zero_speed_jacobian_retains_frozen_original_infinity() {
+    let sample = corpus(Model::Car).remove(1);
+    let mut state = sample.state;
+    let globals = sample.globals.unwrap();
+    state[4] = 0.0;
+    let [mass, _, center_to_front, center_to_rear, stiffness_front, stiffness_rear] =
+        <[f64; 6]>::try_from(globals.as_slice()).unwrap();
+    // F_fun[45] from the independently frozen original generated module.
+    let original = sample.dt
+        * (stiffness_front * (-state[2] - state[3] + state[7]) / (mass * state[1])
+            + (-stiffness_front - stiffness_rear) * state[5] / (mass * state[4])
+            + (-center_to_front * stiffness_front + center_to_rear * stiffness_rear) * state[6]
+                / (mass * state[4]));
+    assert!(original.is_infinite() && original.is_sign_negative());
+    let actual =
+        evaluate_all(Model::Car, &state, &globals, sample.dt).unwrap()["transition_jacobian"][45];
+    assert!(
+        actual.is_infinite() && actual.is_sign_negative(),
+        "frozen original {original}, native {actual}"
+    );
+}
+
+#[test]
 fn output_option_preserves_raw_path_and_last_value() {
     let raw_path = OsString::from_vec(b"/tmp/model-\xff".to_vec());
     let selected = output_argument(

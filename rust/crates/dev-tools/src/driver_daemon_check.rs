@@ -504,7 +504,10 @@ fn compare_value(expected: &Value, observed: &Value, path: &str) -> Result<usize
                     && right.is_finite()
                     && (left - right).abs() <= tolerance * left.abs().max(right.abs()).max(1.0)))
             {
-                return Err(format!("{path}: original driver float changed").into());
+                return Err(format!(
+                    "{path}: original driver float changed: expected={left:?}, observed={right:?}, tolerance={tolerance}, absolute_difference={:?}",
+                    (left - right).abs()
+                ).into());
             }
             Ok(1)
         }
