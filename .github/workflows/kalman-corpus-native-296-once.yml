@@ -1,0 +1,120 @@
+name: 296 fresh original C++ corpus native comparison
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/kalman-corpus-native-296-once.yml
+permissions:
+  contents: read
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
+  CARGO_BUILD_JOBS: '2'
+  CARGO_INCREMENTAL: '0'
+  CARGO_PROFILE_DEV_DEBUG: '0'
+  CARGO_PROFILE_TEST_DEBUG: '0'
+  PYTHONDONTWRITEBYTECODE: '1'
+  PYTHONPATH: ${{ github.workspace }}/rednose_repo:${{ github.workspace }}
+jobs:
+  corpus:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: 30f80e2f6d259e8773cd8e0212e3ed0269425f84
+        persist-credentials: false
+    - name: Bind exact source and reserve hosted growth
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = 30f80e2f6d259e8773cd8e0212e3ed0269425f84
+
+        sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends clang libeigen3-dev
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy --component rustfmt
+
+        mkdir "$RUNNER_TEMP/kalman-corpus-native-296"
+
+        git rev-parse HEAD > "$RUNNER_TEMP/kalman-corpus-native-296/SOURCE_COMMIT"
+
+        printf ''%s\n'' "$GITHUB_SHA" > "$RUNNER_TEMP/kalman-corpus-native-296/WORKFLOW_COMMIT"
+
+        '
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Preflight native candidates before oracle work
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/kalman-corpus-native-296"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features kalman-corpus-generator-native
+        --bin generate-pose-corpus --bin generate-car-corpus > "$proof/native-build.log" 2>&1 || { cat "$proof/native-build.log";
+        exit 1; }
+
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features kalman-corpus-generator-native
+        --test kalman_corpus_generator --lib kalman_corpus_generator -- --nocapture > "$proof/native-pure.log" 2>&1 || { cat
+        "$proof/native-pure.log"; exit 1; }
+
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features kalman-corpus-generator-native
+        --test kalman_corpus_generator -- --nocapture > "$proof/native-inputs.log" 2>&1 || { cat "$proof/native-inputs.log";
+        exit 1; }
+
+        cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features kalman-corpus-generator-native
+        --lib --bin generate-pose-corpus --bin generate-car-corpus --test kalman_corpus_generator -- -D warnings > "$proof/native-clippy.log"
+        2>&1 || { cat "$proof/native-clippy.log"; exit 1; }
+
+        '
+    - name: Install original source generator dependencies
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        python -m pip install numpy==2.5.3 sympy==1.14.0 mpmath==1.3.0 cffi==2.1.1 pycparser==3.0 pycapnp==2.1.0 pyzmq==27.2.0
+        requests==2.34.2 pyserial==3.5 zstandard==0.25.0
+
+        '
+    - name: Build actual unchanged C++ models and compare complete original native corpora
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/kalman-corpus-native-296\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$RUNNER_TEMP\" --growth-mib 2048\nmkdir \"$proof/original\" \"$proof/pose-oracle\" \"$proof/car-oracle\"\
+        \ngit ls-files -z -- '*.py' '*.capnp' '*.cc' '*.cpp' '*.h' '*.pyx' '*.pxd' 'rednose_repo/rednose/templates/*' pyproject.toml\
+        \ uv.lock > \"$proof/source-paths.nul\"\nxargs -0 sha256sum < \"$proof/source-paths.nul\" > \"$proof/sources-before.sha256\"\
+        \nfind /usr/include/eigen3 -type f -print0 | sort -z | xargs -0 sha256sum > \"$proof/eigen-before.sha256\"\nsha256sum\
+        \ \"$(readlink -f \"$(command -v clang++)\")\" rust/target/debug/generate-pose-corpus rust/target/debug/generate-car-corpus\
+        \ > \"$proof/executables-before.sha256\"\nclang++ --version > \"$proof/compiler-version.txt\"\ndpkg-query -W libeigen3-dev\
+        \ > \"$proof/eigen-version.txt\"\npython -VV > \"$proof/python-version.txt\"\npython -m pip freeze --all > \"$proof/python-providers.txt\"\
+        \nrun_capture() {\n local label=$1; shift\n printf '%s\\0' \"$@\" > \"$proof/$label.argv.nul\"\n local code=0\n \"\
+        $@\" > \"$proof/$label.stdout\" 2> \"$proof/$label.stderr\" || code=$?\n printf '%s\\n' \"$code\" > \"$proof/$label.exit-status\"\
+        \n if [ \"$code\" -ne 0 ]; then tail -n 100 \"$proof/$label.stdout\" \"$proof/$label.stderr\"; return \"$code\"; fi\n\
+        }\nfor kind in pose car; do\n run_capture \"$kind-source-generator\" python \"openpilot/selfdrive/locationd/models/${kind}_kf.py\"\
+        \ \"$kind\" \"$proof/$kind-oracle\"\n run_capture \"$kind-cpp-compiler\" clang++ -std=c++17 -O2 -shared -fPIC -Irednose_repo\
+        \ -I/usr/include/eigen3 \"$proof/$kind-oracle/$kind.cpp\" -o \"$proof/$kind-oracle/lib$kind.so\"\n ldd \"$proof/$kind-oracle/lib$kind.so\"\
+        \ > \"$proof/$kind-provider-ldd.txt\"\n run_capture \"$kind-original-cli\" python \"rust/tools/generate_${kind}_corpus.py\"\
+        \ --oracle \"$proof/$kind-oracle\" --output \"$proof/original/$kind-original.json\"\ndone\nfind \"$proof/pose-oracle\"\
+        \ \"$proof/car-oracle\" -type f -print0 | sort -z | xargs -0 sha256sum > \"$proof/oracle-before.sha256\"\nawk '$2\
+        \ == \"=>\" && $3 ~ /^\\// { print $3 } $1 ~ /^\\// { print $1 }' \"$proof/pose-provider-ldd.txt\" \"$proof/car-provider-ldd.txt\"\
+        \ | sort -u | xargs sha256sum > \"$proof/provider-dependencies-before.sha256\"\nexport KALMAN_CORPUS_ORIGINAL_ROOT=\"\
+        $proof/original\"\nexport KALMAN_CORPUS_EVIDENCE=\"$proof\"\nexport KALMAN_POSE_BINARY=\"$GITHUB_WORKSPACE/rust/target/debug/generate-pose-corpus\"\
+        \nexport KALMAN_CAR_BINARY=\"$GITHUB_WORKSPACE/rust/target/debug/generate-car-corpus\"\nexport KALMAN_POSE_ORACLE=\"\
+        $proof/pose-oracle\"\nexport KALMAN_CAR_ORACLE=\"$proof/car-oracle\"\nrun_capture complete-native-pair cargo test\
+        \ --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features kalman-corpus-generator-native --test\
+        \ kalman_corpus_generator native_cli_matches_fresh_original_complete_json_bits_and_order -- --ignored --exact --nocapture\n\
+        xargs -0 sha256sum < \"$proof/source-paths.nul\" > \"$proof/sources-after.sha256\"\ncmp \"$proof/sources-before.sha256\"\
+        \ \"$proof/sources-after.sha256\"\nsha256sum -c \"$proof/oracle-before.sha256\" > \"$proof/oracle-after-check.txt\"\
+        \nsha256sum -c \"$proof/eigen-before.sha256\" > \"$proof/eigen-after-check.txt\"\nsha256sum -c \"$proof/executables-before.sha256\"\
+        \ > \"$proof/executables-after-check.txt\"\nsha256sum -c \"$proof/provider-dependencies-before.sha256\" > \"$proof/provider-dependencies-after-check.txt\"\
+        \n"
+    - name: Preserve raw source/provider/output evidence
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: kalman-corpus-native-296
+        path: ${{ runner.temp }}/kalman-corpus-native-296/
+        include-hidden-files: true
+        if-no-files-found: error
