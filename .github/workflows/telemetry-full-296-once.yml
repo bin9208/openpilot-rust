@@ -1,0 +1,324 @@
+name: 296 full telemetry retired beep and library prerequisites
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/telemetry-full-296-once.yml
+permissions:
+  contents: read
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
+jobs:
+  telemetry-runtime:
+    name: rust telemetry runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+      EXPECTED_SOURCE: 6e34f78ae77734dac46967cc605836b950c99db9
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        ref: 6e34f78ae77734dac46967cc605836b950c99db9
+    - name: Admit exact current checkout
+      run: 'test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        '
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - run: rustup toolchain install 1.94.0 --profile minimal --component clippy
+    - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq5
+    - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 sentry-sdk==2.55.0
+        zstandard==0.25.0
+    - name: Configure original telemetry IPC imports
+      run: printf 'PYTHONPATH=%s/telemetry-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+    - name: Build telemetry daemons and source-comparison probes
+      run: 'rustc --version
+
+        cargo --version
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools -p openpilot-runtime-version -p openpilot-beepd
+        -p openpilot-statsd -p openpilot-tombstoned -p openpilot-logmessaged --features openpilot-dev-tools/version-tools-native,openpilot-dev-tools/tombstone-live-native,openpilot-dev-tools/sdk-transport-native,openpilot-dev-tools/beep-reference-native
+        --bins --examples --locked
+
+        '
+    - name: Verify metadata error transport ownership across calls and threads
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-logging --test runtime_producer --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-logging --test retained_facade --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-runtime-version --test error_log_lifetime --locked
+
+        '
+    - name: Build current native dependency stager
+      uses: ./.github/actions/native-json11
+    - name: Build original telemetry message and Params bindings
+      run: 'python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/telemetry-msgq-python"
+
+        python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/telemetry-params-binding"
+
+        '
+    - name: Compare cached Git metadata and actual collector delivery
+      run: 'export TOMBSTONE_PROBE_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/tombstone_trace"
+
+        test -x "$TOMBSTONE_PROBE_BINARY"
+
+        export BEEP_REFERENCE_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/beep_trace"
+
+        beep_bindings=("$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so)
+
+        test "${#beep_bindings[@]}" -eq 1
+
+        export BEEP_REFERENCE_BINDING="${beep_bindings[0]}"
+
+        export BEEP_REFERENCE_ORIGINAL="$GITHUB_WORKSPACE/rust/crates/dev-tools/tests/fixtures/beep-reference/3835653-original"
+
+        export BEEP_REFERENCE_ORIGINAL_MANIFEST_SHA256=0a02d6aacb5b930012a47886c389571d9cf3ff404ecd796171045f10734a9188
+
+        export BEEP_REFERENCE_EVIDENCE="$RUNNER_TEMP/telemetry-runtime/beep-native-test"
+
+        export BEEP_REFERENCE_CHECKER_BINARY="$GITHUB_WORKSPACE/rust/target/debug/check-beep-reference"
+
+        export BEEP_REFERENCE_RETIREMENT_EVIDENCE="$RUNNER_TEMP/telemetry-runtime/beep-native-retirement"
+
+        export BEEP_REFERENCE_EXPECT_ABSENT=1
+
+        export BEEP_REFERENCE_CHECKER_ABSENT=1
+
+        test ! -e rust/tools/check_beepd_reference.py
+
+        test ! -L rust/tools/check_beepd_reference.py
+
+        export VERSION_PROBE_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/version_trace"
+
+        export VERSION_COLLECTOR_BINARY="$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged"
+
+        export VERSION_WORKER_BINARY="$GITHUB_WORKSPACE/rust/target/debug/version-runtime-worker"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features version-tools-native,tombstone-live-native,sdk-transport-native,beep-reference-native
+        --test version_source --test version_check --test version_collector_check --locked --lib --test beep_reference_check
+        --test beep_reference_retirement
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features version-tools-native,tombstone-live-native,sdk-transport-native,beep-reference-native
+        --lib --bin check-beep-reference --test beep_reference_check --test beep_reference_retirement --bin check-version-reference
+        --bin check-version-collector --bin version-runtime-worker --test version_source --test version_check --test version_collector_check
+        --locked -- -D warnings
+
+        VERSION_EVIDENCE="$RUNNER_TEMP/telemetry-runtime/version-reference" rust/target/debug/check-version-reference "$VERSION_PROBE_BINARY"
+
+        rust/target/debug/check-version-collector "$VERSION_PROBE_BINARY" "$VERSION_COLLECTOR_BINARY" "$RUNNER_TEMP/telemetry-runtime/version-collector"
+
+        rust/target/debug/check-beep-reference --binary "$BEEP_REFERENCE_BINARY" --binding "$BEEP_REFERENCE_BINDING" --original
+        "$BEEP_REFERENCE_ORIGINAL" --original-manifest-sha256 "$BEEP_REFERENCE_ORIGINAL_MANIFEST_SHA256" --output "$RUNNER_TEMP/telemetry-runtime/beep-native-cli"
+
+        '
+    - name: Check source fixture worker error reporting
+      run: python -m unittest discover -s rust/tools/tests -p test_beep_worker_report.py -v
+    - name: Compare alert policy, Params failures and clock conversion
+      run: 'rust/target/debug/build-beep-integer-reference --output "$RUNNER_TEMP/telemetry-integer-reference"
+
+        rust/target/debug/check-beep-integer --binary rust/target/debug/examples/beep_trace --reference "$RUNNER_TEMP/telemetry-integer-reference/beep-integer-reference"
+        --output "$RUNNER_TEMP/telemetry-runtime/beep-integer"
+
+        rust/target/debug/check-beep-clock --binary rust/target/debug/examples/beep_trace --output "$RUNNER_TEMP/telemetry-runtime/beep-clock"
+
+        rust/target/debug/check-beep-sleep --binary rust/target/debug/examples/beep_trace --output "$RUNNER_TEMP/telemetry-runtime/beep-sleep"
+
+        '
+    - name: Compare continuous alert IPC and owned worker shutdown
+      run: python rust/tools/check_beepd_daemon.py --binary rust/target/debug/openpilot-beepd --binding "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so
+        --output "$RUNNER_TEMP/telemetry-runtime/beep-daemon"
+    - name: Compare statistics numeric, clock and producer contracts
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-producer-native --bin check-stats-producer
+        --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        STATS_PRODUCER_CHECKER="$PWD/rust/target/debug/check-stats-producer" STATS_PRODUCER_EXAMPLES="$PWD/rust/target/debug/examples"
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-producer-native --test stats_producer_check
+        --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-producer-native --lib --test
+        stats_producer_check --bin check-stats-producer --locked -- -D warnings
+
+        rust/target/debug/check-stats-numbers --binary rust/target/debug/examples/stats_trace --output "$RUNNER_TEMP/telemetry-runtime/stats-numbers.json"
+
+        rust/target/debug/check-stats-clock rust/target/debug/examples/stats_clock "$RUNNER_TEMP/telemetry-runtime/stats-clock.json"
+
+        rust/target/debug/check-stats-producer rust/target/debug/examples "$RUNNER_TEMP/telemetry-runtime/stats-producer"
+
+        '
+    - name: Compare continuous statistics, real Params and collector failure paths
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-daemon-native --bin check-stats-daemon
+        --bin check-stats-failures --bin check-stats-log-fault --locked
+
+        stats_bindings=("$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so)
+
+        test "${#stats_bindings[@]}" -eq 1
+
+        export STATS_DAEMON_BINDING="${stats_bindings[0]}" STATS_DAEMON_BINARIES="$PWD/rust/target/debug" STATS_DAEMON_CHECKER="$PWD/rust/target/debug/check-stats-daemon"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-daemon-native --test stats_daemon_check
+        --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-daemon-native --lib --test stats_daemon_check
+        --bin check-stats-daemon --bin check-stats-failures --bin check-stats-log-fault --locked -- -D warnings
+
+        rust/target/debug/check-stats-daemon rust/target/debug "$STATS_DAEMON_BINDING" "$RUNNER_TEMP/telemetry-runtime/stats-daemon"
+
+        rust/target/debug/check-stats-failures rust/target/debug "$STATS_DAEMON_BINDING" "$RUNNER_TEMP/telemetry-runtime/stats-failures"
+
+        rust/target/debug/check-stats-log-fault rust/target/debug "$STATS_DAEMON_BINDING" "$RUNNER_TEMP/telemetry-runtime/stats-log-fault"
+
+        '
+    - name: Exercise statistics production startup and shutdown under sustained traffic
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-daemon-native --bin check-stats-runtime
+        --bin check-stats-flood --locked
+
+        export STATS_RUNTIME_BINARIES="$PWD/rust/target/debug"
+
+        export STATS_RUNTIME_CHECKER="$PWD/rust/target/debug/check-stats-runtime"
+
+        export STATS_FLOOD_CHECKER="$PWD/rust/target/debug/check-stats-flood"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-daemon-native --test stats_runtime_check
+        --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-daemon-native --lib --test stats_runtime_check
+        --bin check-stats-runtime --bin check-stats-flood --locked -- -D warnings
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        rust/target/debug/check-stats-runtime rust/target/debug "$RUNNER_TEMP/telemetry-runtime/stats-runtime"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        rust/target/debug/check-stats-flood rust/target/debug "$RUNNER_TEMP/telemetry-runtime/stats-flood"
+
+        '
+    - name: Compare interrupted metric receives with the original daemon
+      run: "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024\ncargo build\
+        \ --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-daemon-native --bin check-stats-interrupted\
+        \ --locked\nfault_root=\"$RUNNER_TEMP/telemetry-runtime/stats-receive-boundary\"\nmkdir -p \"$fault_root\"\ngcc -Wall\
+        \ -Wextra -Werror -O2 -fPIC -DZMQ_LINK_WRAP -c rust/tools/zmq_receive_boundary.c -o \"$fault_root/receive-wrap.o\"\
+        \ngcc -Wall -Wextra -Werror -O2 -fPIC -shared rust/tools/zmq_receive_boundary.c -ldl -o \"$fault_root/receive-preload.so\"\
+        \ncargo rustc --manifest-path rust/Cargo.toml -p openpilot-statsd --example stats_daemon --locked -- -C link-arg=-Wl,--wrap=zmq_msg_recv\
+        \ -C \"link-arg=$fault_root/receive-wrap.o\"\nstats_receive_bindings=(\"$RUNNER_TEMP\"/telemetry-params-binding/params_pyx*.so)\n\
+        test \"${#stats_receive_bindings[@]}\" -eq 1\nexport STATS_INTERRUPTED_BINARY=\"$PWD/rust/target/debug/examples/stats_daemon\"\
+        \ STATS_INTERRUPTED_BINDING=\"${stats_receive_bindings[0]}\" STATS_INTERRUPTED_PRELOAD=\"$fault_root/receive-preload.so\"\
+        \ STATS_INTERRUPTED_CHECKER=\"$PWD/rust/target/debug/check-stats-interrupted\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
+        \ --features stats-daemon-native --lib --test stats_interrupted_check --locked\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
+        \ --features stats-daemon-native --lib --test stats_interrupted_check --bin check-stats-interrupted --locked -- -D\
+        \ warnings\nrust/target/debug/check-stats-interrupted rust/target/debug/examples/stats_daemon \\\n  \"$RUNNER_TEMP\"\
+        /telemetry-params-binding/params_pyx*.so \"$fault_root/receive-preload.so\" \"$fault_root/comparison\"\n"
+    - name: Compare crash-file policy, literal filenames and actual SDK transport
+      run: 'export TOMBSTONE_PROBE_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/tombstone_trace"
+
+        tombstone_bindings=("$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so)
+
+        test "${#tombstone_bindings[@]}" -eq 1
+
+        export TOMBSTONE_PARAMS_BINDING="${tombstone_bindings[0]}"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features tombstone-live-native,sdk-transport-native
+        --test tombstone_source --test tombstone_reference_check --test tombstone_safety_check --test sdk_transport_check
+        --test sdk_transport_runtime --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features tombstone-live-native,sdk-transport-native
+        --lib tombstone_ --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features tombstone-live-native,sdk-transport-native
+        --lib --bin check-tombstoned-reference --bin check-tombstoned-safety --bin check-crash-sdk-transport --test tombstone_source
+        --test tombstone_reference_check --test tombstone_safety_check --test sdk_transport_check --test sdk_transport_runtime
+        --locked -- -D warnings
+
+        rust/target/debug/check-tombstoned-reference "$TOMBSTONE_PROBE_BINARY" "$TOMBSTONE_PARAMS_BINDING" "$RUNNER_TEMP/telemetry-runtime/tombstone-reference"
+
+        rust/target/debug/check-tombstoned-safety "$TOMBSTONE_PROBE_BINARY" "$TOMBSTONE_PARAMS_BINDING" "$RUNNER_TEMP/telemetry-runtime/tombstone-safety"
+
+        rust/target/debug/check-crash-sdk-transport "$TOMBSTONE_PROBE_BINARY" "$TOMBSTONE_PARAMS_BINDING" "$RUNNER_TEMP/telemetry-runtime/crash-sdk"
+
+        '
+    - name: Exercise crash collection and held-command shutdown
+      run: 'export TOMBSTONE_DAEMON_BINARY="$GITHUB_WORKSPACE/rust/target/debug/openpilot-tombstoned"
+
+        export TOMBSTONE_COLLECTOR_BINARY="$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged"
+
+        export TOMBSTONE_LIVE_WORKER="$GITHUB_WORKSPACE/rust/target/debug/tombstone-runtime-worker"
+
+        tombstone_bindings=("$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so)
+
+        test "${#tombstone_bindings[@]}" -eq 1
+
+        export TOMBSTONE_PARAMS_BINDING="${tombstone_bindings[0]}"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features tombstone-live-native,sdk-transport-native
+        --test tombstone_runtime_check --test tombstone_shutdown_check --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features tombstone-live-native,sdk-transport-native
+        --lib --bin check-tombstoned-runtime --bin check-tombstoned-shutdown --bin tombstone-runtime-worker --test tombstone_runtime_check
+        --test tombstone_shutdown_check --locked -- -D warnings
+
+        rust/target/debug/check-tombstoned-runtime "$TOMBSTONE_DAEMON_BINARY" "$TOMBSTONE_COLLECTOR_BINARY" "$TOMBSTONE_PARAMS_BINDING"
+        "$RUNNER_TEMP/telemetry-runtime/tombstone-runtime"
+
+        rust/target/debug/check-tombstoned-shutdown "$TOMBSTONE_DAEMON_BINARY" "$TOMBSTONE_PARAMS_BINDING" "$RUNNER_TEMP/telemetry-runtime/tombstone-shutdown"
+
+        '
+    - name: Retain raw telemetry runtime and Params build evidence
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: rust-telemetry-runtime-evidence
+        path: '${{ runner.temp }}/telemetry-runtime/
+
+          ${{ runner.temp }}/telemetry-params-binding/commands.json
+
+          ${{ runner.temp }}/telemetry-params-binding/provenance.json
+
+          '
