@@ -1,0 +1,124 @@
+name: 296 complete original model pipelines with restored shared Desire oracle
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/desire-model-pipelines-296-once.yml
+permissions:
+  contents: read
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
+jobs:
+  model-pipelines:
+    name: rust original model pipelines
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CPU_COUNT: '2'
+      DEV: CPU:LLVM
+      JIT: '1'
+      JIT_BATCH_SIZE: '0'
+      OPENPILOT_HACKS: '1'
+      LLVM_PATH: /usr/lib/x86_64-linux-gnu/libLLVM-18.so
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        ref: 3cf61ad94e3b34641099fc343217e7ef764f4954
+    - name: Require exact restored shared original driving source
+      run: 'test "$(git rev-parse HEAD)" = 3cf61ad94e3b34641099fc343217e7ef764f4954
+
+        sha256sum rust/tools/check_desire_reference.py
+
+        '
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - run: rustup toolchain install 1.94.0 --profile minimal
+    - run: sudo apt-get update && sudo apt-get install -y clang libllvm18 git-lfs capnproto libcapnp-dev
+    - run: python -m pip install numpy==2.5.3 zstandard==0.25.0 pycapnp==2.1.0 pyzmq==27.2.0 Cython==3.2.4 setuptools==82.0.1
+        pytest==9.0.2
+    - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-model-runtime --bins --locked
+    - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-modeld --examples --locked
+    - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-dmonitoringmodeld --locked
+    - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-driving-modeld --locked
+    - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-logmessaged --bins --locked
+    - run: python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/model-msgq-python"
+    - run: git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx --exclude=''
+    - name: Compile the original grouped driving and driver artifacts
+      run: "mkdir -p \"$RUNNER_TEMP/original-models\"\npython openpilot/selfdrive/modeld/compile_modeld.py --model-size 512x256\
+        \ --camera-resolutions 1928x1208 1344x760 --frame-skip 4 --onnx openpilot/selfdrive/modeld/models/driving_supercombo.onnx\
+        \ --output \"$RUNNER_TEMP/original-models/driving_tinygrad.pkl\"\npython tinygrad_repo/examples/openpilot/compile3.py\
+        \ \"$GITHUB_WORKSPACE/openpilot/selfdrive/modeld/models/dmonitoring_model.onnx\" \"$RUNNER_TEMP/original-models/dmonitoring_model_tinygrad.pkl\"\
+        \npython openpilot/selfdrive/modeld/get_model_metadata.py openpilot/selfdrive/modeld/models/dmonitoring_model.onnx\n\
+        cp openpilot/selfdrive/modeld/models/dmonitoring_model_metadata.pkl \"$RUNNER_TEMP/original-models/\"\nfor resolution\
+        \ in 1928x1208 1344x760; do\n  python openpilot/selfdrive/modeld/compile_dm_warp.py --camera-resolution \"$resolution\"\
+        \ --warp-to 1440x960 --output \"$RUNNER_TEMP/original-models/dm_warp_${resolution}_tinygrad.pkl\"\ndone\n"
+    - name: Build and validate immutable native pipeline catalog
+      run: 'python rust/tools/build_model_pipelines.py --trusted-model-directory "$RUNNER_TEMP/original-models" --backend
+        cpu --output "$RUNNER_TEMP/native-catalog"
+
+        rust/target/debug/model-run --check-catalog "$RUNNER_TEMP/native-catalog"
+
+        '
+    - name: Compare both camera resolutions including prepare-only and recurrent turnover
+      run: "for resolution in '1928 1208' '1344 760'; do\n  set -- $resolution\n  python rust/tools/check_pipeline_reference.py\
+        \ --trusted-driving \"$RUNNER_TEMP/original-models/driving_tinygrad.pkl\" --resolution \"$1\" \"$2\" --output \"$RUNNER_TEMP/road-pipeline-$1\"\
+        \ --binary rust/target/debug/model-run --frames 128\n  python rust/tools/check_pipeline_reference.py --trusted-driver\
+        \ \"$RUNNER_TEMP/original-models/dmonitoring_model_tinygrad.pkl\" --trusted-warp \"$RUNNER_TEMP/original-models/dm_warp_${1}x${2}_tinygrad.pkl\"\
+        \ --trusted-metadata \"$RUNNER_TEMP/original-models/dmonitoring_model_metadata.pkl\" --resolution \"$1\" \"$2\" --output\
+        \ \"$RUNNER_TEMP/dm-pipeline-$1\" --binary rust/target/debug/model-run --frames 3\ndone\n"
+    - name: Compare model publications with the original Python implementations
+      run: "generation=$(rust/target/debug/model-run --catalog-generation \"$RUNNER_TEMP/native-catalog\")\nfor resolution\
+        \ in '1928 1208' '1344 760'; do\n  set -- $resolution\n  python rust/tools/check_model_outputs.py --binary rust/target/debug/examples/output_probe\
+        \ --output \"$RUNNER_TEMP/model-outputs-$1\" \\\n    --driving-pipeline \"$RUNNER_TEMP/native-catalog/$generation/driving-${1}x${2}/pipeline.json\"\
+        \ --driving-outputs \"$RUNNER_TEMP/road-pipeline-$1\" \\\n    --driver-pipeline \"$RUNNER_TEMP/native-catalog/$generation/driver-${1}x${2}/pipeline.json\"\
+        \ --driver-outputs \"$RUNNER_TEMP/dm-pipeline-$1\"\ndone\n"
+    - name: Compare Rust input state through the original driving pipelines
+      run: "python rust/tools/check_input_pipeline.py --inputs-binary rust/target/debug/examples/input_probe \\\n  --model-binary\
+        \ rust/target/debug/model-run --trusted-driving \"$RUNNER_TEMP/original-models/driving_tinygrad.pkl\" \\\n  --output\
+        \ \"$RUNNER_TEMP/model-input-pipelines\"\n"
+    - name: Compare model initialization before first frame and CarParams
+      run: "PYTHONPATH=\"$RUNNER_TEMP/model-msgq-python:$PYTHONPATH\" python rust/tools/check_model_startup.py \\\n  --driving\
+        \ rust/target/debug/openpilot-driving-modeld --driver rust/target/debug/openpilot-dmonitoringmodeld \\\n  --catalog\
+        \ \"$RUNNER_TEMP/native-catalog\" --models \"$RUNNER_TEMP/original-models\" --output \"$RUNNER_TEMP/model-startup\"\
+        \n"
+    - name: Exercise the Rust driver daemon with original camera and message IPC
+      run: "PYTHONPATH=\"$RUNNER_TEMP/model-msgq-python:$PYTHONPATH\" python rust/tools/check_driver_daemon.py \\\n  --binary\
+        \ rust/target/debug/openpilot-dmonitoringmodeld --collector rust/target/debug/openpilot-logmessaged \\\n  --catalog\
+        \ \"$RUNNER_TEMP/native-catalog\" --models \"$RUNNER_TEMP/original-models\" --output \"$RUNNER_TEMP/driver-daemon\"\
+        \n"
+    - name: Exercise the Rust driving daemon against the original model loop
+      run: "PYTHONPATH=\"$RUNNER_TEMP/model-msgq-python:$PYTHONPATH\" python rust/tools/check_driving_daemon.py \\\n  --binary\
+        \ rust/target/debug/openpilot-driving-modeld --collector rust/target/debug/openpilot-logmessaged \\\n  --catalog \"\
+        $RUNNER_TEMP/native-catalog\" --models \"$RUNNER_TEMP/original-models\" --output \"$RUNNER_TEMP/driving-daemon\"\n"
+    - name: Keep native inference running after runtimeTiming transport failures
+      run: "PYTHONPATH=\"$RUNNER_TEMP/model-msgq-python:$PYTHONPATH\" python rust/tools/check_model_logging_faults.py \\\n\
+        \  --catalog \"$RUNNER_TEMP/native-catalog\" --models \"$RUNNER_TEMP/original-models\" \\\n  --collector rust/target/debug/openpilot-logmessaged\
+        \ --output \"$RUNNER_TEMP/model-logging-faults\"\n"
+    - uses: actions/upload-artifact@v6
+      if: always()
+      with:
+        name: rust-original-pipeline-comparison
+        path: '${{ runner.temp }}/road-pipeline-*/report.json
+
+          ${{ runner.temp }}/dm-pipeline-*/report.json
+
+          ${{ runner.temp }}/native-catalog/current.json
+
+          ${{ runner.temp }}/model-outputs-*/**/report.json
+
+          ${{ runner.temp }}/model-input-pipelines/**/report.json
+
+          ${{ runner.temp }}/model-startup/
+
+          ${{ runner.temp }}/driver-daemon/
+
+          ${{ runner.temp }}/driving-daemon/
+
+          ${{ runner.temp }}/model-logging-faults/
+
+          '
