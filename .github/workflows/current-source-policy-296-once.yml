@@ -1,0 +1,52 @@
+name: 296 current source and disk policy
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/current-source-policy-296-once.yml
+permissions:
+  contents: read
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
+jobs:
+  source-policy:
+    name: Current source and disk guards plus lagd Clippy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        ref: 61f4f27590d1517223dd39ed33d817bb589df356
+    - name: Require exact current source
+      run: 'test "$(git rev-parse HEAD)" = 61f4f27590d1517223dd39ed33d817bb589df356
+
+        test -z "$(git status --porcelain)"
+
+        '
+    - name: Prepare source-policy compile prerequisites
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        '
+    - name: Require current source, disk and lagd CI contracts
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --test ci_rust_isolation --test ci_disk_bootstrap
+        --test lagd_ci -- --nocapture
+
+        '
