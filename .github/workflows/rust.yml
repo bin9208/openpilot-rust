@@ -2317,6 +2317,7 @@ jobs:
           fixture="$GITHUB_WORKSPACE/rust/crates/dev-tools/tests/fixtures/logmessaged-startup/13d-original"
           roots="$proof/roots"
           mkdir -p "$proof/native-path" "$roots/absent"
+          git rev-parse HEAD > "$proof/SOURCE_COMMIT"
           ln -s /usr/bin/git "$proof/native-path/git"
           test ! -e rust/tools/check_logmessaged_startup.py
           test ! -L rust/tools/check_logmessaged_startup.py

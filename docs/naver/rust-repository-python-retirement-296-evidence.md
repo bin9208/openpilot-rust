@@ -5087,3 +5087,20 @@ helper including dangling symlinks. The new post-deletion gate is awaiting
 fresh cloud execution. Inventory219replaced-local/3partial/3358pending.
 Local validation is formatting, shell/YAML syntax, fixture data/hash review and
 diff inspection only. No device, full conversion or integration is claimed.
+
+
+The logmessaged startup removal passed its actual post-deletion cloud gate at
+source `4492987ca41d1848a80e9772443964b031bc2ddb` in
+[run39525293160/job118978372228](https://github.com/bin9208/openpilot-rust/actions/runs/39525293160/job/118978372228).
+Workflow commit was `66ac24095796aba36e16979177e794b5d35bcebf`; exact checkout
+assertion identifies the source independently. Artifact12313616215 is2,445,745
+bytes, archive SHA256 `72611c218fa89542b179ef47ca56aea98869f3535dcbdca0f6711bfdfab563d2`.
+Ten checker tests, worker library, independent original reference, current/absent
+proof and strictClippy passed. Parent inspected all three observed/collector-exit
+records, original disk equality after UUID validation,96-byte packet counts,
+seven successful native execs per lane, identical reports and unchanged root
+metadata. The cloud tests decode all raw packets and compare the exact expected
+Event contents. Both source roots genuinely lack the retired checker.
+The companion source-policy job118978371946 passed13disk/69isolation/2lagd.
+The main artifact now also writes its SOURCE_COMMIT directly; the accepted
+4492987c artifact's source was established from the checkout assertion/job log.
