@@ -1,0 +1,278 @@
+name: 449 full support upload runtime and progress allocation proof
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/dashcam-progress-449-once.yml
+permissions:
+  contents: read
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
+jobs:
+  support-runtime:
+    name: 449 full support runtime and actual dashcam progress allocation proof
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+      EXPECTED_SOURCE: 4c876dc7da80629b81a166bc4b0810f1621d2d42
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        ref: 4c876dc7da80629b81a166bc4b0810f1621d2d42
+    - name: Require exact current source
+      run: 'test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        '
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - run: rustup toolchain install 1.94.0 --profile minimal
+    - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq5 strace jq
+    - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0
+        requests==2.34.2 aiohttp==3.13.3 anyio==4.12.1 PyJWT==2.15.1 cryptography==50.0.1 pyserial==3.5
+    - name: Configure original support IPC imports
+      run: printf 'PYTHONPATH=%s/support-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+    - name: Build support daemons and their source-comparison probes
+      run: cargo build --manifest-path rust/Cargo.toml -p openpilot-uploader -p openpilot-web-upload -p openpilot-dashcam-upload
+        -p openpilot-params-typed -p openpilot-journald -p openpilot-timed -p openpilot-logmessaged --bins --examples --locked
+    - name: Build current native dependency stager
+      uses: ./.github/actions/native-json11
+    - name: Build original message and Params bindings
+      run: 'python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/support-msgq-python"
+
+        python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/support-params-binding"
+
+        '
+    - name: Compare uploader policy, signed local HTTP and compressed payloads with original source
+      run: 'python rust/tools/check_uploader.py --binary rust/target/debug/examples/uploader_trace --output "$RUNNER_TEMP/support-runtime/uploader-reference/report.json"
+
+        python rust/tools/check_uploader_timeouts.py --binary rust/target/debug/examples/uploader_trace --output "$RUNNER_TEMP/support-runtime/uploader-timeouts"
+
+        '
+    - name: Compare active Carrot upload helpers and actual loopback request bytes
+      run: python rust/tools/check_web_upload.py --binary rust/target/debug/examples/web_upload_trace --output "$RUNNER_TEMP/support-runtime/web-upload-reference"
+    - name: Exercise uploader with original deviceState IPC, synthetic Params and loopback uploads
+      run: python rust/tools/check_uploader_daemon.py --binary rust/target/debug/openpilot-uploader --output "$RUNNER_TEMP/support-runtime/uploader-native"
+    - name: Keep interrupted socket reads within one upload and its original deadline
+      run: python rust/tools/check_uploader_http_interrupted.py --binary rust/target/debug/openpilot-uploader --output "$RUNNER_TEMP/support-runtime/uploader-http-interrupted"
+    - name: Compare real Params getters and uploader behavior through both collectors
+      run: "python rust/tools/check_params_string.py --binding \"$RUNNER_TEMP\"/support-params-binding/params_pyx*.so \\\n\
+        \  --native rust/target/debug/examples/params_string_probe --output \"$RUNNER_TEMP/support-runtime/params-string\"\
+        \npython rust/tools/check_params_string_uploader.py --binding \"$RUNNER_TEMP\"/support-params-binding/params_pyx*.so\
+        \ \\\n  --binary rust/target/debug/openpilot-uploader --collector rust/target/debug/openpilot-logmessaged --output\
+        \ \"$RUNNER_TEMP/support-runtime/params-uploader\"\n"
+    - name: Require same-ELF logmessaged startup with historical checker absent
+      run: "set -euo pipefail\nrustup component add clippy --toolchain 1.94.0\nexport OPENPILOT_RUST_ROOT=\"$GITHUB_WORKSPACE\"\
+        \nexport LOGMESSAGED_COLLECTOR_BINARY=\"$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
+        \ --features logmessaged-startup-native --bin check-logmessaged-startup --locked\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
+        \ --features logmessaged-startup-native --test logmessaged_startup_check --locked\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
+        \ --features logmessaged-startup-native --lib logmessaged_startup_check::worker::tests --locked\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
+        \ --features logmessaged-startup-native --lib --bin check-logmessaged-startup --test logmessaged_startup_check --test\
+        \ logmessaged_startup_reference --test logmessaged_startup_retirement --locked -- -D warnings\nset -euo pipefail\n\
+        proof=\"$RUNNER_TEMP/support-runtime/logmessaged-startup-retirement\"\nchecker=\"$GITHUB_WORKSPACE/rust/target/debug/check-logmessaged-startup\"\
+        \ncollector=\"$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged\"\nfixture=\"$GITHUB_WORKSPACE/rust/crates/dev-tools/tests/fixtures/logmessaged-startup/13d-original\"\
+        \nroots=\"$proof/roots\"\nmkdir -p \"$proof/native-path\" \"$roots/absent\"\ngit rev-parse HEAD > \"$proof/SOURCE_COMMIT\"\
+        \nln -s /usr/bin/git \"$proof/native-path/git\"\ntest ! -e rust/tools/check_logmessaged_startup.py\ntest ! -L rust/tools/check_logmessaged_startup.py\n\
+        test -d rust/tools\ntest \"$(sha256sum \"$fixture/SHA256SUMS\" | cut -d' ' -f1)\" = cee8e19032542bc4851d0ce6bfebd9b71dde9184b19bdc5b0fb23e06e974d0dd\n\
+        (cd \"$fixture\" && sha256sum -c SHA256SUMS)\ncat > \"$proof/authored-paths.txt\" <<'PATHS'\nrust/crates/dev-tools/src/logmessaged_startup_check.rs\n\
+        rust/crates/dev-tools/src/logmessaged_startup_check/worker.rs\nrust/crates/dev-tools/src/bin/check_logmessaged_startup.rs\n\
+        rust/crates/dev-tools/src/managed_entry_collector_source.rs\nrust/crates/dev-tools/src/stats_daemon_check/process.rs\n\
+        rust/crates/dev-tools/src/stats_daemon_check/identity.rs\nrust/crates/dev-tools/src/qa_endpoint.rs\nrust/crates/dev-tools/src/qa_process.rs\n\
+        rust/crates/dev-tools/src/argparse_scan.rs\nrust/crates/dev-tools/src/python_fs.rs\nrust/crates/dev-tools/src/path_resolve.rs\n\
+        rust/crates/dev-tools/tests/fixtures/logmessaged-startup/source-pins.json\nrust/crates/dev-tools/tests/fixtures/logmessaged-startup/original-observation.json\n\
+        PATHS\njq -r 'keys[] | select(. != \"rust/tools/check_logmessaged_startup.py\")' rust/crates/dev-tools/tests/fixtures/logmessaged-startup/source-pins.json\
+        \ > \"$proof/pinned-paths.txt\"\ncat \"$proof/pinned-paths.txt\" \"$proof/authored-paths.txt\" | sort -u > \"$proof/all-root-paths.txt\"\
+        \nwhile IFS= read -r name; do\n  mkdir -p \"$roots/absent/$(dirname \"$name\")\"\n  cp -- \"$GITHUB_WORKSPACE/$name\"\
+        \ \"$roots/absent/$name\"\ndone < \"$proof/all-root-paths.txt\"\ntest -d \"$roots/absent/rust/tools\"\ntest ! -e \"\
+        $roots/absent/rust/tools/check_logmessaged_startup.py\"\ntest ! -L \"$roots/absent/rust/tools/check_logmessaged_startup.py\"\
+        \nsha256sum \"$checker\" \"$collector\" \"$proof/native-path/git\" > \"$proof/artifacts.sha256\"\ncp \"$proof/artifacts.sha256\"\
+        \ \"$proof/inputs.sha256\"\nwhile IFS= read -r name; do sha256sum \"$GITHUB_WORKSPACE/$name\" \"$roots/absent/$name\"\
+        ; done < \"$proof/all-root-paths.txt\" >> \"$proof/inputs.sha256\"\nfind \"$roots\" -print0 | sort -z | xargs -0 stat\
+        \ -c '%n %d %i %s %Y %Z %F' > \"$proof/inputs.stat\"\nfor lane in current absent; do\n  \"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 128\n  root=\"$GITHUB_WORKSPACE\"\n  if [ \"$lane\" = absent ]; then root=\"\
+        $roots/absent\"; fi\n  env OPENPILOT_RUST_ROOT=\"$root\" PATH=\"$proof/native-path\" /usr/bin/timeout --kill-after=5s\
+        \ 180s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o \"$proof/$lane.exec\" \"$checker\" --collector\
+        \ \"$collector\" --output \"$proof/$lane\" > \"$proof/$lane.stdout\" 2> \"$proof/$lane.stderr\"\n  sha256sum -c \"\
+        $proof/inputs.sha256\"\n  (cd \"$fixture\" && sha256sum -c SHA256SUMS)\n  find \"$roots\" -print0 | sort -z | xargs\
+        \ -0 stat -c '%n %d %i %s %Y %Z %F' > \"$proof/inputs-after.stat\"\n  cmp \"$proof/inputs.stat\" \"$proof/inputs-after.stat\"\
+        \ndone\nexport LOGMESSAGED_STARTUP_PROOF=\"$proof\"\nexport LOGMESSAGED_STARTUP_RETIREMENT_PROOF=\"$proof\"\nexport\
+        \ LOGMESSAGED_STARTUP_RETIREMENT_CHECKER=\"$checker\"\nexport LOGMESSAGED_STARTUP_RETIREMENT_COLLECTOR=\"$collector\"\
+        \nexport LOGMESSAGED_STARTUP_RETIREMENT_CURRENT_ROOT=\"$GITHUB_WORKSPACE\"\nexport LOGMESSAGED_STARTUP_RETIREMENT_ABSENT_ROOT=\"\
+        $roots/absent\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 512\n\
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features logmessaged-startup-native --test logmessaged_startup_reference\
+        \ --locked\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo\
+        \ test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features logmessaged-startup-native --test logmessaged_startup_retirement\
+        \ --locked -- --nocapture\nsha256sum -c \"$proof/inputs.sha256\"\n(cd \"$fixture\" && sha256sum -c SHA256SUMS)\nfind\
+        \ \"$roots\" -print0 | sort -z | xargs -0 stat -c '%n %d %i %s %Y %Z %F' > \"$proof/inputs-after.stat\"\ncmp \"$proof/inputs.stat\"\
+        \ \"$proof/inputs-after.stat\"\n"
+    - name: Compare uploader logs and transport failures through both collectors
+      run: "python rust/tools/check_uploader_logging.py --binary rust/target/debug/openpilot-uploader \\\n  --trace rust/target/debug/examples/uploader_trace\
+        \ --collector rust/target/debug/openpilot-logmessaged --output \"$RUNNER_TEMP/support-runtime/uploader-logging\"\n\
+        python rust/tools/check_uploader_log_fault.py --native rust/target/debug/examples/uploader_log_fault \\\n  --binding\
+        \ \"$RUNNER_TEMP\"/support-params-binding/params_pyx*.so --collector rust/target/debug/openpilot-logmessaged --output\
+        \ \"$RUNNER_TEMP/support-runtime/uploader-log-fault\"\n"
+    - name: Require dashcam progress equivalence and allocation accounting
+      run: 'set -euo pipefail
+
+        mkdir -p "$RUNNER_TEMP/support-runtime"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dashcam-upload --lib --locked -- --nocapture 2>&1 | tee "$RUNNER_TEMP/support-runtime/dashcam-progress-tests.log"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dashcam-upload --all-targets --locked -- -D warnings 2>&1
+        | tee "$RUNNER_TEMP/support-runtime/dashcam-progress-clippy.log"
+
+        '
+    - name: Compare dashcam jobs, catalog, metadata and real Params
+      run: "python rust/tools/check_dashcam_jobs.py --binary rust/target/debug/examples/dashcam_job_trace --output \"$RUNNER_TEMP/support-runtime/dashcam-jobs\"\
+        \npython rust/tools/check_dashcam_catalog.py --binary rust/target/debug/examples/dashcam_catalog_trace --output \"\
+        $RUNNER_TEMP/support-runtime/dashcam-catalog\"\npython rust/tools/check_dashcam_metadata.py --binary rust/target/debug/examples/dashcam_metadata_trace\
+        \ --output \"$RUNNER_TEMP/support-runtime/dashcam-metadata\"\npython rust/tools/check_dashcam_params.py --binary rust/target/debug/examples/dashcam_params_trace\
+        \ \\\n  --binding \"$RUNNER_TEMP\"/support-params-binding/params_pyx*.so --output \"$RUNNER_TEMP/support-runtime/dashcam-params\"\
+        \n"
+    - name: Bound metadata Git capture across full pipes and exited leaders
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dashcam-upload --test git_capture --locked
+
+        '
+    - name: Compare dashcam uploads and child connection ownership
+      run: 'python rust/tools/check_dashcam_runtime.py --binary rust/target/debug/openpilot-dashcam-upload --output "$RUNNER_TEMP/support-runtime/dashcam-runtime"
+
+        python rust/tools/check_dashcam_lifecycle.py --binary rust/target/debug/openpilot-dashcam-upload --output "$RUNNER_TEMP/support-runtime/dashcam-lifecycle"
+
+        '
+    - name: Compare journald actual IPC, fatal inputs and child lifecycle
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo +1.94.0 build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features journal-runtime-native --bin
+        check-journald --bin journalctl-fixture --locked
+
+        cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features journal-runtime-native --bin
+        check-journald --test journald_check --test journald_fixture --test journald_runtime_check --locked
+
+        rustup component add clippy --toolchain 1.94.0
+
+        cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features journal-runtime-native --lib
+        --bin check-journald --bin journalctl-fixture --test journald_check --test journald_fixture --test journald_runtime_check
+        --locked -- -D warnings
+
+        rust/target/debug/check-journald --binary rust/target/debug/journald-rs --fixture rust/target/debug/journalctl-fixture
+        --output "$RUNNER_TEMP/support-runtime/journald"
+
+        '
+    - name: Build and test native timed QA tools
+      env:
+        TIMED_NATIVE_ENTRY: ${{ github.workspace }}/rust/target/debug/openpilot-timed
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo +1.94.0 build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features timed-live-native --bin timed-source-reference
+        --bin timed-command-fixture --bin timed-runtime-worker --bin check-timed-reference --bin check-timed-dates --bin check-timed-http
+        --bin check-timed-logging --bin check-timed-daemon --bin check-timed-date-daemon --bin check-timed-lifecycle --bin
+        check-timed-shutdown --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features timed-live-native --bin timed-source-reference
+        --bin timed-command-fixture --bin timed-runtime-worker --bin check-timed-reference --bin check-timed-dates --bin check-timed-http
+        --bin check-timed-logging --bin check-timed-daemon --bin check-timed-date-daemon --bin check-timed-lifecycle --bin
+        check-timed-shutdown --test timed_fixtures --test timed_shutdown_phase --test timed_reference --test timed_reference_actions
+        --test timed_http_reference --test timed_http_report --test timed_proxy_reference --test timed_native_capture --test
+        timed_native_logging --test timed_check --test timed_check_cli --test timed_check_prefix --test timed_command_publication
+        --test timed_live_child --test timed_live --test timed_live_cli --test timed_live_cleanup --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features timed-live-native --bin timed-source-reference
+        --bin timed-command-fixture --bin timed-runtime-worker --bin check-timed-reference --bin check-timed-dates --bin check-timed-http
+        --bin check-timed-logging --bin check-timed-daemon --bin check-timed-date-daemon --bin check-timed-lifecycle --bin
+        check-timed-shutdown --test timed_fixtures --test timed_shutdown_phase --test timed_reference --test timed_reference_actions
+        --test timed_http_reference --test timed_http_report --test timed_proxy_reference --test timed_native_capture --test
+        timed_native_logging --test timed_check --test timed_check_cli --test timed_check_prefix --test timed_command_publication
+        --test timed_live_child --test timed_live --test timed_live_cli --test timed_live_cleanup --locked -- -D warnings
+
+        '
+    - name: Compare timed policy, HTTP and logging with original source
+      run: 'rust/target/debug/check-timed-reference --binary rust/target/debug/examples/timed_fixture --output "$RUNNER_TEMP/support-runtime/timed-reference"
+
+        rust/target/debug/check-timed-dates --binary rust/target/debug/examples/timed_fixture --output "$RUNNER_TEMP/support-runtime/timed-dates"
+
+        rust/target/debug/check-timed-http --binary rust/target/debug/examples/timed_fixture --output "$RUNNER_TEMP/support-runtime/timed-http"
+
+        rust/target/debug/check-timed-logging --binary rust/target/debug/examples/timed_fixture --output "$RUNNER_TEMP/support-runtime/timed-logging"
+
+        '
+    - name: Compare timed actual IPC and production process shutdown
+      run: 'rust/target/debug/check-timed-daemon --binary rust/target/debug/examples/timed_fixture --output "$RUNNER_TEMP/support-runtime/timed-daemon"
+
+        rust/target/debug/check-timed-date-daemon --binary rust/target/debug/openpilot-timed --output "$RUNNER_TEMP/support-runtime/timed-date-daemon"
+
+        rust/target/debug/check-timed-lifecycle --binary rust/target/debug/openpilot-timed --output "$RUNNER_TEMP/support-runtime/timed-lifecycle"
+
+        rust/target/debug/check-timed-shutdown --binary rust/target/debug/openpilot-timed --output "$RUNNER_TEMP/support-runtime/timed-shutdown"
+
+        '
+    - name: Compare interrupted diagnostic sends and actual upload completion
+      run: 'fault_root="$RUNNER_TEMP/support-runtime/interrupted-send"
+
+        mkdir -p "$fault_root/bin"
+
+        gcc -Wall -Wextra -Werror -O2 -fPIC -DZMQ_LINK_WRAP -c rust/tools/zmq_send_boundary.c -o "$fault_root/send-wrap.o"
+
+        gcc -Wall -Wextra -Werror -O2 -fPIC -shared rust/tools/zmq_send_boundary.c -ldl -o "$fault_root/send-preload.so"
+
+        cargo rustc --manifest-path rust/Cargo.toml -p openpilot-logging --example logging_probe --locked -- -C link-arg=-Wl,--wrap=zmq_msg_send
+        -C "link-arg=$fault_root/send-wrap.o"
+
+        cp rust/target/debug/examples/logging_probe "$fault_root/bin/"
+
+        cargo rustc --manifest-path rust/Cargo.toml -p openpilot-statsd --example stats_producer --locked -- -C link-arg=-Wl,--wrap=zmq_msg_send
+        -C "link-arg=$fault_root/send-wrap.o"
+
+        cp rust/target/debug/examples/stats_producer "$fault_root/bin/"
+
+        cargo rustc --manifest-path rust/Cargo.toml -p openpilot-uploader --bin openpilot-uploader --locked -- -C link-arg=-Wl,--wrap=zmq_msg_send
+        -C "link-arg=$fault_root/send-wrap.o"
+
+        cp rust/target/debug/openpilot-uploader "$fault_root/bin/"
+
+        python_zmq="$(python -c ''import pathlib, zmq; matches = list((pathlib.Path(zmq.__file__).parent.parent / "pyzmq.libs").glob("libzmq-*.so.*"));
+        assert len(matches) == 1, matches; print(matches[0])'')"
+
+        python rust/tools/check_interrupted_send.py --logging "$fault_root/bin/logging_probe" --stats "$fault_root/bin/stats_producer"
+        --preload "$fault_root/send-preload.so" --python-zmq "$python_zmq" --output "$fault_root/producers"
+
+        python rust/tools/check_uploader_interrupted.py --binary "$fault_root/bin/openpilot-uploader" --output "$fault_root/uploader"
+
+        '
+    - name: Retain synthetic startup disk records from all lanes
+      if: always()
+      run: "proof=\"$RUNNER_TEMP/support-runtime/logmessaged-startup-retirement\"\nif [ -d \"$proof\" ]; then\n  tar -C \"\
+        $RUNNER_TEMP/support-runtime\" -cf \"$proof/collector-homes.tar\" --null -T <(find \"$RUNNER_TEMP/support-runtime\"\
+        \ -type d -name '.comma*' -printf '%P\\0')\nfi\n"
+    - name: Retain raw support runtime and Params build evidence
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: rust-support-runtime-evidence
+        path: '${{ runner.temp }}/support-runtime/
+
+          ${{ runner.temp }}/support-params-binding/commands.json
+
+          ${{ runner.temp }}/support-params-binding/provenance.json
+
+          '
