@@ -538,6 +538,7 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
+ci-receipt-metadata-native = []
 beep-reference-native = ["dep:zmq", "serde_json/float_roundtrip"]
 updated-fixture-native = []
 updated-daemon-native = ["updated-fixture-native", "dep:zmq", "dep:chrono"]
@@ -2051,3 +2052,12 @@ required-features = ["driver-daemon-native"]
 name = "check-usbgpu-daemon"
 path = "src/bin/usbgpu_daemon_check.rs"
 required-features = ["driver-daemon-native"]
+
+[[bin]]
+name = "ci-receipt-metadata"
+path = "src/bin/ci_receipt_metadata.rs"
+required-features = ["ci-receipt-metadata-native"]
+
+[[test]]
+name = "ci_receipt_metadata"
+required-features = ["ci-receipt-metadata-native"]

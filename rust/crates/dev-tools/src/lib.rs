@@ -407,3 +407,6 @@ pub mod usbgpu_daemon_check;
 
 #[cfg(feature = "teleop-version-native")]
 pub mod teleop_version;
+
+#[cfg(feature = "ci-receipt-metadata-native")]
+pub mod ci_receipt_metadata;
