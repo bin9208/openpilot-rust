@@ -84,7 +84,7 @@ pub fn run(
                 (state.compute_mode, state.compute_generation)
             };
             if applied_generation != compute_generation {
-                model.set_compute_mode(compute_mode);
+                model.set_compute_mode(compute_mode, compute_generation);
                 let status = model.compute_status();
                 {
                     let mut state = shared.state()?;
@@ -201,7 +201,8 @@ pub fn run(
                 let status = model.compute_status();
                 let timing = model.compute_timing();
                 let detection = serde_json::json!({"side":side.name(),"active":active,
-                    "confidence":model.side(side).confidence,"threshold":settings.threshold});
+                    "confidence":model.side(side).confidence,"threshold":settings.threshold,
+                    "configured_interval_ms":interval*1000.0,"smoothing_ms":settings.smoothing_seconds*1000.0});
                 {
                     let mut state = shared.state()?;
                     if state.compute_generation != compute_generation {

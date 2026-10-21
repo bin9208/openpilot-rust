@@ -43,7 +43,7 @@ pub fn run(
                 (state.compute_mode, state.compute_generation)
             };
             if applied_generation != compute_generation {
-                model.set_compute_mode(compute_mode);
+                model.set_compute_mode(compute_mode, compute_generation);
                 let status = model.compute_status();
                 {
                     let mut state = shared.state()?;
@@ -57,7 +57,7 @@ pub fn run(
                 diagnostics.backend(Stream::Road, compute_generation, status);
                 applied_generation = compute_generation;
             }
-            let (infer, threshold, snapshot) = {
+            let (infer, threshold, interval, snapshot) = {
                 let state = shared.state()?;
                 let status = &state.cameras[1];
                 (
@@ -65,6 +65,7 @@ pub fn run(
                         && state.metrics[1]
                             .ready(platform::monotonic()?, state.settings.lane_interval_seconds),
                     state.settings.lane_threshold,
+                    state.settings.lane_interval_seconds,
                     (status.snapshot_response < status.snapshot_request)
                         .then_some(status.snapshot_request),
                 )
@@ -93,7 +94,8 @@ pub fn run(
                 let thread_cpu_ms = (platform::thread_cpu()? - cpu) * 1000.0;
                 let status = model.compute_status();
                 let timing = model.compute_timing();
-                let detection = serde_json::to_value(&result)?;
+                let detection = serde_json::json!({"result":result,"confidence_threshold":threshold,
+                    "configured_interval_ms":interval*1000.0});
                 {
                     let mut state = shared.state()?;
                     if state.compute_generation != compute_generation {

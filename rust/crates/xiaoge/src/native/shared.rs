@@ -21,6 +21,7 @@ pub struct Shared {
     pub snapshot: Condvar,
     pub vasm_operation: Mutex<()>,
     pub params: Option<Params>,
+    pub params_operation: Mutex<()>,
     pub config_path: PathBuf,
     pub running: AtomicBool,
 }
@@ -33,6 +34,10 @@ impl Shared {
     }
 
     pub fn refresh(&self, force: bool) -> Result<(), Error> {
+        let _parameters = self
+            .params_operation
+            .lock()
+            .map_err(|_| Error::Contract("parameter operation poisoned"))?;
         let now = platform::monotonic()?;
         {
             let mut state = self.state()?;
@@ -95,6 +100,10 @@ impl Shared {
     }
 
     pub fn set_settings(&self, value: &openpilot_logmessaged::JsonValue) -> Result<(), Error> {
+        let _parameters = self
+            .params_operation
+            .lock()
+            .map_err(|_| Error::Contract("parameter operation poisoned"))?;
         let settings = self.state()?.settings.patch_json(value)?;
         let mode = value
             .get("computeMode")

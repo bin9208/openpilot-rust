@@ -47,13 +47,15 @@ impl ComputeMode {
 pub struct Selection {
     pub requested: ComputeMode,
     gpu_failed: bool,
+    generation: u64,
 }
 impl Selection {
-    pub fn select(&mut self, mode: ComputeMode) -> bool {
-        if mode == self.requested {
+    pub fn select(&mut self, mode: ComputeMode, generation: u64) -> bool {
+        if mode == self.requested && generation == self.generation {
             return false;
         }
         self.requested = mode;
+        self.generation = generation;
         self.gpu_failed = false;
         true
     }

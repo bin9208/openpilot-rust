@@ -50,6 +50,7 @@ const METRICS: &[&str] = &[
     "xiaoge_compare_wall_ms",
     "xiaoge_compare_thread_cpu_ms",
     "process_cpu_percent",
+    "process_rss_mib",
     "internal_gpu_busy_percent",
     "comparison_max_abs",
     "comparison_mean_abs",
@@ -100,6 +101,9 @@ pub struct ComparisonStats {
     pub nonfinite_elements: u64,
     pub decoded_checked: u64,
     pub decoded_mismatches: u64,
+    /// Only explicit decision_equal booleans are compared; zero means unobserved.
+    pub decisions_compared: u64,
+    pub decision_mismatches: u64,
     pub errors: u64,
 }
 #[derive(Debug, Serialize)]
@@ -181,13 +185,13 @@ impl Key {
         let backend = match value["effective_backend"].as_str() {
             Some(v @ ("cpu" | "opencl-fp32")) => v,
             Some("mixed") if value["event"] == "xiaoge_resources" => "mixed",
-            Some("pending") if value["event"] == "xiaoge_resources" => "unknown",
+            Some("pending") => "unknown",
             None if value["event"] == "xiaoge_resources"
                 && value["effective_backend"].is_null() =>
             {
                 "unknown"
             }
-            _ => return Err("Xiaoge telemetry requires effective_backend=cpu/opencl-fp32".into()),
+            _ => return Err("Xiaoge effective_backend requires cpu/opencl-fp32/pending; resources also permit mixed or missing".into()),
         };
         Ok(Self {
             mode: Some(mode),
@@ -281,7 +285,7 @@ impl Accumulator {
                     "sampled Xiaoge inference telemetry"
                 } else if matches!(
                     k.as_str(),
-                    "process_cpu_percent" | "internal_gpu_busy_percent"
+                    "process_cpu_percent" | "process_rss_mib" | "internal_gpu_busy_percent"
                 ) {
                     "Xiaoge resource snapshots"
                 } else {
@@ -384,6 +388,12 @@ struct Previous {
     sof: Option<u64>,
     key: Key,
 }
+#[derive(Default)]
+struct FrameMetadata {
+    id: Option<u32>,
+    sof: Option<u64>,
+    sof_metric: Option<&'static str>,
+}
 struct Aggregator {
     timeline: Timeline,
     groups: BTreeMap<Key, Accumulator>,
@@ -408,10 +418,13 @@ impl Aggregator {
         service: &str,
         mono: u64,
         valid: bool,
-        frame: Option<u32>,
-        sof: Option<u64>,
-        sof_metric: Option<&str>,
+        metadata: FrameMetadata,
     ) {
+        let FrameMetadata {
+            id: frame,
+            sof,
+            sof_metric,
+        } = metadata;
         let previous = self.previous.insert(
             service.into(),
             Previous {
@@ -474,7 +487,7 @@ impl Aggregator {
             key = recorded_key.clone();
         }
         let name = value["event"].as_str().ok_or("missing telemetry event")?;
-        self.observe(&key, name, mono, valid, None, None, None);
+        self.observe(&key, name, mono, valid, FrameMetadata::default());
         let group = self.group(&key);
         group.group.mode_conflicts += u64::from(conflict);
         match name {
@@ -482,6 +495,9 @@ impl Aggregator {
                 // Support an Object named resources and flat records from early emitters.
                 let resources = value.get("resources").unwrap_or(value);
                 group.json_metric("process_cpu_percent", &resources["process_cpu_percent"]);
+                if let Some(bytes) = resources["process_rss_bytes"].as_u64() {
+                    group.metric("process_rss_mib", bytes as f64 / 1_048_576.0);
+                }
                 if resources["internal_gpu_counter_valid"].as_bool() == Some(true) {
                     group.json_metric(
                         "internal_gpu_busy_percent",
@@ -556,6 +572,10 @@ impl Aggregator {
                         stats.decoded_checked += 1;
                         stats.decoded_mismatches += u64::from(!equal);
                     }
+                    if let Some(equal) = comparison["decision_equal"].as_bool() {
+                        stats.decisions_compared += 1;
+                        stats.decision_mismatches += u64::from(!equal);
+                    }
                     stats.errors += u64::from(
                         comparison
                             .get("error")
@@ -569,9 +589,10 @@ impl Aggregator {
                     &format!("xiaoge_{stream}"),
                     mono,
                     valid,
-                    Some(frame),
-                    None,
-                    None,
+                    FrameMetadata {
+                        id: Some(frame),
+                        ..FrameMetadata::default()
+                    },
                 );
             }
             _ => {}
@@ -590,9 +611,10 @@ impl Aggregator {
                     "modelV2",
                     mono,
                     valid,
-                    Some(data.get_frame_id()),
-                    None,
-                    None,
+                    FrameMetadata {
+                        id: Some(data.get_frame_id()),
+                        ..FrameMetadata::default()
+                    },
                 );
                 let group = self.group(&key);
                 group.metric(
@@ -611,9 +633,10 @@ impl Aggregator {
                     "driverStateV2",
                     mono,
                     valid,
-                    Some(data.get_frame_id()),
-                    None,
-                    None,
+                    FrameMetadata {
+                        id: Some(data.get_frame_id()),
+                        ..FrameMetadata::default()
+                    },
                 );
                 let group = self.group(&key);
                 group.metric(
@@ -641,14 +664,16 @@ impl Aggregator {
                     name,
                     mono,
                     valid,
-                    Some(data.get_frame_id()),
-                    Some(data.get_timestamp_sof()),
-                    Some(metric),
+                    FrameMetadata {
+                        id: Some(data.get_frame_id()),
+                        sof: Some(data.get_timestamp_sof()),
+                        sof_metric: Some(metric),
+                    },
                 );
             }
             Ok(event::DeviceState(data)) => {
                 let data = data?;
-                self.observe(&key, "deviceState", mono, valid, None, None, None);
+                self.observe(&key, "deviceState", mono, valid, FrameMetadata::default());
                 let group = self.group(&key);
                 // Preserve zero as an observed counter; zero does not establish GPU idleness.
                 group.metric(
@@ -697,10 +722,13 @@ impl Aggregator {
                 "Structured telemetry joins by source mono_ns; full-cereal services join by Event.logMonoTime. Legacy resource samples retain their Event clock. Shared boot identity is checked before combining inputs.",
                 "Aggregate resource backends apply from snapshot time, never retroactively from mode acceptance. Mode-only/pending is unknown; mixed remains mixed. These groups are diagnostic only. Per-stream CPU fallback retains a separate CPU backend bucket within requested GPU mode.",
                 "process_cpu_percent measures all process threads: one logical core is 100%, with no clamp. Per-inference thread_cpu_ms is not process CPU utilization.",
+                "process_rss_mib is whole-process VmRSS (bytes / 1048576), not total GPU/device allocation.",
                 "UsbGpuActive is a selection flag, not measured GPU headroom. Zero/default GPU usage is not proof of idle GPU; cereal scalars cannot distinguish absent from explicit zero.",
                 "Frame ID gaps are observed discontinuities, not proof of lost inference; DM can decimate. SOF gaps count intervals over 75ms. Cross-mode intervals are excluded.",
                 "Xiaoge timing summaries cover logged samples only. Sampled inference frame ID gaps are not dropped frames; sampled_inference_records identifies sampling explicitly.",
                 "Tensor inequality uses exact differences/shape/bits/nonfinite; no numeric tolerance or decoded equivalence is inferred. Missing comparison fields are unobserved.",
+                "decoded_equal observes exact decoded JSON including scores; decision_equal observes only the producer's lane class/geometry or BSD above_threshold comparison. Missing decision_equal is unobserved, never an agreement.",
+                "Sparse BSD confidence/above_threshold comparisons with smoothing_compared=false do not validate smoothing or full temporal state, even when decision_equal=true.",
                 "Quantiles use nearest rank. Device aggregate CPU/temperature distributions pool per-core/sensor readings; indexed metrics retain each source. JSONL has no cereal service or boot identity evidence.",
                 "Inputs must remain unchanged during both passes. Multiple rlogs require matching nonempty bootlogId or the exact same cached InitData clock pair, plus disjoint data ranges (excluding InitData and Sentinel). Different logger sessions without boot identity must be reported separately.",
                 "Without explicit boot identity a single input cannot rule out resets smaller than the one-second timestamp-regression guard.",

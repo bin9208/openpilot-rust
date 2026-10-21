@@ -76,9 +76,9 @@ impl LaneModel {
             .map_or(&self.error, Session::error)
     }
 
-    pub fn set_compute_mode(&mut self, mode: ComputeMode) {
+    pub fn set_compute_mode(&mut self, mode: ComputeMode, generation: u64) {
         if let Some(net) = &mut self.net {
-            net.set_mode(mode);
+            net.set_mode(mode, generation);
         }
     }
     pub fn compute_status(&self) -> serde_json::Value {

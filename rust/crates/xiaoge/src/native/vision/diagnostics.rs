@@ -111,12 +111,20 @@ impl Diagnostics {
     }
 }
 
-fn gpu_busy() -> Option<f64> {
-    let text = fs::read_to_string("/sys/class/kgsl/kgsl-3d0/gpubusy").ok()?;
-    let mut values = text.split_whitespace();
-    let used = values.next()?.parse::<u64>().ok()?;
-    let total = values.next()?.parse::<u64>().ok()?;
-    (total > 0 && used <= total).then(|| 100.0 * used as f64 / total as f64)
+// GPU activity/temperature already arrive in deviceState. Do not add another
+// reader of KGSL gpubusy: its sysfs read can clear idle statistics used by hardwared.
+fn rss_bytes() -> Option<u64> {
+    let status = fs::read_to_string("/proc/self/status").ok()?;
+    let mut fields = status
+        .lines()
+        .find(|line| line.starts_with("VmRSS:"))?
+        .split_whitespace();
+    fields.next()?;
+    let kilobytes = fields.next()?.parse::<u64>().ok()?;
+    if fields.next()? != "kB" {
+        return None;
+    }
+    kilobytes.checked_mul(1024)
 }
 pub fn resources(shared: Arc<Shared>) {
     let mut logger = logger();
@@ -139,7 +147,7 @@ pub fn resources(shared: Arc<Shared>) {
                     "cpu"
                 } else if backends.len() == 2 && backends[0] == backends[1] {
                     backends[0]
-                } else if backends.iter().any(|backend| *backend == "opencl-fp32") {
+                } else if backends.contains(&"opencl-fp32") {
                     "mixed"
                 } else {
                     "pending"
@@ -155,7 +163,6 @@ pub fn resources(shared: Arc<Shared>) {
                 .filter(|(prior, _)| now > *prior)
                 .map(|(prior, prior_cpu)| 100.0 * (cpu - prior_cpu) / (now - prior));
             last = Some((now, cpu));
-            let gpu = gpu_busy();
             let usb = shared
                 .params
                 .as_ref()
@@ -164,7 +171,8 @@ pub fn resources(shared: Arc<Shared>) {
             Some(json!({"schema":1,"mono_ns":platform::timestamp().ok()?,
                 "mode":mode,"generation":generation,"mode_since_ns":since,"effective_backend":effective,
                 "process_cpu_percent":percent,"cpu_percent_unit":"one_logical_core=100",
-                "internal_gpu_busy_percent":gpu,"internal_gpu_counter_valid":gpu.is_some(),
+                "process_rss_bytes":rss_bytes(),
+                "gpu_usage_source":"deviceState",
                 "usb_gpu_active":usb,"sample_interval_seconds":1.0}))
         })();
         if let Some(sample) = sample {

@@ -215,7 +215,7 @@ jobs:
           rust/tools/check-disk-space --path "$RUNNER_TEMP" --growth-mib 4096
           sudo apt-get update
           sudo apt-get install -y capnproto libcapnp-dev
-          rustup toolchain install 1.94.0 --profile minimal
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
       - uses: actions/cache@v4
         with:
           path: |

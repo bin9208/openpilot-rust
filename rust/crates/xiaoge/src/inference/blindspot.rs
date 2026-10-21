@@ -46,8 +46,12 @@ impl BlindspotModel {
             .filter(|net| !net.loaded())
             .map_or(&self.error, Session::error)
     }
-    pub fn set_compute_mode(&mut self, mode: ComputeMode) {
-        if self.net.as_mut().is_some_and(|net| net.set_mode(mode)) {
+    pub fn set_compute_mode(&mut self, mode: ComputeMode, generation: u64) {
+        if self
+            .net
+            .as_mut()
+            .is_some_and(|net| net.set_mode(mode, generation))
+        {
             self.state = Blindspot::default();
         }
     }

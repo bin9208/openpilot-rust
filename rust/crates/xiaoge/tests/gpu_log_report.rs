@@ -235,6 +235,8 @@ fn missing_markers_and_services_stay_unknown_and_unobserved() {
     assert_eq!(unknown.services["driverStateV2"].count, 0);
     assert_eq!(unknown.metrics["dm_execution_ms"].mean, None);
     assert_eq!(unknown.metrics["process_cpu_percent"].count, 0);
+    assert_eq!(unknown.metrics["process_rss_mib"].count, 0);
+    assert_eq!(unknown.metrics["process_rss_mib"].mean, None);
     assert_eq!(unknown.comparison.decoded_checked, 0);
     assert_eq!(report.mode_markers, 0);
     assert_eq!(report.physical_device_execution, "unknown");
@@ -427,7 +429,7 @@ fn mode_only_resources_keep_backend_unknown_and_preserve_process_scope() {
     let fixture = Fixture::new();
     let mut bytes = log(
         1,
-        json!({"event":"xiaoge_resources","schema":1,"mono_ns":1,"mode":1,"process_cpu_percent":250.0,"usb_gpu_active":true,"internal_gpu_busy_percent":0.0,"internal_gpu_counter_valid":true}),
+        json!({"event":"xiaoge_resources","schema":1,"mono_ns":1,"mode":1,"process_cpu_percent":250.0,"process_rss_bytes":1572864,"usb_gpu_active":true,"internal_gpu_busy_percent":0.0,"internal_gpu_counter_valid":true}),
         false,
     );
     bytes.extend(model(2, 1, true, 0.01));
@@ -436,6 +438,8 @@ fn mode_only_resources_keep_backend_unknown_and_preserve_process_scope() {
     let shared = group(&report, Some(1), "unknown");
     assert_eq!(shared.services["modelV2"].count, 1);
     assert_eq!(shared.metrics["process_cpu_percent"].mean, Some(250.0));
+    assert_eq!(shared.metrics["process_rss_mib"].count, 1);
+    assert_eq!(shared.metrics["process_rss_mib"].mean, Some(1.5));
     assert_eq!(shared.usb_gpu_active_true, 1);
     assert_eq!(shared.metrics["internal_gpu_busy_percent"].mean, Some(0.0));
     let fallback = group(&report, Some(1), "cpu");
@@ -493,5 +497,91 @@ fn rejects_invalid_mode_since_timestamps() {
             &[fixture.write(&format!("invalid-{index}"), &log(20, value, false))]
         )
         .is_err());
+    }
+}
+
+// Score differences can preserve a decision; missing decision evidence cannot count
+// as an agreement. Startup pending status must remain unknown, never GPU activity.
+#[test]
+fn decoded_score_differences_and_decision_outcomes_are_counted_independently() {
+    let fixture = Fixture::new();
+    let mut bytes = marker(10, 2, "opencl-fp32");
+    bytes.extend(log(11, json!({"event":"xiaoge_backend","schema":1,"mono_ns":11,"mode":2,"effective_backend":"pending"}), false));
+    for (index, (decision, cpu, gpu, cpu_above, gpu_above)) in [
+        (Some(true), 0.70, 0.71, true, true),
+        (Some(false), 0.49, 0.51, false, true),
+        (None, 0.80, 0.81, true, true),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let mut comparison = json!({
+            "max_abs":0.02,"mean_abs":0.01,"max_rel":0.04,
+            "shape_equal":true,"unequal_bits":1,"nonfinite":0,
+            "decoded_equal":false,
+            "decoded_cpu":{"confidence":cpu,"above_threshold":cpu_above,"smoothing_compared":false},
+            "decoded_gpu":{"confidence":gpu,"above_threshold":gpu_above,"smoothing_compared":false}
+        });
+        if let Some(equal) = decision {
+            comparison["decision_equal"] = json!(equal);
+        }
+        let mono = 20 + index as u64;
+        bytes.extend(log(mono, json!({"event":"xiaoge_inference","schema":1,"mono_ns":mono,"mode":2,"effective_backend":"opencl-fp32","stream":"wide","frame_id":index+1,"comparison":comparison}), false));
+    }
+    let report = report_rlogs(&[fixture.write("rlog", &bytes)]).unwrap();
+    let stats = &group(&report, Some(2), "opencl-fp32").comparison;
+    assert_eq!(stats.records, 3);
+    assert_eq!(stats.tensor_unequal_records, 3);
+    assert_eq!(stats.decoded_checked, 3);
+    assert_eq!(stats.decoded_mismatches, 3);
+    assert_eq!(stats.decisions_compared, 2);
+    assert_eq!(stats.decision_mismatches, 1);
+    let pending = group(&report, Some(2), "unknown");
+    assert!(pending.diagnostic_only);
+    assert_eq!(pending.services["xiaoge_backend"].count, 1);
+    assert_eq!(pending.comparison.decisions_compared, 0);
+}
+
+// A valid pending stream status before first forward must not abort the report or
+// become GPU execution evidence, even when its accepted mode is learned later.
+#[test]
+fn accepted_gpu_mode_allows_pending_streams_then_records_active_backend() {
+    let fixture = Fixture::new();
+    let mut bytes = init(1, "gpu-startup");
+    bytes.extend(log(110, json!({"event":"xiaoge_backend","schema":1,"mono_ns":105,"mode":1,"stream":"road","effective_backend":"pending","backend_report":{"execution_status":"not_run"}}), false));
+    bytes.extend(log(120, json!({"event":"xiaoge_inference","schema":1,"mono_ns":110,"mode":1,"stream":"road","frame_id":1,"effective_backend":"pending","latency_ms":2.0}), false));
+    bytes.extend(log(200, json!({"event":"xiaoge_resources","schema":1,"mono_ns":180,"mode_since_ns":100,"mode":1,"effective_backend":"pending"}), false));
+    let startup = report_rlogs(&[fixture.write("startup", &bytes)]).unwrap();
+    let pending = group(&startup, Some(1), "unknown");
+    assert!(pending.diagnostic_only);
+    assert_eq!(pending.services["xiaoge_backend"].count, 1);
+    assert_eq!(pending.services["xiaoge_inference"].count, 1);
+    assert_eq!(pending.metrics["xiaoge_latency_ms"].mean, Some(2.0));
+    assert!(startup
+        .groups
+        .iter()
+        .all(|g| g.effective_backend != "opencl-fp32"));
+    assert_eq!(startup.physical_device_execution, "unknown");
+
+    bytes.extend(log(220, json!({"event":"xiaoge_backend","schema":1,"mono_ns":190,"mode":1,"stream":"road","effective_backend":"opencl-fp32","backend_report":{"execution_status":"opencl_active_kernel_fallback_unknown"}}), false));
+    bytes.extend(log(230, json!({"event":"xiaoge_inference","schema":1,"mono_ns":200,"mode":1,"stream":"road","frame_id":2,"effective_backend":"opencl-fp32","latency_ms":5.0}), false));
+    bytes.extend(log(240, json!({"event":"xiaoge_resources","schema":1,"mono_ns":220,"mode_since_ns":100,"mode":1,"effective_backend":"opencl-fp32"}), false));
+    let report = report_rlogs(&[fixture.write("active", &bytes)]).unwrap();
+    assert_eq!(report.mode_markers, 1);
+    let active = group(&report, Some(1), "opencl-fp32");
+    assert_eq!(active.services["xiaoge_backend"].count, 1);
+    assert_eq!(active.services["xiaoge_inference"].count, 1);
+    assert_eq!(active.metrics["xiaoge_latency_ms"].mean, Some(5.0));
+    assert_eq!(
+        group(&report, Some(1), "unknown").metrics["xiaoge_latency_ms"].mean,
+        Some(2.0)
+    );
+    assert_eq!(report.physical_device_execution, "unknown");
+
+    for event in ["xiaoge_backend", "xiaoge_inference", "xiaoge_resources"] {
+        let mut invalid = bytes.clone();
+        invalid.extend(log(250, json!({"event":event,"schema":1,"mono_ns":230,"mode":1,"stream":"road","frame_id":3,"effective_backend":"invalid-target"}), false));
+        let error = report_rlogs(&[fixture.write(event, &invalid)]).unwrap_err();
+        assert!(error.to_string().contains("effective_backend"));
     }
 }

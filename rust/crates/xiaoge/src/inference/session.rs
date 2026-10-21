@@ -135,20 +135,21 @@ impl Session {
     pub fn error(&self) -> &str {
         &self.error
     }
-    pub fn set_mode(&mut self, mode: ComputeMode) -> bool {
-        if self.selection.requested == mode {
+    pub fn set_mode(&mut self, mode: ComputeMode, generation: u64) -> bool {
+        let had_gpu = self.selection.wants_gpu();
+        if !self.selection.select(mode, generation) {
             return false;
         }
         let started = Instant::now();
         // Loading/freeing a GPU net also belongs to the single Xiaoge GPU owner gate.
-        let needs_gate = mode != ComputeMode::Cpu || self.selection.wants_gpu();
+        let needs_gate = mode != ComputeMode::Cpu || had_gpu;
         let lock = needs_gate.then(|| GPU_WORK.lock());
-        self.selection.select(mode);
         self.shadow = None;
         self.shadow_outputs = None;
         self.timing = ForwardTiming::default();
         self.comparison_cadence = ComparisonCadence::default();
         self.report_at = None;
+        self.backend_report = json!({"execution_status":"not_run"});
         self.fallback_reason.clear();
         self.error.clear();
         let requested = if self.selection.wants_gpu() {
@@ -235,45 +236,21 @@ impl Session {
         } else {
             0.0
         };
+        let started = Instant::now();
+        let cpu = cpu_seconds();
         if lock.as_ref().is_some_and(|lock| lock.is_err()) {
             self.fallback("GPU owner gate poisoned".into());
         }
-        let started = Instant::now();
-        let cpu = cpu_seconds();
-        let first = self
-            .net
-            .as_mut()
-            .ok_or(Error::Contract("model not loaded"))?
-            .forward(input, names);
-        let mut outputs = match first {
-            Ok(outputs) => outputs,
-            Err(error) if self.selection.wants_gpu() => {
-                self.fallback(format!("GPU forward failed: {error}"));
-                self.net
-                    .as_mut()
-                    .ok_or(Error::Contract("CPU fallback model not loaded"))?
-                    .forward(input, names)?
-            }
-            Err(error) => return Err(error.into()),
-        };
-        if self
-            .report_at
-            .is_none_or(|at| at.elapsed().as_secs_f64() >= 1.0)
-            || self.backend_report["execution_status"] == "not_run"
-        {
-            self.refresh_report();
-        }
-        if self.selection.wants_gpu() && self.backend_report["effective_target"] != "opencl-fp32" {
-            self.fallback("OpenCV selected CPU after the GPU request".into());
-            outputs = self
-                .net
-                .as_mut()
-                .ok_or(Error::Contract("CPU fallback model not loaded"))?
-                .forward(input, names)?;
-            self.refresh_report();
-        }
+        let result = self.forward_primary(input, names);
         self.timing.primary_ms = started.elapsed().as_secs_f64() * 1000.0;
         self.timing.primary_thread_cpu_ms = (cpu_seconds() - cpu) * 1000.0;
+        let outputs = match result {
+            Ok(outputs) => outputs,
+            Err(error) => {
+                self.refresh_report();
+                return Err(error);
+            }
+        };
         // Release the GPU gate before optional CPU diagnostic work.
         drop(lock);
         if self.selection.wants_gpu()
@@ -294,8 +271,6 @@ impl Session {
                     .ok_or(Error::Contract("comparison model missing"))?
                     .forward(input, names)?)
             })();
-            self.timing.compare_wall_ms = started.elapsed().as_secs_f64() * 1000.0;
-            self.timing.compare_thread_cpu_ms = (cpu_seconds() - cpu) * 1000.0;
             match shadow {
                 Ok(shadow) => {
                     self.timing.comparison = Some(Comparison::tensors(&shadow, &outputs, names));
@@ -308,6 +283,47 @@ impl Session {
                     })
                 }
             }
+            self.timing.compare_wall_ms = started.elapsed().as_secs_f64() * 1000.0;
+            self.timing.compare_thread_cpu_ms = (cpu_seconds() - cpu) * 1000.0;
+        }
+        Ok(outputs)
+    }
+    fn forward_primary(
+        &mut self,
+        input: TensorView<'_>,
+        names: &[String],
+    ) -> Result<Vec<Tensor>, Error> {
+        let first = self
+            .net
+            .as_mut()
+            .ok_or(Error::Contract("model not loaded"))?
+            .forward(input, names);
+        let mut outputs = match first {
+            Ok(outputs) => outputs,
+            Err(error) if self.selection.wants_gpu() => {
+                self.fallback(format!("GPU forward failed: {error}"));
+                self.net
+                    .as_mut()
+                    .ok_or(Error::Contract("CPU fallback model not loaded"))?
+                    .forward(input, names)?
+            }
+            Err(error) => return Err(error.into()),
+        };
+        if self
+            .report_at
+            .is_none_or(|at| at.elapsed().as_secs_f64() >= 1.0)
+            || self.backend_report["effective_target"].is_null()
+        {
+            self.refresh_report();
+        }
+        if self.selection.wants_gpu() && self.backend_report["effective_target"] != "opencl-fp32" {
+            self.fallback("OpenCV selected CPU after the GPU request".into());
+            outputs = self
+                .net
+                .as_mut()
+                .ok_or(Error::Contract("CPU fallback model not loaded"))?
+                .forward(input, names)?;
+            self.refresh_report();
         }
         Ok(outputs)
     }
@@ -330,5 +346,33 @@ impl Session {
         if let Some(comparison) = &mut self.timing.comparison {
             comparison.error = Some(error);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn failed_forward_clears_previous_success_evidence_and_keeps_its_elapsed_cost() {
+        openpilot_opencv_runtime::initialize(2).unwrap();
+        let path = std::env::var("OPENCV_TEST_LANE_MODEL").expect("pinned model path");
+        let mut net = Session::load(Path::new(&path)).unwrap();
+        let names = net.output_names().unwrap();
+        let values = vec![0.5; 3 * 416 * 416];
+        let shape = [1, 3, 416, 416];
+        let input = TensorView::new(&shape, &values).unwrap();
+        net.forward(input, &names).unwrap();
+        assert_eq!(net.status()["backend_report"]["execution_status"], "cpu");
+        assert!(net.forward(input, &["not-an-output".into()]).is_err());
+        assert_eq!(
+            net.status()["backend_report"]["execution_status"],
+            "forward_failed"
+        );
+        assert!(net.status()["backend_report"]["effective_target"].is_null());
+        assert!(net.timing.primary_ms > 0.0);
+        assert!(net.timing.comparison.is_none());
+        net.forward(input, &names).unwrap();
+        assert_eq!(net.status()["backend_report"]["execution_status"], "cpu");
+        assert_eq!(net.status()["backend_report"]["effective_target"], "cpu");
     }
 }

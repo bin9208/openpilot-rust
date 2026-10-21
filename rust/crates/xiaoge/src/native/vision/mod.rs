@@ -69,6 +69,7 @@ pub fn run(options: Options, parent_running: Arc<AtomicBool>) -> Result<(), Erro
         snapshot: Condvar::new(),
         vasm_operation: Mutex::new(()),
         params,
+        params_operation: Mutex::new(()),
         config_path: options.config,
         running: AtomicBool::new(true),
     });

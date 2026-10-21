@@ -30,7 +30,7 @@ fn cpu_only_runner_reports_gpu_fallback_without_changing_detections_or_repeating
     let baseline = model.infer(&frame, 0.25);
     assert!(baseline.valid, "{}", baseline.error);
     assert_eq!(model.compute_status()["effective_backend"], "cpu");
-    model.set_compute_mode(ComputeMode::Gpu);
+    model.set_compute_mode(ComputeMode::Gpu, 1);
     let status = model.compute_status();
     assert_eq!(status["mode"], 1);
     assert_eq!(status["effective_backend"], "cpu");
@@ -48,7 +48,7 @@ fn cpu_only_runner_reports_gpu_fallback_without_changing_detections_or_repeating
         assert!(model.compute_timing()["comparison"].is_null());
         assert_eq!(model.compute_timing()["compare_wall_ms"], 0.0);
     }
-    model.set_compute_mode(ComputeMode::Compare);
+    model.set_compute_mode(ComputeMode::Compare, 2);
     let result = model.infer(&frame, 0.25);
     assert_eq!(
         serde_json::to_value(result).unwrap(),
@@ -60,7 +60,7 @@ fn cpu_only_runner_reports_gpu_fallback_without_changing_detections_or_repeating
         model.compute_timing()["comparison"].is_null(),
         "no false CPU/GPU comparison without a GPU"
     );
-    model.set_compute_mode(ComputeMode::Cpu);
+    model.set_compute_mode(ComputeMode::Cpu, 3);
     let status = model.compute_status();
     assert_eq!(status["mode"], 0);
     assert_eq!(status["effective_backend"], "cpu");
@@ -99,6 +99,7 @@ fn diagnostic_settings_persist_mode_reject_invalid_changes_and_return_to_cpu() {
         snapshot: Condvar::new(),
         vasm_operation: Mutex::new(()),
         params: Some(params.clone()),
+        params_operation: Mutex::new(()),
         config_path: root.0.join("config.json"),
         running: AtomicBool::new(true),
     };

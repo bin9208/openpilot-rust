@@ -41,16 +41,16 @@ fn gpu_is_explicit_and_malformed_persistent_modes_return_to_cpu() {
 fn failed_gpu_does_not_retry_until_selection_changes() {
     let mut state = Selection::default();
     assert!(!state.wants_gpu());
-    assert!(state.select(ComputeMode::Gpu));
+    assert!(state.select(ComputeMode::Gpu, 1));
     assert!(state.wants_gpu());
     state.fail_gpu();
     for _ in 0..100 {
-        assert!(!state.select(ComputeMode::Gpu));
+        assert!(!state.select(ComputeMode::Gpu, 1));
         assert!(!state.wants_gpu());
     }
-    assert!(state.select(ComputeMode::Cpu));
+    assert!(state.select(ComputeMode::Cpu, 2));
     assert!(!state.wants_gpu());
-    assert!(state.select(ComputeMode::Gpu));
+    assert!(state.select(ComputeMode::Gpu, 3));
     assert!(state.wants_gpu());
 }
 
@@ -117,4 +117,19 @@ fn changing_mode_expires_prior_results_and_preserves_detection_settings() {
     assert_eq!(state.compute_generation, 1);
     state.select_compute(ComputeMode::Cpu).unwrap();
     assert_eq!(state.compute_generation, 2);
+}
+
+#[test]
+fn a_new_generation_resets_the_latch_even_when_intermediate_modes_were_not_observed() {
+    let mut state = Selection::default();
+    assert!(state.select(ComputeMode::Gpu, 1));
+    state.fail_gpu();
+    assert!(!state.select(ComputeMode::Gpu, 1));
+    assert!(!state.wants_gpu());
+    // The owner selected CPU and then GPU while the worker was busy.
+    assert!(state.select(ComputeMode::Gpu, 3));
+    assert!(state.wants_gpu());
+    assert!(state.select(ComputeMode::Cpu, 4));
+    assert!(state.select(ComputeMode::Cpu, 6));
+    assert!(!state.wants_gpu());
 }
