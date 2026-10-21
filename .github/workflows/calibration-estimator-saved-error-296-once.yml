@@ -12,11 +12,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
-      EXPECTED_SOURCE: 6a726075571b1a30cb73cbedd75472a929575153
+      EXPECTED_SOURCE: 5bcfae4482d9c4dcb1da46e1086bea609e0c9688
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 6a726075571b1a30cb73cbedd75472a929575153
+        ref: 5bcfae4482d9c4dcb1da46e1086bea609e0c9688
         persist-credentials: false
     - uses: actions/setup-python@v6
       with:
@@ -74,16 +74,17 @@ jobs:
         \ commit == args.expected_source, (commit, args.expected_source)\n    output = args.output.resolve()\n    output.mkdir(parents=True,\
         \ exist_ok=False)\n    assert digest(args.baseline_trace.read_bytes()) == BASELINE_TRACE_SHA, \"old trace changed\"\
         \n    source_hashes = {name: digest((ROOT / name).read_bytes()) for name in SOURCES}\n    counters, statuses = Counter(),\
-        \ Counter()\n    steps = failures = writes = packets = cached_failures = successful_resets = 0\n    calibrator = params\
-        \ = None\n    raw = output / \"original.jsonl.gz\"\n    with gzip.open(raw, \"wt\", encoding=\"utf-8\", compresslevel=9,\
-        \ newline=\"\\n\") as trace:\n        for category, command in histories():\n            steps += 1\n            counters[category]\
-        \ += 1\n            assert steps <= 15128, \"original history unexpectedly expanded\"\n            before = len(params.writes)\
-        \ if params is not None else 0\n            observation = {}\n            try:\n                if command[\"action\"\
-        ] == \"reset\":\n                    params = Parameters(bytes(command[\"saved\"]) if command[\"saved\"] is not None\
-        \ else None)\n                    before = 0\n                    source = original(command[\"mici\"], params)\n \
-        \                   handler = CachedParamsFailure()\n                    logger = source.cloudlog\n              \
-        \      logger.addHandler(handler)\n                    try:\n                        calibrator = source.Calibrator(param_put=True)\n\
-        \                    finally:\n                        logger.removeHandler(handler)\n                        handler.close()\n\
+        \ Counter()\n    steps = failures = writes = packets = cached_failures = successful_resets = reset_attempts = 0\n\
+        \    calibrator = params = None\n    raw = output / \"original.jsonl.gz\"\n    with gzip.open(raw, \"wt\", encoding=\"\
+        utf-8\", compresslevel=9, newline=\"\\n\") as trace:\n        for category, command in histories():\n            steps\
+        \ += 1\n            counters[category] += 1\n            assert steps <= 15128, \"original history unexpectedly expanded\"\
+        \n            before = len(params.writes) if params is not None else 0\n            observation = {}\n           \
+        \ try:\n                if command[\"action\"] == \"reset\":\n                    reset_attempts += 1\n          \
+        \          params = Parameters(bytes(command[\"saved\"]) if command[\"saved\"] is not None else None)\n          \
+        \          before = 0\n                    source = original(command[\"mici\"], params)\n                    handler\
+        \ = CachedParamsFailure()\n                    logger = source.cloudlog\n                    logger.addHandler(handler)\n\
+        \                    try:\n                        calibrator = source.Calibrator(param_put=True)\n              \
+        \      finally:\n                        logger.removeHandler(handler)\n                        handler.close()\n\
         \                    assert handler.failures in (0, 1), \"duplicate cached-Params failure\"\n                    assert\
         \ command[\"saved\"] is not None or handler.failures == 0, \"failure without saved Params\"\n                    observation[\"\
         saved_error\"] = bool(handler.failures)\n                    cached_failures += handler.failures\n               \
@@ -110,27 +111,29 @@ jobs:
         \    trace.write(json.dumps({\"step\": steps, \"scenario\": category, \"command\": command,\n                    \
         \                \"original\": observation}, ensure_ascii=False, allow_nan=False, separators=(\",\", \":\")) + \"\\\
         n\")\n    assert steps == 15128, steps\n    assert statuses[\"recalibrating\"] and statuses[\"invalid\"] and statuses[\"\
-        calibrated\"]\n    assert writes >= 10 and failures >= 10\n    assert successful_resets == 163, successful_resets\n\
-        \    compared = 0\n    with gzip.open(args.baseline_trace, \"rt\", encoding=\"utf-8\") as baseline, \\\n         gzip.open(raw,\
-        \ \"rt\", encoding=\"utf-8\") as captured:\n        for old_line, new_line in zip_longest(baseline, captured):\n \
-        \           assert old_line is not None and new_line is not None, \"trace row count differs\"\n            old_row,\
-        \ new_row = json.loads(old_line), json.loads(new_line)\n            if old_row[\"command\"][\"action\"] == \"reset\"\
-        \ and \"state\" in old_row[\"original\"]:\n                assert type(new_row[\"original\"].pop(\"saved_error\",\
-        \ None)) is bool, \"reset observation missing\"\n            assert new_row == old_row, f\"old observation changed\
-        \ at step {compared + 1}\"\n            compared += 1\n    assert compared == steps, (compared, steps)\n    manifest\
-        \ = {\"kind\": \"original-only calibration estimator\", \"source_commit\": commit,\n                \"source_sha256\"\
-        : source_hashes, \"python\": sys.version, \"numpy\": np.__version__,\n                \"capnp\": __import__(\"capnp\"\
-        ).__version__, \"steps\": steps, \"scenarios\": counters,\n                \"statuses\": statuses, \"source_errors\"\
-        : failures, \"persistence_packets\": writes,\n                \"packets\": packets, \"successful_resets\": successful_resets,\n\
+        calibrated\"]\n    assert writes >= 10 and failures >= 10\n    assert reset_attempts == 163, reset_attempts\n    assert\
+        \ successful_resets == 147, successful_resets\n    compared = 0\n    with gzip.open(args.baseline_trace, \"rt\", encoding=\"\
+        utf-8\") as baseline, \\\n         gzip.open(raw, \"rt\", encoding=\"utf-8\") as captured:\n        for old_line,\
+        \ new_line in zip_longest(baseline, captured):\n            assert old_line is not None and new_line is not None,\
+        \ \"trace row count differs\"\n            old_row, new_row = json.loads(old_line), json.loads(new_line)\n       \
+        \     if old_row[\"command\"][\"action\"] == \"reset\" and \"state\" in old_row[\"original\"]:\n                assert\
+        \ type(new_row[\"original\"].pop(\"saved_error\", None)) is bool, \"reset observation missing\"\n            assert\
+        \ new_row == old_row, f\"old observation changed at step {compared + 1}\"\n            compared += 1\n    assert compared\
+        \ == steps, (compared, steps)\n    manifest = {\"kind\": \"original-only calibration estimator\", \"source_commit\"\
+        : commit,\n                \"source_sha256\": source_hashes, \"python\": sys.version, \"numpy\": np.__version__,\n\
+        \                \"capnp\": __import__(\"capnp\").__version__, \"steps\": steps, \"scenarios\": counters,\n      \
+        \          \"statuses\": statuses, \"source_errors\": failures, \"persistence_packets\": writes,\n               \
+        \ \"packets\": packets, \"reset_attempts\": reset_attempts,\n                \"successful_resets\": successful_resets,\n\
         \                \"cached_params_failures\": cached_failures,\n                \"trace_file\": raw.name, \"trace_sha256\"\
         : digest(raw.read_bytes()),\n                \"state_tolerance\": {\"absolute\": 2e-12, \"relative\": 2e-12},\n  \
         \              \"wire_tolerance\": \"one Float32 ULP or absolute2e-12 cancellation floor; discrete and nonfinite classes\
         \ exact\"}\n    (output / \"manifest.json\").write_text(json.dumps(manifest, indent=2) + \"\\n\")\n    print(json.dumps({key:\
         \ manifest[key] for key in (\"steps\", \"scenarios\", \"statuses\", \"source_errors\", \"persistence_packets\", \"\
-        packets\", \"successful_resets\", \"cached_params_failures\", \"trace_sha256\")}, indent=2))\n\n\nif __name__ == \"\
-        __main__\":\n    main()\nPYCODE\nprintf 'c423c7adffd9125d3daed7a621ae7433361c5161329bf2a76e22d3eaa0e00f50  %s/capture_original_only.py\\\
-        n' \"$proof\" | sha256sum --check --strict\npython -m py_compile \"$proof/capture_original_only.py\"\ntimeout 1200s\
-        \ python \"$proof/capture_original_only.py\" --expected-source \"$EXPECTED_SOURCE\" --baseline-trace \"$GITHUB_WORKSPACE/rust/crates/dev-tools/tests/fixtures/calibration-estimator-original-04ee2c/original.jsonl.gz\"\
+        packets\", \"reset_attempts\", \"successful_resets\", \"cached_params_failures\", \"trace_sha256\")}, indent=2))\n\
+        \n\nif __name__ == \"__main__\":\n    main()\nPYCODE\nprintf '08e7811d5760dfec98a707532da3c35e7beeac24306a82d71840d96b582ea96b\
+        \  %s/capture_original_only.py\\n' \"$proof\" | sha256sum --check --strict\npython -m py_compile \"$proof/capture_original_only.py\"\
+        \ntimeout 1200s python \"$proof/capture_original_only.py\" --expected-source \"$EXPECTED_SOURCE\" --baseline-trace\
+        \ \"$GITHUB_WORKSPACE/rust/crates/dev-tools/tests/fixtures/calibration-estimator-original-04ee2c/original.jsonl.gz\"\
         \ --output \"$proof/original\" > \"$proof/capture.stdout\" 2> \"$proof/capture.stderr\"\ntest -s \"$proof/original/manifest.json\"\
         \ntest -s \"$proof/original/original.jsonl.gz\"\nsha256sum \"$proof/capture_original_only.py\" \"$proof/original/manifest.json\"\
         \ \"$proof/original/original.jsonl.gz\" > \"$proof/SHA256SUMS\"\npython -m pip freeze > \"$proof/python-packages.txt\"\
