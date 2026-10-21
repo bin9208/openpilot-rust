@@ -4192,6 +4192,15 @@ jobs:
           python rust/tools/check_wifi_policy.py --binary "$PWD/rust/target/debug/examples/wifi_trace" --output "$RUNNER_TEMP/ui-connectivity/wifi-policy.json"
           python rust/tools/check_wifi_runtime.py --binary "$PWD/rust/target/debug/examples/wifi_native" --launcher "$PWD/rust/target/debug/openpilot-process-child" --binding "$RUNNER_TEMP/ui-params-binding"/params_pyx*.so --output "$RUNNER_TEMP/ui-connectivity/wifi"
           python rust/tools/check_wifi_callback_ordering.py --binary "$PWD/rust/target/debug/examples/wifi_native" --launcher "$PWD/rust/target/debug/openpilot-process-child" --binding "$RUNNER_TEMP/ui-params-binding"/params_pyx*.so --output "$RUNNER_TEMP/ui-connectivity/wifi-callback-ordering"
+      - name: Require cweb redirect byte equivalence and allocation accounting
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/ui-connectivity/cweb/redirect-allocation"
+          mkdir -p "$proof"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-cweb-push --all-targets --locked -- --nocapture 2>&1 | tee "$proof/package-tests.log"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-cweb-push --all-targets --locked -- -D warnings 2>&1 | tee "$proof/clippy.log"
       - name: Compare discovery policy, HTTP, continuous process and address ABI
         run: |
           python rust/tools/check_cweb_policy.py --binary "$PWD/rust/target/debug/examples/cweb_trace" --output "$RUNNER_TEMP/ui-connectivity/cweb/policy"

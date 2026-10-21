@@ -2884,3 +2884,32 @@ fn desire_controller_preserves_shared_original_and_private_absence_cli_command_g
         "${{ runner.temp }}/desire-controller-native/"
     );
 }
+
+#[test]
+fn cweb_redirect_allocation_keeps_full_http_daemon_and_address_comparisons_mandatory() {
+    let data = workflow();
+    let job = &data["jobs"]["ui-connectivity"];
+    let steps = job["steps"].as_array().unwrap();
+    let allocation = steps
+        .iter()
+        .find(|step| {
+            step["name"] == "Require cweb redirect byte equivalence and allocation accounting"
+        })
+        .unwrap();
+    absent(allocation, &["if", "continue-on-error"]);
+    required(allocation["run"].as_str().unwrap(), &[
+        "cargo test --manifest-path rust/Cargo.toml -p openpilot-cweb-push --all-targets --locked -- --nocapture",
+        "cargo clippy --manifest-path rust/Cargo.toml -p openpilot-cweb-push --all-targets --locked -- -D warnings",
+        "tee \"$proof/package-tests.log\"",
+        "tee \"$proof/clippy.log\"",
+    ]);
+    mandatory(
+        job,
+        &[
+            "python rust/tools/check_cweb_policy.py",
+            "python rust/tools/check_cweb_http.py",
+            "python rust/tools/check_cweb_daemon.py",
+            "python rust/tools/check_cweb_address.py",
+        ],
+    );
+}
