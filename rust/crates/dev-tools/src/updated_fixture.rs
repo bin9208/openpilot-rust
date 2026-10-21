@@ -384,7 +384,7 @@ fn python_json_string(value: &str) -> String {
             '\t' => result.push_str("\\t"),
             '\u{8}' => result.push_str("\\b"),
             '\u{c}' => result.push_str("\\f"),
-            value if value < '\u{20}' || value >= '\u{80}' => {
+            value if value < '\u{20}' || value >= '\u{7f}' => {
                 let mut encoded = [0; 2];
                 for unit in value.encode_utf16(&mut encoded).iter() {
                     result.push_str(&format!("\\u{unit:04x}"));

@@ -214,7 +214,8 @@ fn audit_exec(
             assert!(
                 path.starts_with("/usr/bin/")
                     || path.starts_with("/bin/")
-                    || path.starts_with("/usr/lib/gcc/"),
+                    || path.starts_with("/usr/lib/gcc/")
+                    || path.starts_with("/usr/libexec/gcc/"),
                 "helper search outside toolchain: {line}"
             );
             failed_helper_lookups += 1;
@@ -267,7 +268,9 @@ fn audit_exec(
                 "unrecognized compiler child {program}"
             );
             assert!(
-                program.starts_with("/usr/bin/") || program.starts_with("/usr/lib/gcc/"),
+                program.starts_with("/usr/bin/")
+                    || program.starts_with("/usr/lib/gcc/")
+                    || program.starts_with("/usr/libexec/gcc/"),
                 "compiler child outside toolchain: {program}"
             );
             assert!(Path::new(&program).is_file());
