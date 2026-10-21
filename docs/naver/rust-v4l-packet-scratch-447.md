@@ -1,0 +1,7 @@
+# Reuse owned V4L packet scratch (#447 / #296)
+
+The native dequeue worker allocated a new Vec for each normal encoded packet, then copied that payload into Cap’n Proto. It now retains one owned scratch buffer and copies each packet into its exact prefix. The initialized length and capacity retain their high-water marks, so a shorter packet followed by a longer packet does not repeat zero initialization within the already initialized range. Memory can remain at the largest packet seen until this worker exits; Vec capacity can exceed that length.
+
+Mapping still returns owned copies or copies into owned destination storage. No Rust reference to externally written DMA storage is exposed. The original DMA-to-owned-memory copy and later Cap’n Proto copy remain. Codec headers, EOS, packet bounds, timestamp/metadata checks, publication and requeue order are unchanged.
+
+The new native test compares variable, empty and maximum payloads against the existing Mapping::copy method, compares fingerprints, rejects an oversized destination without changing its sentinel, and measures Rust allocator calls after warmup. It records both paths’ copied-byte counts and retained capacity. These are copy-boundary measurements, not full encoding, recording or vehicle timing results. The main hosted encoder job retains its package log, complete codec/V4L/runtime comparisons and strict Clippy. Focused cloud execution and the affected ARM build remain pending. Local checks are syntax, formatting and diff review only.

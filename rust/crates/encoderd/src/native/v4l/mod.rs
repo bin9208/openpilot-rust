@@ -256,6 +256,7 @@ fn dequeue_worker(
     platform::name(&format!("dq-{service}"))?;
     let mut index = u32::MAX;
     let mut header = Vec::new();
+    let mut packet_scratch = Vec::new();
     let mut exit = false;
     let debug = platform::debug_encoder();
     while !exit {
@@ -320,13 +321,19 @@ fn dequeue_worker(
                 }
                 frame_id = extra.frame_id as i32;
                 index = index.wrapping_add(1);
+                if packet_scratch.len() < packet.length {
+                    packet_scratch.resize(packet.length, 0);
+                }
+                buffer
+                    .mapping()
+                    .copy_into(&mut packet_scratch[..packet.length])?;
                 resources.publisher.publish(
                     segment,
                     index,
                     &extra,
                     packet.flags,
                     &header,
-                    &buffer.mapping().copy(packet.length)?,
+                    &packet_scratch[..packet.length],
                 )?;
             }
             if debug != 0 {

@@ -1198,8 +1198,10 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features encoder-runtime-native --test encoder_runtime_native --test encoder_ci_check --locked
       - name: Require encoder policy and shared VisionIPC ownership checks
         run: |
+          set -o pipefail
+          mkdir -p "$RUNNER_TEMP/encoder-native"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-encoderd -p openpilot-msgq --features openpilot-encoderd/native --locked
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-encoderd -p openpilot-msgq --features openpilot-encoderd/native --locked -- --nocapture 2>&1 | tee "$RUNNER_TEMP/encoder-native/package-tests.log"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-encoderd --features native --all-targets --locked -- -D warnings
       - name: Build native encoder and record current JPEG and messaging outputs
