@@ -714,7 +714,7 @@ jobs:
       - name: Verify native workflow receipt metadata against fixed original observations
         env:
           CI_RECEIPT_ORIGINAL: ${{ github.workspace }}/rust/crates/dev-tools/tests/fixtures/ci-receipt-original/original
-          CI_RECEIPT_BINARY: ${{ github.workspace }}/rust/target/debug/ci-receipt-metadata
+          CI_RECEIPT_BINARY: ${{ env.CI_RECEIPT_METADATA }}
           CI_RECEIPT_EVIDENCE: ${{ runner.temp }}/ci-receipt-metadata/comparisons
           CI_RECEIPT_MANIFEST_SHA256: 71d33e6e25f62c7a51240ecb4eb908acd35351a911b482869181fbfdffd130c1
         run: |
