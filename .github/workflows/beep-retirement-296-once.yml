@@ -1,4 +1,4 @@
-name: 296 beep same-ELF checker absence and optional binding proof
+name: 296 beep actual Python deletion complete native proof
 'on':
   push:
     branches:
@@ -16,11 +16,11 @@ jobs:
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
-      EXPECTED_SOURCE: 9d30d353f476bb69b1fe1a1e8c304f7f41aa1bc6
+      EXPECTED_SOURCE: ca042774dd376bd43838d28f32ff39a19c9b7bbb
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 9d30d353f476bb69b1fe1a1e8c304f7f41aa1bc6
+        ref: ca042774dd376bd43838d28f32ff39a19c9b7bbb
         persist-credentials: false
     - name: Admit exact source and native-only prerequisites
       run: 'set -euo pipefail
@@ -44,7 +44,7 @@ jobs:
         printf ''BEEP_REFERENCE_CHECKER_BINARY=%s/rust/target/debug/check-beep-reference\nBEEP_REFERENCE_BINARY=%s/rust/target/debug/examples/beep_trace\nBEEP_REFERENCE_ORIGINAL=%s/rust/crates/dev-tools/tests/fixtures/beep-reference/3835653-original\n''
         "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
 
-        printf ''BEEP_REFERENCE_ORIGINAL_MANIFEST_SHA256=0a02d6aacb5b930012a47886c389571d9cf3ff404ecd796171045f10734a9188\nBEEP_REFERENCE_EVIDENCE=%s/test-output\nBEEP_REFERENCE_RETIREMENT_EVIDENCE=%s/retirement\nBEEP_REFERENCE_EXPECT_ABSENT=0\n''
+        printf ''BEEP_REFERENCE_ORIGINAL_MANIFEST_SHA256=0a02d6aacb5b930012a47886c389571d9cf3ff404ecd796171045f10734a9188\nBEEP_REFERENCE_EVIDENCE=%s/test-output\nBEEP_REFERENCE_RETIREMENT_EVIDENCE=%s/retirement\nBEEP_REFERENCE_EXPECT_ABSENT=1\nBEEP_REFERENCE_CHECKER_ABSENT=1\n''
         "$proof" "$proof" >> "$GITHUB_ENV"
 
         '
@@ -81,6 +81,16 @@ jobs:
         cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features beep-reference-native --lib
         --bin check-beep-reference --test beep_reference_check --test beep_reference_retirement --locked -- -D warnings 2>&1
         | tee "$proof/clippy.log"
+
+
+        test ! -e rust/tools/check_beepd_reference.py
+
+        test ! -L rust/tools/check_beepd_reference.py
+
+        rust/target/debug/check-beep-reference --binary "$BEEP_REFERENCE_BINARY" --original "$BEEP_REFERENCE_ORIGINAL" --original-manifest-sha256
+        "$BEEP_REFERENCE_ORIGINAL_MANIFEST_SHA256" --output "$proof/default-cli" > "$proof/default-cli.stdout" 2> "$proof/default-cli.stderr"
+
+        test ! -s "$proof/default-cli.stderr"
 
         '
     - uses: actions/upload-artifact@v6
