@@ -1,4 +1,4 @@
-name: 296 recovery functional and tracer isolation at unchanged source
+name: 296 recovery corrected aliases and complete tracer isolation
 'on':
   push:
     branches:
@@ -22,12 +22,12 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 010f521bb3d1f8399a13e6e150093eab11c9106c
+        ref: 047b1ea403062a725d834a4b1e0533e094c86722
         persist-credentials: false
     - name: Bind exact source and reserve disk before prerequisites
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = 010f521bb3d1f8399a13e6e150093eab11c9106c
+        test "$(git rev-parse HEAD)" = 047b1ea403062a725d834a4b1e0533e094c86722
 
         proof="$RUNNER_TEMP/recovery-frozen"
 
@@ -92,6 +92,24 @@ jobs:
         test -f "${harness[0]}"
 
         printf ''%s\n'' "${harness[0]}" > "$proof/harness-test-elf.path"
+
+        '
+    - name: Verify changed family units and strict lint before complete traffic
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/recovery-frozen"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features recovery-family-native --lib recovery_family::
+        --locked > "$proof/family-unit.stdout" 2> "$proof/family-unit.stderr" || { tail -n 100 "$proof/family-unit.stderr";
+        exit 1; }
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features recovery-family-native --lib --test
+        recovery_family --test recovery_family_frozen --locked -- -D warnings > "$proof/clippy.stdout" 2> "$proof/clippy.stderr"
+        || { tail -n 120 "$proof/clippy.stderr"; exit 1; }
 
         '
     - name: Prepare absent private source root and bind exact same ELFs
@@ -194,7 +212,7 @@ jobs:
         '
     - name: Verify full held source and ELF identities after traffic
       if: always()
-      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/recovery-frozen\"\ntest \"$(git rev-parse HEAD)\" = 010f521bb3d1f8399a13e6e150093eab11c9106c\n\
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/recovery-frozen\"\ntest \"$(git rev-parse HEAD)\" = 047b1ea403062a725d834a4b1e0533e094c86722\n\
         if test -f \"$proof/held-inputs.list\"; then\n  while IFS= read -r path; do test -f \"$path\" && test ! -L \"$path\"\
         ; stat -c '%d %i %s %f' \"$path\"; sha256sum \"$path\"; done < \"$proof/held-inputs.list\" > \"$proof/held-inputs.after\"\
         \n  cmp \"$proof/held-inputs.before\" \"$proof/held-inputs.after\"\nfi\n"
