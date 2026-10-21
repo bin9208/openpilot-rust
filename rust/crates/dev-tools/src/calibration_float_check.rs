@@ -202,26 +202,8 @@ pub struct Options {
     pub output: PathBuf,
 }
 pub fn parse(args: &[OsString]) -> Result<Option<Options>> {
-    // argparse's zero-argument -h rejects an attached tail. Preserve normal
-    // action ordering through the shared scanner rather than returning early.
-    use std::os::unix::ffi::OsStringExt;
-    let mut literal = false;
-    let args = args
-        .iter()
-        .map(|arg| {
-            let bytes = arg.as_bytes();
-            if bytes == b"--" {
-                literal = true;
-            }
-            if !literal && bytes.starts_with(b"-h") && bytes.len() > 2 && bytes[2] != b'=' {
-                OsString::from_vec([b"-h=".as_slice(), &bytes[2..]].concat())
-            } else {
-                arg.clone()
-            }
-        })
-        .collect::<Vec<_>>();
     let parsed = scan_os(
-        &args,
+        args,
         &[
             OptionSpec::value("--binary", true),
             OptionSpec::value("--output", true),
@@ -355,7 +337,7 @@ fn execute(
     // Defer unavailable/nonregular candidate identity until its original spawn
     // phase. A successful report still requires a held regular-file identity.
     let candidate = Artifact::open(&options.binary);
-    let compile = CommandSpec::new_os(
+    let mut compile = CommandSpec::new_os(
         vec![
             compiler.clone().into_os_string(),
             "-std=c++17".into(),
@@ -366,6 +348,8 @@ fn execute(
         ],
         Duration::from_secs(60),
     );
+    // Keep the original subprocess argv[0] while executing the hash-bound compiler.
+    compile.arg0 = Some("g++".into());
     child(runner, &compile, &options.output, "compiler")?;
     compiler_identity.verify(&compiler)?;
     cancelled(cancel)?;
@@ -420,7 +404,7 @@ fn execute(
     stdout.write_all(SUCCESS.as_bytes())?;
     stdout.flush()?;
     let report = json!({"result":"pass","cases":rows});
-    let provenance = json!({"sources":proof,"binary_sha256":candidate.sha,"compiler_sha256":compiler_identity.sha,"reference_sha256":source_identity.sha,"executing_checker_sha256":executing_identity.sha,"generated_source_sha256":format!("{:x}",Sha256::digest(program.as_bytes())),"binary_path_bytes":options.binary.as_os_str().as_bytes(),"compile_argv_bytes":compile.effective_argv().iter().map(|arg|arg.as_bytes().to_vec()).collect::<Vec<_>>(),"child_bounds_seconds":{"compiler":60,"probe":5}});
+    let provenance = json!({"sources":proof,"binary_sha256":candidate.sha,"compiler_sha256":compiler_identity.sha,"reference_sha256":source_identity.sha,"executing_checker_sha256":executing_identity.sha,"generated_source_sha256":format!("{:x}",Sha256::digest(program.as_bytes())),"binary_path_bytes":options.binary.as_os_str().as_bytes(),"compile_program_bytes":compiler.as_os_str().as_bytes(),"compile_argv_bytes":compile.child_argv().iter().map(|arg|arg.as_bytes().to_vec()).collect::<Vec<_>>(),"child_bounds_seconds":{"compiler":60,"probe":5}});
     let identity = Publication::write(&options.output.join("provenance.json"), &provenance)?;
     let result = Publication::write(&options.output.join("report.json"), &report)?;
     verify()?;

@@ -180,6 +180,11 @@ fn extraction_uses_actual_method_and_rejects_missing_or_unterminated_source() {
 #[test]
 fn original_flags_abbreviations_repeated_options_and_raw_paths_are_admitted() {
     assert!(checker::parse(&["--help".into()]).unwrap().is_none());
+    assert!(checker::parse(&["-hfoo".into()]).unwrap().is_none());
+    assert!(checker::parse(&["-h=foo".into()]).is_err());
+    assert!(checker::parse(&["-h".into(), "-hfoo".into()])
+        .unwrap()
+        .is_none());
     for args in [
         vec![],
         vec!["--binary", "x"],
@@ -216,6 +221,10 @@ fn cloud_original_and_native_cli_have_the_same_help_and_error_admission() {
         vec!["-h"],
         vec!["--hel"],
         vec!["-hfoo"],
+        vec!["-hh"],
+        vec!["-hhh"],
+        vec!["-h-h"],
+        vec!["-hh=foo"],
         vec!["-h=foo"],
         vec!["--help=foo"],
         vec!["--binary"],
@@ -556,7 +565,7 @@ fn cloud_original_and_native_distinguish_unset_path_from_explicitly_empty_path()
     ))
     .unwrap();
     for unset in [true, false] {
-        let mut reports = Vec::new();
+        let mut outcomes = Vec::new();
         for original in [true, false] {
             let output = directory.path().join(format!("path-{unset}-{original}"));
             let mut argv = if original {
@@ -574,8 +583,9 @@ fn cloud_original_and_native_distinguish_unset_path_from_explicitly_empty_path()
                 output.clone().into_os_string(),
             ]);
             let mut command = CommandSpec::new_os(argv, Duration::from_secs(180));
-            // There is deliberately no g++ in this private cwd. No process-wide
-            // environment/cwd mutation can interfere with concurrent tests.
+            // A bare argv[0] can affect GCC helper lookup even when its driver
+            // resolves through the default PATH. Compare the actual original
+            // outcome instead of assuming that this host's compiler succeeds.
             command.cwd = Some(directory.path().into());
             command.env.insert(
                 "OPENPILOT_RUST_ROOT".into(),
@@ -587,22 +597,28 @@ fn cloud_original_and_native_distinguish_unset_path_from_explicitly_empty_path()
                 command.env.insert("PATH".into(), String::new());
             }
             let observed = NativeRunner.run(&command).unwrap();
-            assert_eq!(
-                observed.code,
-                if unset { 0 } else { 1 },
+            assert!(
+                matches!(observed.code, 0 | 1),
                 "unset={unset}, original={original}: {}",
                 String::from_utf8_lossy(&observed.stderr)
             );
+            if !unset {
+                assert_eq!(observed.code, 1, "empty PATH must not find the compiler");
+            }
             assert!(output.join("source_get_float.cc").is_file());
-            if unset {
+            let report = if observed.code == 0 {
                 assert_eq!(observed.stdout, checker::SUCCESS.as_bytes());
-                reports.push(value(&output.join("report.json")));
+                Some(value(&output.join("report.json")))
             } else {
                 assert!(!output.join("report.json").exists());
-            }
+                assert!(!output.join("provenance.json").exists());
+                None
+            };
+            outcomes.push((observed.code, observed.stdout, report));
         }
-        if unset {
-            assert_eq!(reports[0], reports[1]);
-        }
+        assert_eq!(
+            outcomes[0], outcomes[1],
+            "original/native PATH parity: unset={unset}"
+        );
     }
 }

@@ -31,6 +31,9 @@ pub struct CommandSpec {
     /// Authoritative Unix argv when supplied. The String argv remains a UTF-8
     /// peer interface; new_os leaves it empty if any argument is not Unicode.
     pub os_argv: Option<Vec<OsString>>,
+    /// Override the child's argv[0] while executing the program selected by
+    /// effective_argv. Some native compilers use this spelling to find helpers.
+    pub arg0: Option<OsString>,
     pub cwd: Option<PathBuf>,
     pub env: BTreeMap<String, String>,
     /// Authoritative environment overlay, preserving native OS bytes. The
@@ -62,6 +65,7 @@ impl CommandSpec {
         Self {
             argv,
             os_argv: None,
+            arg0: None,
             cwd: None,
             env: BTreeMap::new(),
             os_env: None,
@@ -92,6 +96,13 @@ impl CommandSpec {
         self.os_argv
             .clone()
             .unwrap_or_else(|| self.argv.iter().map(OsString::from).collect())
+    }
+    pub fn child_argv(&self) -> Vec<OsString> {
+        let mut argv = self.effective_argv();
+        if let (Some(first), Some(arg0)) = (argv.first_mut(), &self.arg0) {
+            first.clone_from(arg0);
+        }
+        argv
     }
     pub fn set_os_env(&mut self, env: BTreeMap<OsString, OsString>) {
         self.env = env
@@ -405,6 +416,9 @@ impl NativeRunner {
         let argv = spec.effective_argv();
         let (first, args) = argv.split_first().ok_or("empty native command")?;
         let mut command = Command::new(first);
+        if let Some(arg0) = &spec.arg0 {
+            command.arg0(arg0);
+        }
         command
             .args(args)
             .envs(spec.effective_env())

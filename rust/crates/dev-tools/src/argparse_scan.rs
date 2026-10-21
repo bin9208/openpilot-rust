@@ -93,7 +93,8 @@ pub fn scan_with_positionals(
     let mut all = specs.to_vec();
     all.push(OptionSpec::flag("--help", None));
     let resolve = |name: &str| -> Result<Option<usize>, ArgumentError> {
-        // A short-option cluster executes help before consuming its remaining letters.
+        // Classify short help clusters here; validate explicit tails when the
+        // action is consumed so an earlier help action keeps its ordering.
         if name.starts_with("-h") && !name.starts_with("--") {
             return Ok(Some(all.len() - 1));
         }
@@ -147,12 +148,18 @@ pub fn scan_with_positionals(
             continue;
         };
         let spec = all[index];
-        let inline =
-            if args[i].starts_with("-h") && !args[i].starts_with("-h=") && args[i].len() > 2 {
-                None
+        let inline = if args[i].starts_with("-h") && !args[i].starts_with("--") {
+            let tail = args[i][2..].trim_start_matches('h');
+            if let Some(value) = tail.strip_prefix('=') {
+                Some(value)
+            } else if tail.starts_with('-') {
+                Some(tail)
             } else {
-                args[i].split_once('=').map(|(_, v)| v)
-            };
+                None
+            }
+        } else {
+            args[i].split_once('=').map(|(_, v)| v)
+        };
         if !spec.takes_value {
             if inline.is_some() {
                 return Err(ArgumentError(format!(

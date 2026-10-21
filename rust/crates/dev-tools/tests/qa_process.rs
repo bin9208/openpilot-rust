@@ -699,3 +699,16 @@ fn separate_file_peer_preserves_success_and_timeout_bytes() {
     assert_eq!(fs::read(stdout).unwrap(), b"out\xff");
     assert_eq!(fs::read(stderr).unwrap(), b"err\r");
 }
+
+#[test]
+fn child_arg0_is_lossless_without_changing_the_selected_executable() {
+    use std::{ffi::OsString, os::unix::ffi::OsStringExt};
+    let mut spec = command("printf '%s' \"$0\"", Duration::from_secs(2));
+    let alias = b"/missing/compiler-\xff".to_vec();
+    spec.arg0 = Some(OsString::from_vec(alias.clone()));
+    assert_eq!(spec.effective_argv()[0], "/bin/sh");
+    assert_eq!(spec.child_argv()[0], OsString::from_vec(alias.clone()));
+    let observed = NativeRunner.run(&spec).unwrap();
+    assert_eq!(observed.code, 0);
+    assert_eq!(observed.stdout, alias);
+}
