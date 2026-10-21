@@ -71,7 +71,7 @@ impl<'a> Frame<'a> {
         Ok(output)
     }
 
-    pub fn pack(&self) -> Result<Vec<u8>, Error> {
+    fn validate_uv(&self) -> Result<usize, Error> {
         let layout = self.layout;
         if !layout.width.is_multiple_of(2) || !layout.height.is_multiple_of(2) {
             return Err(Error::OddDimensions);
@@ -93,6 +93,12 @@ impl<'a> Frame<'a> {
                 required: uv_end,
             });
         }
+        Ok(uv_end)
+    }
+
+    pub fn pack(&self) -> Result<Vec<u8>, Error> {
+        let layout = self.layout;
+        let uv_end = self.validate_uv()?;
         let rows = layout
             .height
             .checked_add(layout.height / 2)
@@ -104,6 +110,38 @@ impl<'a> Frame<'a> {
         }
         for row in self.data[layout.uv_offset..uv_end].chunks_exact(layout.stride) {
             output.extend_from_slice(&row[..layout.width]);
+        }
+        Ok(output)
+    }
+
+    /// Packs an even-aligned [x, y, width, height] region as Y then NV12 UV.
+    pub fn crop_nv12(&self, bounds: [usize; 4]) -> Result<Vec<u8>, Error> {
+        // Preserve full-frame validation, including unselected UV rows/padding.
+        let uv_end = self.validate_uv()?;
+        let layout = self.layout;
+        let [x, y, width, height] = bounds;
+        let end_x = x.checked_add(width).ok_or(Error::Overflow)?;
+        let end_y = y.checked_add(height).ok_or(Error::Overflow)?;
+        if width == 0
+            || height == 0
+            || end_x > layout.width
+            || end_y > layout.height
+            || bounds.into_iter().any(|value| !value.is_multiple_of(2))
+        {
+            return Err(Error::Dimensions);
+        }
+        let rows = height.checked_add(height / 2).ok_or(Error::Overflow)?;
+        let capacity = rows.checked_mul(width).ok_or(Error::Overflow)?;
+        let mut output = Vec::with_capacity(capacity);
+        for row in self.y_rows().skip(y).take(height) {
+            output.extend_from_slice(&row[x..end_x]);
+        }
+        for row in self.data[layout.uv_offset..uv_end]
+            .chunks_exact(layout.stride)
+            .skip(y / 2)
+            .take(height / 2)
+        {
+            output.extend_from_slice(&row[x..end_x]);
         }
         Ok(output)
     }

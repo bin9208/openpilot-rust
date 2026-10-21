@@ -275,3 +275,23 @@ Cloud regressions check retained measured inputs and real gate wiring against
 tampered warmup output. GM runtime/source code, EPS guard, cadence, readiness,
 packet counts, deadlines and input-only three-attempt bound stay unchanged.
 Full latest-source PR and post-merge acceptance remains tracked in #444/#409.
+
+### Updated protected base during validation (#446)
+
+While the `d73136a3` run was validating, PR #446 advanced dev-md to `f060fc42`.
+Retain all merged ONNX preprocessing/lane changes, frozen source oracles,
+whole-process compute benchmark, regression tests and their existing records.
+The common workspace and native Xiaoge all-targets checks include the new
+crop, lane and native tensor comparisons on both architectures. Move the
+exact frozen-oracle/source identity verification from the former manual fast
+workflow into the common fast stage; do not restore an independent validation
+entry point. The benchmark source remains available, with its recorded ARM
+measurement in the original #446 evidence; this task makes no new CPU claim.
+
+The old runtime dispatch exception for `codex/fix-416-onnx-compute` is superseded
+by this task's verified exact-source dev-md PR-merge delivery policy. #446's
+separate marked runtime delivery stays outside this task. Cancel the outdated
+`d73136a3` PR run rather than use its older-base results for merging. It passed
+groups 1–33 (including both Xiaoge architecture comparisons) and reached the
+native memory group before cancellation. Repeat full PR and exact-merge
+post-merge admission on the merged source; do not publish a runtime here.

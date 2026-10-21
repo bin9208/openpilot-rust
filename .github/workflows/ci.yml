@@ -71,6 +71,23 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: python tools/ci/check_changed_files.py
+      - name: Verify frozen production Xiaoge oracles
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, subprocess
+          from pathlib import Path
+          receipts = list(Path('rust/crates/xiaoge/tests/support').glob('*_0682e933.json'))
+          assert len(receipts) == 3
+          paths = set()
+          for receipt in receipts:
+            data = json.loads(receipt.read_text())
+            assert data['source_commit'] == '0682e933d3fea06e8953ace63fc521a29ee02b6e'
+            paths.add(data['path'])
+            expected = subprocess.check_output(['git', 'show', data['source_commit'] + ':' + data['path']])
+            actual = receipt.with_suffix('.rs').read_bytes()
+            assert actual == expected and hashlib.sha256(actual).hexdigest() == data['sha256'], receipt
+          assert paths == {'rust/crates/xiaoge/src/lane/head.rs', 'rust/crates/xiaoge/src/inference/lane.rs', 'rust/crates/xiaoge/src/inference/geometry.rs'}
+          PY
       - name: Check CI routing and upstream synchronization guards
         run: |
           python -m unittest discover -s tools/ci/tests -v
