@@ -25,6 +25,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .file("native/image.cc")
         .file("native/signal.cc")
         .file("native/net.cc")
+        .file("native/dnn_context.cc")
         .include("native")
         .include(install.join("include/opencv4"))
         .std("c++17")
@@ -33,6 +34,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "cargo:rustc-link-search=native={}",
         install.join("lib").display()
     );
+    println!("cargo:rustc-link-lib=dl");
     for library in ["opencv_dnn", "opencv_imgproc", "opencv_core"] {
         let pinned = fs::canonicalize(install.join("lib").join(format!("lib{library}.so.4.13.0")))?;
         for suffix in ["so", "so.413", "so.4.13.0"] {
@@ -54,6 +56,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "native/image.cc",
         "native/signal.cc",
         "native/net.cc",
+        "native/dnn_context.h",
+        "native/dnn_context_device.h",
+        "native/opencl_priority.h",
+        "native/dnn_context.cc",
     ] {
         println!("cargo:rerun-if-changed={path}");
     }

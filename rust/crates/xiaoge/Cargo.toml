@@ -37,6 +37,7 @@ socket2 = { version = "0.6", optional = true }
 httparse = { version = "1", optional = true }
 httpdate = "1"
 url = "=2.5.8"
+zstd = "=0.13.3"
 
 [[example]]
 name = "xiaoge_inference_trace"
@@ -46,3 +47,7 @@ required-features = ["native-skip-miri"]
 name = "openpilot-xiaoge"
 path = "src/main.rs"
 required-features = ["native-skip-miri"]
+
+[[bin]]
+name = "xiaoge-log-report"
+path = "src/bin/xiaoge-log-report.rs"

@@ -1,6 +1,7 @@
 mod blindspot;
 mod geometry;
 mod lane;
+mod session;
 pub use blindspot::BlindspotModel;
 pub use geometry::Geometry;
 pub use lane::{lane_image, lane_tensor, LaneModel};

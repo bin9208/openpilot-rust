@@ -80,6 +80,7 @@ fn shared() -> Shared {
         snapshot: Condvar::new(),
         vasm_operation: Mutex::new(()),
         params: None,
+        params_operation: Mutex::new(()),
         config_path: PathBuf::new(),
         running: AtomicBool::new(true),
     }

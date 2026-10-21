@@ -1,5 +1,6 @@
 use super::{platform, Error};
 use crate::{
+    compute::ComputeMode,
     config::Config,
     service::{State, Stream},
     settings::Settings,
@@ -20,6 +21,7 @@ pub struct Shared {
     pub snapshot: Condvar,
     pub vasm_operation: Mutex<()>,
     pub params: Option<Params>,
+    pub params_operation: Mutex<()>,
     pub config_path: PathBuf,
     pub running: AtomicBool,
 }
@@ -32,6 +34,10 @@ impl Shared {
     }
 
     pub fn refresh(&self, force: bool) -> Result<(), Error> {
+        let _parameters = self
+            .params_operation
+            .lock()
+            .map_err(|_| Error::Contract("parameter operation poisoned"))?;
         let now = platform::monotonic()?;
         {
             let mut state = self.state()?;
@@ -50,7 +56,17 @@ impl Shared {
             },
             None => None,
         });
-        self.state()?.settings = settings;
+        let mode = self
+            .params
+            .as_ref()
+            .and_then(|params| params.get("OnnxComputeMode").ok().flatten());
+        let mut state = self.state()?;
+        state.settings = settings;
+        let prior = state.compute_mode;
+        state.select_compute(ComputeMode::from_parameter(mode.as_deref()))?;
+        if prior != state.compute_mode {
+            state.compute_since_ns = platform::timestamp()?;
+        }
         Ok(())
     }
 
@@ -84,15 +100,49 @@ impl Shared {
     }
 
     pub fn set_settings(&self, value: &openpilot_logmessaged::JsonValue) -> Result<(), Error> {
+        let _parameters = self
+            .params_operation
+            .lock()
+            .map_err(|_| Error::Contract("parameter operation poisoned"))?;
         let settings = self.state()?.settings.patch_json(value)?;
-        if let Some(params) = &self.params {
+        let mode = value
+            .get("computeMode")
+            .map(|value| ComputeMode::from_json(&value))
+            .transpose()?;
+        // A compute-only request must not rewrite cached tuning values: another
+        // settings client may have updated Params since the last refresh.
+        // Requests using the legacy API retain their five-value write contract.
+        let compute_only = mode.is_some()
+            && [
+                "threshold",
+                "smoothingSeconds",
+                "baseIntervalSeconds",
+                "laneThreshold",
+                "laneIntervalSeconds",
+            ]
+            .iter()
+            .all(|name| value.get(name).is_none());
+        if let Some(params) = self.params.as_ref().filter(|_| !compute_only) {
             for (name, value) in settings.parameters()? {
                 params
                     .put(name, value.to_string().as_bytes())
                     .map_err(|_| crate::Error::Invalid("could not persist ONNX settings"))?;
             }
         }
-        self.state()?.settings = settings;
+        if let (Some(params), Some(mode)) = (&self.params, mode) {
+            params
+                .put("OnnxComputeMode", mode.value().to_string().as_bytes())
+                .map_err(|_| crate::Error::Invalid("could not persist compute mode"))?;
+        }
+        let mut state = self.state()?;
+        state.settings = settings;
+        if let Some(mode) = mode {
+            let prior = state.compute_mode;
+            state.select_compute(mode)?;
+            if prior != state.compute_mode {
+                state.compute_since_ns = platform::timestamp()?;
+            }
+        }
         Ok(())
     }
 
