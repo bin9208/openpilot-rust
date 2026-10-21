@@ -22,12 +22,12 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: d8a702325df0f055bc070ed55102a56ccb023e19
+        ref: a6bab7a7906da0a21d361567430c7d12c0c8516a
         persist-credentials: false
     - name: Bind exact source and reserve disk before prerequisites
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = d8a702325df0f055bc070ed55102a56ccb023e19
+        test "$(git rev-parse HEAD)" = a6bab7a7906da0a21d361567430c7d12c0c8516a
 
         proof="$RUNNER_TEMP/recovery-frozen"
 
@@ -94,6 +94,24 @@ jobs:
         printf ''%s\n'' "${harness[0]}" > "$proof/harness-test-elf.path"
 
         '
+    - name: Capture the two unchanged original webhook source cases once
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/recovery-frozen\"\nsource=\"$GITHUB_WORKSPACE/openpilot/selfdrive/carrot/recovery/server.py\"\
+        \ntest -f \"$source\"\nstat -c '%d %i %s %f' \"$source\" > \"$proof/webhook-source.identity.before\"\nsha256sum \"\
+        $source\" > \"$proof/webhook-source.sha256.before\"\nmkdir -p \"$proof/webhook-original\" \"$proof/webhook-source-only\"\
+        \n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024\nRECOVERY_SUPPORT_EVIDENCE_DIR=\"\
+        $proof/webhook-original\" cargo test --manifest-path rust/Cargo.toml -p openpilot-carrot-recovery --lib --locked support::transport::tests::webhook_message_matches_actual_recovery_source_with_unicode_and_limits\
+        \ -- --exact --nocapture > \"$proof/webhook-test.stdout\" 2> \"$proof/webhook-test.stderr\" || { tail -n 100 \"$proof/webhook-test.stderr\"\
+        \ \"$proof/webhook-test.stdout\"; exit 1; }\ngrep -F '1 passed; 0 failed' \"$proof/webhook-test.stdout\"\nmapfile\
+        \ -t captured < <(find \"$proof/webhook-original\" -mindepth 1 -maxdepth 1 -type d)\ntest \"${#captured[@]}\" -eq\
+        \ 1\nfor index in 0 1; do\n  case_dir=\"${captured[0]}/message-$index\"\n  test -s \"$case_dir/payload.json\"\n  test\
+        \ -s \"$case_dir/source.txt\"\n  test -f \"$case_dir/source-stderr.txt\"\n  test -s \"$case_dir/source-proof.json\"\
+        \n  test -s \"$case_dir/rust.txt\"\n  mkdir -p \"$proof/webhook-source-only/message-$index\"\n  cp \"$case_dir/payload.json\"\
+        \ \"$case_dir/source.txt\" \"$case_dir/source-stderr.txt\" \"$case_dir/source-proof.json\" \"$proof/webhook-source-only/message-$index/\"\
+        \n  test \"$(du -sb \"$proof/webhook-source-only/message-$index\" | cut -f1)\" -le 65536\ndone\nfind \"$proof/webhook-source-only\"\
+        \ -type f -print0 | sort -z | xargs -0 sha256sum > \"$proof/webhook-source-only/SHA256SUMS\"\nstat -c '%d %i %s %f'\
+        \ \"$source\" > \"$proof/webhook-source.identity.after\"\nsha256sum \"$source\" > \"$proof/webhook-source.sha256.after\"\
+        \ncmp \"$proof/webhook-source.identity.before\" \"$proof/webhook-source.identity.after\"\ncmp \"$proof/webhook-source.sha256.before\"\
+        \ \"$proof/webhook-source.sha256.after\"\n"
     - name: Run all recovery unit, socket, fixture and strict lint gates before traffic
       run: 'set -euo pipefail
 
@@ -101,8 +119,9 @@ jobs:
 
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
 
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-carrot-recovery --lib --locked > "$proof/runtime-unit.stdout"
-        2> "$proof/runtime-unit.stderr" || { tail -n 100 "$proof/runtime-unit.stderr"; exit 1; }
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-carrot-recovery --lib --locked -- --skip webhook_message_matches_actual_recovery_source_with_unicode_and_limits
+        > "$proof/runtime-unit.stdout" 2> "$proof/runtime-unit.stderr" || { tail -n 100 "$proof/runtime-unit.stderr"; exit
+        1; }
 
         cargo test --manifest-path rust/Cargo.toml -p openpilot-carrot-recovery --test terminal_framing --locked > "$proof/terminal-framing.stdout"
         2> "$proof/terminal-framing.stderr" || { tail -n 100 "$proof/terminal-framing.stderr"; exit 1; }
@@ -172,7 +191,7 @@ jobs:
 
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
 
-        strace -ff -qq -e trace=execve,execveat -o "$proof/exec" "$harness" --exact eight_native_recovery_controllers_same_elf_present_and_absent
+        strace -ff -qq -s 32768 -xx -e trace=execve,execveat -o "$proof/exec" "$harness" --exact eight_native_recovery_controllers_same_elf_present_and_absent
         --test-threads=1 --nocapture > "$proof/harness.stdout" 2> "$proof/harness.stderr" || { tail -n 100 "$proof/harness.stderr"
         "$proof/harness.stdout"; exit 1; }
 
@@ -189,7 +208,7 @@ jobs:
         '
     - name: Verify full held source and ELF identities after traffic
       if: always()
-      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/recovery-frozen\"\ntest \"$(git rev-parse HEAD)\" = d8a702325df0f055bc070ed55102a56ccb023e19\n\
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/recovery-frozen\"\ntest \"$(git rev-parse HEAD)\" = a6bab7a7906da0a21d361567430c7d12c0c8516a\n\
         if test -f \"$proof/held-inputs.list\"; then\n  while IFS= read -r path; do test -f \"$path\" && test ! -L \"$path\"\
         ; stat -c '%d %i %s %f' \"$path\"; sha256sum \"$path\"; done < \"$proof/held-inputs.list\" > \"$proof/held-inputs.after\"\
         \n  cmp \"$proof/held-inputs.before\" \"$proof/held-inputs.after\"\nfi\n"
