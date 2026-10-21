@@ -21,7 +21,7 @@ jobs:
       OPENPILOT_HACKS: '1'
       LLVM_PATH: /usr/lib/x86_64-linux-gnu/libLLVM-18.so
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
-      EXPECTED_SOURCE: 0e721009633fbee87d3b26c7ddb7a39759f69996
+      EXPECTED_SOURCE: e25a14386582858dae25c6daca5ced3bfb4bacab
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -31,7 +31,7 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: 0e721009633fbee87d3b26c7ddb7a39759f69996
+        ref: e25a14386582858dae25c6daca5ced3bfb4bacab
     - name: Require exact source and hosted controller prerequisites
       run: 'set -euo pipefail
 
@@ -49,88 +49,96 @@ jobs:
 
         '
     - name: Require real SIGUSR2 EINTR regression to fail on original line wait
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/driving-native-296\"\nleaf=rust/crates/dev-tools/src/driving_daemon_check.rs\n\
+        cp \"$leaf\" \"$proof/eintr-fixed.rs\"\ntrap 'cp \"$proof/eintr-fixed.rs\" \"$leaf\"' EXIT\nrust/tools/check-disk-space\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 256\ngit fetch --no-tags --depth=1 origin 41ed952f4507a7f6727529565933ce75fca241e5\n\
+        python3 - <<'PY_RED'\nfrom pathlib import Path\nimport os,subprocess,hashlib\nleaf=Path('rust/crates/dev-tools/src/driving_daemon_check.rs')\n\
+        proof=Path(os.environ['RUNNER_TEMP'])/'driving-native-296'\nfixed=leaf.read_text()\nold=subprocess.check_output(['git','show','41ed952f4507a7f6727529565933ce75fca241e5:rust/crates/dev-tools/src/driving_daemon_check.rs']).decode()\n\
+        def method(text):\n    anchor='impl Lines {\\n'\n    signature='    fn until(&mut self, tokens: &[&str], signals:\
+        \ &Signals) -> Result<String> {\\n'\n    assert text.count(anchor)==1 and text.count(signature)==1\n    start=text.index(signature,text.index(anchor)+len(anchor))\n\
+        \    # Rustfmt indents this method's closing brace four spaces and the\n    # enclosing impl closing brace zero; nested\
+        \ blocks are deeper.\n    boundary='\\n    }\\n}'\n    end=text.index(boundary,start)+len('\\n    }')\n    value=text[start:end]\n\
+        \    assert value.count(signature)==1 and value.endswith('\\n    }')\n    return start,end,value\nstart,end,current_method=method(fixed)\n\
+        _,_,old_method=method(old)\nassert 'Err(rustix::io::Errno::INTR) => continue' in current_method\nassert 'Err(rustix::io::Errno::INTR)\
+        \ => continue' not in old_method\nassert 'const LINE_WAIT: Duration = Duration::from_secs(60);' in fixed\nassert 'signals.check()?;'\
+        \ in old_method\nmarker='    fn msgq_notification_signals_do_not_abort_a_child_line_wait()'\nassert fixed.count(marker)==1\n\
+        red=fixed[:start]+old_method+fixed[end:]\nassert red[:start]==fixed[:start] and red[start+len(old_method):]==fixed[end:]\n\
+        leaf.write_text(red)\n(proof/'eintr-current-with-old-until.rs').write_text(red)\n(proof/'eintr-red-source.json').write_text(__import__('json').dumps({'baseline':'41ed952f4507a7f6727529565933ce75fca241e5','scope':'only\
+        \ historical Lines::until method in current source; current regression and interfaces unchanged','baseline_method_sha256':hashlib.sha256(old_method.encode()).hexdigest(),'fixed_method_sha256':hashlib.sha256(current_method.encode()).hexdigest(),'fixed_sha256':hashlib.sha256(fixed.encode()).hexdigest(),'controlled_source_sha256':hashlib.sha256(red.encode()).hexdigest()},indent=2)+'\\\
+        n')\nPY_RED\nrust/tools/check-disk-space --path \"$GITHUB_WORKSPACE\" --growth-mib 1024\nset +e\ncargo test --manifest-path\
+        \ rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --lib driving_daemon_check::line_tests::msgq_notification_signals_do_not_abort_a_child_line_wait\
+        \ --locked -- --exact --nocapture 2>&1 | tee \"$proof/eintr-red.log\"\nred_status=${PIPESTATUS[0]}\nset -e\nprintf\
+        \ '%s\\n' \"$red_status\" > \"$proof/eintr-red.status\"\ntest \"$red_status\" = 101\ngrep -F 'Interrupted system call'\
+        \ \"$proof/eintr-red.log\"\ngrep -F 'test result: FAILED. 0 passed; 1 failed;' \"$proof/eintr-red.log\"\ncp \"$proof/eintr-fixed.rs\"\
+        \ \"$leaf\"\ntrap - EXIT\ncmp \"$leaf\" \"$proof/eintr-fixed.rs\"\ngit diff --exit-code -- \"$leaf\"\n"
+    - name: Require controlled missing rollback to fail late reappearance regression
       run: 'set -euo pipefail
 
         proof="$RUNNER_TEMP/driving-native-296"
 
-        leaf=rust/crates/dev-tools/src/driving_daemon_check.rs
+        leaf=rust/crates/dev-tools/src/driving_daemon_check/finalization.rs
 
-        cp "$leaf" "$proof/eintr-fixed.rs"
+        cp "$leaf" "$proof/finalization-fixed.rs"
 
-        trap ''cp "$proof/eintr-fixed.rs" "$leaf"'' EXIT
+        trap ''cp "$proof/finalization-fixed.rs" "$leaf"'' EXIT
 
-        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 256
-
-        git fetch --no-tags --depth=1 origin 41ed952f4507a7f6727529565933ce75fca241e5
-
-        python3 - <<''PY_RED''
+        python3 - <<''PY_ROLLBACK_RED''
 
         from pathlib import Path
 
-        import os,subprocess,hashlib
+        import hashlib,json,os
 
-        leaf=Path(''rust/crates/dev-tools/src/driving_daemon_check.rs'')
+        leaf=Path(''rust/crates/dev-tools/src/driving_daemon_check/finalization.rs'')
 
         proof=Path(os.environ[''RUNNER_TEMP''])/''driving-native-296''
 
-        fixed=leaf.read_text()
+        fixed=leaf.read_bytes()
 
-        old=subprocess.check_output([''git'',''show'',''41ed952f4507a7f6727529565933ce75fca241e5:rust/crates/dev-tools/src/driving_daemon_check.rs'']).decode()
+        marker=b''if self.accepted.get() {''
 
-        marker=''    #[test]\n    fn msgq_notification_signals_do_not_abort_a_child_line_wait()''
+        assert fixed.count(marker)==1
 
-        assert marker in fixed and marker not in old
+        # Controlled pre-fix behavior, NOT an exact historical source graft:
 
-        assert ''Err(rustix::io::Errno::INTR) => continue'' in fixed
+        # only suppress the new guard''s Drop cleanup; leave publication and
 
-        assert ''Err(rustix::io::Errno::INTR) => continue'' not in old
+        # its real source-absence checks and regression unchanged.
 
-        assert ''const LINE_WAIT: Duration = Duration::from_secs(60);'' in old
+        red=fixed.replace(marker,b''if self.accepted.get() || std::hint::black_box(true) {'')
 
-        assert ''signals.check()?;'' in old
+        leaf.write_bytes(red)
 
-        start=fixed.index(marker);end=fixed.rfind(''\n}'')
+        (proof/''finalization-controlled-no-rollback.rs'').write_bytes(red)
 
-        test=fixed[start:end]
+        (proof/''finalization-controlled-red-source.json'').write_text(json.dumps({''kind'':''controlled pre-fix behavior,
+        not exact historical source'',''change'':''disable only OwnedReport Drop cleanup'',''fixed_sha256'':hashlib.sha256(fixed).hexdigest(),''controlled_sha256'':hashlib.sha256(red).hexdigest()},indent=2)+''\n'')
 
-        assert test.count(''#[test]'')==1
+        PY_ROLLBACK_RED
 
-        assert old.rfind(''mod line_tests'')<old.rfind(''\n}'')
-
-        red=old[:old.rfind(''\n}'')]+ ''\n''+test+old[old.rfind(''\n}''):]
-
-        leaf.write_text(red)
-
-        (proof/''eintr-old-plus-test.rs'').write_text(red)
-
-        (proof/''eintr-red-source.json'').write_text(__import__(''json'').dumps({''baseline'':''41ed952f'',''baseline_sha256'':hashlib.sha256(old.encode()).hexdigest(),''graft_test_sha256'':hashlib.sha256(test.encode()).hexdigest(),''fixed_sha256'':hashlib.sha256(fixed.encode()).hexdigest()},indent=2)+''\n'')
-
-        PY_RED
-
-        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 1024
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 256
 
         set +e
 
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --lib driving_daemon_check::line_tests::msgq_notification_signals_do_not_abort_a_child_line_wait
-        --locked -- --exact --nocapture 2>&1 | tee "$proof/eintr-red.log"
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --lib driving_daemon_check::finalization::tests::late_retired_source_and_cancellation_leave_no_owned_pass_or_stdout
+        --locked -- --exact --nocapture 2>&1 | tee "$proof/finalization-controlled-red.log"
 
         red_status=${PIPESTATUS[0]}
 
         set -e
 
-        printf ''%s\n'' "$red_status" > "$proof/eintr-red.status"
+        printf ''%s\n'' "$red_status" > "$proof/finalization-controlled-red.status"
 
         test "$red_status" = 101
 
-        grep -F ''Interrupted system call'' "$proof/eintr-red.log"
+        grep -F ''assertion failed: !root.path().join("report.json").exists()'' "$proof/finalization-controlled-red.log"
 
-        grep -F ''test result: FAILED. 0 passed; 1 failed;'' "$proof/eintr-red.log"
+        grep -F ''test result: FAILED. 0 passed; 1 failed;'' "$proof/finalization-controlled-red.log"
 
-        cp "$proof/eintr-fixed.rs" "$leaf"
+        cp "$proof/finalization-fixed.rs" "$leaf"
 
         trap - EXIT
 
-        cmp "$leaf" "$proof/eintr-fixed.rs"
+        cmp "$leaf" "$proof/finalization-fixed.rs"
 
         git diff --exit-code -- "$leaf"
 
@@ -152,9 +160,9 @@ jobs:
 
         (root/''capture-original-driving-invocation.py'').write_bytes(data)
 
-        data=base64.b64decode(''IiIiQ2xvdWQtb25seSBvcmlnaW5hbCBDTEkgYWRtaXNzaW9uIGNhcHR1cmU7IHN1Y2Nlc3NmdWwgbW9kZWwgcnVucyBhcmUgcmV1c2VkLiIiIgppbXBvcnQgYXJncGFyc2UsaGFzaGxpYixqc29uLG9zLHN1YnByb2Nlc3Msc3lzCmZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aApwPWFyZ3BhcnNlLkFyZ3VtZW50UGFyc2VyKCkKcC5hZGRfYXJndW1lbnQoJy0tcmVwbycsdHlwZT1QYXRoLHJlcXVpcmVkPVRydWUpCnAuYWRkX2FyZ3VtZW50KCctLXByb29mJyx0eXBlPVBhdGgscmVxdWlyZWQ9VHJ1ZSkKcC5hZGRfYXJndW1lbnQoJy0tbW9kZWxzJyx0eXBlPVBhdGgscmVxdWlyZWQ9VHJ1ZSkKcC5hZGRfYXJndW1lbnQoJy0tY2F0YWxvZycsdHlwZT1QYXRoLHJlcXVpcmVkPVRydWUpCnAuYWRkX2FyZ3VtZW50KCctLWRyaXZpbmctc3VjY2VzcycsdHlwZT1QYXRoLHJlcXVpcmVkPVRydWUpCnAuYWRkX2FyZ3VtZW50KCctLWZhdWx0LXN1Y2Nlc3MnLHR5cGU9UGF0aCxyZXF1aXJlZD1UcnVlKQpwLmFkZF9hcmd1bWVudCgnLS1kcml2aW5nLXN1Y2Nlc3MtcmVjb3JkJyx0eXBlPVBhdGgscmVxdWlyZWQ9VHJ1ZSkKcC5hZGRfYXJndW1lbnQoJy0tZmF1bHQtc3VjY2Vzcy1yZWNvcmQnLHR5cGU9UGF0aCxyZXF1aXJlZD1UcnVlKQphPXAucGFyc2VfYXJncygpO3Jvb3Q9YS5yZXBvLnJlc29sdmUoKTtvdXQ9YS5wcm9vZi5yZXNvbHZlKCk7b3V0Lm1rZGlyKGV4aXN0X29rPUZhbHNlKQpleHBlY3RlZD1vcy5lbnZpcm9uWydFWFBFQ1RFRF9TT1VSQ0UnXTthc3NlcnQgc3VicHJvY2Vzcy5jaGVja19vdXRwdXQoWydnaXQnLCdyZXYtcGFyc2UnLCdIRUFEJ10sY3dkPXJvb3QsdGV4dD1UcnVlKS5zdHJpcCgpPT1leHBlY3RlZApoYXNoZmlsZT1sYW1iZGEgcDpoYXNobGliLnNoYTI1NihwLnJlYWRfYnl0ZXMoKSkuaGV4ZGlnZXN0KCkKc291cmNlcz17bjpoYXNoZmlsZShyb290LydydXN0L3Rvb2xzJy9uKWZvciBuIGluICgnY2hlY2tfZHJpdmluZ19kYWVtb24ucHknLCdjaGVja19tb2RlbF9sb2dnaW5nX2ZhdWx0cy5weScpfQpyb3dzPVtdCmZvciBmYW1pbHksbGVhZixuYW1lcyxzdWNjZXNzIGluICgKICgnZHJpdmluZycsJ2NoZWNrX2RyaXZpbmdfZGFlbW9uLnB5JywoJ2JpbmFyeScsJ2NhdGFsb2cnLCdtb2RlbHMnLCdvdXRwdXQnKSxhLmRyaXZpbmdfc3VjY2VzcyksCiAoJ2ZhdWx0JywnY2hlY2tfbW9kZWxfbG9nZ2luZ19mYXVsdHMucHknLCgnY2F0YWxvZycsJ21vZGVscycsJ2NvbGxlY3RvcicsJ291dHB1dCcpLGEuZmF1bHRfc3VjY2VzcykpOgogZGlyZWN0b3J5PW91dC9mYW1pbHk7ZGlyZWN0b3J5Lm1rZGlyKCk7ZXhpc3Rpbmc9ZGlyZWN0b3J5LydleGlzdGluZyc7ZXhpc3RpbmcubWtkaXIoKTsoZXhpc3RpbmcvJ3NlbnRpbmVsJykud3JpdGVfYnl0ZXMoYidleGlzdGluZyBvdXRwdXQgbXVzdCByZW1haW4gdW5jaGFuZ2VkXG4nKQogdmFsdWVzPXsnYmluYXJ5JzpzdHIocm9vdC8ncnVzdC90YXJnZXQvZGVidWcvb3BlbnBpbG90LWRyaXZpbmctbW9kZWxkJyksJ2NhdGFsb2cnOnN0cihhLmNhdGFsb2cucmVzb2x2ZSgpKSwnbW9kZWxzJzpzdHIoYS5tb2RlbHMucmVzb2x2ZSgpKSwnY29sbGVjdG9yJzpzdHIocm9vdC8ncnVzdC90YXJnZXQvZGVidWcvb3BlbnBpbG90LWxvZ21lc3NhZ2VkJyksJ291dHB1dCc6c3RyKGRpcmVjdG9yeS8nYWJzZW50Jyl9CiBiYXNlPVt2IGZvciBuIGluIG5hbWVzIGZvciB2IGluICgnLS0nK24sdmFsdWVzW25dKV0KIG9jY3VwaWVkPVt2IGZvciBuIGluIG5hbWVzIGZvciB2IGluICgnLS0nK24sc3RyKGV4aXN0aW5nKWlmIG49PSdvdXRwdXQnZWxzZSB2YWx1ZXNbbl0pXQogcHJvYmVzPVsoJ2VtcHR5JyxbXSksKCdoZWxwJyxbJy0taGVscCddKSwoJ3Nob3J0LWhlbHAnLFsnLWgnXSksKCdoZWxwLWJlZm9yZS11bmtub3duJyxbJy0taGVscCcsJy0tdW5rbm93biddKSwoJ3Vua25vd24tYmVmb3JlLWhlbHAnLFsnLS11bmtub3duJywnLS1oZWxwJ10pLCgndW5rbm93bicsYmFzZStbJy0tdW5rbm93biddKSwoJ2FtYmlndW91cy1vcHRpb24nLG9jY3VwaWVkK1snLS1jbycsJ3gnXSksKCdtaXNzaW5nLXZhbHVlJyxiYXNlK1snLS1tb2RlbHMnXSksKCdleGlzdGluZy1vdXRwdXQnLG9jY3VwaWVkKSwoJ3VuaXF1ZS1hYmJyZXZpYXRpb24nLFsoJy0tbW9kJ2lmIHY9PSctLW1vZGVscydlbHNlIHYpZm9yIHYgaW4gb2NjdXBpZWRdKSwoJ3JlcGVhdGVkLXJlcXVpcmVkJyxvY2N1cGllZCtbJy0tbW9kZWxzJyx2YWx1ZXNbJ21vZGVscyddXSksKCdlcXVhbHMtdmFsdWUnLFsoJy0tbW9kZWxzPScrdmFsdWVzWydtb2RlbHMnXSlpZiB2PT0nLS1tb2RlbHMnZWxzZSB2IGZvciB2IGluIG9jY3VwaWVkIGlmIHYhPXZhbHVlc1snbW9kZWxzJ11dKSwoJ3Jhdy1tb2RlbC1wYXRoJyxvY2N1cGllZCtbJy0tbW9kZWxzJyxvcy5mc2RlY29kZShiJ3Jhdy1ceGZmLy4uL21vZGVsJyldKSwoJ3Jhdy1vdXRwdXQtcGF0aCcsYmFzZVs6LTJdK1snLS1vdXRwdXQnLG9zLmZzZGVjb2RlKG9zLmZzZW5jb2RlKGV4aXN0aW5nKStiJy8uLi9leGlzdGluZy9ceGZmLy4uJyldKV0KICMgUmF3IG91dHB1dCBtYXkgcmVzb2x2ZSB0byBleGlzdGluZywgYnV0IGF2b2lkIGFsbG93aW5nIGEgdmFsaWQgcHJvYmUgdG8gYnVpbGQ6CiAjIHBhdGhsaWIgbm9uLXN0cmljdCByZXNvbHV0aW9uIGNhbm9uaWNhbGl6ZXMgdGhlIHVuYXZhaWxhYmxlIHJhdyBjaGlsZCBhbmQgJy4uJy4KIGZvciBuYW1lIGluIG5hbWVzOgogIHByb2Jlcy5hcHBlbmQoKCdtaXNzaW5nLScrbmFtZSxbdiBmb3IgbiBpbiBuYW1lcyBpZiBuIT1uYW1lIGZvciB2IGluICgnLS0nK24sdmFsdWVzW25dKV0pKQogZm9yIGxhYmVsLGFyZ3MgaW4gcHJvYmVzOgogIGJlZm9yZT17c3RyKHgucmVsYXRpdmVfdG8oZGlyZWN0b3J5KSk6aGFzaGZpbGUoeClmb3IgeCBpbiBkaXJlY3Rvcnkucmdsb2IoJyonKWlmIHguaXNfZmlsZSgpfQogIGNvbW1hbmQ9W3N5cy5leGVjdXRhYmxlLHN0cihyb290LydydXN0L3Rvb2xzJy9sZWFmKSwqYXJnc10KICByZXN1bHQ9c3VicHJvY2Vzcy5ydW4oY29tbWFuZCxjd2Q9cm9vdCxlbnY9ZGljdChvcy5lbnZpcm9uLFBZVEhPTlBBVEg9c3RyKFBhdGgob3MuZW52aXJvblsnUlVOTkVSX1RFTVAnXSkvJ21vZGVsLW1zZ3EtcHl0aG9uJykrJzonK29zLmVudmlyb24uZ2V0KCdQWVRIT05QQVRIJywnJykpLGNhcHR1cmVfb3V0cHV0PVRydWUsdGltZW91dD00NSkKICBhZnRlcj17c3RyKHgucmVsYXRpdmVfdG8oZGlyZWN0b3J5KSk6aGFzaGZpbGUoeClmb3IgeCBpbiBkaXJlY3Rvcnkucmdsb2IoJyonKWlmIHguaXNfZmlsZSgpfQogIHJvdz17J2ZhbWlseSc6ZmFtaWx5LCdjYXNlJzpsYWJlbCwnYXJndl9oZXgnOltvcy5mc2VuY29kZSh4KS5oZXgoKWZvciB4IGluIGNvbW1hbmRdLCdzdGF0dXMnOnJlc3VsdC5yZXR1cm5jb2RlLCdzdGRvdXRfaGV4JzpyZXN1bHQuc3Rkb3V0LmhleCgpLCdzdGRlcnJfaGV4JzpyZXN1bHQuc3RkZXJyLmhleCgpLCdvdXRwdXRfYmVmb3JlJzpiZWZvcmUsJ291dHB1dF9hZnRlcic6YWZ0ZXJ9CiAgKG91dC8oZmFtaWx5KyctJytsYWJlbCsnLmpzb24nKSkud3JpdGVfdGV4dChqc29uLmR1bXBzKHJvdyxpbmRlbnQ9MikrJ1xuJykKICBhc3NlcnQgYmVmb3JlPT1hZnRlciwoZmFtaWx5LGxhYmVsLCd1bmV4cGVjdGVkIG91dHB1dCBtdXRhdGlvbicpCiAgYXNzZXJ0IG5vdCAoZGlyZWN0b3J5LydhYnNlbnQnKS5leGlzdHMoKSwoZmFtaWx5LGxhYmVsLCd1bmV4cGVjdGVkIG91dHB1dCBkaXJlY3RvcnknKQogIGhlbHBfY2FzZXM9eydoZWxwJywnc2hvcnQtaGVscCcsJ2hlbHAtYmVmb3JlLXVua25vd24nLCd1bmtub3duLWJlZm9yZS1oZWxwJ30KICBhZG1pdHRlZD17J2V4aXN0aW5nLW91dHB1dCcsJ3VuaXF1ZS1hYmJyZXZpYXRpb24nLCdyZXBlYXRlZC1yZXF1aXJlZCcsJ2VxdWFscy12YWx1ZScsJ3Jhdy1tb2RlbC1wYXRoJywncmF3LW91dHB1dC1wYXRoJ30KICBzdGF0dXM9MCBpZiBsYWJlbCBpbiBoZWxwX2Nhc2VzIGVsc2UgMSBpZiBsYWJlbCBpbiBhZG1pdHRlZCBlbHNlIDIKICBhc3NlcnQgcmVzdWx0LnJldHVybmNvZGU9PXN0YXR1cywoZmFtaWx5LGxhYmVsLHJlc3VsdC5yZXR1cm5jb2RlLHN0YXR1cyxyZXN1bHQuc3RkZXJyKQogIGlmIHN0YXR1cz09MDphc3NlcnQgYid1c2FnZTonIGluIHJlc3VsdC5zdGRvdXQKICBpZiBzdGF0dXM9PTE6YXNzZXJ0IGInRmlsZUV4aXN0c0Vycm9yJyBpbiByZXN1bHQuc3RkZXJyCiAgaWYgc3RhdHVzPT0yOmFzc2VydCBiJ3VzYWdlOicgaW4gcmVzdWx0LnN0ZGVycgogIHJvd3MuYXBwZW5kKHJvdykKIHN1Y2Nlc3M9c3VjY2Vzcy5yZXNvbHZlKCk7cmVwb3J0PXN1Y2Nlc3MvJ3JlcG9ydC5qc29uJzthc3NlcnQgcmVwb3J0LmlzX2ZpbGUoKQogIyBSZXVzZSB0aGUgZnVsbCByZWNpcGUncyBhY3R1YWwgc3VjY2Vzc2Z1bCBleGVjdXRpb24gcmF0aGVyIHRoYW4gcmVwZWF0aW5nIG1vZGVscy4KIHJlY29yZF9wYXRoID0gYS5kcml2aW5nX3N1Y2Nlc3NfcmVjb3JkIGlmIGZhbWlseT09J2RyaXZpbmcnIGVsc2UgYS5mYXVsdF9zdWNjZXNzX3JlY29yZAogcmVjb3JkX3Jhdz1yZWNvcmRfcGF0aC5yZWFkX2J5dGVzKCk7cmVjb3JkPWpzb24ubG9hZHMocmVjb3JkX3JhdykKICMgVGhpcyByZWNlaXB0IGlzIHdyaXR0ZW4gYnkgdGhlIGV4aXN0aW5nIHN1Y2Nlc3NmdWwgaW52b2NhdGlvbiB3cmFwcGVyLCBub3QKICMgcmVjb25zdHJ1Y3RlZCBmcm9tIHJlcG9ydC5qc29uIG9yIGluZmVycmVkIGZyb20gYSBsYXRlciBvYnNlcnZhdGlvbi4KIGFzc2VydCByZWNvcmRbJ3N0YXR1cyddPT0wIGFuZCByZWNvcmRbJ3NvdXJjZSddPT1leHBlY3RlZAogYXJndj1bYnl0ZXMuZnJvbWhleCh4KWZvciB4IGluIHJlY29yZFsnYXJndl9oZXgnXV0KIGFzc2VydCBhbnkodiBpbiAob3MuZnNlbmNvZGUocm9vdC8ncnVzdC90b29scycvbGVhZiksb3MuZnNlbmNvZGUoJ3J1c3QvdG9vbHMvJytsZWFmKSkgZm9yIHYgaW4gYXJndikKIGFzc2VydCBhbGwob3MuZnNlbmNvZGUoJy0tJytuYW1lKSBpbiBhcmd2IGZvciBuYW1lIGluIG5hbWVzKQogc3Rkb3V0PWJ5dGVzLmZyb21oZXgocmVjb3JkWydzdGRvdXRfaGV4J10pO3N0ZGVycj1ieXRlcy5mcm9taGV4KHJlY29yZFsnc3RkZXJyX2hleCddKQogYXNzZXJ0IHN0ZG91dCwgKGZhbWlseSwnc3VjY2Vzc2Z1bCBzdGRvdXQgbWlzc2luZycpCiBhc3NlcnQgaGFzaGxpYi5zaGEyNTYoc3Rkb3V0KS5oZXhkaWdlc3QoKT09cmVjb3JkWydzdGRvdXRfc2hhMjU2J10KIGFzc2VydCBoYXNobGliLnNoYTI1NihzdGRlcnIpLmhleGRpZ2VzdCgpPT1yZWNvcmRbJ3N0ZGVycl9zaGEyNTYnXQogYXNzZXJ0IHJlY29yZFsnb3V0cHV0X2JlZm9yZSddPT17J2V4aXN0cyc6RmFsc2V9CiBhc3NlcnQgcmVjb3JkWydvdXRwdXRfYWZ0ZXInXVsnaXNfZGlyZWN0b3J5J10gYW5kIG5vdCByZWNvcmRbJ291dHB1dF9hZnRlciddWydpc19zeW1saW5rJ10KIGFzc2VydCByZWNvcmRbJ291dHB1dF9hZnRlciddWydyZXBvcnRfc2hhMjU2J109PWhhc2hmaWxlKHJlcG9ydCkKIGFzc2VydCBieXRlcy5mcm9taGV4KHJlY29yZFsnb3V0cHV0X3BhdGhfaGV4J10pPT1vcy5mc2VuY29kZShzdWNjZXNzKQoKIHJvd3MuYXBwZW5kKHsnZmFtaWx5JzpmYW1pbHksJ2Nhc2UnOidzdWNjZXNzZnVsLXJ1bi1yZXVzZWQnLCdyZXBvcnRfcGF0aCc6c3RyKHJlcG9ydCksJ3JlcG9ydF9zaGEyNTYnOmhhc2hmaWxlKHJlcG9ydCksJ3JlcG9ydCc6anNvbi5sb2FkcyhyZXBvcnQucmVhZF90ZXh0KCkpLCdpbnZvY2F0aW9uX3JlY29yZF9wYXRoJzpzdHIocmVjb3JkX3BhdGgpLCdpbnZvY2F0aW9uX3JlY29yZF9zaGEyNTYnOmhhc2hsaWIuc2hhMjU2KHJlY29yZF9yYXcpLmhleGRpZ2VzdCgpLCdpbnZvY2F0aW9uJzpyZWNvcmR9KQoKYXNzZXJ0IHtuOmhhc2hmaWxlKHJvb3QvJ3J1c3QvdG9vbHMnL24pZm9yIG4gaW4gc291cmNlc309PXNvdXJjZXMKKG91dC8nYWRtaXNzaW9uLmpzb24nKS53cml0ZV90ZXh0KGpzb24uZHVtcHMoeydzb3VyY2UnOmV4cGVjdGVkLCdzY3JpcHRzJzpzb3VyY2VzLCdpbnRlcnByZXRlcic6c3lzLmV4ZWN1dGFibGUsJ3B5dGhvbic6c3lzLnZlcnNpb24sJ3Jvd3MnOnJvd3N9LGluZGVudD0yKSsnXG4nKQo='',validate=True)
+        data=base64.b64decode(''IiIiQ2FwdHVyZSBvcmlnaW5hbCBDTEkgZ3JvdW5kIHRydXRoIGVhcmx5OyBhdHRhY2ggZXhpc3Rpbmcgc3VjY2Vzc2Z1bCBydW5zIGxhdGVyLiIiIgppbXBvcnQgYXJncGFyc2UsaGFzaGxpYixqc29uLG9zLHN1YnByb2Nlc3Msc3lzCmZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aApwPWFyZ3BhcnNlLkFyZ3VtZW50UGFyc2VyKCkKZm9yIG4gaW4gKCdyZXBvJywncHJvb2YnLCdtb2RlbHMnLCdjYXRhbG9nJyk6cC5hZGRfYXJndW1lbnQoJy0tJytuLHR5cGU9UGF0aCxyZXF1aXJlZD1UcnVlKQpmb3IgbiBpbiAoJ2RyaXZpbmctc3VjY2VzcycsJ2ZhdWx0LXN1Y2Nlc3MnLCdkcml2aW5nLXN1Y2Nlc3MtcmVjb3JkJywnZmF1bHQtc3VjY2Vzcy1yZWNvcmQnKTpwLmFkZF9hcmd1bWVudCgnLS0nK24sdHlwZT1QYXRoKQpnPXAuYWRkX211dHVhbGx5X2V4Y2x1c2l2ZV9ncm91cCgpO2cuYWRkX2FyZ3VtZW50KCctLWNhcHR1cmUtb25seScsYWN0aW9uPSdzdG9yZV90cnVlJyk7Zy5hZGRfYXJndW1lbnQoJy0tbWVyZ2Utc3VjY2VzcycsYWN0aW9uPSdzdG9yZV90cnVlJykKYT1wLnBhcnNlX2FyZ3MoKTtyb290PWEucmVwby5yZXNvbHZlKCk7b3V0PWEucHJvb2YucmVzb2x2ZSgpO2V4cGVjdGVkPW9zLmVudmlyb25bJ0VYUEVDVEVEX1NPVVJDRSddCmFzc2VydCBzdWJwcm9jZXNzLmNoZWNrX291dHB1dChbJ2dpdCcsJ3Jldi1wYXJzZScsJ0hFQUQnXSxjd2Q9cm9vdCx0ZXh0PVRydWUpLnN0cmlwKCk9PWV4cGVjdGVkCmhhc2hmaWxlPWxhbWJkYSBwOmhhc2hsaWIuc2hhMjU2KHAucmVhZF9ieXRlcygpKS5oZXhkaWdlc3QoKQpzb3VyY2VzPXtuOmhhc2hmaWxlKHJvb3QvJ3J1c3QvdG9vbHMnL24pZm9yIG4gaW4gKCdjaGVja19kcml2aW5nX2RhZW1vbi5weScsJ2NoZWNrX21vZGVsX2xvZ2dpbmdfZmF1bHRzLnB5Jyl9CmZhbWlsaWVzPSgoJ2RyaXZpbmcnLCdjaGVja19kcml2aW5nX2RhZW1vbi5weScsKCdiaW5hcnknLCdjYXRhbG9nJywnbW9kZWxzJywnb3V0cHV0JykpLCgnZmF1bHQnLCdjaGVja19tb2RlbF9sb2dnaW5nX2ZhdWx0cy5weScsKCdjYXRhbG9nJywnbW9kZWxzJywnY29sbGVjdG9yJywnb3V0cHV0JykpKQppZiBub3QgYS5tZXJnZV9zdWNjZXNzOgogb3V0Lm1rZGlyKGV4aXN0X29rPUZhbHNlKTtyb3dzPVtdCiBmb3IgZmFtaWx5LGxlYWYsbmFtZXMgaW4gZmFtaWxpZXM6CiAgZGlyZWN0b3J5PW91dC9mYW1pbHk7ZGlyZWN0b3J5Lm1rZGlyKCk7ZXhpc3Rpbmc9ZGlyZWN0b3J5LydleGlzdGluZyc7ZXhpc3RpbmcubWtkaXIoKTsoZXhpc3RpbmcvJ3NlbnRpbmVsJykud3JpdGVfYnl0ZXMoYidleGlzdGluZyBvdXRwdXQgbXVzdCByZW1haW4gdW5jaGFuZ2VkXG4nKQogIHZhbHVlcz17J2JpbmFyeSc6c3RyKHJvb3QvJ3J1c3QvdGFyZ2V0L2RlYnVnL29wZW5waWxvdC1kcml2aW5nLW1vZGVsZCcpLCdjYXRhbG9nJzpzdHIoYS5jYXRhbG9nLnJlc29sdmUoKSksJ21vZGVscyc6c3RyKGEubW9kZWxzLnJlc29sdmUoKSksJ2NvbGxlY3Rvcic6c3RyKHJvb3QvJ3J1c3QvdGFyZ2V0L2RlYnVnL29wZW5waWxvdC1sb2dtZXNzYWdlZCcpLCdvdXRwdXQnOnN0cihkaXJlY3RvcnkvJ2Fic2VudCcpfQogIGJhc2U9W3YgZm9yIG4gaW4gbmFtZXMgZm9yIHYgaW4gKCctLScrbix2YWx1ZXNbbl0pXQogIG9jY3VwaWVkPVt2IGZvciBuIGluIG5hbWVzIGZvciB2IGluICgnLS0nK24sc3RyKGV4aXN0aW5nKWlmIG49PSdvdXRwdXQnZWxzZSB2YWx1ZXNbbl0pXQogIHByb2Jlcz1bKCdlbXB0eScsW10pLCgnaGVscCcsWyctLWhlbHAnXSksKCdzaG9ydC1oZWxwJyxbJy1oJ10pLCgnaGVscC1iZWZvcmUtdW5rbm93bicsWyctLWhlbHAnLCctLXVua25vd24nXSksKCd1bmtub3duLWJlZm9yZS1oZWxwJyxbJy0tdW5rbm93bicsJy0taGVscCddKSwoJ3Vua25vd24nLGJhc2UrWyctLXVua25vd24nXSksKCdjYXRhbG9nLWNvbGxlY3Rvci1wcmVmaXgnLG9jY3VwaWVkK1snLS1jJywneCddKSwoJ2NvbGxlY3Rvci1hYmJyZXZpYXRpb24nLG9jY3VwaWVkK1snLS1jbycsJ3gnXSksKCdtaXNzaW5nLXZhbHVlJyxiYXNlK1snLS1tb2RlbHMnXSksKCdleGlzdGluZy1vdXRwdXQnLG9jY3VwaWVkKSwoJ21vZGVscy1hYmJyZXZpYXRpb24nLFsoJy0tbW9kJ2lmIHY9PSctLW1vZGVscydlbHNlIHYpZm9yIHYgaW4gb2NjdXBpZWRdKSwoJ3JlcGVhdGVkLXJlcXVpcmVkJyxvY2N1cGllZCtbJy0tbW9kZWxzJyx2YWx1ZXNbJ21vZGVscyddXSksKCdlcXVhbHMtdmFsdWUnLFsoJy0tbW9kZWxzPScrdmFsdWVzWydtb2RlbHMnXSlpZiB2PT0nLS1tb2RlbHMnZWxzZSB2IGZvciB2IGluIG9jY3VwaWVkIGlmIHYhPXZhbHVlc1snbW9kZWxzJ11dKSwoJ3Jhdy1tb2RlbC1wYXRoJyxvY2N1cGllZCtbJy0tbW9kZWxzJyxvcy5mc2RlY29kZShiJ3Jhdy1ceGZmLy4uL21vZGVsJyldKSwoJ3Jhdy1vdXRwdXQtcGF0aCcsYmFzZVs6LTJdK1snLS1vdXRwdXQnLG9zLmZzZGVjb2RlKG9zLmZzZW5jb2RlKGV4aXN0aW5nKStiJy8uLi9leGlzdGluZy9ceGZmLy4uJyldKV0KICBmb3IgbmFtZSBpbiBuYW1lczpwcm9iZXMuYXBwZW5kKCgnbWlzc2luZy0nK25hbWUsW3YgZm9yIG4gaW4gbmFtZXMgaWYgbiE9bmFtZSBmb3IgdiBpbiAoJy0tJytuLHZhbHVlc1tuXSldKSkKICBmb3IgbGFiZWwsYXJncyBpbiBwcm9iZXM6CiAgIGJlZm9yZT17c3RyKHgucmVsYXRpdmVfdG8oZGlyZWN0b3J5KSk6aGFzaGZpbGUoeClmb3IgeCBpbiBkaXJlY3Rvcnkucmdsb2IoJyonKWlmIHguaXNfZmlsZSgpfTtjb21tYW5kPVtzeXMuZXhlY3V0YWJsZSxzdHIocm9vdC8ncnVzdC90b29scycvbGVhZiksKmFyZ3NdCiAgIHRpbWVkX291dD1GYWxzZQogICB0cnk6CiAgICByZXN1bHQ9c3VicHJvY2Vzcy5ydW4oY29tbWFuZCxjd2Q9cm9vdCxlbnY9ZGljdChvcy5lbnZpcm9uLFBZVEhPTlBBVEg9c3RyKFBhdGgob3MuZW52aXJvblsnUlVOTkVSX1RFTVAnXSkvJ21vZGVsLW1zZ3EtcHl0aG9uJykrJzonK29zLmVudmlyb24uZ2V0KCdQWVRIT05QQVRIJywnJykpLGNhcHR1cmVfb3V0cHV0PVRydWUsdGltZW91dD00NSkKICAgIHN0YXR1cyxzdGRvdXQsc3RkZXJyPXJlc3VsdC5yZXR1cm5jb2RlLHJlc3VsdC5zdGRvdXQscmVzdWx0LnN0ZGVycgogICBleGNlcHQgc3VicHJvY2Vzcy5UaW1lb3V0RXhwaXJlZCBhcyBlOnN0YXR1cyxzdGRvdXQsc3RkZXJyLHRpbWVkX291dD1Ob25lLGUuc3Rkb3V0IG9yIGInJyxlLnN0ZGVyciBvciBiJycsVHJ1ZQogICBhZnRlcj17c3RyKHgucmVsYXRpdmVfdG8oZGlyZWN0b3J5KSk6aGFzaGZpbGUoeClmb3IgeCBpbiBkaXJlY3Rvcnkucmdsb2IoJyonKWlmIHguaXNfZmlsZSgpfQogICByb3c9eydmYW1pbHknOmZhbWlseSwnY2FzZSc6bGFiZWwsJ2FyZ3ZfaGV4Jzpbb3MuZnNlbmNvZGUoeCkuaGV4KClmb3IgeCBpbiBjb21tYW5kXSwnc3RhdHVzJzpzdGF0dXMsJ3N0ZG91dF9oZXgnOnN0ZG91dC5oZXgoKSwnc3RkZXJyX2hleCc6c3RkZXJyLmhleCgpLCd0aW1lZF9vdXQnOnRpbWVkX291dCwnb3V0cHV0X2JlZm9yZSc6YmVmb3JlLCdvdXRwdXRfYWZ0ZXInOmFmdGVyLCd1bmV4cGVjdGVkX291dHB1dF9leGlzdHMnOm9zLnBhdGgubGV4aXN0cyhkaXJlY3RvcnkvJ2Fic2VudCcpfQogICAob3V0LyhmYW1pbHkrJy0nK2xhYmVsKycuanNvbicpKS53cml0ZV90ZXh0KGpzb24uZHVtcHMocm93LGluZGVudD0yKSsnXG4nKTtyb3dzLmFwcGVuZChyb3cpCiBjYXB0dXJlPXsnc291cmNlJzpleHBlY3RlZCwnc2NyaXB0cyc6c291cmNlcywnaW50ZXJwcmV0ZXInOnN5cy5leGVjdXRhYmxlLCdweXRob24nOnN5cy52ZXJzaW9uLCdyb3dzJzpyb3dzfQogKG91dC8nYWRtaXNzaW9uLWNhc2VzLmpzb24nKS53cml0ZV90ZXh0KGpzb24uZHVtcHMoY2FwdHVyZSxpbmRlbnQ9MikrJ1xuJykKICMgQ2FwdHVyZSBldmVyeSByZXF1ZXN0ZWQgZ3JvdW5kLXRydXRoIHJvdyBiZWZvcmUgY2hlY2tpbmcgYWRtaXNzaW9uIHNhbml0eS4KICMgT25seSBoZWxwL2ltcG9ydCBzdWNjZXNzIGFuZCBsYWNrIG9mIG1vZGVsL2J1aWxkIHNpZGUgZWZmZWN0cyBhcmUgcmVxdWlyZWQ7CiAjIGRvIG5vdCBpbnZlbnQgcGFyc2VyIGV4aXQgY29kZXMgZm9yIGFiYnJldmlhdGlvbi9yZXBlYXQvcmF3LXBhdGggY2FzZXMuCiBmb3Igcm93IGluIHJvd3M6CiAgYXNzZXJ0IG5vdCByb3dbJ3RpbWVkX291dCddIGFuZCBub3Qgcm93Wyd1bmV4cGVjdGVkX291dHB1dF9leGlzdHMnXSxyb3cKICBhc3NlcnQgcm93WydvdXRwdXRfYmVmb3JlJ109PXJvd1snb3V0cHV0X2FmdGVyJ10scm93CiAgaWYgcm93WydjYXNlJ109PSdoZWxwJzphc3NlcnQgcm93WydzdGF0dXMnXT09MCBhbmQgYid1c2FnZTonaW4gYnl0ZXMuZnJvbWhleChyb3dbJ3N0ZG91dF9oZXgnXSkscm93CiBhc3NlcnQge246aGFzaGZpbGUocm9vdC8ncnVzdC90b29scycvbilmb3IgbiBpbiBzb3VyY2VzfT09c291cmNlcwogaWYgYS5jYXB0dXJlX29ubHk6cmFpc2UgU3lzdGVtRXhpdCgwKQplbHNlOgogY2FwdHVyZT1qc29uLmxvYWRzKChvdXQvJ2FkbWlzc2lvbi1jYXNlcy5qc29uJykucmVhZF90ZXh0KCkpO2Fzc2VydCBjYXB0dXJlWydzb3VyY2UnXT09ZXhwZWN0ZWQgYW5kIGNhcHR1cmVbJ3NjcmlwdHMnXT09c291cmNlcztyb3dzPWNhcHR1cmVbJ3Jvd3MnXQpmb3IgZmFtaWx5LGxlYWYsbmFtZXMgaW4gZmFtaWxpZXM6CiBzdWNjZXNzPWdldGF0dHIoYSxmYW1pbHkrJ19zdWNjZXNzJyk7cmVjb3JkX3BhdGg9Z2V0YXR0cihhLGZhbWlseSsnX3N1Y2Nlc3NfcmVjb3JkJyk7YXNzZXJ0IHN1Y2Nlc3MgaXMgbm90IE5vbmUgYW5kIHJlY29yZF9wYXRoIGlzIG5vdCBOb25lCiBzdWNjZXNzPXN1Y2Nlc3MucmVzb2x2ZSgpO3JlcG9ydD1zdWNjZXNzLydyZXBvcnQuanNvbic7YXNzZXJ0IHJlcG9ydC5pc19maWxlKCk7cmVjb3JkX3Jhdz1yZWNvcmRfcGF0aC5yZWFkX2J5dGVzKCk7cmVjb3JkPWpzb24ubG9hZHMocmVjb3JkX3JhdykKIGFzc2VydCByZWNvcmRbJ3N0YXR1cyddPT0wIGFuZCByZWNvcmRbJ3NvdXJjZSddPT1leHBlY3RlZAogYXJndj1bYnl0ZXMuZnJvbWhleCh4KWZvciB4IGluIHJlY29yZFsnYXJndl9oZXgnXV07YXNzZXJ0IGFueSh2IGluKG9zLmZzZW5jb2RlKHJvb3QvJ3J1c3QvdG9vbHMnL2xlYWYpLG9zLmZzZW5jb2RlKCdydXN0L3Rvb2xzLycrbGVhZikpZm9yIHYgaW4gYXJndikKIGFzc2VydCBhbGwob3MuZnNlbmNvZGUoJy0tJytuYW1lKWluIGFyZ3YgZm9yIG5hbWUgaW4gbmFtZXMpCiBzdGRvdXQ9Ynl0ZXMuZnJvbWhleChyZWNvcmRbJ3N0ZG91dF9oZXgnXSk7c3RkZXJyPWJ5dGVzLmZyb21oZXgocmVjb3JkWydzdGRlcnJfaGV4J10pO2Fzc2VydCBzdGRvdXQKIGFzc2VydCBoYXNobGliLnNoYTI1NihzdGRvdXQpLmhleGRpZ2VzdCgpPT1yZWNvcmRbJ3N0ZG91dF9zaGEyNTYnXWFuZCBoYXNobGliLnNoYTI1NihzdGRlcnIpLmhleGRpZ2VzdCgpPT1yZWNvcmRbJ3N0ZGVycl9zaGEyNTYnXQogYXNzZXJ0IHJlY29yZFsnb3V0cHV0X2JlZm9yZSddPT17J2V4aXN0cyc6RmFsc2V9YW5kIHJlY29yZFsnb3V0cHV0X2FmdGVyJ11bJ2lzX2RpcmVjdG9yeSddYW5kIG5vdCByZWNvcmRbJ291dHB1dF9hZnRlciddWydpc19zeW1saW5rJ10KIGFzc2VydCByZWNvcmRbJ291dHB1dF9hZnRlciddWydyZXBvcnRfc2hhMjU2J109PWhhc2hmaWxlKHJlcG9ydClhbmQgYnl0ZXMuZnJvbWhleChyZWNvcmRbJ291dHB1dF9wYXRoX2hleCddKT09b3MuZnNlbmNvZGUoc3VjY2VzcykKIHJvd3MuYXBwZW5kKHsnZmFtaWx5JzpmYW1pbHksJ2Nhc2UnOidzdWNjZXNzZnVsLXJ1bi1yZXVzZWQnLCdyZXBvcnRfcGF0aCc6c3RyKHJlcG9ydCksJ3JlcG9ydF9zaGEyNTYnOmhhc2hmaWxlKHJlcG9ydCksJ3JlcG9ydCc6anNvbi5sb2FkcyhyZXBvcnQucmVhZF90ZXh0KCkpLCdpbnZvY2F0aW9uX3JlY29yZF9zaGEyNTYnOmhhc2hsaWIuc2hhMjU2KHJlY29yZF9yYXcpLmhleGRpZ2VzdCgpLCdpbnZvY2F0aW9uJzpyZWNvcmR9KQphc3NlcnQge246aGFzaGZpbGUocm9vdC8ncnVzdC90b29scycvbilmb3IgbiBpbiBzb3VyY2VzfT09c291cmNlcwpjYXB0dXJlWydyb3dzJ109cm93czsob3V0LydhZG1pc3Npb24uanNvbicpLndyaXRlX3RleHQoanNvbi5kdW1wcyhjYXB0dXJlLGluZGVudD0yKSsnXG4nKQo='',validate=True)
 
-        assert hashlib.sha256(data).hexdigest()==''3e3882f5345dda6696f82f541a725f888033fe46b1f67c4204d9c02f5430447c''
+        assert hashlib.sha256(data).hexdigest()==''619c696e6934f6ad1493405300d1d74f00ceb056505fbb6516b2c06a0ec0a590''
 
         (root/''driving-cli-admission.py'').write_bytes(data)
 
@@ -169,11 +177,13 @@ jobs:
         rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 1024
 
         cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --bin check-driving-daemon
-        --bin check-model-logging-faults --bin build-driving-logging-fault --locked 2>&1 | tee "$proof/controller-build.log"
+        --bin check-model-logging-faults --bin build-driving-logging-fault --bin seal-driving-daemon-fixture --locked 2>&1
+        | tee "$proof/controller-build.log"
 
         cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --lib --bin check-driving-daemon
-        --bin check-model-logging-faults --bin build-driving-logging-fault --test driving_daemon_reference --test driving_daemon_check
-        --test driving_logging_check --test driving_logging_fault_check --locked -- -D warnings 2>&1 | tee "$proof/controller-clippy.log"
+        --bin check-model-logging-faults --bin build-driving-logging-fault --bin seal-driving-daemon-fixture --test driving_daemon_reference
+        --test driving_daemon_check --test driving_logging_check --test driving_logging_fault_check --test driving_daemon_retirement
+        --locked -- -D warnings 2>&1 | tee "$proof/controller-clippy.log"
 
 
         cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --lib driving_daemon_check::
@@ -196,6 +206,12 @@ jobs:
 
         cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --lib driving_logging_check::driver_finish_tests
         --locked -- --nocapture 2>&1 | tee "$proof/driver-finish-unit.log"
+
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 256
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --lib driving_daemon_reference::fixture::tests
+        --locked -- --nocapture 2>&1 | tee "$proof/fixture-unit.log"
 
         '
     - name: Fetch only independently sealed original observation data
@@ -251,6 +267,10 @@ jobs:
         rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 2048
 
         python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/model-msgq-python"'
+    - name: Capture every original CLI admission before expensive model compilation
+      run: "set -euo pipefail\npython3 \"$RUNNER_TEMP/driving-cli-admission.py\" --capture-only \\\n  --repo \"$GITHUB_WORKSPACE\"\
+        \ --proof \"$RUNNER_TEMP/driving-native-296/cli-original\" \\\n  --models \"$RUNNER_TEMP/original-models\" --catalog\
+        \ \"$RUNNER_TEMP/native-catalog\"\n"
     - run: 'set -euo pipefail
 
         rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
@@ -302,6 +322,25 @@ jobs:
 
         cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --test driving_daemon_reference
         --locked -- --nocapture
+
+        '
+    - name: Archive and seal complete same-PKL catalog and independent original fixture
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driving-native-296"
+
+        rust/tools/check-disk-space --path "$RUNNER_TEMP" --growth-mib 2048
+
+        rust/target/debug/seal-driving-daemon-fixture --output "$proof/complete-fixture" --models "$RUNNER_TEMP/original-models"
+        --catalog "$RUNNER_TEMP/native-catalog" --original-dir "$DRIVING_ORIGINAL_OBSERVATION" --source-commit "$EXPECTED_SOURCE"
+        > "$proof/fixture-capture.json"
+
+        fixture_sha="$(sha256sum "$proof/complete-fixture/fixture.json" | cut -d '' '' -f 1)"
+
+        rust/target/debug/seal-driving-daemon-fixture --output "$proof/complete-fixture" --verify-sha "$fixture_sha" > "$proof/fixture-verify-before.json"
+
+        printf ''DRIVING_FIXTURE_DIRECTORY=%s/complete-fixture\nDRIVING_FIXTURE_MANIFEST_SHA256=%s\nDRIVING_DAEMON_CATALOG=%s/complete-fixture/catalog\nDRIVING_ORIGINAL_OBSERVATION=%s/complete-fixture/observations\n''
+        "$proof" "$fixture_sha" "$proof" "$proof" >> "$GITHUB_ENV"
 
         '
     - name: Build actual logging collector and seal the ordinary production ELF
@@ -370,11 +409,11 @@ jobs:
         \ -- python rust/tools/check_driving_daemon.py \\\n  --binary rust/target/debug/openpilot-driving-modeld --collector\
         \ rust/target/debug/openpilot-logmessaged \\\n  --catalog \"$RUNNER_TEMP/native-catalog\" --models \"$RUNNER_TEMP/original-models\"\
         \ --output \"$RUNNER_TEMP/driving-daemon\"\n"
-    - name: Capture original driving and fault CLI admission
-      run: "set -euo pipefail\npython3 \"$RUNNER_TEMP/driving-cli-admission.py\" \\\n  --repo \"$GITHUB_WORKSPACE\" \\\n \
-        \ --proof \"$RUNNER_TEMP/driving-native-296/cli-original\" \\\n  --models \"$RUNNER_TEMP/original-models\" \\\n  --catalog\
-        \ \"$RUNNER_TEMP/native-catalog\" \\\n  --driving-success \"$RUNNER_TEMP/driving-daemon\" \\\n  --fault-success \"\
-        $RUNNER_TEMP/model-logging-faults\" \\\n  --driving-success-record \"$RUNNER_TEMP/driving-native-296/original-driving-invocation.json\"\
+    - name: Merge actual successful original invocations with captured CLI admissions
+      run: "set -euo pipefail\npython3 \"$RUNNER_TEMP/driving-cli-admission.py\" --merge-success \\\n  --repo \"$GITHUB_WORKSPACE\"\
+        \ \\\n  --proof \"$RUNNER_TEMP/driving-native-296/cli-original\" \\\n  --models \"$RUNNER_TEMP/original-models\" \\\
+        \n  --catalog \"$RUNNER_TEMP/native-catalog\" \\\n  --driving-success \"$RUNNER_TEMP/driving-daemon\" \\\n  --fault-success\
+        \ \"$RUNNER_TEMP/model-logging-faults\" \\\n  --driving-success-record \"$RUNNER_TEMP/driving-native-296/original-driving-invocation.json\"\
         \ \\\n  --fault-success-record \"$RUNNER_TEMP/driving-native-296/original-fault-invocation.json\"\n"
     - name: Require native six-scenario real IPC against complete independent original inputs
       run: 'set -euo pipefail
@@ -463,6 +502,26 @@ jobs:
         sha256sum -c "$proof/built-fault-inputs.sha256"
 
         sha256sum -c "$proof/builder-production-inputs.sha256"
+
+        '
+    - name: Require identical current native ELFs in checkout and three-source-absent private root
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driving-native-296"
+
+        export DRIVING_RETIREMENT_OUTPUT="$proof/retirement"
+
+        export DRIVING_RETIREMENT_EXPECT_ABSENT=0
+
+        export DRIVING_LOGGING_FAULT_BINARY="$proof/fault-builder/openpilot-driving-modeld-fault"
+
+        rust/tools/check-disk-space --path "$RUNNER_TEMP" --growth-mib 3072
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --test driving_daemon_retirement
+        --locked -- --nocapture 2>&1 | tee "$proof/retirement-tests.log"
+
+        rust/target/debug/seal-driving-daemon-fixture --output "$DRIVING_FIXTURE_DIRECTORY" --verify-sha "$DRIVING_FIXTURE_MANIFEST_SHA256"
+        > "$proof/fixture-verify-after.json"
 
         '
     - uses: actions/upload-artifact@v6
