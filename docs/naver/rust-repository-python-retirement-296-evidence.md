@@ -18,6 +18,29 @@ execute Python. The original driving oracle must receive an independent native
 replacement before actual source retirement is accepted. Earlier deletion records
 below are historical focused evidence, not current repository-wide retirement.
 
+### Shared-oracle restoration and joint updater proof checkpoint (2026-10-21)
+
+The restored shared Desire oracle passed the complete original model pipelines in
+[39555079988/job119072867369](https://github.com/bin9208/openpilot-rust/actions/runs/39555079988/job/119072867369), source `3cf61ad94e3b34641099fc343217e7ef764f4954`, workflow `a4105a1b7dc6f831d5d1bb00115fa06f82146dcd`.
+Artifact12326160728 ZIP SHA256 is `1dbaee82e962a7eb2ca78832207e48823bbb57133be9e60927c6cd618745d014` (1,522 members; parent CRC and six driving plus linked logging-fault result audit).
+Standalone native Desire source `80adc74bd80621f3a3dea0c6a349ad85d1952cf2`
+passed [39555593610/job119074510359](https://github.com/bin9208/openpilot-rust/actions/runs/39555593610/job/119074510359), workflow `6e00e3106f53f2a2b9e24b2f4e3ec38b3ba98f5e`.
+Artifact12325648441 ZIP SHA256 is `4a262a135d0ef1cef7d1f1bd85764ddcabe45e3192623565de1dd30e1f691190` (115 members; full24,585frames/47scenarios, checkout original present, private absent, same executable identity).
+These validate the restoration and standalone checker, not retirement of the shared original.
+
+Daemon source `ec95aec6bd81a5f718fb2cac54a443d9a61e426c` in
+[39558099959/job119082567435](https://github.com/bin9208/openpilot-rust/actions/runs/39558099959/job/119082567435)
+passed functional unit/controller/11CLI/raw0xff and both267-attempt same-ELF lanes,
+but **failed** strict Clippy on a ten-argument test helper. Artifact12327090874 ZIP
+SHA256 `ded3599064bfaa3ea74b273f8d68b0f46bf4f7891e946a053de0e4983c005876`.
+Source `b91c1bd30b9ee4c15a6b1ad521173412cb6fa63a` fixes the signature and prepares
+joint helper retirement; neither Python source is removed. The parent independently
+reconstructed the two fixture projections from raw original artifacts: only fourteen
+generated `bin/sudo` Python implementation hex values are removed, retaining each
+951-byte count,0755mode,SHA256 and every other JSON value. The maintained gate now
+requires all five fixture tests and explicit helper presence, alongside the unchanged
+five updater scenarios. Joint cloud proof is required before deleting either source.
+
 ## Inventory
 
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)

@@ -15,49 +15,50 @@ below are historical focused evidence, not current repository-wide retirement.
 
 ## 현재 감독·통합 상태, 2026-10-21
 
-부모6.1 Sol이 감독·검토·통합하며6Sol 작업자가 분리된 구현/검토를 맡는다.
+부모6.1 Sol이 감독·검토·통합하고6Sol 작업자가 분리된 구현/검토를 맡는다.
 #296 전용 작업트리와 PR343→dev만 사용한다. dev-md/주 작업폴더/.omo는 보존한다.
 사용자가 pull 후 기기 부팅·녹화·업로드·주행을 확인한다. 로컬은 문법·포맷·diff·
-저장된 데이터 판독만 수행하고 기능 실행/빌드/Clippy는 GitHub-hosted Actions로 제한한다.
-인벤토리는229replaced-local/4partial/3347pending이며 전체 전환은 미완료다.
+저장된 데이터 판독만 수행하며 기능 실행/빌드/Clippy는 GitHub-hosted Actions에서 한다.
+인벤토리는229replaced-local/4partially-replaced/3347pending이고 전체 전환은 미완료다.
 
-Updater 세 Python 도구의 실제 삭제083f937a는39547256419에서15검사,
-두root각1,089exec/Python0/Clippy/defaultCLI를 통과했다. 부모가20JSON과 입력봉인을
-검토했다. updated_fixtures.py는 daemon caller 때문에 남는다. 새 daemon candidate의
-535afad2/39551767732는 fresh original/native pair를 포함한5통합검사를 통과했으나
-strict Clippy 여섯 기계적 lint가 실패했다.19e47ad9에서 수정하여 재검증한다.
-원본 daemon checker와 helper는 아직 유지한다.
+공유 Desire 원본을 복원한3cf61ad9의 전체 original-model-pipelines
+39555079988/job119072867369는 성공했다. 여섯 driving 시나리오와 연결된 logging
+fault 두 사례, ordinary ENOTSOCK를 포함한다. artifact12326160728 ZIP SHA256은
+`1dbaee82e962a7eb2ca78832207e48823bbb57133be9e60927c6cd618745d014`이며
+부모가1,522파일 CRC와 전체 결과를 확인했다. native Desire80adc74b의
+39555593610/job119074510359도 전체24,585행/47시나리오·20CLI·같은ELF 두root·
+Clippy를 통과했다. artifact12325648441 ZIP SHA256은
+`4a262a135d0ef1cef7d1f1bd85764ddcabe45e3192623565de1dd30e1f691190`이다.
+공유 원본은 유지하며 native driving comparator와 linked fault caller를 전환 중이다.
 
-Desire1de0b0d7/39548303946은83lib/4integration/1fullsame-ELF/Clippy와
-20CLI기록을 통과했다. 두root각2exec/전체24,585행바이트일치/원본raw0xff경로성공을
-독립확인한 뒤9b69270f에서 checker와 실제caller를 Rust로 전환했다.
-실제삭제후39551450349는 진행 중이다.27개 공유 원본 source/schema pin은 유지한다.
+Updater 세 도구 실제 삭제083f937a의39547256419는15검사, 두root각1,089exec,
+Python0/Clippy/defaultCLI를 통과했다. daemon ec95aec6의39558099959는 원본과
+새 native의5unit/5integration/11CLI 및 raw0xff/두root각267exec 기능 증거는
+성공했지만 strict Clippy의 인자 수 오류로 전체 실패했다. b91c1bd3에서 수정하고
+helper도 빠진 private root, 기존 다섯 updater 시나리오 및 다섯 fixture 검사를 함께
+요구한다. 새 joint proof는 workflow2bac6b1c36c951772802b969f87c890211ada770이다.
+원본 daemon/helper는 아직 삭제하지 않았다. 원본 fixture의 Python 구현 hex14개만
+제외한 projection을 부모가 원본 artifact와 독립 비교해 나머지 전체 값 일치를 확인했다.
 
-#449 dashcamprogress4c876dc7의39550724394/job119059059811은 전체 support-runtime,
-upload/Params/lifecycle 및 격리된cold/warm측정과 Clippy를 통과했다.
-보관된 수치와 fingerprint 독립 검토가 남았으며 차량성능 주장은 없다.
-#448 a6c3201f/39546722792의 전체 wire/코덱/V4L/runtime/IPC/Clippy도 성공했다.
-5codec/112packet hashes,32V4L,10runtime을 독립확인했다. 선택payload복사
-205400→102700bytes,할당240→240이며 elapsed는 단일표본이다. 최신 ARM/기기는 미확인이다.
+#450 cweb3a90dc52의39554813792/job119072003793는 전체 package/HTTP/daemon,
+ASan/UBSan/Clippy와 고립된 할당 측정을 통과했다. 모든256byte 입력1,000회에서
+할당256000→1000, 재할당169000→0, 할당바이트2406000→768000이며
+fingerprint6501791830646170789는 같다. 실제 차량CPU/peak메모리 주장은 없다.
+#449 전체 support-runtime39550724394와 #448 전체 encoder39546722792도
+성공했다. 세 상세 문서에 exact-source와 artifact/한계를 유지한다.
 
-Panda는 동일소스/ELF 두38phase가 모두 성공했지만 stdout 디스크예약41기록과
-native의 빠진 기록을 비교기가 거부했다.7a66e0e7에서 기록/flush를 복원하고 추가
-ABI예약1회를 명시했다.39551552807에서 전체 재검증 중이며 원본Python은 남는다.
-498774f9 소스정책39551944867/job119062898390은13disk/76isolation/2lagd/2timed 및
-Clippy를 통과했다. 기존 command-reader 정책의 과거 Python caller 기대를 고쳤다.
+Panda 정상UTF8 전체38phase 원본/native39551552807는 성공했다. 원본raw0xff
+실행39554286034는 첫 stage-json11 child의 실제panic101로 controller1을 기록했다.
+이 관측을 유지하는 lossless argv/receipt 수정 cdfdb291의 전체 비교가 진행 중이다.
+child 자체 수정은 별도 #452다. 두 Python controller/test는 아직 남는다.
 
-이전 전체PR run39541018977의 head는b5888cd6, 실제checkout은syntheticmerge
-b757dac402c1ed23c262a407664cdd275b5ea0ea이다. 양쪽tree는
-c85e220930a77593ae4a820dadd9823f4049ae86으로 같다. ARM job119028523969는
-111.28분 후 성공했고 genericGNU/staticC3Xprobe/generic·ION UI를 포함한다.
-artifact12323725085의 ZIP SHA256은
-`4fbef43eeedc76a4b9225356cd7143b4507f5ab7e3ebb11aff5ce805c04bef46`이다.
-이는 generic/not-device-validated 산출물이며 #448/#449 이후 변경이나 AGNOS 설치 증거가 아니다.
-UI/LLVM20도 성공했다. Panda/telemetry/navigation 세 실패의 집중 재검증
-39542206911/39543237917/39543403573은 성공했고 workspace stale정책도 수정했다.
-Navigation 간헐실패 원인은 미확정이다. 마감/허용조건은 바꾸지 않았다.
-최신 전체PR/ARM, 소스일치 AGNOS패키지, dev통합후검사와 사용자기기수용은 별도 미완료다.
-
+전체PR39552825804(head11af3760)는 공유 Desire 삭제로 두job, Wi-Fi helper 준비
+파일 경합으로 UIjob이 실패했다. 앞의 복원 원본 전체 검증은 성공했고 Wi-Fi는
+4b1da110에서 완성된 sibling을 rename해 공개하도록 수정했다. 전체 UI/connectivity
+39554819822는 진행 중이다. 원본 deadline/ownership/pidfd/cleanup 조건을 유지한다.
+현재 전체PR의 workspace/ARM은 진행 중이며 새 변경을 포함한 전체PR은 별도 필요하다.
+이전b5888cd6의 ARM119028523969 성공은 genericGNU/staticC3Xprobe/generic·ION UI
+증거이며 AGNOS 설치나 새 소스 전체검증/사용자 기기 수용을 대신하지 않는다.
 
 ## 과거 감독·통합 상태: 332d99bc, 2026-10-21
 
