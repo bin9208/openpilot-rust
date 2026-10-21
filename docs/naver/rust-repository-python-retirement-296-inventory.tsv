@@ -2005,7 +2005,7 @@ rust/tools/check_navd_engine.py	a27d452daf9668ddb333f4d94e32c8116c72c7f4	pending
 rust/tools/check_navd_http.py	0b5f1dd2b943cab38ba06aa964950d812fea282a	pending	-
 rust/tools/check_navd_ipc.py	68ae83fd7bba51b3388e56088bfafa9f3a0f284e	pending	-
 rust/tools/check_navd_policy.py	bee5a837040cc0a7b936167c68bae8b4db7120fd	pending	-
-rust/tools/check_pandad_can_io.py	45db973e4f3bddfbda24c7f5d208b85dc6001aa2	pending	-
+rust/tools/check_pandad_can_io.py	45db973e4f3bddfbda24c7f5d208b85dc6001aa2	replaced-local	rust/crates/dev-tools/src/pandad_can_io_check.rs;rust/crates/dev-tools/tests/pandad_protocol_reference.rs;rust/crates/dev-tools/tests/pandad_can_io_reference.rs
 rust/tools/check_pandad_ci.py	18dffbda37f0967d912fb01c327ce3f4ebced322	replaced-local	rust/crates/dev-tools/src/panda_ci_check.rs;rust/crates/dev-tools/tests/panda_ci_retirement.rs
 rust/tools/check_pandad_client.py	50db2d1b6994391696b002985810786aa9b40699	pending	-
 rust/tools/check_pandad_composed.py	28edcc8227e4ab83c8430e0da2ea94dc4d0b3573	pending	-
@@ -2015,7 +2015,7 @@ rust/tools/check_pandad_firmware.py	977a7607fab336e4b867847c6c34490d0ac02caa	pen
 rust/tools/check_pandad_firmware_spi.py	e1361adfab18790f8fd39a395371bfa6961ebcb4	pending	-
 rust/tools/check_pandad_native_supervisor.py	d5e20f6bdb180bfcec7fcdf17930a1f546b3dd37	pending	-
 rust/tools/check_pandad_peripheral.py	584a03cee437061c68ba9294e516bd1edac8e6c5	pending	-
-rust/tools/check_pandad_protocol.py	48f0c90ff260dad3ca8ee65977c1dee4aa2ed87b	pending	-
+rust/tools/check_pandad_protocol.py	48f0c90ff260dad3ca8ee65977c1dee4aa2ed87b	replaced-local	rust/crates/dev-tools/src/pandad_protocol_check.rs;rust/crates/dev-tools/tests/pandad_protocol_reference.rs;rust/crates/dev-tools/tests/pandad_can_io_reference.rs
 rust/tools/check_pandad_runtime.py	72bacce202eba3303acb9a9d6ae2b428d7eaf08b	pending	-
 rust/tools/check_pandad_safety.py	c48ef4a89c02dbda94140ac446d5315018f447aa	pending	-
 rust/tools/check_pandad_safety_padding.py	155822c5d0ef31cf1d802c5b5299ceddae9a041e	replaced-local	rust/crates/dev-tools/src/pandad_safety_padding_check.rs; native check-pandad-safety-padding; sealed original full transcripts, 18 negative phase entries and same-ELF sanitized/untraced plus plain native exec audit
@@ -2436,7 +2436,7 @@ rust/tools/navd_runtime_source.py	ab19645c6bd53494ebb68713bdda4810c148e86a	pendi
 rust/tools/navd_source.py	35541a2257f2c6434d2b7617e33db9347107dd1f	pending	-
 rust/tools/original_params_binding.py	a35a51ff627bed03a9316e977be4a348df6c91f3	pending	-
 rust/tools/pandad_device_cases.py	aa2d52b2076ca1054bfb2d32520d7a2105b62061	replaced-local	rust/crates/dev-tools/src/pandad_device_check.rs;rust/crates/dev-tools/tests/pandad_device_reference.rs;rust/crates/dev-tools/src/pandad_device_fixture.rs
-rust/tools/pandad_protocol_cases.py	e71819f83c0e5e456dbe3b4964c62cfaa5c6569d	pending	-
+rust/tools/pandad_protocol_cases.py	e71819f83c0e5e456dbe3b4964c62cfaa5c6569d	replaced-local	rust/crates/dev-tools/src/pandad_protocol_check/cases.rs;rust/crates/dev-tools/tests/pandad_protocol_reference.rs;rust/crates/dev-tools/tests/pandad_can_io_reference.rs
 rust/tools/pandad_runtime_peer.py	2e3e27d5e020c9eca606b3be81c80bf91a924200	pending	-
 rust/tools/pandad_spi_cases.py	4c30c9757087f16ed2b819d19bb78b229d1c86d5	pending	-
 rust/tools/pandad_state_cases.py	cfebc7dd355208db95567a3c9b3286ee273cfbf4	pending	-

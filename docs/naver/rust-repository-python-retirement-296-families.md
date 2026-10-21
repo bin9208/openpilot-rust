@@ -33,20 +33,22 @@ four partial baseline entries.
 
 ## Current batches and blockers
 
-1. Panda device/protocol/CAN-I/O: native implementations and caller routing are
-   committed candidates. Device actual source deletion, full functional/Clippy and native fixture staging
-   are accepted in39640526320; its maintained synthetic fixture removes an expiring observation dependency.
-   Protocol and CAN-I/O complete original captures are sealed and reusable. The
-   raw-runner admission discrepancy is fixed; their combined gate now retries
-   only after a structural JSON metadata comparison fix, without original reexecution. Then remove the shared Python corpus
-   with both callers together and run affected outer integration once.
+1. Panda device/protocol/CAN-I/O source deletion and maintained fixtures are
+   accepted in39640526320 and39647358174. The shared corpus is removed with both
+   native callers. Complete independent observations and parser/failure effects
+   are preserved. Final actual outer38-phase/two-root integration must cover
+   the163-source/34-executable current composition; its14 mock controls alone
+   do not replace that gate.
 2. Driving/driver/logging faults: complete fixture/source-absence/finalization
    and optional-collector candidates are committed. Driving native collector
    and both private-root functional lanes passed; final report metadata equality
    failed and is under diagnosis. Six cheap reappearance controls remain. Driver's actual collector CLI data is
    independently auditable despite a wrapper row-count failure; do not repeat
-   unchanged traffic solely to fix that assertion. Complete one combined
-   no-collector/CLI/raw-alias gate and migrate the shared original dependencies.
+   unchanged traffic solely to fix that assertion. The reused driver catalog failed warmup with confirmed SIGILL: AVX-512 objects
+   were run on an AMD EPYC host without that ISA. CPU target compatibility is a
+   real reuse boundary. Use current-host exports, preserve historical objects
+   and source seals, then complete the no-collector/CLI/raw-alias gate and migrate
+   the shared original dependencies.
 3. Full f5c8 CI `39617311670` passed all runtime/ARM jobs except workspace:
    `desire_reference_cli` failed a source-output hash assertion. The serde feature
    ordering defect #463 is fixed and affected gate39639003843 is accepted. Preserve
@@ -54,8 +56,9 @@ four partial baseline entries.
    The aggregate remains failed. Navigation #457 also remains open because its
    earlier startup stall has not been explained by successful diagnostics.
 4. Next general-tool batch: recovery's eight configured controllers and shared
-   HTTP/WebSocket/PTY/process helpers. Native runtime implementations already
-   exist; their independent controller/oracle and active caller closure remain.
+   HTTP/WebSocket/PTY/process helpers. Native runtime implementations and the eight-controller Rust candidate exist;
+   their grouped hosted gate is running. Original controllers remain mandatory
+   until accepted comparisons and active caller/source removal close the family.
    Follow with binding generation and shared runtime comparator dependencies.
 
 ## Evidence reuse and delivery

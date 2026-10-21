@@ -16,9 +16,10 @@ all16,108 artifact CRCs, both152-source rosters against Git,31 held ELFs, both
 [Panda retirement](rust-panda-orchestration-retirement-296.md) for exact identities.
 Panda device controller and corpus removal are now accepted after deleted-checkout
 gate39640526320 at c056e379, including three complete native CLI lanes and raw-path
-archive retention. Inventory is235replaced-local/4partial/3341pending. Native
-driving/driver and protocol/CAN-I/O originals remain until their functional
-closures pass. Whole-project compiler/tool/vendor conversion remains unfinished.
+archive retention. Protocol/CAN-I/O/shared-case source retirement is accepted in39647358174 at
+83f1da3f after full grouped native references, staging controls and strict Clippy.
+Inventory is238replaced-local/4partial/3338pending. Driving/driver originals
+remain until their remaining source/caller gates pass. Whole-project compiler/tool/vendor conversion remains unfinished.
 
 
 ## Supervised integration checkpoint (2026-10-21)
