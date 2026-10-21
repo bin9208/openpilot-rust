@@ -234,6 +234,9 @@ fn source_paths(root: &Path) -> Result<BTreeSet<PathBuf>> {
         "bin/check_pandad_protocol.rs",
         "pandad_protocol_check/cases.rs",
         "pandad_protocol_check/ownership.rs",
+        "bin/check_pandad_can_io.rs",
+        "pandad_can_io_check/cases.rs",
+        "pandad_can_io_check/ownership.rs",
     ] {
         paths.insert(PathBuf::from("rust/crates/dev-tools/src").join(name));
     }

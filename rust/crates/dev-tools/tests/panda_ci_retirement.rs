@@ -169,6 +169,9 @@ fn source_paths(root: &Path) -> BTreeSet<PathBuf> {
         "bin/check_pandad_protocol.rs",
         "pandad_protocol_check/cases.rs",
         "pandad_protocol_check/ownership.rs",
+        "bin/check_pandad_can_io.rs",
+        "pandad_can_io_check/cases.rs",
+        "pandad_can_io_check/ownership.rs",
     ] {
         paths.insert(PathBuf::from("rust/crates/dev-tools/src").join(name));
     }
@@ -288,9 +291,13 @@ fn prepare_private_root(repo: &Path, private: &Path, expect_absent: bool) -> Val
         "bin/check_pandad_device.rs",
         "pandad_device_check/ownership.rs",
         "pandad_protocol_check.rs",
+        "pandad_can_io_check.rs",
         "bin/check_pandad_protocol.rs",
         "pandad_protocol_check/cases.rs",
         "pandad_protocol_check/ownership.rs",
+        "bin/check_pandad_can_io.rs",
+        "pandad_can_io_check/cases.rs",
+        "pandad_can_io_check/ownership.rs",
     ] {
         assert!(current_names.insert(format!("rust/crates/dev-tools/src/{name}")));
     }
@@ -328,7 +335,7 @@ fn prepare_private_root(repo: &Path, private: &Path, expect_absent: bool) -> Val
         .map(|(name, hash)| (name.clone(), hash.clone()))
         .collect::<BTreeMap<_, _>>();
     assert_eq!(copied, expected_copied);
-    assert_eq!(copied.len(), 158);
+    assert_eq!(copied.len(), 162);
     openpilot_disk_space::inspect(private, 2 * GIB)
         .unwrap()
         .require()
