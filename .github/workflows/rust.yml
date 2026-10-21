@@ -961,7 +961,7 @@ jobs:
           name: rust-desire-controller-retirement
           path: ${{ runner.temp }}/desire-controller-native/
           if-no-files-found: warn
-      - name: Compare model desire state and Bluetooth command consumption with original source
+      - name: Compare native Bluetooth command consumption and JSON boundary
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo build -p openpilot-dev-tools --bin check-command-reference --bin check-command-json-boundary --locked
@@ -1079,7 +1079,7 @@ jobs:
             ${{ runner.temp }}/policy-native/report.json
             ${{ runner.temp }}/message-state/report.json
             ${{ runner.temp }}/model-timing/
-            ${{ runner.temp }}/model-desire/report.json
+            ${{ runner.temp }}/desire-controller-native/default-cli/report.json
             ${{ runner.temp }}/model-commands/report.json
             ${{ runner.temp }}/model-inputs/report.json
             ${{ runner.temp }}/monitoring-policy/report.json

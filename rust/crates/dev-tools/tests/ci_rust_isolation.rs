@@ -2031,12 +2031,12 @@ fn command_reader_gates_keep_both_native_consumers_and_desire_check_mandatory() 
     job_check(
         "workspace",
         &[
-            "python tools/check_desire_reference.py --binary target/debug/examples/desire_probe",
+            "rust/target/debug/check-desire-reference-native --binary \"$DESIRE_REFERENCE_PROBE\"",
             "cargo build -p openpilot-dev-tools --bin check-command-reference --bin check-command-json-boundary --locked",
             "target/debug/check-command-reference --binary target/debug/examples/command_probe",
             "target/debug/check-command-json-boundary --binary target/debug/examples/command_probe",
         ],
-        &["--bin check-command-reference", "target/debug/check-command-reference --binary", "target/debug/check-command-json-boundary --binary"],
+        &["--bin check-command-reference", "target/debug/check-command-reference --binary", "target/debug/check-command-json-boundary --binary", "--bin check-desire-reference-native", "rust/target/debug/check-desire-reference-native --binary"],
         false,
     );
     let data = workflow();
