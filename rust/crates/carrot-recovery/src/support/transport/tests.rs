@@ -442,11 +442,25 @@ fn child_driver() {
 
 #[test]
 fn webhook_message_matches_actual_recovery_source_with_unicode_and_limits() {
-    // Given: explicit source payloads with Unicode, unlimited TTL, and truncation.
-    let fixture = Fixture::new();
-    let source = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../../openpilot/selfdrive/carrot/recovery/server.py");
-    let script = "import importlib.util,json,sys\nspec=importlib.util.spec_from_file_location('owned_support_source',sys.argv[1])\nmodule=importlib.util.module_from_spec(spec)\nspec.loader.exec_module(module)\nprint(module._support_message(json.loads(sys.argv[2])))";
+    // Source-only bytes captured from the unchanged _support_message in hosted CI.
+    const ORIGINAL: [(&[u8], &[u8]); 2] = [
+        (
+            include_bytes!(
+                "../../../tests/fixtures/recovery-webhook-original/message-0/payload.json"
+            ),
+            include_bytes!(
+                "../../../tests/fixtures/recovery-webhook-original/message-0/source.txt"
+            ),
+        ),
+        (
+            include_bytes!(
+                "../../../tests/fixtures/recovery-webhook-original/message-1/payload.json"
+            ),
+            include_bytes!(
+                "../../../tests/fixtures/recovery-webhook-original/message-1/source.txt"
+            ),
+        ),
+    ];
     let payloads = [
         Value::object([
             ("createdAt", Value::text("2026-10-12 12:34:56")),
@@ -466,49 +480,10 @@ fn webhook_message_matches_actual_recovery_source_with_unicode_and_limits() {
             ),
         ]),
     ];
-    for (index, payload) in payloads.into_iter().enumerate() {
-        // When: Rust and the actual source format the identical support payload.
-        let source_result = Command::new("python3")
-            .arg("-c")
-            .arg(script)
-            .arg(&source)
-            .arg(payload.encode().unwrap())
-            .output()
-            .unwrap();
-        assert!(
-            source_result.status.success(),
-            "{}",
-            String::from_utf8_lossy(&source_result.stderr)
-        );
+    for (payload, (original_payload, original_output)) in payloads.into_iter().zip(ORIGINAL) {
+        assert_eq!(payload.encode().unwrap().as_bytes(), original_payload);
         let actual = webhook::message(&payload).unwrap();
-        let capture = fixture.0.join(format!("message-{index}"));
-        fs::create_dir(&capture).unwrap();
-        fs::write(capture.join("payload.json"), payload.encode().unwrap()).unwrap();
-        fs::write(capture.join("source.txt"), &source_result.stdout).unwrap();
-        fs::write(capture.join("source-stderr.txt"), &source_result.stderr).unwrap();
-        fs::write(capture.join("rust.txt"), format!("{actual}\n")).unwrap();
-        use sha1::Digest;
-        let hash = format!("{:x}", sha1::Sha1::digest(fs::read(&source).unwrap()));
-        fs::write(
-            capture.join("source-proof.json"),
-            Value::object([
-                ("source", Value::text(&source.to_string_lossy())),
-                ("sha1", Value::text(&hash)),
-                ("invoked_function", Value::text("_support_message")),
-                (
-                    "exit_code",
-                    Value::integer(source_result.status.code().unwrap_or(-1)),
-                ),
-            ])
-            .encode()
-            .unwrap(),
-        )
-        .unwrap();
-        // Then: message content is identical in Unicode characters and source limits.
-        assert_eq!(
-            String::from_utf8(source_result.stdout).unwrap(),
-            format!("{actual}\n")
-        );
+        assert_eq!(format!("{actual}\n").as_bytes(), original_output);
         assert!(actual.chars().count() <= 1900);
     }
 }
