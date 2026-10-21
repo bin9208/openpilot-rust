@@ -5252,3 +5252,26 @@ the inherited diagnostic job label mentioning Clippy, this recipe only installs
 that component and executes those tests; it does **not** execute cargo clippy.
 Do not infer a current strict-Clippy result from that label or policy pass.
 The joint updater proof separately runs strict Clippy on both controller/test sets.
+
+
+### Corrected independent driving input capture (2026-10-21)
+
+Original-only [39559480695](https://github.com/bin9208/openpilot-rust/actions/runs/39559480695)
+checked out `ec95aec6bd81a5f718fb2cac54a443d9a61e426c` under workflow
+`97adeffc4e2c942586d5e5870446612e1ff02d56`. Artifact12327097515 is291,464,175bytes,
+ZIP SHA256 `348d7760bedf71c1ccf02b66019c5d428452d796b246ef167f525183afb59986`;
+manifest SHA256 `2e7d343e34e06b1a7e998c31aca7c8ec193fbe49e63b30b2739f73c0934c565b`.
+The parent checked ZIP CRC, all1,069 inventoried member lengths/hashes, all40
+packed-input hashes and114 publication packets across six scenarios. Capture
+script SHA256 is `bfe55536e9bf47cda093d9986247cf338f978c3c82b0cc6e1000731008697206`.
+
+The first original capture39556958142 is **not** a valid full-input replay fixture:
+38/40 packed files were copied after the shared recurrent NumPy storage changed.
+The corrected hook copies at the original `write_tensor` boundary and verifies
+those bytes against the original packed hash before saving. No native driving
+candidate executes in this capture. The0.5-second execution time and zero
+publication clock are declared construction sentinels; live native timing still
+requires original bounds and linked modelV2/drivingModelData equality. Original
+ordinary/coefficient tolerances remain1e-6/2e-5, with exact keys/discrete/raw-pred
+bytes. This is independent input/expected-data evidence, not a successful live
+Rust comparator, whole model compiler retirement, or vehicle result.
