@@ -4999,3 +4999,26 @@ through its native checker. No Python source was embedded or renamed.
 Inventory218replaced-local /3partial /3359pending. Post-deletion exact-source
 cloud execution is pending. This does not establish repository-wide retirement,
 full model/compiler coverage, dev integration, ARM packaging or device acceptance.
+
+## Complete paramsd input wire and repaired source gates accepted (2026-10-21)
+
+Source `200ba3fd91c31c448df0bd03b53e0f1a2b7e80af` passed
+[run39519153139/job118958465021](https://github.com/bin9208/openpilot-rust/actions/runs/39519153139/job/118958465021).
+The parent downloaded artifact12310311716 (322,999bytes), ZIP SHA256
+`670f2081c86e1ea898e3ea62b072d9812d32534cc94de46b20e8f7df4865b5c0`,
+and independently verified all parsed metadata and raw packet bytes for all39
+loop cases, seven estimator scenarios,1203 continuous frames and nine restart
+frames against freshly generated unchanged-original inputs. Both native CLIs
+had exactly one successful native exec and no child exec. The fresh original
+inputs were also compared against actual original controller input captures
+from run39514415599/job118943760823, artifact12306774260, capture source
+`4a3336f564e5766b07627633a1b9d72038693d92`.
+
+All five generator tests and strict Clippy passed. The same job passed all13
+disk guards,66 Rust workflow policies, the lagd policy, seven atomic-gate unit
+cases (the hardware/IPC-dependent ignored case remains separately exercised
+by the full daemon proof), four Panda finalization regressions and strict
+Panda reference/finalization Clippy. This establishes the repaired policy and
+reference compilation at this source, not a new actual Panda timestamp proof.
+It does not retire the Python fixture/source/controller family or substitute
+for the new paramsd sealed-numeric full daemon job.
