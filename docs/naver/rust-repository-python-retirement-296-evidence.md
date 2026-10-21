@@ -48,6 +48,41 @@ edges decrease20→19; the baseline source count remains242replaced-local/
 
 ## Supervised integration checkpoint (2026-10-21)
 
+Later model-family preflight
+[39674181956](https://github.com/bin9208/openpilot-rust/actions/runs/39674181956)
+passes at source `0ec6cbae2d85fd98f2e0894697de7869f6159f51`, workflow
+`488758f81c0faf01bb71a3122b092586e8ec333f`: six process/finalization regressions,
+one startup control, one USB mode control, strict Clippy,13 disk-bootstrap cases
+and6 workflow-policy cases. Parent audited artifact12380394746 (8,192bytes/
+14CRC members), ZIP SHA256
+`c99946c5ba8f3ed8f2bf562186489b1e90b9642eb3e77d052d0b163262cd2cae`.
+This also accepts the maintained Teleop caller's workflow/disk policy integration.
+The prior preflight39673003192 failed on four mixed-case rustix signal constants;
+38e7436bf repairs them. Actual original startup/USB capture and complete native
+traffic are not covered by this preflight. Review subsequently found the default
+512MiB catalog bound rejects the genuine776,634,338-byte USB model. Commit5f0aef024
+adds separate800MiB/file,1GiB total/512-file admission and exact original asset
+roster comparison; changed-bound regression39675298032 remains pending.
+
+Recovery [39672931897](https://github.com/bin9208/openpilot-rust/actions/runs/39672931897)
+passes16 family units, strict Clippy and seven complete controllers per root,
+including upload. Both remaining failures are the same `git_pull_repair/refs`
+comparison. The independent original repairs `main`'s upstream to`origin/main`;
+5acc5eacb requires exactly that repair, every other ref unchanged, and full
+original refs equality. All seven snapshot fields remain checked. Artifact
+12379819666 is33,893,171bytes/4,697CRC members, ZIP SHA256
+`b935ae3355512403403be362f5c3d9fe1a51ee435d1aa229515fe9c12bb54b74`.
+Parent verified all26 held inputs unchanged. Full rerun39675157622, complete
+trace classification and actual thirteen-source removal are still pending.
+
+The first model-family source-capture39674492629 stopped before original traffic:
+its caller supplied a relative archive path to the stager's deliberately absolute
+path API. Only the scratch caller is corrected; no stager admission is relaxed.
+Source-only capture39675379701 retries the same0ec6cbae2 source with that absolute
+argument. No expected data is accepted from the failed run. New held exec-parser
+API3005fd3a5 is preparation, not proof of interpreter-free recovery execution;
+its final source-authored argv policy and hosted execution remain pending.
+
 Full PR [39567841179](https://github.com/bin9208/openpilot-rust/actions/runs/39567841179)
 for issue-branch head917cd7db finished with camera QA, navigation startup and the
 workspace JSON11 receipt-order failures; its aggregate is failed. Integration
