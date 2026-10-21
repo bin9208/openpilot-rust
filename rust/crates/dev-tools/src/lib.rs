@@ -41,6 +41,8 @@ pub mod bridge_check;
 pub mod brotli_stage;
 #[cfg(all(unix, feature = "calibration-float-native"))]
 pub mod calibration_float_check;
+#[cfg(all(unix, feature = "calibration-reference-native"))]
+pub mod calibration_reference_check;
 pub mod camera_ci_check;
 pub mod camera_data_generate;
 #[cfg(feature = "camera-sensor-native")]

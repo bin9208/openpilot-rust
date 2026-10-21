@@ -552,6 +552,7 @@ bluetooth-bluez-policy-native = ["dep:openpilot-runtime-version"]
 bluetooth-config-native = ["dep:openpilot-runtime-version"]
 bluetooth-journal-native = []
 calibration-float-native = []
+calibration-reference-native = ["dep:capnp", "dep:openpilot-cereal", "serde_json/float_roundtrip"]
 pandad-safety-padding-native = []
 pandad-device-native = []
 logmessaged-startup-native = ["stats-daemon-native"]
@@ -1814,3 +1815,12 @@ required-features = ["beep-reference-native"]
 [[test]]
 name = "beep_reference_retirement"
 required-features = ["beep-reference-native"]
+
+[[bin]]
+name = "check-calibration-reference"
+path = "src/bin/check_calibration_reference.rs"
+required-features = ["calibration-reference-native"]
+
+[[test]]
+name = "calibration_reference_check"
+required-features = ["calibration-reference-native"]

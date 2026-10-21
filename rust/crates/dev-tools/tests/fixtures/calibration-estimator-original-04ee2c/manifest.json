@@ -1,6 +1,6 @@
 {
   "kind": "original-only calibration estimator",
-  "source_commit": "04ee2c46963a27cbc9d37cea524f169a63557913",
+  "source_commit": "5bcfae4482d9c4dcb1da46e1086bea609e0c9688",
   "source_sha256": {
     "rust/tools/check_calibration_reference.py": "c4c725a5bcbfbc9134ab1d246c94c5c95b96b917c7be8c6c5732fde923a19273",
     "rust/tools/calibration_cases.py": "fb95b60778e6cb55a62427f0058ac85a9dd24f5b719cc217236e795f3f4df78a",
@@ -49,8 +49,11 @@
   "source_errors": 30,
   "persistence_packets": 14,
   "packets": 15098,
+  "reset_attempts": 163,
+  "successful_resets": 147,
+  "cached_params_failures": 1,
   "trace_file": "original.jsonl.gz",
-  "trace_sha256": "2404a796dc09886770546197417d325d53aa2f1d451722982bf7f319439ce954",
+  "trace_sha256": "9ea4da7d3216e19a2fcaf4043c928d59f7b4014e2aa7f6ee2b4c401b3f045de8",
   "state_tolerance": {
     "absolute": 2e-12,
     "relative": 2e-12
