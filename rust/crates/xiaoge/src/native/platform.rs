@@ -2,8 +2,8 @@ use super::Error;
 use std::{
     path::Path,
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc,
+        atomic::{AtomicBool, Ordering},
     },
     thread,
     time::Duration,
@@ -18,6 +18,12 @@ pub fn monotonic() -> Result<f64, Error> {
 pub fn thread_cpu() -> Result<f64, Error> {
     Ok(openpilot_beepd::monotonic_seconds(
         rustix::time::clock_gettime(rustix::time::ClockId::ThreadCPUTime),
+    )?)
+}
+
+pub fn process_cpu() -> Result<f64, Error> {
+    Ok(openpilot_beepd::monotonic_seconds(
+        rustix::time::clock_gettime(rustix::time::ClockId::ProcessCPUTime),
     )?)
 }
 

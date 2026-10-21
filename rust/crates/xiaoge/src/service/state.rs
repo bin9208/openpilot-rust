@@ -1,4 +1,5 @@
 use crate::{
+    compute::ComputeMode,
     config::Config,
     lane::ResultData,
     settings::Settings,
@@ -123,6 +124,9 @@ pub struct State {
     pub config: Config,
     pub config_generation: u64,
     pub settings: Settings,
+    pub compute_mode: ComputeMode,
+    pub compute_generation: u64,
+    pub compute_status: [Option<openpilot_logging::Fields>; 2],
     pub last_param_refresh: f64,
     pub cameras: [Camera; 2],
     pub models: [Model; 2],
@@ -146,6 +150,9 @@ impl State {
             config,
             config_generation: 0,
             settings: Settings::default(),
+            compute_mode: ComputeMode::Cpu,
+            compute_generation: 0,
+            compute_status: [None, None],
             last_param_refresh: 0.0,
             cameras: ["waiting for wide road camera", "waiting for road camera"].map(|error| {
                 Camera {
@@ -177,6 +184,25 @@ impl State {
             side_at: [0.0; 2],
             followup_until: [0.0; 2],
         }
+    }
+
+    pub fn select_compute(&mut self, mode: ComputeMode) -> Result<(), crate::Error> {
+        if self.compute_mode == mode {
+            return Ok(());
+        }
+        self.compute_generation = self
+            .compute_generation
+            .checked_add(1)
+            .ok_or(crate::Error::Invalid("compute generation overflow"))?;
+        self.compute_mode = mode;
+        self.compute_status = [None, None];
+        self.lane = ResultData::failed("compute mode changed; waiting for a new result".into());
+        self.lane_updated = 0;
+        self.blindspot_updated = 0;
+        self.blindspot_side_updated = [0; 2];
+        self.blindspot_active = [false; 2];
+        self.sides = [Detection::default(); 2];
+        Ok(())
     }
 
     pub fn configure(&mut self, config: Config) -> Result<(), crate::Error> {

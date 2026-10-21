@@ -84,3 +84,37 @@ fn comparison_exposes_nonfinite_values_shape_errors_and_real_numeric_deltas() {
     assert_eq!(invalid.nonfinite, 2);
     assert!(Difference::between(&[1.], &[1., 2.]).is_err());
 }
+
+#[test]
+fn changing_mode_expires_prior_results_and_preserves_detection_settings() {
+    use openpilot_xiaoge::{
+        config::Config,
+        service::{Model, State},
+    };
+    let mut state = State::new(
+        Config::default(),
+        ["bsd", "lane"].map(|path| Model {
+            path: path.into(),
+            loaded: true,
+            error: String::new(),
+        }),
+        1.0,
+    );
+    let settings = serde_json::to_value(state.settings).unwrap();
+    state.lane.valid = true;
+    state.lane_updated = 42;
+    state.blindspot_updated = 43;
+    state.blindspot_side_updated = [42, 43];
+    state.blindspot_active = [true; 2];
+    state.select_compute(ComputeMode::Gpu).unwrap();
+    assert_eq!(state.compute_generation, 1);
+    assert!(!state.lane.valid);
+    assert_eq!(state.lane_updated, 0);
+    assert_eq!(state.blindspot_side_updated, [0, 0]);
+    assert_eq!(state.blindspot_active, [false, false]);
+    assert_eq!(serde_json::to_value(state.settings).unwrap(), settings);
+    state.select_compute(ComputeMode::Gpu).unwrap();
+    assert_eq!(state.compute_generation, 1);
+    state.select_compute(ComputeMode::Cpu).unwrap();
+    assert_eq!(state.compute_generation, 2);
+}

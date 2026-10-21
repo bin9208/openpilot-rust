@@ -137,3 +137,11 @@ Separate two questions:
 With immediate-entry settings, the sequence “signal first, then check behind” is especially dangerous. The system can chiefly control when entry is permitted; the driver must select the moment that is actually safe.
 
 Related: [Understanding Settings](settings.md) · [Cruise and Following Gap](cruise-gap.md)
+
+### CPU / GPU comparison candidate
+
+Select **ONNX compute** on the ONNX diagnostic page. `OnnxComputeMode` defaults to 0 (CPU); 1 selects the GPU FP32 test and 2 adds GPU/CPU comparison diagnostics. Models, resolution, precision, confidence thresholds and inference intervals remain unchanged. Select CPU to revert.
+
+If GPU initialization or execution fails, inference returns to CPU and the page/log reports the reason. Select CPU and then GPU to retry. GPU inference shares internal GPU resources with driving workloads; target detection equivalence and concurrent latency are not yet validated for this candidate.
+
+Comparison diagnostics add CPU inference on the identical input at most once per stream every 10 seconds, recording output differences and the extra time separately. Measure normal GPU resource use in **GPU FP32 (test)** mode and keep diagnostic shadow cost separate. Existing route uploads retain selection/effective backend, Xiaoge timings, whole-process CPU, detection summaries and comparisons. Existing driving/DM and camera messages provide concurrent timing and frame gaps. Missing metrics or a zero GPU reading do not establish spare capacity.

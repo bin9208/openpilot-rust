@@ -1,5 +1,6 @@
-use super::{platform, Error};
+use super::{Error, platform};
 use crate::{
+    compute::ComputeMode,
     config::Config,
     service::{State, Stream},
     settings::Settings,
@@ -9,8 +10,8 @@ use std::{
     fs,
     path::PathBuf,
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc, Condvar, Mutex, MutexGuard,
+        atomic::{AtomicBool, Ordering},
     },
     time::Duration,
 };
@@ -50,7 +51,13 @@ impl Shared {
             },
             None => None,
         });
-        self.state()?.settings = settings;
+        let mode = self
+            .params
+            .as_ref()
+            .and_then(|params| params.get("OnnxComputeMode").ok().flatten());
+        let mut state = self.state()?;
+        state.settings = settings;
+        state.select_compute(ComputeMode::from_parameter(mode.as_deref()))?;
         Ok(())
     }
 
@@ -85,6 +92,10 @@ impl Shared {
 
     pub fn set_settings(&self, value: &openpilot_logmessaged::JsonValue) -> Result<(), Error> {
         let settings = self.state()?.settings.patch_json(value)?;
+        let mode = value
+            .get("computeMode")
+            .map(|value| ComputeMode::from_json(&value))
+            .transpose()?;
         if let Some(params) = &self.params {
             for (name, value) in settings.parameters()? {
                 params
@@ -92,7 +103,16 @@ impl Shared {
                     .map_err(|_| crate::Error::Invalid("could not persist ONNX settings"))?;
             }
         }
-        self.state()?.settings = settings;
+        if let (Some(params), Some(mode)) = (&self.params, mode) {
+            params
+                .put("OnnxComputeMode", mode.value().to_string().as_bytes())
+                .map_err(|_| crate::Error::Invalid("could not persist compute mode"))?;
+        }
+        let mut state = self.state()?;
+        state.settings = settings;
+        if let Some(mode) = mode {
+            state.select_compute(mode)?;
+        }
         Ok(())
     }
 
