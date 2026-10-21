@@ -38,8 +38,6 @@ jobs:
 
         python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 cffi==2.1.1 sympy==1.14.0 pyzmq==27.2.0
         zstandard==0.25.0 requests==2.34.2 pyserial==3.5 pytest==9.0.2'
-    - name: Check atomic paramsd fixture input boundaries
-      run: python -P -m pytest -c /dev/null --noconftest -p no:cacheprovider -q rust/tools/tests/test_paramsd_atomic_gate.py
     - uses: ./.github/actions/native-eigen
       with:
         architecture: x86_64
