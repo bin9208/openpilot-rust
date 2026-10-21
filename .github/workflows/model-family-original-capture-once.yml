@@ -250,7 +250,8 @@ jobs:
 
         python -P "$proof/test_export_current_catalog_paths.py" > "$proof/exporter-path-tests.log" 2>&1
 
-        python -P "$proof/prepare_model_family_current_catalog.py" > "$proof/current-export.stdout" 2> "$proof/current-export.stderr"
+        PYTHONPATH="$proof:$PYTHONPATH" python -P "$proof/prepare_model_family_current_catalog.py" > "$proof/current-export.stdout"
+        2> "$proof/current-export.stderr"
 
         rust/target/debug/model-run --check-catalog "$proof/current-catalog" > "$proof/current-catalog-check.json"
 
