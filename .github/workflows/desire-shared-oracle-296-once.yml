@@ -1,0 +1,193 @@
+name: 296 restored Desire shared oracle full selfdrived caller verification
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/desire-shared-oracle-296-once.yml
+permissions:
+  contents: read
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
+jobs:
+  selfdrive-runtime:
+    name: rust selfdrived runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        ref: 3e4011cc3b9f62445a04c608f84c0f6badd6e2d3
+    - name: Require exact restored shared-oracle source
+      run: 'test "$(git rev-parse HEAD)" = 3e4011cc3b9f62445a04c608f84c0f6badd6e2d3
+
+        sha256sum rust/tools/check_desire_reference.py
+
+        '
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Configure original selfdrived IPC imports
+      run: printf 'PYTHONPATH=%s/selfdrived-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+    - name: Reserve runner capacity and install native prerequisites
+      run: 'sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
+
+        sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev
+
+        '
+    - name: Install pinned selfdrived oracle dependencies
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0
+        requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3 pytest==9.0.2
+
+        '
+    - name: Install pinned Rust compiler for selfdrived
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        '
+    - name: Build current native dependency stager
+      uses: ./.github/actions/native-json11
+    - name: Build original selfdrived Params and IPC bindings
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/selfdrived-native/params"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/selfdrived-native/msgq"
+
+        python -P -c ''import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"selfdrived-native/params/provenance.json";
+        print("SELFDRIVE_PARAMS_BINDING="+json.loads(p.read_text())["module"])'' >> "$GITHUB_ENV"
+
+        '
+    - name: Build native selfdrived and source-comparison probes
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-selfdrived --bins --examples --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ratekeeper --bin check-cutin-alert
+        --bin check-selfdrive-state --bin check-alert-manager --bin check-selfdrive-events --bin check-alert-callbacks --bin
+        check-selfdrive-helpers --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features selfdrive-params-native --bin check-selfdrive-params
+        --bin build-selfdrive-params-reference --bin selfdrive-params-test-peer --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features selfdrive-params-native --lib selfdrive_params
+        --locked
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features selfdrive-params-native --test selfdrive_params_check
+        --locked
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features selfdrive-params-native --bin check-selfdrive-params
+        --bin build-selfdrive-params-reference --bin selfdrive-params-test-peer --test selfdrive_params_check --locked --
+        -D warnings
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        rust/target/debug/build-selfdrive-params-reference --output "$RUNNER_TEMP/selfdrived-native/params-reference"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-selfdrived --all-targets --locked -- -D warnings
+
+        '
+    - name: Require selfdrived and messaging seam tests
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-selfdrived -p openpilot-messaging --locked
+
+        python -P -m pytest -c /dev/null --rootdir . --confcutdir=rust/tools/tests --import-mode=importlib rust/tools/tests/test_selfdrived_source.py
+        -q
+
+        '
+    - name: Measure actual messaging update allocation against unchanged source
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/selfdrived-native/messaging-allocation-431\"\nbaseline=\"$RUNNER_TEMP/messaging431-baseline\"\
+        \nmkdir -p \"$proof\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib\
+        \ 4096\ngit fetch --no-tags --depth=1 origin 7709c2e3c455cefba0ff2a72dffad7c22375e49a\nGIT_LFS_SKIP_SMUDGE=1 git worktree\
+        \ add --detach \"$baseline\" 7709c2e3c455cefba0ff2a72dffad7c22375e49a\nsha256sum rust/tools/messaging_update_allocation_probe.rs\
+        \ > \"$proof/probes.sha256\"\ngit -C \"$baseline\" rev-parse HEAD > \"$proof/old.SOURCE_COMMIT\"\ngit rev-parse HEAD\
+        \ > \"$proof/current.SOURCE_COMMIT\"\nCARGO_INCREMENTAL=0 CARGO_TARGET_DIR=\"$RUNNER_TEMP/messaging431-old-target\"\
+        \ cargo build --manifest-path \"$baseline/rust/Cargo.toml\" -p openpilot-messaging --lib --locked 2>&1 | tee \"$proof/old-build.log\"\
+        \n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024\nCARGO_INCREMENTAL=0\
+        \ CARGO_TARGET_DIR=\"$GITHUB_WORKSPACE/rust/target\" cargo build --manifest-path rust/Cargo.toml -p openpilot-messaging\
+        \ --lib --locked 2>&1 | tee \"$proof/current-build.log\"\nfor role in old current; do\n  if [ \"$role\" = old ]; then\
+        \ target=\"$RUNNER_TEMP/messaging431-old-target\"; else target=\"$GITHUB_WORKSPACE/rust/target\"; fi\n  \"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 128\n  shopt -s nullglob\n  cereal=(\"$target\"/debug/deps/libopenpilot_cereal-*.rlib)\n\
+        \  capnp=(\"$target\"/debug/deps/libcapnp-*.rlib)\n  test \"${#cereal[@]}\" -eq 1\n  test \"${#capnp[@]}\" -eq 1\n\
+        \  sha256sum \"$target/debug/libopenpilot_messaging.rlib\" \"${cereal[0]}\" \"${capnp[0]}\" > \"$proof/$role-inputs.sha256\"\
+        \n  rustc --edition=2021 -C debuginfo=0 -D warnings rust/tools/messaging_update_allocation_probe.rs \\\n    --extern\
+        \ \"openpilot_messaging=$target/debug/libopenpilot_messaging.rlib\" \\\n    --extern \"openpilot_cereal=${cereal[0]}\"\
+        \ --extern \"capnp=${capnp[0]}\" \\\n    -L \"dependency=$target/debug/deps\" -o \"$proof/$role-probe\"\n  sha256sum\
+        \ \"$proof/$role-probe\" > \"$proof/$role-executable.sha256\"\n  timeout --kill-after=5s 45s \"$proof/$role-probe\"\
+        \ > \"$proof/$role.log\" 2> \"$proof/$role.stderr\"\n  sha256sum -c \"$proof/$role-executable.sha256\"\n  sha256sum\
+        \ -c \"$proof/$role-inputs.sha256\"\ndone\n\"$proof/current-probe\" --compare \"$proof/old.log\" \"$proof/current.log\"\
+        \ | tee \"$proof/comparison.log\"\nsha256sum -c \"$proof/probes.sha256\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 512\ncargo clippy --manifest-path rust/Cargo.toml -p openpilot-messaging\
+        \ --all-targets --locked -- -D warnings\n"
+    - name: Compare complete selfdrived policy and source effects
+      run: "selfdrive_examples=\"$GITHUB_WORKSPACE/rust/target/debug/examples\"\nselfdrive_evidence=\"$RUNNER_TEMP/selfdrived-native/reference\"\
+        \nrun_reference() {\n  \"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib\
+        \ 2048\n  python \"$@\"\n}\nrun_reference rust/tools/generate_selfdrive_alerts.py --output rust/crates/selfdrived/data/alerts.json\
+        \ --check\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 2048\nrust/target/debug/check-selfdrive-state\
+        \ --binary \"$selfdrive_examples/selfdrive_state\" --output \"$selfdrive_evidence/state\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 2048\nrust/target/debug/check-alert-manager --binary \"$selfdrive_examples/alert_manager\"\
+        \ --output \"$selfdrive_evidence/alert-manager\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\"\
+        \ --growth-mib 2048\nrust/target/debug/check-selfdrive-events --binary \"$selfdrive_examples/events_trace\" --output\
+        \ \"$selfdrive_evidence/events\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib\
+        \ 2048\nrust/target/debug/check-alert-callbacks --binary \"$selfdrive_examples/alert_callbacks\" --output \"$selfdrive_evidence/callbacks\"\
+        \n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 2048\nrust/target/debug/check-selfdrive-params\
+        \ --native \"$selfdrive_examples/alert_params\" --reference \"$RUNNER_TEMP/selfdrived-native/params-reference/selfdrive-params-reference\"\
+        \ --output \"$selfdrive_evidence/params\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\"\
+        \ --growth-mib 2048\nrust/target/debug/check-selfdrive-helpers --native \"$selfdrive_examples/selfdrive_helpers\"\
+        \ --output \"$selfdrive_evidence/helpers\"\nrun_reference rust/tools/check_car_specific.py --binary \"$selfdrive_examples/car_specific\"\
+        \ --binding \"$SELFDRIVE_PARAMS_BINDING\" --output \"$selfdrive_evidence/car-specific\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 2048\nrust/target/debug/check-cutin-alert --binary \"$selfdrive_examples/cutin_alerts\"\
+        \ --output \"$selfdrive_evidence/cutin\"\nrun_reference rust/tools/check_selfdrived_controller.py --binary \"$selfdrive_examples/controller\"\
+        \ --binding \"$SELFDRIVE_PARAMS_BINDING\" --output \"$selfdrive_evidence/controller\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 2048\nrust/target/debug/check-ratekeeper --binary \"$selfdrive_examples/ratekeeper\"\
+        \ --output \"$selfdrive_evidence/ratekeeper\"\n"
+    - name: Require actual selfdrived IPC and failure lifecycle
+      run: 'python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=rust/tools/tests rust/tools/tests/test_selfdrived_stderr.py
+        -q
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        python rust/tools/check_selfdrived_ipc.py --binary "$GITHUB_WORKSPACE/rust/target/debug/openpilot-selfdrived" --output
+        "$RUNNER_TEMP/selfdrived-native/ipc"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        python rust/tools/check_selfdrived_failures.py --binary "$GITHUB_WORKSPACE/rust/target/debug/openpilot-selfdrived"
+        --output "$RUNNER_TEMP/selfdrived-native/failures"
+
+        '
+    - name: Preserve selfdrived source, wire, failure and executable evidence
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: rust-selfdrived-host-evidence
+        path: '${{ runner.temp }}/selfdrived-native/
+
+          rust/target/debug/openpilot-selfdrived
+
+          '
+        if-no-files-found: warn
