@@ -24,9 +24,9 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: b552e6b89bc42f824e2505e57d0a3270fb41ae6f
+        ref: df0128aa055f2ff5899c99791f73bb00b52f8ce0
     - name: Require exact current source
-      run: 'test "$(git rev-parse HEAD)" = b552e6b89bc42f824e2505e57d0a3270fb41ae6f
+      run: 'test "$(git rev-parse HEAD)" = df0128aa055f2ff5899c99791f73bb00b52f8ce0
 
         test -z "$(git status --porcelain)"
 
