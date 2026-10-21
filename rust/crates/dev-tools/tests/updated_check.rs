@@ -9,7 +9,9 @@ use sha2::{Digest, Sha256};
 use std::{
     env,
     ffi::OsString,
-    fs,
+    fs::{self, OpenOptions},
+    io::Write,
+    os::unix::ffi::OsStrExt,
     path::{Path, PathBuf},
     time::Duration,
 };
@@ -18,6 +20,10 @@ fn required(name: &str) -> PathBuf {
     PathBuf::from(
         env::var_os(name).unwrap_or_else(|| panic!("{name} is mandatory for updated comparison")),
     )
+}
+
+fn hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
 #[test]
@@ -84,6 +90,8 @@ fn comparison_accepts_only_exact_obsolete_staging_removal() {
 
 #[test]
 fn original_and_native_cli_reject_and_help_actions_match() {
+    let receipts = required("UPDATED_CHECK_CLI_OUTPUT");
+    fs::create_dir_all(&receipts).unwrap();
     let repo = Path::new(env!("CARGO_MANIFEST_DIR"))
         .ancestors()
         .nth(3)
@@ -95,34 +103,88 @@ fn original_and_native_cli_reject_and_help_actions_match() {
     );
     let python = required("UPDATED_CHECK_PYTHON");
     let native = PathBuf::from(env!("CARGO_BIN_EXE_check-updated"));
-    for args in [
-        vec!["--help"],
-        vec!["-hfoo"],
-        vec!["-hh"],
-        vec!["--binary", "first", "--binary", "second", "--help"],
-        vec![
-            "--bina", "b", "--lau", "l", "--bind", "p", "--out", "o", "--help",
-        ],
-        vec!["--binary"],
-        vec!["--unknown"],
-        vec!["--bin"],
-        vec!["--help=bad"],
-        vec!["-h=bad"],
-        vec!["--binary", "b", "--launcher", "l"],
-    ] {
+    let source_sha = format!("{:x}", Sha256::digest(fs::read(&original).unwrap()));
+    let python_sha = format!("{:x}", Sha256::digest(fs::read(&python).unwrap()));
+    let native_sha = format!("{:x}", Sha256::digest(fs::read(&native).unwrap()));
+    for (index, (name, args)) in [
+        ("help", vec!["--help"]),
+        ("short-help-attached", vec!["-hfoo"]),
+        ("short-help-repeated", vec!["-hh"]),
+        (
+            "repeated-binary-before-help",
+            vec!["--binary", "first", "--binary", "second", "--help"],
+        ),
+        (
+            "abbreviated-options-before-help",
+            vec![
+                "--bina", "b", "--lau", "l", "--bind", "p", "--out", "o", "--help",
+            ],
+        ),
+        ("missing-binary-value", vec!["--binary"]),
+        ("unknown-option", vec!["--unknown"]),
+        ("ambiguous-binary-prefix", vec!["--bin"]),
+        ("help-equals", vec!["--help=bad"]),
+        ("short-help-equals", vec!["-h=bad"]),
+        (
+            "incomplete-required-set",
+            vec!["--binary", "b", "--launcher", "l"],
+        ),
+    ]
+    .into_iter()
+    .enumerate()
+    {
         let mut source_args = vec![
             python.as_os_str().to_owned(),
             original.as_os_str().to_owned(),
         ];
         source_args.extend(args.iter().map(OsString::from));
         let source = NativeRunner
-            .run(&CommandSpec::new_os(source_args, Duration::from_secs(5)))
+            .run(&CommandSpec::new_os(
+                source_args.clone(),
+                Duration::from_secs(5),
+            ))
             .unwrap();
         let mut native_args = vec![native.as_os_str().to_owned()];
         native_args.extend(args.iter().map(OsString::from));
         let candidate = NativeRunner
-            .run(&CommandSpec::new_os(native_args, Duration::from_secs(5)))
+            .run(&CommandSpec::new_os(
+                native_args.clone(),
+                Duration::from_secs(5),
+            ))
             .unwrap();
+        let receipt = json!({
+            "case":name,
+            "source_checker_sha256":source_sha,
+            "source_python_sha256":python_sha,
+            "native_checker_sha256":native_sha,
+            "source":{
+                "argv":source_args.iter().map(|arg| arg.to_string_lossy().into_owned()).collect::<Vec<_>>(),
+                "argv_hex":source_args.iter().map(|arg| hex(arg.as_bytes())).collect::<Vec<_>>(),
+                "code":source.code,
+                "stdout":String::from_utf8_lossy(&source.stdout),
+                "stderr":String::from_utf8_lossy(&source.stderr),
+                "stdout_hex":hex(&source.stdout),
+                "stderr_hex":hex(&source.stderr),
+            },
+            "native":{
+                "argv":native_args.iter().map(|arg| arg.to_string_lossy().into_owned()).collect::<Vec<_>>(),
+                "argv_hex":native_args.iter().map(|arg| hex(arg.as_bytes())).collect::<Vec<_>>(),
+                "code":candidate.code,
+                "stdout":String::from_utf8_lossy(&candidate.stdout),
+                "stderr":String::from_utf8_lossy(&candidate.stderr),
+                "stdout_hex":hex(&candidate.stdout),
+                "stderr_hex":hex(&candidate.stderr),
+            }
+        });
+        let mut file = OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .open(receipts.join(format!("{index:02}-{name}.json")))
+            .unwrap();
+        file.write_all(&serde_json::to_vec_pretty(&receipt).unwrap())
+            .unwrap();
+        file.write_all(b"\n").unwrap();
+        file.sync_all().unwrap();
         assert_eq!(
             candidate.code,
             source.code,
@@ -135,6 +197,7 @@ fn original_and_native_cli_reject_and_help_actions_match() {
             assert!(String::from_utf8_lossy(&candidate.stdout).contains("usage:"));
         }
     }
+    assert_eq!(fs::read_dir(&receipts).unwrap().count(), 11);
     let parsed = parse(&[
         "--bina".into(),
         "first".into(),
