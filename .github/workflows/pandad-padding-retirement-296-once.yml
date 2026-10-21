@@ -1,8 +1,8 @@
-name: One-time Panda safety padding sanitizer and trace proof 440
+name: 296 Panda padding actual Python deletion proof
 permissions:
   contents: read
 jobs:
-  fresh-original-present-absent:
+  actual-deletion-native-roots:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
@@ -16,7 +16,7 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: 20a8f52e83d85c7c5113c5484179b0c016a034eb
+        ref: b552e6b89bc42f824e2505e57d0a3270fb41ae6f
     - uses: actions/setup-python@v6
       with:
         python-version: '3.12'
@@ -43,7 +43,11 @@ jobs:
 
         printf ''PANDAD_PADDING_TRACE_SOURCE_MANIFEST=%s\n'' "$PANDAD_PADDING_TRACE_SOURCE_MANIFEST" >> "$GITHUB_ENV"
 
-        test "$(git rev-parse HEAD)" = 20a8f52e83d85c7c5113c5484179b0c016a034eb
+        test "$(git rev-parse HEAD)" = b552e6b89bc42f824e2505e57d0a3270fb41ae6f
+
+        test ! -e rust/tools/check_pandad_safety_padding.py
+
+        test ! -L rust/tools/check_pandad_safety_padding.py
 
         mkdir -p "$PANDAD_PADDING_TEST_OUTPUT"
 
@@ -190,7 +194,7 @@ jobs:
         test "$(find "$proof" -name native-exec-audit.json -type f | wc -l)" -eq 1
 
         '
-    - name: Preserve original, present, absent, old-red and fixed-green evidence
+    - name: Preserve sealed original and post-deletion native evidence
       if: always()
       uses: actions/upload-artifact@v6
       with:
