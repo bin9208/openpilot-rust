@@ -1,14 +1,7 @@
 use super::{stable_headers, HttpPeer, HttpResponse, OwnedServer, Pin, Result};
 use rustix::process::Signal;
 use serde_json::{json, Value};
-use std::{
-    collections::BTreeMap,
-    ffi::OsString,
-    fs,
-    net::TcpListener,
-    path::{Path, PathBuf},
-    time::Duration,
-};
+use std::{collections::BTreeMap, ffi::OsString, fs, net::TcpListener, path::Path, time::Duration};
 
 pub struct HttpPairConfig<'a> {
     pub repository: &'a Path,

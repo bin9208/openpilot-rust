@@ -166,7 +166,6 @@ fn replay_scenario(
 }
 
 pub fn admit_actions_corpus(config: &ActionsCorpusConfig<'_>) -> Result<()> {
-    fs::create_dir(config.output)?;
     let pins = [
         Pin::open(config.controller, 1024 * 1024)?,
         Pin::open(config.fixtures, 1024 * 1024)?,
