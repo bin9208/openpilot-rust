@@ -9,6 +9,7 @@ use crate::{
     seal::Result,
 };
 use flate2::read::GzDecoder;
+use openpilot_log_format::{JsonValue, JsonView};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::{
@@ -16,6 +17,7 @@ use std::{
     ffi::{OsStr, OsString},
     fs::{self, File},
     io::{self, Read, Write},
+    os::unix::ffi::OsStringExt,
     path::{Component, Path, PathBuf},
     time::Duration,
 };
@@ -97,6 +99,26 @@ fn json_args(values: impl IntoIterator<Item = OsString>) -> Result<String> {
         .map(|value| json_os(&value))
         .collect::<Result<Vec<_>>>()?;
     Ok(format!("[{}]", encoded.join(", ")))
+}
+fn filesystem_path(value: &JsonValue) -> Result<PathBuf> {
+    let JsonView::Text(points) = value.view() else {
+        return Err("missing json11 prefix".into());
+    };
+    let mut bytes = Vec::new();
+    for &point in points {
+        if (0xdc80..=0xdcff).contains(&point) {
+            bytes.push((point - 0xdc00) as u8);
+        } else {
+            let character = char::from_u32(point).ok_or("invalid json11 prefix codepoint")?;
+            let mut utf8 = [0; 4];
+            bytes.extend_from_slice(character.encode_utf8(&mut utf8).as_bytes());
+        }
+    }
+    let path = PathBuf::from(OsString::from_vec(bytes));
+    if python_fs::codepoints(path.as_os_str()).as_slice() != points {
+        return Err("json11 prefix filesystem round trip failed".into());
+    }
+    Ok(path)
 }
 fn json_hashes(values: impl IntoIterator<Item = (PathBuf, String)>) -> Result<String> {
     let encoded = values
@@ -446,14 +468,11 @@ impl<R: Runner> Controller<'_, R> {
             ),
             256,
         )?;
-        let staged: Value = serde_json::from_slice(&stdout)?;
-        save(
-            &self.output("json11-dependency.json"),
-            staged.get("dependency").ok_or("missing json11 receipt")?,
-        )?;
-        Ok(PathBuf::from(
-            staged["prefix"].as_str().ok_or("missing json11 prefix")?,
-        ))
+        let staged = JsonValue::parse(std::str::from_utf8(&stdout)?)?;
+        let dependency = staged.get("dependency").ok_or("missing json11 receipt")?;
+        let dependency: Value = serde_json::from_str(&dependency.to_json()?)?;
+        save(&self.output("json11-dependency.json"), &dependency)?;
+        filesystem_path(&staged.get("prefix").ok_or("missing json11 prefix")?)
     }
     fn spidev(&mut self) -> Result<PathBuf> {
         let lock: toml::Value =

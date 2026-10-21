@@ -2,6 +2,7 @@
 #![cfg(all(target_os = "linux", feature = "panda-ci-native"))]
 use openpilot_dev_tools::{
     panda_ci_check::{self, Command, Options},
+    python_fs,
     qa_process::{Captured, CommandSpec, Runner},
     seal::Result,
 };
@@ -484,6 +485,40 @@ fn malformed_json11_stage_receipt_stops_before_build() {
         runner.names.iter().map(String::as_str).collect::<Vec<_>>(),
         ["stage-json11"]
     );
+    assert!(!fixture.options.output.join("result.json").exists());
+}
+#[test]
+fn raw_json11_prefix_reaches_next_child_without_replacement() {
+    let mut fixture = Fixture::new("spidev-3.6/spidev_module.c", true);
+    fixture.options.output = fixture
+        ._temp
+        .path()
+        .join(OsString::from_vec(b"proof-\xff".to_vec()));
+    let prefix = fixture.options.output.join("json11-dependency/prefix");
+    let mut runner = Fake::new(fixture.archive.clone());
+    runner.stage_stdout = Some(
+        format!(
+            "{{\"prefix\":{},\"dependency\":{{\"sha256\":\"fixture\"}}}}",
+            python_fs::json_string(prefix.as_os_str()).unwrap()
+        )
+        .into_bytes(),
+    );
+    runner.fail_at = Some("build-protocol".into());
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    let error =
+        panda_ci_check::run_with_output(&fixture.options, &mut runner, &mut stdout, &mut stderr)
+            .unwrap_err();
+    assert!(error.to_string().contains("build-protocol exited 1"));
+    assert_eq!(runner.names, ["stage-json11", "build-protocol"]);
+    let commands = fixture.options.output.join("commands");
+    let stage_exit: Value =
+        serde_json::from_slice(&fs::read(commands.join("stage-json11.exit.json")).unwrap())
+            .unwrap();
+    assert_eq!(stage_exit["returncode"], 0);
+    let next = fs::read_to_string(commands.join("build-protocol.command.json")).unwrap();
+    assert!(next.contains(r"proof-\udcff/json11-dependency/prefix"));
+    assert!(openpilot_log_format::JsonValue::parse(&next).is_ok());
     assert!(!fixture.options.output.join("result.json").exists());
 }
 #[test]
