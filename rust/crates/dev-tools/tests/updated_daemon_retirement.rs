@@ -80,7 +80,7 @@ impl Pin {
         );
         let identity = (metadata.dev(), metadata.ino());
         let digest = hash_held(&mut held);
-        let pin = Self {
+        let mut pin = Self {
             requested,
             resolved,
             held,
