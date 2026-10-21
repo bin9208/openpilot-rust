@@ -185,8 +185,13 @@ fn cpu_never_loads_opencl_and_gpu_rejects_a_runtime_without_devices() {
     }
     let fixture = Fixture::new();
     let probe = fixture.0.join("libOpenCL-probe.so");
+    // The sanitizer runner preloads ASan into this test. Do not inject it into
+    // the system compiler/linker, whose process-exit allocations are unrelated
+    // to the fixture. Model children and fixture executions retain the runner's
+    // full sanitizer environment below.
     let compiler = env::var_os("CC").unwrap_or_else(|| "cc".into());
     assert!(Command::new(compiler)
+        .env_remove("LD_PRELOAD")
         .args(["-shared", "-fPIC", "-o"])
         .arg(&probe)
         .arg(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/opencl_probe.c"))
@@ -295,6 +300,7 @@ fn lower_priority_context_creation_and_verification() {
     let executable = fixture.0.join("priority-contracts");
     let compiler = env::var_os("CXX").unwrap_or_else(|| "c++".into());
     assert!(Command::new(compiler)
+        .env_remove("LD_PRELOAD")
         .args(["-std=c++17", "-Wall", "-Wextra", "-Werror", "-I"])
         .arg(root.join("native"))
         .arg(root.join("tests/fixtures/opencl_priority.cc"))
@@ -315,6 +321,7 @@ fn execution_context_uses_its_owned_device_wrapper() {
     let executable = fixture.0.join("context-device-contracts");
     let compiler = env::var_os("CXX").unwrap_or_else(|| "c++".into());
     assert!(Command::new(compiler)
+        .env_remove("LD_PRELOAD")
         .args(["-std=c++17", "-Wall", "-Wextra", "-Werror", "-I"])
         .arg(root.join("native"))
         .arg(root.join("tests/fixtures/dnn_context_device.cc"))
