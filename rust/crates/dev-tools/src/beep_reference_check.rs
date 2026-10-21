@@ -506,10 +506,9 @@ pub fn check(options: &Options, runner: &mut dyn Runner, printed: &mut dyn Write
     if provenance["module_sha256"] != binding.hash {
         return Err("beep original binding differs from provenance".into());
     }
-    let mut binary = Bound::open(&options.binary, 128 * 1024 * 1024)?;
-    if !binary.path.is_absolute() {
-        return Err("beep candidate executable must have an absolute path".into());
-    }
+    // The original CLI resolves valid relative executable paths before spawn.
+    let selected_binary = fs::canonicalize(&options.binary)?;
+    let mut binary = Bound::open(&selected_binary, 128 * 1024 * 1024)?;
     binary.native_elf()?;
     if let Some(parent) = options.output.parent() {
         fs::create_dir_all(parent)?;
