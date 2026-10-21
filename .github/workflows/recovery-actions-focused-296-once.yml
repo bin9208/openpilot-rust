@@ -24,12 +24,12 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 240a2bf6660f9c79dd6d397fc35c619e18a0f0b4
+        ref: 3d9daf8643b1b918ba5814a481c68fa18c7260a3
         persist-credentials: false
     - name: Reserve host disk before installing recovery prerequisites
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = 240a2bf6660f9c79dd6d397fc35c619e18a0f0b4
+        test "$(git rev-parse HEAD)" = 3d9daf8643b1b918ba5814a481c68fa18c7260a3
 
         mkdir -p "$RUNNER_TEMP/recovery-family"
 
@@ -161,7 +161,7 @@ jobs:
         '
     - name: Verify every source, provider and ELF after the complete family
       if: always()
-      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/recovery-family\"\ntest \"$(git rev-parse HEAD)\" = 240a2bf6660f9c79dd6d397fc35c619e18a0f0b4\n\
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/recovery-family\"\ntest \"$(git rev-parse HEAD)\" = 3d9daf8643b1b918ba5814a481c68fa18c7260a3\n\
         test ! -f \"$proof/inputs.before.json\" || {\n  python - \"$proof/inputs.list\" \"$proof/inputs.after.json\" <<'PY'\n\
         import hashlib,json,os,stat,sys\nfrom pathlib import Path\nroot=Path(os.environ['GITHUB_WORKSPACE'])\nresult=[]\n\
         for item in Path(sys.argv[1]).read_text().splitlines():\n  path=Path(item) if item.startswith('/') else root/item\n\
