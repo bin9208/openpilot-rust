@@ -2795,11 +2795,11 @@ fn retired_updater_controller_keeps_all_original_cases_and_remaining_live_gates(
         .unwrap();
     absent(step, &["if", "continue-on-error"]);
     required(step["run"].as_str().unwrap(), &[
-        "for source in rust/tools/check_updated.py rust/tools/updated_source.py rust/tools/tests/test_updated_comparison.py; do",
+        "for source in rust/tools/check_updated.py rust/tools/updated_source.py rust/tools/tests/test_updated_comparison.py rust/tools/updated_fixtures.py; do",
         "test ! -e \"$source\"", "test ! -L \"$source\"",
         "UPDATED_CHECK_BINARY=", "UPDATED_CHECK_LAUNCHER=", "UPDATED_CHECK_SHIM=",
         "UPDATED_CHECK_OUTPUT=", "UPDATED_CHECK_CLI_OUTPUT=", "UPDATED_CHECK_ABSENCE_EVIDENCE=",
-        "UPDATED_FIXTURE_NATIVE_OUTPUT=", "UPDATED_FIXTURE_REQUIRE_ABSENT=0",
+        "UPDATED_FIXTURE_NATIVE_OUTPUT=", "UPDATED_FIXTURE_REQUIRE_ABSENT=1",
         "--features updated-fixture-native --test updated_check --test updated_fixture_original --locked -- --nocapture",
         "--features updated-fixture-native --lib --bin check-updated --bin updated-fixture --test updated_check --test updated_fixture_original --locked -- -D warnings",
         "rust/target/debug/check-updated --binary \"$UPDATED_CHECK_BINARY\" --launcher \"$UPDATED_CHECK_LAUNCHER\" --output",
@@ -2808,12 +2808,26 @@ fn retired_updater_controller_keeps_all_original_cases_and_remaining_live_gates(
     required(
         &run,
         &[
-            "--features openpilot-dev-tools/updated-fixture-native --bins --examples --locked",
+            "--features openpilot-dev-tools/updated-daemon-native --bins --examples --locked",
             "rust/target/debug/check-updated-process",
-            "python rust/tools/check_updated_daemon.py",
+            "rust/target/debug/check-updated-daemon",
             "python rust/tools/check_updated_agnos.py",
         ],
     );
+    let daemon = job["steps"].as_array().unwrap().iter().find(|step| step["name"] == "Verify retired updater daemon and helper against independent original lifecycle observations").unwrap();
+    absent(daemon, &["if", "continue-on-error"]);
+    required(daemon["run"].as_str().unwrap(), &[
+        "for source in rust/tools/check_updated_daemon.py rust/tools/updated_fixtures.py; do",
+        "test ! -e \"$source\"", "test ! -L \"$source\"",
+        "UPDATED_DAEMON_BINARY=", "UPDATED_DAEMON_LAUNCHER=", "UPDATED_DAEMON_FIXTURE=", "UPDATED_DAEMON_CHECKER=", "UPDATED_DAEMON_SOURCE_COMMIT=",
+        "UPDATED_DAEMON_NATIVE_OUTPUT=", "UPDATED_DAEMON_RETIREMENT_EVIDENCE=", "UPDATED_DAEMON_RAW_NATIVE_EVIDENCE=",
+        "UPDATED_DAEMON_REQUIRE_ABSENT=1", "UPDATED_FIXTURE_REQUIRE_ABSENT=1",
+        "--lib updated_daemon_check:: --locked -- --nocapture",
+        "--test updated_daemon_check --test updated_daemon_retirement --test updated_daemon_cli --locked -- --nocapture",
+        "--bin check-updated-daemon --bin updated-fixture --test updated_daemon_check --test updated_daemon_retirement --test updated_daemon_cli --locked -- -D warnings",
+        "cmp rust/crates/dev-tools/tests/fixtures/updated-daemon-original-19e47ad9/original.stdout",
+    ]);
+    assert!(!run.contains("python rust/tools/check_updated_daemon.py"));
     assert!(!run.contains("python rust/tools/check_updated.py"));
     assert!(!run.contains("python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=rust/tools/tests rust/tools/tests/test_updated_comparison.py"));
 }

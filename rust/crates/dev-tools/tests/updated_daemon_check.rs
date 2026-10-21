@@ -1,5 +1,4 @@
-//! The original Python daemon controller remains live until a fresh cloud pair
-//! proves the native controller's full raw observations.
+//! Production daemon comparison against fresh or sealed original-only observations.
 #![cfg(target_os = "linux")]
 use chrono::{NaiveDateTime, TimeZone, Utc};
 use openpilot_dev_tools::updated_daemon_check::{original_sha256, parse, run, Options};
@@ -14,6 +13,15 @@ use std::{
     path::{Path, PathBuf},
     time::{SystemTime, UNIX_EPOCH},
 };
+
+const SEALED_ORIGINAL: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/fixtures/updated-daemon-original-19e47ad9"
+);
+const SEALED_MANIFEST_SHA: &str =
+    "214258ef372f065cf3f924e6d921cf4fd3258e801220504536c8d54e945094b3";
+const SEALED_START_NS: i128 = 1792562491512826293;
+const SEALED_END_NS: i128 = 1792562492873864873;
 
 fn required(name: &str) -> PathBuf {
     PathBuf::from(
@@ -81,6 +89,42 @@ fn required_ns(name: &str) -> i128 {
         .unwrap_or_else(|_| panic!("{name} required for daemon comparison"))
         .parse()
         .unwrap_or_else(|_| panic!("{name} must be Unix nanoseconds"))
+}
+
+fn historical_source_absent() -> bool {
+    match env::var("UPDATED_DAEMON_REQUIRE_ABSENT")
+        .expect("explicit original controller state required")
+        .as_str()
+    {
+        "0" => false,
+        "1" => true,
+        other => panic!("invalid UPDATED_DAEMON_REQUIRE_ABSENT: {other}"),
+    }
+}
+
+fn sealed_original() -> PathBuf {
+    let root = PathBuf::from(SEALED_ORIGINAL);
+    let manifest = fs::read(root.join("SHA256SUMS")).unwrap();
+    assert_eq!(
+        format!("{:x}", Sha256::digest(&manifest)),
+        SEALED_MANIFEST_SHA
+    );
+    let text = String::from_utf8(manifest).unwrap();
+    let mut count = 0;
+    for line in text.lines() {
+        let (digest, name) = line.split_once("  ").unwrap();
+        assert_eq!(digest.len(), 64);
+        assert_eq!(
+            format!("{:x}", Sha256::digest(fs::read(root.join(name)).unwrap())),
+            digest
+        );
+        count += 1;
+    }
+    assert_eq!(
+        count, 8,
+        "complete original production observation required"
+    );
+    root.join("original")
 }
 
 fn stable_params(value: &Value, root: &str, started_ns: i128, ended_ns: i128) -> Value {
@@ -182,8 +226,18 @@ fn record_sequences(records: &Value, parent: &str) -> BTreeMap<&'static str, Vec
 #[test]
 fn original_controller_identity_is_independent_and_unchanged() {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tools/check_updated_daemon.py");
-    let hash = format!("{:x}", Sha256::digest(fs::read(path).unwrap()));
-    assert_eq!(hash, original_sha256());
+    if historical_source_absent() {
+        assert!(
+            matches!(fs::symlink_metadata(path), Err(error) if error.kind() == std::io::ErrorKind::NotFound),
+            "historical controller reappeared"
+        );
+        sealed_original();
+    } else {
+        let metadata = fs::symlink_metadata(&path).unwrap();
+        assert!(metadata.is_file(), "historical controller must be regular");
+        let hash = format!("{:x}", Sha256::digest(fs::read(path).unwrap()));
+        assert_eq!(hash, original_sha256());
+    }
 }
 
 #[test]
@@ -298,8 +352,16 @@ fn early_daemon_failure_retains_log_and_cannot_publish_success() {
 }
 
 #[test]
-fn native_production_daemon_matches_fresh_original_result_and_retains_raw_evidence() {
-    let original = required("UPDATED_DAEMON_ORIGINAL_OUTPUT");
+fn native_production_daemon_matches_original_result_and_retains_raw_evidence() {
+    let (original, original_started_ns, original_ended_ns) = if historical_source_absent() {
+        (sealed_original(), SEALED_START_NS, SEALED_END_NS)
+    } else {
+        (
+            required("UPDATED_DAEMON_ORIGINAL_OUTPUT"),
+            required_ns("UPDATED_DAEMON_ORIGINAL_START_NS"),
+            required_ns("UPDATED_DAEMON_ORIGINAL_END_NS"),
+        )
+    };
     let output = required("UPDATED_DAEMON_NATIVE_OUTPUT");
     let original_report: Value =
         serde_json::from_slice(&fs::read(original.join("result.json")).unwrap()).unwrap();
@@ -311,8 +373,6 @@ fn native_production_daemon_matches_fresh_original_result_and_retains_raw_eviden
         output: output.clone(),
         root: repo(),
     };
-    let original_started_ns = required_ns("UPDATED_DAEMON_ORIGINAL_START_NS");
-    let original_ended_ns = required_ns("UPDATED_DAEMON_ORIGINAL_END_NS");
     let native_started_ns = now_ns();
     let native = run(&options).unwrap();
     let native_ended_ns = now_ns();

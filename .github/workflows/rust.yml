@@ -2923,7 +2923,7 @@ jobs:
           cargo +1.94.0 run --manifest-path "$GITHUB_WORKSPACE/rust/Cargo.toml" -p openpilot-dev-tools --locked --bin stage-startup-ui-raylib -- --arch x86_64 --output "$RUNNER_TEMP/startup-raylib-host" --shared
           printf 'STARTUP_UI_RAYLIB_ROOT=%s/startup-raylib-host\nSTARTUP_UI_RAYLIB_LIBRARY=%s/startup-raylib-host/lib/libopenpilot-raylib.so\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Build native startup service boundaries
-        run: cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools -p openpilot-lpa -p openpilot-bridge -p openpilot-agnos -p openpilot-updated -p openpilot-startup-ui -p openpilot-process-supervision --features openpilot-dev-tools/updated-fixture-native --bins --examples --locked
+        run: cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools -p openpilot-lpa -p openpilot-bridge -p openpilot-agnos -p openpilot-updated -p openpilot-startup-ui -p openpilot-process-supervision --features openpilot-dev-tools/updated-daemon-native --bins --examples --locked
       - name: Verify updater command and checker process ownership
         env:
           UPDATED_OWNER_LAUNCHER: ${{ github.workspace }}/rust/target/debug/openpilot-process-child
@@ -3006,7 +3006,7 @@ jobs:
         run: python rust/tools/check_agnos.py --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/startup-services/agnos"
       - name: Verify retired updater controller against all original lifecycle cases
         run: |
-          for source in rust/tools/check_updated.py rust/tools/updated_source.py rust/tools/tests/test_updated_comparison.py; do
+          for source in rust/tools/check_updated.py rust/tools/updated_source.py rust/tools/tests/test_updated_comparison.py rust/tools/updated_fixtures.py; do
             test ! -e "$source"
             test ! -L "$source"
           done
@@ -3019,7 +3019,7 @@ jobs:
           export UPDATED_CHECK_CLI_OUTPUT="$proof/cli"
           export UPDATED_CHECK_ABSENCE_EVIDENCE="$proof/absence"
           export UPDATED_FIXTURE_NATIVE_OUTPUT="$proof/fixture-native"
-          export UPDATED_FIXTURE_REQUIRE_ABSENT=0
+          export UPDATED_FIXTURE_REQUIRE_ABSENT=1
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features updated-fixture-native --test updated_check --test updated_fixture_original --locked -- --nocapture
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
@@ -3029,8 +3029,36 @@ jobs:
       - name: Compare updater Git lifecycle, native signals and background AGNOS adapter
         run: |
           "$PWD/rust/target/debug/check-updated-process" --binary "$PWD/rust/target/debug/examples/updated_command" --launcher "$PWD/rust/target/debug/openpilot-process-child" --fixture "$PWD/rust/target/debug/updated-process-fixture" --baseline "$PWD/rust/crates/dev-tools/tests/fixtures/updated-process/original.json" --output "$RUNNER_TEMP/startup-services/updated-process"
-          python rust/tools/check_updated_daemon.py --binary "$PWD/rust/target/debug/openpilot-updated" --launcher "$PWD/rust/target/debug/openpilot-process-child" --output "$RUNNER_TEMP/startup-services/updated-daemon"
           python rust/tools/check_updated_agnos.py --target "$PWD/rust/target" --output "$RUNNER_TEMP/startup-services/updated-agnos"
+      - name: Verify retired updater daemon and helper against independent original lifecycle observations
+        run: |
+          set -euo pipefail
+          for source in rust/tools/check_updated_daemon.py rust/tools/updated_fixtures.py; do
+            test ! -e "$source"
+            test ! -L "$source"
+          done
+          proof="$RUNNER_TEMP/startup-services/updated-daemon"
+          mkdir -p "$proof"
+          export UPDATED_DAEMON_BINARY="$GITHUB_WORKSPACE/rust/target/debug/openpilot-updated"
+          export UPDATED_DAEMON_LAUNCHER="$GITHUB_WORKSPACE/rust/target/debug/openpilot-process-child"
+          export UPDATED_DAEMON_FIXTURE="$GITHUB_WORKSPACE/rust/target/debug/updated-fixture"
+          export UPDATED_DAEMON_CHECKER="$GITHUB_WORKSPACE/rust/target/debug/check-updated-daemon"
+          export UPDATED_DAEMON_SOURCE_COMMIT="$(git rev-parse HEAD)"
+          export UPDATED_DAEMON_NATIVE_OUTPUT="$proof/native-integration"
+          export UPDATED_DAEMON_RETIREMENT_EVIDENCE="$proof/retirement"
+          export UPDATED_DAEMON_RAW_NATIVE_EVIDENCE="$proof/raw-native"
+          export UPDATED_DAEMON_REQUIRE_ABSENT=1
+          export UPDATED_FIXTURE_REQUIRE_ABSENT=1
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features updated-daemon-native --lib updated_daemon_check:: --locked -- --nocapture
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features updated-daemon-native --test updated_daemon_check --test updated_daemon_retirement --test updated_daemon_cli --locked -- --nocapture
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features updated-daemon-native --lib --bin check-updated-daemon --bin updated-fixture --test updated_daemon_check --test updated_daemon_retirement --test updated_daemon_cli --locked -- -D warnings
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          rust/target/debug/check-updated-daemon --binary "$UPDATED_DAEMON_BINARY" --launcher "$UPDATED_DAEMON_LAUNCHER" --output "$proof/default-cli" > "$proof/default-cli.stdout" 2> "$proof/default-cli.stderr"
+          cmp rust/crates/dev-tools/tests/fixtures/updated-daemon-original-19e47ad9/original.stdout "$proof/default-cli.stdout"
+          test ! -s "$proof/default-cli.stderr"
       - name: Compare actual startup UI rendering, input and child lifecycle
         run: xvfb-run -a -s '-screen 0 2400x1400x24 -nolisten tcp' python rust/tools/check_startup_ui.py --target "$PWD/rust/target/debug" --output "$RUNNER_TEMP/startup-services/ui"
       - name: Retain startup service comparison evidence

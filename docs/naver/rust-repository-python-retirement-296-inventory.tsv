@@ -2173,7 +2173,7 @@ rust/tools/check_ui_vision_status.py	e7afde08bd366ca72e389cee2a463b1d3ba0450d	pe
 rust/tools/check_ui_widgets.py	ec6c4d34d81266e561aae2a555d4baaefa6d60dc	replaced-local	rust/crates/dev-tools/src/ui_headless_check.rs
 rust/tools/check_updated.py	cd08ceec7fc71f91169bba73d7ee6237ea7a8d7d	replaced-local	rust/crates/dev-tools/src/updated_check.rs; check-updated native sealed original five-case controller
 rust/tools/check_updated_agnos.py	c594f4eaeb1abaa093274f284aeea260e5667580	pending	-
-rust/tools/check_updated_daemon.py	34854dbebdb832812654eb0d8dcb546bc6e468b4	pending	-
+rust/tools/check_updated_daemon.py	34854dbebdb832812654eb0d8dcb546bc6e468b4	replaced-local	rust/crates/dev-tools/src/updated_daemon_check.rs
 rust/tools/check_updated_process.py	6cbb5dd015f9d237991648368e9bd440df3bbc8f	replaced-local	rust/crates/dev-tools/src/updated_process_check.rs
 rust/tools/check_uploader.py	9acf0418078753a26c01320cdfd8d64e8e7db6bc	pending	-
 rust/tools/check_uploader_daemon.py	ff4dc9742b4654a0244a1ec272ffec0373c71ddb	pending	-
@@ -2625,7 +2625,7 @@ rust/tools/ui_qa/application_source.py	54680daa0751838dc9cbafe1492a11fa933e3f0b	
 rust/tools/ui_qa/diagnostic_source.py	78f6b3a75b9087d890618da80bda755891e3138f	replaced-local	openpilot-dev-tools ui-diagnostic-reference; independently ported scene policy and owned raw raylib ABI
 rust/tools/ui_qa/egl_source.py	aac7607d8abb62ab53a753fb048aa7d364375cff	replaced-local	openpilot-dev-tools ui-egl-reference; Rust policy with separate checked raw startup-ui ABI adapter
 rust/tools/ui_qa/polygon_source.py	a66ada40b61786fab5f88846af560ae2b6ae296d	replaced-local	openpilot-dev-tools ui-polygon-reference; independent Rust scene policy and raw raylib ABI
-rust/tools/updated_fixtures.py	62eb7688c4cfc0bb26189518072a21ad4da88d1a	pending	-
+rust/tools/updated_fixtures.py	62eb7688c4cfc0bb26189518072a21ad4da88d1a	replaced-local	rust/crates/dev-tools/src/updated_fixture.rs
 rust/tools/updated_process_source.py	be91545fcb87da2ecf987e12dabab3fcec7889db	replaced-local	rust/crates/dev-tools/tests/fixtures/updated-process/original.json
 rust/tools/updated_source.py	7eef3b6609debc0d46074dac93df5165ad190b1d	replaced-local	rust/crates/dev-tools/src/updated_check.rs; independent original-only sealed source observations
 rust/tools/usbgpu_boot_fixture.py	5bb007512af66372e93c772370eb20e8615f3f7f	pending	-

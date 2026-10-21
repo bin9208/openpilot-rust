@@ -26,6 +26,11 @@ const CHECKER_SHA: &str = "82be3830f8e468c32abe583c197cdf2777cd5fb748a795a8c7024
 const HELPER_SHA: &str = "76607e02520f383227264257de0ed8505b9dc12e462227b176f2c919dfec2d60";
 const ORIGINAL_STDOUT: &str = "PASS production updated: exclusive lock, SIGUSR1 check, SIGHUP fetch/finalize, Params/logs, symlink/mode and SIGTERM lifecycle\n";
 const PROOF_PATH: &str = "/usr/bin:/bin";
+const RAW_FIXTURE: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/fixtures/updated-daemon-original-b91c1bd3/raw-original-capture"
+);
+const RAW_MANIFEST_SHA: &str = "4c7c0995bc7663a67dc5c90bada50ef771d60ee974979ed14b91f524a529fa92";
 const FIXTURE: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/tests/fixtures/updated-daemon-original-19e47ad9"
@@ -33,6 +38,16 @@ const FIXTURE: &str = concat!(
 
 fn required(name: &str) -> PathBuf {
     PathBuf::from(env::var_os(name).unwrap_or_else(|| panic!("{name} required")))
+}
+fn historical_source_absent() -> bool {
+    match env::var("UPDATED_DAEMON_REQUIRE_ABSENT")
+        .expect("original-source state required")
+        .as_str()
+    {
+        "0" => false,
+        "1" => true,
+        other => panic!("invalid UPDATED_DAEMON_REQUIRE_ABSENT: {other}"),
+    }
 }
 fn repo() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -626,9 +641,20 @@ fn assert_raw_original_pair(original: RawPairSide<'_>, native: RawPairSide<'_>) 
 }
 
 fn raw_original_manifest(original: &Path) -> Value {
-    let manifest_path = required("UPDATED_DAEMON_RAW_ORIGINAL_MANIFEST");
-    let expected = env::var("UPDATED_DAEMON_RAW_ORIGINAL_MANIFEST_SHA256")
-        .expect("original raw-path manifest SHA required");
+    let (manifest_path, expected) = if historical_source_absent() {
+        let sealed_output = Path::new(RAW_FIXTURE).join("original-raw");
+        assert_eq!(original, sealed_output.as_path());
+        (
+            Path::new(RAW_FIXTURE).join("original-raw-manifest.json"),
+            RAW_MANIFEST_SHA.to_owned(),
+        )
+    } else {
+        (
+            required("UPDATED_DAEMON_RAW_ORIGINAL_MANIFEST"),
+            env::var("UPDATED_DAEMON_RAW_ORIGINAL_MANIFEST_SHA256")
+                .expect("fresh original raw-path manifest SHA required"),
+        )
+    };
     let bytes = fs::read(manifest_path).unwrap();
     assert_eq!(sha(&bytes), expected);
     let manifest: Value = json(&bytes);
@@ -859,8 +885,13 @@ fn identical_native_elves_match_original_with_present_and_absent_checker_roots()
 }
 
 #[test]
-fn actual_non_utf8_output_path_matches_fresh_original_full_observation() {
-    let original = required("UPDATED_DAEMON_RAW_ORIGINAL_OUTPUT");
+fn actual_non_utf8_output_path_matches_original_full_observation() {
+    let require_absent = historical_source_absent();
+    let original = if require_absent {
+        Path::new(RAW_FIXTURE).join("original-raw")
+    } else {
+        required("UPDATED_DAEMON_RAW_ORIGINAL_OUTPUT")
+    };
     let manifest = raw_original_manifest(&original);
     let evidence = required("UPDATED_DAEMON_RAW_NATIVE_EVIDENCE");
     assert!(!evidence.exists(), "fresh raw-path evidence required");
@@ -871,10 +902,7 @@ fn actual_non_utf8_output_path_matches_fresh_original_full_observation() {
     assert_eq!(source.len(), 40);
     let checker_source = repo().join("rust/tools/check_updated_daemon.py");
     let checker_present = source_present(&checker_source);
-    let require_absent =
-        env::var("UPDATED_DAEMON_REQUIRE_ABSENT").expect("original-source state required");
-    assert!(matches!(require_absent.as_str(), "0" | "1"));
-    assert_eq!(checker_present, require_absent == "0");
+    assert_eq!(checker_present, !require_absent);
     let checker = required("UPDATED_DAEMON_CHECKER");
     let binary = required("UPDATED_DAEMON_BINARY");
     let launcher = required("UPDATED_DAEMON_LAUNCHER");
@@ -895,12 +923,26 @@ fn actual_non_utf8_output_path_matches_fresh_original_full_observation() {
     .map(Pin::new)
     .collect::<Vec<_>>();
     admitted_system_interpreters(&mut pins);
+    let mut input_versions = serde_json::Map::new();
     for (name, index) in [("binary", 1), ("launcher", 2), ("fixture", 3)] {
-        assert_eq!(
-            manifest["native_inputs_sha256"][name], pins[index].digest,
-            "fresh original raw-path input differs from native input"
+        let historical = manifest["native_inputs_sha256"][name].as_str().unwrap();
+        assert!(historical.len() == 64 && historical.bytes().all(|byte| byte.is_ascii_hexdigit()));
+        if !require_absent {
+            assert_eq!(
+                historical, pins[index].digest,
+                "fresh original raw-path input differs from native input"
+            );
+        }
+        input_versions.insert(
+            name.to_owned(),
+            serde_json::json!({"original_capture_sha256":historical,"current_held_sha256":pins[index].digest,"same_bytes":historical==pins[index].digest}),
         );
     }
+    fs::write(
+        evidence.join("original-vs-current-inputs.json"),
+        serde_json::to_vec_pretty(&input_versions).unwrap(),
+    )
+    .unwrap();
     let helper_source = repo().join("rust/tools/updated_fixtures.py");
     let helper_present = source_present(&helper_source);
     let require_helper_absent = env::var("UPDATED_FIXTURE_REQUIRE_ABSENT")

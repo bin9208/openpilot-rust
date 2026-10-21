@@ -6,6 +6,9 @@ use sha2::{Digest, Sha256};
 use std::{env, ffi::OsString, fs, os::unix::ffi::OsStringExt, path::PathBuf, time::Duration};
 
 const ORIGINAL_SHA: &str = "82be3830f8e468c32abe583c197cdf2777cd5fb748a795a8c70247a7dcd00059";
+const SEALED_CLI_SHA: &str = "9d67e04f463986970bba8aac71b8eee72b6f0accdce7c308b0a85ab71fe8228f";
+const SEALED_CLI: &[u8] =
+    include_bytes!("fixtures/updated-daemon-original-b91c1bd3/cli-original.json");
 const NAMES: &[&str] = &[
     "short-help",
     "long-help",
@@ -28,15 +31,38 @@ fn decode_hex(text: &str) -> Vec<u8> {
         .collect()
 }
 
+fn original_receipt() -> (Vec<u8>, String) {
+    match env::var("UPDATED_DAEMON_REQUIRE_ABSENT")
+        .expect("explicit original controller state required")
+        .as_str()
+    {
+        "0" => {
+            let path = PathBuf::from(
+                env::var_os("UPDATED_DAEMON_CLI_ORIGINAL_RECEIPT")
+                    .expect("fresh original CLI capture required before deletion"),
+            );
+            (
+                fs::read(path).unwrap(),
+                env::var("UPDATED_DAEMON_CLI_ORIGINAL_SHA256")
+                    .expect("fresh original CLI receipt SHA required"),
+            )
+        }
+        "1" => {
+            let historical = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("../../tools/check_updated_daemon.py");
+            assert!(
+                matches!(fs::symlink_metadata(historical), Err(error) if error.kind() == std::io::ErrorKind::NotFound),
+                "historical controller reappeared"
+            );
+            (SEALED_CLI.to_vec(), SEALED_CLI_SHA.to_owned())
+        }
+        other => panic!("invalid UPDATED_DAEMON_REQUIRE_ABSENT: {other}"),
+    }
+}
+
 #[test]
 fn native_cli_preserves_original_help_error_and_raw_argv_admissions() {
-    let path = PathBuf::from(
-        env::var_os("UPDATED_DAEMON_CLI_ORIGINAL_RECEIPT")
-            .expect("fresh original CLI capture or pinned original-only fixture required"),
-    );
-    let bytes = fs::read(&path).unwrap();
-    let expected_sha =
-        env::var("UPDATED_DAEMON_CLI_ORIGINAL_SHA256").expect("original CLI receipt SHA required");
+    let (bytes, expected_sha) = original_receipt();
     assert_eq!(format!("{:x}", Sha256::digest(&bytes)), expected_sha);
     let receipt: Value = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(receipt["source_sha256"], ORIGINAL_SHA);

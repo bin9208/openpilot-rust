@@ -1,5 +1,14 @@
 # 저장소 전체 Python 전환 작업 인수인계
 
+Current source retirement candidate: after accepted joint proof39559793259,
+`check_updated_daemon.py` and `updated_fixtures.py` are removed. Their maintained
+callers and all original lifecycle/CLI/raw-path/fixture checks use native Rust
+with pinned original-only data. The actual deleted-checkout rerun is still required;
+this source commit is not yet an accepted postdelete gate. Current inventory is
+231replaced-local/4partially-replaced/3345pending. Shared Desire stays restored.
+The earlier229/4/3347 checkpoint below predates these two local deletions.
+
+
 
 Current correction: full PR39552825804/job119065662638 found that
 `driving_daemon_reference.py` still imports `Commands` and `original_class` from

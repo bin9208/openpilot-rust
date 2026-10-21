@@ -1,5 +1,14 @@
 # Repository-wide Python retirement: current evidence (#296)
 
+Current source retirement candidate: after accepted joint proof39559793259,
+`check_updated_daemon.py` and `updated_fixtures.py` are removed. Their maintained
+callers and all original lifecycle/CLI/raw-path/fixture checks use native Rust
+with pinned original-only data. The actual deleted-checkout rerun is still required;
+this source commit is not yet an accepted postdelete gate. Current inventory is
+231replaced-local/4partially-replaced/3345pending. Shared Desire stays restored.
+The earlier229/4/3347 checkpoint below predates these two local deletions.
+
+
 This is an unfinished conversion, not a completion report. Base commit:
 `b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a`. Work is isolated on
 `codex/feat-296-repository-python-retirement`; concurrent `dev-md` work is not
@@ -46,8 +55,8 @@ five updater scenarios. Joint cloud proof is required before deleting either sou
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. The current source inventory has 229 replaced-local entries,
-four partial entries and 3,347 pending entries. `replaced-local` does not mean merged,
+SCons entrypoints. The current source inventory has 231 replaced-local entries,
+four partial entries and 3,345 pending entries. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
