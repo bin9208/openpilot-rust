@@ -65,3 +65,20 @@ still required. The next bounded run retains full lock bytes/diffs per phase;
 a locked-clean resolution error must fail for explicit diagnosis rather than
 silently modifying source inputs. No model traffic or source-oracle comparison
 was repeated for this diagnostic.
+
+The fixed bounded gate39661522311/job119435458556 passes at source
+e3a19b1bfcf3049d4cad86b58fc6163cb9065280, workflow
+e5cb442a725a9daf2c1f724fb85add19be0021ac. Artifact12375296245 is45,617,558bytes,
+ZIP SHA256082c638d90da9edb27c7b69367f485357f83a74bfc0499a830d855f4e97ca548.
+Parent and independent review audit all129 CRCs,8 passing builder units,
+actual strict Clippy and the real build/rustc/clean/build commands. All four
+commands use --locked and exit0; all eight full lock snapshots match Git,
+all logging stamps remain clean and all five final source seals match.
+Plain-before and plain-after are exactly byte-identical (27,205,864bytes),
+SHA256eeb2e6053ec0c63da4514f74ac0652aaa9b5b17989894200211f27011685cd84.
+Fault SHA2568a983866f2d6a7c725468e2f6c736f2b5ce81adf547df5869bbbff32c1dd21c8
+is distinct and its retained copy matches. This accepts #473's bounded fix.
+Private-target argv and unit placeholder isolation are proved; the artifact
+does not retain a separate live production before/after ELF pair. Full pending
+retained replay, two-root model/collector/fault traffic and source-reappearance
+controls still require their separate final driving gate.
