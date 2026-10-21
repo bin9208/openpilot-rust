@@ -43,3 +43,25 @@ This accepts the bounded #470/#471 defects and staging/export evidence only.
 logging build-script/fingerprint outputs and Git identity without relaxing the
 restoration SHA check. Source compiler, driver/shared-helper retirement, final
 required integration and user boot/recording/upload/driving stay separate.
+
+The bounded native-only diagnostic39658670847 executes the same failing source
+ce59159439648dddbe59904205bff97520904731 under workflow
+74a34fb2ca9192b97240372d8b672c416d726fd0. Artifact12372832634 is45,354,523bytes,
+ZIP SHA2564c6495afe9184020bee84d923c0c9f95d81eca5a3c4a0ce68ae4b7906110ea9b.
+Parent and independent review checked all102 member CRCs, command phases,
+Git states, logging build outputs and the complete pair of27,205,864-byte plain
+ELFs. The unlocked package-clean command changed only tracked rust/Cargo.lock.
+The next plain build embedded source_tree=dirty instead of clean. Exactly25
+bytes differ: the five-character stamp and20-byte GNU build ID; every other
+byte matches. The original final lock seal also failed. This identifies the
+observed #473 failure; it does not prove the cause of every older build failure.
+
+The focused candidate adds --locked to package cleanup and requires the
+original lock digest before rebuilding. It retains exact plain SHA restoration,
+fault distinction, all final source seals and production ELF isolation. A new
+regression injects cleanup-time lock mutation and requires no later build or
+success receipt. The fix is independently reviewed but hosted execution is
+still required. The next bounded run retains full lock bytes/diffs per phase;
+a locked-clean resolution error must fail for explicit diagnosis rather than
+silently modifying source inputs. No model traffic or source-oracle comparison
+was repeated for this diagnostic.
