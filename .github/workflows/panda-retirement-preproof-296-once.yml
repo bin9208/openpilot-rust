@@ -1,4 +1,4 @@
-name: 296 Panda current raw and two38 same-ELF private proof
+name: 458 Panda safety raw-path RED GREEN and full two38 retirement proof
 'on':
   push:
     branches:
@@ -20,14 +20,14 @@ jobs:
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
-      EXPECTED_SOURCE: 96949ecead1b5d377f8b3302680d0191d7cdb6ea
+      EXPECTED_SOURCE: 1f7a182b0b9708340c5f16b5ed55d6c470f5ad8b
       RUSTUP_TOOLCHAIN: 1.94.0
       PANDA_CI_EXPECT_ABSENT: '0'
     steps:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: 96949ecead1b5d377f8b3302680d0191d7cdb6ea
+        ref: 1f7a182b0b9708340c5f16b5ed55d6c470f5ad8b
     - name: Admit exact source and Python 3.12
       run: test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
     - uses: actions/setup-python@v6
@@ -69,6 +69,73 @@ jobs:
         python rust/tools/build_msgq_python.py --output "$proof/msgq"
 
         printf ''PYTHONPATH=%s/msgq:%s\n'' "$proof" "$PYTHONPATH" >> "$GITHUB_ENV"
+
+        '
+    - name: Require old safety JSON boundary fails and current example preserves raw roots
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/panda-safety-458"
+
+        mkdir "$proof"
+
+        rawroot="$proof/params-"$''\xff''
+
+        printf ''{"op":"safety","params_root":"%s/params-\\udcff","pandas":0,"operations":[]}\n'' "$proof" > "$proof/request.jsonl"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        git fetch --no-tags --depth=1 origin 96949ecead1b5d377f8b3302680d0191d7cdb6ea
+
+        git show 96949ecead1b5d377f8b3302680d0191d7cdb6ea:rust/crates/pandad/examples/panda_safety.rs > rust/crates/pandad/examples/panda_safety.rs
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-pandad --example panda_safety --locked > "$proof/old-build.stdout"
+        2> "$proof/old-build.stderr"
+
+        set +e
+
+        rust/target/debug/examples/panda_safety < "$proof/request.jsonl" > "$proof/red.stdout" 2> "$proof/red.stderr"
+
+        status=$?
+
+        set -e
+
+        test "$status" = 1
+
+        grep -F ''lone leading surrogate'' "$proof/red.stderr"
+
+        test ! -s "$proof/red.stdout"
+
+        test ! -e "$rawroot"
+
+        printf ''%s\n'' "$status" > "$proof/red.exit"
+
+        git show "$EXPECTED_SOURCE":rust/crates/pandad/examples/panda_safety.rs > rust/crates/pandad/examples/panda_safety.rs
+
+        git diff --exit-code -- rust/crates/pandad/examples/panda_safety.rs
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-pandad --example panda_safety --locked -- --nocapture > "$proof/green-tests.log"
+        2>&1
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-pandad --example panda_safety --locked -- -D warnings >
+        "$proof/green-clippy.log" 2>&1
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-pandad --example panda_safety --locked > "$proof/green-build.stdout"
+        2> "$proof/green-build.stderr"
+
+        rust/target/debug/examples/panda_safety < "$proof/request.jsonl" > "$proof/green.stdout" 2> "$proof/green.stderr"
+
+        printf ''0\n'' > "$proof/green.exit"
+
+        printf ''{"results":[]}\n'' > "$proof/expected.stdout"
+
+        cmp "$proof/expected.stdout" "$proof/green.stdout"
+
+        test -d "$rawroot"
+
+        test ! -e "$proof/params-"$''\xef\xbf\xbd''
+
+        tar -C "$proof" -cf "$proof/raw-params-root.tar" -- "params-"$''\xff''
 
         '
     - name: Build same thirty Panda executables and retain Cargo build messages
@@ -145,7 +212,7 @@ jobs:
         PANDA_CI_CLI_EVIDENCE: ${{ runner.temp }}/panda-retirement/native-cli
         PANDA_CI_ORIGINAL_CLI_RECEIPT: ${{ github.workspace }}/rust/crates/dev-tools/tests/fixtures/panda-ci-original/original-cli.json
         PANDA_CI_ORIGINAL_CLI_SHA256: 02aa67da5d511a312fe30b7ebc058da5a8ada66098e14aef7b05a8b63eef700b
-        PANDA_CI_SOURCE_COMMIT: 96949ecead1b5d377f8b3302680d0191d7cdb6ea
+        PANDA_CI_SOURCE_COMMIT: 1f7a182b0b9708340c5f16b5ed55d6c470f5ad8b
       run: "set -euo pipefail\nmkdir \"$RUNNER_TEMP/panda-retirement\"\nexport PANDA_CI_PYTHON=\"$(command -v python3)\"\n\
         cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools \\\n  --features panda-ci-native --test panda_ci_retirement\
         \ --locked -- \\\n  --test-threads=1 --nocapture\n"
@@ -207,3 +274,11 @@ jobs:
           '
         if-no-files-found: error
         retention-days: 7
+    - name: Preserve safety raw request RED GREEN and actual Params root
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: panda-safety-458-raw-boundary
+        path: ${{ runner.temp }}/panda-safety-458/
+        if-no-files-found: error
+        retention-days: 14
