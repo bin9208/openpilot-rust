@@ -146,6 +146,10 @@ fn clean_spec(options: &Options, target: &Path) -> CommandSpec {
             options.root.join("rust/Cargo.toml").into_os_string(),
             "-p".into(),
             "openpilot-driving-modeld".into(),
+            // Package-scoped clean resolves workspace dependencies too. Without
+            // this guard it can rewrite Cargo.lock and change the logging
+            // clean/dirty stamp embedded in the supposedly restored ELF.
+            "--locked".into(),
             "--target-dir".into(),
             target.as_os_str().to_owned(),
         ],
@@ -321,6 +325,10 @@ fn run_with_space(
         "plain-clean",
     )
     .and_then(|()| {
+        require(
+            digest(&lock, MAX_SOURCE)? == lock_sha,
+            "Cargo.lock changed during private package cleanup",
+        )?;
         space(&target, BUILD_GROWTH)?;
         step(
             runner,
@@ -560,6 +568,58 @@ mod tests {
             fs::read(options.output.join("target/debug/openpilot-driving-modeld")).unwrap(),
             b"plain"
         );
+        assert!(!options.output.join("fault-build.json").exists());
+        assert_eq!(
+            fs::read(
+                options
+                    .root
+                    .join("rust/target/debug/openpilot-driving-modeld")
+            )
+            .unwrap(),
+            b"production"
+        );
+    }
+
+    #[test]
+    fn package_cleanup_cannot_change_lock_or_rebuild_against_changed_inputs() {
+        struct LockChangingPeer {
+            inner: BuildPeer,
+        }
+        impl Runner for LockChangingPeer {
+            fn run(&mut self, spec: &CommandSpec) -> Result<Captured> {
+                let argv = spec.effective_argv();
+                let cleaning = argv.get(1).is_some_and(|value| value == "clean");
+                if cleaning {
+                    assert!(argv.iter().any(|value| value == "--locked"));
+                }
+                let result = self.inner.run(spec)?;
+                if cleaning {
+                    // Model the observed Cargo clean mutation even if a future
+                    // Cargo regression were to ignore --locked. A dirty-source
+                    // plain rebuild is not an acceptable restoration attempt.
+                    fs::write(
+                        spec.cwd.as_ref().unwrap().join("rust/Cargo.lock"),
+                        b"changed lock",
+                    )?;
+                }
+                Ok(result)
+            }
+        }
+        let root = tempfile::tempdir().unwrap();
+        let options = options(root.path());
+        let mut runner = LockChangingPeer {
+            inner: BuildPeer {
+                steps: Vec::new(),
+                fault_fails: false,
+                restoration_stale: false,
+                source_drift: false,
+            },
+        };
+        let error = run_with_space(&mut runner, &options, |_, _| Ok(()))
+            .unwrap_err()
+            .to_string();
+        assert_eq!(error, "Cargo.lock changed during private package cleanup");
+        assert_eq!(runner.inner.steps, ["build", "c++", "rustc", "clean"]);
         assert!(!options.output.join("fault-build.json").exists());
         assert_eq!(
             fs::read(
