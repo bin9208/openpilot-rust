@@ -335,6 +335,9 @@ struct Reference<'a> {
     epoch: Instant,
     render_started: Instant,
     fps_log: Instant,
+    // Opt-in cloud diagnostic. Store samples until rendering ends so logging
+    // cannot slow a later frame and manufacture a strict-mode FPS failure.
+    fps_diagnostic: Option<Vec<(usize, i32, u128)>>,
     interrupted: Arc<AtomicBool>,
 }
 impl Reference<'_> {
@@ -658,6 +661,9 @@ impl Reference<'_> {
             Event::StartRecording => self.start_recording()?,
             Event::MonitorFps => {
                 let fps = self.raw.request("get-fps")?.parse::<i32>()?;
+                if let Some(samples) = &mut self.fps_diagnostic {
+                    samples.push((self.ticks, fps, self.render_started.elapsed().as_nanos()));
+                }
                 if fps < 18 && self.fps_log.elapsed() >= Duration::from_secs(5) {
                     eprintln!("FPS dropped below 20: {fps}");
                     self.fps_log = Instant::now();
@@ -758,6 +764,9 @@ pub fn run(
         epoch: Instant::now(),
         render_started: Instant::now(),
         fps_log: Instant::now(),
+        fps_diagnostic: (std::env::var_os("UI_APPLICATION_FPS_DIAGNOSTIC")
+            == Some(OsString::from("1")))
+        .then(Vec::new),
         interrupted,
     };
     let mut frames = 0;
@@ -832,6 +841,11 @@ pub fn run(
         frames = generator.frame();
         rendering
     })();
+    if let Some(samples) = &app.fps_diagnostic {
+        for (frame, fps, elapsed_ns) in samples {
+            eprintln!("UI_APPLICATION_FPS_DIAGNOSTIC frame={frame} fps={fps} elapsed_ns={elapsed_ns} target=20 critical=10 offscreen={}", app.settings.offscreen);
+        }
+    }
     if app.strict_exit {
         // Python os._exit skips finally, while OS teardown still releases the
         // in-process window. Reap our separate mechanical window owner as well.
