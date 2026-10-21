@@ -5522,3 +5522,12 @@ fc94f4497c83404b9d422cd643e296705ead6022448d6858583971cc27784968 /
 These are generic ARM build outputs, not sealed AGNOS/device, V4L execution or
 ARM performance evidence. New head917cd7db has its own full PR run39567841179;
 its required checks and updated ARM build remain pending.
+
+
+## Native preparation and source deletion candidate (2026-10-22)
+
+Parent accepted source-data provenance from39680582209: artifact12383214627 ZIP130144004B/735CRCs SHA184585660d3e126a21c33d947b71279c66f060a4aafe4e97e65b62ee20730a18; startup34sealed files/8cases manifest4c54c0d6fb375cec2d64c6ecfeb5ce709f223bbe0aeb0114b68c5a4e184c7416; USB80sealed files/6cases finalized manifest8774d6752cabaeba96bacd4bab009a9432f12e5231e8da608285ff5115b21ad8. All68original USB report/packet files independently byte-compared to ZIP. USB original controller status0 and cleanup assertions pass; original capture wrapper line195 bookkeeping fails after before/after assertions. Three original ELF lengths remain explicitly unknown, with recorded SHA; finalization does not relabel later evidence. Durable fixture README/finalization receipts describe the limitation. No source/model/JIT/native execution occurred during local data inspection.
+
+Recovery post-deletion39683756196 source9cf0bfe5ac86346ff221ee2b9d7efb5c8b4c45e1/workflow1db7de635bd74a680cad1ad6a7912fb611ae4b08 failed compile E0308 actions_effects.rs939 (old pair destructure of new triple with creation guards).81d4186556978fc9e8fd6a33caee4b0a6db739c4 fixes it; retry39684855488 workflowf91f901d60d33b146ad2a585e7dcc391308ee232 remains pending acceptance. This is not a successful thirteen-source retirement proof.
+
+Model native preparation aaf5efa0eb2b4a45e7fb444224546fee247a953f uses existing pending compiler via explicit Rust orchestration; compiler retirement is not claimed. New archive/publication/output-limit controls have hosted preflight39685067872 workflow8615b778be5941eeeb89008512754e21d8e9720d. Six-source candidate deletion and new required grouped workflow remain unaccepted until full exact-source proof. Local syntax/rustfmt/diff checks only.

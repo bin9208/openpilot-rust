@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 509);
+    assert_eq!(text.matches(marker).count(), 517);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -212,7 +212,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
         jobs.values()
             .filter(|job| scripts(job).iter().any(|s| s.contains("check-disk-space")))
             .count(),
-        36
+        37
     );
     assert_eq!(
         jobs.values()
@@ -225,7 +225,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 })
             }))
             .count(),
-        36
+        37
     );
     let lines = text.lines().collect::<Vec<_>>();
     let llvm20_start = lines
@@ -344,9 +344,22 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut recovery_native = vec![];
     let mut driving_retirement = vec![];
     let mut model_build_reserve = vec![];
+    let mut model_family_retirement = vec![];
+    let model_family_start = lines
+        .iter()
+        .position(|line| *line == "  model-family-retirement:")
+        .unwrap();
+    let model_family_end = lines
+        .iter()
+        .position(|line| *line == "  model-pipelines:")
+        .unwrap();
     let mut panda_protocol_retirement = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
+            if (model_family_start..model_family_end).contains(&i) {
+                model_family_retirement.push(tail.to_owned());
+                continue;
+            }
             let step = lines[..i]
                 .iter()
                 .rev()
@@ -904,6 +917,19 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             " --path \"$GITHUB_WORKSPACE\" --growth-mib 3072",
             " --path \"$GITHUB_WORKSPACE\" --growth-mib 12288",
             " --path \"$RUNNER_TEMP\" --growth-mib 3072",
+        ]
+    );
+    assert_eq!(
+        model_family_retirement,
+        [
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 12288",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 4096",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 3072",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 6144",
+            " --path \"$RUNNER_TEMP\" --growth-mib 6144",
+            " --path \"$RUNNER_TEMP\" --growth-mib 3072",
+            " --path \"$RUNNER_TEMP\" --growth-mib 6144",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 4096"
         ]
     );
     assert_eq!(

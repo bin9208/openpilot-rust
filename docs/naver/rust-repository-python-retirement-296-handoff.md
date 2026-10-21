@@ -77,10 +77,9 @@ Do not modify the shared production launcher merely for this audit.
 Policy/bin registration, two-phase maintained workflow integration and the13-source
 cleanup are now in the same candidate, avoiding a redundant intermediate heavy
 traffic run. The cleanup patch was manually rebased for both action leaves;
-all seven Git snapshot checks and new creation hooks remain. Run the actual
-post-deletion grouped hosted gate and inspect every result before acceptance.
+all seven Git snapshot checks and new creation hooks remain. Hosted39683756196 at9cf0bfe5a caught one leftover two-element rebuild destructure after guards made its tuple three elements.81d418655 fixes that consumer; hosted39684855488 runs the same full post-deletion gate. No retirement count is accepted until it finishes and its executable audit is inspected.
 
-## Metadata:14 maintained callers migrated, provider-order correction pending CI
+## Metadata:14 maintained callers migrated, provider-order correction accepted
 
 Original39677845650 seals67 observations/14 actual callers. Manifest SHA256
 `71d33e6e25f62c7a51240ecb4eb908acd35351a911b482869181fbfdffd130c1`.
@@ -137,9 +136,9 @@ archive1,155,620,561bytes/SHA256
 1bb0c80c manifest. The previously selected1f00f0b7 release has a different model;
 no pin was relaxed. Never execute ARM release binaries to stage these data.
 
-After independent capture acceptance, retain fixed data/manifests, finish native
-preparation orchestration without new Python helper payloads, remove the six
-sources and both maintained old Python calls, and run the combined native gate.
+Parent independently audited capture artifact12383214627 (130,144,004bytes/735CRCs), all34startup and80USB sealed data files, eight/six case rows, and68byte-identical original USB observation bodies. Durable pure data is `tests/fixtures/model-family-original`; startup manifest4c54c0d6/USB8774d675. USB original controller exited0; wrapper failed only the late unused-msgq import inventory assertion after its before/after equality checks. Data-only finalization explicitly retains original-wrapper-incomplete status and three SHA-bound ELF entries with unknown lengths (`bytes:null`); it never invents observations, reruns source or substitutes native output.
+
+Native preparation aaf5efa0e provides archive staging and separate driver/family catalog bundles, current model/source/CPU/LLVM seals and atomic publication. Bounded compiler execution preserves timeout partials and states when limit-error partials are unavailable. Hosted preflight39685067872 covers new pure controls/compilation/strict Clippy. Current candidate removes the actual six Python sources and two old workflow calls, adds required `model-family-retirement` to the aggregate gate, and binds explicit atomic bundle paths. The independent review caught and excluded USB cache model hardlinks from artifact upload (about18.6GB of duplicate input). Acceptance remains pending the full grouped gate; counts are unchanged.
 The existing unconverted model compiler remains explicit pending scope; invoking
 it from a Rust preparation command does not count as compiler retirement.
 

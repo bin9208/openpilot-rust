@@ -355,6 +355,7 @@ const RUST_GATE_BINDINGS: &[(&str, &str)] = &[
     ("LLVM20", "model-llvm20"),
     ("MEMORY", "model-memory"),
     ("PIPELINES", "model-pipelines"),
+    ("MODEL_FAMILY", "model-family-retirement"),
     ("LOGGER", "logger-runtime"),
     ("SUPPORT", "support-runtime"),
     ("TELEMETRY", "telemetry-runtime"),

@@ -3,7 +3,7 @@
 #[path = "../src/model_family_retirement_support.rs"]
 mod support;
 use openpilot_dev_tools::{driver_daemon_check, model_startup_check, usbgpu_daemon_check};
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::{
     collections::BTreeMap,
     ffi::OsString,
@@ -12,8 +12,8 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 use support::{
-    Held, OwnedPath, absence, pair, pin, read_json, replace, required, run, success, text,
-    write_json,
+    absence, pair, pin, read_json, replace, required, run, success, text, write_json, Held,
+    OwnedPath,
 };
 
 const COLLECTOR_SOURCE: &str = "2ecf3f6813f601ea52e7a61ccf75219952daefa0";
@@ -194,11 +194,9 @@ fn admit_family_data(directory: &Path, expected: &str, kind: &str, held: &mut Ve
     let files = value["files"].as_object().unwrap();
     assert!(!files.is_empty() && files.len() <= 256 && files.contains_key("report.json"));
     for (name, seal) in files {
-        assert!(
-            Path::new(name)
-                .components()
-                .all(|p| matches!(p, Component::Normal(_)))
-        );
+        assert!(Path::new(name)
+            .components()
+            .all(|p| matches!(p, Component::Normal(_))));
         let file = Held::open(&directory.join(name));
         assert_eq!(file.seal, *seal, "independent data changed: {name}");
         held.push(file);
@@ -322,11 +320,9 @@ fn same_elf_replays_all_three_native_clis_in_both_absent_roots() {
         ),
     ] {
         for (name, seal) in read_json(receipt)["models"].as_object().unwrap() {
-            assert!(
-                Path::new(name)
-                    .components()
-                    .all(|p| matches!(p, Component::Normal(_)))
-            );
+            assert!(Path::new(name)
+                .components()
+                .all(|p| matches!(p, Component::Normal(_))));
             let model = Held::open(&models.join(name));
             assert_eq!(model.seal, *seal);
             held.push(model);
@@ -584,10 +580,8 @@ fn same_elf_replays_all_three_native_clis_in_both_absent_roots() {
                 };
                 assert!(String::from_utf8_lossy(&result.stderr).contains(expected));
                 drop(owner);
-                assert!(
-                    fs::symlink_metadata(&path)
-                        .is_err_and(|e| e.kind() == std::io::ErrorKind::NotFound)
-                );
+                assert!(fs::symlink_metadata(&path)
+                    .is_err_and(|e| e.kind() == std::io::ErrorKind::NotFound));
                 negatives += 1;
             }
         }
