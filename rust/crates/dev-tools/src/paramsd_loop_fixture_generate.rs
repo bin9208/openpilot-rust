@@ -65,10 +65,16 @@ enum SourcePin {
 }
 impl SourcePin {
     fn capture(path: PathBuf, expected: Option<&str>, optional: bool) -> Result<Self> {
-        if optional
-            && matches!(fs::symlink_metadata(&path), Err(e) if e.kind() == io::ErrorKind::NotFound)
-        {
-            return Ok(Self::Absent(path));
+        if optional {
+            return match fs::symlink_metadata(&path) {
+                Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(Self::Absent(path)),
+                Err(error) => Err(error.into()),
+                Ok(_) => Err(format!(
+                    "retired paramsd loop fixture reappeared: {}",
+                    path.display()
+                )
+                .into()),
+            };
         }
         let (metadata, hash) = current(&path)?;
         if expected.is_some_and(|wanted| wanted != hash) {
@@ -416,6 +422,7 @@ mod source_pin_tests {
         absent.verify().unwrap();
         fs::write(&path, b"reappeared").unwrap();
         assert!(absent.verify().is_err());
+        assert!(SourcePin::capture(path.clone(), None, true).is_err());
         let present = SourcePin::capture(path.clone(), None, false).unwrap();
         present.verify().unwrap();
         fs::write(&path, b"mutated source").unwrap();

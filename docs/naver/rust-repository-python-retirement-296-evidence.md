@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. The current source inventory has 221 replaced-local entries,
-three partial entries and 3,356 pending entries. `replaced-local` does not mean merged,
+SCons entrypoints. The current source inventory has 223 replaced-local entries,
+three partial entries and 3,354 pending entries. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -5124,3 +5124,8 @@ Removed rust/tools/check_calibration_float.py and its obsolete source-present re
 ## Hosted full ARM build deadline (#445, 2026-10-21)
 
 [Full PR run39524132398/job118974708126](https://github.com/bin9208/openpilot-rust/actions/runs/39524132398/job/118974708126) checked merge3835653ecdea12c08f0cb9cb2807b0a493f20bb7 for PR head8e8b1e8f. The job started00:58:52Z, logged cancellation02:59:22Z and completed02:59:27Z, matching its120minute deadline. It had reached the final generic/ION UI build after compiler/static-C3X/encoder progress. This is not an ARM success; no compiler failure appeared at the cancellation boundary. [Issue445](https://github.com/bin9208/openpilot-rust/issues/445) tracks raising only that hosted deadline to180minutes with all stages, disk guards and artifacts preserved. Fresh full ARM completion remains required; no local/self-hosted workaround or device test was performed.
+
+
+## Paramsd loop two-tool actual source retirement preparation (2026-10-21)
+
+After accepted predelete run39535390950 at5f6104be, removed onlycheck_paramsd_loop.py andparamsd_loop_fixture.py. Retained independent original C++ source JSON(7,763,306bytes raw), originalPython request(4,430,072bytes raw), stdout/stderr/status/process log/results from artifact12317675555 ZIP SHA2561111f01652e8d9899cd0c1669bc589498487bb6b3b74a064e8c429abc64ffcf4. Parent compared all retained bytes directly to the downloaded archive; current native output is excluded from the expected fixtures. Actual checkout/private-root absence, same currentELFs, exact2execs each,39cases/2420frames/4saves/216GPS writes and finalization regressions are mandatory. Combined fixture workflow decompresses the original request with nativebzip2 and pins both compressed/raw hashes; other still-live Params/daemon comparisons remain. Local syntax/format/diff/data inspection only; actual deletion CI pending. Inventory223replaced-local/3partial/3354pending. Wholeproject/latestfullPR/device acceptance remains incomplete.

@@ -32,10 +32,8 @@ reader produces the same marker only from exact negative-infinity f64 bits.
 All other nonfinite native floats are rejected. No broad token substitution,
 numeric tolerance change, or native-derived expected output is used.
 
-Integrate `paramsd_loop_reference::compare_file` on the **fresh**
+The registered `paramsd_loop_reference::compare_file` checks each **fresh**
 `paramsd_loop` raw JSON output, with `PARAMSD_LOOP_NATIVE_RAW` pointing at that
-file for the focused test. This leaf module/test needs a crate `lib.rs` export,
-test registration, and a cloud job that runs the native generator and loop
-against the same current input. Those shared caller/workflow changes belong to
-the parent. Keep the historical Python checker until the same-ELF
-present/absent retirement gate succeeds.
+file for the focused cloud test. The later accepted same-ELF present/absent proof is documented in
+`paramsd-loop-retired-original`. Its post-deletion gate uses this independent
+original observation without restoring Python source.

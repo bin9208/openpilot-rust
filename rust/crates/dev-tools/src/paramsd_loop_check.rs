@@ -283,6 +283,9 @@ pub fn prepare(options: &Options, runner: &mut dyn Runner, stop: &AtomicBool) ->
                 historical.insert(name.into(), json!(digest));
                 continue;
             }
+            return Err(
+                format!("retired paramsd loop source reappeared: {}", path.display()).into(),
+            );
         }
         bounds.push(Bound::open(path, expected)?);
     }

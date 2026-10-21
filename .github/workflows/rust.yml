@@ -3242,7 +3242,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
-      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev
+      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev bzip2 strace
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 cffi==2.1.1 sympy==1.14.0 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 pytest==9.0.2
       - name: Prepare native Eigen staging evidence
         run: |
@@ -3323,7 +3323,6 @@ jobs:
       - name: Compare vehicle model, source main loop, cache migration and native IPC
         run: |
           python rust/tools/check_paramsd.py --oracle "$RUNNER_TEMP/paramsd-oracle" --trace "$PWD/rust/target/debug/examples/paramsd_trace" --evidence "$RUNNER_TEMP/estimation/paramsd/estimator"
-          python rust/tools/check_paramsd_loop.py --oracle "$RUNNER_TEMP/paramsd-oracle" --trace "$PWD/rust/target/debug/examples/paramsd_loop" --evidence "$RUNNER_TEMP/estimation/paramsd/loop"
           python rust/tools/check_paramsd_daemon.py --oracle "$RUNNER_TEMP/paramsd-oracle" --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/estimation/paramsd/daemon"
           python rust/tools/check_paramsd_startup.py --binary "$PWD/rust/target/debug/openpilot-paramsd" --evidence "$RUNNER_TEMP/estimation/paramsd/startup"
       - name: Compare full native paramsd controller against original source packets
@@ -3367,13 +3366,19 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           mkdir -p "$proof"
           git rev-parse HEAD > "$proof/SOURCE_COMMIT"
-          sha256sum "$checker" "$candidate" rust/tools/check_paramsd_loop.py rust/tools/paramsd_loop_fixture.py rust/tools/paramsd_fixture.py > "$proof/inputs.sha256"
+          test ! -e rust/tools/check_paramsd_loop.py
+          test ! -L rust/tools/check_paramsd_loop.py
+          test ! -e rust/tools/paramsd_loop_fixture.py
+          test ! -L rust/tools/paramsd_loop_fixture.py
+          export PARAMSD_LOOP_RETIREMENT_OUTPUT="$proof/retirement"
+          mkdir -p "$PARAMSD_LOOP_RETIREMENT_OUTPUT"
+          sha256sum "$checker" "$candidate" rust/tools/paramsd_fixture.py > "$proof/inputs.sha256"
           PATH=/nonexistent /usr/bin/timeout --signal=TERM --kill-after=5s 200s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "$proof/native.exec" "$checker" --binary "$candidate" --evidence "$proof/current" > "$proof/native.stdout" 2> "$proof/native.stderr"
           sha256sum -c "$proof/inputs.sha256"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-loop-native --lib --test paramsd_loop_check --test paramsd_loop_reference --locked -- --nocapture
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-loop-native --lib --test paramsd_loop_check --test paramsd_loop_reference --test paramsd_loop_retirement --locked -- --nocapture
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-loop-native --lib --bin check-paramsd-loop-native --test paramsd_loop_check --test paramsd_loop_reference --locked -- -D warnings
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-loop-native --lib --bin check-paramsd-loop-native --test paramsd_loop_check --test paramsd_loop_reference --test paramsd_loop_retirement --locked -- -D warnings
           sha256sum -c "$proof/inputs.sha256"
       - name: Compare native paramsd fixture generator against all original wire inputs
         run: |
@@ -3395,16 +3400,15 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           mkdir -p "$proof"
           git rev-parse HEAD > "$proof/SOURCE_COMMIT"
+          printf '%s  %s\n' 6a5641f18914cbf452f027ed33daf64a372a966ebc89ae2a2e859a4de384f818 rust/crates/dev-tools/tests/fixtures/paramsd-loop-retired-original/input.json.bz2 | sha256sum --check --strict
+          bzip2 -dc rust/crates/dev-tools/tests/fixtures/paramsd-loop-retired-original/input.json.bz2 > "$PARAMSD_LOOP_ORIGINAL_INPUT"
+          printf '%s  %s\n' 4f446bc98c9d303d292f487c9ebe36bc8721436a30627dfca55baabae4c6811d "$PARAMSD_LOOP_ORIGINAL_INPUT" | sha256sum --check --strict
           python - <<'ORIGINAL'
           import json, os
           from pathlib import Path
           from paramsd_fixture import car_params, scenarios
           from check_paramsd_daemon import frames
-          from paramsd_loop_fixture import cases as loop_cases
           saved = Path(os.environ['PARAMSD_FIXTURE_ORIGINAL_SAVED_PACKET']).read_bytes()
-          Path(os.environ['PARAMSD_LOOP_ORIGINAL_INPUT']).write_text(json.dumps({'cases': loop_cases()}) + '\n')
-          observed_loop = Path(os.environ['RUNNER_TEMP']) / 'estimation/paramsd/loop/input.json'
-          assert json.loads(observed_loop.read_text()) == json.loads(Path(os.environ['PARAMSD_LOOP_ORIGINAL_INPUT']).read_text()), observed_loop
           Path(os.environ['PARAMSD_FIXTURE_ORIGINAL_SCENARIOS']).write_text(json.dumps({'cases': scenarios()}) + '\n')
           for restart in (False, True):
             gps = 'gpsLocation' if restart else 'gpsLocationExternal'
@@ -3417,7 +3421,7 @@ jobs:
             observed = Path(os.environ['RUNNER_TEMP']) / 'estimation/paramsd/daemon' / ('restart' if restart else 'continuous') / 'input.json'
             assert json.loads(observed.read_text()) == case, observed
           ORIGINAL
-          sha256sum rust/tools/paramsd_fixture.py rust/tools/paramsd_loop_fixture.py rust/tools/check_paramsd_loop.py "$PARAMSD_LOOP_ORIGINAL_INPUT" rust/tools/check_paramsd_daemon.py opendbc_repo/opendbc/car/car.capnp openpilot/cereal/log.capnp "$PARAMSD_FIXTURE_ORIGINAL_SAVED_PACKET" "$PARAMSD_FIXTURE_ORIGINAL_SCENARIOS" "$PARAMSD_FIXTURE_ORIGINAL_CONTINUOUS" "$PARAMSD_FIXTURE_ORIGINAL_RESTART" > "$proof/original.sha256"
+          sha256sum rust/tools/paramsd_fixture.py "$PARAMSD_LOOP_ORIGINAL_INPUT" rust/tools/check_paramsd_daemon.py opendbc_repo/opendbc/car/car.capnp openpilot/cereal/log.capnp "$PARAMSD_FIXTURE_ORIGINAL_SAVED_PACKET" "$PARAMSD_FIXTURE_ORIGINAL_SCENARIOS" "$PARAMSD_FIXTURE_ORIGINAL_CONTINUOUS" "$PARAMSD_FIXTURE_ORIGINAL_RESTART" > "$proof/original.sha256"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-fixture-native --bin generate-paramsd-fixture --bin generate-paramsd-loop-fixture --locked
           sha256sum "$PARAMSD_FIXTURE_NATIVE_BINARY" "$PARAMSD_LOOP_NATIVE_BINARY" > "$proof/generator.sha256"

@@ -18,9 +18,7 @@ fn fixture_options(directory: &Path) -> Options {
     fs::copy(std::env::current_exe().unwrap(), &binary).unwrap();
     let source = directory.join("source");
     for name in [
-        "rust/tools/paramsd_loop_fixture.py",
         "rust/tools/paramsd_fixture.py",
-        "rust/tools/check_paramsd_loop.py",
         "rust/tools/paramsd_loop_source.py",
         "rust/crates/dev-tools/src/paramsd_loop_fixture_generate.rs",
         "rust/crates/dev-tools/src/paramsd_fixture_generate.rs",
@@ -111,7 +109,7 @@ impl Runner for Peer {
             }
             Mode::MutateSource => {
                 fs::write(
-                    self.source.join("rust/tools/paramsd_loop_fixture.py"),
+                    self.source.join("rust/tools/paramsd_fixture.py"),
                     b"changed source",
                 )?;
                 Ok(Captured {
@@ -149,9 +147,6 @@ fn child_failure_missing_or_invalid_raw_and_mutated_inputs_never_publish() {
     ] {
         let directory = tempfile::tempdir().unwrap();
         let options = fixture_options(directory.path());
-        if matches!(mode, Mode::Reappear) {
-            fs::remove_file(options.root.join("rust/tools/check_paramsd_loop.py")).unwrap();
-        }
         let mut runner = Peer {
             mode,
             calls: 0,
@@ -205,7 +200,6 @@ fn original_source_alias_is_rejected_before_candidate_invocation() {
     let directory = tempfile::tempdir().unwrap();
     let options = fixture_options(directory.path());
     let source = options.root.join("rust/tools/paramsd_loop_fixture.py");
-    fs::remove_file(&source).unwrap();
     std::os::unix::fs::symlink(root().join("rust/tools/paramsd_loop_fixture.py"), &source).unwrap();
     let mut runner = Peer {
         mode: Mode::Failure,
@@ -232,7 +226,6 @@ fn both_retired_python_paths_admit_true_absence_but_reject_changed_or_nonregular
     ] {
         let directory = tempfile::tempdir().unwrap();
         let options = fixture_options(directory.path());
-        fs::remove_file(options.root.join(name)).unwrap();
         let mut runner = Peer {
             mode: Mode::Failure,
             calls: 0,
@@ -255,7 +248,6 @@ fn both_retired_python_paths_admit_true_absence_but_reject_changed_or_nonregular
             let directory = tempfile::tempdir().unwrap();
             let options = fixture_options(directory.path());
             let path = options.root.join(name);
-            fs::remove_file(&path).unwrap();
             match mutation {
                 "changed" => fs::write(&path, b"changed retired source").unwrap(),
                 "symlink" => std::os::unix::fs::symlink(root().join(name), &path).unwrap(),

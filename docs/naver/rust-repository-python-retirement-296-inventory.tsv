@@ -2032,7 +2032,7 @@ rust/tools/check_params_string.py	b4cbdadb45a5850c9d7ccbedcd08c964ccc1c040	pendi
 rust/tools/check_params_string_uploader.py	b02b74f336e9562f7a97406a1fa82c280d14b58d	pending	-
 rust/tools/check_paramsd.py	7ed9f2d6d026b225cee5fe84a9b62fbfc1af5dbc	pending	-
 rust/tools/check_paramsd_daemon.py	9cf7bbcb077ac813f1651c70cac207dfae19d4a2	pending	-
-rust/tools/check_paramsd_loop.py	9bcb3609c414fe7298993c29f7f6c2df767508ba	pending	-
+rust/tools/check_paramsd_loop.py	9bcb3609c414fe7298993c29f7f6c2df767508ba	replaced-local	Native full39-case/2420-row loop controller and input generator; fresh original/same-ELF predelete proof accepted5f6 run39535390950; actual deleted-checkout proof pending
 rust/tools/check_paramsd_native.py	a1e7580517a25338d14e496cc547b6857c765c23	pending	-
 rust/tools/check_paramsd_startup.py	8ccf349660d5d42e466e4db7fb4f5e6d1b626de0	pending	-
 rust/tools/check_pigeon.py	e880f785c5b6297c30e2312ecb47b3cd7afaafa6	pending	-
@@ -2443,7 +2443,7 @@ rust/tools/pandad_state_cases.py	cfebc7dd355208db95567a3c9b3286ee273cfbf4	pendin
 rust/tools/pandad_usb_cases.py	09b88825fd71c39d11c6b355195f06206f175b59	pending	-
 rust/tools/paramsd_fixture.py	5bd264a1564571a414556c2885fea0dbc36d554b	pending	-
 rust/tools/paramsd_live_phase_source.py	23409dcf7912c5dfcbf163929736b887809f4dc6	pending	-
-rust/tools/paramsd_loop_fixture.py	aa5335b7f1e5c287c66f1d27affe70957e700e84	pending	-
+rust/tools/paramsd_loop_fixture.py	aa5335b7f1e5c287c66f1d27affe70957e700e84	replaced-local	Native full39-case/2420-row loop controller and input generator; fresh original/same-ELF predelete proof accepted5f6 run39535390950; actual deleted-checkout proof pending
 rust/tools/paramsd_loop_source.py	d31753784478a68130dffe3d05a2dc49bcf246f1	pending	-
 rust/tools/paramsd_source.py	06d902a723407987e1074a6cd7f84fca1f4694ca	pending	-
 rust/tools/paramsd_startup_control.py	530ca472e81f9d9186a886946cb744ed33b6a4b2	pending	-

@@ -94,7 +94,6 @@ fn retired_loop_fixture_is_optional_only_when_exact_path_is_absent() {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().join("root");
         for name in [
-            "rust/tools/paramsd_loop_fixture.py",
             "rust/tools/paramsd_fixture.py",
             "rust/crates/dev-tools/src/paramsd_loop_fixture_generate.rs",
             "rust/crates/dev-tools/src/paramsd_fixture_generate.rs",
@@ -104,15 +103,13 @@ fn retired_loop_fixture_is_optional_only_when_exact_path_is_absent() {
             fs::copy(repo.join(name), destination).unwrap();
         }
         let retired = root.join("rust/tools/paramsd_loop_fixture.py");
-        fs::remove_file(&retired).unwrap();
         match state {
             "absent" => {}
-            "changed" => fs::write(&retired, b"changed original fixture").unwrap(),
-            "symlink" => std::os::unix::fs::symlink(
-                repo.join("rust/tools/paramsd_loop_fixture.py"),
-                &retired,
-            )
-            .unwrap(),
+            "changed" => fs::write(&retired, b"changed retired fixture").unwrap(),
+            "symlink" => {
+                std::os::unix::fs::symlink(repo.join("rust/tools/paramsd_fixture.py"), &retired)
+                    .unwrap()
+            }
             "directory" => fs::create_dir(&retired).unwrap(),
             _ => unreachable!(),
         }
