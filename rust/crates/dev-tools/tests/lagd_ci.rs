@@ -29,6 +29,13 @@ const ATOMIC: &str = "Check native paramsd atomic gate foundation alongside orig
 const OLD_ATOMIC: &str = "python -P -m pytest -c /dev/null --noconftest -p no:cacheprovider -q rust/tools/tests/test_paramsd_atomic_gate.py";
 const NATIVE_ATOMIC: &str = "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features paramsd-startup-gate-native --test paramsd_startup_gate";
 const NATIVE_ATOMIC_CLIPPY: &str = "cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features paramsd-startup-gate-native --lib --test paramsd_startup_gate -- -D warnings";
+const OLD_LOOP: &str = "python rust/tools/check_paramsd_loop.py --oracle \"$RUNNER_TEMP/paramsd-oracle\" --trace \"$PWD/rust/target/debug/examples/paramsd_loop\" --evidence \"$RUNNER_TEMP/estimation/paramsd/loop\"";
+const NATIVE_LOOP_STEP: &str =
+    "Compare native paramsd loop checker against complete original observations";
+const NATIVE_LOOP_BUILD: &str = "cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-loop-native --bin check-paramsd-loop-native --locked";
+const NATIVE_LOOP_EXEC: &str = "PATH=/nonexistent /usr/bin/timeout --signal=TERM --kill-after=5s 200s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o \"$proof/native.exec\" \"$checker\" --binary \"$candidate\" --evidence \"$proof/current\" > \"$proof/native.stdout\" 2> \"$proof/native.stderr\"";
+const NATIVE_LOOP_TEST: &str = "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-loop-native --lib --test paramsd_loop_check --test paramsd_loop_reference --test paramsd_loop_retirement --locked -- --nocapture";
+const NATIVE_LOOP_CLIPPY: &str = "cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-loop-native --lib --bin check-paramsd-loop-native --test paramsd_loop_check --test paramsd_loop_reference --test paramsd_loop_retirement --locked -- -D warnings";
 const OLD_EIGEN_INSTALL: &str = "python -m pip install 'git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen'";
 const OLD_EIGEN_IMPORT: &str = "python -c 'import eigen; print(\"LOCATIOND_EIGEN_INCLUDE=\" + eigen.INCLUDE_DIR); print(\"PARAMSD_EIGEN_INCLUDE=\" + eigen.INCLUDE_DIR)' >> \"$GITHUB_ENV\"";
 const NATIVE_EIGEN_BUILD: &str = "cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features eigen-tools-native --bin stage-eigen-headers";
@@ -140,6 +147,14 @@ fn validate(workflow: &Value) -> Result<(), String> {
         eigen < estimators,
         "native Eigen staging moved after estimator build",
     )?;
+    require(
+        estimators
+            < steps
+                .iter()
+                .position(|step| step["name"] == NATIVE_LOOP_STEP)
+                .ok_or("native paramsd loop step missing")?,
+        "native paramsd loop checker moved before estimator build",
+    )?;
     for oldstep in old["steps"].as_array().unwrap() {
         if oldstep.get("uses").is_some() {
             require(
@@ -198,6 +213,80 @@ fn validate(workflow: &Value) -> Result<(), String> {
                 .position(|line| *line == "test ! -L rust/tools/tests/test_paramsd_atomic_gate.py")
                 .is_some_and(|index| index < atomic_test),
         "native paramsd atomic absence or test reserve missing before suite",
+    )?;
+    let loop_steps = steps
+        .iter()
+        .filter(|step| step["name"] == NATIVE_LOOP_STEP)
+        .collect::<Vec<_>>();
+    require(
+        loop_steps.len() == 1,
+        "native paramsd loop step missing or duplicated",
+    )?;
+    let loop_step = loop_steps[0];
+    mandatory(loop_step)?;
+    let loop_lines = loop_step["run"]
+        .as_str()
+        .ok_or("native paramsd loop commands missing")?
+        .lines()
+        .map(str::trim)
+        .collect::<Vec<_>>();
+    for line in [
+        "test ! -e rust/tools/check_paramsd_loop.py",
+        "test ! -L rust/tools/check_paramsd_loop.py",
+        "test ! -e rust/tools/paramsd_loop_fixture.py",
+        "test ! -L rust/tools/paramsd_loop_fixture.py",
+        NATIVE_LOOP_BUILD,
+        NATIVE_LOOP_EXEC,
+        NATIVE_LOOP_TEST,
+        NATIVE_LOOP_CLIPPY,
+    ] {
+        require(
+            loop_lines
+                .iter()
+                .filter(|present| **present == line)
+                .count()
+                == 1,
+            "native paramsd loop absence, exec, full reference, or Clippy gate changed",
+        )?;
+    }
+    let loop_build = loop_lines
+        .iter()
+        .position(|line| *line == NATIVE_LOOP_BUILD)
+        .ok_or("native paramsd loop checker build missing")?;
+    let loop_exec = loop_lines
+        .iter()
+        .position(|line| *line == NATIVE_LOOP_EXEC)
+        .ok_or("native paramsd loop caller missing")?;
+    let loop_test = loop_lines
+        .iter()
+        .position(|line| *line == NATIVE_LOOP_TEST)
+        .ok_or("native paramsd loop reference missing")?;
+    let loop_clippy = loop_lines
+        .iter()
+        .position(|line| *line == NATIVE_LOOP_CLIPPY)
+        .ok_or("native paramsd loop Clippy missing")?;
+    require(
+        loop_lines
+            .iter()
+            .position(|line| *line == "test ! -e rust/tools/check_paramsd_loop.py")
+            .is_some_and(|index| index < loop_exec)
+            && loop_lines
+                .iter()
+                .position(|line| *line == "test ! -e rust/tools/paramsd_loop_fixture.py")
+                .is_some_and(|index| index < loop_exec)
+            && loop_build < loop_exec
+            && loop_exec < loop_test
+            && loop_test < loop_clippy
+            && loop_lines[..loop_build]
+                .iter()
+                .any(|line| line.starts_with(GUARD))
+            && loop_lines[loop_build..loop_exec]
+                .iter()
+                .any(|line| line.starts_with(GUARD))
+            && loop_lines[loop_test..loop_clippy]
+                .iter()
+                .any(|line| line.starts_with(GUARD)),
+        "native paramsd loop absence, reserves or full comparison moved",
     )?;
     let build = steps
         .iter()
@@ -308,11 +397,16 @@ fn validate(workflow: &Value) -> Result<(), String> {
         original.get(OLD_ATOMIC) == Some(&1),
         "frozen baseline paramsd atomic command changed",
     )?;
+    require(
+        original.get(OLD_LOOP) == Some(&1),
+        "frozen baseline paramsd loop command changed",
+    )?;
     for (line, count) in original {
         if !line.starts_with("python rust/tools/check_lagd_")
             && line != OLD_EIGEN_INSTALL
             && line != OLD_EIGEN_IMPORT
             && line != OLD_ATOMIC
+            && line != OLD_LOOP
         {
             require(
                 current.get(&line) == Some(&count),
@@ -327,8 +421,12 @@ fn validate(workflow: &Value) -> Result<(), String> {
         )?;
     }
     require(
-        !current.contains_key(OLD_ATOMIC) && current.get(NATIVE_ATOMIC) == Some(&1),
-        "retired paramsd atomic Python command returned or native suite duplicated",
+        !current.contains_key(OLD_ATOMIC)
+            && current.get(NATIVE_ATOMIC) == Some(&1)
+            && !current.contains_key(OLD_LOOP)
+            && current.get(NATIVE_LOOP_EXEC) == Some(&1)
+            && current.get(NATIVE_LOOP_TEST) == Some(&1),
+        "retired paramsd Python command returned or native suite duplicated",
     )?;
     for step in steps {
         if let Some(script) = step["run"].as_str() {
@@ -389,6 +487,10 @@ fn missing_native_tools_tests_guards_or_unrelated_gates_cannot_pass() {
         .iter()
         .position(|step| step["name"] == ATOMIC)
         .unwrap();
+    let loop_step = steps
+        .iter()
+        .position(|step| step["name"] == NATIVE_LOOP_STEP)
+        .unwrap();
     let mut changed = current.clone();
     let script = changed["jobs"]["estimation-runtime"]["steps"][atomic]["run"]
         .as_str()
@@ -421,6 +523,34 @@ fn missing_native_tools_tests_guards_or_unrelated_gates_cannot_pass() {
     assert!(
         validate(&changed).is_err(),
         "accepted restored paramsd atomic Python test"
+    );
+    for marker in [
+        "test ! -e rust/tools/check_paramsd_loop.py",
+        "test ! -L rust/tools/check_paramsd_loop.py",
+        "test ! -e rust/tools/paramsd_loop_fixture.py",
+        "test ! -L rust/tools/paramsd_loop_fixture.py",
+        NATIVE_LOOP_BUILD,
+        NATIVE_LOOP_EXEC,
+        NATIVE_LOOP_TEST,
+        NATIVE_LOOP_CLIPPY,
+    ] {
+        let mut changed = current.clone();
+        let script = changed["jobs"]["estimation-runtime"]["steps"][loop_step]["run"]
+            .as_str()
+            .unwrap()
+            .replace(marker, "removed-by-regression");
+        changed["jobs"]["estimation-runtime"]["steps"][loop_step]["run"] = script.into();
+        assert!(validate(&changed).is_err(), "accepted missing {marker}");
+    }
+    let mut changed = current.clone();
+    let script = changed["jobs"]["estimation-runtime"]["steps"][loop_step]["run"]
+        .as_str()
+        .unwrap();
+    changed["jobs"]["estimation-runtime"]["steps"][loop_step]["run"] =
+        format!("{script}\n{OLD_LOOP}\n").into();
+    assert!(
+        validate(&changed).is_err(),
+        "accepted restored paramsd loop Python checker"
     );
     let mut changed = current.clone();
     let moved = changed["jobs"]["estimation-runtime"]["steps"]
