@@ -125,7 +125,15 @@ fn self_consistent_binding_with_changed_source_or_json11_cannot_launch() {
         .unwrap();
         let mut runner = RejectRun(0);
         let error = check(&options, &mut runner, &mut std::io::sink()).unwrap_err();
-        assert!(error.to_string().contains(changed), "{changed}: {error}");
+        let expected_diagnostic = if changed == "sources" {
+            "source map differs"
+        } else {
+            "json11_sha256"
+        };
+        assert!(
+            error.to_string().contains(expected_diagnostic),
+            "{changed}: {error}"
+        );
         assert_eq!(runner.0, 0);
         assert!(!options.output.exists());
     }
