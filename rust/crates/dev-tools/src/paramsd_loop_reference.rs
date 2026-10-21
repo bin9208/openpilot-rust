@@ -147,7 +147,7 @@ fn event_dict(value: &Value) -> Result<Value> {
         &mut Cursor::new(&bytes),
         capnp::message::ReaderOptions::new(),
     )?;
-    Ok(project(message.get_root::<event::Reader<'_>>()?.into())?)
+    project(message.get_root::<event::Reader<'_>>()?.into())
 }
 fn floats(bits: &Value) -> Result<Value> {
     let values = bits.as_array().ok_or("native float bits array")?;
