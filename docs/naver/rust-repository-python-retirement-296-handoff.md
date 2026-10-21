@@ -1,6 +1,20 @@
 # 저장소 전체 Python 전환 작업 인수인계
 
-## 현재 감독·통합 상태: fe6b64ca, 2026-10-21
+## 현재 감독·통합 상태: 332d99bc, 2026-10-21
+
+#296 전용 native-build-tools-296 작업트리, PR343→dev에서 계속한다. 부모는 검토·조합을 담당하고 허용된 Sol 작업자들이 분리된 구현과 검토를 맡는다. dev-md/주 작업폴더/.omo는 보존한다. 콤마 검증은 사용자가 pull 후 수행한다. 로컬 기능 실행은 하지 않으며 빌드·원본 실행·기능·Clippy·ARM/AGNOS 검증은 GitHub-hosted Actions에서 한다.
+
+현재223전환/3부분/3354대기. 실제 삭제 검증은 Calibration float(cd51eb14/run39536911039)와 Paramsd loop 두 도구(21a35b92/run39538488955)가 성공했다. Panda의 빠졌던18phase도5f6104be/run39535390854에서 통과했다. Stats #442와 전체 추정기 #438 집중 검증도 앞선 기록대로 성공했다. 전체 전환 완료를 뜻하지 않는다.
+
+최근 후보: native-only updater4493b9a5는 원본 다섯 시나리오와11CLI 기록을 보존하고 실제 Python 실행/바인딩 요구를 없앴다. 최초 진단 워크플로는 경로 필터 오류로 실행되지 않았고 이를 바로잡은 f2f6e754/run39540243688이 source5bcfae44에서 진행 중이다. Git/helper 실행 목록은 아직 진단용이며 완전한 허용 목록이 아니다. updated_fixtures.py는 daemon caller 때문에 남는다.
+
+Beep은 b47cec51/run39537544208에서20사례·4unit·6integration·Clippy를 통과했다. 원본 바인딩을 선택적으로 받고 실제 같은ELF 두 root/21exec를 요구하는783810a5는332d99bc/run39540658168에서 검증 중이며 Python checker는 아직 남아 있다. Calibration estimator332d99bc는15,128개 원본 전용 요청/상태/패킷을 비교하는 CLI이며 run39540645023에서 첫 검증 중이다. saved_error 독립 캡처 run39539792161의147성공 reset/한 번의 캐시 오류를 반영했고 전체 이전15,128행과 새 bool 외에는 같음을 확인했다. report.json/trace.jsonl/stdout의 원본 구조도 보존한다.
+
+#447 encoder scratch5bcfae44는 소유 버퍼의 초기화 길이/용량을 재사용한다. DMA 참조는 만들지 않고 두 번의 복사와 기존 경계를 유지한다. run39539787018에서 전체 encoder 회귀·할당 측정·Clippy 진행 중이다. 차량 CPU 개선은 미측정이다.
+
+이전8e8b1e8f 전체PR은 실패 종료했고 ARM은120분 마감으로 취소됐다. #445에서 마감만180분으로 늘렸다. UI strict #384는 단일 진단에서 원본11/native18FPS로 통과했지만 간헐적 실패 원인은 미해결이다. 최신 전체PR/ARM, AGNOS 소스 일치 패키지, dev 통합 후 검사 및 사용자 부팅·녹화·업로드·주행 수용은 남아 있다. 위 집중 성공을 전체 성공으로 쓰지 않는다.
+
+## 과거 감독·통합 상태: fe6b64ca, 2026-10-21
 
 부모6.1 Sol 감독·검토·통합, 허용된6Sol 작업자는 분리된 도구전환과 검증을 담당한다. 전용 native-build-tools-296 작업트리, PR343→dev만 사용한다. dev-md/주작업폴더/.omo는 보존한다. 사용자가 pull 후 기기 부팅·녹화·업로드·주행을 확인한다. 로컬은 문법·포맷·diff·데이터 판독, 기능/빌드/Clippy/ARM/AGNOS는 GitHub-hosted Actions.
 

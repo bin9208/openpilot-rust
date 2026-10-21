@@ -14,6 +14,8 @@ a total request budget would need a separately tested behavioral contract.
 Logger rotation's ready count and preserve-before-drain order match the original.
 No local functional run or new recording/upload device evidence follows.
 
+A later encoder review identified [#447](https://github.com/bin9208/openpilot-rust/issues/447): a fresh owned Vec was allocated for every normal V4L packet before the Cap’n Proto copy. The candidate keeps a reusable owned buffer without exposing DMA references; its copied-byte count, output fingerprints and warm allocation counts are under hosted validation. The initialized high-water storage remains allocated until worker exit. This is a concrete copy-boundary candidate, not a measured vehicle or complete encoder improvement. Codec configuration, EOS, timestamp checks and requeue order are retained. See [the focused record](rust-v4l-packet-scratch-447.md).
+
 Measured host follow-ups are [lagd #429](rust-lagd-masked-allocation-429.md)
 and [messaging #431](rust-messaging-update-allocation-296.md): exact-source
 cloud numerical/semantic fingerprints match while allocator calls and requested
