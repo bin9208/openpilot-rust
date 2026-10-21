@@ -520,7 +520,42 @@ pub(crate) fn relative(name: &str) -> Result<&Path> {
     Ok(path)
 }
 pub(crate) fn held_tree(root: &Path) -> Result<Vec<Held>> {
-    fn visit(path: &Path, output: &mut Vec<Held>, total: &mut u64) -> Result<()> {
+    held_tree_bounded(root, 512 * 1024 * 1024, 512 * 1024 * 1024, 2048)
+}
+// USB release data contains the genuine 776,634,338-byte opaque model. This
+// exception applies only to its externally authenticated complete asset roster.
+pub(crate) fn held_usb_assets(root: &Path, expected: &serde_json::Value) -> Result<Vec<Held>> {
+    let held = held_tree_bounded(root, 800 * 1024 * 1024, 1024 * 1024 * 1024, 512)?;
+    expect_tree_roster(root, &held, expected)?;
+    Ok(held)
+}
+fn expect_tree_roster(root: &Path, held: &[Held], expected: &serde_json::Value) -> Result<()> {
+    let actual = held
+        .iter()
+        .map(|file| {
+            let name = file
+                .path
+                .strip_prefix(root)?
+                .to_str()
+                .ok_or("model family asset path is not UTF-8")?
+                .to_owned();
+            Ok((name, file.pin()))
+        })
+        .collect::<Result<BTreeMap<_, _>>>()?;
+    require(
+        serde_json::to_value(actual)? == *expected,
+        "USB asset whole roster differs from authenticated original",
+    )
+}
+fn held_tree_bounded(root: &Path, per_file: u64, maximum: u64, count: usize) -> Result<Vec<Held>> {
+    fn visit(
+        path: &Path,
+        output: &mut Vec<Held>,
+        total: &mut u64,
+        per_file: u64,
+        maximum: u64,
+        count: usize,
+    ) -> Result<()> {
         let m = fs::symlink_metadata(path)?;
         require(
             !m.file_type().is_symlink(),
@@ -528,23 +563,27 @@ pub(crate) fn held_tree(root: &Path) -> Result<Vec<Held>> {
         )?;
         if m.is_dir() {
             for entry in fs::read_dir(path)? {
-                visit(&entry?.path(), output, total)?;
+                visit(&entry?.path(), output, total, per_file, maximum, count)?;
             }
         } else {
             *total = total
                 .checked_add(m.len())
                 .ok_or("model family tree size overflow")?;
             require(
-                output.len() < 2048 && *total <= 512 * 1024 * 1024,
+                m.is_file() && m.len() <= per_file && output.len() < count && *total <= maximum,
                 "model family tree exceeds bounds",
             )?;
-            output.push(Held::open(path, 512 * 1024 * 1024, false)?);
+            output.push(Held::open(path, per_file, false)?);
         }
         Ok(())
     }
     let mut files = Vec::new();
     let mut total = 0;
-    visit(root, &mut files, &mut total)?;
+    require(
+        fs::symlink_metadata(root)?.is_dir(),
+        "model family tree root is not a real directory",
+    )?;
+    visit(root, &mut files, &mut total, per_file, maximum, count)?;
     Ok(files)
 }
 #[cfg(test)]
@@ -568,6 +607,69 @@ mod tests {
         for name in ["../escape", "/absolute", "./dot", "a//b"] {
             assert!(relative(name).is_err());
         }
+    }
+    #[test]
+    fn usb_asset_admission_preserves_separate_bounds_and_exact_roster() {
+        let root = tempfile::tempdir().unwrap();
+        fs::write(root.path().join("model.pkl"), b"data").unwrap();
+        fs::write(root.path().join("manifest.json"), b"seal").unwrap();
+        let held = held_tree_bounded(root.path(), 4, 8, 2).unwrap();
+        let expected = serde_json::json!({
+            "model.pkl":held.iter().find(|p|p.path.ends_with("model.pkl")).unwrap().pin(),
+            "manifest.json":held.iter().find(|p|p.path.ends_with("manifest.json")).unwrap().pin(),
+        });
+        assert_eq!(held_usb_assets(root.path(), &expected).unwrap().len(), 2);
+        for limits in [(3, 8, 2), (4, 7, 2), (4, 8, 1)] {
+            assert!(held_tree_bounded(root.path(), limits.0, limits.1, limits.2).is_err());
+        }
+        let mut missing = expected.clone();
+        missing.as_object_mut().unwrap().remove("model.pkl");
+        assert!(held_usb_assets(root.path(), &missing).is_err());
+        let mut extra = expected.clone();
+        extra["foreign"] = held[0].pin();
+        assert!(held_usb_assets(root.path(), &extra).is_err());
+        let mut altered = expected.clone();
+        altered["model.pkl"]["sha256"] = serde_json::json!("wrong");
+        assert!(held_usb_assets(root.path(), &altered).is_err());
+        fs::write(root.path().join("foreign"), b"x").unwrap();
+        assert!(held_usb_assets(root.path(), &expected).is_err());
+        assert!(verify_tree(root.path(), &held).is_err());
+    }
+    #[test]
+    fn usb_asset_metadata_bounds_reject_before_hashing_and_catalog_limit_stays_small() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("model.pkl");
+        let sparse = File::create(path).unwrap();
+        sparse.set_len(776_634_338).unwrap();
+        // The genuine model remains inadmissible to the default catalog helper.
+        assert!(held_tree(root.path()).is_err());
+        sparse.set_len(800 * 1024 * 1024 + 1).unwrap();
+        assert!(held_usb_assets(root.path(), &serde_json::json!({})).is_err());
+    }
+    #[test]
+    fn usb_asset_admission_rejects_file_directory_and_parent_aliases() {
+        use std::os::unix::fs::symlink;
+        let base = tempfile::tempdir().unwrap();
+        let root = base.path().join("assets");
+        fs::create_dir(&root).unwrap();
+        fs::write(root.join("data"), b"data").unwrap();
+        let held = held_tree(&root).unwrap();
+        let expected = serde_json::json!({"data":held[0].pin()});
+        for target in [&root.join("data"), &root] {
+            symlink(target, root.join("alias")).unwrap();
+            assert!(held_usb_assets(&root, &expected).is_err());
+            fs::remove_file(root.join("alias")).unwrap();
+        }
+        let alias = base.path().join("alias");
+        symlink(&root, &alias).unwrap();
+        assert!(held_usb_assets(&alias, &expected).is_err());
+        fs::create_dir(root.join("nested")).unwrap();
+        fs::write(root.join("nested/data"), b"data").unwrap();
+        assert!(held_usb_assets(
+            &alias.join("nested"),
+            &serde_json::json!({"data":held[0].pin()})
+        )
+        .is_err());
     }
 }
 pub(crate) fn verify_tree(root: &Path, held: &[Held]) -> Result<()> {

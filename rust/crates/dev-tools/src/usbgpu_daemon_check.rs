@@ -3,8 +3,8 @@
 use crate::{
     driving_daemon_reference::event_dict,
     model_family_process::{
-        car_params, held_tree, json_file, layout, protocol_path, publish_report, require,
-        verify_tree, Cancellation, FailedCase, Held, Namespace, Process,
+        car_params, held_tree, held_usb_assets, json_file, layout, protocol_path, publish_report,
+        require, verify_tree, Cancellation, FailedCase, Held, Namespace, Process,
     },
     model_family_reference::Original,
     seal::Result,
@@ -271,7 +271,7 @@ fn execute(options: &Options, mut emit: impl FnMut(&Value) -> Result<()>) -> Res
         "USB genuine model/runtime identity changed",
     )?;
     let catalog = held_tree(&options.catalog)?;
-    let assets = held_tree(&options.assets)?;
+    let assets = held_usb_assets(&options.assets, &original.manifest["assets_files"])?;
     original.catalog_sources(&options.catalog, &["driving"])?;
     let mut marker = json_file(&options.installed, 1024 * 1024)?;
     require(
