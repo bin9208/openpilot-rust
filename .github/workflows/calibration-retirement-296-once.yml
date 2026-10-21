@@ -16,11 +16,11 @@ jobs:
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
-      CALIBRATION_RETIREMENT_EXPECTED_SOURCE: 20a8f52e83d85c7c5113c5484179b0c016a034eb
+      CALIBRATION_RETIREMENT_EXPECTED_SOURCE: 6ed383f01c8f7783824e84333ea9abdb13e1fc80
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 20a8f52e83d85c7c5113c5484179b0c016a034eb
+        ref: 6ed383f01c8f7783824e84333ea9abdb13e1fc80
         persist-credentials: false
     - name: Verify exact checkout and reserve disk
       shell: bash
@@ -52,18 +52,20 @@ jobs:
         \ntest -s rust/target/debug/examples/calibration_float\ntest -s rust/target/debug/check-calibration-float\nprintf\
         \ 'CALIBRATION_RETIREMENT_CHECKOUT_ROOT=%s\\n' \"$GITHUB_WORKSPACE\" >> \"$GITHUB_ENV\"\nprintf 'CALIBRATION_RETIREMENT_CHECKER=%s\\\
         n' \"$GITHUB_WORKSPACE/rust/target/debug/check-calibration-float\" >> \"$GITHUB_ENV\"\nprintf 'CALIBRATION_RETIREMENT_CANDIDATE=%s\\\
-        n' \"$GITHUB_WORKSPACE/rust/target/debug/examples/calibration_float\" >> \"$GITHUB_ENV\"\nprintf 'CALIBRATION_RETIREMENT_COMPILER=%s\\\
-        n' \"$(command -v g++)\" >> \"$GITHUB_ENV\"\nprintf 'CALIBRATION_RETIREMENT_SOURCE_COMMIT=%s\\n' \"$proof/source-commit.txt\"\
-        \ >> \"$GITHUB_ENV\"\nprintf 'CALIBRATION_RETIREMENT_ORIGINAL_OUTPUT=%s\\n' \"$proof/original\" >> \"$GITHUB_ENV\"\
-        \nprintf 'CALIBRATION_RETIREMENT_PRESENT_OUTPUT=%s\\n' \"$proof/present\" >> \"$GITHUB_ENV\"\nprintf 'CALIBRATION_RETIREMENT_ABSENT_OUTPUT=%s\\\
-        n' \"$proof/absent\" >> \"$GITHUB_ENV\"\nprintf 'CALIBRATION_RETIREMENT_ABSENT_ROOT=%s\\n' \"$proof/absent-root\"\
-        \ >> \"$GITHUB_ENV\"\nprintf 'CALIBRATION_RETIREMENT_CLI_CAPTURE=%s\\n' \"$proof/cli\" >> \"$GITHUB_ENV\"\nfor lane\
-        \ in ORIGINAL PRESENT ABSENT; do\n  printf 'CALIBRATION_RETIREMENT_%s_STDOUT=%s\\n' \"$lane\" \"$proof/${lane,,}.stdout\"\
-        \ >> \"$GITHUB_ENV\"\n  printf 'CALIBRATION_RETIREMENT_%s_STDERR=%s\\n' \"$lane\" \"$proof/${lane,,}.stderr\" >> \"\
-        $GITHUB_ENV\"\ndone\nprintf 'CALIBRATION_RETIREMENT_PRESENT_EXEC=%s\\n' \"$proof/present.exec\" >> \"$GITHUB_ENV\"\
-        \nprintf 'CALIBRATION_RETIREMENT_ABSENT_EXEC=%s\\n' \"$proof/absent.exec\" >> \"$GITHUB_ENV\"\nprintf 'CALIBRATION_RETIREMENT_ARTIFACTS_BEFORE=%s\\\
-        n' \"$proof/before.json\" >> \"$GITHUB_ENV\"\nprintf 'CALIBRATION_RETIREMENT_ARTIFACTS_AFTER=%s\\n' \"$proof/after.json\"\
-        \ >> \"$GITHUB_ENV\"\n"
+        n' \"$GITHUB_WORKSPACE/rust/target/debug/examples/calibration_float\" >> \"$GITHUB_ENV\"\nprintf 'CALIBRATION_FLOAT_BINARY=%s\\\
+        n' \"$GITHUB_WORKSPACE/rust/target/debug/examples/calibration_float\" >> \"$GITHUB_ENV\"\nprintf 'CALIBRATION_FLOAT_PYTHON=%s\\\
+        n' \"$(command -v python)\" >> \"$GITHUB_ENV\"\nprintf 'CALIBRATION_RETIREMENT_COMPILER=%s\\n' \"$(command -v g++)\"\
+        \ >> \"$GITHUB_ENV\"\nprintf 'CALIBRATION_RETIREMENT_SOURCE_COMMIT=%s\\n' \"$proof/source-commit.txt\" >> \"$GITHUB_ENV\"\
+        \nprintf 'CALIBRATION_RETIREMENT_ORIGINAL_OUTPUT=%s\\n' \"$proof/original\" >> \"$GITHUB_ENV\"\nprintf 'CALIBRATION_RETIREMENT_PRESENT_OUTPUT=%s\\\
+        n' \"$proof/present\" >> \"$GITHUB_ENV\"\nprintf 'CALIBRATION_RETIREMENT_ABSENT_OUTPUT=%s\\n' \"$proof/absent\" >>\
+        \ \"$GITHUB_ENV\"\nprintf 'CALIBRATION_RETIREMENT_ABSENT_ROOT=%s\\n' \"$proof/absent-root\" >> \"$GITHUB_ENV\"\nprintf\
+        \ 'CALIBRATION_RETIREMENT_CLI_CAPTURE=%s\\n' \"$proof/cli\" >> \"$GITHUB_ENV\"\nfor lane in ORIGINAL PRESENT ABSENT;\
+        \ do\n  printf 'CALIBRATION_RETIREMENT_%s_STDOUT=%s\\n' \"$lane\" \"$proof/${lane,,}.stdout\" >> \"$GITHUB_ENV\"\n\
+        \  printf 'CALIBRATION_RETIREMENT_%s_STDERR=%s\\n' \"$lane\" \"$proof/${lane,,}.stderr\" >> \"$GITHUB_ENV\"\ndone\n\
+        printf 'CALIBRATION_RETIREMENT_PRESENT_EXEC=%s\\n' \"$proof/present.exec\" >> \"$GITHUB_ENV\"\nprintf 'CALIBRATION_RETIREMENT_ABSENT_EXEC=%s\\\
+        n' \"$proof/absent.exec\" >> \"$GITHUB_ENV\"\nprintf 'CALIBRATION_RETIREMENT_ARTIFACTS_BEFORE=%s\\n' \"$proof/before.json\"\
+        \ >> \"$GITHUB_ENV\"\nprintf 'CALIBRATION_RETIREMENT_ARTIFACTS_AFTER=%s\\n' \"$proof/after.json\" >> \"$GITHUB_ENV\"\
+        \n"
     - name: Capture unchanged original and same-ELF native roots
       shell: bash
       run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/calibration-retirement-296\"\npython_bin=\"$(command -v python)\"\nscript=\"\

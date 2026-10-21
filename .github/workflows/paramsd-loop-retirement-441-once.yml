@@ -24,7 +24,7 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: 20a8f52e83d85c7c5113c5484179b0c016a034eb
+        ref: 6ed383f01c8f7783824e84333ea9abdb13e1fc80
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
@@ -36,7 +36,7 @@ jobs:
     - name: Install exact loop prerequisites
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = 20a8f52e83d85c7c5113c5484179b0c016a034eb
+        test "$(git rev-parse HEAD)" = 6ed383f01c8f7783824e84333ea9abdb13e1fc80
 
         test "$(git -C old-04d rev-parse HEAD)" = 04d29123a38dfb9800954090c58c6c6642bad531
 
@@ -49,7 +49,7 @@ jobs:
         rustup toolchain install 1.94.0 --profile minimal --component clippy
 
         python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 cffi==2.1.1 sympy==1.14.0 pyzmq==27.2.0
-        zstandard==0.25.0
+        zstandard==0.25.0 requests==2.34.2 pyserial==3.5
 
         '
     - uses: ./.github/actions/native-eigen
@@ -241,6 +241,8 @@ jobs:
       uses: actions/upload-artifact@v6
       with:
         name: paramsd-loop-retirement-441-evidence
-        path: ${{ runner.temp }}/paramsd-loop-441/
+        path: '${{ runner.temp }}/paramsd-loop-441/
+
+          ${{ runner.temp }}/paramsd-oracle/build.log'
         if-no-files-found: warn
         retention-days: 14

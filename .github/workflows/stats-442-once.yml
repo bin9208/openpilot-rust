@@ -1,0 +1,157 @@
+name: One-time StatLog historical source admission proof 442
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/stats-442-once.yml
+permissions:
+  contents: read
+jobs:
+  stats-442:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      STATS_442_EXPECTED_SOURCE: 6ed383f01c8f7783824e84333ea9abdb13e1fc80
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: 6ed383f01c8f7783824e84333ea9abdb13e1fc80
+        persist-credentials: false
+    - name: Verify exact source and prepare bounded evidence
+      shell: bash
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = "$STATS_442_EXPECTED_SOURCE"
+
+        proof="$RUNNER_TEMP/stats-442-proof"
+
+        mkdir -p "$proof"
+
+        git rev-parse HEAD > "$proof/current-source.txt"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends libzmq3-dev pkg-config capnproto libcapnp-dev
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        '
+    - name: Build fresh checker and actual StatLog examples
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/stats-442-proof"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo +1.94.0 build --manifest-path rust/Cargo.toml -p openpilot-statsd --examples --locked 2>&1 | tee "$proof/examples-build.log"
+
+        cargo +1.94.0 build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-producer-native --bin
+        check-stats-producer --locked 2>&1 | tee "$proof/checker-build.log"
+
+        for name in stats_fork stats_pressure stats_types; do test -s "rust/target/debug/examples/$name"; done
+
+        test -s rust/target/debug/check-stats-producer
+
+        sha256sum rust/target/debug/check-stats-producer rust/target/debug/examples/{stats_fork,stats_pressure,stats_types}
+        > "$proof/fresh-elves.sha256"
+
+        '
+    - name: Require old source behavioral RED with test-only graft
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/stats-442-proof"
+
+        old_sha=20a8f52e83d85c7c5113c5484179b0c016a034eb
+
+        old_source="$RUNNER_TEMP/stats-442-old-source"
+
+        old_target="$RUNNER_TEMP/stats-442-old-target"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        git fetch --no-tags --depth=1 origin "$old_sha"
+
+        git worktree add --detach "$old_source" "$old_sha"
+
+        test "$(git -C "$old_source" rev-parse HEAD)" = "$old_sha"
+
+        old_test="$old_source/rust/crates/dev-tools/tests/stats_producer_check.rs"
+
+        sha256sum "$old_source/rust/crates/dev-tools/src/stats_producer_check.rs" > "$proof/old-production-source.sha256"
+
+        sha256sum "$old_test" > "$proof/old-test-before.sha256"
+
+        cp rust/crates/dev-tools/tests/stats_producer_check.rs "$old_test"
+
+        git -C "$old_source" diff -- rust/crates/dev-tools/tests/stats_producer_check.rs > "$proof/old-test-only.diff"
+
+        test -z "$(git -C "$old_source" diff --name-only -- rust/crates/dev-tools/src/stats_producer_check.rs)"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        set +e
+
+        STATS_442_EVIDENCE="$proof/old-case" CARGO_TARGET_DIR="$old_target" cargo +1.94.0 test --manifest-path "$old_source/rust/Cargo.toml"
+        -p openpilot-dev-tools --features stats-producer-native --test stats_producer_check --locked retired_source_reappearing_after_worker_admission_cannot_publish_pass
+        -- --exact --nocapture > "$proof/old-red.log" 2>&1
+
+        code=$?
+
+        set -e
+
+        test "$code" -eq 101
+
+        grep -F ''#442 accepted retired-source reappearance'' "$proof/old-red.log"
+
+        ! grep -F ''error: could not compile'' "$proof/old-red.log"
+
+        printf ''%s\n'' "$code" > "$proof/old-red.exit"
+
+        git worktree remove --force "$old_source"
+
+        rm -rf -- "$old_target"
+
+        '
+    - name: Require current guard, real four-mode parity and strict Clippy
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/stats-442-proof"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        export STATS_PRODUCER_CHECKER="$GITHUB_WORKSPACE/rust/target/debug/check-stats-producer"
+
+        export STATS_PRODUCER_EXAMPLES="$GITHUB_WORKSPACE/rust/target/debug/examples"
+
+        export STATS_442_EVIDENCE="$proof/current-case"
+
+        cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-producer-native --lib --locked
+        stats_producer_check::tests::finalization_rechecks_absence_and_preserves_a_foreign_receipt -- --exact --nocapture
+        2>&1 | tee "$proof/finalization-units.log"
+
+        cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-producer-native --test
+        stats_producer_check --locked -- --nocapture 2>&1 | tee "$proof/current-tests.log"
+
+        cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-producer-native --lib
+        --test stats_producer_check --bin check-stats-producer --locked -- -D warnings 2>&1 | tee "$proof/clippy.log"
+
+        sha256sum --check "$proof/fresh-elves.sha256"
+
+        '
+    - name: Retain exact old RED and current GREEN evidence
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: stats-442-old-red-current-green
+        path: ${{ runner.temp }}/stats-442-proof/
+        if-no-files-found: warn
