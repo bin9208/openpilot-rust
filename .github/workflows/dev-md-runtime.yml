@@ -10,7 +10,7 @@ on:
         description: Recover unchanged sealed 1f00 candidate using its original publisher
         type: choice
         default: none
-        options: [none, check, publish]
+        options: [none, check, publish, verify]
   push:
     branches: [dev-md]
 permissions:
@@ -55,13 +55,19 @@ jobs:
       - name: Exercise strict restoration contracts on hosted runner
         run: python3 recovery-driver/rust/ci/runtime/recover_1f00.py --self-test
       - name: Download the immutable original candidate
+        if: inputs.recover_restore != 'verify'
         run: |
           mkdir -p "$RUNNER_TEMP/agnos-runtime"
           gh run download 39600241810 --repo bin9208/openpilot-rust --name dev-md-runtime-1f00f0b7c4ccab4c23c5845aef490406058aec6c --dir "$RUNNER_TEMP/agnos-runtime"
       - name: Validate original source and assets, then run original publisher
         env:
           RECOVERY_ACTION: ${{ inputs.recover_restore }}
-        run: python3 recovery-driver/rust/ci/runtime/recover_1f00.py --root "$GITHUB_WORKSPACE/runtime-source" --work "$RUNNER_TEMP/agnos-runtime" --action "$RECOVERY_ACTION"
+        run: |
+          if [ "$RECOVERY_ACTION" = verify ]; then
+            python3 recovery-driver/rust/ci/runtime/verify_public_1f00.py --root "$GITHUB_WORKSPACE/runtime-source" --work "$RUNNER_TEMP/agnos-runtime"
+          else
+            python3 recovery-driver/rust/ci/runtime/recover_1f00.py --root "$GITHUB_WORKSPACE/runtime-source" --work "$RUNNER_TEMP/agnos-runtime" --action "$RECOVERY_ACTION"
+          fi
       - uses: actions/upload-artifact@v7
         if: always()
         with:
