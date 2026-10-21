@@ -1,5 +1,5 @@
-//! Same-ELF Panda controller proof in the checkout and a separately prepared
-//! full source root with only the historical orchestrator and its tests absent.
+//! Same-ELF Panda controller proof in the checkout and a Rust-prepared private
+//! source root with only the historical orchestrator and its tests absent.
 //! All still-live Python phase checkers remain present and are explicitly run.
 #![cfg(all(target_os = "linux", feature = "panda-ci-native"))]
 use base64::{engine::general_purpose::STANDARD, Engine as _};
@@ -7,12 +7,12 @@ use openpilot_dev_tools::qa_process::{CommandSpec, NativeRunner, Runner};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     env,
     fs::{self, File},
     io::{Read, Seek, SeekFrom},
     os::unix::ffi::OsStringExt,
-    os::unix::fs::MetadataExt,
+    os::unix::fs::{symlink, MetadataExt, PermissionsExt},
     path::{Path, PathBuf},
     time::Duration,
 };
@@ -99,6 +99,233 @@ const EXAMPLES: [&str; 17] = [
     "raw_fixture",
     "spi_fixture",
 ];
+const GIB: u64 = 1024 * 1024 * 1024;
+const HISTORICAL_PATHS: &str = include_str!("fixtures/panda-ci-original/source-paths.json");
+const HISTORICAL_PATHS_SHA256: &str =
+    "ac1a05516798d77de1e22203554382334e7176c6993cc39519d7323d272035d3";
+
+fn source_paths(root: &Path) -> BTreeSet<PathBuf> {
+    fn collect(
+        dir: &Path,
+        root: &Path,
+        recursive: bool,
+        suffix: &str,
+        out: &mut BTreeSet<PathBuf>,
+    ) {
+        for entry in fs::read_dir(dir).unwrap() {
+            let entry = entry.unwrap();
+            let path = entry.path();
+            let kind = fs::symlink_metadata(&path).unwrap().file_type();
+            if kind.is_dir() && recursive {
+                collect(&path, root, true, suffix, out);
+            } else if kind.is_file()
+                && path
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .ends_with(suffix)
+            {
+                out.insert(path.strip_prefix(root).unwrap().to_path_buf());
+            }
+        }
+    }
+    let mut paths = BTreeSet::new();
+    let tools = root.join("rust/tools");
+    collect(&tools, root, false, "", &mut paths);
+    paths.retain(|path| {
+        path.file_name()
+            .unwrap()
+            .to_string_lossy()
+            .contains("pandad")
+    });
+    let src = root.join("rust/crates/dev-tools/src");
+    let mut others = BTreeSet::new();
+    collect(&src, root, false, ".rs", &mut others);
+    paths.extend(others.into_iter().filter(|path| {
+        path.file_name()
+            .unwrap()
+            .to_string_lossy()
+            .contains("panda")
+    }));
+    let mut bins = BTreeSet::new();
+    collect(&src.join("bin"), root, false, ".rs", &mut bins);
+    paths.extend(bins.into_iter().filter(|path| {
+        path.file_name()
+            .unwrap()
+            .to_string_lossy()
+            .starts_with("build_pandad_")
+    }));
+    for name in [
+        "json11_stage.rs",
+        "services_header.rs",
+        "qa_process.rs",
+        "path_resolve.rs",
+        "python_fs.rs",
+        "bin/stage_json11.rs",
+        "bin/check_pandad_safety_padding.rs",
+        "pandad_safety_padding_check/ownership.rs",
+    ] {
+        paths.insert(PathBuf::from("rust/crates/dev-tools/src").join(name));
+    }
+    for name in [
+        "rust/crates/dev-tools/Cargo.toml",
+        "rust/crates/disk-space/src/lib.rs",
+        "rust/crates/messaging/src/services_generated.rs",
+        "rust/Cargo.lock",
+        "uv.lock",
+    ] {
+        paths.insert(name.into());
+    }
+    for name in ["pandad", "panda-usb", "panda-spi", "panda-spi-linux"] {
+        collect(
+            &root.join("rust/crates").join(name),
+            root,
+            true,
+            ".rs",
+            &mut paths,
+        );
+    }
+    paths
+        .into_iter()
+        .filter(|path| root.join(path).is_file())
+        .collect()
+}
+
+fn source_hashes(root: &Path) -> BTreeMap<String, String> {
+    source_paths(root)
+        .into_iter()
+        .map(|path| (path.to_str().unwrap().to_owned(), sha(&root.join(&path))))
+        .collect()
+}
+
+fn copy_private_tree(source: &Path, target: &Path, relative: &Path, budget: &mut u64) {
+    fs::create_dir(target).unwrap();
+    for entry in fs::read_dir(source).unwrap() {
+        let entry = entry.unwrap();
+        let name = entry.file_name();
+        let child = relative.join(&name);
+        let child_name = name.to_string_lossy();
+        if child_name == ".git"
+            || child_name == "__pycache__"
+            || child_name.ends_with(".pyc")
+            || child == Path::new(".analysis")
+            || child == Path::new("rust/target")
+            || RETIRED.iter().any(|retired| child == Path::new(retired))
+        {
+            continue;
+        }
+        let from = entry.path();
+        let to = target.join(&name);
+        let metadata = fs::symlink_metadata(&from).unwrap();
+        // Include a filesystem block per entry in the already reserved copy budget.
+        let growth = 4096
+            + if metadata.is_file() {
+                metadata.len()
+            } else {
+                0
+            };
+        *budget = budget
+            .checked_sub(growth)
+            .expect("private source copy exceeds 3 GiB reserve");
+        if metadata.file_type().is_symlink() {
+            symlink(fs::read_link(&from).unwrap(), &to).unwrap();
+        } else if metadata.is_dir() {
+            copy_private_tree(&from, &to, &child, budget);
+            fs::set_permissions(&to, fs::Permissions::from_mode(metadata.mode())).unwrap();
+        } else if metadata.is_file() {
+            fs::copy(&from, &to).unwrap();
+        } else {
+            panic!("unsupported private-root source type: {}", from.display());
+        }
+    }
+}
+
+fn source_build_metadata(repo: &Path) -> Value {
+    let metadata = openpilot_runtime_version::get_build_metadata(repo).unwrap();
+    let field = |value: &openpilot_runtime_version::JsonValue| -> Value {
+        serde_json::from_str(&value.to_json().unwrap()).unwrap()
+    };
+    serde_json::json!({
+        "channel": field(&metadata.channel),
+        "openpilot": {
+            "version": field(&metadata.openpilot.version),
+            "release_notes": field(&metadata.openpilot.release_notes),
+            "git_commit": field(&metadata.openpilot.git_commit),
+            "git_origin": field(&metadata.openpilot.git_origin),
+            "git_commit_date": field(&metadata.openpilot.git_commit_date),
+            "build_style": field(&metadata.openpilot.build_style),
+            "is_dirty": metadata.openpilot.is_dirty,
+        }
+    })
+}
+
+fn prepare_private_root(repo: &Path, private: &Path, expect_absent: bool) -> Value {
+    assert!(!private.starts_with(repo) && private != repo);
+    absent(private);
+    absent(&repo.join("build.json"));
+    openpilot_disk_space::inspect(private, 3 * GIB)
+        .unwrap()
+        .require()
+        .unwrap();
+    let fixture_sha = format!("{:x}", Sha256::digest(HISTORICAL_PATHS.as_bytes()));
+    assert_eq!(fixture_sha, HISTORICAL_PATHS_SHA256);
+    let historical: Vec<String> = serde_json::from_str(HISTORICAL_PATHS).unwrap();
+    assert_eq!(historical.len(), 151);
+    let expected = historical.into_iter().collect::<BTreeSet<_>>();
+    assert_eq!(expected.len(), 151);
+    assert!(expected.contains(RETIRED[0]));
+    assert!(!expected.contains("rust/crates/dev-tools/src/python_fs.rs"));
+    let mut current_names = expected.clone();
+    current_names.insert("rust/crates/dev-tools/src/python_fs.rs".into());
+    if expect_absent {
+        current_names.remove(RETIRED[0]);
+    }
+    let current = source_hashes(repo);
+    assert_eq!(
+        current.keys().cloned().collect::<BTreeSet<_>>(),
+        current_names
+    );
+    let metadata = source_build_metadata(repo);
+    let expected_commit = env::var("PANDA_CI_SOURCE_COMMIT")
+        .or_else(|_| env::var("EXPECTED_SOURCE"))
+        .expect("hosted proof must pin the exact source commit");
+    assert_eq!(expected_commit.len(), 40);
+    assert_eq!(metadata["openpilot"]["git_commit"], expected_commit);
+    let mut copy_budget = 3 * GIB;
+    copy_private_tree(repo, private, Path::new(""), &mut copy_budget);
+    absent(&private.join(".git"));
+    absent(&private.join("rust/target"));
+    let build = private.join("build.json");
+    absent(&build);
+    fs::write(&build, serde_json::to_vec_pretty(&metadata).unwrap()).unwrap();
+    assert_eq!(
+        serde_json::from_slice::<Value>(&fs::read(&build).unwrap()).unwrap(),
+        metadata
+    );
+    source_state(private, true);
+    let copied = source_hashes(private);
+    let expected_copied = current
+        .iter()
+        .filter(|(name, _)| name.as_str() != RETIRED[0])
+        .map(|(name, hash)| (name.clone(), hash.clone()))
+        .collect::<BTreeMap<_, _>>();
+    assert_eq!(copied, expected_copied);
+    assert_eq!(copied.len(), 151);
+    openpilot_disk_space::inspect(private, 2 * GIB)
+        .unwrap()
+        .require()
+        .unwrap();
+    serde_json::json!({
+        "historical_pair_zip_sha256": "1f64e4436b1af7d000610ea40ab2dff1b4c327bfc7b7287ace3698a6f7abba48",
+        "historical_paths_sha256": fixture_sha,
+        "checker_absent_in_checkout": expect_absent,
+        "current_sources_sha256": current,
+        "private_sources_sha256": copied,
+        "private_build_metadata_sha256": sha(&build),
+        "private_build_metadata": metadata,
+        "private_root": private.display().to_string(),
+    })
+}
 
 fn required(name: &str) -> PathBuf {
     PathBuf::from(env::var_os(name).unwrap_or_else(|| panic!("missing mandatory {name}")))
@@ -377,7 +604,13 @@ fn same_elf_checkout_and_private_checker_absent_roots_complete_all_original_phas
         .join("../../..")
         .canonicalize()
         .unwrap();
-    let private = required("PANDA_CI_PRIVATE_ROOT").canonicalize().unwrap();
+    let proposed_private = required("PANDA_CI_PRIVATE_ROOT");
+    let private = proposed_private
+        .parent()
+        .unwrap()
+        .canonicalize()
+        .unwrap()
+        .join(proposed_private.file_name().unwrap());
     assert_ne!(private, repo);
     let checker = required("PANDA_CI_CHECKER_BINARY").canonicalize().unwrap();
     let binaries = required("PANDA_CI_BINARIES").canonicalize().unwrap();
@@ -391,27 +624,36 @@ fn same_elf_checkout_and_private_checker_absent_roots_complete_all_original_phas
         other => panic!("invalid source presence contract: {other}"),
     };
     source_state(&repo, expect_absent);
+    let mut seals = elf_seals(&checker, &binaries);
+    let messages_sha = sha(&messages);
+    let mut manifest = prepare_private_root(&repo, &private, expect_absent);
+    manifest["current_elf_sha256"] = serde_json::json!(seals
+        .iter()
+        .map(|(path, seal)| (path.display().to_string(), seal.digest.clone()))
+        .collect::<BTreeMap<_, _>>());
+    manifest["build_messages_sha256"] = serde_json::json!(messages_sha);
+    fs::write(
+        evidence.join("private-root-manifest.json"),
+        serde_json::to_vec_pretty(&manifest).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(sha(&messages), messages_sha);
+    for (path, seal) in &mut seals {
+        seal.verify(path);
+    }
     source_state(&private, true);
     let metadata_path = private.join("build.json");
     let metadata_sha = sha(&metadata_path);
-    let metadata: Value = serde_json::from_slice(&fs::read(&metadata_path).unwrap()).unwrap();
-    let manifest: Value = serde_json::from_slice(
-        &fs::read(private.parent().unwrap().join("private-root-manifest.json")).unwrap(),
-    )
-    .unwrap();
     assert_eq!(
         manifest["private_build_metadata_sha256"].as_str(),
         Some(metadata_sha.as_str())
     );
-    assert_eq!(
-        manifest["private_build_metadata"]["openpilot"]["git_commit"],
-        metadata["openpilot"]["git_commit"]
-    );
+    let metadata: Value = serde_json::from_slice(&fs::read(&metadata_path).unwrap()).unwrap();
+    assert_eq!(manifest["private_build_metadata"], metadata);
     let entry = Path::new("rust/crates/dev-tools/src/bin/check_pandad_ci.rs");
     assert!(repo.join(entry).is_file() && private.join(entry).is_file());
     let entry_sha = sha(&repo.join(entry));
     assert_eq!(sha(&private.join(entry)), entry_sha);
-    let mut seals = elf_seals(&checker, &binaries);
     let shared = LaneInputs {
         root: &repo,
         checkout_root: &repo,
@@ -425,6 +667,14 @@ fn same_elf_checkout_and_private_checker_absent_roots_complete_all_original_phas
     source_state(&repo, expect_absent);
     source_state(&private, true);
     assert_eq!(sha(&metadata_path), metadata_sha);
+    assert_eq!(sha(&messages), messages_sha);
+    assert_eq!(
+        source_hashes(&repo),
+        serde_json::from_value::<BTreeMap<String, String>>(
+            manifest["current_sources_sha256"].clone()
+        )
+        .unwrap()
+    );
     let (absent_lane, absent_commands, private_result) = run_lane(
         "private",
         LaneInputs {
@@ -435,6 +685,21 @@ fn same_elf_checkout_and_private_checker_absent_roots_complete_all_original_phas
     source_state(&repo, expect_absent);
     source_state(&private, true);
     assert_eq!(sha(&metadata_path), metadata_sha);
+    assert_eq!(sha(&messages), messages_sha);
+    assert_eq!(
+        source_hashes(&repo),
+        serde_json::from_value::<BTreeMap<String, String>>(
+            manifest["current_sources_sha256"].clone()
+        )
+        .unwrap()
+    );
+    assert_eq!(
+        source_hashes(&private),
+        serde_json::from_value::<BTreeMap<String, String>>(
+            manifest["private_sources_sha256"].clone()
+        )
+        .unwrap()
+    );
     assert_eq!(
         checkout_commands, absent_commands,
         "same-ELF phase argv changed"

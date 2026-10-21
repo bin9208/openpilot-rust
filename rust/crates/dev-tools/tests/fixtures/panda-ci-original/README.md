@@ -19,3 +19,15 @@ The saved paths are the original hosted-run paths; consumers should compare
 behavior after substituting their own rooted paths, not require matching
 workspace spellings. This fixture does not establish full 38-phase behavior or
 post-deletion source absence.
+
+`source-paths.json` is only the sorted path-name set from the independently
+executed original orchestrator's `original-oracles/invocation.json` in the
+accepted same-ELF pair archive (artifact `12327083506`, ZIP SHA-256
+`1f64e4436b1af7d000610ea40ab2dff1b4c327bfc7b7287ace3698a6f7abba48`).
+That archive member's SHA-256 is
+`2b7dce4b3a67acb54baf1e66120f292cdd7322c3b2affbaf9e25d17f345b1138`;
+the 151-name fixture's SHA-256 is
+`ac1a05516798d77de1e22203554382334e7176c6993cc39519d7323d272035d3`.
+The retirement test checks the complete historical path set plus the separately
+added `python_fs.rs`, then hashes current source files in both roots. The
+fixture contains no Python implementation or expected native behavior.
