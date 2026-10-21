@@ -121,7 +121,7 @@ fn full_line_roster_requires_every_original_and_candidate_row() {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum Mode {
     Failure,
     Missing,
@@ -174,6 +174,9 @@ fn private_options(directory: &Path, historical_absent: bool) -> Options {
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::copy(actual_root.join(name), path).unwrap();
     }
+    // The historical checker may be absent while its source directory remains.
+    // A late reappearance must be a real file mutation, not a failed test write.
+    fs::create_dir_all(root.join("rust/tools")).unwrap();
     let binary = directory.join("candidate");
     fs::copy(std::env::current_exe().unwrap(), &binary).unwrap();
     Options {
@@ -204,11 +207,13 @@ fn candidate_failure_missing_output_and_late_source_reappearance_leave_no_report
         assert!(options.output.join("reference.jsonl").is_file());
         assert_eq!(
             fs::read(options.output.join("stdout.log")).unwrap(),
-            b"native diagnostic\n"
+            b"native diagnostic\n",
+            "{mode:?}"
         );
         assert_eq!(
             fs::read(options.output.join("stderr.log")).unwrap(),
-            b"native stderr\n"
+            b"native stderr\n",
+            "{mode:?}"
         );
     }
 }
