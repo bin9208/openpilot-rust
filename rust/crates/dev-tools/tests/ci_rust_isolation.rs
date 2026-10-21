@@ -2685,6 +2685,38 @@ fn lpa_cookie_header_keeps_original_tls_and_requires_measured_byte_exact_improve
 }
 
 #[test]
+fn telemetry_combined_library_tests_receive_their_built_tombstone_probe() {
+    let data = workflow();
+    let steps = data["jobs"]["telemetry-runtime"]["steps"]
+        .as_array()
+        .unwrap();
+    let build = steps
+        .iter()
+        .position(|step| step["name"] == "Build telemetry daemons and source-comparison probes")
+        .unwrap();
+    assert!(steps[build]["run"]
+        .as_str()
+        .unwrap()
+        .contains("-p openpilot-tombstoned"));
+    assert!(steps[build]["run"]
+        .as_str()
+        .unwrap()
+        .contains("--bins --examples --locked"));
+    let paired = steps
+        .iter()
+        .position(|step| {
+            step["name"] == "Compare cached Git metadata and actual collector delivery"
+        })
+        .unwrap();
+    assert!(build < paired);
+    let run = steps[paired]["run"].as_str().unwrap();
+    let export = run.find("export TOMBSTONE_PROBE_BINARY=\"$GITHUB_WORKSPACE/rust/target/debug/examples/tombstone_trace\"").unwrap();
+    let verify = run.find("test -x \"$TOMBSTONE_PROBE_BINARY\"").unwrap();
+    let test = run.find("cargo test ").unwrap();
+    assert!(export < verify && verify < test);
+}
+
+#[test]
 fn beep_native_controller_keeps_all_twenty_original_cases_and_real_caller() {
     job_check("telemetry-runtime", &[
         "openpilot-dev-tools/beep-reference-native",

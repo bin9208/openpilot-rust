@@ -2542,6 +2542,8 @@ jobs:
           python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/telemetry-params-binding"
       - name: Compare cached Git metadata and actual collector delivery
         run: |
+          export TOMBSTONE_PROBE_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/tombstone_trace"
+          test -x "$TOMBSTONE_PROBE_BINARY"
           export BEEP_REFERENCE_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/beep_trace"
           beep_bindings=("$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so)
           test "${#beep_bindings[@]}" -eq 1
