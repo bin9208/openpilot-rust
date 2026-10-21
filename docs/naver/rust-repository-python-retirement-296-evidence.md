@@ -5705,3 +5705,47 @@ Installed runtime modules remain unchanged, and live original mathematical
 source fingerprints guard future drift while their Python consumers remain
 pending. Actual deletion/full maintained-policy acceptance and inventory update
 remain pending hosted execution.
+
+### Same-host model diagnostic and retained CI failures (2026-10-22)
+
+Bounded driver pipeline diagnostic [39694362489](https://github.com/bin9208/openpilot-rust/actions/runs/39694362489)
+passes at source2c22e46ef196eb5a62d339c52a60dd68abb67605, workflow
+83c6ba5e91162f0e2860141bf6e97e6132eb5af4. It runs the unchanged Python driver
+pipeline and actual model-run against one fresh current-host catalog and exact
+2428928-byte warmup/frame0 inputs. Both warped uint8 tensors and all2212 raw
+model-output bytes agree with each other and the frozen original predictions.
+Parent independently decodes retained raw Cereal predictions: warmup SHA256
+ace8ee6c6ff7cf8aa6f1881dd9eae6dc9cba15bb75bcc7bd70a5af03ddef500e;
+frame0 SHA25699b8b2fe7aa17098a366d1bb5e40a2b5a40561f0186ab4dcd33fb29a6dc358fc.
+The earlier failed daemon frame0 is instead
+58456ffe906d7d9aa9dbfe7e530dc55b0251b141511018018eebf78e95800b64.
+Artifact12390232173:20538816B/252CRCs/37462651B expanded,
+SHA256f307d68bcb75d1250cd8812c6e563f628d089e02d5ad381c95567102d55c1387;
+parent checks all CRCs, independent raw comparisons and before/after bindings.
+
+This does **not** establish a daemon/input-transfer cause: failed/current-good
+runs use graniterapids/znver4 CPU targets respectively. Parent finds all47 LLVM
+IR texts and complete weights identical, but target-generated libraries differ;
+the actual LLVM18 provider library is identical. Keep host-dependent compilation
+and daemon input/transform paths as unresolved hypotheses. No stale compiled
+catalog reuse, relabelled CPU, relaxed tolerance or changed original predictions
+is permitted. The next maintained gate retains a bounded120s failure-only
+same-host/same-held-catalog model-run diagnostic, full inputs/raw predictions,
+compiler target and before/after seals. Its report explicitly marks diagnostics
+as non-acceptance, and the original retirement failure status remains fatal.
+
+Current source routing diagnostic39695084680 at706e2686153632304dd0d01286f8d117039f8f71,
+workflowa8e68eb1030172ec5adbe123e5447f2fce589336 passes all three corrected
+native-staging controls, then catches an old soundd CI command-count assertion:
+10 actual vs8 expected. The two additions are source-stager regression/Clippy
+commands, not a removed behavioral guard. Repair partitions exact invocations by
+named steps (1build/3baseline/5native/1retirement) and independently requires the
+20copied/21pinned source roster and missing/changed-source rejection. Original
+behavioral RED and retained-binding checks remain intact; hosted acceptance pending.
+
+Postdelete Kalman39694747536 fails before functional comparison because its
+focused recipe omitted rustfmt. Corrected recipe39695415599 reaches the added
+Panda-enabled source-contract build and exposes missing hosted capnp dependencies.
+These are diagnostic recipe prerequisites, not numerical acceptance failures;
+both failures remain recorded and neither deleted generator is accepted yet.
+The recipe now installs capnproto/libcapnp-dev/libzmq3-dev before that build.

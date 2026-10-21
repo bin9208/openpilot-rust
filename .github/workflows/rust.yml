@@ -4810,7 +4810,17 @@ jobs:
           export MODEL_FAMILY_GATE_ROOT="$GITHUB_WORKSPACE"
           export MODEL_FAMILY_GATE_PREPARATION="$proof"
           export MODEL_FAMILY_GATE_ORIGINAL="$GITHUB_WORKSPACE/rust/crates/dev-tools/tests/fixtures/model-family-original"
-          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features driver-daemon-native --test model_family_retirement same_elf_replays_all_three_native_clis_in_both_absent_roots -- --ignored --exact --nocapture > "$proof/grouped-native.stdout" 2> "$proof/grouped-native.stderr" || { tail -n 100 "$proof/grouped-native.stdout" "$proof/grouped-native.stderr"; exit 1; }
+          if cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features driver-daemon-native --test model_family_retirement same_elf_replays_all_three_native_clis_in_both_absent_roots -- --ignored --exact --nocapture > "$proof/grouped-native.stdout" 2> "$proof/grouped-native.stderr"; then
+            :
+          else
+            gate_status=$?
+            tail -n 100 "$proof/grouped-native.stdout" "$proof/grouped-native.stderr"
+            # Diagnostics retain evidence and cannot turn a failed retirement gate green.
+            if ! cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features driver-daemon-native --test model_family_retirement diagnose_first_driver_frame_on_same_host_and_catalog -- --ignored --exact --nocapture > "$proof/driver-diagnostic.stdout" 2> "$proof/driver-diagnostic.stderr"; then
+              tail -n 100 "$proof/driver-diagnostic.stdout" "$proof/driver-diagnostic.stderr"
+            fi
+            exit "$gate_status"
+          fi
       - name: Preserve native actual CLI, all reports and exact data/provider provenance
         uses: actions/upload-artifact@v6
         if: always()

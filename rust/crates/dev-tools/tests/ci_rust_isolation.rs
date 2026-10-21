@@ -854,17 +854,76 @@ fn soundd_finalization_requires_original_behavioral_failure_and_retained_binding
             "grep -Fq 'accepted changed source at finalization'",
             "accepted changed source at finalization",
             "--lib soundd_daemon_check::worker::tests --locked -- --test-threads=1",
+            "--test soundd_source_stage",
+            "--bin stage-soundd-source --test soundd_source_stage",
             "--test soundd_daemon_check --test soundd_daemon_runtime --locked -- --test-threads=1",
+            "source-stage.json",
+            "SOUNDD_NATIVE_ABSENT_ROOT",
+            "test ! -L \"$SOUNDD_NATIVE_ABSENT_ROOT/rust/tools/check_soundd_daemon.py\"",
+            "sha256sum -c \"$proof/executables.sha256\"",
         ],
-        &["finalization-433", "soundd_daemon_check::worker::tests"],
+        &[
+            "finalization-433",
+            "soundd_daemon_check::worker::tests",
+            "soundd_source_stage",
+            "stage-soundd-source",
+        ],
         true,
     );
-    let scripts = commands(&workflow()["jobs"]["sensor-audio"]);
-    let invocations = scripts
-        .lines()
-        .filter(|line| line.contains("cargo ") && line.contains("--features soundd-daemon-native"))
-        .collect::<Vec<_>>();
-    assert_eq!(invocations.len(), 8);
+    let source_stage_tests = read("rust/crates/dev-tools/tests/soundd_source_stage.rs");
+    required(
+        &source_stage_tests,
+        &[
+            "fn stages_exact_retained_manifest_sources_and_no_receipt_file()",
+            "receipt[\"copied_files\"], 20",
+            "receipt[\"source_sha256\"].as_object().unwrap().len(), 21",
+            "assert!(!output.join(\"receipt.json\").exists())",
+            "fn rejects_missing_or_changed_source_without_publishing_output()",
+        ],
+    );
+
+    let job = &workflow()["jobs"]["sensor-audio"];
+    let steps = job["steps"].as_array().unwrap();
+    let step_invocations = |step_name: &str| {
+        let step = steps
+            .iter()
+            .find(|step| step["name"] == step_name)
+            .unwrap_or_else(|| panic!("missing soundd workflow step: {step_name}"));
+        step["run"]
+            .as_str()
+            .unwrap_or("")
+            .lines()
+            .filter(|line| {
+                line.contains("cargo ") && line.contains("--features soundd-daemon-native")
+            })
+            .collect::<Vec<_>>()
+    };
+    let build = step_invocations("Build and validate native sound daemon controller");
+    let baseline = step_invocations("Require audio finalization baseline rejection");
+    let native = step_invocations("Require native sound daemon finalization and process contracts");
+    let retirement =
+        step_invocations("Require sound daemon same-ELF present and absent execution proof");
+    assert_eq!(build.len(), 1, "build the daemon checker and source stager");
+    assert_eq!(
+        baseline.len(),
+        3,
+        "retain baseline build, compile and behavioral RED"
+    );
+    assert_eq!(
+        native.len(),
+        5,
+        "run worker, source-stager and daemon contracts"
+    );
+    assert_eq!(
+        retirement.len(),
+        1,
+        "retain same-ELF execution retirement gate"
+    );
+    let invocations = build
+        .into_iter()
+        .chain(baseline)
+        .chain(native)
+        .chain(retirement);
     for line in invocations {
         required(
             line,

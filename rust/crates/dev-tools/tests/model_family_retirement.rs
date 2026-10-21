@@ -1,5 +1,7 @@
 //! Hosted same-ELF six-source closure using fixed independent observations.
 #![cfg(all(target_os = "linux", feature = "driver-daemon-native"))]
+#[path = "../src/model_family_retirement_diagnostic.rs"]
+mod diagnostic;
 #[path = "../src/model_family_retirement_support.rs"]
 mod support;
 use openpilot_dev_tools::{driver_daemon_check, model_startup_check, usbgpu_daemon_check};
@@ -277,6 +279,7 @@ fn same_elf_replays_all_three_native_clis_in_both_absent_roots() {
         "openpilot-driving-modeld",
         "openpilot-dmonitoringmodeld",
         "openpilot-logmessaged",
+        "model-run",
         "examples/usbgpu_daemon_fixture",
         "examples/worker_protocol_fixture",
     ] {
@@ -645,4 +648,11 @@ fn committed_original_data_preserves_all_captured_byte_seals() {
     for file in held {
         file.verify();
     }
+}
+
+#[test]
+#[ignore = "failure-only same-host driver diagnostic; never retirement acceptance"]
+fn diagnose_first_driver_frame_on_same_host_and_catalog() {
+    diagnostic::run_first_driver_frame_diagnostic()
+        .expect("failure-only driver diagnostic did not complete; inspect retained receipts");
 }
