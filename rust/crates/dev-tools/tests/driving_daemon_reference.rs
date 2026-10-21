@@ -80,7 +80,7 @@ fn every_original_publication_packet_projects_to_its_independent_decoded_row() {
                     &original.read(source["decoded"].as_str().unwrap()).unwrap(),
                 )
                 .unwrap();
-                let raw = if topic == "modelV2" {
+                let raw = if topic == "modelV2" && case["mode"] == "dual" {
                     Some(
                         original
                             .read(frame["raw_prediction"].as_str().unwrap())
@@ -89,6 +89,13 @@ fn every_original_publication_packet_projects_to_its_independent_decoded_row() {
                 } else {
                     None
                 };
+                if topic == "modelV2" {
+                    assert_eq!(raw.is_some(), case["mode"] == "dual");
+                    assert_eq!(
+                        expected["modelV2"]["rawPredictions"].is_object(),
+                        case["mode"] == "dual"
+                    );
+                }
                 let compared =
                     native::compare_packet(&expected, &packet, topic, 0, 1, raw.as_deref())
                         .unwrap();

@@ -856,7 +856,7 @@ fn scenario(
                         .ok_or("decoded reference missing")?,
                 )?,
             )?;
-            let raw = if topic == "modelV2" {
+            let raw = if topic == "modelV2" && mode == "dual" {
                 Some(
                     original.read(
                         frame["raw_prediction"]
