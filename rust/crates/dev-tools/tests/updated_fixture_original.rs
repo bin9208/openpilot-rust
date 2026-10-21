@@ -13,6 +13,18 @@ use std::{
     process::Command,
 };
 
+fn preserve(name: &str, observation: &Value) {
+    let root = PathBuf::from(
+        env::var_os("UPDATED_FIXTURE_NATIVE_OUTPUT").expect("mandatory native observation output"),
+    );
+    fs::create_dir_all(&root).unwrap();
+    fs::write(
+        root.join(format!("{name}.json")),
+        serde_json::to_vec_pretty(observation).unwrap(),
+    )
+    .unwrap();
+}
+
 fn sha(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
@@ -436,6 +448,10 @@ fn original_overlay_success_and_repeated_mount_match_raw_receipt() {
             let borrowed = args.iter().map(String::as_str).collect::<Vec<_>>();
             let result = overlay_command(&root, &prepared.environment, &borrowed);
             let expected = &original["scenarios"][lane][index];
+            preserve(
+                &format!("{lane}-{index}"),
+                &json!({"exit":result.status.code(),"stdout_hex":sha_hex(&result.stdout),"stderr_hex":sha_hex(&result.stderr),"log":normalized_log(&root),"tree":overlay_tree(&root)}),
+            );
             assert_eq!(
                 result.status.code(),
                 expected["exit"]
@@ -485,7 +501,7 @@ fn original_destination_symlink_escapes_are_rejected_without_touching_private_si
     let temp = tempfile::tempdir().unwrap();
     let seeded = seed(temp.path()).unwrap();
     let shim = Path::new(env!("CARGO_BIN_EXE_updated-fixture"));
-    for lane in ["symlink-outside", "nested-symlink-outside"] {
+    for lane in ["nested-symlink-outside", "symlink-outside"] {
         let root = temp.path().join(lane);
         let prepared = setup(&root, &seeded, Path::new("/usr/bin/true"), shim).unwrap();
         let workdir = root.join("data/work");
@@ -528,6 +544,10 @@ fn original_destination_symlink_escapes_are_rejected_without_touching_private_si
                 "none",
                 stage.to_str().unwrap(),
             ],
+        );
+        preserve(
+            lane,
+            &json!({"exit":result.status.code(),"stdout_hex":sha_hex(&result.stdout),"stderr_hex":sha_hex(&result.stderr),"before_hex":sha_hex(&before),"after_hex":sha_hex(&fs::read(&sentinel).unwrap()),"log":normalized_log(&root)}),
         );
         assert!(
             !result.status.success(),
@@ -586,6 +606,10 @@ fn original_overlay_error_cases_retain_ordered_spaced_logs_and_owned_tree() {
         let borrowed = args.iter().map(String::as_str).collect::<Vec<_>>();
         let result = overlay_command(&root, &prepared.environment, &borrowed);
         let expected = &original["scenarios"]["errors"][index];
+        preserve(
+            &format!("errors-{index}"),
+            &json!({"exit":result.status.code(),"stdout_hex":sha_hex(&result.stdout),"stderr_hex":sha_hex(&result.stderr),"log":normalized_log(&root),"tree":overlay_tree(&root)}),
+        );
         assert_eq!(
             result.status.code(),
             expected["exit"]
