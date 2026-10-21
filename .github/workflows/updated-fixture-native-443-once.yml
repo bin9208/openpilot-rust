@@ -17,12 +17,12 @@ jobs:
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
-      EXPECTED_SOURCE: 7b5ebbb7243a0f74cb3b075067a5dd50506b4927
+      EXPECTED_SOURCE: 5f6104be47db0b3ae9131241726613788eeac747
       GH_TOKEN: ${{ github.token }}
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 7b5ebbb7243a0f74cb3b075067a5dd50506b4927
+        ref: 5f6104be47db0b3ae9131241726613788eeac747
         persist-credentials: false
     - name: Require exact source and independently sealed original receipts
       run: 'set -euo pipefail

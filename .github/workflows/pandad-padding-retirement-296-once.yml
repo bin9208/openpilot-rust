@@ -16,7 +16,7 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: 88e24c56a3bbdc78270762a67232045f2c53f087
+        ref: 5f6104be47db0b3ae9131241726613788eeac747
     - uses: actions/setup-python@v6
       with:
         python-version: '3.12'
@@ -43,7 +43,7 @@ jobs:
 
         printf ''PANDAD_PADDING_TRACE_SOURCE_MANIFEST=%s\n'' "$PANDAD_PADDING_TRACE_SOURCE_MANIFEST" >> "$GITHUB_ENV"
 
-        test "$(git rev-parse HEAD)" = 88e24c56a3bbdc78270762a67232045f2c53f087
+        test "$(git rev-parse HEAD)" = 5f6104be47db0b3ae9131241726613788eeac747
 
         test ! -e rust/tools/check_pandad_safety_padding.py
 
@@ -170,14 +170,14 @@ jobs:
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
 
         cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native
-        --test pandad_safety_padding_absence --test pandad_safety_padding_retirement --test pandad_safety_padding_finalize
-        --locked -- --nocapture 2>&1 | tee "$proof/current-green.log"
+        --test pandad_safety_padding_reference --test pandad_safety_padding_absence --test pandad_safety_padding_retirement
+        --test pandad_safety_padding_finalize --locked -- --nocapture 2>&1 | tee "$proof/current-green.log"
 
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
 
         cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native
-        --lib --bin check-pandad-safety-padding --test pandad_safety_padding_absence --test pandad_safety_padding_retirement
-        --test pandad_safety_padding_finalize --locked -- -D warnings 2>&1 | tee "$proof/current-clippy.log"
+        --lib --bin check-pandad-safety-padding --test pandad_safety_padding_reference --test pandad_safety_padding_absence
+        --test pandad_safety_padding_retirement --test pandad_safety_padding_finalize --locked -- -D warnings 2>&1 | tee "$proof/current-clippy.log"
 
         sha256sum -c "$proof/inputs.before.sha256"
 
