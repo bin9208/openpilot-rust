@@ -6,6 +6,13 @@ use std::{fs, path::PathBuf};
 fn root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..")
 }
+fn direct_caller(line: &str) -> bool {
+    line.contains("build_params_python.py ")
+        || line.contains("check_encoder_ci.py ")
+        || line.split_whitespace().next().is_some_and(|command| {
+            command == "check-encoder-ci" || command.ends_with("/check-encoder-ci")
+        })
+}
 fn callers(workflow: &Value) -> Result<usize, String> {
     let mut count = 0;
     for (name, job) in workflow["jobs"].as_object().ok_or("missing jobs")? {
@@ -18,13 +25,20 @@ fn callers(workflow: &Value) -> Result<usize, String> {
                 ready = true;
             }
             let script = step["run"].as_str().unwrap_or("");
-            for line in script.lines().filter(|line| {
-                line.contains("build_params_python.py ")
-                    || line.contains("check_encoder_ci.py ")
-                    || line.split_whitespace().next().is_some_and(|command| {
-                        command == "check-encoder-ci" || command.ends_with("/check-encoder-ci")
-                    })
-            }) {
+            if script.contains("export PANDA_CI_BINARIES=") {
+                if !ready
+                    || !script.contains(
+                        "export PANDA_CI_BINARIES=\"$GITHUB_WORKSPACE/rust/target/debug\"",
+                    )
+                    || !script.contains("--test panda_ci_retirement")
+                {
+                    return Err(format!(
+                        "{name}: native Panda stager ownership not selected"
+                    ));
+                }
+                count += 1;
+            }
+            for line in script.lines().filter(|line| direct_caller(line)) {
                 if !ready || !line.contains("--json11-stager \"$JSON11_STAGER\"") {
                     return Err(format!("{name}: native stager not prepared/selected"));
                 }
@@ -38,7 +52,14 @@ fn callers(workflow: &Value) -> Result<usize, String> {
 fn all_runtime_and_template_callers_select_a_prepared_current_host_stager() {
     let workflow =
         parse(&fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap()).unwrap();
-    assert_eq!(callers(&workflow).unwrap(), 22);
+    assert_eq!(callers(&workflow).unwrap(), 23);
+    let panda =
+        fs::read_to_string(root().join("rust/crates/dev-tools/src/panda_ci_check.rs")).unwrap();
+    assert!(panda.contains("fn executables(bin: &Path)"));
+    assert!(panda.contains("let binary_sha256 = executables(&options.binaries)"));
+    assert!(panda.contains("&self.bin(\"stage-json11\")"));
+    assert!(panda.contains("\"json11_stage.rs\""));
+    assert!(panda.contains("\"bin/stage_json11.rs\""));
     let template =
         parse(&fs::read_to_string(root().join("rust/crates/carrot-man/ci-jobs.yml")).unwrap())
             .unwrap();
@@ -58,7 +79,7 @@ fn all_runtime_and_template_callers_select_a_prepared_current_host_stager() {
             }
             if step["run"]
                 .as_str()
-                .is_some_and(|run| run.contains("--json11-stager"))
+                .is_some_and(|run| run.lines().any(direct_caller))
             {
                 let mut changed = workflow.clone();
                 changed["jobs"][job]["steps"][index]["run"] = Value::String(
@@ -68,6 +89,19 @@ fn all_runtime_and_template_callers_select_a_prepared_current_host_stager() {
                         .replace("--json11-stager", "--missing-stager"),
                 );
                 assert!(callers(&changed).is_err(), "{job}");
+            }
+            if step["run"]
+                .as_str()
+                .is_some_and(|run| run.contains("export PANDA_CI_BINARIES="))
+            {
+                let mut changed = workflow.clone();
+                changed["jobs"][job]["steps"][index]["run"] = Value::String(
+                    step["run"]
+                        .as_str()
+                        .unwrap()
+                        .replace("rust/target/debug\"", "wrong-target\""),
+                );
+                assert!(callers(&changed).is_err(), "{job}: Panda binary selection");
             }
         }
     }
@@ -86,13 +120,14 @@ fn host_stager_action_reserves_before_toolchain_work_and_separates_cross_flags()
     assert!(guard < script.find("rustc +1.94.0").unwrap());
     assert!(guard < script.find("cargo +1.94.0 build").unwrap());
     for token in [
-        "--locked --bin stage-json11 --target \"$native_host\"",
+        "--locked --features ci-receipt-metadata-native --bin stage-json11 --bin ci-receipt-metadata --target \"$native_host\"",
         "-u CARGO_BUILD_TARGET",
         "-u RUSTFLAGS",
         "-u CARGO_ENCODED_RUSTFLAGS",
         "CARGO_INCREMENTAL=0",
         "CARGO_BUILD_JOBS=2",
         "JSON11_STAGER=%s/rust/target/%s/debug/stage-json11",
+        "CI_RECEIPT_METADATA=%s/rust/target/%s/debug/ci-receipt-metadata",
         "NATIVE_TOOLS_HOST=%s",
     ] {
         assert!(script.contains(token), "{token}");
@@ -127,19 +162,22 @@ fn action_executes_guard_first_and_exports_the_built_host_binary() {
 set -eu
 printf 'cargo\n' >> "$TRACE"
 test "$1" = +1.94.0
-test -z "${RUSTFLAGS+x}${CARGO_BUILD_TARGET+x}${CC+x}${CFLAGS+x}"
+test -z "${RUSTFLAGS+x}${CARGO_ENCODED_RUSTFLAGS+x}${CARGO_BUILD_TARGET+x}${RUSTC_WRAPPER+x}${RUSTC_WORKSPACE_WRAPPER+x}${CC+x}${CXX+x}${CFLAGS+x}${CXXFLAGS+x}${CPPFLAGS+x}${LDFLAGS+x}"
 test "$CARGO_INCREMENTAL" = 0
 test "$CARGO_BUILD_JOBS" = 2
-target= binary=
+target= bins=()
 while (($#)); do
-  case "$1" in --target) target=$2; shift ;; --bin) binary=$2; shift ;; esac
+  case "$1" in --target) target=$2; shift ;; --bin) bins+=("$2"); shift ;; esac
   shift
 done
 test "$target" = aarch64-unknown-linux-gnu
-test "$binary" = stage-json11
+test "${bins[*]}" = 'stage-json11 ci-receipt-metadata'
 if [ "${CARGO_STATUS:-0}" != 0 ]; then exit "$CARGO_STATUS"; fi
 mkdir -p "$CARGO_TARGET_DIR/$target/debug"
-touch "$CARGO_TARGET_DIR/$target/debug/$binary"
+for binary in "${bins[@]}"; do
+  printf '#!/bin/bash\nprintf "%%s\\n" "%s"\n' "$binary" > "$CARGO_TARGET_DIR/$target/debug/$binary"
+  chmod +x "$CARGO_TARGET_DIR/$target/debug/$binary"
+done
 "#,
     )
     .unwrap();
@@ -161,6 +199,13 @@ touch "$CARGO_TARGET_DIR/$target/debug/$binary"
             .env("CARGO_BUILD_TARGET", "invalid-cross-target")
             .env("CC", "invalid-cross-compiler")
             .env("CFLAGS", "invalid-cross-flags")
+            .env("CARGO_ENCODED_RUSTFLAGS", "invalid-cross-flags")
+            .env("RUSTC_WRAPPER", "invalid-cross-wrapper")
+            .env("RUSTC_WORKSPACE_WRAPPER", "invalid-cross-wrapper")
+            .env("CXX", "invalid-cross-compiler")
+            .env("CXXFLAGS", "invalid-cross-flags")
+            .env("CPPFLAGS", "invalid-cross-flags")
+            .env("LDFLAGS", "invalid-cross-flags")
             .output()
             .unwrap()
     };
@@ -172,12 +217,23 @@ touch "$CARGO_TARGET_DIR/$target/debug/$binary"
     );
     assert_eq!(fs::read_to_string(&trace).unwrap(), "guard\nrustc\ncargo\n");
     let binary = workspace.join("rust/target/aarch64-unknown-linux-gnu/debug/stage-json11");
-    assert!(binary.is_file());
+    let metadata =
+        workspace.join("rust/target/aarch64-unknown-linux-gnu/debug/ci-receipt-metadata");
+    for (path, expected) in [
+        (&binary, "stage-json11\n"),
+        (&metadata, "ci-receipt-metadata\n"),
+    ] {
+        assert!(path.is_file());
+        let output = Command::new(path).output().unwrap();
+        assert!(output.status.success());
+        assert_eq!(output.stdout, expected.as_bytes());
+        assert!(output.stderr.is_empty());
+    }
     assert_eq!(
         fs::read_to_string(&export).unwrap(),
         format!(
-            "JSON11_STAGER={}\nNATIVE_TOOLS_HOST=aarch64-unknown-linux-gnu\n",
-            binary.display()
+            "JSON11_STAGER={}\nCI_RECEIPT_METADATA={}\nNATIVE_TOOLS_HOST=aarch64-unknown-linux-gnu\n",
+            binary.display(), metadata.display()
         )
     );
     for (guard_status, cargo_status, code, expected) in [

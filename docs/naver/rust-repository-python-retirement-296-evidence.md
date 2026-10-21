@@ -5651,3 +5651,29 @@ classification. No boundary/tolerance/expectation is removed or changed. Parent
 checks all128CRCs in artifact12389427379:2429072B/8665394B expanded,
 SHA2566eeaad434dc2b3879816b4fecb49e1f000665e5ffd112db695bdc1cb2d86408c.
 This is retained failing evidence; neither Python generator is retired yet.
+
+
+### Full-run source identity and host staging contract correction (2026-10-22)
+
+For the current full PR runs, head isf913de3aa3c0f2c261f4ae4b87e41f3eb317fb82;
+the **actual checked-out synthetic merge** is
+`d39b1b08c2079e9b3356be06ddddf9db49551be6`. Parent fetches that immutable Git
+object and verifies its treec4fd422af3832e2f8000bf45f403965623539cb4 exactly equals
+the PR head tree. References above to full-run f913 identify the PR head, not the
+checkout commit; keep both identities in any final evidence. This involves no
+protected branch merge or dev-md changes.
+
+Fast routing119537354169 in39691148018 passes13disk-bootstrap controls, then all
+three old `ci_native_staging` controls fail because the action now builds/exports
+two host binaries and Panda uses native orchestration. #478 updates the controls:
+require both executable stage-json11/ci-receipt-metadata mocks and exported paths,
+keep guard-first and all inherited cross-variable removal/failure checks, retain
+22 active direct callers and explicitly bind Panda's current executable/source
+ownership as the23rd site. Mutation controls cover both ownership forms rather
+than treating historical baseline commands as active callers. Acceptance awaits
+hosted execution; no original assertion is merely disabled.
+
+Full native-model job119537355539 also fails the existing driver float comparison
+after the new original-byte regression and all preflight/policy/Clippy controls
+pass, independently reproducing #476 on the full PR checkout. Integration39691148113
+passes; Fast39691148018 fails. Remaining long full jobs are still running.
