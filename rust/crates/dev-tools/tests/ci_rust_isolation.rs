@@ -1729,6 +1729,23 @@ fn camera_requires_source_driver_fixture_and_visionipc_checks() {
 }
 #[test]
 fn panda_requires_native_transports_and_source_composition() {
+    let data = workflow();
+    let steps = data["jobs"]["panda-runtime"]["steps"].as_array().unwrap();
+    let build = steps.iter().position(|step| step["run"].as_str().is_some_and(|run|
+        run.contains("--features openpilot-dev-tools/pandad-safety-padding-native --bins --examples --locked --message-format=json"))).expect("native padding checker must be included in the original all-binary build");
+    let caller = steps
+        .iter()
+        .position(|step| {
+            step["run"]
+                .as_str()
+                .is_some_and(|run| run.contains("python rust/tools/check_pandad_ci.py"))
+        })
+        .unwrap();
+    assert!(
+        build < caller,
+        "native checker must exist before the full Panda orchestration"
+    );
+
     job_check("panda-runtime", &["check_pandad_ci.py","build_msgq_python.py","libusb1==3.4.0","-p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux","--message-format=json","--build-messages"], &["check_pandad_ci.py"],false);
     some_artifact(&workflow()["jobs"]["panda-runtime"]);
 }

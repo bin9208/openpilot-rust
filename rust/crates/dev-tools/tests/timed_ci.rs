@@ -39,10 +39,20 @@ const TESTS: [&str; 17] = [
 ];
 const BUILD_STEP: &str = "Build and test native timed QA tools";
 const ORIGINAL_LOG_STARTUP: &str = "python rust/tools/check_logmessaged_startup.py --collector rust/target/debug/openpilot-logmessaged --output \"$RUNNER_TEMP/support-runtime/logmessaged-startup\"";
-const PAIRED_LOG_STARTUP: &str = "python rust/tools/check_logmessaged_startup.py --collector \"$collector\" --output \"$proof/original\"";
+const NATIVE_LOG_STARTUP: &str = "env OPENPILOT_RUST_ROOT=\"$root\" PATH=\"$proof/native-path\" /usr/bin/timeout --kill-after=5s 180s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o \"$proof/$lane.exec\" \"$checker\" --collector \"$collector\" --output \"$proof/$lane\" > \"$proof/$lane.stdout\" 2> \"$proof/$lane.stderr\"";
+const LOG_LANES: &str = "for lane in current absent; do";
+const LOG_ABSENT_ROOT: &str = "if [ \"$lane\" = absent ]; then root=\"$roots/absent\"; fi";
+const LOG_CHECKER: &str =
+    "checker=\"$GITHUB_WORKSPACE/rust/target/debug/check-logmessaged-startup\"";
 const LOG_COLLECTOR: &str =
     "collector=\"$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged\"";
-const LOG_PROOF: &str = "proof=\"$RUNNER_TEMP/support-runtime/logmessaged-startup-controller\"";
+const LOG_PROOF: &str = "proof=\"$RUNNER_TEMP/support-runtime/logmessaged-startup-retirement\"";
+const LOG_ORIGINAL_ABSENT: &str = "test ! -e rust/tools/check_logmessaged_startup.py";
+const LOG_ORIGINAL_NOT_LINK: &str = "test ! -L rust/tools/check_logmessaged_startup.py";
+const LOG_COPIED_ABSENT: &str =
+    "test ! -e \"$roots/absent/rust/tools/check_logmessaged_startup.py\"";
+const LOG_COPIED_NOT_LINK: &str =
+    "test ! -L \"$roots/absent/rust/tools/check_logmessaged_startup.py\"";
 const GUARD: &str =
     "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib ";
 fn original() -> Value {
@@ -139,15 +149,28 @@ fn validate(workflow: &Value) -> Result<(), String> {
             .or_default() += 1;
     }
     for (line, count) in required {
-        // The unchanged startup oracle now writes inside the paired native
-        // proof. Keep the captured baseline immutable and admit only this
-        // explicit relocation with the same production collector.
+        // The original startup command was retired after a sealed original
+        // capture. Keep this baseline immutable and admit only the mandatory
+        // same-ELF current/absent native checker against the production collector.
         let line = if line == ORIGINAL_LOG_STARTUP {
             require(
-                actual_lines.contains(&LOG_COLLECTOR) && actual_lines.contains(&LOG_PROOF),
-                "paired logging collector or proof path changed",
+                [
+                    LOG_LANES,
+                    LOG_ABSENT_ROOT,
+                    LOG_CHECKER,
+                    LOG_COLLECTOR,
+                    LOG_PROOF,
+                    LOG_ORIGINAL_ABSENT,
+                    LOG_ORIGINAL_NOT_LINK,
+                    LOG_COPIED_ABSENT,
+                    LOG_COPIED_NOT_LINK,
+                ]
+                .iter()
+                .all(|line| actual_lines.contains(line))
+                    && !all.contains("python rust/tools/check_logmessaged_startup.py"),
+                "native logmessaged retirement lanes, collector or source absence changed",
             )?;
-            PAIRED_LOG_STARTUP
+            NATIVE_LOG_STARTUP
         } else {
             line
         };
@@ -160,6 +183,27 @@ fn validate(workflow: &Value) -> Result<(), String> {
             &format!("unrelated support command lost: {line}"),
         )?;
     }
+    let native_startup = steps
+        .iter()
+        .filter(|step| {
+            step["run"]
+                .as_str()
+                .is_some_and(|run| run.lines().any(|line| line.trim() == NATIVE_LOG_STARTUP))
+        })
+        .collect::<Vec<_>>();
+    require(
+        native_startup.len() == 1,
+        "native logmessaged startup must run in exactly one step",
+    )?;
+    mandatory(native_startup[0])?;
+    require(
+        native_startup[0]["run"].as_str().is_some_and(|run| {
+            run.lines()
+                .next()
+                .is_some_and(|line| line.trim() == "set -euo pipefail")
+        }),
+        "native logmessaged startup shell must fail closed",
+    )?;
     let apt = steps
         .iter()
         .find(|step| {
@@ -298,9 +342,16 @@ fn missing_softened_or_reordered_timed_routes_and_regressions_cannot_pass() {
             format!("{GUARD}2048"),
             format!("{GUARD}512"),
             "strace".into(),
-            PAIRED_LOG_STARTUP.into(),
+            NATIVE_LOG_STARTUP.into(),
+            LOG_LANES.into(),
+            LOG_ABSENT_ROOT.into(),
+            LOG_CHECKER.into(),
             LOG_COLLECTOR.into(),
             LOG_PROOF.into(),
+            LOG_ORIGINAL_ABSENT.into(),
+            LOG_ORIGINAL_NOT_LINK.into(),
+            LOG_COPIED_ABSENT.into(),
+            LOG_COPIED_NOT_LINK.into(),
         ])
     {
         let mut mutation = baseline.clone();

@@ -84,7 +84,8 @@ class PandaCheck:
         binary_flag, str(self.examples / binary)]
       self.check(name, check_arguments)
       if mode == 'safety':
-        self.check('safety_padding', check_arguments)
+        self.command('check-safety_padding', [str(self.binaries / 'check-pandad-safety-padding'),
+          *check_arguments, '--output', str(self.output / 'safety_padding')])
     for name, example in (('peripheral', 'peripheral'), ('spi', 'spi_fixture')):
       self.command(f'build-{name}', [str(self.binaries / f'build-pandad-{name}-source'), '--root', str(ROOT),
         '--output', str(self.output / f'{name}-src'), *common, '--sanitize'])
@@ -143,7 +144,9 @@ def main() -> None:
   native_tools = ROOT / 'rust/crates/dev-tools'
   sources += list((native_tools / 'src').glob('*panda*.rs')) + list((native_tools / 'src/bin').glob('build_pandad_*.rs'))
   sources += [native_tools / 'src' / name for name in
-              ('json11_stage.rs', 'services_header.rs', 'qa_process.rs', 'path_resolve.rs', 'bin/stage_json11.rs')]
+              ('json11_stage.rs', 'services_header.rs', 'qa_process.rs', 'path_resolve.rs',
+               'bin/stage_json11.rs', 'bin/check_pandad_safety_padding.rs',
+               'pandad_safety_padding_check/ownership.rs')]
   sources += [native_tools / 'Cargo.toml', ROOT / 'rust/crates/disk-space/src/lib.rs',
               ROOT / 'rust/crates/messaging/src/services_generated.rs', ROOT / 'rust/Cargo.lock', ROOT / 'uv.lock']
   for name in ('pandad', 'panda-usb', 'panda-spi', 'panda-spi-linux'):
@@ -151,7 +154,8 @@ def main() -> None:
   executables = [binaries / name for name in ('openpilot-pandad', 'openpilot-pandad-supervisor', 'openpilot-process-child', 'openpilot-logmessaged')]
   executables += [binaries / name for name in ('stage-json11', 'build-pandad-protocol-source',
     'build-pandad-peripheral-source', 'build-pandad-spi-source', 'build-pandad-usb-source',
-    'build-pandad-runtime-fixture', 'build-pandad-runtime-source', 'build-pandad-firmware-spi-fixture')]
+    'build-pandad-runtime-fixture', 'build-pandad-runtime-source', 'build-pandad-firmware-spi-fixture',
+    'check-pandad-safety-padding')]
   executables += [binaries / 'examples' / name for name in ('panda_protocol', 'panda_safety', 'device', 'state', 'can_io',
     'peripheral', 'firmware', 'firmware_client', 'firmware_spi', 'supervisor', 'supervisor_native', 'dfu_recovery',
     'usb_policy', 'spi_policy', 'usb_fixture', 'raw_fixture', 'spi_fixture')]

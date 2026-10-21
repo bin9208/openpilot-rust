@@ -57,6 +57,7 @@ def test_spidev_comparison_has_a_fresh_output_separate_from_its_builder(tmp_path
 
   def record(name: str, script: str, arguments: list[str]) -> None:
     assert name != 'build-spidev', 'source fixture builder must run without the Python driver'
+    assert name != 'check-safety_padding', 'retired safety-padding Python checker was invoked'
     if name == 'check-spidev':
       folder = Path(arguments[arguments.index('--output') + 1])
       folder.mkdir()
@@ -67,7 +68,13 @@ def test_spidev_comparison_has_a_fresh_output_separate_from_its_builder(tmp_path
   def record_native(name: str, arguments: list[str], growth_mib: int = 512) -> None:
     executable = Path(arguments[0])
     assert executable.parent == checker.binaries
-    assert arguments[1:3] == ['--root', str(check_pandad_ci.ROOT)]
+    if name == 'check-safety_padding':
+      assert arguments == [str(checker.binaries / 'check-pandad-safety-padding'),
+        '--source', str(tmp_path / 'safety-src/pandad-protocol-source'),
+        '--binary', str(checker.examples / 'panda_safety'),
+        '--output', str(tmp_path / 'safety_padding')]
+    else:
+      assert arguments[1:3] == ['--root', str(check_pandad_ci.ROOT)]
     native_builds.append(executable.name)
     if name == 'stage-json11':
       checker.commands.mkdir(parents=True)
@@ -83,6 +90,7 @@ def test_spidev_comparison_has_a_fresh_output_separate_from_its_builder(tmp_path
   monkeypatch.setattr(checker, 'command', record_native)
   with pytest.raises(ReachedComparison):
     checker.execute(tmp_path / 'zmq')
-  assert native_builds == ['stage-json11'] + ['build-pandad-protocol-source'] * 5 + [
+  assert native_builds == ['stage-json11'] + ['build-pandad-protocol-source'] * 2 + [
+    'check-pandad-safety-padding'] + ['build-pandad-protocol-source'] * 3 + [
     'build-pandad-peripheral-source', 'build-pandad-spi-source', 'build-pandad-usb-source', 'build-pandad-firmware-spi-fixture']
   assert json.loads((tmp_path / 'json11-dependency.json').read_text()) == {'json11_architecture': 'x86_64'}

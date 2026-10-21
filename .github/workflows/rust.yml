@@ -1330,7 +1330,7 @@ jobs:
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
           set -o pipefail
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux -p openpilot-process-supervision -p openpilot-logmessaged -p openpilot-dev-tools --bins --examples --locked --message-format=json 2> "$RUNNER_TEMP/panda-native/native-build.log" | tee "$RUNNER_TEMP/panda-native/native-build.jsonl"
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux -p openpilot-process-supervision -p openpilot-logmessaged -p openpilot-dev-tools --features openpilot-dev-tools/pandad-safety-padding-native --bins --examples --locked --message-format=json 2> "$RUNNER_TEMP/panda-native/native-build.log" | tee "$RUNNER_TEMP/panda-native/native-build.jsonl"
       - name: Require Panda source, transport and continuous supervisor comparisons
         run: python rust/tools/check_pandad_ci.py --binaries rust/target/debug --build-messages "$RUNNER_TEMP/panda-native/native-build.jsonl" --output "$RUNNER_TEMP/panda-native/oracles"
       - name: Require old Panda padding finalization drift failure
