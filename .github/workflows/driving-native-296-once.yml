@@ -21,7 +21,7 @@ jobs:
       OPENPILOT_HACKS: '1'
       LLVM_PATH: /usr/lib/x86_64-linux-gnu/libLLVM-18.so
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
-      EXPECTED_SOURCE: dac838ed99b7cae6c09a236d7e6eaf6742b42e82
+      EXPECTED_SOURCE: 5a8ffdfa580884cac9c950e0fdcf349f64305c54
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -31,7 +31,7 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: dac838ed99b7cae6c09a236d7e6eaf6742b42e82
+        ref: 5a8ffdfa580884cac9c950e0fdcf349f64305c54
     - name: Require exact source and hosted controller prerequisites
       run: 'set -euo pipefail
 
@@ -56,11 +56,11 @@ jobs:
         rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 1024
 
         cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --bin check-driving-daemon
-        --bin check-model-logging-faults --locked 2>&1 | tee "$proof/controller-build.log"
+        --bin check-model-logging-faults --bin build-driving-logging-fault --locked 2>&1 | tee "$proof/controller-build.log"
 
         cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --lib --bin check-driving-daemon
-        --bin check-model-logging-faults --test driving_daemon_reference --test driving_daemon_check --test driving_logging_check
-        --test driving_logging_fault_check --locked -- -D warnings 2>&1 | tee "$proof/controller-clippy.log"
+        --bin check-model-logging-faults --bin build-driving-logging-fault --test driving_daemon_reference --test driving_daemon_check
+        --test driving_logging_check --test driving_logging_fault_check --locked -- -D warnings 2>&1 | tee "$proof/controller-clippy.log"
 
 
         cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --lib driving_daemon_check::line_tests
@@ -71,6 +71,12 @@ jobs:
 
         cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --lib driving_logging_check::queue_readiness_tests
         --locked -- --nocapture
+
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 256
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --lib driving_logging_fault_build::tests
+        --locked -- --nocapture 2>&1 | tee "$proof/fault-builder-unit.log"
 
         '
     - name: Fetch only independently sealed original observation data
@@ -271,6 +277,40 @@ jobs:
         sha256sum -c "$proof/plain-before.sha256"
 
         '
+    - name: Require native isolated fault builder and same runtime comparisons
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driving-native-296"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 13312
+
+        sha256sum "$DRIVING_DAEMON_NATIVE_BINARY" "$DRIVING_DAEMON_PEER" "$DRIVING_DAEMON_COLLECTOR" > "$proof/builder-production-inputs.sha256"
+
+        rust/target/debug/build-driving-logging-fault --root "$GITHUB_WORKSPACE" --output "$proof/fault-builder" --cargo "$(command
+        -v cargo)" --compiler "$(command -v c++)" 2>&1 | tee "$proof/fault-builder.log"
+
+        sha256sum -c "$proof/builder-production-inputs.sha256"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cp "$proof/fault-builder/target/debug/openpilot-driving-modeld" "$proof/fault-builder/plain-restored.elf"
+
+        export DRIVING_LOGGING_FAULT_BINARY="$proof/fault-builder/openpilot-driving-modeld-fault"
+
+        export DRIVING_LOGGING_FAULT_OUTPUT="$proof/fault-native-built"
+
+        sha256sum "$DRIVING_LOGGING_FAULT_BINARY" rust/tools/model_logging_fault.cc > "$proof/built-fault-inputs.sha256"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --test driving_logging_fault_check
+        --locked -- --nocapture 2>&1 | tee "$proof/fault-native-built-tests.log"
+
+        sha256sum -c "$proof/built-fault-inputs.sha256"
+
+        sha256sum -c "$proof/builder-production-inputs.sha256"
+
+        '
     - uses: actions/upload-artifact@v6
       if: always()
       with:
@@ -281,5 +321,9 @@ jobs:
 
           ${{ runner.temp }}/driving-daemon/
 
-          ${{ runner.temp }}/model-logging-faults/'
+          ${{ runner.temp }}/model-logging-faults/
+
+          !${{ runner.temp }}/driving-native-296/fault-builder/target/**
+
+          '
         if-no-files-found: error
