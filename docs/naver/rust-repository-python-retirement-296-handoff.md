@@ -1,6 +1,37 @@
 # 저장소 전체 Python 전환 작업 인수인계
 
-## 현재 감독·통합 상태: aace5f64, 2026-10-21
+## 현재 감독·통합 상태: 61f4f275, 2026-10-21
+
+부모6.1 Sol이 #296을 감독·검토·통합하며 기존6 Sol 작업자에게 범위를 나눠 진행한다.
+작업트리는 native-build-tools-296, branch codex/feat-296-repository-python-retirement,
+PR343→dev이다. dev-md와 주 작업폴더, `.omo/`는 보존한다. 콤마가 없으므로
+사용자가 최종 pull 후 정상부팅·녹화·업로드·주행을 확인한다.
+
+source d21944e6에서 soundd 삭제 후 원본7모드·두native lane과 strictClippy가
+통과했다(run39516609369/job118950165958). #435 queue 준비 순서 수정도
+원본/native5실제CLI 사례,4unit·7lifecycle·Clippy가 통과했다
+(run39517003021/job118951460426). 상세 SHA와 산출물 봉인은 해당 문서에 있다.
+모델 fused pointwise Conv/Gelu/Mean 경로는 독립 원본3840바이트 일치와138영향
+검사·strictClippy 통과 후4ce6b169에 통합했다. 기본 최적화 선택은 기존대로 유지하며
+전체 compiler 전환이나 기기 CPU 절감으로 해석하지 않는다.
+
+Bluetooth source d219의 삭제 전 전체14suite와 config253/journal721/gesture37
+증명이 통과한 뒤61f4f275에서 세Python을 제거했다. 새 postdelete
+run39519394238/job118959247227이 진행 중이다. 정책 전용 job은 진단workflow의
+옛03a pin으로 실패했고 현재 pin을 사용하는 별도 정책job으로 수정했다.
+인벤토리218replaced-local /3partial /3359pending.
+
+200ba3fd의 paramsd controller는 phase/top 성공 결과를 쓰기 전에 봉인된 독립
+원본1210출력을 비교한다. 입력은 restart timestamp8바이트 외에 정확히 일치한다.
+run39519319264/job118959001528에서 실제데몬 대조를 진행 중이고,39loop 입력
+생성+기존gate+Panda reference 빌드 검사는 run39519153139/job118958465021이다.
+paramsd 원본Python은 유지한다. 새 native39loop 원본 comparator를 준비한다.
+
+원격 주작업 branch는 아직62e8c235이며 그 전체PR run39514415599의 나머지
+LLVM20/ARM 결과를 보존 중이다. 나머지 실패 수정을 포함한 최신 전체검사·dev통합·
+소스일치 패키지·전체Python전환·사용자기기확인은 미완료다. 아래 기록은 과거 상태다.
+
+## 과거 감독·통합 상태: aace5f64, 2026-10-21
 
 부모6.1 Sol이 #296의 검토·통합을 맡으며 기존6 Sol 작업자를 사용한다.
 작업 HEAD는 `aace5f64`이고 PR343→dev에 후속 게시한다. dev-md, 주 작업폴더와
