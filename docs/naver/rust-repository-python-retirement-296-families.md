@@ -41,13 +41,19 @@ four partial baseline entries.
    do not replace that gate.
 2. Driving/driver/logging faults: complete fixture/source-absence/finalization
    and optional-collector candidates are committed. Driving native collector
-   and both private-root functional lanes passed; final report metadata equality
-   failed and is under diagnosis. Six cheap reappearance controls remain. Driver's actual collector CLI data is
+   and both private-root functional lanes passed. The cross-root metadata failure
+   was isolated to one exact DEBUG camera-wait message; only that already-accounted
+   diagnostic count is normalized. Eight four-source reappearance controls, actual
+   deletion and the final complete comparison remain. The compact independent
+   fixture preserves1649 original file pins in59,663,776 XZ bytes; full native
+   image regeneration still needs its hosted gate. Driver's actual collector CLI data is
    independently auditable despite a wrapper row-count failure; do not repeat
    unchanged traffic solely to fix that assertion. The reused driver catalog failed warmup with confirmed SIGILL: AVX-512 objects
    were run on an AMD EPYC host without that ISA. CPU target compatibility is a
    real reuse boundary. Use current-host exports, preserve historical objects
-   and source seals, then complete the no-collector/CLI/raw-alias gate and migrate
+   and source seals. The first fresh-target attempt39651208682 stopped before
+   model traffic on a new shared stager Clippy lint;481ae6fe fixes it without
+   changing runtime policy. Current-host gate39652828256 must complete the no-collector/CLI/raw-alias gate and migrate
    the shared original dependencies.
 3. Full f5c8 CI `39617311670` passed all runtime/ARM jobs except workspace:
    `desire_reference_cli` failed a source-output hash assertion. The serde feature
@@ -57,7 +63,13 @@ four partial baseline entries.
    earlier startup stall has not been explained by successful diagnostics.
 4. Next general-tool batch: recovery's eight configured controllers and shared
    HTTP/WebSocket/PTY/process helpers. Native runtime implementations and the eight-controller Rust candidate exist;
-   their grouped hosted gate is running. Original controllers remain mandatory
+   the first grouped gate39648823814 passed the six external source controllers
+   and eight native integration tests but actions never entered its scenarios:
+   Rust pre-created the output owned by the original controller. Commit240a2bf6
+   removes only that premature creation. Focused gate39652746415 runs the corrected
+   actions comparison, skipped native units and strict Clippy; unchanged successful
+   controller evidence is retained. A78-receipt source-only adapter is partial,
+   deliberately refusing complete-family admission. Original controllers remain
    until accepted comparisons and active caller/source removal close the family.
    Follow with binding generation and shared runtime comparator dependencies.
 
