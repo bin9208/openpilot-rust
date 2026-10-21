@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. The current source inventory has 223 replaced-local entries,
-three partial entries and 3,354 pending entries. `replaced-local` does not mean merged,
+SCons entrypoints. The current source inventory has 229 replaced-local entries,
+three partial entries and 3,348 pending entries. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -5129,3 +5129,24 @@ Removed rust/tools/check_calibration_float.py and its obsolete source-present re
 ## Paramsd loop two-tool actual source retirement preparation (2026-10-21)
 
 After accepted predelete run39535390950 at5f6104be, removed onlycheck_paramsd_loop.py andparamsd_loop_fixture.py. Retained independent original C++ source JSON(7,763,306bytes raw), originalPython request(4,430,072bytes raw), stdout/stderr/status/process log/results from artifact12317675555 ZIP SHA2561111f01652e8d9899cd0c1669bc589498487bb6b3b74a064e8c429abc64ffcf4. Parent compared all retained bytes directly to the downloaded archive; current native output is excluded from the expected fixtures. Actual checkout/private-root absence, same currentELFs, exact2execs each,39cases/2420frames/4saves/216GPS writes and finalization regressions are mandatory. Combined fixture workflow decompresses the original request with nativebzip2 and pins both compressed/raw hashes; other still-live Params/daemon comparisons remain. Local syntax/format/diff/data inspection only; actual deletion CI pending. Inventory223replaced-local/3partial/3354pending. Wholeproject/latestfullPR/device acceptance remains incomplete.
+
+
+## Updater actual three-source retirement prepared (2026-10-21)
+
+Source505cc30c520ddb4a0bbbd3fbe82e7cd8c2584eb3 was checked by
+[run39543788680/job119037266203](https://github.com/bin9208/openpilot-rust/actions/runs/39543788680/job/119037266203),
+workflow3ef960060b7bbb98266b84241e287ef566b324f4, artifact12320896721,
+ZIP SHA256 ebfe3e6294e23cc5467c4c89f1ebefd45d9d63f46d3106a8f90f9d95930b50f5.
+Parent independently compared all five fresh original source JSON to sealed
+observations and all15 native JSON across direct/checkout/private lanes to the
+fresh old CLI native lane. Original16 and native15 tests passed; native tests
+retain every16 original assertion case. Each root had1,089 classified successful
+execs without Python and before/after seals matched; strict Clippy passed.
+
+Removed only rust/tools/check_updated.py, updated_source.py and
+rust/tools/tests/test_updated_comparison.py. Maintained caller, native feature,
+all original regressions and default CLI move together; unchanged updater process,
+daemon and AGNOS gates remain mandatory. updated_fixtures.py remains a live daemon
+dependency and a passive native input pin. Actual deleted-checkout execution,
+whole startup-services/latest full PR/ARM and device acceptance remain pending.
+Inventory229replaced-local/3partial/3348pending does not imply whole conversion.

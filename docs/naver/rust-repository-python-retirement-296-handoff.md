@@ -1,6 +1,38 @@
 # 저장소 전체 Python 전환 작업 인수인계
 
-## 현재 감독·통합 상태: 332d99bc, 2026-10-21
+## 현재 감독·통합 상태: updater 실제삭제 준비, 2026-10-21
+
+부모6.1 Sol이 감독·검토·통합하며6Sol 작업자가 분리된 구현/검토를 맡는다.
+#296 전용 작업트리와 PR343→dev만 사용한다. dev-md/주 작업폴더/.omo는 보존한다.
+사용자가 pull 후 기기 부팅·녹화·업로드·주행을 확인한다. 로컬은 문법·포맷·diff·
+저장된 데이터 판독만 수행하고 실행/빌드/Clippy는 GitHub-hosted Actions로 제한한다.
+
+인벤토리는229replaced-local/3partial/3348pending이다. Beep controller와 전체
+calibration estimator 두 도구의 실제 삭제 후 검증39542693865/39542699485는 성공했다.
+원본의 전체20beep사례/15,128calibration단계를 유지했다. Updater505cc30c의
+39543788680은 원본16/Rust15검사와 두root각1,089실행/Python0/Clippy를 통과했다.
+기존16case를 보존한 Rust caller로 전환하면서 checker/source/pytest 세 파일을
+삭제했다. updated_fixtures.py는 daemon caller 때문에 남는다. 실제삭제후 CI는 대기다.
+
+새 desire/Panda controller049a3f9c는 두 실행파일 빌드 및 전체24,585프레임
+원본/native비교를 통과했으나 desire실패주입 fixture의 parent디렉터리 누락으로
+통합검사가 실패했다. a20ad0fa에서 fixture만 고쳐 재검증 중이다. 두 family의
+원본Python은 유지한다. Panda는 같은소스/같은ELF의38phase전체 비교가 남는다.
+
+#447의 warmed scratch 경계는70→0할당/동일93,220복사bytes로 검증됐다.
+#448은 DMA→Capnp직접복사 후보이며 첫 cloud실패는 테스트 큐namespace누락이었다.
+a6c3201f에서 고유runtime큐로 수정해 전체encoder회귀를 재실행한다. #448의
+측정/전체wire/ARM 결과는 아직 없으며 차량CPU개선 주장을 하지 않는다.
+
+원격 issue branch b5888cd6의 전체 run39541018977은 ARM/LLVM20/UI 장시간검사를
+보존 중이다. Panda/telemetry/navigation 세 실패는 수정후 전체집중작업
+39542206911/39543237917/39543403573에서 각각 성공했다. Navigation의 지난
+간헐실패 원인은 미확정이며 새진단로그의 marker/source기록은 정상,cleanup후
+probe비실행 상태였다. 마감/허용조건은 바꾸지 않았다. 최신전체PR, 소스일치
+AGNOS패키지, dev통합후검사와 사용자기기수용은 모두 별도 미완료다.
+
+
+## 과거 감독·통합 상태: 332d99bc, 2026-10-21
 
 #296 전용 native-build-tools-296 작업트리, PR343→dev에서 계속한다. 부모는 검토·조합을 담당하고 허용된 Sol 작업자들이 분리된 구현과 검토를 맡는다. dev-md/주 작업폴더/.omo는 보존한다. 콤마 검증은 사용자가 pull 후 수행한다. 로컬 기능 실행은 하지 않으며 빌드·원본 실행·기능·Clippy·ARM/AGNOS 검증은 GitHub-hosted Actions에서 한다.
 

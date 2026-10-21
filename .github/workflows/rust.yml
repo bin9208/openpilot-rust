@@ -2886,7 +2886,7 @@ jobs:
           cargo +1.94.0 run --manifest-path "$GITHUB_WORKSPACE/rust/Cargo.toml" -p openpilot-dev-tools --locked --bin stage-startup-ui-raylib -- --arch x86_64 --output "$RUNNER_TEMP/startup-raylib-host" --shared
           printf 'STARTUP_UI_RAYLIB_ROOT=%s/startup-raylib-host\nSTARTUP_UI_RAYLIB_LIBRARY=%s/startup-raylib-host/lib/libopenpilot-raylib.so\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Build native startup service boundaries
-        run: cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools -p openpilot-lpa -p openpilot-bridge -p openpilot-agnos -p openpilot-updated -p openpilot-startup-ui -p openpilot-process-supervision --bins --examples --locked
+        run: cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools -p openpilot-lpa -p openpilot-bridge -p openpilot-agnos -p openpilot-updated -p openpilot-startup-ui -p openpilot-process-supervision --features openpilot-dev-tools/updated-fixture-native --bins --examples --locked
       - name: Verify updater command and checker process ownership
         env:
           UPDATED_OWNER_LAUNCHER: ${{ github.workspace }}/rust/target/debug/openpilot-process-child
@@ -2967,10 +2967,28 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bridge-tools-native --test bridge_controller_reference --locked
       - name: Compare AGNOS images, retry policy, casync and actual CLI
         run: python rust/tools/check_agnos.py --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/startup-services/agnos"
+      - name: Verify retired updater controller against all original lifecycle cases
+        run: |
+          for source in rust/tools/check_updated.py rust/tools/updated_source.py rust/tools/tests/test_updated_comparison.py; do
+            test ! -e "$source"
+            test ! -L "$source"
+          done
+          proof="$RUNNER_TEMP/startup-services/updated-source"
+          mkdir -p "$proof"
+          export UPDATED_CHECK_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/updated_trace"
+          export UPDATED_CHECK_LAUNCHER="$GITHUB_WORKSPACE/rust/target/debug/openpilot-process-child"
+          export UPDATED_CHECK_SHIM="$GITHUB_WORKSPACE/rust/target/debug/updated-fixture"
+          export UPDATED_CHECK_OUTPUT="$proof/native-test"
+          export UPDATED_CHECK_CLI_OUTPUT="$proof/cli"
+          export UPDATED_CHECK_ABSENCE_EVIDENCE="$proof/absence"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features updated-fixture-native --test updated_check --locked -- --nocapture
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features updated-fixture-native --lib --bin check-updated --bin updated-fixture --test updated_check --locked -- -D warnings
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          rust/target/debug/check-updated --binary "$UPDATED_CHECK_BINARY" --launcher "$UPDATED_CHECK_LAUNCHER" --output "$proof/default-cli" > "$proof/default-cli.stdout" 2> "$proof/default-cli.stderr"
       - name: Compare updater Git lifecycle, native signals and background AGNOS adapter
         run: |
-          PYTHONPATH="$PWD/rust/tools:$PYTHONPATH" python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=rust/tools/tests rust/tools/tests/test_updated_comparison.py -q
-          python rust/tools/check_updated.py --binary "$PWD/rust/target/debug/examples/updated_trace" --launcher "$PWD/rust/target/debug/openpilot-process-child" --binding "$RUNNER_TEMP"/services-params-binding/params_pyx*.so --output "$RUNNER_TEMP/startup-services/updated-source"
           "$PWD/rust/target/debug/check-updated-process" --binary "$PWD/rust/target/debug/examples/updated_command" --launcher "$PWD/rust/target/debug/openpilot-process-child" --fixture "$PWD/rust/target/debug/updated-process-fixture" --baseline "$PWD/rust/crates/dev-tools/tests/fixtures/updated-process/original.json" --output "$RUNNER_TEMP/startup-services/updated-process"
           python rust/tools/check_updated_daemon.py --binary "$PWD/rust/target/debug/openpilot-updated" --launcher "$PWD/rust/target/debug/openpilot-process-child" --output "$RUNNER_TEMP/startup-services/updated-daemon"
           python rust/tools/check_updated_agnos.py --target "$PWD/rust/target" --output "$RUNNER_TEMP/startup-services/updated-agnos"

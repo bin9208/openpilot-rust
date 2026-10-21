@@ -1727,3 +1727,20 @@ including the possibility that Rust already reuses the consumed allocation.
 The malformed-batch parse boundary, topic/frame semantics and original checks
 must remain intact. This source review and pending optimization do not establish
 module-wide clearance, numerical equivalence, vehicle timing or CPU savings.
+
+
+### Accepted bounded copy measurements and next encoder candidate (2026-10-21)
+
+The prior #447 full encoder run39539787018 checked5bcfae44:70 old packet-scratch
+allocations versus0 after warmup, equal93,220 selected copied bytes, full codec,
+V4L, runtime/IPC comparisons and strict Clippy. This measures only that boundary.
+The prior pending lagd/messaging measurements are resolved in their linked focused
+records; the historical paragraphs above do not imply current pending status.
+
+#448 now removes the separate scratch copy by filling owned Capnp data directly
+from DMA. Complete packet-wire controls and the same-builder allocation/copy
+measurement are added. First cloud tests failed at test queue setup before wire
+construction; a6c3201f uses distinct runtime queue endpoints and reruns the full
+encoder job. This candidate still needs complete cloud evidence and affected ARM
+builds. Neither local source review nor host fixtures establishes hardware VIDC,
+vehicle CPU, camera timing, module-wide optimization or all-module bug clearance.

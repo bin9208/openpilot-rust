@@ -2171,7 +2171,7 @@ rust/tools/check_ui_updater_signal.py	3ad62badba20752d8758bdec8c93d10239efe423	p
 rust/tools/check_ui_vision.py	9c56587aa9311f24a4a4d00834f3da5e9772d9d1	pending	-
 rust/tools/check_ui_vision_status.py	e7afde08bd366ca72e389cee2a463b1d3ba0450d	pending	-
 rust/tools/check_ui_widgets.py	ec6c4d34d81266e561aae2a555d4baaefa6d60dc	replaced-local	rust/crates/dev-tools/src/ui_headless_check.rs
-rust/tools/check_updated.py	cd08ceec7fc71f91169bba73d7ee6237ea7a8d7d	pending	-
+rust/tools/check_updated.py	cd08ceec7fc71f91169bba73d7ee6237ea7a8d7d	replaced-local	rust/crates/dev-tools/src/updated_check.rs; check-updated native sealed original five-case controller
 rust/tools/check_updated_agnos.py	c594f4eaeb1abaa093274f284aeea260e5667580	pending	-
 rust/tools/check_updated_daemon.py	34854dbebdb832812654eb0d8dcb546bc6e468b4	pending	-
 rust/tools/check_updated_process.py	6cbb5dd015f9d237991648368e9bd440df3bbc8f	replaced-local	rust/crates/dev-tools/src/updated_process_check.rs
@@ -2559,7 +2559,7 @@ rust/tools/tests/test_selfdrived_stderr.py	8cff7420f0a29fecf1b729c2976321f05e41c
 rust/tools/tests/test_timed_shutdown_phase.py	f8d76511e3db11ed960676d4be50bc1cee03488c	replaced-local	rust/crates/dev-tools/tests/timed_shutdown_phase.rs
 rust/tools/tests/test_ublox_framing_delta.py	1a45b6a248a32facdb008ef729f05a66f11bc16b	pending	-
 rust/tools/tests/test_ui_ci.py	126960e651c62f1901b9c7aa22929960d4948549	pending	-
-rust/tools/tests/test_updated_comparison.py	7c9353d2c0f3df4c24889c7f356f5c5776231293	pending	-
+rust/tools/tests/test_updated_comparison.py	7c9353d2c0f3df4c24889c7f356f5c5776231293	replaced-local	rust/crates/dev-tools/tests/updated_check.rs; all sixteen original comparison and held-lock regressions
 rust/tools/tests/test_usbgpu_catalog_package.py	5227b4d6e0957c11a200600331fbb432fca28f50	pending	-
 rust/tools/tests/test_web_upload_eintr_peer.py	3c383f4498109606d154390a341efa55b14ff6b0	pending	-
 rust/tools/tests/test_xiaoge_ci.py	eaf18fcf51d5811476f691da8367ea4f12d78df3	pending	-
@@ -2627,7 +2627,7 @@ rust/tools/ui_qa/egl_source.py	aac7607d8abb62ab53a753fb048aa7d364375cff	replaced
 rust/tools/ui_qa/polygon_source.py	a66ada40b61786fab5f88846af560ae2b6ae296d	replaced-local	openpilot-dev-tools ui-polygon-reference; independent Rust scene policy and raw raylib ABI
 rust/tools/updated_fixtures.py	62eb7688c4cfc0bb26189518072a21ad4da88d1a	pending	-
 rust/tools/updated_process_source.py	be91545fcb87da2ecf987e12dabab3fcec7889db	replaced-local	rust/crates/dev-tools/tests/fixtures/updated-process/original.json
-rust/tools/updated_source.py	7eef3b6609debc0d46074dac93df5165ad190b1d	pending	-
+rust/tools/updated_source.py	7eef3b6609debc0d46074dac93df5165ad190b1d	replaced-local	rust/crates/dev-tools/src/updated_check.rs; independent original-only sealed source observations
 rust/tools/usbgpu_boot_fixture.py	5bb007512af66372e93c772370eb20e8615f3f7f	pending	-
 rust/tools/usbgpu_catalog_package.py	c843ceecc336f3308a86db2ed6cd6c029203c644	pending	-
 rust/tools/usbgpu_hcq_data.py	e7152f70e31ddbc02ea84aa7f8d7b4a929ea2003	pending	-

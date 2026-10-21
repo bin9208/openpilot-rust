@@ -2781,3 +2781,38 @@ fn calibration_estimator_retirement_keeps_complete_sealed_oracle_and_native_call
         "${{ runner.temp }}/calibration-estimator-native/"
     );
 }
+
+#[test]
+fn retired_updater_controller_keeps_all_original_cases_and_remaining_live_gates() {
+    let data = workflow();
+    let job = &data["jobs"]["startup-services"];
+    let steps = job["steps"].as_array().unwrap();
+    let step = steps
+        .iter()
+        .find(|step| {
+            step["name"] == "Verify retired updater controller against all original lifecycle cases"
+        })
+        .unwrap();
+    absent(step, &["if", "continue-on-error"]);
+    required(step["run"].as_str().unwrap(), &[
+        "for source in rust/tools/check_updated.py rust/tools/updated_source.py rust/tools/tests/test_updated_comparison.py; do",
+        "test ! -e \"$source\"", "test ! -L \"$source\"",
+        "UPDATED_CHECK_BINARY=", "UPDATED_CHECK_LAUNCHER=", "UPDATED_CHECK_SHIM=",
+        "UPDATED_CHECK_OUTPUT=", "UPDATED_CHECK_CLI_OUTPUT=", "UPDATED_CHECK_ABSENCE_EVIDENCE=",
+        "--features updated-fixture-native --test updated_check --locked -- --nocapture",
+        "--features updated-fixture-native --lib --bin check-updated --bin updated-fixture --test updated_check --locked -- -D warnings",
+        "rust/target/debug/check-updated --binary \"$UPDATED_CHECK_BINARY\" --launcher \"$UPDATED_CHECK_LAUNCHER\" --output",
+    ]);
+    let run = commands(job);
+    required(
+        &run,
+        &[
+            "--features openpilot-dev-tools/updated-fixture-native --bins --examples --locked",
+            "rust/target/debug/check-updated-process",
+            "python rust/tools/check_updated_daemon.py",
+            "python rust/tools/check_updated_agnos.py",
+        ],
+    );
+    assert!(!run.contains("python rust/tools/check_updated.py"));
+    assert!(!run.contains("python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=rust/tools/tests rust/tools/tests/test_updated_comparison.py"));
+}

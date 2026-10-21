@@ -66,9 +66,9 @@ Interface: protocol (all five modes), USB, SPI, peripheral and runtime-fixture b
 
 Additional locally verified replacements and current failures are recorded in the
 [evidence ledger](rust-repository-python-retirement-296-evidence.md) and inventory.
-226 baseline sources are fully replaced locally, three baseline sources are
+229 baseline sources are fully replaced locally, three baseline sources are
 partially replaced because live-source helpers or unrelated Params tests remain Python,
-and 3,351 baseline sources remain pending. The added
+and 3,348 baseline sources remain pending. The added
 rust/tools/selfdrived_helpers_source.py retains those helpers; relocation is
 not retirement. Remaining families and final delivery gates stay open.
 The Bluetooth input decoder checker is now native after exact10,049-record,
@@ -79,12 +79,13 @@ The statistics producer controller and its source helper are retired after
 independent wire captures, same-ELF removal proof, six regression tests and a
 fresh interpreter-free execution. Other statistics source consumers remain.
 
-Current next batch: bridge, soundd daemon, logmessaged startup, Bluetooth file and journal
-controllers are source-ready with required independent original CI comparisons.
-Keep their five Python controllers until successful cloud evidence is reviewed;
-none is counted retired yet. The `2176c4a5` cloud run exposed formatting,
-collision-fixture umask and missing combined-test prerequisites; repairs are
-included in this batch. Build/test execution remains exclusively in Actions.
+Current next batch: finish actual deleted-checkout proof for the updater's three
+retired Python files; validate the complete desire reference and Panda orchestration
+candidates before removing their originals; finish #448 direct packet publication
+verification and affected ARM checks. Accepted earlier bridge, soundd, logmessaged
+and Bluetooth removals remain recorded below. Remaining original helpers, model
+compiler/tool families and vendor Python are still explicit pending scope. Keep
+functional execution in GitHub-hosted Actions and inspect each exact source result.
 
 ### Task3: native model compiler operations, then the full compiler chain
 
@@ -404,3 +405,16 @@ Fresh post-deletion builds and regressions now run in the required CI job.
 
 
 The next three actual removals retire the beep reference controller and the calibration estimator controller/history generator after accepted same-current-ELF private-absence proofs (39541676860 and39541772800). The unchanged calibration CLI was freshly compared before deletion. Maintained callers now select Rust. Actual deleted-checkout cloud validation is required before accepting this batch; shared original helpers and all remaining Python remain in scope. Inventory226local/3partial/3351pending is source implementation progress, not project acceptance.
+
+### Updater full controller and original regression retirement (2026-10-21)
+
+The exact505cc30c pre-removal cloud run39543788680 passed16 unchanged Python
+regressions,15 Rust tests including all16 original cases, five fresh source/native
+scenarios,11 sealed CLI admissions, strict Clippy and two strict1,089-execution
+native-only root audits. Parent and independent worker inspected the downloaded
+artifact. The maintained startup-services caller now builds the native feature and
+runs full regressions/Clippy/default CLI, preserving process/daemon/AGNOS gates.
+Removed only check_updated.py, updated_source.py and test_updated_comparison.py;
+updated_fixtures.py and the other pinned original dependencies remain. The
+actual-deleted-checkout proof and whole startup-services rerun remain pending.
+Inventory229replaced-local/3partial/3348pending; entire project acceptance is open.
