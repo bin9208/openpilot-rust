@@ -16,7 +16,7 @@ use std::{
         ffi::{OsStrExt, OsStringExt},
         fs::symlink,
     },
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 const ROSTER: [&str; 38] = [
@@ -238,6 +238,7 @@ impl Fixture {
 }
 struct Fake {
     names: Vec<String>,
+    receipt_output: Option<PathBuf>,
     fail_at: Option<String>,
     archive: Vec<u8>,
     stage_stdout: Option<Vec<u8>>,
@@ -249,6 +250,7 @@ impl Fake {
     fn new(archive: Vec<u8>) -> Self {
         Self {
             names: Vec::new(),
+            receipt_output: None,
             fail_at: None,
             archive,
             stage_stdout: None,
@@ -268,7 +270,10 @@ impl Runner for Fake {
             return Ok(Captured { code: 0, stdout: self.metadata.clone().unwrap_or_else(|| br#"{"include":"/usr/include/python3.12","suffix":".so","usb1":"/usr/lib/python3.12/site-packages/usb1.py"}"#.to_vec()), stderr: vec![] });
         }
         let cwd = spec.cwd.as_ref().unwrap();
-        let output = cwd.parent().unwrap().join("proof");
+        let output = self
+            .receipt_output
+            .clone()
+            .unwrap_or_else(|| cwd.parent().unwrap().join("proof"));
         let files = output.join("commands");
         let name = fs::read_dir(&files)?
             .filter_map(|entry| {
@@ -496,6 +501,7 @@ fn raw_json11_prefix_reaches_next_child_without_replacement() {
         .join(OsString::from_vec(b"proof-\xff".to_vec()));
     let prefix = fixture.options.output.join("json11-dependency/prefix");
     let mut runner = Fake::new(fixture.archive.clone());
+    runner.receipt_output = Some(fixture.options.output.clone());
     runner.stage_stdout = Some(
         format!(
             "{{\"prefix\":{},\"dependency\":{{\"sha256\":\"fixture\"}}}}",
