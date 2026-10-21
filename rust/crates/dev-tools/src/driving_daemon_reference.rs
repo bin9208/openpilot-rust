@@ -412,7 +412,7 @@ fn compare(expected: &Value, actual: &Value, path: &str) -> Result<usize> {
         (Value::Number(left), Value::Number(right)) if left.is_f64() => {
             let a = left.as_f64().ok_or("reference float")?;
             let b = right.as_f64().ok_or("candidate float")?;
-            let tolerance = if path.contains("Coefficients") {
+            let tolerance: f64 = if path.contains("Coefficients") {
                 2e-5
             } else {
                 1e-6

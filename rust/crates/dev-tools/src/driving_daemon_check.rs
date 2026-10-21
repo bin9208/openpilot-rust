@@ -233,7 +233,7 @@ impl Binding {
             return Err(format!("invalid driving source: {}", path.display()).into());
         }
         let mut bytes = Vec::new();
-        file.by_ref().take(max + 1).read_to_end(&mut bytes)?;
+        Read::by_ref(&mut file).take(max + 1).read_to_end(&mut bytes)?;
         if bytes.len() as u64 != metadata.len() {
             return Err("driving source changed while binding".into());
         }
@@ -278,7 +278,7 @@ impl Binding {
             return Err("source no longer bounded regular file".into());
         }
         let mut bytes = Vec::new();
-        file.by_ref().take(max + 1).read_to_end(&mut bytes)?;
+        Read::by_ref(&mut file).take(max + 1).read_to_end(&mut bytes)?;
         if bytes.len() as u64 != metadata.len() {
             return Err("source size drifted".into());
         }
