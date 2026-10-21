@@ -30,6 +30,8 @@ fn multipart(body: &[u8], content_type: &str) -> Result<Value> {
         return Err("invalid recovery upload multipart boundary".into());
     }
     let marker = format!("--{boundary}").into_bytes();
+    let filename_timestamp = Regex::new(r"\d{8}-\d{6}")?;
+    let content_timestamp = Regex::new(r"- Time: \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}")?;
     let mut rest = body;
     let mut parts = Vec::new();
     loop {
@@ -68,7 +70,7 @@ fn multipart(body: &[u8], content_type: &str) -> Result<Value> {
             .ok_or("missing recovery upload content disposition")?;
         let name = parameter(disposition, "name").ok_or("missing recovery upload part name")?;
         if let Some(filename) = parameter(disposition, "filename") {
-            let filename = Regex::new(r"\d{8}-\d{6}")?
+            let filename = filename_timestamp
                 .replace_all(&filename, "TIMESTAMP")
                 .to_string();
             parts.push(json!({"name":name,"filename":filename,"size":raw.len(),"sha256":format!("{:x}",Sha256::digest(raw))}));
@@ -77,7 +79,7 @@ fn multipart(body: &[u8], content_type: &str) -> Result<Value> {
             let content = payload["content"]
                 .as_str()
                 .ok_or("missing upload content")?;
-            let normalized = Regex::new(r"- Time: \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}")?
+            let normalized = content_timestamp
                 .replace_all(content, "- Time: TIMESTAMP")
                 .to_string();
             payload["content"] = normalized.into();

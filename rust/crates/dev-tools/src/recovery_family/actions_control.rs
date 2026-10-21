@@ -548,9 +548,9 @@ pub fn run_actions_frozen(
         || historical["source_sha256"].as_str() != Some(source.digest())
         || original.original_input_sha256("openpilot/common/repo_update.py")?
             != repo_update.digest()
-        || !historical["argv"]
+        || historical["argv"]
             .as_array()
-            .is_some_and(|argv| argv.len() == 11)
+            .is_none_or(|argv| argv.len() != 11)
     {
         return Err("frozen actions independent capture changed".into());
     }

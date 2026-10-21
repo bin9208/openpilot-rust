@@ -334,13 +334,14 @@ fn run_one(
             return Err("CWP kernel hostname fallback mismatch".into());
         }
     }
-    if case.action == "boot" && !requests.is_empty() {
-        if requests[0].elapsed < Duration::from_secs(2)
+    if case.action == "boot"
+        && !requests.is_empty()
+        && (requests[0].elapsed < Duration::from_secs(2)
             || (requests.len() > 1
-                && requests[1].elapsed.saturating_sub(requests[0].elapsed) < Duration::from_secs(5))
-        {
-            return Err(format!("CWP {}/{provider} boot cadence mismatch", case.name).into());
-        }
+                && requests[1].elapsed.saturating_sub(requests[0].elapsed)
+                    < Duration::from_secs(5)))
+    {
+        return Err(format!("CWP {}/{provider} boot cadence mismatch", case.name).into());
     }
     Ok(Observation {
         result,

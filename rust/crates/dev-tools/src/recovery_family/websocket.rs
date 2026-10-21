@@ -203,6 +203,27 @@ mod tests {
     use super::*;
 
     #[test]
+    fn source_client_mask_and_length_boundaries_stay_literal() {
+        // Literal mask 03 07 0b 13 and frame boundaries from the unchanged controller.
+        assert_eq!(
+            encode_frame(1, b"hi", true, true),
+            [0x81, 0x82, 3, 7, 11, 19, b'h' ^ 3, b'i' ^ 7]
+        );
+        assert_eq!(encode_frame(2, b"x", true, false), [0x82, 1, b'x']);
+        assert_eq!(encode_frame(9, b"probe263", true, true)[..2], [0x89, 0x88]);
+        assert_eq!(encode_frame(1, &[b'a'; 125], true, true)[1], 0xfd);
+        assert_eq!(
+            encode_frame(1, &[b'a'; 126], true, true)[1..4],
+            [0xfe, 0, 126]
+        );
+        assert_eq!(
+            encode_frame(1, &[b'a'; 65_536], true, true)[1..10],
+            [0xff, 0, 0, 0, 0, 0, 1, 0, 0]
+        );
+        assert_eq!(encode_frame(0, b"end", false, true)[0], 0);
+    }
+
+    #[test]
     fn trickled_frame_cannot_extend_total_deadline() {
         let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
         let address = listener.local_addr().unwrap();

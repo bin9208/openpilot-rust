@@ -11,6 +11,8 @@ use std::{
     time::{Duration, Instant},
 };
 
+type OriginalObservation<'a> = dyn Fn(&str) -> Result<serde_json::Value> + 'a;
+
 pub struct SupportShutdownConfig<'a> {
     pub repository: &'a Path,
     pub candidate: &'a Path,
@@ -50,7 +52,7 @@ pub fn run_support_shutdown_frozen(
 
 fn run_support_shutdown_inner(
     config: &SupportShutdownConfig<'_>,
-    load_original: Option<&dyn Fn(&str) -> Result<serde_json::Value>>,
+    load_original: Option<&OriginalObservation<'_>>,
 ) -> Result<()> {
     fs::create_dir(config.output)?;
     let candidate = Pin::open(config.candidate, 256 * 1024 * 1024)?;
@@ -188,7 +190,7 @@ fn run_support_shutdown_inner(
                     || row["tunnel_entered"] != true
                     || row["exited_within_three_seconds"] != true
                     || row["expect_blocked"] != false
-                    || !row["tunnel_pid"].as_u64().is_some_and(|pid| pid > 0)
+                    || row["tunnel_pid"].as_u64().is_none_or(|pid| pid == 0)
                     || !row["seconds_before_release"]
                         .as_f64()
                         .is_some_and(|elapsed| {

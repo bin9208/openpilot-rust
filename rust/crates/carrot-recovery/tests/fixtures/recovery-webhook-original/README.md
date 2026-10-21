@@ -17,7 +17,8 @@ The capture's `SHA256SUMS` accidentally includes itself with a pre-write digest;
 that self-entry is invalid and is not used as evidence. All eight actual
 source-only member entries match. Acceptance here uses direct hashes of the
 four committed original files, unchanged source identity/hash and independent
-parent/reviewer archive audits; the historical capture is preserved unchanged.
+parent/reviewer archive audits; the historical capture is preserved unchanged. Future capture code excludes
+the manifest from its own file list.
 
 Native acceptance: the unchanged payload constructions and both full source
 outputs pass in Actions39662187794 at a2c9bf7b8da4e907e0e135e449dec90d223210e2;

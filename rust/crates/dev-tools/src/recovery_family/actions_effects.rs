@@ -14,6 +14,8 @@ use std::{
     time::Duration,
 };
 
+type OriginalObservation<'a> = dyn Fn(&str) -> Result<Value> + 'a;
+
 fn command(
     argv: Vec<String>,
     cwd: &Path,
@@ -26,7 +28,7 @@ fn command(
     }
     spec.stdout_limit = 1024 * 1024;
     spec.stderr_limit = 1024 * 1024;
-    NativeRunner.run(&spec).map_err(Into::into)
+    NativeRunner.run(&spec)
 }
 
 pub(super) fn git(cwd: &Path, args: &[&str]) -> Result<String> {
@@ -494,7 +496,7 @@ fn run_inner(
     original_row: &Value,
     name: &str,
     output: &Path,
-    frozen: Option<&dyn Fn(&str) -> Result<Value>>,
+    frozen: Option<&OriginalObservation<'_>>,
 ) -> Result<Value> {
     fs::create_dir(output)?;
     let bare = output.join("origin.git");
