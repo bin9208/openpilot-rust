@@ -82,3 +82,39 @@ Private-target argv and unit placeholder isolation are proved; the artifact
 does not retain a separate live production before/after ELF pair. Full pending
 retained replay, two-root model/collector/fault traffic and source-reappearance
 controls still require their separate final driving gate.
+
+## Accepted actual four-source absence (2026-10-22)
+
+[39663027128](https://github.com/bin9208/openpilot-rust/actions/runs/39663027128)
+passes all steps at source2ecf3f6813f601ea52e7a61ccf75219952daefa0, workflow
+5a9c0039e6554b10953ed0f0152e39abccec34b1/job119440705739. Artifact12377964233
+is1,570,254,214bytes, SHA256
+58ed092b8140d6b4eb1c1015e88466aa41af14bbe5997cf924464734db5baf78.
+Independent review authenticates all4,211 CRCs,574 current catalog files,
+14 exporter Git pins, five original model pins,86 generated image hashes and
+four bundle/source bindings. Parent independently hashes the complete same ZIP
+and inspects final reports, retained comparison and current catalog admission.
+
+Both checkout and private roots lack all four retired Python files. The same
+held native ELFs pass six model cases, six collector cases and two logging-fault
+cases in each root, followed by eight regular/link source-reappearance failures.
+Each model/collector lane compares40 frames and114 publications. The private
+fault builder preserves exact plain restoration; final production seal checks
+pass before/after. Packaged peer/fault/catalog ELF bytes are inspected; production
+ELF identity relies on held hosted seal checks and CLI hashes, not an absent
+binary copy. All original field tolerances, source-call rules and lifecycle
+assertions remain. The25 historical reports pass their bounded comparison;
+that already-completed traffic is not executed again.
+
+Family units, both archive integrations, original Cereal/schema comparisons,
+current-host export and strict Clippy pass. Desire additionally passes all
+24,585 rows/47 scenarios in checkout/private/default/raw-path CLI data, with four
+identical retained datasets and maximum absolute error0. Its per-root exec audit
+contains exactly the two held native executables; source binding checks pass.
+This supersedes the earlier pending four-source deletion/Desire shared-caller
+state. The inventory now counts242 replaced-local/3 partial/3,335 pending.
+
+This is hosted synthetic CPU:LLVM evidence. The model/compiler exporter still
+uses Python and is recorded as a pending execution edge; driver/shared-helper
+retirement, latest full PR/ARM composition and user boot/record/upload/driving
+verification remain separate. No vehicle performance benefit is inferred.

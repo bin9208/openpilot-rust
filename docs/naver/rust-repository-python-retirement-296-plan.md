@@ -86,9 +86,9 @@ Interface: protocol (all five modes), USB, SPI, peripheral and runtime-fixture b
 
 Additional accepted replacements and current failures are recorded in the
 [evidence ledger](rust-repository-python-retirement-296-evidence.md) and inventory.
-238 baseline sources are replaced-local, four baseline sources are
+242 baseline sources are replaced-local, three baseline sources are
 partially replaced because live-source helpers or unrelated Params tests remain Python,
-and 3,338 baseline sources remain pending. The added
+and 3,335 baseline sources remain pending. The added
 rust/tools/selfdrived_helpers_source.py retains those helpers; relocation is
 not retirement. Remaining families and final delivery gates stay open.
 The Bluetooth input decoder checker is now native after exact10,049-record,
@@ -99,14 +99,16 @@ The statistics producer controller and its source helper are retired after
 independent wire captures, same-ELF removal proof, six regression tests and a
 fresh interpreter-free execution. Other statistics source consumers remain.
 
-Current next batch: complete native driving/fault-builder and driver caller
-validation. Panda outer checker/test removal is integrated after153/152-source
+Current next batch: complete driver/startup/USB caller conversion and recovery
+actions/upload/exec admission. Driving/Desire four-source actual retirement is
+accepted by39663027128, with the remaining compiler export dependency explicit. Panda outer checker/test removal is integrated after153/152-source
 two-root/38-phase proof; its actual deleted-checkout maintained gate39625704015
 now passes with both152-source roots and all retained downstream checks. #448/#449/#450 host
 regressions are accepted and affected ARM39567841179 passed; the complete PR
 failed camera/navigation QA and JSON11 feature-order checks. Camera and JSON11
 focused repairs now passed cloud RED/GREEN; navigation startup remains under
-diagnosis. Shared Desire remains restored until its driving caller is replaced. Accepted earlier bridge, soundd, logmessaged
+diagnosis. Shared Desire and its original driving consumer are now retired
+after the complete two-root gate. Accepted earlier bridge, soundd, logmessaged
 and Bluetooth removals remain recorded below. Remaining original helpers, model
 compiler/tool families and vendor Python are still explicit pending scope. Keep
 functional execution in GitHub-hosted Actions and inspect each exact source result.

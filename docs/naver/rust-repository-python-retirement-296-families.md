@@ -44,12 +44,12 @@ four partial baseline entries.
    and both private-root functional lanes passed. The cross-root metadata failure
    was isolated to one exact DEBUG camera-wait message; only that already-accounted
    diagnostic count is normalized. Four original controllers are now deleted and their maintained callers migrated;
-   the hosted final complete comparison and eight reappearance controls remain. The compact independent
+   the final complete comparison and eight reappearance controls pass39663027128. The compact independent
    fixture preserves1649 original file pins in59,663,776 XZ bytes; native full
    regeneration/export passed39654500423. Its private fault-builder failure #473
    is now diagnosed and fixed:39661522311 passes8 units, strictClippy and actual
    byte-identical restoration with all locks/source seals unchanged. The final
-   retained replay/two-root traffic remains pending. Driver's actual collector CLI data is
+   retained replay and full two-root traffic also pass39663027128. Driver's actual collector CLI data is
    independently auditable despite a wrapper row-count failure; do not repeat
    unchanged traffic solely to fix that assertion. The reused driver catalog failed warmup with confirmed SIGILL: AVX-512 objects
    were run on an AMD EPYC host without that ISA. CPU target compatibility is a

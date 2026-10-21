@@ -1927,10 +1927,10 @@ rust/tools/check_dashcam_params.py	9eda1c86b76d2a955cfa378e87331c43aff7887c	pend
 rust/tools/check_dashcam_runtime.py	f640a530a4df155ad2263871b6f9e76dc03aee32	pending	-
 rust/tools/check_deleter_daemon.py	df1faa3bd3de28b7c92c781675163edafc3f0d69	pending	-
 rust/tools/check_deleter_reference.py	a63830c4ac5e042b2aa82fd9b7771713d4c66567	pending	-
-rust/tools/check_desire_reference.py	9fa489afc27b786afb4a4cee2153aab14c677fa4	partially-replaced	rust/crates/dev-tools/src/desire_reference_check.rs; native checker selected, original shared Commands/original_class still required by driving_daemon_reference.py
+rust/tools/check_desire_reference.py	9fa489afc27b786afb4a4cee2153aab14c677fa4	replaced-local	rust/crates/dev-tools/src/desire_reference_check.rs; shared driving consumer retired, actual absence and24585-row/47-scenario proof accepted39663027128
 rust/tools/check_dmonitoring_daemon.py	ec97d6a3191af643cc3ff05253cd81742dd99b8d	pending	-
 rust/tools/check_driver_daemon.py	76894648a334de8c71205b6c605b5916914c81db	pending	-
-rust/tools/check_driving_daemon.py	046223c65c7e54fb3d3cba2e08ec86630506f3a7	pending	-
+rust/tools/check_driving_daemon.py	046223c65c7e54fb3d3cba2e08ec86630506f3a7	replaced-local	rust/crates/dev-tools/src/driving_daemon_check.rs; maintained CLI/two-root actual absence accepted39663027128
 rust/tools/check_encoder_ci.py	e412ae8e8d86c983fe7e957ea12e0f8ef1531881	replaced-local	rust/crates/dev-tools/src/encoder_ci_check.rs
 rust/tools/check_encoder_codecs.py	b5c58edf121dacabb6cb6bfaeee867cdfdfa74e2	replaced-local	rust/crates/dev-tools/src/encoder_codecs_check.rs
 rust/tools/check_encoder_runtime.py	378310c441ab51e189b9e14f44a7953bd3cda73e	replaced-local	rust/crates/dev-tools/src/encoder_runtime_native.rs
@@ -1988,7 +1988,7 @@ rust/tools/check_message_state.py	6f2a3f9b26ad8e529180b4234daf88437afd044d	pendi
 rust/tools/check_micd_analysis.py	08a6ccc4870a71e6a93448d669be8903b3b0112f	pending	-
 rust/tools/check_micd_daemon.py	45eb9518f181d693a94eedeb8d7d6151098eb5fd	pending	-
 rust/tools/check_model_inputs.py	02e7b518b82a443904ceb9b00d87203aee42100f	pending	-
-rust/tools/check_model_logging_faults.py	fc90003b2295a4f8d0f4258f0c74e9bb3cd638b3	pending	-
+rust/tools/check_model_logging_faults.py	fc90003b2295a4f8d0f4258f0c74e9bb3cd638b3	replaced-local	rust/crates/dev-tools/src/driving_logging_fault_check.rs; owned fault builder and two-root actual absence accepted39663027128
 rust/tools/check_model_outputs.py	99e4b6d59d1101b4877a24998ee80d304e628666	pending	-
 rust/tools/check_model_reference.py	b4022153df39107308ecfbb91a6ca82a43a96bd0	pending	-
 rust/tools/check_model_startup.py	357b5bb00757fb859be33908b53c949d6a8fd2db	pending	-
@@ -2329,7 +2329,7 @@ rust/tools/cweb_source_peer.py	986ba379c8d42ade223452b945fc79237a9b1f69	pending	
 rust/tools/deleter_fixtures.py	4e4f021b41f311e8e047734f4e25f70a5c064025	pending	-
 rust/tools/device_probe.py	fe14a20073433d02e12becbcd0ab0f360a6ea5d5	pending	-
 rust/tools/dmonitoring_daemon_reference.py	c2d0193edf1be63a00841e83c872e68c80210b3e	pending	-
-rust/tools/driving_daemon_reference.py	031ad16e17c00a33827332e880f43a4f1e868e7a	pending	-
+rust/tools/driving_daemon_reference.py	031ad16e17c00a33827332e880f43a4f1e868e7a	replaced-local	rust/crates/dev-tools/src/driving_daemon_reference.rs; immutable original fixture and native packet comparisons accepted39663027128
 rust/tools/encoder_outcomes.py	abe06b9fb384b90bdd7f60f6c6a10d4ca664e743	replaced-local	rust/crates/dev-tools/src/encoder_runtime_process.rs;rust/crates/dev-tools/src/encoder_v4l_check.rs
 rust/tools/extract_runtime_sdk.py	007cc4f723139d3a15fd986a76fb5102f3dc9131	pending	-
 rust/tools/generate_bluetooth_digits.py	68e4be829336667c54f2289843ee47e07578625b	replaced-local	openpilot-dev-tools generate-bluetooth-digits

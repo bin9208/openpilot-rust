@@ -523,7 +523,6 @@ F01-vehicle-safety	rust/tools/check_control_policies.py	pending
 F01-vehicle-safety	rust/tools/check_controlsd.py	pending
 F01-vehicle-safety	rust/tools/check_controlsd_daemon.py	pending
 F01-vehicle-safety	rust/tools/check_driver_daemon.py	pending
-F01-vehicle-safety	rust/tools/check_driving_daemon.py	pending
 F01-vehicle-safety	rust/tools/check_lateral_maneuvers.py	pending
 F01-vehicle-safety	rust/tools/check_locationd.py	pending
 F01-vehicle-safety	rust/tools/check_locationd_daemon.py	pending
@@ -532,7 +531,6 @@ F01-vehicle-safety	rust/tools/check_locationd_native.py	pending
 F01-vehicle-safety	rust/tools/check_locationd_startup.py	pending
 F01-vehicle-safety	rust/tools/check_locationd_timestamp.py	pending
 F01-vehicle-safety	rust/tools/check_longitudinal_maneuvers.py	pending
-F01-vehicle-safety	rust/tools/check_model_logging_faults.py	pending
 F01-vehicle-safety	rust/tools/check_monitoring_reference.py	pending
 F01-vehicle-safety	rust/tools/check_pandad_client.py	pending
 F01-vehicle-safety	rust/tools/check_pandad_composed.py	pending
@@ -2193,7 +2191,6 @@ F03-runtime-model-media-comparators	rust/tools/check_cweb_http.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_cweb_policy.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_deleter_daemon.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_deleter_reference.py	pending
-F03-runtime-model-media-comparators	rust/tools/check_desire_reference.py	partially-replaced
 F03-runtime-model-media-comparators	rust/tools/check_dmonitoring_daemon.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_hardware_info.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_hardwared.py	pending
@@ -2431,7 +2428,6 @@ F03-runtime-model-media-comparators	rust/tools/cweb_source_peer.py	pending
 F03-runtime-model-media-comparators	rust/tools/deleter_fixtures.py	pending
 F03-runtime-model-media-comparators	rust/tools/device_probe.py	pending
 F03-runtime-model-media-comparators	rust/tools/dmonitoring_daemon_reference.py	pending
-F03-runtime-model-media-comparators	rust/tools/driving_daemon_reference.py	pending
 F03-runtime-model-media-comparators	rust/tools/extract_runtime_sdk.py	pending
 F03-runtime-model-media-comparators	rust/tools/hardware_control_source.py	pending
 F03-runtime-model-media-comparators	rust/tools/hardware_info_cases.py	pending

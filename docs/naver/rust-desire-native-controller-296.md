@@ -62,3 +62,17 @@ Source presence and unchanged bytes remain mandatory in checkout; private-root
 absence and full native stream/CLI tests stay mandatory. No Python definitions are
 relocated or replaced with candidate-derived expectations. Full original driving
 oracle conversion and updated caller proof are required before retrying deletion.
+
+## Shared driving dependency closure accepted (2026-10-22)
+
+The restoration checkpoint above is superseded by actual four-source retirement
+in39663027128, source2ecf3f6813f601ea52e7a61ccf75219952daefa0. The shared original
+driving consumer and Desire helper are both absent, and both native caller
+families pass. Desire's four retained full datasets each match24,585 rows across
+47 scenarios, maximum numeric error0; the original-only inputs and27 remaining
+source pins remain unchanged. Two successful native executions per retirement
+root and all CLI/source-reappearance controls pass. Full4,211-member artifact
+and exact workflow/source identities are recorded in
+[rust-driving-fixture-current-host-296.md](rust-driving-fixture-current-host-296.md).
+This accepts the shared dependency removal; remaining repository compiler/tools,
+final required integration and user device acceptance remain open.
