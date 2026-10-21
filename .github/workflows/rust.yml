@@ -2424,6 +2424,12 @@ jobs:
             --trace rust/target/debug/examples/uploader_trace --collector rust/target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/support-runtime/uploader-logging"
           python rust/tools/check_uploader_log_fault.py --native rust/target/debug/examples/uploader_log_fault \
             --binding "$RUNNER_TEMP"/support-params-binding/params_pyx*.so --collector rust/target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/support-runtime/uploader-log-fault"
+      - name: Require dashcam progress equivalence and allocation accounting
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dashcam-upload --lib --locked -- --nocapture
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dashcam-upload --all-targets --locked -- -D warnings
       - name: Compare dashcam jobs, catalog, metadata and real Params
         run: |
           python rust/tools/check_dashcam_jobs.py --binary rust/target/debug/examples/dashcam_job_trace --output "$RUNNER_TEMP/support-runtime/dashcam-jobs"

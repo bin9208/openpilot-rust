@@ -27,6 +27,7 @@ rustix = { version = "1", features = ["time","process"] }
 
 [dev-dependencies]
 tempfile = "3"
+stats_alloc = "=0.1.10"
 
 [[test]]
 name = "git_capture"

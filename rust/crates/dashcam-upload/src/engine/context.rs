@@ -19,11 +19,64 @@ pub(super) struct Transfer {
     pub(super) completed: usize,
     pub(super) logical: u64,
     pub(super) transmitted: u64,
-    pub(super) by_file: HashMap<(usize, String), u64>,
+    pub(super) by_file: HashMap<usize, HashMap<String, u64>>,
     pub(super) samples: VecDeque<(f64, u64)>,
     pub(super) results: Vec<Option<Value>>,
 }
 impl Transfer {
+    pub(super) fn record_progress(
+        &mut self,
+        index: usize,
+        total: usize,
+        bytes: u64,
+        event: openpilot_web_upload::Progress<'_>,
+        clock: impl FnOnce() -> f64,
+    ) -> Result<Progress, Error> {
+        let files = self.by_file.entry(index).or_default();
+        let current = event.sent.min(event.size);
+        let previous = match files.get_mut(event.filename) {
+            Some(previous) => {
+                let old = *previous;
+                *previous = old.max(current);
+                old
+            }
+            None => {
+                files.insert(event.filename.to_owned(), current);
+                0
+            }
+        };
+        let current = previous.max(current);
+        self.logical += current - previous;
+        self.transmitted += event.chunk as u64;
+        let now = clock();
+        let sent = self.transmitted;
+        self.samples.push_back((now, sent));
+        while self.samples.len() > 2 && self.samples.front().is_some_and(|(at, _)| now - at > 3.0) {
+            self.samples.pop_front();
+        }
+        let (sample_time, sample_bytes) = self
+            .samples
+            .front()
+            .copied()
+            .ok_or_else(|| Error::Runtime("speed sample unavailable".into()))?;
+        let rate =
+            ((sent - sample_bytes) as f64 / (now - sample_time).max(0.001)).round_ties_even();
+        let logical = self.logical.min(bytes);
+        Ok(Progress {
+            percent: Some(self.percent(total, bytes)),
+            phase: Some("uploading".into()),
+            phase_current: Some(if bytes > 0 {
+                logical
+            } else {
+                self.completed as u64
+            } as i64),
+            phase_total: Some(if bytes > 0 { bytes } else { total as u64 } as i64),
+            bytes_current: Some(logical as i64),
+            bytes_total: Some(bytes as i64),
+            bytes_per_second: Some(rate as i64),
+            ..Progress::default()
+        })
+    }
     pub(super) fn percent(&self, total: usize, bytes: u64) -> f64 {
         let byte_ratio = if bytes > 0 {
             self.logical as f64 / bytes as f64
@@ -41,6 +94,10 @@ impl Transfer {
         self.results.iter().flatten().cloned().collect()
     }
 }
+
+#[cfg(test)]
+#[path = "progress_allocation_tests.rs"]
+mod progress_allocation_tests;
 pub(super) struct Context {
     pub(super) settings: Settings,
     pub(super) webdav: Option<openpilot_web_upload::WebDav>,

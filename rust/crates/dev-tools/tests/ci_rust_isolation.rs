@@ -2816,3 +2816,33 @@ fn retired_updater_controller_keeps_all_original_cases_and_remaining_live_gates(
     assert!(!run.contains("python rust/tools/check_updated.py"));
     assert!(!run.contains("python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=rust/tools/tests rust/tools/tests/test_updated_comparison.py"));
 }
+
+#[test]
+fn dashcam_progress_allocation_proof_keeps_functional_and_full_upload_routes() {
+    let data = workflow();
+    let job = &data["jobs"]["support-runtime"];
+    let steps = job["steps"].as_array().unwrap();
+    let step = steps
+        .iter()
+        .find(|step| {
+            step["name"] == "Require dashcam progress equivalence and allocation accounting"
+        })
+        .unwrap();
+    absent(step, &["if", "continue-on-error"]);
+    required(step["run"].as_str().unwrap(), &[
+        "cargo test --manifest-path rust/Cargo.toml -p openpilot-dashcam-upload --lib --locked -- --nocapture",
+        "cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dashcam-upload --all-targets --locked -- -D warnings",
+    ]);
+    required(
+        &commands(job),
+        &[
+            "python rust/tools/check_dashcam_jobs.py",
+            "python rust/tools/check_dashcam_catalog.py",
+            "python rust/tools/check_dashcam_metadata.py",
+            "python rust/tools/check_dashcam_params.py",
+            "python rust/tools/check_dashcam_runtime.py",
+            "python rust/tools/check_dashcam_lifecycle.py",
+            "--test git_capture --locked",
+        ],
+    );
+}
