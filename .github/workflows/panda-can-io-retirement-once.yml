@@ -1,0 +1,111 @@
+name: 296 independent original Panda CAN-I/O native retirement candidate
+permissions:
+  contents: read
+  actions: read
+'on':
+  workflow_dispatch: {}
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/panda-can-io-retirement-once.yml
+jobs:
+  original-can-io:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      RUSTUP_TOOLCHAIN: 1.94.0
+      GH_TOKEN: ${{ github.token }}
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: 08f21d4aea8b1be4c59925e2b67a302eda4db623
+        persist-credentials: false
+    - name: Reserve disk and prepare minimal device compiler inputs
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = 08f21d4aea8b1be4c59925e2b67a302eda4db623
+
+        sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        sudo apt-get update
+
+        sudo apt-get install -y capnproto libcapnp-dev g++ libusb-1.0-0-dev pkg-config
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        '
+    - name: Borrow and seal unchanged original C++ protocol ELF
+      run: "set -euo pipefail\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$RUNNER_TEMP\" --growth-mib 3072\n\
+        mkdir -p \"$RUNNER_TEMP/panda-can-io-borrowed\"\ncd \"$RUNNER_TEMP/panda-can-io-borrowed\"\ncurl -fLsS --retry 3 --retry-delay\
+        \ 5 \\\n  -H \"Authorization: Bearer $GH_TOKEN\" \\\n  -H 'Accept: application/vnd.github+json' \\\n  'https://api.github.com/repos/bin9208/openpilot-rust/actions/artifacts/12358686227/zip'\
+        \ \\\n  -o original-private.zip\nprintf '%s  %s\\n' 1dffb8ea17d36f68e02b3c59736effbf9667d6225fb13e35eec833f140f321cc\
+        \ original-private.zip | sha256sum -c -\nunzip -p original-private.zip retirement/checkout-output/can-io-src/pandad-protocol-source\
+        \ > pandad-protocol-source\nunzip -p original-private.zip retirement/checkout-output/can-io-src/manifest.json > manifest.json\n\
+        chmod 755 pandad-protocol-source\nprintf '%s  %s\\n' fadf6c458826866584eb66d5cb19794a36aede895d5bbb3f588d2368fecd9ffc\
+        \ pandad-protocol-source | sha256sum -c -\n"
+    - name: Build only the current native protocol example
+      run: "set -euo pipefail\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib\
+        \ 4096\ncargo build --manifest-path rust/Cargo.toml -p openpilot-pandad --example can_io --locked \\\n > \"$RUNNER_TEMP/panda-can-io-borrowed/native-build.stdout\"\
+        \ \\\n 2> \"$RUNNER_TEMP/panda-can-io-borrowed/native-build.stderr\"\n"
+    - name: Capture original CAN-I/O requests responses and admissions
+      env:
+        PANDAD_CAN_IO_CAPTURE: ${{ runner.temp }}/panda-can-io-original
+        PANDAD_CAN_IO_SOURCE_BINARY: ${{ runner.temp }}/panda-can-io-borrowed/pandad-protocol-source
+        PANDAD_CAN_IO_NATIVE_BINARY: ${{ github.workspace }}/rust/target/debug/examples/can_io
+        PANDAD_CAN_IO_SOURCE_MANIFEST: ${{ runner.temp }}/panda-can-io-borrowed/manifest.json
+        PANDAD_CAN_IO_BORROWED_ZIP: ${{ runner.temp }}/panda-can-io-borrowed/original-private.zip
+      run: 'set -euo pipefail
+
+        export PANDAD_CAN_IO_SOURCE_COMMIT="$(git rev-parse HEAD)"
+
+        printf %s ''IyEvdXNyL2Jpbi9lbnYgcHl0aG9uMwoiIiJPbmUtdGltZSBob3N0ZWQgdW5jaGFuZ2VkIFB5dGhvbi9DKysgb2JzZXJ2YXRpb247IG5vIG5hdGl2ZSBjaGVja2VyIGludm9jYXRpb24uIiIiCmltcG9ydCBiYXNlNjQKaW1wb3J0IGhhc2hsaWIKaW1wb3J0IGpzb24KaW1wb3J0IG9zCmZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aAppbXBvcnQgc3VicHJvY2VzcwppbXBvcnQgc2h1dGlsCmltcG9ydCBzeXMKClJPT1QgPSBQYXRoKG9zLmVudmlyb25bJ0dJVEhVQl9XT1JLU1BBQ0UnXSkucmVzb2x2ZShzdHJpY3Q9VHJ1ZSkKT1VUID0gUGF0aChvcy5lbnZpcm9uWydQQU5EQURfQ0FOX0lPX0NBUFRVUkUnXSkucmVzb2x2ZSgpClNPVVJDRSA9IFBhdGgob3MuZW52aXJvblsnUEFOREFEX0NBTl9JT19TT1VSQ0VfQklOQVJZJ10pLnJlc29sdmUoc3RyaWN0PVRydWUpCk5BVElWRSA9IFBhdGgob3MuZW52aXJvblsnUEFOREFEX0NBTl9JT19OQVRJVkVfQklOQVJZJ10pLnJlc29sdmUoc3RyaWN0PVRydWUpCkJVSUxEID0gUGF0aChvcy5lbnZpcm9uWydQQU5EQURfQ0FOX0lPX1NPVVJDRV9NQU5JRkVTVCddKS5yZXNvbHZlKHN0cmljdD1UcnVlKQpaSVAgPSBQYXRoKG9zLmVudmlyb25bJ1BBTkRBRF9DQU5fSU9fQk9SUk9XRURfWklQJ10pLnJlc29sdmUoc3RyaWN0PVRydWUpClBZVEhPTiA9IFBhdGgoc3lzLmV4ZWN1dGFibGUpLnJlc29sdmUoc3RyaWN0PVRydWUpCkNIRUNLRVIgPSBST09UIC8gJ3J1c3QvdG9vbHMvY2hlY2tfcGFuZGFkX2Nhbl9pby5weScKUElOUyA9IHsKICBDSEVDS0VSOiAnNDE2ODk4Y2Y1MzQwZTNmZjVhOTU0OWMxMWY1ZTQ3MmExNDcwMzNmODg4NzY4NjAzZDAxZGNlZDg4NmM4MTI2ZicsCiAgUk9PVCAvICdydXN0L3Rvb2xzL3BhbmRhZF9wcm90b2NvbF9jYXNlcy5weSc6ICczZWFjNGEzOTQwMWRlOTMxMWM1YTVlYTUyMTFhZmViYWMxZGVlZGUzYTA1NWY5ZDE1ZmRiNDVkNzU3NmVlNWJmJywKfQpaSVBfU0hBID0gJzFkZmZiOGVhMTdkMzZmNjhlMDJiM2M1OTczNmVmZmJmOTY2N2Q2MjI1ZmIxM2UzNWVlYzgzM2YxNDBmMzIxY2MnClNPVVJDRV9TSEEgPSAnZmFkZjZjNDU4ODI2ODY2NTg0ZWI2NmQ1Y2IxOTc5NGEzNmFlZGU4OTVkNWJiYjNmNTg4ZDIzNjhmZWNkOWZmYycKCgpkZWYgc2hhKHBhdGgpOgogIHZhbHVlID0gaGFzaGxpYi5zaGEyNTYoKQogIHdpdGggcGF0aC5vcGVuKCdyYicpIGFzIHNvdXJjZToKICAgIGZvciBjaHVuayBpbiBpdGVyKGxhbWJkYTogc291cmNlLnJlYWQoMTAyNCAqIDEwMjQpLCBiJycpOgogICAgICB2YWx1ZS51cGRhdGUoY2h1bmspCiAgcmV0dXJuIHZhbHVlLmhleGRpZ2VzdCgpCgoKZGVmIGI2NCh2YWx1ZSk6CiAgcmV0dXJuIGJhc2U2NC5iNjRlbmNvZGUodmFsdWUpLmRlY29kZSgnYXNjaWknKQoKCmRlZiB0cmVlKHBhdGgpOgogIHJldHVybiB7YjY0KG9zLmZzZW5jb2RlKGZpbGUucmVsYXRpdmVfdG8ocGF0aCkpKTogeydzaXplJzogZmlsZS5zdGF0KCkuc3Rfc2l6ZSwgJ3NoYTI1Nic6IHNoYShmaWxlKX0KICAgICAgICAgIGZvciBmaWxlIGluIHNvcnRlZChwYXRoLnJnbG9iKCcqJykpIGlmIGZpbGUuaXNfZmlsZSgpfQoKCmRlZiBvYnNlcnZlKG5hbWUsIGFyZ3MsIG91dHB1dD1Ob25lKToKICBhcmd2ID0gW29zLmZzZW5jb2RlKFBZVEhPTiksIGInLVAnLCBvcy5mc2VuY29kZShDSEVDS0VSKSwgKm1hcChvcy5mc2VuY29kZSwgYXJncyldCiAgYmVmb3JlID0ge3BhdGg6IHNoYShwYXRoKSBmb3IgcGF0aCBpbiBbKlBJTlMsICpTT1VSQ0VTLCBTT1VSQ0UsIE5BVElWRSwgQlVJTEQsIFpJUCwgUFlUSE9OXX0KICBjaGlsZCA9IHN1YnByb2Nlc3MucnVuKGFyZ3YsIGN3ZD1ST09ULCBjYXB0dXJlX291dHB1dD1UcnVlLCB0aW1lb3V0PTI0MCwgY2hlY2s9RmFsc2UsCiAgICAgICAgICAgICAgICAgICAgICAgICBlbnY9eyoqb3MuZW52aXJvbiwgJ1BZVEhPTkRPTlRXUklURUJZVEVDT0RFJzogJzEnLCAnUEFOREFEX01BWE9VVCc6ICdob3N0aWxlLWluaGVyaXRlZC12YWx1ZScsCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICdQWVRIT05QQVRIJzogb3MucGF0aHNlcC5qb2luKFtzdHIoUk9PVCksIHN0cihST09UIC8gJ3J1c3QvdG9vbHMnKV0pfSkKICByZWNlaXB0ID0geyduYW1lJzogbmFtZSwgJ2FyZ3ZfYjY0JzogbGlzdChtYXAoYjY0LCBhcmd2KSksICdleGl0JzogY2hpbGQucmV0dXJuY29kZSwKICAgICAgICAgICAgICdzdGRvdXRfYjY0JzogYjY0KGNoaWxkLnN0ZG91dCksICdzdGRlcnJfYjY0JzogYjY0KGNoaWxkLnN0ZGVyciksCiAgICAgICAgICAgICAnb3V0cHV0X3BhdGhfYjY0JzogYjY0KG9zLmZzZW5jb2RlKG91dHB1dCkpIGlmIG91dHB1dCBpcyBub3QgTm9uZSBlbHNlIE5vbmUsCiAgICAgICAgICAgICAnZmlsZXNfYjY0JzogdHJlZShvdXRwdXQpIGlmIG91dHB1dCBpcyBub3QgTm9uZSBhbmQgb3V0cHV0LmV4aXN0cygpIGVsc2UgTm9uZX0KICAoT1VUIC8gJ2FkbWlzc2lvbnMnIC8gZid7bmFtZX0uanNvbicpLndyaXRlX3RleHQoanNvbi5kdW1wcyhyZWNlaXB0LCBpbmRlbnQ9Miwgc29ydF9rZXlzPVRydWUpICsgJ1xuJykKICBhc3NlcnQgYmVmb3JlID09IHtwYXRoOiBzaGEocGF0aCkgZm9yIHBhdGggaW4gYmVmb3JlfSwgZid7bmFtZX06IHNvdXJjZSBvciBiaW5hcnkgZHJpZnQnCiAgcmV0dXJuIHJlY2VpcHQKCgpkZWYgbWFpbigpOgogIGdsb2JhbCBTT1VSQ0VTCiAgYXNzZXJ0IG5vdCBPVVQuZXhpc3RzKCkgYW5kIG5vdCBPVVQuaXNfc3ltbGluaygpCiAgYXNzZXJ0IGFsbChzaGEocGF0aCkgPT0gZGlnZXN0IGZvciBwYXRoLCBkaWdlc3QgaW4gUElOUy5pdGVtcygpKQogIGFzc2VydCBzaGEoWklQKSA9PSBaSVBfU0hBIGFuZCBzaGEoU09VUkNFKSA9PSBTT1VSQ0VfU0hBCiAgYnVpbGQgPSBqc29uLmxvYWRzKEJVSUxELnJlYWRfYnl0ZXMoKSkKICBhc3NlcnQgYnVpbGRbJ2JpbmFyeV9zaGEyNTYnXSA9PSBTT1VSQ0VfU0hBCiAgYXNzZXJ0IGJ1aWxkWydiaW5hcnknXS5lbmRzd2l0aCgnL2NoZWNrb3V0LW91dHB1dC9jYW4taW8tc3JjL3BhbmRhZC1wcm90b2NvbC1zb3VyY2UnKQogIGFzc2VydCBsZW4oYnVpbGRbJ3NvdXJjZXMnXSkgPT0gMTQKICBTT1VSQ0VTID0ge1JPT1QgLyBuYW1lOiBkaWdlc3QgZm9yIG5hbWUsIGRpZ2VzdCBpbiBidWlsZFsnc291cmNlcyddLml0ZW1zKCl9CiAgYXNzZXJ0ICdydXN0L3Rvb2xzL3BhbmRhZF9jYW5faW9fc291cmNlLmNjJyBpbiBidWlsZFsnc291cmNlcyddCiAgYXNzZXJ0IGFsbChzaGEocGF0aCkgPT0gZGlnZXN0IGZvciBwYXRoLCBkaWdlc3QgaW4gU09VUkNFUy5pdGVtcygpKQogIE9VVC5ta2RpcihwYXJlbnRzPVRydWUpCiAgKE9VVCAvICdhZG1pc3Npb25zJykubWtkaXIoKQogIHBvc2l0aXZlID0gT1VUIC8gJ3Bvc2l0aXZlJwogIHJlY2VpcHQgPSBvYnNlcnZlKCdwb3NpdGl2ZScsIFsnLS1zb3VyY2UnLCBTT1VSQ0UsICctLW5hdGl2ZScsIE5BVElWRSwgJy0tb3V0cHV0JywgcG9zaXRpdmVdLCBwb3NpdGl2ZSkKICBhc3NlcnQgcmVjZWlwdFsnZXhpdCddID09IDAKICByZXBvcnQgPSBqc29uLmxvYWRzKChwb3NpdGl2ZSAvICdyZXBvcnQuanNvbicpLnJlYWRfYnl0ZXMoKSkKICBhc3NlcnQgcmVwb3J0WydyZXN1bHQnXSA9PSAnUEFTUycKICBhc3NlcnQgcmVwb3J0WydydW5zJ10gPT0gW3snbWF4b3V0JzogRmFsc2UsICdzY2VuYXJpb3MnOiAxMDg1LCAnb3BlcmF0aW9ucyc6IDE5MzN9LAogICAgICAgICAgICAgICAgICAgICAgICAgICAgeydtYXhvdXQnOiBUcnVlLCAnc2NlbmFyaW9zJzogMTA4MiwgJ29wZXJhdGlvbnMnOiAxOTI0fV0KICBhc3NlcnQgbGVuKChwb3NpdGl2ZSAvICdzZWVkcy5pbnB1dC5qc29ubCcpLnJlYWRfYnl0ZXMoKS5zcGxpdGxpbmVzKCkpID09IDE2CiAgZm9yIGxhbmUsIGNvdW50IGluIFsoJ25vcm1hbCcsIDEwODUpLCAoJ21heG91dCcsIDEwODIpXToKICAgIGZvciBzaWRlIGluICgnc291cmNlJywgJ25hdGl2ZScpOgogICAgICBhc3NlcnQgbGVuKChwb3NpdGl2ZSAvIGxhbmUgLyBmJ3tzaWRlfS5pbnB1dC5qc29ubCcpLnJlYWRfYnl0ZXMoKS5zcGxpdGxpbmVzKCkpID09IGNvdW50CiAgICAgIGFzc2VydCBsZW4oKHBvc2l0aXZlIC8gbGFuZSAvIGYne3NpZGV9Lmpzb25sJykucmVhZF9ieXRlcygpLnNwbGl0bGluZXMoKSkgPT0gY291bnQKICBhZG1pc3Npb25zID0gW10KICBmb3IgbmFtZSwgYXJncyBpbiBbCiAgICAgICgnbWlzc2luZy1yZXF1aXJlZCcsIFtdKSwgKCdoZWxwJywgWyctLWhlbHAnXSksICgnaGVscC1hYmJyZXYnLCBbJy0taGVsJ10pLAogICAgICAoJ3Nob3J0LWhlbHAtYXR0YWNoZWQnLCBbJy1oZm9vJ10pLCAoJ3Nob3J0LWhlbHAtYXR0YWNoZWQtdmFsdWUnLCBbJy1oZm9vPWJhciddKSwKICAgICAgKCdzaG9ydC1oZWxwLWNsdXN0ZXInLCBbJy1oZiddKSwgKCdzaG9ydC1oZWxwLWJlZm9yZS1hdHRhY2hlZCcsIFsnLWgnLCAnLWhmb28nXSksCiAgICAgICgndW5rbm93bicsIFsnLS11bmtub3duJ10pLCAoJ3NvdXJjZS1vcHRpb24tbWlzc2luZycsIFsnLS1zb3VyY2UnXSksCiAgICAgICgnbmF0aXZlLXJlcXVpcmVkLW1pc3NpbmcnLCBbJy0tc291cmNlJywgJ3MnLCAnLS1uYXRpdmUnLCAnbiddKSwKICAgICAgKCdydW5uZXItY29uc3VtZXMtaGVscCcsIFsnLS1ydW5uZXInLCAnLS1oZWxwJ10pLAogIF06CiAgICBhZG1pc3Npb25zLmFwcGVuZChvYnNlcnZlKG5hbWUsIGFyZ3MpKQogIGZvciBhZG1pc3Npb24gaW4gYWRtaXNzaW9uczoKICAgIHN0ZG91dCA9IGJhc2U2NC5iNjRkZWNvZGUoYWRtaXNzaW9uWydzdGRvdXRfYjY0J10pCiAgICBzdGRlcnIgPSBiYXNlNjQuYjY0ZGVjb2RlKGFkbWlzc2lvblsnc3RkZXJyX2I2NCddKQogICAgYXNzZXJ0IGFkbWlzc2lvblsnZXhpdCddIGluICgwLCAyKQogICAgYXNzZXJ0IChzdGRvdXQgYW5kIG5vdCBzdGRlcnIpIGlmIGFkbWlzc2lvblsnZXhpdCddID09IDAgZWxzZSAoc3RkZXJyIGFuZCBub3Qgc3Rkb3V0KQogICAgYXNzZXJ0IGInUEFTUycgbm90IGluIHN0ZG91dCBhbmQgYidQQVNTJyBub3QgaW4gc3RkZXJyCiAgYWJzZW50ID0gT1VUIC8gJ2Fic2VudC1wcm9iZScKICBmb3IgbmFtZSwgc291cmNlLCBuYXRpdmUgaW4gWygnbWlzc2luZy1zb3VyY2UnLCBhYnNlbnQsIE5BVElWRSksICgnbWlzc2luZy1uYXRpdmUnLCBTT1VSQ0UsIGFic2VudCldOgogICAgb3V0cHV0ID0gT1VUIC8gbmFtZQogICAgcmVzdWx0ID0gb2JzZXJ2ZShuYW1lLCBbJy0tc291cmNlJywgc291cmNlLCAnLS1uYXRpdmUnLCBuYXRpdmUsICctLW91dHB1dCcsIG91dHB1dF0sIG91dHB1dCkKICAgIGFzc2VydCByZXN1bHRbJ2V4aXQnXSA9PSAxCiAgZm9yZWlnbiA9IE9VVCAvICdwcmVleGlzdGluZy1vdXRwdXQnCiAgZm9yZWlnbi5ta2RpcigpCiAgKGZvcmVpZ24gLyAncmVwb3J0Lmpzb24nKS53cml0ZV9ieXRlcyhiJ2ZvcmVpZ24gcmVjZWlwdCcpCiAgcmVzdWx0ID0gb2JzZXJ2ZSgnZXhpc3Rpbmctb3V0cHV0JywgWyctLXNvdXJjZScsIFNPVVJDRSwgJy0tbmF0aXZlJywgTkFUSVZFLCAnLS1vdXRwdXQnLCBmb3JlaWduXSwgZm9yZWlnbikKICBhc3NlcnQgcmVzdWx0WydleGl0J10gPT0gMSBhbmQgKGZvcmVpZ24gLyAncmVwb3J0Lmpzb24nKS5yZWFkX2J5dGVzKCkgPT0gYidmb3JlaWduIHJlY2VpcHQnCiAgcmF3X25hdGl2ZSA9IFBhdGgob3MuZnNkZWNvZGUob3MuZnNlbmNvZGUoT1VUIC8gJ3Jhdy1uYXRpdmUtJykgKyBiJ1x4ZmYnKSkKICByYXdfcnVubmVyID0gUGF0aChvcy5mc2RlY29kZShvcy5mc2VuY29kZShPVVQgLyAncmF3LXJ1bm5lci0nKSArIGInXHhmZScpKQogIG9zLmxpbmsoTkFUSVZFLCByYXdfbmF0aXZlKQogIHNodXRpbC5jb3B5ZmlsZSgnL3Vzci9iaW4vZW52JywgcmF3X3J1bm5lcikKICByYXdfcnVubmVyLmNobW9kKDBvNzU1KQogIGFzc2VydCBzaGEocmF3X25hdGl2ZSkgPT0gc2hhKE5BVElWRSkKICByYXdfb3V0cHV0ID0gT1VUIC8gJ3Jhdy1uYXRpdmUtb3V0cHV0JwogIHJlc3VsdCA9IG9ic2VydmUoJ3Jhdy1uYXRpdmUnLCBbJy0tc291cmNlJywgU09VUkNFLCAnLS1uYXRpdmUnLCByYXdfbmF0aXZlLCAnLS1vdXRwdXQnLCByYXdfb3V0cHV0LAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgJy0tcnVubmVyJywgcmF3X3J1bm5lciwgJy0tJ10sIHJhd19vdXRwdXQpCiAgYXNzZXJ0IHJlc3VsdFsnZXhpdCddID09IDAKICByYXdfcmVwb3J0ID0ganNvbi5sb2FkcygocmF3X291dHB1dCAvICdyZXBvcnQuanNvbicpLnJlYWRfYnl0ZXMoKSkKICBhc3NlcnQgcmF3X3JlcG9ydFsnbmF0aXZlX2NvbW1hbmQnXSA9PSBbc3RyKHJhd19ydW5uZXIpLCAnLS0nLCBzdHIocmF3X25hdGl2ZSldCiAgYXNzZXJ0IHtrOiB2IGZvciBrLCB2IGluIHJhd19yZXBvcnQuaXRlbXMoKSBpZiBrICE9ICduYXRpdmVfY29tbWFuZCd9ID09IHsKICAgICAgazogdiBmb3IgaywgdiBpbiByZXBvcnQuaXRlbXMoKSBpZiBrICE9ICduYXRpdmVfY29tbWFuZCd9CiAgZm9yIGxhbmUgaW4gKCdub3JtYWwnLCAnbWF4b3V0Jyk6CiAgICBhc3NlcnQgKHJhd19vdXRwdXQgLyBsYW5lIC8gJ3NvdXJjZS5pbnB1dC5qc29ubCcpLnJlYWRfYnl0ZXMoKSA9PSAocG9zaXRpdmUgLyBsYW5lIC8gJ3NvdXJjZS5pbnB1dC5qc29ubCcpLnJlYWRfYnl0ZXMoKQogICAgYXNzZXJ0IChyYXdfb3V0cHV0IC8gbGFuZSAvICdzb3VyY2UuanNvbmwnKS5yZWFkX2J5dGVzKCkgPT0gKHBvc2l0aXZlIC8gbGFuZSAvICdzb3VyY2UuanNvbmwnKS5yZWFkX2J5dGVzKCkKICByYXdfcGF0aF9iNjQgPSBiNjQob3MuZnNlbmNvZGUocmF3X25hdGl2ZSkpCiAgcmF3X3J1bm5lcl9iNjQgPSBiNjQob3MuZnNlbmNvZGUocmF3X3J1bm5lcikpCiAgcmF3X25hdGl2ZS5yZW5hbWUoT1VUIC8gJ3Jhdy1uYXRpdmUtZWxmJykKICByYXdfcnVubmVyLnJlbmFtZShPVVQgLyAncmF3LXJ1bm5lci1lbGYnKQogIG1hbmlmZXN0ID0geydzb3VyY2VfY29tbWl0Jzogb3MuZW52aXJvblsnUEFOREFEX0NBTl9JT19TT1VSQ0VfQ09NTUlUJ10sICdweXRob25fdmVyc2lvbic6IHN5cy52ZXJzaW9uLAogICAgICAgICAgICAgICdweXRob25fZXhlY3V0YWJsZV9zaGEyNTYnOiBzaGEoUFlUSE9OKSwgJ2JvcnJvd2VkX3NvdXJjZV9ydW4nOiAzOTYyNTcwNDAxNSwKICAgICAgICAgICAgICAnYm9ycm93ZWRfc291cmNlX2FydGlmYWN0JzogMTIzNTg2ODYyMjcsICdib3Jyb3dlZF96aXBfc2hhMjU2JzogWklQX1NIQSwKICAgICAgICAgICAgICAnb3JpZ2luYWxfc291cmNlX3NoYTI1Nic6IHtzdHIocGF0aC5yZWxhdGl2ZV90byhST09UKSk6IGRpZ2VzdCBmb3IgcGF0aCwgZGlnZXN0IGluIFBJTlMuaXRlbXMoKX0sCiAgICAgICAgICAgICAgJ3NvdXJjZV9iaW5hcnlfc2hhMjU2Jzogc2hhKFNPVVJDRSksICduYXRpdmVfYmluYXJ5X3NoYTI1Nic6IHNoYShOQVRJVkUpLAogICAgICAgICAgICAgICdzb3VyY2VfYnVpbGRlcl9tYW5pZmVzdF9zaGEyNTYnOiBzaGEoQlVJTEQpLCAnc291cmNlX2J1aWxkZXJfc291cmNlcyc6IGJ1aWxkWydzb3VyY2VzJ10sCiAgICAgICAgICAgICAgJ3Jhd19uYXRpdmUnOiB7J3BhdGhfYjY0JzogcmF3X3BhdGhfYjY0LCAnYXJjaGl2ZWRfYXMnOiAncmF3LW5hdGl2ZS1lbGYnLCAnc2hhMjU2Jzogc2hhKE5BVElWRSl9LAogICAgICAgICAgICAgICdyYXdfcnVubmVyJzogeydwYXRoX2I2NCc6IHJhd19ydW5uZXJfYjY0LCAnYXJjaGl2ZWRfYXMnOiAncmF3LXJ1bm5lci1lbGYnLCAnc2hhMjU2Jzogc2hhKE9VVCAvICdyYXctcnVubmVyLWVsZicpfSwKICAgICAgICAgICAgICAnZmlsZXNfYjY0JzogdHJlZShPVVQpfQogIChPVVQgLyAnY2FwdHVyZS1tYW5pZmVzdC5qc29uJykud3JpdGVfdGV4dChqc29uLmR1bXBzKG1hbmlmZXN0LCBpbmRlbnQ9Miwgc29ydF9rZXlzPVRydWUpICsgJ1xuJykKCgppZiBfX25hbWVfXyA9PSAnX19tYWluX18nOgogIG1haW4oKQo=''
+        | base64 -d > "$RUNNER_TEMP/capture-original-can-io.py"
+
+        printf ''%s  %s\n'' 75c1c9213431dd01ca0923715c6a19387d720399f4128ac79d3663d29341f018 "$RUNNER_TEMP/capture-original-can-io.py"
+        | sha256sum -c -
+
+        PYTHONDONTWRITEBYTECODE=1 python3 "$RUNNER_TEMP/capture-original-can-io.py"
+
+        '
+    - name: Bind independent original capture for native protocol comparison
+      run: "set -euo pipefail\ncapture=\"$RUNNER_TEMP/panda-can-io-original\"\nmanifest_sha=$(sha256sum \"$capture/capture-manifest.json\"\
+        \ | cut -d ' ' -f 1)\nmkdir -p \"$RUNNER_TEMP/panda-can-io-retirement\"\n{\n echo \"PANDAD_CAN_IO_ORIGINAL_CAPTURE=$capture\"\
+        \n echo \"PANDAD_CAN_IO_CAPTURE_MANIFEST_SHA256=$manifest_sha\"\n echo \"PANDAD_CAN_IO_CAPTURE_SOURCE_COMMIT=$(git\
+        \ rev-parse HEAD)\"\n echo \"PANDAD_CAN_IO_TEST_OUTPUT=$RUNNER_TEMP/panda-can-io-retirement\"\n} >> \"$GITHUB_ENV\"\
+        \n"
+    - name: Cloud native protocol controller controls and full independent original parity
+      env:
+        PANDAD_CAN_IO_RETIREMENT_MODE: predelete
+        PANDAD_CAN_IO_SOURCE_BINARY: ${{ runner.temp }}/panda-can-io-borrowed/pandad-protocol-source
+        PANDAD_CAN_IO_NATIVE_BINARY: ${{ github.workspace }}/rust/target/debug/examples/can_io
+      run: "set -euo pipefail\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib\
+        \ 8192\ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-can-io-native --test pandad_can_io_check\
+        \ --test pandad_can_io_reference --locked \\\n > \"$RUNNER_TEMP/panda-can-io-retirement/native-tests.stdout\" \\\n\
+        \ 2> \"$RUNNER_TEMP/panda-can-io-retirement/native-tests.stderr\"\ncargo clippy --manifest-path rust/Cargo.toml -p\
+        \ openpilot-dev-tools --features pandad-can-io-native --lib --bin check-pandad-can-io --test pandad_can_io_check --test\
+        \ pandad_can_io_reference --locked -- -D warnings \\\n > \"$RUNNER_TEMP/panda-can-io-retirement/native-clippy.stdout\"\
+        \ \\\n 2> \"$RUNNER_TEMP/panda-can-io-retirement/native-clippy.stderr\"\n"
+    - name: Preserve independent original and native protocol evidence
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: panda-can-io-original-and-native
+        path: '${{ runner.temp }}/panda-can-io-original/
+
+          ${{ runner.temp }}/panda-can-io-retirement/
+
+          ${{ runner.temp }}/panda-can-io-borrowed/manifest.json
+
+          ${{ runner.temp }}/panda-can-io-borrowed/native-build.stdout
+
+          ${{ runner.temp }}/panda-can-io-borrowed/native-build.stderr
+
+          '
+        if-no-files-found: warn
+        retention-days: 7
