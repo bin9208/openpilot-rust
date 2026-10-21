@@ -1,0 +1,100 @@
+name: 296 native full calibration estimator original-only parity
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/calibration-estimator-native-296-once.yml
+permissions:
+  contents: read
+jobs:
+  calibration-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      EXPECTED_SOURCE: 332d99bc2e8ae5f24be956284e5a65579fb1f632
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: 332d99bc2e8ae5f24be956284e5a65579fb1f632
+        persist-credentials: false
+    - name: Admit exact checkout and native-only prerequisites
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        proof="$RUNNER_TEMP/calibration-estimator-native-296"
+
+        mkdir -p "$proof"
+
+        git rev-parse HEAD > "$proof/SOURCE_COMMIT"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends g++ capnproto libcapnp-dev pkg-config
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        printf ''CALIBRATION_REFERENCE_BINARY=%s/rust/target/debug/examples/calibration_trace\nCALIBRATION_REFERENCE_EVIDENCE=%s/test-output\n''
+        "$GITHUB_WORKSPACE" "$proof" >> "$GITHUB_ENV"
+
+        '
+    - name: Build actual estimator example and complete Rust comparator CLI
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/calibration-estimator-native-296"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo +1.94.0 build --manifest-path rust/Cargo.toml -p openpilot-calibrationd --example calibration_trace --locked
+        2>&1 | tee "$proof/example-build.log"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo +1.94.0 build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features calibration-reference-native
+        --bin check-calibration-reference --locked 2>&1 | tee "$proof/checker-build.log"
+
+        sha256sum rust/target/debug/examples/calibration_trace rust/target/debug/check-calibration-reference > "$proof/ELFS.sha256"
+
+        '
+    - name: Require all 15128 steps, full packet and CLI contracts, negative controls and Clippy
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/calibration-estimator-native-296"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features calibration-reference-native
+        --lib calibration_reference_check::tests --locked -- --nocapture 2>&1 | tee "$proof/unit-tests.log"
+
+        cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features calibration-reference-native
+        --test calibration_reference_check --locked -- --nocapture 2>&1 | tee "$proof/full-parity.log"
+
+        rust/target/debug/check-calibration-reference --binary "$CALIBRATION_REFERENCE_BINARY" --output "$proof/cli-output"
+        > "$proof/cli.stdout" 2> "$proof/cli.stderr"
+
+        test -s "$proof/cli-output/report.json"
+
+        test -s "$proof/cli-output/trace.jsonl"
+
+        test ! -s "$proof/cli.stderr"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features calibration-reference-native
+        --lib --bin check-calibration-reference --test calibration_reference_check --locked -- -D warnings 2>&1 | tee "$proof/clippy.log"
+
+        sha256sum --check "$proof/ELFS.sha256"
+
+        '
+    - uses: actions/upload-artifact@v6
+      if: always()
+      with:
+        name: calibration-estimator-native-296
+        path: ${{ runner.temp }}/calibration-estimator-native-296/
