@@ -244,10 +244,97 @@ fn original_bad_stdout_failure_report_and_fifteen_second_timeout_keep_artifact_p
 fn actual_cli_interrupt_after_child_start_reaps_probe_and_retains_original_signal_status() {
     use rustix::process::{Pid, Signal, WaitId, WaitIdOptions};
     use std::{
+        cell::Cell,
         os::unix::process::{CommandExt, ExitStatusExt},
+        path::Path,
         process::{Child, Command, Stdio},
         time::{Duration, Instant},
     };
+    fn required_diagnostics() -> PathBuf {
+        let path = PathBuf::from(
+            std::env::var_os("NAVD_CONFIG_CANCEL_DIAGNOSTICS")
+                .expect("NAVD_CONFIG_CANCEL_DIAGNOSTICS must name a fresh evidence directory"),
+        );
+        assert!(path.is_absolute(), "diagnostics path must be absolute");
+        path
+    }
+    fn copy_evidence(source: &Path, destination: &Path) -> std::io::Result<()> {
+        if !source.exists() {
+            return Ok(());
+        }
+        fs::create_dir(destination)?;
+        for entry in fs::read_dir(source)? {
+            let entry = entry?;
+            let path = entry.path();
+            let target = destination.join(entry.file_name());
+            let kind = entry.file_type()?;
+            if kind.is_dir() {
+                copy_evidence(&path, &target)?;
+            } else if kind.is_file() {
+                let size = entry.metadata()?.len();
+                if size > 8 * 1024 * 1024 {
+                    return Err(std::io::Error::other(format!(
+                        "diagnostic file exceeds 8 MiB: {} ({size} bytes)",
+                        path.display()
+                    )));
+                }
+                fs::copy(path, target)?;
+            } else {
+                return Err(std::io::Error::other(format!(
+                    "unexpected diagnostic entry: {}",
+                    path.display()
+                )));
+            }
+        }
+        Ok(())
+    }
+    struct Diagnostics {
+        destination: PathBuf,
+        output: PathBuf,
+        marker: PathBuf,
+        stdout: PathBuf,
+        stderr: PathBuf,
+        pid: Pid,
+        started: Instant,
+        phase: Cell<&'static str>,
+        controller_signal: Cell<Option<i32>>,
+        probe_pid: Cell<Option<i32>>,
+    }
+    impl Drop for Diagnostics {
+        fn drop(&mut self) {
+            let controller_alive = rustix::process::waitid(
+                WaitId::Pid(self.pid),
+                WaitIdOptions::EXITED | WaitIdOptions::NOHANG | WaitIdOptions::NOWAIT,
+            )
+            .map(|status| status.is_none())
+            .ok();
+            let copied = copy_evidence(&self.output, &self.destination.join("actual"));
+            let _ = fs::copy(&self.stdout, self.destination.join("controller.stdout"));
+            let _ = fs::copy(&self.stderr, self.destination.join("controller.stderr"));
+            if self.marker.exists() {
+                let _ = fs::copy(&self.marker, self.destination.join("marker"));
+            }
+            let record = self.output.join("environment/source/record.json");
+            let receipt = self.output.join("report.json");
+            let state = serde_json::json!({
+                "phase": self.phase.get(),
+                "panicking": std::thread::panicking(),
+                "elapsed_ms": self.started.elapsed().as_millis(),
+                "controller_alive": controller_alive,
+                "marker_exists": self.marker.exists(),
+                "source_record_exists": record.is_file(),
+                "report_exists": receipt.is_file(),
+                "controller_signal": self.controller_signal.get(),
+                "probe_pid": self.probe_pid.get(),
+                "probe_alive": self.probe_pid.get().map(|pid| PathBuf::from(format!("/proc/{pid}")).exists()),
+                "output_copy_error": copied.err().map(|error| error.to_string()),
+            });
+            let _ = fs::write(
+                self.destination.join("state.json"),
+                serde_json::to_vec_pretty(&state).unwrap(),
+            );
+        }
+    }
     struct Owned(Option<Child>);
     impl Drop for Owned {
         fn drop(&mut self) {
@@ -261,6 +348,11 @@ fn actual_cli_interrupt_after_child_start_reaps_probe_and_retains_original_signa
     let t = tempfile::tempdir().unwrap();
     let marker = t.path().join("marker");
     let output = t.path().join("actual");
+    let stdout = t.path().join("controller.stdout");
+    let stderr = t.path().join("controller.stderr");
+    let destination = required_diagnostics();
+    fs::create_dir(&destination)
+        .expect("NAVD_CONFIG_CANCEL_DIAGNOSTICS must name a fresh directory");
     let mut command = Command::new(required("NAVD_CONFIG_WORKER_BINARY"));
     command.args([
         std::ffi::OsStr::new("--binary"),
@@ -274,11 +366,23 @@ fn actual_cli_interrupt_after_child_start_reaps_probe_and_retains_original_signa
         .env("NAVD_CONFIG_FIXTURE_MARKER", &marker)
         .env("OPENPILOT_RUST_ROOT", root())
         .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
+        .stdout(fs::File::create(&stdout).unwrap())
+        .stderr(fs::File::create(&stderr).unwrap())
         .process_group(0);
     let mut child = Owned(Some(command.spawn().unwrap()));
     let pid = Pid::from_raw(child.0.as_ref().unwrap().id() as i32).unwrap();
+    let diagnostics = Diagnostics {
+        destination,
+        output: output.clone(),
+        marker: marker.clone(),
+        stdout,
+        stderr,
+        pid,
+        started: Instant::now(),
+        phase: Cell::new("waiting_for_candidate_start"),
+        controller_signal: Cell::new(None),
+        probe_pid: Cell::new(None),
+    };
     let deadline = Instant::now() + Duration::from_secs(10);
     while !marker.exists() {
         assert!(Instant::now() < deadline, "actual child start barrier");
@@ -291,6 +395,8 @@ fn actual_cli_interrupt_after_child_start_reaps_probe_and_retains_original_signa
         std::thread::sleep(Duration::from_millis(5));
     }
     let probe: i32 = fs::read_to_string(&marker).unwrap().trim().parse().unwrap();
+    diagnostics.probe_pid.set(Some(probe));
+    diagnostics.phase.set("waiting_for_interrupt_cleanup");
     rustix::process::kill_process(pid, Signal::INT).unwrap();
     while rustix::process::waitid(
         WaitId::Pid(pid),
@@ -307,9 +413,11 @@ fn actual_cli_interrupt_after_child_start_reaps_probe_and_retains_original_signa
         "controller itself must reap the actual child before test cleanup"
     );
     let status = child.0.take().unwrap().wait().unwrap();
+    diagnostics.controller_signal.set(status.signal());
     assert_eq!(status.signal(), Some(2));
     assert!(output.join("environment/source/record.json").is_file());
     assert!(!output.join("report.json").exists());
+    diagnostics.phase.set("passed");
 }
 
 #[test]
