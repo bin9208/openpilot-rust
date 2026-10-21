@@ -46,6 +46,10 @@ const SOURCES: [(&str, &str); 7] = [
         "6337d64508299a53c00f0795397e5043ec7b69c864d6ca8c02604244502aba5e",
     ),
 ];
+const ORIGINAL_BINDING_PROVENANCE: &[u8] =
+    include_bytes!("../tests/fixtures/beep-reference/original-binding-provenance-3835653.json");
+const ORIGINAL_BINDING_PROVENANCE_SHA256: &str =
+    "62a4531e93e1659885012f0b7a53df4821a6ea903ebf1ce1e5bf93187e8b3ad9";
 
 pub struct Options {
     pub root: PathBuf,
@@ -318,6 +322,80 @@ fn capture_files(original: &Path, pinned: &str) -> Result<()> {
     Ok(())
 }
 
+fn captured_binding_hash(original: &Path) -> Result<String> {
+    let mut receipt = Bound::open(&original.join("inputs.sha256"), 16 * 1024)?;
+    receipt.file.seek(SeekFrom::Start(0))?;
+    let mut bytes = Vec::new();
+    (&mut receipt.file)
+        .take(16 * 1024 + 1)
+        .read_to_end(&mut bytes)?;
+    if bytes.len() > 16 * 1024 {
+        return Err("beep original input receipt exceeds bound".into());
+    }
+    let rows = std::str::from_utf8(&bytes)?.lines().collect::<Vec<_>>();
+    if rows.len() != SOURCES.len() + 1 {
+        return Err("beep original input receipt has wrong row count".into());
+    }
+    for ((name, digest), row) in SOURCES.into_iter().zip(&rows) {
+        if *row != format!("{digest}  {name}") {
+            return Err(format!("beep original input source differs: {name}").into());
+        }
+    }
+    let (digest, path) = rows[SOURCES.len()]
+        .split_once("  ")
+        .ok_or("beep original binding receipt is malformed")?;
+    if digest.len() != 64
+        || !digest.bytes().all(|byte| byte.is_ascii_hexdigit())
+        || !path.starts_with('/')
+        || !Path::new(path)
+            .file_name()
+            .and_then(|name| name.to_str())
+            .is_some_and(|name| name.starts_with("params_pyx") && name.ends_with(".so"))
+    {
+        return Err("beep original binding receipt is malformed".into());
+    }
+    receipt.verify(16 * 1024)?;
+    Ok(digest.to_owned())
+}
+
+fn original_binding_provenance(original: &Path, historical_hash: &str) -> Result<Value> {
+    let hash = format!("{:x}", Sha256::digest(ORIGINAL_BINDING_PROVENANCE));
+    if hash != ORIGINAL_BINDING_PROVENANCE_SHA256 {
+        return Err("beep sealed original binding provenance changed".into());
+    }
+    let provenance: Value = serde_json::from_slice(ORIGINAL_BINDING_PROVENANCE)?;
+    if provenance["result"] != "pass"
+        || provenance["module_sha256"] != historical_hash
+        || provenance["source_commit"] != fs::read_to_string(original.join("SOURCE_COMMIT"))?.trim()
+        || provenance["sources"]
+            .as_object()
+            .is_none_or(|map| map.len() != 18)
+    {
+        return Err("beep original binding provenance disagrees with original capture".into());
+    }
+    Ok(provenance)
+}
+
+fn bound_binding_sources(root: &Path, original: &Value, current: &Value) -> Result<Vec<Bound>> {
+    if current["result"] != "pass" || current["sources"] != original["sources"] {
+        return Err("beep rebuilt binding source map differs from sealed original".into());
+    }
+    for key in ["json11_architecture", "json11_sha256", "json11_version"] {
+        if current[key] != original[key] || current[key].as_str().is_none() {
+            return Err(format!("beep rebuilt binding {key} differs from sealed original").into());
+        }
+    }
+    let mut bound = Vec::new();
+    for (name, digest) in original["sources"].as_object().unwrap() {
+        let source = Bound::open(&root.join(name), 16 * 1024 * 1024)?;
+        if Some(source.hash.as_str()) != digest.as_str() {
+            return Err(format!("beep rebuilt binding source changed: {name}").into());
+        }
+        bound.push(source);
+    }
+    Ok(bound)
+}
+
 fn source_pins(root: &Path) -> Result<Vec<Bound>> {
     let mut sources = Vec::new();
     for (name, digest) in SOURCES {
@@ -488,6 +566,8 @@ fn run_case(case: &Case, binary: &Path, output: &Path, runner: &mut dyn Runner) 
 pub fn check(options: &Options, runner: &mut dyn Runner, printed: &mut dyn Write) -> Result<()> {
     let mut sources = source_pins(&options.root)?;
     capture_files(&options.original, &options.original_manifest_sha256)?;
+    let original_binding_hash = captured_binding_hash(&options.original)?;
+    let original_binding = original_binding_provenance(&options.original, &original_binding_hash)?;
     let mut binding = Bound::open(&options.binding, 64 * 1024 * 1024)?;
     let mut receipt = Bound::open(
         &options.binding.with_file_name("provenance.json"),
@@ -506,6 +586,7 @@ pub fn check(options: &Options, runner: &mut dyn Runner, printed: &mut dyn Write
     if provenance["module_sha256"] != binding.hash {
         return Err("beep original binding differs from provenance".into());
     }
+    let mut binding_sources = bound_binding_sources(&options.root, &original_binding, &provenance)?;
     // The original CLI resolves valid relative executable paths before spawn.
     let selected_binary = fs::canonicalize(&options.binary)?;
     let mut binary = Bound::open(&selected_binary, 128 * 1024 * 1024)?;
@@ -529,7 +610,13 @@ pub fn check(options: &Options, runner: &mut dyn Runner, printed: &mut dyn Write
     for source in &mut sources {
         source.verify(16 * 1024 * 1024)?;
     }
+    for source in &mut binding_sources {
+        source.verify(16 * 1024 * 1024)?;
+    }
     capture_files(&options.original, &options.original_manifest_sha256)?;
+    if captured_binding_hash(&options.original)? != original_binding_hash {
+        return Err("beep original binding receipt changed".into());
+    }
     binary.verify(128 * 1024 * 1024)?;
     binding.verify(64 * 1024 * 1024)?;
     receipt.verify(1024 * 1024)?;
@@ -566,7 +653,10 @@ pub fn cli() -> Result<()> {
             binary: PathBuf::from(&args.values["--binary"]),
             binding: PathBuf::from(&args.values["--binding"]),
             original: PathBuf::from(&args.values["--original"]),
-            original_manifest_sha256: args.values["--original-manifest-sha256"].clone(),
+            original_manifest_sha256: args.values["--original-manifest-sha256"]
+                .to_str()
+                .ok_or("non-UTF8 beep original manifest hash")?
+                .to_owned(),
             output: PathBuf::from(&args.values["--output"]),
         },
         &mut NativeRunner,

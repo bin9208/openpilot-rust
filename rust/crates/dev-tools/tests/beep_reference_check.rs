@@ -3,6 +3,7 @@ use openpilot_dev_tools::{
     qa_process::{Captured, CommandSpec, Runner},
     seal::Result,
 };
+use sha2::{Digest, Sha256};
 use std::{env, fs, path::PathBuf};
 
 fn options(output: PathBuf) -> Options {
@@ -96,6 +97,38 @@ fn foreign_capture_manifest_cannot_launch_or_publish() {
     assert!(check(&options, &mut runner, &mut std::io::sink()).is_err());
     assert_eq!(runner.0, 0);
     assert!(!options.output.exists());
+}
+
+#[test]
+fn self_consistent_binding_with_changed_source_or_json11_cannot_launch() {
+    let original: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "fixtures/beep-reference/original-binding-provenance-3835653.json"
+    ))
+    .unwrap();
+    for changed in ["sources", "json11_sha256"] {
+        let private = tempfile::tempdir().unwrap();
+        let mut options = options(private.path().join("report"));
+        options.binding = private.path().join("params_pyx_foreign.so");
+        let altered = b"freshly rebuilt Params binding with changed source policy";
+        fs::write(&options.binding, altered).unwrap();
+        let mut provenance = original.clone();
+        provenance["module_sha256"] = serde_json::json!(format!("{:x}", Sha256::digest(altered)));
+        if changed == "sources" {
+            provenance["sources"]["openpilot/common/params.h"] = serde_json::json!("0".repeat(64));
+        } else {
+            provenance["json11_sha256"] = serde_json::json!("0".repeat(64));
+        }
+        fs::write(
+            private.path().join("provenance.json"),
+            serde_json::to_vec(&provenance).unwrap(),
+        )
+        .unwrap();
+        let mut runner = RejectRun(0);
+        let error = check(&options, &mut runner, &mut std::io::sink()).unwrap_err();
+        assert!(error.to_string().contains(changed), "{changed}: {error}");
+        assert_eq!(runner.0, 0);
+        assert!(!options.output.exists());
+    }
 }
 
 #[test]
