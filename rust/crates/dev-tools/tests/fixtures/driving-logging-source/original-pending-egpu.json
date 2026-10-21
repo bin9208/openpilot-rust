@@ -1,0 +1,50 @@
+[
+  {
+    "expression": "cloudlog.warning(f\"queued {USBGPU_TMUX_ERROR_REASON} tmux capture: {context}\")",
+    "line": 59
+  },
+  {
+    "expression": "cloudlog.warning(\n      f\"did not replace pending CarrotException={pending_reason!r} with \"\n      f\"{USBGPU_TMUX_ERROR_REASON}: {context}\"\n    )",
+    "line": 63
+  },
+  {
+    "expression": "cloudlog.exception(f\"failed to queue {USBGPU_TMUX_ERROR_REASON} tmux capture: {context}\")",
+    "line": 68
+  },
+  {
+    "expression": "cloudlog.warning(\n      f\"eGPU USB not present at modeld start; waiting up to {USBGPU_DISCOVERY_GRACE_SECONDS:.1f}s for SuperSpeed enumeration\"\n    )",
+    "line": 234
+  },
+  {
+    "expression": "cloudlog.warning(\"eGPU USB enumerated during startup grace period\")",
+    "line": 239
+  },
+  {
+    "expression": "cloudlog.warning(\"eGPU USB still absent after startup grace period; using internal model\")",
+    "line": 241
+  },
+  {
+    "expression": "cloudlog.warning(f\"usbgpu present: {_present}, compiled: {_compiled}, startup_failed: {_startup_failed}, requested: {USBGPU}\")",
+    "line": 244
+  },
+  {
+    "expression": "cloudlog.warning(f\"eGPU PCIe link not ready; retrying ({attempt}/{USBGPU_INIT_ATTEMPTS}): {exc!r}\")",
+    "line": 301
+  },
+  {
+    "expression": "cloudlog.exception(\"eGPU model load failed\")",
+    "line": 305
+  },
+  {
+    "expression": "cloudlog.error(f\"eGPU model load timed out after {USBGPU_MODEL_LOAD_TIMEOUT}s\")",
+    "line": 313
+  },
+  {
+    "expression": "cloudlog.exception(\"eGPU model failed, falling back to internal GPU\")",
+    "line": 479
+  },
+  {
+    "expression": "cloudlog.warning(\"eGPU first model output published; startup complete\")",
+    "line": 558
+  }
+]

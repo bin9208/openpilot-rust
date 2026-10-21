@@ -3,6 +3,7 @@
 //! no Python runs in this controller.
 use crate::{
     driving_daemon_reference::{compare_packet, Original},
+    driving_logging_check::{Collector, DrivingScenario},
     qa_process::{CommandSpec, NativeRunner, Runner},
     seal::Result,
     services_header,
@@ -80,7 +81,10 @@ pub struct Options {
 fn digest(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
-fn identity(value: &Metadata) -> (u64, u64, u64, i64, i64, i64, i64) {
+type FileIdentity = (u64, u64, u64, i64, i64, i64, i64);
+type CatalogFiles = BTreeMap<PathBuf, (FileIdentity, String)>;
+
+fn identity(value: &Metadata) -> FileIdentity {
     (
         value.dev(),
         value.ino(),
@@ -101,16 +105,14 @@ struct CatalogBinding {
     root: PathBuf,
     directory: File,
     identity: (u64, u64),
-    files: BTreeMap<PathBuf, ((u64, u64, u64, i64, i64, i64, i64), String)>,
+    files: CatalogFiles,
 }
 impl CatalogBinding {
-    fn walk(
-        root: &Path,
-    ) -> Result<BTreeMap<PathBuf, ((u64, u64, u64, i64, i64, i64, i64), String)>> {
+    fn walk(root: &Path) -> Result<CatalogFiles> {
         fn visit(
             root: &Path,
             directory: &Path,
-            files: &mut BTreeMap<PathBuf, ((u64, u64, u64, i64, i64, i64, i64), String)>,
+            files: &mut CatalogFiles,
             total: &mut u64,
         ) -> Result<()> {
             for entry in fs::read_dir(directory)? {
@@ -233,7 +235,9 @@ impl Binding {
             return Err(format!("invalid driving source: {}", path.display()).into());
         }
         let mut bytes = Vec::new();
-        Read::by_ref(&mut file).take(max + 1).read_to_end(&mut bytes)?;
+        Read::by_ref(&mut file)
+            .take(max + 1)
+            .read_to_end(&mut bytes)?;
         if bytes.len() as u64 != metadata.len() {
             return Err("driving source changed while binding".into());
         }
@@ -278,7 +282,9 @@ impl Binding {
             return Err("source no longer bounded regular file".into());
         }
         let mut bytes = Vec::new();
-        Read::by_ref(&mut file).take(max + 1).read_to_end(&mut bytes)?;
+        Read::by_ref(&mut file)
+            .take(max + 1)
+            .read_to_end(&mut bytes)?;
         if bytes.len() as u64 != metadata.len() {
             return Err("source size drifted".into());
         }
@@ -358,7 +364,7 @@ impl Lines {
         let started = Instant::now();
         loop {
             signals.check()?;
-            if let Some(index) = self.pending.iter().position(|byte| *byte == b'\n') {
+            while let Some(index) = self.pending.iter().position(|byte| *byte == b'\n') {
                 let line = self.pending.drain(..=index).collect::<Vec<_>>();
                 let line = String::from_utf8(line)?.trim_end().to_owned();
                 if tokens.iter().any(|token| line.contains(token)) {
@@ -411,6 +417,8 @@ impl OwnedChild {
         command
             .env_remove("SIMULATION")
             .env_remove("SEND_RAW_PRED")
+            .env_remove("MODEL_LOG_FAULT")
+            .env_remove("MODEL_LOG_FAULT_AUDIT")
             .args(args)
             .envs(env.iter().cloned())
             .process_group(0)
@@ -566,6 +574,35 @@ fn build_peer(options: &Options, output: &Path) -> Result<PathBuf> {
     Ok(destination)
 }
 
+fn checked_source_commit(root: &Path) -> Result<String> {
+    let mut spec = CommandSpec::new_os(
+        vec![
+            "/usr/bin/git".into(),
+            "-C".into(),
+            root.as_os_str().to_owned(),
+            "rev-parse".into(),
+            "HEAD".into(),
+        ],
+        Duration::from_secs(10),
+    );
+    spec.stdout_limit = 128;
+    spec.stderr_limit = 4096;
+    let result = NativeRunner.run(&spec)?;
+    if result.code != 0 {
+        return Err("cannot identify driving source checkout".into());
+    }
+    let commit = String::from_utf8(result.stdout)?.trim().to_owned();
+    if commit.len() != 40 || !commit.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Err("driving source checkout does not have a full Git commit".into());
+    }
+    Ok(commit)
+}
+
+struct ScenarioContext<'a> {
+    source_commit: Option<&'a str>,
+    fault: Option<(&'a str, &'a Path)>,
+}
+
 fn scenario(
     options: &Options,
     original: &Original,
@@ -573,6 +610,7 @@ fn scenario(
     peer_path: &Path,
     signals: &Signals,
     index: usize,
+    context: ScenarioContext<'_>,
 ) -> Result<Value> {
     let width = case["resolution"][0].as_u64().ok_or("missing width")?;
     let height = case["resolution"][1].as_u64().ok_or("missing height")?;
@@ -609,6 +647,23 @@ fn scenario(
     if mode == "dual" {
         env.push(("SEND_RAW_PRED".into(), "0".into()));
     }
+    if let Some((mode, audit)) = context.fault {
+        env.push(("MODEL_LOG_FAULT".into(), mode.into()));
+        env.push(("MODEL_LOG_FAULT_AUDIT".into(), audit.as_os_str().to_owned()));
+    }
+    let mut collector = match (&options.collector, context.source_commit) {
+        (Some(binary), Some(commit)) => Some(Collector::start(
+            binary,
+            &destination.join("logging"),
+            &env,
+            &prefix,
+            &options.root,
+            commit,
+        )?),
+        (None, None) => None,
+        _ => return Err("driving collector source binding missing".into()),
+    };
+    let mut process_ids = Vec::new();
     let args = [
         OsString::from("--trusted-catalog"),
         options.catalog.as_os_str().to_owned(),
@@ -620,6 +675,7 @@ fn scenario(
         &destination.join("camera-wait.log"),
         false,
     )?;
+    process_ids.push(camera_wait.child.id());
     camera_wait.wait_line(&["modeld init"], signals)?;
     thread::sleep(Duration::from_millis(150));
     camera_wait.alive()?;
@@ -657,6 +713,7 @@ fn scenario(
         &destination.join("params-wait.log"),
         false,
     )?;
+    process_ids.push(params_wait.child.id());
     params_wait.wait_line(
         &[if mode == "dual" {
             "connected extra cam"
@@ -682,6 +739,7 @@ fn scenario(
             &destination.join("frame-wait.log"),
             false,
         )?;
+        process_ids.push(first_wait.child.id());
         first_wait.wait_line(&["modeld got CarParams"], signals)?;
         first_wait.stop(Some(Signal::TERM), signals)?;
     }
@@ -698,6 +756,8 @@ fn scenario(
         &destination.join("daemon.log"),
         false,
     )?;
+    process_ids.push(daemon.child.id());
+    let daemon_pid = daemon.child.id();
     daemon.wait_line(
         &[if mode == "dual" {
             "connected extra cam"
@@ -833,6 +893,24 @@ fn scenario(
     daemon.stop(None, signals)?;
     send(&mut peer, "stop".into())?;
     peer.stop(None, signals)?;
+    let logging = if let Some(collector) = &mut collector {
+        let mut frame_ids = Vec::with_capacity(trace.len() + 1);
+        frame_ids.push(2);
+        for step in &trace {
+            frame_ids.push(step["frame_id"].as_u64().ok_or("trace frame ID missing")?);
+        }
+        let source = DrivingScenario {
+            pid: daemon_pid,
+            width,
+            height,
+            size,
+            mode,
+            frames: &frame_ids,
+        };
+        Some(collector.finish(&process_ids, &source)?)
+    } else {
+        None
+    };
     let catalog = services_header::catalog();
     let services = catalog
         .as_array()
@@ -854,7 +932,7 @@ fn scenario(
         "raw_comparison": "exact bytes", "float_tolerance": 1e-6,
         "polynomial_tolerance": 2e-5, "discrete_fields": "exact", "device_validation": false,
         "trace": trace, "queue_capacities": queue_capacities,
-        "llvm_path": std::env::var("LLVM_PATH").ok(), "logging": null,
+        "llvm_path": std::env::var("LLVM_PATH").ok(), "logging": logging,
         "startup": {"model_loaded_before_car_params": true,
             "model_loaded_before_first_frame": true, "first_frame_id": 2,
             "first_frame_prepare_only": true},
@@ -908,10 +986,7 @@ impl Completed {
 
 /// Own the output directory and all children. The receipt is written only after
 /// every six-scenario IPC comparison and a final input/source verification.
-fn execute(options: &Options) -> Result<Completed> {
-    if options.collector.is_some() {
-        return Err("driving collector parity remains pending".into());
-    }
+fn execute(options: &Options, only_dual: bool, fault: Option<(&str, &Path)>) -> Result<Completed> {
     let signals = Signals::new()?;
     let original = Original::open(&options.original_dir, &options.original_manifest_sha256)?;
     let source_pins = original.manifest()["source_pins"]
@@ -931,8 +1006,22 @@ fn execute(options: &Options) -> Result<Completed> {
     let binary = Binding::open(options.binary.clone(), None, 512_000_000)?;
     binary.require_host_elf()?;
     bindings.push(binary);
+    let source_commit = if let Some(collector) = &options.collector {
+        let collector = Binding::open(collector.clone(), None, 512_000_000)?;
+        collector.require_host_elf()?;
+        bindings.push(collector);
+        Some(checked_source_commit(&options.root)?)
+    } else {
+        None
+    };
     let catalog = CatalogBinding::open(options.catalog.clone())?;
     fs::create_dir(&options.output)?;
+    if let Some((_, audit)) = fault {
+        if audit != options.output.join("audit") {
+            return Err("fault audit path must belong to owned output".into());
+        }
+        fs::create_dir(audit)?;
+    }
     let output_dir = File::from(rustix::fs::open(
         &options.output,
         rustix::fs::OFlags::RDONLY
@@ -948,17 +1037,31 @@ fn execute(options: &Options) -> Result<Completed> {
     bindings.push(peer_binary);
     let mut reports = Vec::new();
     for (index, case) in original.scenarios().iter().enumerate() {
+        if only_dual && (case["resolution"][0] != 1344 || case["mode"] != "dual") {
+            continue;
+        }
         signals.check()?;
-        reports.push(scenario(options, &original, case, &peer, &signals, index)?);
+        reports.push(scenario(
+            options,
+            &original,
+            case,
+            &peer,
+            &signals,
+            index,
+            ScenarioContext {
+                source_commit: source_commit.as_deref(),
+                fault,
+            },
+        )?);
     }
-    if reports.len() != 6
+    if reports.len() != if only_dual { 1 } else { 6 }
         || reports
             .iter()
             .map(|row| row["messages"].as_u64().unwrap_or(0))
             .sum::<u64>()
-            != 114
+            != if only_dual { 33 } else { 114 }
     {
-        return Err("driving six-scenario publication count changed".into());
+        return Err("driving scenario publication count changed".into());
     }
     original.verify()?;
     catalog.verify()?;
@@ -1005,7 +1108,25 @@ fn execute(options: &Options) -> Result<Completed> {
 }
 
 pub fn run(options: &Options) -> Result<Value> {
-    let completed = execute(options)?;
+    let completed = execute(options, false, None)?;
+    completed.verify()?;
+    Ok(completed.report.clone())
+}
+
+/// The link-fault checker reuses the exact live 1344-dual scenario, including
+/// the same packet comparator and collector. The ordinary entry point still
+/// requires all six scenarios and all 114 published packets.
+pub fn run_only_dual(options: &Options) -> Result<Value> {
+    let completed = execute(options, true, None)?;
+    completed.verify()?;
+    Ok(completed.report.clone())
+}
+
+pub fn run_link_fault_dual(options: &Options, mode: &str, audit: &Path) -> Result<Value> {
+    if !matches!(mode, "timing-error" | "timing-full") || options.collector.is_none() {
+        return Err("link fault requires a known timing mode and live collector".into());
+    }
+    let completed = execute(options, true, Some((mode, audit)))?;
     completed.verify()?;
     Ok(completed.report.clone())
 }
@@ -1057,8 +1178,35 @@ pub fn cli() -> Result<()> {
         peer: peer.map(PathBuf::from),
         compiler: compiler.map(PathBuf::from),
     };
-    let completed = execute(&options)?;
+    let completed = execute(&options, false, None)?;
     println!("{}", serde_json::to_string(&completed.report)?);
     completed.verify()?;
     Ok(())
+}
+
+#[cfg(test)]
+mod line_tests {
+    use super::{Lines, Signals};
+    use std::{
+        fs::File,
+        io::Write,
+        os::{fd::OwnedFd, unix::net::UnixStream},
+    };
+
+    #[test]
+    fn buffered_later_match_survives_stream_eof() {
+        let directory = tempfile::tempdir().unwrap();
+        let (mut writer, reader) = UnixStream::pair().unwrap();
+        writer.write_all(b"unrelated\nREADY\n").unwrap();
+        drop(writer);
+        let descriptor: OwnedFd = reader.into();
+        let mut lines = Lines {
+            pipe: File::from(descriptor),
+            log: File::create(directory.path().join("peer.log")).unwrap(),
+            pending: Vec::new(),
+            total: 0,
+        };
+        let signals = Signals::new().unwrap();
+        assert_eq!(lines.until(&["READY"], &signals).unwrap(), "READY");
+    }
 }
