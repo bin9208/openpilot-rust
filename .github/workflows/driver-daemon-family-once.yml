@@ -1,0 +1,467 @@
+name: 296 focused driver no-collector, CLI and raw-alias family
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/driver-daemon-family-once.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  driver-daemon-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      EXPECTED_SOURCE: a256d735e22fb7fc012cb6434e90991c277bdcd4
+      RUSTUP_TOOLCHAIN: 1.94.0
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CPU_COUNT: '2'
+      DEV: CPU:LLVM
+      JIT: '1'
+      JIT_BATCH_SIZE: '0'
+      OPENPILOT_HACKS: '1'
+      LLVM_PATH: /usr/lib/x86_64-linux-gnu/libLLVM-18.so
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        ref: a256d735e22fb7fc012cb6434e90991c277bdcd4
+    - name: Require exact source, disk room and native prerequisites
+      shell: bash
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        mkdir -p "$RUNNER_TEMP/driver-daemon-native-296"
+
+        sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends g++ clang libclang-dev libllvm18 git-lfs capnproto libcapnp-dev libzmq3-dev
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        '
+    - name: Fail fast on driver leaf unit, integration compile and strict Clippy
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driver-daemon-native-296"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driver-daemon-native --lib driver_daemon_check::
+        --locked -- --nocapture >"$proof/unit.log" 2>&1 || { cat "$proof/unit.log"; exit 1; }
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driver-daemon-native --test driver_daemon_check
+        --test driver_daemon_no_collector --no-run --locked >"$proof/integration-compile.log" 2>&1 || { cat "$proof/integration-compile.log";
+        exit 1; }
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driver-daemon-native --lib --test driver_daemon_check
+        --test driver_daemon_no_collector --bin check-driver-daemon --locked -- -D warnings >"$proof/clippy.log" 2>&1 || {
+        cat "$proof/clippy.log"; exit 1; }
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driver-daemon-native --bin check-driver-daemon
+        --locked >"$proof/native-cli-build.log" 2>&1 || { cat "$proof/native-cli-build.log"; exit 1; }
+
+        '
+    - name: Fail fast on typed native CLI help and parser admissions
+      shell: bash
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/driver-daemon-native-296\"\nsha256sum rust/target/debug/check-driver-daemon\
+        \ >\"$proof/native-cli-elf-before.sha256\"\npython3 - <<'PY_NATIVE_ADMISSION' >\"$proof/native-cli-admission-summary.json\"\
+        \nimport hashlib, json, os, subprocess\nfrom pathlib import Path\nproof = Path(os.environ[\"RUNNER_TEMP\"]) / \"driver-daemon-native-296\"\
+        \nbinary = Path(os.environ[\"GITHUB_WORKSPACE\"]) / \"rust/target/debug/check-driver-daemon\"\noutput = proof / \"\
+        native-cli-admission\"\noutput.mkdir()\nroster = [\n    (\"short-help\", [\"-h\"], 0),\n    (\"long-help\", [\"--help\"\
+        ], 0),\n    (\"missing-all\", [], 2),\n    (\"unique-abbrev-missing-rest\", [\"--bin\", \"/missing-driver\"], 2),\n\
+        \    (\"output-abbrev-missing-rest\", [\"--o\", \"/unused-output\"], 2),\n    (\"models-abbrev-missing-rest\", [\"\
+        --m\", \"/unused-models\"], 2),\n    (\"ambiguous-abbrev\", [\"--c\", \"value\"], 2),\n    (\"missing-value\", [\"\
+        --binary\"], 2),\n    (\"unknown\", [\"--unknown\"], 2),\n    (\"repeated-missing-rest\", [\"--binary\", \"/first\"\
+        , \"--binary\", \"/last\"], 2),\n]\nmanifest = {\"binary_sha256\": hashlib.sha256(binary.read_bytes()).hexdigest(),\
+        \ \"cases\": []}\nreceipt = proof / \"native-cli-admission-manifest.json\"\nreceipt.write_text(json.dumps(manifest,\
+        \ sort_keys=True, indent=2) + \"\\n\")\nfor name, argv, expected_status in roster:\n    result = subprocess.run([os.fspath(binary),\
+        \ *argv], capture_output=True, timeout=10, check=False)\n    stdout = output / f\"{name}.stdout\"\n    stderr = output\
+        \ / f\"{name}.stderr\"\n    stdout.write_bytes(result.stdout)\n    stderr.write_bytes(result.stderr)\n    manifest[\"\
+        cases\"].append({\"name\": name, \"argv\": argv, \"status\": result.returncode,\n                              \"\
+        stdout\": {\"path\": stdout.name, \"bytes\": len(result.stdout), \"sha256\": hashlib.sha256(result.stdout).hexdigest()},\n\
+        \                              \"stderr\": {\"path\": stderr.name, \"bytes\": len(result.stderr), \"sha256\": hashlib.sha256(result.stderr).hexdigest()}})\n\
+        \    receipt.write_text(json.dumps(manifest, sort_keys=True, indent=2) + \"\\n\")\n    assert result.returncode ==\
+        \ expected_status, f\"native {name} status {result.returncode} != {expected_status}\"\nprint(json.dumps({\"cases\"\
+        : len(manifest[\"cases\"]), \"manifest_sha256\": hashlib.sha256(receipt.read_bytes()).hexdigest()}, sort_keys=True))\n\
+        PY_NATIVE_ADMISSION\nsha256sum -c \"$proof/native-cli-elf-before.sha256\" >\"$proof/native-cli-elf-after-admission.log\"\
+        \n"
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Install pinned original Python observer dependencies
+      shell: bash
+      run: 'set -euo pipefail
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        python -m pip install numpy==2.5.3 zstandard==0.25.0 pycapnp==2.1.0 pyzmq==27.2.0 Cython==3.2.4 setuptools==82.0.1
+        pytest==9.0.2
+
+        '
+    - name: Build only driver daemon, model runner, log collector and original IPC bindings
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driver-daemon-native-296"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-model-runtime --bin model-run --locked >"$proof/model-run-build.log"
+        2>&1 || { cat "$proof/model-run-build.log"; exit 1; }
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dmonitoringmodeld --locked >"$proof/dmonitoring-build.log"
+        2>&1 || { cat "$proof/dmonitoring-build.log"; exit 1; }
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-logmessaged --bin openpilot-logmessaged --locked >"$proof/logmessaged-build.log"
+        2>&1 || { cat "$proof/logmessaged-build.log"; exit 1; }
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/model-msgq-python" >"$proof/msgq-build.log" 2>&1
+        || { cat "$proof/msgq-build.log"; exit 1; }
+
+        '
+    - name: Compile only original driver model, metadata and both camera warps
+      shell: bash
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/driver-daemon-native-296\"\nrust/tools/check-disk-space --path \"$GITHUB_WORKSPACE\"\
+        \ --growth-mib 4096\nmkdir -p \"$RUNNER_TEMP/original-models\"\npython tinygrad_repo/examples/openpilot/compile3.py\
+        \ \"$GITHUB_WORKSPACE/openpilot/selfdrive/modeld/models/dmonitoring_model.onnx\" \"$RUNNER_TEMP/original-models/dmonitoring_model_tinygrad.pkl\"\
+        \ >\"$proof/driver-model-compile.log\" 2>&1 || { cat \"$proof/driver-model-compile.log\"; exit 1; }\npython openpilot/selfdrive/modeld/get_model_metadata.py\
+        \ openpilot/selfdrive/modeld/models/dmonitoring_model.onnx >\"$proof/metadata-compile.log\" 2>&1 || { cat \"$proof/metadata-compile.log\"\
+        ; exit 1; }\ncp openpilot/selfdrive/modeld/models/dmonitoring_model_metadata.pkl \"$RUNNER_TEMP/original-models/\"\
+        \nfor resolution in 1928x1208 1344x760; do\n  rust/tools/check-disk-space --path \"$GITHUB_WORKSPACE\" --growth-mib\
+        \ 2048\n  python openpilot/selfdrive/modeld/compile_dm_warp.py --camera-resolution \"$resolution\" --warp-to 1440x960\
+        \ --output \"$RUNNER_TEMP/original-models/dm_warp_${resolution}_tinygrad.pkl\" >\"$proof/warp-${resolution}.log\"\
+        \ 2>&1 || { cat \"$proof/warp-${resolution}.log\"; exit 1; }\ndone\n"
+    - name: Publish driver-only native catalog from sealed original PKLs
+      shell: bash
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/driver-daemon-native-296\"\nrust/tools/check-disk-space --path \"$GITHUB_WORKSPACE\"\
+        \ --growth-mib 4096\npython - <<'PY_CATALOG' >\"$proof/catalog-build.log\" 2>&1\nimport hashlib\nimport os\nfrom pathlib\
+        \ import Path\nfrom model_export.original import DriverArtifacts, driver\nfrom model_export.publish import BundleSpec,\
+        \ publish\nfrom openpilot.common.file_chunker import open_file_chunked\n\nroot = Path(os.environ[\"RUNNER_TEMP\"])\
+        \ / \"original-models\"\noutput = Path(os.environ[\"RUNNER_TEMP\"]) / \"native-catalog\"\ndef source_hash(path):\n\
+        \    with open_file_chunked(str(path)) as source:\n        return hashlib.file_digest(source, \"sha256\").hexdigest()\n\
+        model = root / \"dmonitoring_model_tinygrad.pkl\"\nmetadata = root / \"dmonitoring_model_metadata.pkl\"\nbase_sources\
+        \ = {\"model\": source_hash(model), \"metadata\": source_hash(metadata)}\nspecs = []\nfor resolution in ((1928, 1208),\
+        \ (1344, 760)):\n    warp = root / f\"dm_warp_{resolution[0]}x{resolution[1]}_tinygrad.pkl\"\n    specs.append(BundleSpec(\"\
+        driver\", resolution, driver(DriverArtifacts(model, warp, metadata)),\n                            base_sources |\
+        \ {\"warp\": source_hash(warp)}))\npublish(output, specs, \"cpu\")\nprint(output / \"current.json\")\nPY_CATALOG\n\
+        rust/target/debug/model-run --check-catalog \"$RUNNER_TEMP/native-catalog\" >\"$proof/catalog-check.log\" 2>&1 ||\
+        \ { cat \"$proof/catalog-build.log\" \"$proof/catalog-check.log\"; exit 1; }\n"
+    - name: Materialize SHA-pinned independent original-only capture wrapper
+      shell: bash
+      run: 'set -euo pipefail
+
+        set -euo pipefail
+
+        proof="$RUNNER_TEMP/driver-daemon-native-296"
+
+        python3 - <<''PY_CAPTURE''
+
+        import base64
+
+        import hashlib
+
+        import os
+
+        from pathlib import Path
+
+        raw = base64.b64decode("IiIiQ2xvdWQtb25seSBvYnNlcnZlciBvZiB1bmNoYW5nZWQgY2hlY2tfZHJpdmVyX2RhZW1vbi5weSBzb3VyY2UtY29tcHV0ZWQgcGFja2V0cy4KClRoZSBtYWludGFpbmVkIGNoZWNrZXIgc3RpbGwgcnVucyBpdHMgZm91ciBjYXNlcyBhbmQgYXNzZXJ0cyBldmVyeSBjYW5kaWRhdGUgcGFja2V0LgpUaGlzIHdyYXBwZXIgb25seSByZWNvcmRzIGl0cyBpbmRlcGVuZGVudCBnZXRfZHJpdmVyc3RhdGVfcGFja2V0IHJlc3VsdCBhZnRlciB0aGUKY2hlY2tlciBpbnNlcnRzIHRoZSBvYnNlcnZlZCBtb25vdG9uaWMgdGltZXN0YW1wOyBjYW5kaWRhdGUgbWVzc2FnZS0qLmJpbiBmaWxlcwphcmUgZGVsaWJlcmF0ZWx5IGV4Y2x1ZGVkIGZyb20gdGhlIHJlZmVyZW5jZSBtYW5pZmVzdC4KIiIiCmZyb20gX19mdXR1cmVfXyBpbXBvcnQgYW5ub3RhdGlvbnMKCmltcG9ydCBhcmdwYXJzZQppbXBvcnQgaGFzaGxpYgppbXBvcnQgaW1wb3J0bGliLnV0aWwKaW1wb3J0IGpzb24KaW1wb3J0IG9zCmZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aAppbXBvcnQgc3RhdAppbXBvcnQgc3VicHJvY2VzcwppbXBvcnQgc3lzCgoKZGVmIGRpZ2VzdChwYXRoOiBQYXRoLCBsaW1pdDogaW50KSAtPiBkaWN0W3N0ciwgb2JqZWN0XToKICAgIGRlc2NyaXB0b3IgPSBvcy5vcGVuKHBhdGgsIG9zLk9fUkRPTkxZIHwgb3MuT19OT0ZPTExPVyB8IG9zLk9fTk9OQkxPQ0sgfCBvcy5PX0NMT0VYRUMpCiAgICB0cnk6CiAgICAgICAgYmVmb3JlID0gb3MuZnN0YXQoZGVzY3JpcHRvcikKICAgICAgICBpZiBub3Qgc3RhdC5TX0lTUkVHKGJlZm9yZS5zdF9tb2RlKSBvciBiZWZvcmUuc3Rfc2l6ZSA+IGxpbWl0OgogICAgICAgICAgICByYWlzZSBBc3NlcnRpb25FcnJvcihmIm5vbnJlZ3VsYXIgb3Igb3ZlcnNpemVkIGNhcHR1cmUgaW5wdXQ6IHtwYXRofSIpCiAgICAgICAgaGFzaF92YWx1ZSA9IGhhc2hsaWIuc2hhMjU2KCkKICAgICAgICBsZW5ndGggPSAwCiAgICAgICAgd2hpbGUgY2h1bmsgOj0gb3MucmVhZChkZXNjcmlwdG9yLCA2NTUzNik6CiAgICAgICAgICAgIGxlbmd0aCArPSBsZW4oY2h1bmspCiAgICAgICAgICAgIGlmIGxlbmd0aCA+IGxpbWl0OgogICAgICAgICAgICAgICAgcmFpc2UgQXNzZXJ0aW9uRXJyb3IoZiJjYXB0dXJlIGlucHV0IGdyZXc6IHtwYXRofSIpCiAgICAgICAgICAgIGhhc2hfdmFsdWUudXBkYXRlKGNodW5rKQogICAgICAgIGFmdGVyID0gb3MuZnN0YXQoZGVzY3JpcHRvcikKICAgICAgICBjdXJyZW50ID0gcGF0aC5sc3RhdCgpCiAgICAgICAgaWRlbnRpdHkgPSBsYW1iZGEgdmFsdWU6ICh2YWx1ZS5zdF9kZXYsIHZhbHVlLnN0X2lubywgdmFsdWUuc3Rfc2l6ZSwgdmFsdWUuc3RfbXRpbWVfbnMsIHZhbHVlLnN0X2N0aW1lX25zKQogICAgICAgIGlmIGlkZW50aXR5KGJlZm9yZSkgIT0gaWRlbnRpdHkoYWZ0ZXIpIG9yIGlkZW50aXR5KGJlZm9yZSkgIT0gaWRlbnRpdHkoY3VycmVudCkgb3IgbGVuZ3RoICE9IGJlZm9yZS5zdF9zaXplOgogICAgICAgICAgICByYWlzZSBBc3NlcnRpb25FcnJvcihmImNhcHR1cmUgaW5wdXQgY2hhbmdlZDoge3BhdGh9IikKICAgICAgICByZXR1cm4geyJieXRlcyI6IGxlbmd0aCwgInNoYTI1NiI6IGhhc2hfdmFsdWUuaGV4ZGlnZXN0KCl9CiAgICBmaW5hbGx5OgogICAgICAgIG9zLmNsb3NlKGRlc2NyaXB0b3IpCgoKZGVmIG1haW4oKSAtPiBOb25lOgogICAgcGFyc2VyID0gYXJncGFyc2UuQXJndW1lbnRQYXJzZXIoKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgiLS1yb290IiwgcmVxdWlyZWQ9VHJ1ZSwgdHlwZT1QYXRoKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgiLS1zb3VyY2UtY29tbWl0IiwgcmVxdWlyZWQ9VHJ1ZSkKICAgIHBhcnNlci5hZGRfYXJndW1lbnQoIi0tZXhwZWN0ZWQtY2hlY2tlci1zaGEyNTYiLCByZXF1aXJlZD1UcnVlKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgiLS1iaW5hcnkiLCByZXF1aXJlZD1UcnVlLCB0eXBlPVBhdGgpCiAgICBwYXJzZXIuYWRkX2FyZ3VtZW50KCItLWNhdGFsb2ciLCByZXF1aXJlZD1UcnVlLCB0eXBlPVBhdGgpCiAgICBwYXJzZXIuYWRkX2FyZ3VtZW50KCItLW1vZGVscyIsIHJlcXVpcmVkPVRydWUsIHR5cGU9UGF0aCkKICAgIHBhcnNlci5hZGRfYXJndW1lbnQoIi0tYmluZGluZyIsIHJlcXVpcmVkPVRydWUsIHR5cGU9UGF0aCkKICAgIHBhcnNlci5hZGRfYXJndW1lbnQoIi0tY29sbGVjdG9yIiwgdHlwZT1QYXRoKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgiLS1vdXRwdXQiLCByZXF1aXJlZD1UcnVlLCB0eXBlPVBhdGgpCiAgICBhcmdzID0gcGFyc2VyLnBhcnNlX2FyZ3MoKQogICAgcm9vdCA9IGFyZ3Mucm9vdC5yZXNvbHZlKHN0cmljdD1UcnVlKQogICAgYmluZGluZyA9IGFyZ3MuYmluZGluZy5yZXNvbHZlKHN0cmljdD1UcnVlKQogICAgb3V0cHV0ID0gYXJncy5vdXRwdXQucmVzb2x2ZSgpCiAgICBpZiBvdXRwdXQuZXhpc3RzKCk6CiAgICAgICAgcmFpc2UgRmlsZUV4aXN0c0Vycm9yKG91dHB1dCkKICAgIHdyYXBwZXJfYmVmb3JlID0gZGlnZXN0KFBhdGgoX19maWxlX18pLCAyXzAwMF8wMDApCiAgICBoZWFkID0gc3VicHJvY2Vzcy5jaGVja19vdXRwdXQoWyIvdXNyL2Jpbi9naXQiLCAiLUMiLCBzdHIocm9vdCksICJyZXYtcGFyc2UiLCAiSEVBRCJdLCB0ZXh0PVRydWUpLnN0cmlwKCkKICAgIGlmIGhlYWQgIT0gYXJncy5zb3VyY2VfY29tbWl0OgogICAgICAgIHJhaXNlIEFzc2VydGlvbkVycm9yKCJvcmlnaW5hbCBjaGVja2VyIGNoZWNrb3V0IGNoYW5nZWQiKQogICAgY2hlY2tlcl9wYXRoID0gcm9vdCAvICJydXN0L3Rvb2xzL2NoZWNrX2RyaXZlcl9kYWVtb24ucHkiCiAgICBjaGVja2VyX3BpbiA9IGRpZ2VzdChjaGVja2VyX3BhdGgsIDFfMDAwXzAwMCkKICAgIGlmIGNoZWNrZXJfcGluWyJzaGEyNTYiXSAhPSBhcmdzLmV4cGVjdGVkX2NoZWNrZXJfc2hhMjU2OgogICAgICAgIHJhaXNlIEFzc2VydGlvbkVycm9yKCJvcmlnaW5hbCBjaGVja2VyIGJ5dGVzIGNoYW5nZWQiKQogICAgc291cmNlX3BhdGhzID0gWwogICAgICAgICJydXN0L3Rvb2xzL2NoZWNrX2RyaXZlcl9kYWVtb24ucHkiLAogICAgICAgICJydXN0L3Rvb2xzL2NoZWNrX3BpcGVsaW5lX3JlZmVyZW5jZS5weSIsCiAgICAgICAgInJ1c3QvdG9vbHMvbW9kZWxfb3V0cHV0X3JlZmVyZW5jZS5weSIsCiAgICAgICAgInJ1c3QvdG9vbHMvbW9kZWxfbG9nZ2luZ19jYXB0dXJlLnB5IiwKICAgICAgICAicnVzdC90b29scy9tb2RlbF9sb2dnaW5nX3JlZmVyZW5jZS5weSIsCiAgICAgICAgInJ1c3QvdG9vbHMvZHJpdmVyX2RhZW1vbl9wZWVyLmNjIiwKICAgICAgICAicnVzdC90b29scy9tb2RlbF9leHBvcnQvb3JpZ2luYWwucHkiLAogICAgICAgICJydXN0L3Rvb2xzL21vZGVsX2V4cG9ydC9waXBlbGluZS5weSIsCiAgICAgICAgInJ1c3QvdG9vbHMvbW9kZWxfZXhwb3J0L3NjaGVtYS5weSIsCiAgICAgICAgIm9wZW5waWxvdC9zZWxmZHJpdmUvbW9kZWxkL2Rtb25pdG9yaW5nbW9kZWxkLnB5IiwKICAgICAgICAib3BlbnBpbG90L3NlbGZkcml2ZS9tb2RlbGQvcGFyc2VfbW9kZWxfb3V0cHV0cy5weSIsCiAgICAgICAgIm9wZW5waWxvdC9zZWxmZHJpdmUvbW9kZWxkL2NvbnN0YW50cy5weSIsCiAgICAgICAgIm9wZW5waWxvdC9jb21tb24vdHJhbnNmb3JtYXRpb25zL2NhbWVyYS5weSIsCiAgICAgICAgIm9wZW5waWxvdC9jb21tb24vdHJhbnNmb3JtYXRpb25zL21vZGVsLnB5IiwKICAgICAgICAib3BlbnBpbG90L3N5c3RlbS9jYW1lcmFkL2NhbWVyYXMvbnYxMl9pbmZvLnB5IiwKICAgIF0KICAgIHNvdXJjZXNfYmVmb3JlID0ge25hbWU6IGRpZ2VzdChyb290IC8gbmFtZSwgNF8wMDBfMDAwKSBmb3IgbmFtZSBpbiBzb3VyY2VfcGF0aHN9CiAgICBtb2RlbHMgPSBbCiAgICAgICAgImRtb25pdG9yaW5nX21vZGVsX3RpbnlncmFkLnBrbCIsCiAgICAgICAgImRtX3dhcnBfMTM0NHg3NjBfdGlueWdyYWQucGtsIiwKICAgICAgICAiZG1fd2FycF8xOTI4eDEyMDhfdGlueWdyYWQucGtsIiwKICAgICAgICAiZG1vbml0b3JpbmdfbW9kZWxfbWV0YWRhdGEucGtsIiwKICAgIF0KICAgIG1vZGVsc19iZWZvcmUgPSB7bmFtZTogZGlnZXN0KGFyZ3MubW9kZWxzIC8gbmFtZSwgMl8wMDBfMDAwXzAwMCkgZm9yIG5hbWUgaW4gbW9kZWxzfQogICAgZXh0ZW5zaW9ucyA9IFsKICAgICAgICBuZXh0KGl0ZXIoc29ydGVkKChiaW5kaW5nIC8gIm1zZ3EiKS5nbG9iKCJpcGNfcHl4Ki5zbyIpKSkpLAogICAgICAgIG5leHQoaXRlcihzb3J0ZWQoKGJpbmRpbmcgLyAibXNncS92aXNpb25pcGMiKS5nbG9iKCJ2aXNpb25pcGNfcHl4Ki5zbyIpKSkpLAogICAgXQogICAgaWYgYW55KGxlbihsaXN0KHBhdGgucGFyZW50Lmdsb2IocGF0aC5uYW1lLnNwbGl0KCIuIilbMF0gKyAiKi5zbyIpKSkgIT0gMSBmb3IgcGF0aCBpbiBleHRlbnNpb25zKToKICAgICAgICByYWlzZSBBc3NlcnRpb25FcnJvcigib3JpZ2luYWwgbXNncSBiaW5kaW5nIGV4dGVuc2lvbiByb3N0ZXIgY2hhbmdlZCIpCiAgICBleHRlbnNpb25zX2JlZm9yZSA9IHtwYXRoLnJlbGF0aXZlX3RvKGJpbmRpbmcpLmFzX3Bvc2l4KCk6IGRpZ2VzdChwYXRoLCAxMDBfMDAwXzAwMCkgZm9yIHBhdGggaW4gZXh0ZW5zaW9uc30KICAgICMgVGhlIGhvc3RlZCBQWVRIT05QQVRIIHN0YXJ0cyB3aXRoIHRoZSBmcmVzaGx5IGJ1aWx0IG9yaWdpbmFsIG1zZ3EgUHl0aG9uCiAgICAjIGJpbmRpbmcuIEtlZXAgdGhhdCBwYWNrYWdlIGFoZWFkIG9mIHRoZSByZXBvc2l0b3J5J3MgdW5idWlsdCBtc2dxIGFsaWFzLgogICAgZm9yIGRpcmVjdG9yeSBpbiAocm9vdCwgcm9vdCAvICJydXN0L3Rvb2xzIik6CiAgICAgICAgaWYgc3RyKGRpcmVjdG9yeSkgbm90IGluIHN5cy5wYXRoOgogICAgICAgICAgICBzeXMucGF0aC5hcHBlbmQoc3RyKGRpcmVjdG9yeSkpCiAgICBzcGVjID0gaW1wb3J0bGliLnV0aWwuc3BlY19mcm9tX2ZpbGVfbG9jYXRpb24oIm9yaWdpbmFsX2RyaXZlcl9kYWVtb25fY2hlY2tlciIsIGNoZWNrZXJfcGF0aCkKICAgIGlmIHNwZWMgaXMgTm9uZSBvciBzcGVjLmxvYWRlciBpcyBOb25lOgogICAgICAgIHJhaXNlIEFzc2VydGlvbkVycm9yKCJjYW5ub3QgbG9hZCB1bmNoYW5nZWQgb3JpZ2luYWwgY2hlY2tlciIpCiAgICBjaGVja2VyID0gaW1wb3J0bGliLnV0aWwubW9kdWxlX2Zyb21fc3BlYyhzcGVjKQogICAgc3BlYy5sb2FkZXIuZXhlY19tb2R1bGUoY2hlY2tlcikKICAgIGRlZiBsb2FkZWRfcHl0aG9uX3NvdXJjZXMoKToKICAgICAgICBwYXRocyA9IHNldCgpCiAgICAgICAgZm9yIG1vZHVsZSBpbiB0dXBsZShzeXMubW9kdWxlcy52YWx1ZXMoKSk6CiAgICAgICAgICAgIGxvY2F0aW9uID0gZ2V0YXR0cihtb2R1bGUsICJfX2ZpbGVfXyIsIE5vbmUpCiAgICAgICAgICAgIGlmIGxvY2F0aW9uIGlzIE5vbmU6CiAgICAgICAgICAgICAgICBjb250aW51ZQogICAgICAgICAgICBwYXRoID0gUGF0aChsb2NhdGlvbikucmVzb2x2ZSgpCiAgICAgICAgICAgIGlmIHBhdGguc3VmZml4ICE9ICIucHkiOgogICAgICAgICAgICAgICAgY29udGludWUKICAgICAgICAgICAgaWYgcGF0aC5pc19yZWxhdGl2ZV90byhiaW5kaW5nKToKICAgICAgICAgICAgICAgIHJlbGF0aXZlID0gcGF0aC5yZWxhdGl2ZV90byhiaW5kaW5nKQogICAgICAgICAgICAgICAgaWYgcmVsYXRpdmUucGFydHNbMF0gIT0gIm1zZ3EiOgogICAgICAgICAgICAgICAgICAgIHJhaXNlIEFzc2VydGlvbkVycm9yKCJ1bmV4cGVjdGVkIGNvcGllZCBiaW5kaW5nIFB5dGhvbiBzb3VyY2UiKQogICAgICAgICAgICAgICAgc291cmNlID0gcm9vdCAvICJtc2dxX3JlcG8iIC8gcmVsYXRpdmUKICAgICAgICAgICAgICAgIGlmIGRpZ2VzdChwYXRoLCA0XzAwMF8wMDApICE9IGRpZ2VzdChzb3VyY2UsIDRfMDAwXzAwMCk6CiAgICAgICAgICAgICAgICAgICAgcmFpc2UgQXNzZXJ0aW9uRXJyb3IoIm9yaWdpbmFsIGNvcGllZCBtc2dxIHNvdXJjZSBkaWZmZXJzIGZyb20gcmVwb3NpdG9yeSIpCiAgICAgICAgICAgICAgICBwYXRocy5hZGQoKFBhdGgoIm1zZ3FfcmVwbyIpIC8gcmVsYXRpdmUpLmFzX3Bvc2l4KCkpCiAgICAgICAgICAgIGVsaWYgcGF0aC5pc19yZWxhdGl2ZV90byhyb290KToKICAgICAgICAgICAgICAgIHBhdGhzLmFkZChwYXRoLnJlbGF0aXZlX3RvKHJvb3QpLmFzX3Bvc2l4KCkpCiAgICAgICAgcmV0dXJuIHtuYW1lOiBkaWdlc3Qocm9vdCAvIG5hbWUsIDRfMDAwXzAwMCkgZm9yIG5hbWUgaW4gc29ydGVkKHBhdGhzKX0KCiAgICBsb2FkZWRfYmVmb3JlID0gbG9hZGVkX3B5dGhvbl9zb3VyY2VzKCkKICAgIG9yaWdpbmFsX2ZhY3RvcnkgPSBjaGVja2VyLm9yaWdpbmFsX2Z1bmN0aW9ucwogICAgb3JpZ2luYWxfY2hlY2sgPSBjaGVja2VyLmNoZWNrCiAgICBhY3RpdmU6IGRpY3Rbc3RyLCBvYmplY3RdID0ge30KCiAgICBjbGFzcyBQYWNrZXQ6CiAgICAgICAgZGVmIF9faW5pdF9fKHNlbGYsIHBhY2tldCk6CiAgICAgICAgICAgIG9iamVjdC5fX3NldGF0dHJfXyhzZWxmLCAicGFja2V0IiwgcGFja2V0KQoKICAgICAgICBkZWYgX19zZXRhdHRyX18oc2VsZiwgbmFtZSwgdmFsdWUpOgogICAgICAgICAgICBzZXRhdHRyKHNlbGYucGFja2V0LCBuYW1lLCB2YWx1ZSkKCiAgICAgICAgZGVmIHRvX2RpY3Qoc2VsZik6CiAgICAgICAgICAgIGluZGV4ID0gYWN0aXZlWyJjb3VudCJdCiAgICAgICAgICAgIHRhcmdldCA9IGFjdGl2ZVsicmVmZXJlbmNlIl0gLyBmImV4cGVjdGVkLXtpbmRleH0uYmluIgogICAgICAgICAgICB0YXJnZXQucGFyZW50Lm1rZGlyKGV4aXN0X29rPVRydWUpCiAgICAgICAgICAgIHdpdGggdGFyZ2V0Lm9wZW4oInhiIikgYXMgc2luazoKICAgICAgICAgICAgICAgIHNpbmsud3JpdGUoc2VsZi5wYWNrZXQudG9fYnl0ZXMoKSkKICAgICAgICAgICAgYWN0aXZlWyJjb3VudCJdID0gaW5kZXggKyAxCiAgICAgICAgICAgIHJldHVybiBzZWxmLnBhY2tldC50b19kaWN0KCkKCiAgICAgICAgZGVmIHRvX2J5dGVzKHNlbGYpOgogICAgICAgICAgICByZXR1cm4gc2VsZi5wYWNrZXQudG9fYnl0ZXMoKQoKICAgIGNsYXNzIFJlZmVyZW5jZToKICAgICAgICBkZWYgX19pbml0X18oc2VsZiwgcmVmZXJlbmNlKToKICAgICAgICAgICAgc2VsZi5yZWZlcmVuY2UgPSByZWZlcmVuY2UKCiAgICAgICAgZGVmIHBhcnNlX21vZGVsX291dHB1dChzZWxmLCB2YWx1ZXMpOgogICAgICAgICAgICByZXR1cm4gc2VsZi5yZWZlcmVuY2UucGFyc2VfbW9kZWxfb3V0cHV0KHZhbHVlcykKCiAgICAgICAgZGVmIGdldF9kcml2ZXJzdGF0ZV9wYWNrZXQoc2VsZiwgKnZhbHVlcyk6CiAgICAgICAgICAgIHJldHVybiBQYWNrZXQoc2VsZi5yZWZlcmVuY2UuZ2V0X2RyaXZlcnN0YXRlX3BhY2tldCgqdmFsdWVzKSkKCiAgICBkZWYgZmFjdG9yeSgpOgogICAgICAgIGRyaXZpbmcsIHJlZmVyZW5jZSA9IG9yaWdpbmFsX2ZhY3RvcnkoKQogICAgICAgIHJldHVybiBkcml2aW5nLCBSZWZlcmVuY2UocmVmZXJlbmNlKQoKICAgIGRlZiBjaGVjayhvcmlnaW5hbF9hcmdzLCB3aWR0aCwgaGVpZ2h0LCByYXcpOgogICAgICAgIGxhYmVsID0gZiJ7d2lkdGh9LXJhdy17aW50KHJhdyl9IgogICAgICAgIHJlZmVyZW5jZSA9IG91dHB1dCAvIGxhYmVsIC8gInJlZmVyZW5jZSIKICAgICAgICAjIFRoZSB1bmNoYW5nZWQgY2hlY2tlciBjcmVhdGVzIHRoZSBjYXNlIGRpcmVjdG9yeSBhdCBlbnRyeS4gS2VlcCB0aGUKICAgICAgICAjIHJlZmVyZW5jZSBzdWJkaXJlY3RvcnkgbGF6eSB1bnRpbCBpdHMgZmlyc3Qgb3JpZ2luYWwgcGFja2V0IGlzIGJ1aWx0LgogICAgICAgIGFjdGl2ZS5jbGVhcigpCiAgICAgICAgYWN0aXZlLnVwZGF0ZSh7ImNvdW50IjogMCwgInJlZmVyZW5jZSI6IHJlZmVyZW5jZX0pCiAgICAgICAgcmVwb3J0ID0gb3JpZ2luYWxfY2hlY2sob3JpZ2luYWxfYXJncywgd2lkdGgsIGhlaWdodCwgcmF3KQogICAgICAgIGV4cGVjdGVkX2NvdW50ID0gNSBpZiByYXcgZWxzZSAyCiAgICAgICAgaWYgYWN0aXZlWyJjb3VudCJdICE9IGV4cGVjdGVkX2NvdW50OgogICAgICAgICAgICByYWlzZSBBc3NlcnRpb25FcnJvcihmIm9yaWdpbmFsIHNvdXJjZSBwYWNrZXQgY291bnQgY2hhbmdlZCBmb3Ige2xhYmVsfSIpCiAgICAgICAgaWYgKHJlZmVyZW5jZSAvICJleHBlY3RlZC0wLmJpbiIpLnJlYWRfYnl0ZXMoKSAhPSAob3V0cHV0IC8gbGFiZWwgLyAid2FybXVwLWV4cGVjdGVkLmJpbiIpLnJlYWRfYnl0ZXMoKToKICAgICAgICAgICAgcmFpc2UgQXNzZXJ0aW9uRXJyb3IoZiJvcmlnaW5hbCB3YXJtdXAgcGFja2V0IGRpZmZlcnMgZnJvbSB1bmNoYW5nZWQgY2hlY2tlciIpCiAgICAgICAgcmV0dXJuIHJlcG9ydAoKICAgIGNoZWNrZXIub3JpZ2luYWxfZnVuY3Rpb25zID0gZmFjdG9yeQogICAgY2hlY2tlci5jaGVjayA9IGNoZWNrCiAgICBvcmlnaW5hbF9hcmd2ID0gWwogICAgICAgIHN0cihjaGVja2VyX3BhdGgpLCAiLS1iaW5hcnkiLCBzdHIoYXJncy5iaW5hcnkpLCAiLS1jYXRhbG9nIiwgc3RyKGFyZ3MuY2F0YWxvZyksCiAgICAgICAgIi0tbW9kZWxzIiwgc3RyKGFyZ3MubW9kZWxzKSwgIi0tb3V0cHV0Iiwgc3RyKG91dHB1dCksCiAgICBdCiAgICBpZiBhcmdzLmNvbGxlY3RvciBpcyBub3QgTm9uZToKICAgICAgICBvcmlnaW5hbF9hcmd2LmV4dGVuZChbIi0tY29sbGVjdG9yIiwgc3RyKGFyZ3MuY29sbGVjdG9yKV0pCiAgICBwcmV2aW91c19hcmd2ID0gc3lzLmFyZ3YKICAgIHRyeToKICAgICAgICBzeXMuYXJndiA9IG9yaWdpbmFsX2FyZ3YKICAgICAgICBjaGVja2VyLm1haW4oKQogICAgZmluYWxseToKICAgICAgICBzeXMuYXJndiA9IHByZXZpb3VzX2FyZ3YKICAgIGZvciBuYW1lIGluICgibXNncS5pcGNfcHl4IiwpOgogICAgICAgIG1vZHVsZSA9IHN5cy5tb2R1bGVzLmdldChuYW1lKQogICAgICAgIGxvY2F0aW9uID0gZ2V0YXR0cihtb2R1bGUsICJfX2ZpbGVfXyIsIE5vbmUpCiAgICAgICAgaWYgbG9jYXRpb24gaXMgTm9uZSBvciBub3QgUGF0aChsb2NhdGlvbikucmVzb2x2ZShzdHJpY3Q9VHJ1ZSkuaXNfcmVsYXRpdmVfdG8oYmluZGluZyk6CiAgICAgICAgICAgIHJhaXNlIEFzc2VydGlvbkVycm9yKGYib3JpZ2luYWwgY2hlY2tlciBkaWQgbm90IHVzZSBoZWxkIGJ1aWx0IGJpbmRpbmc6IHtuYW1lfSIpCiAgICBjYXNlcyA9IFtdCiAgICBmaWxlcyA9IHt9CiAgICBmb3Igd2lkdGgsIGhlaWdodCBpbiBbKDEzNDQsIDc2MCksICgxOTI4LCAxMjA4KV06CiAgICAgICAgZm9yIHJhdyBpbiBbVHJ1ZSwgRmFsc2VdOgogICAgICAgICAgICBsYWJlbCA9IGYie3dpZHRofS1yYXcte2ludChyYXcpfSIKICAgICAgICAgICAgZGlyZWN0b3J5ID0gb3V0cHV0IC8gbGFiZWwKICAgICAgICAgICAgY291bnQgPSA0IGlmIHJhdyBlbHNlIDEKICAgICAgICAgICAgc2VsZWN0ZWQgPSBbIndhcm11cC5iaW4iLCAid2FybXVwLWV4cGVjdGVkLmJpbiIsICJyZXBvcnQuanNvbiJdCiAgICAgICAgICAgIHNlbGVjdGVkICs9IFtmImZyYW1lLXtpfS5iaW4iIGZvciBpIGluIHJhbmdlKGNvdW50KV0KICAgICAgICAgICAgc2VsZWN0ZWQgKz0gW2YicmVmZXJlbmNlL2V4cGVjdGVkLXtpfS5iaW4iIGZvciBpIGluIHJhbmdlKGNvdW50ICsgMSldCiAgICAgICAgICAgIGlmIHJhdzoKICAgICAgICAgICAgICAgIHNlbGVjdGVkICs9IFsiY2FsaWItMS5iaW4iLCAiY2FsaWItMy5iaW4iLCAiaW52YWxpZC1jYWxpYi5iaW4iXQogICAgICAgICAgICBmb3IgbmFtZSBpbiBzZWxlY3RlZDoKICAgICAgICAgICAgICAgIHJlbGF0aXZlID0gZiJ7bGFiZWx9L3tuYW1lfSIKICAgICAgICAgICAgICAgIGZpbGVzW3JlbGF0aXZlXSA9IGRpZ2VzdChkaXJlY3RvcnkgLyBuYW1lLCAxNl8wMDBfMDAwKQogICAgICAgICAgICBjYXNlcy5hcHBlbmQoeyJuYW1lIjogbGFiZWwsICJ3aWR0aCI6IHdpZHRoLCAiaGVpZ2h0IjogaGVpZ2h0LCAicmF3IjogcmF3LAogICAgICAgICAgICAgICAgICAgICAgICAgICJmcmFtZV9jb3VudCI6IGNvdW50LCAicmVmZXJlbmNlX2NvdW50IjogY291bnQgKyAxfSkKICAgIGZpbGVzWyJyZXBvcnQuanNvbiJdID0gZGlnZXN0KG91dHB1dCAvICJyZXBvcnQuanNvbiIsIDFfMDAwXzAwMCkKICAgIHNvdXJjZXNfYWZ0ZXIgPSB7bmFtZTogZGlnZXN0KHJvb3QgLyBuYW1lLCA0XzAwMF8wMDApIGZvciBuYW1lIGluIHNvdXJjZV9wYXRoc30KICAgIG1vZGVsc19hZnRlciA9IHtuYW1lOiBkaWdlc3QoYXJncy5tb2RlbHMgLyBuYW1lLCAyXzAwMF8wMDBfMDAwKSBmb3IgbmFtZSBpbiBtb2RlbHN9CiAgICBleHRlbnNpb25zX2FmdGVyID0ge3BhdGgucmVsYXRpdmVfdG8oYmluZGluZykuYXNfcG9zaXgoKTogZGlnZXN0KHBhdGgsIDEwMF8wMDBfMDAwKSBmb3IgcGF0aCBpbiBleHRlbnNpb25zfQogICAgbG9hZGVkX2FmdGVyID0gbG9hZGVkX3B5dGhvbl9zb3VyY2VzKCkKICAgIGlmIHNvdXJjZXNfYWZ0ZXIgIT0gc291cmNlc19iZWZvcmUgb3IgbW9kZWxzX2FmdGVyICE9IG1vZGVsc19iZWZvcmUgb3IgZXh0ZW5zaW9uc19hZnRlciAhPSBleHRlbnNpb25zX2JlZm9yZSBvciB3cmFwcGVyX2JlZm9yZSAhPSBkaWdlc3QoUGF0aChfX2ZpbGVfXyksIDJfMDAwXzAwMCkgb3IgYW55KAogICAgICAgIGxvYWRlZF9hZnRlci5nZXQobmFtZSkgIT0gcGluIGZvciBuYW1lLCBwaW4gaW4gbG9hZGVkX2JlZm9yZS5pdGVtcygpCiAgICApOgogICAgICAgIHJhaXNlIEFzc2VydGlvbkVycm9yKCJvcmlnaW5hbCBpbXBvcnRzIG9yIG1vZGVsIGFydGlmYWN0cyBjaGFuZ2VkIGR1cmluZyBjYXB0dXJlIikKICAgIGlmIHN1YnByb2Nlc3MuY2hlY2tfb3V0cHV0KFsiL3Vzci9iaW4vZ2l0IiwgIi1DIiwgc3RyKHJvb3QpLCAicmV2LXBhcnNlIiwgIkhFQUQiXSwgdGV4dD1UcnVlKS5zdHJpcCgpICE9IGhlYWQ6CiAgICAgICAgcmFpc2UgQXNzZXJ0aW9uRXJyb3IoInNvdXJjZSBjaGVja291dCBjaGFuZ2VkIGR1cmluZyBjYXB0dXJlIikKICAgIG1hbmlmZXN0ID0geyJzb3VyY2VfY29tbWl0IjogaGVhZCwgImNhcHR1cmVfd3JhcHBlciI6IHdyYXBwZXJfYmVmb3JlLAogICAgICAgICAgICAgICAgIm9yaWdpbmFsX2NoZWNrZXIiOiBjaGVja2VyX3BpbiwKICAgICAgICAgICAgICAgICJvcmlnaW5hbF9zb3VyY2VfaW5wdXRzIjogc291cmNlc19iZWZvcmUsICJsb2FkZWRfcHl0aG9uX3NvdXJjZXMiOiBsb2FkZWRfYWZ0ZXIsCiAgICAgICAgICAgICAgICAib3JpZ2luYWxfbXNncV9iaW5kaW5nX2V4dGVuc2lvbnMiOiBleHRlbnNpb25zX2FmdGVyLAogICAgICAgICAgICAgICAgIm9yaWdpbmFsX21vZGVscyI6IG1vZGVsc19iZWZvcmUsCiAgICAgICAgICAgICAgICAiY2FzZXMiOiBjYXNlcywgImZpbGVzIjogZmlsZXMsCiAgICAgICAgICAgICAgICAicG9saWN5IjogeyJleHBlY3RlZF9wYWNrZXRfb3JpZ2luIjogInVuY2hhbmdlZCBQeXRob24gcmVmZXJlbmNlLmdldF9kcml2ZXJzdGF0ZV9wYWNrZXQiLAogICAgICAgICAgICAgICAgICAgICAgICAgICAiY2FuZGlkYXRlX21lc3NhZ2VfZmlsZXNfYXJlX25vdF9vcmFjbGUiOiBUcnVlfX0KICAgIHdpdGggKG91dHB1dCAvICJyZWZlcmVuY2UtbWFuaWZlc3QuanNvbiIpLm9wZW4oIngiKSBhcyBzaW5rOgogICAgICAgIGpzb24uZHVtcChtYW5pZmVzdCwgc2luaywgaW5kZW50PTIsIHNvcnRfa2V5cz1UcnVlKQogICAgICAgIHNpbmsud3JpdGUoIlxuIikKICAgIHByaW50KGpzb24uZHVtcHMoeyJzb3VyY2VfY29tbWl0IjogaGVhZCwgImNhc2VzIjogbGVuKGNhc2VzKSwKICAgICAgICAgICAgICAgICAgICAgICJleHBlY3RlZF9wYWNrZXRzIjogc3VtKGNhc2VbInJlZmVyZW5jZV9jb3VudCJdIGZvciBjYXNlIGluIGNhc2VzKSwKICAgICAgICAgICAgICAgICAgICAgICJtYW5pZmVzdF9zaGEyNTYiOiBkaWdlc3Qob3V0cHV0IC8gInJlZmVyZW5jZS1tYW5pZmVzdC5qc29uIiwgMV8wMDBfMDAwKVsic2hhMjU2Il19KSkKCgppZiBfX25hbWVfXyA9PSAiX19tYWluX18iOgogICAgbWFpbigpCg==",
+        validate=True)
+
+        assert hashlib.sha256(raw).hexdigest() == "95128a39966819e738e76bcd63e16fe5195385b6c3f17ed1424c10200ee65e1e"
+
+        target = Path(os.environ["RUNNER_TEMP"]) / "driver-daemon-native-296" / "capture_original_driver.py"
+
+        target.write_bytes(raw)
+
+        assert hashlib.sha256(target.read_bytes()).hexdigest() == "95128a39966819e738e76bcd63e16fe5195385b6c3f17ed1424c10200ee65e1e"
+
+        cli = base64.b64decode("IiIiQ2xvdWQtb25seSBjYXB0dXJlIG9mIHVuY2hhbmdlZCBjaGVja19kcml2ZXJfZGFlbW9uLnB5IENMSSBhZG1pc3Npb24uCgpUaGUgcG9zaXRpdmUgZm91ci1jYXNlIGludm9jYXRpb24gaXMgY2FwdHVyZWQgc2VwYXJhdGVseSBieQpjYXB0dXJlX29yaWdpbmFsX2RyaXZlci5weTsgdGhlc2UgaW52b2NhdGlvbnMgbXVzdCBzdG9wIGluIGFyZ3BhcnNlIGFuZCBuZXZlcgpzdGFydCBhIGRhZW1vbiBvciBwdWJsaXNoIGNhbmRpZGF0ZS1kZXJpdmVkIGV4cGVjdGVkIHBhY2tldHMuCiIiIgpmcm9tIF9fZnV0dXJlX18gaW1wb3J0IGFubm90YXRpb25zCgppbXBvcnQgYXJncGFyc2UKaW1wb3J0IGhhc2hsaWIKaW1wb3J0IGpzb24KaW1wb3J0IG9zCmZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aAppbXBvcnQgc3VicHJvY2VzcwppbXBvcnQgc3lzCgoKZGVmIGRpZ2VzdChkYXRhOiBieXRlcykgLT4gc3RyOgogICAgcmV0dXJuIGhhc2hsaWIuc2hhMjU2KGRhdGEpLmhleGRpZ2VzdCgpCgoKZGVmIG1haW4oKSAtPiBOb25lOgogICAgcGFyc2VyID0gYXJncGFyc2UuQXJndW1lbnRQYXJzZXIoKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgiLS1yb290IiwgcmVxdWlyZWQ9VHJ1ZSwgdHlwZT1QYXRoKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgiLS1vdXRwdXQiLCByZXF1aXJlZD1UcnVlLCB0eXBlPVBhdGgpCiAgICBwYXJzZXIuYWRkX2FyZ3VtZW50KCItLWNoZWNrZXItc2hhMjU2IiwgcmVxdWlyZWQ9VHJ1ZSkKICAgIGFyZ3MgPSBwYXJzZXIucGFyc2VfYXJncygpCiAgICBjaGVja2VyID0gYXJncy5yb290IC8gInJ1c3QvdG9vbHMvY2hlY2tfZHJpdmVyX2RhZW1vbi5weSIKICAgIGJlZm9yZSA9IGNoZWNrZXIucmVhZF9ieXRlcygpCiAgICBpZiBkaWdlc3QoYmVmb3JlKSAhPSBhcmdzLmNoZWNrZXJfc2hhMjU2OgogICAgICAgIHJhaXNlIEFzc2VydGlvbkVycm9yKCJ1bmNoYW5nZWQgZHJpdmVyIGNoZWNrZXIgU0hBIG1pc21hdGNoIikKICAgIGlmIGFyZ3Mub3V0cHV0LmV4aXN0cygpOgogICAgICAgIHJhaXNlIEZpbGVFeGlzdHNFcnJvcihhcmdzLm91dHB1dCkKICAgIGFyZ3Mub3V0cHV0Lm1rZGlyKHBhcmVudHM9VHJ1ZSkKICAgIHJvc3RlciA9IFsKICAgICAgICAoInNob3J0LWhlbHAiLCBbIi1oIl0sIDApLAogICAgICAgICgibG9uZy1oZWxwIiwgWyItLWhlbHAiXSwgMCksCiAgICAgICAgKCJtaXNzaW5nLWFsbCIsIFtdLCAyKSwKICAgICAgICAoInVuaXF1ZS1hYmJyZXYtbWlzc2luZy1yZXN0IiwgWyItLWJpbiIsICIvbWlzc2luZy1kcml2ZXIiXSwgMiksCiAgICAgICAgKCJvdXRwdXQtYWJicmV2LW1pc3NpbmctcmVzdCIsIFsiLS1vIiwgIi91bnVzZWQtb3V0cHV0Il0sIDIpLAogICAgICAgICgibW9kZWxzLWFiYnJldi1taXNzaW5nLXJlc3QiLCBbIi0tbSIsICIvdW51c2VkLW1vZGVscyJdLCAyKSwKICAgICAgICAoImFtYmlndW91cy1hYmJyZXYiLCBbIi0tYyIsICJ2YWx1ZSJdLCAyKSwKICAgICAgICAoIm1pc3NpbmctdmFsdWUiLCBbIi0tYmluYXJ5Il0sIDIpLAogICAgICAgICgidW5rbm93biIsIFsiLS11bmtub3duIl0sIDIpLAogICAgICAgICgicmVwZWF0ZWQtbWlzc2luZy1yZXN0IiwgWyItLWJpbmFyeSIsICIvZmlyc3QiLCAiLS1iaW5hcnkiLCAiL2xhc3QiXSwgMiksCiAgICBdCiAgICBlbnRyaWVzID0gW10KICAgIG1hbmlmZXN0ID0gewogICAgICAgICJjaGVja2VyIjogInJ1c3QvdG9vbHMvY2hlY2tfZHJpdmVyX2RhZW1vbi5weSIsCiAgICAgICAgImNoZWNrZXJfc2hhMjU2IjogZGlnZXN0KGJlZm9yZSksCiAgICAgICAgImNhcHR1cmVfc2NyaXB0X3NoYTI1NiI6IGRpZ2VzdChQYXRoKF9fZmlsZV9fKS5yZWFkX2J5dGVzKCkpLAogICAgICAgICJwb2xpY3kiOiAibmVnYXRpdmUvaGVscCBvbmx5OyBmdWxsIHBvc2l0aXZlIGZvdXItY2FzZSBvcmlnaW5hbCBpbnZvY2F0aW9uIGNhcHR1cmVkIHNlcGFyYXRlbHkiLAogICAgICAgICJjYXNlcyI6IGVudHJpZXMsCiAgICB9CiAgICByZWNlaXB0ID0gYXJncy5vdXRwdXQgLyAibWFuaWZlc3QuanNvbiIKICAgIHJlY2VpcHQud3JpdGVfdGV4dChqc29uLmR1bXBzKG1hbmlmZXN0LCBzb3J0X2tleXM9VHJ1ZSwgaW5kZW50PTIpICsgIlxuIikKICAgIGZvciBuYW1lLCBhcmd2LCBleHBlY3RlZF9jb2RlIGluIHJvc3RlcjoKICAgICAgICByZXN1bHQgPSBzdWJwcm9jZXNzLnJ1bigKICAgICAgICAgICAgW3N5cy5leGVjdXRhYmxlLCBvcy5mc3BhdGgoY2hlY2tlciksICphcmd2XSwKICAgICAgICAgICAgY3dkPWFyZ3Mucm9vdCwKICAgICAgICAgICAgY2FwdHVyZV9vdXRwdXQ9VHJ1ZSwKICAgICAgICAgICAgdGltZW91dD0xMCwKICAgICAgICAgICAgY2hlY2s9RmFsc2UsCiAgICAgICAgKQogICAgICAgIHN0ZG91dF9uYW1lID0gZiJ7bmFtZX0uc3Rkb3V0IgogICAgICAgIHN0ZGVycl9uYW1lID0gZiJ7bmFtZX0uc3RkZXJyIgogICAgICAgIChhcmdzLm91dHB1dCAvIHN0ZG91dF9uYW1lKS53cml0ZV9ieXRlcyhyZXN1bHQuc3Rkb3V0KQogICAgICAgIChhcmdzLm91dHB1dCAvIHN0ZGVycl9uYW1lKS53cml0ZV9ieXRlcyhyZXN1bHQuc3RkZXJyKQogICAgICAgIGVudHJpZXMuYXBwZW5kKHsKICAgICAgICAgICAgIm5hbWUiOiBuYW1lLAogICAgICAgICAgICAiYXJndiI6IGFyZ3YsCiAgICAgICAgICAgICJzdGF0dXMiOiByZXN1bHQucmV0dXJuY29kZSwKICAgICAgICAgICAgInN0ZG91dCI6IHsicGF0aCI6IHN0ZG91dF9uYW1lLCAiYnl0ZXMiOiBsZW4ocmVzdWx0LnN0ZG91dCksICJzaGEyNTYiOiBkaWdlc3QocmVzdWx0LnN0ZG91dCl9LAogICAgICAgICAgICAic3RkZXJyIjogeyJwYXRoIjogc3RkZXJyX25hbWUsICJieXRlcyI6IGxlbihyZXN1bHQuc3RkZXJyKSwgInNoYTI1NiI6IGRpZ2VzdChyZXN1bHQuc3RkZXJyKX0sCiAgICAgICAgfSkKICAgICAgICByZWNlaXB0LndyaXRlX3RleHQoanNvbi5kdW1wcyhtYW5pZmVzdCwgc29ydF9rZXlzPVRydWUsIGluZGVudD0yKSArICJcbiIpCiAgICAgICAgaWYgcmVzdWx0LnJldHVybmNvZGUgIT0gZXhwZWN0ZWRfY29kZToKICAgICAgICAgICAgcmFpc2UgQXNzZXJ0aW9uRXJyb3IoZiJvcmlnaW5hbCBDTEkge25hbWV9IHN0YXR1cyBjaGFuZ2VkOiB7cmVzdWx0LnJldHVybmNvZGV9IikKICAgIGFmdGVyID0gY2hlY2tlci5yZWFkX2J5dGVzKCkKICAgIGlmIGJlZm9yZSAhPSBhZnRlcjoKICAgICAgICByYWlzZSBBc3NlcnRpb25FcnJvcigib3JpZ2luYWwgZHJpdmVyIGNoZWNrZXIgY2hhbmdlZCBkdXJpbmcgQ0xJIGNhcHR1cmUiKQogICAgcHJpbnQoanNvbi5kdW1wcyh7ImNhc2VzIjogbGVuKGVudHJpZXMpLCAibWFuaWZlc3Rfc2hhMjU2IjogZGlnZXN0KHJlY2VpcHQucmVhZF9ieXRlcygpKX0pKQoKCmlmIF9fbmFtZV9fID09ICJfX21haW5fXyI6CiAgICBtYWluKCkK",
+        validate=True)
+
+        assert hashlib.sha256(cli).hexdigest() == "84178a590ff4e72ba80787ee0cad8e07d4721b54d970b20862dd771c8b7c3c89"
+
+        cli_target = target.with_name("capture_original_driver_cli.py")
+
+        cli_target.write_bytes(cli)
+
+        assert hashlib.sha256(cli_target.read_bytes()).hexdigest() == "84178a590ff4e72ba80787ee0cad8e07d4721b54d970b20862dd771c8b7c3c89"
+
+        PY_CAPTURE
+
+        printf ''%s\n'' ''95128a39966819e738e76bcd63e16fe5195385b6c3f17ed1424c10200ee65e1e'' > "$proof/capture-script.sha256"
+
+        printf ''%s\n'' ''84178a590ff4e72ba80787ee0cad8e07d4721b54d970b20862dd771c8b7c3c89'' > "$proof/cli-capture-script.sha256"
+
+
+        python3 - <<''PY_NO_COLLECTOR_CAPTURE''
+
+        import base64, hashlib, os
+
+        from pathlib import Path
+
+        raw = base64.b64decode("IiIiQ2xvdWQtb25seSBvYnNlcnZlciBvZiB1bmNoYW5nZWQgY2hlY2tfZHJpdmVyX2RhZW1vbi5weSB3aXRob3V0IGEgY29sbGVjdG9yLgoKVGhlIG1haW50YWluZWQgY2hlY2tlciBzdGlsbCBydW5zIGl0cyBmb3VyIGNhc2VzIGFuZCBhc3NlcnRzIGV2ZXJ5IGNhbmRpZGF0ZSBwYWNrZXQuClRoaXMgd3JhcHBlciBvbmx5IHJlY29yZHMgaXRzIGluZGVwZW5kZW50IGdldF9kcml2ZXJzdGF0ZV9wYWNrZXQgcmVzdWx0IGFmdGVyIHRoZQpjaGVja2VyIGluc2VydHMgdGhlIG9ic2VydmVkIG1vbm90b25pYyB0aW1lc3RhbXA7IGNhbmRpZGF0ZSBtZXNzYWdlLSouYmluIGZpbGVzCmFyZSBkZWxpYmVyYXRlbHkgZXhjbHVkZWQgZnJvbSB0aGUgcmVmZXJlbmNlIG1hbmlmZXN0LgoiIiIKZnJvbSBfX2Z1dHVyZV9fIGltcG9ydCBhbm5vdGF0aW9ucwoKaW1wb3J0IGFyZ3BhcnNlCmltcG9ydCBoYXNobGliCmltcG9ydCBpbXBvcnRsaWIudXRpbAppbXBvcnQganNvbgppbXBvcnQgb3MKZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCmltcG9ydCBzdGF0CmltcG9ydCBzdWJwcm9jZXNzCmltcG9ydCBzeXMKCgpkZWYgZGlnZXN0KHBhdGg6IFBhdGgsIGxpbWl0OiBpbnQpIC0+IGRpY3Rbc3RyLCBvYmplY3RdOgogICAgZGVzY3JpcHRvciA9IG9zLm9wZW4ocGF0aCwgb3MuT19SRE9OTFkgfCBvcy5PX05PRk9MTE9XIHwgb3MuT19OT05CTE9DSyB8IG9zLk9fQ0xPRVhFQykKICAgIHRyeToKICAgICAgICBiZWZvcmUgPSBvcy5mc3RhdChkZXNjcmlwdG9yKQogICAgICAgIGlmIG5vdCBzdGF0LlNfSVNSRUcoYmVmb3JlLnN0X21vZGUpIG9yIGJlZm9yZS5zdF9zaXplID4gbGltaXQ6CiAgICAgICAgICAgIHJhaXNlIEFzc2VydGlvbkVycm9yKGYibm9ucmVndWxhciBvciBvdmVyc2l6ZWQgY2FwdHVyZSBpbnB1dDoge3BhdGh9IikKICAgICAgICBoYXNoX3ZhbHVlID0gaGFzaGxpYi5zaGEyNTYoKQogICAgICAgIGxlbmd0aCA9IDAKICAgICAgICB3aGlsZSBjaHVuayA6PSBvcy5yZWFkKGRlc2NyaXB0b3IsIDY1NTM2KToKICAgICAgICAgICAgbGVuZ3RoICs9IGxlbihjaHVuaykKICAgICAgICAgICAgaWYgbGVuZ3RoID4gbGltaXQ6CiAgICAgICAgICAgICAgICByYWlzZSBBc3NlcnRpb25FcnJvcihmImNhcHR1cmUgaW5wdXQgZ3Jldzoge3BhdGh9IikKICAgICAgICAgICAgaGFzaF92YWx1ZS51cGRhdGUoY2h1bmspCiAgICAgICAgYWZ0ZXIgPSBvcy5mc3RhdChkZXNjcmlwdG9yKQogICAgICAgIGN1cnJlbnQgPSBwYXRoLmxzdGF0KCkKICAgICAgICBpZGVudGl0eSA9IGxhbWJkYSB2YWx1ZTogKHZhbHVlLnN0X2RldiwgdmFsdWUuc3RfaW5vLCB2YWx1ZS5zdF9zaXplLCB2YWx1ZS5zdF9tdGltZV9ucywgdmFsdWUuc3RfY3RpbWVfbnMpCiAgICAgICAgaWYgaWRlbnRpdHkoYmVmb3JlKSAhPSBpZGVudGl0eShhZnRlcikgb3IgaWRlbnRpdHkoYmVmb3JlKSAhPSBpZGVudGl0eShjdXJyZW50KSBvciBsZW5ndGggIT0gYmVmb3JlLnN0X3NpemU6CiAgICAgICAgICAgIHJhaXNlIEFzc2VydGlvbkVycm9yKGYiY2FwdHVyZSBpbnB1dCBjaGFuZ2VkOiB7cGF0aH0iKQogICAgICAgIHJldHVybiB7ImJ5dGVzIjogbGVuZ3RoLCAic2hhMjU2IjogaGFzaF92YWx1ZS5oZXhkaWdlc3QoKX0KICAgIGZpbmFsbHk6CiAgICAgICAgb3MuY2xvc2UoZGVzY3JpcHRvcikKCgpkZWYgbWFpbigpIC0+IE5vbmU6CiAgICBwYXJzZXIgPSBhcmdwYXJzZS5Bcmd1bWVudFBhcnNlcigpCiAgICBwYXJzZXIuYWRkX2FyZ3VtZW50KCItLXJvb3QiLCByZXF1aXJlZD1UcnVlLCB0eXBlPVBhdGgpCiAgICBwYXJzZXIuYWRkX2FyZ3VtZW50KCItLXNvdXJjZS1jb21taXQiLCByZXF1aXJlZD1UcnVlKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgiLS1leHBlY3RlZC1jaGVja2VyLXNoYTI1NiIsIHJlcXVpcmVkPVRydWUpCiAgICBwYXJzZXIuYWRkX2FyZ3VtZW50KCItLWJpbmFyeSIsIHJlcXVpcmVkPVRydWUsIHR5cGU9UGF0aCkKICAgIHBhcnNlci5hZGRfYXJndW1lbnQoIi0tY2F0YWxvZyIsIHJlcXVpcmVkPVRydWUsIHR5cGU9UGF0aCkKICAgIHBhcnNlci5hZGRfYXJndW1lbnQoIi0tbW9kZWxzIiwgcmVxdWlyZWQ9VHJ1ZSwgdHlwZT1QYXRoKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgiLS1iaW5kaW5nIiwgcmVxdWlyZWQ9VHJ1ZSwgdHlwZT1QYXRoKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgiLS1jb2xsZWN0b3IiLCB0eXBlPVBhdGgpCiAgICBwYXJzZXIuYWRkX2FyZ3VtZW50KCItLW91dHB1dCIsIHJlcXVpcmVkPVRydWUsIHR5cGU9UGF0aCkKICAgIGFyZ3MgPSBwYXJzZXIucGFyc2VfYXJncygpCiAgICBpZiBhcmdzLmNvbGxlY3RvciBpcyBub3QgTm9uZToKICAgICAgICByYWlzZSBBc3NlcnRpb25FcnJvcigidGhpcyBvcmlnaW5hbCBjYXB0dXJlIG11c3Qgb21pdCAtLWNvbGxlY3RvciIpCiAgICByb290ID0gYXJncy5yb290LnJlc29sdmUoc3RyaWN0PVRydWUpCiAgICBiaW5kaW5nID0gYXJncy5iaW5kaW5nLnJlc29sdmUoc3RyaWN0PVRydWUpCiAgICBvdXRwdXQgPSBhcmdzLm91dHB1dC5yZXNvbHZlKCkKICAgIGlmIG91dHB1dC5leGlzdHMoKToKICAgICAgICByYWlzZSBGaWxlRXhpc3RzRXJyb3Iob3V0cHV0KQogICAgd3JhcHBlcl9iZWZvcmUgPSBkaWdlc3QoUGF0aChfX2ZpbGVfXyksIDJfMDAwXzAwMCkKICAgIGhlYWQgPSBzdWJwcm9jZXNzLmNoZWNrX291dHB1dChbIi91c3IvYmluL2dpdCIsICItQyIsIHN0cihyb290KSwgInJldi1wYXJzZSIsICJIRUFEIl0sIHRleHQ9VHJ1ZSkuc3RyaXAoKQogICAgaWYgaGVhZCAhPSBhcmdzLnNvdXJjZV9jb21taXQ6CiAgICAgICAgcmFpc2UgQXNzZXJ0aW9uRXJyb3IoIm9yaWdpbmFsIGNoZWNrZXIgY2hlY2tvdXQgY2hhbmdlZCIpCiAgICBjaGVja2VyX3BhdGggPSByb290IC8gInJ1c3QvdG9vbHMvY2hlY2tfZHJpdmVyX2RhZW1vbi5weSIKICAgIGNoZWNrZXJfcGluID0gZGlnZXN0KGNoZWNrZXJfcGF0aCwgMV8wMDBfMDAwKQogICAgaWYgY2hlY2tlcl9waW5bInNoYTI1NiJdICE9IGFyZ3MuZXhwZWN0ZWRfY2hlY2tlcl9zaGEyNTY6CiAgICAgICAgcmFpc2UgQXNzZXJ0aW9uRXJyb3IoIm9yaWdpbmFsIGNoZWNrZXIgYnl0ZXMgY2hhbmdlZCIpCiAgICBzb3VyY2VfcGF0aHMgPSBbCiAgICAgICAgInJ1c3QvdG9vbHMvY2hlY2tfZHJpdmVyX2RhZW1vbi5weSIsCiAgICAgICAgInJ1c3QvdG9vbHMvY2hlY2tfcGlwZWxpbmVfcmVmZXJlbmNlLnB5IiwKICAgICAgICAicnVzdC90b29scy9tb2RlbF9vdXRwdXRfcmVmZXJlbmNlLnB5IiwKICAgICAgICAicnVzdC90b29scy9tb2RlbF9sb2dnaW5nX2NhcHR1cmUucHkiLAogICAgICAgICJydXN0L3Rvb2xzL21vZGVsX2xvZ2dpbmdfcmVmZXJlbmNlLnB5IiwKICAgICAgICAicnVzdC90b29scy9kcml2ZXJfZGFlbW9uX3BlZXIuY2MiLAogICAgICAgICJydXN0L3Rvb2xzL21vZGVsX2V4cG9ydC9vcmlnaW5hbC5weSIsCiAgICAgICAgInJ1c3QvdG9vbHMvbW9kZWxfZXhwb3J0L3BpcGVsaW5lLnB5IiwKICAgICAgICAicnVzdC90b29scy9tb2RlbF9leHBvcnQvc2NoZW1hLnB5IiwKICAgICAgICAib3BlbnBpbG90L3NlbGZkcml2ZS9tb2RlbGQvZG1vbml0b3Jpbmdtb2RlbGQucHkiLAogICAgICAgICJvcGVucGlsb3Qvc2VsZmRyaXZlL21vZGVsZC9wYXJzZV9tb2RlbF9vdXRwdXRzLnB5IiwKICAgICAgICAib3BlbnBpbG90L3NlbGZkcml2ZS9tb2RlbGQvY29uc3RhbnRzLnB5IiwKICAgICAgICAib3BlbnBpbG90L2NvbW1vbi90cmFuc2Zvcm1hdGlvbnMvY2FtZXJhLnB5IiwKICAgICAgICAib3BlbnBpbG90L2NvbW1vbi90cmFuc2Zvcm1hdGlvbnMvbW9kZWwucHkiLAogICAgICAgICJvcGVucGlsb3Qvc3lzdGVtL2NhbWVyYWQvY2FtZXJhcy9udjEyX2luZm8ucHkiLAogICAgXQogICAgc291cmNlc19iZWZvcmUgPSB7bmFtZTogZGlnZXN0KHJvb3QgLyBuYW1lLCA0XzAwMF8wMDApIGZvciBuYW1lIGluIHNvdXJjZV9wYXRoc30KICAgIG1vZGVscyA9IFsKICAgICAgICAiZG1vbml0b3JpbmdfbW9kZWxfdGlueWdyYWQucGtsIiwKICAgICAgICAiZG1fd2FycF8xMzQ0eDc2MF90aW55Z3JhZC5wa2wiLAogICAgICAgICJkbV93YXJwXzE5Mjh4MTIwOF90aW55Z3JhZC5wa2wiLAogICAgICAgICJkbW9uaXRvcmluZ19tb2RlbF9tZXRhZGF0YS5wa2wiLAogICAgXQogICAgbW9kZWxzX2JlZm9yZSA9IHtuYW1lOiBkaWdlc3QoYXJncy5tb2RlbHMgLyBuYW1lLCAyXzAwMF8wMDBfMDAwKSBmb3IgbmFtZSBpbiBtb2RlbHN9CiAgICBleHRlbnNpb25zID0gWwogICAgICAgIG5leHQoaXRlcihzb3J0ZWQoKGJpbmRpbmcgLyAibXNncSIpLmdsb2IoImlwY19weXgqLnNvIikpKSksCiAgICAgICAgbmV4dChpdGVyKHNvcnRlZCgoYmluZGluZyAvICJtc2dxL3Zpc2lvbmlwYyIpLmdsb2IoInZpc2lvbmlwY19weXgqLnNvIikpKSksCiAgICBdCiAgICBpZiBhbnkobGVuKGxpc3QocGF0aC5wYXJlbnQuZ2xvYihwYXRoLm5hbWUuc3BsaXQoIi4iKVswXSArICIqLnNvIikpKSAhPSAxIGZvciBwYXRoIGluIGV4dGVuc2lvbnMpOgogICAgICAgIHJhaXNlIEFzc2VydGlvbkVycm9yKCJvcmlnaW5hbCBtc2dxIGJpbmRpbmcgZXh0ZW5zaW9uIHJvc3RlciBjaGFuZ2VkIikKICAgIGV4dGVuc2lvbnNfYmVmb3JlID0ge3BhdGgucmVsYXRpdmVfdG8oYmluZGluZykuYXNfcG9zaXgoKTogZGlnZXN0KHBhdGgsIDEwMF8wMDBfMDAwKSBmb3IgcGF0aCBpbiBleHRlbnNpb25zfQogICAgIyBUaGUgaG9zdGVkIFBZVEhPTlBBVEggc3RhcnRzIHdpdGggdGhlIGZyZXNobHkgYnVpbHQgb3JpZ2luYWwgbXNncSBQeXRob24KICAgICMgYmluZGluZy4gS2VlcCB0aGF0IHBhY2thZ2UgYWhlYWQgb2YgdGhlIHJlcG9zaXRvcnkncyB1bmJ1aWx0IG1zZ3EgYWxpYXMuCiAgICBmb3IgZGlyZWN0b3J5IGluIChyb290LCByb290IC8gInJ1c3QvdG9vbHMiKToKICAgICAgICBpZiBzdHIoZGlyZWN0b3J5KSBub3QgaW4gc3lzLnBhdGg6CiAgICAgICAgICAgIHN5cy5wYXRoLmFwcGVuZChzdHIoZGlyZWN0b3J5KSkKICAgIHNwZWMgPSBpbXBvcnRsaWIudXRpbC5zcGVjX2Zyb21fZmlsZV9sb2NhdGlvbigib3JpZ2luYWxfZHJpdmVyX2RhZW1vbl9jaGVja2VyIiwgY2hlY2tlcl9wYXRoKQogICAgaWYgc3BlYyBpcyBOb25lIG9yIHNwZWMubG9hZGVyIGlzIE5vbmU6CiAgICAgICAgcmFpc2UgQXNzZXJ0aW9uRXJyb3IoImNhbm5vdCBsb2FkIHVuY2hhbmdlZCBvcmlnaW5hbCBjaGVja2VyIikKICAgIGNoZWNrZXIgPSBpbXBvcnRsaWIudXRpbC5tb2R1bGVfZnJvbV9zcGVjKHNwZWMpCiAgICBzcGVjLmxvYWRlci5leGVjX21vZHVsZShjaGVja2VyKQogICAgZGVmIGxvYWRlZF9weXRob25fc291cmNlcygpOgogICAgICAgIHBhdGhzID0gc2V0KCkKICAgICAgICBmb3IgbW9kdWxlIGluIHR1cGxlKHN5cy5tb2R1bGVzLnZhbHVlcygpKToKICAgICAgICAgICAgbG9jYXRpb24gPSBnZXRhdHRyKG1vZHVsZSwgIl9fZmlsZV9fIiwgTm9uZSkKICAgICAgICAgICAgaWYgbG9jYXRpb24gaXMgTm9uZToKICAgICAgICAgICAgICAgIGNvbnRpbnVlCiAgICAgICAgICAgIHBhdGggPSBQYXRoKGxvY2F0aW9uKS5yZXNvbHZlKCkKICAgICAgICAgICAgaWYgcGF0aC5zdWZmaXggIT0gIi5weSI6CiAgICAgICAgICAgICAgICBjb250aW51ZQogICAgICAgICAgICBpZiBwYXRoLmlzX3JlbGF0aXZlX3RvKGJpbmRpbmcpOgogICAgICAgICAgICAgICAgcmVsYXRpdmUgPSBwYXRoLnJlbGF0aXZlX3RvKGJpbmRpbmcpCiAgICAgICAgICAgICAgICBpZiByZWxhdGl2ZS5wYXJ0c1swXSAhPSAibXNncSI6CiAgICAgICAgICAgICAgICAgICAgcmFpc2UgQXNzZXJ0aW9uRXJyb3IoInVuZXhwZWN0ZWQgY29waWVkIGJpbmRpbmcgUHl0aG9uIHNvdXJjZSIpCiAgICAgICAgICAgICAgICBzb3VyY2UgPSByb290IC8gIm1zZ3FfcmVwbyIgLyByZWxhdGl2ZQogICAgICAgICAgICAgICAgaWYgZGlnZXN0KHBhdGgsIDRfMDAwXzAwMCkgIT0gZGlnZXN0KHNvdXJjZSwgNF8wMDBfMDAwKToKICAgICAgICAgICAgICAgICAgICByYWlzZSBBc3NlcnRpb25FcnJvcigib3JpZ2luYWwgY29waWVkIG1zZ3Egc291cmNlIGRpZmZlcnMgZnJvbSByZXBvc2l0b3J5IikKICAgICAgICAgICAgICAgIHBhdGhzLmFkZCgoUGF0aCgibXNncV9yZXBvIikgLyByZWxhdGl2ZSkuYXNfcG9zaXgoKSkKICAgICAgICAgICAgZWxpZiBwYXRoLmlzX3JlbGF0aXZlX3RvKHJvb3QpOgogICAgICAgICAgICAgICAgcGF0aHMuYWRkKHBhdGgucmVsYXRpdmVfdG8ocm9vdCkuYXNfcG9zaXgoKSkKICAgICAgICByZXR1cm4ge25hbWU6IGRpZ2VzdChyb290IC8gbmFtZSwgNF8wMDBfMDAwKSBmb3IgbmFtZSBpbiBzb3J0ZWQocGF0aHMpfQoKICAgIGxvYWRlZF9iZWZvcmUgPSBsb2FkZWRfcHl0aG9uX3NvdXJjZXMoKQogICAgb3JpZ2luYWxfZmFjdG9yeSA9IGNoZWNrZXIub3JpZ2luYWxfZnVuY3Rpb25zCiAgICBvcmlnaW5hbF9jaGVjayA9IGNoZWNrZXIuY2hlY2sKICAgIGFjdGl2ZTogZGljdFtzdHIsIG9iamVjdF0gPSB7fQoKICAgIGNsYXNzIFBhY2tldDoKICAgICAgICBkZWYgX19pbml0X18oc2VsZiwgcGFja2V0KToKICAgICAgICAgICAgb2JqZWN0Ll9fc2V0YXR0cl9fKHNlbGYsICJwYWNrZXQiLCBwYWNrZXQpCgogICAgICAgIGRlZiBfX3NldGF0dHJfXyhzZWxmLCBuYW1lLCB2YWx1ZSk6CiAgICAgICAgICAgIHNldGF0dHIoc2VsZi5wYWNrZXQsIG5hbWUsIHZhbHVlKQoKICAgICAgICBkZWYgdG9fZGljdChzZWxmKToKICAgICAgICAgICAgaW5kZXggPSBhY3RpdmVbImNvdW50Il0KICAgICAgICAgICAgdGFyZ2V0ID0gYWN0aXZlWyJyZWZlcmVuY2UiXSAvIGYiZXhwZWN0ZWQte2luZGV4fS5iaW4iCiAgICAgICAgICAgIHRhcmdldC5wYXJlbnQubWtkaXIoZXhpc3Rfb2s9VHJ1ZSkKICAgICAgICAgICAgd2l0aCB0YXJnZXQub3BlbigieGIiKSBhcyBzaW5rOgogICAgICAgICAgICAgICAgc2luay53cml0ZShzZWxmLnBhY2tldC50b19ieXRlcygpKQogICAgICAgICAgICBhY3RpdmVbImNvdW50Il0gPSBpbmRleCArIDEKICAgICAgICAgICAgcmV0dXJuIHNlbGYucGFja2V0LnRvX2RpY3QoKQoKICAgICAgICBkZWYgdG9fYnl0ZXMoc2VsZik6CiAgICAgICAgICAgIHJldHVybiBzZWxmLnBhY2tldC50b19ieXRlcygpCgogICAgY2xhc3MgUmVmZXJlbmNlOgogICAgICAgIGRlZiBfX2luaXRfXyhzZWxmLCByZWZlcmVuY2UpOgogICAgICAgICAgICBzZWxmLnJlZmVyZW5jZSA9IHJlZmVyZW5jZQoKICAgICAgICBkZWYgcGFyc2VfbW9kZWxfb3V0cHV0KHNlbGYsIHZhbHVlcyk6CiAgICAgICAgICAgIHJldHVybiBzZWxmLnJlZmVyZW5jZS5wYXJzZV9tb2RlbF9vdXRwdXQodmFsdWVzKQoKICAgICAgICBkZWYgZ2V0X2RyaXZlcnN0YXRlX3BhY2tldChzZWxmLCAqdmFsdWVzKToKICAgICAgICAgICAgcmV0dXJuIFBhY2tldChzZWxmLnJlZmVyZW5jZS5nZXRfZHJpdmVyc3RhdGVfcGFja2V0KCp2YWx1ZXMpKQoKICAgIGRlZiBmYWN0b3J5KCk6CiAgICAgICAgZHJpdmluZywgcmVmZXJlbmNlID0gb3JpZ2luYWxfZmFjdG9yeSgpCiAgICAgICAgcmV0dXJuIGRyaXZpbmcsIFJlZmVyZW5jZShyZWZlcmVuY2UpCgogICAgZGVmIGNoZWNrKG9yaWdpbmFsX2FyZ3MsIHdpZHRoLCBoZWlnaHQsIHJhdyk6CiAgICAgICAgbGFiZWwgPSBmInt3aWR0aH0tcmF3LXtpbnQocmF3KX0iCiAgICAgICAgcmVmZXJlbmNlID0gb3V0cHV0IC8gbGFiZWwgLyAicmVmZXJlbmNlIgogICAgICAgICMgVGhlIHVuY2hhbmdlZCBjaGVja2VyIGNyZWF0ZXMgdGhlIGNhc2UgZGlyZWN0b3J5IGF0IGVudHJ5LiBLZWVwIHRoZQogICAgICAgICMgcmVmZXJlbmNlIHN1YmRpcmVjdG9yeSBsYXp5IHVudGlsIGl0cyBmaXJzdCBvcmlnaW5hbCBwYWNrZXQgaXMgYnVpbHQuCiAgICAgICAgYWN0aXZlLmNsZWFyKCkKICAgICAgICBhY3RpdmUudXBkYXRlKHsiY291bnQiOiAwLCAicmVmZXJlbmNlIjogcmVmZXJlbmNlfSkKICAgICAgICByZXBvcnQgPSBvcmlnaW5hbF9jaGVjayhvcmlnaW5hbF9hcmdzLCB3aWR0aCwgaGVpZ2h0LCByYXcpCiAgICAgICAgZXhwZWN0ZWRfY291bnQgPSA1IGlmIHJhdyBlbHNlIDIKICAgICAgICBpZiBhY3RpdmVbImNvdW50Il0gIT0gZXhwZWN0ZWRfY291bnQ6CiAgICAgICAgICAgIHJhaXNlIEFzc2VydGlvbkVycm9yKGYib3JpZ2luYWwgc291cmNlIHBhY2tldCBjb3VudCBjaGFuZ2VkIGZvciB7bGFiZWx9IikKICAgICAgICBpZiAocmVmZXJlbmNlIC8gImV4cGVjdGVkLTAuYmluIikucmVhZF9ieXRlcygpICE9IChvdXRwdXQgLyBsYWJlbCAvICJ3YXJtdXAtZXhwZWN0ZWQuYmluIikucmVhZF9ieXRlcygpOgogICAgICAgICAgICByYWlzZSBBc3NlcnRpb25FcnJvcihmIm9yaWdpbmFsIHdhcm11cCBwYWNrZXQgZGlmZmVycyBmcm9tIHVuY2hhbmdlZCBjaGVja2VyIikKICAgICAgICByZXR1cm4gcmVwb3J0CgogICAgY2hlY2tlci5vcmlnaW5hbF9mdW5jdGlvbnMgPSBmYWN0b3J5CiAgICBjaGVja2VyLmNoZWNrID0gY2hlY2sKICAgIG9yaWdpbmFsX2FyZ3YgPSBbCiAgICAgICAgc3RyKGNoZWNrZXJfcGF0aCksICItLWJpbmFyeSIsIHN0cihhcmdzLmJpbmFyeSksICItLWNhdGFsb2ciLCBzdHIoYXJncy5jYXRhbG9nKSwKICAgICAgICAiLS1tb2RlbHMiLCBzdHIoYXJncy5tb2RlbHMpLCAiLS1vdXRwdXQiLCBzdHIoYXJncy5vdXRwdXQpLAogICAgXQogICAgaWYgYXJncy5jb2xsZWN0b3IgaXMgbm90IE5vbmU6CiAgICAgICAgb3JpZ2luYWxfYXJndi5leHRlbmQoWyItLWNvbGxlY3RvciIsIHN0cihhcmdzLmNvbGxlY3RvcildKQogICAgcHJldmlvdXNfYXJndiA9IHN5cy5hcmd2CiAgICB0cnk6CiAgICAgICAgc3lzLmFyZ3YgPSBvcmlnaW5hbF9hcmd2CiAgICAgICAgY2hlY2tlci5tYWluKCkKICAgIGZpbmFsbHk6CiAgICAgICAgc3lzLmFyZ3YgPSBwcmV2aW91c19hcmd2CiAgICByZXBvcnQgPSBqc29uLmxvYWRzKChvdXRwdXQgLyAicmVwb3J0Lmpzb24iKS5yZWFkX2J5dGVzKCkpCiAgICBpZiBsZW4ocmVwb3J0WyJydW5zIl0pICE9IDQgb3IgYW55KHJ1blsibG9nZ2luZyJdIGlzIG5vdCBOb25lIGZvciBydW4gaW4gcmVwb3J0WyJydW5zIl0pOgogICAgICAgIHJhaXNlIEFzc2VydGlvbkVycm9yKCJ1bmNoYW5nZWQgb3JpZ2luYWwgbm8tY29sbGVjdG9yIHJlcG9ydCBjaGFuZ2VkIikKICAgIGZvciBuYW1lIGluICgibXNncS5pcGNfcHl4IiwpOgogICAgICAgIG1vZHVsZSA9IHN5cy5tb2R1bGVzLmdldChuYW1lKQogICAgICAgIGxvY2F0aW9uID0gZ2V0YXR0cihtb2R1bGUsICJfX2ZpbGVfXyIsIE5vbmUpCiAgICAgICAgaWYgbG9jYXRpb24gaXMgTm9uZSBvciBub3QgUGF0aChsb2NhdGlvbikucmVzb2x2ZShzdHJpY3Q9VHJ1ZSkuaXNfcmVsYXRpdmVfdG8oYmluZGluZyk6CiAgICAgICAgICAgIHJhaXNlIEFzc2VydGlvbkVycm9yKGYib3JpZ2luYWwgY2hlY2tlciBkaWQgbm90IHVzZSBoZWxkIGJ1aWx0IGJpbmRpbmc6IHtuYW1lfSIpCiAgICBjYXNlcyA9IFtdCiAgICBmaWxlcyA9IHt9CiAgICBmb3Igd2lkdGgsIGhlaWdodCBpbiBbKDEzNDQsIDc2MCksICgxOTI4LCAxMjA4KV06CiAgICAgICAgZm9yIHJhdyBpbiBbVHJ1ZSwgRmFsc2VdOgogICAgICAgICAgICBsYWJlbCA9IGYie3dpZHRofS1yYXcte2ludChyYXcpfSIKICAgICAgICAgICAgZGlyZWN0b3J5ID0gb3V0cHV0IC8gbGFiZWwKICAgICAgICAgICAgY291bnQgPSA0IGlmIHJhdyBlbHNlIDEKICAgICAgICAgICAgc2VsZWN0ZWQgPSBbIndhcm11cC5iaW4iLCAid2FybXVwLWV4cGVjdGVkLmJpbiIsICJyZXBvcnQuanNvbiJdCiAgICAgICAgICAgIHNlbGVjdGVkICs9IFtmImZyYW1lLXtpfS5iaW4iIGZvciBpIGluIHJhbmdlKGNvdW50KV0KICAgICAgICAgICAgc2VsZWN0ZWQgKz0gW2YicmVmZXJlbmNlL2V4cGVjdGVkLXtpfS5iaW4iIGZvciBpIGluIHJhbmdlKGNvdW50ICsgMSldCiAgICAgICAgICAgIGlmIHJhdzoKICAgICAgICAgICAgICAgIHNlbGVjdGVkICs9IFsiY2FsaWItMS5iaW4iLCAiY2FsaWItMy5iaW4iLCAiaW52YWxpZC1jYWxpYi5iaW4iXQogICAgICAgICAgICBmb3IgbmFtZSBpbiBzZWxlY3RlZDoKICAgICAgICAgICAgICAgIHJlbGF0aXZlID0gZiJ7bGFiZWx9L3tuYW1lfSIKICAgICAgICAgICAgICAgIGZpbGVzW3JlbGF0aXZlXSA9IGRpZ2VzdChkaXJlY3RvcnkgLyBuYW1lLCAxNl8wMDBfMDAwKQogICAgICAgICAgICBjYXNlcy5hcHBlbmQoeyJuYW1lIjogbGFiZWwsICJ3aWR0aCI6IHdpZHRoLCAiaGVpZ2h0IjogaGVpZ2h0LCAicmF3IjogcmF3LAogICAgICAgICAgICAgICAgICAgICAgICAgICJmcmFtZV9jb3VudCI6IGNvdW50LCAicmVmZXJlbmNlX2NvdW50IjogY291bnQgKyAxfSkKICAgIGZpbGVzWyJyZXBvcnQuanNvbiJdID0gZGlnZXN0KG91dHB1dCAvICJyZXBvcnQuanNvbiIsIDFfMDAwXzAwMCkKICAgIHNvdXJjZXNfYWZ0ZXIgPSB7bmFtZTogZGlnZXN0KHJvb3QgLyBuYW1lLCA0XzAwMF8wMDApIGZvciBuYW1lIGluIHNvdXJjZV9wYXRoc30KICAgIG1vZGVsc19hZnRlciA9IHtuYW1lOiBkaWdlc3QoYXJncy5tb2RlbHMgLyBuYW1lLCAyXzAwMF8wMDBfMDAwKSBmb3IgbmFtZSBpbiBtb2RlbHN9CiAgICBleHRlbnNpb25zX2FmdGVyID0ge3BhdGgucmVsYXRpdmVfdG8oYmluZGluZykuYXNfcG9zaXgoKTogZGlnZXN0KHBhdGgsIDEwMF8wMDBfMDAwKSBmb3IgcGF0aCBpbiBleHRlbnNpb25zfQogICAgbG9hZGVkX2FmdGVyID0gbG9hZGVkX3B5dGhvbl9zb3VyY2VzKCkKICAgIGlmIHNvdXJjZXNfYWZ0ZXIgIT0gc291cmNlc19iZWZvcmUgb3IgbW9kZWxzX2FmdGVyICE9IG1vZGVsc19iZWZvcmUgb3IgZXh0ZW5zaW9uc19hZnRlciAhPSBleHRlbnNpb25zX2JlZm9yZSBvciB3cmFwcGVyX2JlZm9yZSAhPSBkaWdlc3QoUGF0aChfX2ZpbGVfXyksIDJfMDAwXzAwMCkgb3IgYW55KAogICAgICAgIGxvYWRlZF9hZnRlci5nZXQobmFtZSkgIT0gcGluIGZvciBuYW1lLCBwaW4gaW4gbG9hZGVkX2JlZm9yZS5pdGVtcygpCiAgICApOgogICAgICAgIHJhaXNlIEFzc2VydGlvbkVycm9yKCJvcmlnaW5hbCBpbXBvcnRzIG9yIG1vZGVsIGFydGlmYWN0cyBjaGFuZ2VkIGR1cmluZyBjYXB0dXJlIikKICAgIGlmIHN1YnByb2Nlc3MuY2hlY2tfb3V0cHV0KFsiL3Vzci9iaW4vZ2l0IiwgIi1DIiwgc3RyKHJvb3QpLCAicmV2LXBhcnNlIiwgIkhFQUQiXSwgdGV4dD1UcnVlKS5zdHJpcCgpICE9IGhlYWQ6CiAgICAgICAgcmFpc2UgQXNzZXJ0aW9uRXJyb3IoInNvdXJjZSBjaGVja291dCBjaGFuZ2VkIGR1cmluZyBjYXB0dXJlIikKICAgIG1hbmlmZXN0ID0geyJzb3VyY2VfY29tbWl0IjogaGVhZCwgImNhcHR1cmVfd3JhcHBlciI6IHdyYXBwZXJfYmVmb3JlLAogICAgICAgICAgICAgICAgIm9yaWdpbmFsX2NoZWNrZXIiOiBjaGVja2VyX3BpbiwKICAgICAgICAgICAgICAgICJvcmlnaW5hbF9zb3VyY2VfaW5wdXRzIjogc291cmNlc19iZWZvcmUsICJsb2FkZWRfcHl0aG9uX3NvdXJjZXMiOiBsb2FkZWRfYWZ0ZXIsCiAgICAgICAgICAgICAgICAib3JpZ2luYWxfbXNncV9iaW5kaW5nX2V4dGVuc2lvbnMiOiBleHRlbnNpb25zX2FmdGVyLAogICAgICAgICAgICAgICAgIm9yaWdpbmFsX21vZGVscyI6IG1vZGVsc19iZWZvcmUsCiAgICAgICAgICAgICAgICAiY2FzZXMiOiBjYXNlcywgImZpbGVzIjogZmlsZXMsCiAgICAgICAgICAgICAgICAicG9saWN5IjogeyJleHBlY3RlZF9wYWNrZXRfb3JpZ2luIjogInVuY2hhbmdlZCBQeXRob24gcmVmZXJlbmNlLmdldF9kcml2ZXJzdGF0ZV9wYWNrZXQiLAogICAgICAgICAgICAgICAgICAgICAgICAgICAiY2FuZGlkYXRlX21lc3NhZ2VfZmlsZXNfYXJlX25vdF9vcmFjbGUiOiBUcnVlLAogICAgICAgICAgICAgICAgICAgICAgICAgICAiY29sbGVjdG9yX21vZGUiOiAiYWJzZW50IiwKICAgICAgICAgICAgICAgICAgICAgICAgICAgInJlcXVlc3RlZF9vdXRwdXRfYnl0ZXNfaGV4Ijogb3MuZnNlbmNvZGUoYXJncy5vdXRwdXQpLmhleCgpfX0KICAgIHdpdGggKG91dHB1dCAvICJyZWZlcmVuY2UtbWFuaWZlc3QuanNvbiIpLm9wZW4oIngiKSBhcyBzaW5rOgogICAgICAgIGpzb24uZHVtcChtYW5pZmVzdCwgc2luaywgaW5kZW50PTIsIHNvcnRfa2V5cz1UcnVlKQogICAgICAgIHNpbmsud3JpdGUoIlxuIikKICAgIHByaW50KGpzb24uZHVtcHMoeyJzb3VyY2VfY29tbWl0IjogaGVhZCwgImNhc2VzIjogbGVuKGNhc2VzKSwKICAgICAgICAgICAgICAgICAgICAgICJleHBlY3RlZF9wYWNrZXRzIjogc3VtKGNhc2VbInJlZmVyZW5jZV9jb3VudCJdIGZvciBjYXNlIGluIGNhc2VzKSwKICAgICAgICAgICAgICAgICAgICAgICJtYW5pZmVzdF9zaGEyNTYiOiBkaWdlc3Qob3V0cHV0IC8gInJlZmVyZW5jZS1tYW5pZmVzdC5qc29uIiwgMV8wMDBfMDAwKVsic2hhMjU2Il19KSkKCgppZiBfX25hbWVfXyA9PSAiX19tYWluX18iOgogICAgbWFpbigpCg==",
+        validate=True)
+
+        assert hashlib.sha256(raw).hexdigest() == "e4ab24e57cb31d8728eaa88c6cd32f71bafdb5740078a66da3c96c3e6398d820"
+
+        target = Path(os.environ["RUNNER_TEMP"]) / "driver-daemon-native-296" / "capture_original_driver_no_collector.py"
+
+        target.write_bytes(raw)
+
+        assert hashlib.sha256(target.read_bytes()).hexdigest() == "e4ab24e57cb31d8728eaa88c6cd32f71bafdb5740078a66da3c96c3e6398d820"
+
+        PY_NO_COLLECTOR_CAPTURE
+
+        printf ''%s\n'' ''e4ab24e57cb31d8728eaa88c6cd32f71bafdb5740078a66da3c96c3e6398d820'' > "$proof/no-collector-capture-script.sha256"
+
+        '
+    - name: Seal original sources and three held native executables before traffic
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driver-daemon-native-296"
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        sha256sum rust/tools/check_driver_daemon.py rust/tools/model_export/original.py rust/tools/model_export/publish.py
+        rust/crates/dev-tools/src/driver_daemon_check.rs rust/crates/dev-tools/src/bin/check_driver_daemon.rs rust/crates/dev-tools/tests/driver_daemon_check.rs
+        rust/crates/dev-tools/tests/driver_daemon_no_collector.rs rust/crates/dev-tools/Cargo.toml rust/crates/dev-tools/src/lib.rs
+        "$proof/capture_original_driver.py" "$proof/capture_original_driver_cli.py" "$proof/capture_original_driver_no_collector.py"
+        rust/target/debug/openpilot-dmonitoringmodeld rust/target/debug/openpilot-logmessaged rust/target/debug/model-run
+        >"$proof/inputs-before.sha256"
+
+        find "$RUNNER_TEMP/original-models" -maxdepth 1 -type f -print0 | sort -z | xargs -0 sha256sum >"$proof/models-before.sha256"
+
+        find "$RUNNER_TEMP/model-msgq-python/msgq" -type f -print0 | sort -z | xargs -0 sha256sum >"$proof/binding-before.sha256"
+
+        find "$RUNNER_TEMP/model-msgq-python/msgq" -type f -print | sort >"$proof/binding-roster-before.txt"
+
+        '
+    - name: Authenticate accepted collector-backed historical original only for mode mismatch
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/driver-daemon-native-296\"\narchive=\"$RUNNER_TEMP/driver-daemon-34e-artifact.zip\"\
+        \nheld=\"$RUNNER_TEMP/driver-daemon-historical-34e\"\nrust/tools/check-disk-space --path \"$RUNNER_TEMP\" --growth-mib\
+        \ 512\ngh api repos/bin9208/openpilot-rust/actions/artifacts/12360417493/zip >\"$archive\"\nprintf '%s  %s\\n' 8b238cb6be3358b77dec01628de34bae492b46b4eea016b40b6ad7794ec08fae\
+        \ \"$archive\" | sha256sum -c - >\"$proof/historical-artifact-pin.log\"\nmkdir \"$held\"\nunzip -q \"$archive\" -d\
+        \ \"$held\"\npython3 - <<'PY_HISTORICAL' >\"$proof/historical-collector-admission.json\"\nimport hashlib,json,os\n\
+        from pathlib import Path\nroot=Path(os.environ[\"RUNNER_TEMP\"])/\"driver-daemon-historical-34e/original\"\nraw=(root/\"\
+        reference-manifest.json\").read_bytes()\nexpected=\"57a3a05c0a0fa5b3318fc3fb1e3c07e9a9838b3379c3cb2e50e96974ed7bfd4a\"\
+        \nassert hashlib.sha256(raw).hexdigest()==expected\nmanifest=json.loads(raw)\nassert manifest[\"source_commit\"]==\"\
+        34e5e052f7c19a2c2f22ef9a0298d228ab5ce949\"\nassert \"collector_mode\" not in manifest[\"policy\"]\nassert len(manifest[\"\
+        files\"])==43 and len(manifest[\"cases\"])==4\nfor name,pin in manifest[\"files\"].items():\n    data=(root/name).read_bytes()\n\
+        \    assert len(data)==pin[\"bytes\"] and hashlib.sha256(data).hexdigest()==pin[\"sha256\"]\nprint(json.dumps({\"\
+        artifact_id\":12360417493,\"manifest_sha256\":expected,\n                  \"historical_source_commit\":manifest[\"\
+        source_commit\"],\"members\":len(manifest[\"files\"]),\n                  \"use\":\"collector-mode negative only\"\
+        },sort_keys=True))\nPY_HISTORICAL\nprintf 'DRIVER_DAEMON_HISTORICAL_COLLECTOR_CAPTURE=%s\\nDRIVER_DAEMON_HISTORICAL_COLLECTOR_MANIFEST_SHA256=%s\\\
+        nDRIVER_DAEMON_HISTORICAL_COLLECTOR_SOURCE_COMMIT=%s\\n' \"$held/original\" 57a3a05c0a0fa5b3318fc3fb1e3c07e9a9838b3379c3cb2e50e96974ed7bfd4a\
+        \ 34e5e052f7c19a2c2f22ef9a0298d228ab5ce949 >>\"$GITHUB_ENV\"\n"
+    - name: Capture fresh independent no-collector original packets and source pins
+      shell: bash
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/driver-daemon-native-296\"\nrust/tools/check-disk-space --path \"$RUNNER_TEMP\"\
+        \ --growth-mib 1024\nPYTHONPATH=\"$RUNNER_TEMP/model-msgq-python:$PYTHONPATH\" python -P - <<'PY_BINDING' >\"$proof/binding-imports.json\"\
+        \nimport json, os\nfrom pathlib import Path\nimport msgq.ipc_pyx as ipc\nimport msgq.visionipc.visionipc_pyx as vision\n\
+        root = (Path(os.environ[\"RUNNER_TEMP\"]) / \"model-msgq-python\").resolve(strict=True)\nlocations = [Path(ipc.__file__).resolve(strict=True),\
+        \ Path(vision.__file__).resolve(strict=True)]\nassert all(path.is_relative_to(root) for path in locations), locations\n\
+        print(json.dumps({\"binding_root\":str(root),\"extensions\":[str(path) for path in locations]},sort_keys=True))\n\
+        PY_BINDING\nPYTHONPATH=\"$RUNNER_TEMP/model-msgq-python:$PYTHONPATH\" python -P \"$proof/capture_original_driver_no_collector.py\"\
+        \ --root \"$GITHUB_WORKSPACE\" --source-commit \"$EXPECTED_SOURCE\" --expected-checker-sha256 ea1266dc395dab662319bd3637ad90440989db3d2937756dbf07fbb993520f5b\
+        \ --binary \"$GITHUB_WORKSPACE/rust/target/debug/openpilot-dmonitoringmodeld\" --catalog \"$RUNNER_TEMP/native-catalog\"\
+        \ --models \"$RUNNER_TEMP/original-models\" --binding \"$RUNNER_TEMP/model-msgq-python\" --output \"$proof/original-no-collector\"\
+        \ >\"$proof/original-no-collector.stdout\" 2>\"$proof/original-no-collector.stderr\" || { cat \"$proof/original-no-collector.stderr\"\
+        ; exit 1; }\npython - <<'PY_NO_COLLECTOR_MANIFEST' >\"$proof/original-no-collector-summary.json\"\nimport json, os\n\
+        from pathlib import Path\nproof = Path(os.environ[\"RUNNER_TEMP\"]) / \"driver-daemon-native-296\"\nmanifest = json.loads((proof\
+        \ / \"original-no-collector/reference-manifest.json\").read_text())\nassert manifest[\"policy\"][\"collector_mode\"\
+        ] == \"absent\"\nassert manifest[\"policy\"][\"requested_output_bytes_hex\"] == os.fsencode(proof / \"original-no-collector\"\
+        ).hex()\nassert [(case[\"width\"], case[\"raw\"], case[\"frame_count\"], case[\"reference_count\"]) for case in manifest[\"\
+        cases\"]] == [\n    (1344, True, 4, 5), (1344, False, 1, 2), (1928, True, 4, 5), (1928, False, 1, 2)]\nassert len(manifest[\"\
+        files\"]) == 43 and len(manifest[\"original_source_inputs\"]) == 15\nreports = json.loads((proof / \"original-no-collector/report.json\"\
+        ).read_text())[\"runs\"]\nassert len(reports) == 4 and all(report[\"logging\"] is None for report in reports)\nprint(json.dumps({\"\
+        cases\":4,\"expected_packets\":14,\"input_frames\":10,\"logging\":None,\n                  \"imported_python_sources\"\
+        :len(manifest[\"loaded_python_sources\"])},sort_keys=True))\nPY_NO_COLLECTOR_MANIFEST\nno_collector_sha=\"$(sha256sum\
+        \ \"$proof/original-no-collector/reference-manifest.json\" | cut -d ' ' -f1)\"\nprintf 'DRIVER_DAEMON_NO_COLLECTOR_ORIGINAL_CAPTURE=%s\\\
+        nDRIVER_DAEMON_NO_COLLECTOR_MANIFEST_SHA256=%s\\nDRIVER_DAEMON_NO_COLLECTOR_PEER=%s\\nDRIVER_DAEMON_NO_COLLECTOR_NATIVE_OUTPUT=%s\\\
+        n' \"$proof/original-no-collector\" \"$no_collector_sha\" \"$proof/original-no-collector/driver-daemon-peer\" \"$proof/native-no-collector\"\
+        \ >> \"$GITHUB_ENV\"\nsha256sum \"$proof/original-no-collector/driver-daemon-peer\" rust/target/debug/openpilot-dmonitoringmodeld\
+        \ rust/target/debug/openpilot-logmessaged \"$RUNNER_TEMP/native-catalog/current.json\" \"$proof/original-no-collector/reference-manifest.json\"\
+        \ >\"$proof/native-inputs-before.sha256\"\nprintf 'DRIVER_DAEMON_ORIGINAL_MANIFEST_SHA256=%s\\n' \"$no_collector_sha\"\
+        \ >> \"$GITHUB_ENV\"\nprintf 'DRIVER_DAEMON_BINARY=%s\\nDRIVER_DAEMON_CATALOG=%s\\nDRIVER_DAEMON_COLLECTOR=%s\\nDRIVER_DAEMON_PEER=%s\\\
+        nDRIVER_DAEMON_MODELS=%s\\nDRIVER_DAEMON_ROOT=%s\\nDRIVER_DAEMON_SOURCE_COMMIT=%s\\nDRIVER_DAEMON_ORIGINAL_CAPTURE=%s\\\
+        nDRIVER_DAEMON_ORIGINAL_MANIFEST_SHA256=%s\\nDRIVER_DAEMON_NATIVE_OUTPUT=%s\\n' \"$GITHUB_WORKSPACE/rust/target/debug/openpilot-dmonitoringmodeld\"\
+        \ \"$RUNNER_TEMP/native-catalog\" \"$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged\" \"$proof/original-no-collector/driver-daemon-peer\"\
+        \ \"$RUNNER_TEMP/original-models\" \"$GITHUB_WORKSPACE\" \"$EXPECTED_SOURCE\" \"$proof/original-no-collector\" \"\
+        $no_collector_sha\" \"$proof/native-unused\" >>\"$GITHUB_ENV\"\ncat \"$proof/original-no-collector.stdout\"\n"
+    - name: Capture unchanged original driver CLI help and admission failures
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driver-daemon-native-296"
+
+        PYTHONPATH="$RUNNER_TEMP/model-msgq-python:$PYTHONPATH" python "$proof/capture_original_driver_cli.py" --root "$GITHUB_WORKSPACE"
+        --checker-sha256 ea1266dc395dab662319bd3637ad90440989db3d2937756dbf07fbb993520f5b --output "$proof/original-cli" >"$proof/original-cli.summary.json"
+        2>"$proof/original-cli.capture.stderr" || { cat "$proof/original-cli.capture.stderr"; exit 1; }
+
+        sha256sum "$proof/original-cli/manifest.json" >"$proof/original-cli-manifest.sha256"
+
+        '
+    - name: Run source reference, mutation, parser and dual mode negatives without replay duplication
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driver-daemon-native-296"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driver-daemon-native --test driver_daemon_check
+        --locked -- --nocapture --skip actual_native_driver_replays_all_four_original_cases >"$proof/native-static-tests.log"
+        2>&1 || { cat "$proof/native-static-tests.log"; exit 1; }
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driver-daemon-native --test driver_daemon_no_collector
+        --locked -- --nocapture --skip actual_native_driver_replays_all_four_without_collector >"$proof/native-no-collector-tests.log"
+        2>&1 || { cat "$proof/native-no-collector-tests.log"; exit 1; }
+
+        '
+    - name: Capture positive original raw-byte alias output with full argv receipt
+      shell: bash
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/driver-daemon-native-296\"\npython3 - <<'PY_RAW_ORIGINAL' >\"$proof/raw-original-summary.json\"\
+        \nimport hashlib, json, os, stat, subprocess, sys\nfrom pathlib import Path\nproof = Path(os.environ[\"RUNNER_TEMP\"\
+        ]) / \"driver-daemon-native-296\"\nascii_parent = proof / \"raw-ascii-parent\"\nascii_parent.mkdir()\nalias = os.fsencode(proof)\
+        \ + b\"/raw-output-\\xff-alias\"\nos.symlink(os.fsencode(ascii_parent), alias)\nrequested = alias + b\"/original\"\
+        \nrequested_native = alias + b\"/native\"\nlink = os.lstat(alias)\nassert stat.S_ISLNK(link.st_mode)\nreceipt = {\"\
+        alias_bytes_hex\":alias.hex(), \"requested_original_bytes_hex\":requested.hex(),\n           \"requested_native_bytes_hex\"\
+        :requested_native.hex(),\n           \"effective_original\":str(ascii_parent / \"original\"),\n           \"effective_native\"\
+        :str(ascii_parent / \"native\"),\n           \"alias_target_bytes_hex\":os.fsencode(ascii_parent).hex(),\n       \
+        \    \"alias_dev\":link.st_dev,\"alias_ino\":link.st_ino}\n(proof / \"raw-alias-before.json\").write_text(json.dumps(receipt,sort_keys=True,indent=2)+\"\
+        \\n\")\ncommand = [sys.executable,\"-P\",os.fspath(proof / \"capture_original_driver_no_collector.py\"),\n       \
+        \    \"--root\",os.environ[\"GITHUB_WORKSPACE\"],\"--source-commit\",os.environ[\"EXPECTED_SOURCE\"],\n          \
+        \ \"--expected-checker-sha256\",\"ea1266dc395dab662319bd3637ad90440989db3d2937756dbf07fbb993520f5b\",\n          \
+        \ \"--binary\",os.fspath(Path(os.environ[\"GITHUB_WORKSPACE\"]) / \"rust/target/debug/openpilot-dmonitoringmodeld\"\
+        ),\n           \"--catalog\",os.fspath(Path(os.environ[\"RUNNER_TEMP\"]) / \"native-catalog\"),\n           \"--models\"\
+        ,os.fspath(Path(os.environ[\"RUNNER_TEMP\"]) / \"original-models\"),\n           \"--binding\",os.fspath(Path(os.environ[\"\
+        RUNNER_TEMP\"]) / \"model-msgq-python\"),\n           \"--output\",os.fsdecode(requested)]\n(proof / \"raw-original-argv.json\"\
+        ).write_text(json.dumps({\"argv_hex\":[os.fsencode(arg).hex() for arg in command],\n    \"requested_output_bytes_hex\"\
+        :requested.hex()},sort_keys=True,indent=2)+\"\\n\")\nenvironment = os.environ.copy()\nenvironment[\"PYTHONPATH\"]\
+        \ = os.fspath(Path(os.environ[\"RUNNER_TEMP\"]) / \"model-msgq-python\") + os.pathsep + environment.get(\"PYTHONPATH\"\
+        , \"\")\nresult = subprocess.run(command,capture_output=True,timeout=240,check=False,env=environment)\n(proof / \"\
+        raw-original.stdout\").write_bytes(result.stdout)\n(proof / \"raw-original.stderr\").write_bytes(result.stderr)\n\
+        status = {\"status\":result.returncode,\"requested_output_bytes_hex\":requested.hex(),\n          \"stdout_sha256\"\
+        :hashlib.sha256(result.stdout).hexdigest(),\n          \"stderr_sha256\":hashlib.sha256(result.stderr).hexdigest()}\n\
+        (proof / \"raw-original-status.json\").write_text(json.dumps(status,sort_keys=True,indent=2)+\"\\n\")\nassert result.returncode\
+        \ == 0, \"original positive raw-output alias invocation failed\"\nmanifest_path = ascii_parent / \"original/reference-manifest.json\"\
+        \nmanifest = json.loads(manifest_path.read_text())\nassert manifest[\"policy\"][\"collector_mode\"] == \"absent\"\n\
+        assert manifest[\"policy\"][\"requested_output_bytes_hex\"] == requested.hex()\nreports = json.loads((ascii_parent\
+        \ / \"original/report.json\").read_text())[\"runs\"]\nassert len(reports) == 4 and all(run[\"logging\"] is None for\
+        \ run in reports)\nprint(json.dumps({\"cases\":4,\"source_expected_packets\":14,\n                  \"manifest_sha256\"\
+        :hashlib.sha256(manifest_path.read_bytes()).hexdigest(),\n                  \"requested_output_bytes_hex\":requested.hex()},sort_keys=True))\n\
+        PY_RAW_ORIGINAL\nsha256sum \"$proof/raw-ascii-parent/original/driver-daemon-peer\" \"$proof/raw-ascii-parent/original/reference-manifest.json\"\
+        \ >>\"$proof/native-inputs-before.sha256\"\n"
+    - name: Replay native CLI on held raw-byte alias and verify full report
+      shell: bash
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/driver-daemon-native-296\"\nsha256sum -c \"$proof/native-cli-elf-before.sha256\"\
+        \ >\"$proof/raw-native-cli-elf-preflight.log\"\npython3 - <<'PY_RAW_NATIVE' >\"$proof/raw-native-summary.json\"\n\
+        import hashlib, json, os, stat, subprocess\nfrom pathlib import Path\nproof = Path(os.environ[\"RUNNER_TEMP\"]) /\
+        \ \"driver-daemon-native-296\"\nreceipt = json.loads((proof / \"raw-alias-before.json\").read_text())\nalias = bytes.fromhex(receipt[\"\
+        alias_bytes_hex\"])\nrequested = bytes.fromhex(receipt[\"requested_native_bytes_hex\"])\nlink = os.lstat(alias)\n\
+        assert stat.S_ISLNK(link.st_mode)\nassert (link.st_dev,link.st_ino) == (receipt[\"alias_dev\"],receipt[\"alias_ino\"\
+        ])\nassert os.readlink(alias) == bytes.fromhex(receipt[\"alias_target_bytes_hex\"])\noriginal = proof / \"raw-ascii-parent/original\"\
+        \nmanifest = original / \"reference-manifest.json\"\nbinary = Path(os.environ[\"GITHUB_WORKSPACE\"]) / \"rust/target/debug/check-driver-daemon\"\
+        \ncommand = [os.fspath(binary),\n           \"--binary\",os.fspath(Path(os.environ[\"GITHUB_WORKSPACE\"]) / \"rust/target/debug/openpilot-dmonitoringmodeld\"\
+        ),\n           \"--catalog\",os.fspath(Path(os.environ[\"RUNNER_TEMP\"]) / \"native-catalog\"),\n           \"--models\"\
+        ,os.fspath(Path(os.environ[\"RUNNER_TEMP\"]) / \"original-models\"),\n           \"--output\",os.fsdecode(requested),\n\
+        \           \"--native-peer\",os.fspath(original / \"driver-daemon-peer\"),\n           \"--native-original-dir\"\
+        ,os.fspath(original),\n           \"--native-original-manifest-sha256\",hashlib.sha256(manifest.read_bytes()).hexdigest(),\n\
+        \           \"--native-source-commit\",os.environ[\"EXPECTED_SOURCE\"],\n           \"--native-root\",os.environ[\"\
+        GITHUB_WORKSPACE\"]]\n(proof / \"raw-native-argv.json\").write_text(json.dumps({\"argv_hex\":[os.fsencode(arg).hex()\
+        \ for arg in command],\n    \"requested_output_bytes_hex\":requested.hex()},sort_keys=True,indent=2)+\"\\n\")\nresult\
+        \ = subprocess.run(command,capture_output=True,timeout=240,check=False)\n(proof / \"raw-native.stdout\").write_bytes(result.stdout)\n\
+        (proof / \"raw-native.stderr\").write_bytes(result.stderr)\nstatus = {\"status\":result.returncode,\"requested_output_bytes_hex\"\
+        :requested.hex(),\n          \"stdout_sha256\":hashlib.sha256(result.stdout).hexdigest(),\n          \"stderr_sha256\"\
+        :hashlib.sha256(result.stderr).hexdigest()}\n(proof / \"raw-native-status.json\").write_text(json.dumps(status,sort_keys=True,indent=2)+\"\
+        \\n\")\nassert result.returncode == 0, \"native positive raw-output alias invocation failed\"\neffective = proof /\
+        \ \"raw-ascii-parent/native\"\nreport = json.loads((effective / \"report.json\").read_text())\nrows = [json.loads(line)\
+        \ for line in result.stdout.decode().splitlines() if line.strip()]\nassert len(rows) == len(report[\"runs\"]) == 4\
+        \ and rows == report[\"runs\"]\nassert report[\"original_manifest_sha256\"] == hashlib.sha256(manifest.read_bytes()).hexdigest()\n\
+        assert report[\"inputs\"][\"collector\"] is None\nassert all(case.get(\"logging\", \"missing\") is None for case in\
+        \ rows)\nassert [(case[\"camera\"],case[\"raw_predictions\"],case[\"frames\"],case[\"compared_fields\"]) for case\
+        \ in rows] == [\n    ([1344,760],True,4,188),([1344,760],False,1,47),\n    ([1928,1208],True,4,188),([1928,1208],False,1,47)]\n\
+        assert report[\"inputs\"][\"imported_python_sources\"]\nfor case in rows:\n    label=f'{case[\"camera\"][0]}-raw-{int(case[\"\
+        raw_predictions\"])}'\n    assert not (effective/label/\"logging\").exists()\nassert sum(len(case[\"packets\"]) for\
+        \ case in rows) == 10\nlink_after = os.lstat(alias)\nassert (link_after.st_dev,link_after.st_ino) == (link.st_dev,link.st_ino)\n\
+        assert os.readlink(alias) == bytes.fromhex(receipt[\"alias_target_bytes_hex\"])\n(proof / \"raw-alias-after.json\"\
+        ).write_text(json.dumps(receipt,sort_keys=True,indent=2)+\"\\n\")\nos.unlink(alias)\nassert not os.path.lexists(alias)\n\
+        (proof / \"raw-alias-removed.json\").write_text(json.dumps({\"alias_bytes_hex\":alias.hex(),\"removed\":True},sort_keys=True)+\"\
+        \\n\")\nprint(json.dumps({\"cases\":4,\"packets\":10,\"requested_output_bytes_hex\":requested.hex(),\n           \
+        \       \"report_sha256\":hashlib.sha256((effective / \"report.json\").read_bytes()).hexdigest()},sort_keys=True))\n\
+        PY_RAW_NATIVE\nsha256sum -c \"$proof/native-cli-elf-before.sha256\" >\"$proof/raw-native-cli-elf-after.log\"\n"
+    - name: Verify post-traffic source, executable and original model identities
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driver-daemon-native-296"
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        sha256sum -c "$proof/inputs-before.sha256" >"$proof/inputs-after.log"
+
+        sha256sum -c "$proof/models-before.sha256" >"$proof/models-after.log"
+
+        sha256sum -c "$proof/binding-before.sha256" >"$proof/binding-after.log"
+
+        find "$RUNNER_TEMP/model-msgq-python/msgq" -type f -print | sort >"$proof/binding-roster-after.txt"
+
+        diff -u "$proof/binding-roster-before.txt" "$proof/binding-roster-after.txt" >"$proof/binding-roster.diff"
+
+        sha256sum -c "$proof/native-inputs-before.sha256" >"$proof/native-inputs-after.log"
+
+        sha256sum "$proof/original-no-collector/reference-manifest.json" "$proof/raw-ascii-parent/original/reference-manifest.json"
+        "$proof/raw-ascii-parent/native/report.json" >"$proof/receipts.sha256"
+
+        '
+    - name: Retain identity diagnostics and remove only owned raw alias
+      if: always()
+      shell: bash
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/driver-daemon-native-296\"\nif test -f \"$proof/inputs-before.sha256\"\
+        ; then sha256sum -c \"$proof/inputs-before.sha256\" >\"$proof/inputs-final.log\" 2>&1 || true; fi\nif test -f \"$proof/models-before.sha256\"\
+        ; then sha256sum -c \"$proof/models-before.sha256\" >\"$proof/models-final.log\" 2>&1 || true; fi\nif test -f \"$proof/binding-before.sha256\"\
+        ; then sha256sum -c \"$proof/binding-before.sha256\" >\"$proof/binding-final.log\" 2>&1 || true; fi\nif test -f \"\
+        $proof/native-inputs-before.sha256\"; then sha256sum -c \"$proof/native-inputs-before.sha256\" >\"$proof/native-inputs-final.log\"\
+        \ 2>&1 || true; fi\ngit rev-parse HEAD >\"$proof/source-final.txt\"\npython3 - <<'PY_ALIAS_CLEANUP'\nimport json,\
+        \ os, stat\nfrom pathlib import Path\nproof = Path(os.environ[\"RUNNER_TEMP\"]) / \"driver-daemon-native-296\"\nalias\
+        \ = os.fsencode(proof) + b\"/raw-output-\\xff-alias\"\nif os.path.lexists(alias):\n    actual = os.lstat(alias)\n\
+        \    expected = os.fsencode(proof / \"raw-ascii-parent\")\n    if stat.S_ISLNK(actual.st_mode) and os.readlink(alias)\
+        \ == expected:\n        os.unlink(alias)\n        (proof / \"raw-alias-cleanup.json\").write_text(json.dumps({\"alias_bytes_hex\"\
+        :alias.hex(),\"removed_owned_symlink\":True},sort_keys=True)+\"\\n\")\n    else:\n        (proof / \"raw-alias-cleanup.json\"\
+        ).write_text(json.dumps({\"alias_bytes_hex\":alias.hex(),\"removed_owned_symlink\":False,\"foreign_replacement\":True},sort_keys=True)+\"\
+        \\n\")\nPY_ALIAS_CLEANUP\n"
+    - name: Upload all driver source, build, original and native evidence
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: driver-daemon-cli-296
+        path: ${{ runner.temp }}/driver-daemon-native-296
+        if-no-files-found: error
+        retention-days: 14
