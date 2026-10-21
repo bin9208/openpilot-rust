@@ -10,6 +10,10 @@ on:
         description: Run only focused ONNX regressions on a hosted runner
         type: boolean
         default: false
+      gpu_only:
+        description: Run focused GPU policy and telemetry contracts on a hosted runner
+        type: boolean
+        default: false
       compute_only:
         description: Compare unchanged model results and compute costs on hosted ARM
         type: boolean
@@ -21,7 +25,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   fast:
-    if: github.event_name != 'workflow_dispatch' || (!inputs.onnx_only && !inputs.compute_only)
+    if: github.event_name != 'workflow_dispatch' || (!inputs.onnx_only && !inputs.compute_only && !inputs.gpu_only)
     name: fast checks
     runs-on: ubuntu-24.04
     timeout-minutes: 7
@@ -186,3 +190,35 @@ jobs:
             ${{ runner.temp }}/xiaoge-compute-no-active-wait.json
             ${{ runner.temp }}/xiaoge-compute-opencv/receipt.json
             ${{ runner.temp }}/xiaoge-compute-opencv/native-libraries.sha256
+
+  gpu-contracts:
+    if: github.event_name == 'workflow_dispatch' && inputs.gpu_only
+    name: Xiaoge GPU focused contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GIT_LFS_SKIP_SMUDGE: '1'
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      RUSTUP_TOOLCHAIN: '1.94.0'
+    steps:
+      - uses: actions/checkout@v7
+        with: {persist-credentials: false}
+      - name: Reserve capacity before hosted dependencies
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          rust/tools/check-disk-space --path "$RUNNER_TEMP" --growth-mib 4096
+          sudo apt-get update
+          sudo apt-get install -y capnproto libcapnp-dev
+          rustup toolchain install 1.94.0 --profile minimal
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            rust/target
+          key: xiaoge-gpu-${{ runner.arch }}-${{ hashFiles('rust/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: xiaoge-gpu-${{ runner.arch }}-${{ hashFiles('rust/Cargo.lock') }}-
+      - name: GPU selection, fallback, bounded comparison and numeric contracts
+        run: cargo test --manifest-path rust/Cargo.toml -p openpilot-xiaoge --locked --test gpu_policy
