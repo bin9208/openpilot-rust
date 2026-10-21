@@ -19,12 +19,12 @@ jobs:
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
-      EXPECTED_SOURCE: dac838ed99b7cae6c09a236d7e6eaf6742b42e82
+      EXPECTED_SOURCE: 2c50f2a1162b13fcf1e0be1eecf1efbbd556ddd5
     steps:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: dac838ed99b7cae6c09a236d7e6eaf6742b42e82
+        ref: 2c50f2a1162b13fcf1e0be1eecf1efbbd556ddd5
     - name: Require exact source
       run: 'set -euo pipefail
 
