@@ -261,7 +261,7 @@ fn one(execution: &Execution<'_>) -> Result<Value> {
     for (key, value) in options.as_object().ok_or("case options missing")? {
         config[key] = value.clone();
     }
-    config["steps"] = steps.clone();
+    config["steps"] = (*steps).clone();
     let mut environment = setup.environment;
     let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
         .ancestors()
@@ -332,7 +332,7 @@ fn one(execution: &Execution<'_>) -> Result<Value> {
         .stdout
         .split(|byte| *byte == b'\n')
         .filter(|line| !line.is_empty())
-        .last()
+        .next_back()
         .ok_or("updater result JSON missing")?;
     let value = updated_fixture::normalize(&serde_json::from_slice(last)?, root)?;
     output_value(&value, &stem.with_extension("json"))?;

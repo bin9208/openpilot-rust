@@ -79,6 +79,60 @@ fn sealed_input() -> Result<Value> {
     unpack(INPUT, INPUT_PACKED_SHA, INPUT_SHA, 4_500_000, false)
 }
 
+/// Check the fresh original trace against the sealed original observation.
+/// Three Cap'n Proto error logs contain process-specific stack addresses;
+/// their diagnostic prefixes and stack shape stay required, as does every
+/// other field in the complete 39-case observation.
+pub fn verify_fresh_source(path: &Path) -> Result<()> {
+    let (sealed, _) = original()?;
+    let mut raw = Vec::new();
+    fs::File::open(path)?
+        .take(8_000_001)
+        .read_to_end(&mut raw)?;
+    if raw.len() > 8_000_000 {
+        return Err("fresh original loop source exceeds bound".into());
+    }
+    let mut text = String::from_utf8(raw)?;
+    if text.contains(NEGATIVE_INFINITY) || text.matches("-Infinity").count() != 1 {
+        return Err("fresh original nonfinite token inventory changed".into());
+    }
+    text = text.replacen("-Infinity", &format!("\"{NEGATIVE_INFINITY}\""), 1);
+    let mut fresh: Value = serde_json::from_str(&text)?;
+    for index in [9, 10, 35] {
+        let expected = sealed[index]["init"]["logs"][0][1]
+            .as_str()
+            .ok_or("sealed original error log missing")?;
+        let observed = fresh[index]["init"]["logs"][0][1]
+            .as_str()
+            .ok_or("fresh original error log missing")?;
+        let (expected_prefix, expected_stack) = expected
+            .split_once("\nstack: ")
+            .ok_or("sealed original stack missing")?;
+        let (observed_prefix, observed_stack) = observed
+            .split_once("\nstack: ")
+            .ok_or("fresh original stack missing")?;
+        let expected_addresses = expected_stack.split_whitespace().collect::<Vec<_>>();
+        let observed_addresses = observed_stack.split_whitespace().collect::<Vec<_>>();
+        if observed_prefix != expected_prefix
+            || observed_addresses.len() != expected_addresses.len()
+            || observed_addresses
+                .iter()
+                .zip(&expected_addresses)
+                .any(|(address, expected)| {
+                    address.len() != expected.len()
+                        || !address.bytes().all(|byte| byte.is_ascii_hexdigit())
+                })
+        {
+            return Err(format!("fresh original error stack changed in case {index}").into());
+        }
+        fresh[index]["init"]["logs"][0][1] = json!(expected);
+    }
+    if fresh != sealed {
+        return Err("fresh original loop observation differs from sealed source".into());
+    }
+    Ok(())
+}
+
 /// Require the fresh native-generated request to match every independently
 /// captured original case, metadata field, ordered frame, and packet byte.
 /// Invoke before the native loop child receives the request or writes success.
@@ -353,6 +407,36 @@ pub fn compare_file(path: &Path) -> Result<Summary> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn fresh_original_allows_only_variable_stack_addresses() -> Result<()> {
+        let mut raw = Vec::new();
+        BzDecoder::new(SOURCE).read_to_end(&mut raw)?;
+        let directory = tempfile::tempdir()?;
+        let path = directory.path().join("source.json");
+        fs::write(&path, &raw)?;
+        verify_fresh_source(&path)?;
+
+        let text = String::from_utf8(raw)?;
+        let address = "7f20f24fb277";
+        if !text.contains(address) {
+            return Err("sealed stack anchor missing".into());
+        }
+        fs::write(&path, text.replacen(address, "7f6fe9cfb277", 1))?;
+        verify_fresh_source(&path)?;
+        fs::write(&path, text.replacen(address, "zf20f24fb277", 1))?;
+        assert!(verify_fresh_source(&path).is_err());
+        fs::write(&path, text.replacen(&format!("{address} "), "", 1))?;
+        assert!(verify_fresh_source(&path).is_err());
+        fs::write(&path, text.replacen("migration-0", "migration-X", 1))?;
+        assert!(verify_fresh_source(&path).is_err());
+        fs::write(
+            &path,
+            text.replacen("Value type mismatch", "Other type mismatch", 1),
+        )?;
+        assert!(verify_fresh_source(&path).is_err());
+        Ok(())
+    }
 
     #[test]
     fn fresh_request_requires_exact_original_packets_order_and_case_names() -> Result<()> {

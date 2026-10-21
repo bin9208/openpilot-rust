@@ -226,10 +226,7 @@ fn original_and_same_elf_native_present_absent_cover_all_loop_rows_without_pytho
     let original_cases = original_request["cases"].as_array().unwrap();
     assert_eq!(original_cases.len(), 39);
     let original_raw = original.join("native-raw.json");
-    assert_eq!(
-        sha(&original.join("source.json")),
-        "23d374139b2430bd8da0eb800c0a8a91900c8d08c0df90373ba2f4d7419ae22a"
-    );
+    paramsd_loop_reference::verify_fresh_source(&original.join("source.json")).unwrap();
     assert_eq!(
         sha(&original.join("input.json")),
         "4f446bc98c9d303d292f487c9ebe36bc8721436a30627dfca55baabae4c6811d"
