@@ -29,7 +29,7 @@ fn command(
     NativeRunner.run(&spec).map_err(Into::into)
 }
 
-fn git(cwd: &Path, args: &[&str]) -> Result<String> {
+pub(super) fn git(cwd: &Path, args: &[&str]) -> Result<String> {
     let mut argv = vec!["/usr/bin/git".into()];
     argv.extend(args.iter().map(|arg| (*arg).to_owned()));
     let output = command(argv, cwd, &[])?;
@@ -41,6 +41,85 @@ fn git(cwd: &Path, args: &[&str]) -> Result<String> {
         .into());
     }
     Ok(String::from_utf8(output.stdout)?.trim().to_owned())
+}
+
+fn object(bare: &Path, kind: &str, body: &[u8], expected: &str) -> Result<()> {
+    let mut spec = CommandSpec::new(
+        vec![
+            "/usr/bin/git".into(),
+            "hash-object".into(),
+            "-w".into(),
+            "--stdin".into(),
+            "-t".into(),
+            kind.into(),
+        ],
+        Duration::from_secs(30),
+    );
+    spec.cwd = Some(bare.to_owned());
+    spec.input = Some(body.to_vec());
+    let result = NativeRunner.run(&spec)?;
+    if result.code != 0 || String::from_utf8(result.stdout)?.trim() != expected {
+        return Err("source-derived Git object identity changed".into());
+    }
+    Ok(())
+}
+
+fn object_id_bytes(id: &str) -> Result<[u8; 20]> {
+    if id.len() != 40 {
+        return Err("invalid source Git object id".into());
+    }
+    let mut bytes = [0; 20];
+    for (index, byte) in bytes.iter_mut().enumerate() {
+        *byte = u8::from_str_radix(&id[index * 2..index * 2 + 2], 16)?;
+    }
+    Ok(bytes)
+}
+
+/// Recreate the source's two-commit data fixture from its independently
+/// captured object fields. Every object must hash to the original archive ID;
+/// no historical checkout, hook, helper, or Python source is copied.
+pub(super) fn frozen_bare(output: &Path) -> Result<PathBuf> {
+    const INITIAL: &str = "669014cb9efb52f3c16e4fd45987db291de37d61";
+    const ADVANCED: &str = "db38cc4abed36989964460e61724f62ead60b9a8";
+    const INITIAL_BLOB: &str = "e79c5e8f964493290a409888d5413a737e8e5dd5";
+    const ADVANCED_BLOB: &str = "d786f998a4e7f2f89c57a552dad18a377e06383a";
+    const INITIAL_TREE: &str = "91251e1e364089d034ee30a48f18b10b79527ca1";
+    const ADVANCED_TREE: &str = "9cd82ef0b2511f642255f0a2b066bd7529557f4d";
+    let bare = output.join("source-data.git");
+    fs::create_dir(output)?;
+    git(
+        output,
+        &[
+            "init",
+            "--bare",
+            "--initial-branch=main",
+            bare.to_str().ok_or("non-UTF8 frozen Git path")?,
+        ],
+    )?;
+    object(&bare, "blob", b"initial\n", INITIAL_BLOB)?;
+    object(&bare, "blob", b"remote update\n", ADVANCED_BLOB)?;
+    let mut initial_tree = b"100644 tracked\0".to_vec();
+    initial_tree.extend_from_slice(&object_id_bytes(INITIAL_BLOB)?);
+    object(&bare, "tree", &initial_tree, INITIAL_TREE)?;
+    let mut advanced_tree = b"100644 advanced\0".to_vec();
+    advanced_tree.extend_from_slice(&object_id_bytes(ADVANCED_BLOB)?);
+    advanced_tree.extend_from_slice(b"100644 tracked\0");
+    advanced_tree.extend_from_slice(&object_id_bytes(INITIAL_BLOB)?);
+    object(&bare, "tree", &advanced_tree, ADVANCED_TREE)?;
+    let initial_commit = format!("tree {INITIAL_TREE}\nauthor Recovery Fixture <recovery-fixture@example.invalid> 1792607520 +0000\ncommitter Recovery Fixture <recovery-fixture@example.invalid> 1792607520 +0000\n\ninitial recovery fixture 복구\n");
+    object(&bare, "commit", initial_commit.as_bytes(), INITIAL)?;
+    let advanced_commit = format!("tree {ADVANCED_TREE}\nparent {INITIAL}\nauthor Recovery Fixture <recovery-fixture@example.invalid> 1792607521 +0000\ncommitter Recovery Fixture <recovery-fixture@example.invalid> 1792607521 +0000\n\nadvance selected upstream\n");
+    object(&bare, "commit", advanced_commit.as_bytes(), ADVANCED)?;
+    git(&bare, &["update-ref", "refs/heads/topic", INITIAL])?;
+    git(&bare, &["update-ref", "refs/heads/main", ADVANCED])?;
+    git(&bare, &["fsck", "--full", "--strict", "--no-reflogs"])?;
+    if git(&bare, &["rev-parse", &format!("{ADVANCED}^@")])? != INITIAL
+        || git(&bare, &["show", &format!("{INITIAL}:tracked")])? != "initial"
+        || git(&bare, &["show", &format!("{ADVANCED}:advanced")])? != "remote update"
+    {
+        return Err("frozen Git commit relation changed".into());
+    }
+    Ok(bare)
 }
 
 fn prepare(repo: &Path, name: &str) -> Result<()> {
@@ -110,9 +189,11 @@ fn snapshot(repo: &Path) -> Result<Value> {
     Ok(json!({
         "head":git(repo,&["rev-parse","HEAD"])?,
         "branch":git(repo,&["branch","--show-current"])?,
+        "status":git(repo,&["status","--short","--untracked-files=all"])?,
         "tracked":fs::read_to_string(repo.join("tracked"))?,
         "remote":git(repo,&["config","--get","remote.origin.url"])?,
         "refs":git(repo,&["for-each-ref","--format=%(refname) %(objectname) %(upstream)"])?,
+        "fetch":git(repo,&["config","--get-all","remote.origin.fetch"])?.lines().map(str::to_owned).collect::<Vec<_>>(),
     }))
 }
 
@@ -367,6 +448,54 @@ pub(super) fn run(
     name: &str,
     output: &Path,
 ) -> Result<Value> {
+    run_inner(
+        repository,
+        candidate,
+        process_child,
+        original_bare,
+        original_row,
+        name,
+        output,
+        None,
+    )
+}
+
+/// The frozen lane reads only original/source observations, never previously
+/// captured candidate replies or Git states.
+#[allow(clippy::too_many_arguments)]
+pub(super) fn run_frozen(
+    repository: &Path,
+    candidate: &Path,
+    process_child: &Path,
+    source_bare: &Path,
+    original_row: &Value,
+    name: &str,
+    output: &Path,
+    source: &dyn Fn(&str) -> Result<Value>,
+) -> Result<Value> {
+    run_inner(
+        repository,
+        candidate,
+        process_child,
+        source_bare,
+        original_row,
+        name,
+        output,
+        Some(source),
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn run_inner(
+    repository: &Path,
+    candidate: &Path,
+    process_child: &Path,
+    original_bare: &Path,
+    original_row: &Value,
+    name: &str,
+    output: &Path,
+    frozen: Option<&dyn Fn(&str) -> Result<Value>>,
+) -> Result<Value> {
     fs::create_dir(output)?;
     let bare = output.join("origin.git");
     git(
@@ -405,6 +534,10 @@ pub(super) fn run(
         &checkout,
         &["config", "user.email", "recovery-fixture@example.invalid"],
     )?;
+    let retained_helper = repository.join("openpilot/common/repo_update.py");
+    let copied_helper = checkout.join("openpilot/common/repo_update.py");
+    fs::create_dir_all(copied_helper.parent().ok_or("owned helper parent absent")?)?;
+    fs::copy(&retained_helper, &copied_helper)?;
     prepare(&checkout, name)?;
     git(
         &checkout,
@@ -488,21 +621,38 @@ pub(super) fn run(
     let (status, response) = observed?;
     stop?;
     let server_exit = finished?;
-    let previous: Value = serde_json::from_slice(&fs::read(
-        output
-            .parent()
-            .ok_or("missing owned replay parent")?
-            .parent()
-            .ok_or("missing original actions root")?
-            .join(name)
-            .join("native-evidence/reply.json"),
-    )?)?;
+    let original_root = output
+        .parent()
+        .ok_or("missing owned replay parent")?
+        .parent()
+        .ok_or("missing original actions root")?;
+    let previous: Value = if let Some(source) = frozen {
+        source(&format!("actions/{name}/source-evidence/reply.json"))?
+    } else {
+        serde_json::from_slice(&fs::read(
+            original_root.join(name).join("native-evidence/reply.json"),
+        )?)?
+    };
     let mut normalized = response.clone();
     let mut expected = previous.clone();
     let executable = response
         .get("command")
         .and_then(Value::as_str)
         .map(str::to_owned);
+    let has_command = executable.is_some();
+    if frozen.is_some() && has_command {
+        let action = original_row["payload"]["action"]
+            .as_str()
+            .ok_or("frozen action name absent")?;
+        if let Some(verb) = super::actions_control::staged_verb(action) {
+            let command = executable
+                .as_deref()
+                .ok_or("frozen action command absent")?;
+            if !command.split_ascii_whitespace().any(|part| part == verb) {
+                return Err("frozen staged verb changed".into());
+            }
+        }
+    }
     if executable.is_some() {
         normalized
             .as_object_mut()
@@ -524,56 +674,146 @@ pub(super) fn run(
         {
             return Err("unsafe maintenance command returned".into());
         }
-        let mut shell_environment = vec![
-            (
-                "CARROT_REPO_LOCK_PATH",
-                output.join("transaction.lock").display().to_string(),
-            ),
-            ("GIT_CONFIG_GLOBAL", global.display().to_string()),
-            ("GIT_CONFIG_NOSYSTEM", "1".into()),
-            ("GIT_ALLOW_PROTOCOL", "file".into()),
-        ];
-        if let Some((_, tools)) = &rebuild {
-            shell_environment.push((
-                "PATH",
-                format!("{}:{}", tools.display(), std::env::var("PATH")?),
-            ));
+        if name == "number_commit" {
+            if !script
+                .split_ascii_whitespace()
+                .any(|part| part == "__stage-commit")
+                || !script.ends_with(" __stage-commit 17")
+            {
+                return Err("integer commit command changed".into());
+            }
+        } else {
+            let mut shell_environment = vec![
+                (
+                    "CARROT_REPO_LOCK_PATH",
+                    output.join("transaction.lock").display().to_string(),
+                ),
+                ("GIT_CONFIG_GLOBAL", global.display().to_string()),
+                ("GIT_CONFIG_NOSYSTEM", "1".into()),
+                ("GIT_ALLOW_PROTOCOL", "file".into()),
+            ];
+            if let Some((_, tools)) = &rebuild {
+                shell_environment.push((
+                    "PATH",
+                    format!("{}:{}", tools.display(), std::env::var("PATH")?),
+                ));
+            }
+            let run = command(
+                vec!["/bin/bash".into(), "-c".into(), script],
+                &checkout,
+                &shell_environment,
+            )?;
+            fs::write(output.join("shell.stdout"), &run.stdout)?;
+            fs::write(output.join("shell.stderr"), &run.stderr)?;
+            shell_exit = Some(run.code);
         }
-        let run = command(
-            vec!["/bin/bash".into(), "-c".into(), script],
-            &checkout,
-            &shell_environment,
-        )?;
-        fs::write(output.join("shell.stdout"), &run.stdout)?;
-        fs::write(output.join("shell.stderr"), &run.stderr)?;
-        shell_exit = Some(run.code);
     }
     drop(busy_lock);
     let after = snapshot(&checkout)?;
-    let original_root = output
-        .parent()
-        .ok_or("missing owned replay parent")?
-        .parent()
-        .ok_or("missing original actions root")?;
-    let original_after: Value = serde_json::from_slice(&fs::read(
-        original_root
-            .join(name)
-            .join("native-evidence/repository.json"),
-    )?)?;
-    for field in ["head", "branch", "tracked", "remote", "refs"] {
-        if after[field] != original_after[field] {
-            return Err(format!(
-                "owned Git effect differs from original native observation: {name}/{field}"
+    let staged = if frozen.is_some() {
+        has_command
+            && matches!(
+                original_row["payload"]["action"].as_str(),
+                Some(
+                    "git_reset"
+                        | "git_sync"
+                        | "git_pull"
+                        | "git_rebuild"
+                        | "rebuild_all"
+                        | "git_checkout"
+                        | "git_checkout_commit"
+                        | "git_reset_repo"
+                )
             )
-            .into());
+    } else {
+        original_row["staged_contract"] == true
+    };
+    let original_after: Value = if let Some(source) = frozen {
+        source(&format!("actions/{name}/source-evidence/repository.json"))?
+    } else {
+        serde_json::from_slice(&fs::read(
+            original_root
+                .join(name)
+                .join("native-evidence/repository.json"),
+        )?)?
+    };
+    if frozen.is_some() {
+        match name {
+            "git_reset" | "git_pull" | "git_reset_repo" => {
+                if original_after["tracked"] != "initial\n"
+                    || before["tracked"] != "locally modified\n"
+                {
+                    return Err("frozen original destructive reset control changed".into());
+                }
+            }
+            "git_sync" => {
+                if !before["refs"]
+                    .as_str()
+                    .is_some_and(|refs| refs.contains("refs/heads/spare "))
+                    || original_after["refs"]
+                        .as_str()
+                        .is_some_and(|refs| refs.contains("refs/heads/spare "))
+                {
+                    return Err("frozen original branch deletion control changed".into());
+                }
+            }
+            _ => {}
+        }
+        if name == "git_reset_repo"
+            && original_after["remote"] != "https://github.com/ajouatom/openpilot.git"
+        {
+            return Err("frozen original remote-reset control changed".into());
         }
     }
-    let original_exit = original_row["exits"]
-        .get("native")
-        .and_then(Value::as_i64)
-        .map(i32::try_from)
-        .transpose()?;
-    if rebuild.is_none() && shell_exit != original_exit {
+    for field in [
+        "head", "branch", "status", "tracked", "remote", "refs", "fetch",
+    ] {
+        let expected_field = if frozen.is_some() && staged {
+            if name == "git_pull" && field == "refs" {
+                let before_refs = before["refs"].as_str().ok_or("frozen Git refs absent")?;
+                let initial = git(&bare, &["rev-parse", "refs/heads/topic"])?;
+                let advanced = git(&bare, &["rev-parse", "refs/heads/main"])?;
+                let changed = before_refs
+                    .replace(
+                        &format!("refs/remotes/origin/HEAD {initial} "),
+                        &format!("refs/remotes/origin/HEAD {advanced} "),
+                    )
+                    .replace(
+                        &format!("refs/remotes/origin/main {initial} "),
+                        &format!("refs/remotes/origin/main {advanced} "),
+                    );
+                if changed == before_refs || after["refs"] != changed {
+                    return Err("frozen Git pull remote-ref relation changed".into());
+                }
+                continue;
+            }
+            &before[field]
+        } else {
+            &original_after[field]
+        };
+        if after[field] != *expected_field {
+            return Err(
+                format!("owned Git effect differs from original relation: {name}/{field}").into(),
+            );
+        }
+    }
+    let original_exit = if let Some(source) = frozen {
+        if staged || !has_command {
+            None
+        } else {
+            source(&format!("actions/{name}/source-evidence/shell.json"))?["exit"]
+                .as_i64()
+                .map(i32::try_from)
+                .transpose()?
+        }
+    } else {
+        original_row["exits"]
+            .get("native")
+            .and_then(Value::as_i64)
+            .map(i32::try_from)
+            .transpose()?
+    };
+    if rebuild.is_none() && (frozen.is_none() || !staged) && shell_exit != original_exit {
         return Err(format!(
             "owned Git command exit differs from original native observation: {name}"
         )
@@ -587,17 +827,23 @@ pub(super) fn run(
             "cache_removed":!cache.exists(),
             "sudo":if checkout.join("sudo.argv").exists(){fs::read_to_string(checkout.join("sudo.argv"))?}else{String::new()},
         });
-        let original: Value = serde_json::from_slice(&fs::read(
-            original_root.join(format!("{name}_effects/native-evidence/effects.json")),
-        )?)?;
-        if actual != original
+        let effects_match = if frozen.is_some() {
+            actual
+                == json!({"scons":"","sudo":"","prebuilt_removed":false,
+                "sign_removed":false,"cache_removed":false})
+        } else {
+            let original: Value = serde_json::from_slice(&fs::read(
+                original_root.join(format!("{name}_effects/native-evidence/effects.json")),
+            )?)?;
+            actual == original
+        };
+        if !effects_match
             || fs::read_to_string(checkout.join("rust/runtime-manifest.json"))? != "old package"
             || shell_exit != Some(17)
         {
             return Err(format!("owned native rebuild changed destructive effects: {name}").into());
         }
     }
-    let staged = original_row["staged_contract"] == true;
     if staged && (after["head"] != before["head"] || after["tracked"] != before["tracked"]) {
         return Err(format!("staged command changed checkout: {name}").into());
     }
@@ -606,7 +852,7 @@ pub(super) fn run(
     {
         return Err("staged reset changed owned remote".into());
     }
-    if staged {
+    if staged && name != "number_commit" {
         let expected = match name {
             "fresh_index" | "symlink_index" | "busy_lock" => Some(75),
             "git_sync" => Some(0),
@@ -635,6 +881,9 @@ pub(super) fn run(
     }
     if checkout.join("INJECTED").exists() {
         return Err("quoted branch escaped into an operation".into());
+    }
+    if fs::read(&copied_helper)? != fs::read(&retained_helper)? {
+        return Err("owned untracked retained helper changed".into());
     }
     let receipt = json!({"scenario":name,"before":before,"after":after,"response":response,
         "shell_exit":shell_exit,"server_exit":server_exit,"staged":staged,"pass":true});

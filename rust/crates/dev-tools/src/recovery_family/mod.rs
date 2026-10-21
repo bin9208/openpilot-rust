@@ -20,7 +20,9 @@ mod upload_control;
 mod upload_wire;
 mod websocket;
 
-pub use actions_control::{admit_actions_corpus, ActionsCorpusConfig};
+pub use actions_control::{
+    admit_actions_corpus, run_actions_frozen, ActionsCorpusConfig, ActionsFrozenConfig,
+};
 pub use cwp_control::{run_cwp_frozen, run_cwp_pair, CwpFrozenConfig, CwpPairConfig};
 pub use http::{stable_headers, HttpPeer, HttpResponse};
 pub use http_control::{run_http_frozen, run_http_pair, HttpFrozenConfig, HttpPairConfig};

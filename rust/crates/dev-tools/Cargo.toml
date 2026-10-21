@@ -2006,3 +2006,7 @@ required-features = ["driving-daemon-native"]
 [[test]]
 name = "recovery_family"
 required-features = ["recovery-family-native"]
+
+[[test]]
+name = "recovery_family_frozen"
+required-features = ["recovery-family-native"]
