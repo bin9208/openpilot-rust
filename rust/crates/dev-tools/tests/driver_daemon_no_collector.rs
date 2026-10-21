@@ -78,14 +78,22 @@ fn native_cli_accepts_omitted_collector_without_losing_other_required_evidence()
 fn mismatched_original_collector_mode_is_rejected_before_output_creation() {
     let temporary = tempfile::tempdir().unwrap();
     let mut no_collector = options(temporary.path().join("no-collector"));
-    no_collector.original_dir = required("DRIVER_DAEMON_ORIGINAL_CAPTURE").into();
-    no_collector.original_manifest_sha256 = required("DRIVER_DAEMON_ORIGINAL_MANIFEST_SHA256");
-    assert!(run(&no_collector).is_err());
+    no_collector.original_dir = required("DRIVER_DAEMON_HISTORICAL_COLLECTOR_CAPTURE").into();
+    no_collector.original_manifest_sha256 =
+        required("DRIVER_DAEMON_HISTORICAL_COLLECTOR_MANIFEST_SHA256");
+    no_collector.source_commit = required("DRIVER_DAEMON_HISTORICAL_COLLECTOR_SOURCE_COMMIT");
+    assert_eq!(
+        run(&no_collector).unwrap_err().to_string(),
+        "driver original capture collector mode differs from native option"
+    );
     assert!(!no_collector.output.exists());
 
     let mut unexpected_collector = options(temporary.path().join("unexpected-collector"));
     unexpected_collector.collector = Some(required("DRIVER_DAEMON_COLLECTOR").into());
-    assert!(run(&unexpected_collector).is_err());
+    assert_eq!(
+        run(&unexpected_collector).unwrap_err().to_string(),
+        "driver original capture collector mode differs from native option"
+    );
     assert!(!unexpected_collector.output.exists());
 }
 

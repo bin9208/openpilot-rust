@@ -10,6 +10,13 @@
 
 **Spec:** `docs/rust-port/design.md`, `docs/naver/rust-python-tools-retirement-296.md`, and the user's 2026-10-15 repository-wide clarification. Tracking: #296 and #1.
 
+Current execution follows the user's 2026-10-22 grouped-validation direction in
+the [functional closure ledger](rust-repository-python-retirement-296-families.md).
+It maps every remaining baseline entry, additional helpers/notebooks and embedded
+execution scope, names blockers and completion gates, and reuses successful
+unchanged evidence. Historical per-file checkpoints below do not override that
+family execution policy or relax safety/final integration requirements.
+
 
 Historical shared-oracle correction: full PR39552825804/job119065662638 found that
 `driving_daemon_reference.py` still imports `Commands` and `original_class` from

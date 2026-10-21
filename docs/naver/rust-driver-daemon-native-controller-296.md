@@ -1,5 +1,24 @@
 # Native driver-daemon comparison candidate (#296)
 
+Additional bounded CLI evidence: run
+[39633286381](https://github.com/bin9208/openpilot-rust/actions/runs/39633286381)
+at source `34e5e052f7c19a2c2f22ef9a0298d228ab5ce949` executed all four native
+collector CLI cases and ten parser admissions successfully. Its final wrapper
+assertion incorrectly expected four original stdout rows; the original emits
+four case rows plus a summary. The whole run is therefore failed. Parent
+independently checked artifact `12360417493`, all 282 ZIP CRCs, 43 original-file
+seals, all 15 explicit and 117 loaded repository Python source pins against that
+Git source, the original fifth summary, four native stdout/report rows and packet
+file seals, all static report fields and logging fields except process IDs,
+and both sets of ten admission receipts. ZIP SHA256 is
+`8b238cb6be3358b77dec01628de34bae492b46b4eea016b40b6ad7794ec08fae`;
+original manifest SHA256 is
+`57a3a05c0a0fa5b3318fc3fb1e3c07e9a9838b3379c3cb2e50e96974ed7bfd4a`.
+Reuse this bounded successful traffic evidence; do not turn the failed aggregate
+green or repeat unchanged traffic solely to repair the row-count assertion.
+Optional collector, raw-parent alias and source/caller retirement still need
+their respective affected checks.
+
 The optional `driver-daemon-native` feature registers a Rust controller and its
 reference/mutation/live tests. It replays the original four1344/1928 × raw-on/off
 cases using independently captured Python-produced packets: four warmups and ten

@@ -1,5 +1,13 @@
 # 저장소 전체 Python 전환 작업 인수인계
 
+Current execution policy and blockers are in the
+[functional closure ledger](rust-repository-python-retirement-296-families.md).
+General tools are grouped by dependency family and successful unchanged checks
+are reused. Strict safety and final integration gates remain. Full f5c8 run
+39617311670 finished failed only at the workspace Desire CLI hash check; all
+other runtime/ARM jobs passed. Diagnose that mismatch before treating the full
+aggregate as successful.
+
 Current accepted source retirement: the outer Panda checker/test Python files
 are removed. Actual deleted-checkout maintained gate39625704015 passes at
 source249c1a08 after the prior153/152-source pre-deletion proof. Parent audited
