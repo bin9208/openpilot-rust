@@ -1,4 +1,5 @@
-//! Original-only CLI admissions captured in Actions before checker retirement.
+//! Original-only CLI admissions captured in Actions; the original checker is
+//! still a live dependency of the driving-daemon oracle.
 #![cfg(all(target_os = "linux", feature = "desire-reference-native"))]
 
 use openpilot_dev_tools::qa_process::{CommandSpec, NativeRunner, Runner};
@@ -20,6 +21,7 @@ use std::{
 const CAPTURE: &[u8] = include_bytes!("fixtures/desire-original-6e34f78a/cli-original.json");
 const CAPTURE_SHA: &str = "ac3e8ec4a5117054c073c8761d454ef60a4b599ab16beb9efd647b78364711cf";
 const HISTORICAL: &str = "rust/tools/check_desire_reference.py";
+const HISTORICAL_SHA: &str = "b5529bcac8036ec559de785319b8bd131963fe05eb9aa149528992f7b4f88f8e";
 
 fn sha(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
@@ -30,13 +32,6 @@ fn required(name: &str) -> PathBuf {
     );
     assert!(path.is_absolute(), "{name} must be absolute");
     path
-}
-fn absent(path: &Path) {
-    assert!(
-        matches!(fs::symlink_metadata(path), Err(error) if error.kind() == std::io::ErrorKind::NotFound),
-        "retired Desire checker reappeared: {}",
-        path.display()
-    );
 }
 fn regular(path: &Path) -> File {
     let file = File::from(
@@ -56,6 +51,69 @@ fn regular(path: &Path) -> File {
         path.display()
     );
     file
+}
+fn identity(file: &File) -> (u64, u64, u64, i64, i64, i64, i64) {
+    let metadata = file.metadata().unwrap();
+    (
+        metadata.dev(),
+        metadata.ino(),
+        metadata.len(),
+        metadata.mtime(),
+        metadata.mtime_nsec(),
+        metadata.ctime(),
+        metadata.ctime_nsec(),
+    )
+}
+fn opened_sha(file: &mut File, maximum: u64) -> String {
+    assert!(file.metadata().unwrap().len() <= maximum);
+    file.seek(SeekFrom::Start(0)).unwrap();
+    let mut hash = Sha256::new();
+    let mut chunk = [0_u8; 65536];
+    let mut total = 0_u64;
+    loop {
+        let room = (maximum.saturating_sub(total) + 1).min(chunk.len() as u64) as usize;
+        let count = file.read(&mut chunk[..room]).unwrap();
+        if count == 0 {
+            break;
+        }
+        total += count as u64;
+        assert!(total <= maximum);
+        hash.update(&chunk[..count]);
+    }
+    format!("{:x}", hash.finalize())
+}
+struct HistoricalSource {
+    path: PathBuf,
+    held: File,
+    identity: (u64, u64, u64, i64, i64, i64, i64),
+}
+impl HistoricalSource {
+    fn open(path: PathBuf) -> Self {
+        let mut held = regular(&path);
+        let seal = identity(&held);
+        assert_eq!(opened_sha(&mut held, 1_000_000), HISTORICAL_SHA);
+        assert_eq!(identity(&held), seal);
+        let source = Self {
+            path,
+            held,
+            identity: seal,
+        };
+        source.verify();
+        source
+    }
+    fn verify(&self) {
+        let mut current = regular(&self.path);
+        assert_eq!(identity(&current), self.identity);
+        assert_eq!(identity(&self.held), self.identity);
+        assert_eq!(opened_sha(&mut current, 1_000_000), HISTORICAL_SHA);
+        assert_eq!(identity(&current), self.identity);
+        assert_eq!(identity(&self.held), self.identity);
+        assert_eq!(
+            self.path.symlink_metadata().unwrap().ino(),
+            self.identity.1,
+            "original Desire checker path changed"
+        );
+    }
 }
 fn file_sha(path: &Path, maximum: u64) -> String {
     let mut file = regular(path);
@@ -134,7 +192,7 @@ fn source_elf(path: &Path) -> (u64, u64, u64, String) {
 }
 
 #[test]
-fn original_cli_channels_and_full_raw_path_survive_checker_retirement() {
+fn original_cli_channels_and_full_raw_path_match_native_with_pinned_source() {
     assert_eq!(sha(CAPTURE), CAPTURE_SHA);
     let capture: Value = serde_json::from_slice(CAPTURE).unwrap();
     assert_eq!(capture["kind"], "independently captured unchanged original DesireHelper CLI observations; help/error text retained as evidence, admission tests compare statuses and channels");
@@ -177,8 +235,7 @@ fn original_cli_channels_and_full_raw_path_survive_checker_retirement() {
     assert_eq!(cases.len(), roster.len());
     let repository =
         fs::canonicalize(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..")).unwrap();
-    let historical = repository.join(HISTORICAL);
-    absent(&historical);
+    let historical = HistoricalSource::open(repository.join(HISTORICAL));
     let checker = fs::canonicalize(required("DESIRE_REFERENCE_CHECKER")).unwrap();
     let probe = fs::canonicalize(required("DESIRE_REFERENCE_PROBE")).unwrap();
     assert_ne!(checker, probe);
@@ -194,7 +251,7 @@ fn original_cli_channels_and_full_raw_path_survive_checker_retirement() {
 
     for (row, name) in cases.iter().zip(roster) {
         assert_eq!(row["case"], name);
-        absent(&historical);
+        historical.verify();
         assert_eq!(source_elf(&checker), checker_seal);
         assert_eq!(source_elf(&probe), probe_seal);
         let side = proof.join(name);
@@ -292,7 +349,7 @@ fn original_cli_channels_and_full_raw_path_survive_checker_retirement() {
             matches!(fs::symlink_metadata(&other), Err(error) if error.kind() == std::io::ErrorKind::NotFound),
             "unexpected other output: {name}"
         );
-        absent(&historical);
+        historical.verify();
         assert_eq!(source_elf(&checker), checker_seal);
         assert_eq!(source_elf(&probe), probe_seal);
     }

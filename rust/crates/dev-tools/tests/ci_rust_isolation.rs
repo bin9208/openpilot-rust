@@ -2848,16 +2848,16 @@ fn dashcam_progress_allocation_proof_keeps_functional_and_full_upload_routes() {
 }
 
 #[test]
-fn desire_retirement_preserves_full_original_corpus_absence_cli_and_command_gates() {
+fn desire_controller_preserves_shared_original_and_private_absence_cli_command_gates() {
     let data = workflow();
     let job = &data["jobs"]["workspace"];
     let steps = job["steps"].as_array().unwrap();
-    let step = steps.iter().find(|step| step["name"] == "Verify retired desire controller against complete original corpus and CLI admissions").unwrap();
+    let step = steps.iter().find(|step| step["name"] == "Verify native desire controller while retaining the shared original driving oracle").unwrap();
     absent(step, &["if", "continue-on-error"]);
     assert_eq!(step["working-directory"], ".");
     required(step["run"].as_str().unwrap(), &[
-        "test ! -e rust/tools/check_desire_reference.py", "test ! -L rust/tools/check_desire_reference.py",
-        "DESIRE_REFERENCE_EXPECT_ABSENT=1", "DESIRE_REFERENCE_CHECKER=", "DESIRE_REFERENCE_PROBE=",
+        "test -f rust/tools/check_desire_reference.py", "test ! -L rust/tools/check_desire_reference.py",
+        "DESIRE_REFERENCE_EXPECT_ABSENT=0", "DESIRE_REFERENCE_CHECKER=", "DESIRE_REFERENCE_PROBE=",
         "DESIRE_REFERENCE_RETIREMENT_OUTPUT=", "DESIRE_REFERENCE_CLI_OUTPUT=",
         "--features desire-reference-native --bin check-desire-reference-native --locked",
         "--features desire-reference-native --lib desire_reference_check:: --locked -- --nocapture",

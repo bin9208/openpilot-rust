@@ -10,6 +10,19 @@
 
 **Spec:** `docs/rust-port/design.md`, `docs/naver/rust-python-tools-retirement-296.md`, and the user's 2026-10-15 repository-wide clarification. Tracking: #296 and #1.
 
+
+Current correction: full PR39552825804/job119065662638 found that
+`driving_daemon_reference.py` still imports `Commands` and `original_class` from
+`check_desire_reference.py`. The focused deleted-checkout proof passed, but did
+not cover this shared original oracle. The exact original file is restored,
+SHA256 `b5529bcac8036ec559de785319b8bd131963fe05eb9aa149528992f7b4f88f8e`;
+the maintained standalone checker remains Rust. Inventory is corrected to
+229replaced-local/4partial/3347pending. Checkout source presence remains pinned;
+the private absence proof still verifies that the native checker itself does not
+execute Python. The original driving oracle must receive an independent native
+replacement before actual source retirement is accepted. Earlier deletion records
+below are historical focused evidence, not current repository-wide retirement.
+
 ## Global constraints
 
 - Base: stable dev `b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a`; work branch `codex/feat-296-repository-python-retirement`, targeting dev through required checks.
@@ -430,4 +443,4 @@ and is retained as evidence rather than claimed byte parity. Removed only
 check_desire_reference.py and replaced the real workspace caller with mandatory
 native unit/integration/CLI/absence/default-CLI gates and full artifacts. Shared27
 original dependency pins remain. Actual-deleted-checkout cloud proof remains
-pending. Inventory230replaced-local/3partial/3347pending.
+pending. Inventory229replaced-local/4partial/3347pending.

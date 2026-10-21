@@ -1,12 +1,25 @@
 # 저장소 전체 Python 전환 작업 인수인계
 
+
+Current correction: full PR39552825804/job119065662638 found that
+`driving_daemon_reference.py` still imports `Commands` and `original_class` from
+`check_desire_reference.py`. The focused deleted-checkout proof passed, but did
+not cover this shared original oracle. The exact original file is restored,
+SHA256 `b5529bcac8036ec559de785319b8bd131963fe05eb9aa149528992f7b4f88f8e`;
+the maintained standalone checker remains Rust. Inventory is corrected to
+229replaced-local/4partial/3347pending. Checkout source presence remains pinned;
+the private absence proof still verifies that the native checker itself does not
+execute Python. The original driving oracle must receive an independent native
+replacement before actual source retirement is accepted. Earlier deletion records
+below are historical focused evidence, not current repository-wide retirement.
+
 ## 현재 감독·통합 상태, 2026-10-21
 
 부모6.1 Sol이 감독·검토·통합하며6Sol 작업자가 분리된 구현/검토를 맡는다.
 #296 전용 작업트리와 PR343→dev만 사용한다. dev-md/주 작업폴더/.omo는 보존한다.
 사용자가 pull 후 기기 부팅·녹화·업로드·주행을 확인한다. 로컬은 문법·포맷·diff·
 저장된 데이터 판독만 수행하고 기능 실행/빌드/Clippy는 GitHub-hosted Actions로 제한한다.
-인벤토리는230replaced-local/3partial/3347pending이며 전체 전환은 미완료다.
+인벤토리는229replaced-local/4partial/3347pending이며 전체 전환은 미완료다.
 
 Updater 세 Python 도구의 실제 삭제083f937a는39547256419에서15검사,
 두root각1,089exec/Python0/Clippy/defaultCLI를 통과했다. 부모가20JSON과 입력봉인을

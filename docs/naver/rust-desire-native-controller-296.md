@@ -48,3 +48,17 @@ the raw-path files themselves are not retained in the ZIP. Help/error text parit
 is not claimed. Shared original Python helpers, the remaining repository
 conversion, latest full PR/ARM and user boot/recording/upload/driving acceptance
 remain separate unfinished work.
+
+
+## Full caller closure regression and restored shared original
+
+The latest full PR39552825804/job119065662638 found a live import in
+`driving_daemon_reference.py`: `Commands` and `original_class` came from the
+removed checker. The deleted-checkout proof above remains valid only for the
+standalone native checker. It did not prove all repository callers were migrated.
+The exact original file is restored (same pinned SHA above), while the actual
+standalone CI caller remains Rust. Inventory is partial, not replaced-local.
+Source presence and unchanged bytes remain mandatory in checkout; private-root
+absence and full native stream/CLI tests stay mandatory. No Python definitions are
+relocated or replaced with candidate-derived expectations. Full original driving
+oracle conversion and updated caller proof are required before retrying deletion.

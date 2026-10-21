@@ -5,13 +5,26 @@ This is an unfinished conversion, not a completion report. Base commit:
 `codex/feat-296-repository-python-retirement`; concurrent `dev-md` work is not
 part of this candidate. No device validation or release is claimed here.
 
+
+Current correction: full PR39552825804/job119065662638 found that
+`driving_daemon_reference.py` still imports `Commands` and `original_class` from
+`check_desire_reference.py`. The focused deleted-checkout proof passed, but did
+not cover this shared original oracle. The exact original file is restored,
+SHA256 `b5529bcac8036ec559de785319b8bd131963fe05eb9aa149528992f7b4f88f8e`;
+the maintained standalone checker remains Rust. Inventory is corrected to
+229replaced-local/4partial/3347pending. Checkout source presence remains pinned;
+the private absence proof still verifies that the native checker itself does not
+execute Python. The original driving oracle must receive an independent native
+replacement before actual source retirement is accepted. Earlier deletion records
+below are historical focused evidence, not current repository-wide retirement.
+
 ## Inventory
 
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. The current source inventory has 230 replaced-local entries,
-three partial entries and 3,347 pending entries. `replaced-local` does not mean merged,
+SCons entrypoints. The current source inventory has 229 replaced-local entries,
+four partial entries and 3,347 pending entries. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -5203,4 +5216,4 @@ kept all27 still-required original dependency pins and Bluetooth command/JSON
 gates. Actual deleted-checkout proof now explicitly requires checkout source
 absence and replays all20 independently captured admissions. That postdelete
 cloud proof remains pending; no model behavior/device acceptance is claimed.
-Inventory230replaced-local/3partial/3347pending.
+Inventory229replaced-local/4partial/3347pending.

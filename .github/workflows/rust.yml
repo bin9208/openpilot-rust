@@ -931,18 +931,18 @@ jobs:
             ${{ runner.temp }}/calibration-float-native/
             ${{ runner.temp }}/calibration-float-postdelete/
           if-no-files-found: warn
-      - name: Verify retired desire controller against complete original corpus and CLI admissions
+      - name: Verify native desire controller while retaining the shared original driving oracle
         working-directory: .
         run: |
           set -euo pipefail
-          test ! -e rust/tools/check_desire_reference.py
+          test -f rust/tools/check_desire_reference.py
           test ! -L rust/tools/check_desire_reference.py
           proof="$RUNNER_TEMP/desire-controller-native"
           mkdir -p "$proof"
           export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
           export DESIRE_REFERENCE_CHECKER="$GITHUB_WORKSPACE/rust/target/debug/check-desire-reference-native"
           export DESIRE_REFERENCE_PROBE="$GITHUB_WORKSPACE/rust/target/debug/examples/desire_probe"
-          export DESIRE_REFERENCE_EXPECT_ABSENT=1
+          export DESIRE_REFERENCE_EXPECT_ABSENT=0
           export DESIRE_REFERENCE_RETIREMENT_OUTPUT="$proof/retirement"
           export DESIRE_REFERENCE_CLI_OUTPUT="$proof/cli"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
