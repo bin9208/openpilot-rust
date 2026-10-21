@@ -10,11 +10,11 @@ use crate::{
     seal::Result,
 };
 use rustix::{
-    event::{PollFd, PollFlags, Timespec, poll},
-    process::{Pid, Signal, kill_process, kill_process_group},
-    time::{ClockId, clock_gettime},
+    event::{poll, PollFd, PollFlags, Timespec},
+    process::{kill_process, kill_process_group, Pid, Signal},
+    time::{clock_gettime, ClockId},
 };
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -32,8 +32,8 @@ use std::{
     path::{Component, Path, PathBuf},
     process::{Child, Command, Stdio},
     sync::{
-        Arc,
         atomic::{AtomicBool, Ordering},
+        Arc,
     },
     thread,
     time::{Duration, Instant},
@@ -1636,9 +1636,9 @@ pub fn run(options: &Options) -> Result<Value> {
 #[cfg(test)]
 mod comparison_tests {
     use super::{
-        CatalogPin, Lines, Signals, TransportNamespace, compare_value, verify_catalog_sources,
+        compare_value, verify_catalog_sources, CatalogPin, Lines, Signals, TransportNamespace,
     };
-    use rustix::event::{PollFd, PollFlags, poll};
+    use rustix::event::{poll, PollFd, PollFlags};
     use serde_json::json;
     use std::{
         collections::BTreeMap,
