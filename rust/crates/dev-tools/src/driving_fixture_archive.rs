@@ -237,6 +237,13 @@ pub fn stage(config: &Config) -> Result<Value> {
             return Err("archive path parent is not a real directory".into());
         }
     }
+    // Reject a known foreign destination before decompressing hundreds of MiB.
+    // NOREPLACE below still protects the publication race.
+    match fs::symlink_metadata(&config.output) {
+        Ok(_) => return Err("driving fixture output already exists".into()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => return Err(error.into()),
+    }
     let parent = config.output.parent().ok_or("output parent missing")?;
     disk_space::inspect(parent, MAX_UNPACKED)?.require()?;
     let mut input = File::from(rustix::fs::open(
