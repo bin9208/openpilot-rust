@@ -39,7 +39,7 @@ three partial baseline entries.
    accepted in39640526320 and39647358174. The shared corpus is removed with both
    native callers. Complete independent observations and parser/failure effects
    are preserved. Final actual outer38-phase/two-root integration must cover
-   the163-source/34-executable current composition; its14 mock controls alone
+   the165-source/34-executable current composition; its14 mock controls alone
    do not replace that gate.
 2. Driving/driver/logging faults: complete fixture/source-absence/finalization
    and optional-collector candidates are committed. Driving native collector
@@ -87,7 +87,10 @@ three partial baseline entries.
    fixture admission because Git text=auto normalized the NAS installed marker's
    30CRLFs (879→849bytes).1ccf8437c preserves original bytes; all114sealed staged
    Git blobs and both original manifest hashes are independently checked unchanged.
-   Full replay remains pending; six-source acceptance is not claimed. Compiler
+   Replay39689390187 and full119537355539 reproduce the first nonuniform driver
+   frame mismatch (#476). A bounded original/direct model-run comparison passes
+   on a different CPU, so same-host/catalog diagnosis remains required. Full
+   six-source acceptance is not claimed. Compiler
    functionality remains Python and is a separate open family dependency.
 6. Teleop's two embedded release computations are accepted in39670630661:
    independent34 computations and10 disposable Git scenarios match. The native
@@ -101,6 +104,13 @@ three partial baseline entries.
   22closed native execs/Python0 per runtime lane pass. This closes one embedded
    staging edge, preserves the full checker/finalization/source/ELF contract and
    does not retire remaining audio-job Python binding/policy consumers.
+
+8. Kalman equation generators pass fresh original/native compiled function and
+   constant comparisons39693981650. Two source deletions in706e26861 require
+   postdelete39696496964 before inventory acceptance. Two additional corpus CLI
+   candidates30f80e2f6 call the unchanged C++ oracle, preserve RNG/function order
+   and remain pending fresh original comparison39696759740. Both Python corpus
+   commands and original symbolic definitions/builders remain live/pending.
 
 ## Evidence reuse and delivery
 

@@ -42,9 +42,9 @@ its maintained caller policy integration passes39674181956. No real repository
 tag or remote was modified by the Git fixtures.
 
 Final current-source full PR/workspace, ARM and updated outer Panda proof remain
-pending. The last full PR39617311670 at f5c8ee8d failed only on the Desire source
-hash; the later focused four-source gate fixes that failure, but does not replace
-new exact-source final validation. Generic ARM/QEMU outputs are not sealed AGNOS
+pending. The earlier full PR39617311670 at f5c8ee8d failed only on the Desire source
+hash; the later focused four-source gate fixes that failure. Current full
+39691148023 is described below and does not yet supply final acceptance. Generic ARM/QEMU outputs are not sealed AGNOS
 release/device evidence. #457 startup stall and #474 PTRACE_LISTEN EIO remain
 unexplained; later successful runs do not establish root causes.
 
@@ -166,8 +166,8 @@ exact original heredoc
 SHA56630b535e2da704cf44ce523f9fbcfe662f9e32d2c42821a6938f00a500bf77,21pins/two native
 stage receipts and both traces/provenance. No receipt enters the20-file root; other
 audio Python remains pending. fbb6a007f adds an early frozen-byte regression and
-failure-tail diagnostics to the model gate; its new regression awaits final hosted
-execution.
+failure-tail diagnostics to the model gate; that regression and all preflight
+controls pass the current full job, which then reproduces #476.
 The existing unconverted model compiler remains explicit pending scope; invoking
 it from a Rust preparation command does not count as compiler retirement.
 
@@ -179,10 +179,54 @@ checkout; their unrelated Fast checks use the diagnostic tree and are not proof
 for that checkout. Serialize diagnostic branch pushes.
 
 Published checkpoint f913de3aa3c0f2c261f4ae4b87e41f3eb317fb82 starts full Rust
-39691148023, Integration39691148113 and Fast39691148018; results remain pending.
-Workspace stops at a module-order format error; scoped formatting and the
-independently found empty metadata binary binding are repaired for #475, awaiting
-hosted acceptance. Latest #296 checkpoint comment6328549833 links the evidence. Keep #296 open
-until full criteria are met; no source inventory, partial gate, queued CI or PR
-creation is completion. Detailed functional ownership and next families are in
+39691148023, Integration39691148113 and Fast39691148018. Actual PR checkout is
+synthetic merge d39b1b08c2079e9b3356be06ddddf9db49551be6; parent verifies its tree
+exactly equals the PR head. Integration passes; Fast fails inherited host-stager
+assertions (#478). Full Rust has workspace formatting (#475), Panda outer source
+roster (#477), driver numerics (#476) and inherited Card dependency-set assertion
+(#475) failures; other long jobs remain running. Scoped source fixes for the three
+CI assertion categories are committed; native model failure remains unresolved.
+
+Focused routing39695084680 at706e26861 passes all three fixed host-stager controls,
+then catches old SoundD count8 vs10. df374b0ab partitions exact commands by named
+step and preserves original behavioral RED and source-stager contracts. Retry
+39696562943 (workflow18b45283fe0b57f788586691731629e8f54d1222) executes complete
+Fast routing, actual workspace metadata and original Card policy atdf374b0ab.
+Corrected full Panda outer proof39696533789 (workflow423fb364b75cb0a57e5ecbf05bf5032357b8779a)
+at the same source retains four lanes/38phases/34ELFs and the165-source roster.
+
+Bounded driver diagnostic39694362489 at2c22e46ef passes original Python/direct
+model-run warped and raw-output byte equality, including frozen predictions. Its
+znver4 CPU differs from the earlier graniterapids failure. All47 LLVM IR kernels,
+weights and LLVM provider agree; target libraries differ. Do not infer the cause.
+Maintained failure-only same-host/catalog postmortem is wired indf374b0ab and runs
+with full model gate39696467591 (workflow2282e4f967ace29bf9bd5ca80f5ba4c2ffd9da06).
+Diagnostics cannot convert a failed retirement gate to success; six-source
+acceptance remains pending and expected values/tolerances stay unchanged.
+
+## Kalman development tools in progress
+
+Fresh native equation generators pass39693981650 at44ece72556 against all30
+frozen original files, exact constants and758function comparisons/boundaries.
+The singular zero-speed Jacobian issue is fixed with algebraic denominator
+simplification, preserving original infinite/NaN classifications.706e26861
+actually deletes only generate_pose_model.py/generate_car_model.py and adds the
+maintained workspace fresh-file gate (four growth markers; exact disk count521).
+Postdelete diagnostic prerequisites initially omitted rustfmt, then capnp for
+Panda source tests. Corrected retry39696496964 (workflowc84cbb6390b4ce96b67ae4d3067ab59f34e48ea2)
+atdf374b0ab must pass before accepting two more inventory entries. Installed
+runtime modules are unchanged; original model definitions remain live/pending.
+
+New30f80e2f6 registers generate-pose-corpus/generate-car-corpus through explicitly
+selected unchanged C++ providers. Provider calls are serialized, exact ABI/buffer
+sizes checked and files held. Existing output symlinks are deliberately rejected
+before evaluation (different from Python); ordinary output publication is atomic.
+Both Python commands remain present/pending.39696759740 (workflowc4029a1db2eff203ad3e7073fdb6deb5c9da4d6b)
+compares complete fresh original C++ corpora, float bits and key order; raw JSON
+byte equality remains separately recorded/unproven. No inventory count changes.
+
+Latest #296 checkpoint comment6328549833 predates these new failures/candidates;
+update it and PR343 after coherent acceptance evidence. Keep #296 open until full
+criteria are met; source inventory, partial gates, queued CI and PR creation are
+not completion. Detailed functional ownership is in
 [the grouped ledger](rust-repository-python-retirement-296-families.md).
