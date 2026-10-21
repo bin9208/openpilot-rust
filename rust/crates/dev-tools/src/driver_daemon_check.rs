@@ -4,6 +4,7 @@
 //! original checker has completed all four cases in Actions.
 //! Captured candidate `message-*.bin` files are never reference packets.
 use crate::{
+    argparse_scan::{scan_os, OptionSpec},
     driving_daemon_reference::event_dict,
     driving_logging_check::Collector,
     qa_process::{CommandSpec, NativeRunner, Runner},
@@ -1548,14 +1549,21 @@ pub fn run(options: &Options) -> Result<Value> {
     let mut reports = Vec::with_capacity(CASES.len());
     for (width, height, raw, _) in CASES {
         signals.check()?;
-        reports.push(case(&CaseContext {
+        let report = case(&CaseContext {
             options,
             original: &original,
             signals: &signals,
             width,
             height,
             raw,
-        })?);
+        })?;
+        {
+            let mut stdout = std::io::stdout().lock();
+            serde_json::to_writer(&mut stdout, &report)?;
+            stdout.write_all(b"\n")?;
+            stdout.flush()?;
+        }
+        reports.push(report);
         original.verify()?;
         for pin in [&binary, &peer, &collector] {
             pin.verify()?;
@@ -1631,6 +1639,68 @@ pub fn run(options: &Options) -> Result<Value> {
         format!("{}\n", serde_json::to_string_pretty(&output)?).as_bytes(),
     )?;
     Ok(output)
+}
+
+/// Parse the original checker switches plus a distinct native evidence namespace.
+/// This is an opt-in controller interface: `--collector` remains mandatory here
+/// because every accepted native case checks actual collector records.
+pub fn parse(args: &[std::ffi::OsString]) -> Result<Option<Options>> {
+    let parsed = scan_os(
+        args,
+        &[
+            OptionSpec::value("--binary", true),
+            OptionSpec::value("--catalog", true),
+            OptionSpec::value("--models", true),
+            OptionSpec::value("--output", true),
+            OptionSpec::value("--collector", true),
+            OptionSpec::value("--native-peer", true),
+            OptionSpec::value("--native-original-dir", true),
+            OptionSpec::value("--native-original-manifest-sha256", true),
+            OptionSpec::value("--native-source-commit", true),
+            OptionSpec::value("--native-root", true),
+        ],
+    )?;
+    if parsed.help {
+        return Ok(None);
+    }
+    let value = |name: &str| -> Result<&std::ffi::OsString> {
+        Ok(parsed.values.get(name).ok_or("driver CLI option missing")?)
+    };
+    let path = |name: &str| -> Result<PathBuf> {
+        let selected = PathBuf::from(value(name)?);
+        Ok(if selected.is_absolute() {
+            selected
+        } else {
+            std::env::current_dir()?.join(selected)
+        })
+    };
+    let text = |name: &str| -> Result<String> {
+        Ok(value(name)?
+            .to_str()
+            .ok_or("driver digest or source commit is not UTF-8")?
+            .to_owned())
+    };
+    Ok(Some(Options {
+        binary: path("--binary")?,
+        catalog: path("--catalog")?,
+        models: path("--models")?,
+        output: path("--output")?,
+        collector: path("--collector")?,
+        peer: path("--native-peer")?,
+        original_dir: path("--native-original-dir")?,
+        original_manifest_sha256: text("--native-original-manifest-sha256")?,
+        source_commit: text("--native-source-commit")?,
+        root: path("--native-root")?,
+    }))
+}
+
+pub fn cli() -> Result<()> {
+    let Some(options) = parse(&std::env::args_os().skip(1).collect::<Vec<_>>())? else {
+        std::io::stdout().write_all(b"Usage: check-driver-daemon --binary ELF --catalog DIR --models DIR --output DIR --collector ELF --native-peer ELF --native-original-dir DIR --native-original-manifest-sha256 SHA256 --native-source-commit SHA --native-root DIR\n")?;
+        return Ok(());
+    };
+    run(&options)?;
+    Ok(())
 }
 
 #[cfg(test)]

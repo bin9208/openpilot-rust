@@ -26,3 +26,16 @@ exact manifests, inputs and executable seals. Its results remain pending. The
 historical full model-pipeline archive contains native message output and cannot
 serve as independent expected packets for those ten frames. No device result or
 whole-family Python absence is inferred.
+
+The proposed `check-driver-daemon` binary is a separate evidence-driven CLI, not
+a drop-in replacement for `check_driver_daemon.py`. It accepts the original
+`--binary`, `--catalog`, `--models`, `--output`, and `--collector` spellings.
+Additional requirements use `--native-*` names so original unique abbreviations
+such as `--o` and `--m` retain their meaning. The native controller currently
+requires `--collector`, a sealed original capture and manifest digest, the
+source commit, an existing peer ELF, and an explicit checkout root. The Python
+checker permits no collector and compiles its peer under the output directory;
+those modes are not yet native CLI parity claims. Its original help/error
+observations are captured independently in the optional hosted CLI extension.
+The maintained Python checker stays until the remaining no-collector, CLI,
+source-absence, and caller proofs complete.

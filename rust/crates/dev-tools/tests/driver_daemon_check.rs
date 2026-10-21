@@ -1,5 +1,60 @@
-use openpilot_dev_tools::driver_daemon_check::{run, Options, OriginalCapture};
-use std::{env, fs, path::PathBuf};
+use openpilot_dev_tools::driver_daemon_check::{parse, run, Options, OriginalCapture};
+use std::{env, ffi::OsString, fs, os::unix::ffi::OsStringExt, path::PathBuf};
+
+fn cli_args() -> Vec<OsString> {
+    [
+        "--binary",
+        "/private/driver",
+        "--catalog",
+        "/private/catalog",
+        "--models",
+        "/private/models",
+        "--output",
+        "/private/output",
+        "--collector",
+        "/private/collector",
+        "--native-peer",
+        "/private/peer",
+        "--native-original-dir",
+        "/private/original",
+        "--native-original-manifest-sha256",
+        "a",
+        "--native-source-commit",
+        "b",
+        "--native-root",
+        "/private/root",
+    ]
+    .into_iter()
+    .map(OsString::from)
+    .collect()
+}
+
+#[test]
+fn driver_cli_retains_argparse_help_abbreviation_repeat_and_raw_path() {
+    assert!(parse(&[OsString::from("-hhh")]).unwrap().is_none());
+    let mut args = cli_args();
+    args[0] = "--bin".into();
+    args[6] = "--o".into();
+    args.extend([
+        OsString::from("--binary"),
+        OsString::from("/private/final-driver"),
+    ]);
+    let selected = parse(&args).unwrap().unwrap();
+    assert_eq!(selected.binary, PathBuf::from("/private/final-driver"));
+    let raw = OsString::from_vec(b"/private/output-\xff".to_vec());
+    args[7] = raw.clone();
+    let selected = parse(&args).unwrap().unwrap();
+    assert_eq!(selected.output.as_os_str(), raw.as_os_str());
+}
+
+#[test]
+fn driver_cli_rejects_missing_ambiguous_and_unknown_arguments() {
+    assert!(parse(&[]).is_err());
+    assert!(parse(&["--c".into(), "value".into()]).is_err());
+    let mut args = cli_args();
+    args.extend([OsString::from("--unknown"), OsString::from("value")]);
+    assert!(parse(&args).is_err());
+}
 
 fn required(name: &str) -> String {
     env::var(name).unwrap_or_else(|_| panic!("cloud must set {name}"))

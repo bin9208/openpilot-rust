@@ -1919,3 +1919,8 @@ required-features = ["driving-daemon-native"]
 [[test]]
 name = "driver_daemon_check"
 required-features = ["driver-daemon-native"]
+
+[[bin]]
+name = "check-driver-daemon"
+path = "src/bin/check_driver_daemon.rs"
+required-features = ["driver-daemon-native"]
