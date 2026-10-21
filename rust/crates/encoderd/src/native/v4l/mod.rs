@@ -4,7 +4,11 @@ mod io;
 pub mod primitives;
 mod setup;
 
-use super::{platform, publisher::VideoPublisher, Mapping};
+use super::{
+    platform,
+    publisher::{VideoPacket, VideoPublisher},
+    Mapping,
+};
 use crate::{config::Settings, profile::EncoderInfo, Error};
 use openpilot_logging::{log_site, record::Level};
 use openpilot_msgq::VisionMetadata;
@@ -256,7 +260,6 @@ fn dequeue_worker(
     platform::name(&format!("dq-{service}"))?;
     let mut index = u32::MAX;
     let mut header = Vec::new();
-    let mut packet_scratch = Vec::new();
     let mut exit = false;
     let debug = platform::debug_encoder();
     while !exit {
@@ -321,25 +324,30 @@ fn dequeue_worker(
                 }
                 frame_id = extra.frame_id as i32;
                 index = index.wrapping_add(1);
-                if packet_scratch.len() < packet.length {
-                    packet_scratch.resize(packet.length, 0);
-                }
-                buffer
-                    .mapping()
-                    .copy_into(&mut packet_scratch[..packet.length])?;
-                resources.publisher.publish(
-                    segment,
-                    index,
-                    &extra,
-                    packet.flags,
-                    &header,
-                    &packet_scratch[..packet.length],
+                resources.publisher.publish_mapping(
+                    VideoPacket {
+                        segment,
+                        index,
+                        extra: &extra,
+                        flags: packet.flags,
+                        header: &header,
+                    },
+                    buffer.mapping(),
+                    packet.length,
                 )?;
             }
             if debug != 0 {
-                println!("{service:>20} got({}) {:6} bytes flags {:8x} idx {segment:3}/{:4} id {frame_id:8} ts {} lat {:.2} ms ({} frames free)",
-                    packet.index, packet.length, packet.flags, index as i32, packet.timestamp_us,
-                    super::publisher::nanos(rustix::time::ClockId::Boottime)? as f64 / 1e6 - packet.timestamp_us as f64 / 1000., shared.lock()?.free.len());
+                println!(
+                    "{service:>20} got({}) {:6} bytes flags {:8x} idx {segment:3}/{:4} id {frame_id:8} ts {} lat {:.2} ms ({} frames free)",
+                    packet.index,
+                    packet.length,
+                    packet.flags,
+                    index as i32,
+                    packet.timestamp_us,
+                    super::publisher::nanos(rustix::time::ClockId::Boottime)? as f64 / 1e6
+                        - packet.timestamp_us as f64 / 1000.,
+                    shared.lock()?.free.len()
+                );
             }
             io::queue(
                 &fd,
