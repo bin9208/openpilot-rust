@@ -1965,3 +1965,12 @@ required-features = ["pandad-can-io-native"]
 [[test]]
 name = "driver_daemon_no_collector"
 required-features = ["driver-daemon-native"]
+
+[[bin]]
+name = "stage-pandad-device-reference"
+path = "src/bin/stage_pandad_device_reference.rs"
+required-features = ["pandad-device-native"]
+
+[[test]]
+name = "pandad_device_fixture"
+required-features = ["pandad-device-native"]

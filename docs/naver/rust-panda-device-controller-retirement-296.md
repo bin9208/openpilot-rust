@@ -63,3 +63,19 @@ source has been removed by this device-family candidate. The separate outer
 Panda controller source deletion and its38-phase gate are accepted in
 [39625704015](https://github.com/bin9208/openpilot-rust/actions/runs/39625704015);
 that evidence does not retire this separate device-family controller.
+
+The next family integration routes device, protocol and CAN-I/O phases directly
+to their native executables and records each executed source root. Their three
+new executable seals extend the outer held set from 31 to 34. The historical
+151-source fixture stays immutable; explicit current native additions give a
+164-source candidate roster before this family's source deletions.
+
+`stage-pandad-device-reference` stages a repository-owned compressed synthetic
+fixture, replacing the expiring CI observation download for maintained checks.
+Parent compared all 35 packaged files byte-for-byte with the accepted original
+ZIP: 33 sealed observations, the capture manifest and historical builder JSON.
+The 2,333,895-byte blob expands to 14,321,241 bytes. No original Python code or
+ELF is packaged. Its native materializer and adversarial controls still require
+hosted execution. Historical builder and current build receipts remain separate;
+the final reference gate must validate the actual executed C++ ELF and all 14
+current build inputs without rewriting the historical observations.

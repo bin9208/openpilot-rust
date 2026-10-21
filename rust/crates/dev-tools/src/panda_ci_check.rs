@@ -231,6 +231,7 @@ fn source_paths(root: &Path) -> Result<BTreeSet<PathBuf>> {
         "pandad_safety_padding_check/ownership.rs",
         "bin/check_pandad_device.rs",
         "pandad_device_check/ownership.rs",
+        "bin/stage_pandad_device_reference.rs",
         "bin/check_pandad_protocol.rs",
         "pandad_protocol_check/cases.rs",
         "pandad_protocol_check/ownership.rs",
@@ -279,6 +280,9 @@ fn executables(bin: &Path) -> Vec<PathBuf> {
         "build-pandad-runtime-source",
         "build-pandad-firmware-spi-fixture",
         "check-pandad-safety-padding",
+        "check-pandad-device",
+        "check-pandad-protocol",
+        "check-pandad-can-io",
     ]
     .iter()
     .map(|s| bin.join(s))
@@ -373,10 +377,16 @@ impl<R: Runner> Controller<'_, R> {
     fn command(&mut self, name: &str, argv: Vec<OsString>, growth: u64) -> Result<Vec<u8>> {
         space(&self.options.output, growth, &mut *self.stdout)?;
         fs::create_dir_all(&self.commands)?;
+        let native_checker = matches!(name, "check-device" | "check-protocol" | "check-can_io");
         let command = format!(
-            "{{\"argv\": {}, \"cwd\": {}}}",
+            "{{\"argv\": {}, \"cwd\": {}, \"native_source_root\": {}}}",
             json_args(argv.iter().cloned())?,
             json_os(self.options.root.as_os_str())?,
+            if native_checker {
+                json_os(self.options.root.as_os_str())?
+            } else {
+                "null".into()
+            },
         );
         save_json_text(
             &self.commands.join(format!("{name}.command.json")),
@@ -384,6 +394,16 @@ impl<R: Runner> Controller<'_, R> {
         )?;
         let mut spec = CommandSpec::new_os(argv, Duration::from_secs(600));
         spec.cwd = Some(self.options.root.clone());
+        if native_checker {
+            spec.os_env = Some(
+                [(
+                    "OPENPILOT_RUST_ROOT".into(),
+                    self.options.root.as_os_str().to_owned(),
+                )]
+                .into_iter()
+                .collect(),
+            );
+        }
         let stdout = self.commands.join(format!("{name}.stdout"));
         let stderr = self.commands.join(format!("{name}.stderr"));
         let captured = match Bounded(&mut *self.runner).run_to_files(&spec, &stdout, &stderr) {
@@ -442,6 +462,24 @@ impl<R: Runner> Controller<'_, R> {
         Ok(())
     }
     fn check(&mut self, name: &str, rest: Vec<OsString>, script: Option<&str>) -> Result<()> {
+        let native = match (name, script) {
+            ("device", None) => Some("check-pandad-device"),
+            ("protocol", None) => Some("check-pandad-protocol"),
+            ("can_io", None) => Some("check-pandad-can-io"),
+            _ => None,
+        };
+        if let Some(binary) = native {
+            self.command(
+                &format!("check-{name}"),
+                args(
+                    &self.bin(binary),
+                    rest.into_iter()
+                        .chain(arg_path("--output", &self.output(name))),
+                ),
+                512,
+            )?;
+            return Ok(());
+        }
         let script = script
             .map(str::to_owned)
             .unwrap_or_else(|| format!("check_pandad_{name}.py"));

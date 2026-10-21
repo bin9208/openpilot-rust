@@ -1388,7 +1388,7 @@ jobs:
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
           set -o pipefail
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux -p openpilot-process-supervision -p openpilot-logmessaged -p openpilot-dev-tools --features openpilot-dev-tools/pandad-safety-padding-native,openpilot-dev-tools/panda-ci-native --bins --examples --locked --message-format=json 2> "$RUNNER_TEMP/panda-native/native-build.log" | tee "$RUNNER_TEMP/panda-native/native-build.jsonl"
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux -p openpilot-process-supervision -p openpilot-logmessaged -p openpilot-dev-tools --features openpilot-dev-tools/pandad-safety-padding-native,openpilot-dev-tools/panda-ci-native,openpilot-dev-tools/pandad-device-native,openpilot-dev-tools/pandad-protocol-native,openpilot-dev-tools/pandad-can-io-native --bins --examples --locked --message-format=json 2> "$RUNNER_TEMP/panda-native/native-build.log" | tee "$RUNNER_TEMP/panda-native/native-build.jsonl"
       - name: Require native Panda orchestration, original admissions and absent-source comparisons
         run: |
           set -euo pipefail

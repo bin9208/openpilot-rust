@@ -347,6 +347,9 @@ pub mod pandad_safety_padding_check;
 #[cfg(all(target_os = "linux", feature = "pandad-device-native"))]
 pub mod pandad_device_check;
 
+#[cfg(all(target_os = "linux", feature = "pandad-device-native"))]
+pub mod pandad_device_fixture;
+
 #[cfg(all(target_os = "linux", feature = "pandad-protocol-native"))]
 pub mod pandad_protocol_check;
 

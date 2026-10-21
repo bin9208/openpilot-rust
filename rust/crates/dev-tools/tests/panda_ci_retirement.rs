@@ -65,7 +65,7 @@ const ROSTER: [&str; 38] = [
     "check-composed-explicit",
     "check-composed-default",
 ];
-const BINARIES: [&str; 13] = [
+const BINARIES: [&str; 16] = [
     "openpilot-pandad",
     "openpilot-pandad-supervisor",
     "openpilot-process-child",
@@ -79,6 +79,9 @@ const BINARIES: [&str; 13] = [
     "build-pandad-runtime-source",
     "build-pandad-firmware-spi-fixture",
     "check-pandad-safety-padding",
+    "check-pandad-device",
+    "check-pandad-protocol",
+    "check-pandad-can-io",
 ];
 const EXAMPLES: [&str; 17] = [
     "panda_protocol",
@@ -166,6 +169,7 @@ fn source_paths(root: &Path) -> BTreeSet<PathBuf> {
         "pandad_safety_padding_check/ownership.rs",
         "bin/check_pandad_device.rs",
         "pandad_device_check/ownership.rs",
+        "bin/stage_pandad_device_reference.rs",
         "bin/check_pandad_protocol.rs",
         "pandad_protocol_check/cases.rs",
         "pandad_protocol_check/ownership.rs",
@@ -290,8 +294,10 @@ fn prepare_private_root(repo: &Path, private: &Path, expect_absent: bool) -> Val
         "python_fs.rs",
         "bin/check_pandad_device.rs",
         "pandad_device_check/ownership.rs",
+        "bin/stage_pandad_device_reference.rs",
         "pandad_protocol_check.rs",
         "pandad_can_io_check.rs",
+        "pandad_device_fixture.rs",
         "bin/check_pandad_protocol.rs",
         "pandad_protocol_check/cases.rs",
         "pandad_protocol_check/ownership.rs",
@@ -335,7 +341,7 @@ fn prepare_private_root(repo: &Path, private: &Path, expect_absent: bool) -> Val
         .map(|(name, hash)| (name.clone(), hash.clone()))
         .collect::<BTreeMap<_, _>>();
     assert_eq!(copied, expected_copied);
-    assert_eq!(copied.len(), 162);
+    assert_eq!(copied.len(), 164);
     openpilot_disk_space::inspect(private, 2 * GIB)
         .unwrap()
         .require()
@@ -455,7 +461,7 @@ fn elf_seals(checker: &Path, binaries: &Path) -> BTreeMap<PathBuf, HeldElf> {
     for path in paths {
         seals.insert(path.clone(), HeldElf::open(&path));
     }
-    assert_eq!(seals.len(), 31);
+    assert_eq!(seals.len(), 34);
     seals
 }
 fn normalize(value: &str, root: &Path, checkout_root: &Path, output: &Path) -> String {
@@ -564,7 +570,7 @@ fn run_lane(
     let invocation: Value =
         serde_json::from_slice(&fs::read(output.join("invocation.json")).unwrap()).unwrap();
     assert_eq!(invocation["build_messages_sha256"], sha(messages));
-    assert_eq!(invocation["binary_sha256"].as_object().unwrap().len(), 30);
+    assert_eq!(invocation["binary_sha256"].as_object().unwrap().len(), 33);
     for (path, digest) in invocation["source_sha256"].as_object().unwrap() {
         let source = root.join(path);
         assert!(source.is_file(), "{name}: source disappeared: {path}");

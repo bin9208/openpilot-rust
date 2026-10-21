@@ -175,6 +175,9 @@ impl Fixture {
             "build-pandad-runtime-source",
             "build-pandad-firmware-spi-fixture",
             "check-pandad-safety-padding",
+            "check-pandad-device",
+            "check-pandad-protocol",
+            "check-pandad-can-io",
         ] {
             put(&binaries.join(name), b"sealed fixture executable");
         }
@@ -740,6 +743,38 @@ fn spidev_comparison_uses_fresh_output_active_abi_and_native_json11_stage() {
             .to_string_lossy()
             .into_owned()
     );
+    for (phase, binary, flag, example) in [
+        ("device", "check-pandad-device", "--native", "device"),
+        (
+            "protocol",
+            "check-pandad-protocol",
+            "--binary",
+            "panda_protocol",
+        ),
+        ("can_io", "check-pandad-can-io", "--native", "can_io"),
+    ] {
+        let command_name = format!("check-{phase}");
+        let argv = command_argv(proof, &command_name);
+        assert_eq!(Path::new(&argv[0]), fixture.options.binaries.join(binary));
+        assert_eq!(
+            Path::new(&value(&argv, flag)),
+            fixture.options.binaries.join("examples").join(example)
+        );
+        assert_eq!(Path::new(&value(&argv, "--output")), proof.join(phase));
+        let receipt: Value = serde_json::from_slice(
+            &fs::read(
+                proof
+                    .join("commands")
+                    .join(format!("{command_name}.command.json")),
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            receipt["native_source_root"],
+            fixture.options.root.to_string_lossy().as_ref()
+        );
+    }
     let native_builds = runner
         .names
         .iter()
