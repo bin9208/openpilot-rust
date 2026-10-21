@@ -1,0 +1,46 @@
+name: One-time original updated fixture capture 296
+permissions:
+  contents: read
+jobs:
+  original-fixture:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        ref: 20a8f52e83d85c7c5113c5484179b0c016a034eb
+        fetch-depth: 0
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Capture unchanged original Git and overlay fixture
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = 20a8f52e83d85c7c5113c5484179b0c016a034eb
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        git show "$GITHUB_SHA:.github/workflows/capture_updated_fixtures_original.py" > "$RUNNER_TEMP/capture_updated_fixtures_original.py"
+
+        UPDATED_ORIGINAL_SOURCE_COMMIT=20a8f52e83d85c7c5113c5484179b0c016a034eb python -P "$RUNNER_TEMP/capture_updated_fixtures_original.py"
+        "$RUNNER_TEMP/updated-fixture-original"
+
+        cd "$RUNNER_TEMP/updated-fixture-original"
+
+        sha256sum -c original.sha256
+
+        '
+    - name: Preserve independent original receipt
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: updated-fixture-original-${{ github.sha }}
+        path: ${{ runner.temp }}/updated-fixture-original/
+        if-no-files-found: error
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/updated-fixture-original-once.yml
