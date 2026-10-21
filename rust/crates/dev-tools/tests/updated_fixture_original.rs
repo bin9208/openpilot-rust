@@ -291,3 +291,326 @@ fn overlay_alias_keeps_owned_mount_chmod_umount_and_cleanup_boundaries() {
         .collect::<Vec<_>>();
     assert_eq!(actual, expected);
 }
+
+fn overlay_original() -> Value {
+    let path = PathBuf::from(
+        env::var_os("UPDATED_OVERLAY_ORIGINAL_RECEIPT").expect("original overlay receipt required"),
+    );
+    let bytes = fs::read(path).unwrap();
+    let expected =
+        env::var("UPDATED_OVERLAY_ORIGINAL_SHA256").expect("original overlay SHA256 required");
+    assert_eq!(
+        expected,
+        "3aee09430978c6c2b736bc8bc45c8ce0d049e98f358a7f41e764f01a953606c2"
+    );
+    assert_eq!(sha(&bytes), expected);
+    let receipt: Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(
+        receipt["source_commit"],
+        "ce145d062ad24f71da3e49e9b8b4fc676b35ef41"
+    );
+    assert_eq!(
+        receipt["source_sha256"]["rust/tools/updated_fixtures.py"],
+        "76607e02520f383227264257de0ed8505b9dc12e462227b176f2c919dfec2d60"
+    );
+    receipt
+}
+fn overlay_tree(root: &Path) -> Value {
+    fn visit(root: &Path, at: &Path, result: &mut serde_json::Map<String, Value>) {
+        let mut entries = fs::read_dir(at)
+            .unwrap()
+            .map(|entry| entry.unwrap().path())
+            .collect::<Vec<_>>();
+        entries.sort();
+        for path in entries {
+            let name = path
+                .strip_prefix(root)
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .replace('\\', "/");
+            if name.split('/').any(|part| part == ".git")
+                || name == "bin/sudo"
+                || name == "overlay-commands.jsonl"
+            {
+                continue;
+            }
+            let metadata = fs::symlink_metadata(&path).unwrap();
+            let mode = metadata.permissions().mode() & 0o7777;
+            let value = if metadata.file_type().is_symlink() {
+                json!({"kind":"symlink","mode":mode,"target":fs::read_link(&path).unwrap().to_str().unwrap()})
+            } else if metadata.is_file() {
+                let bytes = fs::read(&path).unwrap();
+                json!({"kind":"file","mode":mode,"raw_hex":sha_hex(&bytes),"sha256":sha(&bytes)})
+            } else if metadata.is_dir() {
+                json!({"kind":"directory","mode":mode})
+            } else {
+                panic!("unsupported fixture entry: {}", path.display());
+            };
+            result.insert(name, value);
+            if metadata.is_dir() {
+                visit(root, &path, result);
+            }
+        }
+    }
+    let mut result = serde_json::Map::new();
+    visit(root, root, &mut result);
+    Value::Object(result)
+}
+fn filtered_original_tree(original: &Value) -> Value {
+    let mut value = original.as_object().unwrap().clone();
+    value.remove("bin/sudo");
+    value.remove("overlay-commands.jsonl");
+    Value::Object(value)
+}
+fn normalized_log(root: &Path) -> String {
+    String::from_utf8(fs::read(root.join("overlay-commands.jsonl")).unwrap())
+        .unwrap()
+        .replace(root.to_str().unwrap(), "<ROOT>")
+}
+fn overlay_command(
+    root: &Path,
+    env: &BTreeMap<std::ffi::OsString, std::ffi::OsString>,
+    args: &[&str],
+) -> std::process::Output {
+    Command::new(root.join("bin/sudo"))
+        .args(args)
+        .envs(env)
+        .output()
+        .unwrap()
+}
+
+#[test]
+fn original_overlay_success_and_repeated_mount_match_raw_receipt() {
+    let original = overlay_original();
+    let temp = tempfile::tempdir().unwrap();
+    let seeded = seed(temp.path()).unwrap();
+    let shim = Path::new(env!("CARGO_BIN_EXE_updated-fixture"));
+    for lane in ["success", "repeat"] {
+        let root = temp.path().join(lane);
+        let prepared = setup(&root, &seeded, Path::new("/usr/bin/true"), shim).unwrap();
+        let workdir = root.join("data/work");
+        fs::create_dir(&workdir).unwrap();
+        let stage = root.join("data/stage");
+        let options = format!(
+            "lowerdir={},upperdir={},workdir={}",
+            root.join("base").display(),
+            root.join("data/upper").display(),
+            workdir.display()
+        );
+        let mount = [
+            "mount",
+            "-t",
+            "overlay",
+            "-o",
+            &options,
+            "none",
+            stage.to_str().unwrap(),
+        ]
+        .into_iter()
+        .map(str::to_owned)
+        .collect::<Vec<_>>();
+        let steps = if lane == "success" {
+            vec![
+                mount.clone(),
+                vec![
+                    "chmod".into(),
+                    "755".into(),
+                    stage.join("launch_env.sh").to_str().unwrap().to_owned(),
+                ],
+                vec![
+                    "umount".into(),
+                    "-l".into(),
+                    stage.to_str().unwrap().to_owned(),
+                ],
+                vec![
+                    "rm".into(),
+                    "-rf".into(),
+                    stage.to_str().unwrap().to_owned(),
+                ],
+            ]
+        } else {
+            vec![mount.clone(), mount]
+        };
+        for (index, args) in steps.iter().enumerate() {
+            let borrowed = args.iter().map(String::as_str).collect::<Vec<_>>();
+            let result = overlay_command(&root, &prepared.environment, &borrowed);
+            let expected = &original["scenarios"][lane][index];
+            assert_eq!(
+                result.status.code(),
+                expected["exit"]
+                    .as_i64()
+                    .and_then(|n| i32::try_from(n).ok()),
+                "{lane} {index}: {}",
+                String::from_utf8_lossy(&result.stderr)
+            );
+            assert_eq!(
+                sha_hex(&result.stdout),
+                expected["stdout_hex"],
+                "{lane} {index} stdout"
+            );
+            if result.status.success() {
+                assert_eq!(
+                    sha_hex(&result.stderr),
+                    expected["stderr_hex"],
+                    "{lane} {index} stderr"
+                );
+            }
+            assert_eq!(
+                normalized_log(&root),
+                expected["log"]["normalized_root_text"],
+                "{lane} {index} raw spaced JSONL"
+            );
+            assert_eq!(
+                overlay_tree(&root),
+                filtered_original_tree(&expected["tree"]),
+                "{lane} {index} complete file bytes/modes/symlinks"
+            );
+        }
+    }
+}
+
+#[test]
+fn original_destination_symlink_escapes_are_rejected_without_touching_private_siblings() {
+    let original = overlay_original();
+    assert_eq!(original["scenarios"]["symlink-outside"][0]["exit"], 0);
+    assert_eq!(
+        original["scenarios"]["nested-symlink-outside"][0]["exit"],
+        0
+    );
+    assert_ne!(
+        original["scenarios"]["nested_outside_before"]["sha256"],
+        original["scenarios"]["nested_outside_after"]["sha256"]
+    );
+    let temp = tempfile::tempdir().unwrap();
+    let seeded = seed(temp.path()).unwrap();
+    let shim = Path::new(env!("CARGO_BIN_EXE_updated-fixture"));
+    for lane in ["symlink-outside", "nested-symlink-outside"] {
+        let root = temp.path().join(lane);
+        let prepared = setup(&root, &seeded, Path::new("/usr/bin/true"), shim).unwrap();
+        let workdir = root.join("data/work");
+        fs::create_dir(&workdir).unwrap();
+        let stage = root.join("data/stage");
+        let sibling = temp.path().join(format!("{lane}-private-sibling"));
+        fs::create_dir(&sibling).unwrap();
+        let sentinel = if lane == "symlink-outside" {
+            let sentinel = sibling.join("sentinel");
+            fs::write(&sentinel, b"private sibling, never a host path\n").unwrap();
+            std::os::unix::fs::symlink(&sibling, &stage).unwrap();
+            sentinel
+        } else {
+            let sentinel = sibling.join("version.h");
+            fs::write(
+                &sentinel,
+                b"private original contents; outside the fixture root\n",
+            )
+            .unwrap();
+            fs::create_dir_all(stage.join("common")).unwrap();
+            std::os::unix::fs::symlink(&sentinel, stage.join("common/version.h")).unwrap();
+            sentinel
+        };
+        let before = fs::read(&sentinel).unwrap();
+        let options = format!(
+            "lowerdir={},upperdir={},workdir={}",
+            root.join("base").display(),
+            root.join("data/upper").display(),
+            workdir.display()
+        );
+        let result = overlay_command(
+            &root,
+            &prepared.environment,
+            &[
+                "mount",
+                "-t",
+                "overlay",
+                "-o",
+                &options,
+                "none",
+                stage.to_str().unwrap(),
+            ],
+        );
+        assert!(
+            !result.status.success(),
+            "{lane} followed destination symlink"
+        );
+        assert_eq!(
+            fs::read(&sentinel).unwrap(),
+            before,
+            "{lane} changed outside sentinel"
+        );
+        let expected_log = original["scenarios"][lane][0]["log"]["normalized_root_text"]
+            .as_str()
+            .unwrap()
+            .replace(
+                original["temp_root"].as_str().unwrap(),
+                temp.path().to_str().unwrap(),
+            );
+        assert_eq!(normalized_log(&root), expected_log);
+    }
+}
+
+#[test]
+fn original_overlay_error_cases_retain_ordered_spaced_logs_and_owned_tree() {
+    let original = overlay_original();
+    let temp = tempfile::tempdir().unwrap();
+    let seeded = seed(temp.path()).unwrap();
+    let root = temp.path().join("errors");
+    let shim = Path::new(env!("CARGO_BIN_EXE_updated-fixture"));
+    let prepared = setup(&root, &seeded, Path::new("/usr/bin/true"), shim).unwrap();
+    fs::create_dir(root.join("data/work")).unwrap();
+    let outside = temp.path().join("private-outside");
+    fs::create_dir(&outside).unwrap();
+    let sentinel = outside.join("sentinel");
+    fs::write(&sentinel, b"private sibling, never a host path\n").unwrap();
+    let before = fs::read(&sentinel).unwrap();
+    let stage = root.join("data/stage");
+    let cases = vec![
+        vec!["echo".into(), "forbidden".into()],
+        vec![
+            "rm".into(),
+            "-rf".into(),
+            outside.to_str().unwrap().to_owned(),
+        ],
+        vec![
+            "mount".into(),
+            "-t".into(),
+            "overlay".into(),
+            "-o".into(),
+            format!("lowerdir={}", root.join("base").display()),
+            "none".into(),
+            stage.to_str().unwrap().to_owned(),
+        ],
+        vec!["mount".into(), "-t".into(), "overlay".into()],
+    ];
+    for (index, args) in cases.iter().enumerate() {
+        let borrowed = args.iter().map(String::as_str).collect::<Vec<_>>();
+        let result = overlay_command(&root, &prepared.environment, &borrowed);
+        let expected = &original["scenarios"]["errors"][index];
+        assert_eq!(
+            result.status.code(),
+            expected["exit"]
+                .as_i64()
+                .and_then(|n| i32::try_from(n).ok())
+        );
+        assert_eq!(sha_hex(&result.stdout), expected["stdout_hex"]);
+        assert!(!result.stderr.is_empty(), "error case must explain failure");
+        let expected_log = expected["log"]["normalized_root_text"]
+            .as_str()
+            .unwrap()
+            .replace(
+                original["temp_root"].as_str().unwrap(),
+                temp.path().to_str().unwrap(),
+            );
+        assert_eq!(
+            normalized_log(&root),
+            expected_log,
+            "error {index} raw spaced JSONL"
+        );
+        assert_eq!(
+            overlay_tree(&root),
+            filtered_original_tree(&expected["tree"]),
+            "error {index} tree"
+        );
+        assert_eq!(fs::read(&sentinel).unwrap(), before);
+    }
+}

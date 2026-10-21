@@ -11,7 +11,7 @@ use std::{
     ffi::{OsStr, OsString},
     fs::{self, OpenOptions},
     io::Write,
-    os::unix::fs::{symlink, PermissionsExt},
+    os::unix::fs::{symlink, OpenOptionsExt, PermissionsExt},
     path::{Component, Path, PathBuf},
     time::Duration,
 };
@@ -324,6 +324,7 @@ fn owned(root: &Path, arg: &OsStr) -> Result<PathBuf> {
 }
 
 fn copytree(source: &Path, target: &Path) -> Result<()> {
+    reject_destination_symlinks(source, target)?;
     fs::create_dir_all(target)?;
     for entry in fs::read_dir(source)? {
         let entry = entry?;
@@ -335,13 +336,75 @@ fn copytree(source: &Path, target: &Path) -> Result<()> {
         } else if metadata.is_dir() {
             copytree(&from, &to)?;
         } else if metadata.is_file() {
-            fs::copy(&from, &to)?;
+            // Opening the final component with NOFOLLOW preserves the preflight
+            // boundary if a private destination changes before this write.
+            let mut input = fs::File::open(&from)?;
+            let mut output = OpenOptions::new()
+                .write(true)
+                .create(true)
+                .truncate(true)
+                .custom_flags(rustix::fs::OFlags::NOFOLLOW.bits() as i32)
+                .open(&to)?;
+            std::io::copy(&mut input, &mut output)?;
+            fs::set_permissions(&to, metadata.permissions())?;
         } else {
             return Err("unsupported overlay fixture source file".into());
         }
     }
     fs::set_permissions(target, fs::metadata(source)?.permissions())?;
     Ok(())
+}
+
+fn reject_destination_symlinks(source: &Path, target: &Path) -> Result<()> {
+    if fs::symlink_metadata(target).is_ok_and(|metadata| metadata.file_type().is_symlink()) {
+        return Err(format!("overlay target symlink: {}", target.display()).into());
+    }
+    for entry in fs::read_dir(source)? {
+        let entry = entry?;
+        let from = entry.path();
+        let to = target.join(entry.file_name());
+        if fs::symlink_metadata(&to).is_ok_and(|metadata| metadata.file_type().is_symlink()) {
+            return Err(format!("overlay destination symlink: {}", to.display()).into());
+        }
+        if fs::symlink_metadata(&from)?.is_dir() {
+            reject_destination_symlinks(&from, &to)?;
+        }
+    }
+    Ok(())
+}
+
+fn python_json_string(value: &str) -> String {
+    let mut result = String::from("\"");
+    for character in value.chars() {
+        match character {
+            '"' => result.push_str("\\\""),
+            '\\' => result.push_str("\\\\"),
+            '\n' => result.push_str("\\n"),
+            '\r' => result.push_str("\\r"),
+            '\t' => result.push_str("\\t"),
+            '\u{8}' => result.push_str("\\b"),
+            '\u{c}' => result.push_str("\\f"),
+            value if value < '\u{20}' || value >= '\u{80}' => {
+                let mut encoded = [0; 2];
+                for unit in value.encode_utf16(&mut encoded).iter() {
+                    result.push_str(&format!("\\u{unit:04x}"));
+                }
+            }
+            value => result.push(value),
+        }
+    }
+    result.push('"');
+    result
+}
+
+fn python_json_args(args: &[&str]) -> String {
+    format!(
+        "[{}]",
+        args.iter()
+            .map(|arg| python_json_string(arg))
+            .collect::<Vec<_>>()
+            .join(", ")
+    )
 }
 
 /// This entrypoint is installed at the owned PATH `sudo` alias. It never calls sudo or mount.
@@ -356,7 +419,7 @@ pub fn sudo_cli() -> Result<()> {
         .map(|arg| arg.to_str().ok_or("non-UTF-8 overlay argument"))
         .collect::<std::result::Result<Vec<_>, _>>()?;
     let mut file = OpenOptions::new().create(true).append(true).open(log)?;
-    writeln!(file, "{}", serde_json::to_string(&strings)?)?;
+    writeln!(file, "{}", python_json_args(&strings))?;
     match strings.as_slice() {
         ["rm", "-rf", target] => {
             let target = owned(&root, OsStr::new(target))?;
