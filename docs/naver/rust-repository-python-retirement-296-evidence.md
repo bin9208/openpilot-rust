@@ -5677,3 +5677,31 @@ Full native-model job119537355539 also fails the existing driver float compariso
 after the new original-byte regression and all preflight/policy/Clippy controls
 pass, independently reproducing #476 on the full PR checkout. Integration39691148113
 passes; Fast39691148018 fails. Remaining long full jobs are still running.
+
+
+### Native Kalman candidate mathematical proof and actual deletion gate (2026-10-22)
+
+[39693981650](https://github.com/bin9208/openpilot-rust/actions/runs/39693981650)
+passes at source44ece72556360fa43cd1a1fd14946b11e79aef34, workflow
+7016b2a74b92ebbf35982beca7aaf473eb098faf. Independent/state-constant denominator
+simplification fixes the observed zero-speed failure without changing expected
+values or tolerance. Pure corpus/source/byte controls, strict Clippy and actual
+native bins pass; fresh compiled Pose and Car both retain exact constant bits,
+all function values and singular/NaN/infinite classifications. Parent independently
+audits artifact12390446123:2428837B/128CRCs/8663033B expanded,
+SHA2562d816b345122a4443ce9ca82f3ad9032958c759fd716f56b87e49c7e66bc871f.
+All30 frozen original bodies match their manifest; both native passes match
+complete11/19-file rosters. Both CLI invocations, both rustc invocations and both
+comparison invocations exit0. Emitted harnesses contain200Pose/558Car complete
+function comparisons (758total) plus constant-bit checks. This proof precedes
+Python source deletion and does not itself accept retirement.
+
+The next candidate removes only generate_pose_model.py/generate_car_model.py,
+requires real absence (including symlinks), and runs the same native CLIs from
+both the actual checkout and an empty source-absent working directory. The full
+fresh-output gate is now maintained inside required workspace, with four explicit
+growth reservations; disk-policy count517→521, no existing budget changed.
+Installed runtime modules remain unchanged, and live original mathematical
+source fingerprints guard future drift while their Python consumers remain
+pending. Actual deletion/full maintained-policy acceptance and inventory update
+remain pending hosted execution.

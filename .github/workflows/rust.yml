@@ -737,6 +737,32 @@ jobs:
           name: rust-ci-receipt-metadata-evidence
           path: ${{ runner.temp }}/ci-receipt-metadata/
           if-no-files-found: warn
+      - name: Verify native Kalman generators against fixed independent original files
+        env:
+          KALMAN_ORIGINAL_ROOT: ${{ github.workspace }}/rust/crates/dev-tools/tests/fixtures/kalman-generators-original
+          KALMAN_RETIRED_ROOT: ${{ github.workspace }}
+          KALMAN_POSE_BINARY: ${{ github.workspace }}/rust/target/debug/generate-pose-model
+          KALMAN_CAR_BINARY: ${{ github.workspace }}/rust/target/debug/generate-car-model
+          KALMAN_GENERATOR_EVIDENCE: ${{ runner.temp }}/kalman-generators-native-296
+        run: |
+          set -euo pipefail
+          export KALMAN_RUSTC="$(rustup which rustc)"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 3072
+          cargo build --locked -p openpilot-dev-tools --features kalman-model-generator-native --bin generate-pose-model --bin generate-car-model
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --locked -p openpilot-dev-tools --features kalman-model-generator-native --test kalman_model_generator -- --nocapture
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --locked -p openpilot-dev-tools --features kalman-model-generator-native --lib --bin generate-pose-model --bin generate-car-model --test kalman_model_generator -- -D warnings
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 2048
+          cargo test --locked -p openpilot-dev-tools --features kalman-model-generator-native --test kalman_model_generator fresh_native_files_compile_and_match_original_functions_and_constant_bits -- --ignored --exact --nocapture
+      - name: Preserve native Kalman generator comparisons
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-kalman-generators-evidence
+          path: ${{ runner.temp }}/kalman-generators-native-296/
+          include-hidden-files: true
+          if-no-files-found: warn
       - name: Check process-stat parser allocation regression
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 64

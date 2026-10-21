@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 517);
+    assert_eq!(text.matches(marker).count(), 521);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -345,6 +345,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut driving_retirement = vec![];
     let mut model_build_reserve = vec![];
     let mut model_family_retirement = vec![];
+    let mut kalman_generators = vec![];
     let model_family_start = lines
         .iter()
         .position(|line| *line == "  model-family-retirement:")
@@ -364,6 +365,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 .iter()
                 .rev()
                 .find(|line| line.starts_with("      - name:"));
+            if step == Some(&"      - name: Verify native Kalman generators against fixed independent original files") {
+                kalman_generators.push(tail.to_owned());
+                continue;
+            }
             if step == Some(&"      - name: Verify native driving four-source retirement with fixed independent observations") {
                 driving_retirement.push(tail.to_owned());
                 continue;
@@ -911,6 +916,15 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             }
         }
     }
+    assert_eq!(
+        kalman_generators,
+        [
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 3072",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 512",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 512",
+            " --path \"$RUNNER_TEMP\" --growth-mib 2048",
+        ]
+    );
     assert_eq!(
         driving_retirement,
         [

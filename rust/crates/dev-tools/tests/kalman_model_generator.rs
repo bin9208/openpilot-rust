@@ -517,6 +517,17 @@ fn main() {
 fn fresh_native_files_compile_and_match_original_functions_and_constant_bits() {
     let original_root = required_path("KALMAN_ORIGINAL_ROOT");
     let original_snapshot = admit_original_root(&original_root);
+    let retired_root = required_path("KALMAN_RETIRED_ROOT");
+    let assert_absent = |root: &Path| {
+        for name in ["generate_pose_model.py", "generate_car_model.py"] {
+            let result = fs::symlink_metadata(root.join("rust/tools").join(name));
+            assert!(
+                result.is_err_and(|error| error.kind() == std::io::ErrorKind::NotFound),
+                "retired Python generator present: {name}"
+            );
+        }
+    };
+    assert_absent(&retired_root);
     let evidence_root = required_path("KALMAN_GENERATOR_EVIDENCE");
     let rustc = required_path("KALMAN_RUSTC");
     fs::create_dir_all(&evidence_root).unwrap();
@@ -531,6 +542,9 @@ fn fresh_native_files_compile_and_match_original_functions_and_constant_bits() {
         fs::create_dir(&directory).unwrap();
         let snapshot = copy_original_roster(&original, &directory.join("original"), model);
         let binary = required_path(binary_name);
+        let private = directory.join("source-absent-working-directory");
+        fs::create_dir(&private).unwrap();
+        assert_absent(&private);
         for pass in ["native-a", "native-b"] {
             let output = directory.join(pass);
             let mut spec = CommandSpec::new_os(
@@ -541,6 +555,11 @@ fn fresh_native_files_compile_and_match_original_functions_and_constant_bits() {
                 ],
                 Duration::from_secs(300),
             );
+            spec.cwd = Some(if pass == "native-a" {
+                retired_root.clone()
+            } else {
+                private.clone()
+            });
             spec.env.insert("PATH".into(), "/nonexistent".into());
             run_recorded(pass, &directory, spec);
         }
@@ -584,4 +603,5 @@ fn fresh_native_files_compile_and_match_original_functions_and_constant_bits() {
         );
     }
     assert_eq!(admit_original_root(&original_root), original_snapshot);
+    assert_absent(&retired_root);
 }
