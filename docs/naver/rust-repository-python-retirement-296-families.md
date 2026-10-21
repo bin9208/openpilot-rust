@@ -26,7 +26,7 @@ they are not completed functionality. All families below still contain work.
 Additional scope outside the baseline source inventory remains explicit:
 `selfdrived_helpers_source.py`, `tests/test_selfdrived_source.py`,
 `tests/test_params_native_stager.py` under `rust/tools`, six car-porting notebooks,
-and the 38 currently recorded pending entries in the [execution-edge inventory](rust-repository-python-retirement-296-execution-edges.tsv).
+and the 37 currently recorded pending entries in the [execution-edge inventory](rust-repository-python-retirement-296-execution-edges.tsv).
 Those include generated extensionless helpers, dynamic launch, embedded Python
 and vendor release/build paths. The22October follow-up adds34 explicit sites
 (30 missed paths, one generated-exporter subedge and three bootstrap retry sites).
@@ -94,6 +94,13 @@ three partial baseline entries.
    CLI, maintained script caller and main CI policy integration are accepted
    in39674181956. This closes one execution edge without changing the baseline
    source count.
+
+7. Native soundd source staging is accepted39688832018 at7219cf5e7: exact
+   original-heredoc/native CLI20file outputs/173533B,21manifest pins and five
+   controls plus strict Clippy. Existing seven audio modes in each root and
+  22closed native execs/Python0 per runtime lane pass. This closes one embedded
+   staging edge, preserves the full checker/finalization/source/ELF contract and
+   does not retire remaining audio-job Python binding/policy consumers.
 
 ## Evidence reuse and delivery
 
