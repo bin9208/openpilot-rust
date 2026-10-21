@@ -128,7 +128,7 @@ fn scenario(mode: &str) {
         rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR,
     )
     .unwrap();
-    fs::write(&helper, b"#!/bin/sh\nset -eu\n[ \"$1\" = sysctl ]\n[ \"$2\" = net.ipv4.ip_forward=0 ]\nexport WIFI_CHILD_NONCE=\"$4\"\n/bin/sleep 120 &\nsleeper=$!\nprintf '%s %s %s\\n' \"$$\" \"$sleeper\" \"$4\" > \"$3\"\nIFS= read -r mode < \"$5\"\nif [ \"$mode\" = exit ]; then exit 0; fi\nif [ \"$mode\" = complete ]; then kill \"$sleeper\"; wait \"$sleeper\" || :; exit 17; fi\nwait \"$sleeper\"\n").unwrap();
+    fs::write(&helper, b"#!/bin/sh\nset -eu\n[ \"$1\" = sysctl ]\n[ \"$2\" = net.ipv4.ip_forward=0 ]\nexport WIFI_CHILD_NONCE=\"$4\"\n/bin/sleep 120 &\nsleeper=$!\nprintf '%s %s %s\\n' \"$$\" \"$sleeper\" \"$4\" > \"$3.pending\"\n/bin/mv -- \"$3.pending\" \"$3\"\nIFS= read -r mode < \"$5\"\nif [ \"$mode\" = exit ]; then exit 0; fi\nif [ \"$mode\" = complete ]; then kill \"$sleeper\"; wait \"$sleeper\" || :; exit 17; fi\nwait \"$sleeper\"\n").unwrap();
     let _cleanup = NonceCleanup(nonce.clone());
     let command = CapturedCommand {
         launcher,
@@ -152,6 +152,8 @@ fn scenario(mode: &str) {
     )
     .unwrap();
     let leader = Identity::open(Pid::from_child(&child.0.process));
+    // Publish only a closed, complete record: opening the final pathname before
+    // printf writes it lets this observer read an empty acknowledgement.
     wait_for(|| ready.is_file(), "owned helper acknowledgement");
     let record = fs::read_to_string(&ready).unwrap();
     let fields = record.split_whitespace().collect::<Vec<_>>();
