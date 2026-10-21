@@ -299,7 +299,7 @@ fn run_native_upload_cases(config: &UploadNativeInputs<'_>, rows: &[Value]) -> R
     let mut runner = NativeRunner;
     let direct_output = config.output.join("direct-native");
     fs::create_dir(&direct_output)?;
-    for (name, row) in MODES.iter().zip(&rows) {
+    for (name, row) in MODES.iter().zip(rows) {
         let expected_requests = row["source_requests"]
             .as_array()
             .ok_or("missing original upload requests")?;
