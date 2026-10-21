@@ -117,6 +117,30 @@ pub fn assert_equivalent(source: &Value, native: &Value) -> Result<usize> {
             .cloned()
             .collect(),
     );
+    // Python compares 5400.0 and 5400 as equal. The native snapshot writes
+    // integral wait seconds as JSON integers; accept only that exact numeric
+    // equivalence at the wait field, keeping every other field strict.
+    if let (Some(source_rows), Some(native_rows)) = (
+        source["snapshots"].as_array(),
+        native["snapshots"].as_array(),
+    ) {
+        for (index, (source_row, native_row)) in source_rows.iter().zip(native_rows).enumerate() {
+            let source_wait = &source_row["wait"];
+            let native_wait = &native_row["wait"];
+            if let (Some(source_number), Some(source_float), Some(native_int)) = (
+                source_wait.as_number(),
+                source_wait.as_f64(),
+                native_wait.as_u64(),
+            ) {
+                if source_number.is_f64()
+                    && native_int <= (1_u64 << 53)
+                    && source_float == native_int as f64
+                {
+                    expected["snapshots"][index]["wait"] = native_wait.clone();
+                }
+            }
+        }
+    }
     require(
         native == &expected,
         "source/native mismatch outside preserved staging-root lifecycle",
@@ -331,8 +355,7 @@ fn one(execution: &Execution<'_>) -> Result<Value> {
     let last = result
         .stdout
         .split(|byte| *byte == b'\n')
-        .filter(|line| !line.is_empty())
-        .next_back()
+        .rfind(|line| !line.is_empty())
         .ok_or("updater result JSON missing")?;
     let value = updated_fixture::normalize(&serde_json::from_slice(last)?, root)?;
     output_value(&value, &stem.with_extension("json"))?;

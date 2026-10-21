@@ -89,6 +89,23 @@ fn comparison_accepts_only_exact_obsolete_staging_removal() {
 }
 
 #[test]
+fn python_integral_wait_equality_does_not_change_other_snapshot_fields() {
+    let obsolete = json!({"argv":["sudo","rm","-rf","<ROOT>/data/stage"],"cwd":null});
+    let source =
+        json!({"commands":[obsolete],"snapshots":[{"wait":5400.0,"consistent":true}],"agnos":[]});
+    let native = json!({"commands":[],"snapshots":[{"wait":5400,"consistent":true}],"agnos":[]});
+    assert_eq!(assert_equivalent(&source, &native).unwrap(), 1);
+    for wrong_wait in [json!(5399), json!(5401), json!("5400"), json!(null)] {
+        let mut changed = native.clone();
+        changed["snapshots"][0]["wait"] = wrong_wait;
+        assert!(assert_equivalent(&source, &changed).is_err());
+    }
+    let mut changed = native;
+    changed["snapshots"][0]["consistent"] = json!(false);
+    assert!(assert_equivalent(&source, &changed).is_err());
+}
+
+#[test]
 fn original_and_native_cli_reject_and_help_actions_match() {
     let receipts = required("UPDATED_CHECK_CLI_OUTPUT");
     fs::create_dir_all(&receipts).unwrap();
