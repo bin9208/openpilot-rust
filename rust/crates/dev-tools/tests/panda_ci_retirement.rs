@@ -252,6 +252,8 @@ fn run_lane(
         "OPENPILOT_RUST_ROOT".into(),
         root.to_str().unwrap().to_owned(),
     );
+    spec.env
+        .insert("PWD".into(), root.to_str().unwrap().to_owned());
     let captured = NativeRunner.run(&spec).unwrap();
     fs::write(evidence.join(format!("{name}.stdout")), &captured.stdout).unwrap();
     fs::write(evidence.join(format!("{name}.stderr")), &captured.stderr).unwrap();
@@ -390,6 +392,21 @@ fn same_elf_checkout_and_private_checker_absent_roots_complete_all_original_phas
     };
     source_state(&repo, expect_absent);
     source_state(&private, true);
+    let metadata_path = private.join("build.json");
+    let metadata_sha = sha(&metadata_path);
+    let metadata: Value = serde_json::from_slice(&fs::read(&metadata_path).unwrap()).unwrap();
+    let manifest: Value = serde_json::from_slice(
+        &fs::read(private.parent().unwrap().join("private-root-manifest.json")).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        manifest["private_build_metadata_sha256"].as_str(),
+        Some(metadata_sha.as_str())
+    );
+    assert_eq!(
+        manifest["private_build_metadata"]["openpilot"]["git_commit"],
+        metadata["openpilot"]["git_commit"]
+    );
     let entry = Path::new("rust/crates/dev-tools/src/bin/check_pandad_ci.rs");
     assert!(repo.join(entry).is_file() && private.join(entry).is_file());
     let entry_sha = sha(&repo.join(entry));
@@ -407,6 +424,7 @@ fn same_elf_checkout_and_private_checker_absent_roots_complete_all_original_phas
     let (checkout, checkout_commands, checkout_result) = run_lane("checkout", shared);
     source_state(&repo, expect_absent);
     source_state(&private, true);
+    assert_eq!(sha(&metadata_path), metadata_sha);
     let (absent_lane, absent_commands, private_result) = run_lane(
         "private",
         LaneInputs {
@@ -416,6 +434,7 @@ fn same_elf_checkout_and_private_checker_absent_roots_complete_all_original_phas
     );
     source_state(&repo, expect_absent);
     source_state(&private, true);
+    assert_eq!(sha(&metadata_path), metadata_sha);
     assert_eq!(
         checkout_commands, absent_commands,
         "same-ELF phase argv changed"
