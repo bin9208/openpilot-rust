@@ -23,11 +23,11 @@ jobs:
       with:
         fetch-depth: 0
         persist-credentials: false
-        ref: 706e2686153632304dd0d01286f8d117039f8f71
+        ref: df374b0abde72e93759bc2a2168505b5615f4d7a
     - name: Bind exact reviewed source
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = 706e2686153632304dd0d01286f8d117039f8f71
+        test "$(git rev-parse HEAD)" = df374b0abde72e93759bc2a2168505b5615f4d7a
 
         mkdir "$RUNNER_TEMP/current-ci-contracts-296"
 
