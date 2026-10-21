@@ -21,6 +21,12 @@ pub fn thread_cpu() -> Result<f64, Error> {
     )?)
 }
 
+pub fn process_cpu() -> Result<f64, Error> {
+    Ok(openpilot_beepd::monotonic_seconds(
+        rustix::time::clock_gettime(rustix::time::ClockId::ProcessCPUTime),
+    )?)
+}
+
 pub fn timestamp() -> Result<u64, Error> {
     let time = rustix::time::clock_gettime(rustix::time::ClockId::Monotonic);
     u64::try_from(i128::from(time.tv_sec) * 1_000_000_000 + i128::from(time.tv_nsec))

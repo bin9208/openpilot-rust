@@ -62,6 +62,20 @@ pre{white-space:pre-wrap;word-break:break-word}.ok{color:#4ade80}.bad{color:#f87
     </section>
 
     <aside class="card">
+      <h2 data-i18n="computeSettings">ONNX 执行方式</h2>
+      <form id="settings-compute">
+        <label><span data-i18n="computeModeLabel">执行方式</span>
+          <select id="computeMode">
+            <option value="0" data-i18n="computeCpu">CPU（默认）</option>
+            <option value="1" data-i18n="computeGpu">GPU FP32（测试）</option>
+            <option value="2" data-i18n="computeCompare">GPU + CPU 对比诊断</option>
+          </select>
+        </label>
+        <p data-i18n="computeHint">对比诊断每 10 秒增加一次 CPU 计算；请单独比较普通 GPU 模式的资源占用。</p>
+        <button data-i18n="apply">应用</button>
+      </form>
+      <pre id="compute-status" style="white-space:pre-wrap;font-size:12px"></pre>
+
       <h2 data-i18n="vasmSettings">盲区 V-ASM 设置</h2>
       <form id="settings-vasm">
         <label><span data-i18n="threshold">置信度阈值</span> <input id="threshold" type="number" min="0" max="1" step=".01"></label>
@@ -194,6 +208,12 @@ pre{white-space:pre-wrap;word-break:break-word}.ok{color:#4ade80}.bad{color:#f87
 
 <script>
 const zh={
+  computeSettings:"ONNX 执行方式",
+  computeModeLabel:"执行方式",
+  computeCpu:"CPU（默认）",
+  computeGpu:"GPU FP32（测试）",
+  computeCompare:"GPU + CPU 对比诊断",
+  computeHint:"对比诊断每 10 秒增加一次 CPU 计算；请单独比较普通 GPU 模式的资源占用。",
   activationHint:"在 Carrot Web 设置中搜索 ONNX 并开启车道与盲点识别。行驶前等待摄像头是正常状态。",
   vision_unavailable:"无法连接识别服务。请确认 Carrot Web 设置中的 ONNX 车道与盲点识别已开启；本页会自动重试。",
   vision_timeout:"识别服务响应较慢，正在自动重试。",
@@ -252,6 +272,12 @@ const zh={
 };
 
 const en={
+  computeSettings:"ONNX compute",
+  computeModeLabel:"Compute mode",
+  computeCpu:"CPU (default)",
+  computeGpu:"GPU FP32 (test)",
+  computeCompare:"GPU + CPU comparison diagnostics",
+  computeHint:"Comparison diagnostics add one CPU inference per stream every 10 seconds. Measure normal GPU mode separately.",
   activationHint:"Search for ONNX in Carrot Web settings to enable lane and BSD detection. Waiting for cameras before driving starts is normal.",
   vision_unavailable:"Cannot connect to the detection service. Check that ONNX Lane and BSD Detection is enabled in Carrot Web settings; this page will reconnect automatically.",
   vision_timeout:"The detection service is slow to respond. Retrying automatically.",
@@ -310,6 +336,12 @@ const en={
 };
 
 const ko={
+  computeSettings:"ONNX 연산 방식",
+  computeModeLabel:"연산 방식",
+  computeCpu:"CPU (기본)",
+  computeGpu:"GPU FP32 (테스트)",
+  computeCompare:"GPU + CPU 비교 진단",
+  computeHint:"비교 진단은 스트림마다 10초에 한 번 CPU 계산을 추가합니다. 평상시 자원 사용량은 일반 GPU 모드로 비교하세요.",
   activationHint:"Carrot Web 설정에서 ONNX를 검색해 차선·BSD 인식을 켜세요. 주행 시작 전에는 카메라 대기가 정상입니다.",
   vision_unavailable:"인식 서비스에 연결하지 못했습니다. Carrot Web 설정에서 ONNX 차선·BSD 인식이 켜져 있는지 확인하세요. 이 화면은 자동으로 다시 연결합니다.",
   vision_timeout:"인식 서비스의 응답이 늦어지고 있습니다. 자동으로 다시 연결합니다.",
@@ -667,6 +699,15 @@ const handleSettingsSubmit=async e=>{
   }catch(error){hint.textContent=errorMessage(error);}
 };
 
+const computeModeSelect=document.querySelector("#computeMode");
+document.querySelector("#settings-compute").onsubmit=async e=>{
+  e.preventDefault();
+  try{
+    await api("settings",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({computeMode:Number(computeModeSelect.value)})});
+    hint.textContent=text.applied;
+  }catch(error){hint.textContent=errorMessage(error);}
+};
 document.querySelector("#settings-vasm").onsubmit=handleSettingsSubmit;
 document.querySelector("#settings-lane").onsubmit=handleSettingsSubmit;
 
@@ -686,6 +727,8 @@ async function poll(){
     connectionError=null;
     document.querySelector("#connection-error").hidden=true;
     lastStatus=s;
+    if(document.activeElement!==computeModeSelect)computeModeSelect.value=String(s.computeMode??0);
+    document.querySelector("#compute-status").textContent=s.compute?JSON.stringify(s.compute,null,2):text.computeCpu;
     status.textContent=JSON.stringify(s,null,2);
 
     if(document.activeElement!==threshold)threshold.value=s.threshold;

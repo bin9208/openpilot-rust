@@ -44,6 +44,16 @@ const setTimeout=callback=>callback();
 
 
 class RuntimeDeliveryTests(unittest.TestCase):
+  def test_inherited_gpu_provider_checks_stay_in_the_common_serial_path(self):
+    ci = yaml.load((ROOT / '.github/workflows/ci.yml').read_text(), Loader=yaml.BaseLoader)['jobs']
+    native = ci['xiaoge-runtime']
+    self.assertEqual(native['env']['OPENCV_TEST_GPU'], 'reject')
+    scripts = [step.get('run', '') for step in native['steps']]
+    self.assertTrue(any('--bin build-xiaoge-opencv -- --opencl' in script for script in scripts))
+    self.assertTrue(any('--example xiaoge_compute_bench' in script and '-- --assert' in script for script in scripts))
+    self.assertTrue(any('python3 rust/ci/runtime/test_package_policy.py' in step.get('run', '')
+                        for step in ci['fast-checks']['steps']))
+
   def test_ci_only_dm_fixture_does_not_change_reused_producers(self):
     tree = ast.parse((ROOT / 'rust/ci/runtime/package.py').read_text())
     policy = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'source_path_allowed')
@@ -69,11 +79,13 @@ class RuntimeDeliveryTests(unittest.TestCase):
     for changed in ('', entry.replace('original', 'changed'), entry.replace('100644', '100755'), entry.replace('blob', 'commit')):
       self.assertFalse(allowed(path, changed, entry))
     for unknown in ('.github/workflows/unrelated.yml', 'tools/ci/tests/test_other.py', '.lfsconfig.extra',
-                    '.github/workflows/ci.yml.extra', 'rust/crates/opencv-runtime/src/lib.rs'):
+                    '.github/workflows/ci.yml.extra', 'rust/crates/opencv-runtime/native/image.cc',
+                    'rust/ci/runtime/unrelated.py', 'rust/tools/tests/test_unreviewed.py'):
       self.assertFalse(allowed(unknown, 'same', 'same'), unknown)
     for reviewed in ('.github/workflows/ci.yml', '.github/workflows/rust.yml', '.lfsconfig',
                      'rust/crates/xiaoge/tests/cadence.rs', 'tools/ci/tests/test_lfs_endpoint.py',
-                     'tools/ci/tests/test_eintr_cleanup.py', '.github/actions/job-temp/action.yml'):
+                     'tools/ci/tests/test_eintr_cleanup.py', '.github/actions/job-temp/action.yml',
+                     'rust/crates/opencv-runtime/src/lib.rs', 'rust/tools/tests/test_card_ci.py'):
       self.assertTrue(allowed(reviewed), reviewed)
 
   def test_completed_latest_exact_merge_is_admitted(self):

@@ -38,6 +38,17 @@ pub(crate) mod ffi {
         values: Vec<f32>,
     }
 
+    struct DnnReportData {
+        requested_target: u8,
+        device: String,
+        vendor: String,
+        driver: String,
+        priority_status: String,
+        graph_gpu_layers: u32,
+        graph_cpu_layers: u32,
+        opencl_active: bool,
+    }
+
     struct Component {
         x: i32,
         y: i32,
@@ -95,7 +106,9 @@ pub(crate) mod ffi {
         fn mask_polygon(points: &[Point], size: Dimensions) -> Result<Vec<u8>>;
         fn bounds(points: &[Point]) -> Result<Rect>;
         fn mask_image(data: &[u8], mask: &[u8], layout: Layout) -> Result<Vec<u8>>;
-        fn load_onnx(path: &str) -> Result<UniquePtr<Net>>;
+        fn load_onnx_with_target(path: &str, target: u8) -> Result<UniquePtr<Net>>;
+        fn net_report(net: &Net, execution_valid: bool) -> Result<DnnReportData>;
+        fn invalidate_net_report(net: Pin<&mut Net>);
         fn output_names(net: &Net) -> Result<Vec<String>>;
         fn forward(
             net: Pin<&mut Net>,
@@ -210,7 +223,7 @@ mod tests {
     fn cpp_checks_tensor_shape_before_touching_a_net_input() {
         crate::initialize(2).unwrap();
         let path = std::env::var("OPENCV_TEST_LANE_MODEL").expect("real lane ONNX path");
-        let mut net = ffi::load_onnx(&path).unwrap();
+        let mut net = ffi::load_onnx_with_target(&path, 0).unwrap();
         assert!(ffi::forward(net.pin_mut(), &[], &[], &[]).is_err());
         assert!(ffi::forward(net.pin_mut(), &[], &[1, -3, 2], &[]).is_err());
         assert!(ffi::forward(net.pin_mut(), &[], &[i32::MAX; 32], &[]).is_err());

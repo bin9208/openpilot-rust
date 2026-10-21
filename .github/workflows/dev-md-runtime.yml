@@ -67,7 +67,7 @@ jobs:
     needs: verify
     name: Build and seal actual AGNOS runtime
     runs-on: ubuntu-24.04
-    timeout-minutes: 150
+    timeout-minutes: 210
     env:
       RUNTIME_SOURCE_SHA: ${{ needs.verify.outputs.source_sha }}
       GIT_LFS_SKIP_SMUDGE: '1'
@@ -109,7 +109,7 @@ jobs:
                           self.assertTrue(allowed(path))
 
               def test_provider_model_and_unrelated_sources_rejected(self):
-                  for path in ('rust/crates/opencv-runtime/src/lib.rs', 'openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx', 'panda/board/main.c', '.github/workflows/unrelated.yml', 'tools/ci/tests/test_other.py'):
+                  for path in ('rust/crates/opencv-runtime/native/image.cc', 'openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx', 'panda/board/main.c', '.github/workflows/unrelated.yml', 'tools/ci/tests/test_other.py'):
                       with self.subTest(path=path):
                           self.assertFalse(allowed(path))
 
@@ -138,6 +138,7 @@ jobs:
           if not result.wasSuccessful():
               raise SystemExit(1)
           PY
+          python3 rust/ci/runtime/test_package_policy.py
           python3 rust/ci/runtime/package.py source-policy
       - name: Reserve disk for AGNOS and bounded builds
         run: |
@@ -154,6 +155,7 @@ jobs:
           python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/publication-policy.json")); assert p["name"] == "dev-md" and p["protected"] and p["protection"]["enabled"] and {"fast checks","integration gate","check mapped user docs","rust checks","rust aarch64 build"} <= set(p["protection"]["required_status_checks"]["contexts"])'
       - name: Install build tools
         run: |
+          python3 -c 'import os,shutil; assert shutil.disk_usage(os.environ["RUNNER_TEMP"]).free >= (25+4)*2**30, "disk reserve before dependency installation"'
           sudo apt-get update
           sudo apt-get install -y g++-aarch64-linux-gnu clang-18 libclang-18-dev cmake pkg-config capnproto libcapnp-dev libzmq3-dev qemu-user-static android-sdk-libsparse-utils e2fsprogs git-lfs nasm
           sudo apt-get install -y 'libavcodec-dev=7:6.1.1-*' 'libavformat-dev=7:6.1.1-*' 'libavutil-dev=7:6.1.1-*'
@@ -217,6 +219,18 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/agnos-runtime/sysroot-extract.log
             ${{ env.CI_JOB_TEMP }}/agnos-runtime/source-policy.json
             ${{ env.CI_JOB_TEMP }}/agnos-runtime/source-policy-tests.json
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/opencv/receipt.json
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/opencv/*.log
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/opencv/*.command.json
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/opencv/*.exit.json
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/opencv/*.space.json
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/opencv/opencl-capability.json
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/opencv/build/CMakeCache.txt
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/opencv/build/cvconfig.h
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/opencv-baseline.json
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/opencv-smoke/*.log
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/opencv-smoke/*.json
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/opencv-smoke/*.jsonl
           retention-days: 7
       - uses: ./.github/actions/job-temp
         if: always()
@@ -246,6 +260,7 @@ jobs:
           if [ "${{ runner.environment }}" = github-hosted ]; then
             sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           fi
+          python3 -c 'import os,shutil; assert shutil.disk_usage(os.environ["RUNNER_TEMP"]).free >= (25+2)*2**30, "disk reserve before dependency installation"'
           sudo apt-get update
           sudo apt-get install -y qemu-user-static android-sdk-libsparse-utils e2fsprogs git-lfs
       - uses: actions/cache@v4

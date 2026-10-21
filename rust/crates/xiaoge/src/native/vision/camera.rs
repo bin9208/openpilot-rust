@@ -11,6 +11,8 @@ pub struct Camera {
     client: Option<VisionClient>,
     pub bytes: Vec<u8>,
     pub layout: Layout,
+    pub frame_id: u32,
+    pub timestamp_sof: u64,
     stream: Stream,
 }
 
@@ -19,12 +21,16 @@ pub struct ReceivedFrame<'a> {
     layout: Layout,
     stream: Stream,
     has_pixels: bool,
+    pub frame_id: u32,
+    pub timestamp_sof: u64,
 }
 
 impl Camera {
     pub const fn new(stream: Stream) -> Self {
         Self {
             client: None,
+            frame_id: 0,
+            timestamp_sof: 0,
             bytes: Vec::new(),
             layout: Layout {
                 width: 0,
@@ -76,6 +82,8 @@ impl Camera {
                 return Ok(());
             };
             let metadata = frame.metadata();
+            self.frame_id = metadata.frame_id;
+            self.timestamp_sof = metadata.timestamp_sof;
             self.layout = Layout {
                 width: metadata.width,
                 height: metadata.height,
@@ -94,6 +102,8 @@ impl Camera {
             layout: self.layout,
             stream: self.stream,
             has_pixels: need_pixels,
+            frame_id: self.frame_id,
+            timestamp_sof: self.timestamp_sof,
         })
     }
 

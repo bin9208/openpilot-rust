@@ -35,7 +35,7 @@ impl State {
             "updatedMonoTimeNanos".to_owned(),
             Value::Integer(i128::from(self.blindspot_updated)),
         );
-        Ok(fields([
+        let mut status = fields([
             ("standalone", Value::Bool(false)),
             ("integrated", Value::Bool(true)),
             (
@@ -120,7 +120,32 @@ impl State {
                     ("inference", Value::Object(self.inference_status(1, now)?)),
                 ]),
             ),
-        ]))
+        ]);
+        // Preserve the original default CPU status shape. GPU status is additive.
+        if self.compute_mode != crate::compute::ComputeMode::Cpu {
+            status.insert(
+                "computeMode".into(),
+                Value::Integer(i128::from(self.compute_mode.value())),
+            );
+            status.insert(
+                "compute".into(),
+                object([
+                    (
+                        "road",
+                        self.compute_status[1]
+                            .clone()
+                            .map_or(Value::Null, Value::Object),
+                    ),
+                    (
+                        "wide",
+                        self.compute_status[0]
+                            .clone()
+                            .map_or(Value::Null, Value::Object),
+                    ),
+                ]),
+            );
+        }
+        Ok(status)
     }
 
     fn side_status(&self, side: Side, now: f64, nanos: u64) -> Value {

@@ -1,9 +1,11 @@
 #![forbid(unsafe_code)]
 
+pub mod compute;
 pub mod config;
 #[cfg(feature = "native-skip-miri")]
 pub mod inference;
 pub mod lane;
+pub mod log_report;
 #[cfg(feature = "native-skip-miri")]
 pub mod native;
 mod numbers;

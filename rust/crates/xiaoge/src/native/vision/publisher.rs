@@ -46,10 +46,14 @@ impl Publisher {
 
     pub fn publish(&self, shared: &Shared) -> Result<(), Error> {
         shared.refresh(false)?;
+        // Keep selection/result transitions ordered with the actual owner send.
+        // An unversioned detached snapshot could otherwise overtake a mode switch
+        // and reassert a previous mode's valid result after the cleared state.
+        // The owner never acquires state; its channel acknowledgment closes the
+        // publication before refresh/settings/other workers can commit a change.
+        let state = shared.state()?;
         let payload = crate::wire::compact(
-            &shared
-                .state()?
-                .publication(platform::monotonic()?, platform::timestamp()?)?,
+            &state.publication(platform::monotonic()?, platform::timestamp()?)?,
         )?;
         let mut message = capnp::message::Builder::new_default();
         let mut root = message.init_root::<event::Builder>();
@@ -63,7 +67,62 @@ impl Publisher {
                 complete,
             })
             .map_err(|_| Error::Contract("publisher owner stopped"))?;
-        wait.recv()
-            .map_err(|_| Error::Contract("publisher dropped result"))?
+        let result = wait
+            .recv()
+            .map_err(|_| Error::Contract("publisher dropped result"))?;
+        drop(state);
+        result
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        config::Config,
+        service::{Model, State},
+    };
+    use std::sync::{atomic::AtomicBool, Arc, Condvar, Mutex, TryLockError};
+    use std::time::Duration;
+
+    #[test]
+    fn publication_completion_excludes_mode_and_result_transitions() {
+        let shared = Arc::new(Shared {
+            state: Mutex::new(State::new(
+                Config::default(),
+                ["bsd", "lane"].map(|path| Model {
+                    path: path.into(),
+                    loaded: true,
+                    error: String::new(),
+                }),
+                platform::monotonic().unwrap(),
+            )),
+            snapshot: Condvar::new(),
+            vasm_operation: Mutex::new(()),
+            params: None,
+            params_operation: Mutex::new(()),
+            config_path: std::path::PathBuf::new(),
+            running: AtomicBool::new(true),
+        });
+        // Substitute only the transport owner so the test can pause precisely
+        // after enqueue, before the real send would finish, without IPC or GPU.
+        let (send, receive) = mpsc::sync_channel(1);
+        let publisher = Publisher(send);
+        let caller_shared = Arc::clone(&shared);
+        let caller = thread::spawn(move || publisher.publish(&caller_shared));
+        let publication = receive.recv_timeout(Duration::from_secs(5)).unwrap();
+        let excluded = matches!(shared.state.try_lock(), Err(TryLockError::WouldBlock));
+        // Always acknowledge before asserting so a failed regression cannot
+        // strand the caller waiting for the substituted owner.
+        publication.complete.send(Ok(())).unwrap();
+        caller.join().unwrap().unwrap();
+        assert!(
+            excluded,
+            "a mode/result update could overtake a queued publication"
+        );
+        assert!(
+            shared.state.try_lock().is_ok(),
+            "state released after actual send acknowledgment"
+        );
     }
 }

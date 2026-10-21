@@ -295,3 +295,26 @@ separate marked runtime delivery stays outside this task. Cancel the outdated
 groups 1–33 (including both Xiaoge architecture comparisons) and reached the
 native memory group before cancellation. Repeat full PR and exact-merge
 post-merge admission on the merged source; do not publish a runtime here.
+
+### Updated protected base during validation (#459)
+
+The periodic base check detected `1f00f0b7` from PR #459 while `2b776659` was
+running. Preserve that CPU-default FP32 GPU comparison candidate, all runtime
+code, Params/UI keys, frozen regression sources and provenance. Retain its
+OpenCL provider rebuild, sealed fresh-provider identity, no-baseline-CPU-reuse
+guards, full consumer rebuild and QEMU offline smoke checks. Only dispatch
+admission changes to the common verified exact-source dev-md flow; feature
+preflight/direct-push delivery exceptions are not restored.
+
+Move GPU/package policy unit checks into common fast CI. Existing native
+Xiaoge matrices build with OpenCL and run GPU-rejection contracts plus the
+same-input CPU equivalence command on both architectures, serially. Preserve
+the new 4GiB benchmark disk reservation separately from all 187 existing
+reservations. Source admission keeps the new exact GPU producer paths and
+rejects unrelated runtime/tool-test files. Delivery keeps its extra disk
+reservations, 210-minute package budget and OpenCV build/smoke artifacts.
+
+Cancel only this task's superseded PR run; do not interfere with #459's
+separate marked runtime delivery. Complete latest-source PR and post-merge
+validation before merging/reporting acceptance. This task does not perform
+GPU/device tests, request runtime publication or claim new compute savings.
