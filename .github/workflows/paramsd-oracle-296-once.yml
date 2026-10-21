@@ -1,0 +1,185 @@
+name: 296 paramsd independent source oracle before receipts
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/paramsd-oracle-296-once.yml
+permissions:
+  contents: read
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
+jobs:
+  paramsd:
+    name: Full paramsd original and native controller
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+      CXX: clang++
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        ref: 200ba3fd91c31c448df0bd03b53e0f1a2b7e80af
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Prepare exact main-job paramsd prerequisites
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 cffi==2.1.1 sympy==1.14.0 pyzmq==27.2.0
+        zstandard==0.25.0 requests==2.34.2 pyserial==3.5 pytest==9.0.2'
+    - name: Check atomic paramsd fixture input boundaries
+      run: python -P -m pytest -c /dev/null --noconftest -p no:cacheprovider -q rust/tools/tests/test_paramsd_atomic_gate.py
+    - uses: ./.github/actions/native-eigen
+      with:
+        architecture: x86_64
+    - uses: ./.github/actions/native-json11
+    - name: Build unchanged paramsd oracle and actual consumer
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        python rust/tools/build_paramsd_oracle.py --output "$RUNNER_TEMP/paramsd-oracle" --eigen-include "$PARAMSD_EIGEN_INCLUDE"
+
+        python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/estimation-params-binding"
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-paramsd --bins --examples --locked
+
+        '
+    - name: Check native paramsd atomic gate foundation alongside original cases
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        test ! -e rust/tools/tests/test_paramsd_atomic_gate.py
+
+        test ! -L rust/tools/tests/test_paramsd_atomic_gate.py
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features paramsd-startup-gate-native
+        --test paramsd_startup_gate
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features paramsd-startup-gate-native
+        --lib --test paramsd_startup_gate -- -D warnings
+
+        '
+    - name: Require native paramsd scoped child-FD handoff
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/estimation/paramsd/native-gate"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        mkdir -p "$proof"
+
+        export PARAMSD_NATIVE_GATE_DAEMON="$GITHUB_WORKSPACE/rust/target/debug/openpilot-paramsd"
+
+        export PARAMSD_NATIVE_GATE_LIBRARY="$proof/startup-phase.so"
+
+        export PARAMSD_NATIVE_GATE_CAR_PARAMS="$proof/CarParams.bin"
+
+        export PARAMSD_NATIVE_GATE_EVIDENCE="$proof/native"
+
+        python -c ''import sys; from paramsd_fixture import car_params; sys.stdout.buffer.write(bytes(car_params()))'' > "$PARAMSD_NATIVE_GATE_CAR_PARAMS"
+
+        clang -std=c11 -O2 -shared -fPIC -Wall -Wextra -Werror rust/tools/paramsd_startup_phase.c -ldl -o "$PARAMSD_NATIVE_GATE_LIBRARY"
+        > "$proof/phase-build.log" 2>&1
+
+        sha256sum rust/tools/paramsd_startup_phase.c rust/tools/paramsd_fixture.py "$PARAMSD_NATIVE_GATE_DAEMON" "$PARAMSD_NATIVE_GATE_LIBRARY"
+        "$PARAMSD_NATIVE_GATE_CAR_PARAMS" > "$proof/artifacts.sha256"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-startup-gate-native --test paramsd_startup_gate
+        --locked -- --ignored --exact native_mapped_gate_holds_actual_paramsd_second_poll_and_shutdown --nocapture
+
+        sha256sum -c "$proof/artifacts.sha256"
+
+        '
+    - name: Capture unchanged original continuous and restart input/source
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        python rust/tools/check_paramsd_daemon.py --oracle "$RUNNER_TEMP/paramsd-oracle" --target "$PWD/rust/target" --evidence
+        "$RUNNER_TEMP/estimation/paramsd/daemon"
+
+        '
+    - name: Compare full native paramsd controller against original source packets
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/estimation/paramsd/native-controller-proof"
+
+        export PARAMSD_ORIGINAL_OUTPUT="$RUNNER_TEMP/estimation/paramsd/daemon"
+
+        export PARAMSD_NATIVE_OUTPUT="$proof/native"
+
+        export PARAMSD_NATIVE_DAEMON="$GITHUB_WORKSPACE/rust/target/debug/openpilot-paramsd"
+
+        export PARAMSD_NATIVE_HOOK="$PARAMSD_ORIGINAL_OUTPUT/continuous/startup-phase.so"
+
+        checker="$GITHUB_WORKSPACE/rust/target/debug/check-paramsd-daemon-native"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-daemon-native --bin check-paramsd-daemon-native
+        --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-daemon-native --lib --test paramsd_daemon_check
+        --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+
+        mkdir -p "$proof"
+
+        git rev-parse HEAD > "$proof/SOURCE_COMMIT"
+
+        sha256sum "$checker" "$PARAMSD_NATIVE_DAEMON" "$PARAMSD_NATIVE_HOOK" "$PARAMSD_ORIGINAL_OUTPUT/continuous/input.json"
+        "$PARAMSD_ORIGINAL_OUTPUT/restart/input.json" "$PARAMSD_ORIGINAL_OUTPUT/continuous/source.json" "$PARAMSD_ORIGINAL_OUTPUT/restart/source.json"
+        rust/tools/check_paramsd_daemon.py rust/tools/paramsd_fixture.py rust/tools/paramsd_startup_phase.c > "$proof/inputs.sha256"
+
+        sha256sum "$PARAMSD_ORIGINAL_OUTPUT"/{continuous,restart}/{results.json,saved.bin,gps.json,packets.json} >> "$proof/inputs.sha256"
+
+        /usr/bin/timeout --signal=TERM --kill-after=5s 180s "$checker" --daemon "$PARAMSD_NATIVE_DAEMON" --library "$PARAMSD_NATIVE_HOOK"
+        --continuous-input "$PARAMSD_ORIGINAL_OUTPUT/continuous/input.json" --restart-input "$PARAMSD_ORIGINAL_OUTPUT/restart/input.json"
+        --evidence "$PARAMSD_NATIVE_OUTPUT" > "$proof/native.stdout" 2> "$proof/native.stderr"
+
+        sha256sum -c "$proof/inputs.sha256"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-daemon-native --test paramsd_daemon_reference
+        --locked -- --nocapture
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-daemon-native --bin check-paramsd-daemon-native
+        --test paramsd_daemon_check --test paramsd_daemon_reference --locked -- -D warnings
+
+        sha256sum -c "$proof/inputs.sha256"
+
+        '
+    - name: Strict Clippy for sealed source comparison and controller
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-daemon-native --lib --bin check-paramsd-daemon-native
+        --test paramsd_daemon_check --test paramsd_daemon_reference --locked -- -D warnings
+
+        '
+    - if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: paramsd-sealed-source-oracle-evidence
+        path: ${{ runner.temp }}/estimation/paramsd/
+        if-no-files-found: warn
