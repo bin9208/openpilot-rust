@@ -30,3 +30,21 @@ unit exercises non-UTF8 argv[0] while confirming it does not select a different
 executable. Parent source review is complete; fresh cloud compilation, the full
 CLI matrix,25-case pair, cancellation controls and strict Clippy remain pending.
 The original Python checker remains present. No device result is claimed.
+
+
+## Repaired exact-source cloud result (2026-10-21)
+
+Source `60e3711e09d6b45b66a3f5ac30d79d6521f86e0c` passed
+[run39523577786/job118972931515](https://github.com/bin9208/openpilot-rust/actions/runs/39523577786/job/118972931515).
+Artifact12312123228 is36,862bytes, archive SHA256
+`fbb136aabb348e8efd312fea55e84110b93588294bccea785184c3958420913f`.
+All25 fresh original/native parsed reports and stdout agree; generated C++
+source and separately compiled reference ELF bytes are identical. Report file
+serialization differs, so raw report bytes are not claimed identical.
+Twelve CLI/control tests include clustered help and unset/empty PATH parity;
+31shared process tests, one scanner test, four library tests and strict Clippy
+passed. Native provenance separately records `/usr/bin/g++` and child argv0`g++`.
+The original/native PATH exit/stdout/receipt assertions passed, but individual
+unset-PATH codes/stderr were not retained; the next retirement proof should
+retain those raw observations. Python remains until that proof is accepted.
+This result does not close whole-project or device acceptance.

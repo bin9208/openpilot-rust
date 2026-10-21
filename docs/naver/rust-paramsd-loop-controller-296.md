@@ -29,5 +29,14 @@ negative tests plus strict Clippy. New tests reject changed input metadata,
 packet/order changes, wrong source aliases, scripts instead of native ELF,
 changed artifacts, missing/invalid/oversized output, child failure, cancellation
 and foreign evidence. The source comparator and controller have been reviewed;
-functional cloud execution of this new tool is pending. Neither the Python
-loop checker nor its fixture/source helpers is retired yet.
+actual cloud execution at source `60e3711e09d6b45b66a3f5ac30d79d6521f86e0c`
+passed in [run39523577819/job118972931583](https://github.com/bin9208/openpilot-rust/actions/runs/39523577819/job/118972931583).
+The actual CLI compared39cases/2,420rows/4saves/216GPS writes;85library tests,
+four controller regressions, two independent reference/exec tests, strict Clippy,
+and13disk/68source/2lagd policies passed. Artifact12311849238 is92,992bytes,
+archive SHA256 `ca02b858158d14785bc41ab68f45a2421bcec30863838b8ea7b467c8e9d7f616`.
+Parent inspection confirmed the actual raw/request case/row counts, all eight
+unchanged source/input/ELF bindings plus the new output binding, exact retained
+input/output hashes, and two successful native execs. The workflow commit
+`2bd29771ae30832433a4cb7c7adcfc876bb4d354` is separate from that tested source.
+Neither the Python loop checker nor its fixture/source helpers is retired yet.
