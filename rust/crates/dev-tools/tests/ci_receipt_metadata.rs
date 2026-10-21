@@ -153,6 +153,43 @@ fn required(name: &str) -> PathBuf {
         .unwrap_or_else(|| panic!("{name} required"))
         .into()
 }
+/// Original capture's optional summary omitted qualified exception names.
+/// Derive the class from the sealed final traceback line, not a native result
+/// or a guessed fallback. Reject malformed/unrecognized exception summaries.
+fn original_error_class(stderr: &[u8]) -> Option<&str> {
+    let text = std::str::from_utf8(stderr).ok()?;
+    let line = text.lines().rev().find(|line| !line.is_empty())?;
+    let qualified = line.split_once(':').map_or(line, |(name, _)| name);
+    if !qualified
+        .split('.')
+        .all(|part| !part.is_empty() && part.bytes().all(|b| b.is_ascii_alphabetic() || b == b'_'))
+    {
+        return None;
+    }
+    let class = qualified.rsplit('.').next()?;
+    (class.ends_with("Error") || class == "StopIteration").then_some(class)
+}
+#[test]
+fn qualified_original_traceback_class_is_recovered_without_an_optional_summary() {
+    // Actual source receipts015/027/037/049 use json.decoder.JSONDecodeError;
+    // their capture error_class field is null, but stderr remains sealed.
+    assert_eq!(original_error_class(b"Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\njson.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)\n"), Some("JSONDecodeError"));
+    assert_eq!(
+        original_error_class(b"StopIteration\n"),
+        Some("StopIteration")
+    );
+    assert_eq!(
+        original_error_class(b"TypeError: bad field\n"),
+        Some("TypeError")
+    );
+    assert_eq!(original_error_class(b"Traceback only\n"), None);
+    assert_eq!(
+        original_error_class(b"JSONDecodeError: bad\ntruncated exception"),
+        None
+    );
+    assert_eq!(original_error_class(b".JSONDecodeError: bad"), None);
+    assert_eq!(original_error_class(b"\xff"), None);
+}
 fn replace_root(bytes: &[u8], old: &[u8], new: &[u8]) -> Vec<u8> {
     assert!(!old.is_empty());
     let mut out = Vec::new();
@@ -348,9 +385,20 @@ fn all_fourteen_callers_and_original_failures() {
                 assert!(actual.stderr.is_empty());
             } else {
                 assert!(actual.stdout.is_empty());
+                let original_stderr = decode(&row["stderr_b64"]);
+                let class = original_error_class(&original_stderr).unwrap_or_else(|| {
+                    panic!("sealed original final exception is invalid for {i}")
+                });
+                if let Some(summary) = row["error_class"].as_str() {
+                    assert_eq!(summary, class, "original exception summary for {i}");
+                } else {
+                    assert!(
+                        row["error_class"].is_null(),
+                        "invalid original exception summary for {i}"
+                    );
+                }
                 assert!(
-                    String::from_utf8_lossy(&actual.stderr)
-                        .starts_with(&format!("{}:", row["error_class"].as_str().unwrap())),
+                    String::from_utf8_lossy(&actual.stderr).starts_with(&format!("{class}:")),
                     "error category for {i}"
                 );
             }
