@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 493);
+    assert_eq!(text.matches(marker).count(), 502);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -212,7 +212,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
         jobs.values()
             .filter(|job| scripts(job).iter().any(|s| s.contains("check-disk-space")))
             .count(),
-        35
+        36
     );
     assert_eq!(
         jobs.values()
@@ -225,7 +225,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 })
             }))
             .count(),
-        35
+        36
     );
     let lines = text.lines().collect::<Vec<_>>();
     let llvm20_start = lines
@@ -340,12 +340,31 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut recording_partial_write = vec![];
     let mut launcher_handoff = vec![];
     let mut teleop_version = vec![];
+    let mut driving_retirement = vec![];
+    let mut model_build_reserve = vec![];
+    let mut panda_protocol_retirement = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
             let step = lines[..i]
                 .iter()
                 .rev()
                 .find(|line| line.starts_with("      - name:"));
+            if step == Some(&"      - name: Verify native driving four-source retirement with fixed independent observations") {
+                driving_retirement.push(tail.to_owned());
+                continue;
+            }
+            if step == Some(&"      - name: Recover hosted disk space before model build growth") {
+                model_build_reserve.push(tail.to_owned());
+                continue;
+            }
+            if step == Some(&"      - name: Verify native Panda device family against sealed original observations") {
+                pandad_device_controller.push(tail.to_owned());
+                continue;
+            }
+            if step == Some(&"      - name: Verify native Panda protocol and CAN-I/O closure against sealed original observations") {
+                panda_protocol_retirement.push(tail.to_owned());
+                continue;
+            }
             if step == Some(&"      - name: Verify native release version computations and disposable Git effects") {
                 teleop_version.push(tail.to_owned());
                 continue;
@@ -354,7 +373,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 panda_orchestration_retirement.push(tail.to_owned());
                 continue;
             }
-            if step == Some(&"      - name: Verify native desire controller while retaining the shared original driving oracle") {
+            if step == Some(&"      - name: Verify native desire controller after shared Python helper retirement") {
                 desire_controller_retirement.push(tail.to_owned());
                 continue;
             }
@@ -870,6 +889,22 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
         }
     }
     assert_eq!(
+        driving_retirement,
+        [
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 3072",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 12288",
+            " --path \"$RUNNER_TEMP\" --growth-mib 3072",
+        ]
+    );
+    assert_eq!(
+        model_build_reserve,
+        [" --path \"$GITHUB_WORKSPACE\" --growth-mib 12288"]
+    );
+    assert_eq!(
+        panda_protocol_retirement,
+        [" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024"]
+    );
+    assert_eq!(
         teleop_version,
         [1024, 512, 512, 512]
             .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
@@ -1297,8 +1332,11 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     );
     assert_eq!(
         pandad_device_controller,
-        [512, 512, 512]
-            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+        [
+            " --path \"$RUNNER_TEMP\" --growth-mib 64",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 512",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 512",
+        ]
     );
     assert_eq!(
         jetlink_owner,

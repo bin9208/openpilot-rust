@@ -4627,7 +4627,7 @@ jobs:
       - name: Recover hosted disk space before model build growth
         run: |
           sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup
-          rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 12288
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 12288
       - run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
       - run: sudo apt-get update && sudo apt-get install -y clang libllvm18 liblzma-dev git-lfs capnproto libcapnp-dev jq
       - run: python -m pip install numpy==2.5.3 zstandard==0.25.0 pycapnp==2.1.0 pyzmq==27.2.0 Cython==3.2.4 setuptools==82.0.1 pytest==9.0.2
@@ -4714,7 +4714,7 @@ jobs:
           export DRIVING_DAEMON_COLLECTOR="$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged"
           export DRIVING_DAEMON_PEER="$proof/peer/driving-daemon-peer"
           export DRIVING_RETIREMENT_OUTPUT="$proof/retirement"
-          rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 3072
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 3072
           cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --locked \
             --bin stage-driving-daemon-fixture --bin seal-driving-daemon-fixture --bin check-driving-daemon \
             --bin check-model-logging-faults --bin build-driving-logging-fault --bin generate-services-header
@@ -4761,7 +4761,7 @@ jobs:
             msgq_repo/msgq/visionipc/{visionipc,visionipc_client,visionipc_server,visionbuf}.cc \
             -o "$DRIVING_DAEMON_PEER" > "$proof/peer-build.stdout" 2> "$proof/peer-build.stderr"
           sha256sum "$DRIVING_DAEMON_NATIVE_BINARY" "$DRIVING_DAEMON_COLLECTOR" "$DRIVING_DAEMON_PEER" > "$proof/production-elf-seals.sha256"
-          rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 12288
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 12288
           rust/target/debug/build-driving-logging-fault --root "$GITHUB_WORKSPACE" --output "$proof/fault-builder" \
             --cargo "$(command -v cargo)" --compiler "$(command -v c++)" 2>&1 | tee "$proof/fault-builder.log"
           export DRIVING_LOGGING_FAULT_BINARY="$proof/fault-builder/openpilot-driving-modeld-fault"
@@ -4774,7 +4774,7 @@ jobs:
               -p openpilot-dev-tools --features driving-daemon-native --locked --test driving_daemon_retirement \
               retained_e25_completed_traffic_reports_match_with_accounted_wait_debug_counts -- --ignored --exact --nocapture 2>&1 | tee "$proof/retained-replay.log"
           fi
-          rust/tools/check-disk-space --path "$RUNNER_TEMP" --growth-mib 3072
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 3072
           # Exactly one full current-source run: two roots, each model6/collector6/fault2,
           # then all eight regular/link reappearance controls. Ignored history is separate.
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --locked \
