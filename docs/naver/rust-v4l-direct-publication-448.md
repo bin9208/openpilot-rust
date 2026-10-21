@@ -32,3 +32,23 @@ was independently inspected by parent and reviewer:5codec cases/112packet hashes
 32V4L cases and10runtime cases preserve exact bytes and metadata. The8×3service/
 codec and variable-packet tests and strict Clippy also passed. No hardware VIDC,
 normal startup, recording/upload or device performance result is inferred.
+
+Accepted affected ARM build checkpoint (2026-10-21):
+[39552825804/job119065662791](https://github.com/bin9208/openpilot-rust/actions/runs/39552825804/job/119065662791)
+succeeded at PR merge `a3a5b0f1960237e9e6b65c5a2893eb5295f73514`, merging
+head `11af3760cada240d48c0dec0e3a732fe485a267c`. The full run failed separate
+required checks; this is ARM build evidence only and predates cweb450.
+Encoder artifact12329423934 ZIP SHA256
+`e6d48cc58a67d6bca14630ef0ef33caa446fdf0b1307a4af4d0fb20fc3c57ef7`
+contains17,341CRC-checked members. Parent verified AArch64 ELF headers and hashes:
+encoderd061c3d25ca740fa1f6988605ef94cd35ea5e01da3586cfd8be1ac438712a2f35,
+codec tracec777ca70abeebba3b7ac138d70fb9f4a510bb1ed7d9dd13537f8d689ce465672,
+V4L trace6236df4b53b99fbf9d707eb46f3d1a359176d9ff8715086d5deb57e811b73cb2.
+Generic ARM artifact12329765174 ZIP SHA256
+`10cec19501648d42dfa43cac96e58c99beef68822ec77a1b590f58fcfa440b17`
+contains83CRC-checked members. Dashcam upload GNU/musl ELF hashes are
+fc94f4497c83404b9d422cd643e296705ead6022448d6858583971cc27784968 /
+74cd303566be35d467f9c685491072fe8461d5d54ce96e54e2e3effb3eb5c593.
+These are generic ARM build outputs, not sealed AGNOS/device, V4L execution or
+ARM performance evidence. New head917cd7db has its own full PR run39567841179;
+its required checks and updated ARM build remain pending.
