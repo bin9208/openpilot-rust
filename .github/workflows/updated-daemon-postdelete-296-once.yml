@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
-      EXPECTED_SOURCE: d1c827fac2d0260878cc1f3a70bef812e40b4b4b
+      EXPECTED_SOURCE: 1b1703f65adf810d3da266854a4d40e0621a89a5
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
@@ -26,7 +26,7 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: d1c827fac2d0260878cc1f3a70bef812e40b4b4b
+        ref: 1b1703f65adf810d3da266854a4d40e0621a89a5
         persist-credentials: false
     - name: Require exact source and original/native prerequisites
       run: "set -euo pipefail\ntest \"$(git rev-parse HEAD)\" = \"$EXPECTED_SOURCE\"\nproof=\"$RUNNER_TEMP/updated-daemon-296\"\
