@@ -21,6 +21,10 @@ const RETIRED: [&str; 2] = [
     "rust/tools/check_pandad_ci.py",
     "rust/tools/tests/test_pandad_ci.py",
 ];
+const DEVICE_RETIRED: [&str; 2] = [
+    "rust/tools/check_pandad_device.py",
+    "rust/tools/pandad_device_cases.py",
+];
 const HISTORICAL: [&str; 2] = [
     "21dd66f08fb279f0d8bdee35b97fd22027e82275486c5a8510704cf3847676c9",
     "46575991a4a668d12828da5ee02832db015e5aaa159e3c617d1926b09329cb22",
@@ -311,6 +315,9 @@ fn prepare_private_root(repo: &Path, private: &Path, expect_absent: bool) -> Val
     if expect_absent {
         current_names.remove(RETIRED[0]);
     }
+    for name in DEVICE_RETIRED {
+        assert!(current_names.remove(name));
+    }
     let current = source_hashes(repo);
     assert_eq!(
         current.keys().cloned().collect::<BTreeSet<_>>(),
@@ -341,7 +348,7 @@ fn prepare_private_root(repo: &Path, private: &Path, expect_absent: bool) -> Val
         .map(|(name, hash)| (name.clone(), hash.clone()))
         .collect::<BTreeMap<_, _>>();
     assert_eq!(copied, expected_copied);
-    assert_eq!(copied.len(), 164);
+    assert_eq!(copied.len(), 162);
     openpilot_disk_space::inspect(private, 2 * GIB)
         .unwrap()
         .require()
@@ -439,6 +446,9 @@ fn absent(path: &Path) {
     }
 }
 fn source_state(root: &Path, expect_absent: bool) {
+    for name in DEVICE_RETIRED {
+        absent(&root.join(name));
+    }
     for (name, historical) in RETIRED.into_iter().zip(HISTORICAL) {
         let path = root.join(name);
         if expect_absent {

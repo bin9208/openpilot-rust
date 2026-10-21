@@ -1,9 +1,9 @@
 # Panda device comparison controller retirement candidate (#296)
 
 This candidate replaces the comparison controller and its generated case corpus,
-`check_pandad_device.py` and `pandad_device_cases.py`. Both remain in the checkout
-until independent original observations, native caller checks and actual deleted
-checkout validation pass. The inventory remains233 replaced-local; this candidate
+`check_pandad_device.py` and `pandad_device_cases.py`. Their removal and maintained
+native reference caller are now integrated as a deleted-checkout candidate.
+Actual deleted-checkout validation remains pending. The inventory remains233 replaced-local; this candidate
 does not add accepted deletions or establish physical Panda/USB/device behavior.
 
 The original-only capture executes the unchanged Python checker against the
@@ -58,8 +58,8 @@ call and relocates completed raw-path evidence to an ASCII archive directory,
 with hashes checked before/after and a separate explicit archive mapping. Those
 evidence additions still require hosted validation.
 
-No Python
-source has been removed by this device-family candidate. The separate outer
+The two device Python files are removed in this pending candidate; do not mark
+their source retirement accepted until its hosted gate is reviewed. The separate outer
 Panda controller source deletion and its38-phase gate are accepted in
 [39625704015](https://github.com/bin9208/openpilot-rust/actions/runs/39625704015);
 that evidence does not retire this separate device-family controller.

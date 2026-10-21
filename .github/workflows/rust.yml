@@ -1462,22 +1462,31 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native --test pandad_safety_padding_absence --locked -- --nocapture
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native --test pandad_safety_padding_retirement --locked -- --nocapture
-      - name: Compare native Panda device controller with unchanged original
+      - name: Verify native Panda device family against sealed original observations
         run: |
           set -euo pipefail
           export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
+          test ! -e rust/tools/check_pandad_device.py
+          test ! -L rust/tools/check_pandad_device.py
+          test ! -e rust/tools/pandad_device_cases.py
+          test ! -L rust/tools/pandad_device_cases.py
           export PANDAD_DEVICE_SOURCE_BINARY="$RUNNER_TEMP/panda-native/retirement/checkout-output/device-src/pandad-protocol-source"
           export PANDAD_DEVICE_SOURCE_MANIFEST="$RUNNER_TEMP/panda-native/retirement/checkout-output/device-src/manifest.json"
+          export PANDAD_DEVICE_SOURCE_BUILD_KIND=fresh
           export PANDAD_DEVICE_NATIVE_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/device"
-          export PANDAD_DEVICE_PYTHON="$(command -v python)"
+          export PANDAD_DEVICE_RETIREMENT_MODE=postdelete
           export PANDAD_DEVICE_TEST_OUTPUT="$RUNNER_TEMP/panda-native/device-controller"
           mkdir -p "$PANDAD_DEVICE_TEST_OUTPUT"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 64
+          rust/target/debug/stage-pandad-device-reference --root "$GITHUB_WORKSPACE" --output "$RUNNER_TEMP/panda-native/device-original-reference" > "$PANDAD_DEVICE_TEST_OUTPUT/fixture-stage.json"
+          while IFS='=' read -r name value; do export "$name=$value"; done < "$RUNNER_TEMP/panda-native/device-original-reference/environment.env"
+          test -f "$PANDAD_DEVICE_ORIGINAL_CAPTURE/capture-manifest.json"
+          test -f "$PANDAD_DEVICE_CAPTURE_BUILDER_MANIFEST"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-device-native --bin check-pandad-device --locked
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-device-native --lib pandad_device_fixture:: --locked
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-device-native --test pandad_device_check --test pandad_device_reference --test pandad_device_fixture --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-device-native --test pandad_device_check --test pandad_device_reference --locked
-          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-device-native --lib --bin check-pandad-device --test pandad_device_check --test pandad_device_reference --locked -- -D warnings
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-device-native --lib --bin check-pandad-device --bin stage-pandad-device-reference --test pandad_device_check --test pandad_device_reference --test pandad_device_fixture --locked -- -D warnings
       - name: Preserve Panda evidence including failed cases
         if: always()
         uses: actions/upload-artifact@v6
