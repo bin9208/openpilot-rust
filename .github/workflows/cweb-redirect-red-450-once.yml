@@ -1,0 +1,81 @@
+name: 450 cweb redirect unchanged production allocation RED
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/cweb-redirect-red-450-once.yml
+permissions:
+  contents: read
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
+jobs:
+  cweb-redirect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CXX: clang++
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: 3e4011cc3b9f62445a04c608f84c0f6badd6e2d3
+        persist-credentials: false
+    - name: Admit exact source and reserve hosted build capacity
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = 3e4011cc3b9f62445a04c608f84c0f6badd6e2d3
+
+        mkdir -p "$RUNNER_TEMP/cweb-redirect"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev strace
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        '
+    - name: Observe unchanged production allocation regression fail for the stated reason
+      run: 'set -euo pipefail
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-cweb-push --lib http::http_redirect_tests::redirect_location_encoding_matches_all_original_byte_cases
+        --locked -- --nocapture 2>&1 | tee "$RUNNER_TEMP/cweb-redirect/byte-controls.log"
+
+        set +e
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-cweb-push --lib http::http_redirect_tests::redirect_location_encoder_uses_one_owned_buffer_per_warmed_call
+        --locked -- --nocapture > "$RUNNER_TEMP/cweb-redirect/allocation-red.log" 2>&1
+
+        observed=$?
+
+        set -e
+
+        cat "$RUNNER_TEMP/cweb-redirect/allocation-red.log"
+
+        printf ''%s\n'' "$observed" > "$RUNNER_TEMP/cweb-redirect/allocation-red.exit"
+
+        test "$observed" -eq 101
+
+        grep -F ''assertion `left == right` failed'' "$RUNNER_TEMP/cweb-redirect/allocation-red.log"
+
+        grep -F ''"warm_calls":1000'' "$RUNNER_TEMP/cweb-redirect/allocation-red.log"
+
+        grep -F ''redirect_location_encoder_uses_one_owned_buffer_per_warmed_call'' "$RUNNER_TEMP/cweb-redirect/allocation-red.log"
+
+        '
+    - uses: actions/upload-artifact@v6
+      if: always()
+      with:
+        name: cweb-redirect-allocation-evidence
+        path: '${{ runner.temp }}/cweb-redirect/
+
+          ${{ runner.temp }}/ui-connectivity/cweb/
+
+          ${{ runner.temp }}/ui-params-binding/build.log'
+        if-no-files-found: error
