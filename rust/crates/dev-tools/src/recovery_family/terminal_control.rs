@@ -1,4 +1,5 @@
 use super::{encode_frame, HttpPeer, OwnedServer, Pin, Result, WebSocketPeer};
+use crate::recovery_exec_audit::CreatedProgramGuard;
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use regex::bytes::Regex;
 use rustix::process::Signal;
@@ -6,15 +7,6 @@ use serde_json::{json, Value};
 use std::{
     ffi::OsString, fs, net::TcpListener, os::unix::fs::PermissionsExt, path::Path, time::Duration,
 };
-
-pub struct TerminalPairConfig<'a> {
-    pub repository: &'a Path,
-    pub python: &'a Path,
-    pub source_wrapper: &'a Path,
-    pub source_server: &'a Path,
-    pub candidate: &'a Path,
-    pub output: &'a Path,
-}
 
 pub struct TerminalFrozenConfig<'a> {
     pub repository: &'a Path,
@@ -273,121 +265,6 @@ fn scenario(port: u16, repository: &Path, directory: &Path) -> Result<Value> {
     )
 }
 
-pub fn run_terminal_pair(config: &TerminalPairConfig<'_>) -> Result<()> {
-    fs::create_dir(config.output)?;
-    let source = Pin::open(config.source_server, 4 * 1024 * 1024)?;
-    let wrapper = Pin::open(config.source_wrapper, 1024 * 1024)?;
-    let candidate = Pin::open(config.candidate, 256 * 1024 * 1024)?;
-    let mut results = Vec::new();
-    for provider in ["source", "native"] {
-        let directory = config.output.join(provider);
-        fs::create_dir(&directory)?;
-        let shell = directory.join("fixture-shell");
-        fs::write(&shell, "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> \"$CARROT_RECOVERY_SHELL_LOG\"\nexec /bin/bash --noprofile --norc -i\n")?;
-        fs::set_permissions(&shell, fs::Permissions::from_mode(0o700))?;
-        let port = port()?;
-        let argv = if provider == "source" {
-            vec![
-                OsString::from(config.python),
-                OsString::from("-P"),
-                OsString::from(config.source_wrapper),
-                OsString::from("--port"),
-                port.to_string().into(),
-                OsString::from("--output"),
-                OsString::from(&directory),
-            ]
-        } else {
-            vec![
-                OsString::from(config.candidate),
-                OsString::from("--host"),
-                OsString::from("127.0.0.1"),
-                OsString::from("--port"),
-                port.to_string().into(),
-            ]
-        };
-        let environment = [
-            (OsString::from("USER"), OsString::from("comma")),
-            (OsString::from("SHELL"), OsString::from(&shell)),
-            (OsString::from("PS1"), OsString::from("OWNED> ")),
-            (OsString::from("PS2"), OsString::from("CONT> ")),
-            (OsString::from("TMUX"), OsString::from("must-be-removed")),
-            (
-                OsString::from("CARROT_RECOVERY_SHELL_LOG"),
-                OsString::from(directory.join("shell-argv.log")),
-            ),
-        ];
-        let mut server = OwnedServer::spawn(
-            &argv,
-            config.repository,
-            &directory.join("process.log"),
-            &environment,
-            &["TERM", "COLORTERM"],
-            provider == "source",
-        )?;
-        let peer = HttpPeer::new(port, Duration::from_secs(2));
-        let result = (|| -> Result<Value> {
-            peer.wait_ready("/api/support_terminal/status", Duration::from_secs(5))?;
-            scenario(port, config.repository, &directory)
-        })();
-        let stopped = if provider == "source" {
-            server.source_eof()
-        } else {
-            server.signal(Signal::TERM)
-        };
-        let exit = server.finish(Duration::from_secs(5));
-        fs::write(
-            directory.join("cleanup.json"),
-            serde_json::to_vec_pretty(&json!({"stop":stopped.is_ok(),"exit":exit.as_ref().ok()}))?,
-        )?;
-        let value = result?;
-        stopped?;
-        if exit? != 0 {
-            return Err(format!("recovery {provider} terminal server cleanup failed").into());
-        }
-        fs::write(
-            directory.join("result.json"),
-            serde_json::to_vec_pretty(&value)?,
-        )?;
-        results.push(value);
-    }
-    let mut source_result = results.remove(0);
-    let mut native_result = results.remove(0);
-    for row in [&mut source_result, &mut native_result] {
-        row.as_object_mut()
-            .ok_or("invalid terminal result object")?
-            .remove("shell_pid");
-        row.as_object_mut()
-            .ok_or("invalid terminal result object")?
-            .remove("fresh_pid");
-    }
-    if source_result != native_result
-        || fs::read(config.output.join("source/shell-argv.log"))?
-            != fs::read(config.output.join("native/shell-argv.log"))?
-    {
-        return Err("recovery terminal source/native comparison failed".into());
-    }
-    let source_proof: Value =
-        serde_json::from_slice(&fs::read(config.output.join("source/source-proof.json"))?)?;
-    if source_proof.get("sha256").and_then(Value::as_str) != Some(source.digest())
-        || source_proof.get("source").and_then(Value::as_str)
-            != config.source_server.canonicalize()?.to_str()
-    {
-        return Err("unchanged terminal source proof mismatch".into());
-    }
-    source.verify()?;
-    wrapper.verify()?;
-    candidate.verify()?;
-    fs::write(
-        config.output.join("result.json"),
-        serde_json::to_vec_pretty(
-            &json!({"pass":true,"scenario":source_result,"source_sha256":source.digest(),"wrapper_sha256":wrapper.digest(),"candidate_sha256":candidate.digest()}),
-        )?,
-    )?;
-    Ok(())
-}
-
-/// Rerun the owned PTY/WebSocket scenario on the native server and compare all
-/// stable result fields with the independently sealed original observation.
 pub fn run_terminal_frozen(
     config: &TerminalFrozenConfig<'_>,
     load_original: impl Fn(&str) -> Result<Value>,
@@ -437,6 +314,8 @@ pub fn run_terminal_frozen(
     let shell = directory.join("fixture-shell");
     fs::write(&shell, "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> \"$CARROT_RECOVERY_SHELL_LOG\"\nexec /bin/bash --noprofile --norc -i\n")?;
     fs::set_permissions(&shell, fs::Permissions::from_mode(0o700))?;
+    let created_shell =
+        CreatedProgramGuard::record(&shell, &config.output.join("created-terminal-shell.jsonl"))?;
     let port = port()?;
     let argv = [
         OsString::from(config.candidate),
@@ -505,6 +384,7 @@ pub fn run_terminal_frozen(
     }
     source_pin.verify()?;
     candidate_pin.verify()?;
+    created_shell.finish()?;
     fs::write(
         config.output.join("result.json"),
         serde_json::to_vec_pretty(&json!({"pass":true,"frozen_original_compared":true,

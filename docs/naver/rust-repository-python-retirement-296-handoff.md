@@ -29,7 +29,7 @@ family records. Git retains earlier handoff versions.
 
 Inventory:242replaced-local/3partial/3335pending of3580 baseline entries. Additional
 helpers/notebooks and observed execution edges are tracked separately. The latter
-has53pending sites before the new14-caller metadata integration is accepted.
+has39pending sites after the14-caller metadata integration accepted in39681730943.
 
 Accepted focused families include outer Panda39625704015, device39640526320,
 protocol/CAN-I/O39647358174, and actual four-source Driving/Desire39663027128.
@@ -59,9 +59,10 @@ and traced,17 focused units and strict Clippy at source
 all32 controller admissions,26 unchanged held inputs and4×52 owned alias rows.
 #472 fixture sequencing/complete Git-repair snapshot defect is closed by that proof.
 
-The13 recovery Python tools are still present; server.py/repo_update.py remain
-independent live original consumers. The old `recovery_family.rs` test and Python
-pair-only APIs still need removal together with maintained caller migration.
+The current candidate deletes13 recovery Python tools, the old `recovery_family.rs`
+test and Python-only APIs, and migrates eight maintained calls plus the CWP Cargo
+selector. These are pending acceptance by the new grouped gate, not13 additional
+accepted inventory retirements. server.py/repo_update.py remain live original consumers.
 
 Worker owns creation receipts in eight recovery leaves and
 `recovery_exec_audit.rs`/`recovery_family_exec_policy.rs`/audit CLI. A created file
@@ -73,12 +74,11 @@ executable provenance, explicitly **not exact argv parity**. Bound the ephemeral
 process-child JSON argument; all resulting child executables still need admission.
 Do not modify the shared production launcher merely for this audit.
 
-Parent registers the new policy/bin, captures provider/native seals before the
-harness, integrates post-run admission, reviews the worker changes and runs the
-hosted gate. Then delete the13 sources, orphan APIs/old test, migrate eight main
-calls and the embedded CWP test selector to native tooling, and run the actual
-post-deletion grouped gate. The stale cleanup patch at base010f521 must be rebased,
-never blindly applied over the new creation hooks.
+Policy/bin registration, two-phase maintained workflow integration and the13-source
+cleanup are now in the same candidate, avoiding a redundant intermediate heavy
+traffic run. The cleanup patch was manually rebased for both action leaves;
+all seven Git snapshot checks and new creation hooks remain. Run the actual
+post-deletion grouped hosted gate and inspect every result before acceptance.
 
 ## Metadata:14 maintained callers migrated, provider-order correction pending CI
 
@@ -101,9 +101,12 @@ host target. The missing Panda producer caught by39680000548 is fixed3851ac65d.
 filesystem enumeration order.9076ccc41 preserves original fixed-order selector
 comparison and permits only the measured current-provider first basename in the
 actual CLI comparison, with exact member roster and retained projection receipts.
-Run39681730943 tests this correction using the **actual maintained host binary**,
-plus workflow policy/bootstrap and strict Clippy. Inspect the result/artifact;
-only after acceptance mark14 execution edges replaced (53→39pending).
+Run39681730943 passes using the **actual maintained host binary**, seven units,
+all67original observations,13disk/6workflow policy cases and strict Clippy.
+Parent audited all83CRCs and independently recomputed every case. Artifact
+12384097663 is44,650bytes, SHA256
+`3e7b85fe188eeb151983fad2540b7c4cb406fb6cb6ba920642084fe7d13369ea`.
+The14 execution edges are accepted (53→39pending); baseline file counts unchanged.
 
 ## Driver/startup/USB six-source gate
 
@@ -126,7 +129,7 @@ Keep **separate4-model driver and5-model startup/USB data/catalog receipts**.
 Only metadata PKL matches; the other DM/warp PKLs differ. Do not relabel a five-
 model receipt as four-model, or replace independent model/source observations.
 
-Original capture39680582209 at fixed0ec6cbae2 uses authenticated helpers and the
+Original capture39680582209 at fixed0ec6cbae2 used authenticated helpers and the
 correct immutable runtime-b55552db release. Parent independently verified whole
 archive1,155,620,561bytes/SHA256
 `6dc8965b2423f111631b6fb6eb9dc5fde3800f46b7785595f595fe348b66d807`,

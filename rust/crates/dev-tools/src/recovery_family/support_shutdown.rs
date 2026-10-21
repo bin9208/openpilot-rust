@@ -1,4 +1,5 @@
 use super::{HttpPeer, OwnedServer, Pin, Result};
+use crate::recovery_exec_audit::CreatedProgramGuard;
 use rustix::process::Signal;
 use serde_json::json;
 use std::{
@@ -36,10 +37,6 @@ fn state(pid: u32) -> Result<Option<String>> {
     }
 }
 
-pub fn run_support_shutdown(config: &SupportShutdownConfig<'_>) -> Result<()> {
-    run_support_shutdown_inner(config, None)
-}
-
 /// Requires the same pending-tunnel termination and request-disconnect
 /// relations observed by the unchanged original controller. The source rows
 /// must come from the independently authenticated original-only fixture.
@@ -47,12 +44,12 @@ pub fn run_support_shutdown_frozen(
     config: &SupportShutdownConfig<'_>,
     load_original: impl Fn(&str) -> Result<serde_json::Value>,
 ) -> Result<()> {
-    run_support_shutdown_inner(config, Some(&load_original))
+    run_support_shutdown_inner(config, &load_original)
 }
 
 fn run_support_shutdown_inner(
     config: &SupportShutdownConfig<'_>,
-    load_original: Option<&OriginalObservation<'_>>,
+    load_original: &OriginalObservation<'_>,
 ) -> Result<()> {
     fs::create_dir(config.output)?;
     let candidate = Pin::open(config.candidate, 256 * 1024 * 1024)?;
@@ -62,6 +59,12 @@ fn run_support_shutdown_inner(
     fs::write(&shell, "#!/bin/sh\nexec /bin/bash --noprofile --norc -i\n")?;
     fs::set_permissions(&tunnel, fs::Permissions::from_mode(0o700))?;
     fs::set_permissions(&shell, fs::Permissions::from_mode(0o700))?;
+    let created_tunnel = CreatedProgramGuard::record(
+        &tunnel,
+        &config.output.join("created-shutdown-cloudflared.jsonl"),
+    )?;
+    let created_shell =
+        CreatedProgramGuard::record(&shell, &config.output.join("created-shutdown-shell.jsonl"))?;
     let port = TcpListener::bind(("127.0.0.1", 0))?.local_addr()?.port();
     let argv = [
         OsString::from(config.candidate),
@@ -165,7 +168,8 @@ fn run_support_shutdown_inner(
         if observed_exit != 0 || owner_exit != observed_exit || tunnel_state.is_some() || !exited {
             return Err("recovery pending support shutdown failed".into());
         }
-        if let Some(load) = load_original {
+        {
+            let load = load_original;
             let source_observation = load("shutdown/source/observation.json")?;
             let source_request = load("shutdown/source/request.json")?;
             let source_cleanup = load("shutdown/source/cleanup.json")?;
@@ -214,10 +218,12 @@ fn run_support_shutdown_inner(
             }
         }
         candidate.verify()?;
+        created_tunnel.finish()?;
+        created_shell.finish()?;
         fs::write(
             config.output.join("result.json"),
             serde_json::to_vec_pretty(
-                &json!({"pass":true,"exited_within_three_seconds":true,"candidate_sha256":candidate.digest(),"frozen_original_compared":load_original.is_some()}),
+                &json!({"pass":true,"exited_within_three_seconds":true,"candidate_sha256":candidate.digest(),"frozen_original_compared":true}),
             )?,
         )?;
         Ok(())

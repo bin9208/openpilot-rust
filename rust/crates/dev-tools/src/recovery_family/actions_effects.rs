@@ -1,8 +1,9 @@
-//! Rust-owned Git fixtures for the action responses. The historical controller
-//! remains the independent oracle, but its repositories are never reused here.
+//! Rust-owned Git fixtures for action responses, compared with sealed original
+//! observations. Historical repositories are never reused here.
 
 use super::{HttpPeer, OwnedServer, Pin, Result};
 use crate::qa_process::{CommandSpec, NativeRunner, Runner};
+use crate::recovery_exec_audit::CreatedProgramGuard;
 use rustix::process::Signal;
 use serde_json::{json, Value};
 use std::{
@@ -311,7 +312,10 @@ fn snapshot(repo: &Path) -> Result<Value> {
     }))
 }
 
-fn rebuild_setup(repo: &Path, output: &Path) -> Result<(PathBuf, PathBuf)> {
+fn rebuild_setup(
+    repo: &Path,
+    output: &Path,
+) -> Result<(PathBuf, PathBuf, Vec<CreatedProgramGuard>)> {
     let cache = output.join("cache");
     fs::create_dir(&cache)?;
     fs::write(cache.join("old"), "remove me")?;
@@ -321,6 +325,7 @@ fn rebuild_setup(repo: &Path, output: &Path) -> Result<(PathBuf, PathBuf)> {
     fs::write(repo.join("rust/runtime-manifest.json"), "old package")?;
     let tools = output.join("tools");
     fs::create_dir(&tools)?;
+    let mut created = Vec::new();
     for (name, marker) in [("scons", "scons.argv"), ("sudo", "sudo.argv")] {
         let path = tools.join(name);
         fs::write(
@@ -328,8 +333,12 @@ fn rebuild_setup(repo: &Path, output: &Path) -> Result<(PathBuf, PathBuf)> {
             format!("#!/bin/sh\nprintf '%s\\n' \"$*\" > {marker}\n"),
         )?;
         fs::set_permissions(&path, fs::Permissions::from_mode(0o700))?;
+        created.push(CreatedProgramGuard::record(
+            &path,
+            &output.join(format!("created-rebuild-{name}.jsonl")),
+        )?);
     }
-    Ok((cache, tools))
+    Ok((cache, tools, created))
 }
 
 fn tmux_command(tmux: &Path, socket: &Path, args: &[&str], cwd: &Path) -> Result<String> {
@@ -552,25 +561,6 @@ pub(super) fn inherited_pty_bound(
     Ok(receipt)
 }
 
-pub(super) fn run(
-    repository: &Path,
-    pair: &OwnedExecutablePair,
-    original_bare: &Path,
-    original_row: &Value,
-    name: &str,
-    output: &Path,
-) -> Result<Value> {
-    run_inner(
-        repository,
-        pair,
-        original_bare,
-        original_row,
-        name,
-        output,
-        None,
-    )
-}
-
 /// The frozen lane reads only original/source observations, never previously
 /// captured candidate replies or Git states.
 #[allow(clippy::too_many_arguments)]
@@ -590,7 +580,7 @@ pub(super) fn run_frozen(
         original_row,
         name,
         output,
-        Some(source),
+        source,
     )
 }
 
@@ -638,7 +628,7 @@ fn run_inner(
     original_row: &Value,
     name: &str,
     output: &Path,
-    frozen: Option<&OriginalObservation<'_>>,
+    frozen: &OriginalObservation<'_>,
 ) -> Result<Value> {
     let bare = output.join("origin.git");
     git(
@@ -695,6 +685,8 @@ fn run_inner(
     fs::create_dir_all(helper.parent().ok_or("missing owned helper parent")?)?;
     fs::write(&helper, b"#!/bin/sh\nprintf '%s\\n' \"$@\" > package-attempt\necho 'Owned matching release unavailable'\nexit 17\n")?;
     fs::set_permissions(&helper, fs::Permissions::from_mode(0o755))?;
+    let created_helper =
+        CreatedProgramGuard::record(&helper, &output.join("created-package-helper.jsonl"))?;
     fs::write(
         checkout.join(".git/info/exclude"),
         "\n/rust/\n/package-attempt\n",
@@ -764,18 +756,7 @@ fn run_inner(
     let (status, response) = observed?;
     stop?;
     let server_exit = finished?;
-    let original_root = output
-        .parent()
-        .ok_or("missing owned replay parent")?
-        .parent()
-        .ok_or("missing original actions root")?;
-    let previous: Value = if let Some(source) = frozen {
-        source(&format!("actions/{name}/source-evidence/reply.json"))?
-    } else {
-        serde_json::from_slice(&fs::read(
-            original_root.join(name).join("native-evidence/reply.json"),
-        )?)?
-    };
+    let previous = frozen(&format!("actions/{name}/source-evidence/reply.json"))?;
     let mut normalized = response.clone();
     let mut expected = previous.clone();
     let executable = response
@@ -783,7 +764,7 @@ fn run_inner(
         .and_then(Value::as_str)
         .map(str::to_owned);
     let has_command = executable.is_some();
-    if frozen.is_some() && has_command {
+    if has_command {
         let action = original_row["payload"]["action"]
             .as_str()
             .ok_or("frozen action name absent")?;
@@ -835,7 +816,7 @@ fn run_inner(
                 ("GIT_CONFIG_NOSYSTEM", "1".into()),
                 ("GIT_ALLOW_PROTOCOL", "file".into()),
             ];
-            if let Some((_, tools)) = &rebuild {
+            if let Some((_, tools, _)) = &rebuild {
                 shell_environment.push((
                     "PATH",
                     format!("{}:{}", tools.display(), std::env::var("PATH")?),
@@ -853,33 +834,21 @@ fn run_inner(
     }
     drop(busy_lock);
     let after = snapshot(&checkout)?;
-    let staged = if frozen.is_some() {
-        has_command
-            && matches!(
-                original_row["payload"]["action"].as_str(),
-                Some(
-                    "git_reset"
-                        | "git_sync"
-                        | "git_pull"
-                        | "git_rebuild"
-                        | "rebuild_all"
-                        | "git_checkout"
-                        | "git_checkout_commit"
-                        | "git_reset_repo"
-                )
+    let staged = has_command
+        && matches!(
+            original_row["payload"]["action"].as_str(),
+            Some(
+                "git_reset"
+                    | "git_sync"
+                    | "git_pull"
+                    | "git_rebuild"
+                    | "rebuild_all"
+                    | "git_checkout"
+                    | "git_checkout_commit"
+                    | "git_reset_repo"
             )
-    } else {
-        original_row["staged_contract"] == true
-    };
-    let original_after: Value = if let Some(source) = frozen {
-        source(&format!("actions/{name}/source-evidence/repository.json"))?
-    } else {
-        serde_json::from_slice(&fs::read(
-            original_root
-                .join(name)
-                .join("native-evidence/repository.json"),
-        )?)?
-    };
+        );
+    let original_after = frozen(&format!("actions/{name}/source-evidence/repository.json"))?;
     let mut observed = OpenOptions::new()
         .write(true)
         .create_new(true)
@@ -890,41 +859,38 @@ fn run_inner(
             "sealed_original_after":&original_after,"shell_exit":shell_exit}),
     )?;
     observed.flush()?;
-    if frozen.is_some() {
-        match name {
-            "git_reset" | "git_pull" | "git_reset_repo" => {
-                if original_after["tracked"] != "initial\n"
-                    || before["tracked"] != "locally modified\n"
-                {
-                    return Err("frozen original destructive reset control changed".into());
-                }
+    match name {
+        "git_reset" | "git_pull" | "git_reset_repo" => {
+            if original_after["tracked"] != "initial\n" || before["tracked"] != "locally modified\n"
+            {
+                return Err("frozen original destructive reset control changed".into());
             }
-            "git_sync" => {
-                if !before["refs"]
+        }
+        "git_sync" => {
+            if !before["refs"]
+                .as_str()
+                .is_some_and(|refs| refs.contains("refs/heads/spare "))
+                || original_after["refs"]
                     .as_str()
                     .is_some_and(|refs| refs.contains("refs/heads/spare "))
-                    || original_after["refs"]
-                        .as_str()
-                        .is_some_and(|refs| refs.contains("refs/heads/spare "))
-                {
-                    return Err("frozen original branch deletion control changed".into());
-                }
+            {
+                return Err("frozen original branch deletion control changed".into());
             }
-            _ => {}
         }
-        if name == "git_reset_repo"
-            && original_after["remote"] != "https://github.com/ajouatom/openpilot.git"
-        {
-            return Err("frozen original remote-reset control changed".into());
-        }
-        if staged && name == "git_pull_repair" {
-            validate_pull_repair_snapshot(&before, &after, &original_after, &advanced)?;
-        }
+        _ => {}
+    }
+    if name == "git_reset_repo"
+        && original_after["remote"] != "https://github.com/ajouatom/openpilot.git"
+    {
+        return Err("frozen original remote-reset control changed".into());
+    }
+    if staged && name == "git_pull_repair" {
+        validate_pull_repair_snapshot(&before, &after, &original_after, &advanced)?;
     }
     for field in [
         "head", "branch", "status", "tracked", "remote", "refs", "fetch",
     ] {
-        let expected_field = if frozen.is_some() && staged {
+        let expected_field = if staged {
             if name == "git_pull_repair" && (field == "refs" || field == "fetch") {
                 continue;
             }
@@ -956,25 +922,17 @@ fn run_inner(
             );
         }
     }
-    let original_exit = if let Some(source) = frozen {
-        if staged || !has_command {
-            None
-        } else {
-            source(&format!("actions/{name}/source-evidence/shell.json"))?["exit"]
-                .as_i64()
-                .map(i32::try_from)
-                .transpose()?
-        }
+    let original_exit = if staged || !has_command {
+        None
     } else {
-        original_row["exits"]
-            .get("native")
-            .and_then(Value::as_i64)
+        frozen(&format!("actions/{name}/source-evidence/shell.json"))?["exit"]
+            .as_i64()
             .map(i32::try_from)
             .transpose()?
     };
-    if rebuild.is_none() && (frozen.is_none() || !staged) && shell_exit != original_exit {
+    if rebuild.is_none() && !staged && shell_exit != original_exit {
         return Err(format!(
-            "owned Git command exit differs from original native observation: {name}"
+            "owned Git command exit differs from sealed original observation: {name}"
         )
         .into());
     }
@@ -986,16 +944,9 @@ fn run_inner(
             "cache_removed":!cache.exists(),
             "sudo":if checkout.join("sudo.argv").exists(){fs::read_to_string(checkout.join("sudo.argv"))?}else{String::new()},
         });
-        let effects_match = if frozen.is_some() {
-            actual
-                == json!({"scons":"","sudo":"","prebuilt_removed":false,
-                "sign_removed":false,"cache_removed":false})
-        } else {
-            let original: Value = serde_json::from_slice(&fs::read(
-                original_root.join(format!("{name}_effects/native-evidence/effects.json")),
-            )?)?;
-            actual == original
-        };
+        let effects_match = actual
+            == json!({"scons":"","sudo":"","prebuilt_removed":false,
+            "sign_removed":false,"cache_removed":false});
         if !effects_match
             || fs::read_to_string(checkout.join("rust/runtime-manifest.json"))? != "old package"
             || shell_exit != Some(17)
@@ -1050,6 +1001,12 @@ fn run_inner(
         output.join("comparison.json"),
         serde_json::to_vec_pretty(&receipt)?,
     )?;
+    created_helper.finish()?;
+    if let Some((_, _, created)) = rebuild {
+        for guard in created {
+            guard.finish()?;
+        }
+    }
     Ok(receipt)
 }
 

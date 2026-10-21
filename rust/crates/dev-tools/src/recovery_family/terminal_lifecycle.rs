@@ -1,4 +1,5 @@
 use super::{terminal_control::marker_pid, HttpPeer, OwnedServer, Pin, Result, WebSocketPeer};
+use crate::recovery_exec_audit::CreatedProgramGuard;
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use rustix::process::Signal;
 use serde_json::{json, Value};
@@ -76,13 +77,6 @@ fn output_with_pid(
     Err("missing bounded PTY PID response".into())
 }
 
-/// Native lifecycle counterpart to the unchanged terminal_lifecycle.py's
-/// strict side. The original source-race observation continues in the old
-/// controller until a fresh independent capture is sealed.
-pub fn run_terminal_lifecycle(config: &TerminalLifecycleConfig<'_>) -> Result<()> {
-    run_terminal_lifecycle_inner(config, None)
-}
-
 /// Compare the fresh native reset and cleanup effects with immutable original
 /// observations. Process IDs are required to be distinct within each run,
 /// rather than copied from the historical host.
@@ -90,18 +84,20 @@ pub fn run_terminal_lifecycle_frozen(
     config: &TerminalLifecycleConfig<'_>,
     load_original: impl Fn(&str) -> Result<Value>,
 ) -> Result<()> {
-    run_terminal_lifecycle_inner(config, Some(&load_original))
+    run_terminal_lifecycle_inner(config, &load_original)
 }
 
 fn run_terminal_lifecycle_inner(
     config: &TerminalLifecycleConfig<'_>,
-    load_original: Option<&OriginalObservation<'_>>,
+    load_original: &OriginalObservation<'_>,
 ) -> Result<()> {
     fs::create_dir(config.output)?;
     let candidate = Pin::open(config.candidate, 256 * 1024 * 1024)?;
     let shell = config.output.join("fixture-shell");
     fs::write(&shell, "#!/bin/sh\nexec /bin/bash --noprofile --norc -i\n")?;
     fs::set_permissions(&shell, fs::Permissions::from_mode(0o700))?;
+    let created_shell =
+        CreatedProgramGuard::record(&shell, &config.output.join("created-lifecycle-shell.jsonl"))?;
     let port = TcpListener::bind(("127.0.0.1", 0))?.local_addr()?.port();
     let argv = [
         OsString::from(config.candidate),
@@ -263,7 +259,8 @@ fn run_terminal_lifecycle_inner(
     {
         return Err("native lifecycle server or descendant cleanup failed".into());
     }
-    if let Some(load) = load_original {
+    {
+        let load = load_original;
         let original = load("lifecycle/source/result.json")?;
         let original_rounds = original["reset_rounds"]
             .as_array()
@@ -308,10 +305,11 @@ fn run_terminal_lifecycle_inner(
         }
     }
     candidate.verify()?;
+    created_shell.finish()?;
     fs::write(
         config.output.join("result.json"),
         serde_json::to_vec_pretty(
-            &json!({"pass":true,"native_24_reset_rounds":pids.len()==24,"native_active_peer_closed_before_replacement":true,"native_leader_and_two_level_descendant_cleanup":true,"native_server_shutdown_cleanup":true,"candidate_sha256":candidate.digest(),"frozen_original_compared":load_original.is_some(),"source_race_observation":"historical source-only observation; not native success expectation"}),
+            &json!({"pass":true,"native_24_reset_rounds":pids.len()==24,"native_active_peer_closed_before_replacement":true,"native_leader_and_two_level_descendant_cleanup":true,"native_server_shutdown_cleanup":true,"candidate_sha256":candidate.digest(),"frozen_original_compared":true,"source_race_observation":"historical source-only observation; not native success expectation"}),
         )?,
     )?;
     Ok(())

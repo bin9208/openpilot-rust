@@ -1,9 +1,9 @@
-//! Retains the unchanged upload controller as an independent source oracle.
-//! Its HTTP upload and multipart comparisons remain mandatory during this
-//! staged controller conversion; this is not a Python absence proof.
+//! Runs owned upload HTTP and multipart effects against sealed original-only
+//! observations. The hosted controller capture is independent fixture data.
 
 use super::{upload_wire, HttpPeer, OwnedServer, Pin, Result, ScriptedHttpPeer};
 use crate::qa_process::{CommandSpec, NativeRunner, Runner};
+use crate::recovery_exec_audit::CreatedProgramGuard;
 use rustix::process::Signal;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -15,18 +15,6 @@ use std::{
     path::Path,
     time::Duration,
 };
-
-pub struct UploadCorpusConfig<'a> {
-    pub repository: &'a Path,
-    pub python: &'a Path,
-    pub controller: &'a Path,
-    pub fixtures: &'a Path,
-    pub source_server: &'a Path,
-    pub candidate: &'a Path,
-    pub actions_binary: &'a Path,
-    pub process_child: &'a Path,
-    pub output: &'a Path,
-}
 
 pub struct UploadFrozenConfig<'a> {
     pub repository: &'a Path,
@@ -197,6 +185,8 @@ fn run_http_action(
     let tmux = tools.join("tmux");
     fs::write(&tmux, b"#!/bin/sh\nprintf 'owned capture\\377\\r\\n'\n")?;
     fs::set_permissions(&tmux, fs::Permissions::from_mode(0o755))?;
+    let created_tmux =
+        CreatedProgramGuard::record(&tmux, &output.join("created-upload-tmux.jsonl"))?;
     let path = std::env::var_os("PATH").ok_or("PATH required for recovery tool")?;
     let mut owned_path = tools.as_os_str().to_os_string();
     owned_path.push(":");
@@ -278,6 +268,7 @@ fn run_http_action(
     if !pass {
         return Err(format!("Rust-driven recovery HTTP action mismatch: {name}").into());
     }
+    created_tmux.finish()?;
     Ok(receipt)
 }
 
@@ -299,128 +290,6 @@ const MODES: &[&str] = &[
     "large-response",
     "invalid-utf8-response",
 ];
-
-pub fn admit_upload_corpus(config: &UploadCorpusConfig<'_>) -> Result<()> {
-    if config.output.exists() {
-        return Err("recovery upload output must be fresh".into());
-    }
-    let pins = [
-        Pin::open(config.controller, 1024 * 1024)?,
-        Pin::open(config.fixtures, 1024 * 1024)?,
-        Pin::open(config.source_server, 4 * 1024 * 1024)?,
-        Pin::open(config.candidate, 256 * 1024 * 1024)?,
-        Pin::open(config.actions_binary, 256 * 1024 * 1024)?,
-        Pin::open(config.process_child, 256 * 1024 * 1024)?,
-    ];
-    let argv = vec![
-        config.python.display().to_string(),
-        "-P".into(),
-        config.controller.display().to_string(),
-        "--binary".into(),
-        config.candidate.display().to_string(),
-        "--output".into(),
-        config.output.display().to_string(),
-        "--http-binary".into(),
-        config.actions_binary.display().to_string(),
-    ];
-    let mut command = CommandSpec::new(argv.clone(), Duration::from_secs(12 * 60));
-    command.cwd = Some(config.repository.to_owned());
-    command.env_remove.push("PYTHONOPTIMIZE".into());
-    command.stdout_limit = 1024 * 1024;
-    command.stderr_limit = 4 * 1024 * 1024;
-    let mut runner = NativeRunner;
-    let observed = runner.run(&command)?;
-    if !config.output.exists() {
-        return Err("recovery upload output missing".into());
-    }
-    fs::write(config.output.join("controller.stdout"), &observed.stdout)?;
-    fs::write(config.output.join("controller.stderr"), &observed.stderr)?;
-    fs::write(
-        config.output.join("invocation.json"),
-        serde_json::to_vec_pretty(&json!({"argv":argv,"exit":observed.code}))?,
-    )?;
-    if observed.code != 0 {
-        return Err("unchanged recovery upload corpus failed".into());
-    }
-    let summary: Value = serde_json::from_slice(&fs::read(config.output.join("result.json"))?)?;
-    if summary["pairs"].as_u64() != Some(MODES.len() as u64)
-        || summary["http_action_pairs"].as_u64() != Some(3)
-        || summary["source_sha256"].as_str() != Some(pins[2].digest())
-        || summary["binary_sha256"].as_str() != Some(pins[3].digest())
-        || summary["owned_recipients_only"] != true
-    {
-        return Err("recovery upload summary changed".into());
-    }
-    let rows: Vec<Value> =
-        serde_json::from_slice(&fs::read(config.output.join("comparisons.json"))?)?;
-    if rows.len() != MODES.len() {
-        return Err("recovery upload scenario count changed".into());
-    }
-    for (name, row) in MODES.iter().zip(&rows) {
-        if row["scenario"] != *name
-            || !row["source"].is_object()
-            || !row["native"].is_object()
-            || !row["source_requests"].is_array()
-            || !row["native_requests"].is_array()
-            || row.get("source") != row.get("native")
-            || row.get("source_requests") != row.get("native_requests")
-        {
-            return Err(format!("recovery upload source/native mismatch: {name}").into());
-        }
-    }
-    let http: Vec<Value> =
-        serde_json::from_slice(&fs::read(config.output.join("http/comparisons.json"))?)?;
-    if http.len() != 3 {
-        return Err("recovery upload HTTP action count changed".into());
-    }
-    for (name, row) in ["success", "partial", "all-failed"].iter().zip(&http) {
-        if row["scenario"] != *name
-            || !row["source"].is_object()
-            || !row["native"].is_object()
-            || !row["source_requests"].is_array()
-            || !row["native_requests"].is_array()
-            || row.get("source") != row.get("native")
-            || row.get("source_requests") != row.get("native_requests")
-        {
-            return Err(format!("recovery upload HTTP action mismatch: {name}").into());
-        }
-    }
-    let direct_actions = config.output.join("direct-http-actions");
-    let native_inputs = UploadNativeInputs {
-        repository: config.repository,
-        candidate: config.candidate,
-        actions_binary: config.actions_binary,
-        process_child: config.process_child,
-        output: config.output,
-    };
-    fs::create_dir(&direct_actions)?;
-    let mut action_rows = Vec::new();
-    for (name, row) in ["success", "partial", "all-failed"].iter().zip(&http) {
-        action_rows.push(run_http_action(
-            &native_inputs,
-            row,
-            name,
-            &direct_actions.join(name),
-        )?);
-        fs::write(
-            direct_actions.join("comparisons.json"),
-            serde_json::to_vec_pretty(&action_rows)?,
-        )?;
-    }
-    let direct_rows = run_native_upload_cases(&native_inputs, &rows)?;
-    for pin in &pins {
-        pin.verify()?;
-    }
-    fs::write(
-        config.output.join("admission.json"),
-        serde_json::to_vec_pretty(&json!({
-            "pass":true,"source_controller_required":true,"upload_modes":MODES.len(),
-        "http_action_modes":3,"rust_driven_native_modes":direct_rows.len(),"rust_driven_http_actions":action_rows.len(),"source_sha256":pins[2].digest(),
-            "candidate_sha256":pins[3].digest(),"actions_sha256":pins[4].digest(),
-        }))?,
-    )?;
-    Ok(())
-}
 
 fn run_native_upload_cases(config: &UploadNativeInputs<'_>, rows: &[Value]) -> Result<Vec<Value>> {
     let mut direct_rows = Vec::new();

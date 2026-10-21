@@ -12,8 +12,11 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     ffi::OsStr,
     fs::{self, File},
-    io::{Read, Seek, SeekFrom},
-    os::unix::{ffi::OsStrExt, fs::MetadataExt},
+    io::{Read, Seek, SeekFrom, Write},
+    os::unix::{
+        ffi::OsStrExt,
+        fs::{MetadataExt, PermissionsExt},
+    },
     path::{Component, Path, PathBuf},
 };
 
@@ -86,12 +89,61 @@ pub struct ProgramSeal {
     pub sha256: String,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum CreatedProgramKind {
+    /// The existing 52-row owned-alias receipt begins with `created` and
+    /// precedes every action or PTY invocation.
+    Alias { source: Vec<u8> },
+    /// The writer's held-file receipt is emitted after the copy and before
+    /// its first execution; `source` was sealed before the harness.
+    CopiedElf { source: Vec<u8>, receipt: PathBuf },
+    /// Exact bytes come from a source-authored literal, never a trace or a
+    /// candidate-generated output. The writer must hold the file descriptor.
+    AuthoredScript {
+        bytes: Vec<u8>,
+        mode: u32,
+        receipt: PathBuf,
+    },
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CreatedProgramRule {
+    pub final_seal: ProgramSeal,
+    pub kind: CreatedProgramKind,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ExpectedAttempt {
     pub program: Vec<u8>,
     pub argv: Vec<Vec<u8>>,
     pub outcome: Outcome,
     pub count: usize,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum TypedArg {
+    Exact(Vec<u8>),
+    /// `tempfile::Builder::prefix("op-exec-")` and `NamedTempFile` in
+    /// process-supervision. This is an argv path, never an executable seal.
+    LaunchDescriptor,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct ExpectedTypedAttempt {
+    pub program: Vec<u8>,
+    pub argv: Vec<TypedArg>,
+    pub outcome: Outcome,
+    pub count: usize,
+}
+
+/// Narrower executable-provenance admission. Raw argv is retained in the
+/// audit receipt but is not claimed to equal an independent argv oracle.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct ExpectedProgram {
+    pub program: Vec<u8>,
+    pub outcome: Outcome,
+    pub minimum: usize,
+    pub maximum: usize,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -120,7 +172,10 @@ pub struct OwnedAliasReceiptRule {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ExplicitPolicy {
     pub expected: Vec<ExpectedAttempt>,
+    pub typed_expected: Vec<ExpectedTypedAttempt>,
+    pub allowed_programs: Vec<ExpectedProgram>,
     pub program_seals: Vec<(ProgramSeal, ProgramSeal)>,
+    pub created_programs: Vec<CreatedProgramRule>,
     /// Independent source/provider digest, never computed from this trace.
     pub expected_program_sha256: Vec<(Vec<u8>, String)>,
     pub alias_relations: Vec<AliasRelation>,
@@ -137,10 +192,13 @@ pub struct ExplicitPolicy {
 #[derive(Debug, Serialize)]
 pub struct AuditReceipt {
     pub passed: bool,
+    pub argv_scope: String,
     pub attempts: Vec<Attempt>,
     pub successful: usize,
     pub failed: usize,
+    pub program_counts: Vec<(ExpectedProgram, usize)>,
     pub program_seals: Vec<(ProgramSeal, ProgramSeal)>,
+    pub created_programs: Vec<CreatedProgramRule>,
     pub alias_relations: Vec<AliasRelation>,
     pub scripts: Vec<ScriptInterpreter>,
     pub alias_receipts: Vec<OwnedAliasReceiptRule>,
@@ -167,6 +225,127 @@ pub struct TraceCorpus {
     directory: PathBuf,
     files: Vec<HeldTraceFile>,
     attempts: Vec<Attempt>,
+}
+
+/// A program authored by the fixture after the pre-harness seal. The first
+/// row is flushed before it can be launched. Drop writes the final row only
+/// when the held descriptor and its original path still agree; an incomplete
+/// receipt is rejected by `audit` even if a controller forgets a final check.
+pub struct CreatedProgramGuard {
+    path: PathBuf,
+    held: File,
+    receipt_path: PathBuf,
+    receipt: File,
+    seal: ProgramSeal,
+    mode: u32,
+    finished: bool,
+}
+
+impl CreatedProgramGuard {
+    pub fn record(path: &Path, receipt_path: &Path) -> Result<Self> {
+        let held = File::from(rustix::fs::open(
+            path,
+            rustix::fs::OFlags::RDONLY
+                | rustix::fs::OFlags::NONBLOCK
+                | rustix::fs::OFlags::NOFOLLOW
+                | rustix::fs::OFlags::CLOEXEC,
+            rustix::fs::Mode::empty(),
+        )?);
+        let metadata = held.metadata()?;
+        if !metadata.is_file() || metadata.len() > MAX_PROGRAM_BYTES {
+            return Err(invalid("created executable is not bounded regular file"));
+        }
+        let seal = capture_program_seal(path)?;
+        if !seal.links.is_empty()
+            || (metadata.dev(), metadata.ino(), metadata.len()) != (seal.dev, seal.ino, seal.len)
+            || digest_held(&held, MAX_PROGRAM_BYTES, seal.len)? != seal.sha256
+        {
+            return Err(invalid("created executable path changed while binding"));
+        }
+        let mode = metadata.permissions().mode() & 0o777;
+        let mut receipt = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(receipt_path)?;
+        Self::write_row(&mut receipt, "created", &seal, mode)?;
+        Ok(Self {
+            path: path.to_owned(),
+            held,
+            receipt_path: receipt_path.to_owned(),
+            receipt,
+            seal,
+            mode,
+            finished: false,
+        })
+    }
+
+    fn write_row(file: &mut File, stage: &str, seal: &ProgramSeal, mode: u32) -> Result<()> {
+        let path = std::str::from_utf8(&seal.requested)?;
+        serde_json::to_writer(
+            &mut *file,
+            &json!({"stage":stage,"path":path,"dev":seal.dev,"ino":seal.ino,
+                "len":seal.len,"sha256":seal.sha256,"mode":mode}),
+        )?;
+        file.write_all(b"\n")?;
+        file.flush()?;
+        Ok(())
+    }
+
+    pub fn finish(mut self) -> Result<()> {
+        self.finished = true;
+        self.verify_and_finish()
+    }
+
+    fn verify_and_finish(&mut self) -> Result<()> {
+        let held = self.held.metadata()?;
+        let receipt_held = self.receipt.metadata()?;
+        let receipt_named = fs::symlink_metadata(&self.receipt_path)?;
+        if !receipt_named.is_file()
+            || (receipt_held.dev(), receipt_held.ino())
+                != (receipt_named.dev(), receipt_named.ino())
+            || (held.dev(), held.ino(), held.len()) != (self.seal.dev, self.seal.ino, self.seal.len)
+            || held.permissions().mode() & 0o777 != self.mode
+            || capture_program_seal(&self.path)? != self.seal
+        {
+            return Err(invalid(
+                "created executable or receipt changed before finalization",
+            ));
+        }
+        let digest = digest_held(&self.held, MAX_PROGRAM_BYTES, self.seal.len)?;
+        if digest != self.seal.sha256 {
+            return Err(invalid("held created executable contents changed"));
+        }
+        Self::write_row(&mut self.receipt, "after-family", &self.seal, self.mode)
+    }
+}
+
+impl Drop for CreatedProgramGuard {
+    fn drop(&mut self) {
+        if !self.finished && self.verify_and_finish().is_ok() {
+            self.finished = true;
+        }
+    }
+}
+
+fn digest_held(file: &File, maximum: u64, expected_len: u64) -> Result<String> {
+    let mut clone = file.try_clone()?;
+    clone.rewind()?;
+    let mut limited = clone.take(maximum + 1);
+    let mut hash = Sha256::new();
+    let mut length = 0_u64;
+    let mut chunk = [0_u8; 65_536];
+    loop {
+        let count = limited.read(&mut chunk)?;
+        if count == 0 {
+            break;
+        }
+        length += count as u64;
+        hash.update(&chunk[..count]);
+    }
+    if length != expected_len || length > maximum {
+        return Err(invalid("held executable length changed"));
+    }
+    Ok(format!("{:x}", hash.finalize()))
 }
 
 fn invalid(message: &str) -> Box<dyn std::error::Error> {
@@ -668,6 +847,25 @@ fn alias_binding(source: &ProgramSeal, alias: &ProgramSeal) -> Result<Value> {
     )
 }
 
+fn verify_created_receipt(path: &Path, seal: &ProgramSeal, mode: u32) -> Result<()> {
+    let bytes = read_bound_regular(path, 4096)?;
+    let text = std::str::from_utf8(&bytes)?;
+    let rows = text.lines().collect::<Vec<_>>();
+    if rows.len() != 2 || !text.ends_with('\n') {
+        return Err(invalid("created executable receipt incomplete"));
+    }
+    let program = std::str::from_utf8(&seal.requested)?;
+    for (stage, row) in ["created", "after-family"].into_iter().zip(rows) {
+        let actual: Value = serde_json::from_str(row)?;
+        let expected = json!({"stage":stage,"path":program,"dev":seal.dev,
+            "ino":seal.ino,"len":seal.len,"sha256":seal.sha256,"mode":mode});
+        if actual != expected {
+            return Err(invalid("created executable identity changed"));
+        }
+    }
+    Ok(())
+}
+
 fn verify_alias_receipt(
     rule: &OwnedAliasReceiptRule,
     seals: &BTreeMap<Vec<u8>, &ProgramSeal>,
@@ -726,12 +924,51 @@ fn verify_alias_receipt(
     Ok(())
 }
 
+fn launch_descriptor_path(path: &[u8]) -> bool {
+    let Some(rest) = path.strip_prefix(b"/tmp/op-exec-") else {
+        return false;
+    };
+    let mut components = rest.splitn(2, |byte| *byte == b'/');
+    let (Some(directory), Some(file)) = (components.next(), components.next()) else {
+        return false;
+    };
+    let Some(file) = file.strip_prefix(b".tmp") else {
+        return false;
+    };
+    directory.len() == 6
+        && file.len() == 6
+        && directory.iter().chain(file).all(u8::is_ascii_alphanumeric)
+}
+
+fn matches_typed(rule: &ExpectedTypedAttempt, attempt: &Attempt) -> bool {
+    rule.program == attempt.program
+        && rule.outcome == attempt.outcome
+        && rule.argv.len() == attempt.argv.len()
+        && rule
+            .argv
+            .iter()
+            .zip(&attempt.argv)
+            .all(|(rule, value)| match rule {
+                TypedArg::Exact(expected) => expected == value,
+                TypedArg::LaunchDescriptor => launch_descriptor_path(value),
+            })
+}
+
 pub fn audit(mut corpus: TraceCorpus, policy: &ExplicitPolicy) -> Result<AuditReceipt> {
     corpus.verify()?;
     let mut receipt = audit_attempts(corpus.attempts.clone(), policy)?;
     for (before, after) in &policy.program_seals {
         if capture_program_seal(Path::new(OsStr::from_bytes(&before.requested)))? != *after {
             return Err(invalid("executable changed before trace audit completed"));
+        }
+    }
+    for created in &policy.created_programs {
+        if capture_program_seal(Path::new(OsStr::from_bytes(&created.final_seal.requested)))?
+            != created.final_seal
+        {
+            return Err(invalid(
+                "created executable changed before trace audit completed",
+            ));
         }
     }
     corpus.verify()?;
@@ -767,6 +1004,15 @@ fn audit_attempts(attempts: Vec<Attempt>, policy: &ExplicitPolicy) -> Result<Aud
         }
         if seals.insert(before.requested.clone(), before).is_some() {
             return Err(invalid("duplicate executable seal"));
+        }
+    }
+    for created in &policy.created_programs {
+        let seal = &created.final_seal;
+        if capture_program_seal(Path::new(OsStr::from_bytes(&seal.requested)))? != *seal
+            || forbidden_interpreter(&seal.resolved, &seal.resolved)
+            || seals.insert(seal.requested.clone(), seal).is_some()
+        {
+            return Err(invalid("created executable seal changed or duplicated"));
         }
     }
     let mut digests = BTreeMap::new();
@@ -816,6 +1062,58 @@ fn audit_attempts(attempts: Vec<Attempt>, policy: &ExplicitPolicy) -> Result<Aud
         }
         verify_alias_receipt(receipt, &seals, &policy.alias_relations)?;
     }
+    for created in &policy.created_programs {
+        let seal = &created.final_seal;
+        let named = fs::symlink_metadata(Path::new(OsStr::from_bytes(&seal.requested)))?;
+        if !named.is_file() || named.file_type().is_symlink() || !seal.links.is_empty() {
+            return Err(invalid(
+                "created executable path is not a direct regular file",
+            ));
+        }
+        let mode = named.permissions().mode() & 0o777;
+        match &created.kind {
+            CreatedProgramKind::Alias { source } => {
+                let original = seals.get(source).ok_or("unsealed hardlink source")?;
+                if !policy.alias_relations.iter().any(|relation| {
+                    relation.alias.as_slice() == seal.requested.as_slice()
+                        && relation.source.as_slice() == source.as_slice()
+                        && relation.same_inode
+                }) || !policy.alias_receipts.iter().any(|receipt| {
+                    (receipt.candidate_alias.as_slice() == seal.requested.as_slice()
+                        && receipt.candidate_source.as_slice() == source.as_slice())
+                        || (receipt.child_alias.as_slice() == seal.requested.as_slice()
+                            && receipt.child_source.as_slice() == source.as_slice())
+                }) || (seal.dev, seal.ino, seal.len, &seal.sha256)
+                    != (original.dev, original.ino, original.len, &original.sha256)
+                {
+                    return Err(invalid("created alias lacks original held hardlink proof"));
+                }
+            }
+            CreatedProgramKind::CopiedElf { source, receipt } => {
+                let original = seals.get(source).ok_or("unsealed copied ELF source")?;
+                if seal.sha256 != original.sha256 || seal.len != original.len {
+                    return Err(invalid("created ELF differs from sealed source"));
+                }
+                verify_created_receipt(receipt, seal, mode)?;
+            }
+            CreatedProgramKind::AuthoredScript {
+                bytes,
+                mode: authored_mode,
+                receipt,
+            } => {
+                if bytes.len() > 4096
+                    || !bytes.starts_with(b"#!")
+                    || format!("{:x}", Sha256::digest(bytes)) != seal.sha256
+                    || mode != *authored_mode
+                {
+                    return Err(invalid(
+                        "created script differs from authored bytes or mode",
+                    ));
+                }
+                verify_created_receipt(receipt, seal, mode)?;
+            }
+        }
+    }
     let mut scripts = BTreeMap::new();
     for script in &policy.scripts {
         if scripts.insert(script.script.clone(), script).is_some()
@@ -852,10 +1150,13 @@ fn audit_attempts(attempts: Vec<Attempt>, policy: &ExplicitPolicy) -> Result<Aud
         if rule.count == 0 || rule.argv.is_empty() || rule.argv.len() > MAX_ARGV {
             return Err(invalid("invalid explicit exec rule"));
         }
-        if matches!(&rule.outcome, Outcome::Errno(errno) if errno != "ENOENT") {
-            return Err(invalid(
-                "only explicit ENOENT PATH-search attempts are admissible",
-            ));
+        if let Outcome::Errno(errno) = &rule.outcome {
+            let owned_permission_fixture = rule
+                .program
+                .ends_with(b"/actions/permission_tmux/tools/tmux");
+            if errno != "ENOENT" && !(errno == "EACCES" && owned_permission_fixture) {
+                return Err(invalid("unadmitted exec failure result"));
+            }
         }
         let key = (
             rule.program.clone(),
@@ -869,47 +1170,155 @@ fn audit_attempts(attempts: Vec<Attempt>, policy: &ExplicitPolicy) -> Result<Aud
             return Err(invalid("successful executable lacks source/provider seal"));
         }
     }
+    for rule in &policy.typed_expected {
+        if rule.count == 0
+            || rule.argv.is_empty()
+            || rule.argv.len() > MAX_ARGV
+            || rule.outcome != Outcome::Success
+            || rule
+                .argv
+                .iter()
+                .filter(|arg| matches!(arg, TypedArg::LaunchDescriptor))
+                .count()
+                != 1
+            || !seals.contains_key(&rule.program)
+            || !rule.program.ends_with(b"openpilot-process-child")
+            || rule.argv.first() != Some(&TypedArg::Exact(rule.program.clone()))
+        {
+            return Err(invalid("invalid typed launch-descriptor exec rule"));
+        }
+    }
+    let mut allowed = BTreeMap::new();
+    for rule in &policy.allowed_programs {
+        if rule.maximum == 0
+            || rule.maximum > MAX_ATTEMPTS
+            || rule.minimum > rule.maximum
+            || rule.program.is_empty()
+            || (rule.outcome == Outcome::Success && !seals.contains_key(&rule.program))
+        {
+            return Err(invalid("invalid executable-provenance rule"));
+        }
+        if let Outcome::Errno(errno) = &rule.outcome {
+            let permission = rule
+                .program
+                .ends_with(b"/actions/permission_tmux/tools/tmux");
+            if errno != "ENOENT" && !(permission && errno == "EACCES") {
+                return Err(invalid("unadmitted executable failure"));
+            }
+        }
+        if allowed
+            .insert((rule.program.clone(), rule.outcome.clone()), rule)
+            .is_some()
+        {
+            return Err(invalid("duplicate executable-provenance rule"));
+        }
+    }
     let harness_key = (
         policy.harness_program.clone(),
         policy.harness_argv.clone(),
         Outcome::Success,
     );
-    if expected.get(&harness_key) != Some(&1) {
+    if expected.get(&harness_key) != Some(&1)
+        && !allowed.contains_key(&(policy.harness_program.clone(), Outcome::Success))
+    {
         return Err(invalid("exact frozen harness invocation absent"));
     }
     let mut seen = BTreeMap::new();
+    let mut seen_typed = vec![0_usize; policy.typed_expected.len()];
+    let mut seen_programs = BTreeMap::new();
     let mut successful = 0;
     let mut failed = 0;
     for attempt in &attempts {
         if attempt.argv.is_empty() || forbidden_interpreter(&attempt.program, &attempt.argv[0]) {
             return Err(invalid("Python, empty, or opaque executable attempt"));
         }
+        if attempt.outcome == Outcome::Success
+            && attempt.program.ends_with(b"openpilot-process-child")
+            && (attempt.argv.len() != 2
+                || attempt.argv[0] != attempt.program
+                || !launch_descriptor_path(&attempt.argv[1]))
+        {
+            return Err(invalid("process-child launch descriptor argv changed"));
+        }
         let key = (
             attempt.program.clone(),
             attempt.argv.clone(),
             attempt.outcome.clone(),
         );
-        if !expected.contains_key(&key) {
+        let typed = policy
+            .typed_expected
+            .iter()
+            .enumerate()
+            .filter(|(_, rule)| matches_typed(rule, attempt))
+            .map(|(index, _)| index)
+            .collect::<Vec<_>>();
+        let program_key = (attempt.program.clone(), attempt.outcome.clone());
+        let program_admitted = allowed.contains_key(&program_key);
+        if (expected.contains_key(&key) as usize) + typed.len() + (program_admitted as usize) != 1 {
             return Err(invalid(
                 "exec path, argv, or result not explicitly admitted",
             ));
         }
-        *seen.entry(key).or_insert(0_usize) += 1;
+        if let Some(index) = typed.first() {
+            seen_typed[*index] += 1;
+        } else if program_admitted {
+            *seen_programs.entry(program_key).or_insert(0_usize) += 1;
+        } else {
+            *seen.entry(key).or_insert(0_usize) += 1;
+        }
         match attempt.outcome {
             Outcome::Success => successful += 1,
             Outcome::Errno(_) => failed += 1,
         }
     }
-    if seen != expected || successful == 0 {
+    if seen != expected
+        || seen_typed
+            .iter()
+            .zip(&policy.typed_expected)
+            .any(|(seen, rule)| *seen != rule.count)
+        || allowed.iter().any(|(key, rule)| {
+            let seen = seen_programs.get(key).copied().unwrap_or(0);
+            seen < rule.minimum || seen > rule.maximum
+        })
+        || attempts
+            .iter()
+            .filter(|attempt| {
+                attempt.program == policy.harness_program
+                    && attempt.argv == policy.harness_argv
+                    && attempt.outcome == Outcome::Success
+            })
+            .count()
+            != 1
+        || successful == 0
+    {
         return Err(invalid("exec attempt count differs from explicit policy"));
     }
     let admission_sha256 = format!("{:x}", Sha256::digest(&admission));
     Ok(AuditReceipt {
         passed: true,
+        argv_scope: if policy.allowed_programs.is_empty() {
+            "exact argv and count".into()
+        } else {
+            "sealed executable provenance and result; raw argv retained without parity claim".into()
+        },
         attempts,
         successful,
         failed,
+        program_counts: policy
+            .allowed_programs
+            .iter()
+            .map(|rule| {
+                (
+                    rule.clone(),
+                    seen_programs
+                        .get(&(rule.program.clone(), rule.outcome.clone()))
+                        .copied()
+                        .unwrap_or(0),
+                )
+            })
+            .collect(),
         program_seals: policy.program_seals.clone(),
+        created_programs: policy.created_programs.clone(),
         alias_relations: policy.alias_relations.clone(),
         scripts: policy.scripts.clone(),
         alias_receipts: policy.alias_receipts.clone(),
@@ -1021,6 +1430,7 @@ mod tests {
         }
         let mut alias_relations = Vec::new();
         let mut alias_receipts = Vec::new();
+        let mut created_programs = Vec::new();
         let mut stages = vec!["created".to_owned()];
         for name in ACTION_SCENARIOS {
             stages.push(format!("before-{name}"));
@@ -1047,10 +1457,19 @@ mod tests {
                     same_inode: true,
                 });
                 expected_program_sha256.push((alias.requested.clone(), alias.sha256.clone()));
-                program_seals.push((alias.clone(), alias.clone()));
+                created_programs.push(CreatedProgramRule {
+                    final_seal: alias.clone(),
+                    kind: CreatedProgramKind::Alias {
+                        source: source.as_os_str().as_bytes().to_vec(),
+                    },
+                });
+                let mut alias_argv = vec![alias.requested.clone()];
+                if alias.requested.ends_with(b"openpilot-process-child") {
+                    alias_argv.push(b"/tmp/op-exec-pJpgwF/.tmphIfUAU".to_vec());
+                }
                 expected.push(ExpectedAttempt {
                     program: alias.requested.clone(),
-                    argv: vec![alias.requested.clone()],
+                    argv: alias_argv.clone(),
                     outcome: Outcome::Success,
                     count: 1,
                 });
@@ -1059,7 +1478,7 @@ mod tests {
                     pid,
                     line: 1,
                     program: alias.requested.clone(),
-                    argv: vec![alias.requested.clone()],
+                    argv: alias_argv,
                     outcome: Outcome::Success,
                 });
             }
@@ -1094,7 +1513,10 @@ mod tests {
         .unwrap();
         let policy = ExplicitPolicy {
             expected,
+            typed_expected: vec![],
+            allowed_programs: vec![],
             program_seals,
+            created_programs,
             expected_program_sha256,
             alias_relations,
             scripts: vec![],
@@ -1107,6 +1529,25 @@ mod tests {
             harness_argv: argv,
         };
         assert!(audit_attempts(attempts.clone(), &policy).is_ok());
+        let mut provenance = policy.clone();
+        provenance.allowed_programs = provenance
+            .expected
+            .iter()
+            .map(|rule| ExpectedProgram {
+                program: rule.program.clone(),
+                outcome: rule.outcome.clone(),
+                minimum: rule.count,
+                maximum: rule.count,
+            })
+            .collect();
+        provenance.expected.clear();
+        let proven = audit_attempts(attempts.clone(), &provenance).unwrap();
+        assert!(proven.argv_scope.contains("without parity claim"));
+        let mut changed_argv = attempts.clone();
+        changed_argv[0]
+            .argv
+            .push(b"different-but-retained".to_vec());
+        assert!(audit_attempts(changed_argv, &provenance).is_err());
         let mut with_failure = policy.clone();
         with_failure.expected.push(ExpectedAttempt {
             program: b"/missing/git".to_vec(),
@@ -1125,6 +1566,23 @@ mod tests {
         with_failed_attempt.push(missing.clone());
         let receipt = audit_attempts(with_failed_attempt.clone(), &with_failure).unwrap();
         assert_eq!((receipt.successful, receipt.failed), (5, 1));
+        let permission_path = b"/owned/actions/permission_tmux/tools/tmux".to_vec();
+        let mut permission = policy.clone();
+        permission.expected.push(ExpectedAttempt {
+            program: permission_path.clone(),
+            argv: vec![permission_path.clone()],
+            outcome: Outcome::Errno("EACCES".into()),
+            count: 1,
+        });
+        let mut denied_permission = attempts.clone();
+        denied_permission.push(Attempt {
+            pid: 20,
+            line: 1,
+            program: permission_path,
+            argv: vec![b"/owned/actions/permission_tmux/tools/tmux".to_vec()],
+            outcome: Outcome::Errno("EACCES".into()),
+        });
+        assert!(audit_attempts(denied_permission, &permission).is_ok());
         let mut denied = missing;
         denied.outcome = Outcome::Errno("EACCES".into());
         *with_failed_attempt.last_mut().unwrap() = denied;
@@ -1179,5 +1637,68 @@ mod tests {
         let after = capture_program_seal(&outer).unwrap();
         assert_ne!(before, after, "nested link retargeting was not sealed");
         assert!(!forbidden_interpreter(&after.resolved, &after.resolved));
+    }
+
+    #[test]
+    fn created_writer_receipt_requires_held_identity_and_exact_final_bytes() {
+        let dir = tempfile::tempdir().unwrap();
+        let script = dir.path().join("script");
+        let receipt = dir.path().join("created.jsonl");
+        fs::write(&script, b"#!/bin/sh\nexit 0\n").unwrap();
+        fs::set_permissions(&script, fs::Permissions::from_mode(0o700)).unwrap();
+        let guard = CreatedProgramGuard::record(&script, &receipt).unwrap();
+        let first = fs::read_to_string(&receipt).unwrap();
+        assert_eq!(first.lines().count(), 1);
+        assert_eq!(
+            serde_json::from_str::<Value>(&first).unwrap()["stage"],
+            "created"
+        );
+        guard.finish().unwrap();
+        let sealed = capture_program_seal(&script).unwrap();
+        verify_created_receipt(&receipt, &sealed, 0o700).unwrap();
+
+        let replacement = dir.path().join("replacement");
+        fs::write(&replacement, b"#!/bin/sh\nexit 0\n").unwrap();
+        fs::set_permissions(&replacement, fs::Permissions::from_mode(0o700)).unwrap();
+        let second_receipt = dir.path().join("replaced.jsonl");
+        let guard = CreatedProgramGuard::record(&script, &second_receipt).unwrap();
+        fs::rename(&replacement, &script).unwrap();
+        assert!(guard.finish().is_err());
+        assert_eq!(
+            fs::read_to_string(&second_receipt).unwrap().lines().count(),
+            1
+        );
+    }
+
+    #[test]
+    fn created_writer_does_not_clobber_foreign_receipt_or_accept_same_length_mutation() {
+        let dir = tempfile::tempdir().unwrap();
+        let script = dir.path().join("script");
+        let receipt = dir.path().join("created.jsonl");
+        fs::write(&script, b"#!/bin/sh\nexit 0\n").unwrap();
+        fs::set_permissions(&script, fs::Permissions::from_mode(0o700)).unwrap();
+        fs::write(&receipt, b"foreign receipt").unwrap();
+        assert!(CreatedProgramGuard::record(&script, &receipt).is_err());
+        assert_eq!(fs::read(&receipt).unwrap(), b"foreign receipt");
+        fs::remove_file(&receipt).unwrap();
+        let guard = CreatedProgramGuard::record(&script, &receipt).unwrap();
+        fs::write(&script, b"#!/bin/sh\nexit 7\n").unwrap();
+        assert!(guard.finish().is_err());
+        assert_eq!(fs::read_to_string(&receipt).unwrap().lines().count(), 1);
+    }
+
+    #[test]
+    fn temporary_launch_descriptor_is_one_bounded_nonexecuting_argv_shape() {
+        assert!(launch_descriptor_path(b"/tmp/op-exec-pJpgwF/.tmphIfUAU"));
+        for path in [
+            b"/tmp/op-exec-pJpgwF/.tmphIfUAU/extra".as_slice(),
+            b"/tmp/op-exec-pJpgwF/../../python".as_slice(),
+            b"/tmp/op-exec-pJpgwF/.tmphIfUAU.py".as_slice(),
+            b"/tmp/op-exec-pJpgwF/.tmphIfUA".as_slice(),
+            b"/tmp/op-exec-pJpgwF/other".as_slice(),
+            b"/tmp/op-exec-pJpgwF/.tmp\xffAAAA".as_slice(),
+        ] {
+            assert!(!launch_descriptor_path(path));
+        }
     }
 }

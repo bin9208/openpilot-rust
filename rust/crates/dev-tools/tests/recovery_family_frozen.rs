@@ -1,6 +1,5 @@
 #![cfg(all(target_os = "linux", feature = "recovery-family-native"))]
-// Parent integration candidate for tests/recovery_family_frozen.rs.
-// Register with required-features = ["recovery-family-native"] after review.
+// Maintained eight-controller gate with independent original observations.
 use openpilot_dev_tools::recovery_family::{
     original_fixture::OriginalFixture, run_actions_frozen, run_cwp_frozen, run_http_frozen,
     run_support_frozen, run_support_shutdown_frozen, run_terminal_frozen,

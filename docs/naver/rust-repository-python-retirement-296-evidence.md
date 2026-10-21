@@ -17,6 +17,41 @@ Desire24,585-row/47-scenario comparisons. Inventory is242replaced-local/3partial
 Driver/shared logging helpers and recovery controllers still require their
 complete caller/absence gates. Whole-project compiler/tool/vendor conversion remains unfinished.
 
+## Metadata caller integration accepted; recovery deletion candidate (2026-10-22)
+
+[39681730943](https://github.com/bin9208/openpilot-rust/actions/runs/39681730943)
+passes at9076ccc410233b8ee9e2add38ff5f3de551ec3ec, workflow
+`a5724e4e816a92b49b727116e3c608479177ca73`: seven unit/caller regressions,
+all67 independent original observations,13disk-bootstrap cases,6workflow-policy
+cases, actual maintained host producer execution and strict Clippy. Parent
+independently audited all83CRCs and67 comparisons, including original-order
+selection and the strictly measured first-basename projection contract.
+This run required zero basename projections; both differing-order controls pass.
+Artifact12384097663 is44,650bytes, ZIP SHA256
+`3e7b85fe188eeb151983fad2540b7c4cb406fb6cb6ba920642084fe7d13369ea`.
+The14 observed embedded metadata edges are accepted:53→39pending. This changes
+no baseline Python-file retirement count. Subsequent recovery workflow changes
+still require their own fresh integration-policy verification.
+
+Recovery candidate integration now removes13 old Python tools, the old paired
+Rust test and Python-only APIs, and replaces all eight maintained calls plus the
+embedded CWP artifact selector. Created-script/copy/alias temporal receipts and
+the two-phase native executable-provenance audit join the same candidate.
+The initial contract retains every raw argv, requires the exact harness and
+bounded child-descriptor shape, and rejects unknown executable/Python/opaque
+trace attempts; it does not claim complete independent argv parity. Until the
+new actual-deletion grouped hosted gate passes, these13 files remain unaccepted
+pending inventory entries, not13 additional accepted retirements.
+
+Startup original capture39680582209 independently completes eight cases and
+manifest4c54c0d6fb375cec2d64c6ecfeb5ce709f223bbe0aeb0114b68c5a4e184c7416.
+USB source controller exits0 with all six report/cleanup assertions passing, but
+the wrapper incorrectly requires Python msgq imports despite its native C++ peer.
+It fails after input before/after checks and before final USB manifest writing.
+Three ELF byte lengths were not retained. Reuse the complete startup capture;
+repeat only USB with corrected bookkeeping and persisted executable pins rather
+than invent lengths or call an incomplete observation manifest complete.
+
 ## Recovery functional closure and metadata integration (2026-10-22)
 
 Recovery [39677229740](https://github.com/bin9208/openpilot-rust/actions/runs/39677229740)

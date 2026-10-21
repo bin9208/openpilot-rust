@@ -3,17 +3,6 @@ use crate::qa_process::{CommandSpec, NativeRunner, Runner};
 use serde_json::{json, Value};
 use std::{fs, os::unix::fs::symlink, path::Path, time::Duration};
 
-pub struct CwpPairConfig<'a> {
-    pub repository: &'a Path,
-    pub python: &'a Path,
-    pub source_script: &'a Path,
-    pub source_server: &'a Path,
-    pub test_binary: &'a Path,
-    pub output: &'a Path,
-}
-
-/// Runs the same owned native peer against independently captured source rows.
-/// The caller must load and authenticate those rows before calling this API.
 pub struct CwpFrozenConfig<'a> {
     pub repository: &'a Path,
     pub source_server: &'a Path,
@@ -23,8 +12,6 @@ pub struct CwpFrozenConfig<'a> {
 
 struct RunInputs<'a> {
     repository: &'a Path,
-    source_command: Option<(&'a Path, &'a Path)>,
-    source_server: &'a Path,
     test_binary: &'a Path,
     output: &'a Path,
 }
@@ -175,12 +162,7 @@ fn has_temp_files(directory: &Path) -> Result<bool> {
     Ok(false)
 }
 
-fn run_one(
-    config: &RunInputs<'_>,
-    case: &Scenario,
-    provider: &str,
-    source_digest: &str,
-) -> Result<Observation> {
+fn run_one(config: &RunInputs<'_>, case: &Scenario, provider: &str) -> Result<Observation> {
     let directory = config.output.join(case.name).join(provider);
     fs::create_dir_all(&directory)?;
     let alias = directory.join("params/alias");
@@ -198,18 +180,13 @@ fn run_one(
         .map(|&(status, body)| Reply::json(status, body.as_bytes()))
         .collect();
     let peer = ScriptedHttpPeer::start(replies)?;
-    let argv = if provider == "source" {
-        let (python, script) = config.source_command.ok_or("source CWP command absent")?;
-        vec![python.display().to_string(), script.display().to_string()]
-    } else {
-        vec![
-            config.test_binary.display().to_string(),
-            "--exact".into(),
-            "cwp::tests::child_driver".into(),
-            "--ignored".into(),
-            "--nocapture".into(),
-        ]
-    };
+    let argv = vec![
+        config.test_binary.display().to_string(),
+        "--exact".into(),
+        "cwp::tests::child_driver".into(),
+        "--ignored".into(),
+        "--nocapture".into(),
+    ];
     let mut command = CommandSpec::new(argv.clone(), Duration::from_secs(20));
     command.cwd = Some(config.repository.to_owned());
     command
@@ -225,10 +202,6 @@ fn run_one(
     command
         .env
         .insert("CWP_REPORT_TOKEN".into(), " owned-loopback-token ".into());
-    command.env.insert(
-        "PYTHONPYCACHEPREFIX".into(),
-        config.output.join("pycache").display().to_string(),
-    );
     let mut runner = NativeRunner;
     let captured = runner.run(&command)?;
     fs::write(directory.join("stdout.txt"), &captured.stdout)?;
@@ -267,16 +240,6 @@ fn run_one(
         directory.join("result.json"),
         serde_json::to_vec_pretty(&result)?,
     )?;
-    if provider == "source" {
-        let proof: Value = serde_json::from_slice(&fs::read(directory.join("source-proof.json"))?)?;
-        if proof.get("source").and_then(Value::as_str)
-            != config.source_server.canonicalize()?.to_str()
-            || proof.get("sha256").and_then(Value::as_str) != Some(source_digest)
-            || proof.get("runtime_functions_changed") != Some(&Value::Bool(false))
-        {
-            return Err("unchanged CWP server source proof mismatch".into());
-        }
-    }
     let gate_path = alias.join("CwebPushRecoveryBoot");
     let observed_gate = if gate_path.is_file() {
         Some(fs::read_to_string(&gate_path)?)
@@ -347,46 +310,6 @@ fn run_one(
         result,
         requests: payloads,
     })
-}
-
-pub fn run_cwp_pair(config: &CwpPairConfig<'_>) -> Result<()> {
-    fs::create_dir(config.output)?;
-    let source = Pin::open(config.source_script, 1024 * 1024)?;
-    let source_server = Pin::open(config.source_server, 4 * 1024 * 1024)?;
-    let binary = Pin::open(config.test_binary, 256 * 1024 * 1024)?;
-    let inputs = RunInputs {
-        repository: config.repository,
-        source_command: Some((config.python, config.source_script)),
-        source_server: config.source_server,
-        test_binary: config.test_binary,
-        output: config.output,
-    };
-    let mut rows = Vec::new();
-    for case in CASES {
-        let original = run_one(&inputs, case, "source", source_server.digest())?;
-        let native = run_one(&inputs, case, "native", source_server.digest())?;
-        let row = json!({"scenario":case.name,"original":original.result,"native":native.result,"source_requests":original.requests,"native_requests":native.requests});
-        rows.push(row);
-        fs::write(
-            config.output.join("comparisons.json"),
-            serde_json::to_vec_pretty(&rows)?,
-        )?;
-        let pair = rows.last().ok_or("missing CWP comparison")?;
-        if pair["original"] != pair["native"] || pair["source_requests"] != pair["native_requests"]
-        {
-            return Err(format!("CWP source/native mismatch: {}", case.name).into());
-        }
-    }
-    source.verify()?;
-    source_server.verify()?;
-    binary.verify()?;
-    fs::write(
-        config.output.join("result.json"),
-        serde_json::to_vec_pretty(
-            &json!({"pass":true,"cases":rows.len(),"source_sha256":source.digest(),"source_server_sha256":source_server.digest(),"binary_sha256":binary.digest()}),
-        )?,
-    )?;
-    Ok(())
 }
 
 fn frozen_payloads(case: &Scenario, source: &Value) -> Result<Vec<Value>> {
@@ -463,8 +386,6 @@ pub fn run_cwp_frozen(
     let binary = Pin::open(config.test_binary, 256 * 1024 * 1024)?;
     let inputs = RunInputs {
         repository: config.repository,
-        source_command: None,
-        source_server: config.source_server,
         test_binary: config.test_binary,
         output: config.output,
     };
@@ -497,7 +418,7 @@ pub fn run_cwp_frozen(
         let result = load_original(&format!("cwp/{}/source/result.json", case.name))?;
         let requests = load_original(&format!("cwp/{}/source/requests.json", case.name))?;
         let source_payloads = frozen_payloads(case, &requests)?;
-        let native = run_one(&inputs, case, "native", source_server.digest())?;
+        let native = run_one(&inputs, case, "native")?;
         let row = json!({"scenario":case.name,"original":result,"native":native.result,
             "source_requests":source_payloads,"native_requests":native.requests});
         rows.push(row);

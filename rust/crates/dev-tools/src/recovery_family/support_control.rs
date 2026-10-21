@@ -1,4 +1,5 @@
 use super::{HttpPeer, OwnedServer, Pin, Reply, Result, ScriptedHttpPeer, WebSocketPeer};
+use crate::recovery_exec_audit::CreatedProgramGuard;
 use regex::Regex;
 use rustix::process::Signal;
 use serde_json::{json, Value};
@@ -12,17 +13,6 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-
-pub struct SupportPairConfig<'a> {
-    pub repository: &'a Path,
-    pub python: &'a Path,
-    pub source_wrapper: &'a Path,
-    pub source_server: &'a Path,
-    pub candidate: &'a Path,
-    pub fixture_binary: &'a Path,
-    pub process_child: &'a Path,
-    pub output: &'a Path,
-}
 
 pub struct SupportFrozenConfig<'a> {
     pub repository: &'a Path,
@@ -500,148 +490,6 @@ fn exercise(port: u16, directory: &Path, webhook: &ScriptedHttpPeer) -> Result<V
     Ok(json!({"scenarios":results,"static":static_rows}))
 }
 
-pub fn run_support_pair(config: &SupportPairConfig<'_>) -> Result<()> {
-    fs::create_dir(config.output)?;
-    let source = Pin::open(config.source_server, 4 * 1024 * 1024)?;
-    let wrapper = Pin::open(config.source_wrapper, 1024 * 1024)?;
-    let candidate = Pin::open(config.candidate, 256 * 1024 * 1024)?;
-    let fixture = Pin::open(config.fixture_binary, 256 * 1024 * 1024)?;
-    let child = Pin::open(config.process_child, 256 * 1024 * 1024)?;
-    let xterm = Pin::open(
-        &config
-            .repository
-            .join("openpilot/selfdrive/carrot/web/js/vendor/xterm.js"),
-        4 * 1024 * 1024,
-    )?;
-    let mut results = Vec::new();
-    for provider in ["source", "native"] {
-        let directory = config.output.join(provider);
-        fs::create_dir(&directory)?;
-        let shell = directory.join("fixture-shell");
-        fs::write(&shell, "#!/bin/sh\nexec /bin/bash --noprofile --norc -i\n")?;
-        fs::set_permissions(&shell, fs::Permissions::from_mode(0o700))?;
-        let alias = directory.join("fixture-params/alias");
-        fs::create_dir_all(&alias)?;
-        symlink("alias", directory.join("fixture-params/d"))?;
-        for (name, value) in [
-            ("CarName", "owned-support-car"),
-            ("DongleId", "owned-support-id"),
-            ("HardwareSerial", "owned-support-serial"),
-        ] {
-            fs::write(alias.join(name), value)?;
-        }
-        let web = directory.join("openpilot/selfdrive/carrot/web");
-        fs::create_dir_all(web.parent().ok_or("missing support web parent")?)?;
-        symlink(
-            config.repository.join("openpilot/selfdrive/carrot/web"),
-            &web,
-        )?;
-        let webhook = ScriptedHttpPeer::start(vec![Reply::empty(204), Reply::empty(204)])?;
-        let port = TcpListener::bind(("127.0.0.1", 0))?.local_addr()?.port();
-        let argv = if provider == "source" {
-            vec![
-                OsString::from(config.python),
-                "-P".into(),
-                OsString::from(config.source_wrapper),
-                "--port".into(),
-                port.to_string().into(),
-                "--output".into(),
-                OsString::from(&directory),
-            ]
-        } else {
-            vec![
-                OsString::from(config.fixture_binary),
-                OsString::from(&directory),
-                OsString::from(directory.join("tmux.log")),
-                OsString::from(config.process_child),
-                port.to_string().into(),
-            ]
-        };
-        let environment = [
-            (OsString::from("OPENPILOT_ROOT"), OsString::from(&directory)),
-            (
-                OsString::from("CARROT_DATA_DIR"),
-                OsString::from(directory.join("fixture-data")),
-            ),
-            (OsString::from("USER"), OsString::from("comma")),
-            (OsString::from("SHELL"), OsString::from(&shell)),
-            (OsString::from("PS1"), OsString::from("OWNED> ")),
-            (OsString::from("PS2"), OsString::from("CONT> ")),
-            (
-                OsString::from("CARROT_SUPPORT_FAKE_TUNNEL_URL"),
-                OsString::from("https://owned-support.invalid"),
-            ),
-            (
-                OsString::from("CARROT_SUPPORT_DISCORD_WEBHOOK_URL"),
-                OsString::from(format!("http://127.0.0.1:{}/owned-webhook", webhook.port())),
-            ),
-            (
-                OsString::from("CARROT_SUPPORT_DISCORD_WEBHOOK_DISABLE"),
-                OsString::from("0"),
-            ),
-        ];
-        let mut server = OwnedServer::spawn(
-            &argv,
-            config.repository,
-            &directory.join("process.log"),
-            &environment,
-            &[],
-            provider == "source",
-        )?;
-        let comparison = (|| -> Result<Value> {
-            HttpPeer::new(port, Duration::from_secs(2))
-                .wait_ready("/api/support_terminal/status", Duration::from_secs(5))?;
-            exercise(port, &directory, &webhook)
-        })();
-        let stop = if provider == "source" {
-            server.source_eof()
-        } else {
-            server.signal(Signal::TERM)
-        };
-        let exit = server.finish(Duration::from_secs(8));
-        fs::write(
-            directory.join("cleanup.json"),
-            serde_json::to_vec_pretty(
-                &json!({"stop":stop.is_ok(),"exit":exit.as_ref().ok(),"webhook_requests":webhook.requests()?.len()}),
-            )?,
-        )?;
-        let result = comparison?;
-        stop?;
-        check(
-            exit? == 0 && webhook.pending_replies()? == 0 && webhook.requests()?.len() == 2,
-            "support fixture cleanup failed",
-        )?;
-        if provider == "source" {
-            let proof: Value =
-                serde_json::from_slice(&fs::read(directory.join("source-proof.json"))?)?;
-            check(
-                proof["sha256"] == source.digest()
-                    && proof["source"]
-                        == config.source_server.canonicalize()?.display().to_string(),
-                "support source proof changed",
-            )?;
-        }
-        results.push(result);
-    }
-    check(
-        results.len() == 2 && results[0] == results[1],
-        "support original/native scenario comparison failed",
-    )?;
-    for pin in [&source, &wrapper, &candidate, &fixture, &child, &xterm] {
-        pin.verify()?;
-    }
-    fs::write(
-        config.output.join("result.json"),
-        serde_json::to_vec_pretty(
-            &json!({"pass":true,"comparison":results[0],"source_sha256":source.digest(),"wrapper_sha256":wrapper.digest(),"candidate_sha256":candidate.digest(),"fixture_sha256":fixture.digest(),"child_sha256":child.digest(),"xterm_asset_sha256":xterm.digest()}),
-        )?,
-    )?;
-    Ok(())
-}
-
-/// Fresh Rust-owned support session/permission effects against independent
-/// original-only observations. Source HTTP ports, session IDs and wall-clock
-/// fields remain dynamic; `exercise` checks their relationships and effects.
 pub fn run_support_frozen(
     config: &SupportFrozenConfig<'_>,
     load_original: impl Fn(&str) -> Result<Value>,
@@ -690,6 +538,8 @@ pub fn run_support_frozen(
     let shell = directory.join("fixture-shell");
     fs::write(&shell, "#!/bin/sh\nexec /bin/bash --noprofile --norc -i\n")?;
     fs::set_permissions(&shell, fs::Permissions::from_mode(0o700))?;
+    let created_shell =
+        CreatedProgramGuard::record(&shell, &config.output.join("created-support-shell.jsonl"))?;
     let alias = directory.join("fixture-params/alias");
     fs::create_dir_all(&alias)?;
     symlink("alias", directory.join("fixture-params/d"))?;
@@ -777,6 +627,7 @@ pub fn run_support_frozen(
     for pin in [&source, &candidate, &fixture, &child, &xterm] {
         pin.verify()?;
     }
+    created_shell.finish()?;
     fs::write(
         config.output.join("result.json"),
         serde_json::to_vec_pretty(&json!({"pass":true,"comparison":actual,

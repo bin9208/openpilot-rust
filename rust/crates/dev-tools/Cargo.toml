@@ -2023,10 +2023,6 @@ name = "driving_fixture_archive"
 required-features = ["driving-daemon-native"]
 
 [[test]]
-name = "recovery_family"
-required-features = ["recovery-family-native"]
-
-[[test]]
 name = "recovery_family_frozen"
 required-features = ["recovery-family-native"]
 
@@ -2065,3 +2061,8 @@ required-features = ["ci-receipt-metadata-native"]
 [[test]]
 name = "ci_receipt_metadata"
 required-features = ["ci-receipt-metadata-native"]
+
+[[bin]]
+name = "audit-recovery-exec"
+path = "src/bin/audit_recovery_exec.rs"
+required-features = ["recovery-family-native"]

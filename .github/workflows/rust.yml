@@ -820,21 +820,58 @@ jobs:
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           cargo build -p openpilot-carrot-recovery -p openpilot-process-supervision --bins --examples --locked
-          sudo apt-get install -y tmux
-      - name: Compare recovery HTTP, terminal, support, actions and upload paths
+          sudo apt-get install -y tmux util-linux strace binutils
+      - name: Compare native recovery HTTP, terminal, support, actions and upload paths
         working-directory: .
+        env:
+          RECOVERY_FAMILY_CHECKOUT_ROOT: ${{ github.workspace }}
+          RECOVERY_FAMILY_BINARY: ${{ github.workspace }}/rust/target/debug/openpilot-carrot-recovery
+          RECOVERY_FAMILY_ACTIONS_EXAMPLE: ${{ github.workspace }}/rust/target/debug/examples/recovery_actions
+          RECOVERY_FAMILY_UPLOAD_EXAMPLE: ${{ github.workspace }}/rust/target/debug/examples/upload
+          RECOVERY_FAMILY_PROCESS_CHILD: ${{ github.workspace }}/rust/target/debug/openpilot-process-child
+          RECOVERY_FAMILY_TMUX: /usr/bin/tmux
+          RECOVERY_FAMILY_HISTORICAL_PRESENT: '0'
         run: |
+          set -euo pipefail
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          python -P rust/tools/carrot_recovery_http_control.py --binary rust/target/debug/openpilot-carrot-recovery --output "$RUNNER_TEMP/recovery/http" --standalone
-          python -P rust/tools/carrot_recovery_terminal_control.py --binary rust/target/debug/openpilot-carrot-recovery --output "$RUNNER_TEMP/recovery/terminal"
-          python -P rust/tools/carrot_recovery_terminal_lifecycle.py --binary rust/target/debug/openpilot-carrot-recovery --output "$RUNNER_TEMP/recovery/lifecycle"
-          python -P rust/tools/carrot_recovery_support_control.py --binary rust/target/debug/openpilot-carrot-recovery --output "$RUNNER_TEMP/recovery/support"
-          python -P rust/tools/carrot_recovery_support_shutdown.py --binary rust/target/debug/openpilot-carrot-recovery --output "$RUNNER_TEMP/recovery/shutdown"
-          python -P rust/tools/carrot_recovery_actions_control.py --binary rust/target/debug/examples/recovery_actions --tmux /usr/bin/tmux --output "$RUNNER_TEMP/recovery/actions"
-          python -P rust/tools/check_carrot_recovery_upload.py --binary rust/target/debug/examples/upload --http-binary rust/target/debug/examples/recovery_actions --output "$RUNNER_TEMP/recovery/upload"
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-carrot-recovery --lib --no-run --locked --message-format=json > "$RUNNER_TEMP/recovery/tests.jsonl"
-          recovery_test=$(python -c 'import json,sys; print(next(x["executable"] for x in map(json.loads,open(sys.argv[1])) if x.get("reason")=="compiler-artifact" and x.get("profile",{}).get("test") and x["target"]["name"]=="openpilot_carrot_recovery"))' "$RUNNER_TEMP/recovery/tests.jsonl")
-          python -P rust/tools/carrot_recovery_cwp_check.py --test-binary "$recovery_test" --output "$RUNNER_TEMP/recovery/cwp"
+          proof="$RUNNER_TEMP/recovery"
+          mkdir "$proof"
+          git rev-parse HEAD > "$proof/SOURCE_COMMIT"
+          private="$RUNNER_TEMP/recovery-private-root"
+          test ! -e "$private"
+          mkdir -p "$private/openpilot/selfdrive/carrot/recovery" "$private/openpilot/common" "$private/rust/tools"
+          cp -a openpilot/selfdrive/carrot/recovery/server.py "$private/openpilot/selfdrive/carrot/recovery/server.py"
+          cp -a openpilot/common/repo_update.py "$private/openpilot/common/repo_update.py"
+          cp -a openpilot/selfdrive/carrot/web "$private/openpilot/selfdrive/carrot/web"
+          export RECOVERY_FAMILY_PRIVATE_ROOT="$private"
+          export RECOVERY_FAMILY_FROZEN_EVIDENCE="$proof/native"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features recovery-family-native --bin list-cargo-tests --bin audit-recovery-exec --locked
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-carrot-recovery --lib --no-run --locked --message-format=json > "$proof/cwp-tests.jsonl"
+          mapfile -t cwp < <(rust/target/debug/list-cargo-tests "$proof/cwp-tests.jsonl")
+          test "${#cwp[@]}" -eq 1
+          test -f "${cwp[0]}"
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features recovery-family-native --test recovery_family_frozen --no-run --locked --message-format=json > "$proof/harness-tests.jsonl"
+          mapfile -t harness < <(rust/target/debug/list-cargo-tests "$proof/harness-tests.jsonl")
+          test "${#harness[@]}" -eq 1
+          test -f "${harness[0]}"
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features recovery-family-native --lib recovery_ --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features recovery-family-native --lib --bin audit-recovery-exec --test recovery_family_frozen --locked -- -D warnings
+          export RECOVERY_FAMILY_CWP_TEST_BINARY="${cwp[0]}"
+          printf '%s\n' "${cwp[0]}" "${harness[0]}" > "$proof/test-elf-paths.txt"
+          pre_sha=$(rust/target/debug/audit-recovery-exec pre --receipt "$proof/exec-preflight.json" --native-root "$proof/native" --server "$RECOVERY_FAMILY_BINARY" --actions "$RECOVERY_FAMILY_ACTIONS_EXAMPLE" --upload "$RECOVERY_FAMILY_UPLOAD_EXAMPLE" --child "$RECOVERY_FAMILY_PROCESS_CHILD" --cwp "${cwp[0]}" --tmux /usr/bin/tmux --harness "${harness[0]}" --host-path "$PATH")
+          [[ "$pre_sha" =~ ^[0-9a-f]{64}$ ]]
+          printf '%s\n' "$pre_sha" > "$proof/exec-preflight.sha256"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 4096
+          status=0
+          strace -ff -qq -s 32768 -xx -e trace=execve,execveat -o "$proof/exec" "${harness[0]}" --exact eight_native_recovery_controllers_same_elf_present_and_absent --test-threads=1 --nocapture > "$proof/harness.stdout" 2> "$proof/harness.stderr" || status=$?
+          test "$status" -eq 0 || { tail -n 100 "$proof/harness.stdout" "$proof/harness.stderr"; exit "$status"; }
+          grep -F '1 passed; 0 failed' "$proof/harness.stdout"
+          test "$(sha256sum "$proof/exec-preflight.json" | cut -d ' ' -f 1)" = "$pre_sha"
+          rust/target/debug/audit-recovery-exec post --receipt "$proof/exec-preflight.json" --receipt-sha256 "$pre_sha" --trace-dir "$proof" --output "$proof/exec-audit.json" --harness-exit "$status"
+          du -sm "$proof" > "$proof/artifact-size-mib.txt"
+          test "$(cut -f1 "$proof/artifact-size-mib.txt")" -le 200
       - name: Preserve recovery source comparisons
         if: always()
         uses: actions/upload-artifact@v6

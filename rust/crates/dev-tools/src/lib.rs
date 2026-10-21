@@ -366,6 +366,8 @@ pub mod pandad_can_io_fixture;
 pub mod recovery_exec_audit;
 #[cfg(all(target_os = "linux", feature = "recovery-family-native"))]
 pub mod recovery_family;
+#[cfg(all(target_os = "linux", feature = "recovery-family-native"))]
+pub mod recovery_family_exec_policy;
 
 #[cfg(all(target_os = "linux", feature = "driving-daemon-native"))]
 pub mod driving_fixture_archive;
