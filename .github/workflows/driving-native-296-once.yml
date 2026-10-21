@@ -1,0 +1,155 @@
+name: 296 native driving six scenario independent original IPC candidate
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/driving-native-296-once.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  driving-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CPU_COUNT: '2'
+      DEV: CPU:LLVM
+      JIT: '1'
+      JIT_BATCH_SIZE: '0'
+      OPENPILOT_HACKS: '1'
+      LLVM_PATH: /usr/lib/x86_64-linux-gnu/libLLVM-18.so
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
+      EXPECTED_SOURCE: efc67ea0413f1e256e6f2c0764994343ffb83f6b
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      DRIVING_ORIGINAL_MANIFEST_SHA256: 2e7d343e34e06b1a7e998c31aca7c8ec193fbe49e63b30b2739f73c0934c565b
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        ref: efc67ea0413f1e256e6f2c0764994343ffb83f6b
+    - name: Require exact source and hosted controller prerequisites
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        mkdir -p "$RUNNER_TEMP/driving-native-296"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends g++ clang libclang-dev libllvm18 git-lfs capnproto libcapnp-dev libzmq3-dev
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        '
+    - name: Compile and strictly check the native controller before model preparation
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driving-native-296"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --bin check-driving-daemon
+        --locked 2>&1 | tee "$proof/controller-build.log"
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --lib --bin check-driving-daemon
+        --test driving_daemon_reference --test driving_daemon_check --locked -- -D warnings 2>&1 | tee "$proof/controller-clippy.log"
+
+        '
+    - name: Fetch only independently sealed original observation data
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/driving-native-296\"\nrust/tools/check-disk-space --path \"$RUNNER_TEMP\"\
+        \ --growth-mib 1024\ngh api repos/bin9208/openpilot-rust/actions/artifacts/12327097515/zip > \"$proof/original.zip\"\
+        \nprintf '%s  %s\n' '348d7760bedf71c1ccf02b66019c5d428452d796b246ef167f525183afb59986' \"$proof/original.zip\" | sha256sum\
+        \ -c -\npython3 - <<'PY_DATA'\nfrom pathlib import Path\nimport zipfile,hashlib,json,os\nproof=Path(os.environ['RUNNER_TEMP'])/'driving-native-296';out=proof/'original-observation';out.mkdir()\n\
+        with zipfile.ZipFile(proof/'original.zip')as z:\n assert z.testzip()is None\n mname=next(n for n in z.namelist()if\
+        \ n.endswith('/observations/manifest.json')or n=='observations/manifest.json');raw=z.read(mname)\n assert hashlib.sha256(raw).hexdigest()==os.environ['DRIVING_ORIGINAL_MANIFEST_SHA256'];m=json.loads(raw);prefix=mname[:-len('manifest.json')]\n\
+        \ assert m['checked_out_commit']=='ec95aec6bd81a5f718fb2cac54a443d9a61e426c' and len(m['files'])==1069\n total=0\n\
+        \ for name,pin in m['files'].items():\n  p=Path(name);assert not p.is_absolute() and p.parts and all(x not in('.','..')for\
+        \ x in p.parts)\n  data=z.read(prefix+name);assert len(data)==pin['bytes'] and hashlib.sha256(data).hexdigest()==pin['sha256'];total+=len(data);assert\
+        \ total<=512000000\n  dest=out/p;dest.parent.mkdir(parents=True,exist_ok=True);dest.write_bytes(data)\n (out/'manifest.json').write_bytes(raw)\n\
+        print('PASS accepted original-only data extracted; no Python source copied')\nPY_DATA\nprintf 'DRIVING_ORIGINAL_OBSERVATION=%s/original-observation\n\
+        DRIVING_DAEMON_NATIVE_BINARY=%s/rust/target/debug/openpilot-driving-modeld\nDRIVING_DAEMON_CATALOG=%s/native-catalog\n\
+        DRIVING_DAEMON_OUTPUT=%s/live\nDRIVING_DAEMON_ROOT=%s\n' \"$proof\" \"$GITHUB_WORKSPACE\" \"$RUNNER_TEMP\" \"$proof\"\
+        \ \"$GITHUB_WORKSPACE\" >> \"$GITHUB_ENV\"\n"
+    - name: Require all114 independently captured publication projections and mutation controls
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driving-native-296"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --test driving_daemon_reference
+        --locked -- --nocapture 2>&1 | tee "$proof/reference-tests.log"
+
+        '
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - run: 'set -euo pipefail
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        python -m pip install numpy==2.5.3 zstandard==0.25.0 pycapnp==2.1.0 pyzmq==27.2.0 Cython==3.2.4 setuptools==82.0.1
+        pytest==9.0.2'
+    - run: 'set -euo pipefail
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-model-runtime --bins --locked'
+    - run: 'set -euo pipefail
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-driving-modeld --locked'
+    - run: 'set -euo pipefail
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx --exclude='''''
+    - name: Compile the original grouped driving and driver artifacts
+      run: "set -euo pipefail\nrust/tools/check-disk-space --path \"$GITHUB_WORKSPACE\" --growth-mib 4096\nmkdir -p \"$RUNNER_TEMP/original-models\"\
+        \npython openpilot/selfdrive/modeld/compile_modeld.py --model-size 512x256 --camera-resolutions 1928x1208 1344x760\
+        \ --frame-skip 4 --onnx openpilot/selfdrive/modeld/models/driving_supercombo.onnx --output \"$RUNNER_TEMP/original-models/driving_tinygrad.pkl\"\
+        \npython tinygrad_repo/examples/openpilot/compile3.py \"$GITHUB_WORKSPACE/openpilot/selfdrive/modeld/models/dmonitoring_model.onnx\"\
+        \ \"$RUNNER_TEMP/original-models/dmonitoring_model_tinygrad.pkl\"\npython openpilot/selfdrive/modeld/get_model_metadata.py\
+        \ openpilot/selfdrive/modeld/models/dmonitoring_model.onnx\ncp openpilot/selfdrive/modeld/models/dmonitoring_model_metadata.pkl\
+        \ \"$RUNNER_TEMP/original-models/\"\nfor resolution in 1928x1208 1344x760; do\n  python openpilot/selfdrive/modeld/compile_dm_warp.py\
+        \ --camera-resolution \"$resolution\" --warp-to 1440x960 --output \"$RUNNER_TEMP/original-models/dm_warp_${resolution}_tinygrad.pkl\"\
+        \ndone\n"
+    - name: Build and validate immutable native pipeline catalog
+      run: 'set -euo pipefail
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        python rust/tools/build_model_pipelines.py --trusted-model-directory "$RUNNER_TEMP/original-models" --backend cpu
+        --output "$RUNNER_TEMP/native-catalog"
+
+        rust/target/debug/model-run --check-catalog "$RUNNER_TEMP/native-catalog"
+
+        '
+    - name: Require native six-scenario real IPC against complete independent original inputs
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driving-native-296"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driving-daemon-native --test driving_daemon_check
+        --locked -- --nocapture 2>&1 | tee "$proof/live-tests.log"
+
+        '
+    - uses: actions/upload-artifact@v6
+      if: always()
+      with:
+        name: driving-native-independent-296
+        path: '${{ runner.temp }}/driving-native-296/
+
+          ${{ runner.temp }}/native-catalog/current.json'
+        if-no-files-found: error
