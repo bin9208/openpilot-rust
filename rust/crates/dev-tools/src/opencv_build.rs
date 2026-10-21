@@ -563,6 +563,32 @@ fn verify_opencl(log: &str, output: &Path) -> Result<()> {
         "OpenCL provider must use dynamic system ICD loading",
     )
 }
+// CMake may omit an explicit alias already present in the compiler wrapper's
+// implicit SDK includes. Check the selected headers, not spelling in flags.make.
+fn verify_target_zlib(trace: &str, sdk: &Path) -> Result<Value> {
+    let include = sdk.join("usr/include").canonicalize()?;
+    let mut headers = BTreeMap::new();
+    for line in trace.lines().filter(|line| line.starts_with('.')) {
+        let path = Path::new(line.trim_start_matches('.').trim());
+        let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
+            continue;
+        };
+        if !matches!(name, "zlib.h" | "zconf.h") {
+            continue;
+        }
+        let expected = include.join(name).canonicalize()?;
+        check(
+            path.canonicalize()? == expected,
+            "zlib probe selected a foreign target header",
+        )?;
+        headers.insert(name.to_owned(), digest(&expected)?);
+    }
+    check(
+        headers.len() == 2,
+        "zlib probe omitted target zlib.h or zconf.h",
+    )?;
+    Ok(json!({"target_include":include,"headers_sha256":headers}))
+}
 fn cmake_string(path: &Path) -> Result<String> {
     Ok(text(path)?.replace('\\', "\\\\").replace('"', "\\\""))
 }
@@ -856,6 +882,11 @@ fn complete(options: &Options, source: &Path, before: &BTreeMap<String, String>)
             output.join("source.json"),
             output.join("opencv-defined-access.patch"),
             output.join("aarch64.cmake"),
+            output.join("zlib-target-probe.cc"),
+            output.join("zlib-target-probe.log"),
+            output.join("zlib-target-probe.command.json"),
+            output.join("zlib-target-probe.exit.json"),
+            output.join("zlib-target-headers.json"),
         ]);
     }
     let mut hashes = BTreeMap::new();
@@ -978,14 +1009,46 @@ pub fn build(options: &Options, runner: &mut impl Runner) -> Result<Value> {
             }),
             "combined OpenCV configuration requires precisely five libraries",
         )?;
-        let flags = fs::read_to_string(
-            options
-                .output
-                .join("build/modules/core/CMakeFiles/opencv_core.dir/flags.make"),
-        )?;
+        let providers = options
+            .providers
+            .as_ref()
+            .ok_or("runtime target providers missing")?;
+        let cache = fs::read_to_string(options.output.join("build/CMakeCache.txt"))?;
+        let expected_include = format!(
+            "ZLIB_INCLUDE_DIR:PATH={}",
+            text(&options.output.join("target-include"))?
+        );
         check(
-            flags.contains(&text(&options.output.join("target-include"))?),
-            "OpenCV omitted relocated target zlib headers",
+            cache.lines().any(|line| line == expected_include),
+            "CMake changed target zlib includes",
+        )?;
+        let library = cache
+            .lines()
+            .find_map(|line| line.strip_prefix("ZLIB_LIBRARY_RELEASE:FILEPATH="))
+            .ok_or("CMake omitted target zlib library")?;
+        check(
+            Path::new(library)
+                .canonicalize()?
+                .starts_with(providers.sdk.canonicalize()?),
+            "CMake selected foreign target zlib library",
+        )?;
+        let probe = options.output.join("zlib-target-probe.cc");
+        fs::write(&probe, "#include <zlib.h>\n")?;
+        let trace = String::from_utf8(phase(
+            options,
+            "zlib-target-probe",
+            vec![
+                text(&providers.cross.join("cxx.sh"))?,
+                "-E".into(),
+                "-H".into(),
+                text(&probe)?,
+            ],
+            &environment,
+            runner,
+        )?)?;
+        write_json(
+            &options.output.join("zlib-target-headers.json"),
+            &verify_target_zlib(&trace, &providers.sdk)?,
         )?;
     }
     phase(
@@ -1141,6 +1204,38 @@ pub fn cli(profile: Profile) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn target_zlib_probe_requires_both_sdk_headers_and_rejects_host_or_mixed_headers() {
+        let temp = tempfile::tempdir().unwrap();
+        let sdk = temp.path().join("sdk");
+        let include = sdk.join("usr/include");
+        let host = temp.path().join("host");
+        fs::create_dir_all(&include).unwrap();
+        fs::create_dir(&host).unwrap();
+        for name in ["zlib.h", "zconf.h"] {
+            fs::write(include.join(name), name).unwrap();
+            fs::write(host.join(name), name).unwrap();
+        }
+        let valid = format!(
+            ". {}\n.. {}\n",
+            include.join("zlib.h").display(),
+            include.join("zconf.h").display()
+        );
+        let result = verify_target_zlib(&valid, &sdk).unwrap();
+        assert_eq!(
+            result["headers_sha256"]["zlib.h"],
+            digest(&include.join("zlib.h")).unwrap()
+        );
+        for trace in [
+            String::new(),
+            format!(". {}\n", include.join("zlib.h").display()),
+            valid.replace(&include.display().to_string(), &host.display().to_string()),
+            format!("{valid}. {}\n", host.join("zlib.h").display()),
+        ] {
+            assert!(verify_target_zlib(&trace, &sdk).is_err());
+        }
+    }
+
     #[test]
     fn runtime_source_manifest_must_be_byte_identical_to_prepared_manifest() {
         for corrupt in ["none", "prepared", "runtime", "identity"] {
