@@ -8,7 +8,7 @@ required integration checks. Do not run a heavyweight suite per removed file.
 
 This ledger tracks functional closures, active dependencies and blockers.
 The [routing map](rust-repository-python-retirement-296-families.tsv) covers
-every pending/partial baseline entry exactly once. Its counts classify scope;
+every remaining pending/partial baseline entry exactly once. Its counts classify scope;
 they are not completed functionality. All families below still contain work.
 
 | Family | Remaining dependencies | Completion conditions |
@@ -34,22 +34,23 @@ four partial baseline entries.
 ## Current batches and blockers
 
 1. Panda device/protocol/CAN-I/O: native implementations and caller routing are
-   committed candidates. Device full functional/Clippy evidence is accepted;
-   its maintained synthetic fixture removes an expiring observation dependency.
-   Protocol's complete original capture is reusable after a Rust macro compile
-   failure. CAN-I/O's raw-runner capture exposed a real parser-admission
-   discrepancy. Fix it and validate the two related controllers in one gate,
-   reusing completed original captures. Then remove the shared Python corpus
+   committed candidates. Device actual source deletion, full functional/Clippy and native fixture staging
+   are accepted in39640526320; its maintained synthetic fixture removes an expiring observation dependency.
+   Protocol and CAN-I/O complete original captures are sealed and reusable. The
+   raw-runner admission discrepancy is fixed; their combined gate now retries
+   only after a structural JSON metadata comparison fix, without original reexecution. Then remove the shared Python corpus
    with both callers together and run affected outer integration once.
 2. Driving/driver/logging faults: complete fixture/source-absence/finalization
    and optional-collector candidates are committed. Driving native collector
-   and private-root proof is running. Driver's actual collector CLI data is
+   and both private-root functional lanes passed; final report metadata equality
+   failed and is under diagnosis. Six cheap reappearance controls remain. Driver's actual collector CLI data is
    independently auditable despite a wrapper row-count failure; do not repeat
    unchanged traffic solely to fix that assertion. Complete one combined
    no-collector/CLI/raw-alias gate and migrate the shared original dependencies.
 3. Full f5c8 CI `39617311670` passed all runtime/ARM jobs except workspace:
-   `desire_reference_cli` failed a source-output hash assertion. Preserve the
-   successful checks, diagnose this exact mismatch, and run affected validation.
+   `desire_reference_cli` failed a source-output hash assertion. The serde feature
+   ordering defect #463 is fixed and affected gate39639003843 is accepted. Preserve
+   successful checks and retain required final integration.
    The aggregate remains failed. Navigation #457 also remains open because its
    earlier startup stall has not been explained by successful diagnostics.
 4. Next general-tool batch: recovery's eight configured controllers and shared

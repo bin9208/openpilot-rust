@@ -3,8 +3,9 @@
 This candidate replaces the comparison controller and its generated case corpus,
 `check_pandad_device.py` and `pandad_device_cases.py`. Their removal and maintained
 native reference caller are now integrated as a deleted-checkout candidate.
-Actual deleted-checkout validation remains pending. The inventory remains233 replaced-local; this candidate
-does not add accepted deletions or establish physical Panda/USB/device behavior.
+Deleted-checkout validation is accepted in run39640526320 at c056e379. The two
+sources are marked replaced-local. This establishes controller retirement, not
+physical Panda/USB/device behavior.
 
 The original-only capture executes the unchanged Python checker against the
 original C++ device probe and current Rust device example. It retains all1,746
@@ -58,8 +59,8 @@ call and relocates completed raw-path evidence to an ASCII archive directory,
 with hashes checked before/after and a separate explicit archive mapping. Those
 evidence additions still require hosted validation.
 
-The two device Python files are removed in this pending candidate; do not mark
-their source retirement accepted until its hosted gate is reviewed. The separate outer
+The two device Python files are removed and their hosted deletion gate is
+independently reviewed below. The separate outer
 Panda controller source deletion and its38-phase gate are accepted in
 [39625704015](https://github.com/bin9208/openpilot-rust/actions/runs/39625704015);
 that evidence does not retire this separate device-family controller.
@@ -68,14 +69,42 @@ The next family integration routes device, protocol and CAN-I/O phases directly
 to their native executables and records each executed source root. Their three
 new executable seals extend the outer held set from 31 to 34. The historical
 151-source fixture stays immutable; explicit current native additions give a
-164-source candidate roster before this family's source deletions.
+164-source candidate roster before this family's source deletions, 162 afterward.
 
 `stage-pandad-device-reference` stages a repository-owned compressed synthetic
 fixture, replacing the expiring CI observation download for maintained checks.
 Parent compared all 35 packaged files byte-for-byte with the accepted original
 ZIP: 33 sealed observations, the capture manifest and historical builder JSON.
 The 2,333,895-byte blob expands to 14,321,241 bytes. No original Python code or
-ELF is packaged. Its native materializer and adversarial controls still require
-hosted execution. Historical builder and current build receipts remain separate;
+ELF is packaged. Its native materializer and adversarial controls pass in the
+deleted-checkout gate below. Historical builder and current build receipts remain separate;
 the final reference gate must validate the actual executed C++ ELF and all 14
 current build inputs without rewriting the historical observations.
+
+## Accepted deleted-checkout gate
+
+[39640526320](https://github.com/bin9208/openpilot-rust/actions/runs/39640526320)
+passes at source `c056e379d5346f599655864f8b6adcab5d0674f8`, workflow
+`c4b3fbaacfc82b47b78cf2ee0b3f8454611358c9`. It runs ten controller controls,
+native staging/adversarial integration, all three maintained reference tests,
+the archive-extraction unit and strict Clippy. No retired Python file is restored,
+downloaded or executed.
+
+Parent audited every ZIP CRC: native artifact12364228304 has 67 members and
+SHA256 `1861df2db9629b69336bef5800c3e71aad1438a53e324ca234d3e2afcd0a933f`;
+staged-original artifact12364807727 has 44 members and SHA256
+`08103534a782a9879dc73b738146ae17d49d2d1e3000ae1869802e9872fe370e`.
+The original manifest, its complete 33-file roster and all14 C++ source pins
+remain unchanged. Historical and current borrowed build receipts agree with the
+actual executed ELF; the gate explicitly identifies reuse rather than a fresh build.
+
+Checkout, private-absent and actual raw0xff CLI lanes each retain all1,746 requests,
+2,490 operations and byte-exact source/native JSONL and stderr. Parent checked
+the actual argv, exit, stdout, explicit environment, source absence and report
+identities in each lane. Eleven parser admissions and three failure effects
+match original status/output channels; the foreign report is unchanged. The
+raw-path archive mapping retains all seven files with matching SHA256 values
+and links them to the raw0xff argv receipt. These fix the earlier uploader gap.
+
+Remaining Panda protocol/CAN-I/O/shared-corpus retirement and the updated outer
+integration are separate gates. Device boot, recording and upload are user-owned.

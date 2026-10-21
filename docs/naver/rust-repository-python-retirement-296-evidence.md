@@ -6,9 +6,11 @@ source249c1a08 after the prior153/152-source pre-deletion proof. Parent audited
 all16,108 artifact CRCs, both152-source rosters against Git,31 held ELFs, both
 38-phase/42-reservation lanes and11 original CLI admissions. See
 [Panda retirement](rust-panda-orchestration-retirement-296.md) for exact identities.
-Inventory is233replaced-local/4partial/3343pending. Native driving/driver and
-Panda device controller candidates retain their Python originals. Whole-project
-validation and remaining compiler/tool/vendor conversion remain unfinished.
+Panda device controller and corpus removal are now accepted after deleted-checkout
+gate39640526320 at c056e379, including three complete native CLI lanes and raw-path
+archive retention. Inventory is235replaced-local/4partial/3341pending. Native
+driving/driver and protocol/CAN-I/O originals remain until their functional
+closures pass. Whole-project compiler/tool/vendor conversion remains unfinished.
 
 
 ## Supervised integration checkpoint (2026-10-21)

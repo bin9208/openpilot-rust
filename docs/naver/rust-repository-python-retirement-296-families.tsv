@@ -537,7 +537,6 @@ F01-vehicle-safety	rust/tools/check_monitoring_reference.py	pending
 F01-vehicle-safety	rust/tools/check_pandad_can_io.py	pending
 F01-vehicle-safety	rust/tools/check_pandad_client.py	pending
 F01-vehicle-safety	rust/tools/check_pandad_composed.py	pending
-F01-vehicle-safety	rust/tools/check_pandad_device.py	pending
 F01-vehicle-safety	rust/tools/check_pandad_dfu_recovery.py	pending
 F01-vehicle-safety	rust/tools/check_pandad_firmware.py	pending
 F01-vehicle-safety	rust/tools/check_pandad_firmware_spi.py	pending
@@ -580,7 +579,6 @@ F01-vehicle-safety	rust/tools/longitudinal_maneuvers_source.py	pending
 F01-vehicle-safety	rust/tools/model_logging_capture.py	pending
 F01-vehicle-safety	rust/tools/model_logging_reference.py	pending
 F01-vehicle-safety	rust/tools/monitoring_fixtures.py	pending
-F01-vehicle-safety	rust/tools/pandad_device_cases.py	pending
 F01-vehicle-safety	rust/tools/pandad_protocol_cases.py	pending
 F01-vehicle-safety	rust/tools/pandad_runtime_peer.py	pending
 F01-vehicle-safety	rust/tools/pandad_spi_cases.py	pending
