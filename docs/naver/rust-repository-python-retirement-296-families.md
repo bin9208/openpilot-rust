@@ -45,8 +45,9 @@ four partial baseline entries.
    was isolated to one exact DEBUG camera-wait message; only that already-accounted
    diagnostic count is normalized. Four original controllers are now deleted and their maintained callers migrated;
    the hosted final complete comparison and eight reappearance controls remain. The compact independent
-   fixture preserves1649 original file pins in59,663,776 XZ bytes; full native
-   image regeneration still needs its hosted gate. Driver's actual collector CLI data is
+   fixture preserves1649 original file pins in59,663,776 XZ bytes; native full
+   regeneration/export passed39654500423. That run stops at private fault-builder
+   restoration (#473), before retained replay and two-root traffic. Driver's actual collector CLI data is
    independently auditable despite a wrapper row-count failure; do not repeat
    unchanged traffic solely to fix that assertion. The reused driver catalog failed warmup with confirmed SIGILL: AVX-512 objects
    were run on an AMD EPYC host without that ISA. CPU target compatibility is a

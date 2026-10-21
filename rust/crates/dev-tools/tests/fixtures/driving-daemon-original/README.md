@@ -34,6 +34,7 @@ machine code. The current-host compiler/exporter remains pending Python scope.
 
 The stager enforces bounded expansion, exact regular-member/hash roster, safe
 paths, no links or duplicates, disk reserve, unchanged input and atomic publication
-without replacing foreign output. Its hosted full regeneration/adversarial gate
-and four-source driving controller retirement are pending; packaging success is
-not functional model, device or complete-project acceptance.
+without replacing foreign output. Hosted39654500423 passes full regeneration/adversarial, original packet/schema
+and current-host export/path checks. Its later private fault-builder restoration
+fails before two-root model traffic, so four-source controller retirement remains
+pending. These bounded results are not device or complete-project acceptance.
