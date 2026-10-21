@@ -1,10 +1,13 @@
+use openpilot_log_format::{JsonValue, JsonView};
 use openpilot_pandad::safety::{Effects, Error, Safety};
 use openpilot_params::{Error as ParamError, Params};
 use serde::Deserialize;
-use serde_json::{json, Value};
+use serde_json::{json, value::RawValue, Value};
 use std::{
     collections::BTreeMap,
+    ffi::OsString,
     io::{self, BufRead, Write},
+    os::unix::ffi::OsStringExt,
     path::PathBuf,
 };
 
@@ -16,13 +19,36 @@ struct Operation {
 }
 
 #[derive(Deserialize)]
-#[serde(tag = "op", rename_all = "snake_case")]
-enum Request {
-    Safety {
-        params_root: PathBuf,
-        pandas: usize,
-        operations: Vec<Operation>,
-    },
+#[serde(rename_all = "snake_case")]
+enum RequestOperation {
+    Safety,
+}
+
+#[derive(Deserialize)]
+struct Request {
+    #[serde(rename = "op")]
+    _operation: RequestOperation,
+    params_root: Box<RawValue>,
+    pandas: usize,
+    operations: Vec<Operation>,
+}
+
+fn filesystem_root(raw: &RawValue) -> Result<PathBuf, Box<dyn std::error::Error>> {
+    let value = JsonValue::parse(raw.get())?;
+    let JsonView::Text(points) = value.view() else {
+        return Err("params_root must be a JSON string".into());
+    };
+    let mut bytes = Vec::new();
+    for &point in points {
+        if (0xdc80..=0xdcff).contains(&point) {
+            bytes.push((point - 0xdc00) as u8);
+        } else {
+            let character = char::from_u32(point).ok_or("invalid params_root codepoint")?;
+            let mut utf8 = [0; 4];
+            bytes.extend_from_slice(character.encode_utf8(&mut utf8).as_bytes());
+        }
+    }
+    Ok(PathBuf::from(OsString::from_vec(bytes)))
 }
 
 struct NativeEffects {
@@ -74,11 +100,13 @@ impl Effects for NativeEffects {
 }
 
 fn run(request: Request) -> Result<Value, Box<dyn std::error::Error>> {
-    let Request::Safety {
+    let Request {
+        _operation: _,
         params_root,
         pandas,
         operations,
     } = request;
+    let params_root = filesystem_root(&params_root)?;
     let params = Params::open(&params_root, "panda-safety-fixture")?;
     for key in [
         "ObdMultiplexingEnabled",
@@ -124,4 +152,50 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         writeln!(output)?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{ffi::OsStr, os::unix::ffi::OsStrExt};
+
+    #[test]
+    fn raw_params_root_is_used_without_unicode_replacement() {
+        let temporary = tempfile::tempdir().unwrap();
+        let base = temporary.path().join("params-");
+        let mut encoded = serde_json::to_string(base.to_str().unwrap()).unwrap();
+        encoded.pop();
+        encoded.push_str("\\udcff\"");
+        let request = format!(
+            "{{\"op\":\"safety\",\"params_root\":{encoded},\"pandas\":0,\"operations\":[]}}"
+        );
+        let mut path = base.into_os_string();
+        path.push(OsStr::from_bytes(&[0xff]));
+        let path = PathBuf::from(path);
+        let result = run(serde_json::from_str(&request).unwrap()).unwrap();
+        assert_eq!(result, json!({"results": []}));
+        assert!(path.is_dir(), "Params must use the original raw root bytes");
+    }
+
+    #[test]
+    fn params_root_rejects_non_text_and_unencodable_surrogates() {
+        for source in ["1", r#""\ud800""#, r#""\udc7f""#] {
+            let raw: Box<RawValue> = serde_json::from_str(source).unwrap();
+            assert!(filesystem_root(&raw).is_err());
+        }
+        let unicode: Box<RawValue> = serde_json::from_str(r#""한글-🦀""#).unwrap();
+        assert_eq!(filesystem_root(&unicode).unwrap(), PathBuf::from("한글-🦀"));
+        let normal: Request = serde_json::from_str(
+            r#"{"op":"safety","params_root":"/tmp","pandas":0,"operations":[]}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            filesystem_root(&normal.params_root).unwrap(),
+            PathBuf::from("/tmp")
+        );
+        assert!(serde_json::from_str::<Request>(
+            r#"{"op":"other","params_root":"/tmp","pandas":0,"operations":[]}"#
+        )
+        .is_err());
+    }
 }

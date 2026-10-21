@@ -169,6 +169,7 @@ fn source_paths(root: &Path) -> BTreeSet<PathBuf> {
     }
     for name in [
         "rust/crates/dev-tools/Cargo.toml",
+        "rust/crates/pandad/Cargo.toml",
         "rust/crates/disk-space/src/lib.rs",
         "rust/crates/messaging/src/services_generated.rs",
         "rust/Cargo.lock",
@@ -277,6 +278,7 @@ fn prepare_private_root(repo: &Path, private: &Path, expect_absent: bool) -> Val
     assert!(!expected.contains("rust/crates/dev-tools/src/python_fs.rs"));
     let mut current_names = expected.clone();
     current_names.insert("rust/crates/dev-tools/src/python_fs.rs".into());
+    current_names.insert("rust/crates/pandad/Cargo.toml".into());
     if expect_absent {
         current_names.remove(RETIRED[0]);
     }
@@ -310,7 +312,7 @@ fn prepare_private_root(repo: &Path, private: &Path, expect_absent: bool) -> Val
         .map(|(name, hash)| (name.clone(), hash.clone()))
         .collect::<BTreeMap<_, _>>();
     assert_eq!(copied, expected_copied);
-    assert_eq!(copied.len(), 151);
+    assert_eq!(copied.len(), 152);
     openpilot_disk_space::inspect(private, 2 * GIB)
         .unwrap()
         .require()

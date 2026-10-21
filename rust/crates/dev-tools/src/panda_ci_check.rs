@@ -234,6 +234,7 @@ fn source_paths(root: &Path) -> Result<BTreeSet<PathBuf>> {
     }
     for name in [
         "rust/crates/dev-tools/Cargo.toml",
+        "rust/crates/pandad/Cargo.toml",
         "rust/crates/disk-space/src/lib.rs",
         "rust/crates/messaging/src/services_generated.rs",
         "rust/Cargo.lock",

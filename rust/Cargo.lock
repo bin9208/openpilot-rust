@@ -3453,6 +3453,7 @@ dependencies = [
  "openpilot-cereal",
  "openpilot-hardware-control",
  "openpilot-hardware-info",
+ "openpilot-log-format",
  "openpilot-logging",
  "openpilot-managed-entry",
  "openpilot-messaging",
@@ -3466,6 +3467,7 @@ dependencies = [
  "serde",
  "serde_json",
  "signal-hook",
+ "tempfile",
  "thiserror 2.0.21",
  "unicode-general-category 0.6.0",
 ]
