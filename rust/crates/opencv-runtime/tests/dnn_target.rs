@@ -305,3 +305,23 @@ fn lower_priority_context_creation_and_verification() {
         .success());
     assert!(Command::new(executable).status().unwrap().success());
 }
+
+// Regresses same-handle/different-wrapper execution-context construction without
+// substituting the negative CPU/no-device matrix for positive GPU coverage.
+#[test]
+fn execution_context_uses_its_owned_device_wrapper() {
+    let fixture = Fixture::new();
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let executable = fixture.0.join("context-device-contracts");
+    let compiler = env::var_os("CXX").unwrap_or_else(|| "c++".into());
+    assert!(Command::new(compiler)
+        .args(["-std=c++17", "-Wall", "-Wextra", "-Werror", "-I"])
+        .arg(root.join("native"))
+        .arg(root.join("tests/fixtures/dnn_context_device.cc"))
+        .arg("-o")
+        .arg(&executable)
+        .status()
+        .unwrap()
+        .success());
+    assert!(Command::new(executable).status().unwrap().success());
+}

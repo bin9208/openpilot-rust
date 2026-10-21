@@ -162,3 +162,37 @@ Real-model CPU/GPU comparisons, recording/upload startup, timing joins against
 modeld/DM, installation and real-device/drive acceptance belong to the parent
 integration and cloud/device validation track. No speedup or isolation is
 established by this adapter candidate.
+
+### Review repair: context-owned Device wrapper (#453)
+
+The initial GPU construction passed the enumerated `selected` Device to
+`OpenCLExecutionContext::create(context, selected)`. This is invalid for pinned
+OpenCV when context creation/import has constructed a distinct Device wrapper
+around the same `cl_device_id`. In pinned
+[ocl.cpp](https://github.com/opencv/opencv/blob/fe38fc608f6acb8b68953438a62305d8318f4fcd/modules/core/src/ocl.cpp),
+`OpenCLExecutionContext::Impl::_init_device(const ocl::Device&)` compares
+`d.getImpl() == device.getImpl()`, whereas `Context::Impl::init_device_list`
+constructs device wrappers with `Device::fromHandle(cl_devices[i])`.
+A raw-handle match alone does not satisfy that overload's wrapper identity check.
+
+Both the Qualcomm imported-context path and ordinary `Context::fromDevice` path
+now pass through `create_context_execution`: reject empty/non-single-device
+contexts, verify the context-owned device has a non-null raw handle equal to the
+selected GPU's handle, then pass **context.device(0)** to the public execution
+factory. Existing selected-GPU validation, context/queue checks, target precision,
+priority behavior and Rust API remain unchanged. The helper is a private,
+header-only factory boundary so its production argument selection can be tested
+without a GPU or an extra OpenCL implementation dependency.
+
+The new `tests/fixtures/dnn_context_device.cc` regression models the pinned
+factory's wrapper identity check: the old enumerated-device argument fails with
+same-handle/different-wrapper input, while the actual production helper passes
+the context-owned wrapper. It also checks already-matching wrappers and rejection
+of empty, zero-device, multi-device, mismatched-handle and null-handle contexts
+before factory invocation. `tests/dnn_target.rs` compiles/runs this fixture only
+when native tests execute in Actions, like the existing priority boundary tests.
+This is a mocked adapter-boundary regression, **not** an actual OpenCV positive
+GPU construction, kernel execution, or device acceptance result. Earlier
+host/ARM CPU/no-GPU rejection passes could not exercise this positive path.
+Local repair verification is restricted to rustfmt, C++ syntax and diff review;
+functional RED/GREEN and the repaired native provider checks remain for Actions.

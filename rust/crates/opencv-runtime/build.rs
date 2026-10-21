@@ -57,6 +57,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "native/signal.cc",
         "native/net.cc",
         "native/dnn_context.h",
+        "native/dnn_context_device.h",
         "native/opencl_priority.h",
         "native/dnn_context.cc",
     ] {

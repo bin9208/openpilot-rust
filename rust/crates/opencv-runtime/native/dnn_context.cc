@@ -1,4 +1,5 @@
 #include "dnn_context.h"
+#include "dnn_context_device.h"
 #include "opencl_priority.h"
 #include <algorithm>
 #include <cstdlib>
@@ -79,7 +80,10 @@ cv::ocl::OpenCLExecutionContext make_gpu_context(std::string& priority_status) {
     context = cv::ocl::Context::fromDevice(selected);
     priority_status = "unsupported_qcom_priority_hint";
   }
-  auto execution = cv::ocl::OpenCLExecutionContext::create(context, selected);
+  auto execution = create_context_execution(context, selected,
+    [](const cv::ocl::Context& owned_context, const cv::ocl::Device& owned_device) {
+      return cv::ocl::OpenCLExecutionContext::create(owned_context, owned_device);
+    });
   if (execution.empty() || execution.getQueue().ptr() == nullptr ||
       execution.getDevice().ptr() != selected.ptr() || !execution.useOpenCL())
     throw std::runtime_error("OpenCL FP32 execution context/queue validation failed");

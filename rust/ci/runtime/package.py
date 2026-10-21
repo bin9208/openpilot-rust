@@ -87,12 +87,14 @@ def source_path_allowed(path, source_entry="", inherited_entry=""):
         "rust/crates/opencv-runtime/src/native/mod.rs", "rust/crates/opencv-runtime/src/native/net.rs",
         "rust/crates/opencv-runtime/native/bridge.h", "rust/crates/opencv-runtime/native/net.cc",
         "rust/crates/opencv-runtime/native/dnn_context.cc", "rust/crates/opencv-runtime/native/dnn_context.h",
+        "rust/crates/opencv-runtime/native/dnn_context_device.h",
         "rust/crates/opencv-runtime/native/opencl_priority.h",
         "rust/crates/opencv-runtime/src/native/net/tests.rs",
         "rust/crates/opencv-runtime/tests/native.rs", "rust/crates/opencv-runtime/tests/contracts.rs",
         "rust/crates/opencv-runtime/tests/dnn_target.rs",
         "rust/crates/opencv-runtime/tests/fixtures/opencl_probe.c",
         "rust/crates/opencv-runtime/tests/fixtures/opencl_priority.cc",
+        "rust/crates/opencv-runtime/tests/fixtures/dnn_context_device.cc",
         "docs/naver/dev-md-xiaoge-gpu.md", "openpilot/common/params_keys.h",
         "openpilot/selfdrive/carrot/xiaoge/v_asm_web.html",
         "rust/upstream/jetlink.json", "docs/naver/dev-md-jetlink-",
@@ -303,6 +305,37 @@ def require_fresh_opencv(provider, receipt, baseline):
         assert receipt["libraries"][f"install/lib/{path}"] != baseline[f"rust/bin/lib/{path}"], "baseline CPU OpenCV reuse forbidden"
 
 
+def stage_opencv_libraries(provider, receipt, root):
+    lib = root / "rust/bin/lib"
+    lib.mkdir(parents=True, exist_ok=True)
+    for old in lib.glob("libopencv_*"):
+        old.unlink()
+    entries = sorted((provider / "install/lib").glob("libopencv_*.so*"))
+    assert len(entries) == 15, "five libraries and both aliases are mandatory"
+    aliases = []
+    # Lexical order places .so aliases before their versioned objects. Copy
+    # every real library first, without dereferencing any destination alias.
+    for path in entries:
+        assert path.resolve().parent == provider / "install/lib"
+        assert f"install/lib/{path.resolve().name}" in receipt["libraries"]
+        dest = lib / path.name
+        if path.is_symlink():
+            aliases.append((dest, path.resolve().name))
+        else:
+            header = path.open("rb").read(20)
+            assert header[:6] == b"\x7fELF\x02\x01" and header[18:20] == b"\xb7\x00"
+            shutil.copy2(path, dest)
+    for dest, target in aliases:
+        dest.symlink_to(target)
+    staged = []
+    for path in entries:
+        dest = lib / path.name
+        actual = digest(dest)
+        assert actual == receipt["sealed"][f"install/lib/{path.name}"], "staged OpenCV content changed"
+        staged.append(dict(path=str(dest.relative_to(root)), sha256=actual))
+    return staged
+
+
 def build_opencv():
     room(6 * 2**30)
     provider = WORK / "opencv"
@@ -323,26 +356,10 @@ def build_opencv():
     room(256 * 2**20)
     # Every alias and header comes from this install, never synthesized CPU
     # headers or links to baseline libraries. Keep the full sealed evidence.
-    lib = ROOT / "rust/bin/lib"
-    for old in lib.glob("libopencv_*"):
-        old.unlink()
     licenses = ROOT / "rust/bin/licenses/opencv"
     if licenses.exists(): shutil.rmtree(licenses)
     licenses.mkdir(parents=True)
-    staged = []
-    for path in sorted((provider / "install/lib").glob("libopencv_*.so*")):
-        assert path.resolve().parent == provider / "install/lib"
-        assert f"install/lib/{path.resolve().name}" in receipt["libraries"]
-        dest = lib / path.name
-        if path.is_symlink():
-            dest.symlink_to(path.resolve().name)
-        else:
-            header = path.open("rb").read(20)
-            assert header[:6] == b"\x7fELF\x02\x01" and header[18:20] == b"\xb7\x00"
-            shutil.copy2(path, dest)
-        assert digest(dest) == receipt["sealed"][f"install/lib/{path.name}"], "staged OpenCV content changed"
-        staged.append(dict(path=str(dest.relative_to(ROOT)), sha256=digest(dest)))
-    assert len(staged) == 15, "five libraries and both aliases are mandatory"
+    staged = stage_opencv_libraries(provider, receipt, ROOT)
     for relative in receipt["sealed"]:
         path = provider / relative
         dest = licenses / "provider" / relative
@@ -420,6 +437,9 @@ def smoke_opencv(env):
     priority = evidence / "priority-contracts"
     run([WORK / "cxx", "-std=c++17", "-Wall", "-Wextra", "-Werror", "-I", root / "native",
          root / "tests/fixtures/opencl_priority.cc", "-o", priority])
+    context_device = evidence / "context-device-contracts"
+    run([WORK / "cxx", "-std=c++17", "-Wall", "-Wextra", "-Werror", "-I", root / "native",
+         root / "tests/fixtures/dnn_context_device.cc", "-o", context_device])
     # Execute the exact staged five-library provider with genuine AGNOS loader
     # and C runtime. The fixture exposes no devices and never loads Qualcomm.
     qemu = ["qemu-aarch64-static", "-L", SDK, "-E",
@@ -444,6 +464,9 @@ def smoke_opencv(env):
     with (evidence / "priority-contracts.log").open("w") as log:
         run([*qemu, priority], stdout=log, stderr=subprocess.STDOUT, timeout=180)
     tests.append("priority-contracts")
+    with (evidence / "context-device-contracts.log").open("w") as log:
+        run([*qemu, context_device], stdout=log, stderr=subprocess.STDOUT, timeout=180)
+    tests.append("context-device-contracts")
     require_fresh_opencv(WORK / "opencv", json.loads((WORK / "opencv/receipt.json").read_text()),
                          json.loads((WORK / "opencv-baseline.json").read_text()))
     result = dict(schema=1, source_commit=SHA, architecture="aarch64", agnos_version="19.8-carrot-bt1",
@@ -451,7 +474,7 @@ def smoke_opencv(env):
                   tests=tests, test_binary_sha256=digest(binary), probe_sha256=digest(probe),
                   evidence={path.name: digest(path) for path in evidence.glob("*.log")},
                   device_execution=False, actual_gpu_execution=False,
-                  scope="AGNOS QEMU CPU inference/recovery, no-OpenCL initialization on CPU, GPU no-platform rejection and priority ownership/verification boundaries. No device or GPU performance claim.")
+                  scope="AGNOS QEMU CPU inference/recovery, no-OpenCL initialization on CPU, GPU no-platform rejection, priority ownership/verification and context device-wrapper identity boundaries. No device or GPU performance claim.")
     save(evidence / "result.json", result)
     save(ROOT / "rust/bin/licenses/runtime-build/opencv-smoke.json", result)
 

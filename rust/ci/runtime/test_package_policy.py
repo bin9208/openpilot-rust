@@ -7,13 +7,14 @@ from pathlib import Path
 import tempfile
 from unittest import mock
 import os
+import shutil
 import unittest
 
 
 SOURCE = Path(__file__).with_name("package.py")
-FUNCTIONS = {"source_path_allowed", "rebuild_opencv_artifact", "require_fresh_opencv", "require_delivery_ref", "digest"}
+FUNCTIONS = {"source_path_allowed", "rebuild_opencv_artifact", "require_fresh_opencv", "require_delivery_ref", "stage_opencv_libraries", "digest"}
 tree = ast.parse(SOURCE.read_text())
-namespace = dict(Path=Path, hashlib=hashlib, json=json, os=os, SHA="exact-source", BASE="baseline")
+namespace = dict(Path=Path, hashlib=hashlib, json=json, os=os, shutil=shutil, SHA="exact-source", BASE="baseline")
 exec(compile(ast.Module(body=[node for node in tree.body if isinstance(node, ast.FunctionDef)
                              and node.name in FUNCTIONS], type_ignores=[]), str(SOURCE), "exec"), namespace)
 
@@ -28,9 +29,11 @@ class SourcePolicyTests(unittest.TestCase):
             "rust/crates/opencv-runtime/PROVENANCE.md",
             "rust/crates/opencv-runtime/native/dnn_context.cc",
             "rust/crates/opencv-runtime/native/dnn_context.h",
+            "rust/crates/opencv-runtime/native/dnn_context_device.h",
             "rust/crates/opencv-runtime/native/opencl_priority.h",
             "rust/crates/opencv-runtime/src/native/net/tests.rs",
             "rust/crates/opencv-runtime/tests/fixtures/opencl_priority.cc",
+            "rust/crates/opencv-runtime/tests/fixtures/dnn_context_device.cc",
             ".github/workflows/rust.yml",
             "rust/crates/opencv-runtime/native/net.cc",
             "rust/crates/opencv-runtime/native/bridge.h",
@@ -73,6 +76,60 @@ class SourcePolicyTests(unittest.TestCase):
         for path in ("rust/bin/lib/libavcodec.so.60", "rust/bin/lib/libonnxruntime.so",
                      "rust/bin/licenses/ffmpeg/provenance.json", "rust/bin/lib/not-opencv.so"):
             self.assertFalse(replaced(path))
+
+
+class LibraryStagingTests(unittest.TestCase):
+    def test_sorted_aliases_stage_into_an_empty_package_without_baseline_targets(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "checkout"
+            provider = Path(temp) / "provider"
+            install = provider / "install/lib"
+            install.mkdir(parents=True)
+            destination = root / "rust/bin/lib"
+            destination.mkdir(parents=True)
+            companion = destination / "libavcodec.so.60"
+            companion.write_bytes(b"unchanged companion")
+            header = bytearray(20)
+            header[:6] = b"\x7fELF\x02\x01"
+            header[18:20] = b"\xb7\x00"
+            for name in ("core", "dnn", "imgproc", "imgcodecs", "videoio"):
+                stem = f"libopencv_{name}.so"
+                (install / f"{stem}.4.13.0").write_bytes(header + name.encode())
+                (install / f"{stem}.413").symlink_to(f"{stem}.4.13.0")
+                (install / stem).symlink_to(f"{stem}.413")
+            entries = sorted(install.glob("libopencv_*.so*"))
+            self.assertEqual(entries[0].name, "libopencv_core.so")
+            self.assertTrue(entries[0].is_symlink())
+            self.assertFalse(any(destination.glob("libopencv_*")), "no baseline OpenCV target may exist")
+            digest = namespace["digest"]
+            sealed = {f"install/lib/{path.name}": digest(path) for path in entries}
+            receipt = dict(sealed=sealed, libraries={path: value for path, value in sealed.items()
+                                                    if path.endswith(".so.4.13.0")})
+
+            def digest_after_all_entries_exist(path):
+                # A digest must never depend on a baseline target or on glob
+                # ordering: all real files and aliases must already be staged.
+                self.assertTrue(all((destination / entry.name).is_file() for entry in entries))
+                return digest(path)
+
+            symlink_to = Path.symlink_to
+
+            def alias_after_all_real_files_exist(path, target, *args, **kwargs):
+                self.assertTrue(all((destination / Path(relative).name).is_file()
+                                    for relative in receipt["libraries"]))
+                return symlink_to(path, target, *args, **kwargs)
+
+            with mock.patch.dict(namespace, digest=digest_after_all_entries_exist), \
+                 mock.patch.object(Path, "symlink_to", alias_after_all_real_files_exist):
+                rows = namespace["stage_opencv_libraries"](provider, receipt, root)
+            self.assertEqual(len(rows), 15)
+            for entry in entries:
+                staged = destination / entry.name
+                self.assertEqual(digest(staged), sealed[f"install/lib/{entry.name}"])
+                if entry.is_symlink():
+                    self.assertTrue(staged.is_symlink())
+                    self.assertEqual(staged.readlink(), Path(entry.resolve().name))
+            self.assertEqual(companion.read_bytes(), b"unchanged companion")
 
 
 class FreshProviderTests(unittest.TestCase):
