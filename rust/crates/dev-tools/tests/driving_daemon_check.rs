@@ -10,6 +10,8 @@ fn required(name: &str) -> PathBuf {
 #[test]
 fn full_six_scenario_live_ipc_matches_independent_original() {
     let options = Options {
+        source_policy:
+            openpilot_dev_tools::driving_daemon_check::source_policy::SourcePolicy::Present,
         binary: required("DRIVING_DAEMON_NATIVE_BINARY"),
         catalog: required("DRIVING_DAEMON_CATALOG"),
         original_dir: required("DRIVING_ORIGINAL_OBSERVATION"),

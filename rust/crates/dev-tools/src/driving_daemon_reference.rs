@@ -13,6 +13,8 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
+pub mod fixture;
+
 const MAX_MANIFEST: u64 = 1_000_000;
 const MAX_FILE: u64 = 16_000_000;
 const MAX_TOTAL: u64 = 512_000_000;

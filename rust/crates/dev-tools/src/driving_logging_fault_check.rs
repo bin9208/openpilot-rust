@@ -22,6 +22,7 @@ use std::{
 const LIMIT: u64 = 16_000_000;
 
 pub struct Options {
+    pub source_policy: driving_daemon_check::source_policy::SourcePolicy,
     pub fault_binary: PathBuf,
     pub collector: PathBuf,
     pub peer: PathBuf,
@@ -213,6 +214,7 @@ fn mode(options: &Options, mode: &str) -> Result<Value> {
     let output = options.output.join(mode);
     let audit = output.join("audit");
     let driving = DrivingOptions {
+        source_policy: options.source_policy,
         binary: options.fault_binary.clone(),
         catalog: options.catalog.clone(),
         original_dir: options.original_dir.clone(),
@@ -360,6 +362,7 @@ fn ordinary(options: &Options) -> Result<i32> {
 /// timings. The original source-only exception policy is a separately sealed
 /// observation; source Python remains in place until all callers migrate.
 pub fn run(options: &Options) -> Result<Value> {
+    driving_daemon_check::source_policy::check_absence(&options.root, options.source_policy)?;
     let inputs = [
         Pin::open(options.fault_binary.clone(), 512_000_000)?,
         Pin::open(options.collector.clone(), 512_000_000)?,
@@ -382,11 +385,13 @@ pub fn run(options: &Options) -> Result<Value> {
     for input in &inputs {
         input.verify()?;
     }
+    driving_daemon_check::source_policy::check_absence(&options.root, options.source_policy)?;
     let report = json!({"result":"pass", "source":source, "native":[first,second],
         "ordinary_exit":code, "scope":"link-only ENOTSOCK/EAGAIN with unchanged model, VisionIPC, msgq and collector"});
     let receipt = output.write_report(&report)?;
     let finalization = (|| {
         output.verify()?;
+        driving_daemon_check::source_policy::check_absence(&options.root, options.source_policy)?;
         original.verify()?;
         for input in &inputs {
             input.verify()?;
@@ -401,6 +406,7 @@ pub fn run(options: &Options) -> Result<Value> {
 }
 
 pub fn cli() -> Result<()> {
+    let mut source_policy = None;
     let mut fault_binary = None;
     let mut collector = None;
     let mut peer = None;
@@ -415,6 +421,7 @@ pub fn cli() -> Result<()> {
             .next()
             .ok_or("missing logging fault option value")?;
         let slot = match key.to_str() {
+            Some("--source-policy") => &mut source_policy,
             Some("--fault-binary") => &mut fault_binary,
             Some("--collector") => &mut collector,
             Some("--peer") => &mut peer,
@@ -433,6 +440,13 @@ pub fn cli() -> Result<()> {
         ))
     };
     let options = Options {
+        source_policy: driving_daemon_check::source_policy::SourcePolicy::parse(
+            source_policy
+                .as_ref()
+                .map(|v| v.to_str().ok_or("source policy must be UTF-8"))
+                .transpose()?
+                .unwrap_or("present"),
+        )?,
         fault_binary: required(fault_binary)?,
         collector: required(collector)?,
         peer: required(peer)?,

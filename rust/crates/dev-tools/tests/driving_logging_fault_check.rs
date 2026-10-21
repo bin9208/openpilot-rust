@@ -10,6 +10,8 @@ fn required(name: &str) -> PathBuf {
 #[test]
 fn unchanged_model_and_collector_recover_from_both_final_link_failures() {
     let options = Options {
+        source_policy:
+            openpilot_dev_tools::driving_daemon_check::source_policy::SourcePolicy::Present,
         fault_binary: required("DRIVING_LOGGING_FAULT_BINARY"),
         collector: required("DRIVING_DAEMON_COLLECTOR"),
         peer: required("DRIVING_DAEMON_PEER"),

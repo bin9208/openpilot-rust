@@ -38,7 +38,10 @@ use std::{
     time::{Duration, Instant},
 };
 
+mod finalization;
 mod model_source;
+pub mod source_policy;
+use source_policy::SourcePolicy;
 
 const LINE_WAIT: Duration = Duration::from_secs(60);
 const SHUTDOWN: Duration = Duration::from_secs(5);
@@ -69,6 +72,7 @@ const TOPICS: [&str; 9] = [
 ];
 
 pub struct Options {
+    pub source_policy: SourcePolicy,
     pub binary: PathBuf,
     pub catalog: PathBuf,
     pub original_dir: PathBuf,
@@ -960,23 +964,27 @@ struct Completed {
     original: Original,
     catalog: CatalogBinding,
     bindings: Vec<Binding>,
+    retired_paths: Vec<PathBuf>,
     signals: Signals,
     output: PathBuf,
-    output_dir: File,
     output_identity: (u64, u64),
-    receipt: File,
+    receipt: finalization::OwnedReport,
     receipt_identity: (u64, u64, u64, i64, i64, i64, i64),
     receipt_bytes: Vec<u8>,
 }
 impl Completed {
+    fn finish(self, writer: Option<&mut dyn Write>) -> Result<Value> {
+        finalization::publish(&self.receipt, &self.report, || self.verify(), writer)
+    }
     fn verify(&self) -> Result<()> {
         self.signals.check()?;
         self.original.verify()?;
+        source_policy::verify_absent(&self.retired_paths)?;
         self.catalog.verify()?;
         for binding in &self.bindings {
             binding.verify()?;
         }
-        let directory = self.output_dir.metadata()?;
+        let directory = self.receipt.directory.metadata()?;
         let path = fs::symlink_metadata(&self.output)?;
         if !path.is_dir()
             || path.file_type().is_symlink()
@@ -989,7 +997,7 @@ impl Completed {
         if !receipt.is_file()
             || receipt.file_type().is_symlink()
             || identity(&receipt) != self.receipt_identity
-            || identity(&self.receipt.metadata()?) != self.receipt_identity
+            || identity(&self.receipt.file.metadata()?) != self.receipt_identity
             || fs::read(self.output.join("report.json"))? != self.receipt_bytes
         {
             return Err("driving report receipt changed".into());
@@ -1007,13 +1015,12 @@ fn execute(options: &Options, only_dual: bool, fault: Option<(&str, &Path)>) -> 
         .as_object()
         .ok_or("original source pins missing")?;
     let mut bindings = Vec::new();
-    for (relative, pin) in source_pins {
-        bindings.push(Binding::open(
-            options.root.join(relative),
-            pin.as_str(),
-            4_000_000,
-        )?);
-    }
+    let retired_paths = source_policy::bind(
+        &options.root,
+        source_pins,
+        options.source_policy,
+        &mut bindings,
+    )?;
     for relative in PEER_FILES {
         bindings.push(Binding::open(options.root.join(relative), None, 4_000_000)?);
     }
@@ -1079,6 +1086,7 @@ fn execute(options: &Options, only_dual: bool, fault: Option<(&str, &Path)>) -> 
         return Err("driving scenario publication count changed".into());
     }
     original.verify()?;
+    source_policy::verify_absent(&retired_paths)?;
     catalog.verify()?;
     for binding in &bindings {
         binding.verify()?;
@@ -1092,7 +1100,7 @@ fn execute(options: &Options, only_dual: bool, fault: Option<(&str, &Path)>) -> 
     let report = json!({"runs": reports, "device_validation": false});
     let mut receipt_bytes = serde_json::to_vec_pretty(&report)?;
     receipt_bytes.push(b'\n');
-    let mut receipt = File::from(rustix::fs::openat(
+    let receipt = File::from(rustix::fs::openat(
         &output_dir,
         "report.json",
         rustix::fs::OFlags::RDWR
@@ -1102,17 +1110,18 @@ fn execute(options: &Options, only_dual: bool, fault: Option<(&str, &Path)>) -> 
             | rustix::fs::OFlags::CLOEXEC,
         rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR,
     )?);
-    receipt.write_all(&receipt_bytes)?;
-    receipt.sync_all()?;
-    let receipt_identity = identity(&receipt.metadata()?);
+    let mut receipt = finalization::OwnedReport::new(output_dir, receipt);
+    receipt.file.write_all(&receipt_bytes)?;
+    receipt.file.sync_all()?;
+    let receipt_identity = identity(&receipt.file.metadata()?);
     let completed = Completed {
         report,
         original,
         catalog,
         bindings,
+        retired_paths,
         signals,
         output: options.output.clone(),
-        output_dir,
         output_identity: (output_metadata.dev(), output_metadata.ino()),
         receipt,
         receipt_identity,
@@ -1124,8 +1133,7 @@ fn execute(options: &Options, only_dual: bool, fault: Option<(&str, &Path)>) -> 
 
 pub fn run(options: &Options) -> Result<Value> {
     let completed = execute(options, false, None)?;
-    completed.verify()?;
-    Ok(completed.report.clone())
+    completed.finish(None)
 }
 
 /// The link-fault checker reuses the exact live 1344-dual scenario, including
@@ -1133,8 +1141,7 @@ pub fn run(options: &Options) -> Result<Value> {
 /// requires all six scenarios and all 114 published packets.
 pub fn run_only_dual(options: &Options) -> Result<Value> {
     let completed = execute(options, true, None)?;
-    completed.verify()?;
-    Ok(completed.report.clone())
+    completed.finish(None)
 }
 
 pub fn run_link_fault_dual(options: &Options, mode: &str, audit: &Path) -> Result<Value> {
@@ -1142,13 +1149,13 @@ pub fn run_link_fault_dual(options: &Options, mode: &str, audit: &Path) -> Resul
         return Err("link fault requires a known timing mode and live collector".into());
     }
     let completed = execute(options, true, Some((mode, audit)))?;
-    completed.verify()?;
-    Ok(completed.report.clone())
+    completed.finish(None)
 }
 
 /// Leaf CLI. Parent registration should expose this through an explicitly
 /// feature-gated bin; the original checker remains in place until cloud proof.
 pub fn cli() -> Result<()> {
+    let mut source_policy = None;
     let mut binary = None;
     let mut catalog = None;
     let mut original_dir = None;
@@ -1164,6 +1171,7 @@ pub fn cli() -> Result<()> {
             .next()
             .ok_or("driving controller option requires a value")?;
         let slot = match option.to_str() {
+            Some("--source-policy") => &mut source_policy,
             Some("--binary") => &mut binary,
             Some("--catalog") => &mut catalog,
             Some("--original-dir") => &mut original_dir,
@@ -1180,6 +1188,13 @@ pub fn cli() -> Result<()> {
         }
     }
     let options = Options {
+        source_policy: SourcePolicy::parse(
+            source_policy
+                .as_ref()
+                .map(|v| v.to_str().ok_or("source policy must be UTF-8"))
+                .transpose()?
+                .unwrap_or("present"),
+        )?,
         binary: PathBuf::from(binary.ok_or("--binary required")?),
         catalog: PathBuf::from(catalog.ok_or("--catalog required")?),
         original_dir: PathBuf::from(original_dir.ok_or("--original-dir required")?),
@@ -1194,8 +1209,8 @@ pub fn cli() -> Result<()> {
         compiler: compiler.map(PathBuf::from),
     };
     let completed = execute(&options, false, None)?;
-    println!("{}", serde_json::to_string(&completed.report)?);
-    completed.verify()?;
+    let stdout = std::io::stdout();
+    completed.finish(Some(&mut stdout.lock()))?;
     Ok(())
 }
 

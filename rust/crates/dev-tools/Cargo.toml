@@ -1920,6 +1920,15 @@ required-features = ["driving-daemon-native"]
 name = "driver_daemon_check"
 required-features = ["driver-daemon-native"]
 
+[[test]]
+name = "driving_daemon_retirement"
+required-features = ["driving-daemon-native"]
+
+[[bin]]
+name = "seal-driving-daemon-fixture"
+path = "src/bin/seal_driving_daemon_fixture.rs"
+required-features = ["driving-daemon-native"]
+
 [[bin]]
 name = "check-driver-daemon"
 path = "src/bin/check_driver_daemon.rs"

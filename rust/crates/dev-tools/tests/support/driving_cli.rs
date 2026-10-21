@@ -13,15 +13,26 @@ fn hex(bytes: &[u8]) -> String {
 }
 
 pub fn run(binary: &Path, args: Vec<OsString>, output: &Path) -> Value {
+    run_at(binary, args, output, &std::env::current_dir().unwrap())
+}
+
+pub fn run_at(binary: &Path, args: Vec<OsString>, output: &Path, cwd: &Path) -> Value {
     let binary_before = format!("{:x}", Sha256::digest(fs::read(binary).unwrap()));
     assert!(!output.exists());
-    let captured = Command::new(binary).args(&args).output().unwrap();
+    let captured = Command::new(binary)
+        .args(&args)
+        .current_dir(cwd)
+        .env_remove("PYTHONPATH")
+        .env_remove("PYTHONHOME")
+        .output()
+        .unwrap();
     let binary_after = format!("{:x}", Sha256::digest(fs::read(binary).unwrap()));
     let receipt = json!({
         "source":std::env::var("EXPECTED_SOURCE").expect("cloud must bind exact source"),
         "binary_sha256_before":binary_before,"binary_sha256_after":binary_after,
         "argv_hex":std::iter::once(binary.as_os_str()).chain(args.iter().map(|a|a.as_os_str()))
             .map(|a|hex(a.as_bytes())).collect::<Vec<_>>(),
+        "cwd_hex":hex(cwd.as_os_str().as_bytes()),"python_path_removed":true,
         "status":captured.status.code(),"stdout_hex":hex(&captured.stdout),"stderr_hex":hex(&captured.stderr),
         "output_absent_before":true,"output_directory_after":output.is_dir(),
     });
