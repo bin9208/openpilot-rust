@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
-      EXPECTED_SOURCE: 22418697cc1ac4fb6bb6c9380e053a5bf3a28bd8
+      EXPECTED_SOURCE: 481ae6fec39ecc68786c4c2813b1205fb4567141
       RUSTUP_TOOLCHAIN: 1.94.0
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
@@ -32,7 +32,7 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: 22418697cc1ac4fb6bb6c9380e053a5bf3a28bd8
+        ref: 481ae6fec39ecc68786c4c2813b1205fb4567141
     - name: Require exact source, disk room and native prerequisites
       shell: bash
       run: 'set -euo pipefail
