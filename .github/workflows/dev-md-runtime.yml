@@ -2,7 +2,7 @@ name: dev-md AGNOS runtime package
 on:
   workflow_dispatch:
   push:
-    branches: [dev-md, 'codex/fix-402-*']
+    branches: [dev-md]
 permissions:
   contents: read
   actions: read
@@ -13,12 +13,12 @@ jobs:
   package:
     if: >-
       (github.event_name == 'workflow_dispatch' &&
-      (github.ref == 'refs/heads/codex/fix-415-416-lfs-onnx' || github.ref == 'refs/heads/codex/fix-416-onnx-compute')) ||
+      github.ref == 'refs/heads/codex/feat-453-xiaoge-gpu') ||
       (github.event_name == 'push' && contains(github.event.head_commit.message, '[runtime-package]') &&
-      (github.ref == 'refs/heads/dev-md' || startsWith(github.ref, 'refs/heads/codex/fix-402-')))
+      github.ref == 'refs/heads/dev-md')
     name: Build and seal actual AGNOS runtime
     runs-on: ubuntu-24.04
-    timeout-minutes: 150
+    timeout-minutes: 210
     env:
       GIT_LFS_SKIP_SMUDGE: '1'
       CARGO_INCREMENTAL: '0'
@@ -56,7 +56,7 @@ jobs:
                           self.assertTrue(allowed(path))
 
               def test_provider_model_and_unrelated_sources_rejected(self):
-                  for path in ('rust/crates/opencv-runtime/src/lib.rs', 'openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx', 'panda/board/main.c', '.github/workflows/rust.yml', 'tools/ci/tests/test_other.py'):
+                  for path in ('rust/crates/opencv-runtime/native/image.cc', 'openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx', 'panda/board/main.c', '.github/workflows/unrelated.yml', 'tools/ci/tests/test_other.py'):
                       with self.subTest(path=path):
                           self.assertFalse(allowed(path))
 
@@ -85,6 +85,7 @@ jobs:
           if not result.wasSuccessful():
               raise SystemExit(1)
           PY
+          python3 rust/ci/runtime/test_package_policy.py
           python3 rust/ci/runtime/package.py source-policy
       - name: Reserve disk for AGNOS and bounded builds
         run: |
@@ -101,6 +102,7 @@ jobs:
           python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/publication-policy.json")); assert p["name"] == "dev" and p["protected"] and p["protection"]["enabled"] and {"fast checks","integration gate","check mapped user docs","rust checks","rust aarch64 build"} <= set(p["protection"]["required_status_checks"]["contexts"])'
       - name: Install build tools
         run: |
+          python3 -c 'import os,shutil; assert shutil.disk_usage(os.environ["RUNNER_TEMP"]).free >= (25+4)*2**30, "disk reserve before dependency installation"'
           sudo apt-get update
           sudo apt-get install -y g++-aarch64-linux-gnu clang-18 libclang-18-dev cmake pkg-config capnproto libcapnp-dev libzmq3-dev qemu-user-static android-sdk-libsparse-utils e2fsprogs git-lfs nasm
           sudo apt-get install -y 'libavcodec-dev=7:6.1.1-*' 'libavformat-dev=7:6.1.1-*' 'libavutil-dev=7:6.1.1-*'
@@ -164,6 +166,18 @@ jobs:
             ${{ runner.temp }}/agnos-runtime/sysroot-extract.log
             ${{ runner.temp }}/agnos-runtime/source-policy.json
             ${{ runner.temp }}/agnos-runtime/source-policy-tests.json
+            ${{ runner.temp }}/agnos-runtime/opencv/receipt.json
+            ${{ runner.temp }}/agnos-runtime/opencv/*.log
+            ${{ runner.temp }}/agnos-runtime/opencv/*.command.json
+            ${{ runner.temp }}/agnos-runtime/opencv/*.exit.json
+            ${{ runner.temp }}/agnos-runtime/opencv/*.space.json
+            ${{ runner.temp }}/agnos-runtime/opencv/opencl-capability.json
+            ${{ runner.temp }}/agnos-runtime/opencv/build/CMakeCache.txt
+            ${{ runner.temp }}/agnos-runtime/opencv/build/cvconfig.h
+            ${{ runner.temp }}/agnos-runtime/opencv-baseline.json
+            ${{ runner.temp }}/agnos-runtime/opencv-smoke/*.log
+            ${{ runner.temp }}/agnos-runtime/opencv-smoke/*.json
+            ${{ runner.temp }}/agnos-runtime/opencv-smoke/*.jsonl
           retention-days: 7
   publish:
     needs: package
@@ -189,6 +203,7 @@ jobs:
           if [ "${{ runner.environment }}" = github-hosted ]; then
             sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           fi
+          python3 -c 'import os,shutil; assert shutil.disk_usage(os.environ["RUNNER_TEMP"]).free >= (25+2)*2**30, "disk reserve before dependency installation"'
           sudo apt-get update
           sudo apt-get install -y qemu-user-static android-sdk-libsparse-utils e2fsprogs git-lfs
       - uses: actions/cache@v4

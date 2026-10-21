@@ -1,4 +1,4 @@
-use super::{State, rounded};
+use super::{rounded, State};
 use crate::{
     vision::Side,
     wire::{fields, object},

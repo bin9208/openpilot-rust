@@ -10,6 +10,10 @@ on:
         description: Run only focused ONNX regressions on a hosted runner
         type: boolean
         default: false
+      gpu_native_only:
+        description: Build OpenCL-capable providers and run focused native contracts on host and ARM
+        type: boolean
+        default: false
       gpu_only:
         description: Run focused GPU policy and telemetry contracts on a hosted runner
         type: boolean
@@ -25,7 +29,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   fast:
-    if: github.event_name != 'workflow_dispatch' || (!inputs.onnx_only && !inputs.compute_only && !inputs.gpu_only)
+    if: github.event_name != 'workflow_dispatch' || (!inputs.onnx_only && !inputs.compute_only && !inputs.gpu_only && !inputs.gpu_native_only)
     name: fast checks
     runs-on: ubuntu-24.04
     timeout-minutes: 7
@@ -221,4 +225,63 @@ jobs:
           key: xiaoge-gpu-${{ runner.arch }}-${{ hashFiles('rust/Cargo.lock') }}-${{ github.sha }}
           restore-keys: xiaoge-gpu-${{ runner.arch }}-${{ hashFiles('rust/Cargo.lock') }}-
       - name: GPU selection, fallback, bounded comparison and numeric contracts
-        run: cargo test --manifest-path rust/Cargo.toml -p openpilot-xiaoge --locked --test gpu_policy
+        run: |
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-xiaoge --locked --lib --tests
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-xiaoge --locked --all-targets -- -D warnings
+          python3 rust/ci/runtime/test_package_policy.py
+
+  gpu-native:
+    if: github.event_name == 'workflow_dispatch' && inputs.gpu_native_only
+    name: Xiaoge OpenCL native (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    timeout-minutes: 75
+    env:
+      GIT_LFS_SKIP_SMUDGE: '1'
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      RUSTUP_TOOLCHAIN: '1.94.0'
+      OPENCV_TEST_GPU: reject
+    steps:
+      - uses: actions/checkout@v7
+        with: {persist-credentials: false}
+      - name: Reserve capacity before dependencies
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          rust/tools/check-disk-space --path "$RUNNER_TEMP" --growth-mib 8192
+          sudo apt-get update
+          sudo apt-get install -y capnproto libcapnp-dev cmake g++ libzmq3-dev git-lfs
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            rust/target
+          key: xiaoge-gpu-native-${{ runner.arch }}-${{ hashFiles('rust/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: xiaoge-gpu-native-${{ runner.arch }}-${{ hashFiles('rust/Cargo.lock') }}-
+      - name: Retrieve unchanged models and build fresh OpenCL provider
+        run: |
+          git lfs pull --include='openpilot/selfdrive/carrot/xiaoge/assets/*.onnx' --exclude=''
+          cargo run --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --bin build-xiaoge-opencv -- --opencl --output "$RUNNER_TEMP/xiaoge-gpu-opencv"
+          printf 'OPENPILOT_OPENCV_ROOT=%s/xiaoge-gpu-opencv\nLD_LIBRARY_PATH=%s/xiaoge-gpu-opencv/install/lib\nOPENCV_TEST_LANE_MODEL=%s/openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx\n' "$RUNNER_TEMP" "$RUNNER_TEMP" "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+      - name: CPU math, ownership, GPU rejection, priority mocks and log analysis
+        run: |
+          rust/tools/check-disk-space --path "$RUNNER_TEMP" --growth-mib 4096
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-xiaoge -p openpilot-opencv-runtime --locked --features native-skip-miri --all-targets
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-xiaoge -p openpilot-opencv-runtime --locked --features native-skip-miri --all-targets -- -D warnings
+          XIAOGE_BENCH_MODELS="$GITHUB_WORKSPACE/openpilot/selfdrive/carrot/xiaoge/assets" cargo run --manifest-path rust/Cargo.toml -p openpilot-xiaoge --locked --features native-skip-miri --example xiaoge_compute_bench -- --assert > "$RUNNER_TEMP/xiaoge-gpu-cpu-equivalence.json"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: xiaoge-gpu-native-${{ matrix.runner }}-evidence
+          path: |
+            ${{ runner.temp }}/xiaoge-gpu-opencv/*.json
+            ${{ runner.temp }}/xiaoge-gpu-opencv/*.log
+            ${{ runner.temp }}/xiaoge-gpu-opencv/native-libraries.sha256
+            ${{ runner.temp }}/xiaoge-gpu-cpu-equivalence.json
+          retention-days: 7

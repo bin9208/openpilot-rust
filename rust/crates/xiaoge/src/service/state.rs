@@ -126,6 +126,7 @@ pub struct State {
     pub settings: Settings,
     pub compute_mode: ComputeMode,
     pub compute_generation: u64,
+    pub compute_since_ns: u64,
     pub compute_status: [Option<openpilot_logging::Fields>; 2],
     pub last_param_refresh: f64,
     pub cameras: [Camera; 2],
@@ -152,6 +153,7 @@ impl State {
             settings: Settings::default(),
             compute_mode: ComputeMode::Cpu,
             compute_generation: 0,
+            compute_since_ns: (now.max(0.0) * 1e9) as u64,
             compute_status: [None, None],
             last_param_refresh: 0.0,
             cameras: ["waiting for wide road camera", "waiting for road camera"].map(|error| {

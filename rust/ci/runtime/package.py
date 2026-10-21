@@ -75,12 +75,32 @@ def source_path_allowed(path, source_entry="", inherited_entry=""):
     allowed = (
         "AGENTS.md", "launch_openpilot.sh", "rust/Cargo.lock",
         "rust/crates/jetlink/", "rust/crates/runtime-core/", "rust/crates/runtime-launcher/",
-        "rust/crates/xiaoge/", "rust/crates/dev-tools/src/publish.rs", "rust/ci/runtime/",
+        "rust/crates/xiaoge/", "rust/crates/dev-tools/src/publish.rs",
+        "rust/ci/runtime/package.py", "rust/ci/runtime/build-args.json",
+        "rust/ci/runtime/elf-roots.json", "rust/ci/runtime/opencv.sha256",
+        "rust/ci/runtime/opencv-headers.cmake", "rust/ci/runtime/test_package_policy.py",
+        # Issue #453: exact GPU producer/API files only. Their native provider
+        # is rebuilt below; these exceptions never authorize CPU binary reuse.
+        "rust/crates/dev-tools/src/opencv_build.rs",
+        "rust/crates/opencv-runtime/build.rs", "rust/crates/opencv-runtime/PROVENANCE.md",
+        "rust/crates/opencv-runtime/src/bridge.rs", "rust/crates/opencv-runtime/src/lib.rs",
+        "rust/crates/opencv-runtime/src/native/mod.rs", "rust/crates/opencv-runtime/src/native/net.rs",
+        "rust/crates/opencv-runtime/native/bridge.h", "rust/crates/opencv-runtime/native/net.cc",
+        "rust/crates/opencv-runtime/native/dnn_context.cc", "rust/crates/opencv-runtime/native/dnn_context.h",
+        "rust/crates/opencv-runtime/native/opencl_priority.h",
+        "rust/crates/opencv-runtime/src/native/net/tests.rs",
+        "rust/crates/opencv-runtime/tests/native.rs", "rust/crates/opencv-runtime/tests/contracts.rs",
+        "rust/crates/opencv-runtime/tests/dnn_target.rs",
+        "rust/crates/opencv-runtime/tests/fixtures/opencl_probe.c",
+        "rust/crates/opencv-runtime/tests/fixtures/opencl_priority.cc",
+        "docs/naver/dev-md-xiaoge-gpu.md", "openpilot/common/params_keys.h",
+        "openpilot/selfdrive/carrot/xiaoge/v_asm_web.html",
         "rust/upstream/jetlink.json", "docs/naver/dev-md-jetlink-",
         "docs/naver/dev-md-lfs-checkout-validation.md", "docs/naver/dev-md-onnx-load-validation.md",
         "docs/user/en/lane-change.md", "docs/user/ko/lane-change.md", ".lfsconfig",
         ".github/workflows/jetlink-native.yml", ".github/workflows/dev-md-runtime.yml",
         ".github/workflows/fast-checks.yml", "tools/check_jetlink_usb_policy.py",
+        ".github/workflows/rust.yml",
         "tools/ci/tests/test_lfs_endpoint.py",
     )
     if any(path == prefix or prefix.endswith(("/", "-")) and path.startswith(prefix) for prefix in allowed):
@@ -106,6 +126,10 @@ def check_source_policy():
     return changed
 
 
+def rebuild_opencv_artifact(path):
+    return path.startswith("rust/bin/lib/libopencv_") or path.startswith("rust/bin/licenses/opencv/")
+
+
 def stage_baseline():
     changed = check_source_policy()
     archive = download(f"https://github.com/bin9208/openpilot-rust/releases/download/runtime-{BASE}/openpilot-rust-{BASE}-aarch64.tar.gz", "baseline.tar.gz", "eb67c8c58f8c8da62aa7afdc11d7cfc1262038222b6e4b9ff0a33fe64206297d")
@@ -115,13 +139,15 @@ def stage_baseline():
     manifest_file = base / "rust/runtime-manifest.json"
     assert digest(manifest_file) == "041be84b1e7ea8d6611e4256e4ae30814eca1cdef498dffa6d455c0d1962787e"
     manifest = json.loads(manifest_file.read_text())
+    save(WORK / "opencv-baseline.json", {row["path"]: row["sha256"] for row in manifest["files"]
+                                       if rebuild_opencv_artifact(row["path"])})
     replaced = {f"rust/bin/{name}" for name in NAMES} | {f"rust/bin/licenses/runtime-build/{name}.json" for name in ("runtime-staging", "installer-build", "source-build-metadata", "provider-reuse", "elf-summary")}
     reused = []
     for row in manifest["files"]:
         path = row["path"]
         source = base / path
         assert digest(source) == row["sha256"], path
-        if path in replaced:
+        if path in replaced or rebuild_opencv_artifact(path):
             continue
         dest = ROOT / path
         dest.parent.mkdir(parents=True, exist_ok=True)
@@ -141,7 +167,8 @@ def stage_baseline():
     metadata["openpilot"].update(git_commit=SHA, git_commit_date=git("show", "-s", "--format=%ct %ci", "HEAD"), git_origin=git("remote", "get-url", "origin"), is_dirty=False)
     save(build / "source-build-metadata.json", metadata)
     save(build / "provider-reuse.json", dict(schema=1, baseline_source=BASE, source_commit=SHA, changed_source_paths=changed, runtime_executables_to_rebuild=len(NAMES), artifacts=reused,
-         note="Every companion/model/firmware/source asset is verified against the sealed public baseline; allowed changes do not touch its producers. All project Rust executables are rebuilt on the exact clean source. External provider receipts retain their real original identity."))
+         rebuilt_providers=["opencv"],
+         note="Non-OpenCV companions/models/firmware/source assets retain verified baseline identity. OpenCV is excluded and freshly rebuilt with OpenCL from pinned hardened source against genuine AGNOS; all project Rust executables are rebuilt on the exact clean source. Other external receipts retain original identity."))
     shutil.rmtree(base)
     archive.unlink()
 
@@ -187,31 +214,8 @@ def isolate_providers():
 
 
 def providers():
-    # Only compile-time headers/static libyuv are restored. Runtime companions
-    # remain the exact hash-verified AGNOS baseline providers.
+    # Restore headers for unchanged providers; OpenCV is always freshly built.
     lib = ROOT / "rust/bin/lib"
-    cv = WORK / "opencv"
-    source_tar = download("https://codeload.github.com/opencv/opencv/tar.gz/fe38fc608f6acb8b68953438a62305d8318f4fcd", "opencv.tar.gz", "6a7508554941c1a698c243b2212b2985ce59a65a3e0348d53c2158607d801e61")
-    unpack(source_tar, cv)
-    source = cv / "source"
-    if not source.exists():
-        (cv / "opencv-fe38fc608f6acb8b68953438a62305d8318f4fcd").rename(source)
-        run(["patch", "-p1", "-i", ROOT / "rust/crates/opencv-runtime/native/opencv-defined-access.patch"], cwd=source)
-    include = cv / "install/include/opencv4"
-    include.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(source / "include", include, dirs_exist_ok=True)
-    for module in (source / "modules").iterdir():
-        if (module / "include").exists():
-            shutil.copytree(module / "include", include, dirs_exist_ok=True)
-    shutil.copy2(CONFIG / "opencv-headers.cmake", cv / "restore.cmake")
-    run(["cmake", "-P", cv / "restore.cmake"])
-    (cv / "install/lib").mkdir(parents=True, exist_ok=True)
-    for path in lib.glob("libopencv*"):
-        dest = cv / "install/lib" / path.name
-        if dest.exists() or dest.is_symlink(): dest.unlink()
-        dest.symlink_to(path.resolve())
-    shutil.copy2(CONFIG / "opencv.sha256", cv / "native-libraries.sha256")
-    run(["sha256sum", "--check", "native-libraries.sha256"], cwd=cv, stdout=subprocess.DEVNULL)
     ort_pin = json.loads((ROOT / "rust/upstream/signal-runtime.json").read_text())["onnxruntime"]["providers"]["aarch64"]
     unpack(download(ort_pin["url"], "ort.tgz", ort_pin["archive_sha256"]), WORK / "ort")
     wheel = download("https://files.pythonhosted.org/packages/27/ce/e8b941bcf0b213ca9cb4d8cb69b18398b4dad77923925d80bc3281837461/comma_deps_raylib-6.0.0.1.post103-py3-none-manylinux_2_28_x86_64.whl", "raylib.whl", "942ec942ec01005f05584eede1a6add483043e8e8f764e68cfebb7c21c443b89")
@@ -234,6 +238,137 @@ def providers():
         dest = ff / "install/lib" / path.name
         if dest.exists() or dest.is_symlink(): dest.unlink()
         dest.symlink_to(path.resolve())
+    # CMake/pkg-config sees only this target prefix, never host FFmpeg.
+    pc = ff / "install/lib/pkgconfig"; pc.mkdir(exist_ok=True)
+    for name, version in (("avcodec", "60.31.102"), ("avformat", "60.16.100"),
+                          ("avutil", "58.29.100"), ("swscale", "7.5.100")):
+        (pc / f"lib{name}.pc").write_text(
+            f"prefix={ff / 'install'}\nlibdir=${{prefix}}/lib\nincludedir=${{prefix}}/include\n"
+            f"Name: lib{name}\nDescription: sealed AGNOS baseline FFmpeg {name}\nVersion: {version}\n"
+            f"Libs: -L${{libdir}} -l{name}\nCflags: -I${{includedir}}\n")
+    build_opencv()
+
+
+def require_fresh_opencv(provider, receipt, baseline):
+    assert receipt["status"] == "BUILT" and receipt["architecture"] == "aarch64"
+    assert receipt["opencl"] is True and receipt["fresh_build"] is True
+    assert receipt["source_commit"] == SHA and receipt["source_unchanged"] is True
+    assert receipt["source_revision"] == "fe38fc608f6acb8b68953438a62305d8318f4fcd"
+    assert receipt["source_archive_sha256"] == "6a7508554941c1a698c243b2212b2985ce59a65a3e0348d53c2158607d801e61"
+    assert receipt["hardening_patch_sha256"] == "7d17439697d9786b43b2a44dc9eecea34381adb6d2f14c6892266b6699a49aec"
+    libraries = {f"install/lib/libopencv_{name}.so.4.13.0" for name in
+                 ("core", "dnn", "imgproc", "imgcodecs", "videoio")}
+    aliases = {path.replace(".so.4.13.0", f".{suffix}") for path in libraries for suffix in ("so", "so.413")}
+    headers = {f"install/include/opencv4/opencv2/{name}.hpp" for name in ("core", "dnn", "imgproc", "imgcodecs", "videoio")}
+    assert set(receipt["libraries"]) == libraries
+    sealed = receipt["sealed"]
+    required = libraries | aliases | headers | {"source.json", "source-files.json", "aarch64.cmake", "opencv-defined-access.patch",
+                           "opencl-capability.json", "configure.log", "configure.command.json", "configure.exit.json",
+                           "build/CMakeCache.txt", "build/cvconfig.h", "build.command.json", "build.exit.json",
+                           "install.command.json", "install.exit.json", "licenses/OpenCL-Headers-LICENSE.txt"}
+    assert required <= sealed.keys(), "fresh OpenCL build evidence is incomplete"
+    for relative, expected in sealed.items():
+        path = Path(relative)
+        assert not path.is_absolute() and ".." not in path.parts
+        assert (provider / path).resolve().is_relative_to(provider.resolve())
+        assert digest(provider / path) == expected, relative
+    assert receipt["libraries"] == {path: sealed[path] for path in libraries}
+    listed = dict(line.split("  ", 1)[::-1] for line in (provider / "native-libraries.sha256").read_text().splitlines())
+    assert listed == sealed, "build receipt and sealed native manifest differ"
+    capability = json.loads((provider / "opencl-capability.json").read_text())
+    assert capability["enabled"] is True and capability["cmake_opencl"] == "YES"
+    assert capability["linkage"] == "dynamic" and capability["target_icd_packaged"] is False
+    assert "OPENCL_LIBRARY:STRING=\n" in (provider / "build/CMakeCache.txt").read_text()
+    assert any(line.split("OpenCL:", 1)[-1].split()[:1] == ["YES"]
+               for line in (provider / "configure.log").read_text().splitlines() if "OpenCL:" in line)
+    assert any(line.split() in (["#define", "HAVE_OPENCL"], ["#define", "HAVE_OPENCL", "1"])
+               for line in (provider / "build/cvconfig.h").read_text().splitlines())
+    command = json.loads((provider / "configure.command.json").read_text())
+    assert "-DWITH_OPENCL=ON" in command and "-DOPENCL_LIBRARY:STRING=" in command
+    assert "-DENABLE_CCACHE=OFF" in command
+    assert not any(line.split()[:2] == ["#define", "HAVE_OPENCL_STATIC"]
+                   for line in (provider / "build/cvconfig.h").read_text().splitlines())
+    for phase in ("configure", "build", "install"):
+        assert json.loads((provider / f"{phase}.exit.json").read_text())["code"] == 0
+    identity = json.loads((provider / "source.json").read_text())
+    assert identity["native_source_files_sha256"] == sealed["source-files.json"] == receipt["source_files_sha256"]
+    assert identity["revision"] == receipt["source_revision"]
+    assert identity["sha256"] == receipt["source_archive_sha256"]
+    assert identity["external_hardening_patch_sha256"] == receipt["hardening_patch_sha256"]
+    assert sealed["opencv-defined-access.patch"] == receipt["hardening_patch_sha256"]
+    # Core and DNN must change when OpenCL is compiled in. Companion modules
+    # can legitimately reproduce identical bytes after a fresh build.
+    for name in ("core", "dnn"):
+        path = f"libopencv_{name}.so.4.13.0"
+        assert receipt["libraries"][f"install/lib/{path}"] != baseline[f"rust/bin/lib/{path}"], "baseline CPU OpenCV reuse forbidden"
+
+
+def build_opencv():
+    room(6 * 2**30)
+    provider = WORK / "opencv"
+    # Never cache or restore the OpenCV native build/install tree.
+    assert not provider.exists(), "OpenCV must be rebuilt from scratch for this exact source"
+    prepared = WORK / "opencv-source"
+    run([TOOLS / "build-xiaoge-opencv", "--root", ROOT, "--output", prepared, "--prepare-only"])
+    source = prepared / "opencv-fe38fc608f6acb8b68953438a62305d8318f4fcd"
+    cross = WORK / "opencv-cross"; cross.mkdir()
+    for language in ("cc", "cxx"):
+        shutil.copy2(WORK / language, cross / f"{language}.sh")
+    run([TOOLS / "build-runtime-opencv", "--root", ROOT, "--source", source, "--output", provider,
+         "--opencl", "--ffmpeg", WORK / "ffmpeg/install", "--sdk", SDK, "--cross", cross,
+         "--compiler-root", "/usr/aarch64-linux-gnu"], env=environment())
+    receipt = json.loads((provider / "receipt.json").read_text())
+    baseline = json.loads((WORK / "opencv-baseline.json").read_text())
+    require_fresh_opencv(provider, receipt, baseline)
+    room(256 * 2**20)
+    # Every alias and header comes from this install, never synthesized CPU
+    # headers or links to baseline libraries. Keep the full sealed evidence.
+    lib = ROOT / "rust/bin/lib"
+    for old in lib.glob("libopencv_*"):
+        old.unlink()
+    licenses = ROOT / "rust/bin/licenses/opencv"
+    if licenses.exists(): shutil.rmtree(licenses)
+    licenses.mkdir(parents=True)
+    staged = []
+    for path in sorted((provider / "install/lib").glob("libopencv_*.so*")):
+        assert path.resolve().parent == provider / "install/lib"
+        assert f"install/lib/{path.resolve().name}" in receipt["libraries"]
+        dest = lib / path.name
+        if path.is_symlink():
+            dest.symlink_to(path.resolve().name)
+        else:
+            header = path.open("rb").read(20)
+            assert header[:6] == b"\x7fELF\x02\x01" and header[18:20] == b"\xb7\x00"
+            shutil.copy2(path, dest)
+        assert digest(dest) == receipt["sealed"][f"install/lib/{path.name}"], "staged OpenCV content changed"
+        staged.append(dict(path=str(dest.relative_to(ROOT)), sha256=digest(dest)))
+    assert len(staged) == 15, "five libraries and both aliases are mandatory"
+    for relative in receipt["sealed"]:
+        path = provider / relative
+        dest = licenses / "provider" / relative
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, dest)
+    for path in (provider / "licenses").iterdir():
+        shutil.copy2(path, licenses / path.name)
+    for name in ("receipt.json", "source.json", "native-libraries.sha256", "opencv-defined-access.patch"):
+        shutil.copy2(provider / name, licenses / name)
+    # Validate exactly the bytes staged into the sealed runtime evidence tree.
+    run(["sha256sum", "--check", licenses / "native-libraries.sha256"], cwd=licenses / "provider", stdout=subprocess.DEVNULL)
+    provenance = dict(schema=1, source_commit=SHA, baseline_source=BASE, rebuilt=True, reused=False,
+                      architecture="aarch64", opencl=True, agnos_version="19.8-carrot-bt1",
+                      provider_receipt_sha256=digest(provider / "receipt.json"),
+                      libraries=receipt["libraries"], files=staged,
+                      scope="Fresh combined five-library pinned hardened source build, dynamic system OpenCL. Consumer AGNOS ELF closure and package installation are checked before sealing/publication. GPU execution remains user device acceptance.")
+    save(licenses / "provenance.json", provenance)
+    reuse_file = ROOT / "rust/bin/licenses/runtime-build/provider-reuse.json"
+    reuse = json.loads(reuse_file.read_text())
+    assert not any(rebuild_opencv_artifact(row["path"]) for row in reuse["artifacts"])
+    reuse["opencv"] = provenance
+    save(reuse_file, reuse)
+    metadata_file = reuse_file.with_name("source-build-metadata.json")
+    metadata = json.loads(metadata_file.read_text())
+    metadata["opencv"] = provenance
+    save(metadata_file, metadata)
 
 
 def environment():
@@ -247,7 +382,7 @@ def environment():
         path.write_text("#!/bin/sh\nexec " + shlex.join(args) + ' "$@"\n'); path.chmod(0o755)
     env.update(CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=str(WORK / "cc"), CC_aarch64_unknown_linux_gnu=str(WORK / "cc"), CXX_aarch64_unknown_linux_gnu=str(WORK / "cxx"), AR_aarch64_unknown_linux_gnu="aarch64-linux-gnu-ar",
                BINDGEN_EXTRA_CLANG_ARGS_aarch64_unknown_linux_gnu=f"--sysroot={SDK} -isystem {SDK}/usr/include/aarch64-linux-gnu -isystem {SDK}/usr/include", PKG_CONFIG_ALLOW_CROSS="1",
-               OPENPILOT_OPENCV_ROOT=str(WORK / "opencv"), OPENPILOT_ORT_ROOT=str(WORK / "ort/onnxruntime-linux-aarch64-1.23.2"), STARTUP_UI_RAYLIB_ROOT=str(WORK / "raylib"), ENCODER_LIBYUV_LIB=str(WORK / "libyuv"), FFMPEG_DIR=str(WORK / "ffmpeg/install"))
+               OPENPILOT_OPENCV_ROOT=str(WORK / "opencv"), OPENPILOT_WEBCAM_OPENCV_ROOT=str(WORK / "opencv"), OPENPILOT_ORT_ROOT=str(WORK / "ort/onnxruntime-linux-aarch64-1.23.2"), STARTUP_UI_RAYLIB_ROOT=str(WORK / "raylib"), ENCODER_LIBYUV_LIB=str(WORK / "libyuv"), FFMPEG_DIR=str(WORK / "ffmpeg/install"))
     return env
 
 
@@ -258,10 +393,67 @@ def host_tools():
     # Cross-build dependencies also compile host units. A separate target tree
     # prevents an upstream build script's cached ARM link paths leaking into
     # packaging tools when that script does not track FFMPEG_DIR changes.
-    arm_providers = {"LOCATIOND_EIGEN_INCLUDE", "PARAMSD_EIGEN_INCLUDE", "FFMPEG_DIR", "ENCODER_LIBYUV_LIB", "OPENPILOT_OPENCV_ROOT", "OPENPILOT_ORT_ROOT", "STARTUP_UI_RAYLIB_ROOT"}
+    arm_providers = {"LOCATIOND_EIGEN_INCLUDE", "PARAMSD_EIGEN_INCLUDE", "FFMPEG_DIR", "ENCODER_LIBYUV_LIB", "OPENPILOT_OPENCV_ROOT", "OPENPILOT_WEBCAM_OPENCV_ROOT", "OPENPILOT_ORT_ROOT", "STARTUP_UI_RAYLIB_ROOT"}
     host_env = {key: value for key, value in env.items() if key not in arm_providers}
     host_env["CARGO_TARGET_DIR"] = str(HOST_TARGET)
-    run(["cargo", "build", "--locked", "--manifest-path", "rust/Cargo.toml", "--release", "-p", "openpilot-dev-tools", "--bin", "package-runtime-release", "--bin", "seal-runtime-package", "--bin", "runtime-elf-audit", "--bin", "publish-runtime-release", "-p", "openpilot-manager", "--bin", "openpilot-manager"], env=host_env)
+    run(["cargo", "test", "--locked", "--manifest-path", "rust/Cargo.toml", "--release", "-p", "openpilot-dev-tools", "--lib", "opencv_build::tests"], env=host_env)
+    room(6 * 2**30)
+    run(["cargo", "build", "--locked", "--manifest-path", "rust/Cargo.toml", "--release", "-p", "openpilot-dev-tools", "--bin", "package-runtime-release", "--bin", "seal-runtime-package", "--bin", "runtime-elf-audit", "--bin", "publish-runtime-release", "--bin", "build-xiaoge-opencv", "--bin", "build-runtime-opencv", "-p", "openpilot-manager", "--bin", "openpilot-manager"], env=host_env)
+
+
+def smoke_opencv(env):
+    room(2 * 2**30)
+    evidence = WORK / "opencv-smoke"; evidence.mkdir()
+    command = ["cargo", "test", "--locked", "--manifest-path", "rust/Cargo.toml", "--release",
+               "--target", "aarch64-unknown-linux-gnu", "-p", "openpilot-opencv-runtime",
+               "--features", "native-skip-miri", "--test", "dnn_target", "--no-run", "--message-format=json"]
+    with (evidence / "build.jsonl").open("w") as log:
+        run(command, env=env, stdout=log)
+    artifacts = [json.loads(line) for line in (evidence / "build.jsonl").read_text().splitlines()]
+    executables = [row["executable"] for row in artifacts if row.get("reason") == "compiler-artifact"
+                   and row["target"]["name"] == "dnn_target" and row.get("executable")]
+    assert len(executables) == 1
+    binary = Path(executables[0])
+    root = ROOT / "rust/crates/opencv-runtime"
+    probe = evidence / "libOpenCL-no-platform.so"
+    run([WORK / "cc", "-shared", "-fPIC", root / "tests/fixtures/opencl_probe.c", "-o", probe])
+    priority = evidence / "priority-contracts"
+    run([WORK / "cxx", "-std=c++17", "-Wall", "-Wextra", "-Werror", "-I", root / "native",
+         root / "tests/fixtures/opencl_priority.cc", "-o", priority])
+    # Execute the exact staged five-library provider with genuine AGNOS loader
+    # and C runtime. The fixture exposes no devices and never loads Qualcomm.
+    qemu = ["qemu-aarch64-static", "-L", SDK, "-E",
+            f"LD_LIBRARY_PATH={ROOT}/rust/bin/lib:{SDK}/usr/lib/aarch64-linux-gnu:{SDK}/lib"]
+    tests = []
+    for name in ("cpu_default_and_explicit_cpu_preserve_math_and_owned_outputs",
+                 "failed_forward_invalidates_execution_evidence"):
+        with (evidence / f"{name}.log").open("w") as log:
+            run([*qemu, "-E", f"OPENCV_OPENCL_RUNTIME={probe}", binary, "--exact", name, "--nocapture"],
+                stdout=log, stderr=subprocess.STDOUT, timeout=180)
+        assert "1 passed; 0 failed;" in (evidence / f"{name}.log").read_text(), "smoke test was filtered or failed"
+        tests.append(name)
+    for mode in ("cpu", "gpu"):
+        marker = evidence / f"{mode}-loader-marker"
+        with (evidence / f"{mode}-policy.log").open("w") as log:
+            run([*qemu, "-E", f"OPENCV_POLICY_CHILD={mode}", "-E", f"OPENCV_OPENCL_RUNTIME={probe}",
+                 "-E", f"OPENCV_POLICY_MARKER={marker}", binary, "--exact", "policy_child", "--nocapture"],
+                stdout=log, stderr=subprocess.STDOUT, timeout=180)
+        assert "1 passed; 0 failed;" in (evidence / f"{mode}-policy.log").read_text()
+        assert marker.exists() == (mode == "gpu"), "CPU must not initialize OpenCL; GPU rejection must exercise the loader"
+        tests.append(f"{mode}-policy")
+    with (evidence / "priority-contracts.log").open("w") as log:
+        run([*qemu, priority], stdout=log, stderr=subprocess.STDOUT, timeout=180)
+    tests.append("priority-contracts")
+    require_fresh_opencv(WORK / "opencv", json.loads((WORK / "opencv/receipt.json").read_text()),
+                         json.loads((WORK / "opencv-baseline.json").read_text()))
+    result = dict(schema=1, source_commit=SHA, architecture="aarch64", agnos_version="19.8-carrot-bt1",
+                  provider_receipt_sha256=digest(WORK / "opencv/receipt.json"),
+                  tests=tests, test_binary_sha256=digest(binary), probe_sha256=digest(probe),
+                  evidence={path.name: digest(path) for path in evidence.glob("*.log")},
+                  device_execution=False, actual_gpu_execution=False,
+                  scope="AGNOS QEMU CPU inference/recovery, no-OpenCL initialization on CPU, GPU no-platform rejection and priority ownership/verification boundaries. No device or GPU performance claim.")
+    save(evidence / "result.json", result)
+    save(ROOT / "rust/bin/licenses/runtime-build/opencv-smoke.json", result)
 
 
 def build():
@@ -269,11 +461,21 @@ def build():
     assert not git("status", "--porcelain")
     env = environment()
     providers()
+    assert {"openpilot-xiaoge", "openpilot-webcam", "openpilot-signalcolord"} <= set(NAMES)
+    # Recompile every selected project package, including the shared Params
+    # registry. Unchanged third-party Cargo dependencies retain their cache.
+    project_packages = sorted({BUILD[i + 1] for i, flag in enumerate(BUILD) if flag == "-p"}
+                              | {"openpilot-params", "openpilot-opencv-runtime", "openpilot-logging"})
+    clean = ["cargo", "clean", "--manifest-path", "rust/Cargo.toml", "--release", "--target", "aarch64-unknown-linux-gnu"]
+    for package in project_packages: clean += ["-p", package]
+    run(clean, env=env)
+    room(20 * 2**30)
     eigen = subprocess.check_output([sys.executable, "-c", "import eigen; print(eigen.INCLUDE_DIR)"], text=True).strip()
     env.update(LOCATIOND_EIGEN_INCLUDE=eigen, PARAMSD_EIGEN_INCLUDE=eigen)
     run([*BUILD, "--message-format=json"], env=env, stdout=(WORK / "build.jsonl").open("w"))
     installer_cmd = ["cargo", "build", "--manifest-path", "rust/Cargo.toml", "--locked", "--release", "--target", "aarch64-unknown-linux-musl", "-p", "openpilot-runtime-installer", "--bin", "openpilot-runtime-install"]
     installer_env = dict(env, CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER="rust-lld", CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS="-C target-feature=+crt-static")
+    room(3 * 2**30)
     run(installer_cmd, env=installer_env)
     installer = TARGET / "aarch64-unknown-linux-musl/release/openpilot-runtime-install"
     save(WORK / "installer-build.json", dict(schema=1, source_commit=SHA, architecture="aarch64", target="aarch64-unknown-linux-musl", installer_sha256=digest(installer), build_command=shlex.join(installer_cmd), validation="Built on GitHub-hosted runner; complete offline QEMU installation and installed AGNOS launcher verification follow before publication."))
@@ -287,11 +489,15 @@ def build():
         shutil.copy2(source, dest); dest.chmod(0o755)
         rows.append(dict(name=name, sha256=digest(dest), bytes=dest.stat().st_size, target="aarch64-unknown-linux-musl" if name == "openpilot-runtime-install" else "aarch64-unknown-linux-gnu"))
     build_dir = ROOT / "rust/bin/licenses/runtime-build"
-    save(build_dir / "runtime-staging.json", dict(schema=1, source_commit=SHA, source_tree=git("rev-parse", "HEAD^{tree}"), source_clean=True, architecture="aarch64", agnos_version="19.8-carrot-bt1", runtime_build_command=BUILD, files=rows))
+    smoke_opencv(env)
+    save(build_dir / "runtime-staging.json", dict(schema=1, source_commit=SHA, source_tree=git("rev-parse", "HEAD^{tree}"), source_clean=True, architecture="aarch64", agnos_version="19.8-carrot-bt1", runtime_build_command=BUILD, files=rows,
+         opencv_provider_receipt_sha256=digest(WORK / "opencv/receipt.json"), rebuilt_opencv_consumers=["openpilot-xiaoge", "openpilot-webcam", "openpilot-signalcolord"],
+         rebuilt_project_packages=project_packages, params_keys_sha256=digest(ROOT / "openpilot/common/params_keys.h")))
     shutil.copy2(WORK / "installer-build.json", build_dir / "installer-build.json")
     for name in ("openpilot-encoderd", "openpilot-camerad", "openpilot-loggerd", "openpilot-driving-modeld", "openpilot-manager", "openpilot-card", "openpilot-ui", "openpilot-pandad", "openpilot-proclogd-runtime"):
         assert SHA.encode() in (ROOT / "rust/bin" / name).read_bytes(), name
     roots = json.loads((CONFIG / "elf-roots.json").read_text())
+    roots.extend(f"rust/bin/{name}" for name in NAMES if f"rust/bin/{name}" not in roots)
     args = [TOOLS / "runtime-elf-audit"]
     for path in roots: args += ["--root", path]
     args += ["--library", "rust/bin/lib", "--library", SDK / "usr/lib/aarch64-linux-gnu", "--library", SDK / "lib", "--output", WORK / "elf.json"]
@@ -350,6 +556,7 @@ def restore_release():
 def publish():
     assert os.environ["GITHUB_REF"] == "refs/heads/dev-md"
     assert os.environ["GITHUB_EVENT_NAME"] == "push"
+    require_delivery_ref()
     identity = json.loads((WORK / "delivery-tools/identity.json").read_text())
     assert identity["source_commit"] == SHA
     publisher = WORK / "delivery-tools/publish-runtime-release"; publisher.chmod(0o755)
@@ -372,8 +579,20 @@ def publish():
     install(True)
 
 
+def require_delivery_ref():
+    event = os.environ["GITHUB_EVENT_NAME"]
+    ref = os.environ["GITHUB_REF"]
+    if event == "workflow_dispatch":
+        assert ref == "refs/heads/codex/feat-453-xiaoge-gpu", "manual preflight is limited to issue #453"
+    else:
+        assert event == "push" and ref == "refs/heads/dev-md"
+        assert "[runtime-package]" in git("show", "-s", "--format=%B", SHA)
+        assert len(git("show", "-s", "--format=%P", SHA).split()) == 2, "runtime publication requires an exact marked merge"
+
+
 if __name__ == "__main__":
     os.environ["RUSTUP_TOOLCHAIN"] = "1.94.0"
+    require_delivery_ref()
     if sys.argv[1] == "source-policy": check_source_policy()
     elif sys.argv[1] == "prepare": stage_baseline(); sysroot(); environment()
     elif sys.argv[1] == "host-tools": host_tools()

@@ -1,4 +1,4 @@
-use super::{Error, platform};
+use super::{platform, Error};
 use crate::{
     compute::ComputeMode,
     config::Config,
@@ -10,8 +10,8 @@ use std::{
     fs,
     path::PathBuf,
     sync::{
-        Arc, Condvar, Mutex, MutexGuard,
         atomic::{AtomicBool, Ordering},
+        Arc, Condvar, Mutex, MutexGuard,
     },
     time::Duration,
 };
@@ -57,7 +57,11 @@ impl Shared {
             .and_then(|params| params.get("OnnxComputeMode").ok().flatten());
         let mut state = self.state()?;
         state.settings = settings;
+        let prior = state.compute_mode;
         state.select_compute(ComputeMode::from_parameter(mode.as_deref()))?;
+        if prior != state.compute_mode {
+            state.compute_since_ns = platform::timestamp()?;
+        }
         Ok(())
     }
 
@@ -111,7 +115,11 @@ impl Shared {
         let mut state = self.state()?;
         state.settings = settings;
         if let Some(mode) = mode {
+            let prior = state.compute_mode;
             state.select_compute(mode)?;
+            if prior != state.compute_mode {
+                state.compute_since_ns = platform::timestamp()?;
+            }
         }
         Ok(())
     }

@@ -8,7 +8,7 @@ pub use image::{
     apply_mask, bgr_to_gray, bounding_rect, nv12_planes_to_rgb, nv12_to_rgb, polygon_mask,
     resize_linear,
 };
-pub use net::DnnNet;
+pub use net::{DnnNet, DnnReport, DnnTarget};
 pub use primitives::{
     connected_components, distance_transform, external_contours, match_template,
     match_template_ccorr, morphology_open, morphology_tophat, rgb_to_gray, rgb_to_hsv, Component,

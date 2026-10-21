@@ -1,4 +1,5 @@
-use super::{Error, Geometry};
+use super::{session::Session, Error, Geometry};
+use crate::compute::ComputeMode;
 use crate::{
     config::Config,
     nv12::Frame,
@@ -6,11 +7,11 @@ use crate::{
     vasm,
     vision::{Blindspot, Detection, Side},
 };
-use openpilot_opencv_runtime::{Dimensions, DnnNet};
+use openpilot_opencv_runtime::Dimensions;
 use std::path::Path;
 
 pub struct BlindspotModel {
-    net: Option<DnnNet>,
+    net: Option<Session>,
     error: String,
     config: Config,
     geometry: Option<Geometry>,
@@ -20,7 +21,7 @@ pub struct BlindspotModel {
 impl BlindspotModel {
     pub fn load(path: &Path, config: Config) -> Self {
         let (net, error) = if path.is_file() {
-            match DnnNet::load(path) {
+            match Session::load(path) {
                 Ok(net) => (Some(net), String::new()),
                 Err(error) => (None, format!("could not load model: {error}")),
             }
@@ -36,12 +37,32 @@ impl BlindspotModel {
         }
     }
 
-    pub const fn loaded(&self) -> bool {
-        self.net.is_some()
+    pub fn loaded(&self) -> bool {
+        self.net.as_ref().is_some_and(Session::loaded)
     }
     pub fn error(&self) -> &str {
-        &self.error
+        self.net
+            .as_ref()
+            .filter(|net| !net.loaded())
+            .map_or(&self.error, Session::error)
     }
+    pub fn set_compute_mode(&mut self, mode: ComputeMode) {
+        if self.net.as_mut().is_some_and(|net| net.set_mode(mode)) {
+            self.state = Blindspot::default();
+        }
+    }
+    pub fn compute_status(&self) -> serde_json::Value {
+        self.net.as_ref().map_or_else(
+            || serde_json::json!({"loaded":false,"error":self.error}),
+            Session::status,
+        )
+    }
+    pub fn compute_timing(&self) -> serde_json::Value {
+        self.net.as_ref().map_or(serde_json::Value::Null, |net| {
+            serde_json::to_value(&net.timing).unwrap_or(serde_json::Value::Null)
+        })
+    }
+
     pub fn configured(&self, side: Side) -> bool {
         match side {
             Side::Left => self.config.poly_left.len() >= 3,
@@ -58,7 +79,7 @@ impl BlindspotModel {
         self.state = Blindspot::default();
     }
 
-    fn confidence(&mut self, frame: &Frame<'_>, side: Side) -> Result<f64, Error> {
+    fn confidence(&mut self, frame: &Frame<'_>, side: Side, threshold: f64) -> Result<f64, Error> {
         let layout = frame.layout();
         let dimensions = Dimensions::new(
             u32::try_from(layout.width).map_err(|_| Error::Contract("frame width overflow"))?,
@@ -86,7 +107,32 @@ impl BlindspotModel {
             .first()
             .ok_or(Error::Contract("blindspot model output missing"))?
             .view();
-        Ok(vasm::confidence(output.shape(), output.values())?)
+        let confidence = vasm::confidence(output.shape(), output.values())?;
+        if let Some(shadow) = net.take_shadow() {
+            let started = std::time::Instant::now();
+            let cpu_started = super::session::cpu_seconds();
+            match shadow
+                .first()
+                .ok_or(Error::Contract("comparison output missing"))
+                .and_then(|tensor| {
+                    Ok(vasm::confidence(
+                        tensor.view().shape(),
+                        tensor.view().values(),
+                    )?)
+                }) {
+                Ok(cpu) => net.decoded(
+                    serde_json::json!({"confidence":cpu,"above_threshold":cpu>=threshold,"smoothing_compared":false}),
+                    serde_json::json!({"confidence":confidence,"above_threshold":confidence>=threshold,"smoothing_compared":false}),
+                    (cpu>=threshold) == (confidence>=threshold),
+                ),
+                Err(error) => net.comparison_error(error.to_string()),
+            }
+            net.add_comparison_cost(
+                started.elapsed().as_secs_f64() * 1000.0,
+                (super::session::cpu_seconds() - cpu_started) * 1000.0,
+            );
+        }
+        Ok(confidence)
     }
 
     pub fn update(
@@ -96,7 +142,10 @@ impl BlindspotModel {
         settings: &Settings,
         dt: f64,
     ) -> Result<(), Error> {
-        let confidence = self.confidence(frame, side)?;
+        if let Some(net) = &mut self.net {
+            net.begin_frame();
+        }
+        let confidence = self.confidence(frame, side, settings.threshold)?;
         self.state.update(
             side,
             confidence,

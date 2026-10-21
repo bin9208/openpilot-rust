@@ -61,6 +61,7 @@ pub struct Options {
     pub prepare_only: bool,
     pub toolchain: Option<PathBuf>,
     pub sanitizers: bool,
+    pub opencl: bool,
     pub providers: Option<Providers>,
     pub growth: u64,
 }
@@ -381,6 +382,21 @@ pub fn configure(
     toolchain: Option<&Path>,
     clang: bool,
 ) -> Result<Vec<String>> {
+    configure_with_opencl(profile, source, output, sanitizers, toolchain, clang, false)
+}
+fn configure_with_opencl(
+    profile: Profile,
+    source: &Path,
+    output: &Path,
+    sanitizers: bool,
+    toolchain: Option<&Path>,
+    clang: bool,
+    opencl: bool,
+) -> Result<Vec<String>> {
+    check(
+        !opencl || profile != Profile::Webcam,
+        "--opencl requires xiaoge or runtime profile",
+    )?;
     let mut command = vec![
         "cmake".into(),
         "-S".into(),
@@ -414,13 +430,28 @@ pub fn configure(
             "-DBUILD_opencv_python2=OFF",
             "-DBUILD_JAVA=OFF",
             "-DWITH_IPP=OFF",
-            "-DWITH_OPENCL=OFF",
             "-DWITH_LAPACK=OFF",
             "-DWITH_TBB=OFF",
             "-DWITH_ITT=OFF",
         ]
         .map(String::from),
     );
+    command.push(format!(
+        "-DWITH_OPENCL={}",
+        if opencl { "ON" } else { "OFF" }
+    ));
+    if opencl {
+        // These Khronos headers are part of the hash-pinned OpenCV archive.
+        // Dynamic loading uses the installed Qualcomm ICD; ship no competing ICD.
+        command.extend([
+            format!(
+                "-DOPENCL_INCLUDE_DIR:PATH={}",
+                text(&source.join("3rdparty/include/opencl/1.2"))?
+            ),
+            "-DOPENCL_LIBRARY:STRING=".into(),
+            "-DENABLE_CCACHE=OFF".into(),
+        ]);
+    }
     if profile == Profile::Xiaoge {
         command.extend(
             [
@@ -498,6 +529,40 @@ pub fn configure(
     }
     Ok(command)
 }
+fn verify_opencl(log: &str, output: &Path) -> Result<()> {
+    check(
+        fs::read_to_string(output.join("build/CMakeCache.txt"))?
+            .lines()
+            .any(|line| line == "OPENCL_LIBRARY:STRING="),
+        "OpenCL must dynamically load the system ICD without a target link library",
+    )?;
+    check(
+        log.lines().any(|line| {
+            line.split_once("OpenCL:")
+                .is_some_and(|(_, value)| value.split_whitespace().next() == Some("YES"))
+        }),
+        "requested OpenCL capability was not enabled by CMake",
+    )?;
+    check(
+        fs::read_to_string(output.join("build/cvconfig.h"))?
+            .lines()
+            .any(|line| {
+                let words = line.split_whitespace().collect::<Vec<_>>();
+                words == ["#define", "HAVE_OPENCL"] || words == ["#define", "HAVE_OPENCL", "1"]
+            }),
+        "generated OpenCV configuration omitted HAVE_OPENCL",
+    )?;
+    check(
+        !fs::read_to_string(output.join("build/cvconfig.h"))?
+            .lines()
+            .any(|line| {
+                line.split_whitespace()
+                    .take(2)
+                    .eq(["#define", "HAVE_OPENCL_STATIC"])
+            }),
+        "OpenCL provider must use dynamic system ICD loading",
+    )
+}
 fn cmake_string(path: &Path) -> Result<String> {
     Ok(text(path)?.replace('\\', "\\\\").replace('"', "\\\""))
 }
@@ -517,7 +582,14 @@ fn toolchain(providers: &Providers, output: &Path) -> Result<PathBuf> {
     .collect::<Result<Vec<_>>>()?
     .join(" ");
     let path = output.join("aarch64.cmake");
-    fs::write(&path,format!("set(CMAKE_SYSTEM_NAME Linux)\nset(CMAKE_SYSTEM_PROCESSOR aarch64)\nset(CMAKE_C_COMPILER \"{}\")\nset(CMAKE_CXX_COMPILER \"{}\")\nset(CMAKE_FIND_ROOT_PATH \"{roots}\")\nset(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)\nset(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)\nset(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)\nset(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)\nset(CMAKE_SHARED_LINKER_FLAGS_INIT \"{links}\")\nset(CMAKE_EXE_LINKER_FLAGS_INIT \"{links}\")\n",cmake_string(&providers.cross.join("cc.sh"))?,cmake_string(&providers.cross.join("cxx.sh"))?))?;
+    fs::write(
+        &path,
+        format!(
+            "set(CMAKE_SYSTEM_NAME Linux)\nset(CMAKE_SYSTEM_PROCESSOR aarch64)\nset(CMAKE_C_COMPILER \"{}\")\nset(CMAKE_CXX_COMPILER \"{}\")\nset(CMAKE_FIND_ROOT_PATH \"{roots}\")\nset(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)\nset(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)\nset(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)\nset(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)\nset(CMAKE_SHARED_LINKER_FLAGS_INIT \"{links}\")\nset(CMAKE_EXE_LINKER_FLAGS_INIT \"{links}\")\n",
+            cmake_string(&providers.cross.join("cc.sh"))?,
+            cmake_string(&providers.cross.join("cxx.sh"))?
+        ),
+    )?;
     Ok(path)
 }
 fn runtime_providers(
@@ -660,12 +732,31 @@ fn files_under(root: &Path, files: &mut Vec<PathBuf>) -> Result<()> {
     }
     Ok(())
 }
+fn verify_prepared_manifest(source: &Path, output: &Path) -> Result<String> {
+    let prepared = source.parent().ok_or("source parent missing")?;
+    let identity: Value = serde_json::from_reader(File::open(prepared.join("source.json"))?)?;
+    let expected = identity["native_source_files_sha256"]
+        .as_str()
+        .ok_or("prepared OpenCV source manifest identity missing")?;
+    check(
+        digest(&prepared.join("source-files.json"))? == expected
+            && digest(&output.join("source-files.json"))? == expected,
+        "runtime source-files.json differs from genuinely prepared OpenCV manifest",
+    )?;
+    Ok(expected.to_owned())
+}
 fn complete(options: &Options, source: &Path, before: &BTreeMap<String, String>) -> Result<Value> {
     check(
         &source_hashes(source)? == before,
         "external build changed its read-only source tree",
     )?;
     let output = &options.output;
+    let source_files_sha256 = if options.opencl {
+        verify_source(source)?;
+        Some(verify_prepared_manifest(source, output)?)
+    } else {
+        None
+    };
     let mut installed = Vec::new();
     files_under(&output.join("install/lib"), &mut installed)?;
     let libraries: Vec<_> = installed
@@ -690,6 +781,15 @@ fn complete(options: &Options, source: &Path, before: &BTreeMap<String, String>)
         .collect();
     check(actual == expected, "unexpected OpenCV provider libraries")?;
     licenses(options.profile, source, output, before)?;
+    if options.opencl {
+        copy_license(
+            source,
+            &output.join("licenses"),
+            "OpenCL-Headers-LICENSE.txt",
+            "3rdparty/include/opencl/LICENSE.txt",
+        )?;
+        verify_opencl(&fs::read_to_string(output.join("configure.log"))?, output)?;
+    }
     let mut retained: Vec<_> = installed
         .into_iter()
         .filter(|path| {
@@ -707,6 +807,27 @@ fn complete(options: &Options, source: &Path, before: &BTreeMap<String, String>)
     }));
     files_under(&output.join("licenses"), &mut retained)?;
     retained.push(output.join("source-files.json"));
+    if options.opencl {
+        write_json(
+            &output.join("opencl-capability.json"),
+            &json!({
+                "enabled":true, "cmake_opencl":"YES", "linkage":"dynamic",
+                "headers":"pinned OpenCV 3rdparty/include/opencl/1.2", "target_icd_packaged":false
+            }),
+        )?;
+        retained.extend([
+            output.join("opencl-capability.json"),
+            output.join("configure.log"),
+            output.join("configure.command.json"),
+            output.join("configure.exit.json"),
+            output.join("build/CMakeCache.txt"),
+            output.join("build/cvconfig.h"),
+            output.join("build.command.json"),
+            output.join("build.exit.json"),
+            output.join("install.command.json"),
+            output.join("install.exit.json"),
+        ]);
+    }
     if options.profile == Profile::Xiaoge {
         retained.extend([
             output.join("source.json"),
@@ -756,11 +877,17 @@ fn complete(options: &Options, source: &Path, before: &BTreeMap<String, String>)
         .map(|(path, hash)| format!("{hash}  {path}\n"))
         .collect::<String>();
     fs::write(output.join("native-libraries.sha256"), manifest)?;
-    let receipt = json!({"status":if options.profile==Profile::Runtime{"BUILT"}else{"PASS"},"architecture":if options.profile==Profile::Runtime{Some("aarch64")}else{None},"source":source,"source_revision":REVISION,"source_archive_sha256":ARCHIVE_SHA256,"external_hardening_patch_sha256":PATCH_SHA256,"hardening_patch_sha256":PATCH_SHA256,"source_unchanged":true,"sanitizers":if options.sanitizers{Some("address,undefined")}else{None},"toolchain":options.toolchain,"libraries":library_hashes,"sealed":hashes,"limits":"External provider build only; ABI and real consumer validation are separate."});
+    let receipt = json!({"status":if options.profile==Profile::Runtime{"BUILT"}else{"PASS"},"architecture":if options.profile==Profile::Runtime{Some("aarch64")}else{None},"source":source,"source_revision":REVISION,"source_archive_sha256":ARCHIVE_SHA256,"external_hardening_patch_sha256":PATCH_SHA256,"hardening_patch_sha256":PATCH_SHA256,"source_unchanged":true,"source_files_sha256":source_files_sha256,"opencl":options.opencl,"fresh_build":options.opencl,"source_commit":if options.opencl{std::env::var("GITHUB_SHA").ok()}else{None},"sanitizers":if options.sanitizers{Some("address,undefined")}else{None},"toolchain":options.toolchain,"libraries":library_hashes,"sealed":hashes,"limits":"External provider build only; ABI and real consumer validation are separate."});
     write_json(&output.join("receipt.json"), &receipt)?;
     Ok(receipt)
 }
 pub fn build(options: &Options, runner: &mut impl Runner) -> Result<Value> {
+    if options.opencl && !options.prepare_only {
+        check(
+            !options.output.join("build").exists() && !options.output.join("install").exists(),
+            "OpenCL requires a fresh build/install directory; CPU providers cannot be reused",
+        )?;
+    }
     disk_space::inspect(&options.output, options.growth)?.require()?;
     fs::create_dir_all(&options.output)?;
     let source = if options.profile == Profile::Xiaoge {
@@ -782,8 +909,27 @@ pub fn build(options: &Options, runner: &mut impl Runner) -> Result<Value> {
         return Ok(json!({"status":"PREPARED","source":source,"source_revision":REVISION}));
     }
     verify_source(&source)?;
+    if options.opencl {
+        let identity: Value = serde_json::from_reader(File::open(
+            source
+                .parent()
+                .ok_or("source parent missing")?
+                .join("source.json"),
+        )?)?;
+        check(
+            identity["native_source_files_sha256"].is_string(),
+            "OpenCL requires genuinely prepared pinned source provenance",
+        )?;
+        check(
+            source.join("3rdparty/include/opencl/1.2/CL/cl.h").is_file(),
+            "pinned OpenCL headers missing",
+        )?;
+    }
     let before = source_hashes(&source)?;
     write_json(&options.output.join("source-files.json"), &before)?;
+    if options.opencl {
+        verify_prepared_manifest(&source, &options.output)?;
+    }
     write_json(
         &options.output.join("receipt.json"),
         &json!({"status":"BUILDING"}),
@@ -801,15 +947,19 @@ pub fn build(options: &Options, runner: &mut impl Runner) -> Result<Value> {
     } else {
         (options.toolchain.clone(), BTreeMap::new())
     };
-    let command = configure(
+    let command = configure_with_opencl(
         options.profile,
         &source,
         &options.output,
         options.sanitizers,
         toolchain.as_deref(),
         std::env::var("CXX").is_ok_and(|value| value.contains("clang")),
+        options.opencl,
     )?;
     let log = String::from_utf8(phase(options, "configure", command, &environment, runner)?)?;
+    if options.opencl {
+        verify_opencl(&log, &options.output)?;
+    }
     if options.profile != Profile::Xiaoge {
         let words = log.split_whitespace().collect::<Vec<_>>();
         check(
@@ -878,16 +1028,27 @@ pub fn cli(profile: Profile) -> Result<()> {
     let mut values = BTreeMap::new();
     let mut args = std::env::args_os().skip(1);
     let mut prepare_only = false;
+    let mut opencl = false;
     while let Some(argument) = args.next() {
         let key = argument.to_str().ok_or("non-UTF8 OpenCV option")?;
         match key {
             "--help" | "-h" => {
-                println!("Build pinned native OpenCV: --output PATH [--archive FILE --prepare-only] [--source PATH] [--toolchain FILE --sanitizers address,undefined] [--growth-mib N] [--ffmpeg PREFIX --sdk SDK --cross ROOT --compiler-root ROOT] [--root CHECKOUT]");
+                println!(
+                    "Build pinned native OpenCV: --output PATH [--archive FILE --prepare-only] [--source PATH] [--opencl] [--toolchain FILE --sanitizers address,undefined] [--growth-mib N] [--ffmpeg PREFIX --sdk SDK --cross ROOT --compiler-root ROOT] [--root CHECKOUT]"
+                );
                 return Ok(());
             }
             "--prepare-only" => {
                 check(!prepare_only, "duplicate prepare-only")?;
                 prepare_only = true;
+            }
+            "--opencl" => {
+                check(!opencl, "duplicate --opencl")?;
+                check(
+                    profile != Profile::Webcam,
+                    "--opencl requires xiaoge or runtime profile",
+                )?;
+                opencl = true;
             }
             "--root" | "--output" | "--archive" | "--source" | "--toolchain" | "--sanitizers"
             | "--growth-mib" | "--ffmpeg" | "--sdk" | "--cross" | "--compiler-root" => {
@@ -968,6 +1129,7 @@ pub fn cli(profile: Profile) -> Result<()> {
         prepare_only,
         toolchain,
         sanitizers,
+        opencl,
         providers,
         growth,
     };
@@ -979,6 +1141,147 @@ pub fn cli(profile: Profile) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn runtime_source_manifest_must_be_byte_identical_to_prepared_manifest() {
+        for corrupt in ["none", "prepared", "runtime", "identity"] {
+            let temp = tempfile::tempdir().unwrap();
+            let source = temp.path().join("prepared/source");
+            let output = temp.path().join("runtime");
+            fs::create_dir_all(&source).unwrap();
+            fs::create_dir(&output).unwrap();
+            let files = BTreeMap::from([("native.cpp", "original-hash")]);
+            let prepared = source.parent().unwrap().join("source-files.json");
+            write_json(&prepared, &files).unwrap();
+            write_json(&output.join("source-files.json"), &files).unwrap();
+            let expected = digest(&prepared).unwrap();
+            write_json(&source.parent().unwrap().join("source.json"), &json!({
+                "native_source_files_sha256": if corrupt == "identity" { "wrong" } else { &expected }
+            })).unwrap();
+            if corrupt == "prepared" {
+                fs::write(&prepared, "changed").unwrap();
+            }
+            if corrupt == "runtime" {
+                fs::write(output.join("source-files.json"), "changed").unwrap();
+            }
+            let result = verify_prepared_manifest(&source, &output);
+            if corrupt == "none" {
+                assert_eq!(result.unwrap(), expected);
+            } else {
+                assert!(result.is_err(), "{corrupt}");
+            }
+        }
+    }
+    #[test]
+    fn opencl_refuses_existing_cpu_build_or_install_before_running_tools() {
+        struct Never;
+        impl Runner for Never {
+            fn run(&mut self, _: &CommandSpec) -> Result<crate::qa_process::Captured> {
+                panic!("existing CPU output must not execute any build phase")
+            }
+        }
+        for name in ["build", "install"] {
+            let temp = tempfile::tempdir().unwrap();
+            fs::create_dir(temp.path().join(name)).unwrap();
+            let options = Options {
+                profile: Profile::Runtime,
+                root: temp.path().into(),
+                output: temp.path().into(),
+                source: None,
+                archive: None,
+                prepare_only: false,
+                toolchain: None,
+                sanitizers: false,
+                opencl: true,
+                providers: None,
+                growth: 0,
+            };
+            assert!(build(&options, &mut Never)
+                .unwrap_err()
+                .to_string()
+                .contains("fresh build/install directory"));
+            assert!(!temp.path().join("receipt.json").exists());
+        }
+    }
+    #[test]
+    fn opencl_is_explicit_and_uses_only_pinned_headers_and_dynamic_loading() {
+        for profile in [Profile::Xiaoge, Profile::Runtime] {
+            let command = configure_with_opencl(
+                profile,
+                Path::new("/source"),
+                Path::new("/output"),
+                false,
+                None,
+                false,
+                true,
+            )
+            .unwrap();
+            for flag in [
+                "-DWITH_OPENCL=ON",
+                "-DOPENCL_INCLUDE_DIR:PATH=/source/3rdparty/include/opencl/1.2",
+                "-DOPENCL_LIBRARY:STRING=",
+            ] {
+                assert!(command.iter().any(|value| value == flag), "{flag}");
+            }
+            assert!(!command.iter().any(|value| value == "-DWITH_OPENCL=OFF"));
+        }
+        assert!(configure_with_opencl(
+            Profile::Webcam,
+            Path::new("/source"),
+            Path::new("/output"),
+            false,
+            None,
+            false,
+            true,
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn opencl_capability_requires_cmake_yes_and_generated_define() {
+        let temp = tempfile::tempdir().unwrap();
+        fs::create_dir(temp.path().join("build")).unwrap();
+        fs::write(
+            temp.path().join("build/cvconfig.h"),
+            "#define HAVE_OPENCL\n",
+        )
+        .unwrap();
+        fs::write(
+            temp.path().join("build/CMakeCache.txt"),
+            "OPENCL_LIBRARY:STRING=\n",
+        )
+        .unwrap();
+        for log in [
+            "-- OpenCL: NO\n",
+            "WITH_OPENCL=ON\n",
+            "-- OpenCL: YES_NOT\n",
+        ] {
+            assert!(verify_opencl(log, temp.path()).is_err());
+        }
+        verify_opencl("-- OpenCL: YES (no extra features)\n", temp.path()).unwrap();
+        fs::write(
+            temp.path().join("build/cvconfig.h"),
+            "/* #undef HAVE_OPENCL */\n",
+        )
+        .unwrap();
+        assert!(verify_opencl("-- OpenCL: YES\n", temp.path()).is_err());
+        fs::write(
+            temp.path().join("build/cvconfig.h"),
+            "#define HAVE_OPENCL\n#define HAVE_OPENCL_STATIC\n",
+        )
+        .unwrap();
+        assert!(verify_opencl("-- OpenCL: YES\n", temp.path()).is_err());
+        fs::write(
+            temp.path().join("build/cvconfig.h"),
+            "#define HAVE_OPENCL\n",
+        )
+        .unwrap();
+        fs::write(
+            temp.path().join("build/CMakeCache.txt"),
+            "OPENCL_LIBRARY:STRING=/foreign/libOpenCL.so\n",
+        )
+        .unwrap();
+        assert!(verify_opencl("-- OpenCL: YES\n", temp.path()).is_err());
+    }
     #[test]
     fn every_profile_places_download_cache_outside_the_read_only_source() {
         let source = Path::new("/owned/source");
@@ -1016,6 +1319,7 @@ mod tests {
                 prepare_only: false,
                 toolchain: None,
                 sanitizers: false,
+                opencl: false,
                 providers: None,
                 growth: 0,
             };
@@ -1096,6 +1400,7 @@ mod tests {
             prepare_only: true,
             toolchain: None,
             sanitizers: false,
+            opencl: false,
             providers: None,
             growth: 0,
         };
@@ -1156,6 +1461,7 @@ mod tests {
             prepare_only: false,
             toolchain: None,
             sanitizers: false,
+            opencl: false,
             providers: None,
             growth: 0,
         };

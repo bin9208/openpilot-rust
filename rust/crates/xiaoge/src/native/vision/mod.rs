@@ -1,4 +1,5 @@
 mod camera;
+mod diagnostics;
 mod publisher;
 mod road;
 mod wide;
@@ -71,6 +72,10 @@ pub fn run(options: Options, parent_running: Arc<AtomicBool>) -> Result<(), Erro
         config_path: options.config,
         running: AtomicBool::new(true),
     });
+    let resources = Arc::clone(&shared);
+    thread::Builder::new()
+        .name("xiaoge-resources".into())
+        .spawn(move || diagnostics::resources(resources))?;
     let publisher = publisher::Publisher::start()?;
     let (ready, wait) = mpsc::sync_channel(2);
     let mut starters = Vec::new();
