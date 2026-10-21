@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
-      EXPECTED_SOURCE: efc67ea0413f1e256e6f2c0764994343ffb83f6b
+      EXPECTED_SOURCE: bba139da624405a278fc9e902d0a9d7f3a8fb126
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
@@ -20,7 +20,7 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: efc67ea0413f1e256e6f2c0764994343ffb83f6b
+        ref: bba139da624405a278fc9e902d0a9d7f3a8fb126
         persist-credentials: false
     - name: Prepare exact-source hosted prerequisites
       run: 'set -euo pipefail
@@ -44,6 +44,8 @@ jobs:
       run: 'set -euo pipefail
 
         proof="$RUNNER_TEMP/json11-452"
+
+        git fetch --no-tags --depth=1 origin cdfdb29137fe1c8df1a9181bbde178418a936f42
 
         git show cdfdb29137fe1c8df1a9181bbde178418a936f42:rust/crates/dev-tools/src/json11_stage.rs > rust/crates/dev-tools/src/json11_stage.rs
 
