@@ -149,6 +149,7 @@ fn setup(root: &Path) {
         "rust/crates/dev-tools/src/qa_process.rs",
         "rust/crates/dev-tools/src/services_header.rs",
         "rust/crates/dev-tools/src/path_resolve.rs",
+        "rust/crates/dev-tools/src/python_fs.rs",
         "rust/crates/dev-tools/src/bin/build_encoder_source.rs",
         "rust/crates/dev-tools/src/bin/check_encoder_codecs.rs",
         "rust/crates/dev-tools/src/bin/check_encoder_v4l.rs",
@@ -333,6 +334,7 @@ fn original_main_stages_receipts_and_failure_phases() {
                 "rust/crates/dev-tools/src/encoder_runtime_native.rs",
                 "rust/crates/dev-tools/src/encoder_runtime_wire.rs",
                 "rust/crates/dev-tools/src/encoder_ci_check.rs",
+                "rust/crates/dev-tools/src/python_fs.rs",
                 "openpilot/cereal/log.capnp",
                 "openpilot/system/loggerd/encoderd.cc",
                 "msgq_repo/msgq/visionipc/visionipc.h",
@@ -526,4 +528,56 @@ fn owned_process_stager_builder_artifacts_and_failure_short_circuit() {
             }
         }
     }
+}
+
+#[test]
+fn raw_json11_prefix_survives_owned_stager_and_dependency_metadata() {
+    use std::{
+        ffi::OsString,
+        os::unix::{ffi::OsStringExt, fs::PermissionsExt},
+    };
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path();
+    let mut opts = options(root);
+    opts.output = root.join(OsString::from_vec(b"output-\xff".to_vec()));
+    let prefix = opts.output.join("json11-dependency/prefix");
+    let receipt = format!(
+        "{{\"prefix\":{},\"dependency\":{{\"json11_sha256\":\"{}\"}}}}",
+        openpilot_dev_tools::python_fs::json_string(prefix.as_os_str()).unwrap(),
+        "b".repeat(64),
+    );
+    let stager = root.join("stage-json11");
+    write(&stager, format!("#!/bin/sh\nprintf %s '{receipt}'\n"));
+    fs::set_permissions(&stager, fs::Permissions::from_mode(0o755)).unwrap();
+    let mut reservations = Vec::new();
+    let mut printed = Vec::new();
+    let mut errors = Vec::new();
+    let actual = openpilot_dev_tools::encoder_ci_check::json11_dependency(
+        &opts,
+        &mut NativeRunner,
+        &mut |path, growth| {
+            reservations.push((path.to_path_buf(), growth));
+            Ok(())
+        },
+        &mut printed,
+        &mut errors,
+    )
+    .expect("raw JSON11 prefix must reach the encoder source builder unchanged");
+    assert_eq!(actual, prefix);
+    assert_eq!(reservations, [(opts.output.clone(), 256 * 1024 * 1024)]);
+    assert_eq!(printed, b"PASS stage-json11\n");
+    assert!(errors.is_empty());
+    assert_eq!(
+        fs::read_to_string(opts.output.join("json11.json")).unwrap(),
+        format!("{{\"json11_sha256\":\"{}\"}}\n", "b".repeat(64))
+    );
+    assert_eq!(
+        fs::read_to_string(opts.output.join("commands/stage-json11.stdout")).unwrap(),
+        receipt
+    );
+    assert_eq!(
+        fs::read_to_string(opts.output.join("commands/stage-json11.exit.json")).unwrap(),
+        "{\"returncode\": 0}\n"
+    );
+    assert!(!opts.output.join("receipt.json").exists());
 }

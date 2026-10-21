@@ -9,7 +9,7 @@ use crate::{
     seal::Result,
 };
 use flate2::read::GzDecoder;
-use openpilot_log_format::{JsonValue, JsonView};
+use openpilot_log_format::JsonValue;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::{
@@ -17,7 +17,6 @@ use std::{
     ffi::{OsStr, OsString},
     fs::{self, File},
     io::{self, Read, Write},
-    os::unix::ffi::OsStringExt,
     path::{Component, Path, PathBuf},
     time::Duration,
 };
@@ -101,24 +100,7 @@ fn json_args(values: impl IntoIterator<Item = OsString>) -> Result<String> {
     Ok(format!("[{}]", encoded.join(", ")))
 }
 fn filesystem_path(value: &JsonValue) -> Result<PathBuf> {
-    let JsonView::Text(points) = value.view() else {
-        return Err("missing json11 prefix".into());
-    };
-    let mut bytes = Vec::new();
-    for &point in points {
-        if (0xdc80..=0xdcff).contains(&point) {
-            bytes.push((point - 0xdc00) as u8);
-        } else {
-            let character = char::from_u32(point).ok_or("invalid json11 prefix codepoint")?;
-            let mut utf8 = [0; 4];
-            bytes.extend_from_slice(character.encode_utf8(&mut utf8).as_bytes());
-        }
-    }
-    let path = PathBuf::from(OsString::from_vec(bytes));
-    if python_fs::codepoints(path.as_os_str()).as_slice() != points {
-        return Err("json11 prefix filesystem round trip failed".into());
-    }
-    Ok(path)
+    Ok(PathBuf::from(python_fs::from_json(value)?))
 }
 fn json_hashes(values: impl IntoIterator<Item = (PathBuf, String)>) -> Result<String> {
     let encoded = values
@@ -243,6 +225,7 @@ fn source_paths(root: &Path) -> Result<BTreeSet<PathBuf>> {
         "services_header.rs",
         "qa_process.rs",
         "path_resolve.rs",
+        "python_fs.rs",
         "bin/stage_json11.rs",
         "bin/check_pandad_safety_padding.rs",
         "pandad_safety_padding_check/ownership.rs",

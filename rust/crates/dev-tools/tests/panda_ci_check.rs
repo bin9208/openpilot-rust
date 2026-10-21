@@ -462,6 +462,13 @@ fn source_symlink_to_regular_file_is_hashed_under_original_glob_name() {
     let fixture = Fixture::new("spidev-3.6/spidev_module.c", true);
     let tools = fixture.options.root.join("rust/tools");
     put(&tools.join("pandad_source.py"), b"original bytes\n");
+    put(
+        &fixture
+            .options
+            .root
+            .join("rust/crates/dev-tools/src/python_fs.rs"),
+        b"shared filesystem codec\n",
+    );
     symlink("pandad_source.py", tools.join("check_pandad_link.py")).unwrap();
     let mut runner = Fake::new(fixture.archive.clone());
     panda_ci_check::run_with_output(
@@ -478,6 +485,10 @@ fn source_symlink_to_regular_file_is_hashed_under_original_glob_name() {
     assert_eq!(
         invocation["source_sha256"]["rust/tools/check_pandad_link.py"],
         expected
+    );
+    assert_eq!(
+        invocation["source_sha256"]["rust/crates/dev-tools/src/python_fs.rs"],
+        format!("{:x}", Sha256::digest(b"shared filesystem codec\n"))
     );
 }
 #[test]

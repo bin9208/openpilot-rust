@@ -27,3 +27,30 @@ fn positional_raw_arguments_keep_terminator_literals_and_help_order() {
             .help
     );
 }
+#[test]
+fn filesystem_json_decodes_all_bytes_and_unicode_without_replacement() {
+    for bytes in [
+        (0..=255).collect::<Vec<u8>>(),
+        "prefix-한글-🦀".as_bytes().to_vec(),
+        b"raw-\xed\xa0\x80-\xed\xb0\x80".to_vec(),
+    ] {
+        let path = OsString::from_vec(bytes);
+        assert_eq!(
+            python_fs::from_json(&python_fs::json_value(&path)).unwrap(),
+            path
+        );
+    }
+}
+#[test]
+fn filesystem_json_rejects_non_text_unencodable_and_noncanonical_strings() {
+    use openpilot_log_format::JsonValue;
+    for value in [
+        JsonValue::parse("1").unwrap(),
+        JsonValue::codepoints(vec![0xd800]).unwrap(),
+        JsonValue::codepoints(vec![0xdc7f]).unwrap(),
+        // These bytes decode as a single U+0080, not two escaped raw bytes.
+        JsonValue::codepoints(vec![0xdcc2, 0xdc80]).unwrap(),
+    ] {
+        assert!(python_fs::from_json(&value).is_err());
+    }
+}

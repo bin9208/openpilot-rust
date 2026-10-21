@@ -34,6 +34,7 @@ const REQUIRED: &[&str] = &[
     "rust/crates/dev-tools/src/qa_process.rs",
     "rust/crates/dev-tools/src/services_header.rs",
     "rust/crates/dev-tools/src/path_resolve.rs",
+    "rust/crates/dev-tools/src/python_fs.rs",
     "rust/crates/dev-tools/src/bin/build_encoder_source.rs",
     "rust/crates/dev-tools/src/bin/check_encoder_codecs.rs",
     "rust/crates/dev-tools/src/bin/check_encoder_v4l.rs",
@@ -257,7 +258,9 @@ pub fn json11_dependency(
         options.output.join("json11.json"),
         get(&staged, "dependency")?.to_json()? + "\n",
     )?;
-    Ok(PathBuf::from(string(&get(&staged, "prefix")?)?))
+    Ok(PathBuf::from(python_fs::from_json(&get(
+        &staged, "prefix",
+    )?)?))
 }
 pub fn build_source(
     options: &Options,
