@@ -2,7 +2,7 @@
 #![cfg(target_os = "linux")]
 use openpilot_dev_tools::{
     qa_process::{CommandSpec, NativeRunner, Runner},
-    updated_check::{assert_equivalent, cases, parse, run},
+    updated_check::{assert_equivalent, assert_preserved, cases, parse, run},
 };
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -383,6 +383,121 @@ fn comparison_accepts_only_exact_obsolete_staging_removal() {
         json!([{"argv":["sudo","rm","-rf","<ROOT>/data/stage/child"],"cwd":null}]);
     assert!(assert_equivalent(&altered, &native).is_err());
     assert!(assert_equivalent(&native, &native).is_err());
+}
+
+fn original_comparison_regression_pair() -> (Value, Value) {
+    let source = json!({
+        "snapshots":[{"consistent":true,"params":{"UpdateAvailable":"31"},"wait":5400}],
+        "agnos":[],
+        "commands":[
+            {"argv":["sudo","rm","-rf","<ROOT>/data/stage"],"cwd":null},
+            {"argv":["git","fetch","origin"],"cwd":"<ROOT>/data/stage/merged"}
+        ]
+    });
+    let mut native = source.clone();
+    native["commands"].as_array_mut().unwrap().remove(0);
+    (source, native)
+}
+
+#[test]
+fn original_comparison_accepts_only_the_exact_obsolete_removal() {
+    let (source, native) = original_comparison_regression_pair();
+    assert_eq!(assert_equivalent(&source, &native).unwrap(), 1);
+}
+
+#[test]
+fn original_comparison_rejects_all_seven_unrelated_field_mutations() {
+    for change in [
+        "snapshot", "params", "agnos", "command", "cwd", "extra", "unknown",
+    ] {
+        let (source, mut native) = original_comparison_regression_pair();
+        match change {
+            "snapshot" => native["snapshots"][0]["consistent"] = json!(false),
+            "params" => native["snapshots"][0]["params"]["UpdateAvailable"] = json!("30"),
+            "agnos" => native["agnos"] = json!([{"kind":"flash"}]),
+            "command" => native["commands"][0]["argv"]
+                .as_array_mut()
+                .unwrap()
+                .push(json!("--force")),
+            "cwd" => native["commands"][0]["cwd"] = json!("<ROOT>/base"),
+            "extra" => {
+                let command = native["commands"][0].clone();
+                native["commands"].as_array_mut().unwrap().push(command);
+            }
+            "unknown" => native["new_field"] = json!(true),
+            _ => unreachable!(),
+        }
+        assert!(
+            assert_equivalent(&source, &native).is_err(),
+            "accepted original comparison mutation: {change}"
+        );
+    }
+}
+
+#[test]
+fn original_comparison_rejects_all_four_destructive_command_mutations() {
+    for change in [
+        "native-rm",
+        "wrong-root",
+        "wrong-cwd",
+        "extra-source-command",
+    ] {
+        let (mut source, mut native) = original_comparison_regression_pair();
+        match change {
+            "native-rm" => native["commands"]
+                .as_array_mut()
+                .unwrap()
+                .insert(0, source["commands"][0].clone()),
+            "wrong-root" => {
+                source["commands"][0]["argv"][3] = json!("<ROOT>/data/stage/old_openpilot")
+            }
+            "wrong-cwd" => source["commands"][0]["cwd"] = json!("<ROOT>/base"),
+            "extra-source-command" => source["commands"]
+                .as_array_mut()
+                .unwrap()
+                .push(json!({"argv":["git","reset","--hard"],"cwd":"<ROOT>/base"})),
+            _ => unreachable!(),
+        }
+        assert!(
+            assert_equivalent(&source, &native).is_err(),
+            "accepted original destructive mutation: {change}"
+        );
+    }
+}
+
+#[test]
+fn original_rollback_and_held_lock_contract_covers_four_cases() {
+    for change in [
+        None,
+        Some("rollback"),
+        Some("lock-bytes"),
+        Some("lock-inode"),
+    ] {
+        let temporary = tempfile::tempdir().unwrap();
+        let staging = temporary.path();
+        let rollback = staging.join("old_openpilot.fixture/owned-rollback");
+        fs::create_dir_all(rollback.parent().unwrap()).unwrap();
+        fs::write(&rollback, b"complete previous source/package pair\n").unwrap();
+        let lock = staging.join(".runtime-update.lock");
+        fs::write(&lock, b"owned shared transaction lock\n").unwrap();
+        // The held descriptor prevents unlink/recreation from recycling its inode.
+        let held = fs::File::open(&lock).unwrap();
+        match change {
+            Some("rollback") => fs::write(&rollback, b"changed rollback").unwrap(),
+            Some("lock-bytes") => fs::write(&lock, b"changed lock").unwrap(),
+            Some("lock-inode") => {
+                fs::remove_file(&lock).unwrap();
+                fs::write(&lock, b"owned shared transaction lock\n").unwrap();
+            }
+            None => {}
+            _ => unreachable!(),
+        }
+        assert_eq!(
+            assert_preserved(staging, &held).is_ok(),
+            change.is_none(),
+            "original rollback/lock mutation: {change:?}"
+        );
+    }
 }
 
 #[test]

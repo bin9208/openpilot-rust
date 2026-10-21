@@ -313,6 +313,21 @@ fn verify_case(name: &str, native: &Value) -> Result<()> {
     Ok(())
 }
 
+/// Verify the retained rollback and the same still-open transaction lock.
+pub fn assert_preserved(staging: &Path, held_lock: &File) -> Result<()> {
+    let retained = staging.join("old_openpilot.fixture/owned-rollback");
+    let lock = staging.join(".runtime-update.lock");
+    require(
+        fs::read(&retained)? == ROLLBACK && fs::read(&lock)? == LOCK,
+        "native lost rollback or lock bytes",
+    )?;
+    let inode = held_lock.metadata()?.ino();
+    require(
+        fs::symlink_metadata(&lock)?.ino() == inode && held_lock.metadata()?.ino() == inode,
+        "native replaced held lock inode",
+    )
+}
+
 struct Execution<'a> {
     root: &'a Path,
     output: &'a Path,
@@ -349,7 +364,6 @@ fn one(execution: &Execution<'_>) -> Result<Value> {
     let lock = staging.join(".runtime-update.lock");
     fs::write(&lock, LOCK)?;
     let held = File::open(&lock)?;
-    let inode = held.metadata()?.ino();
     for (key, value) in options.as_object().ok_or("case options missing")? {
         config[key] = value.clone();
     }
@@ -394,14 +408,7 @@ fn one(execution: &Execution<'_>) -> Result<Value> {
         git_head(&root.join("base"))? == seed.previous,
         "updater changed active Git HEAD",
     )?;
-    require(
-        fs::read(&retained)? == ROLLBACK && fs::read(&lock)? == LOCK,
-        "native lost rollback or lock bytes",
-    )?;
-    require(
-        fs::symlink_metadata(&lock)?.ino() == inode && held.metadata()?.ino() == inode,
-        "native replaced held lock inode",
-    )?;
+    assert_preserved(&staging, &held)?;
     let last = result
         .stdout
         .split(|byte| *byte == b'\n')
