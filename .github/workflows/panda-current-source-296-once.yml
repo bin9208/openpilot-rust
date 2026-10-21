@@ -1,0 +1,152 @@
+name: 296 corrected complete native Panda outer retirement proof
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/panda-current-source-296-once.yml
+permissions:
+  contents: read
+jobs:
+  panda-runtime:
+    name: rust Panda runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+      EXPECTED_SOURCE: df374b0abde72e93759bc2a2168505b5615f4d7a
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        ref: df374b0abde72e93759bc2a2168505b5615f4d7a
+    - name: Bind current source before any build
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = df374b0abde72e93759bc2a2168505b5615f4d7a
+
+        '
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Configure original Panda IPC imports
+      run: printf 'PYTHONPATH=%s/panda-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+    - name: Reserve capacity and install Panda prerequisites
+      run: 'sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
+
+        sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang libusb-1.0-0-dev libzmq3-dev cmake
+        pkg-config curl strace
+
+        '
+    - name: Install pinned Panda oracle dependencies
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        python -m pip install numpy==2.5.3 pycapnp==2.1.0 pyzmq==27.2.0 Cython==3.2.4 setuptools==82.0.1 libusb1==3.4.0 zstandard==0.25.0
+        requests==2.34.2 pyserial==3.5 setproctitle==1.3.7 pytest==9.0.2
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        '
+    - name: Build current native receipt reader
+      uses: ./.github/actions/native-json11
+    - name: Build original Panda IPC bindings
+      run: 'python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=rust/tools/tests rust/tools/tests/test_pandad_spi.py
+        -q
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/panda-native/msgq"
+
+        python -P -c ''import msgq.ipc_pyx, usb1; from openpilot.cereal import log; log.Event.new_message(); print(msgq.ipc_pyx.__file__);
+        print(usb1.__file__)'' > "$RUNNER_TEMP/panda-native/msgq/imports.txt"
+
+        '
+    - name: Check native Panda packages
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p
+        openpilot-panda-spi-linux --all-targets --locked -- -D warnings
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux
+        --all-targets --locked
+
+        '
+    - name: Build native Panda and record resolved dependency outputs
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        set -o pipefail
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux
+        -p openpilot-process-supervision -p openpilot-logmessaged -p openpilot-dev-tools --features openpilot-dev-tools/pandad-safety-padding-native,openpilot-dev-tools/panda-ci-native,openpilot-dev-tools/pandad-device-native,openpilot-dev-tools/pandad-protocol-native,openpilot-dev-tools/pandad-can-io-native
+        --bins --examples --locked --message-format=json 2> "$RUNNER_TEMP/panda-native/native-build.log" | tee "$RUNNER_TEMP/panda-native/native-build.jsonl"
+
+        '
+    - name: Require native Panda orchestration, original admissions and absent-source comparisons
+      run: 'set -euo pipefail
+
+        test ! -e rust/tools/check_pandad_ci.py
+
+        test ! -L rust/tools/check_pandad_ci.py
+
+        test ! -e rust/tools/tests/test_pandad_ci.py
+
+        test ! -L rust/tools/tests/test_pandad_ci.py
+
+        proof="$RUNNER_TEMP/panda-native"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features panda-ci-native --test panda_ci_check
+        --locked -- --nocapture 2>&1 | tee "$proof/controller-unit.log"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features panda-ci-native --lib --bin check-pandad-ci
+        --test panda_ci_check --test panda_ci_retirement --locked -- -D warnings 2>&1 | tee "$proof/controller-clippy.log"
+
+        export PANDA_CI_EXPECT_ABSENT=1
+
+        export PANDA_CI_SOURCE_COMMIT="$(git rev-parse HEAD)"
+
+        export PANDA_CI_PRIVATE_ROOT="$RUNNER_TEMP/panda-controller-private"
+
+        export PANDA_CI_CHECKER_BINARY="$GITHUB_WORKSPACE/rust/target/debug/check-pandad-ci"
+
+        export PANDA_CI_BINARIES="$GITHUB_WORKSPACE/rust/target/debug"
+
+        export PANDA_CI_BUILD_MESSAGES="$proof/native-build.jsonl"
+
+        export PANDA_CI_PYTHON="$(command -v python3)"
+
+        export PANDA_CI_RETIREMENT_EVIDENCE="$proof/retirement"
+
+        export PANDA_CI_CLI_EVIDENCE="$proof/cli"
+
+        export PANDA_CI_ORIGINAL_CLI_RECEIPT="$GITHUB_WORKSPACE/rust/crates/dev-tools/tests/fixtures/panda-ci-original/original-cli.json"
+
+        export PANDA_CI_ORIGINAL_CLI_SHA256=02aa67da5d511a312fe30b7ebc058da5a8ada66098e14aef7b05a8b63eef700b
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features panda-ci-native --test panda_ci_retirement
+        --locked -- --test-threads=1 --nocapture 2>&1 | tee "$proof/controller-retirement.log"
+
+        '
+    - name: Preserve full current-source outer proof
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: panda-current-source-outer-296
+        path: ${{ runner.temp }}/panda-native/
+        include-hidden-files: true
+        if-no-files-found: error
