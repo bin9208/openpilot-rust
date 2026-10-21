@@ -109,7 +109,20 @@ impl Shared {
             .get("computeMode")
             .map(|value| ComputeMode::from_json(&value))
             .transpose()?;
-        if let Some(params) = &self.params {
+        // A compute-only request must not rewrite cached tuning values: another
+        // settings client may have updated Params since the last refresh.
+        // Requests using the legacy API retain their five-value write contract.
+        let compute_only = mode.is_some()
+            && [
+                "threshold",
+                "smoothingSeconds",
+                "baseIntervalSeconds",
+                "laneThreshold",
+                "laneIntervalSeconds",
+            ]
+            .iter()
+            .all(|name| value.get(name).is_none());
+        if let Some(params) = self.params.as_ref().filter(|_| !compute_only) {
             for (name, value) in settings.parameters()? {
                 params
                     .put(name, value.to_string().as_bytes())

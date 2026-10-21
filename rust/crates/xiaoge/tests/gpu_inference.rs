@@ -126,4 +126,38 @@ fn diagnostic_settings_persist_mode_reject_invalid_changes_and_return_to_cpu() {
     assert_eq!(shared.state().unwrap().compute_mode, ComputeMode::Cpu);
     let status: serde_json::Value = serde_json::from_slice(&shared.status().unwrap()).unwrap();
     assert!(status.get("compute").is_none());
+
+    // An independent settings client writes after the service cached defaults.
+    // Selecting only a backend must preserve every one of those newer bytes.
+    let external = [
+        ("OnnxBsdThreshold", "86"),
+        ("OnnxBsdSmoothingMs", "150"),
+        ("OnnxBsdIntervalMs", "300"),
+        ("OnnxLaneThreshold", "34"),
+        ("OnnxLaneIntervalMs", "550"),
+    ];
+    for (name, bytes) in external {
+        params.put(name, bytes.as_bytes()).unwrap();
+    }
+    shared
+        .set_settings(&JsonValue::parse("{\"computeMode\":1}").unwrap())
+        .unwrap();
+    for (name, bytes) in external {
+        assert_eq!(
+            params.get(name).unwrap().as_deref(),
+            Some(bytes.as_bytes()),
+            "compute-only request rewrote {name}"
+        );
+    }
+    shared.refresh(true).unwrap();
+    assert_eq!(shared.state().unwrap().settings.threshold, 0.86);
+    // An explicit mixed request still edits tuning and mode together.
+    shared
+        .set_settings(&JsonValue::parse("{\"computeMode\":0,\"threshold\":0.81}").unwrap())
+        .unwrap();
+    assert_eq!(
+        params.get("OnnxBsdThreshold").unwrap(),
+        Some(b"81".to_vec())
+    );
+    assert_eq!(shared.state().unwrap().compute_mode, ComputeMode::Cpu);
 }
