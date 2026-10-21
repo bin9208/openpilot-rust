@@ -20,6 +20,7 @@ const SEALED_ORIGINAL: &str = concat!(
 );
 const SEALED_MANIFEST_SHA: &str =
     "214258ef372f065cf3f924e6d921cf4fd3258e801220504536c8d54e945094b3";
+const SEALED_SOURCE: &str = "19e47ad98286edb1b572b146a85304e1e94e4edf";
 const SEALED_START_NS: i128 = 1792562491512826293;
 const SEALED_END_NS: i128 = 1792562492873864873;
 
@@ -157,9 +158,14 @@ fn fixture_parent(root: &str) -> &str {
     parent
 }
 
-fn record_sequences(records: &Value, parent: &str) -> BTreeMap<&'static str, Vec<Value>> {
+fn record_sequences(
+    records: &Value,
+    parent: &str,
+    source: &str,
+) -> BTreeMap<&'static str, Vec<Value>> {
     let rows = records.as_array().expect("log records must be an array");
     assert_eq!(rows.len(), 22, "original captured 22 production records");
+    assert!(source.len() == 40 && source.bytes().all(|byte| byte.is_ascii_hexdigit()));
     let signal_thread = rows
         .iter()
         .find(|row| row["msg"] == "caught SIGUSR1, checking for updates")
@@ -172,6 +178,17 @@ fn record_sequences(records: &Value, parent: &str) -> BTreeMap<&'static str, Vec
     let mut timed_events = 0;
     for row in rows {
         let mut normalized = row.as_object().expect("log record object").clone();
+        let context = normalized
+            .get_mut("ctx")
+            .expect("log context")
+            .as_object_mut()
+            .expect("log context object");
+        assert_eq!(context.len(), 3, "unexpected log context fields");
+        assert_eq!(context["source_commit"], source, "log source commit drift");
+        context.insert(
+            "source_commit".into(),
+            Value::String("<SOURCE_COMMIT>".into()),
+        );
         let thread = normalized["thread"].as_u64().expect("log thread ID");
         threads.insert(thread);
         let role = if thread == signal_thread {
@@ -421,8 +438,20 @@ fn native_production_daemon_matches_original_result_and_retains_raw_evidence() {
         serde_json::from_slice(&fs::read(original.join("records.json")).unwrap()).unwrap();
     let native_root = owned_root(&output.join("overlay-commands.jsonl"));
     let original_root = owned_root(&original.join("overlay-commands.jsonl"));
-    let native_sequences = record_sequences(&records, fixture_parent(&native_root));
-    let original_sequences = record_sequences(&original_records, fixture_parent(&original_root));
+    let current_source =
+        env::var("UPDATED_DAEMON_SOURCE_COMMIT").expect("current source commit required");
+    let original_source = if historical_source_absent() {
+        SEALED_SOURCE
+    } else {
+        current_source.as_str()
+    };
+    let native_sequences =
+        record_sequences(&records, fixture_parent(&native_root), &current_source);
+    let original_sequences = record_sequences(
+        &original_records,
+        fixture_parent(&original_root),
+        original_source,
+    );
     assert_eq!(native_sequences, original_sequences);
     assert_eq!(
         native_sequences["signal"]
