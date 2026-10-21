@@ -21,12 +21,12 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 4a3cad747edc38a3df9eafa7a0d95d91278d9f02
+        ref: 0ec6cbae2d85fd98f2e0894697de7869f6159f51
         persist-credentials: false
     - name: Reserve disk and install hosted native prerequisites
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = 4a3cad747edc38a3df9eafa7a0d95d91278d9f02
+        test "$(git rev-parse HEAD)" = 0ec6cbae2d85fd98f2e0894697de7869f6159f51
 
         proof="$RUNNER_TEMP/driver-fixture-preflight"
 
@@ -79,6 +79,18 @@ jobs:
         --bin check-model-startup --bin check-usbgpu-daemon --test driver_daemon_fixture --test driver_daemon_retirement --bin
         check-driver-daemon --bin stage-driver-daemon-fixture -- -D warnings > "$proof/clippy.stdout" 2> "$proof/clippy.stderr"
         || { tail -n 120 "$proof/clippy.stderr"; exit 1; }
+
+        '
+    - name: Verify maintained workflow and disk policy integration
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driver-fixture-preflight"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driver-daemon-native --test ci_disk_bootstrap
+        --test ci_workflow_policy --locked -- --nocapture > "$proof/ci-policy.stdout" 2> "$proof/ci-policy.stderr" || { tail
+        -n 100 "$proof/ci-policy.stdout" "$proof/ci-policy.stderr"; exit 1; }
 
         '
     - uses: actions/upload-artifact@v6
