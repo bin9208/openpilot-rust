@@ -138,11 +138,12 @@ fn main_result() -> Result<()> {
             until(|| backend.vision_connect(0))?;
             // Join the actual publisher generation before its first message.
             assert!(backend.receive_message(0)?.is_none());
+            assert!(backend.receive_image(0)?.is_none());
             fs::write(root.join("go"), "go")?;
             let mut message = None;
             let mut image = None;
             let mut log = None;
-            until(|| {
+            let collected = until(|| {
                 if message.is_none() {
                     message = backend.receive_message(0)?;
                 }
@@ -153,7 +154,16 @@ fn main_result() -> Result<()> {
                     log = backend.receive_log()?;
                 }
                 Ok(message.is_some() && image.is_some() && log.is_some())
-            })?;
+            });
+            if let Err(error) = collected {
+                return Err(format!(
+                    "{error}: message={} image={} log={}",
+                    message.is_some(),
+                    image.is_some(),
+                    log.is_some()
+                )
+                .into());
+            }
             fs::write(root.join("finish"), "finish")?;
             until(|| Ok(backend.poll()?.is_some()))?;
             backend.logger_close()?;
