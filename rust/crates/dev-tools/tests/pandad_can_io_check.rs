@@ -115,8 +115,18 @@ fn options(directory: &Path) -> check::Options {
         "openpilot/selfdrive/pandad/panda.h",
     ] {
         let source = root().join(name);
-        if !source.exists() && name.ends_with(".py") {
-            continue;
+        match fs::symlink_metadata(&source) {
+            Ok(metadata) => assert!(metadata.is_file(), "nonregular fixture source: {name}"),
+            Err(error)
+                if error.kind() == std::io::ErrorKind::NotFound
+                    && matches!(
+                        name,
+                        "rust/tools/check_pandad_can_io.py" | "rust/tools/pandad_protocol_cases.py"
+                    ) =>
+            {
+                continue;
+            }
+            Err(error) => panic!("cannot inspect fixture source {name}: {error}"),
         }
         let target = copied.join(name);
         fs::create_dir_all(target.parent().unwrap()).unwrap();
@@ -322,8 +332,13 @@ fn absent_shared_corpus_rejects_a_remaining_original_protocol_caller_before_chil
         "rust/tools/pandad_protocol_cases.py",
     ] {
         let path = options.root.join(name);
-        if path.exists() {
-            fs::remove_file(path).unwrap();
+        match fs::symlink_metadata(&path) {
+            Ok(metadata) => {
+                assert!(metadata.is_file(), "nonregular retired fixture input");
+                fs::remove_file(path).unwrap();
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => panic!("cannot inspect retired fixture input: {error}"),
         }
     }
     fs::write(

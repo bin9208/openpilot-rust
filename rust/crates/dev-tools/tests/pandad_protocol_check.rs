@@ -120,8 +120,19 @@ fn options(directory: &Path) -> check::Options {
         "openpilot/selfdrive/pandad/spi_alert.h",
     ] {
         let source = root().join(name);
-        if name.ends_with("check_pandad_protocol.py") && !source.exists() {
-            continue;
+        match fs::symlink_metadata(&source) {
+            Ok(metadata) => assert!(metadata.is_file(), "nonregular fixture source: {name}"),
+            Err(error)
+                if error.kind() == std::io::ErrorKind::NotFound
+                    && matches!(
+                        name,
+                        "rust/tools/check_pandad_protocol.py"
+                            | "rust/tools/pandad_protocol_cases.py"
+                    ) =>
+            {
+                continue;
+            }
+            Err(error) => panic!("cannot inspect fixture source {name}: {error}"),
         }
         let target = copied.join(name);
         fs::create_dir_all(target.parent().unwrap()).unwrap();

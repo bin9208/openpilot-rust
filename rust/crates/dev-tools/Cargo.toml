@@ -1974,3 +1974,21 @@ required-features = ["pandad-device-native"]
 [[test]]
 name = "pandad_device_fixture"
 required-features = ["pandad-device-native"]
+
+[[bin]]
+name = "stage-pandad-protocol-reference"
+path = "src/bin/stage_pandad_protocol_reference.rs"
+required-features = ["pandad-protocol-native"]
+
+[[test]]
+name = "pandad_protocol_fixture"
+required-features = ["pandad-protocol-native"]
+
+[[bin]]
+name = "stage-pandad-can-io-reference"
+path = "src/bin/stage_pandad_can_io_reference.rs"
+required-features = ["pandad-can-io-native"]
+
+[[test]]
+name = "pandad_can_io_fixture"
+required-features = ["pandad-can-io-native"]

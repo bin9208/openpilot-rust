@@ -233,9 +233,11 @@ fn source_paths(root: &Path) -> Result<BTreeSet<PathBuf>> {
         "pandad_device_check/ownership.rs",
         "bin/stage_pandad_device_reference.rs",
         "bin/check_pandad_protocol.rs",
+        "bin/stage_pandad_protocol_reference.rs",
         "pandad_protocol_check/cases.rs",
         "pandad_protocol_check/ownership.rs",
         "bin/check_pandad_can_io.rs",
+        "bin/stage_pandad_can_io_reference.rs",
         "pandad_can_io_check/cases.rs",
         "pandad_can_io_check/ownership.rs",
     ] {

@@ -1487,6 +1487,38 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-device-native --test pandad_device_check --test pandad_device_reference --test pandad_device_fixture --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-device-native --lib --bin check-pandad-device --bin stage-pandad-device-reference --test pandad_device_check --test pandad_device_reference --test pandad_device_fixture --locked -- -D warnings
+      - name: Verify native Panda protocol and CAN-I/O closure against sealed original observations
+        run: |
+          set -euo pipefail
+          export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
+          for file in check_pandad_protocol.py check_pandad_can_io.py pandad_protocol_cases.py; do
+            test ! -e "rust/tools/$file"
+            test ! -L "rust/tools/$file"
+          done
+          export PANDAD_PROTOCOL_SOURCE_BINARY="$RUNNER_TEMP/panda-native/retirement/checkout-output/protocol-src/pandad-protocol-source"
+          export PANDAD_PROTOCOL_SOURCE_MANIFEST="$RUNNER_TEMP/panda-native/retirement/checkout-output/protocol-src/manifest.json"
+          export PANDAD_PROTOCOL_SOURCE_BUILD_KIND=fresh
+          export PANDAD_PROTOCOL_NATIVE_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/panda_protocol"
+          export PANDAD_PROTOCOL_RETIREMENT_MODE=postdelete
+          export PANDAD_PROTOCOL_TEST_OUTPUT="$RUNNER_TEMP/panda-native/protocol-controller"
+          export PANDAD_CAN_IO_SOURCE_BINARY="$RUNNER_TEMP/panda-native/retirement/checkout-output/can-io-src/pandad-protocol-source"
+          export PANDAD_CAN_IO_SOURCE_MANIFEST="$RUNNER_TEMP/panda-native/retirement/checkout-output/can-io-src/manifest.json"
+          export PANDAD_CAN_IO_SOURCE_BUILD_KIND=fresh
+          export PANDAD_CAN_IO_NATIVE_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/can_io"
+          export PANDAD_CAN_IO_RETIREMENT_MODE=postdelete
+          export PANDAD_CAN_IO_TEST_OUTPUT="$RUNNER_TEMP/panda-native/can-io-controller"
+          mkdir -p "$PANDAD_PROTOCOL_TEST_OUTPUT" "$PANDAD_CAN_IO_TEST_OUTPUT"
+          rust/target/debug/stage-pandad-protocol-reference --root "$GITHUB_WORKSPACE" --output "$RUNNER_TEMP/panda-native/protocol-original-reference" > "$PANDAD_PROTOCOL_TEST_OUTPUT/fixture-stage.json"
+          rust/target/debug/stage-pandad-can-io-reference --root "$GITHUB_WORKSPACE" --output "$RUNNER_TEMP/panda-native/can-io-original-reference" > "$PANDAD_CAN_IO_TEST_OUTPUT/fixture-stage.json"
+          for family in protocol can-io; do
+            while IFS='=' read -r name value; do export "$name=$value"; done < "$RUNNER_TEMP/panda-native/$family-original-reference/environment.env"
+          done
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features panda-ci-native,pandad-protocol-native,pandad-can-io-native --lib argparse_scan::required_first_tests --locked
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features panda-ci-native,pandad-protocol-native,pandad-can-io-native --lib pandad_protocol_fixture:: --locked
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features panda-ci-native,pandad-protocol-native,pandad-can-io-native --lib pandad_can_io_fixture:: --locked
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features panda-ci-native,pandad-protocol-native,pandad-can-io-native --test panda_ci_check --test pandad_protocol_check --test pandad_protocol_reference --test pandad_protocol_fixture --test pandad_can_io_check --test pandad_can_io_reference --test pandad_can_io_fixture --locked
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features panda-ci-native,pandad-protocol-native,pandad-can-io-native --lib --bin check-pandad-protocol --bin check-pandad-can-io --bin stage-pandad-protocol-reference --bin stage-pandad-can-io-reference --test panda_ci_check --test pandad_protocol_check --test pandad_protocol_reference --test pandad_protocol_fixture --test pandad_can_io_check --test pandad_can_io_reference --test pandad_can_io_fixture --locked -- -D warnings
       - name: Preserve Panda evidence including failed cases
         if: always()
         uses: actions/upload-artifact@v6

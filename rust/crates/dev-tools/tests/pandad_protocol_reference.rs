@@ -717,8 +717,8 @@ fn captured_actual_raw_native_executable_preserves_full_command_and_report() {
             assert_eq!(got.to_utf8().unwrap(), source_pin);
         } else {
             assert_eq!(
-                got.to_json().unwrap(),
-                want.to_json().unwrap(),
+                serde_json::from_str::<Value>(&got.to_json().unwrap()).unwrap(),
+                serde_json::from_str::<Value>(&want.to_json().unwrap()).unwrap(),
                 "original report field {name}"
             );
         }

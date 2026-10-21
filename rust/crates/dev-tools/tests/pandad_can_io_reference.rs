@@ -95,12 +95,54 @@ fn mode() -> String {
 }
 fn original() -> (PathBuf, Value) {
     let capture = required("PANDAD_CAN_IO_ORIGINAL_CAPTURE");
+    use openpilot_dev_tools::pandad_can_io_fixture::{
+        verify_blob, DIRECTORY, MANIFEST_SHA256, SOURCE_COMMIT,
+    };
+    let packed = root().join(DIRECTORY).join("observations.tar.gz");
+    regular(&packed);
+    let authenticated = verify_blob(&fs::read(&packed).unwrap()).unwrap();
+    let staged = capture.parent().unwrap();
+    for (name, bytes) in &authenticated {
+        let path = staged.join(name);
+        regular(&path);
+        assert_eq!(&fs::read(path).unwrap(), bytes, "{name}");
+    }
     let path = capture.join("capture-manifest.json");
+    assert_eq!(hash(&path), MANIFEST_SHA256);
     assert_eq!(
         hash(&path),
         std::env::var("PANDAD_CAN_IO_CAPTURE_MANIFEST_SHA256").unwrap()
     );
     let manifest = value(&path);
+    assert_eq!(manifest["source_commit"], SOURCE_COMMIT);
+    let historical = value(&staged.join("historical-capture-manifest.json"));
+    assert_eq!(historical["files_b64"].as_object().unwrap().len(), 78);
+    let mut reconstructed = manifest["files_b64"].as_object().unwrap().clone();
+    assert_eq!(reconstructed.len(), 76);
+    let omitted = manifest["durable_adapter"]["omitted_executable_seals_b64"]
+        .as_object()
+        .unwrap();
+    assert_eq!(omitted.len(), 2);
+    for name in ["raw-native-elf", "raw-runner-elf"] {
+        let key = STANDARD.encode(name);
+        assert!(reconstructed
+            .insert(key.clone(), omitted[&key].clone())
+            .is_none());
+        assert_eq!(
+            fs::symlink_metadata(capture.join(name)).unwrap_err().kind(),
+            std::io::ErrorKind::NotFound
+        );
+    }
+    assert_eq!(Value::Object(reconstructed), historical["files_b64"]);
+    let historical_builder = value(&staged.join("historical-builder.json"));
+    assert_eq!(
+        historical_builder["sources"],
+        manifest["source_builder_sources"]
+    );
+    assert_eq!(
+        historical_builder["binary_sha256"],
+        manifest["source_binary_sha256"]
+    );
     assert_eq!(
         manifest["source_commit"],
         std::env::var("PANDAD_CAN_IO_CAPTURE_SOURCE_COMMIT").unwrap()
@@ -143,6 +185,22 @@ fn original() -> (PathBuf, Value) {
     roster(&capture, &capture, &mut actual);
     assert!(actual.remove(Path::new("capture-manifest.json")));
     assert_eq!(actual, sealed);
+    assert_eq!(
+        sealed
+            .iter()
+            .filter(|p| p.starts_with("admissions"))
+            .count(),
+        29
+    );
+    let probes = manifest["parser_probes"].as_array().unwrap();
+    assert_eq!(probes.len(), 12);
+    let mut distinct_probes = BTreeSet::new();
+    for probe in probes {
+        let name = probe.as_str().unwrap();
+        assert!(distinct_probes.insert(name));
+        assert!(sealed.contains(&PathBuf::from(format!("admissions/parser-{name}.json"))));
+    }
+    assert!(sealed.contains(Path::new("admissions/runner-separator-rejected.json")));
     for lane in ["positive", "raw-native-output"] {
         for name in ["seeds.input.jsonl", "seeds.jsonl", "report.json"] {
             assert!(sealed.contains(&PathBuf::from(lane).join(name)));
@@ -219,6 +277,41 @@ fn retained(
 fn report(path: &Path) -> JsonValue {
     JsonValue::parse(&fs::read_to_string(path).unwrap()).unwrap()
 }
+fn current_source_binding(historical: &Value, source: &Path) -> Value {
+    let path = required("PANDAD_CAN_IO_SOURCE_MANIFEST");
+    let receipt_pin = hash(&path);
+    let build = value(&path);
+    let binary_pin = hash(source);
+    assert_eq!(build["binary_sha256"], binary_pin);
+    assert_eq!(build["sources"], historical["source_builder_sources"]);
+    assert_eq!(build["sources"].as_object().unwrap().len(), 14);
+    for (name, pin) in build["sources"].as_object().unwrap() {
+        assert_eq!(hash(&root().join(name)), pin.as_str().unwrap());
+    }
+    let kind = std::env::var("PANDAD_CAN_IO_SOURCE_BUILD_KIND")
+        .expect("mandatory explicit fresh/borrowed source build kind");
+    let capture = required("PANDAD_CAN_IO_ORIGINAL_CAPTURE");
+    let historical_path = capture.parent().unwrap().join("historical-builder.json");
+    let historical_pin = hash(&historical_path);
+    match kind.as_str() {
+        "fresh" => {
+            assert_eq!(Path::new(build["binary"].as_str().unwrap()), source);
+            assert_ne!(path, historical_path, "fresh receipt must be separate");
+        }
+        "borrowed" => {
+            assert_eq!(receipt_pin, historical_pin);
+            assert_eq!(build, value(&historical_path));
+            assert_eq!(binary_pin, historical["source_binary_sha256"]);
+        }
+        _ => panic!("source build kind must be fresh or borrowed"),
+    }
+    assert_eq!(hash(&path), receipt_pin);
+    assert_eq!(hash(source), binary_pin);
+    json!({"kind":kind,"current_manifest_path":path,"current_manifest_sha256":receipt_pin,
+        "executed_binary":source,"executed_binary_sha256":binary_pin,"current_build":build,
+        "historical_builder_manifest_sha256":historical_pin,
+        "historical_binary_sha256":historical["source_binary_sha256"]})
+}
 #[test]
 fn full_original_both_modes_all_fields_match_checkout_absent_and_actual_raw_runner_native() {
     let before_mode = mode();
@@ -232,7 +325,12 @@ fn full_original_both_modes_all_fields_match_checkout_absent_and_actual_raw_runn
     let native = required("PANDAD_CAN_IO_NATIVE_BINARY");
     let checker = PathBuf::from(env!("CARGO_BIN_EXE_check-pandad-can-io"));
     let pins = [hash(&source), hash(&native), hash(&checker)];
-    assert_eq!(pins[0], manifest["source_binary_sha256"]);
+    let source_binding = current_source_binding(&manifest, &source);
+    fs::write(
+        evidence.join("current-source-binding.json"),
+        serde_json::to_vec_pretty(&source_binding).unwrap(),
+    )
+    .unwrap();
     let private = evidence.join("absent-root");
     for name in manifest["source_builder_sources"]
         .as_object()
@@ -246,12 +344,20 @@ fn full_original_both_modes_all_fields_match_checkout_absent_and_actual_raw_runn
     let raw_native = evidence.join(OsString::from_vec(b"native-\xff".to_vec()));
     fs::hard_link(&native, &raw_native).unwrap();
     let raw_runner = evidence.join(OsString::from_vec(b"runner-\xfe".to_vec()));
-    fs::copy(capture.join("raw-runner-elf"), &raw_runner).unwrap();
+    let system_runner = Path::new("/usr/bin/env").canonicalize().unwrap();
+    let runner_pin = hash(&system_runner);
+    fs::copy(&system_runner, &raw_runner).unwrap();
     fs::set_permissions(&raw_runner, fs::Permissions::from_mode(0o755)).unwrap();
-    assert_eq!(
-        hash(&raw_runner),
-        manifest["raw_runner"]["sha256"].as_str().unwrap()
-    );
+    assert_eq!(hash(&raw_runner), runner_pin);
+    fs::write(
+        evidence.join("current-runner-binding.json"),
+        serde_json::to_vec_pretty(&json!({
+            "current_system_runner":system_runner,"current_sha256":runner_pin,
+            "historical_sha256":manifest["raw_runner"]["sha256"],"historical_elf_executed":false
+        }))
+        .unwrap(),
+    )
+    .unwrap();
     for (lane, source_root, native_path, runner, original_lane) in [
         ("checkout", root(), native.clone(), vec![], "positive"),
         (
@@ -370,6 +476,12 @@ fn full_original_both_modes_all_fields_match_checkout_absent_and_actual_raw_runn
                 }
             } else if name == "native_sha256" {
                 assert_eq!(got.to_utf8().unwrap(), pins[1]);
+            } else if name == "source_sha256" {
+                assert_eq!(
+                    want.to_utf8().unwrap(),
+                    manifest["source_binary_sha256"].as_str().unwrap()
+                );
+                assert_eq!(got.to_utf8().unwrap(), pins[0]);
             } else {
                 assert_eq!(
                     serde_json::from_str::<Value>(&got.to_json().unwrap()).unwrap(),
@@ -379,6 +491,9 @@ fn full_original_both_modes_all_fields_match_checkout_absent_and_actual_raw_runn
             }
         }
         assert_eq!([hash(&source), hash(&native), hash(&checker)], pins);
+        assert_eq!(current_source_binding(&manifest, &source), source_binding);
+        assert_eq!(hash(&system_runner), runner_pin);
+        assert_eq!(hash(&raw_runner), runner_pin);
     }
     fs::rename(raw_native, evidence.join("raw-native-elf")).unwrap();
     fs::rename(raw_runner, evidence.join("raw-runner-elf")).unwrap();
