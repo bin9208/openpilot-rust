@@ -17,11 +17,11 @@ jobs:
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       CXX: clang++
-      EXPECTED_SOURCE: e6ccc8c1c285bc237048b7a4451465ab2aefea75
+      EXPECTED_SOURCE: 21a35b925f6f1054a5cc6b9b37a3bc1f3a884abf
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: e6ccc8c1c285bc237048b7a4451465ab2aefea75
+        ref: 21a35b925f6f1054a5cc6b9b37a3bc1f3a884abf
         persist-credentials: false
     - name: Admit exact deleted source and native dependencies
       run: 'set -euo pipefail
