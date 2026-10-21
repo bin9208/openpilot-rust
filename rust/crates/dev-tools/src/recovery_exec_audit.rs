@@ -1255,9 +1255,10 @@ fn audit_attempts(attempts: Vec<Attempt>, policy: &ExplicitPolicy) -> Result<Aud
         let program_key = (attempt.program.clone(), attempt.outcome.clone());
         let program_admitted = allowed.contains_key(&program_key);
         if (expected.contains_key(&key) as usize) + typed.len() + (program_admitted as usize) != 1 {
-            return Err(invalid(
-                "exec path, argv, or result not explicitly admitted",
-            ));
+            return Err(invalid(&format!(
+                "exec path, argv, or result not explicitly admitted: pid={} program={:?} outcome={:?}",
+                attempt.pid, String::from_utf8_lossy(&attempt.program), attempt.outcome
+            )));
         }
         if let Some(index) = typed.first() {
             seen_typed[*index] += 1;

@@ -187,7 +187,15 @@ pub fn capture_preflight(
     }
     let programs = paths
         .iter()
-        .map(|path| capture_program_seal(path))
+        .map(|path| {
+            capture_program_seal(path).map_err(|error| {
+                format!(
+                    "cannot seal pre-harness provider {}: {error}",
+                    path.display()
+                )
+                .into()
+            })
+        })
         .collect::<Result<Vec<_>>>()?;
     let preflight = Preflight {
         native_root: native_root.to_owned(),
