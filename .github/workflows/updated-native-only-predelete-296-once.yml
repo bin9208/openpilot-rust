@@ -17,11 +17,11 @@ jobs:
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
-      EXPECTED_SOURCE: 5bcfae4482d9c4dcb1da46e1086bea609e0c9688
+      EXPECTED_SOURCE: ca042774dd376bd43838d28f32ff39a19c9b7bbb
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 5bcfae4482d9c4dcb1da46e1086bea609e0c9688
+        ref: ca042774dd376bd43838d28f32ff39a19c9b7bbb
         persist-credentials: false
     - uses: actions/setup-python@v6
       with:
