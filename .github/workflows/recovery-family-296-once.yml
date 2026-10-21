@@ -1,0 +1,233 @@
+name: 296 recovery eight-controller family source and native gate
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/recovery-family-296-once.yml
+  workflow_dispatch: null
+permissions:
+  contents: read
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
+  CARGO_BUILD_JOBS: '2'
+  CARGO_INCREMENTAL: '0'
+  CARGO_PROFILE_DEV_DEBUG: '0'
+  CARGO_PROFILE_TEST_DEBUG: '0'
+  CARGO_TARGET_DIR: ${{ github.workspace }}/rust/target
+  PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/tinygrad_repo:${{ github.workspace
+    }}/rust/tools
+jobs:
+  recovery-family:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: 73cb4466e9ee9a426911d4ba0c0040e68d988c5f
+        persist-credentials: false
+    - name: Reserve host disk before installing recovery prerequisites
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = 73cb4466e9ee9a426911d4ba0c0040e68d988c5f
+
+        mkdir -p "$RUNNER_TEMP/recovery-family"
+
+        git rev-parse HEAD > "$RUNNER_TEMP/recovery-family/SOURCE_COMMIT"
+
+        printf ''%s\n'' "$GITHUB_SHA" > "$RUNNER_TEMP/recovery-family/WORKFLOW_COMMIT"
+
+        sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
+
+        '
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Install only recovery source-controller dependencies
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        sudo apt-get update
+
+        sudo apt-get install -y tmux util-linux capnproto libcapnp-dev g++ pkg-config cmake
+
+        python -m pip install aiohttp==3.13.3 anyio==4.12.1
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
+
+        test -f /usr/bin/tmux
+
+        test -f /usr/bin/script
+
+        '
+    - name: Build the exact shared recovery binaries and select one CWP test ELF
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/recovery-family"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 6144
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-carrot-recovery -p openpilot-process-supervision --bins --examples
+        --locked > "$proof/build.stdout" 2> "$proof/build.stderr" || { tail -n 80 "$proof/build.stderr"; exit 1; }
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-carrot-recovery --lib --no-run --locked --message-format=json
+        > "$proof/cwp-build.jsonl" 2> "$proof/cwp-build.stderr" || { tail -n 80 "$proof/cwp-build.stderr"; exit 1; }
+
+        cwp_test=$(python - "$proof/cwp-build.jsonl" <<''PY''
+
+        import json,sys
+
+        rows=[row[''executable''] for row in map(json.loads,open(sys.argv[1])) if row.get(''reason'')==''compiler-artifact''
+        and row.get(''profile'',{}).get(''test'') and row.get(''target'',{}).get(''name'')==''openpilot_carrot_recovery''
+        and row.get(''executable'')]
+
+        assert len(rows)==1,rows
+
+        print(rows[0])
+
+        PY
+
+        )
+
+        test -f "$cwp_test"
+
+        printf ''RECOVERY_FAMILY_CWP_TEST_BINARY=%s\n'' "$cwp_test" >> "$GITHUB_ENV"
+
+        printf ''%s\n'' "$cwp_test" > "$proof/cwp-test-elf.path"
+
+        '
+    - name: Bind unchanged controllers, providers and the exact native ELFs
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/recovery-family\"\ncat > \"$proof/inputs.list\" <<'EOF'\nrust/tools/carrot_recovery_http_control.py\n\
+        rust/tools/carrot_recovery_terminal_control.py\nrust/tools/carrot_recovery_terminal_lifecycle.py\nrust/tools/carrot_recovery_support_control.py\n\
+        rust/tools/carrot_recovery_support_shutdown.py\nrust/tools/carrot_recovery_actions_control.py\nrust/tools/check_carrot_recovery_upload.py\n\
+        rust/tools/carrot_recovery_cwp_check.py\nrust/tools/carrot_recovery_source.py\nrust/tools/carrot_recovery_support_source.py\n\
+        rust/tools/carrot_recovery_cwp_source.py\nrust/tools/carrot_recovery_actions_fixtures.py\nrust/tools/carrot_recovery_actions_tools.py\n\
+        openpilot/selfdrive/carrot/recovery/server.py\nopenpilot/common/repo_update.py\nopenpilot/selfdrive/carrot/web/css/tokens.css\n\
+        openpilot/selfdrive/carrot/web/js/vendor/xterm.js\nrust/target/debug/openpilot-carrot-recovery\nrust/target/debug/examples/recovery_actions\n\
+        rust/target/debug/examples/upload\nrust/target/debug/openpilot-process-child\nEOF\nprintf '%s\\n' \"$RECOVERY_FAMILY_CWP_TEST_BINARY\"\
+        \ \"$(command -v python)\" /usr/bin/tmux /usr/bin/script /usr/bin/git /bin/bash >> \"$proof/inputs.list\"\npython\
+        \ - \"$proof/inputs.list\" \"$proof/inputs.before.json\" <<'PY'\nimport hashlib,json,os,stat,sys\nfrom pathlib import\
+        \ Path\nroot=Path(os.environ['GITHUB_WORKSPACE'])\nresult=[]\nfor item in Path(sys.argv[1]).read_text().splitlines():\n\
+        \  path=Path(item) if item.startswith('/') else root/item\n  target=path.resolve(strict=True)\n  link=os.lstat(path)\n\
+        \  meta=target.stat()\n  assert stat.S_ISREG(meta.st_mode),(path,target)\n  data=target.read_bytes()\n  result.append({'path':str(path),'resolved':str(target),'link_dev':link.st_dev,'link_ino':link.st_ino,'link_mode':link.st_mode,'dev':meta.st_dev,'ino':meta.st_ino,'mode':meta.st_mode,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()})\n\
+        Path(sys.argv[2]).write_text(json.dumps(result,sort_keys=True,indent=2)+'\\n')\nPY\nsha256sum \"$proof/inputs.before.json\"\
+        \ > \"$proof/inputs.before.sha256\"\n"
+    - name: Run six unchanged full source controllers once
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/recovery-family"
+
+        mkdir -p "$proof/original"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        python -P rust/tools/carrot_recovery_http_control.py --binary rust/target/debug/openpilot-carrot-recovery --output
+        "$proof/original/http" --standalone > "$proof/original-http.stdout" 2> "$proof/original-http.stderr"
+
+        python -P rust/tools/carrot_recovery_terminal_control.py --binary rust/target/debug/openpilot-carrot-recovery --output
+        "$proof/original/terminal" > "$proof/original-terminal.stdout" 2> "$proof/original-terminal.stderr"
+
+        python -P rust/tools/carrot_recovery_terminal_lifecycle.py --binary rust/target/debug/openpilot-carrot-recovery --output
+        "$proof/original/lifecycle" > "$proof/original-lifecycle.stdout" 2> "$proof/original-lifecycle.stderr"
+
+        python -P rust/tools/carrot_recovery_support_control.py --binary rust/target/debug/openpilot-carrot-recovery --output
+        "$proof/original/support" > "$proof/original-support.stdout" 2> "$proof/original-support.stderr"
+
+        python -P rust/tools/carrot_recovery_support_shutdown.py --binary rust/target/debug/openpilot-carrot-recovery --output
+        "$proof/original/shutdown" > "$proof/original-shutdown.stdout" 2> "$proof/original-shutdown.stderr"
+
+        python -P rust/tools/carrot_recovery_cwp_check.py --test-binary "$RECOVERY_FAMILY_CWP_TEST_BINARY" --output "$proof/original/cwp"
+        > "$proof/original-cwp.stdout" 2> "$proof/original-cwp.stderr"
+
+        '
+    - name: Run eight native controllers with their independent source comparisons once
+      env:
+        RECOVERY_FAMILY_ROOT: ${{ github.workspace }}
+        RECOVERY_FAMILY_SOURCE_WRAPPER: ${{ github.workspace }}/rust/tools/carrot_recovery_source.py
+        RECOVERY_FAMILY_SOURCE_SERVER: ${{ github.workspace }}/openpilot/selfdrive/carrot/recovery/server.py
+        RECOVERY_FAMILY_BINARY: ${{ github.workspace }}/rust/target/debug/openpilot-carrot-recovery
+        RECOVERY_FAMILY_CWP_SOURCE: ${{ github.workspace }}/rust/tools/carrot_recovery_cwp_source.py
+        RECOVERY_FAMILY_SUPPORT_SOURCE: ${{ github.workspace }}/rust/tools/carrot_recovery_support_source.py
+        RECOVERY_FAMILY_ACTIONS_SOURCE: ${{ github.workspace }}/rust/tools/carrot_recovery_actions_control.py
+        RECOVERY_FAMILY_ACTIONS_FIXTURES: ${{ github.workspace }}/rust/tools/carrot_recovery_actions_fixtures.py
+        RECOVERY_FAMILY_ACTIONS_TOOLS: ${{ github.workspace }}/rust/tools/carrot_recovery_actions_tools.py
+        RECOVERY_FAMILY_UPLOAD_SOURCE: ${{ github.workspace }}/rust/tools/check_carrot_recovery_upload.py
+        RECOVERY_FAMILY_REPO_UPDATE: ${{ github.workspace }}/openpilot/common/repo_update.py
+        RECOVERY_FAMILY_ACTIONS_EXAMPLE: ${{ github.workspace }}/rust/target/debug/examples/recovery_actions
+        RECOVERY_FAMILY_UPLOAD_EXAMPLE: ${{ github.workspace }}/rust/target/debug/examples/upload
+        RECOVERY_FAMILY_PROCESS_CHILD: ${{ github.workspace }}/rust/target/debug/openpilot-process-child
+        RECOVERY_FAMILY_TMUX: /usr/bin/tmux
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/recovery-family"
+
+        mkdir -p "$proof/native"
+
+        printf ''RECOVERY_FAMILY_PYTHON=%s\n'' "$(command -v python)" >> "$GITHUB_ENV"
+
+        export RECOVERY_FAMILY_PYTHON="$(command -v python)"
+
+        export RECOVERY_FAMILY_HTTP_OUTPUT="$proof/native/http"
+
+        export RECOVERY_FAMILY_TERMINAL_OUTPUT="$proof/native/terminal"
+
+        export RECOVERY_FAMILY_LIFECYCLE_OUTPUT="$proof/native/lifecycle"
+
+        export RECOVERY_FAMILY_SHUTDOWN_OUTPUT="$proof/native/shutdown"
+
+        export RECOVERY_FAMILY_CWP_OUTPUT="$proof/native/cwp"
+
+        export RECOVERY_FAMILY_SUPPORT_OUTPUT="$proof/native/support"
+
+        export RECOVERY_FAMILY_ACTIONS_OUTPUT="$proof/native/actions"
+
+        export RECOVERY_FAMILY_UPLOAD_OUTPUT="$proof/native/upload"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features recovery-family-native --test recovery_family
+        --locked -- --test-threads=1 --nocapture > "$proof/native-test.stdout" 2> "$proof/native-test.stderr" || { tail -n
+        120 "$proof/native-test.stderr" "$proof/native-test.stdout" | cut -c 1-1500; exit 1; }
+
+        grep -F ''9 passed; 0 failed'' "$proof/native-test.stdout"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features recovery-family-native --lib recovery_family::
+        --locked > "$proof/native-unit.stdout" 2> "$proof/native-unit.stderr" || { tail -n 100 "$proof/native-unit.stderr"
+        "$proof/native-unit.stdout" | cut -c 1-1500; exit 1; }
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features recovery-family-native --lib --test
+        recovery_family --locked -- -D warnings > "$proof/clippy.stdout" 2> "$proof/clippy.stderr" || { tail -n 120 "$proof/clippy.stderr";
+        exit 1; }
+
+        du -sm "$proof" > "$proof/artifact-size-mib.txt"
+
+        test "$(cut -f1 "$proof/artifact-size-mib.txt")" -le 200
+
+        '
+    - name: Verify every source, provider and ELF after the complete family
+      if: always()
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/recovery-family\"\ntest \"$(git rev-parse HEAD)\" = 73cb4466e9ee9a426911d4ba0c0040e68d988c5f\n\
+        test ! -f \"$proof/inputs.before.json\" || {\n  python - \"$proof/inputs.list\" \"$proof/inputs.after.json\" <<'PY'\n\
+        import hashlib,json,os,stat,sys\nfrom pathlib import Path\nroot=Path(os.environ['GITHUB_WORKSPACE'])\nresult=[]\n\
+        for item in Path(sys.argv[1]).read_text().splitlines():\n  path=Path(item) if item.startswith('/') else root/item\n\
+        \  target=path.resolve(strict=True)\n  link=os.lstat(path)\n  meta=target.stat()\n  assert stat.S_ISREG(meta.st_mode),(path,target)\n\
+        \  data=target.read_bytes()\n  result.append({'path':str(path),'resolved':str(target),'link_dev':link.st_dev,'link_ino':link.st_ino,'link_mode':link.st_mode,'dev':meta.st_dev,'ino':meta.st_ino,'mode':meta.st_mode,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()})\n\
+        Path(sys.argv[2]).write_text(json.dumps(result,sort_keys=True,indent=2)+'\\n')\nPY\n  cmp \"$proof/inputs.before.json\"\
+        \ \"$proof/inputs.after.json\"\n}\n"
+    - name: Preserve all original and native family receipts on failure or success
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: rust-recovery-family-296-evidence
+        path: ${{ runner.temp }}/recovery-family/
+        if-no-files-found: error
+        retention-days: 5
