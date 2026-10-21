@@ -51,4 +51,3 @@ both strict Clippy gates and default CLI passed. Historical/current ELF hashes
 remain separately recorded; no fresh original execution after deletion is claimed.
 Current inventory:231replaced-local/4partially-replaced/3345pending. Shared Desire
 is restored; driving/Panda conversion and whole-project validation remain unfinished.
-
