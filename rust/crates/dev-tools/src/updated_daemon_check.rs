@@ -906,13 +906,23 @@ mod tests {
         let path = tools.join("check_updated_daemon.py");
         let original =
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tools/check_updated_daemon.py");
-        fs::copy(&original, &path).unwrap();
-        let mut present = Historical::open(temporary.path()).unwrap();
-        present.verify().unwrap();
-        fs::write(&path, b"changed").unwrap();
-        assert!(present.verify().is_err());
-        fs::remove_file(&path).unwrap();
-        symlink(&original, &path).unwrap();
+        if original.is_file() {
+            fs::copy(&original, &path).unwrap();
+            let mut present = Historical::open(temporary.path()).unwrap();
+            present.verify().unwrap();
+            fs::write(&path, b"changed").unwrap();
+            assert!(present.verify().is_err());
+            fs::remove_file(&path).unwrap();
+        } else {
+            assert!(
+                matches!(fs::symlink_metadata(&original), Err(error) if error.kind() == io::ErrorKind::NotFound)
+            );
+            let mut absent = Historical::open(temporary.path()).unwrap();
+            fs::write(&path, b"changed").unwrap();
+            assert!(absent.verify().is_err());
+            fs::remove_file(&path).unwrap();
+        }
+        symlink("missing historical source", &path).unwrap();
         assert!(Historical::open(temporary.path()).is_err());
         fs::remove_file(&path).unwrap();
         assert!(Command::new("/usr/bin/mkfifo")
@@ -964,11 +974,6 @@ mod tests {
     fn completed_for_test(root: &Path, output: PathBuf) -> Completed {
         let tools = root.join("rust/tools");
         fs::create_dir_all(&tools).unwrap();
-        let source =
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tools/check_updated_daemon.py");
-        if !tools.join("check_updated_daemon.py").exists() {
-            fs::copy(source, tools.join("check_updated_daemon.py")).unwrap();
-        }
         fs::create_dir(&output).unwrap();
         let before = output.join("runtime-aliases-before.json");
         fs::write(&before, b"[]").unwrap();
