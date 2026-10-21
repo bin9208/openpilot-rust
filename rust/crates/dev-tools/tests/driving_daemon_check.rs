@@ -11,7 +11,10 @@ fn required(name: &str) -> PathBuf {
 fn full_six_scenario_live_ipc_matches_independent_original() {
     let options = Options {
         source_policy:
-            openpilot_dev_tools::driving_daemon_check::source_policy::SourcePolicy::Present,
+            openpilot_dev_tools::driving_daemon_check::source_policy::SourcePolicy::parse(
+                &env::var("DRIVING_SOURCE_POLICY").unwrap_or_else(|_| "present".to_owned()),
+            )
+            .expect("cloud source policy must be explicit present or retired-driving"),
         binary: required("DRIVING_DAEMON_NATIVE_BINARY"),
         catalog: required("DRIVING_DAEMON_CATALOG"),
         original_dir: required("DRIVING_ORIGINAL_OBSERVATION"),
@@ -24,6 +27,8 @@ fn full_six_scenario_live_ipc_matches_independent_original() {
         compiler: env::var_os("DRIVING_DAEMON_COMPILER").map(PathBuf::from),
     };
     let mut args = vec![
+        "--source-policy".into(),
+        options.source_policy.as_str().into(),
         "--binary".into(),
         options.binary.as_os_str().to_owned(),
         "--catalog".into(),

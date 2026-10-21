@@ -325,7 +325,7 @@ pub mod lagd_loop_reference;
 pub mod lagd_numeric_cases;
 #[cfg(feature = "lagd-tools-native")]
 pub mod lagd_packet_reference;
-#[cfg(feature = "lagd-tools-native")]
+#[cfg(any(feature = "lagd-tools-native", feature = "driving-daemon-native"))]
 pub mod lagd_random;
 #[cfg(feature = "lagd-tools-native")]
 pub mod lagd_reference;
@@ -361,6 +361,12 @@ pub mod pandad_can_io_check;
 
 #[cfg(all(target_os = "linux", feature = "pandad-can-io-native"))]
 pub mod pandad_can_io_fixture;
+
+#[cfg(all(target_os = "linux", feature = "recovery-family-native"))]
+pub mod recovery_family;
+
+#[cfg(all(target_os = "linux", feature = "driving-daemon-native"))]
+pub mod driving_fixture_archive;
 
 #[cfg(all(unix, feature = "desire-reference-native"))]
 pub mod desire_reference_check;

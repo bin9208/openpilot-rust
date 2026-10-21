@@ -562,6 +562,7 @@ pandad-safety-padding-native = []
 pandad-device-native = []
 pandad-protocol-native = []
 pandad-can-io-native = ["pandad-protocol-native"]
+recovery-family-native = []
 logmessaged-startup-native = ["stats-daemon-native"]
 bluetooth-files-native = []
 soundd-daemon-native = ["serde_json/float_roundtrip", "dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri"]
@@ -1992,3 +1993,16 @@ required-features = ["pandad-can-io-native"]
 [[test]]
 name = "pandad_can_io_fixture"
 required-features = ["pandad-can-io-native"]
+
+[[bin]]
+name = "stage-driving-daemon-fixture"
+path = "src/bin/stage_driving_daemon_fixture.rs"
+required-features = ["driving-daemon-native"]
+
+[[test]]
+name = "driving_fixture_archive"
+required-features = ["driving-daemon-native"]
+
+[[test]]
+name = "recovery_family"
+required-features = ["recovery-family-native"]

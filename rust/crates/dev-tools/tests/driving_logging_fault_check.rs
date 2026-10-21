@@ -11,7 +11,10 @@ fn required(name: &str) -> PathBuf {
 fn unchanged_model_and_collector_recover_from_both_final_link_failures() {
     let options = Options {
         source_policy:
-            openpilot_dev_tools::driving_daemon_check::source_policy::SourcePolicy::Present,
+            openpilot_dev_tools::driving_daemon_check::source_policy::SourcePolicy::parse(
+                &env::var("DRIVING_SOURCE_POLICY").unwrap_or_else(|_| "present".to_owned()),
+            )
+            .expect("cloud source policy must be explicit present or retired-driving"),
         fault_binary: required("DRIVING_LOGGING_FAULT_BINARY"),
         collector: required("DRIVING_DAEMON_COLLECTOR"),
         peer: required("DRIVING_DAEMON_PEER"),
@@ -25,6 +28,8 @@ fn unchanged_model_and_collector_recover_from_both_final_link_failures() {
     let report = cli::run(
         std::path::Path::new(env!("CARGO_BIN_EXE_check-model-logging-faults")),
         vec![
+            "--source-policy".into(),
+            options.source_policy.as_str().into(),
             "--fault-binary".into(),
             options.fault_binary.as_os_str().to_owned(),
             "--collector".into(),

@@ -1,5 +1,5 @@
-//! Original-only CLI admissions captured in Actions; the original checker is
-//! still a live dependency of the driving-daemon oracle.
+//! Original-only CLI admissions captured in Actions; explicit present/retired
+//! helper policy preserves the same complete source/CLI contract.
 #![cfg(all(target_os = "linux", feature = "desire-reference-native"))]
 
 use openpilot_dev_tools::qa_process::{CommandSpec, NativeRunner, Runner};
@@ -7,7 +7,7 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::{
     collections::BTreeMap,
-    ffi::OsString,
+    ffi::{OsStr, OsString},
     fs::{self, File},
     io::{Read, Seek, SeekFrom},
     os::unix::{
@@ -20,6 +20,9 @@ use std::{
 
 const CAPTURE: &[u8] = include_bytes!("fixtures/desire-original-6e34f78a/cli-original.json");
 const CAPTURE_SHA: &str = "ac3e8ec4a5117054c073c8761d454ef60a4b599ab16beb9efd647b78364711cf";
+const SOURCE_MANIFEST: &[u8] = include_bytes!("fixtures/desire-original-6e34f78a/manifest.json");
+const SOURCE_MANIFEST_SHA: &str =
+    "ccb84511e949ccd9ebe44c2dc259cd29f5839a42ec35478a1698311b985a81cf";
 const HISTORICAL: &str = "rust/tools/check_desire_reference.py";
 const HISTORICAL_SHA: &str = "b5529bcac8036ec559de785319b8bd131963fe05eb9aa149528992f7b4f88f8e";
 
@@ -82,20 +85,22 @@ fn opened_sha(file: &mut File, maximum: u64) -> String {
     }
     format!("{:x}", hash.finalize())
 }
-struct HistoricalSource {
+struct PinnedSource {
     path: PathBuf,
     held: File,
+    expected_sha: String,
     identity: (u64, u64, u64, i64, i64, i64, i64),
 }
-impl HistoricalSource {
-    fn open(path: PathBuf) -> Self {
+impl PinnedSource {
+    fn open(path: PathBuf, expected_sha: &str) -> Self {
         let mut held = regular(&path);
         let seal = identity(&held);
-        assert_eq!(opened_sha(&mut held, 1_000_000), HISTORICAL_SHA);
+        assert_eq!(opened_sha(&mut held, 1_000_000), expected_sha);
         assert_eq!(identity(&held), seal);
         let source = Self {
             path,
             held,
+            expected_sha: expected_sha.to_owned(),
             identity: seal,
         };
         source.verify();
@@ -105,14 +110,49 @@ impl HistoricalSource {
         let mut current = regular(&self.path);
         assert_eq!(identity(&current), self.identity);
         assert_eq!(identity(&self.held), self.identity);
-        assert_eq!(opened_sha(&mut current, 1_000_000), HISTORICAL_SHA);
+        assert_eq!(opened_sha(&mut current, 1_000_000), self.expected_sha);
         assert_eq!(identity(&current), self.identity);
         assert_eq!(identity(&self.held), self.identity);
         assert_eq!(
             self.path.symlink_metadata().unwrap().ino(),
             self.identity.1,
-            "original Desire checker path changed"
+            "pinned Desire source path changed"
         );
+    }
+}
+fn absent_mode(value: Option<&OsStr>) -> bool {
+    match value {
+        None => false,
+        Some(value) if value == OsStr::new("1") => true,
+        Some(_) => panic!("DESIRE_REFERENCE_EXPECT_ABSENT must be 1 when set"),
+    }
+}
+fn exactly_absent(path: &Path) -> bool {
+    matches!(fs::symlink_metadata(path), Err(error) if error.kind() == std::io::ErrorKind::NotFound)
+}
+enum HistoricalSource {
+    Present(PinnedSource),
+    Absent(PathBuf),
+}
+impl HistoricalSource {
+    fn open(path: PathBuf, expect_absent: bool) -> Self {
+        let source = if expect_absent {
+            Self::Absent(path)
+        } else {
+            Self::Present(PinnedSource::open(path, HISTORICAL_SHA))
+        };
+        source.verify();
+        source
+    }
+    fn verify(&self) {
+        match self {
+            Self::Present(source) => source.verify(),
+            Self::Absent(path) => assert!(
+                exactly_absent(path),
+                "retired Desire helper present or uninspectable: {}",
+                path.display()
+            ),
+        }
     }
 }
 fn file_sha(path: &Path, maximum: u64) -> String {
@@ -235,7 +275,29 @@ fn original_cli_channels_and_full_raw_path_match_native_with_pinned_source() {
     assert_eq!(cases.len(), roster.len());
     let repository =
         fs::canonicalize(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..")).unwrap();
-    let historical = HistoricalSource::open(repository.join(HISTORICAL));
+    let expect_absent = absent_mode(std::env::var_os("DESIRE_REFERENCE_EXPECT_ABSENT").as_deref());
+    let historical = HistoricalSource::open(repository.join(HISTORICAL), expect_absent);
+    assert_eq!(sha(SOURCE_MANIFEST), SOURCE_MANIFEST_SHA);
+    let source_manifest: Value = serde_json::from_slice(SOURCE_MANIFEST).unwrap();
+    let source_rows = source_manifest["source"].as_object().unwrap();
+    assert_eq!(source_rows.len(), 28);
+    assert_eq!(source_rows[HISTORICAL]["before_sha256"], HISTORICAL_SHA);
+    assert_eq!(source_rows[HISTORICAL]["after_sha256"], HISTORICAL_SHA);
+    let sources = source_rows
+        .iter()
+        .filter(|(name, _)| name.as_str() != HISTORICAL)
+        .map(|(name, row)| {
+            assert_eq!(
+                row["before_sha256"], row["after_sha256"],
+                "original source changed: {name}"
+            );
+            PinnedSource::open(
+                repository.join(name),
+                row["before_sha256"].as_str().unwrap(),
+            )
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(sources.len(), 27);
     let checker = fs::canonicalize(required("DESIRE_REFERENCE_CHECKER")).unwrap();
     let probe = fs::canonicalize(required("DESIRE_REFERENCE_PROBE")).unwrap();
     assert_ne!(checker, probe);
@@ -248,10 +310,23 @@ fn original_cli_channels_and_full_raw_path_match_native_with_pinned_source() {
         .tempdir_in(output)
         .unwrap()
         .keep();
+    let source_receipt = serde_json::json!({
+        "historical_helper_absent": expect_absent, "historical_source_sha256": HISTORICAL_SHA,
+        "source_manifest_sha256": SOURCE_MANIFEST_SHA,
+        "remaining_sources": sources.iter().map(|source|serde_json::json!({"path":source.path,"sha256":source.expected_sha,"identity":source.identity})).collect::<Vec<_>>()
+    });
+    fs::write(
+        proof.join("source-bindings-before.json"),
+        serde_json::to_vec_pretty(&source_receipt).unwrap(),
+    )
+    .unwrap();
 
     for (row, name) in cases.iter().zip(roster) {
         assert_eq!(row["case"], name);
         historical.verify();
+        for source in &sources {
+            source.verify();
+        }
         assert_eq!(source_elf(&checker), checker_seal);
         assert_eq!(source_elf(&probe), probe_seal);
         let side = proof.join(name);
@@ -294,6 +369,12 @@ fn original_cli_channels_and_full_raw_path_match_native_with_pinned_source() {
         let result = NativeRunner.run_to_files(&spec, &stdout, &stderr).unwrap();
         let out = read_bounded(&stdout, 16_000_000);
         let err = read_bounded(&stderr, 16_000_000);
+        fs::write(side.join("invocation.json"),serde_json::to_vec_pretty(&serde_json::json!({
+            "case":name,"argv_hex":spec.effective_argv().iter().map(|arg|arg.as_bytes().iter().map(|b|format!("{b:02x}")).collect::<String>()).collect::<Vec<_>>(),
+            "exit":result.code,"stdout_hex":out.iter().map(|b|format!("{b:02x}")).collect::<String>(),
+            "stderr_hex":err.iter().map(|b|format!("{b:02x}")).collect::<String>(),
+            "historical_helper_absent":expect_absent,"remaining_pinned_sources":sources.len()
+        })).unwrap()).unwrap();
         let original_out = hex_bytes(row["stdout_hex"].as_str().unwrap());
         let original_err = hex_bytes(row["stderr_hex"].as_str().unwrap());
         assert_eq!(
@@ -340,6 +421,24 @@ fn original_cli_channels_and_full_raw_path_match_native_with_pinned_source() {
                     "{filename}: accepted raw output bytes"
                 );
             }
+            // Relocate only the completed, verified raw-byte output for upload.
+            let before = fs::symlink_metadata(&generated).unwrap();
+            assert!(before.file_type().is_dir());
+            let archived = side.join("generated-output-bytes");
+            rustix::fs::renameat_with(
+                rustix::fs::CWD,
+                &generated,
+                rustix::fs::CWD,
+                &archived,
+                rustix::fs::RenameFlags::NOREPLACE,
+            )
+            .unwrap();
+            let after = fs::symlink_metadata(&archived).unwrap();
+            assert_eq!((before.dev(), before.ino()), (after.dev(), after.ino()));
+            fs::write(side.join("raw-output-archive.json"),serde_json::to_vec_pretty(&serde_json::json!({
+                "invoked_path_hex":generated.as_os_str().as_bytes().iter().map(|b|format!("{b:02x}")).collect::<String>(),
+                "archived_as":"generated-output-bytes","same_directory_inode":true
+            })).unwrap()).unwrap();
         } else {
             assert!(
                 matches!(fs::symlink_metadata(&generated), Err(error) if error.kind() == std::io::ErrorKind::NotFound),
@@ -351,7 +450,50 @@ fn original_cli_channels_and_full_raw_path_match_native_with_pinned_source() {
             "unexpected other output: {name}"
         );
         historical.verify();
+        for source in &sources {
+            source.verify();
+        }
         assert_eq!(source_elf(&checker), checker_seal);
         assert_eq!(source_elf(&probe), probe_seal);
     }
+    historical.verify();
+    for source in &sources {
+        source.verify();
+    }
+    fs::write(
+        proof.join("source-bindings-after.json"),
+        serde_json::to_vec_pretty(&source_receipt).unwrap(),
+    )
+    .unwrap();
+}
+
+#[test]
+fn explicit_retired_helper_guard_rejects_late_regular_link_and_directory_reappearance() {
+    assert!(!absent_mode(None));
+    assert!(absent_mode(Some(OsStr::new("1"))));
+    assert!(std::panic::catch_unwind(|| absent_mode(Some(OsStr::new("0")))).is_err());
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("retired-helper.py");
+    let guard = HistoricalSource::open(path.clone(), true);
+    guard.verify();
+    fs::write(&path, b"late reappearance").unwrap();
+    assert!(std::panic::catch_unwind(|| guard.verify()).is_err());
+    fs::remove_file(&path).unwrap();
+    std::os::unix::fs::symlink("missing-target", &path).unwrap();
+    assert!(std::panic::catch_unwind(|| guard.verify()).is_err());
+    fs::remove_file(&path).unwrap();
+    fs::create_dir(&path).unwrap();
+    assert!(std::panic::catch_unwind(|| guard.verify()).is_err());
+    fs::remove_dir(&path).unwrap();
+    guard.verify();
+}
+#[test]
+fn remaining_source_guard_rejects_mutation_without_relaxing_present_pins() {
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("remaining-source");
+    fs::write(&path, b"original").unwrap();
+    let guard = PinnedSource::open(path.clone(), &sha(b"original"));
+    guard.verify();
+    fs::write(&path, b"modified").unwrap();
+    assert!(std::panic::catch_unwind(|| guard.verify()).is_err());
 }

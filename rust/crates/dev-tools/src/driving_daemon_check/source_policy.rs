@@ -1,4 +1,4 @@
-//! Explicit admission for the three historically pinned driving checker leaves.
+//! Explicit admission for the four historically pinned driving oracle leaves.
 use super::Binding;
 use crate::seal::Result;
 use serde_json::{Map, Value};
@@ -7,7 +7,7 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
-pub const RETIRED: [(&str, &str); 3] = [
+pub const RETIRED: [(&str, &str); 4] = [
     (
         "rust/tools/check_driving_daemon.py",
         "7e018d91804e4a26a29c28be9be12ddab7cdb26cc72c3098f41e2939704680bf",
@@ -19,6 +19,10 @@ pub const RETIRED: [(&str, &str); 3] = [
     (
         "rust/tools/driving_daemon_reference.py",
         "e20e38e9fba65667b62d012927bd575c74c6d213001edae388f5e8127a8df266",
+    ),
+    (
+        "rust/tools/check_desire_reference.py",
+        "b5529bcac8036ec559de785319b8bd131963fe05eb9aa149528992f7b4f88f8e",
     ),
 ];
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -117,7 +121,7 @@ mod tests {
     #[test]
     fn explicit_absence_rejects_missing_history_reappearance_links_and_directories() {
         let root = tempfile::tempdir().unwrap();
-        let mut pins = pins();
+        let pins = pins();
         let mut bindings = Vec::new();
         assert!(bind(root.path(), &pins, SourcePolicy::Present, &mut bindings).is_err());
         let paths = bind(
@@ -139,22 +143,33 @@ mod tests {
             assert!(verify_absent(&paths).is_err());
             fs::remove_dir(path).unwrap();
         }
-        pins[RETIRED[0].0] = Value::String("a".repeat(64));
-        assert!(bind(
-            root.path(),
-            &pins,
-            SourcePolicy::RetiredDriving,
-            &mut bindings
-        )
-        .is_err());
-        pins.remove(RETIRED[0].0);
-        assert!(bind(
-            root.path(),
-            &pins,
-            SourcePolicy::RetiredDriving,
-            &mut bindings
-        )
-        .is_err());
+        assert_eq!(paths.len(), RETIRED.len());
+        for (name, _) in RETIRED {
+            let mut changed = pins.clone();
+            changed[name] = Value::String("a".repeat(64));
+            assert!(
+                bind(
+                    root.path(),
+                    &changed,
+                    SourcePolicy::RetiredDriving,
+                    &mut bindings
+                )
+                .is_err(),
+                "changed historical pin: {name}"
+            );
+            changed = pins.clone();
+            changed.remove(name);
+            assert!(
+                bind(
+                    root.path(),
+                    &changed,
+                    SourcePolicy::RetiredDriving,
+                    &mut bindings
+                )
+                .is_err(),
+                "missing historical pin: {name}"
+            );
+        }
     }
     #[test]
     fn remaining_source_stays_bound_and_retirement_is_not_autodetected() {
