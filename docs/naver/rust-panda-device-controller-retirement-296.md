@@ -39,8 +39,19 @@ from required actual absence. The final deletion gate must not restore, download
 or execute the retired Python files.
 
 Candidate39629276623 passes all10 controls and3 full retirement tests, then fails
-because its recipe omitted the Clippy component. That setup is corrected for a
-full rerun; strict-Clippy acceptance remains pending. Parent also found that the
+because its recipe omitted the Clippy component. Corrected
+[39631590479](https://github.com/bin9208/openpilot-rust/actions/runs/39631590479)
+passes the functional checks and strict Clippy at source
+`7fc4698e3d4564a6bd8499ec98a80704f3cd9c77`. Parent audited original artifact
+`12359646845` (ZIP SHA256
+`b454a1c91ec7c0856f56b5e5a0216f5d4e366154c162c1540bcd35d529ba6717`),
+its complete 33-file sealed roster and all 14 C++ plus two original source pins.
+Original manifest SHA256 is
+`ff7b197b3eca5408abbf7dee5b8df196a8fdd5ea61b4e394e829ca382428ea8d`.
+Native artifact `12359402144` has 38 CRC-checked members, ZIP SHA256
+`8e95eb5692736118c9a4041b36319b1c88d2d46d7d237b1ae78b8f661939f40f`.
+This unchanged original observation corpus will be reused for the remaining
+caller/deletion integration rather than recaptured per file. Parent also found that the
 artifact uploader omitted the raw-byte directory although its live assertions
 passed. The next proof retains actual argv/status/streams for every native CLI
 call and relocates completed raw-path evidence to an ASCII archive directory,
