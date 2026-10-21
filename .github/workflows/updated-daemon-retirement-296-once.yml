@@ -1,0 +1,169 @@
+name: 296 updater daemon exact original CLI raw path and same ELF absent proof
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/updated-daemon-retirement-296-once.yml
+permissions:
+  contents: read
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
+jobs:
+  updated-daemon:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      EXPECTED_SOURCE: 4e5b102d6a6330107a0e7ced62c26fe674391448
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      TZ: UTC
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: 4e5b102d6a6330107a0e7ced62c26fe674391448
+        persist-credentials: false
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Require exact source and original/native prerequisites
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        proof="$RUNNER_TEMP/updated-daemon-296"
+
+        mkdir -p "$proof"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev strace git-lfs
+        gettext
+
+        python -m pip install pyzmq==27.2.0
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        printf ''UPDATED_DAEMON_BINARY=%s/rust/target/debug/openpilot-updated\nUPDATED_DAEMON_LAUNCHER=%s/rust/target/debug/openpilot-process-child\nUPDATED_DAEMON_FIXTURE=%s/rust/target/debug/updated-fixture\n''
+        "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+
+        printf ''UPDATED_DAEMON_ORIGINAL_OUTPUT=%s/original\nUPDATED_DAEMON_NATIVE_OUTPUT=%s/native\n'' "$proof" "$proof"
+        >> "$GITHUB_ENV"
+
+        '
+    - name: Build actual production daemon, native fixture and new owned controller
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/updated-daemon-296"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-updated --bin openpilot-updated --locked 2>&1 | tee "$proof/daemon-build.log"
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-process-supervision --bin openpilot-process-child --locked
+        2>&1 | tee "$proof/launcher-build.log"
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features updated-daemon-native --bin check-updated-daemon
+        --bin updated-fixture --locked 2>&1 | tee "$proof/controller-build.log"
+
+        sha256sum rust/tools/check_updated_daemon.py rust/tools/updated_fixtures.py rust/target/debug/openpilot-updated rust/target/debug/openpilot-process-child
+        rust/target/debug/updated-fixture rust/target/debug/check-updated-daemon > "$proof/sealed-inputs.sha256"
+
+        '
+    - name: Execute unchanged original first and capture its actual invocation time window
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/updated-daemon-296"
+
+        printf ''UPDATED_DAEMON_ORIGINAL_START_NS=%s\n'' "$(date -u +%s%N)" >> "$GITHUB_ENV"
+
+        python rust/tools/check_updated_daemon.py --binary "$UPDATED_DAEMON_BINARY" --launcher "$UPDATED_DAEMON_LAUNCHER"
+        --output "$UPDATED_DAEMON_ORIGINAL_OUTPUT" > "$proof/original.stdout" 2> "$proof/original.stderr"
+
+        printf ''UPDATED_DAEMON_ORIGINAL_END_NS=%s\n'' "$(date -u +%s%N)" >> "$GITHUB_ENV"
+
+        sha256sum --check "$proof/sealed-inputs.sha256"
+
+        '
+    - name: Capture unchanged original CLI admissions and valid raw output before candidate runs
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/updated-daemon-296"
+
+        printf ''%s'' ''IiIiSG9zdGVkIG9yaWdpbmFsLW9ubHkgYXJncGFyc2UgY2FwdHVyZTsgbmV2ZXIgaW1wb3J0IHRoZSBuYXRpdmUgY2hlY2tlci4iIiIKaW1wb3J0IGhhc2hsaWIKaW1wb3J0IGpzb24KaW1wb3J0IG9zCmZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aAppbXBvcnQgc3VicHJvY2VzcwppbXBvcnQgc3lzCgoKT1JJR0lOQUxfU0hBID0gIjgyYmUzODMwZjhlNDY4YzMyYWJlNTgzYzE5N2NkZjI3NzdjZDVmYjc0OGE3OTVhOGM3MDI0N2E3ZGNkMDAwNTkiCgoKZGVmIHNoYShwYXRoKToKICByZXR1cm4gaGFzaGxpYi5zaGEyNTYocGF0aC5yZWFkX2J5dGVzKCkpLmhleGRpZ2VzdCgpCgoKZGVmIG1haW4oKToKICByb290ID0gUGF0aChvcy5lbnZpcm9uWyJHSVRIVUJfV09SS1NQQUNFIl0pCiAgc291cmNlID0gcm9vdCAvICJydXN0L3Rvb2xzL2NoZWNrX3VwZGF0ZWRfZGFlbW9uLnB5IgogIG91dHB1dCA9IFBhdGgob3MuZW52aXJvblsiVVBEQVRFRF9EQUVNT05fQ0xJX0NBUFRVUkUiXSkKICBhc3NlcnQgbm90IG91dHB1dC5leGlzdHMoKSwgb3V0cHV0CiAgYXNzZXJ0IHNoYShzb3VyY2UpID09IE9SSUdJTkFMX1NIQQogIGludGVycHJldGVyID0gUGF0aChzeXMuZXhlY3V0YWJsZSkucmVzb2x2ZSgpCiAgaW50ZXJwcmV0ZXJfc2hhID0gc2hhKGludGVycHJldGVyKQogIGNhc2VzID0gWwogICAgKCJzaG9ydC1oZWxwIiwgW2IiLWgiXSksCiAgICAoImxvbmctaGVscCIsIFtiIi0taGVscCJdKSwKICAgICgicmVwZWF0ZWQtc2hvcnQtaGVscCIsIFtiIi1oaCJdKSwKICAgICgiYXR0YWNoZWQtc2hvcnQtaGVscCIsIFtiIi1oZm9vIl0pLAogICAgKCJyZXBlYXRlZC1iaW5hcnktYmVmb3JlLWhlbHAiLCBbYiItLWJpbmFyeSIsIGIiZmlyc3QiLCBiIi0tYmluYXJ5IiwgYiJsYXN0IiwgYiItLWhlbHAiXSksCiAgICAoImFiYnJldmlhdGVkLW9wdGlvbnMtYmVmb3JlLWhlbHAiLCBbYiItLWJpbmEiLCBiImIiLCBiIi0tbGF1IiwgYiJsIiwgYiItLW91dCIsIGIibyIsIGIiLS1oZWxwIl0pLAogICAgKCJtaXNzaW5nLWJpbmFyeS12YWx1ZSIsIFtiIi0tYmluYXJ5Il0pLAogICAgKCJ1bmtub3duLW9wdGlvbiIsIFtiIi0tdW5rbm93biJdKSwKICAgICgiaW5jb21wbGV0ZS1yZXF1aXJlZC1zZXQiLCBbYiItLWJpbmFyeSIsIGIiYiIsIGIiLS1sYXVuY2hlciIsIGIibCJdKSwKICAgICgiaGVscC1lcXVhbHMiLCBbYiItLWhlbHA9YmFkIl0pLAogICAgKCJub24tdXRmOC1vcHRpb24tdmFsdWUtYmVmb3JlLWhlbHAiLCBbYiItLWJpbmFyeSIsIGIiL3RtcC9yYXctXHhmZiIsIGIiLS1oZWxwIl0pLAogIF0KICByb3dzID0gW10KICBmb3IgbmFtZSwgYXJncyBpbiBjYXNlczoKICAgIGNhcHR1cmVkID0gc3VicHJvY2Vzcy5ydW4oCiAgICAgIFtvcy5mc2VuY29kZShpbnRlcnByZXRlciksIG9zLmZzZW5jb2RlKHNvdXJjZSksICphcmdzXSwKICAgICAgc3Rkb3V0PXN1YnByb2Nlc3MuUElQRSwKICAgICAgc3RkZXJyPXN1YnByb2Nlc3MuUElQRSwKICAgICAgdGltZW91dD01LAogICAgICBjaGVjaz1GYWxzZSwKICAgICkKICAgIGFzc2VydCBjYXB0dXJlZC5yZXR1cm5jb2RlIGluICgwLCAyKSwgKG5hbWUsIGNhcHR1cmVkLnJldHVybmNvZGUsIGNhcHR1cmVkLnN0ZGVycikKICAgIHJvd3MuYXBwZW5kKHsKICAgICAgIm5hbWUiOiBuYW1lLAogICAgICAiYXJndl9oZXgiOiBbYXJnLmhleCgpIGZvciBhcmcgaW4gYXJnc10sCiAgICAgICJjb2RlIjogY2FwdHVyZWQucmV0dXJuY29kZSwKICAgICAgInN0ZG91dF9oZXgiOiBjYXB0dXJlZC5zdGRvdXQuaGV4KCksCiAgICAgICJzdGRlcnJfaGV4IjogY2FwdHVyZWQuc3RkZXJyLmhleCgpLAogICAgfSkKICBhc3NlcnQgc2hhKHNvdXJjZSkgPT0gT1JJR0lOQUxfU0hBCiAgYXNzZXJ0IHNoYShpbnRlcnByZXRlcikgPT0gaW50ZXJwcmV0ZXJfc2hhCiAgcmVjZWlwdCA9IHsKICAgICJzb3VyY2Vfc2hhMjU2IjogT1JJR0lOQUxfU0hBLAogICAgImludGVycHJldGVyIjogc3RyKGludGVycHJldGVyKSwKICAgICJpbnRlcnByZXRlcl9zaGEyNTYiOiBpbnRlcnByZXRlcl9zaGEsCiAgICAic291cmNlX2NvbW1pdCI6IG9zLmVudmlyb25bIkVYUEVDVEVEX1NPVVJDRSJdLAogICAgImNhc2VzIjogcm93cywKICB9CiAgb3V0cHV0LnBhcmVudC5ta2RpcihwYXJlbnRzPVRydWUsIGV4aXN0X29rPVRydWUpCiAgd2l0aCBvdXRwdXQub3BlbigieCIsIGVuY29kaW5nPSJ1dGYtOCIpIGFzIHN0cmVhbToKICAgIGpzb24uZHVtcChyZWNlaXB0LCBzdHJlYW0sIGluZGVudD0yLCBlbnN1cmVfYXNjaWk9VHJ1ZSkKICAgIHN0cmVhbS53cml0ZSgiXG4iKQoKCmlmIF9fbmFtZV9fID09ICJfX21haW5fXyI6CiAgbWFpbigpCg==''
+        | base64 -d > "$proof/capture_updated_daemon_cli.py"
+
+        printf ''%s  %s\n'' ''15fdf1ef40a413317894addcdd65ea3a6d88b2a6b1a29744f40d7b3bab1c0e0f'' "$proof/capture_updated_daemon_cli.py"
+        | sha256sum -c -
+
+        printf ''%s'' ''IiIiSG9zdGVkIG9yaWdpbmFsLW9ubHkgdmFsaWQgLS1vdXRwdXQgcGF0aCB3aXRoIG9uZSByYXcgMHhmZiBieXRlLiIiIgppbXBvcnQgaGFzaGxpYgppbXBvcnQganNvbgppbXBvcnQgb3MKZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCmltcG9ydCBzaHV0aWwKaW1wb3J0IHN1YnByb2Nlc3MKaW1wb3J0IHN5cwppbXBvcnQgdGltZQoKCkNIRUNLRVJfU0hBID0gIjgyYmUzODMwZjhlNDY4YzMyYWJlNTgzYzE5N2NkZjI3NzdjZDVmYjc0OGE3OTVhOGM3MDI0N2E3ZGNkMDAwNTkiCgoKZGVmIHNoYShwYXRoKToKICByZXR1cm4gaGFzaGxpYi5zaGEyNTYoUGF0aChwYXRoKS5yZWFkX2J5dGVzKCkpLmhleGRpZ2VzdCgpCgoKZGVmIG1haW4oKToKICBzb3VyY2UgPSBQYXRoKG9zLmVudmlyb25bIkdJVEhVQl9XT1JLU1BBQ0UiXSkgLyAicnVzdC90b29scy9jaGVja191cGRhdGVkX2RhZW1vbi5weSIKICBwcm9vZiA9IFBhdGgob3MuZW52aXJvblsiVVBEQVRFRF9EQUVNT05fUkFXX0NBUFRVUkVfUk9PVCJdKQogIGFzc2VydCBwcm9vZi5pc19kaXIoKQogIHJhdyA9IG9zLmZzZW5jb2RlKHByb29mKSArIGIiL29yaWdpbmFsLXJhdy1ceGZmIgogIGFzc2VydCBub3Qgb3MucGF0aC5sZXhpc3RzKHJhdykKICBrZXB0ID0gcHJvb2YgLyAib3JpZ2luYWwtcmF3IgogIGFzc2VydCBub3Qga2VwdC5leGlzdHMoKQogIGFzc2VydCBzaGEoc291cmNlKSA9PSBDSEVDS0VSX1NIQQogIGJpbmFyaWVzID0gewogICAgImJpbmFyeSI6IG9zLmVudmlyb25bIlVQREFURURfREFFTU9OX0JJTkFSWSJdLAogICAgImxhdW5jaGVyIjogb3MuZW52aXJvblsiVVBEQVRFRF9EQUVNT05fTEFVTkNIRVIiXSwKICAgICJmaXh0dXJlIjogb3MuZW52aXJvblsiVVBEQVRFRF9EQUVNT05fRklYVFVSRSJdLAogIH0KICBiZWZvcmUgPSB7bmFtZTogc2hhKHBhdGgpIGZvciBuYW1lLCBwYXRoIGluIGJpbmFyaWVzLml0ZW1zKCl9CiAgaW50ZXJwcmV0ZXIgPSBQYXRoKHN5cy5leGVjdXRhYmxlKS5yZXNvbHZlKCkKICBpbnRlcnByZXRlcl9zaGEgPSBzaGEoaW50ZXJwcmV0ZXIpCiAgc3RhcnRfbnMgPSB0aW1lLnRpbWVfbnMoKQogIHJlc3VsdCA9IHN1YnByb2Nlc3MucnVuKAogICAgW29zLmZzZW5jb2RlKGludGVycHJldGVyKSwgb3MuZnNlbmNvZGUoc291cmNlKSwgYiItLWJpbmFyeSIsIG9zLmZzZW5jb2RlKGJpbmFyaWVzWyJiaW5hcnkiXSksCiAgICAgYiItLWxhdW5jaGVyIiwgb3MuZnNlbmNvZGUoYmluYXJpZXNbImxhdW5jaGVyIl0pLCBiIi0tb3V0cHV0IiwgcmF3XSwKICAgIHN0ZG91dD1zdWJwcm9jZXNzLlBJUEUsCiAgICBzdGRlcnI9c3VicHJvY2Vzcy5QSVBFLAogICAgY2hlY2s9RmFsc2UsCiAgICB0aW1lb3V0PTE4MCwKICApCiAgZW5kX25zID0gdGltZS50aW1lX25zKCkKICBhc3NlcnQgcmVzdWx0LnJldHVybmNvZGUgPT0gMCwgKHJlc3VsdC5yZXR1cm5jb2RlLCByZXN1bHQuc3RkZXJyKQogIGFzc2VydCByZXN1bHQuc3Rkb3V0LnN0YXJ0c3dpdGgoYiJQQVNTIHByb2R1Y3Rpb24gdXBkYXRlZDoiKSBhbmQgbm90IHJlc3VsdC5zdGRlcnIKICBhc3NlcnQganNvbi5sb2FkcyhQYXRoKG9zLmZzZGVjb2RlKHJhdyksICJyZXN1bHQuanNvbiIpLnJlYWRfYnl0ZXMoKSlbInBhc3NlZCJdIGlzIFRydWUKICBzaHV0aWwuY29weXRyZWUocmF3LCBrZXB0KQogIFBhdGgocHJvb2YgLyAib3JpZ2luYWwuc3Rkb3V0Iikud3JpdGVfYnl0ZXMocmVzdWx0LnN0ZG91dCkKICBQYXRoKHByb29mIC8gIm9yaWdpbmFsLnN0ZGVyciIpLndyaXRlX2J5dGVzKHJlc3VsdC5zdGRlcnIpCiAgYXNzZXJ0IGxlbihqc29uLmxvYWRzKChrZXB0IC8gInJlY29yZHMuanNvbiIpLnJlYWRfYnl0ZXMoKSkpID09IDIyCiAgZmlsZXMgPSB7CiAgICBuYW1lOiBzaGEoa2VwdCAvIG5hbWUpIGZvciBuYW1lIGluIFsKICAgICAgInJlc3VsdC5qc29uIiwgInBhcmFtcy5qc29uIiwgInJlY29yZHMuanNvbiIsICJvdmVybGF5LWNvbW1hbmRzLmpzb25sIiwgImRhZW1vbi5sb2ciLCAiZHVwbGljYXRlLmxvZyIKICAgIF0KICB9CiAgZmlsZXNbIm9yaWdpbmFsLnN0ZG91dCJdID0gc2hhKHByb29mIC8gIm9yaWdpbmFsLnN0ZG91dCIpCiAgZmlsZXNbIm9yaWdpbmFsLnN0ZGVyciJdID0gc2hhKHByb29mIC8gIm9yaWdpbmFsLnN0ZGVyciIpCiAgYXNzZXJ0IHNoYShzb3VyY2UpID09IENIRUNLRVJfU0hBCiAgYXNzZXJ0IHtuYW1lOiBzaGEocGF0aCkgZm9yIG5hbWUsIHBhdGggaW4gYmluYXJpZXMuaXRlbXMoKX0gPT0gYmVmb3JlCiAgYXNzZXJ0IHNoYShpbnRlcnByZXRlcikgPT0gaW50ZXJwcmV0ZXJfc2hhCiAgbWFuaWZlc3QgPSB7CiAgICAiY2hlY2tlcl9zaGEyNTYiOiBDSEVDS0VSX1NIQSwKICAgICJzb3VyY2VfY29tbWl0Ijogb3MuZW52aXJvblsiRVhQRUNURURfU09VUkNFIl0sCiAgICAiaW50ZXJwcmV0ZXJfc2hhMjU2IjogaW50ZXJwcmV0ZXJfc2hhLAogICAgIm5hdGl2ZV9pbnB1dHNfc2hhMjU2IjogYmVmb3JlLAogICAgInJhd19vdXRwdXRfc3VmZml4X2hleCI6ICJmZiIsCiAgICAicmF3X291dHB1dF9wYXRoX2hleCI6IHJhdy5oZXgoKSwKICAgICJzdGFydF9ucyI6IHN0YXJ0X25zLAogICAgImVuZF9ucyI6IGVuZF9ucywKICAgICJmaWxlcyI6IGZpbGVzLAogIH0KICB3aXRoIChwcm9vZiAvICJvcmlnaW5hbC1yYXctbWFuaWZlc3QuanNvbiIpLm9wZW4oIngiLCBlbmNvZGluZz0idXRmLTgiKSBhcyBzdHJlYW06CiAgICBqc29uLmR1bXAobWFuaWZlc3QsIHN0cmVhbSwgaW5kZW50PTIsIHNvcnRfa2V5cz1UcnVlKQogICAgc3RyZWFtLndyaXRlKCJcbiIpCiAgc2h1dGlsLnJtdHJlZShyYXcpCgoKaWYgX19uYW1lX18gPT0gIl9fbWFpbl9fIjoKICBtYWluKCkK''
+        | base64 -d > "$proof/capture_updated_daemon_raw_output.py"
+
+        printf ''%s  %s\n'' ''dfa48539c274b36438973faa88daaf02ac3cddc083d16b3fb4bb4b5168fa8733'' "$proof/capture_updated_daemon_raw_output.py"
+        | sha256sum -c -
+
+        export UPDATED_DAEMON_CLI_CAPTURE="$proof/cli-original.json"
+
+        python "$proof/capture_updated_daemon_cli.py"
+
+        printf ''UPDATED_DAEMON_CLI_ORIGINAL_RECEIPT=%s/cli-original.json\n'' "$proof" >> "$GITHUB_ENV"
+
+        printf ''UPDATED_DAEMON_CLI_ORIGINAL_SHA256=%s\n'' "$(sha256sum "$proof/cli-original.json" | cut -d '' '' -f1)" >>
+        "$GITHUB_ENV"
+
+        mkdir "$proof/raw-original-capture"
+
+        export UPDATED_DAEMON_RAW_CAPTURE_ROOT="$proof/raw-original-capture"
+
+        python "$proof/capture_updated_daemon_raw_output.py"
+
+        printf ''UPDATED_DAEMON_RAW_ORIGINAL_OUTPUT=%s/raw-original-capture/original-raw\nUPDATED_DAEMON_RAW_ORIGINAL_MANIFEST=%s/raw-original-capture/original-raw-manifest.json\n''
+        "$proof" "$proof" >> "$GITHUB_ENV"
+
+        printf ''UPDATED_DAEMON_RAW_ORIGINAL_MANIFEST_SHA256=%s\n'' "$(sha256sum "$proof/raw-original-capture/original-raw-manifest.json"
+        | cut -d '' '' -f1)" >> "$GITHUB_ENV"
+
+        printf ''UPDATED_DAEMON_SOURCE_COMMIT=%s\nUPDATED_DAEMON_CHECKER=%s/rust/target/debug/check-updated-daemon\nUPDATED_DAEMON_RETIREMENT_EVIDENCE=%s/retirement\nUPDATED_DAEMON_RAW_NATIVE_EVIDENCE=%s/raw-native\nUPDATED_DAEMON_REQUIRE_ABSENT=0\n''
+        "$EXPECTED_SOURCE" "$GITHUB_WORKSPACE" "$proof" "$proof" >> "$GITHUB_ENV"
+
+        sha256sum --check "$proof/sealed-inputs.sha256"
+
+        '
+    - name: Require full daemon regressions, fresh original pair, raw CLI and strict same-ELF trace proof
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/updated-daemon-296"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features updated-daemon-native --lib updated_daemon_check::
+        --locked -- --nocapture 2>&1 | tee "$proof/unit-tests.log"
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features updated-daemon-native --test updated_daemon_check
+        --test updated_daemon_retirement --test updated_daemon_cli --locked -- --nocapture 2>&1 | tee "$proof/controller-tests.log"
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features updated-daemon-native --lib --bin check-updated-daemon
+        --test updated_daemon_check --test updated_daemon_retirement --test updated_daemon_cli --locked -- -D warnings 2>&1
+        | tee "$proof/clippy.log"
+
+        rust/target/debug/check-updated-daemon --binary "$UPDATED_DAEMON_BINARY" --launcher "$UPDATED_DAEMON_LAUNCHER" --output
+        "$proof/native-cli" > "$proof/native-cli.stdout" 2> "$proof/native-cli.stderr"
+
+        cmp "$proof/original.stdout" "$proof/native-cli.stdout"
+
+        test ! -s "$proof/native-cli.stderr"
+
+        sha256sum --check "$proof/sealed-inputs.sha256"
+
+        '
+    - uses: actions/upload-artifact@v6
+      if: always()
+      with:
+        name: updated-daemon-native-pair-296
+        path: ${{ runner.temp }}/updated-daemon-296/
+        if-no-files-found: error
