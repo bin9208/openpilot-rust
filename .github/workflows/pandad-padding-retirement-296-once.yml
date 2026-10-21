@@ -11,9 +11,6 @@ jobs:
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       OPENPILOT_RUST_ROOT: ${{ github.workspace }}
-      PANDAD_PADDING_TEST_OUTPUT: ${{ runner.temp }}/padding-retirement-296
-      PANDAD_PADDING_SOURCE_BINARY: ${{ runner.temp }}/padding-retirement-296/source/pandad-protocol-source
-      PANDAD_PADDING_SOURCE_MANIFEST: ${{ runner.temp }}/padding-retirement-296/source/manifest.json
       PANDAD_PADDING_NATIVE_BINARY: ${{ github.workspace }}/rust/target/debug/examples/panda_safety
     steps:
     - uses: actions/checkout@v7
@@ -25,6 +22,18 @@ jobs:
         python-version: '3.12'
     - name: Pin source and install minimum build and audit prerequisites
       run: 'set -euo pipefail
+
+        export PANDAD_PADDING_TEST_OUTPUT="$RUNNER_TEMP/padding-retirement-296"
+
+        printf ''PANDAD_PADDING_TEST_OUTPUT=%s\n'' "$PANDAD_PADDING_TEST_OUTPUT" >> "$GITHUB_ENV"
+
+        export PANDAD_PADDING_SOURCE_BINARY="$RUNNER_TEMP/padding-retirement-296/source/pandad-protocol-source"
+
+        printf ''PANDAD_PADDING_SOURCE_BINARY=%s\n'' "$PANDAD_PADDING_SOURCE_BINARY" >> "$GITHUB_ENV"
+
+        export PANDAD_PADDING_SOURCE_MANIFEST="$RUNNER_TEMP/padding-retirement-296/source/manifest.json"
+
+        printf ''PANDAD_PADDING_SOURCE_MANIFEST=%s\n'' "$PANDAD_PADDING_SOURCE_MANIFEST" >> "$GITHUB_ENV"
 
         test "$(git rev-parse HEAD)" = 3a57116f445af1d297150e6bbef7b1ac9ffa6a26
 
