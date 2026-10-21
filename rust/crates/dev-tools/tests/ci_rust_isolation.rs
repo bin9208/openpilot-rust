@@ -1732,7 +1732,7 @@ fn panda_requires_native_transports_and_source_composition() {
     let data = workflow();
     let steps = data["jobs"]["panda-runtime"]["steps"].as_array().unwrap();
     let build = steps.iter().position(|step| step["run"].as_str().is_some_and(|run|
-        run.contains("--features openpilot-dev-tools/pandad-safety-padding-native,openpilot-dev-tools/panda-ci-native --bins --examples --locked --message-format=json"))).expect("native padding and orchestration checkers must be included in the all-binary build");
+        run.contains("--features openpilot-dev-tools/pandad-safety-padding-native,openpilot-dev-tools/panda-ci-native,openpilot-dev-tools/pandad-device-native,openpilot-dev-tools/pandad-protocol-native,openpilot-dev-tools/pandad-can-io-native --bins --examples --locked --message-format=json"))).expect("all native Panda controllers must be included before orchestration");
     let caller = steps
         .iter()
         .position(|step| {
@@ -1817,6 +1817,25 @@ fn calibration_requires_sealed_retirement_and_panda_requires_original_pairs() {
             "--features pandad-device-native --lib --bin check-pandad-device",
         ],
         &["--features pandad-device-native"],
+        false,
+    );
+    job_check(
+        "panda-runtime",
+        &[
+            "for file in check_pandad_protocol.py check_pandad_can_io.py pandad_protocol_cases.py",
+            "test ! -e \"rust/tools/$file\"",
+            "test ! -L \"rust/tools/$file\"",
+            "PANDAD_PROTOCOL_SOURCE_BUILD_KIND=fresh",
+            "PANDAD_CAN_IO_SOURCE_BUILD_KIND=fresh",
+            "PANDAD_PROTOCOL_RETIREMENT_MODE=postdelete",
+            "PANDAD_CAN_IO_RETIREMENT_MODE=postdelete",
+            "stage-pandad-protocol-reference --root",
+            "stage-pandad-can-io-reference --root",
+            "--test pandad_protocol_reference --test pandad_protocol_fixture",
+            "--test pandad_can_io_reference --test pandad_can_io_fixture",
+            "--bin stage-pandad-protocol-reference --bin stage-pandad-can-io-reference",
+        ],
+        &["--features panda-ci-native,pandad-protocol-native,pandad-can-io-native"],
         false,
     );
 }
