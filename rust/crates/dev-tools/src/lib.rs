@@ -141,12 +141,12 @@ pub mod selfdrive_state_check;
 pub mod services_catalog_check;
 #[cfg(feature = "soundd-daemon-native")]
 pub mod soundd_daemon_check;
-#[cfg(feature = "soundd-daemon-native")]
-pub mod soundd_source_stage;
 #[cfg(feature = "soundd-policy-native")]
 pub mod soundd_policy_check;
 #[cfg(feature = "soundd-policy-native")]
 pub mod soundd_policy_reference;
+#[cfg(feature = "soundd-daemon-native")]
+pub mod soundd_source_stage;
 pub mod stats_clock_check;
 #[cfg(feature = "stats-daemon-native")]
 pub mod stats_daemon_check;

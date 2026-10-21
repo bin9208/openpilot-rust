@@ -175,7 +175,11 @@ required/full checks. Diagnostic candidate workflows execute an explicitly pinne
 checkout; their unrelated Fast checks use the diagnostic tree and are not proof
 for that checkout. Serialize diagnostic branch pushes.
 
-Latest #296 checkpoint comment6327837803 links the above evidence. Keep #296 open
+Published checkpoint f913de3aa3c0f2c261f4ae4b87e41f3eb317fb82 starts full Rust
+39691148023, Integration39691148113 and Fast39691148018; results remain pending.
+Workspace stops at a module-order format error; scoped formatting and the
+independently found empty metadata binary binding are repaired for #475, awaiting
+hosted acceptance. Latest #296 checkpoint comment6328549833 links the evidence. Keep #296 open
 until full criteria are met; no source inventory, partial gate, queued CI or PR
 creation is completion. Detailed functional ownership and next families are in
 [the grouped ledger](rust-repository-python-retirement-296-families.md).

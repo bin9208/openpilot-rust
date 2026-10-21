@@ -5550,3 +5550,41 @@ Native soundd source stager7219cf5e7 retains fixed21manifest pins/20source outpu
 Soundd39688832018 **passes** source7219cf5e794a77a01b66eaf4ce801c056a80b7d7/workflow9f70b7f048829c6ed06aabef8a8126a4b0b85bfe. Artifact12388550588:20121548B/462CRCs/73645184B expanded/SHAf34db8b407a66daa9140cd8efde7ac37300f7de09c711d1e971fd571de751586. Parent independently matches executed original heredoc SHA56630b535e2da704cf44ce523f9fbcfe662f9e32d2c42821a6938f00a500bf77 to original workflow57594f054, verifies20exact byte/digest comparisons totaling173533B against21fixed pins, both native stage receipts, seven case reports per root and22nativeexecs/Pythonexec0 per trace lane (checker8/assets7/daemon7). Five staging controls, actual existing-output refusal, strictClippy and retained finalization/runtime gates pass. One embedded staging edge accepted38→37pending; baseline source counts255/3/3322 unchanged. Python executes only the isolated original baseline copy here; remaining audio binding/policy Python is not retired.
 
 fbb6a007f adds the frozen114-data-file/two-manifest byte-admission regression before expensive model exports and prints retained failure tails on error. Syntax/rustfmt/diff checks pass; its new functional regression awaits hosted final validation. Successful unrelated native preparation code is unchanged.
+
+
+### Published current-source checkpoint and newly retained failures (2026-10-22)
+
+Published `f913de3aa3c0f2c261f4ae4b87e41f3eb317fb82` to the isolated #296
+issue branch; PR343 remains draft→dev and #296 comment6328549833 records the
+255accepted/3partial/3322pending baseline and37pending embedded sites.
+Full Rust run[39691148023](https://github.com/bin9208/openpilot-rust/actions/runs/39691148023)
+is still running. Its workspace job119537355388 fails at `cargo fmt` because
+`soundd_source_stage` precedes the policy modules. Parent applies scoped rustfmt.
+Independent integration review also finds the later metadata comparison bound to
+an unset `CI_RECEIPT_METADATA` environment variable: that workspace job builds its
+own binary without running the exporting action. Bind it to the actual built
+workspace `rust/target/debug/ci-receipt-metadata`. #475 tracks exact-source hosted
+acceptance; neither repair is claimed validated yet. Other running jobs remain
+independent evidence and must be inspected before a new full-source rerun.
+
+Model retry[39689390187](https://github.com/bin9208/openpilot-rust/actions/runs/39689390187)
+at source1ccf8437c/workflowba2ca41f4 passes compile, existing unit/Clippy controls,
+separate current-host catalogs and genuine45asset/3license USB staging. It now
+passes the restored original CRLF data admission, then fails the first collector
+ordinary1344raw1 driver frame comparison. Warmup orientation matches exactly;
+frame0 expected(-0.08113645017147064,0.23940423130989075,-0.047499075531959534),
+observed(-0.08065624535083771,0.23905321955680847,-0.04759492725133896).
+Parent independently decodes the retained single-segment Cereal data with a
+stored-data-only pointer reader. Actual warmup/frame0 bytes match frozen input
+seals: both2428928B, SHA256c93662152aaf108e3a0cadfebadfba4fd1d0e951fed4ac0168ff2cc66b0141aa
+and06edc0ba7b1ed1d7a83e616c943a615a9ae2b88a578dd8a48b16e761643797c4.
+Calibration is still zero beforeframe1 and fixed transform matches source math;
+these observations do not establish a compiler, provider or warp root cause.
+#476 requires bounded original/native warped/raw-output diagnostics and the
+unchanged full gate. Keep the existing1e-6 packet tolerance and all model/source
+pins; six-source retirement remains unaccepted and inventory counts unchanged.
+
+Parent validates all916CRCs in artifact12388742179:154355439B compressed,
+198258091B expanded, SHA256d66ba15781b6833a36facb08e5899a54900171deb1ee6bf46d52ab04c0ad5361.
+Raw failed packets, receipts and compiler diagnostics remain in private scratch;
+no captured native value replaces an independent original expectation.
