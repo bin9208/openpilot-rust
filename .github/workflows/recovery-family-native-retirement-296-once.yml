@@ -21,12 +21,12 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 81d4186556978fc9e8fd6a33caee4b0a6db739c4
+        ref: 57594f054a4454d09247f88d0630c39145853dd7
         persist-credentials: false
     - name: Bind exact source and reserve disk before prerequisites
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = 81d4186556978fc9e8fd6a33caee4b0a6db739c4
+        test "$(git rev-parse HEAD)" = 57594f054a4454d09247f88d0630c39145853dd7
 
         proof="$RUNNER_TEMP/recovery-frozen"
 
