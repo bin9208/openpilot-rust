@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 50
     env:
-      EXPECTED_SOURCE: eb73be217514841536ea714f5ba304acc7a9fc02
+      EXPECTED_SOURCE: 2c22e46ef196eb5a62d339c52a60dd68abb67605
       RUSTUP_TOOLCHAIN: 1.94.0
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
@@ -29,7 +29,7 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: eb73be217514841536ea714f5ba304acc7a9fc02
+        ref: 2c22e46ef196eb5a62d339c52a60dd68abb67605
         persist-credentials: false
     - name: Reserve hosted capacity and install bounded native prerequisites
       shell: bash
@@ -137,8 +137,9 @@ jobs:
         \  raw = path.read_bytes()\n  frame_shape = tuple(frame_tensor.shape)\n  if _to_np_dtype(frame_tensor.dtype) != np.dtype('uint8')\
         \ or frame_tensor.uop.base.buffer.nbytes != len(raw) or int(np.prod(frame_shape)) != len(raw):\n    raise RuntimeError(f'{label}:\
         \ exact frame buffer contract mismatch shape={frame_shape} dtype={frame_tensor.dtype} bytes={len(raw)} buffer={frame_tensor.uop.base.buffer.nbytes}')\n\
-        \  frame = np.frombuffer(raw, dtype=np.uint8).reshape(frame_shape)\n  inputs = {'frame': frame, 'transform': transform,\
-        \ 'calib': calib}\n  input_names = {}\n  for name, values in inputs.items():\n    write_tensor(original.bindings.inputs[name],\
+        \  frame = np.frombuffer(raw, dtype=np.uint8).copy().reshape(frame_shape)\n  if not frame.flags.writeable or frame.tobytes()!=raw:\n\
+        \    raise RuntimeError('mutable original copy changes frozen input bytes')\n  inputs = {'frame': frame, 'transform':\
+        \ transform, 'calib': calib}\n  input_names = {}\n  for name, values in inputs.items():\n    write_tensor(original.bindings.inputs[name],\
         \ values)\n    filename = f'{label}-{name}.bin'\n    (out/filename).write_bytes(values.tobytes())\n    input_names[name]\
         \ = filename\n  execute(original.stages[0])\n  execute(original.stages[1])\n  orig_values = {}\n  for name, tensor\
         \ in original.bindings.outputs.items():\n    data = tensor.numpy().tobytes()\n    filename = f'{label}-original-{name}.bin'\n\
@@ -169,8 +170,8 @@ jobs:
         \ > \"$proof/source-closure.after.sha256\"\ndiff -u \"$proof/source-closure.before.sha256\" \"$proof/source-closure.after.sha256\"\
         \ > \"$proof/source-closure.diff\" || true\ncmp \"$proof/model-roster.sha256\" \"$proof/model-roster.after.sha256\"\
         \ncmp \"$proof/catalog.before.sha256\" \"$proof/catalog.after.sha256\"\ncmp \"$proof/source-closure.before.sha256\"\
-        \ \"$proof/source-closure.after.sha256\"\ncmp \"$proof/providers.before.txt\" \"$proof/providers.after.txt\"\ntest\
-        \ \"$rc\" -eq 0\n"
+        \ \"$proof/source-closure.after.sha256\"\ncmp \"$proof/providers.before.txt\" \"$proof/providers.after.txt\"\nif [\
+        \ \"$rc\" -ne 0 ]; then tail -n 100 \"$proof/diagnostic.log\"; fi\ntest \"$rc\" -eq 0\n"
     - name: Preserve bounded diagnostic and all input/output evidence
       uses: actions/upload-artifact@v6
       if: always()
