@@ -251,7 +251,10 @@ mod direct_packet_tests {
             NEXT_ENDPOINT.fetch_add(1, Ordering::Relaxed)
         );
         VideoPublisher {
-            transport: Publisher::new(&endpoint).unwrap(),
+            // The endpoint is unique per test; the isolated Publisher::new API
+            // requires a process-wide OPENPILOT_PREFIX, unsafe to set while
+            // Rust unit tests run concurrently.
+            transport: Publisher::for_runtime(&endpoint, 1024 * 1024).unwrap(),
             service: "roadEncodeData",
             dimensions: (1920, 1080),
             kind: encode_index::Type::FullHEVC,
