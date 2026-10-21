@@ -20,3 +20,8 @@ processor 열은 마지막으로 관찰된 메인 스레드의 코어이며, 프
 않습니다. 호스트 테스트와 일반 aarch64 빌드 성공은 AGNOS 호환성, CPU 절감, 온도 개선,
 차량 안전 검증을 뜻하지 않습니다. 일반 CI 빌드를 차량에 설치하지 마세요. 대상 기기
 검증은 아직 남아 있습니다.
+
+teleoprtc 릴리스 스크립트의 버전 계산도 Rust 도구를 사용합니다. 저장소 루트에서
+`cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features teleop-version-native --bin teleop-version`으로 준비합니다.
+다른 위치에 설치했다면 `TELEOP_VERSION_BIN`으로 실행 파일을 지정합니다.
+`project.version`은 문자열이어야 하며, 기존 브랜치 검사·버전 정렬·커밋·태그 동작은 유지됩니다.

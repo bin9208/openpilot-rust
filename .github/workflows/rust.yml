@@ -686,6 +686,31 @@ jobs:
           cargo build -p openpilot-bootlog --example bootlog_snapshot -p openpilot-process-supervision --bin openpilot-process-child --locked
           export WIFI_PROCESS_CHILD_BINARY="$GITHUB_WORKSPACE/rust/target/debug/openpilot-process-child"
           cargo test --workspace --locked --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3
+      - name: Verify native release version computations and disposable Git effects
+        env:
+          TELEOP_VERSION_ORIGINAL: ${{ github.workspace }}/rust/crates/dev-tools/tests/fixtures/teleop-version-original
+          TELEOP_VERSION_ORIGINAL_MANIFEST_SHA256: e61842b4db2ddfa2760ec878b33ea11f0556845465963f2b17902e961225456a
+          TELEOP_VERSION_BIN: ${{ github.workspace }}/rust/target/debug/teleop-version
+          TELEOP_VERSION_SCRIPT: ${{ github.workspace }}/teleoprtc_repo/scripts/bump_tag.sh
+          TELEOP_VERSION_EVIDENCE: ${{ runner.temp }}/teleop-version/comparisons
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/teleop-version"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --locked -p openpilot-dev-tools --features teleop-version-native --bin teleop-version
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --locked -p openpilot-dev-tools --features teleop-version-native --test teleop_version
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --locked -p openpilot-dev-tools --features teleop-version-native --test teleop_version -- --ignored --nocapture
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --locked -p openpilot-dev-tools --features teleop-version-native --lib --bin teleop-version --test teleop_version -- -D warnings
+      - name: Preserve native release version comparisons
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-teleop-version-evidence
+          path: ${{ runner.temp }}/teleop-version/
+          if-no-files-found: warn
       - name: Check process-stat parser allocation regression
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 64

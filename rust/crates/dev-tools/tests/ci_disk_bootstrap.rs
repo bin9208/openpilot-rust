@@ -339,12 +339,17 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut jetlink_owner = vec![];
     let mut recording_partial_write = vec![];
     let mut launcher_handoff = vec![];
+    let mut teleop_version = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
             let step = lines[..i]
                 .iter()
                 .rev()
                 .find(|line| line.starts_with("      - name:"));
+            if step == Some(&"      - name: Verify native release version computations and disposable Git effects") {
+                teleop_version.push(tail.to_owned());
+                continue;
+            }
             if step == Some(&"      - name: Require native Panda orchestration, original admissions and absent-source comparisons") {
                 panda_orchestration_retirement.push(tail.to_owned());
                 continue;
@@ -864,6 +869,11 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             }
         }
     }
+    assert_eq!(
+        teleop_version,
+        [1024, 512, 512, 512]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
     assert_eq!(
         panda_orchestration_retirement,
         [
