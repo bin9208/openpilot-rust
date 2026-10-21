@@ -4,7 +4,7 @@ name: 296 updater native-only predelete observation and trace inventory
     branches:
     - codex/feat-296-native-tools-candidate
     paths:
-    - .github/workflows/updated-check-296-once.yml
+    - .github/workflows/updated-native-only-predelete-296-once.yml
 permissions:
   contents: read
 jobs:
@@ -17,11 +17,11 @@ jobs:
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
-      EXPECTED_SOURCE: 4493b9a50ff42965d30b0c46d131dbc5297f0f56
+      EXPECTED_SOURCE: 5bcfae4482d9c4dcb1da46e1086bea609e0c9688
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 4493b9a50ff42965d30b0c46d131dbc5297f0f56
+        ref: 5bcfae4482d9c4dcb1da46e1086bea609e0c9688
         persist-credentials: false
     - uses: actions/setup-python@v6
       with:
