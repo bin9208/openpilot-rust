@@ -497,7 +497,10 @@ pub fn run_terminal_frozen(
         .as_object_mut()
         .ok_or("native terminal result not an object")?
         .remove("fresh_pid");
-    if source_result != native_result || fs::read(directory.join("shell-argv.log"))?.is_empty() {
+    let original_argv = super::original_fixture::OriginalFixture::open()?
+        .opaque_payload("terminal/source/shell-argv.log.json")?;
+    require_shell_argv(&original_argv, &fs::read(directory.join("shell-argv.log"))?)?;
+    if source_result != native_result {
         return Err("frozen original/native terminal scenario changed".into());
     }
     source_pin.verify()?;
@@ -511,6 +514,13 @@ pub fn run_terminal_frozen(
     Ok(())
 }
 
+fn require_shell_argv(original: &[u8], native: &[u8]) -> Result<()> {
+    if original.is_empty() || original != native {
+        return Err("frozen terminal shell bootstrap argv changed".into());
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::marker_pid;
@@ -520,5 +530,17 @@ mod tests {
         let output = b"printf \"ROUND=%s,0\\n\" \"$$\"\r\nROUND=413,0\r\n";
         assert_eq!(marker_pid(output, b"ROUND=", b",0\r\n").unwrap(), 413);
         assert!(marker_pid(b"ROUND=unresolved\r\n", b"ROUND=", b"\r\n").is_err());
+    }
+}
+
+#[cfg(test)]
+mod frozen_argv_tests {
+    use super::*;
+    #[test]
+    fn nonempty_changed_bootstrap_argv_does_not_match_original() {
+        assert!(require_shell_argv(b"-l\n-i\n", b"-i\n").is_err());
+        assert!(require_shell_argv(b"-l\n-i\n", b"-i\n-l\n").is_err());
+        assert!(require_shell_argv(b"", b"").is_err());
+        assert!(require_shell_argv(b"-l\n-i\n", b"-l\n-i\n").is_ok());
     }
 }

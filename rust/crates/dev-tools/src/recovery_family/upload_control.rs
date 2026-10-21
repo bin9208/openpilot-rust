@@ -411,6 +411,7 @@ pub fn run_upload_frozen(
 ) -> Result<()> {
     fs::create_dir(config.output)?;
     let source = Pin::open(config.source_server, 4 * 1024 * 1024)?;
+    require_frozen_upload_source(&source)?;
     let candidate = Pin::open(config.candidate, 256 * 1024 * 1024)?;
     let actions = Pin::open(config.actions_binary, 256 * 1024 * 1024)?;
     let child = Pin::open(config.process_child, 256 * 1024 * 1024)?;
@@ -477,4 +478,26 @@ pub fn run_upload_frozen(
             "actions_sha256":actions.digest(),"child_sha256":child.digest()}))?,
     )?;
     Ok(())
+}
+
+fn require_frozen_upload_source(source: &Pin) -> Result<()> {
+    let fixture = super::original_fixture::OriginalFixture::open()?;
+    if source.digest()
+        != fixture.original_input_sha256("openpilot/selfdrive/carrot/recovery/server.py")?
+    {
+        return Err("frozen upload original server source pin changed".into());
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod frozen_source_tests {
+    use super::*;
+    #[test]
+    fn changed_source_cannot_admit_old_upload_observations() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("server.py");
+        fs::write(&path, b"changed server source").unwrap();
+        assert!(require_frozen_upload_source(&Pin::open(&path, 1024).unwrap()).is_err());
+    }
 }

@@ -355,6 +355,188 @@ pub fn run_http_pair(config: &HttpPairConfig<'_>) -> Result<()> {
     Ok(())
 }
 
+struct Standalone {
+    binary: std::path::PathBuf,
+    repository: std::path::PathBuf,
+    pins: Vec<Pin>,
+}
+fn require_frozen_http_source(source: &Pin) -> Result<()> {
+    let fixture = super::original_fixture::OriginalFixture::open()?;
+    if source.digest()
+        != fixture.original_input_sha256("openpilot/selfdrive/carrot/recovery/server.py")?
+    {
+        return Err("frozen HTTP original server source pin changed".into());
+    }
+    Ok(())
+}
+fn bounded_command(argv: Vec<OsString>, repository: &Path) -> Result<crate::qa_process::Captured> {
+    use crate::qa_process::{CommandSpec, NativeRunner, Runner};
+    let mut command = CommandSpec::new_os(argv, Duration::from_secs(5));
+    command.cwd = Some(repository.to_owned());
+    command.os_env = Some(
+        [(
+            OsString::from("OPENPILOT_ROOT"),
+            repository.as_os_str().to_owned(),
+        )]
+        .into_iter()
+        .collect(),
+    );
+    command.stdout_limit = 1024 * 1024;
+    command.stderr_limit = 1024 * 1024;
+    NativeRunner.run(&command)
+}
+fn require_runtime_dependencies(needed: &[String]) -> Result<()> {
+    if needed.iter().any(|name| {
+        ![
+            "libstdc++.so.6",
+            "libgcc_s.so.1",
+            "libm.so.6",
+            "libc.so.6",
+            "ld-linux-x86-64.so.2",
+        ]
+        .contains(&name.as_str())
+    }) {
+        return Err("standalone recovery requires an unexpected runtime library".into());
+    }
+    Ok(())
+}
+fn standalone_package(config: &HttpFrozenConfig<'_>) -> Result<Standalone> {
+    let package = config.output.join("minimal-host-package");
+    let binary = package.join("bin/openpilot-carrot-recovery");
+    let repository = package.join("repository");
+    let helper = config.candidate.with_file_name("openpilot-process-child");
+    let assets = config.repository.join("openpilot/selfdrive/carrot/web");
+    let mut members = vec![
+        (config.candidate.to_owned(), binary.clone()),
+        (helper, package.join("bin/openpilot-process-child")),
+    ];
+    fn visit(
+        source: &Path,
+        target: &Path,
+        members: &mut Vec<(std::path::PathBuf, std::path::PathBuf)>,
+    ) -> Result<()> {
+        for entry in fs::read_dir(source)? {
+            let entry = entry?;
+            if entry.file_name() == "__pycache__"
+                || entry.path().extension().is_some_and(|e| e == "py")
+            {
+                continue;
+            }
+            let kind = entry.file_type()?;
+            if kind.is_dir() {
+                visit(&entry.path(), &target.join(entry.file_name()), members)?;
+            } else if kind.is_file() {
+                members.push((entry.path(), target.join(entry.file_name())));
+            } else {
+                return Err("standalone web asset is not a regular file or directory".into());
+            }
+            if members.len() > 20_000 {
+                return Err("standalone asset roster exceeds bound".into());
+            }
+        }
+        Ok(())
+    }
+    visit(
+        &assets,
+        &repository.join("openpilot/selfdrive/carrot/web"),
+        &mut members,
+    )?;
+    let mut pins = Vec::new();
+    let mut growth = 25 * 1024 * 1024_u64;
+    for (source, _) in &members {
+        growth = growth
+            .checked_add(fs::symlink_metadata(source)?.len())
+            .ok_or("standalone size overflow")?;
+        if growth > 2 * 1024 * 1024 * 1024 {
+            return Err("standalone package exceeds bound".into());
+        }
+        pins.push(Pin::open(source, 256 * 1024 * 1024)?);
+    }
+    crate::disk_space::inspect(config.output, growth)?.require()?;
+    fs::create_dir(&package)?;
+    let mut copied = Vec::new();
+    for ((source, target), pin) in members.iter().zip(&pins) {
+        fs::create_dir_all(target.parent().ok_or("standalone target parent missing")?)?;
+        fs::copy(source, target)?;
+        let sealed = Pin::open(target, 256 * 1024 * 1024)?;
+        if sealed.digest() != pin.digest() {
+            return Err("standalone copy changed input".into());
+        }
+        pin.verify()?;
+        copied.push(sealed);
+    }
+    pins.extend(copied);
+    if package.join("bin/openpilot-carrot-server").try_exists()? {
+        return Err("standalone package includes main web server".into());
+    }
+    let dynamic = bounded_command(
+        vec![
+            "/usr/bin/readelf".into(),
+            "-d".into(),
+            binary.as_os_str().to_owned(),
+        ],
+        &repository,
+    )?;
+    if dynamic.code != 0 {
+        return Err("standalone ELF inspection failed".into());
+    }
+    let text = std::str::from_utf8(&dynamic.stdout)?;
+    let needed = regex::Regex::new(r"\(NEEDED\).*\[(.*?)\]")?
+        .captures_iter(text)
+        .map(|c| c[1].to_owned())
+        .collect::<Vec<_>>();
+    require_runtime_dependencies(&needed)?;
+    fs::write(
+        config.output.join("standalone.json"),
+        serde_json::to_vec_pretty(
+            &json!({"needed":needed,"estimated_growth":growth,"main_web_absent":true,"python_runtime_files_absent":true,"executed_binary":binary,"executed_repository":repository}),
+        )?,
+    )?;
+    Ok(Standalone {
+        binary,
+        repository,
+        pins,
+    })
+}
+fn standalone_cli(
+    config: &HttpFrozenConfig<'_>,
+    package: &Standalone,
+    active_port: u16,
+) -> Result<()> {
+    let mut rows = Vec::new();
+    for (name, args, success) in [
+        ("help", vec!["--help".to_owned()], true),
+        (
+            "invalid_port",
+            vec!["--port".to_owned(), "invalid".to_owned()],
+            false,
+        ),
+        (
+            "duplicate_listener",
+            vec![
+                "--host".to_owned(),
+                "127.0.0.1".to_owned(),
+                "--port".to_owned(),
+                active_port.to_string(),
+            ],
+            false,
+        ),
+    ] {
+        let mut argv = vec![package.binary.as_os_str().to_owned()];
+        argv.extend(args.into_iter().map(OsString::from));
+        let child = bounded_command(argv.clone(), &package.repository)?;
+        rows.push(json!({"case":name,"argv":argv,"exit":child.code,"stdout_b64":base64::Engine::encode(&base64::engine::general_purpose::STANDARD,&child.stdout),"stderr_b64":base64::Engine::encode(&base64::engine::general_purpose::STANDARD,&child.stderr)}));
+        fs::write(
+            config.output.join("standalone-cli.json"),
+            serde_json::to_vec_pretty(&rows)?,
+        )?;
+        if (child.code == 0) != success {
+            return Err(format!("standalone CLI contract changed: {name}").into());
+        }
+    }
+    Ok(())
+}
+
 /// Replay the same 25 owned requests against one native server, checking each
 /// complete stable response against independently captured original-only rows.
 pub fn run_http_frozen(
@@ -363,6 +545,8 @@ pub fn run_http_frozen(
 ) -> Result<()> {
     fs::create_dir(config.output)?;
     let source = Pin::open(config.source_server, 4 * 1024 * 1024)?;
+    require_frozen_http_source(&source)?;
+    let package = standalone_package(config)?;
     let candidate = Pin::open(config.candidate, 256 * 1024 * 1024)?;
     let token_asset = Pin::open(
         &config
@@ -381,7 +565,7 @@ pub fn run_http_frozen(
     fs::create_dir(&directory)?;
     let port = port()?;
     let argv = [
-        OsString::from(config.candidate),
+        OsString::from(&package.binary),
         OsString::from("--host"),
         OsString::from("127.0.0.1"),
         OsString::from("--port"),
@@ -389,7 +573,7 @@ pub fn run_http_frozen(
     ];
     let mut server = OwnedServer::spawn(
         &argv,
-        config.repository,
+        &package.repository,
         &directory.join("process.log"),
         &[],
         &[],
@@ -399,6 +583,7 @@ pub fn run_http_frozen(
     let mut rows = Vec::with_capacity(source_rows.len());
     let result = (|| -> Result<()> {
         peer.wait_ready("/api/support_terminal/status", Duration::from_secs(5))?;
+        standalone_cli(config, &package, port)?;
         const ROUTES: &[(&str, &str, u16)] = &[
             ("GET", "/", 200),
             ("HEAD", "/", 200),
@@ -573,6 +758,9 @@ pub fn run_http_frozen(
     source.verify()?;
     candidate.verify()?;
     token_asset.verify()?;
+    for pin in &package.pins {
+        pin.verify()?;
+    }
     fs::write(
         config.output.join("result.json"),
         serde_json::to_vec_pretty(&json!({"pass":true,"comparisons":rows.len(),
@@ -580,4 +768,18 @@ pub fn run_http_frozen(
             "candidate_sha256":candidate.digest(),"token_asset_sha256":token_asset.digest()}))?,
     )?;
     Ok(())
+}
+
+#[cfg(test)]
+mod frozen_admission_tests {
+    use super::*;
+    #[test]
+    fn unexpected_runtime_and_changed_original_source_are_rejected() {
+        assert!(require_runtime_dependencies(&["libpython3.12.so".into()]).is_err());
+        assert!(require_runtime_dependencies(&["libc.so.6".into()]).is_ok());
+        let temp = tempfile::tempdir().unwrap();
+        let source = temp.path().join("server.py");
+        fs::write(&source, b"changed source").unwrap();
+        assert!(require_frozen_http_source(&Pin::open(&source, 1024).unwrap()).is_err());
+    }
 }
