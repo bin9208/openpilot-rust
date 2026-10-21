@@ -11,7 +11,10 @@ use std::{
     collections::BTreeMap,
     ffi::OsString,
     fs,
-    os::unix::{ffi::OsStringExt, fs::symlink},
+    os::unix::{
+        ffi::{OsStrExt, OsStringExt},
+        fs::symlink,
+    },
     path::Path,
 };
 
@@ -110,6 +113,25 @@ fn assert_stdout_receipts(
             .collect::<BTreeMap<_, _>>()
     );
 }
+fn assert_only_reservations(stdout: &[u8], expected_growth_mib: &[u64]) {
+    let lines = std::str::from_utf8(stdout)
+        .unwrap()
+        .lines()
+        .collect::<Vec<_>>();
+    assert_eq!(lines.len(), expected_growth_mib.len());
+    for (line, expected) in lines.iter().zip(expected_growth_mib) {
+        let receipt: Value = serde_json::from_str(line).unwrap();
+        assert_eq!(receipt.as_object().unwrap().len(), 3);
+        assert_eq!(receipt["growth_bytes"], expected * 1024 * 1024);
+        assert_eq!(
+            receipt["required_bytes"],
+            25 * 1024_u64.pow(3) + expected * 1024 * 1024
+        );
+        assert!(
+            receipt["free_bytes"].as_u64().unwrap() >= receipt["required_bytes"].as_u64().unwrap()
+        );
+    }
+}
 fn put(path: &Path, content: impl AsRef<[u8]>) {
     fs::create_dir_all(path.parent().unwrap()).unwrap();
     fs::write(path, content).unwrap();
@@ -182,12 +204,23 @@ impl Fixture {
         let archive = tar_bytes(member);
         let digest = format!("{:x}", Sha256::digest(&archive));
         let digest = if correct_hash { digest } else { "0".repeat(64) };
-        put(&root.join("uv.lock"), format!("[[package]]\nname = 'spidev'\nversion = '3.6'\n[package.sdist]\nurl = 'https://example.invalid/spidev.tar'\nhash = 'sha256:{digest}'\n"));
+        put(
+            &root.join("uv.lock"),
+            format!(
+                "[[package]]\nname = 'spidev'\nversion = '3.6'\n[package.sdist]\nurl = 'https://example.invalid/spidev.tar'\nhash = 'sha256:{digest}'\n"
+            ),
+        );
         let zmq = temp.path().join("zmq");
         put(&zmq.join("source/include/zmq.h"), b"header");
         put(&zmq.join("lib/libzmq.a"), b"archive");
         let messages = temp.path().join("messages.jsonl");
-        put(&messages, format!("{{\"reason\":\"build-script-executed\",\"package_id\":\"zmq-sys 0.10\",\"out_dir\":\"{}\"}}\n", zmq.display()));
+        put(
+            &messages,
+            format!(
+                "{{\"reason\":\"build-script-executed\",\"package_id\":\"zmq-sys 0.10\",\"out_dir\":\"{}\"}}\n",
+                zmq.display()
+            ),
+        );
         let options = Options {
             root,
             binaries,
@@ -486,7 +519,14 @@ fn zmq_must_have_one_complete_source_output() {
     put(&zmq.join("source/include/zmq.h"), b"header");
     put(&zmq.join("lib/libzmq.a"), b"archive");
     let original = fixture._temp.path().join("zmq");
-    put(messages, format!("{{\"reason\":\"build-script-executed\",\"package_id\":\"zmq-sys 0.10\",\"out_dir\":\"{}\"}}\n{{\"reason\":\"build-script-executed\",\"package_id\":\"zmq-sys 0.10\",\"out_dir\":\"{}\"}}\n", original.display(), zmq.display()));
+    put(
+        messages,
+        format!(
+            "{{\"reason\":\"build-script-executed\",\"package_id\":\"zmq-sys 0.10\",\"out_dir\":\"{}\"}}\n{{\"reason\":\"build-script-executed\",\"package_id\":\"zmq-sys 0.10\",\"out_dir\":\"{}\"}}\n",
+            original.display(),
+            zmq.display()
+        ),
+    );
     assert!(panda_ci_check::zmq_output(messages).is_err());
 }
 #[test]
@@ -499,7 +539,14 @@ fn zmq_uses_only_executed_build_output_not_compiler_artifact_or_stale_cache() {
         put(&root.join("lib/libzmq.a"), b"fixture archive");
     }
     let messages = temp.path().join("build.jsonl");
-    put(&messages, format!("{{\"reason\":\"build-script-executed\",\"package_id\":\"registry+example#zmq-sys@0.12.0\",\"out_dir\":\"{}\"}}\n{{\"reason\":\"compiler-artifact\",\"package_id\":\"registry+example#zmq-sys@0.12.0\",\"out_dir\":\"{}\"}}\n{{\"reason\":\"build-finished\",\"success\":true}}\n", selected.display(), stale.display()));
+    put(
+        &messages,
+        format!(
+            "{{\"reason\":\"build-script-executed\",\"package_id\":\"registry+example#zmq-sys@0.12.0\",\"out_dir\":\"{}\"}}\n{{\"reason\":\"compiler-artifact\",\"package_id\":\"registry+example#zmq-sys@0.12.0\",\"out_dir\":\"{}\"}}\n{{\"reason\":\"build-finished\",\"success\":true}}\n",
+            selected.display(),
+            stale.display()
+        ),
+    );
     assert_eq!(
         panda_ci_check::zmq_output(&messages).unwrap(),
         selected.canonicalize().unwrap()
@@ -729,6 +776,78 @@ fn cli_keeps_three_required_inputs_and_explicit_python_provider() {
         OsString::from("--output"),
         OsString::from("o"),
     ];
-    let error = panda_ci_check::parse(&invalid, root.path()).unwrap_err();
-    assert!(error.is::<openpilot_dev_tools::argparse_scan::ArgumentError>());
+    let Command::Run(parsed) = panda_ci_check::parse(&invalid, root.path()).unwrap() else {
+        panic!("raw argument was treated as help")
+    };
+    assert!(parsed.binaries.as_os_str().as_bytes().ends_with(b"/x\xff"));
+}
+
+#[test]
+fn raw_output_path_reaches_first_child_with_surrogate_receipts_and_no_success() {
+    struct FirstChild;
+    impl Runner for FirstChild {
+        fn run(&mut self, spec: &CommandSpec) -> Result<Captured> {
+            let argv = spec.effective_argv();
+            assert_eq!(argv.len(), 5);
+            assert_eq!(argv[3], "--output");
+            assert!(argv[4]
+                .as_bytes()
+                .ends_with(b"proof-\xff/json11-dependency"));
+            Ok(Captured {
+                code: 101,
+                stdout: Vec::new(),
+                stderr: b"original stage-json11 failed\n".to_vec(),
+            })
+        }
+    }
+    let mut fixture = Fixture::new("spidev-3.6/spidev_module.c", true);
+    fixture.options.output = fixture
+        ._temp
+        .path()
+        .join(OsString::from_vec(b"proof-\xff".to_vec()));
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    let error = panda_ci_check::run_with_output(
+        &fixture.options,
+        &mut FirstChild,
+        &mut stdout,
+        &mut stderr,
+    )
+    .unwrap_err();
+    assert!(error.to_string().contains("stage-json11 exited 101"));
+    assert_eq!(stderr, b"original stage-json11 failed\n");
+    assert_only_reservations(&stdout, &[2048, 256, 256]);
+    let proof = &fixture.options.output;
+    assert!(proof.is_dir());
+    assert!(!proof.join("result.json").exists());
+    let command = fs::read_to_string(proof.join("commands/stage-json11.command.json")).unwrap();
+    assert!(command.contains(r"proof-\udcff/json11-dependency"));
+    assert!(openpilot_log_format::JsonValue::parse(&command).is_ok());
+    let exit: Value =
+        serde_json::from_slice(&fs::read(proof.join("commands/stage-json11.exit.json")).unwrap())
+            .unwrap();
+    assert_eq!(exit["returncode"], 101);
+}
+
+#[test]
+fn raw_output_with_missing_messages_still_publishes_initial_guard_and_directory() {
+    let mut fixture = Fixture::new("spidev-3.6/spidev_module.c", true);
+    fixture.options.output = fixture
+        ._temp
+        .path()
+        .join(OsString::from_vec(b"proof-\xff".to_vec()));
+    fs::remove_file(&fixture.options.build_messages).unwrap();
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    assert!(panda_ci_check::run_with_output(
+        &fixture.options,
+        &mut Fake::new(fixture.archive.clone()),
+        &mut stdout,
+        &mut stderr,
+    )
+    .is_err());
+    assert_only_reservations(&stdout, &[2048]);
+    assert!(fixture.options.output.is_dir());
+    assert!(!fixture.options.output.join("invocation.json").exists());
+    assert!(!fixture.options.output.join("result.json").exists());
 }

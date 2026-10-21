@@ -4,6 +4,7 @@ use crate::{
     argparse_scan::{scan_os, OptionSpec},
     disk_space,
     path_resolve::resolve_non_strict,
+    python_fs,
     qa_process::{CaptureError, Captured, CommandSpec, NativeRunner, Runner},
     seal::Result,
 };
@@ -49,16 +50,6 @@ pub fn parse(args: &[OsString], root: &Path) -> Result<Command> {
     if parsed.help {
         return Ok(Command::Help);
     }
-    // argparse handles help before evaluating an otherwise unused raw path.
-    // Actual invocation receipts cannot encode such paths losslessly yet.
-    for arg in args {
-        if arg.to_str().is_none() {
-            return Err(crate::argparse_scan::ArgumentError(
-                "Panda CI argument cannot be represented losslessly in JSON".into(),
-            )
-            .into());
-        }
-    }
     Ok(Command::Run(Options {
         root: root.canonicalize()?,
         binaries: resolve_non_strict(Path::new(&parsed.values["--binaries"]))?,
@@ -71,11 +62,6 @@ pub fn parse(args: &[OsString], root: &Path) -> Result<Command> {
             .or_else(|| std::env::var_os("PANDA_CI_PYTHON"))
             .unwrap_or_else(|| OsString::from("python3")),
     }))
-}
-fn utf8(value: &OsStr) -> Result<&str> {
-    value
-        .to_str()
-        .ok_or_else(|| "Panda CI argument cannot be represented losslessly in JSON".into())
 }
 fn sha(path: &Path) -> Result<String> {
     let mut file = File::open(path)?;
@@ -95,6 +81,35 @@ fn save(path: &Path, value: &Value) -> Result<()> {
     serde_json::to_writer_pretty(&mut file, value)?;
     file.write_all(b"\n")?;
     Ok(())
+}
+fn save_json_text(path: &Path, value: &str) -> Result<()> {
+    let mut file = File::create(path)?;
+    file.write_all(value.as_bytes())?;
+    file.write_all(b"\n")?;
+    Ok(())
+}
+fn json_os(value: &OsStr) -> Result<String> {
+    python_fs::json_string(value)
+}
+fn json_args(values: impl IntoIterator<Item = OsString>) -> Result<String> {
+    let encoded = values
+        .into_iter()
+        .map(|value| json_os(&value))
+        .collect::<Result<Vec<_>>>()?;
+    Ok(format!("[{}]", encoded.join(", ")))
+}
+fn json_hashes(values: impl IntoIterator<Item = (PathBuf, String)>) -> Result<String> {
+    let encoded = values
+        .into_iter()
+        .map(|(path, digest)| {
+            Ok(format!(
+                "{}: {}",
+                json_os(path.as_os_str())?,
+                serde_json::to_string(&digest)?
+            ))
+        })
+        .collect::<Result<Vec<_>>>()?;
+    Ok(format!("{{{}}}", encoded.join(", ")))
 }
 fn space_receipt(reservation: &disk_space::Space, stdout: &mut dyn Write) -> Result<()> {
     // The original require_space publishes its observation before rejecting a
@@ -141,7 +156,7 @@ fn files(
             Err(error)
                 if error.kind() == io::ErrorKind::NotFound && link.file_type().is_symlink() =>
             {
-                continue
+                continue;
             }
             Err(error) => return Err(error.into()),
         };
@@ -306,20 +321,23 @@ pub fn zmq_output(messages: &Path) -> Result<PathBuf> {
     }
     Ok(output)
 }
-fn invocation(options: &Options, zmq: &Path) -> Result<Value> {
+fn invocation(options: &Options, zmq: &Path) -> Result<String> {
     let source_sha256 = source_paths(&options.root)?
         .into_iter()
-        .map(|p| Ok((utf8(p.as_os_str())?.to_owned(), sha(&options.root.join(p))?)))
+        .map(|p| Ok((p.clone(), sha(&options.root.join(p))?)))
         .collect::<Result<BTreeMap<_, _>>>()?;
     let binary_sha256 = executables(&options.binaries)
         .into_iter()
-        .map(|p| Ok((utf8(p.as_os_str())?.to_owned(), sha(&p)?)))
+        .map(|p| Ok((p.clone(), sha(&p)?)))
         .collect::<Result<BTreeMap<_, _>>>()?;
-    let argv = std::env::args_os()
-        .map(|arg| Ok(utf8(&arg)?.to_owned()))
-        .collect::<Result<Vec<_>>>()?;
-    Ok(json!({"argv": argv, "source_sha256": source_sha256,
-        "binary_sha256": binary_sha256, "zmq_output": zmq, "build_messages_sha256": sha(&options.build_messages)?}))
+    Ok(format!(
+        "{{\"argv\": {}, \"source_sha256\": {}, \"binary_sha256\": {}, \"zmq_output\": {}, \"build_messages_sha256\": {}}}",
+        json_args(std::env::args_os())?,
+        json_hashes(source_sha256)?,
+        json_hashes(binary_sha256)?,
+        json_os(zmq.as_os_str())?,
+        serde_json::to_string(&sha(&options.build_messages)?)?,
+    ))
 }
 struct Controller<'a, R: Runner> {
     options: &'a Options,
@@ -341,12 +359,12 @@ impl<R: Runner> Controller<'_, R> {
     fn command(&mut self, name: &str, argv: Vec<OsString>, growth: u64) -> Result<Vec<u8>> {
         space(&self.options.output, growth, &mut *self.stdout)?;
         fs::create_dir_all(&self.commands)?;
-        let recorded = argv
-            .iter()
-            .map(|arg| Ok(utf8(arg)?.to_owned()))
-            .collect::<Result<Vec<_>>>()?;
-        let command = json!({"argv": recorded, "cwd": utf8(self.options.root.as_os_str())?});
-        save(
+        let command = format!(
+            "{{\"argv\": {}, \"cwd\": {}}}",
+            json_args(argv.iter().cloned())?,
+            json_os(self.options.root.as_os_str())?,
+        );
+        save_json_text(
             &self.commands.join(format!("{name}.command.json")),
             &command,
         )?;
@@ -871,22 +889,13 @@ pub fn run_with_output<R: Runner>(
     stdout: &mut dyn Write,
     stderr: &mut dyn Write,
 ) -> Result<Value> {
-    for value in [
-        options.root.as_os_str(),
-        options.binaries.as_os_str(),
-        options.build_messages.as_os_str(),
-        options.output.as_os_str(),
-        options.python.as_os_str(),
-    ] {
-        let _ = utf8(value)?;
-    }
     space(&options.output, 2048, stdout)?;
     if options.output.exists() {
         return Err(format!("Panda output already exists: {}", options.output.display()).into());
     }
     fs::create_dir_all(&options.output)?;
     let zmq = zmq_output(&options.build_messages)?;
-    save(
+    save_json_text(
         &options.output.join("invocation.json"),
         &invocation(options, &zmq)?,
     )?;
