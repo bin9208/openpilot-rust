@@ -1,0 +1,93 @@
+name: 296 native teleop version and disposable Git effects
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/teleop-native-296-once.yml
+permissions:
+  contents: read
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
+  CARGO_BUILD_JOBS: '2'
+  CARGO_INCREMENTAL: '0'
+  CARGO_PROFILE_DEV_DEBUG: '0'
+  CARGO_PROFILE_TEST_DEBUG: '0'
+  CARGO_TARGET_DIR: ${{ github.workspace }}/rust/target
+jobs:
+  teleop-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: 9856b0769e982c3462ae6444987d8f167ae649bc
+        persist-credentials: false
+    - name: Bind source and reserve hosted native prerequisites
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = 9856b0769e982c3462ae6444987d8f167ae649bc
+
+        proof="$RUNNER_TEMP/teleop-native"
+
+        mkdir "$proof"
+
+        git rev-parse HEAD > "$proof/SOURCE_COMMIT"
+
+        printf ''%s\n'' "$GITHUB_SHA" > "$proof/WORKFLOW_COMMIT"
+
+        sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 6144
+
+        sudo apt-get update
+
+        sudo apt-get install -y g++ pkg-config liblzma-dev
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        '
+    - name: Compare native computations and all original disposable release scenarios
+      env:
+        TELEOP_VERSION_ORIGINAL: ${{ github.workspace }}/rust/crates/dev-tools/tests/fixtures/teleop-version-original
+        TELEOP_VERSION_ORIGINAL_MANIFEST_SHA256: e61842b4db2ddfa2760ec878b33ea11f0556845465963f2b17902e961225456a
+        TELEOP_VERSION_BIN: ${{ github.workspace }}/rust/target/debug/teleop-version
+        TELEOP_VERSION_SCRIPT: ${{ github.workspace }}/teleoprtc_repo/scripts/bump_tag.sh
+        TELEOP_VERSION_EVIDENCE: ${{ runner.temp }}/teleop-native/comparisons
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/teleop-native"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features teleop-version-native --bin teleop-version
+        --locked > "$proof/build.stdout" 2> "$proof/build.stderr" || { tail -n 100 "$proof/build.stderr"; exit 1; }
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features teleop-version-native --test teleop_version
+        --locked -- --nocapture > "$proof/controls.stdout" 2> "$proof/controls.stderr" || { cat "$proof/controls.stdout" "$proof/controls.stderr";
+        exit 1; }
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features teleop-version-native --test teleop_version
+        --locked -- --ignored --nocapture > "$proof/comparisons.stdout" 2> "$proof/comparisons.stderr" || { cat "$proof/comparisons.stdout"
+        "$proof/comparisons.stderr"; exit 1; }
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features teleop-version-native --lib --bin teleop-version
+        --test teleop_version --locked -- -D warnings > "$proof/clippy.stdout" 2> "$proof/clippy.stderr" || { tail -n 100
+        "$proof/clippy.stderr"; exit 1; }
+
+        sha256sum rust/target/debug/teleop-version teleoprtc_repo/scripts/bump_tag.sh > "$proof/native-inputs.sha256"
+
+        test "$(git status --porcelain --untracked-files=no | wc -l)" -eq 0
+
+        '
+    - uses: actions/upload-artifact@v6
+      if: always()
+      with:
+        name: teleop-native-296
+        path: ${{ runner.temp }}/teleop-native/
+        if-no-files-found: error
+        retention-days: 5
