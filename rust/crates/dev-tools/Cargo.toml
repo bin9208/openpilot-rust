@@ -1640,6 +1640,10 @@ required-features = ["pandad-safety-padding-native"]
 name = "pandad_safety_padding_reference"
 required-features = ["pandad-safety-padding-native"]
 
+[[test]]
+name = "pandad_safety_padding_retirement"
+required-features = ["pandad-safety-padding-native"]
+
 [[bin]]
 name = "check-pandad-device"
 path = "src/bin/check_pandad_device.rs"

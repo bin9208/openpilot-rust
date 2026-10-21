@@ -232,10 +232,10 @@ pub mod encoder_v4l_check;
 pub mod paramsd_daemon_reference;
 #[cfg(feature = "paramsd-fixture-native")]
 pub mod paramsd_fixture_generate;
-#[cfg(feature = "paramsd-fixture-native")]
-pub mod paramsd_loop_fixture_generate;
 #[cfg(feature = "paramsd-loop-native")]
 pub mod paramsd_loop_check;
+#[cfg(feature = "paramsd-fixture-native")]
+pub mod paramsd_loop_fixture_generate;
 #[cfg(feature = "paramsd-loop-native")]
 pub mod paramsd_loop_reference;
 #[cfg(feature = "paramsd-startup-gate-native")]
