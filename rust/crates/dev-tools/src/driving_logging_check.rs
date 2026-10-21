@@ -578,6 +578,20 @@ impl Collector {
     }
 
     pub fn finish(&mut self, pids: &[u32], scenario: &DrivingScenario<'_>) -> Result<Value> {
+        self.finish_component(pids, Some(scenario))
+    }
+
+    /// Finish the shared collector using the original driver-only event rules.
+    /// The driver controller compares its exact ordered source calls separately.
+    pub fn finish_driver(&mut self, pids: &[u32]) -> Result<Value> {
+        self.finish_component(pids, None)
+    }
+
+    fn finish_component(
+        &mut self,
+        pids: &[u32],
+        scenario: Option<&DrivingScenario<'_>>,
+    ) -> Result<Value> {
         let deadline = Instant::now() + DRAIN;
         while Instant::now() < deadline {
             self.drain()?;
@@ -627,23 +641,27 @@ impl Collector {
         for (record, raw) in records.iter().zip(&self.raw_records[0]) {
             timing += usize::from(self.timing(record, raw)?);
         }
-        require(timing > 0, "model loop did not publish runtimeTiming")?;
-        require(
-            records.iter().any(|row| {
-                row["levelnum"] == 10 && row["msg"] == "camera pair unavailable or out of sync"
-            }) && records.iter().any(|row| {
-                row["levelnum"] == 40
-                    && row["msg"]
-                        .as_str()
-                        .is_some_and(|text| text.starts_with("camera dropped "))
-            }) && records.iter().any(|row| {
-                row["levelnum"] == 20
-                    && row["msg"]
-                        .as_str()
-                        .is_some_and(|text| text.starts_with("modeld got CarParams:"))
-            }),
-            "model logging source event roster changed",
-        )?;
+        if scenario.is_some() {
+            require(timing > 0, "model loop did not publish runtimeTiming")?;
+            require(
+                records.iter().any(|row| {
+                    row["levelnum"] == 10 && row["msg"] == "camera pair unavailable or out of sync"
+                }) && records.iter().any(|row| {
+                    row["levelnum"] == 40
+                        && row["msg"]
+                            .as_str()
+                            .is_some_and(|text| text.starts_with("camera dropped "))
+                }) && records.iter().any(|row| {
+                    row["levelnum"] == 20
+                        && row["msg"]
+                            .as_str()
+                            .is_some_and(|text| text.starts_with("modeld got CarParams:"))
+                }),
+                "model logging source event roster changed",
+            )?;
+        } else {
+            driver_events(records, timing, errors.len())?;
+        }
         let mut disk_records = 0_usize;
         for entry in fs::read_dir(&self.disk)? {
             let entry = entry?;
@@ -675,17 +693,22 @@ impl Collector {
                     .count(),
             "collector disk/IPC record counts differ",
         )?;
-        let source_calls = self.source_calls(scenario)?;
+        let source_calls = scenario
+            .map(|scenario| self.source_calls(scenario))
+            .transpose()?;
         for (index, topic) in TOPICS.iter().enumerate() {
             fs::write(
                 self.output.join(format!("{topic}.json")),
                 format!("{}\n", serde_json::to_string_pretty(&self.records[index])?),
             )?;
         }
-        let report = json!({"result":"pass", "component":"modeld", "log_messages":records.len(),
-            "error_messages":errors.len(), "runtime_timing_events":timing, "disk_records":disk_records,
-            "pids":pids, "source_commit":self.source_commit, "collector_exit":status.code(),
-            "source_calls":source_calls});
+        let mut report = json!({"result":"pass", "component":if scenario.is_some() { "modeld" } else { "dmonitoringmodeld" }, "log_messages":records.len(),
+        "error_messages":errors.len(), "runtime_timing_events":timing, "disk_records":disk_records,
+        "pids":pids, "source_commit":self.source_commit, "collector_exit":status.code(),
+        });
+        if let Some(source_calls) = source_calls {
+            report["source_calls"] = source_calls;
+        }
         fs::write(
             self.output.join("report.json"),
             format!("{}\n", serde_json::to_string_pretty(&report)?),
@@ -697,6 +720,49 @@ impl Collector {
             .iter()
             .position(|candidate| *candidate == topic)
             .map(|index| self.records[index].as_slice())
+    }
+}
+
+fn driver_events(records: &[Value], timing: usize, errors: usize) -> Result<()> {
+    require(
+        timing == 0 && errors == 0,
+        "driver source unexpectedly emitted timing or errors",
+    )?;
+    for text in [
+        "connecting to driver stream",
+        "models loaded, dmonitoringmodeld starting",
+        "got SIGINT",
+    ] {
+        require(
+            records
+                .iter()
+                .any(|record| record["msg"] == text && record["levelnum"] == 30),
+            "driver logging source event roster changed",
+        )?;
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod driver_finish_tests {
+    use super::driver_events;
+    use serde_json::json;
+
+    #[test]
+    fn driver_requires_its_original_warnings_and_rejects_timing_and_errors() {
+        let records = [
+            "connecting to driver stream",
+            "models loaded, dmonitoringmodeld starting",
+            "got SIGINT",
+        ]
+        .map(|text| json!({"msg":text,"levelnum":30}));
+        driver_events(&records, 0, 0).unwrap();
+        assert!(driver_events(&records, 1, 0).is_err());
+        assert!(driver_events(&records, 0, 1).is_err());
+        assert!(driver_events(&records[..2], 0, 0).is_err());
+        let mut wrong_level = records;
+        wrong_level[0]["levelnum"] = 20.into();
+        assert!(driver_events(&wrong_level, 0, 0).is_err());
     }
 }
 

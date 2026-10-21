@@ -38,6 +38,8 @@ use std::{
     time::{Duration, Instant},
 };
 
+mod model_source;
+
 const LINE_WAIT: Duration = Duration::from_secs(60);
 const SHUTDOWN: Duration = Duration::from_secs(5);
 const LOG_LIMIT: usize = 16 * 1024 * 1024;
@@ -1017,6 +1019,7 @@ fn execute(options: &Options, only_dual: bool, fault: Option<(&str, &Path)>) -> 
         None
     };
     let catalog = CatalogBinding::open(options.catalog.clone())?;
+    model_source::verify(&options.catalog, original.manifest())?;
     fs::create_dir(&options.output)?;
     if let Some((_, audit)) = fault {
         if audit != options.output.join("audit") {
