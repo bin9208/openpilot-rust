@@ -569,7 +569,7 @@ fn raw_json11_prefix_survives_owned_stager_and_dependency_metadata() {
     assert!(errors.is_empty());
     assert_eq!(
         fs::read_to_string(opts.output.join("json11.json")).unwrap(),
-        format!("{{\"json11_sha256\":\"{}\"}}\n", "b".repeat(64))
+        format!("{{\"json11_sha256\": \"{}\"}}\n", "b".repeat(64))
     );
     assert_eq!(
         fs::read_to_string(opts.output.join("commands/stage-json11.stdout")).unwrap(),
