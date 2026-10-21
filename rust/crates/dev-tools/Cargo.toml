@@ -542,6 +542,7 @@ beep-reference-native = ["dep:zmq", "serde_json/float_roundtrip"]
 updated-fixture-native = []
 updated-daemon-native = ["updated-fixture-native", "dep:zmq", "dep:chrono"]
 driving-daemon-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "serde_json/float_roundtrip"]
+driver-daemon-native = ["driving-daemon-native"]
 paramsd-loop-native = ["paramsd-fixture-native"]
 paramsd-fixture-native = ["dep:capnp", "dep:openpilot-cereal", "serde_json/float_roundtrip"]
 paramsd-startup-gate-native = ["rustix/pipe"]
@@ -1910,3 +1911,7 @@ required-features = ["panda-ci-native"]
 name = "build-driving-logging-fault"
 path = "src/bin/build_driving_logging_fault.rs"
 required-features = ["driving-daemon-native"]
+
+[[test]]
+name = "driver_daemon_check"
+required-features = ["driver-daemon-native"]
