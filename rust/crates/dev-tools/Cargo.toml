@@ -563,6 +563,7 @@ pandad-device-native = []
 pandad-protocol-native = []
 pandad-can-io-native = ["pandad-protocol-native"]
 recovery-family-native = []
+teleop-version-native = []
 logmessaged-startup-native = ["stats-daemon-native"]
 bluetooth-files-native = []
 soundd-daemon-native = ["serde_json/float_roundtrip", "dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri"]
@@ -2023,3 +2024,12 @@ required-features = ["recovery-family-native"]
 [[test]]
 name = "recovery_family_frozen"
 required-features = ["recovery-family-native"]
+
+[[bin]]
+name = "teleop-version"
+path = "src/bin/teleop_version.rs"
+required-features = ["teleop-version-native"]
+
+[[test]]
+name = "teleop_version"
+required-features = ["teleop-version-native"]

@@ -390,3 +390,6 @@ pub mod driver_daemon_check;
 
 #[cfg(all(target_os = "linux", feature = "driver-daemon-native"))]
 pub mod driver_daemon_fixture;
+
+#[cfg(feature = "teleop-version-native")]
+pub mod teleop_version;
