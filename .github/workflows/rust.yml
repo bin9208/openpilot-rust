@@ -1358,17 +1358,24 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native --test pandad_safety_padding_check --locked --test pandad_safety_padding_finalize
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native --lib --bin check-pandad-safety-padding --test pandad_safety_padding_check --test pandad_safety_padding_reference --test pandad_safety_padding_absence --test pandad_safety_padding_finalize --locked -- -D warnings
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native --lib --bin check-pandad-safety-padding --test pandad_safety_padding_check --test pandad_safety_padding_reference --test pandad_safety_padding_absence --test pandad_safety_padding_finalize --test pandad_safety_padding_retirement --locked -- -D warnings
           export PANDAD_PADDING_SOURCE_BINARY="$RUNNER_TEMP/panda-native/oracles/safety-src/pandad-protocol-source"
           export PANDAD_PADDING_SOURCE_MANIFEST="$RUNNER_TEMP/panda-native/oracles/safety-src/manifest.json"
           export PANDAD_PADDING_NATIVE_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/panda_safety"
           export PANDAD_PADDING_PYTHON="$(command -v python)"
           export PANDAD_PADDING_TEST_OUTPUT="$RUNNER_TEMP/panda-native/padding-controller"
           mkdir -p "$PANDAD_PADDING_TEST_OUTPUT"
+          export PANDAD_PADDING_TRACE_SOURCE_BINARY="$PANDAD_PADDING_TEST_OUTPUT/trace-source/pandad-protocol-source"
+          export PANDAD_PADDING_TRACE_SOURCE_MANIFEST="$PANDAD_PADDING_TEST_OUTPUT/trace-source/manifest.json"
+          json11_prefix="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["prefix"])' "$RUNNER_TEMP/panda-native/oracles/commands/stage-json11.stdout")"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rust/target/debug/build-pandad-protocol-source --root "$GITHUB_WORKSPACE" --output "$PANDAD_PADDING_TEST_OUTPUT/trace-source" --capnp-prefix /usr --json11-prefix "$json11_prefix" --safety > "$PANDAD_PADDING_TEST_OUTPUT/trace-build.stdout" 2> "$PANDAD_PADDING_TEST_OUTPUT/trace-build.stderr"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native --test pandad_safety_padding_reference --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native --test pandad_safety_padding_absence --locked -- --nocapture
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features pandad-safety-padding-native --test pandad_safety_padding_retirement --locked -- --nocapture
       - name: Compare native Panda device controller with unchanged original
         run: |
           set -euo pipefail

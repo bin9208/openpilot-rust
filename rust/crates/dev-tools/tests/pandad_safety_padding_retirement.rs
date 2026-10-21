@@ -133,8 +133,10 @@ fn fresh_original_and_same_elf_present_absent_are_equivalent_and_interpreter_fre
         .unwrap()
         .keep();
     let source = required("PANDAD_PADDING_SOURCE_BINARY");
+    let plain_source = required("PANDAD_PADDING_TRACE_SOURCE_BINARY");
     let binary = required("PANDAD_PADDING_NATIVE_BINARY");
     let manifest = required("PANDAD_PADDING_SOURCE_MANIFEST");
+    let plain_manifest = required("PANDAD_PADDING_TRACE_SOURCE_MANIFEST");
     let python = required("PANDAD_PADDING_PYTHON");
     let python_sha = sha(&python);
     let checker = fs::canonicalize(env!("CARGO_BIN_EXE_check-pandad-safety-padding")).unwrap();
@@ -163,7 +165,12 @@ fn fresh_original_and_same_elf_present_absent_are_equivalent_and_interpreter_fre
     }
     missing(&absent_root.join(HISTORICAL));
     let manifest_sha = sha(&manifest);
+    let plain_manifest_sha = sha(&plain_manifest);
     let build = json_file(&manifest);
+    let plain_build = json_file(&plain_manifest);
+    assert_eq!(build["sanitize"], true);
+    assert_eq!(plain_build["sanitize"], false);
+    assert_eq!(plain_build["sources"], build["sources"]);
     let captured_bytes =
         include_bytes!("fixtures/pandad-safety-padding/edb42bf0-source-build-manifest.json");
     assert_eq!(
@@ -190,10 +197,23 @@ fn fresh_original_and_same_elf_present_absent_are_equivalent_and_interpreter_fre
         sealed[source.to_str().unwrap()]
     );
     assert_eq!(Path::new(build["binary"].as_str().unwrap()), source);
+    assert_eq!(
+        plain_build["binary_sha256"].as_str().unwrap(),
+        sha(&plain_source)
+    );
+    assert_eq!(
+        Path::new(plain_build["binary"].as_str().unwrap()),
+        plain_source
+    );
+    let plain_sealed: BTreeMap<String, String> = [&checker, &plain_source, &binary]
+        .into_iter()
+        .map(|path| (path.to_str().unwrap().to_owned(), sha(path)))
+        .collect();
+    assert_eq!(plain_sealed.len(), 3);
     fs::write(
         proof.join("executables.before.json"),
         serde_json::to_vec_pretty(
-            &json!({"native_lane":&sealed,"original_python_sha256":&python_sha}),
+            &json!({"sanitized_native_lane":&sealed,"plain_trace_lane":&plain_sealed,"sanitized_manifest_sha256":&manifest_sha,"plain_manifest_sha256":&plain_manifest_sha,"original_python_sha256":&python_sha}),
         )
         .unwrap(),
     )
@@ -223,10 +243,78 @@ fn fresh_original_and_same_elf_present_absent_are_equivalent_and_interpreter_fre
             &proof.join("original.stderr"),
         )
         .unwrap();
+    assert_eq!(original_status.code, 0, "sanitized original source failed");
 
+    // Complete the sanitizer comparisons before any process is placed under ptrace.
+    // LeakSanitizer cannot run under strace, so the later audit uses a separately
+    // built plain copy of these exact 21 original source files.
+    let mut present_sanitized_spec = CommandSpec::new_os(
+        std::iter::once(checker.as_os_str().to_owned())
+            .chain(args(&source, &binary, &present))
+            .collect(),
+        Duration::from_secs(300),
+    );
+    native_env(&mut present_sanitized_spec, &repo);
+    let present_sanitized_status = NativeRunner
+        .run_to_files(
+            &present_sanitized_spec,
+            &proof.join("native-present-sanitized.stdout"),
+            &proof.join("native-present-sanitized.stderr"),
+        )
+        .unwrap();
+    assert_eq!(present_sanitized_status.code, 0, "sanitized present failed");
+    let mut absent_sanitized_spec = CommandSpec::new_os(
+        std::iter::once(checker.as_os_str().to_owned())
+            .chain(args(&source, &binary, &absent))
+            .collect(),
+        Duration::from_secs(300),
+    );
+    native_env(&mut absent_sanitized_spec, &absent_root);
+    let absent_sanitized_status = NativeRunner
+        .run_to_files(
+            &absent_sanitized_spec,
+            &proof.join("native-absent-sanitized.stdout"),
+            &proof.join("native-absent-sanitized.stderr"),
+        )
+        .unwrap();
+    assert_eq!(absent_sanitized_status.code, 0, "sanitized absent failed");
+    let expected = json_file(&original.join("report.json"));
+    for (lane, output) in [("present", &present), ("absent", &absent)] {
+        assert_eq!(
+            json_file(&output.join("report.json")),
+            expected,
+            "{lane} sanitized report"
+        );
+        for label in ["car-params", "source", "native"] {
+            for suffix in ["stdout", "stderr"] {
+                let name = format!("{label}.{suffix}");
+                assert_eq!(
+                    fs::read(original.join(&name)).unwrap(),
+                    fs::read(output.join(&name)).unwrap(),
+                    "{lane} sanitized: {name}"
+                );
+            }
+            let name = format!("{label}.input.jsonl");
+            assert_eq!(
+                rows(&original.join(&name), &original, label),
+                rows(&output.join(&name), output, label),
+                "{lane} sanitized: {name}"
+            );
+        }
+    }
+    fs::write(proof.join("sanitized-gate.json"), serde_json::to_vec_pretty(&json!({"passed":true,"original":original_status.code,"present":present_sanitized_status.code,"absent":absent_sanitized_status.code,"source_sha256":sealed[source.to_str().unwrap()]})).unwrap()).unwrap();
+
+    let plain_present = proof.join("native-present-plain");
+    let plain_absent = proof.join("native-absent-plain");
     let present_trace = proof.join("native-present.exec");
     let mut present_spec = CommandSpec::new_os(
-        traced_args(&present_trace, &checker, &source, &binary, &present),
+        traced_args(
+            &present_trace,
+            &checker,
+            &plain_source,
+            &binary,
+            &plain_present,
+        ),
         Duration::from_secs(300),
     );
     native_env(&mut present_spec, &repo);
@@ -240,7 +328,13 @@ fn fresh_original_and_same_elf_present_absent_are_equivalent_and_interpreter_fre
 
     let absent_trace = proof.join("native-absent.exec");
     let mut absent_spec = CommandSpec::new_os(
-        traced_args(&absent_trace, &checker, &source, &binary, &absent),
+        traced_args(
+            &absent_trace,
+            &checker,
+            &plain_source,
+            &binary,
+            &plain_absent,
+        ),
         Duration::from_secs(300),
     );
     native_env(&mut absent_spec, &absent_root);
@@ -276,7 +370,6 @@ fn fresh_original_and_same_elf_present_absent_are_equivalent_and_interpreter_fre
         fs::read(proof.join("native-present.stderr")).unwrap()
     );
 
-    let expected = json_file(&original.join("report.json"));
     let sealed_original =
         include_bytes!("fixtures/pandad-safety-padding/edb42bf0-original/report.json");
     assert_eq!(
@@ -330,13 +423,36 @@ fn fresh_original_and_same_elf_present_absent_are_equivalent_and_interpreter_fre
             );
         }
     }
+    for (lane, output) in [("present", &plain_present), ("absent", &plain_absent)] {
+        assert_eq!(
+            json_file(&output.join("report.json")),
+            expected,
+            "{lane} plain report"
+        );
+        for label in ["car-params", "source", "native"] {
+            for suffix in ["stdout", "stderr"] {
+                let name = format!("{label}.{suffix}");
+                assert_eq!(
+                    fs::read(original.join(&name)).unwrap(),
+                    fs::read(output.join(&name)).unwrap(),
+                    "{lane} plain: {name}"
+                );
+            }
+            let name = format!("{label}.input.jsonl");
+            assert_eq!(
+                rows(&original.join(&name), &original, label),
+                rows(&output.join(&name), output, label),
+                "{lane} plain: {name}"
+            );
+        }
+    }
     let as_text = |path: &Path| path.to_str().unwrap().to_owned();
     let checker_path = as_text(&checker);
-    let source_path = as_text(&source);
+    let source_path = as_text(&plain_source);
     let binary_path = as_text(&binary);
     for (lane, trace, output) in [
-        ("present", &present_trace, &present),
-        ("absent", &absent_trace, &absent),
+        ("present", &present_trace, &plain_present),
+        ("absent", &absent_trace, &plain_absent),
     ] {
         let expected_exec = vec![
             (
@@ -355,11 +471,11 @@ fn fresh_original_and_same_elf_present_absent_are_equivalent_and_interpreter_fre
             (source_path.clone(), vec![source_path.clone()]),
             (binary_path.clone(), vec![binary_path.clone()]),
         ];
-        let attempts = exec_attempts(trace, &sealed);
+        let attempts = exec_attempts(trace, &plain_sealed);
         fs::write(
             proof.join(format!("native-{lane}-exec-audit.json")),
             serde_json::to_vec_pretty(
-                &json!({"measured_exec_attempts_with_argv":&attempts,"expected_exec_attempts_with_argv":&expected_exec,"sealed_executables_sha256":&sealed}),
+                &json!({"measured_exec_attempts_with_argv":&attempts,"expected_exec_attempts_with_argv":&expected_exec,"sealed_executables_sha256":&plain_sealed}),
             )
             .unwrap(),
         )
@@ -367,6 +483,9 @@ fn fresh_original_and_same_elf_present_absent_are_equivalent_and_interpreter_fre
         assert_eq!(attempts, expected_exec, "{lane} unexpected executable/argv");
     }
     for (path, digest) in &sealed {
+        assert_eq!(sha(Path::new(path)), *digest, "changed executable: {path}");
+    }
+    for (path, digest) in &plain_sealed {
         assert_eq!(sha(Path::new(path)), *digest, "changed executable: {path}");
     }
     assert_eq!(sha(&python), python_sha);
@@ -378,6 +497,7 @@ fn fresh_original_and_same_elf_present_absent_are_equivalent_and_interpreter_fre
         assert_eq!(sha(&repo.join(name)), digest.as_str().unwrap());
     }
     assert_eq!(sha(&manifest), manifest_sha);
+    assert_eq!(sha(&plain_manifest), plain_manifest_sha);
     assert_eq!(
         sha(&repo.join(HISTORICAL)),
         contract["retired_checker"]["pre_retirement_sha256"]
@@ -385,5 +505,5 @@ fn fresh_original_and_same_elf_present_absent_are_equivalent_and_interpreter_fre
             .unwrap()
     );
     missing(&absent_root.join(HISTORICAL));
-    fs::write(proof.join("comparison.json"), serde_json::to_vec_pretty(&json!({"pass":true,"four_cases":true,"original_present_absent_same_probe_elfs":true,"interpreter_free_absent_lane":true})).unwrap()).unwrap();
+    fs::write(proof.join("comparison.json"), serde_json::to_vec_pretty(&json!({"pass":true,"four_cases":true,"sanitized_original_present_absent_untraced":true,"plain_trace_source_same_21_inputs":true,"native_probe_elf_same_in_all_lanes":true,"interpreter_free_absent_lane":true})).unwrap()).unwrap();
 }

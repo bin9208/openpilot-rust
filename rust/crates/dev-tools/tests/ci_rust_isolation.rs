@@ -1760,6 +1760,10 @@ fn new_calibration_and_panda_controllers_require_unchanged_original_pairs() {
         "test \"$status\" -eq 101",
         "PANDAD_PADDING_SOURCE_BINARY=",
         "PANDAD_PADDING_SOURCE_MANIFEST=",
+        "PANDAD_PADDING_TRACE_SOURCE_BINARY=",
+        "PANDAD_PADDING_TRACE_SOURCE_MANIFEST=",
+        "--output \"$PANDAD_PADDING_TEST_OUTPUT/trace-source\" --capnp-prefix /usr --json11-prefix \"$json11_prefix\" --safety",
+        "--test pandad_safety_padding_retirement --locked -- --nocapture",
         "PANDAD_PADDING_NATIVE_BINARY=",
         "PANDAD_PADDING_PYTHON=",
     ], &["--features pandad-safety-padding-native"], false);
