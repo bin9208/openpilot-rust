@@ -1,37 +1,20 @@
 # 저장소 전체 Python 전환 작업 인수인계
 
-## 현재 감독·통합 상태: f68f407a, 2026-10-21
+## 현재 감독·통합 상태: 6ed383f0, 2026-10-21
 
-부모6.1 Sol이 #296 검토·조합·통합을 맡고 기존6 Sol 작업자가 세부 구현과
-증거 검토를 담당한다. 전용 native-build-tools-296 작업트리, issue branch,
-PR343→dev를 사용한다. dev-md, 주 작업폴더와 `.omo/`는 보존한다.
-콤마가 없으므로 사용자가 최종 pull 후 정상부팅·녹화·업로드·주행을 확인한다.
+부모6.1 Sol이 #296 감독·검토·통합을 맡고 기존6 Sol 작업자는 분리된 구현과 독립 검토를 담당한다. 전용 native-build-tools-296 작업트리의 PR343→dev만 사용한다. dev-md, 주 작업폴더와 `.omo/`는 보존한다. 콤마가 없으므로 사용자가 pull 후 정상부팅·녹화·업로드·주행을 확인한다. 로컬은 문법·포맷·diff만 검사하며 기능·빌드·Clippy는 GitHub-hosted Actions에서 실행한다.
 
-Bluetooth 세Python은61f4f275에서 제거했고 b43ac10d의 실제 삭제후
-run39521331522/job118965606861이 전체14caller/config253/journal721/gesture37을
-통과했다. 동반정책13disk/68isolation/2lagd도 통과했다. 부모가14receipt와
-artifact SOURCE_COMMIT을 재확인했다. 인벤토리218replaced-local/3partial/3359pending.
+현재 인벤토리는219replaced-local/3partial/3358pending이다. Bluetooth3개는61f4f275에서 삭제했고 b43ac10d의 삭제후 실제14caller 검증이 성공했다. logmessaged startup checker는13d20653의 원본/같은ELF present/absent 검증 후4492987c에서 삭제했으며 run39525293160/job118978372228의 실제 삭제후 검사도 성공했다. 전체 Python 제거가 완료됐다는 뜻은 아니다.
 
-paramsd daemon200ba3fd의 독립1210출력 성공전 대조와39loop/7scenario
-전체입력 바이트 대조는 각각 run39519319264/job118959001528 및
-run39519153139/job118958465021에서 통과했다. Native loopcontroller는070328c5의
-run39522124330에서 실제39사례2420행·85lib·4negative·2reference가 통과했으나
-Clippy needless_question_mark가 실패했다.60e3711e에서 수정했고
-run39523577819/job118972931583으로 전체새검사가 진행 중이다.
+LPA 실제 cookie header 경로 f903d976의 cloud run39526488617/job118982236423은 전체 원본 TLS/HTTP/lock 비교 및 strict Clippy를 통과했다. 실제 production helper의64회 비교에서8cookie는할당1664→384회,1024cookie는196736→832회였다. 요청 바이트도 감소했다. 이는 제한된 helper 측정이며 차량CPU 절감 주장이 아니다. 정책의2debug0 환경 허용04d29123도 run39526880444에서13disk/70source/2lagd 통과했다.
 
-#436 calibration의 -hfoo와 unsetPATH/g++ argv0 불일치는69bca166에서 수정했다.
-실제60e3711e 원본25사례+CLI/PATH+공유qa_process/argparse 회귀/Clippy
-run39523577786/job118972931515가 성공했다. 산출물 상세검토 중이며 원본Python은
-유지한다. logmessaged sourceabsence test13d20653의 run39523666271/job118973216977이
-진행 중이다. f68f407a는 원본선행입력봉인, 같은ELF 두root, 원본전체packet/disk
-대조를 mainworkflow에 필수화한다. 새469disk/uniquegate정책도 cloud검증이 필요하다.
+paramsd loop60e3711e의 run39523577819/job118972931583과 calibration CLI/PATH60e3711e의 run39523577786/job118972931515는 성공했다. 이후 #437/#441 finalization 및 같은ELF sourceabsence 강화20a8f52e의 첫 실행은 워크플로 환경/의존성 문제로 실패했다. 수정한 실행 run39530693150(calibration),39530693142(loop)는 현재6ed383f0 소스로 진행 중이며 원본Python은 유지한다.
 
-원격62e8c235 전체PR run39514415599는 LLVM20 job118943760505의108검사와
-ARM job118943760587 모두 성공으로 끝났다. 실제 merge source는4a3336f564e5766b07627633a1b9d72038693d92.
-5실패job은 후속수정과 집중검사로 처리했으나 최신 전체검사를 대신하지 않는다.
-이제 누적변경을 주issue branch에 게시하고 정확한 최신필수전체CI를 진행한다.
-전체Python제거·모든모듈최적화/검토·dev통합·소스일치패키지·사용자기기확인은 미완료다.
-아래는 과거 기록이다.
+Panda #440 source20a8f52e의 run39529140105/job118990740395가 성공했다. sanitizer 원본/present/absent는 추적 없이 모두exit0이며 같은21입력의 별도 plain build 두lane은 각4native exec와 전체 원본 출력이 일치했다. 삭제후 호출자 검증은 아직 남았다. Stats #442는 처음없던 retired source가 실행중 재출현해도PASS되던 경로를6ed383f0에서 수정했고 run39530693250의 oldRED/currentGREEN이 진행 중이다.
+
+주 작업원격은8e8b1e8f, 전체PR run39524132398은 포맷·추정기 디스크·Panda ptrace의3실패를 확인해 각각 수정했다. 나머지 장시간 ARM 검사를 보존 중이며 최신 전체 통과/병합은 아니다. #438 전체 추정기 재검증 run39529411343은20a8f52e에서 진행 중이다. 원본 updated fixture Git/파일 독립캡처 run39529853741은 성공했으며 Rust leaf는 아직 미등록·미검증이다.
+
+남은 작업: 위 실행의 실제 SHA/산출물 판독, 삭제가능 Python의 호출자 통합과 삭제후 검증,3358pending 및3partial의 기능 전환, 최신 전체PR/ARM·AGNOS 소스일치 패키지, dev 통합후 검사, 사용자 실기 확인. CI 성공이나 인벤토리는 이를 대체하지 않는다.
 
 ## 과거 감독·통합 상태: aace5f64, 2026-10-21
 
