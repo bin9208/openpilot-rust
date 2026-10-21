@@ -1,6 +1,8 @@
 #[cfg(feature = "navd-config-tools-native")]
 fn main() {
-    if let Err(error) = openpilot_dev_tools::navd_config_check::cli() {
+    let result = openpilot_dev_tools::navd_config_check::startup_phase("00-main-entry")
+        .and_then(|()| openpilot_dev_tools::navd_config_check::cli());
+    if let Err(error) = result {
         eprintln!("{error}");
         std::process::exit(
             if error

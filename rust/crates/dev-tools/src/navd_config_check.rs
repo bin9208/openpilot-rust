@@ -9,7 +9,7 @@ use openpilot_log_format::{JsonValue, JsonView};
 use std::{
     collections::BTreeMap,
     ffi::{OsStr, OsString},
-    fs,
+    fs::{self, OpenOptions},
     io::{self, Write},
     path::{Path, PathBuf},
     sync::atomic::{AtomicBool, AtomicUsize, Ordering},
@@ -24,6 +24,23 @@ mod source;
 mod values;
 pub use cli::parse;
 use values as v;
+/// An opt-in, exclusive and bounded trace of controller startup phases.
+/// The caller owns a fresh directory; ordinary invocations do no trace I/O.
+pub fn startup_phase(name: &'static str) -> Result<()> {
+    let Some(directory) = std::env::var_os("NAVD_CONFIG_STARTUP_TRACE") else {
+        return Ok(());
+    };
+    let directory = PathBuf::from(directory);
+    if !directory.is_absolute() {
+        return Err("NAVD_CONFIG_STARTUP_TRACE must be absolute".into());
+    }
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(directory.join(name))?;
+    file.write_all(b"1\n")?;
+    Ok(())
+}
 #[derive(Clone)]
 pub struct Case {
     pub name: String,
@@ -116,6 +133,7 @@ fn setup(
         }
     }
     let mut env = environment.clone();
+    env.remove(OsStr::new("NAVD_CONFIG_STARTUP_TRACE"));
     env.insert("PARAMS_ROOT".into(), output.join("params").into_os_string());
     env.insert("OPENPILOT_PREFIX".into(), prefix.into());
     env.remove(OsStr::new("MAPBOX_TOKEN"));
@@ -232,11 +250,13 @@ fn run_inner(
     worker: &Path,
     cancel: &AtomicBool,
 ) -> Result<(JsonValue, publication::Receipt)> {
+    startup_phase("05-run-inner-entry")?;
     // Admission owns no preexisting directory/receipt, including on invalid source.
     if let Some(parent) = options.output.parent() {
         fs::create_dir_all(parent)?;
     }
     fs::create_dir(&options.output)?;
+    startup_phase("06-output-created")?;
     no_core()?;
     interrupted(cancel)?;
     let sources = validate_source(&options.root)?;
@@ -352,6 +372,7 @@ fn run_inner(
     Ok((report, receipt))
 }
 pub fn cli() -> Result<()> {
+    startup_phase("01-cli-entry")?;
     let args = std::env::args_os().skip(1).collect::<Vec<_>>();
     if args.first().is_some_and(|s| s == "--navd-config-source") {
         if args.len() != 1 {
@@ -359,11 +380,14 @@ pub fn cli() -> Result<()> {
         }
         return source::run();
     }
-    match parse(
+    startup_phase("02-parse-start")?;
+    let command = parse(
         &args,
         &std::env::current_dir()?,
         std::env::vars_os().collect(),
-    )? {
+    )?;
+    startup_phase("03-parse-done")?;
+    match command {
         Command::Help => {
             io::stdout().write_all(cli::HELP.as_bytes())?;
             io::stdout().flush()?;
@@ -383,6 +407,7 @@ pub fn cli() -> Result<()> {
                     value as usize,
                 )?);
             }
+            startup_phase("04-handlers-done")?;
             let result = run_inner(&options, &std::env::current_exe()?, &cancel);
             for handler in handlers {
                 signal_hook::low_level::unregister(handler);

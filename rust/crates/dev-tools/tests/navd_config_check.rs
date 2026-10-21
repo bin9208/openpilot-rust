@@ -245,6 +245,7 @@ fn actual_cli_interrupt_after_child_start_reaps_probe_and_retains_original_signa
     use rustix::process::{Pid, Signal, WaitId, WaitIdOptions};
     use std::{
         cell::Cell,
+        io::Read,
         os::unix::process::{CommandExt, ExitStatusExt},
         path::Path,
         process::{Child, Command, Stdio},
@@ -288,6 +289,33 @@ fn actual_cli_interrupt_after_child_start_reaps_probe_and_retains_original_signa
         }
         Ok(())
     }
+    fn capture_proc(pid: Pid, destination: &Path) -> Vec<String> {
+        let source = PathBuf::from(format!("/proc/{}", pid.as_raw_pid()));
+        let mut errors = Vec::new();
+        for (name, limit) in [
+            ("stat", 16 * 1024),
+            ("status", 64 * 1024),
+            ("wchan", 16 * 1024),
+            ("cmdline", 64 * 1024),
+        ] {
+            let result = (|| -> std::io::Result<()> {
+                let mut bytes = Vec::new();
+                fs::File::open(source.join(name))?
+                    .take(limit + 1)
+                    .read_to_end(&mut bytes)?;
+                if bytes.len() as u64 > limit {
+                    return Err(std::io::Error::other(format!(
+                        "/proc/{name} exceeds {limit} bytes"
+                    )));
+                }
+                fs::write(destination.join(format!("controller.proc.{name}")), bytes)
+            })();
+            if let Err(error) = result {
+                errors.push(format!("{name}: {error}"));
+            }
+        }
+        errors
+    }
     struct Diagnostics {
         destination: PathBuf,
         output: PathBuf,
@@ -308,6 +336,12 @@ fn actual_cli_interrupt_after_child_start_reaps_probe_and_retains_original_signa
             )
             .map(|status| status.is_none())
             .ok();
+            let proc_errors =
+                if std::thread::panicking() && self.phase.get() == "waiting_for_candidate_start" {
+                    capture_proc(self.pid, &self.destination)
+                } else {
+                    Vec::new()
+                };
             let copied = copy_evidence(&self.output, &self.destination.join("actual"));
             let _ = fs::copy(&self.stdout, self.destination.join("controller.stdout"));
             let _ = fs::copy(&self.stderr, self.destination.join("controller.stderr"));
@@ -328,6 +362,7 @@ fn actual_cli_interrupt_after_child_start_reaps_probe_and_retains_original_signa
                 "probe_pid": self.probe_pid.get(),
                 "probe_alive": self.probe_pid.get().map(|pid| PathBuf::from(format!("/proc/{pid}")).exists()),
                 "output_copy_error": copied.err().map(|error| error.to_string()),
+                "proc_snapshot_errors": proc_errors,
             });
             let _ = fs::write(
                 self.destination.join("state.json"),
@@ -353,6 +388,8 @@ fn actual_cli_interrupt_after_child_start_reaps_probe_and_retains_original_signa
     let destination = required_diagnostics();
     fs::create_dir(&destination)
         .expect("NAVD_CONFIG_CANCEL_DIAGNOSTICS must name a fresh directory");
+    let trace = destination.join("controller-phases");
+    fs::create_dir(&trace).unwrap();
     let mut command = Command::new(required("NAVD_CONFIG_WORKER_BINARY"));
     command.args([
         std::ffi::OsStr::new("--binary"),
@@ -364,6 +401,7 @@ fn actual_cli_interrupt_after_child_start_reaps_probe_and_retains_original_signa
     ]);
     command
         .env("NAVD_CONFIG_FIXTURE_MARKER", &marker)
+        .env("NAVD_CONFIG_STARTUP_TRACE", &trace)
         .env("OPENPILOT_RUST_ROOT", root())
         .stdin(Stdio::null())
         .stdout(fs::File::create(&stdout).unwrap())
