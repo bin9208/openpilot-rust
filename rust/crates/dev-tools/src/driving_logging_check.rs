@@ -15,7 +15,7 @@ use std::{
     collections::BTreeMap,
     ffi::OsString,
     fs::{self, File, OpenOptions},
-    io::{Cursor, Read, Write},
+    io::{self, Cursor, Read, Write},
     os::unix::process::CommandExt,
     path::{Component, Path, PathBuf},
     process::{Child, Command, Stdio},
@@ -126,6 +126,60 @@ impl Drop for StartingProcess {
         }
     }
 }
+fn collector_alive(starting: &mut StartingProcess) -> Result<bool> {
+    if starting
+        .0
+        .as_mut()
+        .ok_or("collector owner lost")?
+        .try_wait()?
+        .is_some()
+    {
+        // try_wait reaped the leader. Never signal its now-stale PID.
+        starting.0.take();
+        return Ok(false);
+    }
+    Ok(true)
+}
+fn queue_size(queues: &Path, name: &str) -> Result<Option<u64>> {
+    match fs::metadata(queues.join(name)) {
+        Ok(metadata) if metadata.is_file() => Ok(Some(metadata.len())),
+        Ok(_) => Err(format!("model logging queue is not a regular file: {name}").into()),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(error.into()),
+    }
+}
+fn wait_for_queues(
+    queues: &Path,
+    deadline: Instant,
+    mut alive: impl FnMut() -> Result<bool>,
+) -> Result<()> {
+    loop {
+        require(
+            alive()?,
+            "model logging collector exited before full-size queues",
+        )?;
+        let log = queue_size(queues, TOPICS[0])?;
+        let error = queue_size(queues, TOPICS[1])?;
+        if log.is_some_and(|size| size > CAPACITY as u64)
+            && error.is_some_and(|size| size > CAPACITY as u64)
+        {
+            return Ok(());
+        }
+        if Instant::now() >= deadline {
+            require(
+                log.is_some() && error.is_some(),
+                "model logging collector did not open both queues in ten seconds",
+            )?;
+            return Err(format!(
+                "model logging queue capacity reduced: logMessage={} errorLogMessage={} bytes",
+                log.expect("present queue"),
+                error.expect("present queue")
+            )
+            .into());
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+}
 impl PrefixGuard {
     fn set(prefix: &str) -> Self {
         let previous = std::env::var_os("OPENPILOT_PREFIX");
@@ -174,27 +228,7 @@ impl Collector {
         let mut starting = StartingProcess(Some(process));
         let ready = Instant::now() + STARTUP;
         let queues = Path::new("/dev/shm").join(format!("msgq_{prefix}"));
-        while !TOPICS.iter().all(|name| queues.join(name).is_file()) {
-            if starting
-                .0
-                .as_mut()
-                .ok_or("collector owner lost")?
-                .try_wait()?
-                .is_some()
-            {
-                // try_wait reaped the leader. Never signal its now-stale PID.
-                starting.0.take();
-                return Err(
-                    "model logging collector did not open both queues in ten seconds".into(),
-                );
-            }
-            if Instant::now() >= ready {
-                return Err(
-                    "model logging collector did not open both queues in ten seconds".into(),
-                );
-            }
-            std::thread::sleep(Duration::from_millis(10));
-        }
+        wait_for_queues(&queues, ready, || collector_alive(&mut starting))?;
         // The runtime subscriber resolves a namespace from the process env.
         // Restore it immediately after both reader descriptors are open.
         let (log, error) = {
@@ -204,6 +238,10 @@ impl Collector {
                 Subscriber::for_runtime(TOPICS[1], false, CAPACITY)?,
             )
         };
+        require(
+            collector_alive(&mut starting)?,
+            "model logging collector exited before subscription completed",
+        )?;
         Ok(Self {
             process: starting.0.take().ok_or("collector owner lost")?,
             reaped: false,
@@ -659,6 +697,75 @@ impl Collector {
             .iter()
             .position(|candidate| *candidate == topic)
             .map(|index| self.records[index].as_slice())
+    }
+}
+
+#[cfg(test)]
+mod queue_readiness_tests {
+    use super::{wait_for_queues, CAPACITY, TOPICS};
+    use std::{
+        fs::File,
+        time::{Duration, Instant},
+    };
+
+    #[test]
+    fn existing_empty_and_partial_files_wait_for_both_full_queues() {
+        let root = tempfile::tempdir().unwrap();
+        let log = File::create(root.path().join(TOPICS[0])).unwrap();
+        let error = File::create(root.path().join(TOPICS[1])).unwrap();
+        error.set_len(CAPACITY as u64).unwrap();
+        let mut alive_checks = 0;
+        wait_for_queues(root.path(), Instant::now() + Duration::from_secs(1), || {
+            alive_checks += 1;
+            match alive_checks {
+                2 => log.set_len(CAPACITY as u64 + 8)?,
+                3 => error.set_len(CAPACITY as u64 + 8)?,
+                _ => {}
+            }
+            Ok(true)
+        })
+        .unwrap();
+        assert_eq!(alive_checks, 3, "accepted a partial queue");
+    }
+
+    #[test]
+    fn full_files_still_require_a_live_collector() {
+        let root = tempfile::tempdir().unwrap();
+        for name in TOPICS {
+            File::create(root.path().join(name))
+                .unwrap()
+                .set_len(CAPACITY as u64 + 8)
+                .unwrap();
+        }
+        let mut alive_checks = 0;
+        wait_for_queues(root.path(), Instant::now(), || {
+            alive_checks += 1;
+            Ok(true)
+        })
+        .unwrap();
+        assert_eq!(alive_checks, 1);
+        let error = wait_for_queues(root.path(), Instant::now(), || Ok(false))
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("collector exited before full-size queues"));
+    }
+
+    #[test]
+    fn missing_and_undersized_queues_fail_at_deadline() {
+        let root = tempfile::tempdir().unwrap();
+        File::create(root.path().join(TOPICS[0])).unwrap();
+        let missing = wait_for_queues(root.path(), Instant::now(), || Ok(true))
+            .unwrap_err()
+            .to_string();
+        assert!(missing.contains("did not open both queues"));
+        File::create(root.path().join(TOPICS[1]))
+            .unwrap()
+            .set_len(CAPACITY as u64)
+            .unwrap();
+        let partial = wait_for_queues(root.path(), Instant::now(), || Ok(true))
+            .unwrap_err()
+            .to_string();
+        assert!(partial.contains("capacity reduced"));
     }
 }
 impl Drop for Collector {

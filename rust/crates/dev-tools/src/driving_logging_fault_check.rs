@@ -321,8 +321,10 @@ fn ordinary(options: &Options) -> Result<i32> {
         ],
         Duration::from_secs(5),
     );
-    spec.stdout_limit = usize::MAX;
-    spec.stderr_limit = usize::MAX;
+    // The unchanged original ordinary ENOTSOCK capture was 51 stderr bytes.
+    // Preserve the full stream while bounding a faulty child that writes forever.
+    spec.stdout_limit = 1024 * 1024;
+    spec.stderr_limit = 1024 * 1024;
     let mut environment = BTreeMap::<OsString, OsString>::new();
     environment.insert("OPENPILOT_PREFIX".into(), prefix.into());
     environment.insert("MODEL_LOG_FAULT".into(), "ordinary".into());
