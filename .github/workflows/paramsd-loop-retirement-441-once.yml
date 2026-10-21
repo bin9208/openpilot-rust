@@ -24,7 +24,7 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: 6ed383f01c8f7783824e84333ea9abdb13e1fc80
+        ref: 5769ebb185cdad4bba58d8dc3c267882df3dacba
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
@@ -36,7 +36,7 @@ jobs:
     - name: Install exact loop prerequisites
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = 6ed383f01c8f7783824e84333ea9abdb13e1fc80
+        test "$(git rev-parse HEAD)" = 5769ebb185cdad4bba58d8dc3c267882df3dacba
 
         test "$(git -C old-04d rev-parse HEAD)" = 04d29123a38dfb9800954090c58c6c6642bad531
 
@@ -81,7 +81,7 @@ jobs:
 
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
 
-        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-fixture-native --bin generate-paramsd-loop-fixture
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-loop-native --bin generate-paramsd-loop-fixture
         --locked > "$proof/generator-build.stdout" 2> "$proof/generator-build.stderr"
 
         sha256sum rust/tools/check_paramsd_loop.py rust/tools/paramsd_loop_fixture.py rust/tools/paramsd_fixture.py rust/tools/paramsd_loop_source.py
@@ -186,7 +186,7 @@ jobs:
 
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
 
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-fixture-native --test paramsd_loop_fixture_generate
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-loop-native --test paramsd_loop_fixture_generate
         --locked -- --nocapture > "$proof/generator-test.stdout" 2> "$proof/generator-test.stderr"
 
         sha256sum -c "$proof/original-input.sha256"

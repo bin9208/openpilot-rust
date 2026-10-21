@@ -1,0 +1,155 @@
+name: 296 native updated fixture parity and escape regression 443
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/updated-fixture-native-443-once.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  fixture:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      EXPECTED_SOURCE: 5769ebb185cdad4bba58d8dc3c267882df3dacba
+      GH_TOKEN: ${{ github.token }}
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: 5769ebb185cdad4bba58d8dc3c267882df3dacba
+        persist-credentials: false
+    - name: Require exact source and independently sealed original receipts
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        proof="$RUNNER_TEMP/updated-fixture-443"
+
+        mkdir -p "$proof/original"
+
+        git rev-parse HEAD > "$proof/source-commit.txt"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        gh api repos/bin9208/openpilot-rust/actions/artifacts/12314388276/zip > "$proof/original/git.zip"
+
+        gh api repos/bin9208/openpilot-rust/actions/artifacts/12315223271/zip > "$proof/original/overlay.zip"
+
+        printf ''bb324383fc207fbbbb111183a009706051a967af7dffc8c8ceffd55f6fbc92f2  %s\n'' "$proof/original/git.zip" | sha256sum
+        --check --strict
+
+        printf ''88d6a2a3b832a35cf1e3a5ce39a5660f748426c7e7063645bc760cd3284ef360  %s\n'' "$proof/original/overlay.zip" |
+        sha256sum --check --strict
+
+        unzip -p "$proof/original/git.zip" original.json > "$proof/original/git.json"
+
+        unzip -p "$proof/original/overlay.zip" original-overlay.json > "$proof/original/overlay.json"
+
+        printf ''5111de95c85fecc0a5d367097652ac3fbffe9607ed2e6eab239f4af445746548  %s\n'' "$proof/original/git.json" | sha256sum
+        --check --strict
+
+        printf ''3aee09430978c6c2b736bc8bc45c8ce0d049e98f358a7f41e764f01a953606c2  %s\n'' "$proof/original/overlay.json" |
+        sha256sum --check --strict
+
+        printf ''UPDATED_FIXTURE_ORIGINAL_RECEIPT=%s/original/git.json\nUPDATED_OVERLAY_ORIGINAL_RECEIPT=%s/original/overlay.json\n''
+        "$proof" "$proof" >> "$GITHUB_ENV"
+
+        printf ''UPDATED_FIXTURE_ORIGINAL_SHA256=5111de95c85fecc0a5d367097652ac3fbffe9607ed2e6eab239f4af445746548\nUPDATED_OVERLAY_ORIGINAL_SHA256=3aee09430978c6c2b736bc8bc45c8ce0d049e98f358a7f41e764f01a953606c2\n''
+        >> "$GITHUB_ENV"
+
+        printf ''UPDATED_FIXTURE_NATIVE_OUTPUT=%s/current-observations\n'' "$proof" >> "$GITHUB_ENV"
+
+        '
+    - name: Install bounded native prerequisites
+      run: 'set -euo pipefail
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends g++ pkg-config capnproto libcapnp-dev libzmq3-dev
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        '
+    - name: Require old native nested destination escape behavioral RED
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/updated-fixture-443"
+
+        old_sha=0085c1f0
+
+        old_source="$RUNNER_TEMP/updated443-old"
+
+        old_target="$RUNNER_TEMP/updated443-old-target"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        git fetch --no-tags --depth=1 origin 0085c1f052b800d21b077e25c789bf85e8a5c83c
+
+        git worktree add --detach "$old_source" 0085c1f052b800d21b077e25c789bf85e8a5c83c
+
+        git -C "$old_source" rev-parse HEAD > "$proof/old-source-commit.txt"
+
+        cp rust/crates/dev-tools/tests/updated_fixture_original.rs "$old_source/rust/crates/dev-tools/tests/updated_fixture_original.rs"
+
+        git -C "$old_source" diff -- rust/crates/dev-tools/tests/updated_fixture_original.rs > "$proof/old-test-only.diff"
+
+        test -z "$(git -C "$old_source" diff --name-only -- rust/crates/dev-tools/src/updated_fixture.rs)"
+
+        sha256sum "$old_source/rust/crates/dev-tools/src/updated_fixture.rs" > "$proof/old-production.sha256"
+
+        set +e
+
+        UPDATED_FIXTURE_NATIVE_OUTPUT="$proof/old-observations" CARGO_TARGET_DIR="$old_target" cargo +1.94.0 test --manifest-path
+        "$old_source/rust/Cargo.toml" -p openpilot-dev-tools --features updated-fixture-native --test updated_fixture_original
+        --locked original_destination_symlink_escapes_are_rejected_without_touching_private_siblings -- --exact --nocapture
+        > "$proof/old-red.log" 2>&1
+
+        code=$?
+
+        set -e
+
+        test "$code" -eq 101
+
+        grep -F ''nested-symlink-outside followed destination symlink'' "$proof/old-red.log"
+
+        ! grep -F ''could not compile'' "$proof/old-red.log"
+
+        printf ''%s\n'' "$code" > "$proof/old-red.exit"
+
+        git worktree remove --force "$old_source"
+
+        rm -rf -- "$old_target"
+
+        '
+    - name: Require native original parity, destination guards and strict Clippy
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/updated-fixture-443"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features updated-fixture-native --test
+        updated_fixture_original --locked -- --nocapture 2>&1 | tee "$proof/current-tests.log"
+
+        cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features updated-fixture-native --lib
+        --bin updated-fixture --test updated_fixture_original --locked -- -D warnings 2>&1 | tee "$proof/clippy.log"
+
+        sha256sum rust/target/debug/updated-fixture rust/crates/dev-tools/src/updated_fixture.rs rust/crates/dev-tools/tests/updated_fixture_original.rs
+        > "$proof/current-inputs.sha256"
+
+        '
+    - name: Retain original, old RED and fresh native observations
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: updated-fixture-443-${{ github.sha }}
+        path: ${{ runner.temp }}/updated-fixture-443/
+        if-no-files-found: error
