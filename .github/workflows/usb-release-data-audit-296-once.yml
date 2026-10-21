@@ -1,0 +1,42 @@
+name: 296 inspect immutable USB release asset metadata
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/usb-release-data-audit-296-once.yml
+permissions:
+  contents: read
+jobs:
+  data-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: 0501612741fe402bedf50ead847f2f85fc9f5587
+        persist-credentials: false
+    - name: Inspect authenticated archive without executing its contents
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = 0501612741fe402bedf50ead847f2f85fc9f5587
+
+        available=$(df -PB1 "$GITHUB_WORKSPACE" | awk ''NR==2 {print $4}'')
+
+        test "$available" -ge 28991029248
+
+        printf ''%s'' ''aW1wb3J0IGhhc2hsaWIsanNvbixvcyx0YXJmaWxlLHVybGxpYi5yZXF1ZXN0CmZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aApyb290PVBhdGgob3MuZW52aXJvblsnUlVOTkVSX1RFTVAnXSkvJ3VzYi1yZWxlYXNlLWRhdGEtYXVkaXQnO3Jvb3QubWtkaXIoKQpyZWxlYXNlPScxZjAwZjBiN2M0Y2NhYjRjMjNjNTg0NWFlZjQ5MDQwNjA1OGFlYzZjJztuYW1lPWYnb3BlbnBpbG90LXJ1c3Qte3JlbGVhc2V9LWFhcmNoNjQudGFyLmd6JzthcmNoaXZlPXJvb3QvbmFtZQpoPWhhc2hsaWIuc2hhMjU2KCk7c2l6ZT0wCndpdGggdXJsbGliLnJlcXVlc3QudXJsb3BlbihmJ2h0dHBzOi8vZ2l0aHViLmNvbS9iaW45MjA4L29wZW5waWxvdC1ydXN0L3JlbGVhc2VzL2Rvd25sb2FkL3J1bnRpbWUte3JlbGVhc2V9L3tuYW1lfScsdGltZW91dD02MCkgYXMgc3JjLGFyY2hpdmUub3BlbigneGInKSBhcyBzaW5rOgogd2hpbGUgY2h1bms6PXNyYy5yZWFkKDEwMjQqMTAyNCk6CiAgc2l6ZSs9bGVuKGNodW5rKTthc3NlcnQgc2l6ZTw9MTI1MDU2NzAwODtzaW5rLndyaXRlKGNodW5rKTtoLnVwZGF0ZShjaHVuaykKYXNzZXJ0IHNpemU9PTEyNTA1NjcwMDggYW5kIGguaGV4ZGlnZXN0KCk9PScxMmE3ZDJjYjVkNWI0Y2NjY2E5Y2YwMTZjZWIyOGRhNTFhYWQ1MjE3MWZmNTVmYmJjYmQ1YTgzNjdkYzEyMTk3Jwpyb3dzPXt9O2JvZGllcz17fQp3aXRoIHRhcmZpbGUub3BlbihhcmNoaXZlLCdyfGd6JykgYXMgYnVuZGxlOgogZm9yIGVudCBpbiBidW5kbGU6CiAgcGFydHM9UGF0aChlbnQubmFtZSkucGFydHMKICBhc3NlcnQgbm90IGVudC5uYW1lLnN0YXJ0c3dpdGgoJy8nKSBhbmQgJy4uJyBub3QgaW4gcGFydHMKICBpZiBwYXJ0c1s6M10hPSgncnVzdCcsJ2JpbicsJ3VzYmdwdS1hc3NldHMnKSBvciBlbnQuaXNkaXIoKTpjb250aW51ZQogIGFzc2VydCBlbnQuaXNmaWxlKCkgYW5kIGVudC5zaXplPD04MDAqMTAyNCoqMgogIG49Jy8nLmpvaW4ocGFydHNbMzpdKTthc3NlcnQgbiBub3QgaW4gcm93cwogIGg9aGFzaGxpYi5zaGEyNTYoKTtjb3VudD0wO2RhdGE9Ynl0ZWFycmF5KCkKICB3aXRoIGJ1bmRsZS5leHRyYWN0ZmlsZShlbnQpIGFzIHNyYzoKICAgd2hpbGUgY2h1bms6PXNyYy5yZWFkKDEwMjQqMTAyNCk6CiAgICBoLnVwZGF0ZShjaHVuayk7Y291bnQrPWxlbihjaHVuaykKICAgIGlmIG4gaW4gKCdtYW5pZmVzdC5qc29uJywnbmF0aXZlLXByb3ZpZGVyLmpzb24nKTpkYXRhLmV4dGVuZChjaHVuayk7YXNzZXJ0IGxlbihkYXRhKTw9MTAyNCoqMgogIGFzc2VydCBjb3VudD09ZW50LnNpemU7cm93c1tuXT17J2J5dGVzJzpjb3VudCwnc2hhMjU2JzpoLmhleGRpZ2VzdCgpfQogIGlmIGRhdGE6Ym9kaWVzW25dPWpzb24ubG9hZHMoZGF0YSkKYXNzZXJ0IGxlbihyb3dzKT09NDUKKHJvb3QvJ29ic2VydmVkLmpzb24nKS53cml0ZV90ZXh0KGpzb24uZHVtcHMoeydyZWxlYXNlJzpyZWxlYXNlLCdhcmNoaXZlX2J5dGVzJzpzaXplLCdhcmNoaXZlX3NoYTI1Nic6JzEyYTdkMmNiNWQ1YjRjY2NjYTljZjAxNmNlYjI4ZGE1MWFhZDUyMTcxZmY1NWZiYmNiZDVhODM2N2RjMTIxOTcnLCdmaWxlcyc6cm93cywnbWV0YWRhdGEnOmJvZGllcywnc2NvcGUnOidpbW11dGFibGUgcmVsZWFzZSBkYXRhIGluc3BlY3Rpb24gb25seTsgbm8gY2FuZGlkYXRlL21vZGVsIGV4ZWN1dGVkJ30saW5kZW50PTIpKydcbicpCmFyY2hpdmUudW5saW5rKCkK''
+        | base64 --decode > "$RUNNER_TEMP/audit-usb-release.py"
+
+        printf ''%s  %s\n'' 5c47fa775db31019427613adef52393d88c4fcb58d571d141d3e53a9c6f7c80a "$RUNNER_TEMP/audit-usb-release.py"
+        | sha256sum -c -
+
+        python3 "$RUNNER_TEMP/audit-usb-release.py"
+
+        '
+    - uses: actions/upload-artifact@v6
+      if: always()
+      with:
+        name: usb-release-data-audit-296
+        path: ${{ runner.temp }}/usb-release-data-audit/*.json
+        if-no-files-found: error
