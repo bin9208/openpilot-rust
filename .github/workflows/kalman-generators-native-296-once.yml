@@ -20,12 +20,12 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 44ece72556360fa43cd1a1fd14946b11e79aef34
+        ref: 706e2686153632304dd0d01286f8d117039f8f71
         persist-credentials: false
     - name: Bind exact source and reserve hosted capacity
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = 44ece72556360fa43cd1a1fd14946b11e79aef34
+        test "$(git rev-parse HEAD)" = 706e2686153632304dd0d01286f8d117039f8f71
 
         sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
 
@@ -59,8 +59,21 @@ jobs:
         --lib --bin generate-pose-model --bin generate-car-model --test kalman_model_generator -- -D warnings
 
         '
+    - name: Check affected maintained staging, disk and Panda source contracts
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo fmt --manifest-path rust/Cargo.toml --all -- --check
+
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features ci-receipt-metadata-native,panda-ci-native
+        --test ci_native_staging --test ci_disk_bootstrap --test ci_workflow_policy --test panda_ci_retirement -- --nocapture
+
+        '
     - name: Compile fresh native and original files and compare every function and constant
       run: 'set -euo pipefail
+
+        export KALMAN_RETIRED_ROOT="$GITHUB_WORKSPACE"
 
         export KALMAN_ORIGINAL_ROOT="$GITHUB_WORKSPACE/rust/crates/dev-tools/tests/fixtures/kalman-generators-original"
 
