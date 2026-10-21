@@ -29,6 +29,8 @@ const ATOMIC: &str = "Check native paramsd atomic gate foundation alongside orig
 const OLD_ATOMIC: &str = "python -P -m pytest -c /dev/null --noconftest -p no:cacheprovider -q rust/tools/tests/test_paramsd_atomic_gate.py";
 const NATIVE_ATOMIC: &str = "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features paramsd-startup-gate-native --test paramsd_startup_gate";
 const NATIVE_ATOMIC_CLIPPY: &str = "cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features paramsd-startup-gate-native --lib --test paramsd_startup_gate -- -D warnings";
+const OLD_ESTIMATOR_DEPS: &str = "sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev";
+const NATIVE_ESTIMATOR_DEPS: &str = "sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev bzip2 strace";
 const OLD_LOOP: &str = "python rust/tools/check_paramsd_loop.py --oracle \"$RUNNER_TEMP/paramsd-oracle\" --trace \"$PWD/rust/target/debug/examples/paramsd_loop\" --evidence \"$RUNNER_TEMP/estimation/paramsd/loop\"";
 const NATIVE_LOOP_STEP: &str =
     "Compare native paramsd loop checker against complete original observations";
@@ -401,12 +403,19 @@ fn validate(workflow: &Value) -> Result<(), String> {
         original.get(OLD_LOOP) == Some(&1),
         "frozen baseline paramsd loop command changed",
     )?;
+    require(
+        original.get(OLD_ESTIMATOR_DEPS) == Some(&1)
+            && !current.contains_key(OLD_ESTIMATOR_DEPS)
+            && current.get(NATIVE_ESTIMATOR_DEPS) == Some(&1),
+        "native loop decompression/trace prerequisites changed",
+    )?;
     for (line, count) in original {
         if !line.starts_with("python rust/tools/check_lagd_")
             && line != OLD_EIGEN_INSTALL
             && line != OLD_EIGEN_IMPORT
             && line != OLD_ATOMIC
             && line != OLD_LOOP
+            && line != OLD_ESTIMATOR_DEPS
         {
             require(
                 current.get(&line) == Some(&count),
@@ -541,6 +550,20 @@ fn missing_native_tools_tests_guards_or_unrelated_gates_cannot_pass() {
             .replace(marker, "removed-by-regression");
         changed["jobs"]["estimation-runtime"]["steps"][loop_step]["run"] = script.into();
         assert!(validate(&changed).is_err(), "accepted missing {marker}");
+    }
+    for marker in [" bzip2", " strace"] {
+        let mut changed = current.clone();
+        let dependencies = changed["jobs"]["estimation-runtime"]["steps"]
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|step| step["run"].as_str() == Some(NATIVE_ESTIMATOR_DEPS))
+            .unwrap();
+        dependencies["run"] = NATIVE_ESTIMATOR_DEPS.replace(marker, "").into();
+        assert!(
+            validate(&changed).is_err(),
+            "accepted missing native dependency {marker}"
+        );
     }
     let mut changed = current.clone();
     let script = changed["jobs"]["estimation-runtime"]["steps"][loop_step]["run"]
