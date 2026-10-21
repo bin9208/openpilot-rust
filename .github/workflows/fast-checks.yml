@@ -67,9 +67,9 @@ jobs:
         run: bash tools/jetlink_android/gradlew -p tools/jetlink_android :core:test :runtime:test
   cadence:
     if: github.event_name == 'workflow_dispatch' && inputs.onnx_only
-    name: ONNX cadence regressions
+    name: ONNX focused regressions
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       GIT_LFS_SKIP_SMUDGE: '1'
       CARGO_INCREMENTAL: '0'
@@ -98,4 +98,4 @@ jobs:
           restore-keys: onnx-cadence-${{ runner.arch }}-${{ hashFiles('rust/Cargo.lock') }}-
       - name: Mixed-remote LFS checkout regression
         run: python3 -m unittest discover -s tools/ci/tests -p test_lfs_endpoint.py -v
-      - run: cargo test --manifest-path rust/Cargo.toml -p openpilot-xiaoge --test cadence --locked
+      - run: cargo test --manifest-path rust/Cargo.toml -p openpilot-xiaoge --lib --tests --locked
