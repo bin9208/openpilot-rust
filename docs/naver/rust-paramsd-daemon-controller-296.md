@@ -124,3 +124,17 @@ required. Corruption tests include input changes, a sub-tolerance one-bit seed
 float change, framing, saved state, GPS and phase receipt changes. Fresh cloud
 validation of this change is pending; the original Python comparator and
 fixture helpers are still retained.
+
+Source `200ba3fd91c31c448df0bd03b53e0f1a2b7e80af` passed actual full proof
+[run39519319264/job118959001528](https://github.com/bin9208/openpilot-rust/actions/runs/39519319264/job/118959001528).
+Artifact12310113103 is2,353,520bytes, ZIP SHA256
+`6b929fde010b922362042010913a3607468ab2fcac162b1aa7a92fcf2c27b1fd`.
+The parent independently verified both ordered packet arrays against their
+immediate journals,1202+8 counts, exact original GPS, same-run input identity
+hashes, unchanged saved state through restart, original source-equality receipts,
+and native phase/top success receipts. Native shutdown was0.116679159s for INT
+and0.101602467s for TERM, both exit0. The actual scoped gate handoff,83 library
+tests including corruption controls, two controller tests, fresh original full
+reference and strict Clippy passed. The input generator and source/controller
+Python remain because other callers still depend on them. This is cloud IPC
+proof, not normal device startup or driving validation.
