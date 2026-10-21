@@ -594,6 +594,42 @@ pub(super) fn run_frozen(
     )
 }
 
+fn validate_pull_repair_snapshot(
+    before: &Value,
+    after: &Value,
+    original_after: &Value,
+    advanced: &str,
+) -> Result<()> {
+    for field in ["head", "branch", "status", "tracked", "remote"] {
+        if after[field] != before[field] {
+            return Err(format!("owned Git repair changed unrelated field: {field}").into());
+        }
+    }
+    let before_refs = before["refs"].as_str().ok_or("frozen Git refs absent")?;
+    let after_refs = after["refs"].as_str().ok_or("owned Git refs absent")?;
+    let original_refs = original_after["refs"]
+        .as_str()
+        .ok_or("original Git refs absent")?;
+    let old_main = before_refs
+        .lines()
+        .find(|line| line.starts_with("refs/heads/main "))
+        .ok_or("frozen main ref absent")?;
+    let repaired_main = format!("refs/heads/main {advanced} refs/remotes/origin/main");
+    if old_main == repaired_main
+        || before_refs.replacen(old_main, &repaired_main, 1) != after_refs
+        || after_refs != original_refs
+    {
+        return Err("frozen Git upstream repair ref relation changed".into());
+    }
+    if before["fetch"] != json!(["+refs/heads/gone:refs/remotes/origin/gone"])
+        || original_after["fetch"] != json!(["+refs/heads/*:refs/remotes/origin/*"])
+        || after["fetch"] != original_after["fetch"]
+    {
+        return Err("frozen Git fetch-refspec repair relation changed".into());
+    }
+    Ok(())
+}
+
 #[allow(clippy::too_many_arguments)]
 fn run_inner(
     repository: &Path,
@@ -844,6 +880,16 @@ fn run_inner(
                 .join("native-evidence/repository.json"),
         )?)?
     };
+    let mut observed = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(output.join("snapshot-before-comparison.json"))?;
+    serde_json::to_writer_pretty(
+        &mut observed,
+        &json!({"scenario":name,"before":&before,"after":&after,
+            "sealed_original_after":&original_after,"shell_exit":shell_exit}),
+    )?;
+    observed.flush()?;
     if frozen.is_some() {
         match name {
             "git_reset" | "git_pull" | "git_reset_repo" => {
@@ -871,29 +917,15 @@ fn run_inner(
         {
             return Err("frozen original remote-reset control changed".into());
         }
+        if staged && name == "git_pull_repair" {
+            validate_pull_repair_snapshot(&before, &after, &original_after, &advanced)?;
+        }
     }
     for field in [
         "head", "branch", "status", "tracked", "remote", "refs", "fetch",
     ] {
         let expected_field = if frozen.is_some() && staged {
-            if name == "git_pull_repair" && field == "refs" {
-                let before_refs = before["refs"].as_str().ok_or("frozen Git refs absent")?;
-                let after_refs = after["refs"].as_str().ok_or("owned Git refs absent")?;
-                let original_refs = original_after["refs"]
-                    .as_str()
-                    .ok_or("original Git refs absent")?;
-                let advanced = git(&bare, &["rev-parse", "refs/heads/main"])?;
-                let old_main = before_refs
-                    .lines()
-                    .find(|line| line.starts_with("refs/heads/main "))
-                    .ok_or("frozen main ref absent")?;
-                let repaired_main = format!("refs/heads/main {advanced} refs/remotes/origin/main");
-                if old_main == repaired_main
-                    || before_refs.replacen(old_main, &repaired_main, 1) != after_refs
-                    || after_refs != original_refs
-                {
-                    return Err("frozen Git upstream repair ref relation changed".into());
-                }
+            if name == "git_pull_repair" && (field == "refs" || field == "fetch") {
                 continue;
             }
             if name == "git_pull" && field == "refs" {
@@ -1024,6 +1056,41 @@ fn run_inner(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::recovery_family::original_fixture::OriginalFixture;
+
+    #[test]
+    fn repair_compares_every_snapshot_field_with_sealed_original() {
+        let original = OriginalFixture::open()
+            .unwrap()
+            .observation("actions/git_pull_repair/source-evidence/repository.json")
+            .unwrap();
+        let advanced = original["head"].as_str().unwrap();
+        let original_refs = original["refs"].as_str().unwrap();
+        let repaired_main = format!("refs/heads/main {advanced} refs/remotes/origin/main");
+        let broken_main = format!("refs/heads/main {advanced} refs/remotes/origin/gone");
+        assert!(original_refs.contains(&repaired_main));
+        let mut before = original.clone();
+        before["refs"] = original_refs
+            .replacen(&repaired_main, &broken_main, 1)
+            .into();
+        before["fetch"] = json!(["+refs/heads/gone:refs/remotes/origin/gone"]);
+        assert!(validate_pull_repair_snapshot(&before, &original, &original, advanced).is_ok());
+
+        for field in ["head", "branch", "status", "tracked", "remote"] {
+            let mut changed = original.clone();
+            changed[field] = "unexpected mutation".into();
+            assert!(
+                validate_pull_repair_snapshot(&before, &changed, &original, advanced).is_err(),
+                "accepted changed {field}"
+            );
+        }
+        let mut changed = original.clone();
+        changed["refs"] = format!("{original_refs}\nrefs/heads/extra {advanced} ").into();
+        assert!(validate_pull_repair_snapshot(&before, &changed, &original, advanced).is_err());
+        let mut changed = original.clone();
+        changed["fetch"] = before["fetch"].clone();
+        assert!(validate_pull_repair_snapshot(&before, &changed, &original, advanced).is_err());
+    }
 
     #[test]
     fn owned_aliases_bind_both_sources_and_reject_replacement() {
