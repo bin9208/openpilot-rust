@@ -13,7 +13,7 @@ use std::{
 fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..")
 }
-fn options(directory: &Path) -> Options {
+fn fixture_options(directory: &Path) -> Options {
     let binary = directory.join("candidate");
     fs::copy(std::env::current_exe().unwrap(), &binary).unwrap();
     let source = directory.join("source");
@@ -132,7 +132,7 @@ fn child_failure_missing_or_invalid_raw_and_mutated_inputs_never_publish() {
         Mode::MutateSource,
     ] {
         let directory = tempfile::tempdir().unwrap();
-        let options = options(directory.path());
+        let options = fixture_options(directory.path());
         let mut runner = Peer {
             mode,
             calls: 0,
@@ -157,7 +157,7 @@ fn child_failure_missing_or_invalid_raw_and_mutated_inputs_never_publish() {
 #[test]
 fn cancellation_and_foreign_receipt_do_not_run_or_overwrite() {
     let directory = tempfile::tempdir().unwrap();
-    let options = options(directory.path());
+    let options = fixture_options(directory.path());
     let mut runner = Peer {
         mode: Mode::Failure,
         calls: 0,
@@ -170,7 +170,7 @@ fn cancellation_and_foreign_receipt_do_not_run_or_overwrite() {
     assert!(!options.evidence.join("result.json").exists());
 
     let directory = tempfile::tempdir().unwrap();
-    let options = options(directory.path());
+    let options = fixture_options(directory.path());
     fs::create_dir(&options.evidence).unwrap();
     fs::write(options.evidence.join("result.json"), b"foreign receipt").unwrap();
     assert!(prepare(&options, &mut runner, &AtomicBool::new(false)).is_err());
@@ -184,7 +184,7 @@ fn cancellation_and_foreign_receipt_do_not_run_or_overwrite() {
 #[test]
 fn original_source_alias_is_rejected_before_candidate_invocation() {
     let directory = tempfile::tempdir().unwrap();
-    let options = options(directory.path());
+    let options = fixture_options(directory.path());
     let source = options.root.join("rust/tools/paramsd_loop_fixture.py");
     fs::remove_file(&source).unwrap();
     std::os::unix::fs::symlink(root().join("rust/tools/paramsd_loop_fixture.py"), &source).unwrap();
@@ -202,7 +202,7 @@ fn original_source_alias_is_rejected_before_candidate_invocation() {
 #[test]
 fn script_candidate_cannot_enter_the_native_loop_gate() {
     let directory = tempfile::tempdir().unwrap();
-    let options = options(directory.path());
+    let options = fixture_options(directory.path());
     fs::write(
         &options.binary,
         b"#!/usr/bin/env python3\nprint('fake pass')\n",

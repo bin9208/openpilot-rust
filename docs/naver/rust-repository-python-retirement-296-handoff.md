@@ -33,10 +33,10 @@ run39520095117/job118961553990에서13disk/67source/2lagd 검사를 통과했다
 전체compiler 전환이나 기기CPU 절감으로 해석하지 않는다.
 
 원격 주작업 branch는 아직62e8c235이며 전체PR run39514415599의 LLVM20/ARM
-결과를 보존한다. 다른42완료job 중5실패는 후속수정/집중검사로 처리 중이다.
+결과를 보존한다. 다른45완료job 중5실패는 후속수정/집중검사로 처리 중이다.
 calibration25원본/native 검사는 그run의 workspace실패 뒤에 있어 skipped였다.
 완료로 오인하지 않고 별도 원본선행검사를 준비한다. logmessaged startup은 실제
-성공한 startup job 증거를 확인하고 sourceabsence proof를 준비한다.
+성공한 support job118943760348 증거를 확인하고 sourceabsence proof를 준비한다.
 전체Python전환·최신필수전체CI·dev통합·소스일치패키지·사용자기기확인은 미완료다.
 아래는 과거 기록이다.
 
