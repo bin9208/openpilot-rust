@@ -16,11 +16,11 @@ jobs:
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
-      EXPECTED_SOURCE: 5f6104be47db0b3ae9131241726613788eeac747
+      EXPECTED_SOURCE: b4a62ae1fe84b688985ee6bb4f9e6b202cd0c0ba
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 5f6104be47db0b3ae9131241726613788eeac747
+        ref: b4a62ae1fe84b688985ee6bb4f9e6b202cd0c0ba
         persist-credentials: false
     - uses: actions/setup-python@v6
       with:
