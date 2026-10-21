@@ -57,6 +57,19 @@ fn transport_error(error: reqwest::Error) -> String {
     }
 }
 
+fn encode_location(bytes: &[u8]) -> String {
+    bytes
+        .iter()
+        .map(|&byte| {
+            if byte.is_ascii_alphanumeric() || byte.is_ascii_punctuation() {
+                char::from(byte).to_string()
+            } else {
+                format!("%{byte:02X}")
+            }
+        })
+        .collect()
+}
+
 async fn request(address: &str, payload: &Payload, seconds: f64) -> Result<PostResult, String> {
     let timeout = Duration::try_from_secs_f64(seconds).map_err(|error| error.to_string())?;
     let client = Client::builder()
@@ -103,17 +116,7 @@ async fn request(address: &str, payload: &Payload, seconds: f64) -> Result<PostR
         let eligible =
             matches!(status, 301..=303) || (method == Method::GET && matches!(status, 307 | 308));
         if let Some(location) = location.filter(|_| eligible) {
-            let encoded: String = location
-                .as_bytes()
-                .iter()
-                .map(|&byte| {
-                    if byte.is_ascii_alphanumeric() || byte.is_ascii_punctuation() {
-                        char::from(byte).to_string()
-                    } else {
-                        format!("%{byte:02X}")
-                    }
-                })
-                .collect();
+            let encoded = encode_location(location.as_bytes());
             let next = url.join(&encoded).map_err(|error| error.to_string())?;
             let count = visited.get(next.as_str()).copied().unwrap_or_default();
             if !matches!(next.scheme(), "http" | "https") || count >= 4 || visited.len() >= 10 {
@@ -135,3 +138,7 @@ async fn request(address: &str, payload: &Payload, seconds: f64) -> Result<PostR
         }
     }
 }
+
+#[cfg(test)]
+#[path = "http_redirect_tests.rs"]
+mod http_redirect_tests;
