@@ -77,14 +77,12 @@ fn replace_temp(value: &Value, root: &Path) -> Value {
     }
 }
 fn original() -> Value {
-    let path = PathBuf::from(
-        env::var_os("UPDATED_FIXTURE_ORIGINAL_RECEIPT").expect("mandatory original receipt"),
+    let bytes = include_bytes!("fixtures/updated-fixture-original/git-original.json");
+    assert_eq!(
+        sha(bytes),
+        "3a859802faa1b1c080def7260c31baf0cc7fe8e94ba7efdd182a03d3090fdc1a"
     );
-    let bytes = fs::read(path).unwrap();
-    let expected =
-        env::var("UPDATED_FIXTURE_ORIGINAL_SHA256").expect("mandatory original receipt SHA256");
-    assert_eq!(sha(&bytes), expected);
-    let value: Value = serde_json::from_slice(&bytes).unwrap();
+    let value: Value = serde_json::from_slice(bytes).unwrap();
     assert_eq!(
         value["source_sha256"]["rust/tools/updated_fixtures.py"],
         "76607e02520f383227264257de0ed8505b9dc12e462227b176f2c919dfec2d60"
@@ -171,6 +169,11 @@ fn seed_and_setup_preserve_captured_original_git_tree_and_files() {
         );
         for (name, expected) in receipt["lanes"][lane]["entries"].as_object().unwrap() {
             if name == "bin/sudo" {
+                assert_eq!(
+                    expected,
+                    &json!({"byte_count":951,"kind":"file","mode":0o755,"sha256":"3110cc0a1f9b57cdba2133d7d515121e6e47dae3fbe228f77527df861efb041d"}),
+                    "original generated helper metadata: {lane}"
+                );
                 continue;
             } // The emitted Python script becomes an owned ELF alias.
             assert_eq!(&descriptor(&root.join(name)), expected, "{lane}: {name}");
@@ -305,18 +308,12 @@ fn overlay_alias_keeps_owned_mount_chmod_umount_and_cleanup_boundaries() {
 }
 
 fn overlay_original() -> Value {
-    let path = PathBuf::from(
-        env::var_os("UPDATED_OVERLAY_ORIGINAL_RECEIPT").expect("original overlay receipt required"),
-    );
-    let bytes = fs::read(path).unwrap();
-    let expected =
-        env::var("UPDATED_OVERLAY_ORIGINAL_SHA256").expect("original overlay SHA256 required");
+    let bytes = include_bytes!("fixtures/updated-fixture-original/overlay-original.json");
     assert_eq!(
-        expected,
-        "3aee09430978c6c2b736bc8bc45c8ce0d049e98f358a7f41e764f01a953606c2"
+        sha(bytes),
+        "338900085dc7b31c68fc1c743fc19e128679cb63e59a487307f86af6a49d3947"
     );
-    assert_eq!(sha(&bytes), expected);
-    let receipt: Value = serde_json::from_slice(&bytes).unwrap();
+    let receipt: Value = serde_json::from_slice(bytes).unwrap();
     assert_eq!(
         receipt["source_commit"],
         "ce145d062ad24f71da3e49e9b8b4fc676b35ef41"
@@ -371,6 +368,13 @@ fn overlay_tree(root: &Path) -> Value {
 }
 fn filtered_original_tree(original: &Value) -> Value {
     let mut value = original.as_object().unwrap().clone();
+    assert_eq!(
+        value.get("bin/sudo"),
+        Some(
+            &json!({"byte_count":951,"kind":"file","mode":0o755,"sha256":"3110cc0a1f9b57cdba2133d7d515121e6e47dae3fbe228f77527df861efb041d"})
+        ),
+        "original generated helper metadata"
+    );
     value.remove("bin/sudo");
     value.remove("overlay-commands.jsonl");
     Value::Object(value)

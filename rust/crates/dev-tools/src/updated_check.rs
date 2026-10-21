@@ -11,7 +11,7 @@ use std::{
     env,
     ffi::OsString,
     fs::{self, File},
-    io::{self, Read},
+    io::{self, Read, Seek, SeekFrom},
     os::unix::fs::MetadataExt,
     path::{Path, PathBuf},
     time::Duration,
@@ -77,7 +77,7 @@ fn historical_sources(root: &Path) -> Result<Value> {
     for (name, digest, required) in [
         ("rust/tools/check_updated.py", CHECKER_SHA, false),
         ("rust/tools/updated_source.py", SOURCE_SHA, false),
-        ("rust/tools/updated_fixtures.py", FIXTURE_SHA, true),
+        ("rust/tools/updated_fixtures.py", FIXTURE_SHA, false),
     ] {
         let path = root.join(name);
         require(
@@ -127,6 +127,90 @@ fn historical_sources(root: &Path) -> Result<Value> {
         }
     }
     Ok(Value::Object(admitted))
+}
+
+struct HistoricalHelper {
+    path: PathBuf,
+    parent: PathBuf,
+    parent_identity: (u64, u64),
+    held: Option<(File, u64, u64)>,
+}
+impl HistoricalHelper {
+    fn open(root: &Path) -> Result<Self> {
+        let path = root.join("rust/tools/updated_fixtures.py");
+        let parent = path
+            .parent()
+            .ok_or("missing updater helper parent")?
+            .to_owned();
+        let metadata = fs::symlink_metadata(&parent)?;
+        require(
+            metadata.is_dir(),
+            "updater helper parent is not a directory",
+        )?;
+        let held = match fs::symlink_metadata(&path) {
+            Ok(named) => {
+                require(named.is_file(), "updater historical source is not regular")?;
+                let file = File::from(rustix::fs::open(
+                    &path,
+                    rustix::fs::OFlags::RDONLY
+                        | rustix::fs::OFlags::NONBLOCK
+                        | rustix::fs::OFlags::NOFOLLOW
+                        | rustix::fs::OFlags::CLOEXEC,
+                    rustix::fs::Mode::empty(),
+                )?);
+                let opened = file.metadata()?;
+                require(
+                    opened.is_file() && (named.dev(), named.ino()) == (opened.dev(), opened.ino()),
+                    "updater historical helper identity changed",
+                )?;
+                Some((file, opened.dev(), opened.ino()))
+            }
+            Err(error) if error.kind() == io::ErrorKind::NotFound => None,
+            Err(error) => return Err(error.into()),
+        };
+        let mut bound = Self {
+            path,
+            parent,
+            parent_identity: (metadata.dev(), metadata.ino()),
+            held,
+        };
+        bound.verify()?;
+        Ok(bound)
+    }
+    fn verify(&mut self) -> Result<()> {
+        let parent = fs::symlink_metadata(&self.parent)?;
+        require(
+            parent.is_dir() && (parent.dev(), parent.ino()) == self.parent_identity,
+            "updater historical helper parent changed",
+        )?;
+        if let Some((file, dev, ino)) = &mut self.held {
+            let named = fs::symlink_metadata(&self.path)?;
+            let opened = file.metadata()?;
+            require(
+                named.is_file()
+                    && opened.is_file()
+                    && (named.dev(), named.ino()) == (*dev, *ino)
+                    && (opened.dev(), opened.ino()) == (*dev, *ino)
+                    && opened.len() <= MAX_HISTORICAL_SOURCE_BYTES,
+                "updater historical helper identity changed",
+            )?;
+            file.seek(SeekFrom::Start(0))?;
+            let mut bytes = Vec::new();
+            (&mut *file)
+                .take(MAX_HISTORICAL_SOURCE_BYTES + 1)
+                .read_to_end(&mut bytes)?;
+            require(
+                bytes.len() as u64 <= MAX_HISTORICAL_SOURCE_BYTES
+                    && format!("{:x}", Sha256::digest(bytes)) == FIXTURE_SHA,
+                "updater historical helper content changed",
+            )
+        } else {
+            require(
+                matches!(fs::symlink_metadata(&self.path), Err(error) if error.kind() == io::ErrorKind::NotFound),
+                "updater historical helper reappeared",
+            )
+        }
+    }
 }
 
 fn sealed_original(name: &str) -> Result<Value> {
@@ -437,6 +521,7 @@ pub fn run(
         .nth(3)
         .ok_or("repository root missing")?;
     let historical = historical_sources(admission_root)?;
+    let mut historical_helper = HistoricalHelper::open(admission_root)?;
     let mut original_inputs = Vec::new();
     let mut original_pins = serde_json::Map::new();
     for (relative, expected) in ORIGINAL_INPUTS {
@@ -490,6 +575,7 @@ pub fn run(
             historical_sources(admission_root)? == historical,
             "updater historical source presence changed",
         )?;
+        historical_helper.verify()?;
         for (path, digest) in &original_inputs {
             unchanged(path, digest)?;
         }
@@ -499,6 +585,7 @@ pub fn run(
         historical_sources(admission_root)? == historical,
         "updater historical source presence changed before receipt",
     )?;
+    historical_helper.verify()?;
     output_value(&report, &output.join("result.json"))?;
     Ok(report)
 }

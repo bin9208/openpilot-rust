@@ -685,11 +685,6 @@ fn historical_source_reappearance_mutation_and_symlink_fail_before_receipt() {
     let source_root = directory.path().join("root");
     let tools = source_root.join("rust/tools");
     fs::create_dir_all(&tools).unwrap();
-    fs::copy(
-        repo().join("rust/tools/updated_fixtures.py"),
-        tools.join("updated_fixtures.py"),
-    )
-    .unwrap();
     let missing = directory.path().join("missing-binary");
     let attempt = |label: &str| {
         run(
@@ -703,6 +698,21 @@ fn historical_source_reappearance_mutation_and_symlink_fail_before_receipt() {
         .to_string()
     };
     assert!(attempt("valid-absence").contains("No such file"));
+    let helper = tools.join("updated_fixtures.py");
+    fs::write(&helper, b"unexpected helper reappearance").unwrap();
+    assert!(attempt("helper-reappeared").contains("historical source changed"));
+    fs::remove_file(&helper).unwrap();
+    symlink("/bin/true", &helper).unwrap();
+    assert!(attempt("helper-symlink").contains("not regular"));
+    fs::remove_file(&helper).unwrap();
+    rustix::fs::mkfifoat(
+        rustix::fs::CWD,
+        &helper,
+        rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR,
+    )
+    .unwrap();
+    assert!(attempt("helper-fifo").contains("not regular"));
+    fs::remove_file(&helper).unwrap();
     let reappeared = tools.join("updated_source.py");
     fs::write(&reappeared, b"unexpected source reappearance").unwrap();
     assert!(attempt("reappeared").contains("historical source changed"));
@@ -718,13 +728,9 @@ fn historical_source_reappearance_mutation_and_symlink_fail_before_receipt() {
     .unwrap();
     assert!(attempt("fifo").contains("not regular"));
     fs::remove_file(&reappeared).unwrap();
-    fs::write(tools.join("updated_fixtures.py"), b"mutated fixture").unwrap();
+    fs::write(&helper, b"mutated fixture").unwrap();
     assert!(attempt("fixture-drift").contains("historical source changed"));
-    fs::write(
-        tools.join("updated_fixtures.py"),
-        vec![b'x'; 2 * 1024 * 1024 + 1],
-    )
-    .unwrap();
+    fs::write(&helper, vec![b'x'; 2 * 1024 * 1024 + 1]).unwrap();
     assert!(attempt("oversized-fixture").contains("bounded admission"));
     fs::remove_dir_all(&tools).unwrap();
     assert!(attempt("missing-parent").contains("No such file"));
@@ -738,18 +744,39 @@ fn same_elves_run_checkout_and_genuinely_absent_historical_roots() {
     let absent = evidence.join("absent-root");
     let tools = absent.join("rust/tools");
     fs::create_dir_all(&tools).unwrap();
-    fs::copy(
-        repo().join("rust/tools/updated_fixtures.py"),
-        tools.join("updated_fixtures.py"),
-    )
-    .unwrap();
-    for name in ["check_updated.py", "updated_source.py"] {
+    for name in [
+        "check_updated.py",
+        "updated_source.py",
+        "updated_fixtures.py",
+    ] {
         assert!(
             matches!(fs::symlink_metadata(tools.join(name)), Err(error) if error.kind() == std::io::ErrorKind::NotFound)
         );
     }
     let checker_present = repo().join("rust/tools/check_updated.py").exists();
     let source_present = repo().join("rust/tools/updated_source.py").exists();
+    let checkout_helper = repo().join("rust/tools/updated_fixtures.py");
+    let helper_present = match fs::symlink_metadata(&checkout_helper) {
+        Ok(metadata) => {
+            assert!(metadata.is_file(), "historical helper is not regular");
+            assert_eq!(
+                format!("{:x}", Sha256::digest(fs::read(&checkout_helper).unwrap())),
+                "76607e02520f383227264257de0ed8505b9dc12e462227b176f2c919dfec2d60"
+            );
+            true
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => false,
+        Err(error) => panic!("historical helper admission failed: {error}"),
+    };
+    let require_helper_absent = match std::env::var("UPDATED_FIXTURE_REQUIRE_ABSENT")
+        .expect("explicit historical helper state required")
+        .as_str()
+    {
+        "0" => false,
+        "1" => true,
+        other => panic!("invalid UPDATED_FIXTURE_REQUIRE_ABSENT: {other}"),
+    };
+    assert_eq!(helper_present, !require_helper_absent);
     assert_eq!(
         checker_present, source_present,
         "historical pair partially retired"
@@ -759,6 +786,7 @@ fn same_elves_run_checkout_and_genuinely_absent_historical_roots() {
         serde_json::to_vec_pretty(&json!({
             "checker":checker_present,
             "source":source_present,
+            "fixture_helper":helper_present,
             "admission_root_scope":["rust/tools/check_updated.py","rust/tools/updated_source.py","rust/tools/updated_fixtures.py"],
             "other_original_dependency_pins":"current checkout root, not private admission root"
         }))
@@ -771,7 +799,6 @@ fn same_elves_run_checkout_and_genuinely_absent_historical_roots() {
     let shim = required("UPDATED_CHECK_SHIM");
     let strace = PathBuf::from("/usr/bin/strace");
     assert!(strace.is_file(), "cloud must install strace");
-    let helper_source = tools.join("updated_fixtures.py");
     let system_execs = [
         "/usr/bin/git",
         "/usr/bin/git-lfs",
@@ -787,10 +814,11 @@ fn same_elves_run_checkout_and_genuinely_absent_historical_roots() {
     ]
     .map(PathBuf::from);
     let mut seals = Vec::new();
-    for path in [&checker, &binary, &launcher, &shim, &strace, &helper_source]
-        .into_iter()
-        .chain(system_execs.iter())
-    {
+    let mut seal_paths = vec![&checker, &binary, &launcher, &shim, &strace];
+    if helper_present {
+        seal_paths.push(&checkout_helper);
+    }
+    for path in seal_paths.iter().copied().chain(system_execs.iter()) {
         let bytes = fs::read(path).unwrap();
         seals.push((
             path.display().to_string(),
@@ -890,10 +918,7 @@ fn same_elves_run_checkout_and_genuinely_absent_historical_roots() {
             ]),
             "actual native executable roster changed"
         );
-        for path in [&checker, &binary, &launcher, &shim, &strace, &helper_source]
-            .into_iter()
-            .chain(system_execs.iter())
-        {
+        for path in seal_paths.iter().copied().chain(system_execs.iter()) {
             let digest = format!("{:x}", Sha256::digest(fs::read(path).unwrap()));
             assert_eq!(
                 seals
@@ -913,6 +938,8 @@ fn same_elves_run_checkout_and_genuinely_absent_historical_roots() {
         }
     }
     assert_eq!(reports[0], reports[1]);
+    assert_eq!(checkout_helper.exists(), helper_present);
+    assert!(!tools.join("updated_fixtures.py").exists());
     fs::write(
         evidence.join("inputs-after.json"),
         serde_json::to_vec_pretty(&seals).unwrap(),

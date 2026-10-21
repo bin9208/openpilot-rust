@@ -2799,8 +2799,9 @@ fn retired_updater_controller_keeps_all_original_cases_and_remaining_live_gates(
         "test ! -e \"$source\"", "test ! -L \"$source\"",
         "UPDATED_CHECK_BINARY=", "UPDATED_CHECK_LAUNCHER=", "UPDATED_CHECK_SHIM=",
         "UPDATED_CHECK_OUTPUT=", "UPDATED_CHECK_CLI_OUTPUT=", "UPDATED_CHECK_ABSENCE_EVIDENCE=",
-        "--features updated-fixture-native --test updated_check --locked -- --nocapture",
-        "--features updated-fixture-native --lib --bin check-updated --bin updated-fixture --test updated_check --locked -- -D warnings",
+        "UPDATED_FIXTURE_NATIVE_OUTPUT=", "UPDATED_FIXTURE_REQUIRE_ABSENT=0",
+        "--features updated-fixture-native --test updated_check --test updated_fixture_original --locked -- --nocapture",
+        "--features updated-fixture-native --lib --bin check-updated --bin updated-fixture --test updated_check --test updated_fixture_original --locked -- -D warnings",
         "rust/target/debug/check-updated --binary \"$UPDATED_CHECK_BINARY\" --launcher \"$UPDATED_CHECK_LAUNCHER\" --output",
     ]);
     let run = commands(job);

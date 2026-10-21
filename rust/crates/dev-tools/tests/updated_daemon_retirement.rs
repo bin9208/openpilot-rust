@@ -562,34 +562,31 @@ fn assert_observation(
     native_root
 }
 
-fn assert_raw_original_pair(
-    original: &Path,
-    native: &Path,
-    original_stdout: &[u8],
-    original_stderr: &[u8],
-    native_stdout: &[u8],
-    native_stderr: &[u8],
-    original_window: (i128, i128),
-    native_window: (i128, i128),
-    original_source: &str,
-    native_source: &str,
-) {
-    assert_eq!(native_stdout, original_stdout);
-    assert_eq!(native_stdout, ORIGINAL_STDOUT.as_bytes());
-    assert_eq!(native_stderr, original_stderr);
-    assert!(native_stderr.is_empty());
+struct RawPairSide<'a> {
+    output: &'a Path,
+    stdout: &'a [u8],
+    stderr: &'a [u8],
+    window: (i128, i128),
+    source: &'a str,
+}
+
+fn assert_raw_original_pair(original: RawPairSide<'_>, native: RawPairSide<'_>) {
+    assert_eq!(native.stdout, original.stdout);
+    assert_eq!(native.stdout, ORIGINAL_STDOUT.as_bytes());
+    assert_eq!(native.stderr, original.stderr);
+    assert!(native.stderr.is_empty());
     assert_eq!(
-        json(&fs::read(native.join("result.json")).unwrap()),
-        json(&fs::read(original.join("result.json")).unwrap())
+        json(&fs::read(native.output.join("result.json")).unwrap()),
+        json(&fs::read(original.output.join("result.json")).unwrap())
     );
     for name in ["daemon.log", "duplicate.log"] {
         assert_eq!(
-            fs::read(native.join(name)).unwrap(),
-            fs::read(original.join(name)).unwrap()
+            fs::read(native.output.join(name)).unwrap(),
+            fs::read(original.output.join(name)).unwrap()
         );
     }
-    let original_commands = fs::read(original.join("overlay-commands.jsonl")).unwrap();
-    let native_commands = fs::read(native.join("overlay-commands.jsonl")).unwrap();
+    let original_commands = fs::read(original.output.join("overlay-commands.jsonl")).unwrap();
+    let native_commands = fs::read(native.output.join("overlay-commands.jsonl")).unwrap();
     let original_root = root_from_commands(&original_commands);
     let native_root = root_from_commands(&native_commands);
     assert_eq!(
@@ -598,32 +595,32 @@ fn assert_raw_original_pair(
     );
     assert_eq!(
         params(
-            &fs::read(native.join("params.json")).unwrap(),
+            &fs::read(native.output.join("params.json")).unwrap(),
             &native_root,
-            native_window.0,
-            native_window.1
+            native.window.0,
+            native.window.1
         ),
         params(
-            &fs::read(original.join("params.json")).unwrap(),
+            &fs::read(original.output.join("params.json")).unwrap(),
             &original_root,
-            original_window.0,
-            original_window.1
+            original.window.0,
+            original.window.1
         )
     );
     assert_eq!(
         records(
-            &fs::read(native.join("records.json")).unwrap(),
+            &fs::read(native.output.join("records.json")).unwrap(),
             fixture_parent(&native_root),
-            native_source,
-            native_window.0,
-            native_window.1
+            native.source,
+            native.window.0,
+            native.window.1
         ),
         records(
-            &fs::read(original.join("records.json")).unwrap(),
+            &fs::read(original.output.join("records.json")).unwrap(),
             fixture_parent(&original_root),
-            original_source,
-            original_window.0,
-            original_window.1
+            original.source,
+            original.window.0,
+            original.window.1
         )
     );
 }
@@ -697,12 +694,20 @@ fn identical_native_elves_match_original_with_present_and_absent_checker_roots()
         checker_present, !require_absent,
         "checkout checker source state"
     );
-    assert!(source_present(&helper_source));
+    let helper_present = source_present(&helper_source);
+    let require_helper_absent = match env::var("UPDATED_FIXTURE_REQUIRE_ABSENT")
+        .expect("explicit historical fixture helper state required")
+        .as_str()
+    {
+        "0" => false,
+        "1" => true,
+        other => panic!("invalid UPDATED_FIXTURE_REQUIRE_ABSENT: {other}"),
+    };
+    assert_eq!(helper_present, !require_helper_absent);
     let mut pins = owned
         .iter()
         .cloned()
         .chain(std::iter::once(strace.clone()))
-        .chain(std::iter::once(helper_source.clone()))
         .chain(SYSTEM_PROGRAMS.iter().map(PathBuf::from))
         .chain(
             ["git", "bash", "ionice", "find"]
@@ -712,7 +717,11 @@ fn identical_native_elves_match_original_with_present_and_absent_checker_roots()
         .map(Pin::new)
         .collect::<Vec<_>>();
     admitted_system_interpreters(&mut pins);
-    assert_eq!(pins[5].digest, HELPER_SHA);
+    if helper_present {
+        let pin = Pin::new(helper_source.clone());
+        assert_eq!(pin.digest, HELPER_SHA);
+        pins.push(pin);
+    }
     if checker_present {
         let historical = Pin::new(checker_source.clone());
         assert_eq!(historical.digest, CHECKER_SHA);
@@ -721,12 +730,10 @@ fn identical_native_elves_match_original_with_present_and_absent_checker_roots()
     let absent = evidence.join("absent-root");
     let private_tools = absent.join("rust/tools");
     fs::create_dir_all(&private_tools).unwrap();
-    fs::copy(&helper_source, private_tools.join("updated_fixtures.py")).unwrap();
-    let mut private_helper = Pin::new(private_tools.join("updated_fixtures.py"));
-    assert_eq!(private_helper.digest, HELPER_SHA);
     assert!(!source_present(
         &private_tools.join("check_updated_daemon.py")
     ));
+    assert!(!source_present(&private_tools.join("updated_fixtures.py")));
     fs::write(
         evidence.join("input-identities-before.json"),
         serde_json::to_vec_pretty(
@@ -791,6 +798,10 @@ fn identical_native_elves_match_original_with_present_and_absent_checker_roots()
             identity["historical_source_present"],
             lane == "checkout" && checker_present
         );
+        assert_eq!(
+            identity["historical_helper_present"],
+            lane == "checkout" && helper_present
+        );
         assert_eq!(identity["unchanged_after_run"], true);
         let attempts = exec_attempts(&fs::read_to_string(&trace).unwrap());
         assert!(!attempts.is_empty(), "empty execution trace");
@@ -819,7 +830,6 @@ fn identical_native_elves_match_original_with_present_and_absent_checker_roots()
         for pin in &mut pins {
             pin.verify();
         }
-        private_helper.verify();
     }
     assert_eq!(rosters[0], rosters[1], "same ELF execution roster changed");
     assert_eq!(
@@ -830,9 +840,11 @@ fn identical_native_elves_match_original_with_present_and_absent_checker_roots()
         parent_identity
     );
     assert_eq!(source_present(&checker_source), checker_present);
+    assert_eq!(source_present(&helper_source), helper_present);
     assert!(!source_present(
         &private_tools.join("check_updated_daemon.py")
     ));
+    assert!(!source_present(&private_tools.join("updated_fixtures.py")));
     fs::write(
         evidence.join("input-identities-after.json"),
         serde_json::to_vec_pretty(
@@ -889,8 +901,17 @@ fn actual_non_utf8_output_path_matches_fresh_original_full_observation() {
             "fresh original raw-path input differs from native input"
         );
     }
-    let mut helper = Pin::new(repo().join("rust/tools/updated_fixtures.py"));
-    assert_eq!(helper.digest, HELPER_SHA);
+    let helper_source = repo().join("rust/tools/updated_fixtures.py");
+    let helper_present = source_present(&helper_source);
+    let require_helper_absent = env::var("UPDATED_FIXTURE_REQUIRE_ABSENT")
+        .expect("historical fixture helper state required");
+    assert!(matches!(require_helper_absent.as_str(), "0" | "1"));
+    assert_eq!(helper_present, require_helper_absent == "0");
+    let mut helper = helper_present.then(|| {
+        let pin = Pin::new(helper_source.clone());
+        assert_eq!(pin.digest, HELPER_SHA);
+        pin
+    });
     let original_pin = checker_present.then(|| {
         let pin = Pin::new(checker_source);
         assert_eq!(pin.digest, CHECKER_SHA);
@@ -922,17 +943,23 @@ fn actual_non_utf8_output_path_matches_fresh_original_full_observation() {
     assert!(start <= end);
     let original_source = manifest["source_commit"].as_str().unwrap();
     assert_eq!(original_source.len(), 40);
+    let original_stdout = fs::read(original.parent().unwrap().join("original.stdout")).unwrap();
+    let original_stderr = fs::read(original.parent().unwrap().join("original.stderr")).unwrap();
     assert_raw_original_pair(
-        &original,
-        &raw_output,
-        &fs::read(original.parent().unwrap().join("original.stdout")).unwrap(),
-        &fs::read(original.parent().unwrap().join("original.stderr")).unwrap(),
-        &captured.stdout,
-        &captured.stderr,
-        (start, end),
-        (started_ns, ended_ns),
-        original_source,
-        &source,
+        RawPairSide {
+            output: &original,
+            stdout: &original_stdout,
+            stderr: &original_stderr,
+            window: (start, end),
+            source: original_source,
+        },
+        RawPairSide {
+            output: &raw_output,
+            stdout: &captured.stdout,
+            stderr: &captured.stderr,
+            window: (started_ns, ended_ns),
+            source: &source,
+        },
     );
     let raw_root =
         root_from_commands(&fs::read(raw_output.join("overlay-commands.jsonl")).unwrap());
@@ -945,7 +972,10 @@ fn actual_non_utf8_output_path_matches_fresh_original_full_observation() {
     for pin in &mut pins {
         pin.verify();
     }
-    helper.verify();
+    if let Some(pin) = &mut helper {
+        pin.verify();
+    }
+    assert_eq!(source_present(&helper_source), helper_present);
     if let Some(mut pin) = original_pin {
         pin.verify();
     }

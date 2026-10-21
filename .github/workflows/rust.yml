@@ -3018,10 +3018,12 @@ jobs:
           export UPDATED_CHECK_OUTPUT="$proof/native-test"
           export UPDATED_CHECK_CLI_OUTPUT="$proof/cli"
           export UPDATED_CHECK_ABSENCE_EVIDENCE="$proof/absence"
+          export UPDATED_FIXTURE_NATIVE_OUTPUT="$proof/fixture-native"
+          export UPDATED_FIXTURE_REQUIRE_ABSENT=0
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features updated-fixture-native --test updated_check --locked -- --nocapture
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features updated-fixture-native --test updated_check --test updated_fixture_original --locked -- --nocapture
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features updated-fixture-native --lib --bin check-updated --bin updated-fixture --test updated_check --locked -- -D warnings
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features updated-fixture-native --lib --bin check-updated --bin updated-fixture --test updated_check --test updated_fixture_original --locked -- -D warnings
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           rust/target/debug/check-updated --binary "$UPDATED_CHECK_BINARY" --launcher "$UPDATED_CHECK_LAUNCHER" --output "$proof/default-cli" > "$proof/default-cli.stdout" 2> "$proof/default-cli.stderr"
       - name: Compare updater Git lifecycle, native signals and background AGNOS adapter

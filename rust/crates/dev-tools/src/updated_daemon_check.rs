@@ -31,6 +31,8 @@ use std::{
 };
 
 const ORIGINAL_SHA256: &str = "82be3830f8e468c32abe583c197cdf2777cd5fb748a795a8c70247a7dcd00059";
+const HISTORICAL_HELPER_SHA256: &str =
+    "76607e02520f383227264257de0ed8505b9dc12e462227b176f2c919dfec2d60";
 const READY: Duration = Duration::from_secs(15);
 const DUPLICATE: Duration = Duration::from_secs(5);
 const TERM: Duration = Duration::from_secs(4);
@@ -137,13 +139,37 @@ impl Pin {
 
 struct Historical {
     path: PathBuf,
+    helper_path: PathBuf,
     parent: PathBuf,
     parent_identity: (u64, u64),
     pin: Option<Pin>,
+    helper_pin: Option<Pin>,
 }
 impl Historical {
+    fn optional_pin(path: &Path, digest: &str) -> Result<Option<Pin>> {
+        match fs::symlink_metadata(path) {
+            Ok(_) => Ok(Some(Pin::open(
+                path.to_owned(),
+                Some(digest),
+                Some(2 * 1024 * 1024),
+            )?)),
+            Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+    fn verify_pin(path: &Path, pin: &mut Option<Pin>) -> Result<()> {
+        if let Some(pin) = pin {
+            pin.verify()
+        } else {
+            require(
+                matches!(fs::symlink_metadata(path), Err(error) if error.kind() == io::ErrorKind::NotFound),
+                "historical updater source reappeared",
+            )
+        }
+    }
     fn open(root: &Path) -> Result<Self> {
         let path = root.join("rust/tools/check_updated_daemon.py");
+        let helper_path = root.join("rust/tools/updated_fixtures.py");
         let parent = path
             .parent()
             .ok_or("historical updater source parent missing")?
@@ -153,20 +179,15 @@ impl Historical {
             "historical updater parent is not a directory",
         )?;
         let parent_identity = identity(&parent)?;
-        let pin = match fs::symlink_metadata(&path) {
-            Ok(_) => Some(Pin::open(
-                path.clone(),
-                Some(ORIGINAL_SHA256),
-                Some(2 * 1024 * 1024),
-            )?),
-            Err(error) if error.kind() == io::ErrorKind::NotFound => None,
-            Err(error) => return Err(error.into()),
-        };
+        let pin = Self::optional_pin(&path, ORIGINAL_SHA256)?;
+        let helper_pin = Self::optional_pin(&helper_path, HISTORICAL_HELPER_SHA256)?;
         Ok(Self {
             path,
+            helper_path,
             parent,
             parent_identity,
             pin,
+            helper_pin,
         })
     }
     fn verify(&mut self) -> Result<()> {
@@ -175,14 +196,8 @@ impl Historical {
                 && fs::symlink_metadata(&self.parent)?.is_dir(),
             "historical updater source parent changed",
         )?;
-        if let Some(pin) = &mut self.pin {
-            pin.verify()
-        } else {
-            require(
-                matches!(fs::symlink_metadata(&self.path), Err(error) if error.kind() == io::ErrorKind::NotFound),
-                "historical updater source reappeared",
-            )
-        }
+        Self::verify_pin(&self.path, &mut self.pin)?;
+        Self::verify_pin(&self.helper_path, &mut self.helper_pin)
     }
 }
 
@@ -847,7 +862,7 @@ fn execute(options: &Options, signals: &Signals) -> Result<Completed> {
     fs::write(
         options.output.join("input-identities.json"),
         serde_json::to_vec_pretty(
-            &json!({"binary":&completed.inputs[0].sha256,"launcher":&completed.inputs[1].sha256,"fixture":&completed.inputs[2].sha256,"historical_source_present":completed.historical.pin.is_some(),"unchanged_after_run":true}),
+            &json!({"binary":&completed.inputs[0].sha256,"launcher":&completed.inputs[1].sha256,"fixture":&completed.inputs[2].sha256,"historical_source_present":completed.historical.pin.is_some(),"historical_helper_present":completed.historical.helper_pin.is_some(),"unchanged_after_run":true}),
         )?,
     )?;
     Ok(completed)
@@ -911,6 +926,24 @@ mod tests {
         absent.verify().unwrap();
         fs::write(&path, b"reappeared").unwrap();
         assert!(absent.verify().is_err());
+        fs::remove_file(&path).unwrap();
+        let helper = tools.join("updated_fixtures.py");
+        let mut helper_absent = Historical::open(temporary.path()).unwrap();
+        fs::write(&helper, b"unexpected helper reappearance").unwrap();
+        assert!(helper_absent.verify().is_err());
+        assert!(Historical::open(temporary.path()).is_err());
+        fs::remove_file(&helper).unwrap();
+        symlink("/bin/true", &helper).unwrap();
+        assert!(Historical::open(temporary.path()).is_err());
+        fs::remove_file(&helper).unwrap();
+        rustix::fs::mkfifoat(
+            rustix::fs::CWD,
+            &helper,
+            rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR,
+        )
+        .unwrap();
+        assert!(Historical::open(temporary.path()).is_err());
+        fs::remove_file(&helper).unwrap();
         fs::remove_dir_all(&tools).unwrap();
         assert!(Historical::open(temporary.path()).is_err());
     }

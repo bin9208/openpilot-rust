@@ -31,15 +31,16 @@ receipts, in the original case order, with raw stdout/stderr hex, status, argv,
 and source/interpreter hashes. It was projected from the artifact receipts;
 native outputs were deliberately excluded. The projection SHA256 is
 `a9806418ef44248e24a494f37ec387195f6d87996e5de7278c0fc8205cf8372f`.
-The original Python checker remains in the repository until a fresh same-ELF
-present/absent cloud proof passes. `updated_fixtures.py` also remains required
-by `check_updated_daemon.py` and is outside this deletion gate.
+The original Python checker was retired after its same-ELF absence proof.
+`updated_fixtures.py` remains for the original daemon checker until that
+controller's independent comparison and absence proof are accepted.
 
 The controller's `--root` option changes admission only for the three
 `rust/tools/check_updated.py`, `updated_source.py`, and `updated_fixtures.py`
 paths. The five unchanged runtime/original dependency pins are still read from
 the actual checkout. The first absence cloud run retains full `strace` files
 to inventory Git, launcher, fixture, checker, candidate, and any real native
-helper executions. A strict complete executable/argv allowlist must be based
-on that trace before treating interpreter absence as proven; the current
-source check rejects Python attempts but is not the final exact exec audit.
+helper executions. The accepted updater proof uses its complete observed
+executable/argv allowlist; preparation for the helper's own retirement now
+requires its absence in the private root while the checkout helper is
+exact-hash-pinned when present.
