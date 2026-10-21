@@ -1,4 +1,6 @@
-use openpilot_dev_tools::driving_daemon_check::{self, Options};
+#[path = "support/driving_cli.rs"]
+mod cli;
+use openpilot_dev_tools::driving_daemon_check::Options;
 use std::{env, path::PathBuf};
 
 fn required(name: &str) -> PathBuf {
@@ -19,7 +21,34 @@ fn full_six_scenario_live_ipc_matches_independent_original() {
         peer: env::var_os("DRIVING_DAEMON_PEER").map(PathBuf::from),
         compiler: env::var_os("DRIVING_DAEMON_COMPILER").map(PathBuf::from),
     };
-    let result = driving_daemon_check::run(&options).unwrap();
+    let mut args = vec![
+        "--binary".into(),
+        options.binary.as_os_str().to_owned(),
+        "--catalog".into(),
+        options.catalog.as_os_str().to_owned(),
+        "--original-dir".into(),
+        options.original_dir.as_os_str().to_owned(),
+        "--original-manifest-sha256".into(),
+        options.original_manifest_sha256.clone().into(),
+        "--output".into(),
+        options.output.as_os_str().to_owned(),
+        "--root".into(),
+        options.root.as_os_str().to_owned(),
+    ];
+    if let Some(collector) = &options.collector {
+        args.extend(["--collector".into(), collector.as_os_str().to_owned()]);
+    }
+    if let Some(peer) = &options.peer {
+        args.extend(["--peer".into(), peer.as_os_str().to_owned()]);
+    }
+    if let Some(compiler) = &options.compiler {
+        args.extend(["--compiler".into(), compiler.as_os_str().to_owned()]);
+    }
+    let result = cli::run(
+        std::path::Path::new(env!("CARGO_BIN_EXE_check-driving-daemon")),
+        args,
+        &options.output,
+    );
     let runs = result["runs"].as_array().unwrap();
     assert_eq!(runs.len(), 6);
     assert_eq!(

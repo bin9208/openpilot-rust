@@ -1,4 +1,6 @@
-use openpilot_dev_tools::driving_logging_fault_check::{self, Options};
+#[path = "support/driving_cli.rs"]
+mod cli;
+use openpilot_dev_tools::driving_logging_fault_check::Options;
 use std::{env, path::PathBuf};
 
 fn required(name: &str) -> PathBuf {
@@ -18,7 +20,28 @@ fn unchanged_model_and_collector_recover_from_both_final_link_failures() {
         root: required("DRIVING_DAEMON_ROOT"),
         output: required("DRIVING_LOGGING_FAULT_OUTPUT"),
     };
-    let report = driving_logging_fault_check::run(&options).unwrap();
+    let report = cli::run(
+        std::path::Path::new(env!("CARGO_BIN_EXE_check-model-logging-faults")),
+        vec![
+            "--fault-binary".into(),
+            options.fault_binary.as_os_str().to_owned(),
+            "--collector".into(),
+            options.collector.as_os_str().to_owned(),
+            "--peer".into(),
+            options.peer.as_os_str().to_owned(),
+            "--catalog".into(),
+            options.catalog.as_os_str().to_owned(),
+            "--original-dir".into(),
+            options.original_dir.as_os_str().to_owned(),
+            "--original-manifest-sha256".into(),
+            options.original_manifest_sha256.clone().into(),
+            "--root".into(),
+            options.root.as_os_str().to_owned(),
+            "--output".into(),
+            options.output.as_os_str().to_owned(),
+        ],
+        &options.output,
+    );
     assert_eq!(report["result"], "pass");
     assert_eq!(report["source"]["ordinary_errno"], 88);
     assert_eq!(report["ordinary_exit"], 1);

@@ -1227,29 +1227,36 @@ mod line_tests {
 
     #[test]
     fn msgq_notification_signals_do_not_abort_a_child_line_wait() {
-        use std::{
-            os::unix::thread::JoinHandleExt,
-            sync::{
-                atomic::{AtomicBool, Ordering},
-                mpsc, Arc,
-            },
-            thread,
-            time::Duration,
-        };
-        unsafe extern "C" {
-            fn pthread_kill(thread: usize, signal: i32) -> i32;
-        }
-        let notified = Arc::new(AtomicBool::new(false));
-        let registration =
-            signal_hook::flag::register(signal_hook::consts::SIGUSR2, Arc::clone(&notified))
+        use openpilot_msgq::{Publisher, Subscriber};
+        use std::{sync::mpsc, thread, time::Duration};
+        const NAME: &str = "driving_daemon_check::line_tests::msgq_notification_signals_do_not_abort_a_child_line_wait";
+        const CHILD: &str = "OPENPILOT_DRIVING_LINE_SIGNAL_CHILD";
+        // Keep the process-wide msgq handler and namespace isolated from other
+        // lib tests. The parent owns the shared-memory files until the child exits.
+        if std::env::var_os(CHILD).is_none() {
+            let namespace = tempfile::Builder::new()
+                .prefix("msgq_rust-probe-line-eintr-")
+                .tempdir_in("/dev/shm")
                 .unwrap();
-        struct Handler(signal_hook::SigId);
-        impl Drop for Handler {
-            fn drop(&mut self) {
-                signal_hook::low_level::unregister(self.0);
-            }
+            let prefix = namespace
+                .path()
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .strip_prefix("msgq_")
+                .unwrap();
+            let status = std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", NAME, "--nocapture"])
+                .env(CHILD, "1")
+                .env("OPENPILOT_PREFIX", prefix)
+                .env_remove("CEREAL_FAKE")
+                .status()
+                .unwrap();
+            assert!(status.success(), "msgq signal child failed: {status}");
+            return;
         }
-        let _handler = Handler(registration);
+        let mut publisher = Publisher::new("line-interruption").unwrap();
         let directory = tempfile::tempdir().unwrap();
         let (mut writer, reader) = UnixStream::pair().unwrap();
         reader.set_nonblocking(true).unwrap();
@@ -1257,6 +1264,9 @@ mod line_tests {
         let log = File::create(directory.path().join("signal.log")).unwrap();
         let (ready, started) = mpsc::channel();
         let waiting = thread::spawn(move || {
+            // Queue registration records this thread ID. Each publication below
+            // sends this reader the real msgq SIGUSR2 notification.
+            let mut subscriber = Subscriber::new("line-interruption", false).unwrap();
             let mut lines = Lines {
                 pipe: File::from(descriptor),
                 log,
@@ -1265,27 +1275,25 @@ mod line_tests {
             };
             let signals = Signals::new().unwrap();
             ready.send(()).unwrap();
-            lines
+            let line = lines
                 .until(&["READY"], &signals)
-                .map_err(|error| error.to_string())
+                .map_err(|error| error.to_string())?;
+            for value in 0_u8..5 {
+                assert_eq!(
+                    subscriber.receive(Duration::ZERO).unwrap(),
+                    Some(vec![value])
+                );
+            }
+            Ok::<_, String>(line)
         });
         started.recv().unwrap();
-        for _ in 0..5 {
+        for value in 0_u8..5 {
             thread::sleep(Duration::from_millis(10));
-            // SAFETY: the join handle owns this live thread until after the READY write.
-            // SIGUSR2 has the harmless flag handler installed above.
-            assert_eq!(
-                unsafe {
-                    pthread_kill(
-                        waiting.as_pthread_t() as usize,
-                        signal_hook::consts::SIGUSR2,
-                    )
-                },
-                0
-            );
+            publisher.send(&[value]).unwrap();
         }
-        writer.write_all(b"READY\n").unwrap();
+        let written = writer.write_all(b"READY\n");
+        // Report the original wait error before a secondary closed-pipe error.
         assert_eq!(waiting.join().unwrap().unwrap(), "READY");
-        assert!(notified.load(Ordering::Relaxed));
+        written.unwrap();
     }
 }
