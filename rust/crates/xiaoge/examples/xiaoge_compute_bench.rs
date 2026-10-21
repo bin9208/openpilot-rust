@@ -3,34 +3,63 @@ use openpilot_xiaoge::lane::{select, Candidate, Head, ResultData, MASK_CHANNELS,
 use openpilot_xiaoge::nv12::{Frame, Layout};
 use openpilot_xiaoge::Error;
 use serde_json::{json, Value};
-use std::{hint::black_box, time::Instant};
+use std::{
+    hint::black_box,
+    time::{Duration, Instant},
+};
 
 #[path = "../tests/support/lane_head_0682e933.rs"]
 mod baseline;
 #[path = "../tests/support/compute_cases.rs"]
 mod inputs;
 
-fn elapsed(iterations: usize, operation: &mut impl FnMut()) -> f64 {
+#[derive(serde::Serialize)]
+struct Sample {
+    wall_us: f64,
+    process_cpu_us: Option<f64>,
+}
+
+#[cfg(feature = "native-skip-miri")]
+fn cpu_now() -> Option<Duration> {
+    let time = rustix::time::clock_gettime(rustix::time::ClockId::ProcessCPUTime);
+    Some(Duration::new(
+        time.tv_sec.try_into().unwrap(),
+        time.tv_nsec.try_into().unwrap(),
+    ))
+}
+
+#[cfg(not(feature = "native-skip-miri"))]
+fn cpu_now() -> Option<Duration> {
+    None
+}
+
+fn elapsed(iterations: usize, operation: &mut impl FnMut()) -> Sample {
     let start = Instant::now();
+    let cpu = cpu_now();
     for _ in 0..iterations {
         operation();
     }
-    start.elapsed().as_secs_f64() * 1e6 / iterations as f64
+    let process_cpu_us =
+        cpu.map(|start| (cpu_now().unwrap() - start).as_secs_f64() * 1e6 / iterations as f64);
+    Sample {
+        wall_us: start.elapsed().as_secs_f64() * 1e6 / iterations as f64,
+        process_cpu_us,
+    }
 }
 
 fn pair(name: &str, iterations: usize, mut before: impl FnMut(), mut after: impl FnMut()) -> Value {
     // Alternate order, warm both implementations, and retain every raw sample.
     before();
     after();
-    let mut baseline_us = Vec::new();
-    let mut candidate_us = Vec::new();
+    let mut baseline_samples = Vec::new();
+    let mut candidate_samples = Vec::new();
     for round in 0..9 {
         if round % 2 == 0 {
-            baseline_us.push(elapsed(iterations, &mut before));
-            candidate_us.push(elapsed(iterations, &mut after));
+            baseline_samples.push(elapsed(iterations, &mut before));
+            candidate_samples.push(elapsed(iterations, &mut after));
         } else {
-            candidate_us.push(elapsed(iterations, &mut after));
-            baseline_us.push(elapsed(iterations, &mut before));
+            candidate_samples.push(elapsed(iterations, &mut after));
+            baseline_samples.push(elapsed(iterations, &mut before));
         }
     }
     let median = |values: &[f64]| {
@@ -38,10 +67,27 @@ fn pair(name: &str, iterations: usize, mut before: impl FnMut(), mut after: impl
         sorted.sort_by(f64::total_cmp);
         sorted[sorted.len() / 2]
     };
+    let baseline_us: Vec<_> = baseline_samples
+        .iter()
+        .map(|sample| sample.wall_us)
+        .collect();
+    let candidate_us: Vec<_> = candidate_samples
+        .iter()
+        .map(|sample| sample.wall_us)
+        .collect();
+    let cpu_median = |samples: &[Sample]| {
+        samples
+            .iter()
+            .map(|sample| sample.process_cpu_us)
+            .collect::<Option<Vec<_>>>()
+            .map(|values| median(&values))
+    };
     json!({"name": name, "iterations_per_sample": iterations,
-        "baseline_us": baseline_us, "candidate_us": candidate_us,
+        "baseline_samples": baseline_samples, "candidate_samples": candidate_samples,
         "baseline_median_us": median(&baseline_us),
         "candidate_median_us": median(&candidate_us),
+        "baseline_process_cpu_median_us": cpu_median(&baseline_samples),
+        "candidate_process_cpu_median_us": cpu_median(&candidate_samples),
         "speedup": median(&baseline_us) / median(&candidate_us)})
 }
 

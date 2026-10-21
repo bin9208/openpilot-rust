@@ -158,7 +158,9 @@ The manual `compute_only` fast-workflow job builds the pinned, unchanged OpenCV
 provider on a GitHub-hosted ARM runner. It compares both implementations on the
 same inputs, warms both and alternates measurement order over nine samples.
 Reports separate NV12 extraction, mask cases, normalization, BSD preprocessing
-and complete real-model lane inference. Synthetic/stage speedups must not be
+and complete real-model lane inference. Native measurements include both wall
+time and CLOCK_PROCESS_CPUTIME_ID for all OpenCV worker threads; the runtime
+caller-only thread CPU metric is not treated as the inference process total. Synthetic/stage speedups must not be
 reported as a proportional reduction in whole-process or vehicle CPU usage.
 These checks do not measure GPU headroom or establish real-device latency.
 Final exact-source receipts, release identity and pending device acceptance are
