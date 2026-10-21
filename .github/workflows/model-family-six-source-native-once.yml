@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
-      EXPECTED_SOURCE: cb9f508e0cc5f0b12c295e2f679c4196c6feef18
+      EXPECTED_SOURCE: 1ccf8437c43d737b78c9bd8360293a16217fae5c
       RUSTUP_TOOLCHAIN: 1.94.0
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
@@ -33,7 +33,7 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: cb9f508e0cc5f0b12c295e2f679c4196c6feef18
+        ref: 1ccf8437c43d737b78c9bd8360293a16217fae5c
     - name: Reserve hosted capacity before dependencies
       shell: bash
       run: "set -euo pipefail\ntest \"$(git rev-parse HEAD)\" = \"$EXPECTED_SOURCE\"\nsudo rm -rf /usr/local/lib/android /usr/share/dotnet\
@@ -237,4 +237,5 @@ jobs:
           !${{ runner.temp }}/model-family-preparation-296/driving-fixture/**
 
           '
+        include-hidden-files: true
     name: rust native model-family retirement
