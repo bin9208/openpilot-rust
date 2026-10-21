@@ -1810,3 +1810,7 @@ required-features = ["beep-reference-native"]
 [[test]]
 name = "beep_reference_check"
 required-features = ["beep-reference-native"]
+
+[[test]]
+name = "beep_reference_retirement"
+required-features = ["beep-reference-native"]

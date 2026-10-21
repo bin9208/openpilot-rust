@@ -4,7 +4,7 @@ use openpilot_dev_tools::{
     seal::Result,
 };
 use sha2::{Digest, Sha256};
-use std::{env, fs, path::PathBuf};
+use std::{collections::BTreeSet, env, fs, path::PathBuf};
 
 fn options(output: PathBuf) -> Options {
     let required = |key| {
@@ -13,11 +13,12 @@ fn options(output: PathBuf) -> Options {
     Options {
         root: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.."),
         binary: required("BEEP_REFERENCE_BINARY"),
-        binding: required("BEEP_REFERENCE_BINDING"),
+        binding: env::var_os("BEEP_REFERENCE_BINDING").map(PathBuf::from),
         original: required("BEEP_REFERENCE_ORIGINAL"),
         original_manifest_sha256: env::var("BEEP_REFERENCE_ORIGINAL_MANIFEST_SHA256")
             .expect("missing mandatory original-only capture hash"),
         output,
+        checker_absent: env::var_os("BEEP_REFERENCE_CHECKER_ABSENT").is_some(),
     }
 }
 
@@ -38,6 +39,22 @@ impl Runner for EmptyPeer {
             stdout: Vec::new(),
             stderr: Vec::new(),
         })
+    }
+}
+
+struct ReappearingRunner {
+    calls: usize,
+    checker: PathBuf,
+}
+impl Runner for ReappearingRunner {
+    fn run(&mut self, command: &CommandSpec) -> Result<Captured> {
+        let result = openpilot_dev_tools::qa_process::NativeRunner.run(command)?;
+        self.calls += 1;
+        if self.calls == 20 {
+            fs::create_dir_all(self.checker.parent().unwrap())?;
+            fs::write(&self.checker, b"late reappearance")?;
+        }
+        Ok(result)
     }
 }
 
@@ -73,6 +90,10 @@ fn changed_original_source_cannot_launch_or_publish() {
         "openpilot/common/utils.py",
         "openpilot/common/realtime.py",
     ] {
+        if name == "rust/tools/check_beepd_reference.py" && options.checker_absent {
+            assert!(!source.join(name).exists());
+            continue;
+        }
         let target = options.root.join(name);
         fs::create_dir_all(target.parent().unwrap()).unwrap();
         fs::copy(source.join(name), target).unwrap();
@@ -108,9 +129,9 @@ fn self_consistent_binding_with_changed_source_or_json11_cannot_launch() {
     for changed in ["sources", "json11_sha256"] {
         let private = tempfile::tempdir().unwrap();
         let mut options = options(private.path().join("report"));
-        options.binding = private.path().join("params_pyx_foreign.so");
+        options.binding = Some(private.path().join("params_pyx_foreign.so"));
         let altered = b"freshly rebuilt Params binding with changed source policy";
-        fs::write(&options.binding, altered).unwrap();
+        fs::write(options.binding.as_ref().unwrap(), altered).unwrap();
         let mut provenance = original.clone();
         provenance["module_sha256"] = serde_json::json!(format!("{:x}", Sha256::digest(altered)));
         if changed == "sources" {
@@ -159,5 +180,61 @@ fn candidate_missing_policy_trace_cannot_publish_summary() {
     let mut runner = EmptyPeer(0);
     assert!(check(&options, &mut runner, &mut std::io::sink()).is_err());
     assert_eq!(runner.0, 1);
+    assert!(!options.output.join("summary.json").exists());
+}
+
+#[test]
+fn retired_checker_reappearance_cannot_launch_or_publish() {
+    let private = tempfile::tempdir().unwrap();
+    let mut options = options(private.path().join("report"));
+    options.root = private.path().join("root");
+    options.checker_absent = true;
+    let checker = options.root.join("rust/tools/check_beepd_reference.py");
+    fs::create_dir_all(checker.parent().unwrap()).unwrap();
+    fs::write(&checker, b"reappeared").unwrap();
+    let mut runner = RejectRun(0);
+    let error = check(&options, &mut runner, &mut std::io::sink()).unwrap_err();
+    assert!(error.to_string().contains("reappeared"), "{error}");
+    assert_eq!(runner.0, 0);
+    assert!(!options.output.exists());
+}
+
+#[test]
+fn retired_checker_reappearance_at_finalization_rejects_full_native_run() {
+    let private = tempfile::tempdir().unwrap();
+    let mut options = options(private.path().join("report"));
+    let source = options.root.clone();
+    options.root = private.path().join("root");
+    options.binding = None;
+    options.checker_absent = true;
+    let historical: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "fixtures/beep-reference/original-binding-provenance-3835653.json"
+    ))
+    .unwrap();
+    let mut names = historical["sources"]
+        .as_object()
+        .unwrap()
+        .keys()
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    names.extend([
+        "rust/tools/beep_source.py".to_owned(),
+        "rust/tools/beep_fixtures.py".to_owned(),
+        "rust/tools/original_params_binding.py".to_owned(),
+        "openpilot/selfdrive/controls/beep.py".to_owned(),
+        "openpilot/common/utils.py".to_owned(),
+        "openpilot/common/realtime.py".to_owned(),
+    ]);
+    for name in names {
+        let target = options.root.join(&name);
+        fs::create_dir_all(target.parent().unwrap()).unwrap();
+        fs::copy(source.join(name), target).unwrap();
+    }
+    let checker = options.root.join("rust/tools/check_beepd_reference.py");
+    assert!(!checker.exists());
+    let mut runner = ReappearingRunner { calls: 0, checker };
+    let error = check(&options, &mut runner, &mut std::io::sink()).unwrap_err();
+    assert_eq!(runner.calls, 20, "premature failure: {error}");
+    assert!(error.to_string().contains("reappeared"), "{error}");
     assert!(!options.output.join("summary.json").exists());
 }

@@ -2520,13 +2520,16 @@ jobs:
           export BEEP_REFERENCE_ORIGINAL="$GITHUB_WORKSPACE/rust/crates/dev-tools/tests/fixtures/beep-reference/3835653-original"
           export BEEP_REFERENCE_ORIGINAL_MANIFEST_SHA256=0a02d6aacb5b930012a47886c389571d9cf3ff404ecd796171045f10734a9188
           export BEEP_REFERENCE_EVIDENCE="$RUNNER_TEMP/telemetry-runtime/beep-native-test"
+          export BEEP_REFERENCE_CHECKER_BINARY="$GITHUB_WORKSPACE/rust/target/debug/check-beep-reference"
+          export BEEP_REFERENCE_RETIREMENT_EVIDENCE="$RUNNER_TEMP/telemetry-runtime/beep-native-retirement"
+          export BEEP_REFERENCE_EXPECT_ABSENT=0
           export VERSION_PROBE_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/version_trace"
           export VERSION_COLLECTOR_BINARY="$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged"
           export VERSION_WORKER_BINARY="$GITHUB_WORKSPACE/rust/target/debug/version-runtime-worker"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features version-tools-native,tombstone-live-native,sdk-transport-native,beep-reference-native --test version_source --test version_check --test version_collector_check --locked --lib --test beep_reference_check
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features version-tools-native,tombstone-live-native,sdk-transport-native,beep-reference-native --test version_source --test version_check --test version_collector_check --locked --lib --test beep_reference_check --test beep_reference_retirement
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features version-tools-native,tombstone-live-native,sdk-transport-native,beep-reference-native --lib --bin check-beep-reference --test beep_reference_check --bin check-version-reference --bin check-version-collector --bin version-runtime-worker --test version_source --test version_check --test version_collector_check --locked -- -D warnings
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features version-tools-native,tombstone-live-native,sdk-transport-native,beep-reference-native --lib --bin check-beep-reference --test beep_reference_check --test beep_reference_retirement --bin check-version-reference --bin check-version-collector --bin version-runtime-worker --test version_source --test version_check --test version_collector_check --locked -- -D warnings
           VERSION_EVIDENCE="$RUNNER_TEMP/telemetry-runtime/version-reference" rust/target/debug/check-version-reference "$VERSION_PROBE_BINARY"
           rust/target/debug/check-version-collector "$VERSION_PROBE_BINARY" "$VERSION_COLLECTOR_BINARY" "$RUNNER_TEMP/telemetry-runtime/version-collector"
           rust/target/debug/check-beep-reference --binary "$BEEP_REFERENCE_BINARY" --binding "$BEEP_REFERENCE_BINDING" --original "$BEEP_REFERENCE_ORIGINAL" --original-manifest-sha256 "$BEEP_REFERENCE_ORIGINAL_MANIFEST_SHA256" --output "$RUNNER_TEMP/telemetry-runtime/beep-native-cli"
