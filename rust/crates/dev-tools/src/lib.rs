@@ -391,5 +391,17 @@ pub mod driver_daemon_check;
 #[cfg(all(target_os = "linux", feature = "driver-daemon-native"))]
 pub mod driver_daemon_fixture;
 
+#[cfg(all(target_os = "linux", feature = "driver-daemon-native"))]
+mod model_family_process;
+
+#[cfg(all(target_os = "linux", feature = "driver-daemon-native"))]
+mod model_family_reference;
+
+#[cfg(all(target_os = "linux", feature = "driver-daemon-native"))]
+pub mod model_startup_check;
+
+#[cfg(all(target_os = "linux", feature = "driver-daemon-native"))]
+pub mod usbgpu_daemon_check;
+
 #[cfg(feature = "teleop-version-native")]
 pub mod teleop_version;

@@ -2033,3 +2033,21 @@ required-features = ["teleop-version-native"]
 [[test]]
 name = "teleop_version"
 required-features = ["teleop-version-native"]
+
+[[test]]
+name = "model_startup_check"
+required-features = ["driver-daemon-native"]
+
+[[bin]]
+name = "check-model-startup"
+path = "src/bin/model_startup_check.rs"
+required-features = ["driver-daemon-native"]
+
+[[test]]
+name = "usbgpu_daemon_check"
+required-features = ["driver-daemon-native"]
+
+[[bin]]
+name = "check-usbgpu-daemon"
+path = "src/bin/usbgpu_daemon_check.rs"
+required-features = ["driver-daemon-native"]

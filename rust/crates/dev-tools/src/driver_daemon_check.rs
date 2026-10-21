@@ -47,6 +47,30 @@ pub use source_policy::{SourcePolicy, RETIRED};
 mod current_catalog;
 use current_catalog::CurrentCatalog;
 
+pub(crate) struct CurrentCatalogAdmission {
+    catalog: CatalogPin,
+    current: CurrentCatalog,
+}
+impl CurrentCatalogAdmission {
+    pub(crate) fn open(
+        root: &Path,
+        directory: &Path,
+        receipt: &Path,
+        receipt_sha256: &str,
+        models: &BTreeMap<String, String>,
+        checkout: &str,
+    ) -> Result<Self> {
+        let catalog = CatalogPin::open(directory)?;
+        let current =
+            CurrentCatalog::open(root, &catalog, receipt, receipt_sha256, models, checkout)?;
+        Ok(Self { catalog, current })
+    }
+    pub(crate) fn verify(&self) -> Result<()> {
+        self.catalog.verify()?;
+        self.current.verify()
+    }
+}
+
 const MAX_MANIFEST: u64 = 1_000_000;
 const MAX_MEMBER: u64 = 16_000_000;
 const MAX_CAPTURE: u64 = 100_000_000;
