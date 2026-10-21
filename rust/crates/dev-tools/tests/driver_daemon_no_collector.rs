@@ -23,7 +23,7 @@ fn options(output: PathBuf) -> Options {
 #[test]
 fn original_no_collector_four_case_capture_is_independent_and_sealed() {
     let original = OriginalCapture::open(
-        &required("DRIVER_DAEMON_NO_COLLECTOR_ORIGINAL_CAPTURE").into(),
+        &PathBuf::from(required("DRIVER_DAEMON_NO_COLLECTOR_ORIGINAL_CAPTURE")),
         &required("DRIVER_DAEMON_NO_COLLECTOR_MANIFEST_SHA256"),
         &required("DRIVER_DAEMON_SOURCE_COMMIT"),
     )
@@ -112,7 +112,10 @@ fn actual_native_driver_replays_all_four_without_collector() {
         assert_eq!(run["frames"].as_u64(), Some(frames));
         assert_eq!(run["compared_fields"].as_u64(), Some(frames * 47));
         assert_eq!(run.get("logging"), Some(&serde_json::Value::Null));
-        assert_eq!(run["packets"].as_array().unwrap().len(), frames);
+        assert_eq!(
+            run["packets"].as_array().unwrap().len(),
+            usize::try_from(frames).unwrap()
+        );
         let camera = run["camera"][0].as_u64().unwrap();
         let raw = usize::from(run["raw_predictions"].as_bool().unwrap());
         assert!(!options
