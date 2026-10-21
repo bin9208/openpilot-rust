@@ -186,9 +186,9 @@ impl Historical {
     }
 }
 
-fn native_elf(path: &Path) -> Result<()> {
+fn native_elf_header(reader: &mut impl Read) -> Result<()> {
     let mut header = [0_u8; 64];
-    File::open(path)?.read_exact(&mut header)?;
+    reader.read_exact(&mut header)?;
     let machine: u16 = match std::env::consts::ARCH {
         "x86_64" => 62,
         "aarch64" => 183,
@@ -202,6 +202,10 @@ fn native_elf(path: &Path) -> Result<()> {
             && u16::from_le_bytes([header[18], header[19]]) == machine,
         "updated daemon input is not a native host ELF",
     )
+}
+
+fn native_elf(path: &Path) -> Result<()> {
+    native_elf_header(&mut File::open(path)?)
 }
 
 struct Signals {
@@ -282,12 +286,93 @@ impl Drop for Receipt {
     }
 }
 
+struct RuntimeAlias {
+    name: &'static str,
+    path: PathBuf,
+    target: PathBuf,
+    target_resolved: PathBuf,
+    identity: (u64, u64),
+    pinned: Pin,
+}
+impl RuntimeAlias {
+    fn open(root: &Path, name: &'static str, fixture: &Path) -> Result<Self> {
+        let path = root.join("bin").join(name);
+        let metadata = fs::symlink_metadata(&path)?;
+        require(
+            metadata.file_type().is_symlink(),
+            "updater runtime alias is not a symlink",
+        )?;
+        let target = fs::read_link(&path)?;
+        require(
+            target.is_absolute(),
+            "updater runtime alias target is not absolute",
+        )?;
+        let target_resolved = fs::canonicalize(&target)?;
+        if name == "sudo" {
+            require(
+                target_resolved == fixture,
+                "updater sudo alias changed native fixture target",
+            )?;
+        }
+        let mut pinned = Pin::open(target_resolved.clone(), None, None)?;
+        pinned.held.seek(SeekFrom::Start(0))?;
+        native_elf_header(&mut pinned.held)?;
+        let mut alias = Self {
+            name,
+            path,
+            target,
+            target_resolved,
+            identity: (metadata.dev(), metadata.ino()),
+            pinned,
+        };
+        alias.verify()?;
+        Ok(alias)
+    }
+    fn verify(&mut self) -> Result<()> {
+        let metadata = fs::symlink_metadata(&self.path)?;
+        require(
+            metadata.file_type().is_symlink()
+                && (metadata.dev(), metadata.ino()) == self.identity
+                && fs::read_link(&self.path)? == self.target
+                && fs::canonicalize(&self.target)? == self.target_resolved,
+            "updater runtime alias changed",
+        )?;
+        self.pinned.verify()?;
+        self.pinned.held.seek(SeekFrom::Start(0))?;
+        native_elf_header(&mut self.pinned.held)
+    }
+}
+fn runtime_alias_receipt(aliases: &[RuntimeAlias]) -> Value {
+    Value::Array(
+        aliases
+            .iter()
+            .map(|alias| {
+                json!({
+                    "name":alias.name,
+                    "path":alias.path,
+                    "target":alias.target,
+                    "target_resolved":alias.target_resolved,
+                    "link_dev":alias.identity.0,
+                    "link_ino":alias.identity.1,
+                    "target_dev":alias.pinned.dev,
+                    "target_ino":alias.pinned.ino,
+                    "target_sha256":alias.pinned.sha256,
+                    "native_host_elf":true
+                })
+            })
+            .collect(),
+    )
+}
+
 struct Completed {
     report: Value,
     output: PathBuf,
     output_identity: (u64, u64),
     inputs: [Pin; 3],
     historical: Historical,
+    aliases: Vec<RuntimeAlias>,
+    alias_before: Pin,
+    _temporary: tempfile::TempDir,
 }
 impl Completed {
     fn verify(&mut self, cancelled: &Signals) -> Result<()> {
@@ -300,6 +385,10 @@ impl Completed {
         for input in &mut self.inputs {
             input.verify()?;
         }
+        for alias in &mut self.aliases {
+            alias.verify()?;
+        }
+        self.alias_before.verify()?;
         self.historical.verify()
     }
     fn finish_after_teardown(
@@ -315,6 +404,14 @@ impl Completed {
         signals.teardown();
         after_teardown();
         self.verify(signals)?;
+        if !self.aliases.is_empty() {
+            let after = Receipt::write(
+                self.output.join("runtime-aliases-after.json"),
+                &serde_json::to_vec_pretty(&runtime_alias_receipt(&self.aliases))?,
+            )?;
+            self.verify(signals)?;
+            after.commit()?;
+        }
         receipt.commit()?;
         Ok(self.report)
     }
@@ -562,6 +659,17 @@ fn execute(options: &Options, signals: &Signals) -> Result<Completed> {
     let seed = updated_fixture::seed(temporary.path())?;
     let root = temporary.path().join("runtime");
     let mut setup = updated_fixture::setup(&root, &seed, &launcher, &fixture)?;
+    let aliases = ["git", "bash", "ionice", "find", "sudo"]
+        .into_iter()
+        .map(|name| RuntimeAlias::open(&root, name, &fixture))
+        .collect::<Result<Vec<_>>>()?;
+    let before_path = options.output.join("runtime-aliases-before.json");
+    Receipt::write(
+        before_path.clone(),
+        &serde_json::to_vec_pretty(&runtime_alias_receipt(&aliases))?,
+    )?
+    .commit()?;
+    let alias_before = Pin::open(before_path, None, Some(16 * 1024))?;
     let staging = PathBuf::from(
         setup.config["paths"]["staging"]
             .as_str()
@@ -731,6 +839,9 @@ fn execute(options: &Options, signals: &Signals) -> Result<Completed> {
         output_identity,
         inputs,
         historical,
+        aliases,
+        alias_before,
+        _temporary: temporary,
     };
     completed.verify(signals)?;
     fs::write(
@@ -826,6 +937,8 @@ mod tests {
             fs::copy(source, tools.join("check_updated_daemon.py")).unwrap();
         }
         fs::create_dir(&output).unwrap();
+        let before = output.join("runtime-aliases-before.json");
+        fs::write(&before, b"[]").unwrap();
         Completed {
             report: json!({"passed":true}),
             output_identity: identity(&output).unwrap(),
@@ -834,6 +947,9 @@ mod tests {
                 Pin::open(PathBuf::from("/bin/true"), None, None).unwrap()
             }),
             historical: Historical::open(root).unwrap(),
+            aliases: Vec::new(),
+            alias_before: Pin::open(before, None, Some(16 * 1024)).unwrap(),
+            _temporary: tempfile::tempdir().unwrap(),
         }
     }
 
@@ -867,6 +983,38 @@ mod tests {
             .finish_after_teardown(&mut signals, || flag.store(true, Ordering::Relaxed))
             .is_err());
         assert!(!root.join("cancelled/result.json").exists());
+    }
+
+    #[test]
+    fn finalization_rejects_late_private_executable_alias_drift() {
+        let temporary = tempfile::tempdir().unwrap();
+        let root = temporary.path();
+        fs::create_dir(root.join("bin")).unwrap();
+        let alias = root.join("bin/git");
+        let original = fs::canonicalize("/bin/true").unwrap();
+        let replacement = fs::canonicalize("/bin/false").unwrap();
+        std::os::unix::fs::symlink(&original, &alias).unwrap();
+        let mut completed = completed_for_test(root, root.join("late-alias"));
+        completed
+            .aliases
+            .push(RuntimeAlias::open(root, "git", &original).unwrap());
+        let mut signals = Signals {
+            cancelled: Arc::new(AtomicBool::new(false)),
+            ids: Vec::new(),
+        };
+        assert!(completed
+            .finish_after_teardown(&mut signals, || {
+                fs::remove_file(&alias).unwrap();
+                std::os::unix::fs::symlink(&replacement, &alias).unwrap();
+            })
+            .is_err());
+        assert!(!root.join("late-alias/result.json").exists());
+        assert!(!root.join("late-alias/runtime-aliases-after.json").exists());
+        fs::remove_file(&alias).unwrap();
+        let script = root.join("script");
+        fs::write(&script, b"#!/usr/bin/python3\n").unwrap();
+        std::os::unix::fs::symlink(&script, &alias).unwrap();
+        assert!(RuntimeAlias::open(root, "git", &original).is_err());
     }
 
     #[test]

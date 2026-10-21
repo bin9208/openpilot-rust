@@ -348,6 +348,13 @@ fn native_production_daemon_matches_fresh_original_result_and_retains_raw_eviden
             );
         }
     }
+    for name in ["daemon.log", "duplicate.log"] {
+        assert_eq!(
+            fs::read(output.join(name)).unwrap(),
+            fs::read(original.join(name)).unwrap(),
+            "raw production daemon observation changed: {name}"
+        );
+    }
     let records: Value =
         serde_json::from_slice(&fs::read(output.join("records.json")).unwrap()).unwrap();
     let original_records: Value =

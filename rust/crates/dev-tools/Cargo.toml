@@ -1866,3 +1866,11 @@ required-features = ["updated-daemon-native"]
 [[test]]
 name = "updated_daemon_check"
 required-features = ["updated-daemon-native"]
+
+[[test]]
+name = "updated_daemon_retirement"
+required-features = ["updated-daemon-native"]
+
+[[test]]
+name = "updated_daemon_cli"
+required-features = ["updated-daemon-native"]
