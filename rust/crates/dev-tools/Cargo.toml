@@ -541,6 +541,7 @@ required-features = ["manager-catalog-tools-native"]
 beep-reference-native = ["dep:zmq", "serde_json/float_roundtrip"]
 updated-fixture-native = []
 updated-daemon-native = ["updated-fixture-native", "dep:zmq", "dep:chrono"]
+driving-daemon-native = ["dep:capnp", "dep:openpilot-cereal", "serde_json/float_roundtrip"]
 paramsd-loop-native = ["paramsd-fixture-native"]
 paramsd-fixture-native = ["dep:capnp", "dep:openpilot-cereal", "serde_json/float_roundtrip"]
 paramsd-startup-gate-native = ["rustix/pipe"]
@@ -1874,3 +1875,16 @@ required-features = ["updated-daemon-native"]
 [[test]]
 name = "updated_daemon_cli"
 required-features = ["updated-daemon-native"]
+
+[[bin]]
+name = "check-driving-daemon"
+path = "src/bin/check_driving_daemon.rs"
+required-features = ["driving-daemon-native"]
+
+[[test]]
+name = "driving_daemon_reference"
+required-features = ["driving-daemon-native"]
+
+[[test]]
+name = "driving_daemon_check"
+required-features = ["driving-daemon-native"]

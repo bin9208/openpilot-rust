@@ -351,3 +351,8 @@ pub mod pandad_device_check;
 pub mod desire_reference_check;
 #[cfg(all(unix, feature = "panda-ci-native"))]
 pub mod panda_ci_check;
+
+#[cfg(all(target_os = "linux", feature = "driving-daemon-native"))]
+pub mod driving_daemon_check;
+#[cfg(all(target_os = "linux", feature = "driving-daemon-native"))]
+pub mod driving_daemon_reference;
