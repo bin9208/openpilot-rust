@@ -12,7 +12,8 @@ concurrency:
 jobs:
   package:
     if: >-
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/codex/fix-415-416-lfs-onnx') ||
+      (github.event_name == 'workflow_dispatch' &&
+      (github.ref == 'refs/heads/codex/fix-415-416-lfs-onnx' || github.ref == 'refs/heads/codex/fix-416-onnx-compute')) ||
       (github.event_name == 'push' && contains(github.event.head_commit.message, '[runtime-package]') &&
       (github.ref == 'refs/heads/dev-md' || startsWith(github.ref, 'refs/heads/codex/fix-402-')))
     name: Build and seal actual AGNOS runtime

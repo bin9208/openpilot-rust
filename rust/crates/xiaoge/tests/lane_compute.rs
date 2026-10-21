@@ -1,4 +1,4 @@
-use openpilot_xiaoge::lane::{select, Candidate, Head, MASK_CHANNELS, PROTO_SIZE};
+use openpilot_xiaoge::lane::{select, Candidate, Head, ResultData, MASK_CHANNELS, PROTO_SIZE};
 use openpilot_xiaoge::Error;
 
 // Frozen deployed implementation, not an oracle derived from the optimized code.

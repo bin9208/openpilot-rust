@@ -10,6 +10,10 @@ on:
         description: Run only focused ONNX regressions on a hosted runner
         type: boolean
         default: false
+      compute_only:
+        description: Compare unchanged model results and compute costs on hosted ARM
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -17,7 +21,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   fast:
-    if: github.event_name != 'workflow_dispatch' || !inputs.onnx_only
+    if: github.event_name != 'workflow_dispatch' || (!inputs.onnx_only && !inputs.compute_only)
     name: fast checks
     runs-on: ubuntu-24.04
     timeout-minutes: 7
@@ -99,3 +103,79 @@ jobs:
       - name: Mixed-remote LFS checkout regression
         run: python3 -m unittest discover -s tools/ci/tests -p test_lfs_endpoint.py -v
       - run: cargo test --manifest-path rust/Cargo.toml -p openpilot-xiaoge --lib --tests --locked
+  compute:
+    if: github.event_name == 'workflow_dispatch' && inputs.compute_only
+    name: ONNX exact compute comparison (hosted ARM)
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 75
+    env:
+      GIT_LFS_SKIP_SMUDGE: '1'
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      RUSTUP_TOOLCHAIN: '1.94.0'
+      XIAOGE_BENCH_MODELS: ${{ github.workspace }}/openpilot/selfdrive/carrot/xiaoge/assets
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify the frozen production oracle against its exact source
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, subprocess
+          from pathlib import Path
+          receipts = list(Path('rust/crates/xiaoge/tests/support').glob('*_0682e933.json'))
+          assert len(receipts) == 3
+          paths = set()
+          for receipt in receipts:
+            data = json.loads(receipt.read_text())
+            assert data['source_commit'] == '0682e933d3fea06e8953ace63fc521a29ee02b6e'
+            paths.add(data['path'])
+            expected = subprocess.check_output(['git', 'show', data['source_commit'] + ':' + data['path']])
+            actual = receipt.with_suffix('.rs').read_bytes()
+            assert actual == expected and hashlib.sha256(actual).hexdigest() == data['sha256'], receipt
+          assert paths == {'rust/crates/xiaoge/src/lane/head.rs', 'rust/crates/xiaoge/src/inference/lane.rs', 'rust/crates/xiaoge/src/inference/geometry.rs'}
+          PY
+      - name: Reserve space and install native benchmark dependencies
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          rust/tools/check-disk-space --path "$RUNNER_TEMP" --growth-mib 12288
+          sudo apt-get update
+          sudo apt-get install -y capnproto libcapnp-dev cmake ninja-build g++ libzmq3-dev git-lfs nasm
+          rustup toolchain install 1.94.0 --profile minimal
+          echo "OPENPILOT_OPENCV_ROOT=$RUNNER_TEMP/xiaoge-compute-opencv" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=$RUNNER_TEMP/xiaoge-compute-opencv/install/lib" >> "$GITHUB_ENV"
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            rust/target
+            ${{ runner.temp }}/xiaoge-compute-opencv
+          key: xiaoge-compute-${{ runner.arch }}-${{ hashFiles('rust/Cargo.lock', 'rust/crates/dev-tools/src/opencv_build.rs', 'rust/crates/opencv-runtime/native/opencv-defined-access.patch') }}-${{ github.sha }}
+          restore-keys: xiaoge-compute-${{ runner.arch }}-${{ hashFiles('rust/Cargo.lock', 'rust/crates/dev-tools/src/opencv_build.rs', 'rust/crates/opencv-runtime/native/opencv-defined-access.patch') }}-
+      - name: Build or verify the unchanged pinned OpenCV provider
+        run: |
+          rust/tools/check-disk-space --path "$RUNNER_TEMP" --growth-mib 8192
+          if [ -f "$OPENPILOT_OPENCV_ROOT/native-libraries.sha256" ]; then
+            (cd "$OPENPILOT_OPENCV_ROOT" && sha256sum --check native-libraries.sha256)
+          else
+            cargo run --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --bin build-xiaoge-opencv -- --output "$OPENPILOT_OPENCV_ROOT"
+          fi
+          git lfs pull --include='openpilot/selfdrive/carrot/xiaoge/assets/*.onnx' --exclude=''
+      - name: Require exact contracts before measuring release code
+        run: cargo test --manifest-path rust/Cargo.toml -p openpilot-xiaoge --features native-skip-miri --lib --tests --locked
+      - name: Compare the same inputs on the same ARM runner
+        run: |
+          rust/tools/check-disk-space --path "$RUNNER_TEMP" --growth-mib 4096
+          cargo run --quiet --release --manifest-path rust/Cargo.toml -p openpilot-xiaoge --features native-skip-miri --example xiaoge_compute_bench --locked > "$RUNNER_TEMP/xiaoge-compute.json"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: xiaoge-compute-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/xiaoge-compute.json
+            ${{ runner.temp }}/xiaoge-compute-opencv/receipt.json
+            ${{ runner.temp }}/xiaoge-compute-opencv/native-libraries.sha256
