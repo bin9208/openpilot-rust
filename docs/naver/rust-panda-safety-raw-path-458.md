@@ -33,3 +33,13 @@ artifact12352849676 (6,960bytes/15members, all CRCs), ZIP SHA256
 The full same-source Panda two38 lanes and11 CLI cases also pass. Current raw
 controllers advance through safety/padding/device and fail a later strict-text
 builder boundary; no full raw38 or physical Panda acceptance is inferred.
+
+The later full f5c8 CI39617311670 ARM job119281627564 passed generic
+aarch64 builds, including Panda examples. Artifact12359678225 has6 CRC-checked
+files, ZIP SHA256 `4d67c19bde9f17c3800f8b22c5a1018b8172fd755afdc40de8ccb8eb810ce685`,
+source receipt001e9a3f549f245a059b1f1cc6a65f1f2b24ebcc. Both retained Panda
+executables match their SHA256SUMS and AArch64 machine183. This is build evidence;
+the archive does not retain the example or prove its raw-path tests executed.
+The maintained ARM job now executes both panda_safety regressions under QEMU
+using the target libc. That added functional check and final required CI remain
+pending, so #458 stays open.

@@ -26,7 +26,7 @@ they are not completed functionality. All families below still contain work.
 Additional scope outside the baseline source inventory remains explicit:
 `selfdrived_helpers_source.py`, `tests/test_selfdrived_source.py`,
 `tests/test_params_native_stager.py` under `rust/tools`, six car-porting notebooks,
-and the 18 pending entries in the [execution-edge inventory](rust-repository-python-retirement-296-execution-edges.tsv).
+and the 19 pending entries in the [execution-edge inventory](rust-repository-python-retirement-296-execution-edges.tsv).
 Those include generated extensionless helpers, dynamic launch, embedded Python
 and vendor release/build paths. Relocation and missing files do not close the
 four partial baseline entries.
@@ -43,8 +43,8 @@ four partial baseline entries.
    and optional-collector candidates are committed. Driving native collector
    and both private-root functional lanes passed. The cross-root metadata failure
    was isolated to one exact DEBUG camera-wait message; only that already-accounted
-   diagnostic count is normalized. Eight four-source reappearance controls, actual
-   deletion and the final complete comparison remain. The compact independent
+   diagnostic count is normalized. Four original controllers are now deleted and their maintained callers migrated;
+   the hosted final complete comparison and eight reappearance controls remain. The compact independent
    fixture preserves1649 original file pins in59,663,776 XZ bytes; full native
    image regeneration still needs its hosted gate. Driver's actual collector CLI data is
    independently auditable despite a wrapper row-count failure; do not repeat
