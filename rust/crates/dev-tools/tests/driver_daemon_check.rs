@@ -56,6 +56,40 @@ fn driver_cli_rejects_missing_ambiguous_and_unknown_arguments() {
     assert!(parse(&args).is_err());
 }
 
+#[test]
+fn driver_cli_requires_paired_current_receipt_and_explicit_retirement_policy() {
+    use openpilot_dev_tools::driver_daemon_check::SourcePolicy;
+    let original = parse(&cli_args()).unwrap().unwrap();
+    assert_eq!(original.source_policy, SourcePolicy::Present);
+    assert!(original.current_catalog_receipt.is_none());
+    for option in [
+        "--native-current-catalog-receipt",
+        "--native-current-catalog-receipt-sha256",
+    ] {
+        let mut args = cli_args();
+        args.extend([option.into(), "value".into()]);
+        assert!(parse(&args).is_err());
+    }
+    let raw = OsString::from_vec(b"/private/current-\xff.json".to_vec());
+    let mut args = cli_args();
+    args.extend([
+        "--native-source-policy".into(),
+        "retired-driver".into(),
+        "--native-current-catalog-receipt".into(),
+        raw.clone(),
+        "--native-current-catalog-receipt-sha256".into(),
+        "a".repeat(64).into(),
+    ]);
+    let selected = parse(&args).unwrap().unwrap();
+    assert_eq!(selected.source_policy, SourcePolicy::RetiredDriver);
+    assert_eq!(
+        selected.current_catalog_receipt.unwrap(),
+        (raw.into(), "a".repeat(64))
+    );
+    args[cli_args().len() + 1] = "retired-driving".into();
+    assert!(parse(&args).is_err());
+}
+
 fn required(name: &str) -> String {
     env::var(name).unwrap_or_else(|_| panic!("cloud must set {name}"))
 }
@@ -127,6 +161,8 @@ fn actual_native_driver_replays_all_four_original_cases() {
         original_dir: required("DRIVER_DAEMON_ORIGINAL_CAPTURE").into(),
         original_manifest_sha256: required("DRIVER_DAEMON_ORIGINAL_MANIFEST_SHA256"),
         source_commit: required("DRIVER_DAEMON_SOURCE_COMMIT"),
+        source_policy: openpilot_dev_tools::driver_daemon_check::SourcePolicy::Present,
+        current_catalog_receipt: None,
         output: required("DRIVER_DAEMON_NATIVE_OUTPUT").into(),
         root: required("DRIVER_DAEMON_ROOT").into(),
     };

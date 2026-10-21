@@ -1968,6 +1968,19 @@ name = "driver_daemon_no_collector"
 required-features = ["driver-daemon-native"]
 
 [[bin]]
+name = "stage-driver-daemon-fixture"
+path = "src/bin/stage_driver_daemon_fixture.rs"
+required-features = ["driver-daemon-native"]
+
+[[test]]
+name = "driver_daemon_fixture"
+required-features = ["driver-daemon-native"]
+
+[[test]]
+name = "driver_daemon_retirement"
+required-features = ["driver-daemon-native"]
+
+[[bin]]
 name = "stage-pandad-device-reference"
 path = "src/bin/stage_pandad_device_reference.rs"
 required-features = ["pandad-device-native"]

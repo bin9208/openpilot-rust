@@ -15,6 +15,8 @@ fn options(output: PathBuf) -> Options {
         original_dir: required("DRIVER_DAEMON_NO_COLLECTOR_ORIGINAL_CAPTURE").into(),
         original_manifest_sha256: required("DRIVER_DAEMON_NO_COLLECTOR_MANIFEST_SHA256"),
         source_commit: required("DRIVER_DAEMON_SOURCE_COMMIT"),
+        source_policy: openpilot_dev_tools::driver_daemon_check::SourcePolicy::Present,
+        current_catalog_receipt: None,
         output,
         root: required("DRIVER_DAEMON_ROOT").into(),
     }

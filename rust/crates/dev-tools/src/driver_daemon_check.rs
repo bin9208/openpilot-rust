@@ -40,6 +40,13 @@ use std::{
     time::{Duration, Instant},
 };
 
+#[path = "driver_daemon_source_policy.rs"]
+mod source_policy;
+pub use source_policy::{SourcePolicy, RETIRED};
+#[path = "driver_daemon_current_catalog.rs"]
+mod current_catalog;
+use current_catalog::CurrentCatalog;
+
 const MAX_MANIFEST: u64 = 1_000_000;
 const MAX_MEMBER: u64 = 16_000_000;
 const MAX_CAPTURE: u64 = 100_000_000;
@@ -554,6 +561,8 @@ pub struct Options {
     pub original_dir: PathBuf,
     pub original_manifest_sha256: String,
     pub source_commit: String,
+    pub source_policy: SourcePolicy,
+    pub current_catalog_receipt: Option<(PathBuf, String)>,
     pub output: PathBuf,
     pub root: PathBuf,
 }
@@ -1560,9 +1569,26 @@ pub fn run(options: &Options) -> Result<Value> {
     if options.collector.is_some() != original.collector_enabled {
         return Err("driver original capture collector mode differs from native option".into());
     }
-    if checkout_commit(&options.root)? != options.source_commit {
+    let checkout = checkout_commit(&options.root)?;
+    if options.source_policy == SourcePolicy::Present
+        && options.current_catalog_receipt.is_none()
+        && checkout != options.source_commit
+    {
         return Err("driver source checkout changed from original capture".into());
     }
+    if options.source_policy == SourcePolicy::RetiredDriver
+        && options.current_catalog_receipt.is_none()
+    {
+        return Err("retired driver requires an authenticated current-host catalog receipt".into());
+    }
+    let historical_sources = original
+        .source_inputs()?
+        .into_iter()
+        .map(|(n, h)| (n.to_owned(), h.to_owned()))
+        .collect::<BTreeMap<_, _>>();
+    options
+        .source_policy
+        .verify(&options.root, &historical_sources)?;
     let binary = InputPin::open(&options.binary, true)?;
     let peer = InputPin::open(&options.peer, true)?;
     let collector = options
@@ -1582,6 +1608,9 @@ pub fn run(options: &Options) -> Result<Value> {
     }
     let mut source_pins = Vec::new();
     for (name, hash) in original.source_inputs()? {
+        if options.source_policy.skips(name) {
+            continue;
+        }
         real_parent_chain(&options.root, name)?;
         let pin = InputPin::open(&options.root.join(name), false)?;
         if pin.digest != hash {
@@ -1591,6 +1620,14 @@ pub fn run(options: &Options) -> Result<Value> {
     }
     let mut imported_pins = Vec::new();
     for (name, hash) in original.loaded_python_sources()? {
+        if options.source_policy.skips(name) {
+            if historical_sources.get(name).map(String::as_str) != Some(hash) {
+                return Err(
+                    "driver retired imported source pin differs from independent source pin".into(),
+                );
+            }
+            continue;
+        }
         real_parent_chain(&options.root, name)?;
         let pin = InputPin::open(&options.root.join(name), false)?;
         if pin.digest != hash {
@@ -1600,6 +1637,13 @@ pub fn run(options: &Options) -> Result<Value> {
     }
     let catalog = CatalogPin::open(&options.catalog)?;
     verify_catalog_sources(&catalog, &model_hashes)?;
+    let current_catalog = options
+        .current_catalog_receipt
+        .as_ref()
+        .map(|(path, sha)| {
+            CurrentCatalog::open(&options.root, &catalog, path, sha, &model_hashes, &checkout)
+        })
+        .transpose()?;
     fs::create_dir(&options.output)?;
     let mut reports = Vec::with_capacity(CASES.len());
     for (width, height, raw, _) in CASES {
@@ -1620,6 +1664,12 @@ pub fn run(options: &Options) -> Result<Value> {
         }
         reports.push(report);
         original.verify()?;
+        options
+            .source_policy
+            .verify(&options.root, &historical_sources)?;
+        if let Some(binding) = &current_catalog {
+            binding.verify()?;
+        }
         for pin in [&binary, &peer] {
             pin.verify()?;
         }
@@ -1653,53 +1703,110 @@ pub fn run(options: &Options) -> Result<Value> {
         verify_catalog_sources(&catalog, &model_hashes)?;
     }
     let output = json!({"runs":reports,"device_validation":false,
-        "source_commit":options.source_commit,"original_manifest_sha256":options.original_manifest_sha256,
+        "source_commit":options.source_commit,"checkout_commit":checkout,"source_policy":options.source_policy.as_str(),"current_catalog":current_catalog.as_ref().map(CurrentCatalog::report),"original_manifest_sha256":options.original_manifest_sha256,
         "inputs":{"binary":binary.receipt(),"peer":peer.receipt(),"collector":collector.as_ref().map(InputPin::receipt),
             "source_inputs":source_pins.iter().map(InputPin::receipt).collect::<Vec<_>>(),
             "imported_python_sources":imported_pins.iter().map(InputPin::receipt).collect::<Vec<_>>(),
             "original_models":model_pins.iter().map(InputPin::receipt).collect::<Vec<_>>(),
             "catalog":catalog.receipt()}});
-    signals.check()?;
-    original.verify()?;
-    for pin in [&binary, &peer] {
-        pin.verify()?;
-    }
-    if let Some(pin) = &collector {
-        pin.verify()?;
-    }
-    for pin in &source_pins {
-        real_parent_chain(
-            &options.root,
-            pin.path
-                .strip_prefix(&options.root)?
-                .to_str()
-                .ok_or("non-UTF8 driver source")?,
-        )?;
-        pin.verify()?;
-    }
-    for pin in &imported_pins {
-        real_parent_chain(
-            &options.root,
-            pin.path
-                .strip_prefix(&options.root)?
-                .to_str()
-                .ok_or("non-UTF8 driver import")?,
-        )?;
-        pin.verify()?;
-    }
-    for pin in &model_pins {
-        pin.verify()?;
-    }
-    catalog.verify()?;
-    verify_catalog_sources(&catalog, &model_hashes)?;
-    if checkout_commit(&options.root)? != options.source_commit {
-        return Err("driver checkout changed during live replay".into());
-    }
-    write_new(
+    let verify_inputs = || -> Result<()> {
+        signals.check()?;
+        original.verify()?;
+        for pin in [&binary, &peer] {
+            pin.verify()?;
+        }
+        if let Some(pin) = &collector {
+            pin.verify()?;
+        }
+        for pin in &source_pins {
+            real_parent_chain(
+                &options.root,
+                pin.path
+                    .strip_prefix(&options.root)?
+                    .to_str()
+                    .ok_or("non-UTF8 driver source")?,
+            )?;
+            pin.verify()?;
+        }
+        for pin in &imported_pins {
+            real_parent_chain(
+                &options.root,
+                pin.path
+                    .strip_prefix(&options.root)?
+                    .to_str()
+                    .ok_or("non-UTF8 driver import")?,
+            )?;
+            pin.verify()?;
+        }
+        for pin in &model_pins {
+            pin.verify()?;
+        }
+        catalog.verify()?;
+        verify_catalog_sources(&catalog, &model_hashes)?;
+        options
+            .source_policy
+            .verify(&options.root, &historical_sources)?;
+        if let Some(binding) = &current_catalog {
+            binding.verify()?;
+        }
+        if checkout_commit(&options.root)? != checkout {
+            return Err("driver checkout changed during live replay".into());
+        }
+        Ok(())
+    };
+    finalize_report(
         &options.output.join("report.json"),
         format!("{}\n", serde_json::to_string_pretty(&output)?).as_bytes(),
+        verify_inputs,
     )?;
     Ok(output)
+}
+
+// Case rows may already have reached stdout; command exit and this owned disk
+// receipt jointly determine success. A late failure cannot retract stdout.
+fn finalize_report(
+    path: &Path,
+    bytes: &[u8],
+    mut verify: impl FnMut() -> Result<()>,
+) -> Result<()> {
+    struct OwnedReport {
+        path: PathBuf,
+        file: File,
+        accepted: bool,
+    }
+    impl Drop for OwnedReport {
+        fn drop(&mut self) {
+            if self.accepted {
+                return;
+            }
+            if let (Ok(held), Ok(current)) =
+                (self.file.metadata(), fs::symlink_metadata(&self.path))
+            {
+                if current.is_file()
+                    && !current.file_type().is_symlink()
+                    && held.dev() == current.dev()
+                    && held.ino() == current.ino()
+                {
+                    let _ = fs::remove_file(&self.path);
+                }
+            }
+        }
+    }
+    verify()?;
+    let file = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(path)?;
+    let mut report = OwnedReport {
+        path: path.to_owned(),
+        file,
+        accepted: false,
+    };
+    report.file.write_all(bytes)?;
+    report.file.flush()?;
+    verify()?;
+    report.accepted = true;
+    Ok(())
 }
 
 /// Parse the original checker switches plus a distinct native evidence namespace.
@@ -1719,6 +1826,9 @@ pub fn parse(args: &[std::ffi::OsString]) -> Result<Option<Options>> {
             OptionSpec::value("--native-original-manifest-sha256", true),
             OptionSpec::value("--native-source-commit", true),
             OptionSpec::value("--native-root", true),
+            OptionSpec::value("--native-source-policy", false),
+            OptionSpec::value("--native-current-catalog-receipt", false),
+            OptionSpec::value("--native-current-catalog-receipt-sha256", false),
         ],
     )?;
     if parsed.help {
@@ -1753,6 +1863,31 @@ pub fn parse(args: &[std::ffi::OsString]) -> Result<Option<Options>> {
             })
         })
         .transpose()?;
+    let source_policy = parsed
+        .values
+        .get("--native-source-policy")
+        .map(|s| SourcePolicy::parse(s.to_str().ok_or("driver source policy is not UTF-8")?))
+        .transpose()?
+        .unwrap_or(SourcePolicy::Present);
+    let current_catalog_receipt = match (
+        parsed
+            .values
+            .contains_key("--native-current-catalog-receipt"),
+        parsed
+            .values
+            .contains_key("--native-current-catalog-receipt-sha256"),
+    ) {
+        (false, false) => None,
+        (true, true) => Some((
+            path("--native-current-catalog-receipt")?,
+            text("--native-current-catalog-receipt-sha256")?,
+        )),
+        _ => {
+            return Err(
+                "driver current catalog receipt path and SHA must be supplied together".into(),
+            )
+        }
+    };
     Ok(Some(Options {
         binary: path("--binary")?,
         catalog: path("--catalog")?,
@@ -1763,13 +1898,15 @@ pub fn parse(args: &[std::ffi::OsString]) -> Result<Option<Options>> {
         original_dir: path("--native-original-dir")?,
         original_manifest_sha256: text("--native-original-manifest-sha256")?,
         source_commit: text("--native-source-commit")?,
+        source_policy,
+        current_catalog_receipt,
         root: path("--native-root")?,
     }))
 }
 
 pub fn cli() -> Result<()> {
     let Some(options) = parse(&std::env::args_os().skip(1).collect::<Vec<_>>())? else {
-        std::io::stdout().write_all(b"Usage: check-driver-daemon --binary ELF --catalog DIR --models DIR --output DIR [--collector ELF] --native-peer ELF --native-original-dir DIR --native-original-manifest-sha256 SHA256 --native-source-commit SHA --native-root DIR\n")?;
+        std::io::stdout().write_all(b"Usage: check-driver-daemon --binary ELF --catalog DIR --models DIR --output DIR [--collector ELF] --native-peer ELF --native-original-dir DIR --native-original-manifest-sha256 SHA256 --native-source-commit SHA --native-root DIR [--native-source-policy present|retired-driver] [--native-current-catalog-receipt JSON --native-current-catalog-receipt-sha256 SHA256]\n")?;
         return Ok(());
     };
     run(&options)?;
@@ -1856,6 +1993,42 @@ mod comparison_tests {
             1
         );
         assert!(compare_value(&first, &infinity, "driverStateV2").is_err());
+    }
+
+    #[test]
+    fn failed_late_finalization_removes_only_owned_driver_success_report() {
+        let root = tempfile::tempdir().unwrap();
+        let report = root.path().join("report.json");
+        let retired = root.path().join("retired.py");
+        let mut calls = 0;
+        let error = super::finalize_report(&report, b"PASS", || {
+            calls += 1;
+            if calls == 2 {
+                assert!(report.is_file());
+                fs::write(&retired, b"reappeared")?;
+            }
+            if retired.exists() {
+                Err("retired source reappeared".into())
+            } else {
+                Ok(())
+            }
+        })
+        .unwrap_err();
+        assert!(error.to_string().contains("retired source reappeared"));
+        assert!(!report.exists());
+        fs::remove_file(retired).unwrap();
+        let mut calls = 0;
+        assert!(super::finalize_report(&report, b"PASS", || {
+            calls += 1;
+            if calls == 2 {
+                fs::remove_file(&report)?;
+                fs::write(&report, b"foreign replacement")?;
+                return Err("late cancellation".into());
+            }
+            Ok(())
+        })
+        .is_err());
+        assert_eq!(fs::read(report).unwrap(), b"foreign replacement");
     }
 
     #[test]
