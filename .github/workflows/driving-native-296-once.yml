@@ -21,16 +21,17 @@ jobs:
       OPENPILOT_HACKS: '1'
       LLVM_PATH: /usr/lib/x86_64-linux-gnu/libLLVM-18.so
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
-      EXPECTED_SOURCE: bba139da624405a278fc9e902d0a9d7f3a8fb126
+      EXPECTED_SOURCE: d1c827fac2d0260878cc1f3a70bef812e40b4b4b
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       DRIVING_ORIGINAL_MANIFEST_SHA256: 2e7d343e34e06b1a7e998c31aca7c8ec193fbe49e63b30b2739f73c0934c565b
+      RUSTUP_TOOLCHAIN: 1.94.0
     steps:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: bba139da624405a278fc9e902d0a9d7f3a8fb126
+        ref: d1c827fac2d0260878cc1f3a70bef812e40b4b4b
     - name: Require exact source and hosted controller prerequisites
       run: 'set -euo pipefail
 
