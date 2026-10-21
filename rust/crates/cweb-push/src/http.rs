@@ -58,16 +58,18 @@ fn transport_error(error: reqwest::Error) -> String {
 }
 
 fn encode_location(bytes: &[u8]) -> String {
-    bytes
-        .iter()
-        .map(|&byte| {
-            if byte.is_ascii_alphanumeric() || byte.is_ascii_punctuation() {
-                char::from(byte).to_string()
-            } else {
-                format!("%{byte:02X}")
-            }
-        })
-        .collect()
+    const HEX: &[u8; 16] = b"0123456789ABCDEF";
+    let mut encoded = String::with_capacity(bytes.len().saturating_mul(3));
+    for &byte in bytes {
+        if byte.is_ascii_alphanumeric() || byte.is_ascii_punctuation() {
+            encoded.push(char::from(byte));
+        } else {
+            encoded.push('%');
+            encoded.push(char::from(HEX[usize::from(byte >> 4)]));
+            encoded.push(char::from(HEX[usize::from(byte & 0x0f)]));
+        }
+    }
+    encoded
 }
 
 async fn request(address: &str, payload: &Payload, seconds: f64) -> Result<PostResult, String> {
