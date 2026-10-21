@@ -1,0 +1,96 @@
+name: Original Kalman model generator capture
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/kalman-generators-original-296-once.yml
+permissions:
+  contents: read
+jobs:
+  capture-original-generators:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      SOURCE_SHA: f913de3aa3c0f2c261f4ae4b87e41f3eb317fb82
+      EVIDENCE_DIR: ${{ runner.temp }}/kalman-generators-original-296
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+    - name: Checkout exact unchanged project source
+      uses: actions/checkout@v7
+      with:
+        ref: f913de3aa3c0f2c261f4ae4b87e41f3eb317fb82
+        persist-credentials: false
+    - name: Reserve disk before installing generator dependencies
+      shell: bash
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 1024
+
+        '
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+        cache: false
+    - name: Capture both unchanged generators and complete raw outputs
+      shell: bash
+      run: "set -uo pipefail\nif [[ -e \"$EVIDENCE_DIR\" || -L \"$EVIDENCE_DIR\" ]]; then\n  printf 'evidence path must be\
+        \ fresh: %s\\n' \"$EVIDENCE_DIR\" >&2\n  exit 1\nfi\nmkdir -p \"$EVIDENCE_DIR\" || exit 1\nmkdir \"$EVIDENCE_DIR/pose-original\"\
+        \ \"$EVIDENCE_DIR/car-original\" \"$EVIDENCE_DIR/metadata\" || exit 1\nfailures=0\n\nactual_sha=$(git rev-parse HEAD)\n\
+        printf '%s\\n' \"$actual_sha\" > \"$EVIDENCE_DIR/metadata/checked-out-sha.txt\"\nif [[ \"$actual_sha\" != \"$SOURCE_SHA\"\
+        \ ]]; then\n  printf 'expected=%s\\nactual=%s\\n' \"$SOURCE_SHA\" \"$actual_sha\" > \"$EVIDENCE_DIR/metadata/source-binding-failure.txt\"\
+        \n  exit 1\nfi\ngit submodule status --recursive > \"$EVIDENCE_DIR/metadata/submodules.txt\" 2>&1 || failures=1\n\n\
+        source_closure=(\n  pyproject.toml\n  uv.lock\n  rust/tools/generate_pose_model.py\n  rust/tools/generate_car_model.py\n\
+        \  openpilot/selfdrive/locationd/models/pose_kf.py\n  openpilot/selfdrive/locationd/models/car_kf.py\n  openpilot/selfdrive/locationd/models/constants.py\n\
+        \  openpilot/selfdrive/__init__.py\n  openpilot/selfdrive/locationd/__init__.py\n  openpilot/selfdrive/locationd/models/__init__.py\n\
+        \  openpilot/common/__init__.py\n  openpilot/common/constants.py\n  openpilot/common/swaglog.py\n  openpilot/common/logging_extra.py\n\
+        \  openpilot/common/utils.py\n  openpilot/common/gpio.py\n  openpilot/common/i2c.py\n  openpilot/common/time_helpers.py\n\
+        \  openpilot/system/hardware/__init__.py\n  openpilot/system/hardware/base.py\n  openpilot/system/hardware/hw.py\n\
+        \  openpilot/system/hardware/pc/__init__.py\n  openpilot/system/hardware/pc/hardware.py\n  openpilot/system/hardware/tici/__init__.py\n\
+        \  openpilot/system/hardware/tici/hardware.py\n  openpilot/system/hardware/tici/iwlist.py\n  openpilot/system/hardware/tici/lpa.py\n\
+        \  openpilot/system/hardware/tici/pins.py\n  openpilot/system/hardware/tici/amplifier.py\n  openpilot/cereal/__init__.py\n\
+        \  openpilot/cereal/custom.capnp\n  openpilot/cereal/deprecated.capnp\n  openpilot/cereal/include/c++.capnp\n  openpilot/cereal/log.capnp\n\
+        \  opendbc_repo/opendbc/car/car.capnp\n  opendbc_repo/opendbc/car/include/c++.capnp\n  rednose_repo/rednose/__init__.py\n\
+        \  rednose_repo/rednose/helpers/__init__.py\n  rednose_repo/rednose/helpers/ekf_sym.py\n  rednose_repo/rednose/helpers/kalmanfilter.py\n\
+        \  rednose_repo/rednose/helpers/sympy_helpers.py\n  rednose_repo/rednose/helpers/chi2_lookup.py\n)\nseal_sources()\
+        \ {\n  local destination=$1 file\n  : > \"$destination\"\n  for file in \"${source_closure[@]}\"; do\n    if [[ !\
+        \ -f \"$GITHUB_WORKSPACE/$file\" ]]; then\n      printf 'missing\\t%s\\n' \"$file\" >> \"$destination\"\n      failures=1\n\
+        \      continue\n    fi\n    printf '%s\\t%s\\t%s\\n' \\\n      \"$(sha256sum \"$GITHUB_WORKSPACE/$file\" | cut -d\
+        \ ' ' -f 1)\" \\\n      \"$(stat -c '%s' \"$GITHUB_WORKSPACE/$file\")\" \"$file\" >> \"$destination\"\n  done\n}\n\
+        seal_sources \"$EVIDENCE_DIR/metadata/source-closure-before.tsv\"\ngit ls-files -z -- '*.py' '*.capnp' uv.lock pyproject.toml\
+        \ > \"$EVIDENCE_DIR/metadata/all-project-source-paths.nul\"\nxargs -0 sha256sum < \"$EVIDENCE_DIR/metadata/all-project-source-paths.nul\"\
+        \ > \"$EVIDENCE_DIR/metadata/all-project-source-before.sha256\" || failures=1\n\nrun_capture() {\n  local name=$1;\
+        \ shift\n  \"$@\" > \"$EVIDENCE_DIR/metadata/$name.stdout\" 2> \"$EVIDENCE_DIR/metadata/$name.stderr\"\n  local result=$?\n\
+        \  printf '%s\\n' \"$result\" > \"$EVIDENCE_DIR/metadata/$name.exit-status\"\n  if (( result != 0 )); then failures=1;\
+        \ fi\n}\n\nrun_capture dependency-install python -m pip install \\\n  'numpy==2.5.3' 'sympy==1.14.0' 'mpmath==1.3.0'\
+        \ 'cffi==2.1.1' 'pycparser==3.0' 'pyzmq==27.2.0' \\\n  'pycapnp==2.1.0' 'requests==2.34.2' 'certifi==2026.7.22' \\\
+        \n  'charset-normalizer==3.5.1' 'idna==3.19' 'urllib3==2.7.0' \\\n  'pyserial==3.5' 'zstandard==0.25.0'\nrun_capture\
+        \ python-version python -VV\nrun_capture pip-freeze python -m pip freeze --all\nrun_capture provider-versions python\
+        \ -c 'import importlib.metadata as m; names = (\"numpy\", \"sympy\", \"mpmath\", \"cffi\", \"pycparser\", \"pyzmq\"\
+        , \"pycapnp\", \"requests\", \"pyserial\", \"zstandard\"); print(\"\\n\".join(f\"{name}=={m.version(name)}\" for name\
+        \ in names))'\n\nexport PYTHONPATH=\"$GITHUB_WORKSPACE/rednose_repo:$GITHUB_WORKSPACE\"\nrun_capture pose-generator\
+        \ python rust/tools/generate_pose_model.py --output \"$EVIDENCE_DIR/pose-original\"\nrun_capture car-generator python\
+        \ rust/tools/generate_car_model.py --output \"$EVIDENCE_DIR/car-original\"\n\nseal_sources \"$EVIDENCE_DIR/metadata/source-closure-after.tsv\"\
+        \nxargs -0 sha256sum < \"$EVIDENCE_DIR/metadata/all-project-source-paths.nul\" > \"$EVIDENCE_DIR/metadata/all-project-source-after.sha256\"\
+        \ || failures=1\ncmp \"$EVIDENCE_DIR/metadata/all-project-source-before.sha256\" \"$EVIDENCE_DIR/metadata/all-project-source-after.sha256\"\
+        \ || failures=1\nif ! cmp -s \"$EVIDENCE_DIR/metadata/source-closure-before.tsv\" \"$EVIDENCE_DIR/metadata/source-closure-after.tsv\"\
+        ; then\n  diff -u \"$EVIDENCE_DIR/metadata/source-closure-before.tsv\" \"$EVIDENCE_DIR/metadata/source-closure-after.tsv\"\
+        \ \\\n    > \"$EVIDENCE_DIR/metadata/source-closure-diff.txt\" || true\n  failures=1\nfi\nfor output in pose-original\
+        \ car-original; do\n  roster=\"$EVIDENCE_DIR/metadata/$output-files.tsv\"\n  : > \"$roster\"\n  while IFS= read -r\
+        \ -d '' file; do\n    relative=${file#\"$EVIDENCE_DIR/$output/\"}\n    printf '%s\\t%s\\t%s\\n' \\\n      \"$(sha256sum\
+        \ \"$file\" | cut -d ' ' -f 1)\" \\\n      \"$(stat -c '%s' \"$file\")\" \"$relative\" >> \"$roster\"\n  done < <(find\
+        \ \"$EVIDENCE_DIR/$output\" -type f -print0 | sort -z)\ndone\nprintf 'source_sha\\t%s\\n' \"$SOURCE_SHA\" > \"$EVIDENCE_DIR/metadata/capture-identity.tsv\"\
+        \nprintf 'source_commit\\t%s\\n' \"$(git rev-parse HEAD)\" >> \"$EVIDENCE_DIR/metadata/capture-identity.tsv\"\nprintf\
+        \ 'pose_output_files\\t%s\\n' \"$(wc -l < \"$EVIDENCE_DIR/metadata/pose-original-files.tsv\")\" >> \"$EVIDENCE_DIR/metadata/capture-identity.tsv\"\
+        \nprintf 'car_output_files\\t%s\\n' \"$(wc -l < \"$EVIDENCE_DIR/metadata/car-original-files.tsv\")\" >> \"$EVIDENCE_DIR/metadata/capture-identity.tsv\"\
+        \nexit \"$failures\"\n"
+    - name: Upload original raw generator evidence
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: kalman-generators-original-296-${{ github.run_id }}
+        path: ${{ runner.temp }}/kalman-generators-original-296/
+        if-no-files-found: warn
+        include-hidden-files: true
+        retention-days: 90
