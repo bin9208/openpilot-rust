@@ -36,6 +36,9 @@ jobs:
 
         test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
 
+        printf ''%s  %s\n'' ea1266dc395dab662319bd3637ad90440989db3d2937756dbf07fbb993520f5b rust/tools/check_driver_daemon.py
+        | sha256sum -c -
+
         rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
 
         mkdir -p "$RUNNER_TEMP/driver-daemon-native-296"
@@ -190,7 +193,7 @@ jobs:
       shell: bash
       run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/driver-daemon-native-296\"\nrust/tools/check-disk-space --path \"$RUNNER_TEMP\"\
         \ --growth-mib 1024\nPYTHONPATH=\"$RUNNER_TEMP/model-msgq-python:$PYTHONPATH\" python \"$proof/capture_original_driver.py\"\
-        \ --root \"$GITHUB_WORKSPACE\" --source-commit \"$EXPECTED_SOURCE\" --expected-checker-sha256 ea1266dc395dab662319bd3637ad90440989dbd3d2937756dbf07fbb993520f5b\
+        \ --root \"$GITHUB_WORKSPACE\" --source-commit \"$EXPECTED_SOURCE\" --expected-checker-sha256 ea1266dc395dab662319bd3637ad90440989db3d2937756dbf07fbb993520f5b\
         \ --binary \"$GITHUB_WORKSPACE/rust/target/debug/openpilot-dmonitoringmodeld\" --catalog \"$RUNNER_TEMP/native-catalog\"\
         \ --models \"$RUNNER_TEMP/original-models\" --collector \"$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged\"\
         \ --output \"$proof/original\" >\"$proof/original.stdout\" 2>\"$proof/original.stderr\" || { cat \"$proof/original.stderr\"\
