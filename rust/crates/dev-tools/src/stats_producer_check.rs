@@ -9,7 +9,7 @@ use sha2::{Digest, Sha256};
 use std::{
     ffi::OsString,
     fs::{self, File, Metadata},
-    io::{Read, Write},
+    io::{self, Read, Write},
     os::unix::fs::MetadataExt,
     path::{Path, PathBuf},
     process::{Child, Command, Stdio},
@@ -103,11 +103,86 @@ impl Artifact {
         Ok(())
     }
 }
-fn sources(root: &Path) -> Result<Vec<Artifact>> {
+struct MissingSource {
+    path: PathBuf,
+    parent: PathBuf,
+    directory: File,
+    device: u64,
+    inode: u64,
+}
+impl MissingSource {
+    fn open(path: PathBuf) -> Result<Self> {
+        let parent = path
+            .parent()
+            .ok_or("missing StatLog source parent")?
+            .to_owned();
+        let directory = File::from(rustix::fs::open(
+            &parent,
+            rustix::fs::OFlags::RDONLY
+                | rustix::fs::OFlags::DIRECTORY
+                | rustix::fs::OFlags::NOFOLLOW
+                | rustix::fs::OFlags::CLOEXEC,
+            rustix::fs::Mode::empty(),
+        )?);
+        let metadata = directory.metadata()?;
+        let source = Self {
+            path,
+            parent,
+            directory,
+            device: metadata.dev(),
+            inode: metadata.ino(),
+        };
+        source.verify()?;
+        Ok(source)
+    }
+    fn verify(&self) -> Result<()> {
+        let current = File::from(rustix::fs::open(
+            &self.parent,
+            rustix::fs::OFlags::RDONLY
+                | rustix::fs::OFlags::DIRECTORY
+                | rustix::fs::OFlags::NOFOLLOW
+                | rustix::fs::OFlags::CLOEXEC,
+            rustix::fs::Mode::empty(),
+        )?);
+        let current = current.metadata()?;
+        let held = self.directory.metadata()?;
+        if (current.dev(), current.ino()) != (self.device, self.inode)
+            || (held.dev(), held.ino()) != (self.device, self.inode)
+        {
+            return Err("StatLog historical source parent changed".into());
+        }
+        match fs::symlink_metadata(&self.path) {
+            Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
+            Err(error) => Err(error.into()),
+            Ok(_) => Err(format!(
+                "StatLog historical source reappeared: {}",
+                self.path.display()
+            )
+            .into()),
+        }
+    }
+}
+struct Sources {
+    files: Vec<Artifact>,
+    missing: Vec<MissingSource>,
+}
+impl Sources {
+    fn verify(&self) -> Result<()> {
+        for file in &self.files {
+            file.verify()?;
+        }
+        for source in &self.missing {
+            source.verify()?;
+        }
+        Ok(())
+    }
+}
+fn sources(root: &Path) -> Result<Sources> {
     let pins: Value = serde_json::from_str(include_str!(
         "../tests/fixtures/stats-producer/source-pins.json"
     ))?;
     let mut files = Vec::new();
+    let mut missing = Vec::new();
     for pin in pins.as_array().ok_or("invalid source pins")? {
         let name = pin["path"].as_str().ok_or("invalid source path")?;
         let path = root.join(name);
@@ -118,6 +193,7 @@ fn sources(root: &Path) -> Result<Vec<Artifact>> {
         if retired
             && fs::symlink_metadata(&path).is_err_and(|e| e.kind() == std::io::ErrorKind::NotFound)
         {
+            missing.push(MissingSource::open(path)?);
             continue;
         }
         let input = Artifact::open(&path)?;
@@ -126,7 +202,7 @@ fn sources(root: &Path) -> Result<Vec<Artifact>> {
         }
         files.push(input);
     }
-    Ok(files)
+    Ok(Sources { files, missing })
 }
 fn check_cancel(cancel: &AtomicBool) -> Result<()> {
     if cancel.load(Ordering::SeqCst) {
@@ -135,28 +211,79 @@ fn check_cancel(cancel: &AtomicBool) -> Result<()> {
         Ok(())
     }
 }
-pub fn run(options: &Options, worker: &Path) -> Result<Value> {
-    run_controlled(options, worker, &AtomicBool::new(false))
+struct Publication {
+    path: PathBuf,
+    file: File,
+    committed: bool,
 }
-fn run_controlled(options: &Options, worker: &Path, cancel: &AtomicBool) -> Result<Value> {
+impl Publication {
+    fn write(path: &Path, report: &Value) -> Result<Self> {
+        let mut temporary =
+            tempfile::NamedTempFile::new_in(path.parent().ok_or("missing StatLog output parent")?)?;
+        temporary.write_all(&serde_json::to_vec_pretty(report)?)?;
+        temporary.flush()?;
+        let file = temporary
+            .persist_noclobber(path)
+            .map_err(|error| error.error)?;
+        Ok(Self {
+            path: path.to_owned(),
+            file,
+            committed: false,
+        })
+    }
+    fn owns(&self) -> bool {
+        let Ok(held) = self.file.metadata() else {
+            return false;
+        };
+        fs::symlink_metadata(&self.path).is_ok_and(|current| {
+            current.is_file() && (current.dev(), current.ino()) == (held.dev(), held.ino())
+        })
+    }
+}
+impl Drop for Publication {
+    fn drop(&mut self) {
+        if !self.committed && self.owns() {
+            let _ = fs::remove_file(&self.path);
+        }
+    }
+}
+struct Completed {
+    report: Value,
+    sources: Sources,
+    receipt: Publication,
+}
+fn finish(mut completed: Completed, cancel: &AtomicBool) -> Result<Value> {
+    check_cancel(cancel)?;
+    completed.sources.verify()?;
+    if !completed.receipt.owns() {
+        return Err("StatLog result receipt replaced before commit".into());
+    }
+    completed.receipt.committed = true;
+    Ok(completed.report)
+}
+pub fn run(options: &Options, worker: &Path) -> Result<Value> {
+    let cancel = AtomicBool::new(false);
+    finish(execute(options, worker, &cancel)?, &cancel)
+}
+fn execute(options: &Options, worker: &Path, cancel: &AtomicBool) -> Result<Completed> {
     let mut held = sources(&options.root)?;
     check_cancel(cancel)?;
     let checker = Artifact::open(worker)?;
     let checker_sha256 = checker.sha256.clone();
-    held.push(checker);
+    held.files.push(checker);
     let mut binaries = serde_json::Map::new();
     for name in ["stats_fork", "stats_pressure", "stats_types"] {
         let artifact = Artifact::open(&options.examples.join(name))?;
         binaries.insert(name.into(), json!(artifact.sha256));
-        held.push(artifact);
+        held.files.push(artifact);
     }
     if let Some(parent) = options.output.parent() {
         fs::create_dir_all(parent)?;
     }
     // Exclusive ownership prevents a failed invocation from removing foreign receipts.
     fs::create_dir(&options.output)?;
-    let receipt = options.output.join("result.json");
-    let result = (|| {
+    let receipt_path = options.output.join("result.json");
+    (|| {
         let mut rows = Vec::new();
         for mode in ["reconnect", "drop", "pressure", "types"] {
             check_cancel(cancel)?;
@@ -203,22 +330,18 @@ fn run_controlled(options: &Options, worker: &Path, cancel: &AtomicBool) -> Resu
             }
             rows.push(row);
         }
-        for file in &held {
-            file.verify()?;
-        }
+        held.verify()?;
         check_cancel(cancel)?;
         let report = json!({"result":"PASS", "reference_kind":"captured unchanged original", "native":rows, "binary_sha256":binaries, "checker_sha256":checker_sha256});
-        fs::write(&receipt, serde_json::to_vec_pretty(&report)?)?;
+        let receipt = Publication::write(&receipt_path, &report)?;
         check_cancel(cancel)?;
-        for file in &held {
-            file.verify()?;
-        }
-        Ok(report)
-    })();
-    if result.is_err() {
-        let _ = fs::remove_file(receipt);
-    }
-    result
+        held.verify()?;
+        Ok(Completed {
+            report,
+            sources: held,
+            receipt,
+        })
+    })()
 }
 struct OwnedChild {
     child: Child,
@@ -396,19 +519,68 @@ pub fn cli() -> Result<()> {
     for signal in [signal_hook::consts::SIGINT, signal_hook::consts::SIGTERM] {
         ids.push(signal_hook::flag::register(signal, Arc::clone(&cancel))?);
     }
-    let result = run_controlled(&options, &std::env::current_exe()?, &cancel);
+    let result = execute(&options, &std::env::current_exe()?, &cancel).and_then(|completed| {
+        io::stdout().write_all(
+            b"PASS: four native StatLog scenarios match independently captured original wire contracts\n",
+        )?;
+        io::stdout().flush()?;
+        Ok(completed)
+    });
     for id in ids {
         signal_hook::low_level::unregister(id);
     }
     if cancel.load(Ordering::SeqCst) {
-        if result.is_ok() {
-            let _ = fs::remove_file(options.output.join("result.json"));
-        }
         return Err("StatLog comparison cancelled".into());
     }
-    result?;
-    println!(
-        "PASS: four native StatLog scenarios match independently captured original wire contracts"
-    );
+    finish(result?, &cancel)?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn finalization_rechecks_absence_and_preserves_a_foreign_receipt() {
+        for mutation in ["unchanged", "reappear", "parent", "foreign"] {
+            let directory = tempfile::tempdir().unwrap();
+            let parent = directory.path().join("rust/tools");
+            fs::create_dir_all(&parent).unwrap();
+            let missing = parent.join("check_stats_producer.py");
+            let sources = Sources {
+                files: Vec::new(),
+                missing: vec![MissingSource::open(missing.clone()).unwrap()],
+            };
+            let receipt = directory.path().join("result.json");
+            let completed = Completed {
+                report: json!({"result":"PASS"}),
+                sources,
+                receipt: Publication::write(&receipt, &json!({"result":"PASS"})).unwrap(),
+            };
+            match mutation {
+                "unchanged" => {}
+                "reappear" | "foreign" => fs::write(&missing, b"reappeared").unwrap(),
+                "parent" => {
+                    fs::rename(&parent, directory.path().join("old-tools")).unwrap();
+                    fs::create_dir(&parent).unwrap();
+                }
+                _ => unreachable!(),
+            }
+            if mutation == "foreign" {
+                fs::remove_file(&receipt).unwrap();
+                fs::write(&receipt, b"foreign receipt").unwrap();
+            }
+            let result = finish(completed, &AtomicBool::new(false));
+            if mutation == "unchanged" {
+                assert_eq!(result.unwrap()["result"], "PASS");
+                assert!(receipt.is_file());
+            } else if mutation == "foreign" {
+                assert!(result.is_err());
+                assert_eq!(fs::read(receipt).unwrap(), b"foreign receipt");
+            } else {
+                assert!(result.is_err());
+                assert!(!receipt.exists());
+            }
+        }
+    }
 }

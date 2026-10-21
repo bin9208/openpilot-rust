@@ -229,6 +229,7 @@ fn changed_original_source_is_rejected_before_any_worker() {
             Err(error) => panic!("source capture failed: {error}"),
         }
     }
+    fs::create_dir_all(source_root.join("rust/tools")).unwrap();
     let path = source_root.join("openpilot/system/statsd.py");
     let mut bytes = fs::read(&path).unwrap();
     bytes.extend_from_slice(b"\n# changed source\n");
@@ -241,4 +242,100 @@ fn changed_original_source_is_rejected_before_any_worker() {
     let error = checker::run(&options, &worker).unwrap_err();
     assert!(error.to_string().contains("source pin changed"));
     assert!(!options.output.exists());
+}
+
+#[test]
+fn retired_source_reappearing_after_worker_admission_cannot_publish_pass() {
+    use std::{
+        os::unix::fs::PermissionsExt,
+        time::{Duration, Instant},
+    };
+    let directory = tempfile::tempdir().unwrap();
+    let source_root = directory.path().join("source");
+    let pins: Value =
+        serde_json::from_str(include_str!("fixtures/stats-producer/source-pins.json")).unwrap();
+    for pin in pins.as_array().unwrap() {
+        let name = pin["path"].as_str().unwrap();
+        if matches!(
+            name,
+            "rust/tools/check_stats_producer.py" | "rust/tools/stats_source_producer.py"
+        ) {
+            continue;
+        }
+        let destination = source_root.join(name);
+        fs::create_dir_all(destination.parent().unwrap()).unwrap();
+        fs::copy(root().join(name), destination).unwrap();
+    }
+    fs::create_dir_all(source_root.join("rust/tools")).unwrap();
+    let examples = directory.path().join("examples");
+    fs::create_dir(&examples).unwrap();
+    for name in ["stats_fork", "stats_pressure", "stats_types"] {
+        fs::write(examples.join(name), b"private lifecycle fixture").unwrap();
+    }
+    let worker = directory.path().join("worker");
+    fs::write(
+        &worker,
+        b"#!/bin/sh\nset -eu\nbase=$(dirname \"$0\")\nif [ \"$3\" = reconnect ]; then\n  printf ready > \"$base/ready\"\n  n=0\n  while [ ! -e \"$base/release\" ]; do\n    n=$((n + 1))\n    [ \"$n\" -lt 200 ] || exit 71\n    sleep 0.05\n  done\nfi\ncat \"$base/$3.json\"\n",
+    )
+    .unwrap();
+    fs::set_permissions(&worker, fs::Permissions::from_mode(0o755)).unwrap();
+    for mode in ["reconnect", "drop", "pressure", "types"] {
+        fs::write(
+            directory.path().join(format!("{mode}.json")),
+            serde_json::to_vec(&serde_json::json!({"mode":mode,"exit":0,"messages":checker::expected_messages(mode).unwrap()})).unwrap(),
+        )
+        .unwrap();
+    }
+    let output = directory.path().join("output");
+    let options = Options {
+        root: source_root.clone(),
+        examples,
+        output: output.clone(),
+    };
+    let handle =
+        std::thread::spawn(move || checker::run(&options, &worker).map_err(|e| e.to_string()));
+    let ready = directory.path().join("ready");
+    let release = directory.path().join("release");
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while !ready.exists() && !handle.is_finished() && Instant::now() < deadline {
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    let reached = ready.exists();
+    let retired = source_root.join("rust/tools/check_stats_producer.py");
+    if reached {
+        fs::write(retired, b"reappeared after source admission").unwrap();
+    }
+    fs::write(release, b"release").unwrap();
+    let result = handle.join().unwrap();
+    if let Some(evidence) = std::env::var_os("STATS_442_EVIDENCE") {
+        let evidence = PathBuf::from(evidence);
+        fs::create_dir_all(&evidence).unwrap();
+        for name in [
+            "reconnect.stdout",
+            "drop.stdout",
+            "pressure.stdout",
+            "types.stdout",
+            "result.json",
+        ] {
+            let path = output.join(name);
+            if path.is_file() {
+                fs::copy(path, evidence.join(name)).unwrap();
+            }
+        }
+        fs::write(evidence.join("case-result.txt"), format!("{result:?}\n")).unwrap();
+    }
+    assert!(
+        reached,
+        "worker did not reach admission barrier: {result:?}"
+    );
+    assert!(
+        output.join("types.stdout").is_file(),
+        "four-mode worker did not finish: {result:?}"
+    );
+    match result {
+        Ok(report) => panic!("#442 accepted retired-source reappearance: {report:?}"),
+        Err(error) if error.contains("historical source reappeared") => {}
+        Err(error) => panic!("unexpected #442 controller failure: {error}"),
+    }
+    assert!(!output.join("result.json").exists());
 }
