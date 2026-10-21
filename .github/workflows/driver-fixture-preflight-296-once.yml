@@ -1,0 +1,102 @@
+name: 296 driver durable fixture and native source policy preflight
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/driver-fixture-preflight-296-once.yml
+permissions:
+  contents: read
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
+  CARGO_BUILD_JOBS: '2'
+  CARGO_INCREMENTAL: '0'
+  CARGO_PROFILE_DEV_DEBUG: '0'
+  CARGO_PROFILE_TEST_DEBUG: '0'
+  CARGO_TARGET_DIR: ${{ github.workspace }}/rust/target
+jobs:
+  driver-fixture:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: 1d87b3f0daf02c8a49993af0596c7c427cff944e
+        persist-credentials: false
+    - name: Reserve disk and install hosted native prerequisites
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = 1d87b3f0daf02c8a49993af0596c7c427cff944e
+
+        proof="$RUNNER_TEMP/driver-fixture-preflight"
+
+        mkdir "$proof"
+
+        git rev-parse HEAD > "$proof/SOURCE_COMMIT"
+
+        printf ''%s\n'' "$GITHUB_SHA" > "$proof/WORKFLOW_COMMIT"
+
+        sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 8192
+
+        sudo apt-get update
+
+        sudo apt-get install -y g++ capnproto libcapnp-dev pkg-config liblzma-dev
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        '
+    - name: Compile all native driver targets before execution
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driver-fixture-preflight"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 6144
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driver-daemon-native --locked --no-run
+        --lib --test driver_daemon_check --test driver_daemon_no_collector --test driver_daemon_fixture --test driver_daemon_retirement
+        --bin check-driver-daemon --bin stage-driver-daemon-fixture > "$proof/compile.stdout" 2> "$proof/compile.stderr" ||
+        { tail -n 100 "$proof/compile.stderr"; exit 1; }
+
+        '
+    - name: Verify archive, current source policy, parser and actual staging CLI
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driver-fixture-preflight"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driver-daemon-native --locked --lib driver_
+        -- --nocapture > "$proof/unit.stdout" 2> "$proof/unit.stderr" || { cat "$proof/unit.stderr" "$proof/unit.stdout";
+        exit 1; }
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driver-daemon-native --locked --test
+        driver_daemon_check driver_cli_ -- --nocapture > "$proof/parser.stdout" 2> "$proof/parser.stderr" || { cat "$proof/parser.stderr"
+        "$proof/parser.stdout"; exit 1; }
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driver-daemon-native --locked --test
+        driver_daemon_fixture -- --nocapture > "$proof/fixture.stdout" 2> "$proof/fixture.stderr" || { cat "$proof/fixture.stderr"
+        "$proof/fixture.stdout"; exit 1; }
+
+        '
+    - name: Strict lint all registered driver targets
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/driver-fixture-preflight"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features driver-daemon-native --locked --lib
+        --test driver_daemon_check --test driver_daemon_no_collector --test driver_daemon_fixture --test driver_daemon_retirement
+        --bin check-driver-daemon --bin stage-driver-daemon-fixture -- -D warnings > "$proof/clippy.stdout" 2> "$proof/clippy.stderr"
+        || { tail -n 120 "$proof/clippy.stderr"; exit 1; }
+
+        '
+    - uses: actions/upload-artifact@v6
+      if: always()
+      with:
+        name: rust-driver-fixture-preflight-296
+        path: ${{ runner.temp }}/driver-fixture-preflight/
+        if-no-files-found: error
+        retention-days: 5
