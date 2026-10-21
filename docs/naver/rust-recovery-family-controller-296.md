@@ -58,3 +58,24 @@ original-only static bytes while retaining both payloads and the1,900-scalar
 bound. The bounded continuation runs that new native unit, the corrected socket
 test, strict lint and eight-controller traffic without repeating the accepted
 source capture or unchanged passing sets. Hosted native acceptance is pending.
+
+The first compiled eight-controller replay39663706166 executes source
+50a058fdd5d997c40e7bea61a0836a4d86d6f6d8 under workflow
+fd21de6cacc7b5ae3375fb4cd282f821c4190f9c. Parent independently checks all3,138
+CRCs in artifact12376546684 (20,826,979bytes), ZIP SHA256
+f39800096e5c1a79c1d962867bf89ca1c7b9b82aa3fa55076bd593fa5641925e,
+and all26 held identities unchanged around traffic. Twelve family units and
+strict Clippy pass. HTTP25/CWP14 comparisons, terminal, lifecycle, support and
+shutdown pass in each root. The checkout retains all13 historical Python files;
+the private root lacks all13. Neither lane executes those files.
+
+Support's actual expiry observations are14.959651297/14.959057534seconds, with no
+expired-command file. Direct Duration comparisons retain14–18second boundaries;
+#468's bounded rounding defect is accepted. Overall family acceptance is false:
+actions creates its output directory twice, and upload omitted seven original
+Params values. Exactly those two failures occur in each root. The next repair
+removes the duplicate creation and seeds values checked against the sealed source
+request. Host-dependent local_ip requires an independent UDP route measurement;
+all other request values remain exact. The297 successful execs and100 ENOENT PATH
+searches are only an inventory: strict executable admission and successful actions
+traffic remain pending. No13-file removal is accepted from this failed run.
