@@ -6,6 +6,11 @@ on:
         description: Inspect sealed 1f00 archive restoration without building or publishing
         type: boolean
         default: false
+      recover_restore:
+        description: Recover unchanged sealed 1f00 candidate using its original publisher
+        type: choice
+        default: none
+        options: [none, check, publish]
   push:
     branches: [dev-md]
 permissions:
@@ -15,6 +20,57 @@ concurrency:
   group: dev-md-runtime-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/dev-md' }}
 jobs:
+  recover-restore:
+    if: github.event_name == 'workflow_dispatch' && !inputs.diagnose_restore && inputs.recover_restore != 'none' && inputs.recover_restore != '' && github.ref == 'refs/heads/codex/feat-453-xiaoge-gpu'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GIT_LFS_SKIP_SMUDGE: '1'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: recovery-driver
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          ref: 1f00f0b7c4ccab4c23c5845aef490406058aec6c
+          path: runtime-source
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Reserve disk and install hosted ARM execution tools
+        run: |
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet /opt/hostedtoolcache/CodeQL
+          python3 -c 'import os,shutil; assert shutil.disk_usage(os.environ["RUNNER_TEMP"]).free >= (25+10)*2**30'
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static git-lfs
+      - uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/agnos-runtime/sdk
+          key: agnos-sdk-375c5d22335770ac-v1
+      - name: Exercise strict restoration contracts on hosted runner
+        run: python3 recovery-driver/rust/ci/runtime/recover_1f00.py --self-test
+      - name: Download the immutable original candidate
+        run: |
+          mkdir -p "$RUNNER_TEMP/agnos-runtime"
+          gh run download 39600241810 --repo bin9208/openpilot-rust --name dev-md-runtime-1f00f0b7c4ccab4c23c5845aef490406058aec6c --dir "$RUNNER_TEMP/agnos-runtime"
+      - name: Validate original source and assets, then run original publisher
+        env:
+          RECOVERY_ACTION: ${{ inputs.recover_restore }}
+        run: python3 recovery-driver/rust/ci/runtime/recover_1f00.py --root "$GITHUB_WORKSPACE/runtime-source" --work "$RUNNER_TEMP/agnos-runtime" --action "$RECOVERY_ACTION"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: runtime-recovery-${{ inputs.recover_restore }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/agnos-runtime/*recovery*.json
+            ${{ runner.temp }}/agnos-runtime/*restore*.json
+            ${{ runner.temp }}/agnos-runtime/online-install.json
+          retention-days: 14
   diagnose-restore:
     if: github.event_name == 'workflow_dispatch' && inputs.diagnose_restore && github.ref == 'refs/heads/codex/feat-453-xiaoge-gpu'
     runs-on: ubuntu-24.04
@@ -81,7 +137,7 @@ jobs:
           path: ${{ runner.temp }}/restore-diagnostic/restore-diagnostic.json
   package:
     if: >-
-      (github.event_name == 'workflow_dispatch' && !inputs.diagnose_restore &&
+      (github.event_name == 'workflow_dispatch' && !inputs.diagnose_restore && (inputs.recover_restore == 'none' || inputs.recover_restore == '') &&
       github.ref == 'refs/heads/codex/feat-453-xiaoge-gpu') ||
       (github.event_name == 'push' && contains(github.event.head_commit.message, '[runtime-package]') &&
       github.ref == 'refs/heads/dev-md')
