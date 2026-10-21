@@ -179,11 +179,23 @@ fn parse_cli(
     Ok(Some((root, output, architecture)))
 }
 fn staged_json(staged: &Staged) -> Result<String> {
-    Ok(format!(
-        "{{\"dependency\":{},\"prefix\":{}}}",
-        serde_json::to_string(&staged.dependency)?,
-        python_fs::json_string(staged.prefix.as_os_str())?
-    ))
+    // Match the former json! object's ordering with either serde_json map backend.
+    // The workspace may enable preserve_order even when this package did not.
+    let fields = json!({"prefix": null, "dependency": &staged.dependency});
+    let encoded = fields
+        .as_object()
+        .expect("stager receipt object")
+        .iter()
+        .map(|(name, value)| -> Result<String> {
+            let encoded = if name == "prefix" {
+                python_fs::json_string(staged.prefix.as_os_str())?
+            } else {
+                serde_json::to_string(value)?
+            };
+            Ok(format!("{}:{encoded}", serde_json::to_string(name)?))
+        })
+        .collect::<Result<Vec<_>>>()?;
+    Ok(format!("{{{}}}", encoded.join(",")))
 }
 pub fn cli() -> Result<()> {
     let Some((root, output, architecture)) = parse_cli(std::env::args_os().skip(1))? else {
