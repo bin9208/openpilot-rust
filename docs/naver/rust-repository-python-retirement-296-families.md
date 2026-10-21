@@ -26,10 +26,10 @@ they are not completed functionality. All families below still contain work.
 Additional scope outside the baseline source inventory remains explicit:
 `selfdrived_helpers_source.py`, `tests/test_selfdrived_source.py`,
 `tests/test_params_native_stager.py` under `rust/tools`, six car-porting notebooks,
-and the 20 pending entries in the [execution-edge inventory](rust-repository-python-retirement-296-execution-edges.tsv).
+and the 19 pending entries in the [execution-edge inventory](rust-repository-python-retirement-296-execution-edges.tsv).
 Those include generated extensionless helpers, dynamic launch, embedded Python
 and vendor release/build paths. Relocation and missing files do not close the
-four partial baseline entries.
+three partial baseline entries.
 
 ## Current batches and blockers
 
@@ -71,21 +71,29 @@ four partial baseline entries.
    observations, one controller receipt and five explicitly native-only shutdown
    contracts); data completeness does not mean native acceptance. The13 Python
    controllers/helpers remain until all eight native paths and both roots pass.
-   Earlier actions failures exposed output-directory ownership, progression of
-   a shared Git remote and the original number_commit nonexecution policy.
-   Source fixes retain all seven Git snapshot fields and aggregate independent
-   failures. The next full frozen candidate39658903638 failed while compiling
-   the new harness. Follow-up39660686811 compiled, captured both original webhook
-   cases and passed20 runtime units,4 framing cases,4 staged-update scenarios
-   and11 family units; a scratch Cargo argument error prevented socket/Clippy
-   and traffic. The argument is corrected. The embedded webhook source call is
-   replaced with independently audited exact input/output bytes in a2c9bf7b;
-   its native unit and runtime strictClippy pass39662187794. That continuation
-   stops before traffic on nine new dev-tools lint findings, being fixed as
-   one group. The independent literal WebSocket mask/boundary assertions also
-   passed and must move intact before removing the old bootstrap test target.
-   Reuse unchanged successful sets before both-root family traffic.
-   Follow with binding generation and shared runtime comparator dependencies.
+   Frozen gate39663706166 passed six controllers in both roots and identified
+   actions directory ownership and upload fixture setup defects. The repair
+   preserved source semantics. Traced39667756626 then stopped in strace's
+   PTRACE_LISTEN/EIO path (#474); untraced39669218530 separately exposed the
+   action executable/sibling layout and one owned missing-file error path.
+   Those failures are distinct. Commit047b1ea40 binds the action executable and
+   process-child as held same-inode aliases and projects only the independently
+   recorded missing-file absolute path. Full untraced and traced eight-controller
+   rerun39672931897 is pending; no Python deletion is accepted yet. Complete
+   execution classification, old bootstrap API cleanup and actual caller migration
+   remain gates after functional success. Literal WebSocket mask/boundary tests
+   and frozen webhook bytes are already native and must remain intact.
+5. Startup/USB daemon comparator ports are registered in4a3cad747. They reuse
+   authenticated current-host catalog admission, reap descendants after leader
+   exit and reject replaced/modified success reports. Hosted compile/regression/
+   strict-Clippy preflight39673003192 is pending. Independent original capture,
+   complete two-root functional comparison and source absence remain required;
+   driver/shared logging sources stay until these consumers are retired.
+6. Teleop's two embedded release computations are accepted in39670630661:
+   independent34 computations and10 disposable Git scenarios match. The native
+   CLI and maintained script caller are present; main CI policy integration
+   remains pending. This closes one execution edge without changing the baseline
+   source count.
 
 ## Evidence reuse and delivery
 
