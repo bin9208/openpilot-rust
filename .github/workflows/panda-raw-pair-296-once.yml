@@ -21,12 +21,12 @@ jobs:
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
-      EXPECTED_SOURCE: 4e5b102d6a6330107a0e7ced62c26fe674391448
+      EXPECTED_SOURCE: cdfdb29137fe1c8df1a9181bbde178418a936f42
     steps:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: 4e5b102d6a6330107a0e7ced62c26fe674391448
+        ref: cdfdb29137fe1c8df1a9181bbde178418a936f42
     - name: Admit exact current checkout
       run: 'test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
 
