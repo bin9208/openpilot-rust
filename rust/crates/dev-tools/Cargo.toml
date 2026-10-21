@@ -540,6 +540,7 @@ required-features = ["manager-catalog-tools-native"]
 [features]
 beep-reference-native = ["dep:zmq", "serde_json/float_roundtrip"]
 updated-fixture-native = []
+updated-daemon-native = ["updated-fixture-native", "dep:zmq", "dep:chrono"]
 paramsd-loop-native = ["paramsd-fixture-native"]
 paramsd-fixture-native = ["dep:capnp", "dep:openpilot-cereal", "serde_json/float_roundtrip"]
 paramsd-startup-gate-native = ["rustix/pipe"]
@@ -1856,3 +1857,12 @@ required-features = ["desire-reference-native"]
 [[test]]
 name = "desire_reference_cli"
 required-features = ["desire-reference-native"]
+
+[[bin]]
+name = "check-updated-daemon"
+path = "src/bin/check_updated_daemon.rs"
+required-features = ["updated-daemon-native"]
+
+[[test]]
+name = "updated_daemon_check"
+required-features = ["updated-daemon-native"]
