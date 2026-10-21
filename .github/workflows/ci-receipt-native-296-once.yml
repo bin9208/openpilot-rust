@@ -21,12 +21,12 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: c32cc4c3b4bf321090b11870f6c46cd0ed6e6427
+        ref: 3851ac65de0155a8b420d798da779232f214e80f
         persist-credentials: false
     - name: Reserve disk and install hosted native prerequisites
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = c32cc4c3b4bf321090b11870f6c46cd0ed6e6427
+        test "$(git rev-parse HEAD)" = 3851ac65de0155a8b420d798da779232f214e80f
 
         proof="$RUNNER_TEMP/driver-fixture-preflight"
 
