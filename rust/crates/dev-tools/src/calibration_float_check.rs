@@ -129,9 +129,18 @@ struct Artifact {
 }
 impl Artifact {
     fn open(path: &Path) -> Result<Self> {
+        Self::open_flags(path, rustix::fs::OFlags::empty())
+    }
+    fn open_source(path: &Path) -> Result<Self> {
+        Self::open_flags(path, rustix::fs::OFlags::NOFOLLOW)
+    }
+    fn open_flags(path: &Path, extra: rustix::fs::OFlags) -> Result<Self> {
         let mut file = File::from(rustix::fs::open(
             path,
-            rustix::fs::OFlags::RDONLY | rustix::fs::OFlags::NONBLOCK | rustix::fs::OFlags::CLOEXEC,
+            rustix::fs::OFlags::RDONLY
+                | rustix::fs::OFlags::NONBLOCK
+                | rustix::fs::OFlags::CLOEXEC
+                | extra,
             rustix::fs::Mode::empty(),
         )?);
         let metadata = file.metadata()?;
@@ -161,6 +170,13 @@ impl Artifact {
         }
         Ok(())
     }
+    fn verify_source(&self, path: &Path) -> Result<()> {
+        let after = Self::open_source(path)?;
+        if (self.dev, self.ino, &self.sha) != (after.dev, after.ino, &after.sha) {
+            return Err("getFloat input changed during execution".into());
+        }
+        Ok(())
+    }
     fn bytes(&self) -> Result<Vec<u8>> {
         use std::os::unix::fs::FileExt;
         let mut bytes = vec![0; usize::try_from(self.file.metadata()?.len())?];
@@ -169,10 +185,125 @@ impl Artifact {
     }
 }
 
+struct SourceParent {
+    path: PathBuf,
+    file: File,
+    dev: u64,
+    ino: u64,
+}
+impl SourceParent {
+    fn open(path: &Path) -> Result<Self> {
+        let file = File::from(rustix::fs::open(
+            path,
+            rustix::fs::OFlags::RDONLY
+                | rustix::fs::OFlags::DIRECTORY
+                | rustix::fs::OFlags::NOFOLLOW
+                | rustix::fs::OFlags::CLOEXEC,
+            rustix::fs::Mode::empty(),
+        )?);
+        let metadata = file.metadata()?;
+        Ok(Self {
+            path: path.to_path_buf(),
+            file,
+            dev: metadata.dev(),
+            ino: metadata.ino(),
+        })
+    }
+    fn verify(&self) -> Result<()> {
+        let current = Self::open(&self.path)?;
+        let held = self.file.metadata()?;
+        if (self.dev, self.ino) != (current.dev, current.ino)
+            || (self.dev, self.ino) != (held.dev(), held.ino())
+        {
+            return Err("getFloat historical source parent changed".into());
+        }
+        Ok(())
+    }
+}
+
+struct Historical {
+    path: PathBuf,
+    parent: SourceParent,
+    present: Option<Artifact>,
+}
+impl Historical {
+    fn bind(root: &Path, proof: &Value) -> Result<Self> {
+        let path = root.join(CHECKER);
+        let parent = SourceParent::open(path.parent().ok_or("missing checker parent")?)?;
+        let present = if proof["source_sha256"].get(CHECKER).is_some() {
+            let checker = Artifact::open_source(&path)?;
+            if checker.sha != CHECKER_SHA256 {
+                return Err("getFloat checker source changed".into());
+            }
+            Some(checker)
+        } else {
+            Self::verify_absence(&path)?;
+            None
+        };
+        parent.verify()?;
+        Ok(Self {
+            path,
+            parent,
+            present,
+        })
+    }
+    fn verify_absence(path: &Path) -> Result<()> {
+        SourceParent::open(path.parent().ok_or("missing checker parent")?)?;
+        match fs::symlink_metadata(path) {
+            Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
+            Err(error) => Err(error.into()),
+            Ok(_) => Err("getFloat historical checker reappeared".into()),
+        }
+    }
+    fn verify(&self) -> Result<()> {
+        self.parent.verify()?;
+        match &self.present {
+            Some(checker) => checker.verify_source(&self.path),
+            None => Self::verify_absence(&self.path),
+        }
+    }
+}
+
+struct Bindings {
+    root: PathBuf,
+    proof: Value,
+    historical: Historical,
+    header: Artifact,
+    candidate_path: PathBuf,
+    candidate: Artifact,
+    compiler_path: PathBuf,
+    compiler: Artifact,
+    reference_path: PathBuf,
+    reference: Artifact,
+    executing_path: PathBuf,
+    executing: Artifact,
+}
+impl Bindings {
+    fn verify(&self, cancel: &AtomicBool) -> Result<()> {
+        self.candidate.verify(&self.candidate_path)?;
+        self.compiler.verify(&self.compiler_path)?;
+        self.reference.verify(&self.reference_path)?;
+        self.header.verify_source(&self.root.join(HEADER))?;
+        self.executing.verify(&self.executing_path)?;
+        self.historical.verify()?;
+        if self.proof != sources(&self.root)? {
+            return Err("getFloat source presence changed".into());
+        }
+        cancelled(cancel)
+    }
+}
+
+struct Pending {
+    report: Value,
+    identity: Publication,
+    result: Publication,
+    bindings: Bindings,
+}
+
 /// The retained header is always mandatory. Only genuine checker absence is
 /// accepted for eventual retirement; a dangling symlink is never absence.
 pub fn sources(root: &Path) -> Result<Value> {
-    let header = Artifact::open(&root.join(HEADER))?;
+    let header = Artifact::open_source(&root.join(HEADER))?;
     if header.sha != HEADER_SHA256 {
         return Err("Params header source changed".into());
     }
@@ -181,11 +312,12 @@ pub fn sources(root: &Path) -> Result<Value> {
     live.insert(HEADER.into(), json!(header.sha));
     match fs::symlink_metadata(root.join(CHECKER)) {
         Err(error) if error.kind() == io::ErrorKind::NotFound => {
+            Historical::verify_absence(&root.join(CHECKER))?;
             historical.insert(CHECKER.into(), json!(CHECKER_SHA256));
         }
         Err(error) => return Err(error.into()),
         Ok(_) => {
-            let checker = Artifact::open(&root.join(CHECKER))?;
+            let checker = Artifact::open_source(&root.join(CHECKER))?;
             if checker.sha != CHECKER_SHA256 {
                 return Err("getFloat checker source changed".into());
             }
@@ -317,7 +449,7 @@ fn execute(
     runner: &mut dyn Runner,
     stdout: &mut dyn Write,
     cancel: &AtomicBool,
-) -> Result<(Value, Publication, Publication)> {
+) -> Result<Pending> {
     // Exclusive admission precedes reading sources or touching any old receipt.
     if let Some(parent) = options.output.parent() {
         fs::create_dir_all(parent)?;
@@ -325,7 +457,8 @@ fn execute(
     fs::create_dir(&options.output)?;
     cancelled(cancel)?;
     let proof = sources(&options.root)?;
-    let header = Artifact::open(&options.root.join(HEADER))?;
+    let historical = Historical::bind(&options.root, &proof)?;
+    let header = Artifact::open_source(&options.root.join(HEADER))?;
     let program = source_program(&String::from_utf8(header.bytes()?)?)?;
     let source = options.output.join("source_get_float.cc");
     fs::write(&source, &program)?;
@@ -388,40 +521,48 @@ fn execute(
         rows.push(json!({"input_hex":hex(input),"source":expected,"rust":actual}));
     }
     let candidate = candidate?;
-    let verify = || -> Result<()> {
-        candidate.verify(&options.binary)?;
-        compiler_identity.verify(&compiler)?;
-        source_identity.verify(&reference)?;
-        header.verify(&options.root.join(HEADER))?;
-        executing_identity.verify(&executing_path)?;
-        if proof != sources(&options.root)? {
-            return Err("getFloat source presence changed".into());
-        }
-        cancelled(cancel)
+    let bindings = Bindings {
+        root: options.root.clone(),
+        proof: proof.clone(),
+        historical,
+        header,
+        candidate_path: options.binary.clone(),
+        candidate,
+        compiler_path: compiler,
+        compiler: compiler_identity,
+        reference_path: reference,
+        reference: source_identity,
+        executing_path,
+        executing: executing_identity,
     };
-    verify()?;
+    bindings.verify(cancel)?;
     // A broken output pipe cannot leave a successful report behind.
     stdout.write_all(SUCCESS.as_bytes())?;
     stdout.flush()?;
     let report = json!({"result":"pass","cases":rows});
-    let provenance = json!({"sources":proof,"binary_sha256":candidate.sha,"compiler_sha256":compiler_identity.sha,"reference_sha256":source_identity.sha,"executing_checker_sha256":executing_identity.sha,"generated_source_sha256":format!("{:x}",Sha256::digest(program.as_bytes())),"binary_path_bytes":options.binary.as_os_str().as_bytes(),"compile_program_bytes":compiler.as_os_str().as_bytes(),"compile_argv_bytes":compile.child_argv().iter().map(|arg|arg.as_bytes().to_vec()).collect::<Vec<_>>(),"child_bounds_seconds":{"compiler":60,"probe":5}});
+    let provenance = json!({"sources":proof,"binary_sha256":bindings.candidate.sha,"compiler_sha256":bindings.compiler.sha,"reference_sha256":bindings.reference.sha,"executing_checker_sha256":bindings.executing.sha,"generated_source_sha256":format!("{:x}",Sha256::digest(program.as_bytes())),"binary_path_bytes":options.binary.as_os_str().as_bytes(),"compile_program_bytes":bindings.compiler_path.as_os_str().as_bytes(),"compile_argv_bytes":compile.child_argv().iter().map(|arg|arg.as_bytes().to_vec()).collect::<Vec<_>>(),"child_bounds_seconds":{"compiler":60,"probe":5}});
     let identity = Publication::write(&options.output.join("provenance.json"), &provenance)?;
     let result = Publication::write(&options.output.join("report.json"), &report)?;
-    verify()?;
+    bindings.verify(cancel)?;
     if !identity.owns() || !result.owns() {
         return Err("getFloat report replaced before commit".into());
     }
     cancelled(cancel)?;
-    Ok((report, identity, result))
+    Ok(Pending {
+        report,
+        identity,
+        result,
+        bindings,
+    })
 }
-fn commit(pending: (Value, Publication, Publication)) -> Result<Value> {
-    let (report, mut identity, mut result) = pending;
-    if !identity.owns() || !result.owns() {
+fn commit(mut pending: Pending, cancel: &AtomicBool) -> Result<Value> {
+    pending.bindings.verify(cancel)?;
+    if !pending.identity.owns() || !pending.result.owns() {
         return Err("getFloat report replaced before commit".into());
     }
-    identity.committed = true;
-    result.committed = true;
-    Ok(report)
+    pending.identity.committed = true;
+    pending.result.committed = true;
+    Ok(pending.report)
 }
 pub fn check(
     options: &Options,
@@ -431,7 +572,7 @@ pub fn check(
 ) -> Result<Value> {
     let pending = execute(options, runner, stdout, cancel)?;
     cancelled(cancel)?;
-    commit(pending)
+    commit(pending, cancel)
 }
 
 struct Controlled<'a>(&'a AtomicBool);
@@ -441,7 +582,7 @@ impl Runner for Controlled<'_> {
     }
 }
 fn finish_cli(
-    result: Result<(Value, Publication, Publication)>,
+    result: Result<Pending>,
     cancel: &AtomicBool,
     unregister: impl FnOnce(),
 ) -> Result<Value> {
@@ -449,7 +590,7 @@ fn finish_cli(
     // A handler can latch cancellation during removal, after execute returns.
     unregister();
     cancelled(cancel)?;
-    commit(result?)
+    commit(result?, cancel)
 }
 pub fn cli() -> Result<()> {
     let Some(options) = parse(&std::env::args_os().skip(1).collect::<Vec<_>>())? else {
@@ -477,6 +618,34 @@ pub fn cli() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    struct ProbeRunner;
+    impl Runner for ProbeRunner {
+        fn run(&mut self, command: &CommandSpec) -> Result<Captured> {
+            if command.timeout == Duration::from_secs(60) {
+                let reference = PathBuf::from(command.effective_argv().last().unwrap().clone());
+                fs::write(reference, b"private lifecycle fixture")?;
+            }
+            Ok(Captured {
+                code: 0,
+                stdout: b"0".to_vec(),
+                stderr: Vec::new(),
+            })
+        }
+    }
+    fn options_in(directory: &Path) -> Options {
+        let repository = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let header = directory.join(HEADER);
+        fs::create_dir_all(header.parent().unwrap()).unwrap();
+        fs::copy(repository.join(HEADER), &header).unwrap();
+        fs::create_dir_all(directory.join(CHECKER).parent().unwrap()).unwrap();
+        let binary = directory.join("candidate");
+        fs::copy(std::env::current_exe().unwrap(), &binary).unwrap();
+        Options {
+            root: directory.to_path_buf(),
+            binary,
+            output: directory.join("evidence"),
+        }
+    }
     #[cfg(target_os = "linux")]
     #[test]
     fn fingerprinting_a_fifo_never_waits_for_a_writer() {
@@ -529,18 +698,15 @@ mod tests {
     fn cancellation_latched_during_handler_removal_rolls_back_only_owned_receipts() {
         for replaced in [false, true] {
             let directory = tempfile::tempdir().unwrap();
-            let provenance = directory.path().join("provenance.json");
-            let report = directory.path().join("report.json");
-            let pending = (
-                json!({"result":"pass"}),
-                Publication::write(&provenance, &json!({"source":"owned"})).unwrap(),
-                Publication::write(&report, &json!({"result":"pass"})).unwrap(),
-            );
+            let cancel = AtomicBool::new(false);
+            let options = options_in(directory.path());
+            let pending = execute(&options, &mut ProbeRunner, &mut Vec::new(), &cancel).unwrap();
+            let provenance = options.output.join("provenance.json");
+            let report = options.output.join("report.json");
             if replaced {
                 fs::remove_file(&report).unwrap();
                 fs::write(&report, b"foreign replacement").unwrap();
             }
-            let cancel = AtomicBool::new(false);
             let error = finish_cli(Ok(pending), &cancel, || {
                 cancel.store(true, Ordering::Relaxed);
             })
@@ -555,6 +721,85 @@ mod tests {
             } else {
                 assert!(!report.exists());
             }
+        }
+    }
+
+    #[test]
+    fn historical_reappearance_during_handler_teardown_cannot_commit_receipts() {
+        // #437: exercise the actual gap after execute's last verification.
+        for replacement in ["file", "dangling", "fifo"] {
+            let directory = tempfile::tempdir().unwrap();
+            let cancel = AtomicBool::new(false);
+            let options = options_in(directory.path());
+            let pending = execute(&options, &mut ProbeRunner, &mut Vec::new(), &cancel).unwrap();
+            let historical = options.root.join(CHECKER);
+            let error = finish_cli(Ok(pending), &cancel, || match replacement {
+                "file" => fs::write(&historical, b"reappeared").unwrap(),
+                "dangling" => std::os::unix::fs::symlink("missing", &historical).unwrap(),
+                "fifo" => rustix::fs::mkfifoat(
+                    rustix::fs::CWD,
+                    &historical,
+                    rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR,
+                )
+                .unwrap(),
+                _ => unreachable!(),
+            })
+            .unwrap_err();
+            assert!(error.to_string().contains("historical checker reappeared"));
+            assert!(!options.output.join("provenance.json").exists());
+            assert!(!options.output.join("report.json").exists());
+        }
+    }
+
+    #[test]
+    fn historical_parent_replacement_during_teardown_cannot_commit_receipts() {
+        let directory = tempfile::tempdir().unwrap();
+        let cancel = AtomicBool::new(false);
+        let options = options_in(directory.path());
+        let pending = execute(&options, &mut ProbeRunner, &mut Vec::new(), &cancel).unwrap();
+        let parent = options.root.join(CHECKER).parent().unwrap().to_path_buf();
+        let held = options.root.join("rust/old-tools");
+        let error = finish_cli(Ok(pending), &cancel, || {
+            fs::rename(&parent, &held).unwrap();
+            fs::create_dir(&parent).unwrap();
+        })
+        .unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("historical source parent changed"));
+        assert!(!options.output.join("report.json").exists());
+        assert!(!options.output.join("provenance.json").exists());
+    }
+
+    #[test]
+    fn finalization_rechecks_held_inputs_and_preserves_foreign_receipts() {
+        let directory = tempfile::tempdir().unwrap();
+        let cancel = AtomicBool::new(false);
+        let options = options_in(directory.path());
+        let pending = execute(&options, &mut ProbeRunner, &mut Vec::new(), &cancel).unwrap();
+        let report = finish_cli(Ok(pending), &cancel, || {}).unwrap();
+        assert_eq!(report["cases"].as_array().unwrap().len(), inputs().len());
+
+        for changed in [HEADER, "candidate"] {
+            let directory = tempfile::tempdir().unwrap();
+            let cancel = AtomicBool::new(false);
+            let options = options_in(directory.path());
+            let pending = execute(&options, &mut ProbeRunner, &mut Vec::new(), &cancel).unwrap();
+            let changed_path = if changed == HEADER {
+                options.root.join(HEADER)
+            } else {
+                options.binary.clone()
+            };
+            let receipt = options.output.join("report.json");
+            let error = finish_cli(Ok(pending), &cancel, || {
+                fs::write(&changed_path, b"changed after publication").unwrap();
+                fs::remove_file(&receipt).unwrap();
+                fs::write(&receipt, b"foreign receipt").unwrap();
+            })
+            .unwrap_err();
+            assert!(error.to_string().contains("getFloat input changed"));
+            assert!(!options.output.join("provenance.json").exists());
+            assert_eq!(fs::read(receipt).unwrap(), b"foreign receipt");
         }
     }
 }

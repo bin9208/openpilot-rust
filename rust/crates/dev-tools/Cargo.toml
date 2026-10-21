@@ -1627,6 +1627,10 @@ required-features = ["calibration-float-native"]
 name = "calibration_float_check"
 required-features = ["calibration-float-native"]
 
+[[test]]
+name = "calibration_float_retirement"
+required-features = ["calibration-float-native"]
+
 [[bin]]
 name = "check-pandad-safety-padding"
 path = "src/bin/check_pandad_safety_padding.rs"

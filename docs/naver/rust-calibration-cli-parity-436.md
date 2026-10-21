@@ -48,3 +48,17 @@ The original/native PATH exit/stdout/receipt assertions passed, but individual
 unset-PATH codes/stderr were not retained; the next retirement proof should
 retain those raw observations. Python remains until that proof is accepted.
 This result does not close whole-project or device acceptance.
+
+
+The separate finalization finding is tracked in #437. Source-specific opens
+now reject symlinks without changing compiler-alias lookup. The historical
+checker's parent is retained as a real directory descriptor and compared by
+identity through final receipt commit. Admitted source/input/executable handles,
+presence/absence, cancellation and owned receipt guards remain live across
+handler teardown. A parent replacement, reappearing/changed/nonregular source
+or foreign receipt cannot be accepted at that final check. This is not an
+atomic transaction against arbitrary changes after the final check.
+Baseline-compatible test-only grafts on60e3711e must compile and fail at the
+specific stale-publication assertions, then current regression/25-row retirement
+and raw CLI/PATH tests must pass. That fresh cloud proof remains pending; the
+Python checker is still present. No numerical tolerance was changed.

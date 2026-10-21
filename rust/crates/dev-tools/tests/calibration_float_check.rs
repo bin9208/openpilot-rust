@@ -306,6 +306,13 @@ fn source_guard_rejects_drift_and_dangling_objects_and_splits_genuine_retirement
     copy_sources(directory.path());
     assert!(checker::sources(directory.path()).is_ok());
     let checker_path = directory.path().join(checker::CHECKER);
+    let checker_copy = directory.path().join("checker-copy");
+    fs::copy(&checker_path, &checker_copy).unwrap();
+    fs::remove_file(&checker_path).unwrap();
+    symlink(&checker_copy, &checker_path).unwrap();
+    assert!(checker::sources(directory.path()).is_err());
+    fs::remove_file(&checker_path).unwrap();
+    fs::copy(&checker_copy, &checker_path).unwrap();
     fs::write(&checker_path, b"changed").unwrap();
     assert!(checker::sources(directory.path()).is_err());
     fs::remove_file(&checker_path).unwrap();
@@ -318,7 +325,29 @@ fn source_guard_rejects_drift_and_dangling_objects_and_splits_genuine_retirement
         proof["historical_source_sha256"][checker::CHECKER],
         checker::CHECKER_SHA256
     );
-    fs::remove_file(directory.path().join(checker::HEADER)).unwrap();
+    rustix::fs::mkfifoat(
+        rustix::fs::CWD,
+        &checker_path,
+        rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR,
+    )
+    .unwrap();
+    assert!(checker::sources(directory.path()).is_err());
+    fs::remove_file(&checker_path).unwrap();
+    fs::remove_dir(checker_path.parent().unwrap()).unwrap();
+    assert!(checker::sources(directory.path()).is_err());
+    let other_tools = directory.path().join("other-tools");
+    fs::create_dir(&other_tools).unwrap();
+    symlink(&other_tools, checker_path.parent().unwrap()).unwrap();
+    assert!(checker::sources(directory.path()).is_err());
+    fs::remove_file(checker_path.parent().unwrap()).unwrap();
+    fs::create_dir(checker_path.parent().unwrap()).unwrap();
+    let header_path = directory.path().join(checker::HEADER);
+    let header_copy = directory.path().join("header-copy");
+    fs::copy(&header_path, &header_copy).unwrap();
+    fs::remove_file(&header_path).unwrap();
+    symlink(&header_copy, &header_path).unwrap();
+    assert!(checker::sources(directory.path()).is_err());
+    fs::remove_file(&header_path).unwrap();
     assert!(checker::sources(directory.path()).is_err());
 }
 
