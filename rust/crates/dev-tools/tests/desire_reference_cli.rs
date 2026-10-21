@@ -336,7 +336,8 @@ fn original_cli_channels_and_full_raw_path_match_native_with_pinned_source() {
                 );
                 assert_eq!(
                     file_sha(&path, 150_000_000),
-                    expected["sha256"].as_str().unwrap()
+                    expected["sha256"].as_str().unwrap(),
+                    "{filename}: accepted raw output bytes"
                 );
             }
         } else {

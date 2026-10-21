@@ -49,10 +49,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
             },
         )?;
-        serde_json::to_writer(
-            &mut output,
-            &json!({"state":helper,"remote_allowed":allowed,"params_refreshed":refreshed}),
-        )?;
+        let mut observation =
+            json!({"state":helper,"remote_allowed":allowed,"params_refreshed":refreshed});
+        // Workspace consumers may enable serde_json/preserve_order. Keep the
+        // accepted probe wire format independent of Cargo feature unification.
+        observation.sort_all_objects();
+        serde_json::to_writer(&mut output, &observation)?;
         writeln!(output)?;
     }
     output.flush()?;
