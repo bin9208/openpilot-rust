@@ -64,3 +64,8 @@ fixed regression/complete comparison/strictClippy remain required. The old
 baseline test injects only a documented test callback after publication; it
 must compile and fail behaviorally, not be counted RED from a build error.
 Local verification is Rust formatting and diff review only.
+
+
+## Accepted fresh-original retirement preparation, before actual deletion (2026-10-21)
+
+[Run39535390950](https://github.com/bin9208/openpilot-rust/actions/runs/39535390950) succeeded at checkout5f6104be47db0b3ae9131241726613788eeac747; workflow07656775bb4d5cca369731565db1dca523fe0318. Artifact12317675555 ZIP SHA2561111f01652e8d9899cd0c1669bc589498487bb6b3b74a064e8c429abc64ffcf4. The fresh original, native-present and same-ELF native-absent roots matched all39cases/2420frames/4saves/216GPS writes. Both native audit lanes admit exactly the bound checker and candidate. The old finalizer compiled and failed at the stale-publication assertion with exit101; current regressions and strict Clippy passed. Fresh original ASLR differences are normalized only at three fixed initial error-stack fields after strict prefix/hex-address shape validation; all other fields remain compared. This is accepted predelete evidence; actual deletion and caller integration are being prepared separately.

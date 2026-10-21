@@ -9,3 +9,8 @@ The native reference now has opt-in `UI_APPLICATION_FPS_DIAGNOSTIC=1` in-memory 
 A diagnostic-only workflow on the isolated proof branch restores exact-hash original helper code to runner scratch, instruments only observation of real GetFPS, and runs original/native on one Xvfb display. Only a detached scratch checkout receives a recorded test-only strict-case filter. This is diagnostic historical execution, not retirement or a maintained Python dependency. Raw FPS, exits, frames, source/workflow identities and host load are required before choosing a repair. Focused reproduction may not reproduce full-job load; the full matrix remains required.
 
 Status: source ready; diagnostic and final unchanged strict acceptance pending hosted Actions. Local checks are syntax, formatting and diff only. No device or driving claim.
+
+
+## Strict-case diagnostic observation without threshold change (2026-10-21)
+
+[Run39535390796](https://github.com/bin9208/openpilot-rust/actions/runs/39535390796) checked out5f6104be47db0b3ae9131241726613788eeac747 under diagnostic workflow07656775bb4d5cca369731565db1dca523fe0318. Original observedFPS11twice; native18twice. Both strict cases returned0 with matching JSON/PNG. Artifact12317319324 ZIP SHA25667c6cc3cfdb78eb8c644367a6e2458ce7e61402a8306d8ae9f1072f37331ef84. The temporary filtered test graft and original observation wrapper exist only in diagnostic scratch/workflow; no maintained test filter or relaxed threshold was introduced. This run did not reproduce intermittent<10FPS failure and does not establish its cause or close #384. The full unfiltered PR suite is still required.

@@ -62,3 +62,10 @@ Baseline-compatible test-only grafts on60e3711e must compile and fail at the
 specific stale-publication assertions, then current regression/25-row retirement
 and raw CLI/PATH tests must pass. That fresh cloud proof remains pending; the
 Python checker is still present. No numerical tolerance was changed.
+
+
+## Accepted same-ELF proof and actual-removal follow-up (2026-10-21)
+
+[Run39533224232/job119003782752](https://github.com/bin9208/openpilot-rust/actions/runs/39533224232/job/119003782752) succeeded at checkout7b5ebbb7243a0f74cb3b075067a5dd50506b4927, workflow80113fb7c98081e1cbfae401a60350a6aa9525b9. Artifact12317055106 ZIP SHA256c169d7ef9864c0c3ccc3d1a23e91cf56d02962d3153b5cf185734a79052871d2. Fresh original25-row report/generatedC++/stdout, same current checker and candidate in source-present/private-absent roots,56execs per lane,12retained raw originalCLI observations,old #437 finalization RED/current regressions and strict Clippy passed. Parent independently bound retained data to that archive.
+
+The Python checker and obsolete predelete test were removed in5a070589. New maintained tests have no Python execution branches and use sealed original data plus cold C++ comparison. First actual-deletion [run39536560305/job119014447523](https://github.com/bin9208/openpilot-rust/actions/runs/39536560305/job/119014447523), checkoutdf0128aa, passed12controller tests and12sealedCLI phases but rejected `/snap/bin/as` ENOENT in the exec audit: the test inherited runner PATH rather than the predelete admitted `/usr/bin:/bin`. Commitcd51eb14 restores that test environment explicitly; the unset/empty PATH regressions remain separate and unchanged. Fresh postdelete execution is pending, so deletion acceptance is not yet claimed.

@@ -1,6 +1,22 @@
 # 저장소 전체 Python 전환 작업 인수인계
 
-## 현재 감독·통합 상태: 6ed383f0, 2026-10-21
+## 현재 감독·통합 상태: fe6b64ca, 2026-10-21
+
+부모6.1 Sol 감독·검토·통합, 허용된6Sol 작업자는 분리된 도구전환과 검증을 담당한다. 전용 native-build-tools-296 작업트리, PR343→dev만 사용한다. dev-md/주작업폴더/.omo는 보존한다. 사용자가 pull 후 기기 부팅·녹화·업로드·주행을 확인한다. 로컬은 문법·포맷·diff·데이터 판독, 기능/빌드/Clippy/ARM/AGNOS는 GitHub-hosted Actions.
+
+인벤토리221replaced-local/3partial/3356pending. 실제 원격 issue branch는8e8b1e8f이며 이후 수정은 로컬 커밋과 별도 진단브랜치 소스핀으로 검증 중이다. 아직 최신 전체PR 또는 dev병합/패키지 완료가 아니다.
+
+최근 수용: #438 전체추정기20a run39529411343, #442통계 finalization6ed run39530693250, Panda실제삭제+18phase5f6 run39535390854(artifact12317565373), paramsdloop원본/같은ELF전환전검증5f6 run39535390950(artifact12317675555). UI strict진단5f6 run39535390796은원본11/native18FPS로동일출력성공했지만간헐적실패원인/#384미해결. 각doc에ZIP/SHA와증거한계를기록했다.
+
+Calibration원본25행/12CLI/56exec전환전검증7b5 run39533224232는성공. 5a070589에서Pythonchecker를삭제했고첫삭제후run39536560305는테스트상속PATH의/snap/bin/as시도를엄격audit가거부했다. cd51eb14에서기존허용PATH를명시했으며재검증중이다. 새postdelete증거는CLI출력과형제디렉터리를써exclusive출력생성을보존한다.
+
+Updater전체controller run39536560193(checkoutdf0128aa/workflowec7d3e2f)는성공했고독립아티팩트검토중. 별도fixture의기능검사는성공했지만Clippyuseless_vec가남아fe6b64ca에서고쳤고재검증중. Beepcontroller E0308과원본바인딩source18개/json11provenance검사를b4a62ae1에서수정,run39536726773진행중. 과거ELF해시는provenance로만기록하고현재ELF는현재receipt에묶는다.
+
+전체8ePR run39524132398은실패종료. LLVM20 108tests/30suites와startup은성공했지만workspacefmt/추정기disk/Pandaptrace/UIstrict실패가있고ARM은120분마감에마지막UI빌드에서취소됐다. #445에서그hosted마감만180분으로늘렸다. 앞선세실패수정의집중검증은완료/통합중이며최신전체PR재검증은남았다.
+
+현재작업: paramsdloop두Python도구실제삭제준비,updater원본5scenario/10JSON/CLI수용및삭제설계,calibrationestimator원본독립캡처와Rustcontroller준비. 이후3356pending/3partial전환,전체모듈검토/최신전체CI/소스일치AGNOS/통합후검사/사용자기기수용이남는다. 부분CI를전체완료로부르지않는다.
+
+## 과거 감독·통합 상태: 6ed383f0, 2026-10-21
 
 부모6.1 Sol이 #296 감독·검토·통합을 맡고 기존6 Sol 작업자는 분리된 구현과 독립 검토를 담당한다. 전용 native-build-tools-296 작업트리의 PR343→dev만 사용한다. dev-md, 주 작업폴더와 `.omo/`는 보존한다. 콤마가 없으므로 사용자가 pull 후 정상부팅·녹화·업로드·주행을 확인한다. 로컬은 문법·포맷·diff만 검사하며 기능·빌드·Clippy는 GitHub-hosted Actions에서 실행한다.
 
