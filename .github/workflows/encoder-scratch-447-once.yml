@@ -24,9 +24,9 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: 5bcfae4482d9c4dcb1da46e1086bea609e0c9688
+        ref: a05963f5b452dd198fcc73a8262cafd597d19d8c
     - name: Require exact candidate source
-      run: 'test "$(git rev-parse HEAD)" = 5bcfae4482d9c4dcb1da46e1086bea609e0c9688
+      run: 'test "$(git rev-parse HEAD)" = a05963f5b452dd198fcc73a8262cafd597d19d8c
 
         '
     - name: Reserve capacity and install native codec prerequisites
