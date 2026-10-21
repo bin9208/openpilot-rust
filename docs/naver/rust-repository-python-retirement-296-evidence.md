@@ -17,6 +17,34 @@ Desire24,585-row/47-scenario comparisons. Inventory is242replaced-local/3partial
 Driver/shared logging helpers and recovery controllers still require their
 complete caller/absence gates. Whole-project compiler/tool/vendor conversion remains unfinished.
 
+## Teleop embedded release computations accepted (2026-10-22)
+
+Both inline Python computations in `teleoprtc_repo/scripts/bump_tag.sh` now
+use `teleop-version`. The independent unchanged-original capture
+[39669805189](https://github.com/bin9208/openpilot-rust/actions/runs/39669805189)
+contains34 computation cases and10 disposable Git scenarios. Its artifact
+12378144762 is9,170bytes/7CRC members, ZIP SHA256
+`720f521346ff6b5456fbabb701856d7f0f10845471b4c8a3378515333221e42e`.
+No original executable source is retained as a runnable expected-value helper.
+
+Native [39670630661](https://github.com/bin9208/openpilot-rust/actions/runs/39670630661)
+passes all34 cases, all10 Git effects, three pure controls and strict Clippy at
+source `9856b0769e982c3462ae6444987d8f167ae649bc`, workflow
+`7c3f8a4674d61cfbf8daeea3a6ad1bdbacae94b4`. Artifact12379332323 is26,930bytes/
+57CRC members, ZIP SHA256
+`f5d8b1350d8c25700f53092510bf0944b0a5b676f638c54f650b3dfa34a0039e`.
+Parent independently compared the retained original computations and Git effects
+with these native receipts. This exposed and corrected an embedded-CR parsing
+regression; only LF terminates the first input line. Error status/stdout and
+ordered error classes match; incidental Python traceback text is not reproduced.
+PEP621 string versions are supported, not incidental non-string TOML values.
+Git/tag operations occurred only inside owned disposable repositories.
+
+The maintained workflow caller and paired user docs were added in4634bc86c;
+their combined CI policy validation remains pending. Embedded pending execution
+edges decrease20→19; the baseline source count remains242replaced-local/
+3partial/3335pending. This is not whole-repository or device acceptance.
+
 
 ## Supervised integration checkpoint (2026-10-21)
 
