@@ -286,7 +286,7 @@ fn audit_exec(
     for name in ["cc1plus", "as", "collect2", "ld"] {
         assert_eq!(counts.get(name), Some(&1), "compiler child {name}");
     }
-    assert_eq!(counts.values().sum::<usize>(), 55);
+    assert_eq!(counts.values().sum::<usize>(), 56);
     helpers
 }
 

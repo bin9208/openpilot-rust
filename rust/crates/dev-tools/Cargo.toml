@@ -1791,3 +1791,12 @@ required-features = ["updated-fixture-native"]
 [[test]]
 name = "updated_fixture_original"
 required-features = ["updated-fixture-native"]
+
+[[bin]]
+name = "check-updated"
+path = "src/bin/check_updated.rs"
+required-features = ["updated-fixture-native"]
+
+[[test]]
+name = "updated_check"
+required-features = ["updated-fixture-native"]

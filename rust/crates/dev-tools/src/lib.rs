@@ -291,6 +291,8 @@ pub mod ui_state_scheduler_check;
 pub mod ui_translation_check;
 pub mod ui_updater_handshake;
 #[cfg(all(target_os = "linux", feature = "updated-fixture-native"))]
+pub mod updated_check;
+#[cfg(all(target_os = "linux", feature = "updated-fixture-native"))]
 pub mod updated_fixture;
 #[cfg(target_os = "linux")]
 pub mod updated_process_check;
