@@ -876,6 +876,26 @@ fn run_inner(
         "head", "branch", "status", "tracked", "remote", "refs", "fetch",
     ] {
         let expected_field = if frozen.is_some() && staged {
+            if name == "git_pull_repair" && field == "refs" {
+                let before_refs = before["refs"].as_str().ok_or("frozen Git refs absent")?;
+                let after_refs = after["refs"].as_str().ok_or("owned Git refs absent")?;
+                let original_refs = original_after["refs"]
+                    .as_str()
+                    .ok_or("original Git refs absent")?;
+                let advanced = git(&bare, &["rev-parse", "refs/heads/main"])?;
+                let old_main = before_refs
+                    .lines()
+                    .find(|line| line.starts_with("refs/heads/main "))
+                    .ok_or("frozen main ref absent")?;
+                let repaired_main = format!("refs/heads/main {advanced} refs/remotes/origin/main");
+                if old_main == repaired_main
+                    || before_refs.replacen(old_main, &repaired_main, 1) != after_refs
+                    || after_refs != original_refs
+                {
+                    return Err("frozen Git upstream repair ref relation changed".into());
+                }
+                continue;
+            }
             if name == "git_pull" && field == "refs" {
                 let before_refs = before["refs"].as_str().ok_or("frozen Git refs absent")?;
                 let initial = git(&bare, &["rev-parse", "refs/heads/topic"])?;
