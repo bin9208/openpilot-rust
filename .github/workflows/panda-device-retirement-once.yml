@@ -15,12 +15,12 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: e4b30b8d197722eb31ce993c975dd631729aa937
+        ref: 7fc4698e3d4564a6bd8499ec98a80704f3cd9c77
         persist-credentials: false
     - name: Reserve disk and prepare minimal device compiler inputs
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = e4b30b8d197722eb31ce993c975dd631729aa937
+        test "$(git rev-parse HEAD)" = 7fc4698e3d4564a6bd8499ec98a80704f3cd9c77
 
         sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
 
@@ -30,7 +30,7 @@ jobs:
 
         sudo apt-get install -y capnproto libcapnp-dev g++ libusb-1.0-0-dev pkg-config
 
-        rustup toolchain install 1.94.0 --profile minimal
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
 
         '
     - name: Borrow and seal unchanged original C++ device ELF
