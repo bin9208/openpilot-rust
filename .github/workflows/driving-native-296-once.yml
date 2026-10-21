@@ -21,7 +21,7 @@ jobs:
       OPENPILOT_HACKS: '1'
       LLVM_PATH: /usr/lib/x86_64-linux-gnu/libLLVM-18.so
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
-      EXPECTED_SOURCE: 312f48274043fb0b84cbf02430efc52899e74077
+      EXPECTED_SOURCE: dac838ed99b7cae6c09a236d7e6eaf6742b42e82
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -31,7 +31,7 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: 312f48274043fb0b84cbf02430efc52899e74077
+        ref: dac838ed99b7cae6c09a236d7e6eaf6742b42e82
     - name: Require exact source and hosted controller prerequisites
       run: 'set -euo pipefail
 
@@ -161,7 +161,40 @@ jobs:
 
         cargo build --manifest-path rust/Cargo.toml -p openpilot-logmessaged --bins --locked 2>&1 | tee "$proof/collector-build.log"
 
+        # Initial modeld was linked before model and Python binding preparation.
+
+        # Bind both fresh plain links only after that source/build-metadata state is stable.
+
+        git status --porcelain --untracked-files=normal > "$proof/plain-input-status-before.txt"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo clean --manifest-path rust/Cargo.toml -p openpilot-driving-modeld
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-driving-modeld --bin openpilot-driving-modeld --locked 2>&1
+        | tee "$proof/plain-first-build.log"
+
+        cp rust/target/debug/openpilot-driving-modeld "$proof/plain-first.elf"
+
         sha256sum rust/target/debug/openpilot-driving-modeld > "$proof/plain-before.sha256"
+
+        git status --porcelain --untracked-files=normal > "$proof/plain-input-status-first.txt"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo clean --manifest-path rust/Cargo.toml -p openpilot-driving-modeld
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-driving-modeld --bin openpilot-driving-modeld --locked 2>&1
+        | tee "$proof/plain-repeat-build.log"
+
+        cp rust/target/debug/openpilot-driving-modeld "$proof/plain-repeat.elf"
+
+        sha256sum -c "$proof/plain-before.sha256"
+
+        git status --porcelain --untracked-files=normal > "$proof/plain-input-status-repeat.txt"
+
+        find rust/target/debug/build -path ''*/openpilot-logging-*/output'' -exec sh -c ''for p do printf "%s\n" "$p"; cat
+        "$p"; done'' sh {} + > "$proof/plain-logging-build-outputs.txt"
 
         '
     - name: Retain fresh unchanged original linked-fault and ordinary ENOTSOCK outcomes
@@ -175,7 +208,9 @@ jobs:
         \nelse\n  printf 'original-finally-output-differs-from-fault-ELF\\n' > \"$RUNNER_TEMP/driving-native-296/original-restore-comparison.txt\"\
         \nfi\nrust/tools/check-disk-space --path \"$GITHUB_WORKSPACE\" --growth-mib 2048\ncargo clean --manifest-path rust/Cargo.toml\
         \ -p openpilot-driving-modeld\ncargo build --manifest-path rust/Cargo.toml -p openpilot-driving-modeld --bin openpilot-driving-modeld\
-        \ --locked\nsha256sum -c \"$RUNNER_TEMP/driving-native-296/plain-before.sha256\"\n"
+        \ --locked\ncp rust/target/debug/openpilot-driving-modeld \"$RUNNER_TEMP/driving-native-296/plain-restored.elf\"\n\
+        git status --porcelain --untracked-files=normal > \"$RUNNER_TEMP/driving-native-296/plain-input-status-restored.txt\"\
+        \nsha256sum -c \"$RUNNER_TEMP/driving-native-296/plain-before.sha256\"\n"
     - name: Retain fresh unchanged original six-scenario collector outcomes
       run: "set -euo pipefail\nrust/tools/check-disk-space --path \"$GITHUB_WORKSPACE\" --growth-mib 2048\nPYTHONPATH=\"$RUNNER_TEMP/model-msgq-python:$PYTHONPATH\"\
         \ python rust/tools/check_driving_daemon.py \\\n  --binary rust/target/debug/openpilot-driving-modeld --collector\
