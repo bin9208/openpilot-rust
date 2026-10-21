@@ -267,6 +267,10 @@ pub fn audit_after_harness(
         &pre.selected.server,
         &pre.selected.child,
     )?);
+    created.extend(owned_tmux_symlink_rules(
+        &pre.native_root,
+        &pre.selected.tmux,
+    )?);
     let mut relations = Vec::with_capacity(4);
     let mut alias_receipts = Vec::with_capacity(2);
     for lane in ["checkout", "private"] {
@@ -311,13 +315,13 @@ pub fn audit_after_harness(
             CreatedProgramKind::AuthoredScript { bytes, .. } => {
                 format!("{:x}", Sha256::digest(bytes))
             }
-            CreatedProgramKind::CopiedElf { source, .. } | CreatedProgramKind::Alias { source } => {
-                pre_map
-                    .get(source.as_slice())
-                    .ok_or("created executable has no pre-harness ELF source")?
-                    .sha256
-                    .clone()
-            }
+            CreatedProgramKind::CopiedElf { source, .. }
+            | CreatedProgramKind::Alias { source }
+            | CreatedProgramKind::SymlinkAlias { source, .. } => pre_map
+                .get(source.as_slice())
+                .ok_or("created executable has no pre-harness ELF source")?
+                .sha256
+                .clone(),
         };
         independent.push((program.final_seal.requested.clone(), digest));
     }
@@ -492,6 +496,27 @@ pub fn copied_http_program_rules(
     Ok(rules)
 }
 
+/// The real-tmux control authors one PATH symlink per lane after preflight.
+/// Its target is the selected, held native tmux ELF, never an authored script.
+pub fn owned_tmux_symlink_rules(
+    native_root: &Path,
+    tmux_source: &Path,
+) -> Result<Vec<CreatedProgramRule>> {
+    ["checkout", "private"]
+        .into_iter()
+        .map(|lane| {
+            let output = native_root.join(lane).join("actions/rust-owned-tmux");
+            Ok(CreatedProgramRule {
+                final_seal: capture_program_seal(&output.join("tools/tmux"))?,
+                kind: CreatedProgramKind::SymlinkAlias {
+                    source: tmux_source.as_os_str().as_bytes().to_vec(),
+                    receipt: output.join("created-owned-tmux-symlink.jsonl"),
+                },
+            })
+        })
+        .collect()
+}
+
 /// A narrow argv-path exception for process-supervision's non-executable
 /// tempfile descriptor. Count must come from the controller contract, never
 /// the observed trace. Every selected child exec remains independently sealed.
@@ -538,6 +563,7 @@ pub fn provenance_program_rules(
     }
     for lane in ["checkout", "private"] {
         let root = native_root.join(lane);
+        success.insert(root.join("actions/rust-owned-tmux/tools/tmux"));
         for name in ["recovery_actions", "openpilot-process-child"] {
             success.insert(
                 root.join("actions/rust-owned-native-bin/native-bin")
@@ -786,6 +812,13 @@ mod tests {
             b"/owned/native/private/actions/permission_tmux/tools/tmux",
             Outcome::Errno("EACCES".into())
         ));
+        for lane in ["checkout", "private"] {
+            let alias = format!("/owned/native/{lane}/actions/rust-owned-tmux/tools/tmux");
+            assert!(contains(alias.as_bytes(), Outcome::Success));
+            assert!(!authored_scripts(Path::new("/owned/native"))
+                .iter()
+                .any(|script| script.path == Path::new(&alias)));
+        }
         assert!(!contains(b"/usr/bin/python3", Outcome::Success));
         assert!(
             provenance_program_rules(Path::new("/owned/native"), &elfs, "relative:/usr/bin")

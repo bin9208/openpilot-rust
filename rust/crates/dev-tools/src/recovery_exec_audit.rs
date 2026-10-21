@@ -94,6 +94,9 @@ pub enum CreatedProgramKind {
     /// The existing 52-row owned-alias receipt begins with `created` and
     /// precedes every action or PTY invocation.
     Alias { source: Vec<u8> },
+    /// A controller-created symlink to a pre-harness native provider. Its
+    /// creation inode and exact target are recorded before the first launch.
+    SymlinkAlias { source: Vec<u8>, receipt: PathBuf },
     /// The writer's held-file receipt is emitted after the copy and before
     /// its first execution; `source` was sealed before the harness.
     CopiedElf { source: Vec<u8>, receipt: PathBuf },
@@ -239,6 +242,150 @@ pub struct CreatedProgramGuard {
     seal: ProgramSeal,
     mode: u32,
     finished: bool,
+}
+
+/// Hold both the authored symlink inode and its pre-existing ELF target. A
+/// separate receipt makes the creation boundary visible before any launch.
+pub struct CreatedSymlinkGuard {
+    path: PathBuf,
+    target: PathBuf,
+    source: File,
+    source_seal: ProgramSeal,
+    link: File,
+    link_dev: u64,
+    link_ino: u64,
+    receipt_path: PathBuf,
+    receipt: File,
+    finished: bool,
+}
+
+impl CreatedSymlinkGuard {
+    pub fn record(path: &Path, target: &Path, receipt_path: &Path) -> Result<Self> {
+        let source = File::from(rustix::fs::open(
+            target,
+            rustix::fs::OFlags::RDONLY
+                | rustix::fs::OFlags::NONBLOCK
+                | rustix::fs::OFlags::NOFOLLOW
+                | rustix::fs::OFlags::CLOEXEC,
+            rustix::fs::Mode::empty(),
+        )?);
+        let source_seal = capture_program_seal(target)?;
+        let source_meta = source.metadata()?;
+        let link = File::from(rustix::fs::open(
+            path,
+            rustix::fs::OFlags::PATH | rustix::fs::OFlags::NOFOLLOW | rustix::fs::OFlags::CLOEXEC,
+            rustix::fs::Mode::empty(),
+        )?);
+        let link_meta = link.metadata()?;
+        let named_link = fs::symlink_metadata(path)?;
+        if !source_meta.is_file()
+            || !link_meta.file_type().is_symlink()
+            || !named_link.file_type().is_symlink()
+            || (named_link.dev(), named_link.ino()) != (link_meta.dev(), link_meta.ino())
+            || fs::read_link(path)? != target
+            || source_seal.requested != target.as_os_str().as_bytes()
+            || (source_meta.dev(), source_meta.ino(), source_meta.len())
+                != (source_seal.dev, source_seal.ino, source_seal.len)
+            || digest_held(&source, MAX_PROGRAM_BYTES, source_seal.len)? != source_seal.sha256
+        {
+            return Err(invalid(
+                "created symlink did not bind sealed native provider",
+            ));
+        }
+        let mut receipt = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(receipt_path)?;
+        Self::write_row(
+            &mut receipt,
+            "created",
+            path,
+            target,
+            &source_seal,
+            &link_meta,
+        )?;
+        Ok(Self {
+            path: path.to_owned(),
+            target: target.to_owned(),
+            source,
+            source_seal,
+            link,
+            link_dev: link_meta.dev(),
+            link_ino: link_meta.ino(),
+            receipt_path: receipt_path.to_owned(),
+            receipt,
+            finished: false,
+        })
+    }
+
+    fn write_row(
+        file: &mut File,
+        stage: &str,
+        path: &Path,
+        target: &Path,
+        source: &ProgramSeal,
+        link: &fs::Metadata,
+    ) -> Result<()> {
+        serde_json::to_writer(
+            &mut *file,
+            &json!({"stage":stage,"alias":path.as_os_str().as_bytes(),
+                "target":target.as_os_str().as_bytes(),"link_dev":link.dev(),
+                "link_ino":link.ino(),"source_sha256":source.sha256}),
+        )?;
+        file.write_all(b"\n")?;
+        file.flush()?;
+        Ok(())
+    }
+
+    pub fn finish(mut self) -> Result<()> {
+        self.finished = true;
+        self.verify_and_finish()
+    }
+
+    fn verify_and_finish(&mut self) -> Result<()> {
+        let link = self.link.metadata()?;
+        let named_link = fs::symlink_metadata(&self.path)?;
+        let source = self.source.metadata()?;
+        let receipt = self.receipt.metadata()?;
+        let named_receipt = fs::symlink_metadata(&self.receipt_path)?;
+        if !link.file_type().is_symlink()
+            || !named_link.file_type().is_symlink()
+            || (link.dev(), link.ino()) != (self.link_dev, self.link_ino)
+            || (named_link.dev(), named_link.ino()) != (link.dev(), link.ino())
+            || fs::read_link(&self.path)? != self.target
+            || (source.dev(), source.ino(), source.len())
+                != (
+                    self.source_seal.dev,
+                    self.source_seal.ino,
+                    self.source_seal.len,
+                )
+            || digest_held(&self.source, MAX_PROGRAM_BYTES, self.source_seal.len)?
+                != self.source_seal.sha256
+            || capture_program_seal(&self.target)? != self.source_seal
+            || !named_receipt.is_file()
+            || (receipt.dev(), receipt.ino()) != (named_receipt.dev(), named_receipt.ino())
+        {
+            return Err(invalid(
+                "created provider symlink changed before finalization",
+            ));
+        }
+        Self::write_row(
+            &mut self.receipt,
+            "after-family",
+            &self.path,
+            &self.target,
+            &self.source_seal,
+            &link,
+        )
+    }
+}
+
+impl Drop for CreatedSymlinkGuard {
+    fn drop(&mut self) {
+        if !self.finished && self.verify_and_finish().is_ok() {
+            self.finished = true;
+        }
+    }
 }
 
 impl CreatedProgramGuard {
@@ -866,6 +1013,38 @@ fn verify_created_receipt(path: &Path, seal: &ProgramSeal, mode: u32) -> Result<
     Ok(())
 }
 
+fn verify_created_symlink_receipt(
+    path: &Path,
+    seal: &ProgramSeal,
+    source: &ProgramSeal,
+) -> Result<()> {
+    let bytes = read_bound_regular(path, 4096)?;
+    let text = std::str::from_utf8(&bytes)?;
+    let rows = text.lines().collect::<Vec<_>>();
+    let alias = Path::new(OsStr::from_bytes(&seal.requested));
+    let target = Path::new(OsStr::from_bytes(&source.requested));
+    let link = fs::symlink_metadata(alias)?;
+    if rows.len() != 2
+        || !text.ends_with('\n')
+        || !link.file_type().is_symlink()
+        || fs::read_link(alias)? != target
+    {
+        return Err(invalid(
+            "created native provider symlink receipt incomplete",
+        ));
+    }
+    for (stage, row) in ["created", "after-family"].into_iter().zip(rows) {
+        let actual: Value = serde_json::from_str(row)?;
+        let expected = json!({"stage":stage,"alias":seal.requested,
+            "target":source.requested,"link_dev":link.dev(),
+            "link_ino":link.ino(),"source_sha256":source.sha256});
+        if actual != expected {
+            return Err(invalid("created native provider symlink identity changed"));
+        }
+    }
+    Ok(())
+}
+
 fn verify_alias_receipt(
     rule: &OwnedAliasReceiptRule,
     seals: &BTreeMap<Vec<u8>, &ProgramSeal>,
@@ -1065,9 +1244,13 @@ fn audit_attempts(attempts: Vec<Attempt>, policy: &ExplicitPolicy) -> Result<Aud
     for created in &policy.created_programs {
         let seal = &created.final_seal;
         let named = fs::symlink_metadata(Path::new(OsStr::from_bytes(&seal.requested)))?;
-        if !named.is_file() || named.file_type().is_symlink() || !seal.links.is_empty() {
+        let symlink_alias = matches!(&created.kind, CreatedProgramKind::SymlinkAlias { .. });
+        if (!symlink_alias
+            && (!named.is_file() || named.file_type().is_symlink() || !seal.links.is_empty()))
+            || (symlink_alias && !named.file_type().is_symlink())
+        {
             return Err(invalid(
-                "created executable path is not a direct regular file",
+                "created executable path has unexpected file type or link chain",
             ));
         }
         let mode = named.permissions().mode() & 0o777;
@@ -1088,6 +1271,22 @@ fn audit_attempts(attempts: Vec<Attempt>, policy: &ExplicitPolicy) -> Result<Aud
                 {
                     return Err(invalid("created alias lacks original held hardlink proof"));
                 }
+            }
+            CreatedProgramKind::SymlinkAlias { source, receipt } => {
+                let original = seals.get(source).ok_or("unsealed symlink provider")?;
+                let mut expected_links = vec![LinkSeal {
+                    path: seal.requested.clone(),
+                    target: source.clone(),
+                }];
+                expected_links.extend(original.links.clone());
+                if seal.links != expected_links
+                    || (seal.dev, seal.ino, seal.len, &seal.sha256)
+                        != (original.dev, original.ino, original.len, &original.sha256)
+                    || seal.resolved != original.resolved
+                {
+                    return Err(invalid("created symlink differs from held native provider"));
+                }
+                verify_created_symlink_receipt(receipt, seal, original)?;
             }
             CreatedProgramKind::CopiedElf { source, receipt } => {
                 let original = seals.get(source).ok_or("unsealed copied ELF source")?;
@@ -1701,5 +1900,40 @@ mod tests {
         ] {
             assert!(!launch_descriptor_path(path));
         }
+    }
+
+    #[test]
+    fn created_provider_symlink_receipt_binds_target_and_inode() {
+        let directory = tempfile::tempdir().unwrap();
+        let target = directory.path().join("native-tmux");
+        let alias = directory.path().join("tools-tmux");
+        let receipt = directory.path().join("created-tmux.jsonl");
+        fs::write(&target, b"\x7fELF-owned-provider").unwrap();
+        std::os::unix::fs::symlink(&target, &alias).unwrap();
+        let guard = CreatedSymlinkGuard::record(&alias, &target, &receipt).unwrap();
+        guard.finish().unwrap();
+        let seal = capture_program_seal(&alias).unwrap();
+        let source = capture_program_seal(&target).unwrap();
+        verify_created_symlink_receipt(&receipt, &seal, &source).unwrap();
+        let wrong = directory.path().join("foreign-native");
+        fs::write(&wrong, b"\x7fELF-foreign-provider").unwrap();
+        fs::remove_file(&alias).unwrap();
+        std::os::unix::fs::symlink(&wrong, &alias).unwrap();
+        assert!(verify_created_symlink_receipt(&receipt, &seal, &source).is_err());
+    }
+
+    #[test]
+    fn active_created_provider_guard_rejects_same_target_symlink_replacement() {
+        let directory = tempfile::tempdir().unwrap();
+        let target = directory.path().join("native-tmux");
+        let alias = directory.path().join("tools-tmux");
+        let receipt = directory.path().join("created-tmux.jsonl");
+        fs::write(&target, b"\x7fELF-owned-provider").unwrap();
+        std::os::unix::fs::symlink(&target, &alias).unwrap();
+        let guard = CreatedSymlinkGuard::record(&alias, &target, &receipt).unwrap();
+        fs::remove_file(&alias).unwrap();
+        std::os::unix::fs::symlink(&target, &alias).unwrap();
+        assert!(guard.finish().is_err());
+        assert_eq!(fs::read_to_string(&receipt).unwrap().lines().count(), 1);
     }
 }

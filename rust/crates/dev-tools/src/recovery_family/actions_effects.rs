@@ -3,7 +3,7 @@
 
 use super::{HttpPeer, OwnedServer, Pin, Result};
 use crate::qa_process::{CommandSpec, NativeRunner, Runner};
-use crate::recovery_exec_audit::CreatedProgramGuard;
+use crate::recovery_exec_audit::{CreatedProgramGuard, CreatedSymlinkGuard};
 use rustix::process::Signal;
 use serde_json::{json, Value};
 use std::{
@@ -404,7 +404,13 @@ pub(super) fn capture_tmux(
     )?;
     let tools = output.join("tools");
     fs::create_dir(&tools)?;
-    symlink(tmux, tools.join("tmux"))?;
+    let owned_tmux = tools.join("tmux");
+    symlink(tmux, &owned_tmux)?;
+    let created_tmux = CreatedSymlinkGuard::record(
+        &owned_tmux,
+        tmux,
+        &output.join("created-owned-tmux-symlink.jsonl"),
+    )?;
     // tmux uses a Unix socket whose path must fit sun_path; the artifact root
     // can be much longer than the kernel limit on hosted runners.
     let socket_directory = tempfile::Builder::new()
@@ -423,7 +429,7 @@ pub(super) fn capture_tmux(
         &["new-session", "-d", "-s", "owned", &shell],
         output,
     )?;
-    let _lease = TmuxLease {
+    let lease = TmuxLease {
         binary: tmux,
         socket: &socket,
         cwd: output,
@@ -483,13 +489,19 @@ pub(super) fn capture_tmux(
             .windows(b"owned recovery capture".len())
             .any(|window| window == b"owned recovery capture");
     let receipt = json!({"http_status":status,"response":response,"source_len":source.len(),"captured_len":captured.len(),"exit":exit,"pass":pass});
+    if !pass {
+        fs::write(
+            output.join("comparison.json"),
+            serde_json::to_vec_pretty(&receipt)?,
+        )?;
+        return Err("Rust-owned real tmux capture diverged from original".into());
+    }
+    drop(lease);
+    created_tmux.finish()?;
     fs::write(
         output.join("comparison.json"),
         serde_json::to_vec_pretty(&receipt)?,
     )?;
-    if !pass {
-        return Err("Rust-owned real tmux capture diverged from original".into());
-    }
     Ok(receipt)
 }
 
