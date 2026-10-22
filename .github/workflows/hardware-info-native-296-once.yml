@@ -1,0 +1,124 @@
+name: 296 native HardwareInfo original parity candidate
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/hardware-info-native-296-once.yml
+permissions:
+  contents: read
+jobs:
+  hardware-info-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      EXPECTED_SOURCE: 148030ae65c6728155029f2ba2e17e4b3a5a99be
+      RUSTUP_TOOLCHAIN: 1.94.0
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: 148030ae65c6728155029f2ba2e17e4b3a5a99be
+        persist-credentials: false
+    - name: Reserve hosted capacity and native prerequisites
+      shell: bash
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 6144
+
+        sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends g++ capnproto libcapnp-dev libzmq3-dev strace
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
+
+        mkdir "$RUNNER_TEMP/hardware-info-native-296"
+
+        '
+    - name: Build actual native checker and hardware example
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/hardware-info-native-296"
+
+        git rev-parse HEAD > "$proof/SOURCE_COMMIT"
+
+        printf ''%s\n'' "$GITHUB_SHA" > "$proof/WORKFLOW_COMMIT"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features hardware-info-qa-native --bin
+        check-hardware-info --message-format=json > "$proof/checker-build.jsonl" 2> "$proof/checker-build.stderr" || { cat
+        "$proof/checker-build.stderr"; exit 1; }
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-hardware-info --example hardware_info --message-format=json
+        > "$proof/example-build.jsonl" 2> "$proof/example-build.stderr" || { cat "$proof/example-build.stderr"; exit 1; }
+
+        sha256sum rust/target/debug/check-hardware-info rust/target/debug/examples/hardware_info > "$proof/native.before.sha256"
+
+        '
+    - name: Exercise capture admission, CLI parsing and strict native lint checks
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/hardware-info-native-296"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features hardware-info-qa-native --lib
+        hardware_info_ -- --nocapture > "$proof/unit-inline.log" 2>&1 || { cat "$proof/unit-inline.log"; exit 1; }
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features hardware-info-qa-native --test
+        hardware_info_qa --test hardware_info_capture -- --nocapture > "$proof/unit-controls.log" 2>&1 || { cat "$proof/unit-controls.log";
+        exit 1; }
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features hardware-info-qa-native --lib
+        --bin check-hardware-info --test hardware_info_qa --test hardware_info_capture -- -D warnings > "$proof/clippy.log"
+        2>&1 || { cat "$proof/clippy.log"; exit 1; }
+
+        cargo fmt --manifest-path rust/Cargo.toml --all -- --check
+
+        '
+    - name: Replay every unchanged original case in checkout and private source-absent root
+      shell: bash
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/hardware-info-native-296\"\ncapture=\"$GITHUB_WORKSPACE/rust/crates/dev-tools/tests/fixtures/hardware-info-original\"\
+        \nchecker=\"$GITHUB_WORKSPACE/rust/target/debug/check-hardware-info\"\nbinary=\"$GITHUB_WORKSPACE/rust/target/debug/examples/hardware_info\"\
+        \n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$RUNNER_TEMP\" --growth-mib 2048\nstrace -ff -s 16384\
+        \ -o \"$proof/checkout.trace\" -e trace=execve,execveat,clone,fork,vfork,exit,exit_group \"$checker\" \"$binary\"\
+        \ \"$capture/plans.json.gz\" \"$capture\" \"$proof/checkout\" --root \"$GITHUB_WORKSPACE\" > \"$proof/checkout.stdout\"\
+        \ 2> \"$proof/checkout.stderr\"\npython3 - <<'PY'\nimport json,os,pathlib,hashlib\nroot=pathlib.Path.cwd()\nproof=pathlib.Path(os.environ['RUNNER_TEMP'])/'hardware-info-native-296'\n\
+        capture=root/'rust/crates/dev-tools/tests/fixtures/hardware-info-original'\nmanifest=json.loads((capture/'capture-manifest.json').read_text())\n\
+        private=proof/'private-root'\nprivate.mkdir()\nretired=set(manifest['retired_sources'])\ncopied={}\nfor name,pin in\
+        \ manifest['source_sha256'].items():\n  if name in retired:continue\n  body=(root/name).read_bytes()\n  assert hashlib.sha256(body).hexdigest()==pin\n\
+        \  target=private/name;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(body)\n  copied[name]={'bytes':len(body),'sha256':pin}\n\
+        assert len(copied)==27\nfor name in retired:assert not (private/name).exists() and not (private/name).is_symlink()\n\
+        (proof/'private-source-roster.json').write_text(json.dumps(copied,indent=2)+'\\n')\n(proof/'empty-cwd').mkdir()\n\
+        PY\ncd \"$proof/empty-cwd\"\nstrace -ff -s 16384 -o \"$proof/private.trace\" -e trace=execve,execveat,clone,fork,vfork,exit,exit_group\
+        \ \"$checker\" \"$binary\" \"$capture/plans.json.gz\" \"$capture\" \"$proof/private\" --root \"$proof/private-root\"\
+        \ --require-retired > \"$proof/private.stdout\" 2> \"$proof/private.stderr\"\ncd \"$GITHUB_WORKSPACE\"\nsha256sum\
+        \ rust/target/debug/check-hardware-info rust/target/debug/examples/hardware_info > \"$proof/native.after.sha256\"\n\
+        cmp \"$proof/native.before.sha256\" \"$proof/native.after.sha256\"\npython3 - <<'PY'\nimport json,os,pathlib\np=pathlib.Path(os.environ['RUNNER_TEMP'])/'hardware-info-native-296'\n\
+        for lane in ('checkout','private'):\n  m=json.loads((p/lane/'manifest.json').read_text())\n  assert m['result']=='PASS'\
+        \ and m['scenario_count']==136 and m['comparisons']==3110 and m['datagram_requests_per_implementation']==70\n  assert\
+        \ (p/lane/'input-receipt.before.json').read_bytes()==(p/lane/'input-receipt.after.json').read_bytes()\nPY\n"
+    - uses: actions/upload-artifact@v6
+      if: always()
+      with:
+        name: hardware-info-native-296
+        path: ${{ runner.temp }}/hardware-info-native-296/
+        include-hidden-files: true
+        if-no-files-found: error
+        retention-days: 14
