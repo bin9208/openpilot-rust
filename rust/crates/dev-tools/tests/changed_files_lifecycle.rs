@@ -101,7 +101,7 @@ impl Identity {
         })
     }
     fn state(&self) -> Option<char> {
-        let raw = fs::read_to_string(format!("/proc/{}/stat", self.pid.as_raw())).ok()?;
+        let raw = fs::read_to_string(format!("/proc/{}/stat", self.pid.as_raw_pid())).ok()?;
         let (_, suffix) = raw.rsplit_once(") ")?;
         let words: Vec<_> = suffix.split_whitespace().collect();
         if words.get(2)?.parse::<i32>().ok()? != self.group
@@ -116,7 +116,7 @@ impl Identity {
             .is_some_and(|state| state != 'Z' && state != 'X')
     }
     fn evidence(&self) -> Value {
-        json!({"pid":self.pid.as_raw(),"group":self.group,"starttime":self.start,"state":self.state().map(|s|s.to_string()),"alive":self.alive()})
+        json!({"pid":self.pid.as_raw_pid(),"group":self.group,"starttime":self.start,"state":self.state().map(|s|s.to_string()),"alive":self.alive()})
     }
 }
 struct OwnedChild(Child);
@@ -214,8 +214,8 @@ impl Case {
             .into_iter()
             .map(|role| Identity::read(&self.path(&format!("{role}-{stage}.pid"))).unwrap())
             .collect();
-        assert_eq!(result[0].group, result[0].pid.as_raw());
-        assert_ne!(result[0].group, getpid().as_raw());
+        assert_eq!(result[0].group, result[0].pid.as_raw_pid());
+        assert_ne!(result[0].group, getpid().as_raw_pid());
         for identity in &result {
             assert_eq!(identity.group, result[0].group);
         }
