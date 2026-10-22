@@ -341,10 +341,10 @@ fn check_case_files(evidence: &Path) -> ((usize, usize, usize), BTreeMap<String,
     assert_eq!(lifecycle["state_removed"], true);
     assert_eq!(lifecycle["child_reaped"], true);
     assert_eq!(lifecycle["snapshots"].as_array().unwrap().len(), 5);
-    let calls = lifecycle["calls"].as_array().unwrap();
-    assert!(calls.contains(&json!(["systemctl", "mask", "--runtime", "ModemManager"])));
-    assert!(calls.contains(&json!(["systemctl", "start", "ModemManager"])));
-    assert!(calls.contains(&json!(["resolvectl", "dns", "ppp0", "1.1.1.1", "8.8.8.8"])));
+    let lifecycle_calls = lifecycle["calls"].as_array().unwrap();
+    assert!(lifecycle_calls.contains(&json!(["systemctl", "mask", "--runtime", "ModemManager"])));
+    assert!(lifecycle_calls.contains(&json!(["systemctl", "start", "ModemManager"])));
+    assert!(lifecycle_calls.contains(&json!(["resolvectl", "dns", "ppp0", "1.1.1.1", "8.8.8.8"])));
     assert_eq!(report["process_boundary"].as_array().unwrap().len(), 3);
     let descriptor: Value =
         serde_json::from_slice(&fs::read(evidence.join("descriptor-boundary.json")).unwrap())
