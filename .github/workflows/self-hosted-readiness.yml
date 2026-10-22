@@ -1,0 +1,29 @@
+name: Local runner capabilities502
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  capabilities:
+    name: local runner capabilities
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    timeout-minutes: 5
+    steps:
+      - name: Inspect ARM execution facilities without modifying the host
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'SOURCE_COMMIT=%s\nRUNNER=%s ENVIRONMENT=%s ARCH=%s\n' "$GITHUB_SHA" "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_ARCH"
+          uname -a
+          free -m
+          df -h "$RUNNER_TEMP"
+          command -v docker podman proot qemu-aarch64-static qemu-aarch64 debootstrap skopeo || true
+          systemd-detect-virt || true
+          sed -n '/^CapEff:/p' /proc/self/status
+          cat /proc/self/uid_map
+          ls -l /proc/sys/fs/binfmt_misc || true
+          if test -f /proc/sys/fs/binfmt_misc/qemu-aarch64; then cat /proc/sys/fs/binfmt_misc/qemu-aarch64; fi
+          if command -v docker >/dev/null; then
+            sudo -n docker info --format '{{json .}}' 2>&1 || true
+          fi
+          if sudo -n test -w /proc/sys/fs/binfmt_misc/register; then echo BINFMT_REGISTER_WRITABLE=true; else echo BINFMT_REGISTER_WRITABLE=false; fi
