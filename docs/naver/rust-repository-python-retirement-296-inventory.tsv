@@ -1939,8 +1939,8 @@ rust/tools/check_encoder_v4l.py	3eddf8d4ebe3f414c6c1cf0712e081d9450258c4	replace
 rust/tools/check_feedbackd.py	6dbcef88b313b3d972116647f6b184cb741ad8ee	replaced-local	rust/crates/dev-tools/src/feedbackd_check.rs; rust/crates/dev-tools/src/feedbackd_native.rs
 rust/tools/check_hardware_control.py	d3db234f72a367c9b692ed2fd53099a9c1d1c2c7	replaced-local	openpilot-dev-tools check-hardware-control-policy; original 35 fixed cases and exact artifact comparisons
 rust/tools/check_hardware_info.py	089f34da86d5a3f4d30bb1533967ba90a193e8c0	replaced-local	rust/crates/dev-tools/src/hardware_info_qa.rs; hardware_info_capture.rs; check-hardware-info; independent original136-case capture
-rust/tools/check_hardwared.py	bd1fdb053cb5dbcf038a7250b9752f4992d8a9dc	pending	-
-rust/tools/check_hardwared_daemon.py	bfd4b1ad7fd25469ee13a652cbcae435123d1ba7	pending	-
+rust/tools/check_hardwared.py	bd1fdb053cb5dbcf038a7250b9752f4992d8a9dc	replaced-local	rust/crates/dev-tools/src/hardwared_qa.rs; check-hardwared; hardwared_retirement
+rust/tools/check_hardwared_daemon.py	bfd4b1ad7fd25469ee13a652cbcae435123d1ba7	replaced-local	rust/crates/dev-tools/src/hardwared_qa.rs; check-hardwared-daemon; hardwared_retirement
 rust/tools/check_input_pipeline.py	95c7e1034ebf1377559ac89500a3d69c4f22ef3c	pending	-
 rust/tools/check_interrupted_send.py	0aa7d18350c477cb8979d3c20f5797c0ba48b374	pending	-
 rust/tools/check_jetlink_raw.py	e6e774affc13454db56a86124cb2d97d22b1deed	pending	-
@@ -2359,7 +2359,7 @@ rust/tools/generate_xiaoge_opencv_reference.py	46030a6e85bec5a60c13f7b78b6a16382
 rust/tools/hardware_control_source.py	03b09cc6f9a30c966badb031424ed72e74723002	pending	-
 rust/tools/hardware_info_cases.py	77db06f52ae14b8baed52f6f2588c142553f5ab3	replaced-local	rust/crates/dev-tools/src/hardware_info_qa.rs; hardware_info_capture.rs; check-hardware-info; independent original136-case capture
 rust/tools/hardware_info_reference.py	d3807f765255ad31f6f3932f81c90499e7d0556a	replaced-local	rust/crates/dev-tools/src/hardware_info_qa.rs; hardware_info_capture.rs; check-hardware-info; independent original136-case capture
-rust/tools/hardwared_source.py	73e0da3ebf1019f5b3fbc392739302b17b95781d	pending	-
+rust/tools/hardwared_source.py	73e0da3ebf1019f5b3fbc392739302b17b95781d	replaced-local	rust/crates/dev-tools/src/hardwared_capture.rs; independent hardwared-original fixtures
 rust/tools/import_usbgpu_hcq.py	8e5f49b13bda8be79e70e7aad826a9f455b12316	pending	-
 rust/tools/interrupted_send_reference.py	315b410aa159992f07925ca6603a46d8cd81de88	pending	-
 rust/tools/journal_fixture_input.py	2a845bca7d0db628f0d60a611796a42ca439f450	replaced-local	rust/crates/dev-tools/src/journald_fixture.rs
