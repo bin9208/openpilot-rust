@@ -348,8 +348,8 @@ impl OwnedReport {
             .read_to_end(&mut bytes)?;
         if bytes != expected
             || report_identity(&self.file.metadata()?) != identity
-            || fs::symlink_metadata(&self.path)
-                .is_err_or(|metadata| report_identity(&metadata) != identity)
+            || !fs::symlink_metadata(&self.path)
+                .is_ok_and(|metadata| report_identity(&metadata) == identity)
         {
             return Err("hardwared report bytes or identity changed".into());
         }
@@ -544,7 +544,7 @@ fn send_inputs(
     let panda = write_event(|event| {
         event.set_log_mono_time(now);
         event.set_valid(false);
-        let mut list = event.init_panda_states(1);
+        let mut list = event.reborrow().init_panda_states(1);
         let mut state = list.reborrow().get(0);
         state.set_panda_type(PandaType::Dos);
         state.set_harness_status(HarnessStatus::Normal);
@@ -553,14 +553,14 @@ fn send_inputs(
     let peripheral = write_event(|event| {
         event.set_log_mono_time(now);
         event.set_valid(false);
-        let mut state = event.init_peripheral_state();
+        let mut state = event.reborrow().init_peripheral_state();
         state.set_panda_type(PandaType::Dos);
         state.set_voltage(12000);
     });
     let selfdrive = write_event(|event| {
         event.set_log_mono_time(now);
         event.set_valid(false);
-        event.init_selfdrive_state().set_enabled(engaged);
+        event.reborrow().init_selfdrive_state().set_enabled(engaged);
     });
     publishers.send("pandaStates", &panda)?;
     publishers.send("peripheralState", &peripheral)?;
@@ -1203,7 +1203,6 @@ fn peer(root: &Path, output: &Path, prefix: &str) -> Result<Value> {
         let _ = send_receive(
             &mut publisher,
             &mut subscriber,
-            true,
             true,
             true,
             &mut packets,

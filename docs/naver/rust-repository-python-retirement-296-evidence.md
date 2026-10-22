@@ -6263,3 +6263,10 @@ three Cap'n Proto Builder moves requiring reborrow. Parent audits artifact
 SHA256297c97f4f47973c7c2fe96f19887d89618b2a50953c006d6d32a0318acaddf07.
 No functional proof or tool deletion is inferred. Add the source-fixture README
 needed by the private outer copy along with compile repairs before retry.
+
+Hardwared compile repair uses stable negated is_ok_and, the exact two ignition/
+engaged arguments, and reborrowed Cereal builders. These repair all five reported
+compiler diagnostics; only hosted recompilation can confirm success. Source-only
+README records unchanged independent provenance and satisfies private-root copy.
+HardwareInfo actual3-source deletion97c33434c moves to the complete maintained
+hardware-runtime/postdelete/policy job candidate; no acceptance count yet.
