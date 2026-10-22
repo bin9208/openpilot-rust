@@ -17,13 +17,24 @@ def cases():
         if radar:fingerprints[0][1].append((0x410,8))
         firmware=[dict(ecu='eps',fw_version=list(versions[candidate]))] if fsd else []
         result.append(dict(name=f'params-{candidate}-{alpha}-{vehicle}-{das}-{radar}-{fsd}-{disable}',op='params',candidate=candidate,alpha_long=alpha,fingerprints=fingerprints,firmware=firmware,settings={'DisableMinSteerSpeed':str(int(disable)),'NNFF':'1'},now=2_000_000_000,steps=[]))
-    result.append(dict(name='model-x-missing-torque',op='params',candidate='TESLA_MODEL_X',alpha_long=True,fingerprints=[],firmware=[],settings={},now=2_000_000_000,steps=[]))
+    for nnff,alpha,vehicle,das,radar,fsd in itertools.product((False,True),repeat=6):
+        fingerprints=[(1,[(0x3df,8)] if vehicle else []),(2,[(0x293,8)] if das else [])]
+        if radar:fingerprints[0][1].append((0x410,8))
+        # Model 3's known EPS version is deliberately not a Model X FSD admission.
+        firmware=[dict(ecu='eps',fw_version=list(versions['TESLA_MODEL_3']))] if fsd else []
+        result.append(dict(name=f'params-model-x-{nnff}-{alpha}-{vehicle}-{das}-{radar}-{fsd}',op='params',candidate='TESLA_MODEL_X',alpha_long=alpha,fingerprints=fingerprints,firmware=firmware,settings={'NNFF':str(int(nnff))},now=2_000_000_000,steps=[]))
     party=CANPacker('tesla_model3_party');vehicle_packer=CANPacker('tesla_model3_vehicle');rng=random.Random(177)
     def packed(name,bus,values,packer=party):
         address,data,source=packer.make_can_msg(name,bus,values)
         return dict(address=address,data=list(data),bus=source)
-    for profile in range(8):
-        candidate='TESLA_MODEL_3' if profile%2==0 else 'TESLA_MODEL_Y';long=profile%4<2;vehicle=profile%4!=3;fsd=profile%4==1;das=profile!=6;mph=profile>=4
+    for profile in range(16):
+        if profile<8:
+            candidate='TESLA_MODEL_3' if profile%2==0 else 'TESLA_MODEL_Y';long=profile%4<2;vehicle=profile%4!=3;fsd=profile%4==1;das=profile!=6;mph=profile>=4
+            settings={}
+        else:
+            index=profile-8
+            candidate='TESLA_MODEL_X';long=bool(index&4);vehicle=bool(index&2);fsd=bool(index&1);das=not fsd;mph=bool(index&4)
+            settings={'NNFF':str(index&1)}
         steps=[]
         for index in range(620):
             now=2_000_000_000+index*10_000_000
@@ -68,6 +79,6 @@ def cases():
             if profile==6 and 330<=index<390:packets=[dict(mono_time=now,frames=[])]
             steps.append(dict(now=now,packets=packets,control=list(control.to_bytes()),soft_hold=index%4,commit={'vCruise':70.,'activateCruise':index%2}))
         fingerprints=[(1,[(0x3df,8)] if vehicle else []),(2,[(0x293,8)] if das else [])]
-        firmware=[dict(ecu='eps',fw_version=list(versions[candidate]))] if fsd else []
-        result.append(dict(name=f'runtime-{profile}',op='runtime',candidate=candidate,alpha_long=long,fingerprints=fingerprints,firmware=firmware,settings={},now=2_000_000_000,steps=steps))
+        firmware=[dict(ecu='eps',fw_version=list(versions.get(candidate,versions['TESLA_MODEL_3'])))] if fsd else []
+        result.append(dict(name=f'runtime-{profile}',op='runtime',candidate=candidate,alpha_long=long,fingerprints=fingerprints,firmware=firmware,settings=settings,now=2_000_000_000,steps=steps))
     return result

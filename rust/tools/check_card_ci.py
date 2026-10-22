@@ -57,6 +57,9 @@ def reference(arguments: argparse.Namespace) -> None:
   run(source_command(TOOLS / 'check_vehicle_source_fixes_497.py',
     ['--output', str(output / 'source-fixes-497')], dbc), commands, 'source-fixes-497')
   require_space(output, 1024**3)
+  run(source_command(TOOLS / 'check_tesla_model_x_497.py',
+    ['--output', str(output / 'model-x-controls-497')], dbc), commands, 'model-x-controls-497')
+  require_space(output, 1024**3)
   run(source_command(TOOLS / 'card_hyundai_alt_buttons_defect.py',
     [str(Path(os.environ['HYUNDAI_FIXTURE_DIR'])), str(output / 'hyundai-alt-controls')], dbc),
     commands, 'hyundai-alt-controls')

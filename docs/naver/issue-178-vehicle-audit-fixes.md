@@ -168,16 +168,16 @@ The source/native difference at candidate-only construction is documented in the
 boundary checker, rather than claiming a missing asset still exists. The complete
 state/controller port and full parameter admission remain outside this batch.
 
-## #185: two exact Ford admissions; four remaining failures
+## #185: exact Ford and Model X admissions; three remaining failures
 
 [Primary overrides](https://github.com/commaai/opendbc/blob/c3955753ae7258412814e2cdca3ee8af979e4679/opendbc/car/torque_data/override.toml),
 blob `f406ae64da4f2fa5a6b50e42b87feb2c7561d16b`, provide exact rows:
 `PSA_PEUGEOT_208 = [nan, 2.0, nan]`, `TESLA_MODEL_X = [nan, 2.5, nan]`,
 `FORD_ESCAPE_MK4_5 = [nan, 1.5, nan]`, `FORD_EXPEDITION_MK4 = [nan, 1.5, nan]`.
-Only the **two Ford rows** are admitted to the source override and native catalog.
+The **two Ford rows and Model X row** are admitted to the source override and native catalog.
 NaNs remain official placeholders (native JSON null), never measured friction or
 LAT_ACCEL_FACTOR. Existing Ford brand parameter logic selects angle control;
-source and native finish skip torque tuning even when NNFF is requested.
+source and native finish skip torque tuning even when NNFF is requested. Model X also retains its existing angle selection and dashcamOnly restriction.
 
 `ford_override_497.rs` checks real full parameter construction, finite control
 scalars, Angle/PID selection and no NNFFModelName effects with NNFF off/on.
@@ -190,18 +190,106 @@ requires the **same SecOC dashcamOnly rejection**, not a missing-data error.
 No safety/firmware/size checks, steering limits or bus policy are weakened.
 `rust/crates/card/data/vehicle-497-provenance.json` records this scoped admission.
 
-Keep #185 open for the four remaining exact identities:
+Keep #185 open for the three remaining exact identities:
 
 - PSA: source `parse_wheel_speeds` and native state/controller are unimplemented.
   Importing its placeholder now would require a larger runtime admission repair.
-- Model X: current platform/native catalog lack its DBC mapping; source parser
-  construction indexes the missing party bus. A Model 3 DBC is not a substitute.
 - `GMC_YUKON_CC` and `KIA_K5_DL3_24_HEV`: no exact key in primary override,
   [measured params](https://github.com/commaai/opendbc/blob/c3955753ae7258412814e2cdca3ee8af979e4679/opendbc/car/torque_data/params.toml)
   (blob `1fbabf6f76ba4bbc4717fb2e9797a4ef55616736`) or
   [substitutions](https://github.com/commaai/opendbc/blob/c3955753ae7258412814e2cdca3ee8af979e4679/opendbc/car/torque_data/substitute.toml)
   (blob `161c3792c4d3829e3bf3a6c4fda8c5dfe61742bb`). The local near spelling
   `KIA_K5_DL3_HEV_24` is not authority to alias another identity.
+
+## Model X follow-up: correction of the DBC claim and safe admission
+
+The earlier claim that Model X lacks a party DBC was **mistaken**. The generic
+catalog generator chooses `Bus.main`/`Bus.pt` for `dbc_pt`; that field is null for
+Model 3 and Y as well. It does not represent Tesla's `Bus.party` mapping.
+[Primary TeslaPlatformConfig](https://github.com/commaai/opendbc/blob/c3955753ae7258412814e2cdca3ee8af979e4679/opendbc/car/tesla/values.py#L39)
+(blob `6da33ecb19496435e546e3afdcfdec7e0da3104b`) supplies
+`{Bus.party: 'tesla_model3_party'}` through its actual dataclass default_factory,
+which applies to Model X's two-argument constructor. The actual fork's
+[values](https://github.com/ajouatom/openpilot/blob/7e371b92fd877c2cd160c92b4cf6fc62fe6d8805/opendbc_repo/opendbc/car/tesla/values.py#L43)
+(blob `5b2b3f868a49873dcada96da992a7d10683c4d35`) and
+[base configuration](https://github.com/ajouatom/openpilot/blob/7e371b92fd877c2cd160c92b4cf6fc62fe6d8805/opendbc_repo/opendbc/car/__init__.py#L379)
+(blob `9202ab152e2e6f4e938e6870ca6db850dd33a309`) retain that contract:
+`__post_init__` only calls the unchanged no-op `init` method.
+
+The exact official `[nan, 2.5, nan]` row is now added to the preserved source
+and native catalog; the placeholders are not measured factors. No Tesla runtime
+algorithm, DBC asset, generic `dbc_pt`, radar mapping or safety policy changes.
+The existing source/native parameters select angle and **dashcamOnly**; Model X
+has no radar DBC even when a 0x410 fingerprint appears. Missing DAS settings,
+optional vehicle-bus parser, safety bits, all angle limits and the source's Model Y
+vehicle model for safety limiting remain. This is dashcam runtime admission,
+not new active driving support or physical CAN acceptance.
+
+Hosted regression definitions (not run locally):
+
+- `tesla_params.rs`: 32 NNFF/longitudinal/vehicle/DAS/radar combinations require
+  finite angle CarParams, dashcamOnly, the exact Tesla safety bits, no NNFFModelName
+  write, and no FSD admission from Model 3 firmware. A separate missing-directory
+  constructor control still requires the existing party DBC.
+- The full Tesla oracle now includes 64 Model X fullParams cases and eight real
+  State/Controller cases, **620 updates each**, spanning NNFF off/on, longitudinal
+  off/on and vehicle bus absent/present. Existing Model 3/Y fixtures retain their
+  identities, generated bytes and random sequence. Full wire fields, owner state,
+  ordered CAN, logs, cadence and Params effects remain exact comparisons.
+- `check_tesla_model_x_497.py` executes the actual dataclass default, full current
+  parameters, real CarState/Controller construction and 33 normal first/continuous
+  updates for each of eight combinations. It asserts absence of a radar parser
+  even with a radar fingerprint. The complete original baseline interfaces module
+  and three immutable baseline torque files supply the genuine KeyError control;
+  only data-file paths and Params are owned boundaries, with original bodies and
+  input hashes retained. No injected `np` or replacement vehicle policy is used.
+- Factory comparisons add ordinary and optional vehicle-bus Model X construction.
+  The registry regression now accepts its full parameters while asserting that
+  dashcamOnly/radarUnavailable remain set.
+
+Exact added registration and focused compile regression commands in Actions:
+
+```sh
+PYTHONPATH=.:opendbc_repo:rust/tools python rust/tools/check_tesla_model_x_497.py --output "$RUNNER_TEMP/vehicle-497/model-x-controls"
+cargo test --manifest-path rust/Cargo.toml -p openpilot-card --features native --locked --test tesla_params --test registry --test ford_override_497
+```
+
+Retain the existing full `check_card_tesla.py` and factory commands; their new
+cases are automatically included. Fetch the immutable b555 baseline object for
+source controls when checkout is shallow. The first hosted vehicles attempt at
+`4072836f430365d1851e65bf2d6b15ca820fc1e1` stopped compiling at the Ford test's
+extra `get_lateral_tuning().unwrap()`. It is corrected to the Reader getter API in
+both Ford and new Model X tests. No functional PASS is inferred from that run.
+
+Model X checkpoint paths: `opendbc_repo/opendbc/car/torque_data/override.toml`,
+`rust/crates/card/data/{vehicle,vehicle-497-provenance}.json`,
+`rust/crates/card/tests/{tesla_params,registry,ford_override_497}.rs`,
+`rust/tools/card_qa/tesla/scenarios.py`, `rust/tools/check_card_tesla.py`,
+`rust/tools/check_card_factory.py`, `rust/tools/check_vehicle_source_fixes_497.py`,
+`rust/tools/check_tesla_model_x_497.py`, and this document. No workflow,
+`check_card_ci.py`, daemon or common baseline-proof helper is changed here.
+
+## PSA #501 approved design, not implemented at this checkpoint
+
+Dedicated follow-up: [#501](https://github.com/bin9208/openpilot-rust/issues/501),
+with existing asset #180 and placeholder #185 acceptance retained. After the
+parent's Model X selective-commit coordination signal, implement the exact
+[primary speed helper](https://github.com/commaai/opendbc/blob/c3955753ae7258412814e2cdca3ee8af979e4679/opendbc/car/interfaces.py#L287)
+(blob `34d557e5b535f3333ed1101a747c8d68f08a3ab1`): sum raw wheels, divide by four,
+multiply by unit then wheelSpeedFactor, store cereal vEgoRaw, then pass the stored
+value to the existing Kalman filter. No wheelSpeeds field or rounding policy is
+invented. The actual helper has two body lines and is missing only from this
+vendored base.
+
+The bounded implementation covers the one declared PSA identity, exact official
+`[nan, 2.0, nan]` angle placeholder, existing source 3-bus state, shared wrapper,
+20Hz steering controller/status 2→3→4 and full registry lifecycle/diagnostic
+ownership. It preserves dashcamOnly, PSA safety, radarUnavailable, no longitudinal
+CAN and all steering/rate/intervention limits. Source/native and actual IPC
+comparisons, negative baseline/missing-asset controls and full hosted rig gates
+are required before functional completion; physical CAN remains user-owned.
+No PSA catalog/override/base/registry implementation edit is part of this
+Model X checkpoint. Parent owns workflow/command registration and shared guides.
 
 ## #181: authoritative conflict remains open
 
@@ -338,19 +426,20 @@ no local test/fixture execution was used as a substitute.
   `tesla/state.rs`, `volkswagen/{mod,state_mqb}.rs`, `psa.rs` under brands;
   `data/{vehicle,vehicle-497-provenance}.json`, `examples/psa_boundary.rs`,
   `examples/volkswagen_trace/steps.rs`, and
-  `tests/{vehicle_backlog_497,ford_override_497,ford_parameters,psa_source}.rs`.
+  `tests/{vehicle_backlog_497,ford_override_497,ford_parameters,tesla_params,registry,psa_source}.rs`.
 - Exclusive tools under `rust/tools/`: `card_hyundai_alt_buttons_defect.py`,
-  `check_vehicle_source_fixes_497.py`, `check_card_{volkswagen,factory,psa_source}.py`,
+  `check_vehicle_source_fixes_497.py`, `check_tesla_model_x_497.py`,
+  `check_card_{volkswagen,tesla,factory,psa_source}.py`,
   `check_{can,can_checksums,mlb_primary_497,psa_asset_497}.py`, `can_cases.py`,
   `card_qa/volkswagen/{frames,scenarios,source}.py`,
-  `card_qa/ford/scenarios.py`, `card_qa/psa/source.py`.
+  `card_qa/ford/scenarios.py`, `card_qa/tesla/scenarios.py`, `card_qa/psa/source.py`.
 - This is the only vehicle evidence document added by this worker.
 
 No encoderd/loggerd/model/GPS/torque-uploader/dev-tools/JPEG/server, shared
 workflow/Cargo or paired user-guide files are owned by this worker. Other workers'
 uncommitted changes in this shared worktree are preserved. #296 remains separate.
 
-Local static receipt (2026-10-23): 19 Python files parsed with `ast.parse`, four
+Earlier vehicle-batch static receipt (2026-10-23): 19 Python files parsed with `ast.parse`, four
 JSON files and one TOML parsed; 16 scoped Rust files pass
 `rustfmt +1.94.0 --edition 2021 --config skip_children=true --check`.
 Scoped tracked diff and all 12 added-file whitespace checks pass. The owned set

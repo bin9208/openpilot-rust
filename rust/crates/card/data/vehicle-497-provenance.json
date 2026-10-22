@@ -13,12 +13,27 @@
       "nan",
       1.5,
       "nan"
+    ],
+    "TESLA_MODEL_X": [
+      "nan",
+      2.5,
+      "nan"
     ]
   },
-  "native_representation": "null LAT_ACCEL_FACTOR/FRICTION retains nonfinite placeholder; actual final Ford CarParams selects Angle, not Torque",
+  "native_representation": "null LAT_ACCEL_FACTOR/FRICTION retains nonfinite placeholder; final Ford/Model X CarParams selects Angle, not Torque",
+  "model_x_boundary_correction": {
+    "previous_claim": "missing party DBC mapping",
+    "correction": "TeslaPlatformConfig default_factory supplies Bus.party: tesla_model3_party to the two-argument Model X configuration; generic dbc_pt null is shared by Model 3/Y and does not describe party",
+    "primary_values_commit": "c3955753ae7258412814e2cdca3ee8af979e4679",
+    "primary_values_blob": "6da33ecb19496435e546e3afdcfdec7e0da3104b",
+    "fork_commit": "7e371b92fd877c2cd160c92b4cf6fc62fe6d8805",
+    "fork_values_blob": "5b2b3f868a49873dcada96da992a7d10683c4d35",
+    "fork_platform_base_blob": "9202ab152e2e6f4e938e6870ca6db850dd33a309",
+    "preserved": "existing dashcamOnly, angle limits/Model Y safety vehicle model, safety flags, party/optional vehicle parsers, radarUnavailable and absence of Model X radar DBC",
+    "validation": "actual hosted full Params/state/controller/factory comparisons and baseline failure controls required; no local project execution"
+  },
   "deferred": {
     "PSA_PEUGEOT_208": "source parse_wheel_speeds/native runtime unimplemented; asset import is not runtime admission",
-    "TESLA_MODEL_X": "source platform and native catalog have no DBC party mapping; full runtime controller admission unproved",
     "GMC_YUKON_CC": "no exact primary mapping",
     "KIA_K5_DL3_24_HEV": "no exact primary mapping; no similar-name alias"
   },

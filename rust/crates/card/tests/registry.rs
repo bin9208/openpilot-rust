@@ -79,6 +79,7 @@ fn native_registry_preserves_brand_parameters_and_rejects_unknown_models() {
         ("MOCK", "mock"),
         ("HYUNDAI_IONIQ_5", "hyundai"),
         ("TESLA_MODEL_3", "tesla"),
+        ("TESLA_MODEL_X", "tesla"),
         ("MAZDA_CX5_2022", "mazda"),
         ("NISSAN_XTRAIL", "nissan"),
         ("CHRYSLER_PACIFICA_2018", "chrysler"),
@@ -106,14 +107,10 @@ fn native_registry_preserves_brand_parameters_and_rejects_unknown_models() {
             identification.vin
         );
         assert!(!settings.get_bool("FirmwareQueryDone").unwrap());
+        if candidate == "TESLA_MODEL_X" {
+            assert!(cp.get_dashcam_only());
+            assert!(cp.get_radar_unavailable());
+        }
     }
     assert!(registry::parameters(&identification("invented-car"), &settings, false).is_err());
-    assert!(matches!(
-        registry::parameters(&identification("TESLA_MODEL_X"), &settings, false),
-        Err(Error::Tesla(
-            openpilot_card::brands::tesla::Error::Baseline(
-                openpilot_card::vehicle_params::Error::MissingTorque(_)
-            )
-        ))
-    ));
 }

@@ -49,9 +49,9 @@ GitHub PATCH readback confirms 120 audit closures: 110 completed items and
 a dated status and evidence block. No unresolved physical acceptance is marked
 successful. Other open items were updated with remaining conditions.
 
-A later overlap check assigned #154 to the active #296 model/USB work. Its initial
-audit status header was removed after confirming no intervening external edit;
-the exact original body and open state are restored. Source and other-session
+Later overlap checks assigned #154 and #260 to the active #296 model/USB/numerical
+work. Their initial audit status headers were removed after confirming no intervening external edit;
+the exact original bodies and open states are restored. Source and other-session
 work remained untouched. Excluded entries below otherwise receive no mutation.
 
 The table records audit decisions, not unrun-fix success. `fix` remains open until
@@ -171,7 +171,7 @@ complete; user-owned acceptance remains separate.
 | [#254](https://github.com/bin9208/openpilot-rust/issues/254) | fix | Rust live snapshot도 NavInstruction에 없는 mainText/distanceText/turnType를 조회한다. 채워진 내비 데이터가 null로 표시되는 상속 결함이 현재 네이티브 API에 남는다. [e1](https://github.com/bin9208/openpilot-rust/issues/254) [e2](https://github.com/bin9208/openpilot-rust/blob/b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a/rust/crates/carrot-server/src/live/snapshot.rs) [e3](https://github.com/bin9208/openpilot-rust/blob/b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a/openpilot/cereal/log.capnp) |
 | [#255](https://github.com/bin9208/openpilot-rust/issues/255) | completed | 웹캠의 픽셀·메시지·시간·독립 worker/EOF 비교가 x86/ARM에서 성공했고 manager 및 AGNOS provider 패키지에 연결되었다. 선택적 물리 카메라 수용은 #1과 분리한다. [e1](https://github.com/bin9208/openpilot-rust/pull/267) [e2](https://github.com/bin9208/openpilot-rust/actions/runs/38149368079) [e3](https://github.com/bin9208/openpilot-rust/blob/b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a/docs/naver/rust-webcam-255.md) [e4](https://github.com/bin9208/openpilot-rust/issues/269#issuecomment-6137096903) [e5](https://github.com/bin9208/openpilot-rust/releases/tag/runtime-b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a) [e6](https://github.com/bin9208/openpilot-rust/actions/runs/38646726305) |
 | [#257](https://github.com/bin9208/openpilot-rust/issues/257) | completed | Params가 임시 링크를 namespace 이름으로 원자 교체하여 dangling symlink를 복구한다. 실제 Cython/네이티브 HTTP 및 storage 회귀가 통합되고 현재 검사가 성공했다. [e1](https://github.com/bin9208/openpilot-rust/blob/b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a/rust/crates/params/src/lib.rs) [e2](https://github.com/bin9208/openpilot-rust/blob/b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a/docs/naver/rust-params-dangling-257.md) [e3](https://github.com/bin9208/openpilot-rust/issues/257#issuecomment-6078868029) [e4](https://github.com/bin9208/openpilot-rust/pull/273) [e5](https://github.com/bin9208/openpilot-rust/actions/runs/38646726305) |
-| [#260](https://github.com/bin9208/openpilot-rust/issues/260) | keep | 호스트 AMD oracle의 정렬 수정 checkpoint와 473커널 수치 비교 성공 기록은 있다. 해당 checkpoint는 stable dev에 통합되지 않았고 현재 dev에는 그 oracle 파일/기록도 없어 현행 검증과의 대체 관계가 불명확하다. [e1](https://github.com/bin9208/openpilot-rust/issues/260#issuecomment-6083023981) [e2](https://github.com/bin9208/openpilot-rust/commit/6a646ab8b61bc983390fb14d0a45d5bfaf48cebe) [e3](https://github.com/bin9208/openpilot-rust/blob/6a646ab8b61bc983390fb14d0a45d5bfaf48cebe/docs/naver/rust-usbgpu-emulator-alignment-260.md) [e4](https://github.com/bin9208/openpilot-rust/actions/runs/37945752436) [e5](https://github.com/bin9208/openpilot-rust/tree/b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a/rust/tools) |
+| [#260](https://github.com/bin9208/openpilot-rust/issues/260) | excluded | 현재 #296 세션이 #154의 모델 수치·호스트 oracle 검증을 계속 수행하므로 해당 정렬 검증 하위 이슈도 제외한다. 초기 감사 헤더는 다른 편집이 없음을 확인한 뒤 정확한 원문으로 복원했다. |
 | [#263](https://github.com/bin9208/openpilot-rust/issues/263) | completed | 독립 recovery의 HTTP/WS·실제 PTY·지원 세션·소유 자식 정리 및 메인 웹/Python 없는 패키지 비교가 완료되었다. GNU ARM/AGNOS loader와 launcher 연결 및 후속 CI도 있다. [e1](https://github.com/bin9208/openpilot-rust/pull/273) [e2](https://github.com/bin9208/openpilot-rust/blob/b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a/docs/naver/rust-carrot-recovery-263.md) [e3](https://github.com/bin9208/openpilot-rust/blob/b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a/.github/workflows/rust.yml) [e4](https://github.com/bin9208/openpilot-rust/issues/269#issuecomment-6137096903) [e5](https://github.com/bin9208/openpilot-rust/releases/tag/runtime-b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a) [e6](https://github.com/bin9208/openpilot-rust/actions/runs/38646726305) |
 | [#264](https://github.com/bin9208/openpilot-rust/issues/264) | not_planned | 원래 Python reader가 새 PTY를 닫는 경쟁은 native actor의 단일 세대 소유로 대체되었다. reset 비교에서 이전 shell을 정리하고 새 shell을 유지하므로 폐기할 Python만 따로 고칠 필요가 없다. [e1](https://github.com/bin9208/openpilot-rust/issues/264) [e2](https://github.com/bin9208/openpilot-rust/blob/b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a/docs/naver/rust-carrot-server-225.md) [e3](https://github.com/bin9208/openpilot-rust/blob/b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a/rust/crates/carrot-server/src/terminal/owner.rs) [e4](https://github.com/bin9208/openpilot-rust/blob/b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a/rust/crates/carrot-server/src/terminal/state.rs) [e5](https://github.com/bin9208/openpilot-rust/actions/runs/38646726305) |
 | [#265](https://github.com/bin9208/openpilot-rust/issues/265) | completed | 메인 PTY와 exec-handshake 관찰 모두 waitid NOWAIT로 leader를 보존하고 최종 신호 뒤 wait한다. 실제 EOF/reset/failed-handshake 소유권 회귀와 통합 CI가 있다. [e1](https://github.com/bin9208/openpilot-rust/blob/b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a/rust/crates/carrot-server/src/terminal/pty.rs) [e2](https://github.com/bin9208/openpilot-rust/blob/b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a/rust/crates/process-supervision/src/launch.rs) [e3](https://github.com/bin9208/openpilot-rust/blob/b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a/docs/naver/rust-carrot-server-225.md) [e4](https://github.com/bin9208/openpilot-rust/pull/273) [e5](https://github.com/bin9208/openpilot-rust/actions/runs/38646726305) |
@@ -343,7 +343,7 @@ complete; user-owned acceptance remains separate.
 ## Candidate corrections and pending gates
 
 The initial 279 decisions currently comprise 110 completed, 10 not planned,
-105 active-scope exclusions, 33 remaining acceptance/investigation items and
+106 active-scope exclusions, 32 remaining acceptance/investigation items and
 21 implementation or test repairs. #497 is the new audit parent; #498 is new
 runner work owned by another chat. The candidate patch is not a passing result.
 
@@ -390,3 +390,33 @@ before compiling because this stable-dev baseline has no `rust-path` composite
 action. The focused workflow now explicitly uses the hosted cargo PATH. That
 setup failure is not reported as a runtime RED or a candidate functional result.
 Required PR and exact-head source/ARM evidence remain pending.
+
+### Second focused run and repaired test preparation
+
+At `4072836f430365d1851e65bf2d6b15ca820fc1e1`,
+[focused Actions39830158038](https://github.com/bin9208/openpilot-rust/actions/runs/39830158038)
+verified actual model #17/#49 and QCOM #320 baseline assertion failures. Candidate
+core compilation then exposed the startup warning's String argument, now fixed.
+The media lane proved the old raw-completion and uploader-scan failures, then
+passed affected tests and strict lint. The tools lane proved directory ZIP, SDK
+alias and CMake source-identity failures; candidate ext4 fixtures, the actual
+pinned ARM NumPy wheel and host/ARM JPEG build/cache checks passed. Java again
+passed both16-test variants after its controlled expected-one/actual-zero RED.
+
+Vehicle compilation found a redundant Cap'n Proto Reader unwrap in the Ford
+regression, now corrected. Web report/navigation baseline assertions failed as
+expected; terminal cases instead failed **fixture readiness**, so those terminal
+failures are rejected as defect evidence. The fixture's double-escaped printf
+newlines are corrected; complete PID/PGID/SID/start-time records now authenticate
+readiness. The RED gate requires all six setup-complete receipts and an actual
+post-setup leaked-job assertion, with the original five-second preparation and
+cleanup deadlines retained. Exact-head cloud execution is still pending.
+
+Reinspection corrected the Model X DBC boundary: the Tesla dataclass supplies
+its existing party DBC even though the generic main/pt catalog field is empty
+for all three Teslas. The exact official override is now admitted under existing
+angle control and dashcamOnly with no radar mapping or active NaN torque tune.
+Full source/native parameter, state/controller and factory regressions are
+registered. Official source also supplies the missing PSA wheel-speed method;
+complete existing PSA dashcam state/controller work continues under
+[#501](https://github.com/bin9208/openpilot-rust/issues/501), without device access.

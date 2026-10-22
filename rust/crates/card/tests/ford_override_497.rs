@@ -24,7 +24,7 @@ fn exact_ford_placeholders_admit_only_finite_angle_parameters_even_with_nnff_req
             );
             assert_eq!(cp.get_max_lateral_accel(), 1.5);
             assert!(matches!(
-                cp.get_lateral_tuning().unwrap().which().unwrap(),
+                cp.get_lateral_tuning().which().unwrap(),
                 car_params::lateral_tuning::Which::Pid(_)
             ));
             for value in [

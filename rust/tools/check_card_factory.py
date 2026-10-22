@@ -67,6 +67,9 @@ def run(binary: Path, output: Path, binding: Path, numerics: Path, brand: str | 
                for candidate in ("VOLKSWAGEN_GOLF_MK7", "VOLKSWAGEN_PASSAT_NMS", "VOLKSWAGEN_ID4_MK1", "VOLKSWAGEN_ID4_MK2"))
   # Append exact new admissions without changing established factory case identities.
   cases.extend({"candidate": candidate, "fingerprints": []} for candidate in ("FORD_ESCAPE_MK4_5", "FORD_EXPEDITION_MK4"))
+  cases.extend({"candidate": "TESLA_MODEL_X", "fingerprints": fingerprints} for fingerprints in (
+    [], [(1, [(0x3df, 8), (0x410, 8)])],
+  ))
   if brand is not None:
     cases = [case for case in cases if interfaces[case["candidate"]].__module__.split(".")[-2] == brand]
     assert cases, f"no factory cases for {brand}"

@@ -195,3 +195,60 @@ remains applicable to the original lifecycle module; the stopped-helper case
 first rejects the original no-helper topology before it can send SIGSTOP to the
 runner. These additions are source-complete but unexecuted locally. Parent still
 owns hosted RED/GREEN, actual PTY transport checks and acceptance.
+
+## Hosted readiness failure: fixture framing repair
+
+The parent reported that hosted web run `web-4072836` failed all six PTY
+lifecycle cases in both baseline and candidate at the five-second fixture
+readiness wait, before their cleanup assertions. That result is **invalid RED**;
+`FAILED` alone does not show the old cleanup defect. The supplied log paths
+were not present in this assigned worktree, so this worker did not claim to
+inspect their PTY transcript or retrieve logs through GitHub.
+
+Static tracing found an escaping error in the original fixture: `%s\\n` in a
+Rust raw string passes two backslashes into an outer Bash single-quoted printf
+format. printf consumes the pair as one literal backslash, then prints `n`,
+rather than ending the PID record. The subsequent JOB records concatenate and
+cannot be parsed as integer PIDs. The inner Bash double-quoted format had an
+additional shell-escape layer and was not equivalent to the outer formats.
+By the time of the fixture rewrite, the parent's immediate one-backslash
+correction was already present; the rewrite preserves the correction.
+The old `str::lines` parser also considered a non-newline-terminated fragment,
+which could mistake initial PID digits for a complete process identity, and a
+prompt could obscure a marker at the start of a line.
+
+Only `pty_cleanup_tests.rs` and this record changed in this repair. The PTY
+runtime, timeout values, original cleanup assertions and all six lifecycle
+cases remain in place. The repaired fixture:
+
+- Uses a single printf backslash in the Rust raw setup script. Each emitted
+  record has a leading newline and a final newline, separating it from prompts.
+- Emits `ISSUE270_READY role=... pid=... pgid=... sid=... start=...` for leader,
+  job1, job2 and nested. Bash builtins obtain numeric identity fields from each
+  process's own `/proc/PID/stat`; an exported fixture function supplies the same
+  format to the nested Bash without a second printf-escaping convention.
+- Parses only complete newline-terminated records, rejects prompt prefixes,
+  printf placeholders, command echo and trailing partial PID fragments, then
+  cross-checks every literal PID/PGID/SID/start-time value against `/proc`.
+  Setup still requires three distinct live descendants, at least two nonleader
+  job-control groups, and the nested child sharing its parent job's group.
+- Logs JSON events `issue270_fixture_tx` (script), `issue270_fixture_rx` (text
+  and exact byte values), `issue270_fixture_ready` (literal identities), and
+  `issue270_fixture_setup_complete` (roles/groups/current kernel session).
+  Timeout, EOF or read errors produce `issue270_fixture_setup_failed` with the
+  accumulated transcript, accepted identities and kernel session snapshot.
+
+The parser's focused framing unit case is named
+`fixture_ready_records_require_complete_literal_identity`, so the existing
+original-production `...cleanup_tests::issue270_` filter still selects the six
+runtime cases; the normal `terminal::` filter also runs the framing unit case.
+For hosted diagnosis, keep `--nocapture --test-threads=1` and retain that command's
+log as an artifact. A readiness/framing failure must never count as baseline
+RED. Require a per-case setup-complete marker and a targeted post-setup failure
+(such as `owned jobs remain` or the exited-shell/PTY-EOF assertion) for the
+original cleanup defect. The baseline's deliberate no-helper topology rejection
+in the stopped-helper case is not evidence of leaked job groups either.
+
+This repair has only local Rust formatting/parsing and diff review. Actual
+hosted baseline/candidate PTY execution is still required; no runtime pass or
+fixed-#270 claim follows from the fixture source correction.

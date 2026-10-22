@@ -4029,7 +4029,11 @@
       "flags": 0,
       "dbc_pt": null,
       "dbc_radar": null,
-      "torque": null
+      "torque": {
+        "LAT_ACCEL_FACTOR": null,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": null
+      }
     },
     {
       "candidate": "TOYOTA_ALPHARD_TSS2",

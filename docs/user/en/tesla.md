@@ -51,3 +51,5 @@ The #497 follow-up candidate preserves stock ACC cancellation when vehicle-bus
 and infotainment button events are processed together, including simultaneous
 button presses and releases. Vehicle acceptance remains separate. This event
 correction does not supply missing vehicle torque data or change supported status.
+
+The audit candidate restores Model X parameter admission from the exact official override. Model X stays `dashcamOnly`; its inherited party DBC, angle control and unavailable-radar policy remain in force. Host/ARM verification is pending and this does not establish vehicle acceptance.

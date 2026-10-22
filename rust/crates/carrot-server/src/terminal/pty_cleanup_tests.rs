@@ -58,6 +58,111 @@ fn config() -> Config {
     }
 }
 
+// This is a Rust raw string: printf needs one literal backslash before n.
+// Start each record on a fresh line so a Bash prompt cannot hide the prefix.
+const SETUP: &[u8] = br#"set -m
+trap '' HUP
+issue270_ready() { local role=$1 pid=$2 stat; local -a fields; IFS= read -r stat < "/proc/$pid/stat" || return; IFS=' ' read -r -a fields <<< "${stat##*) }"; printf '\nISSUE270_READY role=%s pid=%s pgid=%s sid=%s start=%s\n' "$role" "$pid" "${fields[2]}" "${fields[3]}" "${fields[19]}"; }
+export -f issue270_ready
+issue270_ready leader "$BASHPID"
+/bin/bash --noprofile --norc -c 'trap "" HUP; sleep 600 & issue270_ready nested "$!"; wait' & issue270_ready job1 "$!"
+sleep 600 & issue270_ready job2 "$!"
+"#;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct Ready {
+    role: &'static str,
+    pid: i32,
+    group: i32,
+    session: i32,
+    start: u64,
+}
+
+fn ready_record(line: &[u8]) -> Option<Ready> {
+    // A trailing fragment may contain only the first digits of a PID. Never
+    // accept it, or echoed format placeholders, as process readiness.
+    let line = line.strip_suffix(b"\n")?;
+    let line = line.strip_suffix(b"\r").unwrap_or(line);
+    let fields: Vec<_> = std::str::from_utf8(line)
+        .ok()?
+        .split_ascii_whitespace()
+        .collect();
+    let ["ISSUE270_READY", role, pid, group, session, start] = fields.as_slice() else {
+        return None;
+    };
+    let role = match *role {
+        "role=leader" => "leader",
+        "role=job1" => "job1",
+        "role=job2" => "job2",
+        "role=nested" => "nested",
+        _ => return None,
+    };
+    let positive = |value: &str, prefix| {
+        value
+            .strip_prefix(prefix)?
+            .parse::<i32>()
+            .ok()
+            .filter(|pid| *pid > 0)
+    };
+    Some(Ready {
+        role,
+        pid: positive(pid, "pid=")?,
+        group: positive(group, "pgid=")?,
+        session: positive(session, "sid=")?,
+        start: start.strip_prefix("start=")?.parse().ok()?,
+    })
+}
+
+#[test]
+fn fixture_ready_records_require_complete_literal_identity() {
+    let record = b"ISSUE270_READY role=job1 pid=123 pgid=123 sid=100 start=456\r\n";
+    assert_eq!(
+        ready_record(record),
+        Some(Ready {
+            role: "job1",
+            pid: 123,
+            group: 123,
+            session: 100,
+            start: 456,
+        })
+    );
+    assert_eq!(ready_record(&record[..record.len() - 2]), None);
+    assert_eq!(
+        ready_record(br"ISSUE270_READY role=job1 pid=123 pgid=123 sid=100 start=456\n"),
+        None
+    );
+    assert_eq!(
+        ready_record(b"ISSUE270_READY role=job1 pid=%s pgid=%s sid=%s start=%s\r\n"),
+        None
+    );
+    assert_eq!(
+        ready_record(b"owned> ISSUE270_READY role=job1 pid=123 pgid=123 sid=100 start=456\r\n"),
+        None
+    );
+    assert_eq!(
+        ready_record(
+            b"printf 'ISSUE270_READY role=job1 pid=%s pgid=%s sid=%s start=%s\\n' \"$!\"\r\n"
+        ),
+        None
+    );
+}
+
+fn session_snapshot(leader: i32) -> Vec<serde_json::Value> {
+    std::fs::read_dir("/proc")
+        .unwrap()
+        .filter_map(Result::ok)
+        .filter_map(|entry| {
+            let pid = entry.file_name().to_str()?.parse::<i32>().ok()?;
+            let (start, state, group, session) = identity(pid)?;
+            (session == leader).then(|| {
+                serde_json::json!({
+                    "pid": pid, "pgid": group, "sid": session, "start": start, "state": state,
+                })
+            })
+        })
+        .collect()
+}
+
 async fn owned_jobs() -> (Generation, Fixture) {
     let subreaper = rustix::process::child_subreaper().unwrap();
     let generation = Generation::start(&config(), "exec /bin/bash --noprofile --norc -i").unwrap();
@@ -66,34 +171,85 @@ async fn owned_jobs() -> (Generation, Fixture) {
         members: BTreeMap::new(),
         unrelated: Command::new("/bin/sleep").arg("600").spawn().unwrap(),
     };
-    write(
-        generation.master.clone(),
-        br#"set -m; trap '' HUP; /bin/bash -c 'trap "" HUP; sleep 600 & printf "NESTED270=%s\n" "$!"; wait' & printf 'JOB1270=%s\n' "$!"; sleep 600 & printf 'JOB2270=%s\n' "$!"
-"#,
-    )
-    .await
-    .unwrap();
-    let mut output = String::new();
+    let leader = generation.pid.as_raw_nonzero().get();
+    eprintln!(
+        "{}",
+        serde_json::json!({
+            "event": "issue270_fixture_tx", "leader": leader,
+            "script": String::from_utf8_lossy(SETUP),
+        })
+    );
+    write(generation.master.clone(), SETUP).await.unwrap();
+    let mut output = Vec::new();
+    let mut ready = BTreeMap::new();
     let deadline = Instant::now() + Duration::from_secs(5);
-    while fixture.members.len() < 3 {
-        let bytes = tokio::time::timeout_at(deadline.into(), read(generation.master.clone()))
-            .await
-            .expect("fixture PTY readiness deadline")
-            .unwrap();
-        assert!(!bytes.is_empty(), "shell exited during setup: {output}");
-        output.push_str(&String::from_utf8_lossy(&bytes));
-        for line in output.lines() {
-            let line = line.trim_end_matches('\r');
-            if let Some(pid) = ["NESTED270=", "JOB1270=", "JOB2270="]
-                .into_iter()
-                .find_map(|prefix| line.strip_prefix(prefix))
-                .and_then(|pid| pid.parse::<i32>().ok())
-            {
-                fixture.members.insert(pid, identity(pid).unwrap().0);
+    while ready.len() < 4 {
+        let received =
+            tokio::time::timeout_at(deadline.into(), read(generation.master.clone())).await;
+        let bytes = match received {
+            Ok(Ok(bytes)) if !bytes.is_empty() => bytes,
+            error => {
+                eprintln!(
+                    "{}",
+                    serde_json::json!({
+                        "event": "issue270_fixture_setup_failed", "leader": leader,
+                        "ready": format!("{ready:?}"), "read_result": format!("{error:?}"),
+                        "transcript": String::from_utf8_lossy(&output),
+                        "session": session_snapshot(leader),
+                    })
+                );
+                panic!("fixture PTY readiness deadline/EOF/read error: {error:?}");
+            }
+        };
+        eprintln!(
+            "{}",
+            serde_json::json!({
+                "event": "issue270_fixture_rx", "leader": leader,
+                "text": String::from_utf8_lossy(&bytes), "bytes": &bytes,
+            })
+        );
+        output.extend_from_slice(&bytes);
+        assert!(
+            output.len() <= 65536,
+            "fixture readiness exceeded capture limit"
+        );
+        for record in output
+            .split_inclusive(|byte| *byte == b'\n')
+            .filter_map(ready_record)
+        {
+            let (start, state, group, session) =
+                identity(record.pid).expect("fixture readiness PID missing");
+            assert_eq!(
+                (start, group, session),
+                (record.start, record.group, record.session),
+                "fixture readiness identity differs from /proc: {record:?}"
+            );
+            assert_ne!(state, 'Z', "fixture readiness process is not live");
+            assert_eq!(
+                session, leader,
+                "fixture readiness session differs from leader"
+            );
+            assert_eq!(
+                record.role == "leader",
+                record.pid == leader,
+                "fixture readiness leader identity"
+            );
+            if let Some(previous) = ready.insert(record.role, record) {
+                assert_eq!(previous, record, "fixture readiness identity changed");
+            } else {
+                eprintln!(
+                    "{}",
+                    serde_json::json!({
+                        "event": "issue270_fixture_ready", "role": record.role,
+                        "pid": record.pid, "pgid": group, "sid": session, "start": start, "state": state,
+                    })
+                );
+            }
+            if record.role != "leader" {
+                fixture.members.insert(record.pid, start);
             }
         }
     }
-    let leader = generation.pid.as_raw_nonzero().get();
     let groups: std::collections::BTreeSet<_> = fixture
         .members
         .keys()
@@ -105,11 +261,27 @@ async fn owned_jobs() -> (Generation, Fixture) {
             group
         })
         .collect();
+    assert_eq!(
+        fixture.members.len(),
+        3,
+        "fixture readiness requires three distinct jobs"
+    );
     assert!(
         groups.len() >= 2,
         "fixture needs multiple job-control groups"
     );
-    println!("issue270 owned session={leader} groups={groups:?} output={output:?}");
+    assert_eq!(
+        ready["nested"].group, ready["job1"].group,
+        "nested job must share its parent job group"
+    );
+    eprintln!(
+        "{}",
+        serde_json::json!({
+            "event": "issue270_fixture_setup_complete", "leader": leader,
+            "roles": ready.keys().collect::<Vec<_>>(), "groups": groups,
+            "session": session_snapshot(leader),
+        })
+    );
     (generation, fixture)
 }
 

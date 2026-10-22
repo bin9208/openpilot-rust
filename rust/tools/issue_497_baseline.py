@@ -32,7 +32,12 @@ def main():
   def red(name, command, marker='test result: FAILED'):
     result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=900)
     (options.output / f'{name}.log').write_text(result.stdout)
-    if result.returncode == 0 or marker not in result.stdout or 'could not compile' in result.stdout:
+    invalid = ('could not compile', 'fixture PTY readiness deadline', 'shell exited during setup')
+    if (result.returncode == 0 or marker not in result.stdout
+        or any(failure in result.stdout for failure in invalid)
+        or (name == 'issue_270_cleanup' and (
+            'owned jobs remain:' not in result.stdout
+            or result.stdout.count('"event":"issue270_fixture_setup_complete"') != 6))):
       raise AssertionError(f'{name}: expected a behavioral baseline assertion failure; exit={result.returncode}; inspect retained log')
     results.append({'case': name, 'exit': result.returncode, 'expected_behavioral_failure': True})
     print(json.dumps(results[-1]), flush=True)
@@ -57,7 +62,7 @@ def main():
       red('issue_252_warnings', cargo + ['-p', 'openpilot-carrot-server', '--lib', 'numbered_driver_warnings_each_start_a_report_episode'])
     path = 'rust/crates/carrot-server/src/terminal/pty.rs'
     with original([path], {path: '\n#[cfg(test)]\n#[path = "pty_cleanup_tests.rs"]\nmod cleanup_tests;\n'}):
-      red('issue_270_cleanup', cargo + ['-p', 'openpilot-carrot-server', '--lib', 'terminal::pty::cleanup_tests::issue270_', '--', '--test-threads=1'])
+      red('issue_270_cleanup', cargo + ['-p', 'openpilot-carrot-server', '--lib', 'terminal::pty::cleanup_tests::issue270_', '--', '--nocapture', '--test-threads=1'])
   elif options.scope == 'media':
     with original(['rust/crates/loggerd/src/raw_file.rs', 'rust/crates/loggerd/src/media.rs']):
       red('issue_54_failed_video_completion', cargo + ['-p', 'openpilot-loggerd', '--test', 'media', 'marks_raw_video_failed_after_enospc'])

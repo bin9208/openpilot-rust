@@ -125,7 +125,7 @@ pub fn run(
             log_site!(),
             Record::text(
                 Level::Warning,
-                "SEND_RAW_PRED is unsupported for Jetlink frames: rawPredictions will be empty; native frames retain their raw tensor",
+                "SEND_RAW_PRED is unsupported for Jetlink frames: rawPredictions will be empty; native frames retain their raw tensor".into(),
             ),
         );
     }
