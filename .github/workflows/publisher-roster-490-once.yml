@@ -1,0 +1,311 @@
+name: 296 immutable publisher roster RED GREEN
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/publisher-roster-490-once.yml
+permissions:
+  contents: read
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
+jobs:
+  publisher-roster:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      EXPECTED_SOURCE: e0805edb9ebe306226b1a632a2188c655384ab40
+      RUSTUP_TOOLCHAIN: 1.94.0
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CPU_COUNT: '2'
+      DEV: CPU:LLVM
+      JIT: '1'
+      JIT_BATCH_SIZE: '0'
+      OPENPILOT_HACKS: '1'
+      LLVM_PATH: /usr/lib/x86_64-linux-gnu/libLLVM-18.so
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: e0805edb9ebe306226b1a632a2188c655384ab40
+        persist-credentials: false
+    - name: Reserve disposable hosted capacity before dependencies
+      shell: bash
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 6144
+
+        mkdir "$RUNNER_TEMP/bridge-targeted-296"
+
+        sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends g++ clang libclang-dev libllvm18 liblzma-dev capnproto libcapnp-dev
+        libzmq3-dev jq
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
+
+        '
+    - name: Admit reused green helper source closure from run39754225912
+      shell: bash
+      run: 'set -euo pipefail
+
+        sha256sum --check --strict <<''UNCHANGED_GREEN_HELPER_SOURCES''
+
+        891091d51f08675581ecc4b9d51277ab667a4623fcc5efffc266c78821308f35  rust/crates/model-runtime/src/guarded_add.rs
+
+        99775d26ba0eadc5a841691bccfe8ef6301ece907c00f927f17de03bf6fba223  rust/crates/model-runtime/src/bin/offline-llvm-guarded-add.rs
+
+        1362e2a2767684a3a4f7a04e622ee5207a5beefc80d150bd1621daaa512893ac  rust/crates/model-runtime/src/owned_outputs.rs
+
+        3ba1e9e5c1d8cdefce88cfab60b899b354b8eabbc1a20931f49812c3be06bd10  rust/crates/model-runtime/src/lib.rs
+
+        98ac26be3117508d6fee253a9afacdd763ea2b7d3a3083de94ff7ff55146b7c7  rust/crates/model-runtime/Cargo.toml
+
+        4035ea9b0e271e225f803e1b19c7eaa5575c0d5e4b6e2d13b0ba4d3f5a46ddca  rust/Cargo.toml
+
+        f623b371e05451bf6373329c58af621d421efea7af3c0899197df006f773adcf  rust/Cargo.lock
+
+        474342a18df37f923f59df43b1b90e6c0b0d6758612462bbc0dadbe37fe2cadf  rust/rust-toolchain.toml
+
+        22e8c225c65e4ca116ec90893e40390baeb66b4b8d87b9805ae90ceabde18c33  rust/crates/model-runtime/tests/guarded_add.rs
+
+        96a43406d719717c98ce170b43a0e07d4909452456f4c8446fde424d53f9ce9b  rust/crates/model-runtime/tests/guarded_add_cli.rs
+
+        e05450114c35e2748d32e87b916b4959d9cbe6d61115cd33a6a7c196cf3bce95  rust/crates/dev-tools/src/driver_daemon_check.rs
+
+        8bb09f8358d0f1fad241dddc5ae1329d83d03e4e66b865468785679adb283ef0  rust/crates/dev-tools/src/driver_daemon_current_catalog.rs
+
+        6f376578896d424c8e89425527d929faac8054f85c69d060a9e42c6c60382ce8  rust/crates/dev-tools/src/driver_daemon_fixture.rs
+
+        8522323f6921031b40191c1115aa6cc76f6af5fa94c1b1170d934730e5b48d56  rust/crates/dev-tools/src/driver_daemon_source_policy.rs
+
+        63a153a6a203c7c2163b4036917da92b9f0db0dc6ace22ee9519a8298f822a41  rust/crates/dev-tools/src/model_family_prepare.rs
+
+        bca14aea0e7110b8c9f3c4d897ee0e9f733abecf14ed61b884ba5fe2753eccd7  rust/crates/dev-tools/src/model_family_prepare/catalog.rs
+
+        dd62a6c30d4d4c77156d5669f05a1e76ec8633549ecd2f1aecad6c3e71fdfb15  rust/crates/dev-tools/src/model_family_prepare/usb.rs
+
+        ead2910cfad026dfa414c7589cb938ed0700a6576a370c2add1516d8da61c48e  rust/crates/dev-tools/src/qa_process.rs
+
+        61acb2852b7b000b84ab179fcf7bdde4e062bb5055e1759ef0c4fa7523837c54  rust/crates/dev-tools/src/seal.rs
+
+        e137df27ccbf5cda9fd4cb89f81bdda8ba7c1b24483978123a9d5dbf7a38c094  rust/crates/dev-tools/tests/model_family_prepare.rs
+
+        UNCHANGED_GREEN_HELPER_SOURCES
+
+        '
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Install unchanged model compiler prerequisites
+      shell: bash
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        python -m pip install numpy==2.5.3 zstandard==0.25.0 pycapnp==2.1.0 pyzmq==27.2.0
+
+        '
+    - name: Build same-source native helper once
+      shell: bash
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 3072
+
+        cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --bin offline-llvm-guarded-add > "$RUNNER_TEMP/bridge-targeted-296/helper-build.log"
+        2>&1 || { cat "$RUNNER_TEMP/bridge-targeted-296/helper-build.log"; exit 1; }
+
+        '
+    - name: Strict Clippy for changed catalog integration test; reuse unchanged helper/catalog green checks
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/bridge-targeted-296"
+
+        test -n "$LLVM_PATH" && test -s "$LLVM_PATH"
+
+        cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --test catalog -- -D warnings > "$proof/changed-catalog-test-clippy.log"
+        2>&1 || { cat "$proof/changed-catalog-test-clippy.log"; exit 1; }
+
+        '
+    - name: Compile and select exact catalog test ELF after every grouped feature build
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/bridge-targeted-296"
+
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --test catalog --no-run --message-format=json
+        > "$proof/catalog-test-artifacts.jsonl" 2> "$proof/catalog-test-compile.log" || { cat "$proof/catalog-test-compile.log";
+        exit 1; }
+
+        binary=$(jq -sr ''[.[] | select(.reason == "compiler-artifact" and .target.name == "catalog" and (.target.kind | index("test"))
+        != null and .profile.test == true and .executable != null) | .executable] | unique | if length == 1 then .[0] else
+        error("expected one catalog test executable") end'' "$proof/catalog-test-artifacts.jsonl")
+
+        test -n "$binary" && test -x "$binary"
+
+        test "$(readlink -f "$binary")" = "$binary"
+
+        printf ''%s\n'' "$binary" > "$proof/catalog-test-path.txt"
+
+        printf ''MODEL_BRIDGE_CATALOG_TEST_BINARY=%s\n'' "$binary" >> "$GITHUB_ENV"
+
+        '
+    - name: Bind explicit helper/test ELFs and full eight-file Rust dependency closure after grouped builds
+      id: bridge-bind
+      shell: bash
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/bridge-proof-296\"\nmkdir \"$proof\"\ntest \"$(git rev-parse HEAD)\" =\
+        \ \"$EXPECTED_SOURCE\"\ntest -n \"$LLVM_PATH\" && test -s \"$LLVM_PATH\"\nhelper=$(readlink -f \"$GITHUB_WORKSPACE/rust/target/debug/offline-llvm-guarded-add\"\
+        )\ntest -x \"$helper\"\ndigest=$(sha256sum \"$helper\" | cut -d' ' -f1)\nprintf 'MODEL_LLVM_GUARDED_ADD_BINARY=%s\\\
+        nMODEL_LLVM_GUARDED_ADD_SHA256=%s\\n' \"$helper\" \"$digest\" >> \"$GITHUB_ENV\"\nprintf '%s\\n' \"$helper\" \"$(readlink\
+        \ -f \"$LLVM_PATH\")\" \"$GITHUB_WORKSPACE/rust/crates/model-runtime/src/guarded_add.rs\" \"$GITHUB_WORKSPACE/rust/crates/model-runtime/src/bin/offline-llvm-guarded-add.rs\"\
+        \ \"$GITHUB_WORKSPACE/rust/crates/model-runtime/src/owned_outputs.rs\" \"$GITHUB_WORKSPACE/rust/crates/model-runtime/src/lib.rs\"\
+        \ \"$GITHUB_WORKSPACE/rust/crates/model-runtime/Cargo.toml\" \"$GITHUB_WORKSPACE/rust/Cargo.toml\" \"$GITHUB_WORKSPACE/rust/Cargo.lock\"\
+        \ \"$GITHUB_WORKSPACE/rust/rust-toolchain.toml\" \"$GITHUB_WORKSPACE/rust/tools/build_model_pipelines.py\" \"$GITHUB_WORKSPACE/rust/tools/model_export/native.py\"\
+        \ \"$GITHUB_WORKSPACE/rust/tools/model_export/capture.py\" \"$GITHUB_WORKSPACE/rust/tools/model_export/compile.py\"\
+        \ \"$GITHUB_WORKSPACE/rust/tools/model_export/schema.py\" \"$GITHUB_WORKSPACE/rust/crates/dev-tools/src/driver_daemon_current_catalog.rs\"\
+        \ \"$GITHUB_WORKSPACE/rust/crates/dev-tools/src/model_family_prepare/catalog.rs\" \"$GITHUB_WORKSPACE/rust/crates/model-runtime/tests/catalog.rs\"\
+        \ > \"$proof/binding-paths.txt\"\nif test -n \"${MODEL_BRIDGE_CATALOG_TEST_BINARY:-}\"; then\n printf '%s\\n' \"$MODEL_BRIDGE_CATALOG_TEST_BINARY\"\
+        \ >> \"$proof/binding-paths.txt\"\nfi\nwhile IFS= read -r path; do sha256sum \"$path\"; done < \"$proof/binding-paths.txt\"\
+        \ > \"$proof/bindings.before.sha256\"\nwhile IFS= read -r path; do stat --printf '%n:%d:%i:%s:%f:%y:%z\\n' \"$path\"\
+        ; done < \"$proof/binding-paths.txt\" > \"$proof/identities.before.txt\"\nlscpu --json > \"$proof/lscpu.json\"\ncat\
+        \ /proc/cpuinfo > \"$proof/proc-cpuinfo.txt\"\nuname -a > \"$proof/uname.txt\"\ngit rev-parse HEAD > \"$proof/source.txt\"\
+        \npython -m pip freeze > \"$proof/providers.before.txt\"\n"
+    - name: Actual immutable publisher RED then GREEN with phase-specific source seals
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/bridge-targeted-296"
+
+        export MODEL_BRIDGE_PYTHON="$(command -v python)"
+
+        test "$(rustc --version | cut -d '' '' -f2)" = 1.94.0
+
+        publish=rust/tools/model_export/publish.py
+
+        git show 6e54a58bdef824ee2ed00f2cd5c099d34a797686:"$publish" > "$proof/publish-original.py"
+
+        cp "$publish" "$proof/publish-fixed.py"
+
+        printf ''c400d7a55e3d95c2fd7737d30782b309dc9a7c0152854cce975ae0aba6433dcd  %s\n'' "$proof/publish-original.py" | sha256sum
+        --check --strict
+
+        printf ''c142bc7459591d84d03404d38bc34f609ba728fec77f23436c37d43b51f012a6  %s\n'' "$proof/publish-fixed.py" | sha256sum
+        --check --strict
+
+        restore() { cp "$proof/publish-fixed.py" "$publish"; }
+
+        trap restore EXIT
+
+        cp "$proof/publish-original.py" "$publish"
+
+        printf ''c400d7a55e3d95c2fd7737d30782b309dc9a7c0152854cce975ae0aba6433dcd  %s\n'' "$publish" | sha256sum --check --strict
+
+        sha256sum "$publish" > "$proof/publisher-red.before.sha256"
+
+        stat --printf ''%d:%i:%s:%f:%y:%z\n'' "$publish" > "$proof/publisher-red.before.identity"
+
+        red=0
+
+        "$MODEL_BRIDGE_CATALOG_TEST_BINARY" guarded_add_publish_reuse_requires_exact_evidence_roster --ignored --exact --nocapture
+        > "$proof/publisher-red.log" 2>&1 || red=$?
+
+        printf ''%s\n'' "$red" > "$proof/publisher-red.status"
+
+        test "$red" -eq 101
+
+        grep -F ''different immutable evidence roster silently reused'' "$proof/publisher-red.log"
+
+        sha256sum --check --strict "$proof/publisher-red.before.sha256"
+
+        stat --printf ''%d:%i:%s:%f:%y:%z\n'' "$publish" > "$proof/publisher-red.after.identity"
+
+        cmp "$proof/publisher-red.before.identity" "$proof/publisher-red.after.identity"
+
+        restore
+
+        printf ''c142bc7459591d84d03404d38bc34f609ba728fec77f23436c37d43b51f012a6  %s\n'' "$publish" | sha256sum --check --strict
+
+        sha256sum "$publish" > "$proof/publisher-green.before.sha256"
+
+        stat --printf ''%d:%i:%s:%f:%y:%z\n'' "$publish" > "$proof/publisher-green.before.identity"
+
+        green=0
+
+        "$MODEL_BRIDGE_CATALOG_TEST_BINARY" guarded_add_publish_reuse_requires_exact_evidence_roster --ignored --exact --nocapture
+        > "$proof/publisher-green.log" 2>&1 || green=$?
+
+        printf ''%s\n'' "$green" > "$proof/publisher-green.status"
+
+        if test "$green" -ne 0; then cat "$proof/publisher-green.log"; exit "$green"; fi
+
+        sha256sum --check --strict "$proof/publisher-green.before.sha256"
+
+        stat --printf ''%d:%i:%s:%f:%y:%z\n'' "$publish" > "$proof/publisher-green.after.identity"
+
+        cmp "$proof/publisher-green.before.identity" "$proof/publisher-green.after.identity"
+
+        git diff --exit-code -- "$publish"
+
+        trap - EXIT
+
+        '
+    - name: Independent final helper/provider/source/Python guards
+      if: always() && steps.bridge-bind.outcome == 'success'
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/bridge-proof-296"
+
+        status=0
+
+        sha256sum --check --strict "$proof/bindings.before.sha256" > "$proof/bindings.after.log" 2>&1 || status=1
+
+        while IFS= read -r path; do stat --printf ''%n:%d:%i:%s:%f:%y:%z\n'' "$path" || status=1; done < "$proof/binding-paths.txt"
+        > "$proof/identities.after.txt"
+
+        cmp "$proof/identities.before.txt" "$proof/identities.after.txt" || status=1
+
+        python -m pip freeze > "$proof/providers.after.txt" || status=1
+
+        cmp "$proof/providers.before.txt" "$proof/providers.after.txt" || status=1
+
+        printf ''%s\n'' "$status" > "$proof/final-guards.status"
+
+        test "$status" -eq 0
+
+        '
+    - uses: actions/upload-artifact@v6
+      if: always()
+      with:
+        name: 490-bridge-evidence-${{ github.job }}-e0805edb9eb
+        retention-days: 7
+        if-no-files-found: warn
+        path: '${{ runner.temp }}/bridge-proof-296/
+
+          ${{ github.workspace }}/rust/target/debug/offline-llvm-guarded-add
+
+          ${{ runner.temp }}/**/compilation-evidence.json
+
+          ${{ runner.temp }}/**/kernel-*.txt
+
+          ${{ runner.temp }}/**/kernel-*.compiled.ll
+
+          ${{ runner.temp }}/**/kernel-*.guarded-add.json
+
+          ${{ runner.temp }}/**/kernel-*.o'
+    - uses: actions/upload-artifact@v6
+      if: always()
+      with:
+        name: 490-bridge-targeted-tests-e0805edb9eb
+        path: ${{ runner.temp }}/bridge-targeted-296/
+        retention-days: 7
+        if-no-files-found: warn
