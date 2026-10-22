@@ -472,14 +472,20 @@ fn same_held_native_elfs_replay_modem_originals_in_checkout_and_private_absent_r
         let report_elfs = report["executables"].as_array().unwrap();
         assert_eq!(report_elfs.len(), 4);
         for held_elf in &held {
-            let module_name = match held_elf.name {
-                "checker" => "checker helper",
-                "process_launcher" => "process launcher",
-                other => other,
-            };
-            assert!(report_elfs.iter().any(|entry| {
-                entry["name"] == module_name && entry["sha256"] == held_elf.sha256
-            }));
+            let expected = held_elf.report();
+            assert_eq!(
+                report_elfs
+                    .iter()
+                    .filter(|entry| {
+                        ["path_bytes_hex", "sha256", "bytes", "device", "inode"]
+                            .iter()
+                            .all(|key| entry[*key] == expected[*key])
+                    })
+                    .count(),
+                1,
+                "{} held ELF is not uniquely bound in the checker report",
+                held_elf.name
+            );
         }
     }
     assert_eq!(
