@@ -3,7 +3,7 @@ name: Native logging R4 admission
   workflow_dispatch: null
   push:
     branches:
-    - codex/feat-296-repository-python-retirement
+    - codex/feat-296-native-tools-candidate
     paths:
     - .github/workflows/native-logging-r4-final-296-once.yml
 permissions:
