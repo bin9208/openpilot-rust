@@ -30,9 +30,11 @@ def invoke(values):
   harness = '''
 const f = JSON.parse(process.env.FIXTURE);
 process.env.SOURCE_SHA=f.sha; process.env.CI_RUN_ID=f.run_id;
-const context={repo:{owner:'bin9208',repo:'openpilot-rust'}};
+process.env.RELEASE_REQUEST=f.request_id||'';
+const context={repo:{owner:'bin9208',repo:'openpilot-rust'},actor:f.actor||'bin9208',ref:f.ref||'refs/heads/dev-md'};
 const github={rest:{repos:{getBranch:async()=>({data:{commit:{sha:f.branch_sha}}}),
 getCommit:async()=>({data:{commit:{message:f.message}}}),listPullRequestsAssociatedWithCommit:'prs'},
+issues:{get:async()=>({data:f.issue})},
 actions:{getWorkflowRun:async()=>({data:f.run}),listWorkflowRunsForRepo:'latest',listJobsForWorkflowRun:'jobs'}},
 paginate:async(method)=>method==='prs'?f.prs:method==='latest'?[f.latest]:f.jobs};
 const core={setOutput:(key,value)=>process.stdout.write(JSON.stringify({[key]:value}))};
@@ -92,6 +94,29 @@ class RuntimeDeliveryTests(unittest.TestCase):
     result = invoke(fixture())
     self.assertEqual(result.returncode, 0, result.stderr)
     self.assertEqual(json.loads(result.stdout), dict(source_sha=SHA))
+
+  def test_explicit_manual_request_admits_only_its_owner_source_run_and_controller(self):
+    f = fixture()
+    f.update(request_id='486', message='ordinary CI merge', ref='refs/heads/codex/fix-486-exact-runtime-delivery')
+    f['issue'] = dict(state='open', user=dict(login='bin9208'), body='\n'.join((
+      f'source_sha: {SHA}', 'ci_run_id: 42', f'controller_ref: {f["ref"]}', 'release_authorized: true')))
+    result = invoke(f)
+    self.assertEqual(result.returncode, 0, result.stderr)
+    self.assertEqual(json.loads(result.stdout), dict(source_sha=SHA))
+    for fault in ('actor', 'author', 'closed', 'request-ref', 'source', 'approval', 'run', 'missing-gate'):
+      changed = copy.deepcopy(f)
+      if fault == 'actor': changed['actor'] = 'someone'
+      elif fault == 'author': changed['issue']['user']['login'] = 'someone'
+      elif fault == 'closed': changed['issue']['state'] = 'closed'
+      elif fault == 'request-ref': changed['ref'] += '-other'
+      elif fault == 'source': changed['issue']['body'] = changed['issue']['body'].replace(SHA, 'b' * 40)
+      elif fault == 'approval': changed['issue']['body'] = changed['issue']['body'].replace('true', 'false')
+      elif fault == 'run': changed['issue']['body'] = changed['issue']['body'].replace('ci_run_id: 42', 'ci_run_id: 43')
+      elif fault == 'missing-gate': changed['jobs'].pop()
+      with self.subTest(fault=fault):
+        result = invoke(changed)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, '')
 
   def test_wrong_or_missing_evidence_is_rejected_before_build(self):
     faults = ['sha', 'run-id', 'stale-branch', 'marker', 'no-pr', 'unmerged', 'wrong-merge',

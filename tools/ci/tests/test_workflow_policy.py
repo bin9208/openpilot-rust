@@ -178,7 +178,8 @@ class WorkflowPolicyTests(unittest.TestCase):
     self.assertEqual(runtime['jobs']['publish']['needs'], ['verify', 'package'])
     self.assertNotIn('codex/fix-402-', (ROOT / '.github/workflows/dev-md-runtime.yml').read_text())
     for name in ('package', 'publish'):
-      checkout = next(step for step in runtime['jobs'][name]['steps'] if 'actions/checkout@' in step.get('uses', ''))
+      checkout = next(step for step in runtime['jobs'][name]['steps']
+                      if 'actions/checkout@' in step.get('uses', '') and 'if' not in step)
       self.assertEqual(checkout['with']['ref'], '${{ needs.verify.outputs.source_sha }}')
 
 

@@ -1,0 +1,94 @@
+"""Cloud-only tests of owner approval, exact CI evidence and source separation."""
+import copy
+import importlib.util
+from pathlib import Path
+import unittest
+
+import yaml
+
+ROOT = Path(__file__).resolve().parents[3]
+SPEC = importlib.util.spec_from_file_location('manual_delivery', ROOT / 'rust/ci/runtime/manual_delivery.py')
+DRIVER = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(DRIVER)
+SHA = 'a' * 40
+REF = 'refs/heads/codex/fix-486-exact-runtime-delivery'
+
+
+def request():
+  return dict(state='open', user=dict(login='bin9208'), body='\n'.join((
+    f'source_sha: {SHA}', 'ci_run_id: 42', f'controller_ref: {REF}', 'release_authorized: true')))
+
+
+def evidence():
+  run = dict(id=42, run_attempt=1, head_sha=SHA, head_branch='dev-md', event='push',
+             path='.github/workflows/ci.yml', repository=dict(full_name=DRIVER.REPOSITORY),
+             status='completed', conclusion='success')
+  jobs = [dict(name=name, head_sha=SHA, status='completed', conclusion='success') for name in DRIVER.GATES]
+  return run, copy.deepcopy(run), jobs
+
+
+class ManualDeliveryTests(unittest.TestCase):
+  def test_explicit_owner_request_for_exact_source_is_admitted(self):
+    DRIVER.validate_request(request(), SHA, '42', REF, 'bin9208')
+
+  def test_missing_wrong_revoked_and_duplicate_approval_are_rejected(self):
+    for fault in ('source', 'run', 'ref', 'actor', 'author', 'closed', 'pr', 'missing', 'duplicate', 'unapproved'):
+      item = request()
+      args = [SHA, '42', REF, 'bin9208']
+      if fault == 'source': args[0] = 'b' * 40
+      elif fault == 'run': args[1] = '43'
+      elif fault == 'ref': args[2] = 'refs/heads/dev-md'
+      elif fault == 'actor': args[3] = 'someone'
+      elif fault == 'author': item['user']['login'] = 'someone'
+      elif fault == 'closed': item['state'] = 'closed'
+      elif fault == 'pr': item['pull_request'] = {}
+      elif fault == 'missing': item['body'] = ''
+      elif fault == 'duplicate': item['body'] += '\nrelease_authorized: true'
+      elif fault == 'unapproved': item['body'] = item['body'].replace('true', 'false')
+      with self.subTest(fault=fault), self.assertRaises(AssertionError):
+        DRIVER.validate_request(item, *args)
+
+  def test_completed_latest_push_and_all_real_gates_are_required(self):
+    DRIVER.validate_ci(*evidence(), SHA, '42')
+    for fault in ('sha', 'branch', 'pr', 'repository', 'running', 'failed', 'cancelled',
+                  'workflow', 'superseded', 'attempt', 'missing', 'duplicate', 'job-source', 'job-skipped'):
+      run, latest, jobs = evidence()
+      if fault == 'sha': run['head_sha'] = 'b' * 40
+      elif fault == 'branch': run['head_branch'] = 'dev'
+      elif fault == 'pr': run['event'] = 'pull_request'
+      elif fault == 'repository': run['repository']['full_name'] = 'someone/else'
+      elif fault == 'running': run['status'] = 'in_progress'
+      elif fault in ('failed', 'cancelled'): run['conclusion'] = fault
+      elif fault == 'workflow': run['path'] = '.github/workflows/rust.yml'
+      elif fault == 'superseded': latest['id'] = 43
+      elif fault == 'attempt': latest['run_attempt'] = 2
+      elif fault == 'missing': jobs.pop()
+      elif fault == 'duplicate': jobs.append(copy.deepcopy(jobs[0]))
+      elif fault == 'job-source': jobs[0]['head_sha'] = 'b' * 40
+      elif fault == 'job-skipped': jobs[0]['conclusion'] = 'skipped'
+      with self.subTest(fault=fault), self.assertRaises(AssertionError):
+        DRIVER.validate_ci(run, latest, jobs, SHA, '42')
+
+  def test_controller_is_preserved_before_immutable_source_checkout(self):
+    workflow = yaml.load((ROOT / '.github/workflows/dev-md-runtime.yml').read_text(), Loader=yaml.BaseLoader)
+    for name in ('package', 'publish'):
+      steps = workflow['jobs'][name]['steps']
+      checkouts = [(i, step) for i, step in enumerate(steps) if step.get('uses', '').startswith('actions/checkout@')]
+      self.assertEqual(checkouts[0][1]['if'], "inputs.release_request != ''")
+      self.assertEqual(checkouts[0][1]['with']['ref'], '${{ github.sha }}')
+      self.assertEqual(checkouts[1][1]['with']['ref'], '${{ needs.verify.outputs.source_sha }}')
+      self.assertNotIn('if', checkouts[1][1])
+      between = '\n'.join(step.get('run', '') for step in steps[checkouts[0][0]:checkouts[1][0]])
+      self.assertIn('"$RUNNER_TEMP/manual-delivery.py"', between)
+      self.assertNotIn('git commit', between)
+    source = (ROOT / 'rust/ci/runtime/manual_delivery.py').read_text()
+    self.assertIn('runpy.run_path(str(root / "rust/ci/runtime/package.py"))', source)
+    self.assertIn('delivery["build"]()', source)
+    self.assertIn('delivery["restore_release"]()', source)
+    self.assertIn('delivery["install"](True)', source)
+    self.assertIn('identity["publisher_sha256"]', source)
+    self.assertIn('identity["installer_sha256"]', source)
+
+
+if __name__ == '__main__':
+  unittest.main()

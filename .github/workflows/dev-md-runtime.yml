@@ -10,19 +10,25 @@ on:
         description: Successful unified push CI run
         required: true
         type: string
+      release_request:
+        description: Owner-authored issue authorizing this exact source and controller ref
+        required: false
+        default: ''
+        type: string
 permissions:
   contents: read
   actions: read
   pull-requests: read
+  issues: read
 concurrency:
   group: dev-md-runtime-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   verify:
     name: Verify completed exact-source merge CI
-    if: github.repository == 'bin9208/openpilot-rust' && github.ref == 'refs/heads/dev-md'
+    if: github.repository == 'bin9208/openpilot-rust' && (github.ref == 'refs/heads/dev-md' || (inputs.release_request != '' && startsWith(github.ref, 'refs/heads/codex/')))
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 360
     outputs:
       source_sha: ${{ steps.verify.outputs.source_sha }}
     steps:
@@ -31,6 +37,7 @@ jobs:
         env:
           SOURCE_SHA: ${{ inputs.source_sha }}
           CI_RUN_ID: ${{ inputs.ci_run_id }}
+          RELEASE_REQUEST: ${{ inputs.release_request }}
         with:
           script: |
             const sha = process.env.SOURCE_SHA;
@@ -39,13 +46,23 @@ jobs:
             const branch = await github.rest.repos.getBranch({...context.repo, branch: 'dev-md'});
             if (branch.data.commit.sha !== sha) throw new Error('Stale dev-md source');
             const commit = await github.rest.repos.getCommit({...context.repo, ref: sha});
-            if (!commit.data.commit.message.includes('[runtime-package]')) throw new Error('Unmarked runtime delivery');
+            const requestId = process.env.RELEASE_REQUEST || '';
+            if (requestId) {
+              if (!/^[1-9][0-9]*$/.test(requestId) || context.actor !== context.repo.owner) throw new Error('Manual request requires repository owner');
+              const request = (await github.rest.issues.get({...context.repo, issue_number: Number(requestId)})).data;
+              if (request.state !== 'open' || request.pull_request || request.user.login !== context.repo.owner) throw new Error('Invalid manual release request');
+              if (!context.ref.startsWith('refs/heads/codex/')) throw new Error('Manual controller requires an issue branch');
+              const lines = request.body.split(/\r?\n/);
+              for (const line of [`source_sha: ${sha}`, `ci_run_id: ${id}`, `controller_ref: ${context.ref}`, 'release_authorized: true']) {
+                if (lines.filter(value => value === line).length !== 1) throw new Error(`Request does not authorize ${line}`);
+              }
+            } else if (!commit.data.commit.message.includes('[runtime-package]')) throw new Error('Unmarked runtime delivery');
             const prs = await github.paginate(github.rest.repos.listPullRequestsAssociatedWithCommit, {
               ...context.repo, commit_sha: sha, per_page: 100
             });
             if (!prs.some(pr => pr.merged_at && pr.merge_commit_sha === sha && pr.base.ref === 'dev-md')) throw new Error('Not a dev-md PR merge');
             let run;
-            for (let attempt = 0; attempt < 60; attempt++) {
+            for (let attempt = 0; attempt < (requestId ? 4200 : 60); attempt++) {
               run = (await github.rest.actions.getWorkflowRun({...context.repo, run_id: Number(id)})).data;
               if (run.path !== '.github/workflows/ci.yml' || run.head_sha !== sha || run.head_branch !== 'dev-md' || run.event !== 'push' || run.repository.full_name !== 'bin9208/openpilot-rust') throw new Error('Wrong validation identity');
               if (run.status === 'completed') break;
@@ -70,11 +87,24 @@ jobs:
     timeout-minutes: 210
     env:
       RUNTIME_SOURCE_SHA: ${{ needs.verify.outputs.source_sha }}
+      RUNTIME_MANUAL_REQUEST: ${{ inputs.release_request }}
+      RUNTIME_CI_RUN_ID: ${{ inputs.ci_run_id }}
       GIT_LFS_SKIP_SMUDGE: '1'
       CARGO_INCREMENTAL: '0'
       CARGO_BUILD_JOBS: '2'
       RUSTUP_TOOLCHAIN: '1.94.0'
+      GH_TOKEN: ${{ github.token }}
     steps:
+      - uses: actions/checkout@v7
+        if: inputs.release_request != ''
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Preserve manual delivery controller outside the source tree
+        if: inputs.release_request != ''
+        run: |
+          cp rust/ci/runtime/manual_delivery.py "$RUNNER_TEMP/manual-delivery.py"
+          echo "RUNTIME_MANUAL_DRIVER=$RUNNER_TEMP/manual-delivery.py" >> "$GITHUB_ENV"
       - uses: actions/checkout@v7
         with:
           ref: ${{ needs.verify.outputs.source_sha }}
@@ -139,7 +169,7 @@ jobs:
               raise SystemExit(1)
           PY
           python3 rust/ci/runtime/test_package_policy.py
-          python3 rust/ci/runtime/package.py source-policy
+          if [ -n "$RUNTIME_MANUAL_REQUEST" ]; then python3 "$RUNTIME_MANUAL_DRIVER" source-policy; else python3 rust/ci/runtime/package.py source-policy; fi
       - name: Reserve disk for AGNOS and bounded builds
         run: |
           # Only GitHub-hosted images contain these disposable tool bundles.
@@ -177,7 +207,7 @@ jobs:
           key: agnos-runtime-1.94-${{ hashFiles('rust/Cargo.lock') }}-${{ needs.verify.outputs.source_sha }}
           restore-keys: agnos-runtime-1.94-${{ hashFiles('rust/Cargo.lock') }}-
       - name: Restore verified baseline companions and genuine OS sysroot
-        run: python3 rust/ci/runtime/package.py prepare
+        run: if [ -n "$RUNTIME_MANUAL_REQUEST" ]; then python3 "$RUNTIME_MANUAL_DRIVER" prepare; else python3 rust/ci/runtime/package.py prepare; fi
       - name: Cache the verified OS independently of the consumer build
         if: steps.sdk-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
@@ -185,9 +215,9 @@ jobs:
           path: ${{ env.CI_JOB_TEMP }}/agnos-runtime/sdk
           key: agnos-sdk-375c5d22335770ac-v1
       - name: Compile host release tools in an isolated native cache
-        run: python3 rust/ci/runtime/package.py host-tools
+        run: if [ -n "$RUNTIME_MANUAL_REQUEST" ]; then python3 "$RUNTIME_MANUAL_DRIVER" host-tools; else python3 rust/ci/runtime/package.py host-tools; fi
       - name: Compile exact source, audit ABI, seal and test offline installation
-        run: python3 rust/ci/runtime/package.py build
+        run: if [ -n "$RUNTIME_MANUAL_REQUEST" ]; then python3 "$RUNTIME_MANUAL_DRIVER" build; else python3 rust/ci/runtime/package.py build; fi
       - name: Preserve compiled dependencies for focused repair runs
         if: always() && steps.cargo-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
@@ -217,6 +247,7 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/agnos-runtime/offline-install.json
             ${{ env.CI_JOB_TEMP }}/agnos-runtime/build.jsonl
             ${{ env.CI_JOB_TEMP }}/agnos-runtime/sysroot-extract.log
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/manual-request.json
             ${{ env.CI_JOB_TEMP }}/agnos-runtime/source-policy.json
             ${{ env.CI_JOB_TEMP }}/agnos-runtime/source-policy-tests.json
             ${{ env.CI_JOB_TEMP }}/agnos-runtime/opencv/receipt.json
@@ -243,11 +274,25 @@ jobs:
     permissions:
       contents: write
       actions: read
+      issues: read
+      pull-requests: read
     env:
       RUNTIME_SOURCE_SHA: ${{ needs.verify.outputs.source_sha }}
+      RUNTIME_MANUAL_REQUEST: ${{ inputs.release_request }}
+      RUNTIME_CI_RUN_ID: ${{ inputs.ci_run_id }}
       GIT_LFS_SKIP_SMUDGE: '1'
       GH_TOKEN: ${{ github.token }}
     steps:
+      - uses: actions/checkout@v7
+        if: inputs.release_request != ''
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Preserve manual delivery controller outside the source tree
+        if: inputs.release_request != ''
+        run: |
+          cp rust/ci/runtime/manual_delivery.py "$RUNNER_TEMP/manual-delivery.py"
+          echo "RUNTIME_MANUAL_DRIVER=$RUNNER_TEMP/manual-delivery.py" >> "$GITHUB_ENV"
       - uses: actions/checkout@v7
         with:
           ref: ${{ needs.verify.outputs.source_sha }}
@@ -273,12 +318,13 @@ jobs:
           mkdir -p "$RUNNER_TEMP/agnos-runtime"
           gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "dev-md-runtime-$RUNTIME_SOURCE_SHA" --dir "$RUNNER_TEMP/agnos-runtime"
       - name: Require exact-SHA CI, publish six sealed assets, verify public online installation
-        run: python3 rust/ci/runtime/package.py publish
+        run: if [ -n "$RUNTIME_MANUAL_REQUEST" ]; then python3 "$RUNTIME_MANUAL_DRIVER" publish; else python3 rust/ci/runtime/package.py publish; fi
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: runtime-publish-evidence-${{ needs.verify.outputs.source_sha }}
           path: |
+            ${{ env.CI_JOB_TEMP }}/agnos-runtime/manual-request.json
             ${{ env.CI_JOB_TEMP }}/agnos-runtime/online-install.json
             ${{ env.CI_JOB_TEMP }}/agnos-runtime/offline-install.json
           retention-days: 14
