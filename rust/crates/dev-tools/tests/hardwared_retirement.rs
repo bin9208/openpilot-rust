@@ -228,14 +228,14 @@ fn same_native_clis_preserve_all_original_cases_and_live_ipc_in_both_roots() {
                 receipt.verify().unwrap();
             }
         }
-        for index in 0..2 {
+        for (index, checker) in checkers.iter().enumerate() {
             for (name, argv, code) in [
                 ("help", vec![OsString::from("--help")], 0),
                 ("missing", vec![], 2),
                 ("unknown", vec![OsString::from("--unknown")], 2),
             ] {
                 invoke(
-                    &checkers[index],
+                    checker,
                     &argv,
                     cwd,
                     &output.join(format!("{label}-{index}-{name}")),
