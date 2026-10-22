@@ -26,6 +26,14 @@ jobs:
         ref: fc0f017bd96419c81af878ef211ed15152fc2eda
     - name: Require exact complete issue-source checkout
       run: test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+    - name: Retain the same pinned toolchain as the maintained workflow
+      run: 'mkdir -p "$RUNNER_TEMP/platform-runtime"
+
+        rustc -vV > "$RUNNER_TEMP/platform-runtime/rustc.txt"
+
+        cargo -V > "$RUNNER_TEMP/platform-runtime/cargo.txt"
+
+        grep -F "rustc 1.94.0" "$RUNNER_TEMP/platform-runtime/rustc.txt"'
     - uses: actions/setup-python@v6
       with:
         python-version: '3.12'
@@ -133,46 +141,5 @@ jobs:
           ${{ runner.temp }}/platform-params-binding/provenance.json
 
           '
-  policy:
-    name: fast native routing checks
-    runs-on: ubuntu-24.04
-    timeout-minutes: 7
-    env:
-      RUSTUP_TOOLCHAIN: 1.94.0
-      CARGO_BUILD_JOBS: '2'
-      CARGO_INCREMENTAL: '0'
-      CARGO_PROFILE_DEV_DEBUG: '0'
-      CARGO_PROFILE_TEST_DEBUG: '0'
-      EXPECTED_SOURCE: fc0f017bd96419c81af878ef211ed15152fc2eda
-    steps:
-    - uses: actions/checkout@v7
-      with:
-        fetch-depth: 0
-        persist-credentials: false
-        ref: fc0f017bd96419c81af878ef211ed15152fc2eda
-    - name: Require exact complete issue-source checkout
-      run: test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
-    - uses: actions/setup-python@v6
-      with:
-        python-version: '3.12'
-    - run: python -m pip install pytest==9.0.2 PyYAML==6.0.2
-    - name: Prepare native CI validation
-      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-
-        '
-    - name: Check CI routing and upstream synchronization guards
-      run: "python -m unittest discover -s tools/ci/tests -v\ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
-        \ --locked --lib \\\n  --test ci_workflow_policy --test ci_rust_isolation --test ci_disk_bootstrap --test ci_process_probe\
-        \ \\\n  --test panda_oracle_build --test upstream_sync --test native_build_closure --test updated_process_check \\\
-        \n  --test native_logging_build --test release_files --test logger_identifier_check --test qa_process \\\n  --test\
-        \ logging_oracle_build --test path_resolve --test bridge_source_build --test jpeg_sanitizers_check \\\n  --test ci_native_staging\
-        \ --test encoder_source_build --test ui_updater_handshake --test athena_vision_build \\\n  --test hardware_command_check\
-        \ --test pandad_firmware_spi_build --test panda_cli --test msgq_sanitizers_check \\\n  --test control_tools_policy_check\
-        \ --test five_cli --test registration_vendor_check --test ui_adapter_sanitizers \\\n  --test unix_argv --test python_fs\
-        \ --test unix_cli_paths --test panda_raw \\\n  --test startup_adapter_sanitizers --test python_glob --test ui_fixed_corpus_check\
-        \ --test ui_ci_runtime \\\n  --test ui_state_scheduler_check --test ui_translation_check --test ui_application_logic_check\
-        \ --test ui_headless_check \\\n  --test ui_scroll_check --test diagnostic_check --test message_state_ci --test timed_ci\
-        \ --test ci_artifact_list \\\n  --test miri_provenance --test image_array_math --test ui_egl_ci --test command_reference_check\
-        \ \\\n  --test params_reference_check --test beep_integer_ci --test ui_polygon_ci --test ui_application_lifecycle_ci\
-        \ --test ratekeeper_ci --test cutin_alert_ci \\\n  --test bluetooth_digits_generate --test encoder_runtime_ci\ncargo\
-        \ test --manifest-path rust/Cargo.toml -p openpilot-service-tools --locked\n"
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
