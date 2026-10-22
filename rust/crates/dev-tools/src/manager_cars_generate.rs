@@ -513,7 +513,7 @@ where
     fs::create_dir_all(output)?;
     let mut results = Vec::new();
     for (brand, source) in BRANDS.into_iter().zip(&held) {
-        let names = source_names(brand, &source)?;
+        let names = source_names(brand, source)?;
         let text = python_json(&names)?;
         let target = output.join(format!("{brand}.json"));
         if check {

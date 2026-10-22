@@ -7030,3 +7030,24 @@ Parent checks scoped formatting/TOML/diff, nine source hashes and test roster.
 Hosted compilation/Clippy/original comparison and later source-absence/caller
 closure remain pending. generate_manager_cars.py is still present and inventory
 is unchanged.
+
+Predelete39737019024/source345d4b6fb61f6523e92bf3019a7b95d9d87f9866/workflow
+b5ab14ec70a3a830013e82077ae97a3af99127cd passes compilation/strictClippy,
+twelve manager units, both original-backed integrations, two actual LD-input
+variants and twelve exact fresh original/native CLI error controls. It then
+fails the new strace audit on empty per-thread files. Artifact12408390083 is
+7189512B/SHA452bf3a1d6d97debcaf14fef28031b4a2c3fe9b37a6e0221f20771c4a0a06dec;
+parent checks all20961CRCs and raw20tracefiles. Six files are empty (quiet
+threads without an execution event); all nonempty files are within3315B and
+newline-terminated. Candidate now admits empty thread files, preserving strict
+complete-line parsing, exact successful exec roster and rejection of failed,
+foreign or missing executions. A focused exact-one-pass audit regression also
+checks missing/truncated/failed/foreign records. Full three-absent proof still
+has to pass; PID units were after this failure and did not execute.
+
+Generator39737361381/sourcea4797fb639e4b1020dbc797f1e357744e9fa6d97 compiles;
+strictClippy stops on one needless_borrow in source_names(brand,&source).
+Artifact12407852675 is21851B/SHA
+e9424347ce4a6922c807aa25c0e8c9e4f5c2f08a0de6c9557e1abd0bda951bb9/all5CRCs.
+The call now passes the existing borrow directly. Functional original/native
+comparison remains pending; Python source and inventory remain unchanged.

@@ -277,7 +277,7 @@ fn audit_exec(trace: &Path, expected: &[(&Path, usize)]) -> Value {
         let entry = entry.unwrap();
         assert!(entry.file_type().unwrap().is_file());
         let bytes = fs::read(entry.path()).unwrap();
-        assert!(bytes.len() <= 16 * 1024 * 1024 && bytes.ends_with(b"\n"));
+        assert!(bytes.len() <= 16 * 1024 * 1024 && (bytes.is_empty() || bytes.ends_with(b"\n")));
         let text = std::str::from_utf8(&bytes).unwrap();
         for line in text.lines() {
             if !line.contains("execve") {
@@ -301,6 +301,31 @@ fn audit_exec(trace: &Path, expected: &[(&Path, usize)]) -> Value {
         .collect::<BTreeMap<_, _>>();
     assert_eq!(observed, target, "manager QA exec roster changed");
     json!({"programs":observed.iter().map(|(p,n)|json!({"path_bytes":p,"count":n})).collect::<Vec<_>>(),"files":files})
+}
+
+#[test]
+fn manager_exec_audit_accepts_empty_threads_without_losing_execution_checks() {
+    let trace = tempfile::tempdir().unwrap();
+    let process = trace.path().join("trace.1");
+    fs::write(trace.path().join("trace.2"), b"").unwrap();
+    fs::write(&process, b"execve(\"/native\", [\"/native\"], 0x0) = 0\n").unwrap();
+    let expected = [(Path::new("/native"), 1)];
+    let receipt = audit_exec(trace.path(), &expected);
+    assert_eq!(receipt["files"].as_array().unwrap().len(), 2);
+    assert!(receipt["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|row| row["bytes"] == 0));
+    for invalid in [
+        "",
+        "execve(\"/native\", [\"/native\"], 0x0) = 0",
+        "execve(\"/native\", [\"/native\"], 0x0) = -1 ENOENT\n",
+        "execve(\"/foreign\", [\"/foreign\"], 0x0) = 0\n",
+    ] {
+        fs::write(&process, invalid).unwrap();
+        assert!(std::panic::catch_unwind(|| audit_exec(trace.path(), &expected)).is_err());
+    }
 }
 
 fn traced(
