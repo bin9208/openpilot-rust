@@ -262,7 +262,13 @@ Native ISA run39775186997/workflow8ed5e42d3 stops at compile: forwarding literal
 macro tokens hides is_x86_feature_detected named-feature matches. No ISA gate ran.
 Worker replaces forwarding with explicit detector calls, preserving the mapping.
 Repaired recipeSHA7e4499317cdfe1053d7a7d6c9bc2440632e147f1334f6daba523670eec37aa7c
-is published at8bd27349a/sourcebb3b4fdd3. Runtime cached-image candidate remains
+at8bd27349a/sourcebb3b4fdd3 passes39776104353: all5negative units/all44images,
+58028decoded instructions. Artifact12424538606:2062901B/SHA3a3c108b/all41CRCs,
+all44original source/image identities/text extents and complete native receipt
+parent+worker audited. Generated image execution/ABI/numerics are explicitly false.
+Worker owns native container/loader/exporter integration and actual dependency
+vendor manifests. Parent review additionally requires exact linked-library cached
+symbol roster, not only exact container count. Runtime candidate remains
 uncommitted/default-disabled; no driver numerical acceptance or retirement.
 
 Continue model compiler diagnosis, native uploader consumers and route R8; repair actual failures without

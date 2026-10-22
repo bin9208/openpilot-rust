@@ -7713,3 +7713,17 @@ all22CRCs worker-audited. Explicit literal calls repair compilation without chan
 feature mapping. RecipeSHA7e4499317cdfe1053d7a7d6c9bc2440632e147f1334f6daba523670eec37aa7c
 is published at8bd27349a8955d95e83db4bda99060f65c785f72/sourcebb3b4fdd3.
 No ISA/runtime ABI/numerical acceptance is claimed from the failed run.
+
+Repaired native ISA [39776104353](https://github.com/bin9208/openpilot-rust/actions/runs/39776104353),
+workflow8bd27349a/sourcebb3b4fdd3, succeeds. Artifact12424538606:2062901B/SHA
+3a3c108be273db979691a02ac4e599c6881b44c7f8d2c3bc556357773c01c12f/all41CRCs
+parent+worker audited. All44receipt source/image identities match the original
+packaging receipt; alltext extents are within complete images.58,028instructions
+are decoded; actual-host required features are avx,avx2,bmi1,cmov,fma,multibyte-nop.
+Five negative tests reject unknown/unavailable/last-image feature requirements,
+invalid/privileged/external/indirect control flow and decoding constant tails.
+ReceiptSHA67ed192e61b36cb18126c2a3ddf3ea897bd5d7da4569eca3cd34f19c9619c2bb
+explicitly records generated_code_executed=false and ABI_or_numeric_acceptance=false.
+Worker checks168provider hashes and both locked registry archive checksums;
+real Cargo vendor manifests are still required for production integration.
+This is inert ISA admission, not driver numerical or compiler retirement acceptance.
