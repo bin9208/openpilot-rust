@@ -4486,16 +4486,13 @@ jobs:
         run: |
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/platform-msgq-python"
           python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/platform-params-binding"
-      - name: Compare manager initialization, transitions and lifecycle logging
-        run: |
-          python rust/tools/generate_manager_cars.py rust/crates/manager/data/cars --check --binding "$RUNNER_TEMP"/platform-params-binding/params_pyx*.so
       - name: Verify retired manager QA controllers against sealed original observations
         run: |
           set -euo pipefail
           for name in check_manager.py check_manager_logging.py manager_reference.py; do
             test ! -e "rust/tools/$name" && test ! -L "rust/tools/$name"
           done
-          test -f rust/tools/generate_manager_cars.py
+          test ! -e rust/tools/generate_manager_cars.py && test ! -L rust/tools/generate_manager_cars.py
           test -f rust/tools/original_params_binding.py
           test -f openpilot/system/manager/manager.py
           proof="$RUNNER_TEMP/platform-runtime/manager-retirement"
@@ -4503,27 +4500,34 @@ jobs:
           mkdir -p "$proof"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
           cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools \
-            --features manager-qa-native --bin check-manager-qa --bin check-manager --bin check-manager-logging \
+            --features manager-qa-native,manager-cars-native --bin check-manager-qa --bin check-manager --bin check-manager-logging --bin generate-manager-cars \
             > "$proof/build.stdout" 2> "$proof/build.stderr"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools \
-            --features manager-qa-native --lib --test manager_qa --test manager_qa_compat \
-            --test manager_retirement --no-run --message-format=json \
+            --features manager-qa-native,manager-cars-native --lib --test manager_qa --test manager_qa_compat \
+            --test manager_retirement --test manager_cars_generate --no-run --message-format=json \
             > "$proof/compile.jsonl" 2> "$proof/compile.stderr"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo +1.94.0 clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools \
-            --features manager-qa-native --lib --bin check-manager-qa --bin check-manager \
-            --bin check-manager-logging --test manager_qa --test manager_qa_compat \
-            --test manager_retirement -- -D warnings \
+            --features manager-qa-native,manager-cars-native --lib --bin check-manager-qa --bin check-manager \
+            --bin check-manager-logging --bin generate-manager-cars --test manager_qa --test manager_qa_compat \
+            --test manager_retirement --test manager_cars_generate -- -D warnings \
             > "$proof/clippy.stdout" 2> "$proof/clippy.stderr"
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools \
-            --features manager-qa-native --lib manager_qa:: -- --nocapture \
+            --features manager-qa-native,manager-cars-native --lib manager_qa:: -- --nocapture \
             > "$proof/units.stdout" 2> "$proof/units.stderr"
           grep -E '^test result: ok\. 13 passed; 0 failed;' "$proof/units.stdout"
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools \
+            --features manager-qa-native,manager-cars-native --lib manager_cars_generate::tests:: \
+            > "$proof/cars-units.stdout" 2> "$proof/cars-units.stderr"
+          grep -E '^test result: ok\. 4 passed; 0 failed;' "$proof/cars-units.stdout"
           command -v jq >/dev/null
           mapfile -t manager_test_elf < <(jq -r 'select(.reason=="compiler-artifact" and .profile.test==true and .target.name=="manager_retirement") | .executable // empty' "$proof/compile.jsonl")
           test "${#manager_test_elf[@]}" -eq 1
           test -f "${manager_test_elf[0]}"
+          mapfile -t cars_test_elf < <(jq -r 'select(.reason=="compiler-artifact" and .profile.test==true and .target.name=="manager_cars_generate") | .executable // empty' "$proof/compile.jsonl")
+          test "${#cars_test_elf[@]}" -eq 1
+          test -f "${cars_test_elf[0]}"
           printf '%s\n' "${manager_test_elf[0]}" > "$proof/test-elf-path.txt"
           shopt -s nullglob
           bindings=("$RUNNER_TEMP"/platform-params-binding/params_pyx*.so)
@@ -4535,10 +4539,35 @@ jobs:
           export MANAGER_RETIREMENT_BINDING="${bindings[0]}"
           export MANAGER_RETIREMENT_EVIDENCE="$proof/actual"
           export MANAGER_RETIREMENT_REQUIRE_ABSENT=1
+          export MANAGER_CARS_BINARY="$GITHUB_WORKSPACE/rust/target/debug/generate-manager-cars"
+          test -x "$MANAGER_CARS_BINARY"
           providers=("$MANAGER_RETIREMENT_CHECKER" "$MANAGER_RETIREMENT_MANAGER" \
             "$MANAGER_RETIREMENT_LOGGING" "$MANAGER_RETIREMENT_TRACE" \
-            "$MANAGER_RETIREMENT_BINDING" /usr/bin/strace /usr/bin/env "${manager_test_elf[0]}")
+            "$MANAGER_RETIREMENT_BINDING" /usr/bin/strace /usr/bin/env "${manager_test_elf[0]}" "$MANAGER_CARS_BINARY" "${cars_test_elf[0]}")
           sha256sum "${providers[@]}" > "$proof/providers-before.sha256"
+          export MANAGER_CARS_RETIREMENT_ROOT="$GITHUB_WORKSPACE"
+          export MANAGER_CARS_RETIREMENT_BINARY="$MANAGER_CARS_BINARY"
+          export MANAGER_CARS_RETIREMENT_EVIDENCE="$proof/cars-actual"
+          export MANAGER_CARS_RETIREMENT_REQUIRE_ABSENT=1
+          test ! -e "$MANAGER_CARS_RETIREMENT_EVIDENCE"
+          "${cars_test_elf[0]}" manager_car_generator_trace_parser_rejects_unknown_failed_and_incomplete_execs \
+            --exact > "$proof/cars-trace-parser.stdout" 2> "$proof/cars-trace-parser.stderr"
+          grep -Fx 'test manager_car_generator_trace_parser_rejects_unknown_failed_and_incomplete_execs ... ok' "$proof/cars-trace-parser.stdout"
+          grep -E '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$proof/cars-trace-parser.stdout"
+          "${cars_test_elf[0]}" native_car_generator_preserves_original_bytes_in_both_source_states \
+            --ignored --exact --nocapture > "$proof/cars-absence.stdout" 2> "$proof/cars-absence.stderr"
+          grep -Fx 'test native_car_generator_preserves_original_bytes_in_both_source_states ... ok' "$proof/cars-absence.stdout"
+          grep -E '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$proof/cars-absence.stdout"
+          jq -e '.passed == true and .checkout_generator_absent == true and .private_generator_absent == true and .closed_native_execs == 11 and (.closed_native_execs_by_invocation | length) == 11 and ([.closed_native_execs_by_invocation[]] | all(. == 1))' \
+            "$MANAGER_CARS_RETIREMENT_EVIDENCE/result.json" >/dev/null
+          strace -ff -s 32768 -o "$proof/cars-installed.trace" -e trace=execve,execveat \
+            "$MANAGER_CARS_BINARY" rust/crates/manager/data/cars --check \
+            > "$proof/cars-installed.stdout" 2> "$proof/cars-installed.stderr"
+          test "$(sha256sum "$proof/cars-installed.stdout" | cut -d' ' -f1)" = 34742676490c2c6133eb940cff7d61721f2d7cb072978fd052c2376faeda9995
+          grep -h 'execve' "$proof"/cars-installed.trace.* > "$proof/cars-installed.exec"
+          test "$(wc -l < "$proof/cars-installed.exec")" -eq 1
+          grep -F "execve(\"$MANAGER_CARS_BINARY\"," "$proof/cars-installed.exec" | grep -F ' = 0' >/dev/null
+          ! grep -F 'execveat(' "$proof/cars-installed.exec"
           "${manager_test_elf[0]}" manager_exec_audit_accepts_empty_threads_without_losing_execution_checks \
             --exact --nocapture > "$proof/exec-audit-unit.stdout" 2> "$proof/exec-audit-unit.stderr"
           grep -Fx 'test manager_exec_audit_accepts_empty_threads_without_losing_execution_checks ... ok' \
@@ -4551,6 +4580,7 @@ jobs:
           grep -Fx 'test manager_original_observations_survive_three_controller_retirement ... ok' "$proof/retirement.stdout"
           grep -E '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$proof/retirement.stdout"
           test -f "$MANAGER_RETIREMENT_EVIDENCE/result.json"
+          jq -e '.passed == true and .historical_source_count == 3 and .negative_controls == 6 and .historical_generator_present == false and .total_closed_native_exec_attempts == 62 and ([.roots[] | .historical_absent] | all(. == true))' "$MANAGER_RETIREMENT_EVIDENCE/result.json" >/dev/null
           sha256sum "${providers[@]}" > "$proof/providers-after.sha256"
           cmp "$proof/providers-before.sha256" "$proof/providers-after.sha256"
           printf 'workflow_head=%s\nsource_commit=%s\n' "$GITHUB_SHA" "$(git rev-parse HEAD)" > "$proof/source-workflow.txt"

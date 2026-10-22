@@ -141,13 +141,17 @@ three partial baseline entries.
     its live Python manager caller. Native summary's all-runtime retirement
     flag stays false; acceptance here covers the five development tools only.
 
-12. Manager QA candidate83fb19a8c retains all Python originals. Seven full
-    original observations and4ZMQ packets seed three native CLIs with held-file
-    content/identity checks. First39728775823 exposes Cargo-added environment differences after five units/
-    Clippy pass; direct-held-test-ELF retry39729826364 passes expanded original/
-    native CLI and traffic comparison. Complete original capture audit is underway. Fresh original capture
-    39726612260 seals3271repo sources/257opendbc/3495external Python providers.
-    Car-name regeneration and full private-root/source absence remain pending.
+12. Three manager QA Python controllers are deleted and accepted by full
+    platform39742079076/sourceefd4350de plus13disk/78isolation cases.
+    Both absent roots preserve seven original cases/four logs;77raw trace files
+    contain61successful closed native execs. Parent and reviewer audit all8334
+    platform CRCs and4policy CRCs, held providers and original case values.
+    Car-name generator predelete39744327540/source285b12a62 also passes: four
+    generator/thirteen manager units, fresh seven-brand original comparison,
+    same held native ELF in checkout/private-absent roots and11single-exec
+    admissions. The Python generator is now deleted in the candidate with its
+    maintained native caller; actual generator-postdelete platform/policy proof
+    remains pending. Credit covers only the three accepted QA controllers.
 
 ## Evidence reuse and delivery
 

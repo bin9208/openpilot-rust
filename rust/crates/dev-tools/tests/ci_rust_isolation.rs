@@ -1126,15 +1126,25 @@ fn platform_runtime_requires_retired_manager_and_modem_hardwared_proof() {
         "platform-runtime",
         &[
             "rustup toolchain install 1.94.0 --profile minimal --component clippy",
-            "generate_manager_cars.py",
             "for name in check_manager.py check_manager_logging.py manager_reference.py; do",
             "test ! -e \"rust/tools/$name\" && test ! -L \"rust/tools/$name\"",
-            "test -f rust/tools/generate_manager_cars.py",
-            "--features manager-qa-native --bin check-manager-qa --bin check-manager --bin check-manager-logging",
-            "--features manager-qa-native --lib --test manager_qa --test manager_qa_compat",
-            "--test manager_retirement --no-run --message-format=json",
-            "--test manager_retirement -- -D warnings",
-            "--features manager-qa-native --lib manager_qa:: -- --nocapture",
+            "test ! -e rust/tools/generate_manager_cars.py && test ! -L rust/tools/generate_manager_cars.py",
+            "--features manager-qa-native,manager-cars-native --bin check-manager-qa --bin check-manager --bin check-manager-logging",
+            "--features manager-qa-native,manager-cars-native --lib --test manager_qa --test manager_qa_compat",
+            "--test manager_retirement --test manager_cars_generate --no-run --message-format=json",
+            "--test manager_retirement --test manager_cars_generate -- -D warnings",
+            "--features manager-qa-native,manager-cars-native --lib manager_qa:: -- --nocapture",
+            "--bin generate-manager-cars",
+            "manager_cars_generate::tests::",
+            "4 passed; 0 failed;",
+            "13 passed; 0 failed;",
+            "MANAGER_CARS_RETIREMENT_REQUIRE_ABSENT=1",
+            "manager_car_generator_trace_parser_rejects_unknown_failed_and_incomplete_execs",
+            "native_car_generator_preserves_original_bytes_in_both_source_states",
+            ".closed_native_execs == 11",
+            ".total_closed_native_exec_attempts == 62",
+            "\"$MANAGER_CARS_BINARY\" rust/crates/manager/data/cars --check",
+            "34742676490c2c6133eb940cff7d61721f2d7cb072978fd052c2376faeda9995",
             "MANAGER_RETIREMENT_REQUIRE_ABSENT=1",
             "manager_exec_audit_accepts_empty_threads_without_losing_execution_checks",
             "manager_original_observations_survive_three_controller_retirement",
@@ -1183,7 +1193,11 @@ fn platform_runtime_requires_retired_manager_and_modem_hardwared_proof() {
             "retired manager controller reappeared: {name}"
         );
     }
-    assert!(root().join("rust/tools/generate_manager_cars.py").is_file());
+    assert!(
+        fs::symlink_metadata(root().join("rust/tools/generate_manager_cars.py"))
+            .is_err_and(|error| error.kind() == std::io::ErrorKind::NotFound)
+    );
+    assert!(!run.contains("python rust/tools/generate_manager_cars.py"));
     assert!(root().join("openpilot/system/manager/manager.py").is_file());
     assert!(!run.contains("python rust/tools/check_manager.py"));
     assert!(!run.contains("python rust/tools/check_manager_logging.py"));

@@ -15,15 +15,18 @@ seven case values and logging lifecycle results in each root, seven held ELF
 receipts, twelve manager units and the two #484 PID-publication regressions.
 The complete native proof reports61closed native exec attempts. Actual postdelete
 platform/policy run39742079076 checks efd4350de under workflow50e742d10; still
-pending. Inventory remains270/3/3307 until that source-absent gate is audited.
+accepted: all8334platform/4policy CRCs,61closedexecs and both absent roots audited.
+Inventory is273/3/3304. Current generator deletion candidate has not gained credit.
 
 Car generator present-source comparison39739972934/source94758a721 passes:
 artifact12408992459/99676B/SHA
 ef424c1d4bf53973f91645c532167cb4c4a082632cfa8636a0122e51f92c28ad/all95CRCs.
 Original/native/installed seven JSON bodies and stdout match; three units,
 strictClippy and fresh original comparison pass. The generator Python remains
-live; source retirement and its manager-QA retained-pin dependencies are being
-implemented separately. No inventory credit yet.
+accepted in subsequent predelete39744327540/source285b12a62 with feature union,
+4generator+13manager units and11single-native-exec admissions. Generator is now
+deleted with the combined maintained platform proof; actual postdelete full
+platform/policy remains pending. No generator inventory credit yet.
 
 Driver#476 actual nine-term emitted-pairing diagnostic39741736692/source67c21ea2
 under workflowe8f587eb5 passes; artifact12409875993/29665B/SHA
@@ -62,7 +65,7 @@ Local space is83GiB; no local build/functional test/model execution is authorize
 
 ## Accepted inventory and global gates
 
-**270replaced-local /3partial /3307pending of3580 baseline entries.** Additional
+**273replaced-local /3partial /3304pending of3580 baseline entries.** Additional
 helpers/notebooks are separate;37observed embedded execution sites remain pending.
 One previously missed modem reference site is now explicitly recorded as closed;
 it increases recorded closed edges24→25 and does not reduce those37pending sites.

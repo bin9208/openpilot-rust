@@ -7158,3 +7158,69 @@ The historical generator itself is still present; fresh predelete hosted proof
 and actual deletion/maintained caller migration/postdelete proof are pending.
 Progressive per-brand writes preserve original behavior; no atomic rollback
 claim is made. Inventory is unchanged by this candidate.
+
+### Road#482 actual original exceptional-half observations
+
+The corrected immutable-input diagnostic39743854797/source
+ defb9011df3fca924dca41a703b48ce5ff0c51e0/workflow
+23a13ffc1e57560b1d5963e1220f054518f5edd2 completes on natural EPYC9V74;
+second EPYC7763sample skips. Eligible artifact12410064619 is30874373B/SHA
+1b63bb25f60b0980aa8ec288cc19bf6eead84c84ceaedec78b0ccc04e93d1892/all383CRCs;
+skip12409938927 is2748B/SHA
+cd5a9d11402230e84d4f84393689feaebbc3385b32323a129aa30f92646c430c/all4CRCs.
+Parent and worker independently compare all24complete10304Boutputs and all
+eight complete poststates in each of12signed-zero/finite/subnormal/infinity/
+qNaN/sNaN patterns. Each modifies only allocation16bytes9670..9672, both workers
+run on separately cloned eight-buffer sets, and all original/guarded outputs
+match exactly. Unmodified baseline matches frozen9afb2defff4ff29e5bf70e54db32d0d531d5e2b44507c8de652ee2c0dfcb67fe.
+All45held source/provider snapshots agree before/after; FP controls unchanged.
+Observed original element99:half7e01→float7fc02000,fe01→ffc02000,
+7c01→7f802000,fc01→ff802000. Guarded variant matches all four actual bodies.
+Sticky invalid flags are recorded (one sNaN call32→33), not an acceptance rule.
+No NaN payload expectation was authored; no frozen model golden changed.
+This supports the general guarded-copy candidate on the captured actual kernel,
+not every source-level NaN arrangement or the entire affected model corpus.
+The earlier scalar-authored exact-SNaN-copy assertion was a stronger contract;
+its failure remains recorded and is not relabeled a passing numerical test.
+
+The previous39742229755attempt2 eligiblehost failed before numerical execution:
+source ZIP had an unrelated140992208Bfault-builder member above a blanket80MiB
+cap and no PKL. Corrected recipe retains all691sourceZIPCRC/size/hash checks,
+limits selected catalog members only, and extracts the independently pinned
+original PKL/manifest from existing59663776Btracked observations.tar.xz. It does
+not relax source/model pins or execute/unpickle the PKL for this diagnostic.
+
+### Manager three-controller source retirement accepted
+
+Complete maintained platform39742079076/sourceefd4350de600f24dd8fa6e25da6a3db97fbafa73/
+workflow50e742d10da885f60062166d4769fd2240fc47aa passes all manager/IPC/boot,
+modem, EOF/helper lifetime and hardwared gates. Platform artifact12409869474:
+5755013B/SHAcb32015646471634fb85b727dbeca13900e2d4b2fba58e4f09ab331d5096e082/all8334CRCs.
+Policy12409657742:5651B/SHA50eabce58f33ce53ae98b37cdcfd1df23bc2a74c734236af1125f607dca5106c/all4CRCs;
+13disk and78isolation tests pass, preserving542markers/177base aggregate.
+Parent and reviewer verify both actual absent roots' seven cases/four logs,
+seven held ELF receipts and61successful native execs across77raw traces, with
+no Python exec in that native traffic. This closes exactly the three manager
+QA controllers:inventory270→273replaced-local/3partial/3304pending. Later
+optional generator/source-state candidate changes are not relabeled as this
+source's validation. Runtime manager.py/Params/swaglog stay live and pending.
+
+Generator predelete39744327540/source285b12a628e6f05c55d31c990dd573cc3e8037ee/
+workflowbbe2fd9dbd491f05770e85e0f258a30d10e892f7 passes the feature union,
+strictClippy,4generator+13manager units, fresh actual original seven-brand
+exports and same-ELF absent-private proof. Artifact12410961935/SHA
+0efa3ebdf58fb05e4d9e7d55c61d36c7f5c330dbe9146d3d263ce6561fb79a60/all183CRCs;
+all seven original/native JSON bodies and stdout match; eleven named invocations
+have exactly one successful native exec each. Original Python remains solely
+in the comparison lane, absent from private native traffic. Captured hash/FD/
+provider seals agree. After this audit delete generate_manager_cars.py and
+combine its required native proof with the manager platform step, four bins,
+13+4units, generator11/manager62closedexecs and installed data check. Existing
+four reserves/542markers/177base remain. Generator deletion is a candidate;
+no fourth inventory credit before actual complete postdelete platform/policy.
+
+Static compiler rollback review discovered issue#485: offline-llvm-compile
+journals paths without held ownership when removing files after late output
+failure. A foreign path replacement could be deleted by its current Drop.
+No hosted replacement-race reproduction or fix is claimed yet; new tool output
+transactions must not copy that path-only cleanup. Issue stays open.

@@ -2210,9 +2210,7 @@ F03-runtime-model-media-comparators	rust/tools/check_logging_producer.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_logmessaged_native.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_logmessaged_reference.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_lpa.py	pending
-F03-runtime-model-media-comparators	rust/tools/check_manager.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_manager_log_upload.py	pending
-F03-runtime-model-media-comparators	rust/tools/check_manager_logging.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_message_state.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_micd_analysis.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_micd_daemon.py	pending
@@ -2443,7 +2441,6 @@ F03-runtime-model-media-comparators	rust/tools/logmessaged_native.py	pending
 F03-runtime-model-media-comparators	rust/tools/logmessaged_reference.py	pending
 F03-runtime-model-media-comparators	rust/tools/lpa_fixture.py	pending
 F03-runtime-model-media-comparators	rust/tools/lpa_source.py	pending
-F03-runtime-model-media-comparators	rust/tools/manager_reference.py	pending
 F03-runtime-model-media-comparators	rust/tools/model_output_fixtures.py	pending
 F03-runtime-model-media-comparators	rust/tools/model_output_reference.py	pending
 F03-runtime-model-media-comparators	rust/tools/model_startup_reference.py	pending
