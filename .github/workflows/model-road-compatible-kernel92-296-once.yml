@@ -11,15 +11,21 @@ jobs:
   driver-first-kernel-diagnostic:
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 4
       matrix:
         sample:
         - 0
         - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        - 6
+        - 7
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
-      EXPECTED_SOURCE: ad3bf3d260bbb9e3edb00203671ee54127f9c82a
+      EXPECTED_SOURCE: dc50ce5e40774707cdc4623a0255cfb2ff9acf50
       DIAGNOSTIC_SAMPLE: ${{ matrix.sample }}
       RUSTUP_TOOLCHAIN: 1.94.0
       CARGO_BUILD_JOBS: '2'
@@ -34,11 +40,11 @@ jobs:
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
       CPU_COUNT: '2'
       CARGO_PROFILE_TEST_DEBUG: '0'
-      DIAGNOSTIC_ATTEMPT: 20261022-road-compatible-kernel92-01
+      DIAGNOSTIC_ATTEMPT: 20261022-road-compatible-kernel92-02
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: ad3bf3d260bbb9e3edb00203671ee54127f9c82a
+        ref: dc50ce5e40774707cdc4623a0255cfb2ff9acf50
         persist-credentials: false
     - name: Record natural host and observed AVX512 eligibility only
       id: cpu
