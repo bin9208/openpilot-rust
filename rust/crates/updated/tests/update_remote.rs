@@ -346,11 +346,13 @@ fn absent_branch_remote_falls_back_to_origin_despite_other_remote_defaults() {
 }
 
 #[test]
-fn explicit_named_remote_and_supported_ssh_urls_are_preserved() {
+fn explicit_named_remote_and_supported_network_urls_are_preserved() {
     for url in [
         RUST_URL,
         "ssh://git@github.com/fixture/rust.git",
         "git@github.com:fixture/rust.git",
+        "https://git.example/",
+        "git@[2001:db8::1]:repo.git",
     ] {
         let fixture = Fixture::new();
         fixture.branch("dev-md", "rust");

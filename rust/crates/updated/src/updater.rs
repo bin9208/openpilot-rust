@@ -316,23 +316,48 @@ fn supported_remote_url(value: &str) -> bool {
     }
     if value.contains("://") {
         return url::Url::parse(value).is_ok_and(|url| {
-            matches!(url.scheme(), "https" | "http" | "ssh" | "git")
-                && url.host_str().is_some()
-                && url.path().len() > 1
+            matches!(url.scheme(), "https" | "http" | "ssh" | "git") && url.host_str().is_some()
         });
     }
     // Git's scp-style SSH syntax: [user@]host:path. A local path or remote
     // helper (such as ext::command) must not be interpreted as this form.
-    value.split_once(':').is_some_and(|(host, path)| {
-        !host.is_empty()
-            && !matches!(host, "." | "..")
-            && host
+    let host_path = if let Some((user, host_path)) = value.split_once('@') {
+        if user.is_empty()
+            || user.starts_with('-')
+            || !user
                 .bytes()
-                .all(|c| c.is_ascii_alphanumeric() || b"@._-".contains(&c))
-            && !host.starts_with('-')
-            && !path.is_empty()
-            && !path.starts_with(':')
-    })
+                .all(|c| c.is_ascii_alphanumeric() || b"._-".contains(&c))
+        {
+            return false;
+        }
+        host_path
+    } else {
+        value
+    };
+    let path = if let Some(address_path) = host_path.strip_prefix('[') {
+        let Some((address, path)) = address_path.split_once("]:") else {
+            return false;
+        };
+        if address.parse::<std::net::Ipv6Addr>().is_err() {
+            return false;
+        }
+        path
+    } else {
+        let Some((host, path)) = host_path.split_once(':') else {
+            return false;
+        };
+        if host.is_empty()
+            || matches!(host, "." | "..")
+            || host.starts_with('-')
+            || !host
+                .bytes()
+                .all(|c| c.is_ascii_alphanumeric() || b"._-".contains(&c))
+        {
+            return false;
+        }
+        path
+    };
+    !path.is_empty() && !path.starts_with(':')
 }
 fn short(value: &str) -> String {
     value.chars().take(7).collect()
@@ -355,4 +380,50 @@ pub fn remote_head(line: &str) -> Option<(&str, &str)> {
         return None;
     }
     Some((hash, branch))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::supported_remote_url;
+
+    #[test]
+    fn network_urls_accept_repository_roots_and_bracketed_ipv6() {
+        for url in [
+            "https://git.example/",
+            "http://git.example/",
+            "ssh://git@git.example/",
+            "git://git.example/",
+            "git@[2001:db8::1]:repo.git",
+            "[2001:db8::1]:repo.git",
+            "git@[::1]:/srv/git/repo.git",
+            "ssh://git@[2001:db8::1]/repo.git",
+        ] {
+            assert!(supported_remote_url(url), "rejected network URL: {url}");
+        }
+    }
+
+    #[test]
+    fn malformed_ipv6_and_unsupported_or_local_sources_stay_rejected() {
+        for url in [
+            "git@[2001:db8::zz]:repo.git",
+            "git@[2001:db8:::1]:repo.git",
+            "git@[127.0.0.1]:repo.git",
+            "git@[]:repo.git",
+            "git@[2001:db8::1:repo.git",
+            "git@[2001:db8::1]extra:repo.git",
+            "git@[2001:db8::1]:",
+            "git@[2001:db8::1]::helper",
+            "-user@[2001:db8::1]:repo.git",
+            "git@@[2001:db8::1]:repo.git",
+            "@[2001:db8::1]:repo.git",
+            "ext::false",
+            "ftp://git.example/",
+            "file:///repo.git",
+            "/repo.git",
+            "../repo.git",
+            ".:repo.git",
+        ] {
+            assert!(!supported_remote_url(url), "accepted invalid source: {url}");
+        }
+    }
 }
