@@ -390,41 +390,19 @@ pub(super) fn payload(raw: &[u8], codec: &str) -> Result<String> {
             return Err(invalid("source text codec unavailable on Linux"))
         }
         "punycode" => super::punycode::decode(raw)?,
-        "idna" => {
-            if raw.windows(4).any(|v| v == b"xn--") {
-                return Err(Diagnostic::new(
-                    Phase::Capability,
-                    "IDNA ACE labels require original Unicode3.2 nameprep/round-trip validation",
-                ));
-            }
-            // Pinned CPython idna.Codec.decode fast path bypasses nameprep when
-            // no lowercase ACE prefix occurs anywhere in the byte payload.
-            if !raw.is_ascii() {
-                return Err(invalid(
-                    "non-ASCII IDNA payload without a supported ACE path",
-                ));
-            }
-            String::from_utf8(raw.to_vec()).expect("ASCII IDNA payload")
-        }
+        "idna" => super::idna::decode(raw)?,
         "unicode_escape" => escaped(raw, false)?,
         "raw_unicode_escape" => escaped(raw, true)?,
         "utf7" | "utf_7" => super::utf7::decode(raw)?,
         "shift_jis" | "shiftjis" | "sjis" => super::japanese::decode(raw, false)?,
         "cp932" | "ms932" => super::japanese::decode(raw, true)?,
         "koi8_r" | "koi8r" => native_codec(raw, c"KOI8-R")?,
-        // These exact no-state ASCII subsets are supported from the pinned
-        // CPython C decoder branches. Other byte sequences stay unclosed.
-        "euc_jis_2004" | "shift_jis_2004" | "iso2022_jp_2004" | "iso2022_jp_ext" => {
-            if raw
-                .iter()
-                .any(|&b| !b.is_ascii() || matches!(b, 0x1b | 0x0e | 0x0f | b'\\' | b'~'))
-            {
-                return Err(Diagnostic::new(
-                    Phase::Capability,
-                    "this Japanese variant requires its distinct original multibyte/state mapping",
-                ));
-            }
-            String::from_utf8(raw.to_vec()).expect("reviewed no-state ASCII subset")
+        "euc_jp" | "euc_jis_2004" | "euc_jisx0213" => super::japanese_variants::euc(raw, name)?,
+        "shift_jis_2004" | "shift_jisx0213" => {
+            super::japanese_variants::shift(raw, name == "shift_jisx0213")?
+        }
+        "iso2022_jp" | "iso2022_jp_1" | "iso2022_jp_3" | "iso2022_jp_2004" | "iso2022_jp_ext" => {
+            super::japanese_variants::iso2022(raw, name)?
         }
         "hz" if raw.is_ascii() && !raw.contains(&b'~') => {
             String::from_utf8(raw.to_vec()).expect("HZ ASCII without shift introducer")
@@ -433,20 +411,14 @@ pub(super) fn payload(raw: &[u8], codec: &str) -> Result<String> {
         "big5hkscs" => native_codec(raw, c"BIG5-HKSCS")?,
         "cp949" => native_codec(raw, c"CP949")?,
         "cp950" => native_codec(raw, c"CP950")?,
-        "euc_jp" => native_codec(raw, c"EUC-JP")?,
-        "euc_jisx0213" => native_codec(raw, c"EUC-JISX0213")?,
         "euc_kr" => native_codec(raw, c"EUC-KR")?,
         "gb18030" => native_codec(raw, c"GB18030")?,
         "gb2312" => native_codec(raw, c"GB2312")?,
         "gbk" => native_codec(raw, c"GBK")?,
         "hz" => native_codec(raw, c"HZ")?,
-        "iso2022_jp" => native_codec(raw, c"ISO-2022-JP")?,
-        "iso2022_jp_1" => native_codec(raw, c"ISO-2022-JP-1")?,
         "iso2022_jp_2" => native_codec(raw, c"ISO-2022-JP-2")?,
-        "iso2022_jp_3" => native_codec(raw, c"ISO-2022-JP-3")?,
         "iso2022_kr" => native_codec(raw, c"ISO-2022-KR")?,
         "johab" => native_codec(raw, c"JOHAB")?,
-        "shift_jisx0213" => native_codec(raw, c"SHIFT_JISX0213")?,
         "base64_codec" | "bz2_codec" | "hex_codec" | "quopri_codec" | "rot_13" | "uu_codec"
         | "zlib_codec" => {
             return Err(invalid(

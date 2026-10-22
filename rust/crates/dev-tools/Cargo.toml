@@ -2303,3 +2303,7 @@ required-features = ["changed-files-native"]
 [[test]]
 name = "changed_files_lifecycle"
 required-features = ["changed-files-native"]
+
+[[test]]
+name = "changed_files_japanese_variants"
+required-features = ["changed-files-native"]

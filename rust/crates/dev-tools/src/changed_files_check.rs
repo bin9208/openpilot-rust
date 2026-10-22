@@ -2,7 +2,9 @@
 //! Opt-in adapter; maintained Python callers remain until differentials pass.
 mod codec_names;
 mod decode;
+mod idna;
 mod japanese;
+mod japanese_variants;
 mod names15;
 mod process;
 mod punycode;

@@ -1,0 +1,100 @@
+{
+  "repository": "https://github.com/python/cpython",
+  "commit": "e848e4b09ca4bc67c0041c9ce7526dae471d4c36",
+  "version": "3.12.15",
+  "license": "PSF-2.0",
+  "gnu_review": {
+    "repository": "https://github.com/bminor/glibc",
+    "commit": "ef321e23c20eebc6d6fb4044425c00e6df27b05f",
+    "version": "2.39",
+    "implementation_copied": false
+  },
+  "source_data_never_executed": true,
+  "cpython_source_files": {
+    "CPython-LICENSE.txt": {
+      "bytes": 13936,
+      "sha256": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf"
+    },
+    "_codecs_iso2022.c": {
+      "bytes": 35522,
+      "sha256": "f495710505aa93c5610d8c38c543b057416e5508b9fb6337bbae6d2a4b85c707"
+    },
+    "_codecs_jp.c": {
+      "bytes": 20619,
+      "sha256": "e41484049adac46605165e00d5ea22b7ff9eac76519331913526f228b3112696"
+    },
+    "alg_jisx0201.h": {
+      "bytes": 3131,
+      "sha256": "e3d6b89fa67e6e05fe2b59dc9c8690dab7d0357ddef7fbb6e92cc34bebf41c7b"
+    },
+    "cjkcodecs.h": {
+      "bytes": 17493,
+      "sha256": "79b8d3dd8c18a18377d6bc72524bf6e53cdedf5e7e108b6a403a476a8cde862b"
+    },
+    "emu_jisx0213_2000.h": {
+      "bytes": 2777,
+      "sha256": "b8db3dce0aac8d433ea5f3ba057547c52727b9e3391971b278c9eb4cb61a7aca"
+    },
+    "mappings_jisx0213_pair.h": {
+      "bytes": 3862,
+      "sha256": "b01e43c69e8edd8274ba9d6756357bea80a11507b125378927b37c7b443170e4"
+    },
+    "mappings_jp.h": {
+      "bytes": 365550,
+      "sha256": "09012ff9eb963073d42a8bce375c05484219537caa0cc2aa74baa63d5f3f1658"
+    }
+  },
+  "gnu_review_source_files": {
+    "glibc-2.39-euc-jisx0213.c": {
+      "bytes": 14826,
+      "sha256": "b4c86429b650e957af899c7d5482f4f63944a779385d38b7f7095fed3b50d8d1"
+    },
+    "glibc-2.39-gconv-modules": {
+      "bytes": 3916,
+      "sha256": "04a2796255a1fe21adc0b58e5ac5d2674c2a4f2b55ba030381c0b7a5e8ab0cf1"
+    },
+    "glibc-2.39-gconv-modules-extra.conf": {
+      "bytes": 53974,
+      "sha256": "66a58a04bc649608be7dfea12bc204b808c417d50e30bfb2ab090a3aefc89b42"
+    },
+    "glibc-2.39-iso-2022-jp-3.c": {
+      "bytes": 29375,
+      "sha256": "c44d021d6b8056e06d4692e21335073aba75ed6418795b0fa110de4a4dfccb26"
+    },
+    "glibc-2.39-shift_jisx0213.c": {
+      "bytes": 15642,
+      "sha256": "ebf1b4347b465069ad23d05c02da35a440efafba872ab721021dec12b6bbbc51"
+    }
+  },
+  "license_file": "japanese-variant-LICENSE.txt",
+  "format": {
+    "tables": [
+      "jisx0208",
+      "jisx0212",
+      "jisx0213_1_bmp",
+      "jisx0213_2_bmp",
+      "jisx0213_1_emp",
+      "jisx0213_2_emp",
+      "jisx0213_pair"
+    ],
+    "rows": 94,
+    "columns": 94,
+    "first_byte": 33,
+    "last_byte": 126,
+    "unit": "u32 little-endian; 0xffffffff absent; pairs high16 then low16"
+  },
+  "counts": {
+    "jisx0208": 6879,
+    "jisx0212": 6067,
+    "jisx0213_1_bmp": 1880,
+    "jisx0213_2_bmp": 2159,
+    "jisx0213_1_emp": 26,
+    "jisx0213_2_emp": 277,
+    "jisx0213_pair": 25
+  },
+  "output": {
+    "bytes": 247408,
+    "sha256": "7182cb67d8236f35b07be5d9523a86fcc6d5ef14f506d274039740d7a1b5cb36"
+  },
+  "independent_original_capture_status": "not executed; source data is implementation input only, never expected test output"
+}

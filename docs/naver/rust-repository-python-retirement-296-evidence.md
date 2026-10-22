@@ -8286,3 +8286,23 @@ compilation, cleanup and lifecycle behavior remain unaccepted until hosted proof
 Checks between files do not preempt a single parser/read, and inherited process
 groups do not claim setsid escape ownership. Source callers and inventory remain
 unchanged, with no retirement credit.
+
+Japanese variant candidatef3970dcb and IDNA candidate6e0a5f01 are integrated with
+their pinned CPython source/data provenance and PSF licensing. Japanese handling
+adds ten EUC/Shift/ISO2022 variants; IDNA preserves Unicode3.2 nameprep, case-
+sensitive ACE admission and ToASCII round-trip validation. Parent resolves only
+module/test registration overlaps with the Git lifecycle change. No dependency
+or lock change is involved. Scoped formatting/data/diff review is not numerical
+or decoder equivalence: independent original captures are now queued at source
+1d5570e15 (Japanese workflowc84c062898, IDNA workflow01572261b), before any native
+comparison against these domains. Existing full-string/multibyte gaps and source
+retirement gates remain open.
+
+RadarCAN diagnostic39820165858 at461b0bcd0/workflow101899f87 passes the focused
+Chrysler lifecycle case under the unchanged100ms bound. Parent authenticates
+artifact12443449281:29887308bytes/SHA256
+2ff5bb632d04dcb5ccdf2f7c64aff9f6582011b0885330c97cd5e1e44e7d65b9/all220CRCs.
+Relative to last-send start, final ack0.655ms, evidence preparation1.426ms,
+producer exit observed17.831ms, source stop request38.046ms/confirmed38.119ms,
+native request38.120ms/confirmed38.182ms. This successful new observation does
+not diagnose or fix the original intermittent >100ms result; #495 stays open.
