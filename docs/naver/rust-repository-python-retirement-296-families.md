@@ -111,6 +111,16 @@ three partial baseline entries.
    empty-cwd execution, and symlink/hardlink output behavior. Original symbolic
    model definitions, C++/Cython builders and remaining consumers stay pending.
 
+9. HardwareInfo3development tools are deleted97c33434c and accepted by full
+   maintained hardware39710753791 plus corrected native policy39711275087. Both
+   actual/private roots require all3absent, replay136cases/3110observations/
+   70datagrams with same current native ELFs and independent captured expectations.
+   All bootlog/control/amplifier/ASan boundaries pass. Parent verifies full12389
+   ZIP CRCs, complete source/input receipts and selected3028HardwareInfo members.
+   Exact failed-read partial ordering is limited to two verified failures in one
+   case; general keyfile priority/value/wire contracts remain exact. Original
+   HardwareInfo runtime Python and Params/Cython consumers remain separate work.
+
 ## Evidence reuse and delivery
 
 Key reuse to relevant source/fixture/ABI hashes, compiler/provider/target and

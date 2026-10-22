@@ -6306,3 +6306,20 @@ Move those two values to the replay step's env and keep pinned helper bytes.
 Corrected39711589963/workflow61c82092966337c4805d5f0196c5aebef13624c5 runs
 one eligible natural host and explicitly skips three known hosts. Single-call
 artifact audit/interpretation is pending; no numerical production change yet.
+
+### HardwareInfo actual three-source retirement accepted (2026-10-22)
+
+Parent completes full artifact12397456757 audit:162436985B/all12389ZIP CRCs,
+SHA256382b801c8ca8f95d6865c36f046703aaa3978be9c1037f7b1dfa1c24cbd30b6a.
+Retain3028HardwareInfo members. Both full actual/private runs require_retired=true,
+all3tools absent, each136/3110/70, complete974fixture/body pins and identical
+before/after held receipts; same native checker/example and all CLI/runner controls
+pass. Full maintained hardware119601261069 at97c33434c also passes original native
+bootlog/control/amplifier/ASan boundaries. Corrected policies119602929645 at028919c8d
+pass13disk/78isolation and wholefmt; only new reserve classification and unrelated
+feature-gated Hardwared QA behavior differ from97c, retaining unchanged HardwareInfo
+implementation/runtime/capture/Cargo inputs. Reuse the successful full lane.
+Accept exactly3inventory entries:259→262replaced-local,3318→3315pending,3partial
+unchanged. Routing TSV still covers every pending/partial baseline path once.
+Original27HardwareInfo source/provider dependencies and whole-project closure
+remain pending. Generic d610 aarch64119576923156 passes; workspace still runs.

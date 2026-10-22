@@ -22,7 +22,7 @@ SHA/CRC audits; Git retains prior handoffs.
 
 ## Accepted inventory and global gates
 
-**259replaced-local /3partial /3318pending of3580 baseline entries.** Additional
+**262replaced-local /3partial /3315pending of3580 baseline entries.** Additional
 helpers/notebooks are separate;37observed embedded execution sites remain pending.
 The [functional closure ledger](rust-repository-python-retirement-296-families.md)
 and exact pending routing TSV retain ownership/dependencies. No source count is
@@ -38,6 +38,8 @@ inspect actual latest results before acceptance. Previous f913de3aa checkout is
 synthetic merged39b1b08c2079e9b3356be06ddddf9db49551be6, independently same tree.
 Integration39691148113 passes. Rust39691148023 is complete:44successful jobs,
 including generic aarch64119537355478, four failures plus failed aggregate.
+Current d610 generic aarch64119576923156 also passes;46jobs succeed and workspace
+remains running, with known#476 model failure unchanged.
 Failures were workspace formatting/metadata binding (#475), Panda source roster
 (#477, now closed after complete focused proof), old Card policy (#475) and model
 numerics (#476). Fast39691148018 failed old host-staging assertions (#478).
@@ -175,8 +177,15 @@ a,b versus originalb,a in keyfile-read-errors. Both fail with identical diagnost
 before same fallbackc; values/wire match.212721e1b admits only these two failed-read
 orders in this case with exact diagnostics, retaining raw logs/explicit receipt;
 all other ordering remains exact. It also retains source receipts through fallible
-stdout and provisional manifest finalization. Full hosted retry is pending.
-All3original tools remain live; count stays259/3/3318.
+stdout and provisional manifest finalization. Full predelete39709448191 atb0e77aa01 passes; see accepted postdelete below.
+All3original tools are actually deleted97c33434c. Full maintained hardware
+119601261069/run39710753791 passes: both actual/private require3absent, each
+136/3110/70, unchanged input receipts and same native ELFs. Parent audits complete
+162436985B artifact12397456757/all12389CRCs/SHA382b801c8ca8f95d6865c36f046703aaa3978be9c1037f7b1dfa1c24cbd30b6a;
+retains3028HardwareInfo members. Corrected policy39711275087 at028919c8d passes
+13disk/78isolation/wholefmt; four new reserves separately preserve the old177
+entry aggregate/hash and total529 markers. These3entries are accepted:262/3/3315.
+Remaining original HardwareInfo runtime sources/Params binding stay pending.
 
 ## Hardwared candidate in progress
 
@@ -186,7 +195,11 @@ Captured source.json264722B has12cases/891inputs/890expected observations. Paren
 verifies gzip exact equality and19oldGit/current source pins. Native daemon IPC
 artifacts are engineering baseline only, never frozen expected values. New capture,
 trace/live peer leaves, native CLI wrappers and actual/private outer are being
-integrated. Featurehardwared-qa-native uses existing nativeIPC dependencies. All3
+integrated. Firstbuildrepair83a6fdf82 passes4inline+6capture controls but strict
+Clippy fails on multiplier/Copydrops. ce496c303 removes both and preserves exact
+original input order/1000ms receive and5s transition contracts. Retry39711992268
+atce496c303/workflowcd99c6221aebe3d844168174f9dd0485089523dc is running.
+Featurehardwared-qa-native uses existing nativeIPC dependencies. All3
 original tools remain live and pending hosted proof; five original runtime files
 and shared schema/import/Python bindings remain separately pending.
 
