@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      EXPECTED_SOURCE: 83a6fdf8270d8bbaca0cef6e0c598292e05f223d
+      EXPECTED_SOURCE: ce496c303268424a4055bcf03c6d8e73f02d441a
       RUSTUP_TOOLCHAIN: 1.94.0
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
@@ -21,7 +21,7 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 83a6fdf8270d8bbaca0cef6e0c598292e05f223d
+        ref: ce496c303268424a4055bcf03c6d8e73f02d441a
         persist-credentials: false
     - name: Reserve capacity and native prerequisites
       shell: bash
