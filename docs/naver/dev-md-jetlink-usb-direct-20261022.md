@@ -21,3 +21,9 @@
 - GPT-6.1 Sol USB 검토에서 FunctionFS close가 g1을 이미 unbind한 뒤 다시 빈 UDC를 쓰면 AGNOS 커널이 ENODEV를 반환할 수 있음을 확인해, 실제 보유값이 있을 때만 해제한다. [고정 커널 FunctionFS close](https://github.com/commaai/agnos-kernel-sdm845/blob/c368754c26c7b9659de187addc6cccedc6cfb0a0/drivers/usb/gadget/function/f_fs.c#L4461), [configfs unregister](https://github.com/commaai/agnos-kernel-sdm845/blob/c368754c26c7b9659de187addc6cccedc6cfb0a0/drivers/usb/gadget/configfs.c#L283).
 - g1이 미생성/해제 상태라도 ADB watcher가 나중에 소유권을 빼앗지 않도록 기록하고 정지한다. 복원 때 watcher를 먼저 시작하고 원본 service로 현재 AdbEnabled를 재조정한다. 이중 해제, 미생성/해제된 g1, owner 재시작, 설정 변경, 외부 소유자, root 기록 검증을 파일/서비스 fixture에 추가했다. 아직 Actions 실행 전이며 통과를 주장하지 않는다.
 - 일반 archive 복원기는 data_filter의 경로·link 검증을 유지하고 일반 파일 fd로만 정확한 권한을 복원한다. 0664/0444/0555/0644/0755, symlink, escaping/기존 경로 link, 특수 권한·타입, 설치 cwd 검증을 CI에 연결했다. 원래 Rust publisher의 archive/identity gate는 유지한다.
+
+## 빠른 Actions 결과와 생성물
+
+- 최초 소스 `64a56f885ed607cb1d37305943c2da903985a04f`: [39752504852](https://github.com/bin9208/openpilot-rust/actions/runs/39752504852)에서 archive 복원 13개 회귀가 통과했으나 신규 웹 빌드 디스크 예약의 검사 개수 기대값이 기존 26개에 머물러 실패했다. 기존 179개 baseline 예약은 보존하며 웹 512MiB 예약을 별도로 검증하도록 수정했다.
+- 빠른 검사 `084b8096ef1b4089278f4fca91835d559e2d5a51`: [39753010962 / fast checks](https://github.com/bin9208/openpilot-rust/actions/runs/39753010962/job/119738045677) 성공. Python 모델/계약/전환, Android core/runtime, 웹 선택/레거시 값 표시/USB 진단과 일반 archive 복원 검사를 수행했다. 아직 Rust 실행/ARM/AGNOS 검증은 아니다.
+- 같은 Actions 실행의 artifact `12413619026`에서 생성 patch를 받았다. 생성된 `tools.js`와 asset manifest 두 파일만 바뀌었으며 manifest의 tools SHA-256은 `a52d66fb22e8777d483f7e918abce2b0db61fe77a6dc0a3f2c2288f21a4f264e`다. 로컬 빌드는 수행하지 않았다. PR와 보호 브랜치 검사에서는 동일 생성물 재현 후 차이가 없어야 통과한다.
