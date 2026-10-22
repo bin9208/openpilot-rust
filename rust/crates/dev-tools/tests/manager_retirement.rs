@@ -3,7 +3,7 @@
 #![cfg(all(target_os = "linux", feature = "manager-qa-native"))]
 
 use openpilot_dev_tools::qa_process::{CommandSpec, NativeRunner, Runner};
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::{
     collections::BTreeMap,
@@ -173,10 +173,8 @@ fn private_root(checkout: &Path, root: &Path) {
         &root.join("rust/crates/dev-tools/tests/fixtures/manager-qa-original"),
     );
     for name in RETIRED {
-        assert!(
-            fs::symlink_metadata(root.join(name))
-                .is_err_and(|error| { error.kind() == std::io::ErrorKind::NotFound })
-        );
+        assert!(fs::symlink_metadata(root.join(name))
+            .is_err_and(|error| { error.kind() == std::io::ErrorKind::NotFound }));
     }
 }
 
@@ -677,10 +675,8 @@ fn manager_original_observations_survive_three_controller_retirement() {
     )
     .unwrap();
     for historical in RETIRED {
-        assert!(
-            fs::symlink_metadata(private.join(historical))
-                .is_err_and(|e| e.kind() == std::io::ErrorKind::NotFound)
-        );
+        assert!(fs::symlink_metadata(private.join(historical))
+            .is_err_and(|e| e.kind() == std::io::ErrorKind::NotFound));
     }
     for name in REQUIRED {
         assert_eq!(
