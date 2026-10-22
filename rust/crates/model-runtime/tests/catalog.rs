@@ -358,7 +358,14 @@ spec=BundleSpec('driving',(1344,760),original,{'model':'12'*32})
 def enabled(value):
  for key in ['MODEL_LLVM_GUARDED_ADD_BINARY','MODEL_LLVM_GUARDED_ADD_SHA256']:os.environ.pop(key,None)
  if value:os.environ.update(MODEL_LLVM_GUARDED_ADD_BINARY=helper,MODEL_LLVM_GUARDED_ADD_SHA256=digest)
-def snapshot(root):return {str(p.relative_to(root)):p.read_bytes() for p in root.rglob('*') if p.is_file()}
+def snapshot(root):
+ result={}
+ for path in root.rglob('*'):
+  meta=path.lstat()
+  identity=(meta.st_dev,meta.st_ino,meta.st_mode,meta.st_size,meta.st_mtime_ns,meta.st_ctime_ns)
+  content=('symlink',os.readlink(path)) if path.is_symlink() else ('directory',) if path.is_dir() else ('file',path.read_bytes())
+  result[str(path.relative_to(root))]=(identity,content)
+ return result
 def rejected(root):
  before=snapshot(root)
  try:publish(root,(spec,),'cpu')
