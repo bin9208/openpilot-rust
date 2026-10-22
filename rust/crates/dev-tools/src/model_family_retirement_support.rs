@@ -136,6 +136,36 @@ pub fn run(
     receipt: Option<&Path>,
     negative: bool,
 ) -> Captured {
+    run_inner(cli, args, proof, receipt, negative, false)
+}
+
+/// Startup/USB use their independent five-model fixture in ordinary fresh mode.
+/// A driver-only cached request must never leak into those real native CLIs.
+/// Require the explicitly selected catalog to attest disabled cached mode first;
+/// do not silently disable a cached catalog or rewrite any model expectations.
+pub fn run_fresh_family(
+    cli: &Path,
+    args: &[OsString],
+    proof: &Path,
+    receipt: Option<&Path>,
+    negative: bool,
+) -> Captured {
+    let expected = receipt.expect("explicit independent fresh family catalog required");
+    assert!(
+        read_json(expected)["cached_code"].is_null(),
+        "fresh family caller cannot disable an admitted cached catalog"
+    );
+    run_inner(cli, args, proof, receipt, negative, true)
+}
+
+fn run_inner(
+    cli: &Path,
+    args: &[OsString],
+    proof: &Path,
+    receipt: Option<&Path>,
+    negative: bool,
+    fresh_family: bool,
+) -> Captured {
     fs::create_dir(proof).unwrap();
     let argv = std::iter::once(cli.as_os_str().to_owned())
         .chain(args.iter().cloned())
@@ -149,6 +179,16 @@ pub fn run(
     }
     spec.stderr_limit = 1024 * 1024;
     spec.env_remove = vec!["PYTHONPATH".into(), "PYTHONHOME".into()];
+    if fresh_family {
+        for name in [
+            "MODEL_CACHED_CODE_BINARY",
+            "MODEL_CACHED_CODE_SHA256",
+            "MODEL_CACHED_CODE_REQUEST",
+            "MODEL_CACHED_CODE_REQUEST_SHA256",
+        ] {
+            spec.env_remove.push(name.into());
+        }
+    }
     spec.env
         .insert("PATH".to_owned(), "/nonexistent".to_owned());
     if let Some(receipt) = receipt {
@@ -172,7 +212,7 @@ pub fn run(
         "timeout_seconds":spec.timeout.as_secs(),"stream_limit_bytes":spec.stdout_limit,
         "stdout":{"bytes":stdout.len(),"sha256":bytes_sha(&stdout)},
         "stderr":{"bytes":stderr.len(),"sha256":bytes_sha(&stderr)},
-        "environment_overlay":spec.env,"removed_environment":["PYTHONPATH","PYTHONHOME"]}),
+        "environment_overlay":spec.env,"removed_environment":spec.env_remove.iter().map(|key|key.to_string_lossy()).collect::<Vec<_>>()}),
     );
     Captured {
         code: result

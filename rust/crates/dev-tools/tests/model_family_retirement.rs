@@ -14,8 +14,8 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 use support::{
-    absence, pair, pin, read_json, replace, required, run, success, success_usbgpu, text,
-    write_json, Held, OwnedPath,
+    absence, pair, pin, read_json, replace, required, run, run_fresh_family, success,
+    success_usbgpu, text, write_json, Held, OwnedPath,
 };
 
 const COLLECTOR_SOURCE: &str = "2ecf3f6813f601ea52e7a61ccf75219952daefa0";
@@ -374,7 +374,7 @@ fn same_elf_replays_all_three_native_clis_in_both_absent_roots() {
             ("missing", vec![], 2),
             ("unknown", vec![OsString::from("--unknown")], 2),
         ] {
-            let result = run(
+            let result = run_fresh_family(
                 &inputs.binaries.join(name),
                 &args,
                 &proof.join(format!("admission-{name}-{label}")),
@@ -452,7 +452,7 @@ fn same_elf_replays_all_three_native_clis_in_both_absent_roots() {
             let output = lane.join(format!("{kind}-output"));
             let label = format!("root-{number}-{kind}");
             let args = inputs.family_args(source, startup, &output);
-            let result = run(
+            let result = run_fresh_family(
                 &cli,
                 &args,
                 &proof.join(&label),
@@ -524,7 +524,7 @@ fn same_elf_replays_all_three_native_clis_in_both_absent_roots() {
             let bad_output = lane.join(format!("{kind}-bad-policy-output"));
             let mut bad = inputs.family_args(source, startup, &bad_output);
             replace(&mut bad, "--source-policy", "unrecognized-policy");
-            let result = run(
+            let result = run_fresh_family(
                 &cli,
                 &bad,
                 &proof.join(format!("root-{number}-{kind}-bad-policy")),
@@ -538,7 +538,7 @@ fn same_elf_replays_all_three_native_clis_in_both_absent_roots() {
             let foreign = lane.join(format!("{kind}-foreign-output"));
             fs::create_dir(&foreign).unwrap();
             fs::write(foreign.join("report.json"), b"foreign-owned-report").unwrap();
-            let result = run(
+            let result = run_fresh_family(
                 &cli,
                 &inputs.family_args(source, startup, &foreign),
                 &proof.join(format!("root-{number}-{kind}-foreign-output")),
@@ -577,7 +577,7 @@ fn same_elf_replays_all_three_native_clis_in_both_absent_roots() {
                         &inputs.driver_receipt,
                     )
                 };
-                let result = run(
+                let result = (if family { run_fresh_family } else { run })(
                     &cli,
                     &args,
                     &proof.join(format!("root-{number}-negative-{index}-{link}")),
