@@ -34,6 +34,7 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
+mod socket_identity;
 pub(super) const WORKER: &str = "--internal-route-upload-worker";
 #[derive(Debug)]
 pub struct Interrupted(pub i32);
@@ -120,6 +121,11 @@ impl Bootstrap {
 #[serde(tag = "event", rename_all = "snake_case")]
 enum Message {
     Ready,
+    PreserveIpc {
+        path: Vec<u8>,
+        dev: u64,
+        ino: u64,
+    },
     Own {
         path: Vec<u8>,
         dev: u64,
@@ -134,6 +140,7 @@ enum Message {
 pub(super) struct Context {
     pub(super) cancel: Cancel,
     observed: BTreeMap<PathBuf, (u64, u64)>,
+    ipc_preserved: bool,
     probe_pid: Option<Pid>,
     probe_started: bool,
     probe_namespace: Option<HeldPath>,
@@ -237,6 +244,19 @@ impl Context {
     pub(super) fn ipc_root(&self) -> Result<&Path> {
         Ok(&self.ipc_root.as_ref().ok_or("QA IPC root missing")?.path)
     }
+    fn preserve_ipc(&mut self) -> Result<()> {
+        if !self.ipc_preserved {
+            let root = self.ipc_root.as_ref().ok_or("QA IPC root missing")?;
+            let meta = root.held.metadata()?;
+            self.send(&Message::PreserveIpc {
+                path: root.path.as_os_str().as_bytes().into(),
+                dev: meta.dev(),
+                ino: meta.ino(),
+            })?;
+            self.ipc_preserved = true;
+        }
+        Ok(())
+    }
     fn observe_manager(&mut self) -> Result<()> {
         let Some(root) = &self.ipc_root else {
             return Ok(());
@@ -252,10 +272,29 @@ impl Context {
                 continue;
             }
             if let Some(pid) = self.probe_pid {
-                let mut held = HeldPath::new(&path, false)?;
-                held.preserve = true;
-                if descendant_socket(pid, &path)? && held.matches_path()? {
-                    self.own(&held)?;
+                match authenticate_socket(pid, &path) {
+                    Ok(SocketOwner::Owned(candidate)) => {
+                        let held = HeldPath {
+                            path: path.clone(),
+                            held: candidate,
+                            directory: false,
+                            receipt: false,
+                            preserve: true,
+                        };
+                        // The candidate may have been replaced since the kernel query.
+                        let current = held.held.metadata()?;
+                        if (current.dev(), current.ino()) == (meta.dev(), meta.ino())
+                            && held.matches_path()?
+                        {
+                            self.own(&held)?;
+                        }
+                    }
+                    Ok(SocketOwner::Foreign) => self.preserve_ipc()?,
+                    Ok(SocketOwner::Pending) => {}
+                    Err(error) => {
+                        self.preserve_ipc()?;
+                        return Err(error);
+                    }
                 }
             }
         }
@@ -291,6 +330,7 @@ pub(super) fn worker(manager: bool) -> Result<()> {
     let mut context = Context {
         cancel,
         observed: BTreeMap::new(),
+        ipc_preserved: false,
         probe_pid: None,
         probe_started: false,
         probe_namespace: None,
@@ -384,7 +424,31 @@ pub(super) fn capture(spec: &CommandSpec, path: &Path, context: &mut Context) ->
 // A shared pathname is never enough to claim a socket. Match the live kernel
 // socket to an FD in this unreaped probe's owned tree, retaining pidfds while
 // checking ancestry. Ambiguous/unlinked-and-rebound names remain unclaimed.
+enum SocketOwner {
+    Owned(File),
+    Foreign,
+    Pending,
+}
+#[cfg(test)]
 fn descendant_socket(root: Pid, path: &Path) -> Result<bool> {
+    Ok(matches!(
+        authenticate_socket(root, path)?,
+        SocketOwner::Owned(_)
+    ))
+}
+fn authenticate_socket(root: Pid, path: &Path) -> Result<SocketOwner> {
+    // Inspect the held NOFOLLOW node before consulting listener rows. A regular
+    // file or symlink is foreign even when no provider has bound this path yet.
+    let candidate = File::from(rustix::fs::open(
+        path,
+        OFlags::PATH | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+        rustix::fs::Mode::empty(),
+    )?);
+    if rustix::fs::FileType::from_raw_mode(rustix::fs::fstat(&candidate)?.st_mode)
+        != rustix::fs::FileType::Socket
+    {
+        return Ok(SocketOwner::Foreign);
+    }
     let network = fs::read_to_string("/proc/net/unix")?;
     let sockets = network
         .lines()
@@ -399,10 +463,15 @@ fn descendant_socket(root: Pid, path: &Path) -> Result<bool> {
             .then(|| fields[6].to_owned())
         })
         .collect::<Vec<_>>();
-    if sockets.len() != 1 {
-        return Ok(false);
+    if sockets.is_empty() {
+        return Ok(SocketOwner::Pending);
     }
-    let expected = format!("socket:[{}]", sockets[0]);
+    let expected = sockets
+        .iter()
+        .map(|inode| format!("socket:[{inode}]"))
+        .collect::<BTreeSet<_>>();
+    let mut owned_match = false;
+    let mut foreign_match = false;
     let mut queue = vec![(root, None)];
     let mut identities = Vec::new();
     let mut seen = BTreeSet::new();
@@ -420,11 +489,43 @@ fn descendant_socket(root: Pid, path: &Path) -> Result<bool> {
         let directory = format!("/proc/{}", pid.as_raw_pid());
         if let Ok(entries) = fs::read_dir(format!("{directory}/fd")) {
             for entry in entries.flatten() {
-                if fs::read_link(entry.path())
-                    .is_ok_and(|target| target.as_os_str() == std::ffi::OsStr::new(&expected))
-                    && expected_parent.is_none_or(|owner| parent(pid).ok() == Some(owner))
+                let Ok(target) = fs::read_link(entry.path()) else {
+                    continue;
+                };
+                if !expected.contains(&target.to_string_lossy().into_owned())
+                    || expected_parent.is_some_and(|owner| parent(pid).ok() != Some(owner))
                 {
-                    return Ok(true);
+                    continue;
+                }
+                let Some(number) = entry
+                    .file_name()
+                    .to_str()
+                    .and_then(|text| text.parse::<i32>().ok())
+                else {
+                    continue;
+                };
+                let duplicate = match rustix::process::pidfd_getfd(
+                    identities.last().ok_or("owned process identity missing")?,
+                    number,
+                    rustix::process::PidfdGetfdFlags::empty(),
+                ) {
+                    Ok(fd) => fd,
+                    Err(rustix::io::Errno::BADF | rustix::io::Errno::SRCH) => continue,
+                    Err(error) => return Err(error.into()),
+                };
+                let inode = rustix::fs::fstat(&duplicate)?.st_ino;
+                if !expected.contains(&format!("socket:[{inode}]"))
+                    || expected_parent.is_some_and(|owner| parent(pid).ok() != Some(owner))
+                {
+                    continue;
+                }
+                if socket_identity::matches(&duplicate, &candidate)? {
+                    if sockets.len() == 1 {
+                        return Ok(SocketOwner::Owned(candidate));
+                    }
+                    owned_match = true;
+                } else {
+                    foreign_match = true;
                 }
             }
         }
@@ -440,7 +541,11 @@ fn descendant_socket(root: Pid, path: &Path) -> Result<bool> {
             }
         }
     }
-    Ok(false)
+    Ok(if foreign_match && !owned_match {
+        SocketOwner::Foreign
+    } else {
+        SocketOwner::Pending
+    })
 }
 fn direct_children() -> Result<Vec<Pid>> {
     let owner = rustix::process::getpid().as_raw_pid();
@@ -636,6 +741,35 @@ impl Supervisor {
             Message::Ready => {
                 require(!*ready, "duplicate native worker readiness")?;
                 *ready = true;
+            }
+            Message::PreserveIpc { path, dev, ino } => {
+                require(*ready, "preservation before native readiness")?;
+                let path = PathBuf::from(std::ffi::OsString::from_vec(path));
+                let held = self
+                    .resources
+                    .iter_mut()
+                    .find(|resource| resource.directory && resource.path == path)
+                    .ok_or("unowned IPC preservation request")?;
+                let metadata = held.held.metadata()?;
+                require(
+                    (metadata.dev(), metadata.ino()) == (dev, ino),
+                    "IPC preservation identity mismatch",
+                )?;
+                held.preserve = true;
+                let mut record = serde_json::to_vec(&Message::PreserveIpc {
+                    path: path.as_os_str().as_bytes().into(),
+                    dev,
+                    ino,
+                })?;
+                record.push(b'\n');
+                self.journal
+                    .as_mut()
+                    .ok_or("ownership journal missing")?
+                    .write_all(&record)?;
+                self.journal
+                    .as_mut()
+                    .ok_or("ownership journal missing")?
+                    .flush()?;
             }
             Message::Result { text } => {
                 require(*ready, "native result before readiness")?;

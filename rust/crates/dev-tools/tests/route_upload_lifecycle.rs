@@ -714,3 +714,303 @@ fn cancellation_preserves_a_foreign_replacement_of_the_preowned_ipc_root() {
     fs::remove_dir_all(&ipc_root).unwrap();
     fs::remove_dir_all(moved).unwrap();
 }
+
+fn preserved_ipc(output: &Path) -> bool {
+    fs::read_to_string(output.join("ownership.jsonl")).is_ok_and(|text| {
+        text.lines().any(|line| {
+            serde_json::from_str::<Value>(line).is_ok_and(|row| row["event"] == "preserve_ipc")
+        })
+    })
+}
+fn foreign_node(socket: &Path, kind: &str) -> Option<std::os::unix::net::UnixDatagram> {
+    match kind {
+        "datagram" => Some(std::os::unix::net::UnixDatagram::bind(socket).unwrap()),
+        "regular" => {
+            fs::write(socket, b"foreign data").unwrap();
+            None
+        }
+        "closed-stream" => {
+            drop(UnixListener::bind(socket).unwrap());
+            None
+        }
+        _ => unreachable!(),
+    }
+}
+#[test]
+fn replacement_before_first_ack_cannot_claim_a_stale_listener_or_remove_the_foreign_node() {
+    for signal in [Signal::INT, Signal::TERM] {
+        let temporary = tempfile::tempdir().unwrap();
+        let binaries = temporary.path().join("bin");
+        fs::create_dir(&binaries).unwrap();
+        let output = temporary.path().join("output");
+        let records = temporary.path().join("records");
+        let mut checker = Checker::start(
+            true,
+            &binaries,
+            Path::new(FIXTURE),
+            &output,
+            &records,
+            Some("probe-wait-before-bind"),
+        );
+        checker.wait_for(|| records.join("before-bind").exists());
+        let checker_pid = checker.child.as_ref().unwrap().id() as i32;
+        let (worker_pid, worker, _) = live_descendants(checker_pid)
+            .into_iter()
+            .find(|(_, _, exe)| {
+                exe.file_name()
+                    == Path::new(env!("CARGO_BIN_EXE_check-manager-log-upload")).file_name()
+            })
+            .expect("dedicated worker missing");
+
+        pidfd_send_signal(&worker, Signal::STOP).unwrap();
+        checker.wait_for(|| {
+            fs::read_to_string(format!("/proc/{worker_pid}/status"))
+                .is_ok_and(|text| text.lines().any(|line| line.starts_with("State:\tT")))
+        });
+        fs::write(records.join("continue-bind"), b"ready").unwrap();
+        checker.wait_for(|| {
+            records.join("paths.json").exists()
+                && records.join("escaped.json").exists()
+                && records.join("leaf.json").exists()
+        });
+        let paths = read(&records.join("paths.json"));
+        let socket = PathBuf::from(paths["socket"].as_str().unwrap());
+        let namespace = PathBuf::from(paths["namespace"].as_str().unwrap());
+        let ipc_root = PathBuf::from(paths["ipc_root"].as_str().unwrap());
+        assert!(
+            socket_bindings(&output, &socket).is_empty(),
+            "worker observed the socket before the deterministic stop barrier"
+        );
+        for role in ["probe", "escaped", "leaf"] {
+            let row = read(&records.join(format!("{role}.json")));
+            checker.remember_peer(row["pid"].as_i64().unwrap() as i32, &records);
+        }
+        let moved = ipc_root.join("logmessage-original");
+        fs::rename(&socket, &moved).unwrap();
+        let _foreign = foreign_node(&socket, "closed-stream");
+        let metadata = fs::symlink_metadata(&socket).unwrap();
+        let identity = (metadata.dev(), metadata.ino());
+        pidfd_send_signal(&worker, Signal::CONT).unwrap();
+        checker.wait_for(|| {
+            preserved_ipc(&output) || socket_bindings(&output, &socket).contains(&identity)
+        });
+        assert!(
+            !socket_bindings(&output, &socket).contains(&identity),
+            "first observation must not acknowledge a foreign replacement"
+        );
+        assert!(preserved_ipc(&output));
+        pidfd_send_signal(&checker.identity, signal).unwrap();
+        assert_eq!(checker.finish().code(), Some(128 + signal.as_raw()));
+        let after = fs::symlink_metadata(&socket).unwrap();
+        assert_eq!((after.dev(), after.ino()), identity);
+        assert!(!namespace.exists() && !output.join("result.json").exists());
+        fs::remove_file(socket).unwrap();
+        fs::remove_file(moved).unwrap();
+        // A stats leaf may have exited before observation; this is the declared
+        // preserved private namespace, manually disposed only by the test owner.
+        fs::remove_dir_all(ipc_root).unwrap();
+    }
+}
+#[test]
+#[ignore = "hosted actual manager/provider prerequisites required"]
+fn actual_manager_replacements_keep_foreign_datagram_regular_and_closed_stream_nodes() {
+    let binaries = PathBuf::from(
+        std::env::var_os("ROUTE_UPLOAD_LIVE_BINARIES").expect("actual binaries required"),
+    );
+    let probe =
+        PathBuf::from(std::env::var_os("ROUTE_UPLOAD_LIVE_PROBE").expect("actual probe required"));
+    for signal in [Signal::INT, Signal::TERM] {
+        for kind in ["datagram", "regular", "closed-stream"] {
+            let temporary = tempfile::tempdir().unwrap();
+            let output = temporary.path().join("output");
+            let mut checker = Checker::start(
+                true,
+                &binaries,
+                &probe,
+                &output,
+                &temporary.path().join("records"),
+                None,
+            );
+            let checker_pid = checker.child.as_ref().unwrap().id() as i32;
+            let mut peers = Vec::new();
+            checker.wait_for(|| {
+                peers = live_descendants(checker_pid);
+                ["openpilot-manager", "openpilot-logmessaged", "statsd-rs"]
+                    .iter()
+                    .all(|name| {
+                        peers
+                            .iter()
+                            .any(|(_, _, exe)| exe.file_name() == Some(std::ffi::OsStr::new(name)))
+                    })
+                    && fs::read_to_string(output.join("ownership.jsonl")).is_ok_and(|text| {
+                        text.lines().any(|line| {
+                            serde_json::from_str::<Value>(line).is_ok_and(|row| {
+                                row["path"].as_array().is_some_and(|bytes| {
+                                    bytes
+                                        .iter()
+                                        .filter_map(Value::as_u64)
+                                        .map(|b| b as u8)
+                                        .collect::<Vec<_>>()
+                                        .ends_with(b"/logmessage")
+                                })
+                            })
+                        })
+                    })
+            });
+            let (probe_pid, probe_fd, _) = peers
+                .iter()
+                .find(|(_, _, exe)| exe.file_name() == probe.file_name())
+                .expect("actual held probe missing");
+            pidfd_send_signal(probe_fd, Signal::STOP).unwrap();
+            checker.wait_for(|| {
+                fs::read_to_string(format!("/proc/{probe_pid}/status"))
+                    .is_ok_and(|text| text.lines().any(|line| line.starts_with("State:\tT")))
+            });
+            let ownership = fs::read_to_string(output.join("ownership.jsonl")).unwrap();
+            let socket = ownership
+                .lines()
+                .filter_map(|line| serde_json::from_str::<Value>(line).ok())
+                .filter_map(|row| {
+                    row["path"].as_array().map(|bytes| {
+                        PathBuf::from(std::ffi::OsString::from_vec(
+                            bytes.iter().map(|b| b.as_u64().unwrap() as u8).collect(),
+                        ))
+                    })
+                })
+                .find(|path| path.file_name() == Some(std::ffi::OsStr::new("logmessage")))
+                .unwrap();
+            let ipc_root = socket.parent().unwrap().to_path_buf();
+            let moved = ipc_root.join("logmessage-original");
+            fs::rename(&socket, &moved).unwrap();
+            let foreign = foreign_node(&socket, kind);
+            let metadata = fs::symlink_metadata(&socket).unwrap();
+            let identity = (metadata.dev(), metadata.ino());
+            checker.wait_for(|| {
+                preserved_ipc(&output) || socket_bindings(&output, &socket).contains(&identity)
+            });
+            assert!(
+                !socket_bindings(&output, &socket).contains(&identity),
+                "actual foreign replacement must not acquire an ownership acknowledgement: {kind}"
+            );
+            assert!(preserved_ipc(&output));
+            let pids = peers.iter().map(|(pid, _, _)| *pid).collect::<Vec<_>>();
+            checker.peers.extend(peers.into_iter().map(|(_, fd, _)| fd));
+            pidfd_send_signal(&checker.identity, signal).unwrap();
+            assert_eq!(checker.finish().code(), Some(128 + signal.as_raw()));
+            assert!(
+                pids.iter()
+                    .all(|pid| !Path::new(&format!("/proc/{pid}")).exists()),
+                "actual owned descendants remain"
+            );
+            let after = fs::symlink_metadata(&socket).unwrap();
+            assert_eq!(
+                (after.dev(), after.ino()),
+                identity,
+                "foreign endpoint changed: {kind}"
+            );
+            assert!(!output.join("result.json").exists());
+            drop(foreign);
+            fs::remove_file(socket).unwrap();
+            fs::remove_file(moved).unwrap();
+            fs::remove_dir_all(ipc_root).unwrap();
+        }
+    }
+}
+
+#[test]
+fn no_listener_foreign_regular_files_and_broken_symlinks_survive_cancellation() {
+    for signal in [Signal::INT, Signal::TERM] {
+        for endpoint in ["logmessage", "stats"] {
+            for kind in ["regular", "broken-symlink"] {
+                let temporary = tempfile::tempdir().unwrap();
+                let binaries = temporary.path().join("bin");
+                fs::create_dir(&binaries).unwrap();
+                let output = temporary.path().join("output");
+                let records = temporary.path().join("records");
+                let mut checker = Checker::start(
+                    true,
+                    &binaries,
+                    Path::new(FIXTURE),
+                    &output,
+                    &records,
+                    Some("probe-wait-before-bind"),
+                );
+                // Never release this barrier: neither endpoint has an old
+                // listener, and the fixture cannot bind over the foreign node.
+                checker.wait_for(|| records.join("before-bind").exists());
+                let ownership = fs::read_to_string(output.join("ownership.jsonl")).unwrap();
+                let directories = ownership
+                    .lines()
+                    .filter_map(|line| serde_json::from_str::<Value>(line).ok())
+                    .filter(|row| row["event"] == "own" && row["directory"] == true)
+                    .map(|row| {
+                        PathBuf::from(std::ffi::OsString::from_vec(
+                            row["path"]
+                                .as_array()
+                                .unwrap()
+                                .iter()
+                                .map(|byte| byte.as_u64().unwrap() as u8)
+                                .collect(),
+                        ))
+                    })
+                    .collect::<Vec<_>>();
+                let ipc_root = directories
+                    .iter()
+                    .find(|path| {
+                        path.file_name()
+                            .unwrap()
+                            .as_bytes()
+                            .starts_with(b"route-upload-ipc-")
+                    })
+                    .unwrap();
+                let namespace = directories
+                    .iter()
+                    .find(|path| {
+                        path.file_name()
+                            .unwrap()
+                            .as_bytes()
+                            .starts_with(b"msgq_rust-probe-installed-")
+                    })
+                    .unwrap();
+                let node = ipc_root.join(endpoint);
+                let missing = ipc_root.join("never-created-target");
+                if kind == "broken-symlink" {
+                    symlink(&missing, &node).unwrap();
+                } else {
+                    fs::write(&node, b"foreign data").unwrap();
+                }
+                assert!(
+                    !fs::read_to_string("/proc/net/unix")
+                        .unwrap()
+                        .lines()
+                        .any(|line| {
+                            line.split_whitespace()
+                                .last()
+                                .is_some_and(|path| path.as_bytes() == node.as_os_str().as_bytes())
+                        }),
+                    "pre-bind fixture unexpectedly has a kernel socket row"
+                );
+                let before = fs::symlink_metadata(&node).unwrap();
+                let identity = (before.dev(), before.ino());
+                checker.wait_for(|| preserved_ipc(&output));
+                assert!(socket_bindings(&output, &node).is_empty());
+                let probe = read(&records.join("probe.json"));
+                checker.remember_peer(probe["pid"].as_i64().unwrap() as i32, &records);
+                pidfd_send_signal(&checker.identity, signal).unwrap();
+                assert_eq!(checker.finish().code(), Some(128 + signal.as_raw()));
+                let after = fs::symlink_metadata(&node).unwrap();
+                assert_eq!((after.dev(), after.ino()), identity);
+                if kind == "broken-symlink" {
+                    assert!(after.file_type().is_symlink());
+                    assert_eq!(fs::read_link(&node).unwrap(), missing);
+                } else {
+                    assert!(after.is_file());
+                    assert_eq!(fs::read(&node).unwrap(), b"foreign data");
+                }
+                assert!(!namespace.exists() && !output.join("result.json").exists());
+                fs::remove_file(node).unwrap();
+                fs::remove_dir(ipc_root).unwrap();
+            }
+        }
+    }
+}

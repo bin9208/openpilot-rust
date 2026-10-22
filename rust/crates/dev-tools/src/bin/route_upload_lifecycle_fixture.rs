@@ -60,7 +60,11 @@ fn role() -> Result<()> {
         hold();
         return Ok(());
     }
-    if mode == "probe-escape" || mode == "probe-early-namespace" || mode == "probe-rebind" {
+    if mode == "probe-escape"
+        || mode == "probe-early-namespace"
+        || mode == "probe-rebind"
+        || mode == "probe-wait-before-bind"
+    {
         let managed = PathBuf::from(std::env::args_os().nth(1).ok_or("managed output missing")?);
         let namespace = PathBuf::from(
             std::env::var_os("ROUTE_UPLOAD_QA_NAMESPACE").ok_or("owned namespace missing")?,
@@ -86,6 +90,16 @@ fn role() -> Result<()> {
         let ipc_root = PathBuf::from(
             std::env::var_os("ROUTE_UPLOAD_QA_IPC_ROOT").ok_or("QA IPC root missing")?,
         );
+        if mode == "probe-wait-before-bind" {
+            fs::write(records.join("before-bind"), b"ready")?;
+            let deadline = Instant::now() + Duration::from_secs(10);
+            while !records.join("continue-bind").exists() {
+                if Instant::now() >= deadline {
+                    return Err("test bind barrier deadline".into());
+                }
+                thread::sleep(Duration::from_millis(5));
+            }
+        }
         let socket = ipc_root.join("logmessage");
         let _log = UnixListener::bind(&socket)?;
         let stats_path = ipc_root.join("stats");
