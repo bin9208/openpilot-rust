@@ -36,10 +36,16 @@ execution. Local checkout validation remains syntax/format/diff only.
 
 ## Evidence and limitations
 
-The preliminary local capability probe is run39844532155, source
-bba2408fb30c840906cc18de74273d1866b783f8. It is queued behind other authorized
-local work at the time of writing. No host dependency install, build, functional
-check or ARM execution has run locally on the workstation.
+The preliminary capability request39844532155 was cancelled before execution.
+The focused [run39847632228](https://github.com/bin9208/openpilot-rust/actions/runs/39847632228),
+source6a8e1c4c8c24d6e98ba404885c789e99476f16a3, executed on bin-actions.
+The baseline-red routing regression passed, and all seven new local-runner policy
+tests passed. The retained suite ran86 tests with31 errors, all caused by the
+focused workflow omitting Node.js from PATH. The regular CI already sets up
+Node24; the focused workflow now uses the same setup. This is a validation
+configuration error, not runner instability. The failed policy job prevented ARM
+execution; no ARM functional success is claimed. No functional checks or builds
+have run on the workstation.
 
 The ARM execution transport uses an official Ubuntu Base ARM64 rootfs and the
 existing pinned Python 3.12.14 / Rust 1.94.0 tools. Downloads are hash pinned.
