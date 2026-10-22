@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "origin": "Actual original Python runtime observations; no native daemon-generated expected values",
+  "source": "67f099bffbdda2396ea2f64e1f168a76ce19d560",
+  "workflow": "72bfd4d8b11903d34237982ee0c2bb0f0ec584bf",
+  "run": 39770735490,
+  "artifact": 12422761878,
+  "artifact_bytes": 543998,
+  "artifact_sha256": "69f9c16983a0699d7478455016b94dade68374e346b72a12a1e669354ad8abee",
+  "file": "source-observations.json",
+  "bytes": 124406,
+  "sha256": "30f9e1f21c47cd9bcefcc161456e1df9984338cc2a2e940eabb8dce0a97a6176",
+  "scenarios": {
+    "timeouts": 10,
+    "fault": 30,
+    "params": 14
+  },
+  "native_functionality_accepted": false,
+  "original_helpers_retired": false
+}

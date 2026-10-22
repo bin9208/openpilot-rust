@@ -1,0 +1,3495 @@
+{
+  "version": 1,
+  "source_pins": {
+    "rust/tools/check_uploader_daemon.py": "1276e801ea79cd68142d362c4e31eb6c3cd5820404c3e1503cab3bc19358601c",
+    "rust/tools/check_uploader_interrupted.py": "c08676ad7b68c063e427f8cc90e2d9fd6edb0c4369f8704b39f6e458bdb6bf23",
+    "rust/tools/check_uploader_http_interrupted.py": "94318a796d6f1b2bb75c8e8b5d5bf290fa90bf035efb2e541b7cb2edf9eddc77",
+    "rust/tools/check_uploader_timeouts.py": "10a447b0672becd978f0647bf18b335413b39d6826aed60966bf644c9d5d25e1",
+    "rust/tools/check_uploader_log_fault.py": "4daa7396db6927414ca4088705390e74a5f2264829386db4e74189ba546ef3fc",
+    "rust/tools/check_params_string_uploader.py": "6444445db87f1ea109eeb7cfe8c5da7f0e98e7d5e57934d201d8fb6b334fe580",
+    "rust/tools/check_interrupted_send.py": "1d9259308fbf326d2914ab403bbcd6a82cc7a88cbde7fc0a6a3fcd316b114951",
+    "rust/tools/fixtures/http/interrupted_read.c": "8d959c1f96ab054037c7a47ec88fa4e5ad192eafc1792c5ae9d243acad00eb59",
+    "rust/tools/zmq_send_boundary.c": "5157388ef7ae3b9a026f138b34ec7f8ced48d76de0e20054b2ef0b9b5728eddd",
+    "rust/tools/original_params_binding.py": "b5fa10da96aecca63bafef0c03f6ddf9fe5fde89683f10e70742b4e919c38457",
+    "rust/tools/build_params_python.py": "7a1a16a636190d3bc2a8cedd4d81567f0c6db6b382c33cbe03e3ba40a43a5552",
+    "rust/tools/build_msgq_python.py": "81e31b421333794c2101d2d3dfb52280a031e4a35b69a9dc7f5f53b8762d8c18",
+    "rust/crates/uploader/examples/uploader_log_fault.rs": "a4309aa3903eeaa9ce4ca54cbcaec479df64237a44f2d5e9e37714c3bb18e120",
+    "rust/crates/uploader/examples/uploader_trace.rs": "8eaf25485aadab61739685e0508a3b2b0279e6f90a4a13f6a23b683e23d998ae",
+    "rust/tools/check_uploader.py": "b90a41b13ed1a9a99e23c771feaea3ad97ff9999c394e309e9d714f69f10a291",
+    "rust/tools/check_uploader_logging.py": "bdac9f00bbb0434a81f535aac7aa1b95007fd80a28aa52b4ede1060bb17ff637",
+    "rust/tools/logmessaged_native.py": "3366e64eb36b0bad9b10023c46217f61c66aae0fe823120ae23d597d2456c872",
+    "rust/tools/logmessaged_reference.py": "ce6d6764911daaab1e9e5ce70152d9f5efc9b5ea006482064bb8192d36f735e3",
+    "openpilot/system/loggerd/uploader.py": "8af80c2411a3303d9f3e9e2255dd0732177d9af280abab6e7f568c7576e3a02e",
+    "openpilot/system/loggerd/xattr_cache.py": "35b6460ce0d1ea99066d86d6e81ef10edcd989a2f0967f07a8bae3957720e631",
+    "openpilot/common/api.py": "10c6b0673654a798d7d32591dc5b67f39650aed086b812aff8ff62ae64da9177",
+    "openpilot/common/utils.py": "b1cc68b63cff1386ba397c0cc527dbb38fb50b154043ffcb066ed7acce65ec83",
+    "openpilot/common/logging_extra.py": "ce9b3b3d8498d76e1c4c0352a3e98e72759bb7f367ff8629c1329c46040595c3"
+  },
+  "origin": "actual original Python runtime lanes only; daemon/interrupt controller traffic is separate evidence",
+  "timeouts": [
+    {
+      "stage": "get-headers",
+      "mode": "late",
+      "implementation": "python",
+      "elapsed": 10.09292379499999,
+      "result": {
+        "files": [
+          [
+            "qlog",
+            "route--0/qlog"
+          ]
+        ],
+        "next": [
+          "qlog",
+          "route--0/qlog"
+        ],
+        "results": [
+          false
+        ],
+        "last": "",
+        "events": [
+          "upload_start",
+          "upload_failed"
+        ]
+      },
+      "attribute": null,
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "time": 343.028493229
+        }
+      ]
+    },
+    {
+      "stage": "get-headers",
+      "mode": "stall",
+      "implementation": "python",
+      "elapsed": 10.060080878999997,
+      "result": {
+        "files": [
+          [
+            "qlog",
+            "route--0/qlog"
+          ]
+        ],
+        "next": [
+          "qlog",
+          "route--0/qlog"
+        ],
+        "results": [
+          false
+        ],
+        "last": "",
+        "events": [
+          "upload_start",
+          "upload_failed"
+        ]
+      },
+      "attribute": null,
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "time": 343.069355137
+        }
+      ]
+    },
+    {
+      "stage": "get-body",
+      "mode": "late",
+      "implementation": "python",
+      "elapsed": 10.075189198999965,
+      "result": {
+        "files": [
+          [
+            "qlog",
+            "route--0/qlog"
+          ]
+        ],
+        "next": [
+          "qlog",
+          "route--0/qlog"
+        ],
+        "results": [
+          false
+        ],
+        "last": "",
+        "events": [
+          "upload_start",
+          "upload_failed"
+        ]
+      },
+      "attribute": null,
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "time": 343.031671181
+        }
+      ]
+    },
+    {
+      "stage": "get-body",
+      "mode": "stall",
+      "implementation": "python",
+      "elapsed": 10.047354460999998,
+      "result": {
+        "files": [
+          [
+            "qlog",
+            "route--0/qlog"
+          ]
+        ],
+        "next": [
+          "qlog",
+          "route--0/qlog"
+        ],
+        "results": [
+          false
+        ],
+        "last": "",
+        "events": [
+          "upload_start",
+          "upload_failed"
+        ]
+      },
+      "attribute": null,
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "time": 343.110170566
+        }
+      ]
+    },
+    {
+      "stage": "put-headers",
+      "mode": "late",
+      "implementation": "python",
+      "elapsed": 10.051582874000019,
+      "result": {
+        "files": [
+          [
+            "qlog",
+            "route--0/qlog"
+          ]
+        ],
+        "next": [
+          "qlog",
+          "route--0/qlog"
+        ],
+        "results": [
+          false
+        ],
+        "last": "",
+        "events": [
+          "upload_start",
+          "upload_failed"
+        ]
+      },
+      "attribute": null,
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "time": 353.093258486
+        },
+        {
+          "method": "PUT",
+          "path": "/put",
+          "body_hex": "28b52ffd006001040011283f566d849bb2c9e0f70e253c536a8198afc6ddf40b223950677e95acc3daf1081f364d647b92a9c0d7ee051c334a61788fa6bdd4eb021930475e758ca3bad1e8ff162d445b7289a0b7cee5fc132a41586f869db4cbe2f910273e556c839ab1c8dff60d243b52698097aec5dcf30a21384f667d94abc2d9f0071e354c637a",
+          "time": 353.097531481
+        }
+      ]
+    },
+    {
+      "stage": "put-headers",
+      "mode": "stall",
+      "implementation": "python",
+      "elapsed": 10.060849451000024,
+      "result": {
+        "files": [
+          [
+            "qlog",
+            "route--0/qlog"
+          ]
+        ],
+        "next": [
+          "qlog",
+          "route--0/qlog"
+        ],
+        "results": [
+          false
+        ],
+        "last": "",
+        "events": [
+          "upload_start",
+          "upload_failed"
+        ]
+      },
+      "attribute": null,
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "time": 353.600198402
+        },
+        {
+          "method": "PUT",
+          "path": "/put",
+          "body_hex": "28b52ffd006001040011283f566d849bb2c9e0f70e253c536a8198afc6ddf40b223950677e95acc3daf1081f364d647b92a9c0d7ee051c334a61788fa6bdd4eb021930475e758ca3bad1e8ff162d445b7289a0b7cee5fc132a41586f869db4cbe2f910273e556c839ab1c8dff60d243b52698097aec5dcf30a21384f667d94abc2d9f0071e354c637a",
+          "time": 353.610136159
+        }
+      ]
+    },
+    {
+      "stage": "put-body",
+      "mode": "late",
+      "implementation": "python",
+      "elapsed": 10.092549130999998,
+      "result": {
+        "files": [
+          [
+            "qlog",
+            "route--0/qlog"
+          ]
+        ],
+        "next": [
+          "qlog",
+          "route--0/qlog"
+        ],
+        "results": [
+          false
+        ],
+        "last": "",
+        "events": [
+          "upload_start",
+          "upload_failed"
+        ]
+      },
+      "attribute": null,
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "time": 353.666484548
+        },
+        {
+          "method": "PUT",
+          "path": "/put",
+          "body_hex": "28b52ffd006001040011283f566d849bb2c9e0f70e253c536a8198afc6ddf40b223950677e95acc3daf1081f364d647b92a9c0d7ee051c334a61788fa6bdd4eb021930475e758ca3bad1e8ff162d445b7289a0b7cee5fc132a41586f869db4cbe2f910273e556c839ab1c8dff60d243b52698097aec5dcf30a21384f667d94abc2d9f0071e354c637a",
+          "time": 353.703984788
+        }
+      ]
+    },
+    {
+      "stage": "put-body",
+      "mode": "stall",
+      "implementation": "python",
+      "elapsed": 10.058957268999961,
+      "result": {
+        "files": [
+          [
+            "qlog",
+            "route--0/qlog"
+          ]
+        ],
+        "next": [
+          "qlog",
+          "route--0/qlog"
+        ],
+        "results": [
+          false
+        ],
+        "last": "",
+        "events": [
+          "upload_start",
+          "upload_failed"
+        ]
+      },
+      "attribute": null,
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "time": 353.704911965
+        },
+        {
+          "method": "PUT",
+          "path": "/put",
+          "body_hex": "28b52ffd006001040011283f566d849bb2c9e0f70e253c536a8198afc6ddf40b223950677e95acc3daf1081f364d647b92a9c0d7ee051c334a61788fa6bdd4eb021930475e758ca3bad1e8ff162d445b7289a0b7cee5fc132a41586f869db4cbe2f910273e556c839ab1c8dff60d243b52698097aec5dcf30a21384f667d94abc2d9f0071e354c637a",
+          "time": 353.7088965
+        }
+      ]
+    },
+    {
+      "stage": "get-body",
+      "mode": "progress",
+      "implementation": "python",
+      "elapsed": 11.04041826599996,
+      "result": {
+        "files": [
+          [
+            "qlog",
+            "route--0/qlog"
+          ]
+        ],
+        "next": [
+          "qlog",
+          "route--0/qlog"
+        ],
+        "results": [
+          true
+        ],
+        "last": "route--0/qlog",
+        "events": [
+          "upload_start",
+          "upload_success"
+        ]
+      },
+      "attribute": "31",
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "time": 363.162618544
+        },
+        {
+          "method": "PUT",
+          "path": "/put",
+          "body_hex": "28b52ffd006001040011283f566d849bb2c9e0f70e253c536a8198afc6ddf40b223950677e95acc3daf1081f364d647b92a9c0d7ee051c334a61788fa6bdd4eb021930475e758ca3bad1e8ff162d445b7289a0b7cee5fc132a41586f869db4cbe2f910273e556c839ab1c8dff60d243b52698097aec5dcf30a21384f667d94abc2d9f0071e354c637a",
+          "time": 374.167100622
+        }
+      ]
+    },
+    {
+      "stage": "put-body",
+      "mode": "progress",
+      "implementation": "python",
+      "elapsed": 11.038462838999976,
+      "result": {
+        "files": [
+          [
+            "qlog",
+            "route--0/qlog"
+          ]
+        ],
+        "next": [
+          "qlog",
+          "route--0/qlog"
+        ],
+        "results": [
+          true
+        ],
+        "last": "route--0/qlog",
+        "events": [
+          "upload_start",
+          "upload_success"
+        ]
+      },
+      "attribute": "31",
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "time": 363.775325802
+        },
+        {
+          "method": "PUT",
+          "path": "/put",
+          "body_hex": "28b52ffd006001040011283f566d849bb2c9e0f70e253c536a8198afc6ddf40b223950677e95acc3daf1081f364d647b92a9c0d7ee051c334a61788fa6bdd4eb021930475e758ca3bad1e8ff162d445b7289a0b7cee5fc132a41586f869db4cbe2f910273e556c839ab1c8dff60d243b52698097aec5dcf30a21384f667d94abc2d9f0071e354c637a",
+          "time": 363.777222771
+        }
+      ]
+    }
+  ],
+  "fault": [
+    {
+      "name": "normal",
+      "original": true,
+      "original_collector": true,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/normal/source-original-collector/input.json"
+      ],
+      "exit_code": 0,
+      "observation": {
+        "status": "Success",
+        "error": null,
+        "delay": 0.1,
+        "last": "route--0/qlog",
+        "attempts": [
+          "upload_start",
+          "debug_url",
+          "upload_success"
+        ],
+        "fired": false,
+        "saturated": false
+      },
+      "marked": true,
+      "http": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "headers": {
+            "Host": "127.0.0.1:36609",
+            "User-Agent": "openpilot-0.11.1",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "Authorization": "JWT eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGl0eSI6IjAwMDAwMDAwMDAwMDAwMDAiLCJuYmYiOjE3OTI2Njg3NTQsImlhdCI6MTc5MjY2ODc1NCwiZXhwIjoxNzkyNjcyMzU0fQ.1VNZ9hpu-90RJpwxzooGjMhbn8hSIdPxJHpGR0xRWJkcQ-z7PmiQ0k2yBQBWnfHeLN44CaMEvI98Uikw5nRIPQ"
+          },
+          "body_hex": ""
+        },
+        {
+          "method": "PUT",
+          "path": "/put",
+          "headers": {
+            "Host": "127.0.0.1:36609",
+            "User-Agent": "python-requests/2.34.2",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "X-Fixture": "synthetic",
+            "Content-Length": "137"
+          },
+          "body_hex": "28b52ffd006001040011283f566d849bb2c9e0f70e253c536a8198afc6ddf40b223950677e95acc3daf1081f364d647b92a9c0d7ee051c334a61788fa6bdd4eb021930475e758ca3bad1e8ff162d445b7289a0b7cee5fc132a41586f869db4cbe2f910273e556c839ab1c8dff60d243b52698097aec5dcf30a21384f667d94abc2d9f0071e354c637a"
+        }
+      ],
+      "disk_records": 2,
+      "records": [
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-xhdimj8y/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 1,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10166,
+          "thread": 140669793516416,
+          "threadName": "MainThread",
+          "created": 1792668754.2145746
+        },
+        {
+          "msg": "upload_url v1.4 http://127.0.0.1:36609/put {'X-Fixture': 'synthetic'}",
+          "ctx": {},
+          "level": "DEBUG",
+          "levelnum": 10,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 188,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10166,
+          "thread": 140669793516416,
+          "threadName": "MainThread",
+          "created": 1792668754.2238946
+        },
+        {
+          "msg": {
+            "event": "upload_success",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-xhdimj8y/logs/route--0/qlog",
+            "sz": 128,
+            "content_length": 137,
+            "network_type": 1,
+            "metered": false,
+            "speed": 0.010344213911112265
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 200,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10166,
+          "thread": 140669793516416,
+          "threadName": "MainThread",
+          "created": 1792668754.228305
+        }
+      ]
+    },
+    {
+      "name": "normal",
+      "original": true,
+      "original_collector": false,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/normal/source-rust-collector/input.json"
+      ],
+      "exit_code": 0,
+      "observation": {
+        "status": "Success",
+        "error": null,
+        "delay": 0.1,
+        "last": "route--0/qlog",
+        "attempts": [
+          "upload_start",
+          "debug_url",
+          "upload_success"
+        ],
+        "fired": false,
+        "saturated": false
+      },
+      "marked": true,
+      "http": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "headers": {
+            "Host": "127.0.0.1:33145",
+            "User-Agent": "openpilot-0.11.1",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "Authorization": "JWT eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGl0eSI6IjAwMDAwMDAwMDAwMDAwMDAiLCJuYmYiOjE3OTI2Njg3NTUsImlhdCI6MTc5MjY2ODc1NSwiZXhwIjoxNzkyNjcyMzU1fQ.WhtNlmnqadBXu0JISm25xIrXC2emD691D5BSRqQuhiQtkQaMHx4kYzZ0La9iqk8lKZBI0oZ4xeYbiGkSG1XvXQ"
+          },
+          "body_hex": ""
+        },
+        {
+          "method": "PUT",
+          "path": "/put",
+          "headers": {
+            "Host": "127.0.0.1:33145",
+            "User-Agent": "python-requests/2.34.2",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "X-Fixture": "synthetic",
+            "Content-Length": "137"
+          },
+          "body_hex": "28b52ffd006001040011283f566d849bb2c9e0f70e253c536a8198afc6ddf40b223950677e95acc3daf1081f364d647b92a9c0d7ee051c334a61788fa6bdd4eb021930475e758ca3bad1e8ff162d445b7289a0b7cee5fc132a41586f869db4cbe2f910273e556c839ab1c8dff60d243b52698097aec5dcf30a21384f667d94abc2d9f0071e354c637a"
+        }
+      ],
+      "disk_records": 2,
+      "records": [
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-ayj1kbe0/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 1,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10198,
+          "thread": 140094213573504,
+          "threadName": "MainThread",
+          "created": 1792668755.6385217
+        },
+        {
+          "msg": "upload_url v1.4 http://127.0.0.1:33145/put {'X-Fixture': 'synthetic'}",
+          "ctx": {},
+          "level": "DEBUG",
+          "levelnum": 10,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 188,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10198,
+          "thread": 140094213573504,
+          "threadName": "MainThread",
+          "created": 1792668755.6459036
+        },
+        {
+          "msg": {
+            "event": "upload_success",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-ayj1kbe0/logs/route--0/qlog",
+            "sz": 128,
+            "content_length": 137,
+            "network_type": 1,
+            "metered": false,
+            "speed": 0.012840527027707395
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 200,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10198,
+          "thread": 140094213573504,
+          "threadName": "MainThread",
+          "created": 1792668755.6497245
+        }
+      ]
+    },
+    {
+      "name": "eagain",
+      "original": true,
+      "original_collector": true,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/eagain/source-original-collector/input.json"
+      ],
+      "exit_code": 0,
+      "observation": {
+        "status": "Success",
+        "error": null,
+        "delay": 0.1,
+        "last": "route--0/qlog",
+        "attempts": [
+          "upload_start",
+          "debug_url",
+          "upload_success"
+        ],
+        "fired": false,
+        "saturated": true
+      },
+      "marked": true,
+      "http": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "headers": {
+            "Host": "127.0.0.1:41249",
+            "User-Agent": "openpilot-0.11.1",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "Authorization": "JWT eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGl0eSI6IjAwMDAwMDAwMDAwMDAwMDAiLCJuYmYiOjE3OTI2Njg3NTcsImlhdCI6MTc5MjY2ODc1NywiZXhwIjoxNzkyNjcyMzU3fQ.x0BhkqB7js52oxMnRtqPWMOWj0eIgNGXgPayCfjZAPw7DlB52HZ1sjCpobeysZkBU7GTB_ZqHVqubjjY2fF3zg"
+          },
+          "body_hex": ""
+        },
+        {
+          "method": "PUT",
+          "path": "/put",
+          "headers": {
+            "Host": "127.0.0.1:41249",
+            "User-Agent": "python-requests/2.34.2",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "X-Fixture": "synthetic",
+            "Content-Length": "137"
+          },
+          "body_hex": "28b52ffd006001040011283f566d849bb2c9e0f70e253c536a8198afc6ddf40b223950677e95acc3daf1081f364d647b92a9c0d7ee051c334a61788fa6bdd4eb021930475e758ca3bad1e8ff162d445b7289a0b7cee5fc132a41586f869db4cbe2f910273e556c839ab1c8dff60d243b52698097aec5dcf30a21384f667d94abc2d9f0071e354c637a"
+        }
+      ],
+      "disk_records": 0,
+      "records": []
+    },
+    {
+      "name": "eagain",
+      "original": true,
+      "original_collector": false,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/eagain/source-rust-collector/input.json"
+      ],
+      "exit_code": 0,
+      "observation": {
+        "status": "Success",
+        "error": null,
+        "delay": 0.1,
+        "last": "route--0/qlog",
+        "attempts": [
+          "upload_start",
+          "debug_url",
+          "upload_success"
+        ],
+        "fired": false,
+        "saturated": true
+      },
+      "marked": true,
+      "http": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "headers": {
+            "Host": "127.0.0.1:35637",
+            "User-Agent": "openpilot-0.11.1",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "Authorization": "JWT eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGl0eSI6IjAwMDAwMDAwMDAwMDAwMDAiLCJuYmYiOjE3OTI2Njg3NTgsImlhdCI6MTc5MjY2ODc1OCwiZXhwIjoxNzkyNjcyMzU4fQ.pF56oSVuG9mkVnkuSTKjzz8pOrp94l6ksEeBNKqhPR0Zs2pyc6joUKyU4Vl29ColLBuwt351Mt-tI2GBslNXlQ"
+          },
+          "body_hex": ""
+        },
+        {
+          "method": "PUT",
+          "path": "/put",
+          "headers": {
+            "Host": "127.0.0.1:35637",
+            "User-Agent": "python-requests/2.34.2",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "X-Fixture": "synthetic",
+            "Content-Length": "137"
+          },
+          "body_hex": "28b52ffd006001040011283f566d849bb2c9e0f70e253c536a8198afc6ddf40b223950677e95acc3daf1081f364d647b92a9c0d7ee051c334a61788fa6bdd4eb021930475e758ca3bad1e8ff162d445b7289a0b7cee5fc132a41586f869db4cbe2f910273e556c839ab1c8dff60d243b52698097aec5dcf30a21384f667d94abc2d9f0071e354c637a"
+        }
+      ],
+      "disk_records": 0,
+      "records": []
+    },
+    {
+      "name": "persistent-debug",
+      "original": true,
+      "original_collector": true,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/persistent-debug/source-original-collector/input.json"
+      ],
+      "exit_code": 1,
+      "observation": {
+        "status": "Error",
+        "error": "ZMQError('Socket operation on non-socket')",
+        "delay": null,
+        "last": "",
+        "attempts": [
+          "upload_start",
+          "debug_url",
+          "upload_failed"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "headers": {
+            "Host": "127.0.0.1:33843",
+            "User-Agent": "openpilot-0.11.1",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "Authorization": "JWT eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGl0eSI6IjAwMDAwMDAwMDAwMDAwMDAiLCJuYmYiOjE3OTI2Njg3NTksImlhdCI6MTc5MjY2ODc1OSwiZXhwIjoxNzkyNjcyMzU5fQ.t_EWBOpjKx3mgoF0Avh7X5MULxyeYCAdiPUk9nYK5LgdyRjZFR8Giy9SCW_CrzizmJ_Mb7QTNAtZsk6UJ8UGQQ"
+          },
+          "body_hex": ""
+        }
+      ],
+      "disk_records": 1,
+      "records": [
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-kvfkjvd8/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 1,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10294,
+          "thread": 140400802503552,
+          "threadName": "MainThread",
+          "created": 1792668759.9608152
+        }
+      ]
+    },
+    {
+      "name": "persistent-debug",
+      "original": true,
+      "original_collector": false,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/persistent-debug/source-rust-collector/input.json"
+      ],
+      "exit_code": 1,
+      "observation": {
+        "status": "Error",
+        "error": "ZMQError('Socket operation on non-socket')",
+        "delay": null,
+        "last": "",
+        "attempts": [
+          "upload_start",
+          "debug_url",
+          "upload_failed"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "headers": {
+            "Host": "127.0.0.1:42533",
+            "User-Agent": "openpilot-0.11.1",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "Authorization": "JWT eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGl0eSI6IjAwMDAwMDAwMDAwMDAwMDAiLCJuYmYiOjE3OTI2Njg3NjEsImlhdCI6MTc5MjY2ODc2MSwiZXhwIjoxNzkyNjcyMzYxfQ.G9lORxPdBZlGl9xYZnS3lwIDA0Bk2RVv9nWsNvmGzDuBb1E3dDJU_VAG8ERPU74HuRrRztbtdIABW3yMGnl5qw"
+          },
+          "body_hex": ""
+        }
+      ],
+      "disk_records": 1,
+      "records": [
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-yi3yp03m/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 1,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10328,
+          "thread": 139697807678336,
+          "threadName": "MainThread",
+          "created": 1792668761.3768919
+        }
+      ]
+    },
+    {
+      "name": "backoff",
+      "original": true,
+      "original_collector": true,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/backoff/source-original-collector/input.json"
+      ],
+      "exit_code": 1,
+      "observation": {
+        "status": "Error",
+        "error": "ZMQError('Socket operation on non-socket')",
+        "delay": null,
+        "last": "",
+        "attempts": [
+          "upload_start",
+          "debug_url",
+          "upload_failed",
+          "upload backoff 0.1"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "headers": {
+            "Host": "127.0.0.1:38333",
+            "User-Agent": "openpilot-0.11.1",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "Authorization": "JWT eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGl0eSI6IjAwMDAwMDAwMDAwMDAwMDAiLCJuYmYiOjE3OTI2Njg3NjIsImlhdCI6MTc5MjY2ODc2MiwiZXhwIjoxNzkyNjcyMzYyfQ.TM1zoNpn4VR0D-a45Z5aTj9CI4RYXp7dhL0hlrp_5SLchPZ6v-pmZThajLPnvbhzCUKhtyQE1pc3JDfJekxU3A"
+          },
+          "body_hex": ""
+        },
+        {
+          "method": "PUT",
+          "path": "/put",
+          "headers": {
+            "Host": "127.0.0.1:38333",
+            "User-Agent": "python-requests/2.34.2",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "X-Fixture": "synthetic",
+            "Content-Length": "137"
+          },
+          "body_hex": "28b52ffd006001040011283f566d849bb2c9e0f70e253c536a8198afc6ddf40b223950677e95acc3daf1081f364d647b92a9c0d7ee051c334a61788fa6bdd4eb021930475e758ca3bad1e8ff162d445b7289a0b7cee5fc132a41586f869db4cbe2f910273e556c839ab1c8dff60d243b52698097aec5dcf30a21384f667d94abc2d9f0071e354c637a"
+        }
+      ],
+      "disk_records": 2,
+      "records": [
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-sym4uo9p/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 1,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10358,
+          "thread": 140040460749696,
+          "threadName": "MainThread",
+          "created": 1792668762.7973988
+        },
+        {
+          "msg": "upload_url v1.4 http://127.0.0.1:38333/put {'X-Fixture': 'synthetic'}",
+          "ctx": {},
+          "level": "DEBUG",
+          "levelnum": 10,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 188,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10358,
+          "thread": 140040460749696,
+          "threadName": "MainThread",
+          "created": 1792668762.8050203
+        },
+        {
+          "msg": {
+            "event": "upload_failed",
+            "stat": "<Response [500]>",
+            "exc": null,
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-sym4uo9p/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 1,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 205,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10358,
+          "thread": 140040460749696,
+          "threadName": "MainThread",
+          "created": 1792668762.8095484
+        }
+      ]
+    },
+    {
+      "name": "backoff",
+      "original": true,
+      "original_collector": false,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/backoff/source-rust-collector/input.json"
+      ],
+      "exit_code": 1,
+      "observation": {
+        "status": "Error",
+        "error": "ZMQError('Socket operation on non-socket')",
+        "delay": null,
+        "last": "",
+        "attempts": [
+          "upload_start",
+          "debug_url",
+          "upload_failed",
+          "upload backoff 0.1"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "headers": {
+            "Host": "127.0.0.1:44881",
+            "User-Agent": "openpilot-0.11.1",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "Authorization": "JWT eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGl0eSI6IjAwMDAwMDAwMDAwMDAwMDAiLCJuYmYiOjE3OTI2Njg3NjQsImlhdCI6MTc5MjY2ODc2NCwiZXhwIjoxNzkyNjcyMzY0fQ.twqmVmY1dInd9VCwwEJ0QFM609YwYcbtmpYVRbuBc1V35iXUee8PpvNMBJ8BJCwRbYWiOUGOxH3as7xdfjvhBg"
+          },
+          "body_hex": ""
+        },
+        {
+          "method": "PUT",
+          "path": "/put",
+          "headers": {
+            "Host": "127.0.0.1:44881",
+            "User-Agent": "python-requests/2.34.2",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "X-Fixture": "synthetic",
+            "Content-Length": "137"
+          },
+          "body_hex": "28b52ffd006001040011283f566d849bb2c9e0f70e253c536a8198afc6ddf40b223950677e95acc3daf1081f364d647b92a9c0d7ee051c334a61788fa6bdd4eb021930475e758ca3bad1e8ff162d445b7289a0b7cee5fc132a41586f869db4cbe2f910273e556c839ab1c8dff60d243b52698097aec5dcf30a21384f667d94abc2d9f0071e354c637a"
+        }
+      ],
+      "disk_records": 2,
+      "records": [
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-6eius72q/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 1,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10390,
+          "thread": 139734885608320,
+          "threadName": "MainThread",
+          "created": 1792668764.2213082
+        },
+        {
+          "msg": "upload_url v1.4 http://127.0.0.1:44881/put {'X-Fixture': 'synthetic'}",
+          "ctx": {},
+          "level": "DEBUG",
+          "levelnum": 10,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 188,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10390,
+          "thread": 139734885608320,
+          "threadName": "MainThread",
+          "created": 1792668764.2289867
+        },
+        {
+          "msg": {
+            "event": "upload_failed",
+            "stat": "<Response [500]>",
+            "exc": null,
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-6eius72q/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 1,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 205,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10390,
+          "thread": 139734885608320,
+          "threadName": "MainThread",
+          "created": 1792668764.2345545
+        }
+      ]
+    },
+    {
+      "name": "start",
+      "original": true,
+      "original_collector": true,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/start/source-original-collector/input.json"
+      ],
+      "exit_code": 1,
+      "observation": {
+        "status": "Error",
+        "error": "ZMQError('Socket operation on non-socket')",
+        "delay": null,
+        "last": "",
+        "attempts": [
+          "upload_start"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [],
+      "disk_records": 0,
+      "records": []
+    },
+    {
+      "name": "start",
+      "original": true,
+      "original_collector": false,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/start/source-rust-collector/input.json"
+      ],
+      "exit_code": 1,
+      "observation": {
+        "status": "Error",
+        "error": "ZMQError('Socket operation on non-socket')",
+        "delay": null,
+        "last": "",
+        "attempts": [
+          "upload_start"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [],
+      "disk_records": 0,
+      "records": []
+    },
+    {
+      "name": "debug",
+      "original": true,
+      "original_collector": true,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/debug/source-original-collector/input.json"
+      ],
+      "exit_code": 0,
+      "observation": {
+        "status": "Failure",
+        "error": null,
+        "delay": 0.2,
+        "last": "",
+        "attempts": [
+          "upload_start",
+          "debug_url",
+          "upload_failed",
+          "upload backoff 0.1"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "headers": {
+            "Host": "127.0.0.1:37269",
+            "User-Agent": "openpilot-0.11.1",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "Authorization": "JWT eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGl0eSI6IjAwMDAwMDAwMDAwMDAwMDAiLCJuYmYiOjE3OTI2Njg3NjgsImlhdCI6MTc5MjY2ODc2OCwiZXhwIjoxNzkyNjcyMzY4fQ.8rtm0XWv4wAix_dx9laYJ6Ir3hjYjW9IKg9FLSrMIUVrFZRAL8qqOqmAGZFQZSJ79zZEzcnO7URIbD0wxZT-Uw"
+          },
+          "body_hex": ""
+        }
+      ],
+      "disk_records": 3,
+      "records": [
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-anj2tbco/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 1,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10470,
+          "thread": 140207069916032,
+          "threadName": "MainThread",
+          "created": 1792668768.084243
+        },
+        {
+          "msg": {
+            "event": "upload_failed",
+            "stat": null,
+            "exc": [
+              "ZMQError('Socket operation on non-socket')",
+              "Traceback (most recent call last):\n  File \"/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py\", line 188, in upload\n    stat = self.do_upload(key, fn)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py\", line 152, in do_upload\n    cloudlog.debug(\"upload_url v1.4 %s %s\", url, str(headers))\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/logging/__init__.py\", line 1527, in debug\n    self._log(DEBUG, msg, args, **kwargs)\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/logging/__init__.py\", line 1684, in _log\n    self.handle(record)\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/logging/__init__.py\", line 1700, in handle\n    self.callHandlers(record)\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/logging/__init__.py\", line 1762, in callHandlers\n    hdlr.handle(record)\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/logging/__init__.py\", line 1028, in handle\n    self.emit(record)\n  File \"/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py\", line 52, in emit\n    closed.emit(record)\n  File \"/home/runner/work/openpilot-rust/openpilot-rust/openpilot/common/swaglog.py\", line 101, in emit\n    self.sock.send(s.encode('utf8'), zmq.NOBLOCK)\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/zmq/sugar/socket.py\", line 713, in send\n    return super().send(data, flags=flags, copy=copy, track=track)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"zmq/backend/cython/_zmq.py\", line 1152, in zmq.backend.cython._zmq.Socket.send\n    def send(self, data, flags=0, copy: bint = True, track: bint = False):\n    ^^^^^^^^^^^\n  File \"zmq/backend/cython/_zmq.py\", line 1194, in zmq.backend.cython._zmq.Socket.send\n    _check_closed(self)\n    ^^^^^^^^^^^\n  File \"zmq/backend/cython/_zmq.py\", line 1339, in zmq.backend.cython._zmq._check_closed\n    raise ZMQError(ENOTSOCK)\n    ^^^^^^^^^^^\nzmq.error.ZMQError: Socket operation on non-socket\n"
+            ],
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-anj2tbco/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 1,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 205,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10470,
+          "thread": 140207069916032,
+          "threadName": "MainThread",
+          "created": 1792668768.0929196
+        },
+        {
+          "msg": "upload backoff 0.1",
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "check_uploader_log_fault.py",
+          "lineno": 111,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+          "module": "check_uploader_log_fault",
+          "funcName": "source_run",
+          "host": "runnervm8k3b6",
+          "process": 10470,
+          "thread": 140207069916032,
+          "threadName": "MainThread",
+          "created": 1792668768.0930357
+        }
+      ]
+    },
+    {
+      "name": "debug",
+      "original": true,
+      "original_collector": false,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/debug/source-rust-collector/input.json"
+      ],
+      "exit_code": 0,
+      "observation": {
+        "status": "Failure",
+        "error": null,
+        "delay": 0.2,
+        "last": "",
+        "attempts": [
+          "upload_start",
+          "debug_url",
+          "upload_failed",
+          "upload backoff 0.1"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "headers": {
+            "Host": "127.0.0.1:33953",
+            "User-Agent": "openpilot-0.11.1",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "Authorization": "JWT eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGl0eSI6IjAwMDAwMDAwMDAwMDAwMDAiLCJuYmYiOjE3OTI2Njg3NjksImlhdCI6MTc5MjY2ODc2OSwiZXhwIjoxNzkyNjcyMzY5fQ.DINgvZx2XcajAsfcBmuET6VeyqKtJkfnKR6n-HSqUd_3ZgtEENWNkKRbUurc_7HhgHO33SkttwVXdtoqcMNfXg"
+          },
+          "body_hex": ""
+        }
+      ],
+      "disk_records": 3,
+      "records": [
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-exzxkxxp/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 1,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10500,
+          "thread": 140446717012864,
+          "threadName": "MainThread",
+          "created": 1792668769.499535
+        },
+        {
+          "msg": {
+            "event": "upload_failed",
+            "stat": null,
+            "exc": [
+              "ZMQError('Socket operation on non-socket')",
+              "Traceback (most recent call last):\n  File \"/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py\", line 188, in upload\n    stat = self.do_upload(key, fn)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py\", line 152, in do_upload\n    cloudlog.debug(\"upload_url v1.4 %s %s\", url, str(headers))\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/logging/__init__.py\", line 1527, in debug\n    self._log(DEBUG, msg, args, **kwargs)\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/logging/__init__.py\", line 1684, in _log\n    self.handle(record)\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/logging/__init__.py\", line 1700, in handle\n    self.callHandlers(record)\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/logging/__init__.py\", line 1762, in callHandlers\n    hdlr.handle(record)\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/logging/__init__.py\", line 1028, in handle\n    self.emit(record)\n  File \"/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py\", line 52, in emit\n    closed.emit(record)\n  File \"/home/runner/work/openpilot-rust/openpilot-rust/openpilot/common/swaglog.py\", line 101, in emit\n    self.sock.send(s.encode('utf8'), zmq.NOBLOCK)\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/zmq/sugar/socket.py\", line 713, in send\n    return super().send(data, flags=flags, copy=copy, track=track)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"zmq/backend/cython/_zmq.py\", line 1152, in zmq.backend.cython._zmq.Socket.send\n    def send(self, data, flags=0, copy: bint = True, track: bint = False):\n    ^^^^^^^^^^^\n  File \"zmq/backend/cython/_zmq.py\", line 1194, in zmq.backend.cython._zmq.Socket.send\n    _check_closed(self)\n    ^^^^^^^^^^^\n  File \"zmq/backend/cython/_zmq.py\", line 1339, in zmq.backend.cython._zmq._check_closed\n    raise ZMQError(ENOTSOCK)\n    ^^^^^^^^^^^\nzmq.error.ZMQError: Socket operation on non-socket\n"
+            ],
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-exzxkxxp/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 1,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 205,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10500,
+          "thread": 140446717012864,
+          "threadName": "MainThread",
+          "created": 1792668769.509412
+        },
+        {
+          "msg": "upload backoff 0.1",
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "check_uploader_log_fault.py",
+          "lineno": 111,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+          "module": "check_uploader_log_fault",
+          "funcName": "source_run",
+          "host": "runnervm8k3b6",
+          "process": 10500,
+          "thread": 140446717012864,
+          "threadName": "MainThread",
+          "created": 1792668769.5095239
+        }
+      ]
+    },
+    {
+      "name": "success",
+      "original": true,
+      "original_collector": true,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/success/source-original-collector/input.json"
+      ],
+      "exit_code": 1,
+      "observation": {
+        "status": "Error",
+        "error": "ZMQError('Socket operation on non-socket')",
+        "delay": null,
+        "last": "route--0/qlog",
+        "attempts": [
+          "upload_start",
+          "debug_url",
+          "upload_success"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "headers": {
+            "Host": "127.0.0.1:33229",
+            "User-Agent": "openpilot-0.11.1",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "Authorization": "JWT eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGl0eSI6IjAwMDAwMDAwMDAwMDAwMDAiLCJuYmYiOjE3OTI2Njg3NzAsImlhdCI6MTc5MjY2ODc3MCwiZXhwIjoxNzkyNjcyMzcwfQ.DkCZxTmZEQBanY82ddrivqRBQ9m-9HktCD3pj8TGzkFoKvaH_lwqptg8T6jEATM72SZxtsddfCn8m3FuMoMauQ"
+          },
+          "body_hex": ""
+        },
+        {
+          "method": "PUT",
+          "path": "/put",
+          "headers": {
+            "Host": "127.0.0.1:33229",
+            "User-Agent": "python-requests/2.34.2",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "X-Fixture": "synthetic",
+            "Content-Length": "137"
+          },
+          "body_hex": "28b52ffd006001040011283f566d849bb2c9e0f70e253c536a8198afc6ddf40b223950677e95acc3daf1081f364d647b92a9c0d7ee051c334a61788fa6bdd4eb021930475e758ca3bad1e8ff162d445b7289a0b7cee5fc132a41586f869db4cbe2f910273e556c839ab1c8dff60d243b52698097aec5dcf30a21384f667d94abc2d9f0071e354c637a"
+        }
+      ],
+      "disk_records": 1,
+      "records": [
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-gbh8k7fh/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 1,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10530,
+          "thread": 140347301596032,
+          "threadName": "MainThread",
+          "created": 1792668770.9175918
+        },
+        {
+          "msg": "upload_url v1.4 http://127.0.0.1:33229/put {'X-Fixture': 'synthetic'}",
+          "ctx": {},
+          "level": "DEBUG",
+          "levelnum": 10,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 188,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10530,
+          "thread": 140347301596032,
+          "threadName": "MainThread",
+          "created": 1792668770.924591
+        }
+      ]
+    },
+    {
+      "name": "success",
+      "original": true,
+      "original_collector": false,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/success/source-rust-collector/input.json"
+      ],
+      "exit_code": 1,
+      "observation": {
+        "status": "Error",
+        "error": "ZMQError('Socket operation on non-socket')",
+        "delay": null,
+        "last": "route--0/qlog",
+        "attempts": [
+          "upload_start",
+          "debug_url",
+          "upload_success"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "headers": {
+            "Host": "127.0.0.1:34603",
+            "User-Agent": "openpilot-0.11.1",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "Authorization": "JWT eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGl0eSI6IjAwMDAwMDAwMDAwMDAwMDAiLCJuYmYiOjE3OTI2Njg3NzIsImlhdCI6MTc5MjY2ODc3MiwiZXhwIjoxNzkyNjcyMzcyfQ.daSrMZT4CTofrvsVg6wkFsXCsH-nKSKbjxrY4z9L80-KnR46a7ysOQuMk19ihamcgpykpxVCAbQYyqRx8-HaJw"
+          },
+          "body_hex": ""
+        },
+        {
+          "method": "PUT",
+          "path": "/put",
+          "headers": {
+            "Host": "127.0.0.1:34603",
+            "User-Agent": "python-requests/2.34.2",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "X-Fixture": "synthetic",
+            "Content-Length": "137"
+          },
+          "body_hex": "28b52ffd006001040011283f566d849bb2c9e0f70e253c536a8198afc6ddf40b223950677e95acc3daf1081f364d647b92a9c0d7ee051c334a61788fa6bdd4eb021930475e758ca3bad1e8ff162d445b7289a0b7cee5fc132a41586f869db4cbe2f910273e556c839ab1c8dff60d243b52698097aec5dcf30a21384f667d94abc2d9f0071e354c637a"
+        }
+      ],
+      "disk_records": 1,
+      "records": [
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-s0b4h87w/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 1,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10563,
+          "thread": 140338824657792,
+          "threadName": "MainThread",
+          "created": 1792668772.343558
+        },
+        {
+          "msg": "upload_url v1.4 http://127.0.0.1:34603/put {'X-Fixture': 'synthetic'}",
+          "ctx": {},
+          "level": "DEBUG",
+          "levelnum": 10,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 188,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10563,
+          "thread": 140338824657792,
+          "threadName": "MainThread",
+          "created": 1792668772.3509812
+        }
+      ]
+    },
+    {
+      "name": "ignored",
+      "original": true,
+      "original_collector": true,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/ignored/source-original-collector/input.json"
+      ],
+      "exit_code": 1,
+      "observation": {
+        "status": "Error",
+        "error": "ZMQError('Socket operation on non-socket')",
+        "delay": null,
+        "last": "route--0/qlog",
+        "attempts": [
+          "upload_start",
+          "upload_ignored"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "headers": {
+            "Host": "127.0.0.1:37635",
+            "User-Agent": "openpilot-0.11.1",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "Authorization": "JWT eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGl0eSI6IjAwMDAwMDAwMDAwMDAwMDAiLCJuYmYiOjE3OTI2Njg3NzMsImlhdCI6MTc5MjY2ODc3MywiZXhwIjoxNzkyNjcyMzczfQ.OV_QGsNdeXJWN9RnT8XBJkRjXLzB7zXVTAeFtP0iLR-dTe4hfArASyMDR0JYEVnYEr4tBSKeCRovxMIl5QfePA"
+          },
+          "body_hex": ""
+        }
+      ],
+      "disk_records": 1,
+      "records": [
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-7jqtwrze/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 1,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10596,
+          "thread": 140719411948416,
+          "threadName": "MainThread",
+          "created": 1792668773.7707324
+        }
+      ]
+    },
+    {
+      "name": "ignored",
+      "original": true,
+      "original_collector": false,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/ignored/source-rust-collector/input.json"
+      ],
+      "exit_code": 1,
+      "observation": {
+        "status": "Error",
+        "error": "ZMQError('Socket operation on non-socket')",
+        "delay": null,
+        "last": "route--0/qlog",
+        "attempts": [
+          "upload_start",
+          "upload_ignored"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "headers": {
+            "Host": "127.0.0.1:42001",
+            "User-Agent": "openpilot-0.11.1",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "Authorization": "JWT eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGl0eSI6IjAwMDAwMDAwMDAwMDAwMDAiLCJuYmYiOjE3OTI2Njg3NzUsImlhdCI6MTc5MjY2ODc3NSwiZXhwIjoxNzkyNjcyMzc1fQ.og9ejjJdO8kwLVkteTPA5k-LFa63w2ZLKH948iiFgEYqtT6cDffgD3TZE_GLSo1L5ihr_oSIGYaZ6rrTt51zdA"
+          },
+          "body_hex": ""
+        }
+      ],
+      "disk_records": 1,
+      "records": [
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-vesd48oc/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 1,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10626,
+          "thread": 139907581488000,
+          "threadName": "MainThread",
+          "created": 1792668775.1897182
+        }
+      ]
+    },
+    {
+      "name": "failed",
+      "original": true,
+      "original_collector": true,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/failed/source-original-collector/input.json"
+      ],
+      "exit_code": 1,
+      "observation": {
+        "status": "Error",
+        "error": "ZMQError('Socket operation on non-socket')",
+        "delay": null,
+        "last": "",
+        "attempts": [
+          "upload_start",
+          "debug_url",
+          "upload_failed"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "headers": {
+            "Host": "127.0.0.1:33301",
+            "User-Agent": "openpilot-0.11.1",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "Authorization": "JWT eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGl0eSI6IjAwMDAwMDAwMDAwMDAwMDAiLCJuYmYiOjE3OTI2Njg3NzYsImlhdCI6MTc5MjY2ODc3NiwiZXhwIjoxNzkyNjcyMzc2fQ.4Dg4Xii82oC4VKwaDAJkRfCi5bqOs4qcYUB2UnMzN51kKGTV0kwaBkl7UvyXgXnLkqdPvMlFdU5QtzTGrEIlnw"
+          },
+          "body_hex": ""
+        },
+        {
+          "method": "PUT",
+          "path": "/put",
+          "headers": {
+            "Host": "127.0.0.1:33301",
+            "User-Agent": "python-requests/2.34.2",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "X-Fixture": "synthetic",
+            "Content-Length": "137"
+          },
+          "body_hex": "28b52ffd006001040011283f566d849bb2c9e0f70e253c536a8198afc6ddf40b223950677e95acc3daf1081f364d647b92a9c0d7ee051c334a61788fa6bdd4eb021930475e758ca3bad1e8ff162d445b7289a0b7cee5fc132a41586f869db4cbe2f910273e556c839ab1c8dff60d243b52698097aec5dcf30a21384f667d94abc2d9f0071e354c637a"
+        }
+      ],
+      "disk_records": 1,
+      "records": [
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-p8jz1x39/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 1,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10657,
+          "thread": 140201591139200,
+          "threadName": "MainThread",
+          "created": 1792668776.6055844
+        },
+        {
+          "msg": "upload_url v1.4 http://127.0.0.1:33301/put {'X-Fixture': 'synthetic'}",
+          "ctx": {},
+          "level": "DEBUG",
+          "levelnum": 10,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 188,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10657,
+          "thread": 140201591139200,
+          "threadName": "MainThread",
+          "created": 1792668776.6120095
+        }
+      ]
+    },
+    {
+      "name": "failed",
+      "original": true,
+      "original_collector": false,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/failed/source-rust-collector/input.json"
+      ],
+      "exit_code": 1,
+      "observation": {
+        "status": "Error",
+        "error": "ZMQError('Socket operation on non-socket')",
+        "delay": null,
+        "last": "",
+        "attempts": [
+          "upload_start",
+          "debug_url",
+          "upload_failed"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "headers": {
+            "Host": "127.0.0.1:36699",
+            "User-Agent": "openpilot-0.11.1",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "Authorization": "JWT eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGl0eSI6IjAwMDAwMDAwMDAwMDAwMDAiLCJuYmYiOjE3OTI2Njg3NzgsImlhdCI6MTc5MjY2ODc3OCwiZXhwIjoxNzkyNjcyMzc4fQ.Op2Ockwy9J4X_thGAR8Voar4fA3RQ1l_Q5uQ1NttP_Bsjm0SaoZ7PC38RDGGYbTgLRb_eqA5N0-BQEfhavGzQQ"
+          },
+          "body_hex": ""
+        },
+        {
+          "method": "PUT",
+          "path": "/put",
+          "headers": {
+            "Host": "127.0.0.1:36699",
+            "User-Agent": "python-requests/2.34.2",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "X-Fixture": "synthetic",
+            "Content-Length": "137"
+          },
+          "body_hex": "28b52ffd006001040011283f566d849bb2c9e0f70e253c536a8198afc6ddf40b223950677e95acc3daf1081f364d647b92a9c0d7ee051c334a61788fa6bdd4eb021930475e758ca3bad1e8ff162d445b7289a0b7cee5fc132a41586f869db4cbe2f910273e556c839ab1c8dff60d243b52698097aec5dcf30a21384f667d94abc2d9f0071e354c637a"
+        }
+      ],
+      "disk_records": 1,
+      "records": [
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-bhyw9i7j/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 1,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10689,
+          "thread": 140106127391616,
+          "threadName": "MainThread",
+          "created": 1792668778.029692
+        },
+        {
+          "msg": "upload_url v1.4 http://127.0.0.1:36699/put {'X-Fixture': 'synthetic'}",
+          "ctx": {},
+          "level": "DEBUG",
+          "levelnum": 10,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 188,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10689,
+          "thread": 140106127391616,
+          "threadName": "MainThread",
+          "created": 1792668778.0368745
+        }
+      ]
+    },
+    {
+      "name": "large",
+      "original": true,
+      "original_collector": true,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/large/source-original-collector/input.json"
+      ],
+      "exit_code": 1,
+      "observation": {
+        "status": "Error",
+        "error": "ZMQError('Socket operation on non-socket')",
+        "delay": null,
+        "last": "",
+        "attempts": [
+          "upload_start",
+          "uploader_too_large"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [],
+      "disk_records": 1,
+      "records": [
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-qimh7f3h/logs/route--0/qlog",
+            "sz": 25000001,
+            "network_type": 1,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10721,
+          "thread": 140276447005568,
+          "threadName": "MainThread",
+          "created": 1792668779.4545882
+        }
+      ]
+    },
+    {
+      "name": "large",
+      "original": true,
+      "original_collector": false,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/large/source-rust-collector/input.json"
+      ],
+      "exit_code": 1,
+      "observation": {
+        "status": "Error",
+        "error": "ZMQError('Socket operation on non-socket')",
+        "delay": null,
+        "last": "",
+        "attempts": [
+          "upload_start",
+          "uploader_too_large"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [],
+      "disk_records": 1,
+      "records": [
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-ok6vrv8l/logs/route--0/qlog",
+            "sz": 25000001,
+            "network_type": 1,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10749,
+          "thread": 140416394300288,
+          "threadName": "MainThread",
+          "created": 1792668780.6788335
+        }
+      ]
+    },
+    {
+      "name": "metadata",
+      "original": true,
+      "original_collector": true,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/metadata/source-original-collector/input.json"
+      ],
+      "exit_code": 1,
+      "observation": {
+        "status": "Error",
+        "error": "ZMQError('Socket operation on non-socket')",
+        "delay": null,
+        "last": "",
+        "attempts": [
+          "uploader_getxattr_failed"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [],
+      "disk_records": 0,
+      "records": []
+    },
+    {
+      "name": "metadata",
+      "original": true,
+      "original_collector": false,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/metadata/source-rust-collector/input.json"
+      ],
+      "exit_code": 1,
+      "observation": {
+        "status": "Error",
+        "error": "ZMQError('Socket operation on non-socket')",
+        "delay": null,
+        "last": "",
+        "attempts": [
+          "uploader_getxattr_failed"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [],
+      "disk_records": 0,
+      "records": []
+    },
+    {
+      "name": "listdir",
+      "original": true,
+      "original_collector": true,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/listdir/source-original-collector/input.json"
+      ],
+      "exit_code": 1,
+      "observation": {
+        "status": "Error",
+        "error": "ZMQError('Socket operation on non-socket')",
+        "delay": null,
+        "last": "",
+        "attempts": [
+          "listdir_by_creation failed"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [],
+      "disk_records": 0,
+      "records": []
+    },
+    {
+      "name": "listdir",
+      "original": true,
+      "original_collector": false,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/listdir/source-rust-collector/input.json"
+      ],
+      "exit_code": 1,
+      "observation": {
+        "status": "Error",
+        "error": "ZMQError('Socket operation on non-socket')",
+        "delay": null,
+        "last": "",
+        "attempts": [
+          "listdir_by_creation failed"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [],
+      "disk_records": 0,
+      "records": []
+    },
+    {
+      "name": "getsize",
+      "original": true,
+      "original_collector": true,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/getsize/source-original-collector/input.json"
+      ],
+      "exit_code": 1,
+      "observation": {
+        "status": "Error",
+        "error": "ZMQError('Socket operation on non-socket')",
+        "delay": null,
+        "last": "",
+        "attempts": [
+          "upload: getsize failed"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [],
+      "disk_records": 0,
+      "records": []
+    },
+    {
+      "name": "getsize",
+      "original": true,
+      "original_collector": false,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/getsize/source-rust-collector/input.json"
+      ],
+      "exit_code": 1,
+      "observation": {
+        "status": "Error",
+        "error": "ZMQError('Socket operation on non-socket')",
+        "delay": null,
+        "last": "",
+        "attempts": [
+          "upload: getsize failed"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [],
+      "disk_records": 0,
+      "records": []
+    },
+    {
+      "name": "clear",
+      "original": true,
+      "original_collector": true,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/clear/source-original-collector/input.json"
+      ],
+      "exit_code": 1,
+      "observation": {
+        "status": "Error",
+        "error": "ZMQError('Socket operation on non-socket')",
+        "delay": null,
+        "last": "",
+        "attempts": [
+          "clear_locks failed"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [],
+      "disk_records": 0,
+      "records": []
+    },
+    {
+      "name": "clear",
+      "original": true,
+      "original_collector": false,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/clear/source-rust-collector/input.json"
+      ],
+      "exit_code": 1,
+      "observation": {
+        "status": "Error",
+        "error": "ZMQError('Socket operation on non-socket')",
+        "delay": null,
+        "last": "",
+        "attempts": [
+          "clear_locks failed"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [],
+      "disk_records": 0,
+      "records": []
+    },
+    {
+      "name": "mark",
+      "original": true,
+      "original_collector": true,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/mark/source-original-collector/input.json"
+      ],
+      "exit_code": 1,
+      "observation": {
+        "status": "Error",
+        "error": "ZMQError('Socket operation on non-socket')",
+        "delay": null,
+        "last": "route--0/qlog",
+        "attempts": [
+          "upload_start",
+          "debug_url",
+          "upload_success",
+          "uploader_setxattr_failed"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "headers": {
+            "Host": "127.0.0.1:42027",
+            "User-Agent": "openpilot-0.11.1",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "Authorization": "JWT eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGl0eSI6IjAwMDAwMDAwMDAwMDAwMDAiLCJuYmYiOjE3OTI2Njg3OTEsImlhdCI6MTc5MjY2ODc5MSwiZXhwIjoxNzkyNjcyMzkxfQ.p_pEUhYAtVmGgH6uotTKz0BWUtoX-h1dXFVZkEmtvOFGjrPx5g_DlKOHqYt4NbejUHN_mNOy4oJ5ssmNZ-KbEQ"
+          },
+          "body_hex": ""
+        },
+        {
+          "method": "PUT",
+          "path": "/put",
+          "headers": {
+            "Host": "127.0.0.1:42027",
+            "User-Agent": "python-requests/2.34.2",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "X-Fixture": "synthetic",
+            "Content-Length": "137"
+          },
+          "body_hex": "28b52ffd006001040011283f566d849bb2c9e0f70e253c536a8198afc6ddf40b223950677e95acc3daf1081f364d647b92a9c0d7ee051c334a61788fa6bdd4eb021930475e758ca3bad1e8ff162d445b7289a0b7cee5fc132a41586f869db4cbe2f910273e556c839ab1c8dff60d243b52698097aec5dcf30a21384f667d94abc2d9f0071e354c637a"
+        }
+      ],
+      "disk_records": 2,
+      "records": [
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-r0slya8y/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 1,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10971,
+          "thread": 140220388780928,
+          "threadName": "MainThread",
+          "created": 1792668791.5990398
+        },
+        {
+          "msg": "upload_url v1.4 http://127.0.0.1:42027/put {'X-Fixture': 'synthetic'}",
+          "ctx": {},
+          "level": "DEBUG",
+          "levelnum": 10,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 188,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10971,
+          "thread": 140220388780928,
+          "threadName": "MainThread",
+          "created": 1792668791.6054199
+        },
+        {
+          "msg": {
+            "event": "upload_success",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-r0slya8y/logs/route--0/qlog",
+            "sz": 128,
+            "content_length": 137,
+            "network_type": 1,
+            "metered": false,
+            "speed": 0.013775880303847483
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 200,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 10971,
+          "thread": 140220388780928,
+          "threadName": "MainThread",
+          "created": 1792668791.609496
+        }
+      ]
+    },
+    {
+      "name": "mark",
+      "original": true,
+      "original_collector": false,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_uploader_log_fault.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/fault/mark/source-rust-collector/input.json"
+      ],
+      "exit_code": 1,
+      "observation": {
+        "status": "Error",
+        "error": "ZMQError('Socket operation on non-socket')",
+        "delay": null,
+        "last": "route--0/qlog",
+        "attempts": [
+          "upload_start",
+          "debug_url",
+          "upload_success",
+          "uploader_setxattr_failed"
+        ],
+        "fired": true,
+        "saturated": false
+      },
+      "marked": false,
+      "http": [
+        {
+          "method": "GET",
+          "path": "/v1.4/0000000000000000/upload_url/?path=route--0%2Fqlog.zst",
+          "headers": {
+            "Host": "127.0.0.1:37143",
+            "User-Agent": "openpilot-0.11.1",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "Authorization": "JWT eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGl0eSI6IjAwMDAwMDAwMDAwMDAwMDAiLCJuYmYiOjE3OTI2Njg3OTMsImlhdCI6MTc5MjY2ODc5MywiZXhwIjoxNzkyNjcyMzkzfQ.Rp4TTXlgOG4JV3r8qENEYDoktAZnqWUpYGE_GIQjh4VIhzt03eni1PgvQjXTfxNjpElvzI_XJF1DFXSi-XF0qg"
+          },
+          "body_hex": ""
+        },
+        {
+          "method": "PUT",
+          "path": "/put",
+          "headers": {
+            "Host": "127.0.0.1:37143",
+            "User-Agent": "python-requests/2.34.2",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "X-Fixture": "synthetic",
+            "Content-Length": "137"
+          },
+          "body_hex": "28b52ffd006001040011283f566d849bb2c9e0f70e253c536a8198afc6ddf40b223950677e95acc3daf1081f364d647b92a9c0d7ee051c334a61788fa6bdd4eb021930475e758ca3bad1e8ff162d445b7289a0b7cee5fc132a41586f869db4cbe2f910273e556c839ab1c8dff60d243b52698097aec5dcf30a21384f667d94abc2d9f0071e354c637a"
+        }
+      ],
+      "disk_records": 2,
+      "records": [
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-gp_ict7_/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 1,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11003,
+          "thread": 139895058893696,
+          "threadName": "MainThread",
+          "created": 1792668793.014923
+        },
+        {
+          "msg": "upload_url v1.4 http://127.0.0.1:37143/put {'X-Fixture': 'synthetic'}",
+          "ctx": {},
+          "level": "DEBUG",
+          "levelnum": 10,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 188,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11003,
+          "thread": 139895058893696,
+          "threadName": "MainThread",
+          "created": 1792668793.0231597
+        },
+        {
+          "msg": {
+            "event": "upload_success",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/uploader-log-fault-gp_ict7_/logs/route--0/qlog",
+            "sz": 128,
+            "content_length": 137,
+            "network_type": 1,
+            "metered": false,
+            "speed": 0.011740105597530612
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 200,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11003,
+          "thread": 139895058893696,
+          "threadName": "MainThread",
+          "created": 1792668793.0271072
+        }
+      ]
+    }
+  ],
+  "params": [
+    {
+      "case": "missing-id",
+      "source": true,
+      "original_collector": true,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_params_string_uploader.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/params/missing-id/original-collector-source/source-config.json"
+      ],
+      "exit": 1,
+      "warnings": 0,
+      "disk_records": 1,
+      "http_requests": 0,
+      "records": [
+        {
+          "msg": "uploader missing dongle_id",
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "check_params_string_uploader.py",
+          "lineno": 56,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_params_string_uploader.py",
+          "module": "check_params_string_uploader",
+          "funcName": "source_main",
+          "host": "runnervm8k3b6",
+          "process": 11035,
+          "thread": 140688210242432,
+          "threadName": "MainThread",
+          "created": 1792668794.4359658
+        }
+      ]
+    },
+    {
+      "case": "missing-id",
+      "source": true,
+      "original_collector": false,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_params_string_uploader.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/params/missing-id/rust-collector-source/source-config.json"
+      ],
+      "exit": 1,
+      "warnings": 0,
+      "disk_records": 1,
+      "http_requests": 0,
+      "records": [
+        {
+          "msg": "uploader missing dongle_id",
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "check_params_string_uploader.py",
+          "lineno": 56,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_params_string_uploader.py",
+          "module": "check_params_string_uploader",
+          "funcName": "source_main",
+          "host": "runnervm8k3b6",
+          "process": 11059,
+          "thread": 140496744864640,
+          "threadName": "MainThread",
+          "created": 1792668795.6489625
+        }
+      ]
+    },
+    {
+      "case": "empty-id",
+      "source": true,
+      "original_collector": true,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_params_string_uploader.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/params/empty-id/original-collector-source/source-config.json"
+      ],
+      "exit": 1,
+      "warnings": 0,
+      "disk_records": 1,
+      "http_requests": 0,
+      "records": [
+        {
+          "msg": "uploader missing dongle_id",
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "check_params_string_uploader.py",
+          "lineno": 56,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_params_string_uploader.py",
+          "module": "check_params_string_uploader",
+          "funcName": "source_main",
+          "host": "runnervm8k3b6",
+          "process": 11084,
+          "thread": 140520801016704,
+          "threadName": "MainThread",
+          "created": 1792668796.8566349
+        }
+      ]
+    },
+    {
+      "case": "empty-id",
+      "source": true,
+      "original_collector": false,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_params_string_uploader.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/params/empty-id/rust-collector-source/source-config.json"
+      ],
+      "exit": 1,
+      "warnings": 0,
+      "disk_records": 1,
+      "http_requests": 0,
+      "records": [
+        {
+          "msg": "uploader missing dongle_id",
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "check_params_string_uploader.py",
+          "lineno": 56,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_params_string_uploader.py",
+          "module": "check_params_string_uploader",
+          "funcName": "source_main",
+          "host": "runnervm8k3b6",
+          "process": 11109,
+          "thread": 139698008861568,
+          "threadName": "MainThread",
+          "created": 1792668798.0733676
+        }
+      ]
+    },
+    {
+      "case": "invalid-id",
+      "source": true,
+      "original_collector": true,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_params_string_uploader.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/params/invalid-id/original-collector-source/source-config.json"
+      ],
+      "exit": 1,
+      "warnings": 1,
+      "disk_records": 2,
+      "http_requests": 0,
+      "records": [
+        {
+          "msg": "Failed to cast param DongleId with value=b\"one'\\xff\" from type t=<ParamKeyType.STRING: 0>",
+          "ctx": {},
+          "level": "WARNING",
+          "levelnum": 30,
+          "name": "swaglog",
+          "filename": "check_params_string_uploader.py",
+          "lineno": 56,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_params_string_uploader.py",
+          "module": "check_params_string_uploader",
+          "funcName": "source_main",
+          "host": "runnervm8k3b6",
+          "process": 11133,
+          "thread": 139636644039552,
+          "threadName": "MainThread",
+          "created": 1792668799.283259
+        },
+        {
+          "msg": "uploader missing dongle_id",
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "check_params_string_uploader.py",
+          "lineno": 56,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_params_string_uploader.py",
+          "module": "check_params_string_uploader",
+          "funcName": "source_main",
+          "host": "runnervm8k3b6",
+          "process": 11133,
+          "thread": 139636644039552,
+          "threadName": "MainThread",
+          "created": 1792668799.283931
+        }
+      ]
+    },
+    {
+      "case": "invalid-id",
+      "source": true,
+      "original_collector": false,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_params_string_uploader.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/params/invalid-id/rust-collector-source/source-config.json"
+      ],
+      "exit": 1,
+      "warnings": 1,
+      "disk_records": 2,
+      "http_requests": 0,
+      "records": [
+        {
+          "msg": "Failed to cast param DongleId with value=b\"one'\\xff\" from type t=<ParamKeyType.STRING: 0>",
+          "ctx": {},
+          "level": "WARNING",
+          "levelnum": 30,
+          "name": "swaglog",
+          "filename": "check_params_string_uploader.py",
+          "lineno": 56,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_params_string_uploader.py",
+          "module": "check_params_string_uploader",
+          "funcName": "source_main",
+          "host": "runnervm8k3b6",
+          "process": 11157,
+          "thread": 140303735638912,
+          "threadName": "MainThread",
+          "created": 1792668800.5019798
+        },
+        {
+          "msg": "uploader missing dongle_id",
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "check_params_string_uploader.py",
+          "lineno": 56,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_params_string_uploader.py",
+          "module": "check_params_string_uploader",
+          "funcName": "source_main",
+          "host": "runnervm8k3b6",
+          "process": 11157,
+          "thread": 140303735638912,
+          "threadName": "MainThread",
+          "created": 1792668800.5026438
+        }
+      ]
+    },
+    {
+      "case": "valid-id",
+      "source": true,
+      "original_collector": true,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_params_string_uploader.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/params/valid-id/original-collector-source/source-config.json"
+      ],
+      "exit": 0,
+      "warnings": 0,
+      "disk_records": 2,
+      "http_requests": 2,
+      "records": [
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/params-uploader-tlbner4r/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 0,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11181,
+          "thread": 140072958143360,
+          "threadName": "MainThread",
+          "created": 1792668801.7153049
+        },
+        {
+          "msg": "upload_url v1.4 http://127.0.0.1:42287/put {'X-Fixture': 'synthetic'}",
+          "ctx": {},
+          "level": "DEBUG",
+          "levelnum": 10,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 188,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11181,
+          "thread": 140072958143360,
+          "threadName": "MainThread",
+          "created": 1792668801.7219927
+        },
+        {
+          "msg": {
+            "event": "upload_success",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/params-uploader-tlbner4r/logs/route--0/qlog",
+            "sz": 128,
+            "content_length": 137,
+            "network_type": 0,
+            "metered": false,
+            "speed": 0.011761878789286716
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 200,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11181,
+          "thread": 140072958143360,
+          "threadName": "MainThread",
+          "created": 1792668801.7275305
+        }
+      ]
+    },
+    {
+      "case": "valid-id",
+      "source": true,
+      "original_collector": false,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_params_string_uploader.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/params/valid-id/rust-collector-source/source-config.json"
+      ],
+      "exit": 0,
+      "warnings": 0,
+      "disk_records": 2,
+      "http_requests": 2,
+      "records": [
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/params-uploader-knv4jq6w/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 0,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11210,
+          "thread": 139641486613376,
+          "threadName": "MainThread",
+          "created": 1792668803.1518695
+        },
+        {
+          "msg": "upload_url v1.4 http://127.0.0.1:40163/put {'X-Fixture': 'synthetic'}",
+          "ctx": {},
+          "level": "DEBUG",
+          "levelnum": 10,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 188,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11210,
+          "thread": 139641486613376,
+          "threadName": "MainThread",
+          "created": 1792668803.1588528
+        },
+        {
+          "msg": {
+            "event": "upload_success",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/params-uploader-knv4jq6w/logs/route--0/qlog",
+            "sz": 128,
+            "content_length": 137,
+            "network_type": 0,
+            "metered": false,
+            "speed": 0.012141907883679425
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 200,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11210,
+          "thread": 139641486613376,
+          "threadName": "MainThread",
+          "created": 1792668803.1637568
+        }
+      ]
+    },
+    {
+      "case": "empty-routes",
+      "source": true,
+      "original_collector": true,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_params_string_uploader.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/params/empty-routes/original-collector-source/source-config.json"
+      ],
+      "exit": 0,
+      "warnings": 0,
+      "disk_records": 2,
+      "http_requests": 2,
+      "records": [
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/params-uploader-6qgv2scq/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 0,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11238,
+          "thread": 140579741817728,
+          "threadName": "MainThread",
+          "created": 1792668804.5411541
+        },
+        {
+          "msg": "upload_url v1.4 http://127.0.0.1:45927/put {'X-Fixture': 'synthetic'}",
+          "ctx": {},
+          "level": "DEBUG",
+          "levelnum": 10,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 188,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11238,
+          "thread": 140579741817728,
+          "threadName": "MainThread",
+          "created": 1792668804.5478113
+        },
+        {
+          "msg": {
+            "event": "upload_success",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/params-uploader-6qgv2scq/logs/route--0/qlog",
+            "sz": 128,
+            "content_length": 137,
+            "network_type": 0,
+            "metered": false,
+            "speed": 0.013317151859769921
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 200,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11238,
+          "thread": 140579741817728,
+          "threadName": "MainThread",
+          "created": 1792668804.5519578
+        }
+      ]
+    },
+    {
+      "case": "empty-routes",
+      "source": true,
+      "original_collector": false,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_params_string_uploader.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/params/empty-routes/rust-collector-source/source-config.json"
+      ],
+      "exit": 0,
+      "warnings": 0,
+      "disk_records": 2,
+      "http_requests": 2,
+      "records": [
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/params-uploader-e9x_m3sc/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 0,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11267,
+          "thread": 140209678318464,
+          "threadName": "MainThread",
+          "created": 1792668805.9350212
+        },
+        {
+          "msg": "upload_url v1.4 http://127.0.0.1:34269/put {'X-Fixture': 'synthetic'}",
+          "ctx": {},
+          "level": "DEBUG",
+          "levelnum": 10,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 188,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11267,
+          "thread": 140209678318464,
+          "threadName": "MainThread",
+          "created": 1792668805.9420455
+        },
+        {
+          "msg": {
+            "event": "upload_success",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/params-uploader-e9x_m3sc/logs/route--0/qlog",
+            "sz": 128,
+            "content_length": 137,
+            "network_type": 0,
+            "metered": false,
+            "speed": 0.012693816980757663
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 200,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11267,
+          "thread": 140209678318464,
+          "threadName": "MainThread",
+          "created": 1792668805.9463668
+        }
+      ]
+    },
+    {
+      "case": "valid-routes",
+      "source": true,
+      "original_collector": true,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_params_string_uploader.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/params/valid-routes/original-collector-source/source-config.json"
+      ],
+      "exit": 0,
+      "warnings": 0,
+      "disk_records": 2,
+      "http_requests": 2,
+      "records": [
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/params-uploader-4490rrzm/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 0,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11295,
+          "thread": 139994967767936,
+          "threadName": "MainThread",
+          "created": 1792668807.3345332
+        },
+        {
+          "msg": "upload_url v1.4 http://127.0.0.1:40339/put {'X-Fixture': 'synthetic'}",
+          "ctx": {},
+          "level": "DEBUG",
+          "levelnum": 10,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 188,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11295,
+          "thread": 139994967767936,
+          "threadName": "MainThread",
+          "created": 1792668807.3420134
+        },
+        {
+          "msg": {
+            "event": "upload_success",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/params-uploader-4490rrzm/logs/route--0/qlog",
+            "sz": 128,
+            "content_length": 137,
+            "network_type": 0,
+            "metered": false,
+            "speed": 0.011231512377242101
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 200,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11295,
+          "thread": 139994967767936,
+          "threadName": "MainThread",
+          "created": 1792668807.3472772
+        }
+      ]
+    },
+    {
+      "case": "valid-routes",
+      "source": true,
+      "original_collector": false,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_params_string_uploader.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/params/valid-routes/rust-collector-source/source-config.json"
+      ],
+      "exit": 0,
+      "warnings": 0,
+      "disk_records": 2,
+      "http_requests": 2,
+      "records": [
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/params-uploader-lue4xcro/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 0,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11323,
+          "thread": 140061528767360,
+          "threadName": "MainThread",
+          "created": 1792668808.756975
+        },
+        {
+          "msg": "upload_url v1.4 http://127.0.0.1:39869/put {'X-Fixture': 'synthetic'}",
+          "ctx": {},
+          "level": "DEBUG",
+          "levelnum": 10,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 188,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11323,
+          "thread": 140061528767360,
+          "threadName": "MainThread",
+          "created": 1792668808.7633476
+        },
+        {
+          "msg": {
+            "event": "upload_success",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/params-uploader-lue4xcro/logs/route--0/qlog",
+            "sz": 128,
+            "content_length": 137,
+            "network_type": 0,
+            "metered": false,
+            "speed": 0.014640391900921602
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 200,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11323,
+          "thread": 140061528767360,
+          "threadName": "MainThread",
+          "created": 1792668808.7668457
+        }
+      ]
+    },
+    {
+      "case": "invalid-routes",
+      "source": true,
+      "original_collector": true,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_params_string_uploader.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/params/invalid-routes/original-collector-source/source-config.json"
+      ],
+      "exit": 0,
+      "warnings": 1,
+      "disk_records": 3,
+      "http_requests": 2,
+      "records": [
+        {
+          "msg": "Failed to cast param AthenadRecentlyViewedRoutes with value=b'\\xff\\'\"\\n' from type t=<ParamKeyType.STRING: 0>",
+          "ctx": {},
+          "level": "WARNING",
+          "levelnum": 30,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 132,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "next_file_to_upload",
+          "host": "runnervm8k3b6",
+          "process": 11351,
+          "thread": 139824250649472,
+          "threadName": "MainThread",
+          "created": 1792668810.1657298
+        },
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/params-uploader-ilzrux5k/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 0,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11351,
+          "thread": 139824250649472,
+          "threadName": "MainThread",
+          "created": 1792668810.1665773
+        },
+        {
+          "msg": "upload_url v1.4 http://127.0.0.1:38073/put {'X-Fixture': 'synthetic'}",
+          "ctx": {},
+          "level": "DEBUG",
+          "levelnum": 10,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 188,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11351,
+          "thread": 139824250649472,
+          "threadName": "MainThread",
+          "created": 1792668810.1723802
+        },
+        {
+          "msg": {
+            "event": "upload_success",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/params-uploader-ilzrux5k/logs/route--0/qlog",
+            "sz": 128,
+            "content_length": 137,
+            "network_type": 0,
+            "metered": false,
+            "speed": 0.012721357422724382
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 200,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11351,
+          "thread": 139824250649472,
+          "threadName": "MainThread",
+          "created": 1792668810.17745
+        }
+      ]
+    },
+    {
+      "case": "invalid-routes",
+      "source": true,
+      "original_collector": false,
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_params_string_uploader.py",
+        "--source",
+        "/home/runner/work/_temp/uploader-sibling-original-296/observations/params/invalid-routes/rust-collector-source/source-config.json"
+      ],
+      "exit": 0,
+      "warnings": 1,
+      "disk_records": 3,
+      "http_requests": 2,
+      "records": [
+        {
+          "msg": "Failed to cast param AthenadRecentlyViewedRoutes with value=b'\\xff\\'\"\\n' from type t=<ParamKeyType.STRING: 0>",
+          "ctx": {},
+          "level": "WARNING",
+          "levelnum": 30,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 132,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "next_file_to_upload",
+          "host": "runnervm8k3b6",
+          "process": 11379,
+          "thread": 139851409189760,
+          "threadName": "MainThread",
+          "created": 1792668811.5614438
+        },
+        {
+          "msg": {
+            "event": "upload_start",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/params-uploader-cyd2_i1w/logs/route--0/qlog",
+            "sz": 128,
+            "network_type": 0,
+            "metered": false
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 174,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11379,
+          "thread": 139851409189760,
+          "threadName": "MainThread",
+          "created": 1792668811.562161
+        },
+        {
+          "msg": "upload_url v1.4 http://127.0.0.1:44147/put {'X-Fixture': 'synthetic'}",
+          "ctx": {},
+          "level": "DEBUG",
+          "levelnum": 10,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 188,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11379,
+          "thread": 139851409189760,
+          "threadName": "MainThread",
+          "created": 1792668811.567896
+        },
+        {
+          "msg": {
+            "event": "upload_success",
+            "key": "route--0/qlog.zst",
+            "fn": "/tmp/params-uploader-cyd2_i1w/logs/route--0/qlog",
+            "sz": 128,
+            "content_length": 137,
+            "network_type": 0,
+            "metered": false,
+            "speed": 0.013461351771247763
+          },
+          "ctx": {},
+          "level": "INFO",
+          "levelnum": 20,
+          "name": "swaglog",
+          "filename": "uploader.py",
+          "lineno": 200,
+          "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/loggerd/uploader.py",
+          "module": "uploader",
+          "funcName": "upload",
+          "host": "runnervm8k3b6",
+          "process": 11379,
+          "thread": 139851409189760,
+          "threadName": "MainThread",
+          "created": 1792668811.5724065
+        }
+      ]
+    }
+  ]
+}
