@@ -6994,3 +6994,17 @@ hosted regression and affected full-gate verification remain pending.
 Neither outer trace reproduces the historical ptrace fault: all4193GETSIGINFO
 calls and bothLISTEN calls succeed; no ptrace errno is recorded. Nested tracing
 changes scheduling, so this does not resolve474 or establish its old cause.
+
+Manager predelete39735484572/sourcea1b287a340598d5d12f624111d48569f81c0f894/
+workflow059419cdacbe89389cf6da43f59edfa90318db62 fails before functional traffic.
+Artifact12406729310 is20727B/SHA
+cf4ff1f920325359d68c227140961e69a51a81e4d26b14639421d2d22b0fbcb7;
+parent checks all3CRCs and raw compiler JSON. E0107/E0308 identify a local
+one-parameter Result alias used with two parameters in scan_manager_args.
+The candidate now qualifies std::result::Result. Directory guards also retain
+dev/inode/mode while allowing legitimate output creation under rust/tools;
+file-content/identity and individual retired-path checks remain strict, and
+replacement-directory rejection is covered. Twelve manager units remain;
+readiness controls extend an existing test instead of adding a thirteenth.
+The next same-source gate additionally compiles/Clippy-checks recovery feature
+and selects both new PID-publication units for484. No removal is accepted.

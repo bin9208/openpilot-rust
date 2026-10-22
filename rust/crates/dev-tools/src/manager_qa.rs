@@ -122,6 +122,7 @@ struct Held {
 }
 
 type FileIdentity = (u64, u64, u64, u32, (i64, i64), (i64, i64));
+type DirectoryIdentity = (u64, u64, u32);
 
 fn file_identity(meta: &fs::Metadata) -> FileIdentity {
     (
@@ -132,6 +133,10 @@ fn file_identity(meta: &fs::Metadata) -> FileIdentity {
         (meta.mtime(), meta.mtime_nsec()),
         (meta.ctime(), meta.ctime_nsec()),
     )
+}
+
+fn directory_identity(meta: &fs::Metadata) -> DirectoryIdentity {
+    (meta.dev(), meta.ino(), meta.mode())
 }
 
 impl Held {
@@ -343,7 +348,7 @@ struct SourceSet {
     held: Vec<Held>,
     parent: File,
     parent_path: PathBuf,
-    parent_identity: FileIdentity,
+    parent_identity: DirectoryIdentity,
     retired: bool,
 }
 
@@ -358,9 +363,9 @@ impl SourceSet {
                 | rustix::fs::OFlags::CLOEXEC,
             rustix::fs::Mode::empty(),
         )?);
-        let parent_identity = file_identity(&parent.metadata()?);
+        let parent_identity = directory_identity(&parent.metadata()?);
         require(
-            file_identity(&fs::symlink_metadata(&parent_path)?) == parent_identity,
+            directory_identity(&fs::symlink_metadata(&parent_path)?) == parent_identity,
             "manager QA historical parent changed while opening",
         )?;
         let mut present = 0;
@@ -419,7 +424,7 @@ impl SourceSet {
             fs::symlink_metadata(&self.parent_path)?,
         ] {
             require(
-                current.is_dir() && file_identity(&current) == self.parent_identity,
+                current.is_dir() && directory_identity(&current) == self.parent_identity,
                 "manager QA historical parent identity changed",
             )?;
         }
@@ -1079,7 +1084,7 @@ fn scan_manager_args(
     args: &[std::ffi::OsString],
     program: &str,
     scenarios: bool,
-) -> Result<argparse_scan::ParsedOs, argparse_scan::ArgumentError> {
+) -> std::result::Result<argparse_scan::ParsedOs, argparse_scan::ArgumentError> {
     let specs = if scenarios {
         vec![OptionSpec::append("--scenario")]
     } else {
@@ -1346,6 +1351,8 @@ mod tests {
             }
         }
         let retired = SourceSet::open(private.path(), true).unwrap();
+        fs::create_dir(private.path().join("rust/tools/valid-output")).unwrap();
+        retired.verify(private.path()).unwrap();
         fs::rename(
             private.path().join("rust/tools"),
             private.path().join("rust/old-tools"),
