@@ -59,3 +59,36 @@ members and special mode bits. Archive bytes, source files, native publisher and
 all independent archive/source/CI checks remain unchanged. A cloud regression
 covers 0664/0775/0444 round trips and rejects an altered archive digest.
 Public release and online installation remain pending; no device boot claim.
+
+## Completed exact-source delivery (2026-10-22)
+
+- Source: `dc95138076836ea3a5c1b6c27262be3f3b912f71`; pinned external
+  controller: `32237791fb0b23d702c064da36da658fcb650cfd`.
+- [Delivery run 39783809670](https://github.com/bin9208/openpilot-rust/actions/runs/39783809670)
+  succeeded: approval/CI job 119841603917, genuine AGNOS build/seal/offline job
+  119841707115, native publication/online install job 119873057051.
+- [Public exact-source prerelease](https://github.com/bin9208/openpilot-rust/releases/tag/runtime-dc95138076836ea3a5c1b6c27262be3f3b912f71)
+  is not a draft and targets the exact requested source. All six assets exist:
+  the ARM64 installer and checksum, exact-source runtime archive and checksum,
+  `runtime-installer-build.json`, and `runtime-release.json`.
+- Public archive SHA-256:
+  `3306896fb204e076daae8164d37665119343a3f1058857315c1446fd9f83e9a1`.
+  Runtime manifest SHA-256:
+  `827cf40067fa50745538ad28c5abdfaef9fbf643090e89d088cca095e0a53395`.
+- Offline and public online evidence agree on that source/archive/manifest.
+  Both actual ARM64 installers exited 0 and both installed AGNOS launchers
+  passed `--verify-package` under QEMU with exit 0. `device_execution` is false.
+- Fresh OpenCL receipt records the requested source, `fresh_build: true`,
+  `opencl: true`, and `source_unchanged: true`. The original native publisher
+  independently passed exact-SHA CI, sealed assets and publication checks.
+- Successful logs confirm the prior mode failure: 17 OpenCV license/provider
+  companion files needed `0644 -> 0664` restoration after safe extraction.
+  The sealed bytes and original verifier remained unchanged.
+- Build evidence artifact 12431213884 and publication evidence artifact
+  12433341119 retain the receipts. Local concise evidence is indexed under
+  `.analysis/archive/2026-10-22-cicd-runtime-486/` (ignored, not a remote backup).
+
+This completes the authorized publication request. CI/CD #409 was already
+accepted independently. No further dev-md integration/rebase, dev/main merge,
+device connection, installation or reboot was performed. Normal physical-device
+boot and driving acceptance remain user-owned and have not been established.
