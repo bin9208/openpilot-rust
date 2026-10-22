@@ -69,6 +69,17 @@ def emit(spec: BundleSpec, destination: Path, backend: Literal["cpu", "qcom"]) -
                        hashlib.sha256((destination / "graph.json").read_bytes()).hexdigest(), hashlib.sha256(pipeline).hexdigest())
 
 
+def _generation_roster(directory: Path) -> dict[Path, bool]:
+    if directory.is_symlink() or not directory.is_dir():
+        raise ExportError("existing generation is not a regular artifact directory")
+    roster = {}
+    for path in directory.rglob("*"):
+        if path.is_symlink() or not (path.is_file() or path.is_dir()):
+            raise ExportError("existing generation contains an alias or special file")
+        roster[path.relative_to(directory)] = path.is_dir()
+    return roster
+
+
 def publish(root: Path, specs: Sequence[BundleSpec], backend: Literal["cpu", "qcom"]) -> None:
     keys = [(spec.kind, spec.camera) for spec in specs]
     if not specs or len(specs) > 16 or len(set(keys)) != len(keys):
@@ -91,11 +102,14 @@ def publish(root: Path, specs: Sequence[BundleSpec], backend: Literal["cpu", "qc
         (generation / "index.json").write_bytes(index)
         digest = hashlib.sha256(index).hexdigest()
         destination = root / digest
-        if destination.exists():
-            for path in generation.rglob("*"):
-                if path.is_file():
-                    existing = destination / path.relative_to(generation)
-                    if not existing.is_file() or hashlib.sha256(existing.read_bytes()).digest() != hashlib.sha256(path.read_bytes()).digest():
+        if destination.exists() or destination.is_symlink():
+            roster = _generation_roster(generation)
+            if roster != _generation_roster(destination):
+                raise ExportError("existing generation file roster disagrees with immutable artifact")
+            for relative, is_directory in roster.items():
+                if not is_directory:
+                    existing, path = destination / relative, generation / relative
+                    if hashlib.sha256(existing.read_bytes()).digest() != hashlib.sha256(path.read_bytes()).digest():
                         raise ExportError("existing generation contents disagree with immutable artifact")
         else:
             generation.rename(destination)

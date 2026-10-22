@@ -7329,3 +7329,109 @@ parent checks all741CRCs and actual manager parity/groupstatus1. This is failed
 native-exec admission, not accepted two-controller retirement. Review only
 source-authored exact Git calls and replay stored traces before repeating any
 unchanged successful manager traffic. Both originals remain present.
+
+
+### Native guarded-add exact compilation correspondence accepted
+
+[39755306372](https://github.com/bin9208/openpilot-rust/actions/runs/39755306372)
+checks source06956b79d1d3ebacfa6e8a09616e9cdc1c358ed3 under workflow
+98854fb213ac5d4d93ace2a12413bbe4a1ce1b40. Artifact12416082247 is236753B,
+SHA25612e27ef38c07fdc3174497a88114c0fa4936a73a68fca03547910453db71b245;
+parent checks all30member CRCs and actual IR/object bytes. Raw no-EOF input
+produces166405B/SHA604e0d709ba70a899a0b2f86d3ebab47a40f6e0283fbbabcdd86d30d44072fab.
+The separately explicit line-terminated input produces166406B/SHA
+a860c4dfbf8551795ecb703fdadfb455be017e5a1b21abd8cee00f9b1c9b38a5,
+exactly matching the accepted diagnostic IR after its stated symbol rename.
+Both native receipts contain the same four justified rewrites. The raw native
+output, with only that function-symbol rename, is compiled without executing
+its generated code: its entire15800Bobject equals SHA
+8e4e3f74e0e312581af47b2c8623fc62ede0e3e27fd0c3254b7401efe6326300;
+optimized146782BIR equals30a0593cd106b3aec6573530e90afae79b082037c40c14120431ec97964fb848.
+Pinned LLVM18 and the complete recorded target/pass/API configuration remain
+unchanged. This is fresh native compilation and byte correspondence, with
+historical numerical evidence reused explicitly. The separate exceptional-input
+run's objectb7cb2f77 is a different compilation context. No fresh model numerical,
+Python deletion or device acceptance is inferred. Issue#482 remains open.
+
+### Recording/upload continuation: actual runtime composition accepted
+
+[39756811673](https://github.com/bin9208/openpilot-rust/actions/runs/39756811673)
+checks unchanged source192ff501f40116022419e470d14a3e732243960c under workflow
+f4f331e0a63f2130f58f7bf512e64542f00562c1. Artifact12416731303 is1446858B,
+SHA25629709384166a3bea9e5c7d11899b554583ec7173ae4e9831f8867f1e08c09794;
+parent verifies all71CRCs,33identical held inputs and exact package/source
+inventories. Twelve rebuilt native/host providers have ELF64/x86_64 headers and
+hashes identical to their prior held providers, closing the explicitly missing
+header links without repeating successful original/native manager traffic.
+The unchanged manager trace audit classifies68calls:66successful execs plus two
+exact expected df ENOENT results, including the source-authored Git argv.
+
+Fresh original/native runtime traffic uses actual logmessaged, loggerd and
+uploader processes. The closed runtime trace has six successful native execs
+and no interpreter. Each lane records four full-schema route messages and one
+typed crash, makes its real GET/PUT pair and marks the qlog uploaded. Parent
+compares every retained PUT body byte against that lane's retained qlog: original
+1677B/cc76ba113597924fdc7c2157208579e13af1907fce36779adb1bbb766420f657,
+native1676B/1a059636c3a69e5a4c7148628a74df4e24eb5dac4eed20377ae44cdb5e09f88d.
+Independent route metadata varies; stable source/provider/crash/upload fields
+match. Hosted xattr/full-schema assertions are retained; ZIP inspection does
+not assert a new local xattr or controller execution. Group status is0.
+This accepts source-present runtime functionality only. Both Python controllers
+and shared helpers remain live until two-root absence, negative CLI and actual
+cancellation/session-escape cleanup gates pass for the changed implementation.
+
+### Published full gates and next functional groups
+
+PR343 headf09eee7b8d352cc3b4463acf5f467a786f0d310d, synthetic merge
+48abb4d87797d84c03be1595e9122c4b1e023e2d, passes Integration39754486834
+(all16jobs), Fast39754486617/39754477763 and docs39754486636/39754745503.
+At inspection Rust39754486991 has42successful jobs, two model failures and four
+running jobs. Successful navigation119742946180 includes all8configuration
+lifecycle tests,2reference tests,3registration tests,3publication tests,strict
+Clippy,527policy cases,15engine/76steps,36HTTP,26config,75destination cases and
+all5actual IPC/timer/signal scenarios. Original model119742946401 and native
+model-family119742946604 fail unchanged numerical/retirement gates; do not
+claim full Rust or all-model acceptance. Workspace, UI/connectivity, LLVM20 and
+generic ARM completion remain outstanding at this checkpoint.
+
+Actual exporter bridge R2 run39756443777/source6e54a58b/workflow
+a801bbdccf8ac6b5a5b2329d09e735e4eeea6919 passes its bridge job119749518799;
+original model119751525230 fails later on ambient Rust1.99 Clippy because the
+scratch composer dropped the maintained workflow-level1.94pin. Both camera
+resolution pipeline comparisons pass before that unrelated boundary. Family
+119751525078 fails source admission before numerical traffic: the historical
+schema.py hash is incorrectly applied to the changed current exporter. Keep
+historical observation pins and current-exporter authentication distinct.
+Preserve strict original outputs, tolerances and natural ISA policy.
+Ordinary uploader original-group capture39758140178/workflow
+a38acdb7d894c013817d9d2a5d0ef233f45f15d8 succeeds. Its sealed observations and
+new native ordinary/logging implementations require full audit/hosted proof;
+none is source retirement. Inventory remains274/3/3303, embedded pending38.
+
+
+### Navigation #457 published affected-gate acceptance
+
+PR343 synthetic merge48abb4d8/navigation119742946180 and complete
+Integration39754486834 pass at published headf09eee7b. Artifact12416295492:
+37348479B/SHA418df41023040444992405f15edd0a35b4ceff1fb14eaf067688d28052a81f5c,
+all1430CRCs independently checked. Actual interrupt regression state is passed,
+marker/source record present, signal2 retained and child reaped at476ms. Its
+fresh RSA phase is234.015199ms, corroborating focused39724315701's eight fresh
+142.57–419.92ms keys. Only num-bigint-dig dev/test optimization changes; RSA2048,
+release behavior and10s deadline remain unchanged. All8configuration lifecycle,
+2reference,3registration,3publication tests and strictClippy pass; full policy,
+engine,HTTP,config,destination and five actual IPC/timer/signal scenarios pass.
+Issue#457 is closed after published affected acceptance. This does not prove
+all historical uninstrumented stalls share the same cause or claim device CPU
+improvement. #474/#476/#482 and complete project acceptance remain separate.
+
+
+Issue#490 tracks a concrete immutable-generation admission defect: oldpublish
+checks only new output files and can retain stale helper evidence when a
+zero-rewrite enabled/disabled export shares the same index digest. Exact
+bidirectional file/directory roster admission and actual publisher regression
+are candidates pending hosted RED/GREEN. The second inline Python test is an
+explicit new pending edge:67observed/39pending; baseline274/3/3303 unchanged.
+Issue#491 tracks end-to-end route-controller signal cleanup, escaped-session
+descendants, partial readiness, PID lifetime and actual IPC ownership. Neither
+issue's implementation candidate counts as retirement or accepted fix yet.

@@ -39,10 +39,21 @@ FMA contraction appears later in backend codegen; no driver fix is accepted.
 Active implementation groups are the Rust guarded-add/exporter bridge and the
 manager/runtime recording-upload controllers. Existing Python exporters and
 the two upload controllers remain pending until their complete native proof.
-The current implementation checkpoint is192ff501f40116022419e470d14a3e732243960c.
-Bridge/full-model diagnostics pin77bd306e; grouped original/native upload proof
-pins192ff501. The current branch is published through PR343 as a draft; final
-exact-source integration/workspace/ARM checks and both group acceptances remain.
+The published implementation checkpoint is f09eee7b8d352cc3b4463acf5f467a786f0d310d;
+local committed bridge-fixture correction is6e54a58bdef824ee2ed00f2cd5c099d34a797686.
+PR343 remains a draft targeting dev. Exact synthetic merge48abb4d8 passes all16
+Integration jobs, both Fast checks and both docs checks. Rust39754486991 has42
+successful jobs, two model failures and four running jobs at this checkpoint;
+workspace, UI/connectivity, LLVM20 and generic ARM results remain pending.
+Full bridge R2 at6e54a58b passes its actual exporter connection test but the
+original-model job is blocked later by scratch toolchain selection; complete
+affected retirement acceptance is still open.
+Source192ff501 runtime-only upload continuation39756811673 passes with33unchanged
+held inputs,12exact provider links,6closed native execs and both complete HTTP
+uploads checked against their own retained qlogs. The two original controllers
+remain present pending root-absence, CLI and cancellation/lifecycle validation.
+Ordinary uploader capture39758140178 succeeds; native ordinary/logging tools are
+being implemented against those original observations, with no deletion credit.
 The user has no device and owns boot, recording, upload and driving acceptance.
 No local builds, functional tests or model execution are authorized.
 
@@ -65,22 +76,22 @@ No local builds, functional tests or model execution are authorized.
 ## Accepted inventory and global gates
 
 **274 replaced-local / 3 partially-replaced / 3303 pending of 3580 baseline entries.** Additional
-helpers/notebooks are separate;38observed embedded execution sites remain pending.
-The added hosted exporter bridge test is explicitly pending until its Python
-compiler consumer is retired; it does not gain baseline source credit.
+helpers/notebooks are separate;39observed embedded execution sites remain pending.
+The two added hosted exporter/publisher tests are explicitly pending until their
+Python compiler consumer is retired; neither gains baseline source credit.
 One previously missed modem reference site is now explicitly recorded as closed;
 it increases recorded closed edges24→25 and does not reduce those37pending sites.
 The [functional closure ledger](rust-repository-python-retirement-296-families.md)
 and exact pending routing TSV retain ownership/dependencies. No source count is
 an all-module clearance or complete runtime/device acceptance.
 
-Navigation startup #457 remains open pending published full integration: the
-num-bigint-dig development/test opt-level3 candidate passes the complete focused
-navigation suite and eight fresh starts at39724315701. RSA generation is
-142.57–419.92ms; the unchanged10s barrier, RSA2048 and release profile remain.
-The older uninstrumented failed phase is unproved. Historical PTRACE_LISTEN/EIO
-#474 recurs in current full workspace119628631200 and remains open.
-Generic ARM/QEMU is not a sealed AGNOS/device candidate. Keep #296 open.
+Navigation startup #457 is closed after full published navigation119742946180
+and Integration39754486834 acceptance. The dev/test num-bigint-dig optimization
+retains RSA2048/release behavior/10s deadline. All8configuration lifecycle tests
+pass; actual interrupt phase476ms includes234.015199ms RSA and reaped probe.
+Parent audits artifact12416295492 SHA/all1430CRCs. This corroborates the eight
+fresh focused142.57–419.92ms keys, without proving every older uninstrumented
+stall's cause or a device CPU benefit.
 
 Prior published PR checkpoint was4d599dde6ec461cc43089d6f87381631aabdee6c.
 Current full Fast PR39719156487, Fast push39719148455 and

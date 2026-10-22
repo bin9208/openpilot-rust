@@ -323,3 +323,93 @@ with tempfile.TemporaryDirectory() as td:
         String::from_utf8_lossy(&output.stderr)
     );
 }
+
+/// Real publisher reuse must not retain sidecars from another helper policy.
+#[test]
+#[ignore = "requires hosted Python/tinygrad/LLVM environment"]
+fn guarded_add_publish_reuse_requires_exact_evidence_roster() {
+    use std::process::Command;
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .nth(3)
+        .unwrap();
+    let python = std::env::var_os("MODEL_BRIDGE_PYTHON").expect("explicit hosted Python required");
+    let helper = std::path::Path::new(env!("CARGO_BIN_EXE_offline-llvm-guarded-add"));
+    let helper_sha = format!("{:x}", Sha256::digest(fs::read(helper).unwrap()));
+    let script = r#"
+import json,os,tempfile
+from pathlib import Path
+import numpy as np
+from tinygrad import Tensor,TinyJit
+from model_export import Bindings,ExportError
+from model_export.original import Metadata,OriginalPipeline
+from model_export.pipeline import Stage,compose
+from model_export.publish import BundleSpec,publish
+helper=os.environ['MODEL_LLVM_GUARDED_ADD_BINARY'];digest=os.environ['MODEL_LLVM_GUARDED_ADD_SHA256']
+inputs=Tensor(np.zeros(16,dtype=np.float32)).realize()
+jit=TinyJit(lambda x:(x+2).realize())
+jit(inputs);output=jit(inputs)
+np.testing.assert_array_equal(output.numpy(),np.full(16,2,dtype=np.float32))
+bindings=Bindings({'x':inputs},{'model':output})
+stages=(Stage('prepare',jit,{'0':inputs}),)
+metadata=Metadata('fixture',{'x':(16,)},{'outputs':(16,)},{'all':(0,16)})
+original=OriginalPipeline(metadata,stages,bindings,compose(stages,bindings))
+spec=BundleSpec('driving',(1344,760),original,{'model':'12'*32})
+def enabled(value):
+ for key in ['MODEL_LLVM_GUARDED_ADD_BINARY','MODEL_LLVM_GUARDED_ADD_SHA256']:os.environ.pop(key,None)
+ if value:os.environ.update(MODEL_LLVM_GUARDED_ADD_BINARY=helper,MODEL_LLVM_GUARDED_ADD_SHA256=digest)
+def snapshot(root):return {str(p.relative_to(root)):p.read_bytes() for p in root.rglob('*') if p.is_file()}
+def rejected(root):
+ before=snapshot(root)
+ try:publish(root,(spec,),'cpu')
+ except ExportError as error:assert 'existing generation' in str(error)
+ else:raise AssertionError('different immutable evidence roster silently reused')
+ assert snapshot(root)==before,'rejected publish changed generation or current pointer'
+with tempfile.TemporaryDirectory() as td:
+ on,off=Path(td)/'enabled',Path(td)/'disabled'
+ publish(on,(spec,),'cpu')
+ current=(on/'current.json').read_bytes();generation=json.loads(current)['generation']
+ records=list((on/generation).rglob('compilation-evidence.json'))
+ receipts=[r for p in records for r in p.parent.glob('*.guarded-add.json')]
+ assert records and receipts and all(json.loads(r.read_bytes())['rewrite_count']==0 for r in receipts)
+ enabled(False);publish(off,(spec,),'cpu')
+ assert (off/'current.json').read_bytes()==current,'zero-rewrite helper unexpectedly changed generation identity'
+ assert not list(off.rglob('*.guarded-add.json'))
+ rejected(on)  # enabled generation has old evidence absent from new output.
+ publish(off,(spec,),'cpu')  # exact disabled generation remains reusable.
+ enabled(True);rejected(off)
+ publish(on,(spec,),'cpu')  # exact enabled generation remains reusable.
+ extra=on/generation/'unused-evidence.json';extra.write_text('{}')
+ rejected(on);extra.unlink()
+ empty=on/generation/'unused-directory';empty.mkdir()
+ rejected(on);empty.rmdir()
+ alias=on/generation/'evidence-alias';alias.symlink_to(records[0])
+ rejected(on);alias.unlink()
+ enabled(False)
+"#;
+    let output = Command::new(python)
+        .args(["-P", "-c", script])
+        .current_dir(root)
+        .env(
+            "PYTHONPATH",
+            format!(
+                "{}:{}:{}",
+                root.display(),
+                root.join("tinygrad_repo").display(),
+                root.join("rust/tools").display()
+            ),
+        )
+        .env("PYTHONDONTWRITEBYTECODE", "1")
+        .env("DEV", "CPU:LLVM")
+        .env("JIT_BATCH_SIZE", "0")
+        .env("MODEL_LLVM_GUARDED_ADD_BINARY", helper)
+        .env("MODEL_LLVM_GUARDED_ADD_SHA256", helper_sha)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "publisher reuse proof failed: {}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
