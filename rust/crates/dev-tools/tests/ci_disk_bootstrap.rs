@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 542);
+    assert_eq!(text.matches(marker).count(), 547);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -351,6 +351,8 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut hardwared_native = vec![];
     let mut modem_native = vec![];
     let mut manager_qa_native = vec![];
+    let mut uploader_native_builds = vec![];
+    let mut guarded_add_archives = vec![];
     let model_family_start = lines
         .iter()
         .position(|line| *line == "  model-family-retirement:")
@@ -362,14 +364,26 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut panda_protocol_retirement = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
-            if (model_family_start..model_family_end).contains(&i) {
-                model_family_retirement.push(tail.to_owned());
-                continue;
-            }
             let step = lines[..i]
                 .iter()
                 .rev()
                 .find(|line| line.starts_with("      - name:"));
+            if i + 1 < lines.len()
+                && (lines[i + 1].contains("--features uploader-reference-native")
+                    || lines[i + 1].contains("--features uploader-logging-native"))
+            {
+                uploader_native_builds.push(tail.to_owned());
+                continue;
+            }
+            if step == Some(&"      - name: Independent final helper/provider/source/Python guards")
+            {
+                guarded_add_archives.push(tail.to_owned());
+                continue;
+            }
+            if (model_family_start..model_family_end).contains(&i) {
+                model_family_retirement.push(tail.to_owned());
+                continue;
+            }
             if step == Some(&"      - name: Verify native Kalman generators against fixed independent original files") {
                 kalman_generators.push(tail.to_owned());
                 continue;
@@ -943,6 +957,14 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             }
         }
     }
+    assert_eq!(
+        uploader_native_builds,
+        [" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024"; 3]
+    );
+    assert_eq!(
+        guarded_add_archives,
+        [" --path \"$RUNNER_TEMP\" --growth-mib 512"; 2]
+    );
     assert_eq!(
         kalman_corpora,
         [
