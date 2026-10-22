@@ -271,6 +271,35 @@ fn check_case_files(evidence: &Path) -> ((usize, usize, usize), BTreeMap<String,
     let report: Value =
         serde_json::from_slice(&fs::read(evidence.join("results.json")).unwrap()).unwrap();
     assert_eq!(report["passed"], 17);
+    assert_eq!(report["request_plan_validation"]["source_cases"], 13);
+    assert_eq!(
+        report["request_plan_validation"]["paired_request_plans"],
+        26
+    );
+    assert_eq!(
+        report["request_plan_validation"]["original_source_operations"],
+        40
+    );
+    assert_eq!(
+        report["request_plan_validation"]["scenario_operations_match"],
+        true
+    );
+    assert_eq!(
+        report["request_plan_validation"]["response_overrides_match"],
+        true
+    );
+    assert_eq!(
+        report["request_plan_validation"]["default_responses_match"],
+        true
+    );
+    assert_eq!(
+        report["request_plan_validation"]["scalar_configuration_match"],
+        true
+    );
+    assert_eq!(
+        report["source_capture"]["helper_original_reference"]["sha256"],
+        "7e99f8fa3501a481e83a72a00b965ec9c3009404071de32adacbbf51c57327d2"
+    );
     let scenarios = report["scenarios"].as_array().unwrap();
     assert_eq!(scenarios.len(), 13);
     let mut rows = 0;
@@ -353,6 +382,16 @@ fn same_held_native_elfs_replay_modem_originals_in_checkout_and_private_absent_r
     let fixture_source = root.join(FIXTURE);
     let fixture_target = private.join(FIXTURE);
     copy_tree(&fixture_source, &fixture_target);
+    let helper_reference =
+        root.join("rust/crates/modem/tests/fixtures/original-source-reference.json");
+    let private_helper_reference =
+        private.join("rust/crates/modem/tests/fixtures/original-source-reference.json");
+    fs::create_dir_all(private_helper_reference.parent().unwrap()).unwrap();
+    fs::copy(&helper_reference, &private_helper_reference).unwrap();
+    assert_eq!(
+        fs::read(&helper_reference).unwrap(),
+        fs::read(&private_helper_reference).unwrap()
+    );
     for name in RETIRED {
         assert!(fs::symlink_metadata(private.join(name)).is_err());
     }
@@ -493,8 +532,15 @@ fn same_held_native_elfs_replay_modem_originals_in_checkout_and_private_absent_r
             .unwrap(),
     )
     .unwrap();
-    fs::write(output.join("summary.json"), serde_json::to_vec_pretty(&json!({
-        "result":"PASS","roots":2,"case_counts":totals,"cli_controls":12,
-        "source_reappearance_controls":reappearance,"same_held_elfs":true,"device_validation":false
-    })).unwrap()).unwrap();
+    fs::write(
+        output.join("summary.json"),
+        serde_json::to_vec_pretty(&json!({
+            "result":"PASS","roots":2,"case_counts":totals,"cli_controls":12,
+            "source_reappearance_controls":reappearance,"private_absent_source_count":RETIRED.len(),
+            "accepted_source_removals":0,"retirement_acceptance":false,
+            "same_held_elfs":true,"device_validation":false
+        }))
+        .unwrap(),
+    )
+    .unwrap();
 }

@@ -17,7 +17,7 @@ use std::{
     collections::BTreeMap,
     ffi::OsString,
     fs::{self, File, OpenOptions},
-    io::{self, Read, Write},
+    io::{self, Read, Seek, Write},
     os::fd::AsFd,
     os::unix::{
         ffi::OsStrExt,
@@ -231,6 +231,98 @@ fn scenarios() -> Vec<Case> {
     cases
 }
 
+fn validate_original_request_plans(cases: &[Case], receipt: &Receipt) -> Result<Value> {
+    let plans = receipt.request_plans()?;
+    let plans = plans
+        .as_array()
+        .ok_or("modem original request plans are not an array")?;
+    require(
+        plans.len() == cases.len() * 2,
+        "modem original request plan count differs",
+    )?;
+    let expected_paths = [
+        ("at_port", "<owned-fixture-root>/at"),
+        ("ppp_port", "<owned-fixture-root>/absent-data-port"),
+        ("state", "<owned-fixture-root>/state"),
+        ("lock", "<owned-fixture-root>/lock"),
+        ("params", "<owned-fixture-root>/params"),
+        ("statistics", "<owned-fixture-root>/statistics"),
+        ("modem_manager", "<owned-fixture-root>/manager.service"),
+        ("sudo", "<owned-fixture-root>/sudo"),
+        ("ip", "<owned-fixture-root>/ip"),
+    ];
+    for (index, case) in cases.iter().enumerate() {
+        let source = &plans[index * 2];
+        let native = &plans[index * 2 + 1];
+        let mut source_as_native = source.clone();
+        source_as_native["side"] = json!("native");
+        require(
+            source["side"] == "source"
+                && native["side"] == "native"
+                && source_as_native == native.clone(),
+            format!("modem original paired request differs: {}", case.name),
+        )?;
+        let mut responses = default_responses();
+        let mut changes = serde_json::Map::new();
+        for (command, lines) in &case.responses {
+            if responses.get(command) != Some(lines) {
+                changes.insert(command.clone(), json!(lines));
+            }
+        }
+        require(
+            source["operations"] == Value::Array(case.operations.clone())
+                && source["changes"] == Value::Object(changes)
+                && source["flags"] == json!(case.flags)
+                && source["held_lock"] == case.hold_lock,
+            format!(
+                "Rust modem scenario differs from original input: {}",
+                case.name
+            ),
+        )?;
+        responses.extend(case.responses.clone());
+        require(
+            source["initial_responses"] == json!(responses),
+            format!(
+                "Rust modem default responses differ from original input: {}",
+                case.name
+            ),
+        )?;
+        for (field, expected) in expected_paths {
+            require(
+                source["config"][field] == expected,
+                format!("modem original fixture path differs: {}:{field}", case.name),
+            )?;
+        }
+        require(
+            source["config"]["serial_timeout_ms"] == 100
+                && source["config"]["state_wait_ms"] == 30
+                && source["config"]["iccid_interval"] == 0.1
+                && source["config"]["launcher"].as_str().is_some_and(|path| {
+                    path.ends_with("/rust/target/debug/openpilot-process-child")
+                }),
+            format!(
+                "Rust modem scalar configuration differs from original: {}",
+                case.name
+            ),
+        )?;
+    }
+    let original_operations = plans
+        .iter()
+        .step_by(2)
+        .map(|plan| plan["operations"].as_array().map_or(0, Vec::len))
+        .sum::<usize>();
+    require(
+        original_operations == 40,
+        "modem original request operation count differs",
+    )?;
+    Ok(
+        json!({"source_cases":cases.len(),"paired_request_plans":plans.len(),
+        "original_source_operations":original_operations,"scenario_operations_match":true,
+        "response_overrides_match":true,"default_responses_match":true,
+        "scalar_configuration_match":true}),
+    )
+}
+
 struct PtyServer {
     stop: Arc<AtomicBool>,
     commands: Arc<Mutex<Vec<String>>>,
@@ -401,10 +493,6 @@ impl PtyServer {
             .clone())
     }
 
-    fn root(&self) -> &Path {
-        self.directory.path()
-    }
-
     fn set_response(&self, command: &str, lines: Vec<String>) -> Result<()> {
         self.responses
             .lock()
@@ -483,6 +571,10 @@ impl Fixture {
           "state_wait_ms": 30,
           "iccid_interval": 0.1
         })
+    }
+
+    fn root(&self) -> &Path {
+        self.directory.path()
     }
 
     fn calls(&self) -> Result<Vec<Vec<String>>> {
@@ -1082,7 +1174,7 @@ fn process_boundary(options: &TraceOptions, receipt: &Receipt) -> Result<Vec<Val
     config["state"] = json!(bad_state);
     let config_path = startup_fixture.root().join("startup-config.json");
     fs::write(&config_path, serde_json::to_vec(&config)?)?;
-    let mut spec = CommandSpec::new(
+    let mut spec = CommandSpec::new_os(
         vec![
             options.daemon.as_os_str().to_owned(),
             OsString::from("--config"),
@@ -1237,7 +1329,8 @@ pub fn run_with_emit(
     receipt.verify()?;
     executables.verify()?;
     let report = json!({"source_capture":receipt.report(),"scenarios":traces["scenarios"],
-      "executables":executables.report(),"lifecycle":lifecycle,"process_boundary":boundaries,"passed":17});
+      "executables":executables.report(),"lifecycle":lifecycle,"process_boundary":boundaries,"passed":17,
+      "request_plan_validation":traces["request_plan_validation"]});
     finalize_report(
         &options.output.join("results.json"),
         &report,
@@ -1256,7 +1349,9 @@ pub fn run(options: &TraceOptions) -> Result<Value> {
 
 fn trace_admitted(options: &TraceOptions, receipt: &Receipt) -> Result<Value> {
     let mut report = Vec::new();
-    for case in scenarios() {
+    let cases = scenarios();
+    let plan_validation = validate_original_request_plans(&cases, receipt)?;
+    for case in cases {
         let expected = source_result(&case, &receipt)?;
         let actual = native_result(&case, &options.trace, &options.launcher, &options.helper)?;
         let pass = actual == expected;
@@ -1271,7 +1366,7 @@ fn trace_admitted(options: &TraceOptions, receipt: &Receipt) -> Result<Value> {
             json!({"scenario":case.name,"pass":true,"artifact":format!("{}.json", case.name)}),
         );
     }
-    Ok(json!({"source_capture":receipt.report(),"scenarios":report,"passed":report.len()}))
+    Ok(json!({"scenarios":report,"passed":report.len(),"request_plan_validation":plan_validation}))
 }
 
 fn write_new(path: &Path, bytes: &[u8]) -> Result<()> {

@@ -11,9 +11,20 @@ use std::{
 };
 
 const MANIFEST: &[u8] = include_bytes!("../tests/fixtures/modem-original/capture-manifest.json");
-const MANIFEST_SHA256: &str = "ef03b3508abb966f5522959d05ccce9dd9d6e5eee0b7c8880dc111c8d339177c";
+const MANIFEST_SHA256: &str = "a14b97cfb5bd2a74582bc1098f5ebc731f723dac0f946640662842aefbd603a6";
 const PROCESS_BOUNDARY_SHA256: &str =
     "9b7d0fa7e3d8c79d6fe83519afcba2530a5f284f0c8c2fa31af960da3102c869";
+const REQUEST_PLANS_SHA256: &str =
+    "678f66f7328df0133dac8870f095f19fc1e7d89e277f46c4adbe733bd48a111d";
+const PROVIDER_SHA256: &str = "70495fe3a705121556f894be26fb15c593152fe22d033fcb58e0f7d49b4f7100";
+const SOURCE_RECEIPT_SHA256: &str =
+    "87734afd5c3d54f1e08305b60213e0574f62fbe7041283672aae9d4492c9239a";
+const PLAN_SUMMARY_SHA256: &str =
+    "3dba57624d66668dc77fb108aa3c610f50ebb5553e298459b29d7213bcd8c7d4";
+const PLAN_PROVENANCE_SHA256: &str =
+    "cfb52379c02c7c3ade29fd33a5922a9c44d5f69b0169a8432fd97d739b7cb434";
+const HELPER_REFERENCE_SHA256: &str =
+    "7e99f8fa3501a481e83a72a00b965ec9c3009404071de32adacbbf51c57327d2";
 const MAX_SOURCE: u64 = 32 * 1024 * 1024;
 const MAX_EXPECTATION: u64 = 8 * 1024 * 1024;
 const MAX_EXECUTABLE: u64 = 512 * 1024 * 1024;
@@ -148,6 +159,18 @@ fn digest_file(file: &File, expected_len: u64, maximum: u64) -> Result<String> {
         "modem capture length changed while hashing",
     )?;
     Ok(format!("{:x}", hash.finalize()))
+}
+
+fn read_held_json(input: &Held) -> Result<Value> {
+    let mut file = input.file.try_clone()?;
+    file.seek(SeekFrom::Start(0))?;
+    let mut bytes = Vec::with_capacity(input.len as usize);
+    file.take(MAX_EXPECTATION + 1).read_to_end(&mut bytes)?;
+    require(
+        bytes.len() as u64 == input.len && sha(&bytes) == input.sha256,
+        format!("modem original input changed while reading: {}", input.name),
+    )?;
+    Ok(serde_json::from_slice(&bytes)?)
 }
 
 struct Held {
@@ -367,6 +390,38 @@ impl Receipt {
         Ok(serde_json::from_slice(&bytes)?)
     }
 
+    /// Original Python source requests, retained separately from Rust expectations.
+    pub fn request_plans(&self) -> Result<Value> {
+        self.read_json(&self.fixture.join("request-plans.json"), MAX_EXPECTATION)
+    }
+
+    /// Original helper-lifetime observations captured against the pinned Python helper.
+    pub fn helper_reference(&self) -> Result<Value> {
+        self.read_json(
+            &self
+                .root
+                .join("rust/crates/modem/tests/fixtures/original-source-reference.json"),
+            MAX_EXPECTATION,
+        )
+    }
+
+    fn read_json(&self, path: &Path, maximum: u64) -> Result<Value> {
+        let input = self
+            .held
+            .iter()
+            .find(|input| input.path == path)
+            .ok_or("modem independent original input was not admitted")?;
+        let mut file = input.file.try_clone()?;
+        file.seek(SeekFrom::Start(0))?;
+        let mut bytes = Vec::with_capacity(input.len as usize);
+        file.take(maximum + 1).read_to_end(&mut bytes)?;
+        require(
+            bytes.len() as u64 == input.len && sha(&bytes) == input.sha256,
+            format!("modem original input changed while reading: {}", input.name),
+        )?;
+        Ok(serde_json::from_slice(&bytes)?)
+    }
+
     pub fn original_process_startup(&self) -> Result<Value> {
         let input = self
             .held
@@ -391,6 +446,7 @@ impl Receipt {
           "source_bundle_sha256": "4285c91ffd0b45568d79472a782c8ca05a4cd475eca8cb7ce196af65d74f911b",
           "source_files": self.held.iter().filter(|input| input.path.starts_with(&self.root.join("openpilot")) || input.path.starts_with(&self.root.join("rust/tools"))).map(Held::report).collect::<Vec<_>>(),
           "original_oracles": self.held.iter().filter(|input| input.path.starts_with(&self.fixture) && input.name != "capture-manifest.json").map(Held::report).collect::<Vec<_>>(),
+          "helper_original_reference": self.held.iter().find(|input| input.path == self.root.join("rust/crates/modem/tests/fixtures/original-source-reference.json")).map(Held::report),
           "retired_sources_absent": self.missing})
     }
 }
@@ -410,6 +466,17 @@ pub fn validate(root: &Path, require_retired: bool) -> Result<Receipt> {
             && manifest["artifact_sha256"]
                 == "4285c91ffd0b45568d79472a782c8ca05a4cd475eca8cb7ce196af65d74f911b",
         "modem capture provenance differs",
+    )?;
+    require(
+        manifest["request_plans_sha256"] == REQUEST_PLANS_SHA256
+            && manifest["provider_before_sha256"] == PROVIDER_SHA256
+            && manifest["provider_after_sha256"] == PROVIDER_SHA256
+            && manifest["sources_before_sha256"] == SOURCE_RECEIPT_SHA256
+            && manifest["sources_after_sha256"] == SOURCE_RECEIPT_SHA256
+            && manifest["plan_capture_summary_sha256"] == PLAN_SUMMARY_SHA256
+            && manifest["plan_capture_provenance_sha256"] == PLAN_PROVENANCE_SHA256
+            && manifest["helper_original_reference_sha256"] == HELPER_REFERENCE_SHA256,
+        "modem supplemental original evidence pins differ",
     )?;
     let source_pins = manifest["source_files"]
         .as_object()
@@ -497,6 +564,127 @@ pub fn validate(root: &Path, require_retired: bool) -> Result<Receipt> {
         "modem original startup-order observation differs",
     )?;
     held.push(process_boundary);
+    let mut supplemental = Vec::new();
+    for (name, hash) in [
+        ("request-plans.json", REQUEST_PLANS_SHA256),
+        ("provider.before.json", PROVIDER_SHA256),
+        ("provider.after.json", PROVIDER_SHA256),
+        ("sources.before.json", SOURCE_RECEIPT_SHA256),
+        ("sources.after.json", SOURCE_RECEIPT_SHA256),
+        ("capture-summary.json", PLAN_SUMMARY_SHA256),
+        ("plan-capture-provenance.json", PLAN_PROVENANCE_SHA256),
+    ] {
+        let input = Held::open(&fixture.join(name), name.to_owned(), MAX_EXPECTATION)?;
+        require(
+            input.sha256 == hash,
+            format!("modem original request evidence changed: {name}"),
+        )?;
+        supplemental.push(input);
+    }
+    let plan_index = |name: &str| {
+        supplemental
+            .iter()
+            .find(|input| input.name == name)
+            .ok_or_else(|| format!("modem request evidence missing: {name}"))
+    };
+    let plans: Value = read_held_json(plan_index("request-plans.json")?)?;
+    require(
+        plans.as_array().is_some_and(|plans| plans.len() == 26),
+        "modem request plan roster differs",
+    )?;
+    for pair in plans.as_array().unwrap().chunks_exact(2) {
+        require(
+            pair[0]["side"] == "source" && pair[1]["side"] == "native",
+            "modem request plans are not source/native paired",
+        )?;
+        let mut source = pair[0].clone();
+        source["side"] = json!("native");
+        require(source == pair[1], "paired modem request plans differ")?;
+    }
+    let providers = read_held_json(plan_index("provider.before.json")?)?;
+    require(
+        providers == read_held_json(plan_index("provider.after.json")?)?
+            && providers["python"] == "3.12.15 (main, Oct  1, 2026 02:35:59) [GCC 13.3.0]"
+            && providers["serial_version"] == "3.5",
+        "modem original provider provenance differs",
+    )?;
+    let original_sources = read_held_json(plan_index("sources.before.json")?)?;
+    require(
+        original_sources == read_held_json(plan_index("sources.after.json")?)?
+            && original_sources
+                .as_object()
+                .is_some_and(|sources| sources.len() == 10),
+        "modem original source closure changed during capture",
+    )?;
+    let summary = read_held_json(plan_index("capture-summary.json")?)?;
+    require(
+        summary["source_cases"] == 13
+            && summary["original_source_operations"] == 40
+            && summary["paired_request_plans"] == 26
+            && summary["request_plan_sha256"] == REQUEST_PLANS_SHA256
+            && summary["retirement_acceptance"] == false,
+        "modem original request capture summary differs",
+    )?;
+    let plan_provenance = read_held_json(plan_index("plan-capture-provenance.json")?)?;
+    require(
+        plan_provenance["schema"] == 1
+            && plan_provenance["run"] == 39715283281u64
+            && plan_provenance["artifact"] == 12399150770u64
+            && plan_provenance["artifact_zip_sha256"]
+                == "efcb43bf1ab90f9345bf95a12064f7ccdb411da44a984d4b63051fbe42ec7d2a"
+            && plan_provenance["source_commit"] == "ca0bd03a16362fdaeb69339c1268d20d92ee5b64"
+            && plan_provenance["workflow_commit"] == "06b241263d6fc7278ee92c414aa48b29e1b3b69b"
+            && plan_provenance["request_plans_sha256"] == REQUEST_PLANS_SHA256
+            && plan_provenance["provider_receipt_sha256"] == PROVIDER_SHA256
+            && plan_provenance["source_receipt_sha256"] == SOURCE_RECEIPT_SHA256
+            && plan_provenance["retirement_acceptance"] == false,
+        "modem original plan capture provenance differs",
+    )?;
+    held.extend(supplemental);
+
+    let helper_reference_path =
+        root.join("rust/crates/modem/tests/fixtures/original-source-reference.json");
+    let helper_reference = Held::open(
+        &helper_reference_path,
+        "original-source-reference.json".into(),
+        MAX_EXPECTATION,
+    )?;
+    require(
+        helper_reference.sha256 == HELPER_REFERENCE_SHA256,
+        "modem helper original-source reference differs",
+    )?;
+    let helper_reference_value = read_held_json(&helper_reference)?;
+    let modes = helper_reference_value["original_reference_modes"]
+        .as_array()
+        .ok_or("modem helper original-reference modes are missing")?;
+    require(
+        helper_reference_value["schema"] == 1
+            && modes.len() == 3
+            && ["stdout", "stderr", "invaliderr"]
+                .iter()
+                .all(|name| modes.iter().any(|mode| mode["mode"] == *name))
+            && modes.iter().all(|mode| {
+                mode["original_only"] == true
+                    && mode["original_exit_code"] == 0
+                    && mode["direct_child_reaped"] == true
+                    && mode["original_result"] == json!({})
+                    && mode["stdout_utf8"] == "{}\n"
+                    && mode["stderr_bytes"] == 0
+                    && mode["stderr_sha256"]
+                        == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }),
+        "modem helper original-source reference differs",
+    )?;
+    require(
+        modes.iter().all(|mode| {
+            let mode_name = mode["mode"].as_str().unwrap_or_default();
+            mode["descendant_alive_after_direct_child_exit"] == (mode_name != "invaliderr")
+                && mode["invalid_stderr_was_rejected"] == (mode_name == "invaliderr")
+        }),
+        "modem helper original-source lifecycle reference differs",
+    )?;
+    held.push(helper_reference);
+
     let mut missing = Vec::new();
     for (name, hash) in SOURCE_PINS {
         let path = safe_path(&root, name)?;
@@ -574,6 +762,13 @@ mod tests {
                 .path()
                 .join("rust/crates/dev-tools/tests/fixtures/modem-original"),
         );
+        let helper_reference =
+            repository.join("rust/crates/modem/tests/fixtures/original-source-reference.json");
+        let target = root
+            .path()
+            .join("rust/crates/modem/tests/fixtures/original-source-reference.json");
+        fs::create_dir_all(target.parent().unwrap()).unwrap();
+        fs::copy(helper_reference, target).unwrap();
         root
     }
 
@@ -585,6 +780,40 @@ mod tests {
         let path = root
             .path()
             .join("rust/crates/dev-tools/tests/fixtures/modem-original/source/normal.json");
+        let mut bytes = fs::read(&path).unwrap();
+        bytes.push(b' ');
+        fs::write(path, bytes).unwrap();
+        assert!(receipt.verify().is_err());
+    }
+
+    #[test]
+    fn request_plans_and_helper_reference_are_held_with_the_original_receipt() {
+        let root = checkout_copy();
+        let receipt = validate(root.path(), false).unwrap();
+        assert_eq!(
+            receipt.request_plans().unwrap().as_array().unwrap().len(),
+            26
+        );
+        assert_eq!(
+            receipt.helper_reference().unwrap()["original_reference_modes"]
+                .as_array()
+                .unwrap()
+                .len(),
+            3
+        );
+        let path = root
+            .path()
+            .join("rust/crates/dev-tools/tests/fixtures/modem-original/request-plans.json");
+        let mut bytes = fs::read(&path).unwrap();
+        bytes.push(b' ');
+        fs::write(path, bytes).unwrap();
+        assert!(receipt.verify().is_err());
+
+        let second = checkout_copy();
+        let receipt = validate(second.path(), false).unwrap();
+        let path = second
+            .path()
+            .join("rust/crates/modem/tests/fixtures/original-source-reference.json");
         let mut bytes = fs::read(&path).unwrap();
         bytes.push(b' ');
         fs::write(path, bytes).unwrap();

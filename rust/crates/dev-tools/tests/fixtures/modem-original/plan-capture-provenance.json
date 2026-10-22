@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "run": 39715283281,
+  "artifact": 12399150770,
+  "artifact_zip_sha256": "efcb43bf1ab90f9345bf95a12064f7ccdb411da44a984d4b63051fbe42ec7d2a",
+  "source_commit": "ca0bd03a16362fdaeb69339c1268d20d92ee5b64",
+  "workflow_commit": "06b241263d6fc7278ee92c414aa48b29e1b3b69b",
+  "request_plans_sha256": "678f66f7328df0133dac8870f095f19fc1e7d89e277f46c4adbe733bd48a111d",
+  "provider_receipt_sha256": "70495fe3a705121556f894be26fb15c593152fe22d033fcb58e0f7d49b4f7100",
+  "source_receipt_sha256": "87734afd5c3d54f1e08305b60213e0574f62fbe7041283672aae9d4492c9239a",
+  "retirement_acceptance": false
+}
