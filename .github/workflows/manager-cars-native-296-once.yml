@@ -20,6 +20,7 @@ jobs:
       CARGO_PROFILE_TEST_DEBUG: '0'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
       PYTHONDONTWRITEBYTECODE: '1'
+      CARGO_BUILD_TARGET: x86_64-unknown-linux-gnu
     steps:
     - uses: actions/checkout@v7
       with:
@@ -53,7 +54,7 @@ jobs:
         sudo apt-get update
 
         sudo apt-get install -y jq g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev
-        libzstd-dev libzmq5 strace
+        libzstd-dev libzmq3-dev strace
 
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
 
@@ -71,8 +72,8 @@ jobs:
         \ --locked -p openpilot-dev-tools \\\n  --features manager-cars-native --bin generate-manager-cars \\\n  > \"$proof/build.stdout\"\
         \ 2> \"$proof/build.stderr\"\nmapfile -t harness < <(jq -r 'select(.reason==\"compiler-artifact\" and .profile.test==true\
         \ and .target.name==\"manager_cars_generate\") | .executable // empty' \"$proof/compile.jsonl\")\ntest \"${#harness[@]}\"\
-        \ -eq 1\ntest -f \"${harness[0]}\"\nnative=\"$GITHUB_WORKSPACE/rust/target/debug/generate-manager-cars\"\ntest -x\
-        \ \"$native\"\nsha256sum \"$native\" \"${harness[0]}\" > \"$proof/native-before.sha256\"\n\ncargo test --manifest-path\
+        \ -eq 1\ntest -f \"${harness[0]}\"\nnative=\"$GITHUB_WORKSPACE/rust/target/$CARGO_BUILD_TARGET/debug/generate-manager-cars\"\
+        \ntest -x \"$native\"\nsha256sum \"$native\" \"${harness[0]}\" > \"$proof/native-before.sha256\"\n\ncargo test --manifest-path\
         \ rust/Cargo.toml --locked -p openpilot-dev-tools --features manager-cars-native --lib manager_cars_generate::tests::\
         \ -- --nocapture 2>&1 | tee \"$proof/units.log\"\ngrep -E \"^test result: ok\\. 3 passed; 0 failed; 0 ignored;\" \"\
         $proof/units.log\"\n"
@@ -107,13 +108,13 @@ jobs:
         \ > \"$proof/original-check.stdout\" 2> \"$proof/original-check.stderr\"\ncmp \"$proof/original.stdout\" \"$proof/original-check.stdout\"\
         \n\nmapfile -t harness < <(jq -r 'select(.reason==\"compiler-artifact\" and .profile.test==true and .target.name==\"\
         manager_cars_generate\") | .executable // empty' \"$proof/compile.jsonl\")\ntest \"${#harness[@]}\" -eq 1\nnative=\"\
-        $GITHUB_WORKSPACE/rust/target/debug/generate-manager-cars\"\nexport MANAGER_CARS_SOURCE_ROOT=\"$GITHUB_WORKSPACE\"\
-        \nexport MANAGER_CARS_ORIGINAL_OUTPUT=\"$proof/original\"\nexport MANAGER_CARS_ORIGINAL_STDOUT=\"$proof/original.stdout\"\
-        \nexport MANAGER_CARS_NATIVE_BINARY=\"$native\"\nexport MANAGER_CARS_EVIDENCE=\"$proof/native-evidence\"\n\"${harness[0]}\"\
-        \ fresh_original_car_docs_match_native_generation_and_check_mode \\\n  --ignored --exact --nocapture > \"$proof/test.stdout\"\
-        \ 2> \"$proof/test.stderr\"\ngrep -Fx 'test fresh_original_car_docs_match_native_generation_and_check_mode ... ok'\
-        \ \"$proof/test.stdout\"\ngrep -Eq '^test result: ok\\. 1 passed; 0 failed; 0 ignored;' \"$proof/test.stdout\"\n\n\
-        # Capture unchanged-original admission behavior separately from the generator\n# byte proof. Error traceback text\
+        $GITHUB_WORKSPACE/rust/target/$CARGO_BUILD_TARGET/debug/generate-manager-cars\"\nexport MANAGER_CARS_SOURCE_ROOT=\"\
+        $GITHUB_WORKSPACE\"\nexport MANAGER_CARS_ORIGINAL_OUTPUT=\"$proof/original\"\nexport MANAGER_CARS_ORIGINAL_STDOUT=\"\
+        $proof/original.stdout\"\nexport MANAGER_CARS_NATIVE_BINARY=\"$native\"\nexport MANAGER_CARS_EVIDENCE=\"$proof/native-evidence\"\
+        \n\"${harness[0]}\" fresh_original_car_docs_match_native_generation_and_check_mode \\\n  --ignored --exact --nocapture\
+        \ > \"$proof/test.stdout\" 2> \"$proof/test.stderr\"\ngrep -Fx 'test fresh_original_car_docs_match_native_generation_and_check_mode\
+        \ ... ok' \"$proof/test.stdout\"\ngrep -Eq '^test result: ok\\. 1 passed; 0 failed; 0 ignored;' \"$proof/test.stdout\"\
+        \n\n# Capture unchanged-original admission behavior separately from the generator\n# byte proof. Error traceback text\
         \ is retained; only exit status is claimed.\nadmit() {\n  local label=\"$1\" expected=\"$2\"\n  shift 2\n  local code\n\
         \  set +e\n  \"$@\" > \"$proof/$label.stdout\" 2> \"$proof/$label.stderr\"\n  code=$?\n  set -e\n  printf '%s\\n'\
         \ \"$code\" > \"$proof/$label.status\"\n  test \"$code\" -eq \"$expected\"\n}\nadmit original-help 0 python rust/tools/generate_manager_cars.py\
