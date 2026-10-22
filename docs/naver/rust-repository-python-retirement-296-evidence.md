@@ -9221,3 +9221,16 @@ scoped Rust formatting and diff checks pass; no local functional execution.
 Exact-SHA Actions Fast behavior, cold private toolchain provisioning and its
 retained seven-minute bound still require actual execution. No success claim
 or deletion credit follows from source-only routing.
+
+## Preserve pending Actions runs as well as running checks (2026-10-23)
+
+GitHub's current [concurrency contract](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency)
+allows one pending run by default even with cancel-in-progress:false; a later
+arrival replaces that pending run. The supported queue:max setting retains up
+to100pending runs and is compatible with cancel-in-progress:false. Fast now
+keeps its original concurrency group and adds queue:max, with a native policy
+assertion and a single-queue mutation counterexample. This prevents the next
+publication from replacing already queued work; no running/pending run was
+cancelled or restarted by this session. Common execution helper bytes and the
+seven required Fast jobs/commands/timeouts are unchanged. Source/YAML/rustfmt
+checks only; actual GitHub validation remains pending next publication.

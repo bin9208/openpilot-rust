@@ -50,6 +50,7 @@ fn protected_workflow_mutations_are_rejected() {
             "cancel-in-progress: false",
             "cancel-in-progress: true",
         ),
+        ("fast-checks.yml", "queue: max", "queue: single"),
         ("integration.yml", "${{ always() }}", "${{ success() }}"),
         ("integration.yml", "test \"$BUILD\" = success", "true"),
         ("user-docs.yaml", "- dev", "- other"),
