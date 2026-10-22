@@ -19,8 +19,11 @@ use std::{
     },
     time::{Duration, Instant},
 };
+#[path = "paramsd_estimator_check/identity.rs"]
 mod identity;
+#[path = "paramsd_estimator_check/numeric.rs"]
 pub mod numeric;
+#[path = "paramsd_estimator_check/reference.rs"]
 pub mod reference;
 use identity::{Bound, Directory};
 const LIMIT: u64 = 32 * 1024 * 1024;

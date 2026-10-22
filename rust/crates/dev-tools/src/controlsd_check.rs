@@ -29,6 +29,7 @@ mod identity;
 #[allow(dead_code)]
 #[path = "paramsd_estimator_check/numeric.rs"]
 pub mod numeric;
+#[path = "controlsd_check/reference.rs"]
 pub mod reference;
 use identity::{Bound, Directory};
 const LIMIT: u64 = 512 * 1024 * 1024;

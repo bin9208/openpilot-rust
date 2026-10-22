@@ -981,8 +981,14 @@ fn current_native_cli_preserves_sealed_original_admissions_and_side_effects() {
                 source_reservation["growth_bytes"]
             );
             assert_eq!(
+                source_reservation["required_bytes"],
+                27 * 1024 * 1024 * 1024_u64
+            );
+            // The original receipt includes the retired 25 GiB reserve. The
+            // native receipt now admits exactly the same 2 GiB operation growth.
+            assert_eq!(
                 native_reservation["required_bytes"],
-                source_reservation["required_bytes"]
+                native_reservation["growth_bytes"]
             );
             assert!(!first_output.exists(), "earlier repeated output was used");
         }
