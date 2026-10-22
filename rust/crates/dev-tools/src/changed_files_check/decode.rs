@@ -1,6 +1,6 @@
 //! Source-byte frontend based on CPython3.12.15 tokenizer's BOM/cookie order.
 //! Python/PSF source provenance is recorded beside this opt-in candidate.
-//! GNU iconv is an explicit native dependency for three legacy codecs and UTF7.
+//! GNU iconv is an explicit native dependency for the remaining multibyte codecs.
 //! Its complete codec-domain parity is NOT yet established by the original72rows.
 use super::{named_character, Diagnostic, Phase};
 use std::ffi::{c_char, c_void, CStr};
@@ -288,57 +288,50 @@ fn native_codec(raw: &[u8], name: &CStr) -> Result<String> {
     out.truncate(length - output_left);
     String::from_utf8(out).map_err(|e| invalid(e.to_string()))
 }
-fn cp1252(raw: &[u8]) -> Result<String> {
-    let specials = [
-        Some('€'),
-        None,
-        Some('‚'),
-        Some('ƒ'),
-        Some('„'),
-        Some('…'),
-        Some('†'),
-        Some('‡'),
-        Some('ˆ'),
-        Some('‰'),
-        Some('Š'),
-        Some('‹'),
-        Some('Œ'),
-        None,
-        Some('Ž'),
-        None,
-        None,
-        Some('‘'),
-        Some('’'),
-        Some('“'),
-        Some('”'),
-        Some('•'),
-        Some('–'),
-        Some('—'),
-        Some('˜'),
-        Some('™'),
-        Some('š'),
-        Some('›'),
-        Some('œ'),
-        None,
-        Some('ž'),
-        Some('Ÿ'),
-    ];
-    raw.iter()
-        .map(|&b| {
-            if (0x80..0xa0).contains(&b) {
-                specials[usize::from(b - 0x80)]
-                    .ok_or_else(|| invalid("undefined cp1252 source byte"))
+fn utf16(raw: &[u8], endian: Option<bool>) -> Result<String> {
+    let (raw, little) = match (endian, raw.get(..2)) {
+        (None, Some([0xff, 0xfe])) => (&raw[2..], true),
+        (None, Some([0xfe, 0xff])) => (&raw[2..], false),
+        _ => (raw, endian.unwrap_or(cfg!(target_endian = "little"))),
+    };
+    if !raw.len().is_multiple_of(2) {
+        return Err(invalid("truncated UTF16 payload"));
+    }
+    let units = raw.chunks_exact(2).map(|v| {
+        let bytes = [v[0], v[1]];
+        if little {
+            u16::from_le_bytes(bytes)
+        } else {
+            u16::from_be_bytes(bytes)
+        }
+    });
+    char::decode_utf16(units)
+        .map(|c| c.map_err(|_| invalid("unpaired UTF16 surrogate")))
+        .collect()
+}
+fn utf32(raw: &[u8], endian: Option<bool>) -> Result<String> {
+    let (raw, little) = match (endian, raw.get(..4)) {
+        (None, Some([0xff, 0xfe, 0, 0])) => (&raw[4..], true),
+        (None, Some([0, 0, 0xfe, 0xff])) => (&raw[4..], false),
+        _ => (raw, endian.unwrap_or(cfg!(target_endian = "little"))),
+    };
+    if !raw.len().is_multiple_of(4) {
+        return Err(invalid("truncated UTF32 payload"));
+    }
+    raw.chunks_exact(4)
+        .map(|v| {
+            let bytes = [v[0], v[1], v[2], v[3]];
+            scalar(if little {
+                u32::from_le_bytes(bytes)
             } else {
-                Ok(char::from(b))
-            }
+                u32::from_be_bytes(bytes)
+            })
         })
         .collect()
 }
-pub fn source(raw: &[u8]) -> Result<String> {
-    let raw = newlines(raw);
-    let bom = raw.starts_with(&[0xef, 0xbb, 0xbf]);
-    let raw = if bom { &raw[3..] } else { raw.as_slice() };
-    let codec = encoding(raw, bom)?;
+/// Strict payload decoding without source BOM/cookie/newline/NUL admission.
+/// Unlike `source`, this preserves NUL, CR, LF and missing EOF newlines.
+pub(super) fn payload(raw: &[u8], codec: &str) -> Result<String> {
     // Python codec lookup is broader than this reviewed candidate roster. A
     // capability error is explicit and never counted as Python syntax rejection.
     let mut key = String::new();
@@ -356,8 +349,21 @@ pub fn source(raw: &[u8]) -> Result<String> {
     }
     let name = super::codec_names::lookup(&key)
         .ok_or_else(|| invalid(format!("unknown Python3.12 source encoding: {codec}")))?;
+    if let Some(table) = super::single_byte_tables::lookup(name) {
+        return raw
+            .iter()
+            .map(|&b| {
+                let cp = table[usize::from(b)];
+                if cp == 0xfffe {
+                    Err(invalid("undefined byte in pinned CPython codec table"))
+                } else {
+                    scalar(cp)
+                }
+            })
+            .collect();
+    }
     let decoded = match name {
-        "utf_8" | "utf8" | "utf_8_sig" => std::str::from_utf8(raw)
+        "utf_8" | "utf8" => std::str::from_utf8(raw)
             .map(str::to_owned)
             .map_err(|e| invalid(e.to_string()))?,
         "ascii" | "us_ascii" => {
@@ -369,13 +375,78 @@ pub fn source(raw: &[u8]) -> Result<String> {
         "iso_8859_1" | "iso8859_1" | "latin1" | "latin_1" => {
             raw.iter().map(|&b| char::from(b)).collect()
         }
-        "cp1252" | "windows_1252" => cp1252(raw)?,
+        "utf_8_sig" => std::str::from_utf8(raw.strip_prefix(&[0xef, 0xbb, 0xbf]).unwrap_or(raw))
+            .map(str::to_owned)
+            .map_err(|e| invalid(e.to_string()))?,
+        "charmap" => raw.iter().map(|&b| char::from(b)).collect(),
+        "utf_16" => utf16(raw, None)?,
+        "utf_16_le" => utf16(raw, Some(true))?,
+        "utf_16_be" => utf16(raw, Some(false))?,
+        "utf_32" => utf32(raw, None)?,
+        "utf_32_le" => utf32(raw, Some(true))?,
+        "utf_32_be" => utf32(raw, Some(false))?,
+        // These registry modules have no codec on the supported Linux host.
+        "mbcs" | "oem" | "undefined" => {
+            return Err(invalid("source text codec unavailable on Linux"))
+        }
+        "punycode" => super::punycode::decode(raw)?,
+        "idna" => {
+            if raw.windows(4).any(|v| v == b"xn--") {
+                return Err(Diagnostic::new(
+                    Phase::Capability,
+                    "IDNA ACE labels require original Unicode3.2 nameprep/round-trip validation",
+                ));
+            }
+            // Pinned CPython idna.Codec.decode fast path bypasses nameprep when
+            // no lowercase ACE prefix occurs anywhere in the byte payload.
+            if !raw.is_ascii() {
+                return Err(invalid(
+                    "non-ASCII IDNA payload without a supported ACE path",
+                ));
+            }
+            String::from_utf8(raw.to_vec()).expect("ASCII IDNA payload")
+        }
         "unicode_escape" => escaped(raw, false)?,
         "raw_unicode_escape" => escaped(raw, true)?,
-        "utf7" | "utf_7" => native_codec(raw, c"UTF-7")?,
-        "shift_jis" | "shiftjis" | "sjis" => native_codec(raw, c"SHIFT_JIS")?,
-        "cp932" | "ms932" => native_codec(raw, c"CP932")?,
+        "utf7" | "utf_7" => super::utf7::decode(raw)?,
+        "shift_jis" | "shiftjis" | "sjis" => super::japanese::decode(raw, false)?,
+        "cp932" | "ms932" => super::japanese::decode(raw, true)?,
         "koi8_r" | "koi8r" => native_codec(raw, c"KOI8-R")?,
+        // These exact no-state ASCII subsets are supported from the pinned
+        // CPython C decoder branches. Other byte sequences stay unclosed.
+        "euc_jis_2004" | "shift_jis_2004" | "iso2022_jp_2004" | "iso2022_jp_ext" => {
+            if raw
+                .iter()
+                .any(|&b| !b.is_ascii() || matches!(b, 0x1b | 0x0e | 0x0f | b'\\' | b'~'))
+            {
+                return Err(Diagnostic::new(
+                    Phase::Capability,
+                    "this Japanese variant requires its distinct original multibyte/state mapping",
+                ));
+            }
+            String::from_utf8(raw.to_vec()).expect("reviewed no-state ASCII subset")
+        }
+        "hz" if raw.is_ascii() && !raw.contains(&b'~') => {
+            String::from_utf8(raw.to_vec()).expect("HZ ASCII without shift introducer")
+        }
+        "big5" => native_codec(raw, c"BIG5")?,
+        "big5hkscs" => native_codec(raw, c"BIG5-HKSCS")?,
+        "cp949" => native_codec(raw, c"CP949")?,
+        "cp950" => native_codec(raw, c"CP950")?,
+        "euc_jp" => native_codec(raw, c"EUC-JP")?,
+        "euc_jisx0213" => native_codec(raw, c"EUC-JISX0213")?,
+        "euc_kr" => native_codec(raw, c"EUC-KR")?,
+        "gb18030" => native_codec(raw, c"GB18030")?,
+        "gb2312" => native_codec(raw, c"GB2312")?,
+        "gbk" => native_codec(raw, c"GBK")?,
+        "hz" => native_codec(raw, c"HZ")?,
+        "iso2022_jp" => native_codec(raw, c"ISO-2022-JP")?,
+        "iso2022_jp_1" => native_codec(raw, c"ISO-2022-JP-1")?,
+        "iso2022_jp_2" => native_codec(raw, c"ISO-2022-JP-2")?,
+        "iso2022_jp_3" => native_codec(raw, c"ISO-2022-JP-3")?,
+        "iso2022_kr" => native_codec(raw, c"ISO-2022-KR")?,
+        "johab" => native_codec(raw, c"JOHAB")?,
+        "shift_jisx0213" => native_codec(raw, c"SHIFT_JISX0213")?,
         "base64_codec" | "bz2_codec" | "hex_codec" | "quopri_codec" | "rot_13" | "uu_codec"
         | "zlib_codec" => {
             return Err(invalid(
@@ -389,6 +460,18 @@ pub fn source(raw: &[u8]) -> Result<String> {
             ))
         }
     };
+    Ok(decoded)
+}
+pub fn source(raw: &[u8]) -> Result<String> {
+    // CPython _Py_SourceAsString checks raw embedded NUL before token decoding.
+    if raw.contains(&0) {
+        return Err(invalid("source code string cannot contain null bytes"));
+    }
+    let raw = newlines(raw);
+    let bom = raw.starts_with(&[0xef, 0xbb, 0xbf]);
+    let raw = if bom { &raw[3..] } else { raw.as_slice() };
+    let codec = encoding(raw, bom)?;
+    let decoded = payload(raw, &codec)?;
     if decoded.contains('\0') {
         return Err(invalid("source code cannot contain null bytes"));
     }

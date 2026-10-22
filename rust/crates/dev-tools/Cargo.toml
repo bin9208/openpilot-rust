@@ -2295,3 +2295,7 @@ required-features = ["changed-files-native"]
 [[test]]
 name = "changed_files_check"
 required-features = ["changed-files-native"]
+
+[[test]]
+name = "changed_files_codec_domains"
+required-features = ["changed-files-native"]

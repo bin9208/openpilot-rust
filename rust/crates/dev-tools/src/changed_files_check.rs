@@ -2,7 +2,12 @@
 //! Opt-in adapter; maintained Python callers remain until differentials pass.
 mod codec_names;
 mod decode;
+mod japanese;
+mod names15;
+mod punycode;
+mod single_byte_tables;
 mod unicode15;
+mod utf7;
 use ruff_python_ast::{token::TokenKind, Mod, PythonVersion};
 use ruff_python_parser::{parse_unchecked, Mode, ParseOptions, Parsed};
 use std::{
@@ -53,15 +58,18 @@ impl fmt::Display for Diagnostic {
 }
 impl std::error::Error for Diagnostic {}
 
+/// Decode a codec payload to exact UTF8 without source newline/NUL processing.
+/// This API exposes the native byte boundary for original-provider differentials.
+pub fn decode_bytes(raw: &[u8], encoding: &str) -> Result<String, Diagnostic> {
+    decode::payload(raw, encoding)
+}
 pub fn named_character(name: &str) -> Result<char, Diagnostic> {
-    unicode_names2::character(name)
-        .filter(|&c| unicode15::contains(unicode15::ASSIGNED_CODEPOINTS, c))
-        .ok_or_else(|| {
-            Diagnostic::new(
-                Phase::Syntax,
-                format!("unknown Unicode15 character name: {name}"),
-            )
-        })
+    names15::lookup(name).ok_or_else(|| {
+        Diagnostic::new(
+            Phase::Syntax,
+            format!("unknown Unicode15 character name: {name}"),
+        )
+    })
 }
 fn named_escapes(text: &str) -> Result<(), Diagnostic> {
     // Interpret only unpaired backslashes. Literal \\N is not a named escape.

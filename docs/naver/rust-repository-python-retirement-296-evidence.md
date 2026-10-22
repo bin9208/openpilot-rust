@@ -8223,3 +8223,26 @@ output stall. RadarCAN119931046796 fails radarcan_runtime_capture.py:232's
 unchanged100ms producer-stop bound; new #495 tracks raw timestamp/provider
 investigation without a guessed cause or threshold relaxation. Pending/cancelled
 jobs do not establish complete acceptance. A new source push needs its own gates.
+
+## 23 October continuation: native codec candidate
+
+The new session resumes only the isolated #296 worktree at3b997279f. Current
+Codex configuration records1000 concurrent children;12 actual child creations
+were admitted, exceeding the former three-child ceiling. Several model requests
+then failed with429, so admission is not claimed as12 productive workers. The
+user explicitly authorizes Astra as well as Sol for retried parallel lanes.
+
+The frozen codec candidate2b4b6100 and registration7cf60682 are now integrated.
+Parent static comparison checks all70x256 pinned CPython literal table entries,
+16483 original Japanese lead pairs,512 single-byte mappings and473 aliases
+against the independently captured originals, without executing project code.
+Scoped Rustfmt, TOML/YAML/Bash syntax and diff checks pass. Cargo.lock and both
+maintained Python source/caller contracts remain unchanged. The hosted recipe
+also requires exactly one successfully identified native exec in each of its
+two traces; unparsed, unexpected or extra exec attempts cannot be ignored.
+
+The upcoming focused hosted gate must compile the candidate and compare five
+new codec/name domains plus72 affected source admissions. Existing accepted Git
+and Unicode lexer traffic is reused. IDNA ACE, remaining multibyte compatibility,
+Git cancellation, caller migration and source absence remain open; no new source
+retirement or inventory credit is granted by this implementation checkpoint.
