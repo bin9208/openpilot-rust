@@ -11,10 +11,14 @@ use std::{
     collections::BTreeMap,
     ffi::OsString,
     fs,
-    io::{ErrorKind, Read},
+    io::{ErrorKind, Read, Seek, SeekFrom, Write},
     os::{
         linux::net::SocketAddrExt,
-        unix::{ffi::OsStringExt, fs::PermissionsExt, net::UnixDatagram},
+        unix::{
+            ffi::OsStringExt,
+            fs::{MetadataExt, PermissionsExt},
+            net::UnixDatagram,
+        },
     },
     path::{Path, PathBuf},
     sync::{
@@ -484,20 +488,93 @@ fn raw_commands(path: &Path, root: &Path) -> Result<(Vec<u8>, String)> {
             Err(e)
         }
     })?;
-    let normalized = raw.clone();
+    let normalized = encode_hex(&normalize_fixture_bytes(&raw, root));
+    Ok((raw, normalized))
+}
+
+fn normalize_fixture_bytes(raw: &[u8], root: &Path) -> Vec<u8> {
     let from = root.as_os_str().as_encoded_bytes();
-    let mut out = Vec::with_capacity(normalized.len());
+    let mut out = Vec::with_capacity(raw.len());
     let mut i = 0;
-    while i < normalized.len() {
-        if normalized[i..].starts_with(from) {
+    while i < raw.len() {
+        if raw[i..].starts_with(from) {
             out.extend_from_slice(b"$FIXTURE");
             i += from.len();
         } else {
-            out.push(normalized[i]);
+            out.push(raw[i]);
             i += 1;
         }
     }
-    Ok((raw, encode_hex(&out)))
+    out
+}
+
+struct KeyfileEvidence<'a> {
+    source_stderr: &'a [u8],
+    native_stderr: &'a [u8],
+    source_root: &'a Path,
+    native_root: &'a Path,
+}
+
+// Path.glob and read_dir both use filesystem enumeration order. In the original
+// keyfile-read-errors fixture, the two first keyfiles are unreadable (mode 0)
+// and a directory, respectively; sudo_read returns empty for either failure.
+// Only those failed reads may commute. The successful fallback c must remain last.
+fn failed_keyfile_order(commands: &str, stderr: &[u8]) -> Result<&'static str> {
+    const A: &[u8] =
+        b"sudo\0cat\0$FIXTURE/run/NetworkManager/system-connections/a.nmconnection\0\0";
+    const B: &[u8] =
+        b"sudo\0cat\0$FIXTURE/run/NetworkManager/system-connections/b.nmconnection\0\0";
+    const C: &[u8] =
+        b"sudo\0cat\0$FIXTURE/data/etc/NetworkManager/system-connections/c.nmconnection\0\0";
+    const A_ERROR: &[u8] = b"/bin/cat: $FIXTURE/run/NetworkManager/system-connections/a.nmconnection: Permission denied\n";
+    const B_ERROR: &[u8] = b"/bin/cat: $FIXTURE/run/NetworkManager/system-connections/b.nmconnection: Is a directory\n";
+    let commands = decode_hex(commands)?;
+    for (label, first, second, first_error, second_error) in [
+        ("a,b,c", A, B, A_ERROR, B_ERROR),
+        ("b,a,c", B, A, B_ERROR, A_ERROR),
+    ] {
+        if commands == [first, second, C].concat() && stderr == [first_error, second_error].concat()
+        {
+            return Ok(label);
+        }
+    }
+    Err("keyfile failed-read order, count, or diagnostics differ".into())
+}
+
+fn compare_case(
+    name: &str,
+    expected: &Value,
+    native: &Value,
+    keyfile: Option<KeyfileEvidence<'_>>,
+) -> Result<Option<Value>> {
+    if name != "keyfile-read-errors" {
+        if expected != native {
+            return Err("original and native HardwareInfo observations differ".into());
+        }
+        return Ok(None);
+    }
+    if expected["values"] != native["values"] || expected["wire"] != native["wire"] {
+        return Err("keyfile values or WPA wire differ".into());
+    }
+    let evidence = keyfile.ok_or("keyfile stderr evidence missing")?;
+    let source_stderr = normalize_fixture_bytes(evidence.source_stderr, evidence.source_root);
+    let native_stderr = normalize_fixture_bytes(evidence.native_stderr, evidence.native_root);
+    let source_commands = expected["commands"]
+        .as_str()
+        .ok_or("original keyfile commands missing")?;
+    let native_commands = native["commands"]
+        .as_str()
+        .ok_or("native keyfile commands missing")?;
+    let source_order = failed_keyfile_order(source_commands, &source_stderr)?;
+    let native_order = failed_keyfile_order(native_commands, &native_stderr)?;
+    Ok(Some(
+        json!({"policy":"keyfile-read-errors failed-read commutation only",
+        "source_order":source_order,"native_order":native_order,
+        "source_commands_normalized_hex":source_commands,
+        "native_commands_normalized_hex":native_commands,
+        "source_stderr_normalized_hex":encode_hex(&source_stderr),
+        "native_stderr_normalized_hex":encode_hex(&native_stderr)}),
+    ))
 }
 
 fn lexical_absolute(path: &Path) -> PathBuf {
@@ -558,6 +635,83 @@ fn resolve_runner(arguments: &[OsString], checkout: &Path) -> Result<Vec<OsStrin
 /// The output directory may already exist, but each selected case directory must
 /// be new. `root` is the source checkout; each case gets its own fixture root.
 pub fn run(options: &Options, runner: &mut dyn qa_process::Runner) -> Result<Value> {
+    run_with_emit(options, runner, |_| Ok(()))
+}
+
+struct PendingPublication {
+    path: PathBuf,
+    file: fs::File,
+    committed: bool,
+}
+impl PendingPublication {
+    fn verify_owned(&self, expected: &[u8]) -> Result<()> {
+        let owned = self.file.metadata()?;
+        let current = fs::symlink_metadata(&self.path)?;
+        if !current.is_file()
+            || (owned.dev(), owned.ino()) != (current.dev(), current.ino())
+            || owned.len() != expected.len() as u64
+        {
+            return Err("HardwareInfo success manifest ownership changed".into());
+        }
+        let mut file = self.file.try_clone()?;
+        file.seek(SeekFrom::Start(0))?;
+        let mut contents = Vec::new();
+        file.take(expected.len() as u64 + 1)
+            .read_to_end(&mut contents)?;
+        if contents != expected
+            || fs::symlink_metadata(&self.path)
+                .is_err_or(|m| (m.dev(), m.ino()) != (owned.dev(), owned.ino()))
+        {
+            return Err("HardwareInfo success manifest bytes changed".into());
+        }
+        Ok(())
+    }
+}
+impl Drop for PendingPublication {
+    fn drop(&mut self) {
+        if self.committed {
+            return;
+        }
+        if let (Ok(owned), Ok(current)) = (self.file.metadata(), fs::symlink_metadata(&self.path)) {
+            if (owned.dev(), owned.ino()) == (current.dev(), current.ino()) {
+                let _ = fs::remove_file(&self.path);
+            }
+        }
+    }
+}
+fn finalize_report(
+    path: &Path,
+    report: &Value,
+    verify: impl Fn() -> Result<()>,
+    emit: impl FnOnce(&Value) -> Result<()>,
+) -> Result<()> {
+    verify()?;
+    let mut bytes = serde_json::to_vec_pretty(report)?;
+    bytes.push(b'\n');
+    let mut temporary =
+        tempfile::NamedTempFile::new_in(path.parent().ok_or("manifest parent missing")?)?;
+    temporary.write_all(&bytes)?;
+    temporary.flush()?;
+    let file = temporary
+        .persist_noclobber(path)
+        .map_err(|error| error.error)?;
+    let mut publication = PendingPublication {
+        path: path.into(),
+        file,
+        committed: false,
+    };
+    emit(report)?;
+    verify()?;
+    publication.verify_owned(&bytes)?;
+    publication.committed = true;
+    Ok(())
+}
+
+fn run_with_emit(
+    options: &Options,
+    runner: &mut dyn qa_process::Runner,
+    emit: impl FnOnce(&Value) -> Result<()>,
+) -> Result<Value> {
     let checkout = options.root.canonicalize()?;
     let resolve_existing = |path: &Path| -> Result<PathBuf> {
         let path = if path.is_absolute() {
@@ -735,7 +889,7 @@ pub fn run(options: &Options, runner: &mut dyn qa_process::Runner) -> Result<Val
         let result = read_json(&folder.join("result.json"))?;
         let values = normalized_result(&result)?;
         let (raw, commands) = raw_commands(&command_log, &fixture_root)?;
-        fs::write(folder.join("commands.bin"), raw)?;
+        fs::write(folder.join("commands.bin"), &raw)?;
         let normalized_wire = wire
             .iter()
             .map(|v| json!({"request_hex":v["request_hex"],"replies_hex":v["replies_hex"]}))
@@ -744,19 +898,69 @@ pub fn run(options: &Options, runner: &mut dyn qa_process::Runner) -> Result<Val
         write_json(&folder.join("native-normalized.json"), &native)?;
         let expected_bytes = read_evidence(&source.join("normalized.json"))?;
         let expected = expected_normalized(&expected_bytes)?;
-        if native != expected {
-            write_json(
-                &folder.join("failure.json"),
-                &json!({"result":"FAIL","case":case.name,"source_canonical":expected,"native_canonical":native}),
-            )?;
-            return Err(format!("HardwareInfo parity failure: {}", case.name).into());
+        let comparison = (|| -> Result<Option<Value>> {
+            if case.name == "keyfile-read-errors" {
+                let source_commands = read_json(&source.join("commands.json"))?;
+                let source_root = Path::new(
+                    original_request["root"]
+                        .as_str()
+                        .ok_or("captured keyfile root missing")?,
+                );
+                let source_raw = decode_hex(
+                    source_commands["raw_hex"]
+                        .as_str()
+                        .ok_or("captured keyfile raw commands missing")?,
+                )?;
+                if source_commands["normalized_hex"] != expected["commands"]
+                    || encode_hex(&normalize_fixture_bytes(&source_raw, source_root))
+                        != expected["commands"]
+                {
+                    return Err("captured keyfile raw and normalized commands differ".into());
+                }
+                let source_stderr = read_evidence(&source.join("stderr.log"))?;
+                let native_stderr = fs::read(folder.join("stderr.log"))?;
+                let mut admission = compare_case(
+                    &case.name,
+                    &expected,
+                    &native,
+                    Some(KeyfileEvidence {
+                        source_stderr: &source_stderr,
+                        native_stderr: &native_stderr,
+                        source_root,
+                        native_root: &fixture_root,
+                    }),
+                )?;
+                if let Some(value) = admission.as_mut() {
+                    value["source_raw_commands_hex"] = source_commands["raw_hex"].clone();
+                    value["native_raw_commands_hex"] = json!(encode_hex(&raw));
+                }
+                Ok(admission)
+            } else {
+                compare_case(&case.name, &expected, &native, None)
+            }
+        })();
+        let keyfile = match comparison {
+            Ok(admission) => admission,
+            Err(error) => {
+                write_json(
+                    &folder.join("failure.json"),
+                    &json!({"result":"FAIL","case":case.name,"reason":error.to_string(),"source_canonical":expected,"native_canonical":native}),
+                )?;
+                return Err(format!("HardwareInfo parity failure: {}: {error}", case.name).into());
+            }
+        };
+        if let Some(admission) = &keyfile {
+            write_json(&folder.join("command-order-admission.json"), admission)?;
         }
         let count = values.as_array().map_or(0, Vec::len);
         comparisons += count;
         packets += case.wire.len();
-        scenarios.push(
-            json!({"scenario":case.name,"result":"PASS","calls":count,"packets":case.wire.len()}),
-        );
+        let mut scenario =
+            json!({"scenario":case.name,"result":"PASS","calls":count,"packets":case.wire.len()});
+        if let Some(admission) = keyfile {
+            scenario["command_order_admission"] = admission;
+        }
+        scenarios.push(scenario);
     }
     receipt.verify()?;
     write_json(&output.join("input-receipt.after.json"), &receipt.report())?;
@@ -765,7 +969,12 @@ pub fn run(options: &Options, runner: &mut dyn qa_process::Runner) -> Result<Val
         encode_hex(&Sha256::digest(fs::read(&binary)?))
     };
     let report = json!({"result":"PASS","source_commit":plans.source_commit,"scenario_count":scenarios.len(),"comparisons":comparisons,"datagram_requests_per_implementation":packets,"selection":options.cases,"scenarios":scenarios,"binary_sha256":binary_hash});
-    write_json(&output.join("manifest.json"), &report)?;
+    finalize_report(
+        &output.join("manifest.json"),
+        &report,
+        || receipt.verify(),
+        emit,
+    )?;
     Ok(report)
 }
 
@@ -823,7 +1032,250 @@ pub fn cli() -> Result<()> {
         return Ok(());
     };
     let mut native = qa_process::NativeRunner;
-    let report = run(&options, &mut native)?;
-    println!("{}", serde_json::to_string(&report)?);
+    let stdout = std::io::stdout();
+    let mut locked = stdout.lock();
+    run_with_emit(&options, &mut native, |report| {
+        serde_json::to_writer(&mut locked, report)?;
+        locked.write_all(b"\n")?;
+        locked.flush()?;
+        Ok(())
+    })?;
     Ok(())
+}
+
+#[cfg(test)]
+mod publication_tests {
+    use super::*;
+    use std::io;
+
+    const REPORT: &str = "manifest.json";
+
+    #[test]
+    fn late_source_change_removes_only_the_owned_success_manifest() {
+        let directory = tempfile::tempdir().unwrap();
+        let source = directory.path().join("source.txt");
+        let manifest = directory.path().join(REPORT);
+        fs::write(&source, b"admitted source").unwrap();
+        let result = finalize_report(
+            &manifest,
+            &json!({"result":"PASS"}),
+            || {
+                if fs::read(&source)? != b"admitted source" {
+                    return Err("source changed before final publication".into());
+                }
+                Ok(())
+            },
+            |_| {
+                assert!(
+                    manifest.exists(),
+                    "writer runs after provisional publication"
+                );
+                fs::write(&source, b"mutated source")?;
+                Ok(())
+            },
+        );
+        assert!(result.is_err());
+        assert!(!manifest.exists());
+    }
+
+    #[test]
+    fn broken_writer_rolls_back_but_foreign_replacement_is_preserved() {
+        struct BrokenWriter;
+        impl Write for BrokenWriter {
+            fn write(&mut self, _: &[u8]) -> io::Result<usize> {
+                Err(io::ErrorKind::BrokenPipe.into())
+            }
+            fn flush(&mut self) -> io::Result<()> {
+                Err(io::ErrorKind::BrokenPipe.into())
+            }
+        }
+        let directory = tempfile::tempdir().unwrap();
+        let manifest = directory.path().join(REPORT);
+        let report = json!({"result":"PASS"});
+        let result = finalize_report(
+            &manifest,
+            &report,
+            || Ok(()),
+            |value| {
+                serde_json::to_writer(&mut BrokenWriter, value)?;
+                Ok(())
+            },
+        );
+        assert!(result.is_err());
+        assert!(!manifest.exists());
+
+        let result = finalize_report(
+            &manifest,
+            &report,
+            || Ok(()),
+            |_| {
+                fs::remove_file(&manifest)?;
+                fs::write(&manifest, b"foreign replacement")?;
+                Ok(())
+            },
+        );
+        assert!(result.is_err());
+        assert_eq!(fs::read(&manifest).unwrap(), b"foreign replacement");
+    }
+}
+
+#[cfg(test)]
+mod keyfile_order_tests {
+    use super::*;
+
+    fn evidence<'a>(
+        source_stderr: &'a [u8],
+        native_stderr: &'a [u8],
+        root: &'a Path,
+    ) -> KeyfileEvidence<'a> {
+        KeyfileEvidence {
+            source_stderr,
+            native_stderr,
+            source_root: root,
+            native_root: root,
+        }
+    }
+
+    fn original() -> (Value, Value, Vec<u8>) {
+        let normalized = flate2::read::GzDecoder::new(
+            &include_bytes!("../tests/fixtures/hardware-info-original/keyfile-read-errors/source/normalized.json.gz")[..],
+        );
+        let request = flate2::read::GzDecoder::new(
+            &include_bytes!("../tests/fixtures/hardware-info-original/keyfile-read-errors/source/request.json.gz")[..],
+        );
+        let mut normalized = normalized;
+        let mut request = request;
+        let mut normalized_bytes = Vec::new();
+        let mut request_bytes = Vec::new();
+        normalized.read_to_end(&mut normalized_bytes).unwrap();
+        request.read_to_end(&mut request_bytes).unwrap();
+        (
+            expected_normalized(&normalized_bytes).unwrap(),
+            serde_json::from_slice(&request_bytes).unwrap(),
+            include_bytes!(
+                "../tests/fixtures/hardware-info-original/keyfile-read-errors/source/stderr.log"
+            )
+            .to_vec(),
+        )
+    }
+
+    fn rows(commands: &str) -> Vec<Vec<u8>> {
+        let bytes = decode_hex(commands).unwrap();
+        let mut tail = bytes.as_slice();
+        let mut rows = Vec::new();
+        while !tail.is_empty() {
+            let end = tail.windows(2).position(|w| w == b"\0\0").unwrap() + 2;
+            rows.push(tail[..end].to_vec());
+            tail = &tail[end..];
+        }
+        rows
+    }
+
+    #[test]
+    fn only_the_two_independently_observed_failed_reads_may_commute() {
+        let (expected, request, source_stderr) = original();
+        let root = Path::new(request["root"].as_str().unwrap());
+        let original_rows = rows(expected["commands"].as_str().unwrap());
+        assert_eq!(original_rows.len(), 3);
+        let source_lines = source_stderr
+            .split_inclusive(|b| *b == b'\n')
+            .collect::<Vec<_>>();
+        assert_eq!(source_lines.len(), 2);
+        let mut native_rows = original_rows.clone();
+        native_rows.swap(0, 1);
+        let mut native = expected.clone();
+        native["commands"] = json!(encode_hex(&native_rows.concat()));
+        let native_stderr = [source_lines[1], source_lines[0]].concat();
+        let admission = compare_case(
+            "keyfile-read-errors",
+            &expected,
+            &native,
+            Some(evidence(&source_stderr, &native_stderr, root)),
+        )
+        .unwrap()
+        .unwrap();
+        assert_eq!(admission["source_order"], "b,a,c");
+        assert_eq!(admission["native_order"], "a,b,c");
+
+        for changed in [
+            vec![
+                original_rows[2].clone(),
+                original_rows[0].clone(),
+                original_rows[1].clone(),
+            ],
+            vec![
+                original_rows[1].clone(),
+                original_rows[1].clone(),
+                original_rows[2].clone(),
+            ],
+            vec![original_rows[0].clone(), original_rows[2].clone()],
+        ] {
+            let mut bad = native.clone();
+            bad["commands"] = json!(encode_hex(&changed.concat()));
+            assert!(compare_case(
+                "keyfile-read-errors",
+                &expected,
+                &bad,
+                Some(evidence(&source_stderr, &native_stderr, root)),
+            )
+            .is_err());
+        }
+        assert!(compare_case(
+            "keyfile-read-errors",
+            &expected,
+            &native,
+            Some(evidence(
+                &source_stderr,
+                &native_stderr[source_lines[1].len()..],
+                root,
+            )),
+        )
+        .is_err());
+        assert!(compare_case(
+            "keyfile-read-errors",
+            &expected,
+            &native,
+            Some(evidence(
+                &source_stderr[..source_lines[0].len()],
+                &native_stderr,
+                root
+            )),
+        )
+        .is_err());
+        let wrong_error = native_stderr
+            .windows(b"Permission denied".len())
+            .position(|w| w == b"Permission denied")
+            .unwrap();
+        let mut wrong_stderr = native_stderr.clone();
+        wrong_stderr.splice(
+            wrong_error..wrong_error + b"Permission denied".len(),
+            b"No such file".iter().copied(),
+        );
+        assert!(compare_case(
+            "keyfile-read-errors",
+            &expected,
+            &native,
+            Some(evidence(&source_stderr, &wrong_stderr, root)),
+        )
+        .is_err());
+        let mut wrong_value = native.clone();
+        wrong_value["values"] = json!([]);
+        assert!(compare_case(
+            "keyfile-read-errors",
+            &expected,
+            &wrong_value,
+            Some(evidence(&source_stderr, &native_stderr, root)),
+        )
+        .is_err());
+        let mut wrong_wire = native.clone();
+        wrong_wire["wire"] = json!([]);
+        assert!(compare_case(
+            "keyfile-read-errors",
+            &expected,
+            &wrong_wire,
+            Some(evidence(&source_stderr, &native_stderr, root)),
+        )
+        .is_err());
+        assert!(compare_case("another-case", &expected, &native, None).is_err());
+    }
 }

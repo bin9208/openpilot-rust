@@ -6134,3 +6134,43 @@ admission. Repair17c770c721f3af4787ccf72e549386b5dc749264 is hosted as3970743699
 workflow9f780a3d88bf9a95761db9deecd20bab1416c5e1. Fourth first-kernel diagnostic
 39707504533/workflow96aab0c0df13a65f1669c150b33d520032e3a562 keeps exactd610
 source and backend-specific restoration; no valid first-kernel result yet.
+
+### Hosted USB regression and HardwareInfo environmental ordering (2026-10-22)
+
+USB focused39707683464/source5b5aa357be47596a6927da677db33ae2629f327f passes
+new exact hardlink/mutation regression plus strict checker/library Clippy.
+Parent audits artifact12394914078:4668B/all3CRCs,
+SHA256ef695f505dee4dd52b06751ae8756bb70cd9b640a2373aff888d7cff8288dc09.
+USB-only two-root actual six-case follow-up39708204175/workflow79fb511de5ee412bd73ae3462b68ac68a8cc64e8
+is running at the same source; its independently pinned temporary harness omits
+driver/startup positive traffic and cannot accept the full group/#479/#476.
+
+HardwareInfo39707436994/source17c770c721f3af4787ccf72e549386b5dc749264 passes
+build/units/strict Clippy, then fails keyfile-read-errors on command order alone.
+Parent audits all1525CRCs/1147965B artifact12395536902,
+SHA25606910f0824359f3865ffe59a91d5178221d486e6f0d97cadc18230c58c7a7f7c.
+Original Path.glob/native read_dir enumerate unreadable a and directory b in
+opposite orders; both stderr logs prove exactly Permission denied(a), Is a
+directory(b), then the same successful fallback c. Both values and WPA bytes
+match. Admit only those two failed-read orders in this exact case, with exact
+root-normalized diagnostics, each attempt once and c last. Retain raw logs and
+an explicit partial-order receipt; all other command order, values and wire
+remain exact. Negative controls reject duplicate/missing/reordered fallback,
+wrong/missing diagnostics and any values/wire change. This does not sort general
+keyfile priority or replace independent expected bytes.
+Standalone success publication now keeps input receipts through fallible stdout
+write/flush and final manifest ownership/byte checks. Late mutation or writer
+failure rolls back only this run's own provisional PASS; foreign replacement
+is preserved. Hosted candidate validation is required before accepting either fix.
+
+Fourth first-kernel39707504533 completes valid full2frame/88call comparisons in
+both samples, but both actual hosts are known-matching EPYC7763/znver3. Each
+returns NO_PER_CALL_DIFFERENCE, not a #476 explanation or fix. Parent audits
+sample0 artifact12396145796:15296822B/all237CRCs,
+SHA25632ac18df71948e632c988f00dd24d7812ea27dffcb2d8f0953c4272f21d64b98;
+sample1 artifact12395811779:15296848B/all237CRCs,
+SHA2565b0c71f8caaf53ebfa33b8a0b9747b9451fd8fe62d464a96d894cdc8c8af2a04.
+Follow-up allocates four natural hosts; only exact already-matching non-AVX512
+EPYC7763 hosts record explicit SKIP and avoid redundant heavy preparation.
+Other hosts retain identical probe/provider/actual-target behavior. No forced
+CPU, target substitution or numerical tolerance change is introduced.
