@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      EXPECTED_SOURCE: 12fab44083b6dbd1f8c69f5f2b18bea8aca99461
+      EXPECTED_SOURCE: ad3bf3d260bbb9e3edb00203671ee54127f9c82a
       RUSTUP_TOOLCHAIN: 1.94.0
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
@@ -21,7 +21,7 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 12fab44083b6dbd1f8c69f5f2b18bea8aca99461
+        ref: ad3bf3d260bbb9e3edb00203671ee54127f9c82a
         persist-credentials: false
     - name: Build actual native checker and require complete original and live two-root proof
       shell: bash
@@ -59,6 +59,18 @@ jobs:
 
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
 
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features modem-qa-native --lib --test
+        modem_retirement --no-run > "$proof/compile-all-qa.log" 2>&1 || { tail -n 160 "$proof/compile-all-qa.log"; exit 1;
+        }
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features modem-qa-native --lib --bin
+        check-modem --test modem_retirement -- -D warnings > "$proof/clippy.log" 2>&1 || { tail -n 120 "$proof/clippy.log";
+        exit 1; }
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
         cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features modem-qa-native --lib modem_
         -- --nocapture > "$proof/units.log" 2>&1 || { tail -n 120 "$proof/units.log"; exit 1; }
 
@@ -69,9 +81,6 @@ jobs:
 
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
 
-        cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features modem-qa-native --lib --bin
-        check-modem --test modem_retirement -- -D warnings > "$proof/clippy.log" 2>&1 || { tail -n 120 "$proof/clippy.log";
-        exit 1; }
 
         cargo fmt --manifest-path rust/Cargo.toml --all -- --check
 
