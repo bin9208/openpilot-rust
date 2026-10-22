@@ -6270,3 +6270,17 @@ compiler diagnostics; only hosted recompilation can confirm success. Source-only
 README records unchanged independent provenance and satisfies private-root copy.
 HardwareInfo actual3-source deletion97c33434c moves to the complete maintained
 hardware-runtime/postdelete/policy job candidate; no acceptance count yet.
+
+Postdelete39710753791/source97c33434c2fa686678fc7a15031a6ae9b90e0dd7:
+complete maintained hardware job119601261069 is running. Policy119601261267
+passes12disk controls, then finds the four new HardwareInfo reserve entries still
+in the old177-entry aggregate (observed181). Classify/assert the exact new
+2048/1024/1024MiB workspace and2048MiB temporary reserves separately, preserving
+both old aggregate length/hash and total529 markers; no existing growth is
+removed or loosened. Focused current-policy retry is required. Native source
+retirement count stays pending the full postdelete/caller+policy evidence.
+
+Hardwared review additionally restores original peripheral/selfdrive/panda send
+order and1000ms missing-deviceState rejection while retaining continuous10Hz
+producer. No behavioral deadline is relaxed. The current83a6fdf82 candidate is
+already rebuilding; apply this precise source fix before its final full proof.

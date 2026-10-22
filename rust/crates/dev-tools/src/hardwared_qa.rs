@@ -562,9 +562,9 @@ fn send_inputs(
         event.set_valid(false);
         event.reborrow().init_selfdrive_state().set_enabled(engaged);
     });
-    publishers.send("pandaStates", &panda)?;
     publishers.send("peripheralState", &peripheral)?;
     publishers.send("selfdriveState", &selfdrive)?;
+    publishers.send("pandaStates", &panda)?;
     Ok(now)
 }
 
@@ -714,7 +714,7 @@ impl PublisherWorker {
                     history.push(json!({"mono_ns":mono_ns,"ignition":ignition,"engaged":engaged,
                         "event_valid":false,"publisher_thread":"hardwared-qa-publisher",
                         "publishers_opened":["pandaStates","peripheralState","selfdriveState","gpsLocationExternal"],
-                        "services_sent":["pandaStates","peripheralState","selfdriveState"],
+                        "services_sent":["peripheralState","selfdriveState","pandaStates"],
                         "gpsLocationExternal_event_sent":false}));
                 }
                 Ok(PublisherEvent::Failed(error)) => return Err(error.into()),
@@ -1119,10 +1119,10 @@ fn peer(root: &Path, output: &Path, prefix: &str) -> Result<Value> {
      -> Result<Option<Value>> {
         publisher.set_state(ignition, engaged)?;
         drain_zmq(&logs, &stats, records, metrics)?;
-        let received = subscriber.receive(Duration::from_millis(180))?;
+        let received = subscriber.receive(Duration::from_millis(1000))?;
         publisher.collect(input_history, input_count)?;
         let Some(raw) = received else {
-            return Ok(None);
+            return Err("missing deviceState".into());
         };
         let value = value_packet(&raw)?;
         if value["memoryUsagePercent"] != 50 || value["cpuUsagePercent"] != json!([0]) {

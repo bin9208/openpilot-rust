@@ -347,6 +347,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut model_family_retirement = vec![];
     let mut kalman_generators = vec![];
     let mut kalman_corpora = vec![];
+    let mut hardware_info_native = vec![];
     let model_family_start = lines
         .iter()
         .position(|line| *line == "  model-family-retirement:")
@@ -426,6 +427,12 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             }
             if step == Some(&"      - name: Verify retired updater daemon and helper against independent original lifecycle observations") {
                 updater_daemon_retirement.push(tail.to_owned());
+                continue;
+            }
+            if step == Some(&"      - name: Verify native HardwareInfo capture, CLI and source retirement")
+                || step == Some(&"      - name: Replay complete original HardwareInfo observations in both source-absent roots")
+            {
+                hardware_info_native.push(tail.to_owned());
                 continue;
             }
             if step == Some(&"      - name: Verify retired updater controller against all original lifecycle cases") {
@@ -997,6 +1004,15 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
 
     // The removed camera pip install and Cython build had 512/1024 MiB
     // guards. Native camera operations retain every required reserve.
+    assert_eq!(
+        hardware_info_native,
+        [
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 2048",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 1024",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 1024",
+            " --path \"$RUNNER_TEMP\" --growth-mib 2048",
+        ]
+    );
     assert_eq!(arguments.len(), 177);
     assert_eq!(
         desire_controller_retirement,
