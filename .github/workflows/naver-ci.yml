@@ -60,6 +60,16 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - name: Prepare Maven on the registered local runner
+        run: |
+          free_bytes=$(df --output=avail -B1 "$RUNNER_TEMP" | tail -n 1)
+          if (( free_bytes < 1024 * 1024 * 1024 )); then
+            echo 'Insufficient disk space for estimated Maven/dependency growth (1 GiB).' >&2
+            exit 1
+          fi
+          "$GITHUB_WORKSPACE/tools/ci/apt-native" update
+          "$GITHUB_WORKSPACE/tools/ci/apt-native" install -y --no-install-recommends maven
+          mvn --version
       - name: Pure JVM mapping and runtime contract (not APK or device acceptance)
         run: mvn -B --no-transfer-progress -f tools/naver_ci/java/pom.xml test
       - uses: actions/setup-python@v6

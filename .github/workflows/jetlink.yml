@@ -32,8 +32,24 @@ jobs:
       - uses: actions/checkout@v7
         with: {persist-credentials: false, lfs: false}
       - uses: ./.github/actions/job-temp
+      - uses: actions/setup-python@v6
+        with: {python-version: '3.12'}
       - uses: actions/setup-java@v5
         with: {distribution: temurin, java-version: '17'}
+      - name: Reserve capacity and select a job-owned Android SDK
+        run: |
+          free_bytes=$(df --output=avail -B1 "$RUNNER_TEMP" | tail -n 1)
+          if (( free_bytes < 4 * 1024 * 1024 * 1024 )); then
+            echo 'Insufficient disk space for estimated Android SDK/build growth (4 GiB).' >&2
+            exit 1
+          fi
+          echo "ANDROID_HOME=$RUNNER_TEMP/jetlink-android-sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$RUNNER_TEMP/jetlink-android-sdk" >> "$GITHUB_ENV"
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
+        with:
+          log-accepted-android-sdk-licenses: false
+      - name: Install the SDK declared by the Jetlink app
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
       - run: bash tools/jetlink_android/gradlew -p tools/jetlink_android :core:test :runtime:test :app:lintDebug :app:assembleDebug
       - run: python tools/jetlink_android/check_apk.py tools/jetlink_android/app/build/outputs/apk/debug/app-debug.apk
       - uses: actions/upload-artifact@v6
