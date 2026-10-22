@@ -7508,3 +7508,76 @@ selected globally and per job. Original manifests, goldens, ISA policy and
 tolerances are unchanged. Remaining-road119767923402 and family119767922950
 are active, not accepted results. Published full39754486991 now has44successful
 jobs, two earlier model failures, workspace and generic ARM still running.
+
+### Current-source family numerical result and grouped uploader continuation
+
+Continuation39761920908/family119767922950 reaches actual driver traffic after
+current-exporter source admission passes, then fails the first checkout-root
+collector case at unchanged1e-6 tolerance: leftDriverData.faceOrientation[0]
+expects-0.08113645017147064 and observes-0.08065624535083771. Later startup/USB
+and second-root cases do not run. Artifact12420001190:162986409B/SHA
+957da69616b1ffc89960c619d301fa348826d7e4d2e1bda3880b3eae725f55dd/all1669CRCs
+independently checked by parent and worker. Parent checks complete diagnostic
+bodies: warmup2212B is original-equal; frame0 model-run and daemon agree;
+both1382400B warped inputs agree.439/553float32 outputs differ from original,
+max0.01171875, exact same known #47658456ffe native/99b8b2fe original hashes.
+Worker audits1454sidecar hashes/20bindings and separate sidecar12419044879:
+12526219B/SHA1878435ffcf80724a898e56f9d295ce66afacf19a5c9ae7f67d52a07696d575f/
+2035CRCs. This rules out a daemon-only IPC difference; it does not establish a
+general compiler fix or numerical acceptance. Remaining-road119767923402 passes
+all four tests including its complete two-root retirement gate in1896.83s.
+Artifact12420199425:1534656177B/SHA48fa9b05ce1669909d0fa2ae33ddadcf3532fe04ecdde5d1f97248e2788b05e2;
+sidecar12420169678:10122020B/SHAc85136beb2d8a1b622b8581d9b35d68c4946c7495695351ac83260fe9f4b4a00.
+Their raw audit and maintained same-source helper integration remain outstanding.
+No original, tolerance, ISA or model change is accepted here.
+
+Uploader R3 run39763672720/sourceb897 passes compile/strictClippy/no-default and
+test compilation, then fails policy5 files/events from filesystem tie order;
+last/results/next and all other fields agree. Artifact12418649993:2886762B/SHA
+cf1655a91a843c168d550273dc85d63bc158fac813e9175c62c700b08bdda52d/all507CRCs
+checked by parent and worker. Sourcee0acfdbbf2cb0f41ce61453ea5a77227ba012f75
+provides controlled, probed Linux tmpfs input order. Only captured same-priority
+relations constrain fixture construction; unsorted cross-priority inputs and
+full original output comparisons remain. Frozen expectations/daemon unchanged.
+
+R4 [39766039639](https://github.com/bin9208/openpilot-rust/actions/runs/39766039639)
+at sourcee0acfdbb/workflow8710ba37fb308c8f7ce687a722a69433ff3e4bf8 passes all212
+filesystem cases with live xattrs, then HTTP0–12. Parent independently checks
+artifact12419949779:3106694B/SHA3b6740df2b6b75390961f3c2f1aec096f5b25bfd67481fcd0bfd1745ea439b50/
+all1186CRCs, all212complete saved objects and496source tie relations.74fixtures
+retain unsorted priority inputs. HTTP13 redirect301 fails because the diagnostic
+peer rejects the provider's chunked empty redirected PUT; backoff/logging do not
+run. Source67f099bffbdda2396ea2f64e1f168a76ce19d560 adds bounded chunk framing
+while rejecting ambiguous Content-Length/Transfer-Encoding, unsupported coding,
+trailers and oversized bodies, and persists actual requests before comparison.
+No original/production-daemon change. R5 run39767931037/workflow
+728f3586fc987e539f69e38d0827f70532d62a8e, recipe SHA
+d9f7c6a50a8b109d9ffbe442cba5998e8f4a571b90bfc33823395a84d276d099, is active.
+
+### Route ownership candidate committed; full proof remains required
+
+Parent reviewed/committed15route/provider/test files at
+8444df20b94f83cec92dd7e3f6a74887022c3604. Dedicated CLI supervisor/subreaper
+reserves leader identity through final process-group signals, uses pidfds for
+adopted owned children and preserves resources if complete reaping is unconfirmed.
+A child-only precreated, FD-held private QA IPC root covers real collector/statsd
+bind/restart and unacknowledged early exit; original production default paths
+remain. Latest acknowledged foreign socket replacement preserves that leaf and
+its enclosing owned directories. Receipt ownership and runtime optional --root
+remain explicit. Python controllers/helper are unchanged and live.
+
+R4 [39767373708](https://github.com/bin9208/openpilot-rust/actions/runs/39767373708)
+uses source8444/workflow83356d0d19285c302d0c0a38d0feb049d9068f56, recipe SHA
+89bdde5082506ef76f8cffe7a4d78b6bb86d064627fb75b7cc6f7dd44f2efab9. Eight
+hash-checked external payloads run focused compilation/strictClippy/CLI/default
+endpoint/lifecycle regressions, then real-provider interruption/restart/foreign
+path controls before conditional same-ELF fresh two-root original/native and
+temporary source-absence proof. Only local syntax/format/diff and inert archive
+checks ran; no local provider/build/test execution. Actual focused compile and
+strictClippy pass, as do3controller units,4provider endpoint tests,10CLI/semantics,
+7default lifecycle and2of3real-provider tests. Actual-manager cancellation fails
+at its required acknowledged logmessage ownership assertion; the conditional
+two-root proof does not run. Preserve that assertion and diagnose the actual
+provider path/ownership boundary before retrying. No aggregate pass is claimed.
+#491 stays open; inventory274/3/3303
+and observed embedded67/39pending remain unchanged. Device acceptance is user-owned.

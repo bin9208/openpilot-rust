@@ -27,9 +27,9 @@ records; Git retains earlier handoffs. Do not restart accepted unchanged groups.
 
 ## Source and full checks
 
-Local committed HEAD: b897edcf68374a1ce563d4007df357ebb1e8a99a.
+Implementation source: 67f099bffbdda2396ea2f64e1f168a76ce19d560.
 Issue-branch remote/PR343: f09eee7b8d352cc3b4463acf5f467a786f0d310d.
-Newest diagnostic branch: ce5f93658ba7d5511a276441d838a749049502f8.
+Newest diagnostic branch: 728f3586fc987e539f69e38d0827f70532d62a8e.
 Do not lose newer commits or mix unrelated route WIP into a source pin.
 
 Published PR synthetic merge48abb4d87797d84c03be1595e9122c4b1e023e2d:
@@ -102,10 +102,22 @@ Current-source admission fix committed3fd4e7a4 keeps original model/source
 manifests immutable and admits only separately sealed current model_export
 Python files through authenticated current-catalog receipts. Runtime/checker
 historical pins remain strict; mutation/alias/stale-receipt tests added.
-Continuation39761920908/workflow738785adb/source3fd4e7a4 runs remaining-road
-job119767923402 and updated family119767922950. Both explicitly select1.94 and
+Continuation39761920908/workflow738785adb/source3fd4e7a4 remaining-road
+job119767923402 passes all four tests including the complete two-root retirement
+gate (1896.83s). Its1,534,656,177B artifact12420199425/SHA48fa9b05 requires raw
+audit; helper/caller integration remains necessary. Updated family119767922950
+has failed the actual first driver
+collector case after source admission passes. Both explicitly select1.94 and
 keep original complete numerical/absence/fault gates. New source/host catalogs
 must be exported; old6e54/znver4 receipts cannot be relabeled or forced onto hosts.
+
+The family failure reproduces #476's exact58456ffe native/99b8b2fe original
+frame0 bytes:439/553float32 values differ, maximum0.01171875, while both native
+paths, both1382400B warped inputs and original/native warmup agree byte for byte.
+Parent independently audits162986409B artifact12420001190/SHA957da696/all1669CRCs
+and those complete bodies. Worker checks1454sidecar hashes and20bindings. Later
+startup/USB and second-root cases do not execute after the required driver failure.
+Current exporter admission is accepted only as admission, not numerical closure.
 
 Worker exporter_bridge_r3 owns model diagnosis/caller continuation. If full road
 passes, integrate same-source helper build/explicit absolute ELF+SHA and source
@@ -133,30 +145,50 @@ R2 initializes proof path through GITHUB_ENV. R2 run39762866909/sourceb53 builds
 both candidates, then fails only Clippy needless_range_loop before functional
 traffic. Fixb897edcf iterates TOPICS directly. Failed artifact12419380772:
 526759B/SHAa07b6b2d87c905085f67c9bf18efa59d1c739e8f7fb6ebe6601b250464e3523d/485CRCs
-worker-audited. R3 run39763672720/workflowce5f93658/sourceb897 uses recipe SHA
-fb5596f2e0045000f4af1cb7247d2616e203d5e61055d6d83406abced8d86d58.
+worker-audited. R3 run39763672720/workflowce5f93658/sourceb897 passes compile,
+strictClippy, no-default admission and test compilation, then fails policy5's
+files/events order. Last/results/next and all other fields agree. Sourcee0acfdbb
+uses probed Linux tmpfs to reproduce captured same-priority input relations,
+preserving cross-priority input and frozen expectations.
+
+R4 run39766039639/workflow8710ba37/sourcee0acfdbb passes all212 full filesystem
+outputs and their live xattr checks, then HTTP0–12. Parent independently checks
+artifact12419949779/3106694B/SHA3b6740df/all1186CRCs, all212 complete saved output
+objects and496captured tie relations.74fixtures retain unsorted priority inputs.
+HTTP13 redirect301 fails: the diagnostic peer rejects the provider's empty
+chunked redirected PUT. Backoff/logging have not run. Source67f099bf adds bounded
+chunk framing and flushes HTTP observations before comparisons, leaving daemon
+and oracle unchanged. R5 run39767931037/workflow728f3586/source67f099bf uses recipe
+SHAd9f7c6a50a8b109d9ffbe442cba5998e8f4a571b90bfc33823395a84d276d099;
+its actual result remains pending.
 Worker guarded_proof_r3 owns actual compile/Clippy/functional failure repair and
 then the remaining daemon/interrupted/timeouts/log_fault consumer closure.
 Do not repeat accepted ordinary source traffic merely to capture new siblings.
 
 ## Route ownership candidate, issue#491
 
-Routeworker route_upload_r3 owns uncommitted lifecycle/signal/root/CLI fixes,
-fixture/tests and the installed manager example. Parent applied its v2 namespace
-patch; further private IPC changes are WIP. Cargo route-fixture bin/test additions
-are deliberately unstaged; uploader registrations are already committed. Preserve
-both when staging. Original upload controllers and shared helper stay unchanged.
+Routeworker route_upload_r3 owns the lifecycle/signal/root/CLI closure and hosted
+proof. Parent reviewed and committed all15files at8444df20b94f83cec92dd7e3f6a74887022c3604;
+uploader registrations are preserved. Original upload controllers and shared
+helper stay unchanged. This source is a candidate, not retirement credit.
 
 Read-only review found restarted socket inodes skipped permanently, actual statsd
 bind able to unlink foreign global/tmp/stats after precheck, and bind-then-exit
 missed by live-FD adoption; acknowledgement-based fixtures hid that race. Worker
-is replacing those global paths with a preowned private QA IPC root across
+replaces those global paths with a preowned private QA IPC root across
 logging producer, collector, statsd and example, preserving normal defaults.
 Require focused default/rejection tests, real provider restart/foreign-path and
 unacknowledged early-exit proof; no sleeping fixture alone proves provider safety.
-Dedicated CLI subreaper and WNOWAIT/pidfd ordering look sound statically, but need
-hosted checks. Run focused then full two-root original/native/source-absence/CLI
-proof, review raw traces/bodies/seals before deleting originals or crediting them.
+Dedicated CLI subreaper retains WNOWAIT/pidfd identity until final signals/reaps.
+If complete owned-child cleanup cannot be confirmed, its guard preserves every
+resource. R4 run39767373708/workflow83356d0d/source8444df20 has eight hash-checked
+external payloads; recipe SHA89bdde5082506ef76f8cffe7a4d78b6bb86d064627fb75b7cc6f7dd44f2efab9.
+Focused strictClippy,3controller units,4provider endpoint tests,10CLI/semantics
+and7default lifecycle tests pass. Two of three actual-provider tests pass;
+actual-manager cancellation fails at missing acknowledged logmessage ownership.
+Two-root proof does not run after that failure. Worker owns diagnosis; preserve
+the required real ownership assertion. Review repaired actual results, raw
+traces/bodies/seals before deleting originals or crediting them.
 
 ## Publication and next steps
 
@@ -167,7 +199,7 @@ artifacts through connector temporary links without printing signed URLs/data.
 All scratch recipes/evidence live under
 `.analysis/scratch/2026-10-22-family-execution-296/`.
 
-Continue the two model jobs and uploader R3; repair actual failures without
+Continue remaining-road, model compiler diagnosis and uploader R5; repair actual failures without
 altering original evidence. Complete route ownership fix/proof, then grouped
 consumer conversion and native caller transitions. Push a coherent reviewed
 batch to the issue branch, refresh PR343/#296 and close only accepted defects.
