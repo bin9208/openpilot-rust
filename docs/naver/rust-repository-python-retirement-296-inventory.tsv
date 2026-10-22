@@ -2350,7 +2350,7 @@ rust/tools/generate_card_catalog.py	61bd63c0f181c89c08b2f25e600444706ef1a73c	pen
 rust/tools/generate_cluster_config.py	7a19fcba142835c6fc382ee9bad9fb59248d603f	pending	-
 rust/tools/generate_cluster_models.py	3ca42eb443e0f12113e24d930242ae2b43f47f11	pending	-
 rust/tools/generate_control_registry.py	cdc54d3442e1a323c80fce8a86d1a9410e0d9cb9	pending	-
-rust/tools/generate_manager_cars.py	2e64f168b654f80a57c5c9a2e4337f6cd2ed55a8	pending	-
+rust/tools/generate_manager_cars.py	2e64f168b654f80a57c5c9a2e4337f6cd2ed55a8	replaced-local	rust/crates/dev-tools/src/manager_cars.rs; complete source-absent manager/platform and policy proof39746277084 at ac72102459752eec5936fb42b68aac2a05d6bef2
 rust/tools/generate_pose_corpus.py	2b4d7153f462d7c1620c54f8af0e8fc4de04b3eb	replaced-local	rust/crates/dev-tools/src/kalman_corpus_generator.rs
 rust/tools/generate_pose_model.py	ca7db69192840793c42847e7c73e465c06a31b3f	replaced-local	rust/crates/dev-tools/src/kalman_model_generator.rs
 rust/tools/generate_selfdrive_alerts.py	08e794f0087fba1f115909d16fa6428d4d475cb4	pending	-

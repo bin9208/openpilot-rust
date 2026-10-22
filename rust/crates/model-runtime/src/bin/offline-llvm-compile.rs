@@ -1,23 +1,13 @@
 //! One pinned LLVM library per process; all outputs are owned until complete.
-use openpilot_model_runtime::compiler_backend_cpu::llvm::{self, Config};
+use openpilot_model_runtime::{
+    compiler_backend_cpu::llvm::{self, Config},
+    owned_outputs::Outputs,
+};
 use std::{
-    fs::{self, File, OpenOptions},
-    io::{Read, Write},
+    fs::{self, File},
+    io::Read,
     path::{Path, PathBuf},
 };
-struct Outputs {
-    paths: Vec<PathBuf>,
-    committed: bool,
-}
-impl Drop for Outputs {
-    fn drop(&mut self) {
-        if !self.committed {
-            for path in &self.paths {
-                let _ = fs::remove_file(path);
-            }
-        }
-    }
-}
 fn bounded_read(reader: impl Read, max: usize) -> Result<Vec<u8>, String> {
     let mut bytes = Vec::new();
     reader
@@ -96,28 +86,16 @@ fn run() -> Result<(), String> {
     }
     let result = llvm::compile_worker(&config, &source)?;
     let receipt = serde_json::to_vec(&result.receipt).map_err(|e| e.to_string())?;
-    let mut transaction = Outputs {
-        paths: Vec::new(),
-        committed: false,
-    };
-    // create_new owns only paths created here; late I/O failure removes every
-    // owned file, and never removes/replaces an existing caller-owned file.
+    let mut transaction = Outputs::default();
+    // Descriptors retain inode identity across late write/sync failures.
     for (path, bytes) in [
         (&paths[1], result.object.as_slice()),
         (&paths[3], result.optimized_ir.as_bytes()),
         (&paths[2], receipt.as_slice()),
     ] {
-        let mut file = OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(path)
-            .map_err(|e| e.to_string())?;
-        transaction.paths.push(path.clone());
-        file.write_all(bytes)
-            .and_then(|()| file.sync_all())
-            .map_err(|e| e.to_string())?;
+        transaction.write(path, bytes).map_err(|e| e.to_string())?;
     }
-    transaction.committed = true;
+    transaction.commit().map_err(|e| e.to_string())?;
     Ok(())
 }
 fn main() {
@@ -132,17 +110,8 @@ mod output_ownership_tests {
     use super::*;
 
     fn staged(path: &Path) -> Outputs {
-        let mut output = Outputs {
-            paths: Vec::new(),
-            committed: false,
-        };
-        let mut file = OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(path)
-            .unwrap();
-        output.paths.push(path.to_owned());
-        file.write_all(b"owned output").unwrap();
+        let mut output = Outputs::default();
+        output.write(path, b"owned output").unwrap();
         output
     }
 
@@ -191,9 +160,7 @@ mod output_ownership_tests {
     fn successful_output_is_retained() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("output");
-        let mut transaction = staged(&path);
-        transaction.committed = true;
-        drop(transaction);
+        staged(&path).commit().unwrap();
         assert_eq!(fs::read(path).unwrap(), b"owned output");
     }
 }

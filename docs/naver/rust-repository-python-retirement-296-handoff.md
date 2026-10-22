@@ -4,48 +4,45 @@ Current execution state, not completion. The [evidence ledger](rust-repository-p
 retains exact original captures, failed attempts, sources, workflows and artifact
 SHA/CRC audits; Git retains prior handoffs.
 
-## Current checkpoint — 2026-10-22 manager deletion candidate
+## Current checkpoint — 2026-10-22 native manager and compiler work
 
-This checkpoint supersedes the older chronological notes below. Issue branch
-HEAD efd4350de deletes exactly three manager QA Python controllers after
-39740337951/source dabbb2a60 passed present-checkout/private-absent admission.
-Parent audited artifact12409078411/9091291B/SHA
-5a6f7d067e4b4e548527761f53f88c15422a129dfa3b20073ce0447c660f1bf0/all27575CRCs,
-seven case values and logging lifecycle results in each root, seven held ELF
-receipts, twelve manager units and the two #484 PID-publication regressions.
-The complete native proof reports61closed native exec attempts. Actual postdelete
-platform/policy run39742079076 checks efd4350de under workflow50e742d10; still
-accepted: all8334platform/4policy CRCs,61closedexecs and both absent roots audited.
-Inventory is273/3/3304. Current generator deletion candidate has not gained credit.
+Accepted inventory is **274 replaced-local / 3 partially-replaced / 3303 pending
+of 3580 baseline entries**. The three manager QA controllers and the car-name
+generator are physically removed. Complete postdelete platform/policy run
+[39746277084](https://github.com/bin9208/openpilot-rust/actions/runs/39746277084)
+checks source `ac72102459752eec5936fb42b68aac2a05d6bef2`; seven original car
+JSON bodies, generator 12 native invocations and manager 62 native invocations
+pass with retained source/provider/ELF seals. Parent verifies all 8426 platform
+and 4 policy ZIP CRCs and both artifact SHA-256 digests. Runtime manager,
+Params and swaglog Python remain live; this is not whole-runtime retirement.
 
-Car generator present-source comparison39739972934/source94758a721 passes:
-artifact12408992459/99676B/SHA
-ef424c1d4bf53973f91645c532167cb4c4a082632cfa8636a0122e51f92c28ad/all95CRCs.
-Original/native/installed seven JSON bodies and stdout match; three units,
-strictClippy and fresh original comparison pass. The generator Python remains
-accepted in subsequent predelete39744327540/source285b12a62 with feature union,
-4generator+13manager units and11single-native-exec admissions. Generator is now
-deleted with the combined maintained platform proof; actual postdelete full
-platform/policy remains pending. No generator inventory credit yet.
+Compiler rollback issue #485 is reproduced by hosted run
+[39749673407](https://github.com/bin9208/openpilot-rust/actions/runs/39749673407)
+at source `33c82b5ba91aee198c4c4657850abe2b397e6065`: two real foreign-output
+replacement tests fail, while two ownership controls pass. The successful
+workflow confirms the bug, not a passing compiler. A candidate holds output
+file descriptors and removes only unchanged owned files; its hosted GREEN
+verification remains pending. The same candidate adds a bounded Rust LLVM
+source canonicalizer for the general guarded-add transformation; numerical
+acceptance still requires the actual exporter and complete affected model gates.
 
-Driver#476 actual nine-term emitted-pairing diagnostic39741736692/source67c21ea2
-under workflowe8f587eb5 passes; artifact12409875993/29665B/SHA
-86424eab91539ea34b11dde301731bd37d19de78347baca73bd6ecbe1324109b/all10CRCs
-reproduces originalbfdbe345/nativebfdbe347 across all288actual implementation
-rows. First divergencechannel13/term2 is separate-add versus FMA; no LLVM bug
-or general fix established. This changes no production code/tolerance and is
-not whole-model acceptance.
-Road#482 actual captured kernel92 half-input mutation diagnostic39742229755
-under workflow8dc4fed9e uses defb9011d; execution-versus-hardware-skip audit is
-complete: both attempt1hosts lack AVX-512 and skip, giving no numerical evidence.
-Same-run hardware-admission retry is pending. The diagnostic compares actual
-original raw code against the general guarded-copy candidate, preserves complete
-outputs/eight poststates, and assumes no authored NaN payload. Existing finite model goldens remain unchanged.
+Road #482 captured kernel evidence now includes the actual twelve exceptional
+half-input patterns at run 39743854797, with all complete original/guarded
+outputs and eight-buffer poststates equal. The independent driver #476
+nine-term replay at 39741736692 identifies an actual separate-add/FMA
+contraction difference; no general driver compiler correction is accepted.
+Natural-host post-O2 attempts at 39745095474 both skip before compilation.
+A separate nonexecuting recompilation using the recorded target configuration
+is being prepared; no generated code may run in that diagnostic.
 
-Only diagnostic workflow branches have received these commits so far; issue
-branch/PR343 remote head remains4d599dde6 until the coherent batch is pushed.
-No device is available. User owns boot, recording, upload and driving checks.
-Local space is83GiB; no local build/functional test/model execution is authorized.
+Active implementation groups are the Rust guarded-add/exporter bridge and the
+manager/runtime recording-upload controllers. Existing Python exporters and
+the two upload controllers remain pending until their complete native proof.
+Only the diagnostic branch has received recent source commits; issue branch
+and PR343 still publish `4d599dde6ec461cc43089d6f87381631aabdee6c` pending the
+coherent batch. Final exact-source integration/workspace/ARM checks remain.
+The user has no device and owns boot, recording, upload and driving acceptance.
+No local builds, functional tests or model execution are authorized.
 
 ## Scope and boundaries
 
@@ -57,7 +54,7 @@ Local space is83GiB; no local build/functional test/model execution is authorize
 - Local syntax, scoped rustfmt/diff and stored-data inspection only. Builds,
   functional/original tests, Clippy and ARM use GitHub-hosted Actions.
 - Reserve25GiB plus growth; recover35GiB below floor. Two build jobs, incremental
-  disabled. Local free space is about93GiB; keep needed current evidence only.
+  disabled. Local free space is about83GiB; keep needed current evidence only.
 - User has no device and will pull/test boot, recording, upload and driving.
   Do not request USB or claim device acceptance, CPU savings or an AGNOS release.
 - Continue development/build/test/vendor/notebook/embedded conversion. A Rust
@@ -65,7 +62,7 @@ Local space is83GiB; no local build/functional test/model execution is authorize
 
 ## Accepted inventory and global gates
 
-**273replaced-local /3partial /3304pending of3580 baseline entries.** Additional
+**274 replaced-local / 3 partially-replaced / 3303 pending of 3580 baseline entries.** Additional
 helpers/notebooks are separate;37observed embedded execution sites remain pending.
 One previously missed modem reference site is now explicitly recorded as closed;
 it increases recorded closed edges24→25 and does not reduce those37pending sites.

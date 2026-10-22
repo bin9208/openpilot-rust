@@ -7224,3 +7224,30 @@ journals paths without held ownership when removing files after late output
 failure. A foreign path replacement could be deleted by its current Drop.
 No hosted replacement-race reproduction or fix is claimed yet; new tool output
 transactions must not copy that path-only cleanup. Issue stays open.
+
+### Generator complete postdelete acceptance and #485 RED reproduction
+
+Run39746277084 checks exact source ac72102459752eec5936fb42b68aac2a05d6bef2
+under workflow0eec67cbcf2321195b79253e67902736d9000c7c. Platform12412880586:
+5834296B/SHA ee4fcf9513c84936c2b19ae8068c15bc712f7a317f0011fecbf8d33165c23c1c,
+all8426CRCs; policy12412410021:5656B/SHA
+e1159aa678f86a60e460a86adfa895b7d9d1d6227c0fd70e6f1ddec99ba268be,all4CRCs.
+Parent independently recomputes both ZIP digests and checks every member CRC;
+reviewer compares14manager case results,4logs per root,7heldELFs,10outerseals,
+62allowed native manager execs in78traces and12single-native generator execs.
+Seven original/installed JSON hashes and original stdout match. Intentional
+Ford check-mode corruption is retained on rejection. All13manager+4generator
+units, trace parser units, two source-absence proofs, strictClippy,13disk and
+78isolation tests pass. The same job passes managerIPC/boot, modem, #398 and
+hardwared composition. Credit exactly one generator:274replaced-local,
+3partially-replaced,3303pending. No runtime-manager or device acceptance inferred.
+
+Issue#485 RED run39749673407 at source33c82b5ba91aee198c4c4657850abe2b397e6065,
+workflowda02a24607886752db85e8668edecb67e5c1888f, artifact12412424146:1917B/SHA
+c57a6937539024d453b0c7fc14030021610d31db7451ebeebb48eb8006dd5f99/all5CRCs.
+Parent checks actual cargo status101: foreign_replacement_survives_late_failure
+and foreign_symlink_survives_late_failure fail because old Drop removes caller
+replacements; unchanged-owned cleanup and successful-output retention pass.
+The workflow succeeds only by asserting those two failures/two controls.
+The held-file ownership and Rust guarded-add candidate is source-only reviewed;
+GREEN/provider/actual-model checks remain pending, and #485 remains open.

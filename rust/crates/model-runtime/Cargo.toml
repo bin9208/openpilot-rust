@@ -26,6 +26,11 @@ name = "offline-llvm-compile"
 path = "src/bin/offline-llvm-compile.rs"
 required-features = ["native-skip-miri"]
 
+[[bin]]
+name = "offline-llvm-guarded-add"
+path = "src/bin/offline-llvm-guarded-add.rs"
+required-features = ["native-skip-miri"]
+
 [features]
 default = ["native-skip-miri"]
 native-skip-miri = ["dep:libloading", "dep:sha2", "dep:libc", "dep:tempfile"]

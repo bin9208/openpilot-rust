@@ -3166,7 +3166,6 @@ F06-build-generation-staging	rust/tools/generate_card_catalog.py	pending
 F06-build-generation-staging	rust/tools/generate_cluster_config.py	pending
 F06-build-generation-staging	rust/tools/generate_cluster_models.py	pending
 F06-build-generation-staging	rust/tools/generate_control_registry.py	pending
-F06-build-generation-staging	rust/tools/generate_manager_cars.py	pending
 F06-build-generation-staging	rust/tools/generate_selfdrive_alerts.py	pending
 F06-build-generation-staging	rust/tools/generate_ublox_layouts.py	pending
 F06-build-generation-staging	rust/tools/generate_xiaoge_opencv_reference.py	pending

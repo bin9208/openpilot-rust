@@ -25,3 +25,8 @@ pub mod compiler_launch;
 pub mod compiler_onnx;
 #[cfg(feature = "native-skip-miri")]
 pub mod export;
+
+#[cfg(feature = "native-skip-miri")]
+pub mod guarded_add;
+#[cfg(all(feature = "native-skip-miri", unix))]
+pub mod owned_outputs;
