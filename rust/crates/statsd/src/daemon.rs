@@ -38,13 +38,36 @@ impl Configuration {
             home.push("/stats");
             PathBuf::from(home)
         };
+        let endpoint = runtime_endpoint(std::env::var_os("ROUTE_UPLOAD_QA_IPC_ROOT"))?;
         Ok(Self {
-            endpoint: STATS_SOCKET.into(),
+            endpoint,
             directory,
             source_root: std::env::current_dir()?,
             device_type: None,
         })
     }
+}
+
+fn runtime_endpoint(qa_root: Option<std::ffi::OsString>) -> Result<String, Error> {
+    Ok(match qa_root {
+        None => STATS_SOCKET.into(),
+        Some(path) => {
+            let path = PathBuf::from(path);
+            if path.parent() != Some(Path::new("/tmp"))
+                || !path
+                    .file_name()
+                    .is_some_and(|name| name.as_encoded_bytes().starts_with(b"route-upload-ipc-"))
+                || !fs::symlink_metadata(&path)?.is_dir()
+            {
+                return Err(Error::Configuration("invalid route-upload QA IPC root"));
+            }
+            format!(
+                "ipc://{}/stats",
+                path.to_str()
+                    .ok_or(Error::Configuration("QA IPC root must be UTF-8"))?
+            )
+        }
+    })
 }
 pub fn run(
     configuration: &Configuration,
@@ -211,5 +234,33 @@ impl Storage {
         fs::rename(path, &destination)?;
         self.index += 1;
         Ok(Publication::Written(destination))
+    }
+}
+
+#[cfg(test)]
+mod qa_endpoint_tests {
+    use super::*;
+    #[test]
+    fn default_and_owned_qa_endpoint_are_explicit_and_invalid_roots_fail() {
+        assert_eq!(runtime_endpoint(None).unwrap(), STATS_SOCKET);
+        let root = tempfile::Builder::new()
+            .prefix("route-upload-ipc-")
+            .tempdir_in("/tmp")
+            .unwrap();
+        assert_eq!(
+            runtime_endpoint(Some(root.path().as_os_str().to_owned())).unwrap(),
+            format!("ipc://{}/stats", root.path().display())
+        );
+        for path in [
+            Path::new("/tmp"),
+            Path::new("relative"),
+            Path::new("/tmp/route-upload-ipc-missing"),
+        ] {
+            assert!(runtime_endpoint(Some(path.as_os_str().to_owned())).is_err());
+        }
+        let alias = root.path().with_extension("alias");
+        std::os::unix::fs::symlink(root.path(), &alias).unwrap();
+        assert!(runtime_endpoint(Some(alias.as_os_str().to_owned())).is_err());
+        std::fs::remove_file(alias).unwrap();
     }
 }

@@ -2231,6 +2231,15 @@ name = "route_upload_check"
 required-features = ["route-upload-native"]
 
 [[bin]]
+name = "route-upload-lifecycle-fixture"
+path = "src/bin/route_upload_lifecycle_fixture.rs"
+required-features = ["route-upload-native"]
+
+[[test]]
+name = "route_upload_lifecycle"
+required-features = ["route-upload-native"]
+
+[[bin]]
 name = "check-uploader-reference"
 path = "src/bin/check_uploader_reference.rs"
 required-features = ["uploader-reference-native"]

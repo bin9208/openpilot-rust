@@ -162,7 +162,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let metrics = context.socket(zmq::PUSH)?;
     metrics.set_linger(0)?;
     metrics.set_sndtimeo(1000)?;
-    metrics.connect("ipc:///tmp/stats")?;
+    metrics.connect(&probe.stats_endpoint()?)?;
     send_metric(&metrics)?;
     let mut child_record = None;
     for started in [true, false] {

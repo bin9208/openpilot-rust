@@ -1,13 +1,16 @@
 //! Composed native manager/runtime route recording and real loopback uploads.
 //! Expected observations come from the historical QA controllers, not daemon policy.
 mod http;
+mod lifecycle;
 mod runtime;
 use crate::{
     argparse_scan::{self, OptionSpec},
-    qa_process::{CommandSpec, NativeRunner, Runner},
+    qa_process::CommandSpec,
     seal::{digest, Result},
 };
 pub use http::Request;
+use lifecycle::Context;
+pub use lifecycle::Interrupted;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::{
@@ -188,8 +191,12 @@ fn spec(argv: Vec<OsString>, env: &BTreeMap<OsString, OsString>, timeout: u64) -
     .to_vec();
     command
 }
-fn capture(command: &CommandSpec, path: &Path) -> Result<crate::qa_process::Captured> {
-    NativeRunner.run_to_file(command, path)
+fn capture(
+    command: &CommandSpec,
+    path: &Path,
+    context: &mut Context,
+) -> Result<crate::qa_process::Captured> {
+    lifecycle::capture(command, path, context)
 }
 fn qlog(routes: &Path) -> Result<PathBuf> {
     let mut files = Vec::new();
@@ -228,10 +235,11 @@ fn upload(
     env: &BTreeMap<OsString, OsString>,
     cycles: &str,
     seconds: u64,
-    output: &Path,
     qlog: &Path,
     routes: &Path,
+    context: &mut Context,
 ) -> Result<Vec<Value>> {
+    let output = &options.output;
     let server = http::Server::new()?;
     let mut env = env.clone();
     env.insert("API_HOST".into(), server.url.clone().into());
@@ -247,7 +255,7 @@ fn upload(
         seconds,
     );
     command.cwd = Some(options.root.clone());
-    let result = capture(&command, &output.join("uploader.log"))?;
+    let result = capture(&command, &output.join("uploader.log"), context)?;
     require(result.code == 0, "native uploader failed; see uploader.log")?;
     let captures = server.finish()?;
     let path = qlog
@@ -270,10 +278,11 @@ fn upload(
     )?;
     Ok(transfers)
 }
-pub fn manager(options: &Options) -> Result<String> {
+fn manager(options: &Options, context: &mut Context) -> Result<String> {
     crate::disk_space::inspect(&options.root, 1024 * 1024 * 1024)?.require()?;
     fs::create_dir_all(options.output.parent().ok_or("output parent missing")?)?;
     fs::create_dir(&options.output)?;
+    context.watch_manager()?;
     let managed = options.output.join("manager");
     let probe = options.probe.as_ref().ok_or("manager probe missing")?;
     let argv = vec![
@@ -283,9 +292,19 @@ pub fn manager(options: &Options) -> Result<String> {
         options.binaries.clone().into_os_string(),
         "log-route".into(),
     ];
+    let mut probe_environment = environment();
+    probe_environment.insert(
+        "ROUTE_UPLOAD_QA_NAMESPACE".into(),
+        context.probe_namespace()?.into(),
+    );
+    probe_environment.insert(
+        "ROUTE_UPLOAD_QA_IPC_ROOT".into(),
+        context.ipc_root()?.into(),
+    );
     let result = capture(
-        &spec(argv.clone(), &environment(), 90),
+        &spec(argv.clone(), &probe_environment, 90),
         &options.output.join("manager-probe.log"),
+        context,
     )?;
     require(
         result.code == 0,
@@ -324,6 +343,10 @@ pub fn manager(options: &Options) -> Result<String> {
     comma.push(&prefix);
     http::signing_key(&managed.join("home").join(comma).join("persist"))?;
     let mut env = environment();
+    env.insert(
+        "ROUTE_UPLOAD_QA_IPC_ROOT".into(),
+        context.ipc_root()?.into(),
+    );
     for (name, value) in [
         ("HOME", managed.join("home").into_os_string()),
         ("OPENPILOT_PREFIX", prefix.clone()),
@@ -336,19 +359,23 @@ pub fn manager(options: &Options) -> Result<String> {
     }
     let mut namespace_name = OsString::from("msgq_");
     namespace_name.push(prefix);
+    context.release_probe_namespace()?;
     let _namespace = runtime::Directory::new(&Path::new("/dev/shm").join(namespace_name))?;
-    let transfers = upload(options, &env, "6", 20, &options.output, &qlog, &routes)?;
+    context.own(&_namespace.held)?;
+    let transfers = upload(options, &env, "6", 20, &qlog, &routes, context)?;
     let receipt = json!({"result":"PASS","manager_probe_sha256":digest(probe)?,"binaries":binary_hashes(&options.binaries,&["openpilot-manager","openpilot-process-child","openpilot-bootlog","openpilot-logmessaged","statsd-rs","openpilot-loggerd","openpilot-uploader"] )?,"source_commit":commit,"route_messages":messages,"managed_child_route_records":native,"managed_crashes_recorded_and_uploaded":crashes,"failed_child_restarted":true,"native_children_reaped":reaped,"transfers":transfers,"scope":"actual manager, process launcher, bootlog, collector, statsd, route logger and uploader; owned IPC/storage/HTTP; other daemons blocked"});
     let mut encoded = serde_json::to_string(&receipt)?;
     encoded.pop();
     encoded.push_str(&format!(",\"manager_command\":{}}}", command_json(&argv)?));
-    fs::write(options.output.join("result.json"), format!("{encoded}\n"))?;
+    context.publish(&options.output.join("result.json"), &encoded)?;
     Ok(encoded)
 }
-pub fn runtime(options: &Options) -> Result<String> {
-    Ok(serde_json::to_string(&runtime::run(options)?)?)
+fn runtime(options: &Options, context: &mut Context) -> Result<String> {
+    let encoded = serde_json::to_string(&runtime::run(options, context)?)?;
+    context.publish(&options.output.join("result.json"), &encoded)?;
+    Ok(encoded)
 }
-pub fn cli(manager_mode: bool) -> Result<()> {
+pub fn parse_options(manager_mode: bool, args: &[OsString]) -> Result<Option<Options>> {
     let mut flags = vec![
         OptionSpec::value("--binaries", true),
         OptionSpec::value("--output", true),
@@ -358,31 +385,19 @@ pub fn cli(manager_mode: bool) -> Result<()> {
             OptionSpec::value("--root", true),
             OptionSpec::value("--probe", true),
         ]);
+    } else {
+        flags.push(OptionSpec::value("--root", false));
     }
-    let args = std::env::args_os().skip(1).collect::<Vec<_>>();
-    let parsed = argparse_scan::scan_os(&args, &flags)?;
+    let parsed = argparse_scan::scan_os_required_first(args, &flags)?;
     if parsed.help {
-        println!(
-            "usage: {} --binaries DIR --output DIR{}",
-            if manager_mode {
-                "check-manager-log-upload"
-            } else {
-                "check-runtime-log-upload"
-            },
-            if manager_mode {
-                " --root DIR --probe FILE"
-            } else {
-                ""
-            }
-        );
-        return Ok(());
+        return Ok(None);
     }
     let path = |name: &str| -> Result<PathBuf> {
         let value = parsed.values.get(name).ok_or("required argument missing")?;
         crate::path_resolve::resolve_non_strict(Path::new(value))
     };
-    let options = Options {
-        root: if manager_mode {
+    Ok(Some(Options {
+        root: if parsed.values.contains_key("--root") {
             path("--root")?
         } else {
             crate::path_resolve::resolve_non_strict(
@@ -396,15 +411,33 @@ pub fn cli(manager_mode: bool) -> Result<()> {
         } else {
             None
         },
+    }))
+}
+/// Entry point for the dedicated, single-threaded route-upload CLI processes.
+/// The executable identity, sole thread and absence of existing children are
+/// enforced before enabling process-local subreaping; embedding is unsupported.
+pub fn cli(manager_mode: bool) -> Result<()> {
+    let args = std::env::args_os().skip(1).collect::<Vec<_>>();
+    if args == [OsString::from(lifecycle::WORKER)] {
+        return lifecycle::worker(manager_mode);
+    }
+    let Some(options) = parse_options(manager_mode, &args)? else {
+        println!(
+            "usage: {} --binaries DIR --output DIR{}",
+            if manager_mode {
+                "check-manager-log-upload"
+            } else {
+                "check-runtime-log-upload"
+            },
+            if manager_mode {
+                " --root DIR --probe FILE"
+            } else {
+                " [--root DIR]"
+            }
+        );
+        return Ok(());
     };
-    println!(
-        "{}",
-        if manager_mode {
-            manager(&options)?
-        } else {
-            runtime(&options)?
-        }
-    );
+    println!("{}", lifecycle::supervise(manager_mode, &options)?);
     Ok(())
 }
 /// Python's filesystem JSON encoding, including Unix surrogateescape bytes.

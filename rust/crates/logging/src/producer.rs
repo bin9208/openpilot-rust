@@ -14,6 +14,32 @@ use std::{
 mod runtime;
 pub use runtime::{close_runtime, emit_runtime, RuntimeLogScope};
 
+// Opt-in for the route-upload QA process family only. Its supervisor holds this
+// private directory before any child bind; ordinary runtime callers keep /tmp.
+pub(crate) fn runtime_endpoint(prefix: &str) -> Result<String, Error> {
+    qa_endpoint(prefix, env::var_os("ROUTE_UPLOAD_QA_IPC_ROOT"))
+}
+fn qa_endpoint(prefix: &str, root: Option<std::ffi::OsString>) -> Result<String, Error> {
+    let Some(root) = root else {
+        return Ok(format!("ipc:///tmp/logmessage{prefix}"));
+    };
+    let root = std::path::PathBuf::from(root);
+    if root.parent() != Some(std::path::Path::new("/tmp"))
+        || !root
+            .file_name()
+            .is_some_and(|name| name.as_encoded_bytes().starts_with(b"route-upload-ipc-"))
+        || !std::fs::symlink_metadata(&root)?.is_dir()
+    {
+        return Err(Error::Contract("invalid route-upload QA IPC root"));
+    }
+    let path = root.join("logmessage");
+    Ok(format!(
+        "ipc://{}",
+        path.to_str()
+            .ok_or(Error::Contract("QA logging endpoint is not UTF-8"))?
+    ))
+}
+
 #[derive(Clone)]
 pub struct Factory {
     endpoint: Arc<str>,
@@ -52,7 +78,7 @@ impl Factory {
                 return Err(Error::Contract("logging IPC prefix is not UTF-8"))
             }
         };
-        let factory = Self::new(format!("ipc:///tmp/logmessage{prefix}"))?;
+        let factory = Self::new(runtime_endpoint(&prefix)?)?;
         match env::var("OPENPILOT_LOG_CONTEXT") {
             Ok(context) => {
                 let Value::Object(mut fields) = serde_json::from_str(&context)? else {
@@ -299,4 +325,35 @@ fn write_console(record: &Record) -> Result<(), io::Error> {
     }
     stderr.write_all(b"\n")?;
     stderr.flush()
+}
+
+#[cfg(test)]
+mod qa_endpoint_tests {
+    use super::*;
+    #[test]
+    fn default_and_owned_qa_log_endpoint_are_explicit_and_invalid_roots_fail() {
+        assert_eq!(
+            qa_endpoint("-original", None).unwrap(),
+            "ipc:///tmp/logmessage-original"
+        );
+        let root = tempfile::Builder::new()
+            .prefix("route-upload-ipc-")
+            .tempdir_in("/tmp")
+            .unwrap();
+        assert_eq!(
+            qa_endpoint("-original", Some(root.path().as_os_str().to_owned())).unwrap(),
+            format!("ipc://{}/logmessage", root.path().display())
+        );
+        for path in [
+            std::path::Path::new("/tmp"),
+            std::path::Path::new("relative"),
+            std::path::Path::new("/tmp/route-upload-ipc-missing"),
+        ] {
+            assert!(qa_endpoint("-original", Some(path.as_os_str().to_owned())).is_err());
+        }
+        let alias = root.path().with_extension("alias");
+        std::os::unix::fs::symlink(root.path(), &alias).unwrap();
+        assert!(qa_endpoint("-original", Some(alias.as_os_str().to_owned())).is_err());
+        std::fs::remove_file(alias).unwrap();
+    }
 }

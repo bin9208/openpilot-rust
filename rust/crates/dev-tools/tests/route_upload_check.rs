@@ -5,6 +5,47 @@ use openpilot_dev_tools::route_upload_check::{
 };
 use serde_json::json;
 
+#[test]
+fn explicit_runtime_root_preserves_the_original_compiled_default() {
+    use openpilot_dev_tools::route_upload_check::parse_options;
+    use std::ffi::OsString;
+    let temporary = tempfile::tempdir().unwrap();
+    let args = vec![
+        OsString::from("--binaries"),
+        temporary.path().join("bin").into_os_string(),
+        OsString::from("--output"),
+        temporary.path().join("output").into_os_string(),
+    ];
+    let original_default = parse_options(false, &args).unwrap().unwrap();
+    let expected = openpilot_dev_tools::path_resolve::resolve_non_strict(
+        &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.."),
+    )
+    .unwrap();
+    assert_eq!(original_default.root, expected);
+    let mut explicit = args;
+    explicit.extend([OsString::from("--root"), temporary.path().into()]);
+    let selected = parse_options(false, &explicit).unwrap().unwrap();
+    assert_eq!(selected.root, temporary.path());
+    assert_eq!(selected.binaries, original_default.binaries);
+    assert_eq!(selected.output, original_default.output);
+    assert_eq!(std::fs::read_dir(temporary.path()).unwrap().count(), 0);
+}
+
+#[test]
+fn required_options_precede_unknown_argument_diagnostics_like_argparse() {
+    use openpilot_dev_tools::route_upload_check::parse_options;
+    for manager in [false, true] {
+        let error = parse_options(manager, &["--not-an-option".into()]).unwrap_err();
+        assert!(error.to_string().contains("required"));
+        assert!(!error.to_string().contains("unrecognized"));
+        assert!(
+            parse_options(manager, &["--not-an-option".into(), "--help".into()])
+                .unwrap()
+                .is_none()
+        );
+    }
+}
+
 fn crash() -> serde_json::Value {
     json!({"msg":"crash","ctx":{"runtime_language":"rust","runtime_implementation":"openpilot-uploader","daemon":"uploader","dongle_id":"owned-device","source_commit":"a".repeat(40),"source_tree":"clean"},"exc_info":"openpilot_uploader::Error"})
 }
