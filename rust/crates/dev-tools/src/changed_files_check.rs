@@ -4,7 +4,9 @@ mod codec_names;
 mod decode;
 mod japanese;
 mod names15;
+mod process;
 mod punycode;
+pub use process::RunControl;
 mod single_byte_tables;
 mod unicode15;
 mod utf7;
@@ -16,7 +18,7 @@ use std::{
     io::{self, Write},
     os::unix::ffi::{OsStrExt, OsStringExt},
     path::{Path, PathBuf},
-    process::{Command, Output},
+    time::Duration,
 };
 
 /// Unsupported native decoding is distinct from an observed Python rejection.
@@ -24,6 +26,8 @@ use std::{
 pub enum Phase {
     Whitespace,
     Git,
+    Cancelled,
+    Timeout,
     Read,
     Decode,
     Capability,
@@ -165,27 +169,22 @@ pub struct Report {
     pub base: OsString,
     pub checked_paths: Vec<PathBuf>,
 }
-fn git(root: &Path, args: &[&OsStr]) -> Result<Output, Diagnostic> {
-    let result = Command::new("git")
-        .current_dir(root)
-        .args(args)
-        .output()
-        .map_err(|e| Diagnostic::new(Phase::Git, e.to_string()))?;
-    if !result.status.success() {
-        return Err(Diagnostic::new(
-            Phase::Git,
-            format!(
-                "git {:?} exited {:?}: {}",
-                args,
-                result.status.code(),
-                String::from_utf8_lossy(&result.stderr)
-            ),
-        ));
-    }
-    Ok(result)
+fn git(root: &Path, args: &[&OsStr], control: &RunControl) -> Result<Vec<u8>, Diagnostic> {
+    process::git(root, args, false, Phase::Git, control)
 }
 /// Same NUL-separated ACMR selection and current worktree bytes as the original.
 pub fn run(root: &Path, explicit_base: Option<OsString>) -> Result<Report, Diagnostic> {
+    let control = RunControl::new(Duration::from_secs(120))?;
+    run_controlled(root, explicit_base, &control)
+}
+/// Caller-controlled cancellation/deadline; no global signal handlers are
+/// installed by this library entrypoint. Parsing checks control between files.
+pub fn run_controlled(
+    root: &Path,
+    explicit_base: Option<OsString>,
+    control: &RunControl,
+) -> Result<Report, Diagnostic> {
+    control.check()?;
     let mut base = explicit_base
         .filter(|v| !v.is_empty())
         .or_else(|| std::env::var_os("BASE_SHA"))
@@ -198,27 +197,24 @@ pub fn run(root: &Path, explicit_base: Option<OsString>) -> Result<Report, Diagn
                 OsStr::new("origin/dev"),
                 OsStr::new("HEAD"),
             ],
+            control,
         )?;
-        let bytes = output.stdout.strip_suffix(b"\n").unwrap_or(&output.stdout);
+        let bytes = output.strip_suffix(b"\n").unwrap_or(&output);
         base = OsString::from_vec(bytes.to_vec());
     }
     // Preserve failure ordering: whitespace rejection must precede AST admission.
-    let whitespace = Command::new("git")
-        .current_dir(root)
-        .args([
+    process::git(
+        root,
+        &[
             OsStr::new("diff"),
             OsStr::new("--check"),
             &base,
             OsStr::new("HEAD"),
-        ])
-        .status()
-        .map_err(|e| Diagnostic::new(Phase::Git, e.to_string()))?;
-    if !whitespace.success() {
-        return Err(Diagnostic::new(
-            Phase::Whitespace,
-            format!("git diff --check exited {:?}", whitespace.code()),
-        ));
-    }
+        ],
+        true,
+        Phase::Whitespace,
+        control,
+    )?;
     let selected = git(
         root,
         &[
@@ -229,9 +225,11 @@ pub fn run(root: &Path, explicit_base: Option<OsString>) -> Result<Report, Diagn
             &base,
             OsStr::new("HEAD"),
         ],
+        control,
     )?;
     let mut checked_paths = Vec::new();
-    for raw in selected.stdout.split(|&v| v == 0).filter(|v| !v.is_empty()) {
+    for raw in selected.split(|&v| v == 0).filter(|v| !v.is_empty()) {
+        control.check()?;
         let path = PathBuf::from(OsString::from_vec(raw.to_vec()));
         if path.extension() != Some(OsStr::new("py")) {
             continue;
@@ -247,6 +245,7 @@ pub fn run(root: &Path, explicit_base: Option<OsString>) -> Result<Report, Diagn
         check_bytes(&raw).map_err(|error| error.at(&path))?;
         checked_paths.push(path);
     }
+    control.check()?;
     Ok(Report {
         base,
         checked_paths,
@@ -265,7 +264,9 @@ pub fn cli() -> Result<(), Box<dyn std::error::Error>> {
             return Err(format!("unknown or duplicate option: {}", arg.to_string_lossy()).into());
         }
     }
-    let report = run(&std::env::current_dir()?, base)?;
+    let control = RunControl::new(Duration::from_secs(120))?;
+    let _signals = process::Signals::install(&control)?;
+    let report = run_controlled(&std::env::current_dir()?, base, &control)?;
     let mut out = io::stdout().lock();
     write!(
         out,

@@ -8265,3 +8265,24 @@ SHA256505267101b747faf656edd00a1535505fa909120957ae37223f02635a4cff3ce/all26CRCs
 The surrogate slot and leading scalar constant are now explicitly u32; no
 decoder arithmetic, original observations or acceptance condition is changed.
 The corrected candidate still requires the actual hosted compile/domain gate.
+
+Corrected codec run39820551641 atf2b7729ff/workflow34c68ba8b passes strict compile
+and Clippy, three of five domain tests and all72 source admissions. Parent verifies
+artifact12444153381:14359387bytes/SHA256
+8a5a166ec8b3c9b87c4a3a4515b70ccdc416da49220eb7478124c84b0b6c4f1a/all62CRCs.
+Raw full-domain bytes, allUTF7scalars and Unicode names agree; registry comparison
+retains three differences. A separate payload-preservation test requests the
+unknown spelling utf8-sig and panics. Its premise must be checked against the
+original registry before changing accepted aliases. The workflow remains failed;
+successful unchanged domains must not be rerun simply to replace this result.
+
+The Git lifecycle candidate10c8d355 is integrated using the existing owned QA
+process runner, with a shared120s operation deadline, caller cancellation and
+CLI INT/TERM handling. Captured Git output rejects overflow instead of truncating;
+whitespace keeps inherited I/O and precedes source admission. The new hosted-only
+target covers31 scenarios across eight tests, and the affected twelve original
+Git observations require fresh comparison. Scoped Rustfmt and diff checks pass;
+compilation, cleanup and lifecycle behavior remain unaccepted until hosted proof.
+Checks between files do not preempt a single parser/read, and inherited process
+groups do not claim setsid escape ownership. Source callers and inventory remain
+unchanged, with no retirement credit.
