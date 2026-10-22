@@ -1,0 +1,159 @@
+name: 296 Carrot Navi maintained comparison caller
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/carrot-navi-caller-296-once.yml
+permissions:
+  contents: read
+  actions: read
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
+  CARGO_BUILD_JOBS: '2'
+  CARGO_INCREMENTAL: '0'
+  CARGO_PROFILE_DEV_DEBUG: '0'
+  CARGO_PROFILE_TEST_DEBUG: '0'
+  EXPECTED_SOURCE: e8744f656444f1e8a5c49527ed15fb56e4406673
+jobs:
+  maintained-caller:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: e8744f656444f1e8a5c49527ed15fb56e4406673
+        persist-credentials: false
+    - uses: actions/setup-python@v6
+      with:
+        python-version: 3.12.14
+    - name: Bind current source and install hosted diagnostic tools
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        git rev-parse HEAD > "$RUNNER_TEMP/carrot-navi-caller-source.txt"
+
+        git fetch --no-tags --depth=1 origin 7a1c79f25ecc5a1eb71fab0564b13278bf3abba5
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
+
+        sudo apt-get update
+
+        sudo apt-get install -y strace
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy --component rustfmt
+
+        printf ''CARROT_NAVI_ORIGINAL_PYTHON=%s\n'' "$(command -v python)" >> "$GITHUB_ENV"
+
+        '
+    - name: Authenticate two-source caller policy and retained original traffic
+      run: "set -euo pipefail\npython -I - <<'PY'\n# Hosted-only source/policy inspection. No runtime/traffic/provider imports.\n\
+        import hashlib\nimport json\nimport os\nfrom pathlib import Path\nimport subprocess\n\nACCEPTED = '7a1c79f25ecc5a1eb71fab0564b13278bf3abba5'\n\
+        ORACLE = 'a6aa33955b981c9308729c89d744d794acf6127140421d10c01ae76147256262'\nRETAINED = 'fe4b08ff2bab5d8d199c827c6ed13ac392576ed710544a0adef1e6f6160e34cf'\n\
+        BUILD = 'aca5431dabde67b28fa11ce90fc3e71d7f6c0c3c5794025ebb947075deae7e51'\nCALLER = '0e1d027a4ca577b885be3551757efe560ecfb31e2f559eb886ca07ca538a9bd2'\n\
+        sha = lambda b: hashlib.sha256(b).hexdigest()\nrepo = Path(os.environ['GITHUB_WORKSPACE'])\nproof = Path(os.environ['RUNNER_TEMP'])\
+        \ / 'carrot-navi-caller-policy'\nproof.mkdir()\noriginal = subprocess.check_output(['git', 'show', ACCEPTED + ':.github/workflows/rust.yml'],\
+        \ cwd=repo).decode()\ncurrent = (repo / '.github/workflows/rust.yml').read_text()\n\ndef job(text):\n  start = text.index('\
+        \  carrot-navi-runtime:\\n')\n  return text[start:text.index('  carrot-navi-arm:\\n', start)]\n\ndef step(text, name):\n\
+        \  header = '      - name: ' + name + '\\n        run: |\\n'\n  assert text.count(header) == 1\n  start = text.index(header)\n\
+        \  end = text.index('      - ', start + len(header))\n  encoded = text[start + len(header):end]\n  lines = encoded.splitlines()\n\
+        \  assert all(line.startswith('          ') for line in lines)\n  return text[start:end], '\\n'.join(line[10:] for\
+        \ line in lines) + '\\n'\n\ncomparison_name = 'Require exact existing policy and normalized process comparisons'\n\
+        old_step, old_run = step(job(original), comparison_name)\nassert old_run.startswith(\"python -P - <<'PY'\\n\") and\
+        \ old_run.endswith('PY\\n')\nold_oracle = old_run.removeprefix(\"python -P - <<'PY'\\n\").removesuffix('PY\\n').encode()\n\
+        assert sha(old_oracle) == ORACLE\nfixture = repo / 'rust/crates/dev-tools/tests/fixtures/carrot-navi-comparator/original-embedded.py'\n\
+        assert fixture.read_bytes() == old_oracle\nretained = job(original).replace(old_step, '', 1)\nassert sha(retained.encode())\
+        \ == RETAINED\nbuild_step, build_script = step(job(current), 'Build current native Carrot Navi comparator')\ncaller_step,\
+        \ caller_script = step(job(current), comparison_name)\nassert sha(build_script.encode()) == BUILD\nassert sha(caller_script.encode())\
+        \ == CALLER\nassert job(current).replace(build_step, '', 1).replace(caller_step, '', 1) == retained\nfor path in sorted((repo\
+        \ / '.github/workflows').iterdir()):\n  if path.suffix not in ('.yml', '.yaml'):\n    continue\n  text = path.read_text()\n\
+        \  assert not all(token in text for token in ('def normalize(rows):', 'cereal_publish_count', \"'discovery/wire'\"\
+        )), str(path)\n  assert 'fixtures/carrot-navi-comparator/original-embedded.py' not in text, str(path)\n# Two-source\
+        \ absence gate: complete admitted old executable removed from the\n# maintained job; frozen independent source retained\
+        \ only in test data. Every\n# other byte of that job and every original runtime/QA input stays unchanged.\nunchanged\
+        \ = [\n  'rust/tools/radarcan_exact.py', 'rust/tools/carrot_navi_cases.py',\n  'rust/tools/carrot_navi_source.py',\
+        \ 'rust/tools/carrot_navi_runtime.py',\n  'rust/tools/carrot_navi_qa', 'rust/crates/carrot-navi',\n  'rust/crates/dev-tools/src/carrot_navi_compare.rs',\n\
+        \  'rust/crates/dev-tools/src/bin/check_carrot_navi_comparison.rs',\n  'rust/crates/dev-tools/src/control_tools_policy_check.rs',\n\
+        \  'rust/crates/dev-tools/src/control_tools_policy_check/json.rs',\n  'rust/crates/log-format/src',\n  'rust/crates/dev-tools/tests/fixtures/carrot-navi-comparator/saved-members.sha256',\n\
+        ]\nsubprocess.run(['git', 'diff', '--exit-code', ACCEPTED, 'HEAD', '--', *unchanged], cwd=repo, check=True)\nassert\
+        \ sha((repo / 'rust/tools/radarcan_exact.py').read_bytes()) == '5425bbe8fd48efd1f3bd5e2e71ce5801a3a2497e3a8b5c084a6ca8b71a4f7c95'\n\
+        (proof / 'maintained-build.sh').write_text(build_script)\n(proof / 'maintained-caller.sh').write_text(caller_script)\n\
+        (proof / 'original-embedded.py').write_bytes(old_oracle)\n(proof / 'retained-runtime-job.txt').write_text(retained)\n\
+        (proof / 'policy.json').write_text(json.dumps({\n  'accepted_source': ACCEPTED, 'current_source': os.environ['EXPECTED_SOURCE'],\n\
+        \  'oracle_sha256': ORACLE, 'build_sha256': BUILD, 'caller_sha256': CALLER,\n  'retained_runtime_job_sha256': RETAINED,\
+        \ 'unchanged_paths': unchanged,\n  'embedded_source_absent_from_maintained_workflows': True,\n  'frozen_fixture_only':\
+        \ True,\n}, indent=2))\nPY\n"
+    - name: Authenticate accepted controls and extract only held inert JSON
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: "set -euo pipefail\narchive=\"$RUNNER_TEMP/carrot-navi-comparator-39826752939.zip\"\ngh api repos/bin9208/openpilot-rust/actions/artifacts/12447566198/zip\
+        \ > \"$archive\"\nprintf '%s  %s\\n' '9e25cbbb637a451c3087c379d5600badc9d98108dc8eed76988c9c00534e3445' \"$archive\"\
+        \ | sha256sum --check --strict\nunzip -tq \"$archive\" > \"$RUNNER_TEMP/carrot-navi-caller-crc.txt\"\nsaved=\"$RUNNER_TEMP/carrot-navi-caller-saved\"\
+        \nmkdir \"$saved\"\nwhile read -r digest relative; do\n  case \"$relative\" in\n    *.json) ;;\n    *) exit 1 ;;\n\
+        \  esac\n  case \"$relative\" in\n    /*|*..*|*\\\\*) exit 1 ;;\n  esac\n  mkdir -p \"$saved/$(dirname \"$relative\"\
+        )\"\n  unzip -p \"$archive\" \"_temp/carrot-navi-comparator-saved/$relative\" > \"$saved/$relative\"\n  printf '%s\
+        \  %s\\n' \"$digest\" \"$saved/$relative\" | sha256sum --check --strict\ndone < rust/crates/dev-tools/tests/fixtures/carrot-navi-comparator/saved-members.sha256\n\
+        controls=\"$RUNNER_TEMP/carrot-navi-caller-accepted-controls.json\"\nunzip -p \"$archive\" _temp/carrot-navi-comparator-controls/controls.json\
+        \ > \"$controls\"\nprintf '%s  %s\\n' '815af34faaf6cf9f2cd02a8934d7c328f8fe7ee16716ed8bea16c7378abdc180' \"$controls\"\
+        \ | sha256sum --check --strict\nunzip -p \"$archive\" _temp/carrot-navi-comparator-controls/original-embedded.py |\
+        \ cmp - rust/crates/dev-tools/tests/fixtures/carrot-navi-comparator/original-embedded.py\nprintf 'CARROT_NAVI_SAVED_ROOT=%s\\\
+        nCARROT_NAVI_ACCEPTED_CONTROLS=%s\\nCARROT_NAVI_CALLER_EVIDENCE=%s\\nCARROT_NAVI_MAINTAINED_BUILD_PROOF=%s\\n' \"\
+        $saved\" \"$controls\" \"$RUNNER_TEMP/carrot-navi-caller-controls\" \"$RUNNER_TEMP/carrot-navi/comparator.sha256\"\
+        \ >> \"$GITHUB_ENV\"\n"
+    - name: Execute exact maintained fresh build step
+      run: 'set -euo pipefail
+
+        mkdir "$RUNNER_TEMP/carrot-navi"
+
+        bash --noprofile --norc -e -o pipefail "$RUNNER_TEMP/carrot-navi-caller-policy/maintained-build.sh"
+
+        '
+    - name: Run only new caller and source-absence gates with strict Clippy
+      run: "set -euo pipefail\nlogs=\"$RUNNER_TEMP/carrot-navi-caller-logs\"\nmkdir \"$logs\"\nexport CARGO_TARGET_DIR=\"\
+        $RUNNER_TEMP/carrot-navi-caller-test-target\"\ntest ! -e \"$CARGO_TARGET_DIR\"\nrustfmt --edition 2021 --config skip_children=true\
+        \ --check rust/crates/dev-tools/tests/carrot_navi_compare.rs\ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
+        \ --no-default-features --features carrot-navi-compare-native --test carrot_navi_compare --locked -- maintained_ --nocapture\
+        \ 2>&1 | tee \"$logs/tests.log\"\ncargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --no-default-features\
+        \ --features carrot-navi-compare-native --lib --bin check-carrot-navi-comparison --test carrot_navi_compare --locked\
+        \ -- -D warnings 2>&1 | tee \"$logs/clippy.log\"\npython -I - <<'PY' | tee \"$logs/receipt.json\"\n# Hosted-only saved-evidence\
+        \ validation after the two focused tests.\nimport hashlib\nimport json\nimport os\nfrom pathlib import Path\nroot\
+        \ = Path(os.environ['RUNNER_TEMP'])\nproof = root / 'carrot-navi-caller-controls'\nreceipt = json.loads((proof / 'caller-controls.json').read_text())\n\
+        assert receipt['reused_controls'] == 72\nassert receipt['reused_accepted_run'] == 39826752939\ncases = receipt['cases']\n\
+        assert len(cases) == 42\nassert len({case['name'] for case in cases}) == 42\nassert sum(case['expected_pass'] for\
+        \ case in cases) == 2\nassert sum(len(case['output_sha256']) for case in cases) == 205\nfor case in cases:\n  assert\
+        \ case['source_status'] == case['native_status'] == (0 if case['expected_pass'] else 1)\n  assert case['native_execs']\
+        \ == case['shell_execs'] == 1 and case['input_files_unchanged']\n  for name, digest in case['output_sha256'].items():\n\
+        \    source = proof / case['name'] / 'source/carrot-navi' / name\n    native = proof / case['name'] / 'native/carrot-navi'\
+        \ / name\n    assert source.read_bytes() == native.read_bytes()\n    assert hashlib.sha256(source.read_bytes()).hexdigest()\
+        \ == digest\n# Inherited stale success receipts survive failures before the final write.\n# They must stay byte-identical;\
+        \ receipt presence is never a pass criterion.\nfor case in cases:\n  if not case['expected_pass'] and case['name']\
+        \ != 'blocked-comparison.json':\n    path = proof / case['name'] / 'native/carrot-navi/comparison.json'\n    assert\
+        \ path.read_bytes() == b'stale:comparison.json\\n'\nprint(json.dumps({'focused_tests': 2, 'caller_cases': 42, 'positive':\
+        \ 2,\n                  'negative': 40, 'output_pairs': 205, 'reused_controls': 72,\n                  'traffic_recollected':\
+        \ False, 'arm_rerun': False}, indent=2))\nPY\n"
+    - name: Preserve focused evidence on success and failure
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: carrot-navi-caller-296-evidence
+        if-no-files-found: warn
+        path: '${{ runner.temp }}/carrot-navi-caller-source.txt
+
+          ${{ runner.temp }}/carrot-navi-caller-crc.txt
+
+          ${{ runner.temp }}/carrot-navi-caller-policy/
+
+          ${{ runner.temp }}/carrot-navi-caller-accepted-controls.json
+
+          ${{ runner.temp }}/carrot-navi-caller-saved/
+
+          ${{ runner.temp }}/carrot-navi-caller-controls/
+
+          ${{ runner.temp }}/carrot-navi-caller-logs/
+
+          ${{ runner.temp }}/carrot-navi/
+
+          ${{ runner.temp }}/carrot-navi-comparison-target/debug/check-carrot-navi-comparison
+
+          '
