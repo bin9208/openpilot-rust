@@ -143,7 +143,19 @@ const CACHED_SOURCES: [&str; 9] = [
     "rust/crates/model-runtime/src/assets.rs",
     "rust/crates/model-runtime/src/buffer.rs",
 ];
-fn source_tree(root: &Path, guarded_add: bool, cached: bool) -> Result<BTreeMap<String, Snapshot>> {
+const PUBLISHER_SOURCES: [&str; 5] = [
+    "rust/crates/model-runtime/src",
+    "rust/crates/model-runtime/Cargo.toml",
+    "rust/Cargo.toml",
+    "rust/Cargo.lock",
+    "rust/rust-toolchain.toml",
+];
+fn source_tree(
+    root: &Path,
+    guarded_add: bool,
+    cached: bool,
+    publisher: bool,
+) -> Result<BTreeMap<String, Snapshot>> {
     let mut out = BTreeMap::new();
     for name in SOURCES {
         let base = root.join(name);
@@ -172,6 +184,21 @@ fn source_tree(root: &Path, guarded_add: bool, cached: bool) -> Result<BTreeMap<
                 name.to_owned(),
                 Snapshot::open(&root.join(name), 16 * 1024 * 1024)?,
             );
+        }
+    }
+    if publisher {
+        // Hold the complete linked native library source, including the disk
+        // guard and owned-output implementation, rather than only its CLI.
+        for name in PUBLISHER_SOURCES {
+            let base = root.join(name);
+            if fs::symlink_metadata(&base)?.is_dir() {
+                for (relative, pin) in tree(&base, 5000, 1024 * 1024 * 1024)? {
+                    out.insert(format!("{name}/{relative}"), pin);
+                }
+            } else {
+                out.insert(name.to_owned(), Snapshot::open(&base, 16 * 1024 * 1024)?);
+            }
+            require(out.len() <= 5000, "compiler source roster exceeds bound")?;
         }
     }
     Ok(out)
@@ -224,6 +251,20 @@ fn helper_binding(input: &Input) -> Result<Value> {
         json!({"enabled":true,"path":input.path,"bytes":m.len(),"sha256":input.seal["sha256"],
         "identity":[m.dev(),m.ino(),m.len(),u64::from(m.mode()),i128::from(m.mtime())*1_000_000_000+i128::from(m.mtime_nsec()),i128::from(m.ctime())*1_000_000_000+i128::from(m.ctime_nsec())]}),
     )
+}
+fn publisher_target(target: &Value, binding: Option<&Value>) -> Result<()> {
+    match binding {
+        Some(binding) => require(
+            target["catalog_publisher_before"] == *binding
+                && target["catalog_publisher_after"] == *binding,
+            "catalog publisher compiler receipt differs from held ELF",
+        ),
+        None => require(
+            target["catalog_publisher_before"].is_null()
+                && target["catalog_publisher_after"].is_null(),
+            "unadmitted catalog publisher compiler receipt",
+        ),
+    }
 }
 fn verify_map(map: &BTreeMap<String, Snapshot>) -> Result<()> {
     for pin in map.values() {
@@ -359,7 +400,15 @@ pub fn prepare_catalog(options: &CatalogOptions) -> Result<Value> {
     let helper_before = helper.as_ref().map(helper_binding).transpose()?;
     let cached_helper = configured_helper("MODEL_CACHED_CODE")?;
     let cached_before = cached_helper.as_ref().map(helper_binding).transpose()?;
-    let sources = source_tree(&options.root, helper.is_some(), cached_helper.is_some())?;
+    let publisher = configured_helper("MODEL_CATALOG_PUBLISH")
+        .map_err(|error| format!("catalog publisher admission failed: {error}"))?;
+    let publisher_before = publisher.as_ref().map(helper_binding).transpose()?;
+    let sources = source_tree(
+        &options.root,
+        helper.is_some(),
+        cached_helper.is_some(),
+        publisher.is_some(),
+    )?;
     let cached_request = match (
         std::env::var_os("MODEL_CACHED_CODE_REQUEST"),
         std::env::var("MODEL_CACHED_CODE_REQUEST_SHA256"),
@@ -520,6 +569,23 @@ pub fn prepare_catalog(options: &CatalogOptions) -> Result<Value> {
             spec.env.insert(name.into(), value);
         }
     }
+    if let Some(input) = &publisher {
+        spec.env.insert(
+            "MODEL_CATALOG_PUBLISH_BINARY".into(),
+            input
+                .path
+                .to_str()
+                .ok_or("catalog publisher path UTF8")?
+                .to_owned(),
+        );
+        spec.env.insert(
+            "MODEL_CATALOG_PUBLISH_SHA256".into(),
+            input.seal["sha256"]
+                .as_str()
+                .ok_or("catalog publisher SHA missing")?
+                .to_owned(),
+        );
+    }
     let result = execute(&spec, temp.path());
     if !matches!(&result, Ok(result) if result.code == 0) {
         let evidence = temp.keep();
@@ -539,6 +605,7 @@ pub fn prepare_catalog(options: &CatalogOptions) -> Result<Value> {
             &options.root,
             helper.is_some(),
             cached_helper.is_some(),
+            publisher.is_some(),
         )?) == seals(&sources)
             && seals(&tree(&options.models, 5, 128 * 1024 * 1024)?) == seals(&models),
         "compiler source/model roster changed",
@@ -551,6 +618,11 @@ pub fn prepare_catalog(options: &CatalogOptions) -> Result<Value> {
             && target["stored_jit_executed"] == false
             && target["before"] == target["after"],
         "compiler target changed or old JIT was executed",
+    )?;
+    publisher_target(&target, publisher_before.as_ref())?;
+    require(
+        publisher.as_ref().map(helper_binding).transpose()? == publisher_before,
+        "catalog publisher changed during compilation",
     )?;
     let target_helper = &target["guarded_add_before"];
     require(
@@ -724,6 +796,9 @@ pub fn prepare_catalog(options: &CatalogOptions) -> Result<Value> {
         "invalid checkout identity",
     )?;
     let mut report = json!({"version":1,"provider":"CPU:LLVM","source_commit":checkout,"host":receipt_host,"models":seals(&models),"exporter_dependency_files":seals(&sources),"catalog_generation":generation,"catalog_files":seals(&files),"stored_jit_executed":false,"original_jit_execution_admitted":false,"compiler_entrypoint":compiler.seal,"compiler_interpreter":python.seal,"compiler_target_receipt":target_pin.seal,"original_model_manifest":manifest.seal,"scope":"native orchestration; existing Python compiler remains pending retirement"});
+    if let Some(binding) = &publisher_before {
+        report["catalog_publisher"] = binding.clone();
+    }
     if let Some(binding) = &helper_before {
         report["guarded_add"] = binding.clone();
     }
@@ -820,6 +895,10 @@ pub fn prepare_catalog(options: &CatalogOptions) -> Result<Value> {
     require(
         helper.as_ref().map(helper_binding).transpose()? == helper_before,
         "published guarded add helper changed",
+    )?;
+    require(
+        publisher.as_ref().map(helper_binding).transpose()? == publisher_before,
+        "published catalog publisher changed",
     )?;
     published.accepted = true;
     Ok(report)
@@ -997,5 +1076,31 @@ mod cached_binding_canonical_tests {
         changed["helper"]["identity"][2] = json!(3);
         changed["sources"][0]["sha256"] = json!("stale");
         assert_ne!(cached_canonical_sha(&changed).unwrap(), expected);
+    }
+}
+
+#[cfg(test)]
+mod publisher_caller_tests {
+    use super::*;
+    #[test]
+    fn publisher_receipt_requires_the_exact_held_issuer_and_both_observations() {
+        let binding = json!({"enabled":true,"path":"/held/native","bytes":64,"sha256":"12".repeat(32),"identity":[1,2,64,493,5,6]});
+        let good = json!({"catalog_publisher_before":binding,"catalog_publisher_after":binding});
+        assert!(publisher_target(&good, Some(&binding)).is_ok());
+        for field in ["catalog_publisher_before", "catalog_publisher_after"] {
+            let mut missing = good.clone();
+            missing.as_object_mut().unwrap().remove(field);
+            assert!(publisher_target(&missing, Some(&binding)).is_err());
+            let mut replaced = good.clone();
+            replaced[field]["identity"][1] = json!(3);
+            assert!(publisher_target(&replaced, Some(&binding)).is_err());
+        }
+        assert!(publisher_target(&good, None).is_err());
+        assert!(publisher_target(&json!({}), None).is_ok());
+        assert!(publisher_target(&json!({"catalog_publisher_before":{"enabled":false},"catalog_publisher_after":{"enabled":false}}), None).is_err());
+        let mut forged = good;
+        forged["catalog_publisher_before"]["sha256"] = json!("00".repeat(32));
+        forged["catalog_publisher_after"] = forged["catalog_publisher_before"].clone();
+        assert!(publisher_target(&forged, Some(&binding)).is_err());
     }
 }

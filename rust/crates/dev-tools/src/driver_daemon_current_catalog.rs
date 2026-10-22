@@ -20,7 +20,19 @@ const CACHED_SOURCES: [&str; 9] = [
     "rust/crates/model-runtime/src/assets.rs",
     "rust/crates/model-runtime/src/buffer.rs",
 ];
-fn source_roster(root: &Path, guarded_add: bool, cached: bool) -> Result<BTreeSet<String>> {
+const PUBLISHER_SOURCES: [&str; 5] = [
+    "rust/crates/model-runtime/src",
+    "rust/crates/model-runtime/Cargo.toml",
+    "rust/Cargo.toml",
+    "rust/Cargo.lock",
+    "rust/rust-toolchain.toml",
+];
+fn source_roster(
+    root: &Path,
+    guarded_add: bool,
+    cached: bool,
+    publisher: bool,
+) -> Result<BTreeSet<String>> {
     fn visit(root: &Path, path: &Path, names: &mut BTreeSet<String>) -> Result<()> {
         let metadata = fs::symlink_metadata(path)?;
         if metadata.file_type().is_symlink() {
@@ -78,7 +90,29 @@ fn source_roster(root: &Path, guarded_add: bool, cached: bool) -> Result<BTreeSe
             visit(root, &root.join(name), &mut names)?;
         }
     }
+    if publisher {
+        for name in PUBLISHER_SOURCES {
+            visit(root, &root.join(name), &mut names)?;
+        }
+    }
     Ok(names)
+}
+fn publisher_matches(binding: &Value) -> Result<()> {
+    let path = std::env::var_os("MODEL_CATALOG_PUBLISH_BINARY");
+    let hash = std::env::var_os("MODEL_CATALOG_PUBLISH_SHA256");
+    if binding.is_null() {
+        if path.is_some() || hash.is_some() {
+            return Err("unrecorded catalog publisher configured".into());
+        }
+        return Ok(());
+    }
+    if binding["enabled"] != true
+        || path.as_deref().and_then(|p| p.to_str()) != binding["path"].as_str()
+        || hash.as_deref().and_then(|p| p.to_str()) != binding["sha256"].as_str()
+    {
+        return Err("catalog publisher configuration differs from catalog".into());
+    }
+    Ok(())
 }
 fn helper_matches(binding: &Value) -> Result<()> {
     let path = std::env::var_os("MODEL_LLVM_GUARDED_ADD_BINARY");
@@ -212,6 +246,7 @@ impl CurrentCatalog {
         }
         helper_matches(&value["guarded_add"])?;
         cached_matches(&value["cached_code"])?;
+        publisher_matches(&value["catalog_publisher"])?;
         let mut held = Vec::new();
         let mut source_seals = Vec::new();
         let recorded_models = value["models"]
@@ -234,6 +269,7 @@ impl CurrentCatalog {
                 root,
                 !value["guarded_add"].is_null(),
                 !value["cached_code"].is_null(),
+                !value["catalog_publisher"].is_null(),
             )?
         {
             return Err("driver current exporter whole source roster changed".into());
@@ -303,21 +339,24 @@ impl CurrentCatalog {
         {
             return Err("driver current catalog generation changed".into());
         }
-        if !value["guarded_add"].is_null() {
-            let binding = &value["guarded_add"];
+        for field in ["guarded_add", "catalog_publisher"] {
+            let binding = &value[field];
+            if binding.is_null() {
+                continue;
+            }
             let path = Path::new(
                 binding["path"]
                     .as_str()
-                    .ok_or("guarded add helper path missing")?,
+                    .ok_or("catalog native helper path missing")?,
             );
             if !path.is_absolute() || fs::canonicalize(path)? != path {
-                return Err("guarded add helper path is not canonical".into());
+                return Err("catalog native helper path is not canonical".into());
             }
             let helper = InputPin::open(path, true)?;
             if helper.digest != binding["sha256"]
                 || Some(helper.identity.2) != binding["bytes"].as_u64()
             {
-                return Err("guarded add helper seal differs from compiler binding".into());
+                return Err("catalog native helper seal differs from compiler binding".into());
             }
             let m = helper.file.metadata()?;
             let mut header = [0_u8; 64];
@@ -334,7 +373,7 @@ impl CurrentCatalog {
                         62
                     }
             {
-                return Err("guarded add helper is not a bounded executable ELF".into());
+                return Err("catalog native helper is not a bounded executable ELF".into());
             }
             if binding["identity"]
                 != json!([
@@ -346,7 +385,7 @@ impl CurrentCatalog {
                     i128::from(m.ctime()) * 1_000_000_000 + i128::from(m.ctime_nsec())
                 ])
             {
-                return Err("guarded add helper metadata differs from compiler binding".into());
+                return Err("catalog native helper metadata differs from compiler binding".into());
             }
             held.push(helper);
         }
@@ -453,6 +492,7 @@ impl CurrentCatalog {
         self.receipt.verify()?;
         helper_matches(&self.value["guarded_add"])?;
         cached_matches(&self.value["cached_code"])?;
+        publisher_matches(&self.value["catalog_publisher"])?;
         if self.value["exporter_dependency_files"]
             .as_object()
             .ok_or("driver source roster missing")?
@@ -463,6 +503,7 @@ impl CurrentCatalog {
                 &self.source_root,
                 !self.value["guarded_add"].is_null(),
                 !self.value["cached_code"].is_null(),
+                !self.value["catalog_publisher"].is_null(),
             )?
         {
             return Err("driver current exporter source reappearance or removal".into());
@@ -636,23 +677,30 @@ mod tests {
             fs::create_dir_all(root.path().join(name)).unwrap();
         }
         fs::write(root.path().join("uv.lock"), b"locked").unwrap();
-        let first = source_roster(root.path(), false, false).unwrap();
-        assert!(source_roster(root.path(), true, false).is_err());
+        let first = source_roster(root.path(), false, false, false).unwrap();
+        assert!(source_roster(root.path(), true, false, false).is_err());
+        assert!(source_roster(root.path(), false, false, true).is_err());
         let module = root.path().join("rust/tools/model_export/new.py");
         fs::write(&module, b"new exporter").unwrap();
-        assert_ne!(source_roster(root.path(), false, false).unwrap(), first);
+        assert_ne!(
+            source_roster(root.path(), false, false, false).unwrap(),
+            first
+        );
         fs::remove_file(module).unwrap();
-        assert_eq!(source_roster(root.path(), false, false).unwrap(), first);
+        assert_eq!(
+            source_roster(root.path(), false, false, false).unwrap(),
+            first
+        );
         let linked = root.path().join("rust/tools/model_export/linked.py");
         std::os::unix::fs::symlink(root.path().join("uv.lock"), &linked).unwrap();
-        assert!(source_roster(root.path(), false, false).is_err());
+        assert!(source_roster(root.path(), false, false, false).is_err());
         fs::remove_file(linked).unwrap();
         let linked = root.path().join("rust/tools/model_export/linked-directory");
         std::os::unix::fs::symlink(root.path().join("openpilot/common"), &linked).unwrap();
-        assert!(source_roster(root.path(), false, false).is_err());
+        assert!(source_roster(root.path(), false, false, false).is_err());
         fs::remove_file(linked).unwrap();
         fs::remove_file(root.path().join("uv.lock")).unwrap();
-        assert!(source_roster(root.path(), false, false).is_err());
+        assert!(source_roster(root.path(), false, false, false).is_err());
     }
 }
 
@@ -687,5 +735,72 @@ mod cached_binding_canonical_tests {
         changed["helper"]["identity"][2] = json!(3);
         changed["sources"][0]["sha256"] = json!("stale");
         assert_ne!(cached_canonical_sha(&changed).unwrap(), expected);
+    }
+}
+
+#[cfg(test)]
+mod publisher_admission_tests {
+    use super::*;
+
+    #[test]
+    #[ignore = "hosted genuine current-catalog issuer checks after real emission"]
+    fn publisher_current_catalog_rejects_forged_or_omitted_binding_and_native_source() {
+        let root = PathBuf::from(std::env::var_os("GITHUB_WORKSPACE").unwrap());
+        let prepared = PathBuf::from(std::env::var_os("PUBLISHER_CALLER_PROOF").unwrap())
+            .join("native-prepared");
+        let body = fs::read(prepared.join("current-catalog-receipt.json")).unwrap();
+        let value: Value = serde_json::from_slice(&body).unwrap();
+        let models = value["models"]
+            .as_object()
+            .unwrap()
+            .iter()
+            .map(|(name, seal)| (name.clone(), seal["sha256"].as_str().unwrap().to_owned()))
+            .collect::<BTreeMap<_, _>>();
+        let checkout = value["source_commit"].as_str().unwrap();
+        let temp = tempfile::tempdir().unwrap();
+        for case in [
+            "valid",
+            "omitted-binding",
+            "replaced-identity",
+            "omitted-native-source",
+            "forged-source",
+        ] {
+            let mut current = value.clone();
+            match case {
+                "valid" => (),
+                "omitted-binding" => {
+                    current.as_object_mut().unwrap().remove("catalog_publisher");
+                }
+                "replaced-identity" => current["catalog_publisher"]["identity"][1] = json!(0),
+                "omitted-native-source" => {
+                    current["exporter_dependency_files"]
+                        .as_object_mut()
+                        .unwrap()
+                        .remove("rust/crates/model-runtime/src/catalog_publish.rs");
+                }
+                "forged-source" => {
+                    current["exporter_dependency_files"]
+                        ["rust/crates/model-runtime/src/catalog_publish.rs"]["sha256"] =
+                        json!("00".repeat(32))
+                }
+                _ => unreachable!(),
+            }
+            let path = temp.path().join(format!("{case}.json"));
+            let bytes = serde_json::to_vec(&current).unwrap();
+            fs::write(&path, &bytes).unwrap();
+            let admission = crate::driver_daemon_check::CurrentCatalogAdmission::open(
+                &root,
+                &prepared.join("catalog"),
+                &path,
+                &sha(&bytes),
+                &models,
+                checkout,
+            );
+            if case == "valid" {
+                admission.unwrap().verify().unwrap();
+            } else {
+                assert!(admission.is_err(), "accepted {case}");
+            }
+        }
     }
 }

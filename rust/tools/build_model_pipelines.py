@@ -14,7 +14,7 @@ from pathlib import Path
 
 from model_export.native import cached_export_session, guarded_add_binding
 from model_export.original import DriverArtifacts, driver, driving
-from model_export.publish import BundleSpec, publish
+from model_export.publish import BundleSpec, catalog_publisher_binding, publish
 from openpilot.common.file_chunker import open_file_chunked
 
 
@@ -58,6 +58,7 @@ def main() -> None:
         if args.target_receipt.exists() or args.target_receipt.is_symlink():
             raise FileExistsError(args.target_receipt)
     helper_before = guarded_add_binding()
+    publisher_before = catalog_publisher_binding()
     if helper_before["enabled"] and args.backend != "cpu":
         parser.error("guarded add requires --backend cpu")
     target_before = llvm_target() if args.target_receipt is not None else None
@@ -83,6 +84,9 @@ def main() -> None:
         cached_after = cached.receipt() if cached is not None else None
         if cached_before != cached_after:
             raise RuntimeError("cached native issuer binding changed during catalog compilation")
+    publisher_after = catalog_publisher_binding()
+    if publisher_before != publisher_after:
+        raise RuntimeError("native catalog publisher binding changed during catalog compilation")
     helper_after = guarded_add_binding()
     if helper_before != helper_after:
         raise RuntimeError("guarded add helper changed during catalog compilation")
@@ -94,6 +98,8 @@ def main() -> None:
             evidence = {"version": 1, "stored_jit_executed": False,
                         "before": target_before, "after": target_after,
                         "guarded_add_before": helper_before, "guarded_add_after": helper_after}
+            if publisher_before["enabled"]:
+                evidence["catalog_publisher_before"], evidence["catalog_publisher_after"] = publisher_before, publisher_after
             if cached_before is not None:
                 evidence["cached_code_before"], evidence["cached_code_after"] = cached_before, cached_after
             json.dump(evidence, receipt, indent=2, sort_keys=True)
