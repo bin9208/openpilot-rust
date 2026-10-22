@@ -6792,3 +6792,64 @@ strace6.8-0ubuntu2 fails, matching historical#474. Lifecycle/actions/upload/fina
 trace audit are not complete; later workspace steps skip. No native runtime
 cause is established. Hosted kernel/signal/tracer metadata and separate complete
 same-ELF untraced/traced lanes are being prepared; no tracing gate is waived.
+
+### Driver two-sided raw values prove correct half rounding, upstream FP32 drift
+
+Split-inferior39729163251 at83fb19a8cfda05bd2039253ceea8e0786676274d,
+workflow86b2557115c15fa11077fcad8b9ddaca478ca2c1, obtains one eligibleEPYC9V45
+sample and3explicit CPU skips. Artifact12403979791 is91519755B/SHA
+e76fed12411c28191104aaadd6f63758f9b473790d172898508e4da07ae591e0;
+all1115CRCs pass. Three skip artifacts add15checked CRCs. Both independent
+owned inferiors retain the complete original/native outputs and1728000B bases;
+each debug output equals its retained baseline, and every output/base agrees
+across inferiors. All496input/13source/two-generated-ELF seals per inferior,
+per-worker function code and FP controls match. GDB environment restoration,
+stdlib preflight, supervisor limits and full positive-feature admission pass.
+
+At element60921, unchanged original+bc4 rawF32 be07f000 is exactly
+-0.13275146484375; unchanged native+9e7 rawF32 be07effe is
+-0.1327514350414276. This two-FP32-ULP difference precedes half conversion.
+Original is exactly the midpoint between halfb03f/b040; ties-to-even correctly
+producesb040. Native is slightly nearerb03f and correctly producesb03f. The
+half converter is not demonstrated faulty. The earliest upstream arithmetic
+cause remains unproved; identical IR maps this lane to a convolution+bias
+numerator divided by a lowered exponential activation denominator. Both contain
+FMA instructions; their presence or CPU labels alone do not establish cause.
+The next bounded unchanged-code observation targets operands before original
++b91/native+9b8 divisions. No production numerical/tolerance/target change or
+model-family retirement acceptance follows from this probe.
+
+### Manager candidate environment failure retained; generic semantics preserved
+
+39728775823/workflowc4db0c15342ba9b29d1d92d25ccbeefaab0584ec checked out
+83fb19a8cfda05bd2039253ceea8e0786676274d. Completeartifact12404785057 is4067861B,
+SHA b28449aa7816215da00b9b55f7a36e709310224948436f3fbdbbd39d6ab5d449;
+all12868CRCs pass. Compilation/strictClippy/five units pass and fresh original
+capture completes. Native unified comparison correctly rejects packet2 because
+Cargo prepended build/toolchain directories to LD_LIBRARY_PATH. Positional CLI
+comparison and outer final provider comparisons were not reached. The failure
+is not accepted as a manager behavior change or a complete source-present pass.
+
+A proposed generic CLI patch that hardcoded the frozen original library path
+was rejected during parent review: it would change actual caller-environment
+behavior. The leaf source is unchanged. Instead retry39729826364 compiles and
+seals the exact two integration-test ELFs, then executes them directly under
+the same untouched host environment as the fresh original capture. All four
+packet comparisons, exact one-pass assertions and provider/source seals remain;
+there is no environment-output normalization or production manager change.
+
+### General guarded-copy diagnostic matches the complete kernel92 output
+
+39729562958/source defb9011df3fca924dca41a703b48ce5ff0c51e0/workflow
+21ed562971a92e4fea74ea777c189fad36e7bc2b obtains one eligible sample and one
+explicit ISA skip. Eligibleartifact12404776700 is4391525B/SHA
+ba28ae07b5becc3afe4346db3e86437f9a93aaaf02031c19f83e070ad9c7d93b;
+all133CRCs pass. Diagnostic scalar recognition rewrites four general guarded
+adds with either operand/select-arm order; it contains no model index or CPU
+match. Introduced sums drop only nsz so the selected true copy retains zero
+sign. Forty independent boundary cases pass. Complete10304B variant output
+matches frozen original9afb2def...b67fe, and all seven input-only bases stay
+unchanged, after the baseline native069/original9afb/whole-native poststate gates.
+Full optimized IR/object/disassembly and provider/FP seals are retained. Emitted
+copy mapping and affected full-model/corpus validation remain required; no
+production fix, whole original pipeline proof or #482 closure is claimed.

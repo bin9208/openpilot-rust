@@ -143,8 +143,9 @@ three partial baseline entries.
 
 12. Manager QA candidate83fb19a8c retains all Python originals. Seven full
     original observations and4ZMQ packets seed three native CLIs with held-file
-    content/identity checks. Hosted compilation/Clippy pass39728775823; expanded
-    original/native CLI and traffic comparison is pending. Fresh original capture
+    content/identity checks. First39728775823 exposes Cargo-added environment differences after five units/
+    Clippy pass; direct-held-test-ELF retry39729826364 passes expanded original/
+    native CLI and traffic comparison. Complete original capture audit is underway. Fresh original capture
     39726612260 seals3271repo sources/257opendbc/3495external Python providers.
     Car-name regeneration and full private-root/source absence remain pending.
 

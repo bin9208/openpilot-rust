@@ -81,8 +81,9 @@ filter false green is repaired with exact success-line and1passed assertions.
 
 Native manager QA candidate83fb19a8c adds three CLIs, seven independent cases,
 four actual ZMQ log packets, held-file identity/content guards and positional
-compatibility. Hosted39728775823 passed compilation/strictClippy; functional
-comparison is pending. No manager Python source is deleted. Original capture
+compatibility. First39728775823 passes compilation/Clippy/five units but rejects Cargo-added
+library paths in packet2. Direct held-test-ELF retry39729826364 now passes full
+functional/positional comparison atdefb9011d; complete artifact audit is underway. No manager Python source is deleted. Original capture
 39726612260 has full7331CRC/Git3271/source/provider3495 seals; the current native
 run expands selected scenarios to normal,normal,custom. Car-name generation
 and complete imported-source/private-root closure remain separate work.
@@ -346,3 +347,25 @@ SIGINT at unchanged10sbarrier; inspectnewretainedphase/procdiagnostics.
 Watch39719769987greenisall8explicitwrong-hostskips, notnumericalevidence.
 Compatible-host unchanged-binary2samplediagnostic retainsstrictrequiredISA and
 fullcapturedbase/debug-outputcorrespondence; it cannotestablishsame9V45behavior.
+
+
+## New diagnostics after modem closure
+
+Driver split-inferior39729163251 has one full valid sample/3explicit skips.
+Fullartifact12403979791 is91519755B/all1115CRCs/SHA
+e76fed12411c28191104aaadd6f63758f9b473790d172898508e4da07ae591e0.
+Both complete outputs/bases and all source/provider/input/FP/code guards match.
+Original rawF32be07f000/nativebe07effe at element60921 prove a2-ULP upstream
+FP32 difference; both half conversions are correct. Division operand probe
+uses one hardware stop in each newly owned inferior; no numerical fix is accepted.
+
+Road guarded-copy39729562958 has one eligible/one skipped sample. All133CRCs,
+40boundaries and full10304B variant original output match; source/provider/FP/
+eight-base guards pass. Static emitted compare/mask/add/copy/store mapping
+confirms the selected input bit copy. This is still diagnostic-only, with
+exceptional values and affected full-model/corpus validation pending.
+
+Current native manager retry39729826364 passes; frozen complete original data
+and source/provider roster auditing precedes three-tool source-absence support.
+No manager Python deletion is accepted. Recovery39729659238 separately runs
+complete untraced then traced same-ELF traffic to investigate recurring#474.
