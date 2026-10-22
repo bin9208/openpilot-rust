@@ -68,3 +68,11 @@ original C++ producer, including packet bytes, console output and transport
 failures. Build it with `--features native-logging-check-native --bin check-native-logging`
 in `openpilot-dev-tools`. Its Python comparison helpers remain until native
 functionality and source-absence checks pass.
+
+The experimental `check-changed-files` checks changed Python source bytes with
+an explicit Python 3.12 grammar. Build it in `openpilot-dev-tools` with
+`--features changed-files-native --bin check-changed-files`; run from the checkout
+with optional `--base SHA` or `BASE_SHA`. It uses GNU libc iconv for four legacy
+encodings and reports unsupported codecs as capability errors. Codec and grammar
+parity are still being validated; maintained syntax checks continue to use the
+original Python tool. This candidate receives no source-retirement credit yet.

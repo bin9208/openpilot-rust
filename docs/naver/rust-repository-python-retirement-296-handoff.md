@@ -42,10 +42,17 @@ opt-in native logging candidate,915aad61b fixes two readiness-count compilation
 errors. Logger R1 failed before tests; R2 workflow90d9fff3d requires actual native
 acceptance. Both old logging Python helpers/caller remain; no inventory credit.
 AST metadata-only39804553336 passes(all593old lock identities/checksums/edges
-preserved,29new optional parser packages); no production lock/parser change is
-applied yet. Full model continuation39796728026 remains pending; road R4
-workflowdbee1ef362/source103188 observes actual original raw predictions after
-the repeated EPYC7763 model-1 failure, without a numerical/target policy change.
+preserved,29new optional parser packages). The opt-in parser candidate now includes
+that exact accepted lock delta, independent Unicode15 data and CPython3.12.15
+encoding-name provenance; maintained Python callers and inventory remain unchanged.
+Native syntax/Git/full-scalar and wider codec-domain acceptance remain pending.
+Full model continuation39796728026 fails on the120s startup foreign-output
+rejection after24root-0 driver/startup cases pass. Source/provider/sidecar guards
+pass; this timeout provides no numerical-failure inference. Road R4
+workflowdbee1ef362/source103188 fails on EPYC9V74: all12raw original output
+files are retained; only3/2576model-1 floats differ(+0 original/-0 native),
+with every other byte exact. Strict comparison stays unchanged; the zero-arm
+forwarding hypothesis requires actual operand/exceptional-value validation.
 
 Exact103188 Fast39800281535 and both mapped-docs39800281419/39800598592
 pass. Integration39800281579 and maintained logger119899439610 also pass.

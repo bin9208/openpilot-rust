@@ -8059,3 +8059,47 @@ Source915aad61b tests the returned count as==0 for empty and>0 for ready, preser
 the original timeout/error contract. R2 workflow90d9fff3d88c96d85262056e8823ab30884acc29
 uses the unchanged reviewed recipef26e2d72 and requires actual tests/strictClippy/
 native replay. Both Python helpers and their maintained caller stay pending.
+
+The opt-in changed-files AST adapter now includes the exact lock delta admitted
+by metadata-only run39804553336/artifact12436423196(SHA7a903c48,all20CRCs).
+Parent independently checks593existing package identities/checksums/resolved
+edges unchanged and29new packages reachable only from three optional tool edges.
+This is dependency admission, not parser execution. The Ruff0.15.8 parser targets
+Python3.12 and includes unsupported-version errors; current worktree source bytes,
+NUL-delimited Git paths, whitespace-first ordering and Unicode15 token boundaries
+are explicit. Original39798239318/artifact12434037946(SHA123620c0,16CRCs/four
+seals) supplies immutable72syntax and12Git observations. Parent compares every
+667start/775continue/707assigned Unicode range and445codec-name rows against the
+independent original/source data. No project or native execution occurs locally.
+The new unicode_names2=1.3.0 is separate from the retained4.0.0 dependency; new
+names on old codepoints, full grammar and complete byte-codec domains remain
+open. Four legacy encodings use explicit GNU libc iconv with bounded FFI; valid
+unsupported codecs produce Capability errors, never credited syntax rejections.
+Maintained Python checker/test and workflow callers are unchanged. Hosted native
+72/12/full-scalar, Clippy and default-library checks are pending; no inventory
+credit, codec-parity or source-retirement claim follows from this candidate.
+
+Native logging R2 run39808180046/source915aad61b/workflow90d9fff3d compiles and
+passes8units, strictClippy and the no-default library check, then its actual
+protocol exits1. Artifact12438882821:407659B/SHA256
+c071f3ed30a8d5b501354b92df9ae088673bdea39a201a2cea692088d6d54c9c;
+the first protocol diagnostic must be investigated before any functional credit.
+
+Model-family continuation39796728026 atc7c3a9c8a/workflow9ea535c3c fails after
+1885.56s in the120s startup foreign-output rejection. Root-0 driver ordinary/raw,
+with/without collector, and startup total24positive cases pass. Artifact12438851210:
+306623184B/SHAfa0443ea and sidecar12438422601:11321415B/SHA85dc79ce have2088CRCs;
+all1754sidecar seals and source/provider bindings pass. Missing final completion
+is an actual failure. A proposed early occupied-path rejection preserves the
+later create_dir ownership check; the timeout is not numerical-drift evidence.
+
+Road R4 run39808528596 at1031884ccad7fa39957fb640aff70a03afade189/workflowdbee1ef362
+fails on EPYC9V74. Artifact12438244934:142955367B/SHA256
+9710571f1fc72797332c606b24ace549905c613d39906ce99f0a8b22f1b1b6b9;
+parent checks8CRCs,1094tar files/189194041expanded bytes and all12retained original
+raw output hashes. Eleven files are byte-exact. Only model-1.bin positions100,
+101,1349 of2576f32 differ: original+0/native-0(maximum absolute difference0).
+Every other byte agrees and final guards pass. Strict comparison stays failed.
+Kernel92's zero-arm forwarding is a concrete candidate cause, requiring actual
+operand and exceptional-value validation. Earlier opposite-sign #482 evidence
+and nonzero #476 drift are not explained or accepted by this observation.

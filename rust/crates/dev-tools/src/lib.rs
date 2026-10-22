@@ -467,3 +467,6 @@ pub mod uploader_lifecycle_check;
     feature = "bootlog-artifact-native"
 ))]
 pub mod uploader_source_admission;
+
+#[cfg(all(target_os = "linux", feature = "changed-files-native"))]
+pub mod changed_files_check;

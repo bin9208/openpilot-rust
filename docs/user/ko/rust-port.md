@@ -64,3 +64,10 @@ Linux용 `check-native-logging` 후보는 Rust 로거와 원본 C++ 생산자의
 콘솔 출력, 전송 실패 동작을 비교합니다. `openpilot-dev-tools`에서
 `--features native-logging-check-native --bin check-native-logging`으로 빌드합니다.
 네이티브 기능과 소스 부재 검증을 통과할 때까지 기존 Python 비교 도구는 유지합니다.
+
+실험용 `check-changed-files`는 변경된 Python 소스 바이트를 Python 3.12 문법으로
+검사합니다. `openpilot-dev-tools`에서 `--features changed-files-native --bin check-changed-files`로
+빌드하고 저장소에서 실행하며, `--base SHA` 또는 `BASE_SHA`를 지정할 수 있습니다.
+레거시 인코딩 4개는 GNU libc iconv를 사용하고, 미지원 인코딩은 기능 미지원 오류로
+구분합니다. 인코딩·문법 동등성 검증 중이므로 유지 중인 문법 검사는 기존 Python 도구를
+계속 사용하며, 이 후보는 아직 소스 제거 수에 포함하지 않습니다.
