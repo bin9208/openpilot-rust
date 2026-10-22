@@ -1,0 +1,187 @@
+name: '296 road #482 five-failure context attribution (once)'
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/model-zero-r4-attribution-296-once.yml
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: model-zero-r4-attribution-296
+  cancel-in-progress: false
+jobs:
+  attribution:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      SOURCE_SHA: 1d5570e158bb7a799c4a816f78bc7f63f201d2a4
+      GIT_LFS_SKIP_SMUDGE: '1'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      PYTHONDONTWRITEBYTECODE: '1'
+      ATTRIBUTION_SHA256: ce7ee4bd7f945c607e676efdb0c227fae01550266d3c67358937936a5f7d0cce
+      ATTRIBUTION_B64: IiIiSG9zdGVkLW9ubHkgbWlzc2luZyBvcmlnaW5hbC9vbGQgY29udHJvbHMgb24gdGhlIGZpdmUgZmFpbGVkIGFyY2hpdmVkIGNhc2VzLgpObyBhcmNoaXZlZCBjb2RlIGlzIGV4dHJhY3RlZC9sb2FkZWQ7IGFsbCBleGVjdXRlZCBFTEYgaXMgZnJlc2hseSBidWlsdCBoZXJlLgpUaGlzIG5ldmVyIHJld3JpdGVzIGEgaGlzdG9yaWNhbCBleHBlY3RhdGlvbiBvciByZWxhYmVscyB0aGUgZmFpbGVkIFI0IHJ1bi4KIiIiCmltcG9ydCBjdHlwZXMKaW1wb3J0IGhhc2hsaWIKaW1wb3J0IGlvCmltcG9ydCBqc29uCmltcG9ydCBvcwpmcm9tIHBhdGhsaWIgaW1wb3J0IFBhdGgKaW1wb3J0IHN0YXQKaW1wb3J0IHN0cnVjdAppbXBvcnQgc3VicHJvY2VzcwppbXBvcnQgc3lzCmltcG9ydCB0YXJmaWxlCmltcG9ydCB6aXBmaWxlCgpTT1VSQ0UgPSAnMWQ1NTcwZTE1OGJiN2E3OTljNGE4MTZmNzhiYzdmNjNmMjAxZDJhNCcKWklQX1NIQSA9ICc5YmVlNmMyMTA3M2E5ZWYzZTVmZjk5ZjI1ZDBhNDhhNGI4NTQwNzlmNTA4YTY0MmE0MjNjMjQwNWY1NDllZDQwJwpMTFZNX1NIQSA9ICc1YzNhNjM5NTdlMjhjMTVjZGYxNTAzODkyMDc0ZjAzMmQyOWI3MmUzNmE5ODI0YTc3ZGZhODdlNDhhMGRhZmIwJwpJUl9TSEEgPSAnZTIyM2EyYzM2YzZiZGU3Y2Y2NzZiYjkyZmQyNTI5ODU4YTcyM2Y5ZWNmYTkxYzgxMWIyYjk0MTc1NmE5YmVhMCcKQUxMT0MgPSAoOSwgMTYsIDMyOCwgMzI5LCAzMzAsIDMzMSwgMzMyLCAzMzMpCkNBU0VTID0gKCdiYXNlbGluZScsICduZWdhdGl2ZS16ZXJvJywgJ25lZ2F0aXZlLXN1Ym5vcm1hbCcsICdwb3NpdGl2ZS1zbmFuLXBheWxvYWQtMScsICduZWdhdGl2ZS1zbmFuLXBheWxvYWQtMScpClNPVVJDRV9QSU5TID0gewogJ3J1c3QvY3JhdGVzL21vZGVsLXJ1bnRpbWUvc3JjL2d1YXJkZWRfYWRkLnJzJzogJ2E1ZWE3ZTVhOWI3OWY1YzcyMmVhNmYwZDI1ODUxZDVlYmYyMjc5ZDM2YTE1MmI2OWYwMzFkY2Y1MTY4YmY4MzEnLAogJ3J1c3QvY3JhdGVzL21vZGVsLXJ1bnRpbWUvc3JjL2Jpbi9vZmZsaW5lLWxsdm0tY29tcGlsZS5ycyc6ICc3YmQ5ZjZhOTg2N2I0M2RlZTBjMTIwZDA1ZTk3MzY0ZmEwYjg0MzE0MTYxNTU5MGQzODJiNjNjNzYyYjY2NjFjJywKICdydXN0L2NyYXRlcy9tb2RlbC1ydW50aW1lL3NyYy9jb21waWxlcl9iYWNrZW5kX2NwdS9sbHZtLnJzJzogJzIwNGQxNjRkYzk2YjQ4MzY1ZWY4NjU2YjQ2ZTBiYmViNzgxNDUzMGVmMTg0MTkxZTczNTZiOTViZDE4OTRlMjcnLAp9CnNoYSA9IGxhbWJkYSBkYXRhOiBoYXNobGliLnNoYTI1NihkYXRhKS5oZXhkaWdlc3QoKQpsb2FkID0gbGFtYmRhIHBhdGg6IGpzb24ubG9hZHMocGF0aC5yZWFkX2J5dGVzKCkpCgoKZGVmIG5lZWQodmFsdWUsIHJlYXNvbik6CiBpZiBub3QgdmFsdWU6IHJhaXNlIEFzc2VydGlvbkVycm9yKHJlYXNvbikKCgpkZWYgc2F2ZShwYXRoLCB2YWx1ZSk6CiBwYXRoLnBhcmVudC5ta2RpcihwYXJlbnRzPVRydWUsIGV4aXN0X29rPVRydWUpCiBwYXRoLndyaXRlX3RleHQoanNvbi5kdW1wcyh2YWx1ZSwgaW5kZW50PTIpICsgJ1xuJykKCgpkZWYgbG9jYXRpb25zKCk6CiBuZWVkKChvcy5lbnZpcm9uLmdldCgnR0lUSFVCX0FDVElPTlMnKSwgb3MuZW52aXJvbi5nZXQoJ1JVTk5FUl9FTlZJUk9OTUVOVCcpKSA9PSAoJ3RydWUnLCAnZ2l0aHViLWhvc3RlZCcpLCAnaG9zdGVkIG9ubHknKQogbmVlZChvcy51bmFtZSgpLm1hY2hpbmUgPT0gJ3g4Nl82NCcgYW5kIG9zLmVudmlyb25bJ0dJVEhVQl9SRVBPU0lUT1JZJ10gPT0gJ2JpbjkyMDgvb3BlbnBpbG90LXJ1c3QnLCAnaG9zdC9yZXBvc2l0b3J5IGFkbWlzc2lvbicpCiByb290ID0gUGF0aChvcy5lbnZpcm9uWydHSVRIVUJfV09SS1NQQUNFJ10pLnJlc29sdmUoKQogam9iID0gUGF0aChvcy5lbnZpcm9uWydaRVJPX0FUVFJJQlVUSU9OX0pPQiddKS5yZXNvbHZlKCkKIG5lZWQoam9iLmlzX3JlbGF0aXZlX3RvKFBhdGgob3MuZW52aXJvblsnUlVOTkVSX1RFTVAnXSkucmVzb2x2ZSgpKSBhbmQgbm90IGpvYi5pc19yZWxhdGl2ZV90byhyb290KSwgJ2V4dGVybmFsIGZyZXNoIGpvYiBuYW1lc3BhY2UnKQogcmV0dXJuIHJvb3QsIGpvYiwgam9iIC8gJ2V2aWRlbmNlJwoKCmRlZiBzb3VyY2Vfc3RhdGUocm9vdCk6CiBoZWFkID0gc3VicHJvY2Vzcy5jaGVja19vdXRwdXQoWycvdXNyL2Jpbi9naXQnLCAncmV2LXBhcnNlJywgJ0hFQUQnXSwgY3dkPXJvb3QsIHRpbWVvdXQ9MzApLmRlY29kZSgpLnN0cmlwKCkKIHN0YXR1cyA9IHN1YnByb2Nlc3MuY2hlY2tfb3V0cHV0KFsnL3Vzci9iaW4vZ2l0JywgJ3N0YXR1cycsICctLXBvcmNlbGFpbicsICctLXVudHJhY2tlZC1maWxlcz1ub3JtYWwnXSwgY3dkPXJvb3QsIHRpbWVvdXQ9MzApLmRlY29kZSgpCiBuZWVkKGhlYWQgPT0gU09VUkNFIGFuZCBzdGF0dXMgPT0gJycsICdleGFjdCBwcmlzdGluZSBzb3VyY2UnKQogZmlsZXMgPSBzdWJwcm9jZXNzLmNoZWNrX291dHB1dChbJy91c3IvYmluL2dpdCcsICdscy1maWxlcycsICcteicsICctLScsICdydXN0L2NyYXRlcy9tb2RlbC1ydW50aW1lJywgJ3J1c3QvQ2FyZ28udG9tbCcsICdydXN0L0NhcmdvLmxvY2snLCAncnVzdC9ydXN0LXRvb2xjaGFpbi50b21sJ10sIGN3ZD1yb290LCB0aW1lb3V0PTMwKS5zcGxpdChiJ1wwJykKIHBpbnMgPSB7fQogZm9yIHJhdyBpbiBmaWxlczoKICBpZiBub3QgcmF3OiBjb250aW51ZQogIG5hbWUgPSBvcy5mc2RlY29kZShyYXcpOyBwYXRoID0gcm9vdCAvIG5hbWUKICBuZWVkKHBhdGguaXNfZmlsZSgpIGFuZCBub3QgcGF0aC5pc19zeW1saW5rKCksICgncmVndWxhciBjdXJyZW50IHNvdXJjZScsIG5hbWUpKQogIHBpbnNbbmFtZV0gPSBzaGEocGF0aC5yZWFkX2J5dGVzKCkpCiBmb3IgbmFtZSwgZGlnZXN0IGluIFNPVVJDRV9QSU5TLml0ZW1zKCk6IG5lZWQocGluc1tuYW1lXSA9PSBkaWdlc3QsICgncmVsZXZhbnQgc291cmNlIGNoYW5nZWQnLCBuYW1lKSkKIHJldHVybiB7J2hlYWQnOiBoZWFkLCAnc3RhdHVzJzogc3RhdHVzLCAnZmlsZXMnOiBwaW5zfQoKCmRlZiBhZG1pdCgpOgogcm9vdCwgam9iLCBvdXQgPSBsb2NhdGlvbnMoKQogYXBpID0gbG9hZChqb2IgLyAnaW5wdXQtYXBpLmpzb24nKQogbmVlZCgoYXBpWydpZCddLCBhcGlbJ3NpemVfaW5fYnl0ZXMnXSwgYXBpWydkaWdlc3QnXSwgYXBpWydleHBpcmVkJ10sIGFwaVsnd29ya2Zsb3dfcnVuJ11bJ2lkJ10sIGFwaVsnd29ya2Zsb3dfcnVuJ11bJ2hlYWRfc2hhJ10pID09ICgxMjQ0NTc2MzY1OSwgMTkzOTIwMTQ0LCAnc2hhMjU2OicgKyBaSVBfU0hBLCBGYWxzZSwgMzk4MjM2NjY4MDUsICc0NDUwZjgxYjI0YjExOGY0NDZmZGY4Mjg4YzI5MTBjMDA0MjViZjQ2JyksICdmYWlsZWQgYXJ0aWZhY3QgZXhhY3QgQVBJJykKIG5lZWQoYXBpWyd3b3JrZmxvd19ydW4nXVsncmVwb3NpdG9yeV9pZCddID09IGFwaVsnd29ya2Zsb3dfcnVuJ11bJ2hlYWRfcmVwb3NpdG9yeV9pZCddID09IDEzOTU1MDE5NjMsICdmYWlsZWQgYXJ0aWZhY3QgcmVwb3NpdG9yeSBiaW5kaW5nJykKIGFyY2hpdmUgPSBqb2IgLyAnaW5wdXQuemlwJwogbmVlZChhcmNoaXZlLnN0YXQoKS5zdF9zaXplID09IDE5MzkyMDE0NCBhbmQgc2hhKGFyY2hpdmUucmVhZF9ieXRlcygpKSA9PSBaSVBfU0hBLCAnaW1tdXRhYmxlIGZhaWxlZCBaSVAnKQogd2l0aCB6aXBmaWxlLlppcEZpbGUoYXJjaGl2ZSkgYXMgejoKICBuZWVkKGxlbih6Lm5hbWVsaXN0KCkpID09IGxlbihzZXQoei5uYW1lbGlzdCgpKSkgPT0gOCBhbmQgei50ZXN0emlwKCkgaXMgTm9uZSwgJ2ZhaWxlZCBaSVAgZXhhY3Q4IENSQ3MnKQogIGJvZHkgPSB6LnJlYWQoJ3Byb3ZlbmFuY2UudGFyLmd6JykKICBuZWVkKHNoYShib2R5KSA9PSB6LnJlYWQoJ3Byb3ZlbmFuY2Uuc2hhMjU2JykuZGVjb2RlKCkuc3BsaXQoKVswXSwgJ2lubmVyIHRhciBzZWFsJykKICBzZWxlY3RlZCA9IHsnbmF0dXJhbC1ob3N0LWNvbmZpZy5qc29uJywgJ3N0cmljdC1wcmVmaXguc3RhdHVzJywgJ29wZXJhbmQtcmVwbGF5LnN0YXR1cycsICdmaW5hbC1ndWFyZHMuc3RhdHVzJywgJ3NvdXJjZXMuYmVmb3JlLnNoYTI1NicsICdzb3VyY2VzLmFmdGVyLmxvZyd9CiAgc2VsZWN0ZWQgfD0ge2Ynb3BlcmFuZC1yZXBsYXkve2xhYmVsfXtzdWZmaXh9JyBmb3IgbGFiZWwgaW4gKCdvcmlnaW5hbCcsICdvbGQnLCAnY2FuZGlkYXRlJykgZm9yIHN1ZmZpeCBpbiAoJy5sbCcsICcuY29tcGlsZS5qc29uJyl9CiAgc2VsZWN0ZWQgfD0geydvcGVyYW5kLXJlcGxheS9vbGQucmV3cml0ZS5qc29uJywgJ29wZXJhbmQtcmVwbGF5L2NhbmRpZGF0ZS5yZXdyaXRlLmpzb24nLCAnb3BlcmFuZC1yZXBsYXkvcm93cy5qc29uJywgJ29wZXJhbmQtcmVwbGF5L2hlbGQuYmVmb3JlLmpzb24nLCAnb3BlcmFuZC1yZXBsYXkvaGVsZC5hZnRlci5qc29uJ30KICBzZWxlY3RlZCB8PSB7J2hpc3RvcmljYWwvYWRtaXNzaW9uLmpzb24nLCAnaGlzdG9yaWNhbC9ncmFwaC5qc29uJywgJ2hpc3RvcmljYWwvc3VtbWFyeS5qc29uJywgJ2hpc3RvcmljYWwvc291cmNlLmxsJ30KICBzZWxlY3RlZCB8PSB7ZidoaXN0b3JpY2FsL3ByZS17YX0uYmluJyBmb3IgYSBpbiBBTExPQ30KICBmb3IgY2FzZSBpbiBDQVNFUzoKICAgcHJlZml4ID0gJ2Jhc2VsaW5lJyBpZiBjYXNlID09ICdiYXNlbGluZScgZWxzZSAnY2FzZXMvJyArIGNhc2UKICAgc2VsZWN0ZWQgfD0ge2YnaGlzdG9yaWNhbC97cHJlZml4fS9wb3N0LXthfS5iaW4nIGZvciBhIGluIEFMTE9DfQogICBzZWxlY3RlZCB8PSB7ZidvcGVyYW5kLXJlcGxheS9oaXN0b3JpY2FsL3tjYXNlfS9jYW5kaWRhdGUtcG9zdC17YX0uYmluJyBmb3IgYSBpbiBBTExPQ30KICBmb3VuZCA9IHNldCgpOyB0b3RhbCA9IDAKICB3aXRoIHRhcmZpbGUub3BlbihmaWxlb2JqPWlvLkJ5dGVzSU8oYm9keSksIG1vZGU9J3I6Z3onKSBhcyB0YXI6CiAgIGZvciBtZW1iZXIgaW4gdGFyOgogICAgaWYgbWVtYmVyLm5hbWUgbm90IGluIHNlbGVjdGVkOiBjb250aW51ZQogICAgbmVlZChtZW1iZXIubmFtZSBub3QgaW4gZm91bmQgYW5kIG1lbWJlci5pc2ZpbGUoKSBhbmQgbm90IFBhdGgobWVtYmVyLm5hbWUpLmlzX2Fic29sdXRlKCkgYW5kICcuLicgbm90IGluIFBhdGgobWVtYmVyLm5hbWUpLnBhcnRzLCAnc2FmZSB1bmlxdWUgaW5lcnQgbWVtYmVyJykKICAgIGRhdGEgPSB0YXIuZXh0cmFjdGZpbGUobWVtYmVyKS5yZWFkKCk7IHRvdGFsICs9IGxlbihkYXRhKQogICAgbmVlZCh0b3RhbCA8PSA2NCA8PCAyMCBhbmQgbm90IGRhdGEuc3RhcnRzd2l0aChiJ1x4N2ZFTEYnKSwgJ2luZXJ0IHNlbGVjdGVkIGRhdGEgYm91bmQvbm8gY29kZScpCiAgICBkZXN0ID0gb3V0IC8gJ2lucHV0JyAvIG1lbWJlci5uYW1lOyBkZXN0LnBhcmVudC5ta2RpcihwYXJlbnRzPVRydWUsIGV4aXN0X29rPVRydWUpOyBkZXN0LndyaXRlX2J5dGVzKGRhdGEpOyBmb3VuZC5hZGQobWVtYmVyLm5hbWUpCiAgbmVlZChmb3VuZCA9PSBzZWxlY3RlZCwgKCdyZXF1aXJlZCBpbnB1dCByb3N0ZXInLCBzb3J0ZWQoc2VsZWN0ZWQgLSBmb3VuZCkpKQogZGF0YV9yb290ID0gb3V0IC8gJ2lucHV0JwogaGlzdG9yeSA9IGxvYWQoZGF0YV9yb290IC8gJ2hpc3RvcmljYWwvYWRtaXNzaW9uLmpzb24nKQogbmVlZChoaXN0b3J5WydhcnRpZmFjdCddID09IDEyNDEwMDY0NjE5IGFuZCBoaXN0b3J5Wyd6aXBfc2hhMjU2J10gPT0gJzFiNjNiYjI1ZjYwYjA5ODBhYThlYzI4OGNjMTliZjZlZWFkODRjODRjZWFlZGVjNzhiMGNjYzA0ZTkzZDE4OTInIGFuZCBoaXN0b3J5WydDUkMnXSA9PSAzODMsICdwcmlvciBpbmRlcGVuZGVudCBoaXN0b3J5IGJpbmRpbmcnKQogZm9yIHBhdGggaW4gKGRhdGFfcm9vdCAvICdoaXN0b3JpY2FsJykucmdsb2IoJyonKToKICBpZiBwYXRoLmlzX2ZpbGUoKSBhbmQgcGF0aC5uYW1lICE9ICdhZG1pc3Npb24uanNvbic6CiAgIHNlYWwgPSBoaXN0b3J5WydmaWxlcyddW3N0cihwYXRoLnJlbGF0aXZlX3RvKGRhdGFfcm9vdCAvICdoaXN0b3JpY2FsJykpXQogICBuZWVkKHBhdGguc3RhdCgpLnN0X3NpemUgPT0gc2VhbFsnYnl0ZXMnXSBhbmQgc2hhKHBhdGgucmVhZF9ieXRlcygpKSA9PSBzZWFsWydzaGEyNTYnXSwgJ3NlbGVjdGVkIGltbXV0YWJsZSBvcmlnaW5hbCBzZWFsJykKIG5lZWQobG9hZChkYXRhX3Jvb3QgLyAnb3BlcmFuZC1yZXBsYXkvaGVsZC5iZWZvcmUuanNvbicpID09IGxvYWQoZGF0YV9yb290IC8gJ29wZXJhbmQtcmVwbGF5L2hlbGQuYWZ0ZXIuanNvbicpLCAncHJpb3IgYWN0dWFsIGhlbGQxOTEgcGFpcicpCiByb3dzID0gbG9hZChkYXRhX3Jvb3QgLyAnb3BlcmFuZC1yZXBsYXkvcm93cy5qc29uJykKIG5lZWQobGVuKHJvd3MpID09IDE1IGFuZCBbclsnY2FzZSddLnNwbGl0KCcvJywgMSlbMV0gZm9yIHIgaW4gcm93cyBpZiBub3QgclsnZ2F0ZV9wYXNzZWQnXV0gPT0gbGlzdChDQVNFUyksICdleGFjdCBmaXZlIGZhaWxlZCBjYXNlcycpCiBuZWVkKGFsbChyWydpbXBsZW1lbnRhdGlvbnMnXVtraW5kXVsnYWxsX2VpZ2h0X21hdGNoX2FjdHVhbF9vcmlnaW5hbCddIGZvciByIGluIHJvd3MgaWYgclsnY2FzZSddLnN0YXJ0c3dpdGgoJ2FjdHVhbC1yNC8nKSBmb3Iga2luZCBpbiAoJ29yaWdpbmFsJywgJ2NhbmRpZGF0ZScpKSwgJ3JldXNlIGFjdHVhbCB0d28tZnJhbWUgc3VjY2Vzcywgbm8gZHVwbGljYXRlIGV4ZWN1dGlvbicpCiBuZWVkKChkYXRhX3Jvb3QgLyAnc3RyaWN0LXByZWZpeC5zdGF0dXMnKS5yZWFkX3RleHQoKS5zdHJpcCgpID09ICcwJyBhbmQgKGRhdGFfcm9vdCAvICdvcGVyYW5kLXJlcGxheS5zdGF0dXMnKS5yZWFkX3RleHQoKS5zdHJpcCgpID09ICcxJyBhbmQgKGRhdGFfcm9vdCAvICdmaW5hbC1ndWFyZHMuc3RhdHVzJykucmVhZF90ZXh0KCkuc3RyaXAoKSA9PSAnMScsICdwcmlvciBmYWlsZWQgcnVuIHN0YXlzIGZhaWxlZCcpCiBmb3IgbGFiZWwgaW4gKCdvcmlnaW5hbCcsICdvbGQnLCAnY2FuZGlkYXRlJyk6CiAgcmVjZWlwdCA9IGxvYWQoZGF0YV9yb290IC8gZidvcGVyYW5kLXJlcGxheS97bGFiZWx9LmNvbXBpbGUuanNvbicpCiAgbmVlZChzaGEoKGRhdGFfcm9vdCAvIGYnb3BlcmFuZC1yZXBsYXkve2xhYmVsfS5sbCcpLnJlYWRfYnl0ZXMoKSkgPT0gcmVjZWlwdFsnc291cmNlX3NoYTI1NiddLCAnYWN0dWFsIHNhdmVkIExMVk0gaW5wdXQgc2VhbCcpCiBmb3IgbGFiZWwgaW4gKCdvbGQnLCAnY2FuZGlkYXRlJyk6CiAgcmVjZWlwdCA9IGxvYWQoZGF0YV9yb290IC8gZidvcGVyYW5kLXJlcGxheS97bGFiZWx9LnJld3JpdGUuanNvbicpCiAgbmVlZChyZWNlaXB0WydyZXdyaXRlX2NvdW50J10gPT0gNCBhbmQgcmVjZWlwdFsnb3JpZ2luYWxfc291cmNlX3NoYTI1NiddID09IElSX1NIQSBhbmQgcmVjZWlwdFsnb3V0cHV0X3NvdXJjZV9zaGEyNTYnXSA9PSBzaGEoKGRhdGFfcm9vdCAvIGYnb3BlcmFuZC1yZXBsYXkve2xhYmVsfS5sbCcpLnJlYWRfYnl0ZXMoKSksICdhY3R1YWwgcHJpb3IgaGVscGVyIHJld3JpdGUgcmVjZWlwdCcpCiBuZWVkKHNoYSgoZGF0YV9yb290IC8gJ29wZXJhbmQtcmVwbGF5L29yaWdpbmFsLmxsJykucmVhZF9ieXRlcygpKSA9PSBJUl9TSEEsICdleGFjdCBzb3VyY2UgSVInKQogc2F2ZShvdXQgLyAnc291cmNlLmJlZm9yZS5qc29uJywgc291cmNlX3N0YXRlKHJvb3QpKQogc2F2ZShvdXQgLyAnYWRtaXNzaW9uLmpzb24nLCB7J2FydGlmYWN0JzogYXBpLCAnc2VsZWN0ZWRfbWVtYmVycyc6IHNvcnRlZChzZWxlY3RlZCksICdpbmVydF9zZWxlY3RlZF9ieXRlcyc6IHRvdGFsLCAncHJpb3JfYWN0dWFsX2ZyYW1lc19yZXVzZWQnOiAyLCAncHJpb3Jfc3VjY2Vzc2Z1bF9oaXN0b3JpY2FsX3Jvd3Nfbm90X3JlZXhlY3V0ZWQnOiA4LCAncHJpb3JfcnVuX3N0YXlzX2ZhaWxlZCc6IFRydWV9KQoKCmNsYXNzIEhlbGQ6CiBkZWYgX19pbml0X18oc2VsZik6IHNlbGYuZmlsZXMgPSB7fQogZGVmIHNuYXBzaG90KHNlbGYsIHBhdGgsIGZkKToKICBzdCA9IG9zLmZzdGF0KGZkKTsgY3VycmVudCA9IHBhdGgubHN0YXQoKQogIG5lZWQoc3RhdC5TX0lTUkVHKGN1cnJlbnQuc3RfbW9kZSkgYW5kIChzdC5zdF9kZXYsIHN0LnN0X2lubykgPT0gKGN1cnJlbnQuc3RfZGV2LCBjdXJyZW50LnN0X2lubyksICgnaGVsZCBpZGVudGl0eScsIHN0cihwYXRoKSkpCiAgaCA9IGhhc2hsaWIuc2hhMjU2KCk7IG9mZnNldCA9IDAKICB3aGlsZSBUcnVlOgogICBkYXRhID0gb3MucHJlYWQoZmQsIDEgPDwgMjAsIG9mZnNldCkKICAgaWYgbm90IGRhdGE6IGJyZWFrCiAgIGgudXBkYXRlKGRhdGEpOyBvZmZzZXQgKz0gbGVuKGRhdGEpCiAgcmV0dXJuIHsnc2hhMjU2JzogaC5oZXhkaWdlc3QoKSwgJ2lkZW50aXR5JzogW3N0LnN0X2Rldiwgc3Quc3RfaW5vLCBzdC5zdF9zaXplLCBzdC5zdF9tb2RlLCBzdC5zdF9tdGltZV9ucywgc3Quc3RfY3RpbWVfbnNdfQogZGVmIGFkZChzZWxmLCBwYXRoKToKICBwYXRoID0gcGF0aC5yZXNvbHZlKHN0cmljdD1UcnVlKQogIGlmIHN0cihwYXRoKSBub3QgaW4gc2VsZi5maWxlczoKICAgZmQgPSBvcy5vcGVuKHBhdGgsIG9zLk9fUkRPTkxZIHwgb3MuT19OT0ZPTExPVyB8IG9zLk9fTk9OQkxPQ0sgfCBvcy5PX0NMT0VYRUMpCiAgIHNlbGYuZmlsZXNbc3RyKHBhdGgpXSA9IChwYXRoLCBmZCwgc2VsZi5zbmFwc2hvdChwYXRoLCBmZCkpCiBkZWYgYmVmb3JlKHNlbGYpOiByZXR1cm4ge3A6IHJvd1syXSBmb3IgcCwgcm93IGluIHNlbGYuZmlsZXMuaXRlbXMoKX0KIGRlZiBhZnRlcihzZWxmKTogcmV0dXJuIHtwOiBzZWxmLnNuYXBzaG90KHBhdGgsIGZkKSBmb3IgcCwgKHBhdGgsIGZkLCBfKSBpbiBzZWxmLmZpbGVzLml0ZW1zKCl9CiBkZWYgY2xvc2Uoc2VsZik6CiAgZm9yIF8sIGZkLCBfIGluIHNlbGYuZmlsZXMudmFsdWVzKCk6IG9zLmNsb3NlKGZkKQoKCmRlZiByZXBsYXkoKToKIHJvb3QsIGpvYiwgb3V0ID0gbG9jYXRpb25zKCk7IGlucHV0cyA9IG91dCAvICdpbnB1dCc7IGhpc3RvcnkgPSBpbnB1dHMgLyAnaGlzdG9yaWNhbCcKIGxsdm1fcGF0aCA9IFBhdGgoJy91c3IvbGliL3g4Nl82NC1saW51eC1nbnUvbGliTExWTS0xOC5zbycpLnJlc29sdmUoc3RyaWN0PVRydWUpCiBuZWVkKHNoYShsbHZtX3BhdGgucmVhZF9ieXRlcygpKSA9PSBMTFZNX1NIQSwgJ3NhbWUgaGVsZCBMTFZNMTguMS4zIHByb3ZpZGVyJykKIGxsdm0gPSBjdHlwZXMuQ0RMTChzdHIobGx2bV9wYXRoKSkKIGZvciBuYW1lIGluICgnTExWTUdldEhvc3RDUFVOYW1lJywgJ0xMVk1HZXRIb3N0Q1BVRmVhdHVyZXMnKTogZ2V0YXR0cihsbHZtLCBuYW1lKS5yZXN0eXBlID0gY3R5cGVzLmNfY2hhcl9wCiBjb25maWcgPSB7J2xpYnJhcnknOiBzdHIobGx2bV9wYXRoKSwgJ2xpYnJhcnlfc2hhMjU2JzogTExWTV9TSEEsICd0cmlwbGUnOiAneDg2XzY0LW5vbmUtdW5rbm93bi1lbGYnLCAnY3B1JzogbGx2bS5MTFZNR2V0SG9zdENQVU5hbWUoKS5kZWNvZGUoKSwgJ2ZlYXR1cmVzJzogbGx2bS5MTFZNR2V0SG9zdENQVUZlYXR1cmVzKCkuZGVjb2RlKCksICdwYXNzZXMnOiAnZGVmYXVsdDxPMj4nLCAnbG9vcF91bnJvbGxpbmcnOiBUcnVlLCAnbG9vcF92ZWN0b3JpemF0aW9uJzogVHJ1ZSwgJ3NscF92ZWN0b3JpemF0aW9uJzogVHJ1ZSwgJ3ZlcmlmeV9lYWNoJzogVHJ1ZX0KIG5lZWQoY29uZmlnWydjcHUnXSBhbmQgY29uZmlnWydmZWF0dXJlcyddLCAnbmF0dXJhbCBob3N0IGRpc2NvdmVyeScpCiBzYXZlKG91dCAvICduYXR1cmFsLWhvc3QtY29uZmlnLmpzb24nLCBjb25maWcpCiBvYnNlcnZlciA9IGN0eXBlcy5DRExMKHN0cihqb2IgLyAnZnAtb2JzZXJ2ZS5zbycpKQogb2JzZXJ2ZXIuZGlhZ25vc3RpY19teGNzci5yZXN0eXBlID0gY3R5cGVzLmNfdWludDMyOyBvYnNlcnZlci5kaWFnbm9zdGljX3JvdW5kLnJlc3R5cGUgPSBjdHlwZXMuY19pbnQKIGRlZiBmcCgpOgogIHdvcmQgPSBvYnNlcnZlci5kaWFnbm9zdGljX214Y3NyKCk7IHJldHVybiB7J214Y3NyJzogd29yZCwgJ3JvdW5kJzogb2JzZXJ2ZXIuZGlhZ25vc3RpY19yb3VuZCgpLCAnc3RpY2t5Jzogd29yZCAmIDYzfQogZGVmIGNvbnRyb2xzKHJvdyk6IHJldHVybiAocm93WydteGNzciddICYgMHhmZmMwLCByb3dbJ3JvdW5kJ10pCiBpbml0aWFsID0gZnAoKTsgbmVlZChpbml0aWFsWydyb3VuZCddID09IDAgYW5kIGluaXRpYWxbJ214Y3NyJ10gJiAoKDMgPDwgMTMpIHwgKDEgPDwgNikgfCAoMSA8PCAxNSkpID09IDAsICdvcmlnaW5hbCB1bm1vZGlmaWVkIEZQIGNvbnRyb2xzJykKIGNvbXBpbGVyID0gUGF0aChvcy5lbnZpcm9uWydDQVJHT19UQVJHRVRfRElSJ10pIC8gJ2RlYnVnL29mZmxpbmUtbGx2bS1jb21waWxlJwogbmF0aXZlID0gam9iIC8gJ25hdGl2ZSc7IG5hdGl2ZS5ta2RpcigpCiBoZWxkID0gSGVsZCgpOyBsaWJyYXJpZXMgPSB7fTsgZnVuY3Rpb25zID0ge307IHJlY2VpcHRzID0ge307IHJvd3MgPSBbXQogdHJ5OgogIGZvciBwYXRoIGluIFtjb21waWxlciwgbGx2bV9wYXRoLCBQYXRoKCcvdXNyL2Jpbi9jbGFuZycpLCBQYXRoKF9fZmlsZV9fKSwgam9iIC8gJ2ZwLW9ic2VydmUuYycsIGpvYiAvICdmcC1vYnNlcnZlLnNvJywgb3V0IC8gJ25hdHVyYWwtaG9zdC1jb25maWcuanNvbiddOgogICBoZWxkLmFkZChwYXRoKQogIGZvciBwYXRoIGluIGlucHV0cy5yZ2xvYignKicpOgogICBpZiBwYXRoLmlzX2ZpbGUoKTogaGVsZC5hZGQocGF0aCkKICBmb3IgbmFtZSBpbiBzb3VyY2Vfc3RhdGUocm9vdClbJ2ZpbGVzJ106IGhlbGQuYWRkKHJvb3QgLyBuYW1lKQogIGZvciBsaW5lIGluIFBhdGgoJy9wcm9jL3NlbGYvbWFwcycpLnJlYWRfdGV4dCgpLnNwbGl0bGluZXMoKToKICAgZmllbGRzID0gbGluZS5zcGxpdCgpCiAgIGlmIGxlbihmaWVsZHMpID49IDYgYW5kIGZpZWxkc1stMV0uc3RhcnRzd2l0aCgnLycpIGFuZCBQYXRoKGZpZWxkc1stMV0pLmlzX2ZpbGUoKTogaGVsZC5hZGQoUGF0aChmaWVsZHNbLTFdKSkKICBzYXZlKG91dCAvICdoZWxkLmJlZm9yZS5qc29uJywgaGVsZC5iZWZvcmUoKSkKICBmb3IgbGFiZWwgaW4gKCdvcmlnaW5hbCcsICdvbGQnLCAnY2FuZGlkYXRlJyk6CiAgIHNvdXJjZSA9IChpbnB1dHMgLyBmJ29wZXJhbmQtcmVwbGF5L3tsYWJlbH0ubGwnKS5yZWFkX2J5dGVzKCkKICAgb2JqID0gbmF0aXZlIC8gZid7bGFiZWx9Lm8nOyBvcHRpbWl6ZWQgPSBvdXQgLyBmJ3tsYWJlbH0ub3B0aW1pemVkLmxsJzsgcmVjZWlwdCA9IG91dCAvIGYne2xhYmVsfS5jb21waWxlLmpzb24nCiAgIHJ1biA9IHN1YnByb2Nlc3MucnVuKFtzdHIoY29tcGlsZXIpLCAnLS1jb25maWcnLCBzdHIob3V0IC8gJ25hdHVyYWwtaG9zdC1jb25maWcuanNvbicpLCAnLS1vYmplY3QnLCBzdHIob2JqKSwgJy0tcmVjZWlwdCcsIHN0cihyZWNlaXB0KSwgJy0tb3B0aW1pemVkLWlyJywgc3RyKG9wdGltaXplZCldLCBpbnB1dD1zb3VyY2UsIGNhcHR1cmVfb3V0cHV0PVRydWUsIHRpbWVvdXQ9OTApCiAgIChvdXQgLyBmJ3tsYWJlbH0uY29tcGlsZS5zdGRlcnInKS53cml0ZV9ieXRlcyhydW4uc3RkZXJyKTsgbmVlZChydW4ucmV0dXJuY29kZSA9PSAwLCAoJ2ZyZXNoIGNvbXBpbGUnLCBsYWJlbCkpCiAgIHJlY29yZCA9IGxvYWQocmVjZWlwdCk7IG5lZWQocmVjb3JkWydjb25maWcnXSA9PSBjb25maWcgYW5kIHJlY29yZFsnc291cmNlX3NoYTI1NiddID09IHNoYShzb3VyY2UpIGFuZCByZWNvcmRbJ29iamVjdF9zaGEyNTYnXSA9PSBzaGEob2JqLnJlYWRfYnl0ZXMoKSkgYW5kIHJlY29yZFsnb3B0aW1pemVkX2lyX3NoYTI1NiddID09IHNoYShvcHRpbWl6ZWQucmVhZF9ieXRlcygpKSwgJ2ZyZXNoIGV4YWN0IGNvbXBpbGUgcmVjZWlwdCcpCiAgIGxpYnJhcnkgPSBuYXRpdmUgLyBmJ3tsYWJlbH0uc28nCiAgIHJ1biA9IHN1YnByb2Nlc3MucnVuKFsnL3Vzci9iaW4vY2xhbmcnLCAnLXNoYXJlZCcsICctV2wsLXosZGVmcycsIHN0cihvYmopLCAnLW8nLCBzdHIobGlicmFyeSldLCBjYXB0dXJlX291dHB1dD1UcnVlLCB0aW1lb3V0PTYwKQogICAob3V0IC8gZid7bGFiZWx9Lmxpbmsuc3RkZXJyJykud3JpdGVfYnl0ZXMocnVuLnN0ZGVycik7IG5lZWQocnVuLnJldHVybmNvZGUgPT0gMCwgKCdmcmVzaCBsaW5rJywgbGFiZWwpKQogICBsaWJyYXJpZXNbbGFiZWxdID0gY3R5cGVzLkNETEwoc3RyKGxpYnJhcnkpKTsgZiA9IGxpYnJhcmllc1tsYWJlbF0ucl8zMjJfMl80XzI1Nl8zMgogICBmLmFyZ3R5cGVzID0gW2N0eXBlcy5jX3ZvaWRfcF0gKiAxMCArIFtjdHlwZXMuY19pbnQzMl07IGYucmVzdHlwZSA9IE5vbmU7IGZ1bmN0aW9uc1tsYWJlbF0gPSBmOyByZWNlaXB0c1tsYWJlbF0gPSByZWNvcmQKICAgZm9yIHBhdGggaW4gKG9iaiwgbGlicmFyeSwgb3B0aW1pemVkLCByZWNlaXB0KTogaGVsZC5hZGQocGF0aCkKICBzYXZlKG91dCAvICdoZWxkLmJlZm9yZS5qc29uJywgaGVsZC5iZWZvcmUoKSkKICBncmFwaCA9IGxvYWQoaGlzdG9yeSAvICdncmFwaC5qc29uJyk7IGNhbGwgPSBncmFwaFsnY2FsbHMnXVstMV0KICBuZWVkKGNhbGwgPT0geydrZXJuZWwnOiA5MiwgJ3ZpZXdzJzogWzksMzY1LDQxNyw0MjEsNDIyLDQyMyw0MjAsNDI0LDQyNSw0MjZdLCAnc2NhbGFycyc6IFswXSwgJ3dvcmtlcnMnOiAyLCAnY29yZV9pZCc6IDB9LCAnZXhhY3Qgb2JzZXJ2ZWQgQUJJJykKICB2aWV3cyA9IFtncmFwaFsndmlld3MnXVtpXSBmb3IgaSBpbiBjYWxsWyd2aWV3cyddXTsgcHJlID0ge2E6IChoaXN0b3J5IC8gZidwcmUte2F9LmJpbicpLnJlYWRfYnl0ZXMoKSBmb3IgYSBpbiBBTExPQ30KICBwYXR0ZXJucyA9IHtyWydjYXNlJ106IGludChyWydpbnB1dF9oYWxmX2JpdHNfbGVfaGV4J10sIDE2KSBmb3IgciBpbiBsb2FkKGhpc3RvcnkgLyAnc3VtbWFyeS5qc29uJylbJ2Nhc2VzJ119CiAgZm9yIGNhc2UgaW4gQ0FTRVM6CiAgIHByZXN0YXRlID0gZGljdChwcmUpCiAgIGlmIGNhc2UgIT0gJ2Jhc2VsaW5lJzogcHJlc3RhdGVbMTZdID0gcHJlWzE2XVs6OTY3MF0gKyBzdHJ1Y3QucGFjaygnPEgnLCBwYXR0ZXJuc1tjYXNlXSkgKyBwcmVbMTZdWzk2NzI6XQogICBwcmVmaXggPSAnYmFzZWxpbmUnIGlmIGNhc2UgPT0gJ2Jhc2VsaW5lJyBlbHNlICdjYXNlcy8nICsgY2FzZQogICBleHBlY3RlZCA9IHthOiAoaGlzdG9yeSAvIHByZWZpeCAvIGYncG9zdC17YX0uYmluJykucmVhZF9ieXRlcygpIGZvciBhIGluIEFMTE9DfQogICByZXN1bHRzID0ge307IHN0YXRlcyA9IHt9CiAgIGZvciBsYWJlbCBpbiAoJ29yaWdpbmFsJywgJ29sZCcsICdjYW5kaWRhdGUnKToKICAgIHN0b3JhZ2UgPSB7YTogY3R5cGVzLmNyZWF0ZV9zdHJpbmdfYnVmZmVyKGxlbihkYXRhKSArIDQwOTUpIGZvciBhLCBkYXRhIGluIHByZXN0YXRlLml0ZW1zKCl9CiAgICBhZGRyZXNzZXMgPSB7YTogKGN0eXBlcy5hZGRyZXNzb2Yob3duZXIpICsgNDA5NSkgJiB+NDA5NSBmb3IgYSwgb3duZXIgaW4gc3RvcmFnZS5pdGVtcygpfQogICAgZm9yIGEsIGRhdGEgaW4gcHJlc3RhdGUuaXRlbXMoKTogY3R5cGVzLm1lbW1vdmUoYWRkcmVzc2VzW2FdLCBkYXRhLCBsZW4oZGF0YSkpCiAgICBhcmdzID0gW10KICAgIGZvciB2aWV3IGluIHZpZXdzOgogICAgIGEgPSB2aWV3WydhbGxvY2F0aW9uJ107IG5lZWQoMCA8PSB2aWV3WydvZmZzZXQnXSBhbmQgdmlld1snb2Zmc2V0J10gKyB2aWV3WydieXRlcyddIDw9IGxlbihwcmVzdGF0ZVthXSksICdleGFjdCB2aWV3IGJvdW5kcycpOyBhcmdzLmFwcGVuZChhZGRyZXNzZXNbYV0gKyB2aWV3WydvZmZzZXQnXSkKICAgIGV2ZW50cyA9IFtdCiAgICBmb3Igd29ya2VyIGluICgwLCAxKToKICAgICBiZWZvcmUgPSBmcCgpOyBuZWVkKGNvbnRyb2xzKGJlZm9yZSkgPT0gY29udHJvbHMoaW5pdGlhbCksICd1bm1vZGlmaWVkIG9ic2VydmVkIEZQIGNvbnRyb2wgbW9kZScpCiAgICAgZnVuY3Rpb25zW2xhYmVsXSgqYXJncywgd29ya2VyKTsgYWZ0ZXIgPSBmcCgpOyBuZWVkKGNvbnRyb2xzKGJlZm9yZSkgPT0gY29udHJvbHMoYWZ0ZXIpLCAnRlAgY29udHJvbHMgdW5jaGFuZ2VkJykKICAgICBldmVudHMuYXBwZW5kKHsnd29ya2VyJzogd29ya2VyLCAnYmVmb3JlJzogYmVmb3JlLCAnYWZ0ZXInOiBhZnRlcn0pCiAgICBzdGF0ZSA9IHthOiBjdHlwZXMuc3RyaW5nX2F0KGFkZHJlc3Nlc1thXSwgbGVuKGRhdGEpKSBmb3IgYSwgZGF0YSBpbiBwcmVzdGF0ZS5pdGVtcygpfTsgc3RhdGVzW2xhYmVsXSA9IHN0YXRlCiAgICBmb3IgYSwgZGF0YSBpbiBzdGF0ZS5pdGVtcygpOgogICAgIGRlc3QgPSBvdXQgLyAncG9zdHN0YXRlcycgLyBjYXNlIC8gZid7bGFiZWx9LXthfS5iaW4nOyBkZXN0LnBhcmVudC5ta2RpcihwYXJlbnRzPVRydWUsIGV4aXN0X29rPVRydWUpOyBkZXN0LndyaXRlX2J5dGVzKGRhdGEpCiAgICBkaWZmZXJlbmNlcyA9IFtdCiAgICBmb3IgYSBpbiBBTExPQzoKICAgICBpZiBzdGF0ZVthXSA9PSBleHBlY3RlZFthXTogY29udGludWUKICAgICBkaWZmZXJlbnQgPSBbaSBmb3IgaSwgKHgseSkgaW4gZW51bWVyYXRlKHppcChleHBlY3RlZFthXSwgc3RhdGVbYV0pKSBpZiB4ICE9IHldCiAgICAgaW5kaWNlcyA9IHNvcnRlZCh7aSAvLyA0IGZvciBpIGluIGRpZmZlcmVudH0pCiAgICAgZGlmZmVyZW5jZXMuYXBwZW5kKHsnYWxsb2NhdGlvbic6IGEsICdieXRlcyc6IGxlbihkaWZmZXJlbnQpLCAnZmlyc3RfYnl0ZSc6IGRpZmZlcmVudFswXSwgJ2YzMl9iaXRzJzogW3snaW5kZXgnOiBpLCAnZXhwZWN0ZWQnOiBleHBlY3RlZFthXVs0Kmk6NCppKzRdLmhleCgpLCAnb2JzZXJ2ZWQnOiBzdGF0ZVthXVs0Kmk6NCppKzRdLmhleCgpfSBmb3IgaSBpbiBpbmRpY2VzWzozMl1dfSkKICAgIHJlc3VsdHNbbGFiZWxdID0geydhbGxfZWlnaHRfbWF0Y2hfZnJvemVuX29yaWdpbmFsJzogbm90IGRpZmZlcmVuY2VzLCAnaW5wdXRfb25seV91bmNoYW5nZWQnOiBhbGwoc3RhdGVbYV0gPT0gcHJlc3RhdGVbYV0gZm9yIGEgaW4gQUxMT0MgaWYgYSAhPSA5KSwgJ2RpZmZlcmVuY2VzJzogZGlmZmVyZW5jZXMsICdwb3N0c3RhdGVfc2hhMjU2Jzoge3N0cihhKTpzaGEoYikgZm9yIGEsYiBpbiBzdGF0ZS5pdGVtcygpfSwgJ2ZwJzogZXZlbnRzfQogICByb3dzLmFwcGVuZCh7J2Nhc2UnOiBjYXNlLCAnaW1wbGVtZW50YXRpb25zJzogcmVzdWx0cywgJ2NhbmRpZGF0ZV9tYXRjaGVzX2ZyZXNoX29yaWdpbmFsX2FsbF9laWdodCc6IHN0YXRlc1snY2FuZGlkYXRlJ10gPT0gc3RhdGVzWydvcmlnaW5hbCddfSkKICAgc2F2ZShvdXQgLyAnYXR0cmlidXRpb24tcm93cy5qc29uJywgcm93cykKIGZpbmFsbHk6CiAgdHJ5OgogICBhZnRlciA9IGhlbGQuYWZ0ZXIoKTsgc2F2ZShvdXQgLyAnaGVsZC5hZnRlci5qc29uJywgYWZ0ZXIpOyBuZWVkKGFmdGVyID09IGhlbGQuYmVmb3JlKCksICdzb3VyY2UvcHJvdmlkZXIvaW5wdXRzIHVuY2hhbmdlZCcpCiAgIHN0YXRlID0gc291cmNlX3N0YXRlKHJvb3QpOyBzYXZlKG91dCAvICdzb3VyY2UuYWZ0ZXIuanNvbicsIHN0YXRlKTsgbmVlZChzdGF0ZSA9PSBsb2FkKG91dCAvICdzb3VyY2UuYmVmb3JlLmpzb24nKSwgJ3NvdXJjZSB1bmNoYW5nZWQnKQogIGZpbmFsbHk6IGhlbGQuY2xvc2UoKQogbmVlZChsZW4ocm93cykgPT0gNSBhbmQgYWxsKHJbJ2ltcGxlbWVudGF0aW9ucyddW2tdWydpbnB1dF9vbmx5X3VuY2hhbmdlZCddIGZvciByIGluIHJvd3MgZm9yIGsgaW4gKCdvcmlnaW5hbCcsJ29sZCcsJ2NhbmRpZGF0ZScpKSwgJ2ZpdmUgY29tcGxldGUgZWlnaHQtYnVmZmVyIGNhc2VzJykKIHN0cmljdCA9IGFsbChyWydpbXBsZW1lbnRhdGlvbnMnXVsnY2FuZGlkYXRlJ11bJ2FsbF9laWdodF9tYXRjaF9mcm96ZW5fb3JpZ2luYWwnXSBmb3IgciBpbiByb3dzKQogY29udGV4dCA9IGFsbChyWydjYW5kaWRhdGVfbWF0Y2hlc19mcmVzaF9vcmlnaW5hbF9hbGxfZWlnaHQnXSBmb3IgciBpbiByb3dzKQogcmVwb3J0ID0geydkaWFnbm9zdGljX2NvbXBsZXRlZCc6IFRydWUsICdzb3VyY2UnOiBTT1VSQ0UsICduYXR1cmFsX2NvbmZpZyc6IGNvbmZpZywgJ3ByaW9yX2NvbmZpZ19lcXVhbCc6IGNvbmZpZyA9PSBsb2FkKGlucHV0cyAvICduYXR1cmFsLWhvc3QtY29uZmlnLmpzb24nKSwgJ2ZyZXNoX29yaWdpbmFsX2NhbmRpZGF0ZV9vYmplY3RzX2VxdWFsJzogcmVjZWlwdHNbJ29yaWdpbmFsJ11bJ29iamVjdF9zaGEyNTYnXSA9PSByZWNlaXB0c1snY2FuZGlkYXRlJ11bJ29iamVjdF9zaGEyNTYnXSwgJ3N0cmljdF9mcm96ZW5fb3JpZ2luYWxfcGFyaXR5Jzogc3RyaWN0LCAnZnJlc2hfY29udGV4dF9vcmlnaW5hbF9wYXJpdHknOiBjb250ZXh0LCAncHJpb3JfYWN0dWFsX2ZyYW1lc19yZXVzZWQnOiAyLCAncHJpb3Jfc3VjY2Vzc2Z1bF9oaXN0b3JpY2FsX3Jvd3Nfbm90X3JlZXhlY3V0ZWQnOiA4LCAncHJpb3JfcnVuX3N0YXlzX2ZhaWxlZCc6IFRydWUsICdhcmNoaXZlZF9jb2RlX2V4ZWN1dGVkJzogRmFsc2UsICdwcm9kdWN0aW9uX2ZpeCc6IEZhbHNlLCAnd2hvbGVfbW9kZWxfb3JfNDgyX2FjY2VwdGFuY2UnOiBGYWxzZX0KIHNhdmUob3V0IC8gJ2F0dHJpYnV0aW9uLWNvbXBsZXRlLmpzb24nLCByZXBvcnQpCiAob3V0IC8gJ3N0cmljdC1mcm96ZW4uc3RhdHVzJykud3JpdGVfdGV4dCgnMFxuJyBpZiBzdHJpY3QgZWxzZSAnMVxuJykKIChvdXQgLyAnZnJlc2gtY29udGV4dC5zdGF0dXMnKS53cml0ZV90ZXh0KCcwXG4nIGlmIGNvbnRleHQgZWxzZSAnMVxuJykKIG5lZWQoc3RyaWN0IGFuZCBjb250ZXh0LCAnc3RyaWN0IGJ5dGUgZ2F0ZXMgcmVtYWluIHJlcXVpcmVkOyBkaWFnbm9zdGljIHJvd3Mgc2F2ZWQgYmVmb3JlIHJlamVjdGlvbicpCgoKaWYgX19uYW1lX18gPT0gJ19fbWFpbl9fJzoKIHsnYWRtaXQnOiBhZG1pdCwgJ3JlcGxheSc6IHJlcGxheX1bc3lzLmFyZ3ZbMV1dKCkK
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: ${{ env.SOURCE_SHA }}
+        persist-credentials: false
+    - name: Prepare exact hosted source and external diagnostics
+      run: "set -euo pipefail\n[[ $GITHUB_ACTIONS == true && $RUNNER_ENVIRONMENT == github-hosted && $RUNNER_OS == Linux ]]\n\
+        [[ $(git rev-parse HEAD) == \"$SOURCE_SHA\" && -z $(git status --porcelain --untracked-files=normal) ]]\nzero_free=$(df\
+        \ -B1 --output=avail \"$RUNNER_TEMP\" | tail -n 1)\nif [[ $zero_free -lt $((35*1024*1024*1024)) ]]; then\n sudo rm\
+        \ -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup\n zero_free=$(df -B1 --output=avail \"$RUNNER_TEMP\"\
+        \ | tail -n 1)\nfi\n[[ $zero_free -ge $((35*1024*1024*1024)) ]]\nzero_job=$(mktemp -d \"$RUNNER_TEMP/model-zero-attribution-296.XXXXXXXX\"\
+        )\nmkdir \"$zero_job/evidence\"\nprintf 'ZERO_ATTRIBUTION_JOB=%s\\nCARGO_TARGET_DIR=%s/target\\n' \"$zero_job\" \"\
+        $zero_job\" >> \"$GITHUB_ENV\"\nprintf '%s' \"$ATTRIBUTION_B64\" | base64 --decode > \"$zero_job/attribution.py\"\n\
+        printf '%s  %s\\n' \"$ATTRIBUTION_SHA256\" \"$zero_job/attribution.py\" | sha256sum --check --strict\ncp \"$zero_job/attribution.py\"\
+        \ \"$zero_job/evidence/attribution-source.py\"\nprintf 'source=%s\\nworkflow=%s\\nrun=%s\\n' \"$SOURCE_SHA\" \"$GITHUB_SHA\"\
+        \ \"$GITHUB_RUN_ID\" > \"$zero_job/evidence/source.txt\"\n"
+    - name: Authenticate failed run as inert data before any kernel execution
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: 'set -euo pipefail
+
+        gh api -H ''Cache-Control: no-cache'' repos/bin9208/openpilot-rust/actions/artifacts/12445763659 > "$ZERO_ATTRIBUTION_JOB/input-api.json"
+
+        gh api -H ''Cache-Control: no-cache'' repos/bin9208/openpilot-rust/actions/artifacts/12445763659/zip > "$ZERO_ATTRIBUTION_JOB/input.zip"
+
+        cp "$ZERO_ATTRIBUTION_JOB/input-api.json" "$ZERO_ATTRIBUTION_JOB/evidence/input-api.json"
+
+        /usr/bin/python3 -I -B "$ZERO_ATTRIBUTION_JOB/attribution.py" admit
+
+        '
+    - name: Fresh narrow compiler build and observation-only FP provider
+      timeout-minutes: 15
+      run: 'set -euo pipefail
+
+        rust/tools/check-disk-space --path "$RUNNER_TEMP" --growth-mib 4096
+
+        sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends clang libllvm18 liblzma-dev capnproto libcapnp-dev pkg-config
+
+        rustup toolchain install 1.94.0 --profile minimal
+
+        unset RUSTFLAGS CARGO_ENCODED_RUSTFLAGS RUSTC_WRAPPER RUSTC_WORKSPACE_WRAPPER CARGO_BUILD_TARGET
+
+        [[ ! -e $CARGO_TARGET_DIR && ! -L $CARGO_TARGET_DIR ]]
+
+        cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --bin offline-llvm-compile
+        > "$ZERO_ATTRIBUTION_JOB/evidence/build.log" 2>&1 || { tail -n 100 "$ZERO_ATTRIBUTION_JOB/evidence/build.log"; exit
+        1; }
+
+        cat > "$ZERO_ATTRIBUTION_JOB/fp-observe.c" <<''FP''
+
+        #include <stdint.h>
+
+        #include <fenv.h>
+
+        #include <xmmintrin.h>
+
+        uint32_t diagnostic_mxcsr(void) { return _mm_getcsr(); }
+
+        int diagnostic_round(void) { return fegetround(); }
+
+        FP
+
+        /usr/bin/clang -shared -fPIC -O2 -Wl,-z,defs "$ZERO_ATTRIBUTION_JOB/fp-observe.c" -lm -o "$ZERO_ATTRIBUTION_JOB/fp-observe.so"
+
+        cp "$ZERO_ATTRIBUTION_JOB/fp-observe.c" "$ZERO_ATTRIBUTION_JOB/evidence/fp-observe.c"
+
+        rustc +1.94.0 -Vv > "$ZERO_ATTRIBUTION_JOB/evidence/rustc.txt"
+
+        lscpu --json > "$ZERO_ATTRIBUTION_JOB/evidence/actual-cpu.json"
+
+        dpkg-query -W clang libllvm18 > "$ZERO_ATTRIBUTION_JOB/evidence/compiler-packages.tsv"
+
+        '
+    - name: Add missing original and old controls for only the five failed cases
+      timeout-minutes: 12
+      run: 'set -euo pipefail
+
+        rust/tools/check-disk-space --path "$RUNNER_TEMP" --growth-mib 1024
+
+        # Observe this actual host; no historical target forcing, archive execution,
+
+        # full-model rerun, accepted256 controls, or successful8 historical repeats.
+
+        status=0
+
+        timeout --signal=KILL 600 /usr/bin/python3 -I -B "$ZERO_ATTRIBUTION_JOB/attribution.py" replay > "$ZERO_ATTRIBUTION_JOB/evidence/replay.stdout"
+        2> "$ZERO_ATTRIBUTION_JOB/evidence/replay.stderr" || status=$?
+
+        printf ''%s\n'' "$status" > "$ZERO_ATTRIBUTION_JOB/evidence/replay.status"
+
+        tail -n 60 "$ZERO_ATTRIBUTION_JOB/evidence/replay.stdout" "$ZERO_ATTRIBUTION_JOB/evidence/replay.stderr"
+
+        exit "$status"
+
+        '
+    - name: Require unchanged exact historical and fresh-original byte gates
+      run: 'set -euo pipefail
+
+        test "$(cat "$ZERO_ATTRIBUTION_JOB/evidence/strict-frozen.status")" = 0
+
+        test "$(cat "$ZERO_ATTRIBUTION_JOB/evidence/fresh-context.status")" = 0
+
+        /usr/bin/python3 -I -B - <<''CHECK''
+
+        import json, os
+
+        from pathlib import Path
+
+        root=Path(os.environ[''ZERO_ATTRIBUTION_JOB''])/''evidence''
+
+        report=json.loads((root/''attribution-complete.json'').read_bytes())
+
+        assert report[''diagnostic_completed''] is True and report[''source'']==os.environ[''SOURCE_SHA'']
+
+        assert report[''strict_frozen_original_parity''] is True and report[''fresh_context_original_parity''] is True
+
+        assert report[''archived_code_executed''] is False and report[''prior_run_stays_failed''] is True
+
+        assert report[''production_fix''] is False and report[''whole_model_or_482_acceptance''] is False
+
+        rows=json.loads((root/''attribution-rows.json'').read_bytes())
+
+        assert len(rows)==5 and all(set(r[''implementations''])=={''original'',''old'',''candidate''} for r in rows)
+
+        CHECK
+
+        [[ $(git rev-parse HEAD) == "$SOURCE_SHA" && -z $(git status --porcelain --untracked-files=normal) ]]
+
+        '
+    - name: Always seal bounded inert raw diagnostics
+      if: always()
+      timeout-minutes: 5
+      run: "set -euo pipefail\n/usr/bin/python3 -I -B - <<'PACK'\nimport hashlib, json, os, stat\nfrom pathlib import Path\n\
+        output=Path(os.environ['RUNNER_TEMP'])/'model-zero-attribution-public'\noutput.mkdir(exist_ok=False)\nsource=Path(os.environ['ZERO_ATTRIBUTION_JOB'])/'evidence'\
+        \ if 'ZERO_ATTRIBUTION_JOB' in os.environ else None\nseals={}; omitted=[]; total=0; cap=256<<20\nif source is not\
+        \ None and source.exists():\n for path in sorted(source.rglob('*'), key=lambda p:(p.stat().st_size>(1<<20) if p.is_file()\
+        \ else False, str(p))):\n  info=path.lstat()\n  if stat.S_ISDIR(info.st_mode): continue\n  name=str(path.relative_to(source))\n\
+        \  if not stat.S_ISREG(info.st_mode) or total+info.st_size>cap-(8<<20):\n   omitted.append({'path':name,'size':info.st_size,'reason':'nonregular\
+        \ or immutable evidence bound'});continue\n  data=path.read_bytes()\n  if data.startswith(b'\\x7fELF'):\n   omitted.append({'path':name,'size':len(data),'reason':'unexpected\
+        \ executable in inert evidence'});continue\n  dest=output/name;dest.parent.mkdir(parents=True,exist_ok=True);dest.write_bytes(data)\n\
+        \  seals[name]={'size':len(data),'sha256':hashlib.sha256(data).hexdigest()};total+=len(data)\nelse: omitted.append({'path':'evidence','reason':'bootstrap\
+        \ did not create evidence'})\nmetadata={'content-seals.json':seals,'omissions.json':omitted,'packaging.json':{'result':'fail'\
+        \ if omitted else 'pass','bytes':total,'bound':cap}}\nencoded={k:(json.dumps(v,indent=2)+'\\n').encode() for k,v in\
+        \ metadata.items()}\nif sum(map(len,encoded.values()))>cap-total:\n omitted=[{'reason':'seal metadata exceeds evidence\
+        \ bound'}]\n encoded={k:(json.dumps(v)+'\\n').encode() for k,v in {'content-seals.json':{},'omissions.json':omitted,'packaging.json':{'result':'fail','bytes':total,'bound':cap}}.items()}\n\
+        assert total+sum(map(len,encoded.values()))<=cap\nfor name,data in encoded.items():(output/name).write_bytes(data)\n\
+        assert not omitted, 'incomplete evidence fails; bounded partial diagnostics remain uploadable'\nPACK\n"
+    - uses: actions/upload-artifact@v6
+      if: always()
+      with:
+        name: model-zero-r4-attribution-${{ github.run_id }}
+        path: ${{ runner.temp }}/model-zero-attribution-public/
+        if-no-files-found: error
+        include-hidden-files: true
+        retention-days: 30
