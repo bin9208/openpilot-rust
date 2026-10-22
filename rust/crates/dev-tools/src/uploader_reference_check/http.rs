@@ -261,10 +261,6 @@ fn receive(stream: &mut TcpStream) -> Result<Request> {
         let (key, value) = line
             .split_once(':')
             .ok_or("malformed uploader HTTP header")?;
-        require(
-            !key.eq_ignore_ascii_case("transfer-encoding"),
-            "unexpected uploader transfer encoding",
-        )?;
         if key.eq_ignore_ascii_case("content-length") {
             require(length.is_none(), "duplicate content length")?;
             length = Some(value.trim().parse::<usize>()?);
@@ -276,10 +272,56 @@ fn receive(stream: &mut TcpStream) -> Result<Request> {
             "duplicate uploader HTTP header",
         )?;
     }
-    let length = length.unwrap_or(0);
-    require(length <= 4 << 20, "uploader peer body bound exceeded")?;
-    let mut body = vec![0; length];
-    stream.read_exact(&mut body)?;
+    let body = if let Some(transfer) = headers.get("transfer-encoding") {
+        require(
+            transfer.eq_ignore_ascii_case("chunked") && length.is_none(),
+            "unsupported or ambiguous uploader request framing",
+        )?;
+        let mut body = Vec::new();
+        loop {
+            let mut line = Vec::new();
+            while !line.ends_with(b"\r\n") {
+                require(
+                    line.len() < 64 && started.elapsed() < Duration::from_secs(2),
+                    "uploader chunk header bound exceeded",
+                )?;
+                let mut byte = [0];
+                stream.read_exact(&mut byte)?;
+                line.push(byte[0]);
+            }
+            let text = std::str::from_utf8(&line[..line.len() - 2])?;
+            require(
+                !text.is_empty() && text.bytes().all(|byte| byte.is_ascii_hexdigit()),
+                "invalid uploader chunk size",
+            )?;
+            let size = usize::from_str_radix(text, 16)?;
+            require(
+                size <= (4 << 20) - body.len(),
+                "uploader chunked body bound exceeded",
+            )?;
+            if size > 0 {
+                let offset = body.len();
+                body.resize(offset + size, 0);
+                stream.read_exact(&mut body[offset..])?;
+            }
+            let mut end = [0; 2];
+            stream.read_exact(&mut end)?;
+            require(
+                end == *b"\r\n",
+                "invalid uploader chunk terminator or trailers",
+            )?;
+            if size == 0 {
+                break;
+            }
+        }
+        body
+    } else {
+        let length = length.unwrap_or(0);
+        require(length <= 4 << 20, "uploader peer body bound exceeded")?;
+        let mut body = vec![0; length];
+        stream.read_exact(&mut body)?;
+        body
+    };
     Ok(Request {
         method: start[0].into(),
         path: start[1].into(),

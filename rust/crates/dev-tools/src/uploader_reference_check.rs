@@ -291,6 +291,14 @@ pub fn run(options: &Options) -> Result<Value> {
             &case.id,
             &mut runner,
         )?;
+        if let Some((server, observation, _persist)) = server {
+            let requests = server.finish()?;
+            fs::write(
+                options.output.join(format!("{}.http.json", case.id)),
+                serde_json::to_vec_pretty(&requests)?,
+            )?;
+            http::verify_observation(observation, &requests, &keys)?;
+        }
         require(
             actual == case.expected,
             &format!(
@@ -299,14 +307,6 @@ pub fn run(options: &Options) -> Result<Value> {
             ),
         )?;
         check_xattrs(temp.path(), case)?;
-        if let Some((server, observation, _persist)) = server {
-            let requests = server.finish()?;
-            http::verify_observation(observation, &requests, &keys)?;
-            fs::write(
-                options.output.join(format!("{}.http.json", case.id)),
-                serde_json::to_vec_pretty(&requests)?,
-            )?;
-        }
         rows.push(json!({"case":case.id,"original_result_equal":true,"post_xattrs_equal":true}));
     }
     let temp = tempfile::tempdir()?;
