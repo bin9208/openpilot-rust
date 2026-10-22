@@ -6669,3 +6669,37 @@ identified pre-half value. A bounded hardware-execute diagnostic is being
 reviewed at original+bc4/native+9e7, with independently derived counter17721 plus
 43200element store displacement, unchanged full-output gates and original GDB
 environment/provider protections. It is not a numerical fix or retirement proof.
+
+### Complete modem predelete proof and five-tool retirement candidate
+
+39725797981 at93c8030467ef1008648342d8e162c8658e2068f0, workflow
+79f2cd88a57dcdc199ef0751eab05584da5c7886, executes exactly one ignored retirement
+test and passes14units/Clippy. Parent downloads completeartifact12402929676,
+2713715B/SHAb2e0dd8c59597bc90cda8718cf8e5861d348769bb7280736efefc420ce3fc3f6,
+checks all2479CRCs and28original-source/fixture Git hashes. Actual OriginalPresent
+and private AllRetired roots each run13cases,40rows/144ATcommands/93helpercalls
+per original/native side; parent recomputes full case equality within and across
+both roots. Both live lifecycles retain5snapshots/clean state removal/reaped PPP,
+plus3process-boundary cases each. TwelveCLI controls and six source-reappearance
+rejections pass. All4ELF receipts are byte-identical before/after; stdout has only
+the original passed14/evidence fields. This is predelete engineering evidence,
+not accepted source retirement or physical-device proof.
+
+The five modem QA Python tools are now physically deleted in the candidate;
+runtime modem.py remains pinned because the Python manager caller is still live.
+The maintained platform gate uses MODEM_REQUIRE_TOOLS_RETIRED=1, exact1test
+success assertions and original/private comparisons; five new capacity guards
+raise533→538 without changing the original177growth roster. Complete pinned
+postdelete platform and CI policy checks remain required before inventory+5.
+
+Navigation development optimization39724315701 at7e32499c38d5e78434d5d4943637ae07af48555e,
+workflow17bdb19e214e1127ae22f42a776baff07c4be6ff, passes8fresh cancellation
+starts under the unchanged10s barrier and the complete navigation suite. Parent
+checks completeartifact12402768711/37421857B/all1682CRCs/SHA
+95bac9c9f82a26e4781aca740df69d11af25f6c70b06a47a80eb23b61816e2bf and unchanged
+input seals. RSA generation across the8fresh random keys is142.57–419.92ms
+(median335.78ms), versus2039.23–7770.95ms (median3598.75ms) in the previous run.
+These are hosted observations with fresh random keys, not a paired benchmark
+or vehicle CPU claim. Release/RSA2048/error order/deadlines remain unchanged.
+Keep#457 open pending full published integration of this measured mitigation;
+the precise phase of the original uninstrumented failure remains unproved.

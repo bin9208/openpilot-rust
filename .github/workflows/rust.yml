@@ -4495,10 +4495,38 @@ jobs:
         run: |
           rust/target/debug/examples/manager_native "$RUNNER_TEMP/platform-runtime/manager-native" "$PWD/rust/target/debug/openpilot-process-child"
           rust/target/debug/examples/manager_adapters "$RUNNER_TEMP/platform-runtime/manager-adapters" "$PWD/rust/target/debug/openpilot-process-child"
-      - name: Compare serial modem state and continuous native reconnect lifecycle
+      - name: Verify retired modem tools and continuous native reconnect lifecycle
         run: |
-          python rust/tools/check_modem_process_boundary.py --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/platform-runtime/modem-process"
-          python rust/tools/check_modem.py --binary "$PWD/rust/target/debug/openpilot-modem" --trace "$PWD/rust/target/debug/examples/modem_trace" --evidence "$RUNNER_TEMP/platform-runtime/modem"
+          set -euo pipefail
+          for name in check_modem.py modem_source.py modem_fixture.py modem_fixture_command.py check_modem_process_boundary.py; do
+            test ! -e "rust/tools/$name" && test ! -L "rust/tools/$name"
+          done
+          test -f openpilot/system/hardware/tici/modem.py
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features modem-qa-native --bin check-modem
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features modem-qa-native --lib --test modem_retirement --no-run
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo +1.94.0 clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features modem-qa-native --lib --bin check-modem --test modem_retirement -- -D warnings
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features modem-qa-native --lib modem_ -- --nocapture
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features modem-qa-native --test modem_retirement -- --nocapture
+          export MODEM_REQUIRE_TOOLS_RETIRED=1
+          export MODEM_CHECKER_BINARY="$GITHUB_WORKSPACE/rust/target/debug/check-modem"
+          export MODEM_DAEMON_BINARY="$GITHUB_WORKSPACE/rust/target/debug/openpilot-modem"
+          export MODEM_TRACE_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/modem_trace"
+          export MODEM_PROCESS_CHILD_BINARY="$GITHUB_WORKSPACE/rust/target/debug/openpilot-process-child"
+          export MODEM_RETIREMENT_OUTPUT="$RUNNER_TEMP/platform-runtime/modem-native"
+          seals="$RUNNER_TEMP/platform-runtime/modem-seals"
+          mkdir -p "$seals"
+          sha256sum "$MODEM_CHECKER_BINARY" "$MODEM_DAEMON_BINARY" "$MODEM_TRACE_BINARY" "$MODEM_PROCESS_CHILD_BINARY" > "$seals/before.sha256"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 1024
+          strace -ff -s 16384 -o "$seals/retirement.trace" -e trace=execve,execveat,clone,fork,vfork,exit,exit_group \
+            cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features modem-qa-native --test modem_retirement same_held_native_elfs_replay_modem_originals_in_checkout_and_private_absent_root -- --ignored --exact --nocapture 2>&1 | tee "$seals/retirement.log"
+          grep -Fx "test same_held_native_elfs_replay_modem_originals_in_checkout_and_private_absent_root ... ok" "$seals/retirement.log"
+          grep -E "^test result: ok\. 1 passed; 0 failed; 0 ignored;" "$seals/retirement.log"
+          sha256sum "$MODEM_CHECKER_BINARY" "$MODEM_DAEMON_BINARY" "$MODEM_TRACE_BINARY" "$MODEM_PROCESS_CHILD_BINARY" > "$seals/after.sha256"
+          cmp -s "$seals/before.sha256" "$seals/after.sha256"
       - name: Reproduce old modem EOF failure and require owned helper cleanup
         run: |
           set -euo pipefail

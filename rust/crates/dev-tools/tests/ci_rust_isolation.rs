@@ -1121,7 +1121,7 @@ fn modem_requires_real_baseline_failure_and_fixed_helper_lifetimes() {
     ], &["helper-lifetime-tests"], false);
 }
 #[test]
-fn platform_runtime_requires_original_manager_modem_and_retired_hardwared_proof() {
+fn platform_runtime_requires_original_manager_and_retired_modem_hardwared_proof() {
     job_check(
         "platform-runtime",
         &[
@@ -1131,8 +1131,17 @@ fn platform_runtime_requires_original_manager_modem_and_retired_hardwared_proof(
             "generate_manager_cars.py",
             "examples/manager_native",
             "examples/manager_adapters",
-            "check_modem.py",
-            "check_modem_process_boundary.py",
+            "for name in check_modem.py modem_source.py modem_fixture.py modem_fixture_command.py check_modem_process_boundary.py; do",
+            "test -f openpilot/system/hardware/tici/modem.py",
+            "--features modem-qa-native --bin check-modem",
+            "--features modem-qa-native --lib --test modem_retirement --no-run",
+            "--features modem-qa-native --lib --bin check-modem --test modem_retirement -- -D warnings",
+            "--features modem-qa-native --lib modem_ -- --nocapture",
+            "MODEM_REQUIRE_TOOLS_RETIRED=1",
+            "MODEM_RETIREMENT_OUTPUT=",
+            "grep -Fx \"test same_held_native_elfs_replay_modem_originals_in_checkout_and_private_absent_root ... ok\"",
+            "^test result: ok\\. 1 passed; 0 failed; 0 ignored;",
+            "same_held_native_elfs_replay_modem_originals_in_checkout_and_private_absent_root",
             "for name in check_hardwared.py hardwared_source.py check_hardwared_daemon.py; do",
             "--features hardwared-qa-native --bin check-hardwared --bin check-hardwared-daemon",
             "--features hardwared-qa-native --lib hardwared_ -- --nocapture",
@@ -1142,13 +1151,19 @@ fn platform_runtime_requires_original_manager_modem_and_retired_hardwared_proof(
             "same_native_clis_preserve_all_original_cases_and_live_ipc_in_both_roots",
             "cmp -s \"$seals/before.sha256\" \"$seals/after.sha256\"",
         ],
-        &["python rust/tools/check_", "HARDWARED_REQUIRE_RETIRED=1"],
+        &[
+            "python rust/tools/check_",
+            "HARDWARED_REQUIRE_RETIRED=1",
+            "MODEM_REQUIRE_TOOLS_RETIRED=1",
+        ],
         false,
     );
     let data = workflow();
     let run = commands(&data["jobs"]["platform-runtime"]);
     assert!(!run.contains("python rust/tools/check_hardwared.py"));
     assert!(!run.contains("python rust/tools/check_hardwared_daemon.py"));
+    assert!(!run.contains("python rust/tools/check_modem.py"));
+    assert!(!run.contains("python rust/tools/check_modem_process_boundary.py"));
 }
 #[test]
 fn workspace_checks_run_without_waiting_for_runtime_jobs() {

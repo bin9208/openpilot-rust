@@ -77,8 +77,11 @@ matches all4ELFs by path/hash/size/device/inode.93c803046 fixes the outer bindin
 c7b0c220b also preserves the original CLI's two-field14case/evidence summary,
 while keeping enhanced17check details in results.json. Current diagnostic retry
 uses exact success-line and1passed/0failed/0ignored assertions. The proposed
-maintained platform/policy edits are still uncommitted, and all5Python tools
-remain live until a complete actual/private proof and postdelete gate pass.
+maintained platform/policy edits now accompany the five-tool deletion candidate.
+39725797981 completes the real two-root predelete proof (full2479CRCs/28Gitpins,
+13cases per root/12CLI/6reappearance/4unchanged ELF receipts); the five tools are
+physically deleted, but inventory265 remains unchanged pending complete pinned
+postdelete platform and policy gates. Runtime modem.py remains live and pinned.
 
 ## Accepted focused closures to reuse
 
