@@ -365,6 +365,13 @@ fn execute(options: &Options, mut emit: impl FnMut(&Value) -> Result<()>) -> Res
         options.output.is_absolute(),
         "USB evidence output must be absolute",
     )?;
+    // Reject foreign evidence before hashing the genuine model and asset tree.
+    // create_dir below remains the authoritative, race-safe ownership check.
+    match fs::symlink_metadata(&options.output) {
+        Ok(_) => return Err("USB evidence output already exists".into()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => return Err(error.into()),
+    }
     let original = Original::open(
         &options.root,
         &options.original,
@@ -791,6 +798,43 @@ pub fn cli() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn foreign_evidence_is_rejected_before_large_or_missing_input_admission() {
+        let root = tempfile::tempdir().unwrap();
+        let missing = root.path().join("missing-input");
+        let output = root.path().join("foreign");
+        fs::create_dir(&output).unwrap();
+        fs::write(output.join("report.json"), b"foreign report").unwrap();
+        let mut options = Options {
+            binary: missing.clone(),
+            worker: missing.clone(),
+            peer: missing.clone(),
+            catalog: missing.clone(),
+            model: missing.clone(),
+            runtime: missing.clone(),
+            installed: missing.clone(),
+            assets: missing.clone(),
+            output: output.clone(),
+            original: missing.clone(),
+            original_sha256: String::new(),
+            root: missing,
+            expect_absent: true,
+            modes: Vec::new(),
+        };
+        assert!(run(&options).unwrap_err().to_string().contains("exists"));
+        assert_eq!(
+            fs::read(output.join("report.json")).unwrap(),
+            b"foreign report"
+        );
+        let link = root.path().join("foreign-link");
+        std::os::unix::fs::symlink(root.path().join("absent-target"), &link).unwrap();
+        options.output = link.clone();
+        assert!(run(&options).unwrap_err().to_string().contains("exists"));
+        assert!(fs::symlink_metadata(link).unwrap().file_type().is_symlink());
+        options.output = root.path().join("new-evidence");
+        assert!(run(&options).is_err());
+        assert!(!options.output.exists());
+    }
     #[test]
     fn case_hardlinks_preserve_original_inputs_and_snapshot_mutations_are_rejected() {
         let root = tempfile::tempdir().unwrap();
