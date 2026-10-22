@@ -93,19 +93,11 @@ impl Drop for Checker {
         if let Some(peer) = &self.peer {
             let _ = pidfd_send_signal(peer, Signal::KILL);
         }
-        if self.child.is_some() {
+        if let Some(child) = self.child.as_mut() {
             let _ = pidfd_send_signal(&self.identity, Signal::TERM);
             let until = Instant::now() + Duration::from_secs(20);
             while Instant::now() < until {
-                if self
-                    .child
-                    .as_mut()
-                    .unwrap()
-                    .try_wait()
-                    .ok()
-                    .flatten()
-                    .is_some()
-                {
+                if child.try_wait().ok().flatten().is_some() {
                     return;
                 }
                 std::thread::sleep(Duration::from_millis(5));
@@ -114,15 +106,7 @@ impl Drop for Checker {
             // The test harness has its own bound even when cleanup itself fails.
             let until = Instant::now() + Duration::from_secs(2);
             while Instant::now() < until {
-                if self
-                    .child
-                    .as_mut()
-                    .unwrap()
-                    .try_wait()
-                    .ok()
-                    .flatten()
-                    .is_some()
-                {
+                if child.try_wait().ok().flatten().is_some() {
                     return;
                 }
                 std::thread::sleep(Duration::from_millis(5));

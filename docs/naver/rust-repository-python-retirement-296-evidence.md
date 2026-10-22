@@ -8578,3 +8578,79 @@ non-executing text or removed source. Two new focused hosted tests will execute
 the actual extracted build/caller over42file-effect controls while reusing the
 accepted72comparison controls. The gate is pending. Paired user docs describe
 the native command and this limited scope; baseline inventory remains unchanged.
+
+### Korean/GB admission and the next bounded diagnostics
+
+Korean native39831621316 succeeds atbcf7b88ef40072adbaead10e980a84d018f00390,
+workflowaddda352a8237767e4f7ed78b04d7ab0c4c6efa5. Artifact12448934224 is5703338B,
+SHA2568784a5779879d9570a13055a0a83fb8c3dbe7112597c876787a0a967fcebbab4,
+436CRCs. Parent independently compares all36dense binaries/788687rows,
+24576new vectors,135prior values and72source admissions. Two tests/strictClippy,
+one native exec/zero Python execs and unchanged source/original/native-provider
+snapshot pairs pass. Prior135 values retain the historical provider limitation
+until the separately captured supplement is admitted; no caller credit yet.
+
+GB native39832418520 succeeds ate8744f656444f1e8a5c49527ed15fb56e4406673,
+workflowaf6963854bc92a6a9d905e24c34d8250506c562f. Artifact12448928095 is5667116B,
+SHA25648bc6251983aac49b96739f20a30da7600e334606946231df3819b5fc30ae8da,
+61CRCs. Parent compares11dense binaries/2107480rows,19435new vectors,135prior
+values and1222source admissions, with zero acceptance/UTF8 differences.
+Three tests/strictClippy, one native exec/zero Python execs and all three paired
+snapshots pass. This does not prove arbitrary strings, incremental APIs or
+exception-message equality. Historical CN identity is explicitly not inferred.
+
+Big5 original39830642816 atbcf7b88ef/workflowdcf3fb3791e1ab528514d8b4fbcb25b053b9ac88
+is independently admitted: artifact12447389472,316779B/SHA256
+c0bb415658046efc870afa7fe636b09fb56d00434db8e8a1aa95d86060d31cc9,
+26CRCs/16seals, manifestd2b401ffa22b513133006824ceece8b6278ca99f2d935b32beb7e1380a589836.
+Its197322dense rows/11274vectors/180source cases feed native39833214339,
+sourcee8744f656/workflowb8689ae6a4a7d04d9e3387ce9d2d8fc910ebcde6, still pending.
+GB original39831243150 atbcf7b88ef/workflowc0b5406d32cff646ffec78c026a52a2c5d3c5448
+has artifact12448852242,2695146B/SHA256
+29e4b0c8235fae0ce7eadbc3b0cb5e4d232d3e4c121085ec0d67b765a52312b1,
+27CRCs/18seals, manifest5215b2f9b01a7975a471268d9679dfccc2fcfa414e5affe9cf60f50726ad8dd5.
+
+JP2 original39831336477 succeeds atbcf7b88ef/workflow
+df7d9ca1dc4de01d1fe47375889918345ab69ef5. Artifact12449416044 is710190B,
+SHA256110fdc055250625161e56d35a957bdebfbc69c01b1acaa4d79a183cb8748265f,
+62CRCs/52seals, manifest66a0357ae158d92a116e76acc492d441d8b04b948db2c4ae4ecc64f5e02d3df3.
+Parent verifies unchanged source/provider pairs and explicit CN/KR/Japanese/
+ISO2022/multibyte extensions. It captures986871dense rows/45domains,
+28296new vectors/101source cases; native comparison remains pending.
+
+Provider supplement39833544500 uses sourcee8744f656/workflow
+86da06ba978a01872f189b807c4aa6ad4012191e. It captures only540old inputs,
+12codecs×45, against complete held current providers. Expected canonical stream
+21145B/SHA2565e4323d391a4b9da4972fb392ff4069e1ffe3eae8a518c7c9755154ba9d88d91
+is derived from sealed old observations, never native data. New exact value
+agreement can supplement provenance transitively, never retroactively establish
+missing historical extension identity. No dense or passed native scope is rerun.
+
+LoggingR4 retry39830442536 fails strictClippy only after14units and the cheap
+CLI grammar test pass. Two checked unwraps in deferred lifecycle cleanup are
+replaced by one if-let binding (patch4c3874a3); all signals and20s/2s bounds remain.
+Artifact12449315453 is16198B/SHA256
+1c1bbffd60895ee6ab2e6e93319b8b4315796ec953b8845fc8d693dd73740bd4,
+11CRCs/9seals. The next recipe authenticates/reuses those exact passed subscopes
+with source equivalence and explicit failed-run attribution. It freshly runs
+failed/unreached Clippy, lifecycle and protocol gates; admission remains pending.
+
+Road#482 failed39823666805 is narrowed by inert full-buffer audit: both actual
+frames match all eight buffers, but five historical cases fail only output9
+index99 (-0 becomes+0, or an sNaN quiet bit changes). Fresh original/candidate
+objects are byte-identical; historical original compiler context is unresolved.
+No production arithmetic fix is justified. Diagnostic39833558563 at unchanged
+1d5570e158bb7a799c4a816f78bc7f63f201d2a4/workflow0138e0176d25755d82a6a9f9425abce3965d888e
+adds the missing fresh-original controls on those five cases only; strict old
+and fresh-original bytes remain required. No accepted actual-frame/scalar reruns.
+
+Driver#476 first-convolution39828495779 fails the observer's original/native
+scalar-input comparison before completing the capture. Artifact12447878261 is
+141867366B/SHA2563b8061ee51808cd5a2cd3a648382fadff22a767fa820428356d483363620413b,
+581CRCs; Sol inspects ABI/scalar lineage before any repair. This does not prove
+FMA causality or numerical acceptance. Paramsd39830330826 and loggerd39832401630
+also fail; their actual causes are under separate Sol diagnosis. Startup39819735679
+ends cancelled with a final-guard failure; no whole-family startup success claim.
+Carrot maintained-caller39832413264 reports success, with artifact admission
+still required. Fast checks39832017496 fail the disk-bootstrap workflow guard
+roster after the new caller; the reserve contract must be preserved in its fix.
