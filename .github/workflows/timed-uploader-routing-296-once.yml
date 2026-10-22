@@ -1,4 +1,4 @@
-name: 296 preserved native uploader routing and capacity proof
+name: 296 complete native uploader caller and capacity policy proof
 'on':
   push:
     branches:
@@ -17,11 +17,11 @@ jobs:
       CARGO_BUILD_JOBS: '2'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
-      EXPECTED_SOURCE: 9adb3fdf2c4107ed72d284d62fb7712ac16036ea
+      EXPECTED_SOURCE: 5fc4e8886dde7d41840758dbdf113143b6bc0a78
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 9adb3fdf2c4107ed72d284d62fb7712ac16036ea
+        ref: 5fc4e8886dde7d41840758dbdf113143b6bc0a78
         persist-credentials: false
     - name: Admit exact source and reserve bounded build capacity
       run: 'set -euo pipefail
@@ -43,7 +43,8 @@ jobs:
         rustup toolchain install 1.94.0 --profile minimal --component clippy
 
         sha256sum .github/workflows/rust.yml rust/crates/dev-tools/tests/timed_ci.rs rust/crates/dev-tools/tests/ci_disk_bootstrap.rs
-        rust/crates/dev-tools/tests/fixtures/timed-tools/support-ci-original.json > "$proof/inputs.before.sha256"
+        rust/crates/dev-tools/tests/ci_rust_isolation.rs rust/crates/dev-tools/tests/fixtures/timed-tools/support-ci-original.json
+        > "$proof/inputs.before.sha256"
 
         '
     - name: Run exact routing mutation and capacity policy regressions
@@ -52,10 +53,10 @@ jobs:
         rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 2048
 
         cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --test timed_ci --test ci_disk_bootstrap
-        2>&1 | tee "$ROUTING_PROOF/tests.txt"
+        --test ci_rust_isolation 2>&1 | tee "$ROUTING_PROOF/tests.txt"
 
         cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --test timed_ci --test ci_disk_bootstrap
-        -- -D warnings 2>&1 | tee "$ROUTING_PROOF/clippy.txt"
+        --test ci_rust_isolation -- -D warnings 2>&1 | tee "$ROUTING_PROOF/clippy.txt"
 
         sha256sum --check --strict "$ROUTING_PROOF/inputs.before.sha256" | tee "$ROUTING_PROOF/input-guards.txt"
 
