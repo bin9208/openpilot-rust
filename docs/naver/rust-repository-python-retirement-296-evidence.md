@@ -8511,3 +8511,22 @@ captures only missing Korean cases, reusing135prior observations. Its independen
 results and new native comparisons remain required before acceptance. Local
 review covers source/provenance, static table shape, scoped Rustfmt, TOML and
 diff only. Maintained source/callers and inventory stay unchanged.
+
+
+LoggingR4 run39827448694 is localized to the existing ZMQ_USE_FD unsafe-code
+lint, before functional execution. Patchf5c85b2d adds a statement-only allowance
+with the existing live-socket/FD-ownership rationale; no crate-wide policy or
+executable behavior changes. The complete unchanged outer gate must now compile
+and execute the published corrected source before any caller migration.
+
+Paramsd run39827158238 failed earlier than runtime: the initial source sealing
+pipeline followed tracked directory/dangling symlinks and exited123. Artifact
+12446229110 is851450bytes/SHA256
+02504c62439098de59752ea9836b85e33dedcae149f683965e58b8b7d301255c,
+seven members, containing no Paramsd build/test/functional results. Workflow-only
+repair9d7fe7887b6cd2e91997389de8cdc6179a47f2aac017a4213d2e3a609d621327
+seals every tracked path through a deterministic non-dereferencing tar stream,
+including all7literal symlinks, plus before/after Git index inventories. It keeps
+source69bbee211 fixed, original/candidate observers, disk reserves, strict fields,
+timing and two native roots unchanged. No aliases or runtime checks are removed;
+all new functional stages still require hosted execution.

@@ -38,6 +38,7 @@ fn attach_listener(
     // socket_base::bind returns success on that path. Failed binds therefore
     // leave the clone here; successful binds transfer exactly this clone.
     // This socket is never rebound or reused after an error (also in tests).
+    #[allow(unsafe_code)] // Confined to this checked ZMQ_USE_FD FFI call.
     let status = unsafe {
         zmq_sys::zmq_setsockopt(
             pull.as_mut_ptr(),
