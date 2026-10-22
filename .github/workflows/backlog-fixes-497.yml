@@ -35,6 +35,10 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v6
+        if: matrix.scope == 'web'
+        with:
+          node-version: '24'
       - name: Reserve capacity and install affected native prerequisites
         run: |
           if [ "${{ runner.environment }}" = github-hosted ]; then
@@ -47,11 +51,43 @@ jobs:
           "$GITHUB_WORKSPACE/tools/ci/apt-native" update
           "$GITHUB_WORKSPACE/tools/ci/apt-native" install -y g++ clang libclang-dev cmake pkg-config capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libyuv-dev libzmq3-dev ffmpeg e2fsprogs
           rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
+      - name: Prepare original web source closure and real native Python bindings
+        if: matrix.scope == 'web'
+        run: |
+          set -euo pipefail
+          python3 rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          "$GITHUB_WORKSPACE/tools/ci/apt-native" install -y iproute2 util-linux openssl
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0 requests==2.34.2 aiohttp==3.13.3 anyio==4.12.1 psutil==7.2.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3 msgpack==1.2.1
+          mkdir "$RUNNER_TEMP/web-source"
+          mkdir "$RUNNER_TEMP/web-source/evidence"
+          # The PTY peers require outputs beneath cwd and use relative source paths.
+          # Keep that cwd short for Unix sockets; expose the exact checked-out source.
+          ln -s "$GITHUB_WORKSPACE/openpilot" "$RUNNER_TEMP/web-source/openpilot"
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/web-bindings/params"
+          python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/web-bindings/ipc"
+          export ORIGINAL_PARAMS_BINDING="$(python -P -c 'import json,os; from pathlib import Path; print(json.loads((Path(os.environ["RUNNER_TEMP"])/"web-bindings/params/provenance.json").read_text())["module"])')"
+          export PYTHONPATH="$RUNNER_TEMP/web-bindings/ipc:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/opendbc_repo:$GITHUB_WORKSPACE/rust/tools"
+          printf 'ORIGINAL_PARAMS_BINDING=%s\nPYTHONPATH=%s\n' "$ORIGINAL_PARAMS_BINDING" "$PYTHONPATH" >> "$GITHUB_ENV"
+          python -P - <<'PY'
+          import importlib, json, os, sys
+          from pathlib import Path
+          from original_params_binding import load
+          root = Path(os.environ['RUNNER_TEMP']) / 'web-source/evidence'
+          binding, _ = load(os.environ['ORIGINAL_PARAMS_BINDING'], f'ipc://{root}/closure-log', root / 'closure-logs')
+          names = ['anyio', 'aiohttp', 'capnp', 'numpy', 'zstandard', 'msgpack', 'msgq.ipc_pyx', 'msgq.visionipc.visionipc_pyx']
+          modules = {name: importlib.import_module(name).__file__ for name in names}
+          (root / 'python-imports.json').write_text(json.dumps({'executable': sys.executable, 'version': sys.version, 'prefix': sys.prefix, 'base_prefix': sys.base_prefix, 'modules': modules, 'params_binding': binding.__file__}, indent=2) + '\n')
+          PY
+          python -m pip freeze > "$RUNNER_TEMP/web-source/evidence/python-packages.txt"
+          git rev-parse HEAD > "$RUNNER_TEMP/web-source/evidence/SOURCE_COMMIT"
       - name: Build actual terminal executables for ownership regressions
         if: matrix.scope == 'web'
         run: |
           python3 rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
           cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-carrot-server -p openpilot-process-supervision --bins
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-carrot-server --example dashcam_report --example carrot_live --example carrot_terminal --example carrot_terminal_command --example carrot_main_owner
+          cc -std=c11 -Wall -Wextra -Werror rust/tools/carrot_terminal_pty_filter.c -o "$RUNNER_TEMP/web-source/evidence/pty-filter"
+          sha256sum rust/target/debug/openpilot-carrot-server rust/target/debug/openpilot-carrot-command rust/target/debug/openpilot-process-child rust/target/debug/examples/{dashcam_report,carrot_live,carrot_terminal,carrot_terminal_command,carrot_main_owner} > "$RUNNER_TEMP/web-source/evidence/SHA256SUMS"
       - name: Prove behavioral regressions against original production code
         if: matrix.scope == 'core' || matrix.scope == 'web' || matrix.scope == 'media' || matrix.scope == 'tools' || matrix.scope == 'vehicles'
         env:
@@ -74,7 +110,7 @@ jobs:
               python3 rust/tools/check_qcomgps_framing.py rust/target/debug/examples/framing_trace "$RUNNER_TEMP/qcom-framing-source.json"
               ;;
             web)
-              cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-carrot-server --lib
+              cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-carrot-server --lib -- --nocapture --test-threads=1 2>&1 | tee "$RUNNER_TEMP/web-source/evidence/library-tests.log"
               cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-carrot-server --all-targets -- -D warnings
               ;;
             media)
@@ -137,6 +173,93 @@ jobs:
               python3 rust/crates/jpeg/tests/build_cache.py --target aarch64-unknown-linux-gnu --build-script "${arm_scripts[0]}"
               ;;
           esac
+      - name: Compare complete original and native report controls for issue 252
+        if: matrix.scope == 'web'
+        working-directory: ${{ env.CI_JOB_TEMP }}/web-source
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/web-source/evidence"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_dashcam_report_source_controls.py" --output "$evidence/report/source" 2>&1 | tee "$evidence/report-source.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_dashcam_report_state_controls.py" --output "$evidence/report/state" 2>&1 | tee "$evidence/report-state.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_dashcam_report_open_stream.py" --output "$evidence/report/open-stream" 2>&1 | tee "$evidence/report-open-stream.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_dashcam_report.py" --binary "$GITHUB_WORKSPACE/rust/target/debug/examples/dashcam_report" --source-captures "$evidence/report/source" --state-captures "$evidence/report/state" --open-stream-captures "$evidence/report/open-stream" --output "$evidence/report/compare" 2>&1 | tee "$evidence/report-compare.log"
+      - name: Compare populated msgq HTTP WebSocket and browser navigation for issue 254
+        if: matrix.scope == 'web'
+        working-directory: ${{ env.CI_JOB_TEMP }}/web-source
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/web-source/evidence"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_live.py" --binary "$GITHUB_WORKSPACE/rust/target/debug/examples/carrot_live" --output "$evidence/live" 2>&1 | tee "$evidence/live.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_live_app.py" --binary "$GITHUB_WORKSPACE/rust/target/debug/examples/carrot_live" --output "$evidence/live-app" 2>&1 | tee "$evidence/live-app.log"
+      - name: Observe original and native PTY edges and complete terminal application lifecycle for issue 270
+        if: matrix.scope == 'web'
+        working-directory: ${{ env.CI_JOB_TEMP }}/web-source
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/web-source/evidence"
+          native="$GITHUB_WORKSPACE/rust/target/debug/examples/carrot_terminal"
+          launcher="$GITHUB_WORKSPACE/rust/target/debug/openpilot-process-child"
+          terminal_args=(--server "$native" --native "$GITHUB_WORKSPACE/rust/target/debug/examples/carrot_terminal_command" --launcher "$launcher" --binding "$ORIGINAL_PARAMS_BINDING" --vision-root "$RUNNER_TEMP/web-bindings/ipc/msgq")
+          cli_args=(--native "$GITHUB_WORKSPACE/rust/target/debug/examples/carrot_terminal_command" --launcher "$launcher" --binding "$ORIGINAL_PARAMS_BINDING" --vision-root "$RUNNER_TEMP/web-bindings/ipc/msgq")
+          for mode in reset eof; do
+            python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_edges.py" --output "$evidence/terminal/$mode-source" --mode "$mode" 2>&1 | tee "$evidence/terminal-$mode-source.log"
+            python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_edges.py" --native "$native" --launcher "$launcher" --output "$evidence/terminal/$mode-native" --mode "$mode" 2>&1 | tee "$evidence/terminal-$mode-native.log"
+          done
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_pty.py" --output "$evidence/terminal/pty-source" 2>&1 | tee "$evidence/terminal-pty-source.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_pty.py" --native "$native" --launcher "$launcher" --output "$evidence/terminal/pty-native" 2>&1 | tee "$evidence/terminal-pty-native.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_pty.py" --native "$native" --launcher "$launcher" --filter "$evidence/pty-filter" --output "$evidence/terminal/pty-fallback" 2>&1 | tee "$evidence/terminal-pty-fallback.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_cli.py" "${cli_args[@]}" --output "$evidence/terminal/cli" 2>&1 | tee "$evidence/terminal-cli.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_cli_errors.py" "${cli_args[@]}" --output "$evidence/terminal/cli-errors" 2>&1 | tee "$evidence/terminal-cli-errors.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_http.py" "${terminal_args[@]}" --output "$evidence/terminal/http" 2>&1 | tee "$evidence/terminal-http.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_http.py" "${terminal_args[@]}" --application --output "$evidence/terminal/application" 2>&1 | tee "$evidence/terminal-application.log"
+          for mode in history shutdown missing params; do
+            python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_limits.py" "${terminal_args[@]}" --mode "$mode" --output "$evidence/terminal/$mode" 2>&1 | tee "$evidence/terminal-$mode.log"
+          done
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_capture.py" "${terminal_args[@]}" --immediate --output "$evidence/terminal/capture-immediate" 2>&1 | tee "$evidence/terminal-capture-immediate.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_capture.py" "${terminal_args[@]}" --output "$evidence/terminal/capture-disconnect" 2>&1 | tee "$evidence/terminal-capture-disconnect.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_capture.py" "${terminal_args[@]}" --timeout --output "$evidence/terminal/capture-timeout" 2>&1 | tee "$evidence/terminal-capture-timeout.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_capture.py" "${terminal_args[@]}" --force --output "$evidence/terminal/capture-force" 2>&1 | tee "$evidence/terminal-capture-force.log"
+      - name: Exercise actual main HTTP WebSocket PTY and managed stop without host data or network access
+        if: matrix.scope == 'web'
+        working-directory: ${{ env.CI_JOB_TEMP }}/web-source
+        run: |
+          set -euo pipefail
+          # Normal startup precompresses assets. Archive as the checkout owner,
+          # keeping the exact committed tree writable only for private sidecars.
+          mkdir "$RUNNER_TEMP/web-main-assets"
+          git -C "$GITHUB_WORKSPACE" rev-parse HEAD:openpilot/selfdrive/carrot/web > "$RUNNER_TEMP/web-source/evidence/main-web-tree.txt"
+          git -C "$GITHUB_WORKSPACE" archive HEAD:openpilot/selfdrive/carrot/web | tar -x -C "$RUNNER_TEMP/web-main-assets"
+          # Only the namespace child mounts these views. No host /data, hosts,
+          # routes, certificates or tools are created, replaced or removed.
+          sudo -n unshare --mount --net bash -euo pipefail -s -- "$GITHUB_WORKSPACE" "$RUNNER_TEMP" "$(command -v python)" "${LD_LIBRARY_PATH:-}" "$PYTHONPATH" <<'NAMESPACE' 2>&1 | tee "$RUNNER_TEMP/web-source/evidence/main.log"
+          repository=$1
+          temporary=$2
+          python=$3
+          library_path=$4
+          python_path=$5
+          mount --make-rprivate /
+          root="$temporary/web-main-root"
+          mkdir "$root"
+          for name in usr bin sbin lib lib64 etc home opt dev proc sys; do
+            if [ -e "/$name" ]; then
+              mkdir "$root/$name"
+              mount --rbind "/$name" "$root/$name"
+              case "$name" in dev|proc|sys) ;; *) mount -o remount,bind,ro "$root/$name" ;; esac
+            fi
+          done
+          mkdir -p "$root/data/openpilot" "$root/tmp" "$root$temporary"
+          mount --bind "$repository" "$root/data/openpilot"
+          mount -o remount,bind,ro "$root/data/openpilot"
+          mount --bind "$temporary/web-main-assets" "$root/data/openpilot/openpilot/selfdrive/carrot/web"
+          mount --bind "$temporary" "$root$temporary"
+          printf '127.0.0.1 localhost shind0.synology.me\n' > "$temporary/web-main-hosts"
+          mount --bind "$temporary/web-main-hosts" "$root/etc/hosts"
+          mkdir "$temporary/web-main"
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=shind0.synology.me -addext subjectAltName=DNS:shind0.synology.me -keyout "$temporary/web-main/owned-key.pem" -out "$temporary/web-main/owned-cert.pem"
+          for mode in term supervisor force; do
+            chroot "$root" /usr/bin/env PATH=/usr/sbin:/usr/bin:/sbin:/bin LD_LIBRARY_PATH="$library_path" PYTHONPATH="$python_path" GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.directory GIT_CONFIG_VALUE_0=/data/openpilot "$python" -P "$repository/rust/tools/carrot_server_main_control.py" --binary "$repository/rust/target/debug/openpilot-carrot-server" --owner "$repository/rust/target/debug/examples/carrot_main_owner" --mode "$mode" --output "$temporary/web-main/$mode"
+          done
+          NAMESPACE
       - uses: actions/upload-artifact@v6
         if: always()
         with:
@@ -151,6 +274,12 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/card-497/model-x-controls
             ${{ env.CI_JOB_TEMP }}/card-497/kia-key
             ${{ env.CI_JOB_TEMP }}/card-497/tesla
+            ${{ env.CI_JOB_TEMP }}/web-source/evidence/
+            ${{ env.CI_JOB_TEMP }}/web-bindings/params/provenance.json
+            ${{ env.CI_JOB_TEMP }}/web-bindings/params/commands.json
+            ${{ env.CI_JOB_TEMP }}/web-main/term/
+            ${{ env.CI_JOB_TEMP }}/web-main/supervisor/
+            ${{ env.CI_JOB_TEMP }}/web-main/force/
           if-no-files-found: ignore
       - uses: ./.github/actions/job-temp
         if: always()

@@ -39,7 +39,7 @@ remain in place.
 
 ## Hosted verification handoff
 
-Run only in GitHub-hosted Actions, from repository root, with the parent's
+Run only in registered GitHub Actions on `bin-actions`, from repository root, with the parent's
 existing original-source/full-cereal dependencies, `ORIGINAL_PARAMS_BINDING` and
 Node.js >=20 setup:
 
@@ -52,7 +52,7 @@ python3 -P rust/tools/carrot_server_live_app.py --binary rust/target/debug/examp
 
 The first probe executes the browser assertion automatically and retains its
 stdout/exit in `family/navigation-browser.json`. Adjust binary location if
-Actions sets `CARGO_TARGET_DIR`. For baseline RED, in a separate hosted checkout
+Actions sets `CARGO_TARGET_DIR`. For baseline RED, in a separate Actions checkout
 with the candidate test files, restore only original production snapshot and
 keep test registration:
 
@@ -68,7 +68,7 @@ cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-carrot-server -
 ```
 
 Expected RED is the original null navigation object versus the populated expected
-object, not a compile error. Exact-SHA hosted RED/GREEN, HTTP/browser verification
+object, not a compile error. Exact-SHA Actions RED/GREEN, HTTP/browser verification
 and aggregate parent acceptance remain pending. Local checks cover formatting,
 syntax and scoped diff review only; no test/build/fixture execution occurred.
 No commit, push, device or external-service mutation performed.
@@ -78,3 +78,26 @@ owned patch passed `git diff --check`. These are syntax/format checks only.
 
 Docs-Not-Needed: existing optional diagnostic API mapping correction adds no
 setting; paired user guides are parent-owned and unchanged.
+
+## Acceptance registration follow-up (2026-10-23)
+
+At `82e1284d8602120f1e5aa834ea4cea0d2a41fb42`, the actual live/app probes were
+not registered. The focused `web` lane now builds `carrot_live`, builds the
+unchanged original Params and msgq/VisionIPC bindings, exports the exact Params
+extension path from its provenance receipt, and runs both probes above with
+Node.js 24. The populated live probe runs its real browser normalizer assertion
+automatically. No saved codec capture is reused; every compact source case and
+the original raw/compact/camera/HTTP/cleanup comparisons run again on the new
+candidate, including the existing precisely checked #254 field difference.
+
+Artifacts include `CI_JOB_TEMP/web-source/evidence/live/` (including
+`family/navigation-browser.json`), `live-app/`, their complete logs, actual
+binding import paths and Params build provenance. They upload before the owned
+job-temp root is removed. The dependency and output-root wiring is recorded in
+[web validation registration](issue-497-web-validation.md).
+
+All jobs use `bin-actions` under the current owner policy. Separate ARM checks
+use QEMU/PRoot without hosted fallback; this focused x64 lane does not establish
+physical ARM execution, navigation producer behavior or vehicle acceptance.
+Actual new-head live HTTP/msgq/browser and App lifecycle results remain pending;
+the registration itself does not complete #254 acceptance.

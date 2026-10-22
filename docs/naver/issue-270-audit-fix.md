@@ -63,7 +63,7 @@ entry points under unusable inherited managed-entry configuration, checks
 The unchanged existing exit-status tests exercise the same mapping function
 used by the supervisor.
 
-Run **only on GitHub-hosted Actions**, from repository root with existing
+Run **only in registered GitHub Actions on `bin-actions`**, from repository root with existing
 Carrot server native build dependencies installed:
 
 ```sh
@@ -72,7 +72,7 @@ cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-carrot-server -
 cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-carrot-server --all-targets -- -D warnings
 ```
 
-For an actual baseline RED, in a disposable hosted checkout retain the new
+For an actual baseline RED, in a disposable Actions checkout retain the new
 `pty_cleanup_tests.rs` but restore only production `pty.rs` from the base, then
 append its test-module declaration. No new production helper is used by that
 original Generation:
@@ -95,8 +95,12 @@ Retain the unchanged transport/source comparison controls, including:
 
 ```sh
 cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-carrot-server --example carrot_terminal
-python -P rust/tools/carrot_server_terminal_edges.py --native "$PWD/rust/target/debug/examples/carrot_terminal" --launcher "$PWD/rust/target/debug/openpilot-process-child" --output "$RUNNER_TEMP/issue270-reset" --mode reset
-python -P rust/tools/carrot_server_terminal_edges.py --native "$PWD/rust/target/debug/examples/carrot_terminal" --launcher "$PWD/rust/target/debug/openpilot-process-child" --output "$RUNNER_TEMP/issue270-eof" --mode eof
+# After the registered web binding/source-view preparation below:
+cd "$RUNNER_TEMP/web-source"
+for mode in reset eof; do
+  python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_edges.py" --output "$PWD/evidence/terminal/$mode-source" --mode "$mode"
+  python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_edges.py" --native "$GITHUB_WORKSPACE/rust/target/debug/examples/carrot_terminal" --launcher "$GITHUB_WORKSPACE/rust/target/debug/openpilot-process-child" --output "$PWD/evidence/terminal/$mode-native" --mode "$mode"
+done
 ```
 
 No existing source comparator, output equality, threshold or fixture expectation
@@ -188,7 +192,8 @@ Additional hosted runtime cases (included by the existing `terminal::` filter):
   the production per-member cleanup path and verify the original owner can still
   kill/reap it. A companion live-child case rejects a stale starttime snapshot.
 
-Use the same hosted build/test/clippy commands above; no new workflow is needed.
+Use the same Actions build/test/clippy commands above; the full transport and
+entrypoint probes additionally require the registration follow-up below.
 The two per-member cases exercise the cleanup function directly to order the
 census/setsid race deterministically. The original-production RED procedure
 remains applicable to the original lifecycle module; the stopped-helper case
@@ -252,3 +257,52 @@ in the stopped-helper case is not evidence of leaked job groups either.
 This repair has only local Rust formatting/parsing and diff review. Actual
 hosted baseline/candidate PTY execution is still required; no runtime pass or
 fixed-#270 claim follows from the fixture source correction.
+
+## Acceptance registration follow-up (2026-10-23)
+
+The audit at `82e1284d8602120f1e5aa834ea4cea0d2a41fb42` found the focused web
+baseline/library checks but no actual terminal transport/entrypoint registrations.
+`.github/workflows/backlog-fixes-497.yml` now retains the existing baseline and
+strict lint, runs the complete library suite serially with `--nocapture` and a
+retained log, and builds the actual server/command/process-child executables
+plus `carrot_terminal`, `carrot_terminal_command` and `carrot_main_owner`.
+
+The registration executes reset **and** EOF for both original and native peers;
+real original/native PTYs and the native older-kernel peer-open fallback;
+the complete CLI and CLI-error comparisons; standalone and composed Application
+HTTP/WebSocket bridges; history/shutdown/missing-shell/Params-failure controls;
+and immediate/disconnect/45-second-timeout/Force command captures. The original
+helpers, deadlines, equality checks and owned-child cleanup assertions are
+unchanged. No `--start-case`, native-only comparison shortcut or smaller suite
+is substituted.
+Force capture retains its existing native-only mode because the original peer
+does not implement that owner operation; the other capture modes remain paired.
+
+It also invokes `carrot_server_main_control.py` in all three existing modes
+(`term`, `supervisor`, `force`) with the actual main executable and managed
+process owner. Its hardcoded `/data/openpilot`, loopback setup, hostname and
+HTTPS port require a private filesystem/network view; the workflow supplies
+that view using `sudo -n unshare --mount --net` and chroot. Host source/tool
+trees are mounted read-only, the source is bound at `/data/openpilot`, and the
+held heartbeat hostname resolves only to the namespace's loopback receiver.
+The web subtree is an exact committed asset-tree copy with a recorded tree
+identity, writable only for normal startup's compressed sidecars.
+No host `/data`, resolver file, routes, trust store or image bundle is changed.
+This requires runner mount/network namespace privileges; missing privileges
+must fail the registration rather than skip main-entry coverage or use a
+hosted fallback. The namespace integration is pending real Actions execution.
+
+The PTY examples assert that their output roots are descendants of cwd, while
+the source peers use relative source paths. Their cwd is therefore a short
+owned `CI_JOB_TEMP/web-source` view with a symlink to the exact checkout's
+`openpilot` tree. Evidence stays beneath that cwd without long Unix-socket
+paths or writes to source. Main-mode outputs live in `CI_JOB_TEMP/web-main/`.
+All result/cleanup receipts and logs upload before owned temp cleanup; the
+ephemeral receiver private key is excluded from artifact paths.
+
+See [web validation registration](issue-497-web-validation.md) for dependencies,
+commands and evidence locations. Every job remains on `bin-actions`. Other ARM
+lanes use the existing QEMU/PRoot interface without hosted fallback; no physical
+ARM CPU, vehicle, camera/encoder or drive acceptance follows from these owned
+PTY/loopback probes. Actual new-head baseline/candidate and full transport/main
+Actions results remain pending. This registration is not a fixed-#270 claim.

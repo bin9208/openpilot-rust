@@ -28,7 +28,7 @@ other output as before. Source captures, hashes, limits and comparisons remain.
 
 ## Hosted verification handoff
 
-All commands below are for GitHub-hosted Actions only, from repository root.
+All commands below are for registered GitHub Actions on `bin-actions`, from repository root.
 Parent owns aggregate workflow/dependency setup and exact-SHA run links.
 
 ```sh
@@ -43,7 +43,7 @@ python3 -P rust/tools/carrot_server_dashcam_report.py --binary rust/target/debug
 The source controls require the existing full-cereal, zstandard and original
 report dependencies. Adjust binary location if Actions sets `CARGO_TARGET_DIR`.
 
-To obtain actual baseline RED without changing the tests, use a separate hosted
+To obtain actual baseline RED without changing the tests, use a separate Actions
 baseline checkout containing candidate test files and replace only production
 aggregation as follows. This is a cloud recipe, not a locally executed step:
 
@@ -68,3 +68,26 @@ owned patch passed `git diff --check`; the report comparison tool passed Python
 
 Docs-Not-Needed: report warning recognition correction adds no setting or guide
 workflow; paired user guides are parent-owned and unchanged.
+
+## Acceptance registration follow-up (2026-10-23)
+
+The audit at `82e1284d8602120f1e5aa834ea4cea0d2a41fb42` found no registration
+for the full report capture/comparison chain. The focused `web` lane in
+`.github/workflows/backlog-fixes-497.yml` now builds `dashcam_report`, executes
+all three original source controls above, and supplies all three capture roots
+to the full native comparison without `--only-zstd`. Existing narrow #252 oracle
+handling is unchanged; no additional source fields or cases are waived.
+
+All source controls, native requests/responses, hashes, invocation receipts and
+stdout/stderr are uploaded from `CI_JOB_TEMP/web-source/evidence/report/` and
+the adjacent report logs before owned job-temp cleanup. The pinned original
+Python closure and full-cereal binding are installed explicitly. See
+[web validation registration](issue-497-web-validation.md) for the transitive
+build/dependency plan and exact workflow mapping.
+
+The current policy requires every Actions job on `bin-actions`; ARM checks,
+where required, use the separately owned QEMU/PRoot interface without a hosted
+fallback. This focused lane is x64 execution and establishes neither physical
+ARM CPU nor vehicle/drive acceptance. Registration and local syntax/diff review
+are not a pass: actual new-head Actions report comparison and remaining parent
+acceptance must succeed before closing #252.
