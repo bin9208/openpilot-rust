@@ -123,6 +123,64 @@ class RustIsolationTests(unittest.TestCase):
                     self.assertEqual(steps[-1]['if'], 'always()')
                     self.assertEqual(steps[-1]['with']['cleanup'], 'true')
 
+    def test_saved_carrot_man_template_preserves_the_local_execution_contract(self):
+        path = ROOT / 'rust/crates/carrot-man/ci-jobs.yml'
+        text = path.read_text()
+        job = yaml.load(text, Loader=yaml.BaseLoader)['carrot-man-runtime']
+        self.assertEqual(job['if'], TRUST_IF)
+        self.assertEqual(job['runs-on'], LOCAL)
+        self.assertEqual(job['name'], 'rust CarrotMan owner (${{ matrix.arch }})')
+        self.assertEqual(job['timeout-minutes'], '25')
+        self.assertEqual(job['strategy'], {'fail-fast': 'false', 'matrix': {'include': [
+            {'arch': 'x86_64', 'runner': 'ubuntu-24.04'},
+            {'arch': 'aarch64', 'runner': 'ubuntu-24.04-arm'},
+        ]}})
+        self.assertEqual(job['env']['LOCAL_CI_ARCH'], '${{ matrix.arch }}')
+        self.assertEqual(job['defaults']['run']['shell'], 'openpilot-local-shell {0}')
+        steps = job['steps']
+        self.assertTrue(steps[0]['uses'].startswith('actions/checkout@'))
+        self.assertEqual(steps[1], {'uses': './.github/actions/job-temp'})
+        self.assertEqual(steps[2], {'uses': './.github/actions/local-arm'})
+        python = [step for step in steps if step.get('uses', '').startswith('actions/setup-python@')]
+        self.assertEqual(len(python), 1)
+        self.assertEqual(python[0]['if'], "env.LOCAL_CI_ARCH == 'x86_64'")
+        self.assertEqual(python[0]['with']['python-version'], '3.12')
+        for step, action in zip(steps[-2:], ('local-arm', 'job-temp'), strict=True):
+            self.assertEqual(step, {'uses': './.github/actions/' + action,
+                                    'if': 'always()', 'with': {'cleanup': 'true'}})
+        functional = [step for step in steps if 'run' in step]
+        self.assertEqual([step['name'] for step in functional], [
+            'Reserve runner capacity and install pinned dependencies',
+            'Stage exact optional GEOS provider',
+            'Build owner and unchanged source bindings',
+            'Compare affected original policy, cereal and time boundaries',
+            'Compare actual owned Params, IPC, sockets and upload recipients',
+        ])
+        for step in functional:
+            self.assertNotIn('continue-on-error', step)
+            if step['name'] == 'Compare affected original policy, cereal and time boundaries':
+                self.assertEqual(step['if'], "matrix.arch == 'x86_64'")
+            else:
+                self.assertNotIn('if', step)
+        self.assertIn('if [ "${{ runner.environment }}" = github-hosted ]; then\n'
+                      '  sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet\nfi\n', functional[0]['run'])
+        self.assertIn('"$GITHUB_WORKSPACE/tools/ci/apt-native" update && '
+                      '"$GITHUB_WORKSPACE/tools/ci/apt-native" install -y ', functional[0]['run'])
+        self.assertNotIn('sudo apt-get', text)
+        self.assertNotIn('${{ runner.temp }}', text)
+        artifacts = [step for step in steps if step.get('uses', '').startswith('actions/upload-artifact@')]
+        self.assertEqual(len(artifacts), 1)
+        self.assertEqual(steps[-3], artifacts[0])
+        self.assertEqual(artifacts[0]['if'], 'always()')
+        self.assertEqual(artifacts[0]['with']['name'], 'carrot-man-owner-${{ matrix.arch }}-evidence')
+        paths = artifacts[0]['with']['path']
+        for evidence in ('execution.json', 'qemu-version.txt', 'proot-version.txt'):
+            self.assertIn('${{ env.CI_JOB_TEMP }}/local-arm/' + evidence, paths)
+        for evidence in ('carrot-man-policy', 'carrot-man-owned', 'carrot-man-geos'):
+            self.assertIn('${{ env.CI_JOB_TEMP }}/' + evidence + '/**', paths)
+        self.assertIn('${{ env.LOCAL_CI_TARGET_DIR }}/debug/openpilot-carrot-man', paths)
+        self.assertNotIn('rust/target', paths)
+
     def test_repeated_jobs_leave_stale_runner_evidence_and_other_owners_untouched(self):
         action_path = ROOT / '.github/actions/job-temp/action.yml'
         self.assertTrue(action_path.is_file())

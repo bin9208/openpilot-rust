@@ -243,3 +243,48 @@ independent actual host proof at `b90ae57c7` above. With the common transport
 proof now available, publishing the prepared #500 source can proceed to its own
 exact-head focused regressions and all five required pre-merge checks. Normal
 merge and post-merge evidence remain required before closing its code issues.
+
+### Saved CarrotMan job template follow-up
+
+Review at clean stable-dev head `2765b4ab1c15a05c72d23c4ca32c033011c14543`
+found that `rust/crates/carrot-man/ci-jobs.yml` still selected hosted matrix
+runners, deleted host image bundles without a runner-environment guard, called
+native APT directly, and uploaded from `runner.temp`. This saved template is
+included in the existing frozen disk-guard inventory and must carry the same
+local execution contract as the active workflow before integration.
+
+The template now selects the constant bin labels with the existing source
+trust predicate. `LOCAL_CI_ARCH` comes from its unchanged `matrix.arch`, and
+the existing custom shell dispatches commands into the appropriate user space.
+Checkout is followed by owned job-temp initialization and local-arm preparation;
+host Python setup runs only for x64. Global Android/GHC/dotnet cleanup is guarded
+by `runner.environment == github-hosted`, and native package setup uses
+`apt-native`. Evidence uses `CI_JOB_TEMP` and `LOCAL_CI_TARGET_DIR`, includes all
+three execution/QEMU/PRoot manifests, and uploads before transport finish and
+ownership-checked job-temp cleanup.
+
+The job name, both logical matrix entries, 25-minute timeout, Python/dependency
+pins, all source comparison commands and their x64-only condition are retained.
+The only original command-body changes are the approved hosted-image cleanup
+guard and native APT substitutions. All nine disk-guard calls retain their
+original order and arguments, including their argument SHA256
+`471b43e7b994adca394eb5a342a5cdbaca211fec1b306dc219cc9c0f767a03b7`.
+The active workflow's frozen 184-call inventory, its hashes and
+`test_native_disk_guard.py` are unchanged. No active workflow is edited in this
+follow-up.
+
+A dedicated regression parses the actual saved template and checks local
+routing, trust, ARM architecture mapping, shell, setup/cleanup order, Python
+selection, preserved functional lanes, bounded global cleanup, native APT and
+host-visible evidence paths. It is registered through the existing Actions
+unittest discovery. Local review is YAML/Bash syntax, Python AST and diff only;
+the regression and functional jobs have not been run locally.
+
+The common exact-source `77663836` foundation proof above remains successful.
+At the parent's latest supplied 21:20 status, this candidate's 45 Rust jobs and
+six focused jobs for `2765b4ab` were queued without an assigned runner; no own
+candidate success was reported. This record does not promote that queued state
+to a passing result. Parent owns exact-head status verification before any new
+source push, independent review and subsequent Actions validation. No existing
+run is cancelled or repeated merely to change routing, and this session does
+not commit, push or dispatch CI.
