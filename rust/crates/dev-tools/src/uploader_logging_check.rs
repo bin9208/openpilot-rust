@@ -282,10 +282,7 @@ fn load(options: &Options) -> Result<Corpus> {
                 .all(|c| matches!(c, Component::Normal(_))),
             "unsafe pinned source path",
         )?;
-        require(
-            hash(&bounded(&options.root.join(name), 8 << 20)?) == *pin,
-            "uploader logging retained source changed",
-        )?;
+        crate::uploader_source_admission::validate(&options.root, name, pin)?;
     }
     Ok(corpus)
 }

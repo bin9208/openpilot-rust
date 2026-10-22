@@ -66,12 +66,16 @@ pub const SOURCES: &[(&str, &str)] = &[
 pub fn validate_source(root: &Path) -> Result<Value> {
     let mut pins = Map::new();
     for &(name, expected) in SOURCES {
-        match fs::read(root.join(name)) {
-            Ok(bytes) if format!("{:x}", Sha256::digest(&bytes)) == expected => {}
-            Err(error)
-                if error.kind() == std::io::ErrorKind::NotFound
-                    && name == "rust/tools/check_bootlog.py" => {}
-            _ => return Err(format!("bootlog checker source changed or missing: {name}").into()),
+        if name == "rust/tools/check_bootlog.py" {
+            match fs::read(root.join(name)) {
+                Ok(bytes) if format!("{:x}", Sha256::digest(&bytes)) == expected => {}
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+                _ => {
+                    return Err(format!("bootlog checker source changed or missing: {name}").into())
+                }
+            }
+        } else {
+            crate::uploader_source_admission::validate(root, name, expected)?;
         }
         pins.insert(name.into(), json!(expected));
     }

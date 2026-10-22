@@ -45,10 +45,7 @@ pub fn load(root: &Path, path: &Path, sha: &str) -> Result<Corpus> {
                 .all(|p| matches!(p, Component::Normal(_))),
             "unsafe sibling source pin",
         )?;
-        require(
-            hash(&bytes(&root.join(name), 8 << 20)?) == *pin,
-            &format!("sibling retained original source changed: {name}"),
-        )?;
+        crate::uploader_source_admission::validate(root, name, pin)?;
     }
     let timeout_ids = corpus
         .timeouts

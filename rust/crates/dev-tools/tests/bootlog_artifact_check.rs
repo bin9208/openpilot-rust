@@ -160,7 +160,11 @@ fn original_retirement_is_narrow_and_every_live_source_pin_is_required() {
             }
             Err(error)
                 if error.kind() == std::io::ErrorKind::NotFound
-                    && name == "rust/tools/check_bootlog.py" => {}
+                    && [
+                        "rust/tools/check_bootlog.py",
+                        "rust/tools/check_uploader.py",
+                    ]
+                    .contains(&name) => {}
             Err(error) => panic!("{name}: {error}"),
         }
     }
@@ -180,7 +184,12 @@ fn original_retirement_is_narrow_and_every_live_source_pin_is_required() {
             fs::remove_file(&path).unwrap();
         }
         assert!(validate_source(temp.path()).is_ok());
-        if name != "rust/tools/check_bootlog.py" {
+        if ![
+            "rust/tools/check_bootlog.py",
+            "rust/tools/check_uploader.py",
+        ]
+        .contains(&name)
+        {
             fs::remove_file(&path).unwrap();
             assert!(validate_source(temp.path())
                 .unwrap_err()

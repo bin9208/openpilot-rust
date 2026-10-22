@@ -4837,9 +4837,14 @@ jobs:
       - run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           cargo build -p openpilot-loggerd -p openpilot-logmessaged -p openpilot-uploader --locked
+          cargo +1.94.0 build -p openpilot-dev-tools --features route-upload-native --bin check-runtime-log-upload --locked
+      - name: Check route controller receipts, admission and owned lifecycle cleanup
+        run: |
+          cargo +1.94.0 test -p openpilot-dev-tools --features route-upload-native --lib route_upload_check:: --locked
+          cargo +1.94.0 test -p openpilot-dev-tools --features route-upload-native --test route_upload_check --test route_upload_lifecycle --locked -- --test-threads=1
       - name: Verify managed crash recording and existing route upload
         run: |
-          PYTHONPATH="$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python -P tools/check_runtime_log_upload.py \
+          target/debug/check-runtime-log-upload --root "$GITHUB_WORKSPACE" \
             --binaries target/debug --output "$RUNNER_TEMP/runtime-log-upload"
       - run: cargo build -p openpilot-logging --example native_logging_probe --locked
       - run: |

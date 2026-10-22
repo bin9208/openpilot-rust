@@ -457,3 +457,9 @@ pub mod uploader_logging_check;
 
 #[cfg(all(target_os = "linux", feature = "uploader-siblings-native"))]
 pub mod uploader_lifecycle_check;
+
+#[cfg(any(
+    feature = "uploader-reference-native",
+    feature = "bootlog-artifact-native"
+))]
+pub mod uploader_source_admission;

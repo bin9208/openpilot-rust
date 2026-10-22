@@ -246,10 +246,7 @@ pub fn run(options: &Options) -> Result<Value> {
     let corpus = load(&options.fixture, &options.fixture_sha256)?;
     for (name, expected) in &corpus.source_pins {
         relative(name)?;
-        require(
-            hash(&bounded(&options.root.join(name), 8 << 20)?) == *expected,
-            &format!("uploader original source pin changed: {name}"),
-        )?;
+        crate::uploader_source_admission::validate(&options.root, name, expected)?;
     }
     fs::create_dir_all(&options.output)?;
     let before = hash(&bounded(&options.binary, 256 << 20)?);
