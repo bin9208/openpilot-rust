@@ -46,7 +46,11 @@ fn raw_predictions(packet: &[u8]) -> Result<Vec<u8>> {
 fn comparison(left: &[u8], right: &[u8]) -> Value {
     let mut maximum = 0.0_f64;
     let mut nonfinite_pairs = 0;
-    for (left, right) in left.chunks_exact(4).zip(right.chunks_exact(4)) {
+    let mut finite_nonzero_differences = 0;
+    let mut signed_zero_differences = 0;
+    let mut nonfinite_differences = 0;
+    let mut first_differences = Vec::new();
+    for (index, (left, right)) in left.chunks_exact(4).zip(right.chunks_exact(4)).enumerate() {
         let a = f32::from_le_bytes(left.try_into().unwrap());
         let b = f32::from_le_bytes(right.try_into().unwrap());
         if a.is_finite() && b.is_finite() {
@@ -54,11 +58,38 @@ fn comparison(left: &[u8], right: &[u8]) -> Value {
         } else {
             nonfinite_pairs += 1;
         }
+        if a.to_bits() != b.to_bits() {
+            let kind = if !a.is_finite() || !b.is_finite() {
+                nonfinite_differences += 1;
+                "nonfinite"
+            } else if a == 0.0 && b == 0.0 {
+                signed_zero_differences += 1;
+                "signed_zero"
+            } else {
+                finite_nonzero_differences += 1;
+                "finite_nonzero"
+            };
+            // Raw bit strings preserve NaN payloads and signed zeros in JSON.
+            // Bound samples, but count every differing f32 in the prediction.
+            if first_differences.len() < 8 {
+                first_differences.push(json!({"index":index,
+                    "left_bits":format!("{:08x}",a.to_bits()),
+                    "right_bits":format!("{:08x}",b.to_bits()),"kind":kind}));
+            }
+        }
     }
+    let differing_f32_count =
+        finite_nonzero_differences + signed_zero_differences + nonfinite_differences;
     json!({"left_bytes":left.len(),"right_bytes":right.len(),
         "left_sha256":bytes_sha(left),"right_sha256":bytes_sha(right),
         "byte_equal":left == right,"max_finite_f32_absolute_difference":maximum,
-        "nonfinite_pairs":nonfinite_pairs,"float_count":left.len()/4})
+        "nonfinite_pairs":nonfinite_pairs,"float_count":left.len()/4,
+        "differing_f32_count":differing_f32_count,
+        "finite_nonzero_differences":finite_nonzero_differences,
+        "signed_zero_differences":signed_zero_differences,
+        "nonfinite_differences":nonfinite_differences,
+        "difference_samples_truncated":differing_f32_count > first_differences.len(),
+        "first_differences":first_differences})
 }
 
 pub fn run_first_driver_frame_diagnostic() -> Result<()> {
@@ -217,4 +248,103 @@ pub fn run_driver_frame_diagnostic_from(
         "interpreter_execution":"not_measured"}),
     );
     Ok(())
+}
+
+#[cfg(test)]
+mod drift_tests {
+    use super::*;
+
+    fn words(bits: &[u32]) -> Vec<u8> {
+        bits.iter().flat_map(|bits| bits.to_le_bytes()).collect()
+    }
+
+    #[test]
+    fn reports_finite_zero_and_nonfinite_bit_differences_separately() {
+        let left = words(&[0xbda52f1a, 0, 0x7fc00001, 0x7f800000, 0x7fc00003]);
+        let right = words(&[0xbda62ade, 0x80000000, 0x7fc00002, 0xff800000, 0x7fc00003]);
+        let report = comparison(&left, &right);
+        assert_eq!(report["differing_f32_count"], 4);
+        assert_eq!(report["finite_nonzero_differences"], 1);
+        assert_eq!(report["signed_zero_differences"], 1);
+        assert_eq!(report["nonfinite_differences"], 2);
+        // The existing field counts all nonfinite pairs, including identical NaNs.
+        assert_eq!(report["nonfinite_pairs"], 3);
+        assert_eq!(
+            report["first_differences"][0],
+            json!({
+                "index":0,"left_bits":"bda52f1a","right_bits":"bda62ade","kind":"finite_nonzero"
+            })
+        );
+        assert_eq!(report["first_differences"][1]["kind"], "signed_zero");
+        assert_eq!(report["first_differences"][2]["kind"], "nonfinite");
+        assert_eq!(report["difference_samples_truncated"], false);
+        assert_eq!(
+            report["max_finite_f32_absolute_difference"],
+            0.00048020482063293457
+        );
+    }
+
+    #[test]
+    fn keeps_complete_counts_when_difference_samples_are_bounded() {
+        let left = words(&[1.0_f32.to_bits(); 553]);
+        let right = words(&[2.0_f32.to_bits(); 553]);
+        let report = comparison(&left, &right);
+        assert_eq!(report["differing_f32_count"], 553);
+        assert_eq!(report["finite_nonzero_differences"], 553);
+        assert_eq!(report["first_differences"].as_array().unwrap().len(), 8);
+        assert_eq!(report["first_differences"][7]["index"], 7);
+        assert_eq!(report["difference_samples_truncated"], true);
+        assert_eq!(report["max_finite_f32_absolute_difference"], 1.0);
+        let equal = comparison(&right, &right);
+        assert_eq!(equal["differing_f32_count"], 0);
+        assert_eq!(equal["first_differences"], json!([]));
+        assert_eq!(equal["byte_equal"], true);
+    }
+
+    #[test]
+    #[ignore = "requires independently hashed raw predictions from job119931046645; no model execution"]
+    fn saved_job119931046645_has_nonzero_driver_drift() {
+        let root = required("DRIVER_DRIFT_SAVED_PREDICTIONS");
+        let expected = "99b8b2fe7aa17098a366d1bb5e40a2b5a40561f0186ab4dcd33fb29a6dc358fc";
+        let observed = "58456ffe906d7d9aa9dbfe7e530dc55b0251b141511018018eebf78e95800b64";
+        let warmup = "ace8ee6c6ff7cf8aa6f1881dd9eae6dc9cba15bb75bcc7bd70a5af03ddef500e";
+        let mut held = Vec::new();
+        let mut load = |frame: &str, kind: &str, expected_sha: &str| {
+            let path = root.join(format!("{frame}-{kind}.raw"));
+            held.push(Held::open(&path));
+            let bytes = fs::read(path).unwrap();
+            assert_eq!(bytes.len(), 2212);
+            assert_eq!(bytes_sha(&bytes), expected_sha);
+            bytes
+        };
+        let original = load("frame-0", "original", expected);
+        let native = load("frame-0", "model", observed);
+        let daemon = load("frame-0", "daemon", observed);
+        assert_eq!(native, daemon);
+        let warm_original = load("warmup", "original", warmup);
+        let warm_native = load("warmup", "model", warmup);
+        let warm_daemon = load("warmup", "daemon", warmup);
+        assert_eq!(warm_original, warm_native);
+        assert_eq!(warm_original, warm_daemon);
+        let report = comparison(&native, &original);
+        assert_eq!(report["differing_f32_count"], 439);
+        assert_eq!(report["finite_nonzero_differences"], 439);
+        assert_eq!(report["signed_zero_differences"], 0);
+        assert_eq!(report["nonfinite_differences"], 0);
+        assert_eq!(report["max_finite_f32_absolute_difference"], 0.01171875);
+        assert_eq!(
+            report["first_differences"][0],
+            json!({
+                "index":0,"left_bits":"bda52f1a","right_bits":"bda62ade","kind":"finite_nonzero"
+            })
+        );
+        assert_eq!(
+            comparison(&warm_native, &warm_original)["differing_f32_count"],
+            0
+        );
+        for input in &held {
+            input.verify();
+        }
+        println!("saved-driver-drift-report={report}");
+    }
 }
