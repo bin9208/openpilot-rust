@@ -7465,3 +7465,46 @@ rejection. No numerical/golden/ISA/schema change. This accepts the bounded
 immutable-roster defect fix; it is not atomic protection against an adversarial
 concurrent pathname replacement, full model acceptance or Python retirement.
 Issue closure follows publication of this committed candidate on PR343.
+
+
+### Ordinary uploader/logging original capture and first native feedback
+
+Original39758140178/workflowa38acdb7/source06956b79 succeeds. Artifact
+12417680413:506656B/SHA7be58982b6ad420fb97a2085e1e782bec5edb7ca3c77d8e2019eab731c8a899e.
+Parent and worker independently check all474CRCs,461manifest seals, exact
+212filesystem/10000backoff/32HTTP-signing/18logging×2collector rosters and the
+actual completed-original-assertions receipt. No private key files are archived.
+Frozen ordinary JSON SHA b1ce58a70769ab48c7893f26da0f7186b2e7d378fd8a19fd5e495f88d68d4eb5;
+logging cdf42bbfebd0613cfc4896c419d96927cf410301155d3ce6b2141cb10313abba.
+These remain independent original expectations, never Rust-generated goldens.
+
+Sourceb53be530319f2920975bf4087886d747feff7539 registers actual Rust reference
+and logging controllers, isolated features, CLI wrappers and six tests. Both
+real native collector lanes preserve full packets/disks; one lane is the
+independently validated native original-policy adapter, with historical actual
+Python collector evidence retained separately. Native live HTTP, RSA/P256 JWT
+verification and exact compressed body checks remain required. Source helper
+consumers are seven/two and remain live; no Python file is removed or credited.
+
+First39762635403/workflow5be049d48 has zero jobs from unsupported runner.temp
+job-env context. No compilation/functional execution occurs. R2 moves that path
+to a first-step RUNNER_TEMP/GITHUB_ENV assignment.39762866909/workflow93b00ad9f
+atb53 builds both controllers, then strict Clippy rejects one needless_range_loop
+in logging IPC; no functional tests run. Artifact12419380772:526759B/SHA
+a07b6b2d87c905085f67c9bf18efa59d1c739e8f7fb6ebe6601b250464e3523d/all485CRCs
+worker-audited. Sourceb897edcf68374a1ce563d4007df357ebb1e8a99a changes only that
+iteration to TOPICS.iter().enumerate(); no expectations/protocol change.
+R3 run39763672720/workflowce5f93658ba7d5511a276441d838a749049502f8 now executes
+the required compile/Clippy/functional boundary, recipe SHA
+fb5596f2e0045000f4af1cb7247d2616e203d5e61055d6d83406abced8d86d58.
+No successful native aggregate is claimed before its real result/artifact audit.
+
+Model remaining-road/family continuation39761920908 checks committed source
+3fd4e7a4f38764e8d56a1696e1d89be8080cdfc4/workflow
+738785adb6b10e0fda05114a7b144a9468c68609. Current exporter admission is separate
+from unchanged historical model/source observations; source namespace, mutation,
+alias, unsealed and stale-receipt rejection tests are included. Rust1.94 is
+selected globally and per job. Original manifests, goldens, ISA policy and
+tolerances are unchanged. Remaining-road119767923402 and family119767922950
+are active, not accepted results. Published full39754486991 now has44successful
+jobs, two earlier model failures, workspace and generic ARM still running.
