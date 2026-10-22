@@ -1,0 +1,1290 @@
+name: 296 CP949 current GNU focused native gate bin-actions
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/changed-files-cp949-native-296-once.yml
+  workflow_dispatch: null
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: changed-files-cp949-native-296
+  cancel-in-progress: false
+jobs:
+  native:
+    runs-on:
+    - self-hosted
+    - Linux
+    - X64
+    - dev-md-local
+    timeout-minutes: 45
+    env:
+      EXPECTED_SOURCE: 300f77e423750804b2a781d734128945a4b56765
+      PYTHONDONTWRITEBYTECODE: '1'
+      GIT_LFS_SKIP_SMUDGE: '1'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      RUST_BACKTRACE: '1'
+    steps:
+    - name: Create owned job isolation and record actual runner resources
+      shell: bash
+      run: "export CP949_SCOPE=native\n# ACTIONS ONLY. Run before checkout; all writes belong to this one job.\nset -euo pipefail\n\
+        : \"${CP949_SCOPE:?original or native}\"\ncase \"$CP949_SCOPE\" in original|native) ;; *) exit 2 ;; esac\ntest \"\
+        $RUNNER_NAME\" = bin-actions\ntest \"$(uname -m)\" = x86_64\nexport CP949_JOB\nCP949_JOB=$(mktemp -d \"$RUNNER_TEMP/cp949-$CP949_SCOPE-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT.XXXXXXXX\"\
+        )\nexport CP949_WORK=\"$GITHUB_WORKSPACE/cp949-$CP949_SCOPE-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT\"\ntest ! -e \"$CP949_WORK\"\
+        \nmkdir \"$CP949_WORK\"\nexport CP949_SOURCE=\"$CP949_WORK/source\"\nexport CP949_BASE=\"$CP949_JOB/evidence\"\nmkdir\
+        \ \"$CP949_BASE\" \"$CP949_JOB/tmp\" \"$CP949_JOB/cargo\" \"$CP949_JOB/rustup\" \"$CP949_JOB/cache\" \"$CP949_JOB/config\"\
+        \ \"$CP949_JOB/pip-cache\" \"$CP949_JOB/tools\"\nprintf '%s:%s:%s\\n' \"$GITHUB_RUN_ID\" \"$GITHUB_RUN_ATTEMPT\" \"\
+        $CP949_SCOPE\" > \"$CP949_JOB/.cp949-owner\"\ncp \"$CP949_JOB/.cp949-owner\" \"$CP949_WORK/.cp949-owner\"\n{\n  printf\
+        \ 'CP949_JOB=%s\\nCP949_WORK=%s\\nCP949_SOURCE=%s\\nCP949_BASE=%s\\n' \"$CP949_JOB\" \"$CP949_WORK\" \"$CP949_SOURCE\"\
+        \ \"$CP949_BASE\"\n  printf 'CARGO_HOME=%s/cargo\\nCARGO_TARGET_DIR=%s/target\\nRUSTUP_HOME=%s/rustup\\n' \"$CP949_JOB\"\
+        \ \"$CP949_JOB\" \"$CP949_JOB\"\n  printf 'XDG_CACHE_HOME=%s/cache\\nXDG_CONFIG_HOME=%s/config\\nPIP_CACHE_DIR=%s/pip-cache\\\
+        nTMPDIR=%s/tmp\\n' \"$CP949_JOB\" \"$CP949_JOB\" \"$CP949_JOB\" \"$CP949_JOB\"\n  printf 'GIT_CONFIG_GLOBAL=%s/gitconfig\\\
+        n' \"$CP949_JOB\"\n} >> \"$GITHUB_ENV\"\n{\n  printf 'runner=%s\\nexpected_runner_id=22\\nrequired_labels=self-hosted,Linux,X64,dev-md-local\\\
+        n' \"$RUNNER_NAME\"\n  uname -a\n  cat /etc/os-release\n  cat /proc/meminfo\n  cat /proc/self/status\n  df -Pk \"\
+        $CP949_JOB\" \"$CP949_WORK\"\n  for item in /sys/fs/cgroup/cpu.max /sys/fs/cgroup/memory.max /sys/fs/cgroup/memory.current;\
+        \ do\n    if test -r \"$item\"; then printf '%s\\n' \"$item\"; cat \"$item\"; fi\n  done\n} > \"$CP949_BASE/runner-bootstrap.txt\"\
+        \n# Estimates are operation growth, with no25/35GiB or other permanent reserve.\ntemp_mib=1024\nif test \"$CP949_SCOPE\"\
+        \ = native; then temp_mib=10240; fi\nsource_mib=2048\ntemp_free=$(df -Pk \"$CP949_JOB\" | awk 'NR==2{print $4}')\n\
+        source_free=$(df -Pk \"$CP949_WORK\" | awk 'NR==2{print $4}')\ntemp_device=$(stat -c %d \"$CP949_JOB\")\nsource_device=$(stat\
+        \ -c %d \"$CP949_WORK\")\nif test \"$temp_device\" = \"$source_device\"; then\n  test \"$temp_free\" -ge $(((temp_mib\
+        \ + source_mib) * 1024))\nelse\n  test \"$temp_free\" -ge $((temp_mib * 1024))\n  test \"$source_free\" -ge $((source_mib\
+        \ * 1024))\nfi\nprintf 'temp_growth_mib=%s\\nsource_growth_mib=%s\\nfixed_reserve_mib=0\\n' \"$temp_mib\" \"$source_mib\"\
+        \ > \"$CP949_BASE/operation-growth.txt\"\n"
+    - uses: actions/checkout@v7
+      with:
+        ref: 300f77e423750804b2a781d734128945a4b56765
+        path: cp949-native-${{ github.run_id }}-${{ github.run_attempt }}/source
+        persist-credentials: false
+        set-safe-directory: false
+        clean: false
+        lfs: false
+    - uses: actions/setup-python@v6
+      env:
+        RUNNER_TOOL_CACHE: ${{ env.CP949_JOB }}/tools
+        AGENT_TOOLSDIRECTORY: ${{ env.CP949_JOB }}/tools
+      with:
+        python-version: 3.12.15
+    - name: Bind exact source in isolated checkout
+      shell: bash
+      run: 'set -euo pipefail
+
+        cd "$CP949_SOURCE"
+
+        test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        git status --porcelain=v1 > "$CP949_BASE/source-status.before.txt"
+
+        test ! -s "$CP949_BASE/source-status.before.txt"
+
+        printf ''workflow_head=%s\nsource_commit=%s\n'' "$GITHUB_SHA" "$EXPECTED_SOURCE" > "$CP949_BASE/source.txt"
+
+        python -I -B -VV > "$CP949_BASE/python.txt"
+
+        '
+    - name: Stage sealed provider_seals.py part 1
+      shell: bash
+      run: 'set -euo pipefail
+
+        cat > "$CP949_BASE/.provider_seals.py.b64" <<''CP949_PAYLOAD''
+
+        H4sIAAAAAAACA5VWW2/bNhR+9684yAslVFCatMmDV+2lTdcBQV00BbbBNQRGPIrZSKRA0nG8LP99OCRlS7bbbnoRL+c7/M6VPDk5
+
+        +TC7+XL1DmYfr/+awlI3AnjlVryBzugHKdBALRu0v4DSUGmBFWhDe9+wciDbThtn85OTk0ltdAsdd8tG3sYN+MTdchLHS25pq59q
+
+        24+s42473tjJZCKwBrvkieHrdDoBADDoVkb1OnK75OcXl34/X+KjkHdoXZJGqBSonHSb5IE3KxxreLrHzRTu0HHnTBDIgFlXMngB
+
+        97hJodaGBiCVx/VfwgQ+sAyYVJp+rRZIfyv/9v/WyRZLZWlc9eP0eTKZVA23Fj5gIwIToliWUklXlonFps6822wkSh+t5t7vUMDT
+
+        83aduCneIkgFVhuHItmH0kdrUHjvJySe5gatbh4wsc7IyhVfzArTEaQWUIC2ue5QeZ0ZzWbl53eUGfBPmL29nl39efW2n36cvZ9d
+
+        X8/+GKvi1mIMa35T/n7z+eq3RNu8poWkFmluXUneG6N2Js+tM55CuoACajHZes0q3tmldt5rA5sN2lXjjrsqI9PIXVv9uXTY2mTP
+
+        Z7U0llRsk2dI+aiBETGGeEQ8VzeNXpd20zZS3dviPW8spmnmaR1TqG1OZueWt0hME3baGV2dEvXTWpxSipJvahGVHNMVagGK/VoZ
+
+        m6Dr2iJJvRwtr5eyQaDsGDvHO5mvQ4p0BrlIapHBGbx5A+cvs6guPcDIGpR2BD3UR9+tQX5/sBPJvSigQeWL/EAkWJmvOsEdHor0
+
+        Do1WFiFW81Csi/8czF38/3+YR4eEBJ0TgHL6iRGeTcOp1ER8jNi0t2vQ0zJgS2xESZlR9hTKBzSylijY1EfreVAKvs2FA3eVUzXa
+
+        4n7ZUIkcFIdviQfVoW0eVNSi77It7zqp7raiRq+pW82De0l3I5XvVL4PDXO55Z1l1JS4KB0+uiTNbddIR4DR0bXERpBW2gkyScsf
+
+        /aC42Pk4BpHSJUBS+LWAi8zjJoNsHEoUBVwCVyKeMr9YUFiNs2vp+bI9H/jGW+ykj6URZTvJ5ahE1AOJwAYdipSl/jj29SvzglLF
+
+        DjViOWjgVOw/aeJ7eR+ubl+mPkV9Gz1GVCoXHTF/vfC+CFhqzlLpI5wi0K26BhOCqwzOLsN9qciWqO7VIgaKTVkoHCqYln/TJtmd
+
+        IfAh9VdMK9XBRnrkeEqvnHcdKpE8MbKLTSFcVKxD00prpVbWF5XncbbIgIUOsFs8X2RHG5H/6IaXFe6kXy3CfS8Ga68Xz+nwQRGv
+
+        YaKX0buhaHh7KzjxnQItzwPZRQZ+Ehn10yH1RdrXVrdxS61KqbqVswk+OsNjMvrrnlrINje67ySGD0xHgfH45x0850IkW7zd2Bwf
+
+        sVo5ftt8L8uCya0Wq9GbZHfJhq3Bu4TURvm80t0mSft7d/jO0StTUVH1D7KAyICVJbWjsmQZfNRq8FaoeLVEcRwS9o6AIpFBAybt
+
+        bBoJ0JPNQ9k06n8eNo3IUlpftaT58Lm171QP+aEzo/JoDzUGjwzzNJfWeyBJf3pWj/hR4HhHUdu17EEy9HfoLlN9WI1eUzQJOcp3
+
+        D+rjTQPe2cm/bDSg9UgMAAA=
+
+        CP949_PAYLOAD
+
+        base64 --decode "$CP949_BASE/.provider_seals.py.b64" | gzip -dc > "$CP949_BASE/provider_seals.py"
+
+        printf ''c593fff98e6831372232b4930a68d76f6968b79fe354c4c224f62e3b37ec44d6  %s/provider_seals.py\n'' "$CP949_BASE"
+        | sha256sum --check --strict
+
+        rm -- "$CP949_BASE/.provider_seals.py.b64"
+
+        '
+    - name: Stage sealed capture-original.py part 1
+      shell: bash
+      run: 'set -euo pipefail
+
+        cat > "$CP949_BASE/.capture-original.py.b64" <<''CP949_PAYLOAD''
+
+        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
+
+        CP949_PAYLOAD
+
+        base64 --decode "$CP949_BASE/.capture-original.py.b64" | gzip -dc > "$CP949_BASE/capture-original.py"
+
+        printf ''c9aa87a4088b8981d0c08e5c35d317a3fac4e952633e82bed083e7d2b6d65c4c  %s/capture-original.py\n'' "$CP949_BASE"
+        | sha256sum --check --strict
+
+        rm -- "$CP949_BASE/.capture-original.py.b64"
+
+        '
+    - name: Stage sealed hosted-audit.py part 1
+      shell: bash
+      run: 'set -euo pipefail
+
+        cat > "$CP949_BASE/.hosted-audit.py.b64" <<''CP949_PAYLOAD''
+
+        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
+
+        CP949_PAYLOAD
+
+        base64 --decode "$CP949_BASE/.hosted-audit.py.b64" | gzip -dc > "$CP949_BASE/hosted-audit.py"
+
+        printf ''026b426d99dacef9a5e507403c2eed936b89e7da846208e7f0827e9e26d57984  %s/hosted-audit.py\n'' "$CP949_BASE" |
+        sha256sum --check --strict
+
+        rm -- "$CP949_BASE/.hosted-audit.py.b64"
+
+        '
+    - name: Stage sealed runner-resources.py part 1
+      shell: bash
+      run: 'set -euo pipefail
+
+        cat > "$CP949_BASE/.runner-resources.py.b64" <<''CP949_PAYLOAD''
+
+        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
+
+        CP949_PAYLOAD
+
+        base64 --decode "$CP949_BASE/.runner-resources.py.b64" | gzip -dc > "$CP949_BASE/runner-resources.py"
+
+        printf ''fc98876312e3342c66ddb380a9a404ce4b5b79be53ffe5ee45263cced6583a12  %s/runner-resources.py\n'' "$CP949_BASE"
+        | sha256sum --check --strict
+
+        rm -- "$CP949_BASE/.runner-resources.py.b64"
+
+        '
+    - name: Stage sealed input-plan.json part 1
+      shell: bash
+      run: 'set -euo pipefail
+
+        cat > "$CP949_BASE/.input-plan.json.b64" <<''CP949_PAYLOAD''
+
+        H4sIAAAAAAACA+3d245cx5Hu8Xs9BcFre6PyGJF+lYEh5BEWNiwJsjyejcG8+0axaamTtpl/mRk9N/SF4SI/r4rV61dRuQ6M/u9v
+
+        3r17338Ys7//w7v3/ccSy/vfPf9szO//Mr/96Ye//eX9H9757FQeL3/+w5/rd98///A/vnn37t27//7w38+N1B9//utPc7z/w7sP
+
+        yZc//OGv3//8/g/v3C9/8n3983y+1ct2fv94/J/23ffvf/nrH3+a67v/+vZP87+eoV///C//97sff5zj2+++H9/1+evbP//z+Pi/
+
+        /vhr+q/rn27lb9+Nn//0LPDDH/zP7/7lHvgU/mEffMr/ci/cl++Fl9/98r+d11cvYvjNO+hOO5hT8u4fdjGnFP71Tvov38lc4qs9
+
+        8yHLq5fB+5xfvwzqX70MzpXtpX+8fpl8evUyyhaOsoWz5Fd/G53Xx+uX8aGvX+b0+m+jPF69UY6S428+PB4cnlcHgh2e8LnDE91n
+
+        D9DV0l/9NGHp8ctluZzjq8P0fOn2l35/GfaXcX+Z9pd5fyn7S91flu1l2qtKe1VpryrtVaW9qrRXlfaq0l5V2qtKe1V5ryrvVeW9
+
+        qrxXlfeq8l5V3qvKe1V5ryrvVclelexVyV6V7FXJXpXsVclelexVyV6V7FXpXpXuVelele5V6V6V7lXpXpXuVelele5Vlb2qsldV
+
+        9qrKXlXZqyp7VWWvquxVlb2qslUlj8f+0u0v/f4y7C/j/jLtL/P+UvaXur/cq3J7VW6vyu1Vub0qt1fl9qrcXpXbq3J7VW6vyu9V
+
+        +b0qv1fl96r8XpXfq/J7VX6vyu9V+b2qsFcV9qrCXlXYqwp7VWGvKuxVhb2qsFcV9qr23i57b5e9t8ve22Xv7bL3dtl7u+y9Xfbe
+
+        Lntvl723y97bZe/tsvd22Xu77L1d9t4ue2+XvbfL3ttl7+2y93bZe7vsvV323i57b5e9t8ve22Xv7bL3dtl7u+y9XfbeLntvl723
+
+        y97bZe/tsvd22Xu77L1d9t4ue2+XvbfL3ttl7+2y93bZe7vsvV323i57b5e9t8ve22Xv7bL3dtl7u+y9XfbeLntvl723y97bde/t
+
+        uvd23Xu77r1d996ue2/Xvbfr3tt17+2693bde7vuvV333q57b9e9t+ve23Xv7br3dt17u+69Xfferntv1723697bde/tuvd23Xu7
+
+        7r1d996ue2/Xvbfr3tt17+2693bde7vuvV333q57b9e9t+ve23Xv7br3dt17u+69Xfferntv1723697bde/tuvd23Xu77r1d996u
+
+        e2/Xvbfr3tt17+2693bde7vuvV333q57b9e9t+ve23Xv7br3dt17u+69Xfferntv1723697bde/tuvd23Xu77r1d996ue2/Xvbfr
+
+        3tt17+2693bde7vuvV333q57b9e9t+ve23Xv7br3dt17u+69Xfferntv1723a0mHKw+vz/pNT+DT1xP4ryfwX0/gv57Afz2B/3oC
+
+        //UE/usJ/NcT+K8n8F9P4L+ewH89gf96Av/1BP7fPoHXf30C/83H/9f7H3/67oefvv3u+x//+vO3fz9bf/kYvf9p9h9+Gt+2//fz
+
+        h5Ptl077/i/9T/PP9ZfnfX7/3fdj/ji/H/P7n3//8YT+P1/e9/1ffvjrT/3DY0C/bPrjUXn1V//kYaCPf/lxL3zwjxzyyjGXPLOE
+
+        +nwtj1BCDOVRJWeXu6ScwvA+Ou8f9f0/vUzx27b7/PvoHvVRRcMI7s5W/0m142q94y0qvluvbbU3LdhV+njcdPt42Cr4UO24Wu94
+
+        i4rv1mtb7U0LhpWOq26tFYzLbsfbVHy3Xttqb1owrLRedVuNFdTLbqu523rVbbXXcNOCXaWp33Sb+htUO67WO96i4rv12lZ704Jd
+
+        pbJuupVlq+BDteNqveMtKr5br221Ny3YVapXz8vU+NtBL5+XqfmKXK+el6nxqlEvnpep6XnZutpvl3G/XZf77TLvt+tqv13G/XZd
+
+        7LfLtt9evX6rxtdv9fL1WzW/fqtXr9+q8fVbvXj9Vk2v3655td9O4+41L/fbad5v59V+O4377bzYb6ftJyzeXeG6aL3Gfal4XK55
+
+        vE3Vt2u2rviuC9NqL68covnaIV5fPcQ3WD/EyyuIaL6GiFdXEbb3gdWletdxqtYiUr3tOFV7x6nedZyqteNUbzpO1j/fdtlxe7xF
+
+        xeNyzeNtqr5ds3XFd11YVpsvryuy+boiX19X5DdYV+TL64psvq7IV9cV2XhdIZfXFWK+rpDr6wp5g3WFXF5XiPm6Qq6uK8T653t5
+
+        XSHm6wq5vq6QN1hXyOV1hZivK+TqukKM1xW373TY3+u4f7fjLe533L7jYX/P4+5dD9v7HtXVq46f27MV8bHicbnm8TZV367ZuuK7
+
+        LgyrjSNedRxHNBbxUvG4XPN4m6pv12xd8V0XdtW2x91+/NyerYiPFY/LNY+3qfp2zdYV33VhV23Pyd90/NyerYiPFY/LNY+3qfp2
+
+        zdYV33VhWm247DiYiwjXHYc3cBwuOw7mjsNVx8G0Wr37hNtze8Yi9PZTbh9qHm9T9e2arSu+68Lwybxx+UnNYf6s5rj+tOZ4g+c1
+
+        x+UnNof5M5vj6lObw9jxvP3Esf0zx/efOn6L545vP3ls/+zx3aePzZ8/vn4nJL7BvZBocDckvsn9kHj9jkh8g3si8fJdkfib74vM
+
+        1Vpbx7p/28/A+SVJgni/sn9u0a+c8pTsH/KQIjFrXnm+VH1637tPQeeYU87+kb34vHJ71uU11EvH92O9//7WLOZ/3Z/9ZTP3y2Lm
+
+        l8W8r/uzvu7P+bo948tivtf92V42c70sZnpZzPO6P8vr/hyv2zO8LOZ33Z/dZTO3y2Jml8W8rvuzuu7P6bo9o8tiPtf92Vw2c7ks
+
+        ZnJZzOO6P4vr/hyu2zO4LOZv3Z+9ZTN3y2LmlsW8rfuztu7P2bo9Y8tivtb92Vo2c7UsZmpZzNO6P0vr/hyt2zO0LOZn3Z+dZTM3
+
+        y2JmlsW8rPuzsu7Pybo9I8tiPtb92Vg2c7EsZmJZzMO6Pwvr/hys2zOwLOZf3Z99ZTP3ymLmlcW8q/uzru7Pubo948pivtX92VY2
+
+        c60sZlpZzLO6P8vq/hyr2zOsbOZXWcyusppbZTOzymZelcWsKos5VfdnVNnMp7KYTWU1l8pmJpXNPCqLWVQWc6juz6CymT9lMXvK
+
+        au6Uzcwpm3lTFrOmLOZM3Z8xZTNfymK2lNVcKZuZUjbzpCxmSVnMkbo/Q8pmfpTF7CiruVE2M6Ns5kVZzIqymBN1f0aUzXwoi9lQ
+
+        VnOhbGZC2cyDspgFZTEH6v4MKJv5Txazn6zmPtnMfLKZ92Qx68liztP9GU82850sZjtZzXWymelkM8/JYpaTxRyn+zOcbOY3Wcxu
+
+        sprbZDOzyWZek8WsJos5TfdnNNnMZ7KYzWQ1l8lmJpPNPCaLWUwWc5juz2Cymb9kMXvJau6Szcwlm3lLFrOWLOYs3Z+xZDNfyWK2
+
+        ktVcJZuZSjbzlCxmKVnMUbo/Q8lmfpLF7CSruUk2M5Ns5iVZzEqymJN0f0aSzXwki9lIVnORbGYi2cxDspiFZDEH6f4MJJv5Rxaz
+
+        j6zmHtnMPLKZd2Qx68hiztH9GUc2840sZhtZzTWymWlkM8/IYpaRxRyj+zOMrOYX2cwusptbZDWzyGpekc2sIps5RXYziv435hPd
+
+        nU1kN5fo3kyiPCRYzCV6vd17s4kO1Y6r9Y63qPhuvbbV3rRgV+mXzS36tNY7s4sO1Y6r9Y63qPhuvbbV3rRgWOm46tZawbjsdrxN
+
+        xXfrta32pgXDSutVt9VYQb3stpq7rVfdVnsNNy3YVfplc5E+rfXObKRDteNqveMtKr5br221Ny3YVfplc5M+rfXO7KRDteNqveMt
+
+        Kr5br221Ny3YVapXz8vU+NtBL5+XqfmKXK+el6nxqlEvnpep6XnZutpvl3G/XZf77TLvt+tqv13G/XZd7LfLtt9evX6rxtdv9fL1
+
+        WzW/fqtXr9+q8fVbvXj9Vk2v337hbwn69DM2jbvXvNxvp3m/nVf77TTut/Niv522n7B4d4V7abbTseJxuebxNlXfrtm64rsuTKu9
+
+        vHKI5muHeH31EN9g/RAvryCi+RoiXl1F2N4H/tK5UP9Yb6rWIlK97ThVe8ep3nWcqrXjVG86TtY/33bZcXu8RcXjcs3jbaq+XbN1
+
+        xXddWFabL68rsvm6Il9fV+Q3WFfky+uKbL6uyFfXFdl4XSGX1xVivq6Q6+sKeYN1hVxeV4j5ukKurivE+ud7eV0h5usKub6ukDdY
+
+        V8jldYWYryvk6rpCjNcVt+902N/ruH+34y3ud9y+42F/z+PuXQ/b+x5fOtfq03pvzbY6Vjwu1zzepurbNVtXfNeFYbVfOPfqH+q9
+
+        NPvqWPG4XPN4m6pv12xd8V0XdtV+6VysT+u9NRvrWPG4XPN4m6pv12xd8V0XdtV+6dysT+u9NTvrWPG4XPN4m6pv12xd8V0XptWG
+
+        y46DuYhw3XF4A8fhsuNg7jhcdRxMq9W7T7jdmr11rHhcrnm8TdW3a7au+K4LwyfzxuUnNYf5s5rj+tOa4w2e1xyXn9gc5s9sjqtP
+
+        bQ5jx/P2E8f2zxzff+r4LZ47vv3ksf2zx3efPjZ//vj6nZD4BvdCosHdkPgm90Pi9Tsi8Q3uicTLd0Vuzvza6n7DuV+fvu/dp6Dv
+
+        z//6Z/X++1uTlDWHu/O//r7Ne7O/PlPluFbnsK70Xp12Vd465jYVftl8r9c13pnt9Zkqx7U6h3Wl9+q0q/LWMTeqcFxzaXm0x0WX
+
+        w77Se3XaVXnrmBtVWK+5rIZHu150WU1d1msuq+1Rv3XMbSr8svlbr2u8M3vrM1WOa3UO60rv1WlX5a1jblPhl83Xel3jndlan6ly
+
+        XKtzWFd6r067Km8dc5sK9dp5jxp2db143qOmK2G9dt6jhqs3vXTeo2bnPetav1yG/XJd7JfLtF+ua/1yGfbLdalfLrt+ee36pRpe
+
+        v9SL1y/V9PqlXrt+qYbXL/XS9Us1u375ZXebt8/ONOxC82K/nKb9cl7rl9OwX85L/XLafXLivRXmpdlVn610XKx12Fd7s1bLSu8d
+
+        f7MqL36zR9Pv9nj12z0af7/Hi9/w0fQ7Pl77lre7T/ml86f2OlO1PPKp3nSaqq3TVO85TdXSaaq3nCbLn2e76LQ9rCsdF2sd9tXe
+
+        rNWy0nvH36rKfPF7P5t+7+er3/vZ+Hs/X/zez6bf+/na9342/N6Xi9/7Yvq9L1e/98X4e18ufu+L6fe+XPveF8uf58XvfTH93per
+
+        3/ti/L0vF7/3xfR7X65974vh9/7NK/m21/LvXs23vp5/84q+7TX9e1f17a7rf+n8ptd13prd9NlKx8Vah321N2u1rPTe8Teq8gvn
+
+        M211XprN9NlKx8Vah321N2u1rPTe8bep8kvnL72u89bspc9WOi7WOuyrvVmrZaX3jr9NlV86X+l1nbdmK3220nGx1mFf7c1aLSu9
+
+        d/zNqgwXnQbTIx+uOg3GTsNFp8HUabjmNJhVqfeekLo1G+mzlY6LtQ77am/WalnpveNv9ETXuPgk3zB9lm9cfZpvGD/PNy4+0TdM
+
+        n+kb157qG4ZO580nTm2fOb371Kn1c6c3nzy1ffb03tOnps+fXr3SH42v9cfLV/uj+fX+ePWKfzS+5h8vXvW/OaPol3rfcD7R6/e8
+
+        9wTs/blEn9b5y5a+effuj8+tvf/P2X/+4advf/rhb395/4d3MTl59cfPP/qP/T0/vtnjkbrMf17WL5HnU3LHSHbHiJy28rw8f4rE
+
+        EQ+R50WpQ+R5PeAcCaeIrtOP7rkAOUXmKfJsXo9z5F92zFeh89F+dp51jOi5nnXeCtjx52cShFIFoUy2JGRLet7S2fIzdNQ8HvXs
+
+        eTzqWfRLKJxDCg7L2fWHw3sIPTUeZH+InGQ/Q0fZz8BB9jOi53rWeStgx4+yX0KpglAmWxKyJT1v6Sj7Q+gk+xk6yn6GjrI/hsI5
+
+        pOCwHGW/HN5D6GWkwiFyJCvrePyfkcPRf0bktJXjQZV1PKSyjgdU1vFwfoiEU0SPB+B4IGUdD+PLBIJD5HgY9byC0vMKSs8rKD2v
+
+        oPS8gtLzCkrPKyg9r6D0vILS8wpKzyuodf40rvOncZ0/jev8aVznT+M6fxrX+dO4zp/Gdf40rvOncZ0/jev8aVzg0+jOn0Z3/jS6
+
+        86fRnT+N7vxpdOdPozt/Gt350+jOn0Z3/jS686fRnT+N7vxpPC/o1nk5t85ro3VeGa3zumidFzzrvNxZ58XOOi911nmhs87LnHVe
+
+        5KwJPo3RHRbvf//nqscQ+NBGd1i8f7gada5nnbcCdvy4eH8JpQpCmWxJyJb0vCXQkiJpSpG0pUgaUyStKZLmFEl7ig7ITvUoO1Xy
+
+        ZVSB7FSPslPVcz3rvBWw40B2qkB2qkB2qkB2qkB2qkB2qkB2qkB2qkB2qkB2qkB2qkB2qkB2PvfsTHp2Jj07n3t2PvfsfO7Z2YEd
+
+        B7Iz6dmZ9OxMenYmPTuTnp1Jz86kZ2fSszPp2Zn07Ex6diY9W849W0jPFtKz5dyz5dyz5dyzpYIdB7KF9GwhPVtIzxbSs4X0bCE9
+
+        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
+
+        CP949_PAYLOAD
+
+        '
+    - name: Stage sealed input-plan.json part 2
+      shell: bash
+      run: 'set -euo pipefail
+
+        cat >> "$CP949_BASE/.input-plan.json.b64" <<''CP949_PAYLOAD''
+
+        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
+
+        CP949_PAYLOAD
+
+        base64 --decode "$CP949_BASE/.input-plan.json.b64" | gzip -dc > "$CP949_BASE/input-plan.json"
+
+        printf ''7e1a2467623b6d0a65e557323f9799342b723ad3d36d750c4845db3ae5f8e4bd  %s/input-plan.json\n'' "$CP949_BASE" |
+        sha256sum --check --strict
+
+        rm -- "$CP949_BASE/.input-plan.json.b64"
+
+        '
+    - name: Stage sealed reused-cp949.json part 1
+      shell: bash
+      run: 'set -euo pipefail
+
+        cat > "$CP949_BASE/.reused-cp949.json.b64" <<''CP949_PAYLOAD''
+
+        H4sIAAAAAAACA72W32rrMAzG7/MUJte7sB35X19lHA6yI3Euyja2lg3G3v2Q0HYZ1Ek7lBASivw1v8+OJPuzUap9fX5/a3fqsVFK
+
+        qc/xqVSLpdDLgfp2pw6vR3o4x8tzT6Xdqba8JEjtJf6PPobod+B44Pj3HB2DXw8iCK11r/E66DQmiTP5OspkYYyFGsiCOMpGYEvW
+
+        1JEXhTza6dB3eQ59UqyANhZCMNlGsLMGprpVbCws/kkhjk7QabLGGs0z+KlK2gJYa2r1OxlfA7v03SeaNfCgbzFwUa1pwZVAt9kY
+
+        lcJW/PjyE6Zq46dK2EKEZI3jhQ/yUyVuAYfFXbQwVQlbSJCGOtfs6t1gqhHG09xVNTT/L2mLYEyGuWb9rRBH+/HFMIM+K5bQjPu3
+
+        O9hAzHB9yk/H/V6Y5r1nz8xag2H+NfWe5a33P/F+F6i2240jsqiQh80zUOhryIlCGu280/Poi0IYTVUkyZZG1NsURTSdHu6taI63
+
+        Inm9SYFHy+56UhDmgLIlHkOq7J+UY8jSMNQzMBZO+G36cWQ0tUlhhyg9Ke5z3ibjsXbElV5CNKWSF6XLQTQF0ebKgZVsjEn2JITQ
+
+        A0I1PbroEKiLkNfBImS+DT/8jnyjlftyiNBskkNcuFQm6tEm4d7C1KXhXphao9Sf5qv5DxPHRTetFAAA
+
+        CP949_PAYLOAD
+
+        base64 --decode "$CP949_BASE/.reused-cp949.json.b64" | gzip -dc > "$CP949_BASE/reused-cp949.json"
+
+        printf ''9bdc06a0713139c302df8babf73c031cfe26053bbe8f42bf235ec6e9d9e40d1c  %s/reused-cp949.json\n'' "$CP949_BASE"
+        | sha256sum --check --strict
+
+        rm -- "$CP949_BASE/.reused-cp949.json.b64"
+
+        '
+    - name: Stage sealed strict-exec-audit.py part 1
+      shell: bash
+      run: 'set -euo pipefail
+
+        cat > "$CP949_BASE/.strict-exec-audit.py.b64" <<''CP949_PAYLOAD''
+
+        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
+
+        Wnmdk/8Hu6ZeVG1SAAA=
+
+        CP949_PAYLOAD
+
+        base64 --decode "$CP949_BASE/.strict-exec-audit.py.b64" | gzip -dc > "$CP949_BASE/strict-exec-audit.py"
+
+        printf ''7b90fd3163ba0c97fed5dbf7f53a2af1b2857e21b7fda99771651914a24d5c5b  %s/strict-exec-audit.py\n'' "$CP949_BASE"
+        | sha256sum --check --strict
+
+        rm -- "$CP949_BASE/.strict-exec-audit.py.b64"
+
+        '
+    - name: Stage sealed hosted-native-build.sh part 1
+      shell: bash
+      run: 'set -euo pipefail
+
+        cat > "$CP949_BASE/.hosted-native-build.sh.b64" <<''CP949_PAYLOAD''
+
+        H4sIAAAAAAACA8VSXW/TQBB8969YjqC2QuuWNpVqUCrlw2qDSlIlKQIJybrY6+SKc3u6W4f23yMnFJG08MrbaXd2dmZvXsP1eDpL
+
+        BzAe3Xx9D2wJSk9hCSXndaAChIKAaL8g+QCWgWVJHsra5mLY6goKXmljQxwFEkCqGZxxVGpTRZtZ1TpcGAFPa3TaB4LrtDs4UtAB
+
+        1Uq/3Kb9WTrIpuO7ST9VET049gL97uRqnM26k6t0lg2Gk45q9W+TdpJ9HPeOt2L2sMNRf5J+Skez7k3nZLv4FSCBau1zqch5Y6WE
+
+        g2db3oRv9uClEbi8BNW6Gs6u73pZOvqsIvcoS7aAQ8AePKnrdafpsa+tJY+eAtc+pxC7RwXOE85rUxVwcX6RJGft8+R010Dvbngz
+
+        aPxNo/1Cp3WYa9ndsiHDe56HWB5EHUW59guGt+/ipB2fQF4Z5x4BcaWtKSkIOi1L8HWQ436DjIVXFSBWnH+nAtABO7LOVCxY0BqF
+
+        uQqAaBkLKnVdCZakpfbUVH8/86W2CyqwNBUFtFrMmhpWMwfEzS/8QmQbRJa7pJ0AIuAAfmhvjV0EuNy1ttUeBym4FgWnf22T92rP
+
+        92bl/3L9D7+W0de2UUYh6AVhyX6lpXMf2O77b2jCNi1x06+e3+BPyNMhtok8eymSSw5CBeq6MLKJY2FCzmvy0U8hWdAL/wMAAA==
+
+        CP949_PAYLOAD
+
+        base64 --decode "$CP949_BASE/.hosted-native-build.sh.b64" | gzip -dc > "$CP949_BASE/hosted-native-build.sh"
+
+        printf ''5f442b6f2179ad7d3bc2fe574c9b5f357a5f529d33d18c371ef0b5ba0b53174b  %s/hosted-native-build.sh\n'' "$CP949_BASE"
+        | sha256sum --check --strict
+
+        rm -- "$CP949_BASE/.hosted-native-build.sh.b64"
+
+        '
+    - name: Stage sealed hosted-native-run.sh part 1
+      shell: bash
+      run: 'set -euo pipefail
+
+        cat > "$CP949_BASE/.hosted-native-run.sh.b64" <<''CP949_PAYLOAD''
+
+        H4sIAAAAAAACA32RUWsbMQzH3/0phJfRh0WXpO3DUriNdDvWwpaWNSsbDILj0/VMrrZryUf67UuS0bKw7kkSf/0k9NcbuLi6WVSf
+
+        4Wr+9dcZ1I5t6ClRDTanRF7gy/wHroxdUw1CLEPwAWhDNotZdQRMJtkWopG2UEwCSDlAdJEa4zp1v65dAj34dD09nS7PZzfVyAd8
+
+        4VkrNj3Vy+2AUg+uZ4sLrWgTQxLYFuX/WRJ4R2qUOY1Wzo/E3VPIAojs7rzpykX1/Rsgrl3XoWmEUjkZM5yMxwzPEEsylgAbwIcH
+
+        QBEBZHg/mR4DEuzEcru1p+E+GBmGSN4IYDi4zYjrqdgx+lmazxaXt9Wy+llpQNy6iNImMjWXE0D0wZooORF8+Oc0ljpk0XD8qkwp
+
+        acViJHM5+PjnDQcuvtisVUzOSwNHb/m3PwI92KP61f07Vd05gX0OiDEkS51xvuwnhxyHnCzhvrfY2V7IRrSKj9IGfwJ4CXj+N9MG
+
+        FqrR5NpJER81NM47btUTsd1piqECAAA=
+
+        CP949_PAYLOAD
+
+        base64 --decode "$CP949_BASE/.hosted-native-run.sh.b64" | gzip -dc > "$CP949_BASE/hosted-native-run.sh"
+
+        printf ''8e3864e6d3f34083ffb7ec931a33f23da32d01ceb4117604d2ad43b8b90bf610  %s/hosted-native-run.sh\n'' "$CP949_BASE"
+        | sha256sum --check --strict
+
+        rm -- "$CP949_BASE/.hosted-native-run.sh.b64"
+
+        '
+    - name: Stage sealed admission.json part 1
+      shell: bash
+      run: 'set -euo pipefail
+
+        cat > "$CP949_BASE/.admission.json.b64" <<''CP949_PAYLOAD''
+
+        H4sIAAAAAAACA33S3W6bNwwG4PNdho6dgRIpkvLNBOKPFmNxbPizUxRF7n3whjZFk/X0lUQK5POtbP6Ux1n2xc+DxsPTabtmPMw4
+
+        HrbtcHp5eK1lV06Xw1+Hl/lc9t/KdM/zNaPsr5db7srl9vJ4iLLHoaigVZh2ZV6uhzX9+u9JbdTbaMgqu7KdbhfPx+3p3lOkAgSi
+
+        J0Vt0LSjBdvCPmTC8gaVvA8ou/LldPl7PZ++/HjpjZb1Vn1i+sqkmmFjLWnck2EQ5sos97/40+E1H+3rNbeyrwzQQd/zYx4tL1vZ
+
+        M7+H29Nsncu+MC+P6dwbE2Ydlm6Ic7EPXMuTpebSlB7mVVEaj4gli2sPBr1/4DhfDiu363vRxZ1QV7DMGoMlHMBzAXKjJrWJu7kv
+
+        H0SJ1sAiZa01KFoVSCu7cknPw/mnmoCrclQfQG7SULh3Q6bJqhIamRE5MVbHhSNggU5LZwCU1ZzKrvg8X2+X7xO5m/gvePi+/z/P
+
+        X3+69qO1jzlVJoGq6dAa4KDZHXtglYlrOuXojRFTm2WAYko04+Du5GVXtpzPj366vVzLvurbrmy38/k5j3kPfo8OO1EH+IiOBg6F
+
+        Vn9BlypEizsT0aqpszuN3iSj9mWdkwiYBT+iU44JbHOITqgqbVUdpiBOc/IMgtrqqJ+hq4BK/RN02D5B52Rq6iTJIZWCyCqzoocp
+
+        d2M1TGndrSJgm9LQmniazm6yevsU3ZQ2QNmIms+M2qp2E5ToPX0sGDyAKGQZ2UJRqd7ceYY7mYf8sqX7XD8gzJUyPdpqPtJjsHmF
+
+        SSzJlAuNZxpx9dUVYgH0ZpwBogjDUOrvEJ4vp9dD5OXBT8fzc14Pp5f/8ajRp/dReWjLNmRYjenGYjWTZ85oS7K20V1oZHOXnJGJ
+
+        NjJHreXt7Y9/AFmFa3MaBQAA
+
+        CP949_PAYLOAD
+
+        base64 --decode "$CP949_BASE/.admission.json.b64" | gzip -dc > "$CP949_BASE/admission.json"
+
+        printf ''912cb69e414c2276b7700c6bc240450a3f6815199f57d76265c8ccc06aa8b0ae  %s/admission.json\n'' "$CP949_BASE" | sha256sum
+        --check --strict
+
+        rm -- "$CP949_BASE/.admission.json.b64"
+
+        '
+    - name: Record actual CPU memory disk and package identity
+      shell: bash
+      run: "set -euo pipefail\npython -I -B \"$CP949_BASE/runner-resources.py\" prepared 10737418240\nif command -v dpkg-query\
+        \ >/dev/null 2>&1; then\n  dpkg-query -W libc6 libc-bin capnproto libcapnp-dev libzmq5 > \"$CP949_BASE/packages.txt\"\
+        \ 2> \"$CP949_BASE/packages.stderr\" || true\nfi\n"
+    - name: Admit frozen original and accepted supplement without reexecution
+      env:
+        GH_TOKEN: ${{ github.token }}
+      shell: bash
+      run: 'set -euo pipefail
+
+        python -I -B "$CP949_BASE/hosted-audit.py" admit
+
+        '
+    - name: Verify existing prerequisites and prepare isolated Rust toolchain
+      shell: bash
+      run: "set -euo pipefail\nif ! command -v rustup >/dev/null 2>&1; then\n  test -x \"$HOME/.cargo/bin/rustup\"\n  export\
+        \ PATH=\"$HOME/.cargo/bin:$PATH\"\n  printf '%s\\n' \"$HOME/.cargo/bin\" >> \"$GITHUB_PATH\"\nfi\nfor executable in\
+        \ gh git gzip base64 sha256sum rustup capnp pkg-config c++ strace; do\n  command -v \"$executable\" >> \"$CP949_BASE/prerequisites.txt\"\
+        \ndone\npkg-config --exists capnp\npkg-config --exists libzmq\nrustup toolchain install 1.94.0 --profile minimal --component\
+        \ clippy > \"$CP949_BASE/rustup.stdout\" 2> \"$CP949_BASE/rustup.stderr\"\nrustc +1.94.0 -Vv > \"$CP949_BASE/rustc.txt\"\
+        \nstrace -V > \"$CP949_BASE/strace.txt\"\n"
+    - name: Build one fresh focused target with resource controlled parallelism
+      shell: bash
+      run: 'set -euo pipefail
+
+        cd "$CP949_SOURCE"
+
+        bash "$CP949_BASE/hosted-native-build.sh"
+
+        '
+    - name: Compare only missing CP949 payloads and source admission
+      shell: bash
+      run: 'set -euo pipefail
+
+        cd "$CP949_SOURCE"
+
+        export CP949_NATIVE_OUTPUT="$CP949_BASE/actual"
+
+        bash "$CP949_BASE/hosted-native-run.sh"
+
+        '
+    - name: Finalize resource and evidence size receipts
+      if: always() && env.CP949_BASE != ''
+      shell: bash
+      run: "set -euo pipefail\nif test -f \"$CP949_BASE/runner-resources.py\"; then\n  python -I -B \"$CP949_BASE/runner-resources.py\"\
+        \ finished 0\nfi\ndu -sm \"$CP949_BASE\" > \"$CP949_BASE/artifact-size-mib.txt\"\ntest \"$(cut -f1 \"$CP949_BASE/artifact-size-mib.txt\"\
+        )\" -le 160\n"
+    - name: Preserve full original provider and actual failure evidence
+      id: upload
+      if: always() && env.CP949_BASE != ''
+      uses: actions/upload-artifact@v6
+      with:
+        name: changed-files-cp949-native-296
+        path: ${{ env.CP949_BASE }}/
+        retention-days: 14
+        include-hidden-files: true
+        if-no-files-found: warn
+    - name: Clean only this owned job after evidence upload
+      if: always() && env.CP949_BASE != ''
+      env:
+        CP949_UPLOAD_OUTCOME: ${{ steps.upload.outcome }}
+      shell: bash
+      run: "export CP949_SCOPE=native\n# ACTIONS ONLY, after successful evidence upload. Delete only owned job paths.\nset\
+        \ -euo pipefail\nif test \"${CP949_UPLOAD_OUTCOME:-}\" != success; then\n  printf 'Evidence upload incomplete; preserve\
+        \ owned job directory: %s\\n' \"${CP949_JOB:-unset}\"\n  exit 0\nfi\n: \"${CP949_SCOPE:?}\"\nexpected_owner=\"$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$CP949_SCOPE\"\
+        \ncase \"$CP949_JOB\" in \"$RUNNER_TEMP\"/cp949-\"$CP949_SCOPE\"-\"$GITHUB_RUN_ID\"-\"$GITHUB_RUN_ATTEMPT\".*) ;;\
+        \ *) exit 2 ;; esac\ntest \"$CP949_WORK\" = \"$GITHUB_WORKSPACE/cp949-$CP949_SCOPE-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT\"\
+        \ntest ! -L \"$CP949_JOB\"\ntest ! -L \"$CP949_WORK\"\ntest \"$(cat \"$CP949_JOB/.cp949-owner\")\" = \"$expected_owner\"\
+        \ntest \"$(cat \"$CP949_WORK/.cp949-owner\")\" = \"$expected_owner\"\nrm -rf -- \"$CP949_WORK\" \"$CP949_JOB\"\n"
