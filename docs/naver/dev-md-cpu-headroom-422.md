@@ -212,6 +212,10 @@ Focused regression cases cover amd64/arm64 userspaces with a foreign-architectur
 list, direct/sudo invocation, update failure and temporary-config cleanup, and
 invalid architecture rejection. They are included in the existing fast-test
 discovery; only Bash/Python syntax and diff review have run locally.
+The exact-source delivery allowlist adds only the setup script and its regression
+file, with neighboring paths still rejected. This does not change the AGNOS SDK
+or native-provider build inputs. A Sol review found no actionable setup-patch
+issues; actual APT repository/privilege behavior still requires Actions evidence.
 
 The patch is held locally pending the common all-local execution foundation.
 PR #504 at `d27cd41ee8082cd7feb76f8ec59c8d7a9701d37b` passed its focused local

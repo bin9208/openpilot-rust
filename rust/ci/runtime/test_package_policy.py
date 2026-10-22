@@ -52,6 +52,16 @@ class SourcePolicyTests(unittest.TestCase):
                 self.assertFalse(allowed(path + ".extra"))
                 self.assertFalse(allowed(path + "/child"))
 
+    def test_host_setup_repair_exceptions_are_exact_paths(self):
+        allowed = namespace["source_path_allowed"]
+        for path in ("tools/setup_dependencies.sh", "tools/ci/tests/test_setup_apt.py"):
+            with self.subTest(path=path):
+                self.assertTrue(allowed(path))
+                self.assertFalse(allowed(path + ".extra"))
+                self.assertFalse(allowed(path + "/child"))
+        self.assertFalse(allowed("tools/setup_dependencies_other.sh"))
+        self.assertFalse(allowed("tools/ci/tests/test_setup_apt_other.py"))
+
     def test_gpu_exceptions_are_exact_paths(self):
         allowed = namespace["source_path_allowed"]
         for path in (

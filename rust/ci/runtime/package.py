@@ -109,6 +109,8 @@ def source_path_allowed(path, source_entry="", inherited_entry=""):
         '.github/actions/rust-path/',
         '.github/actions/job-temp/',
         'tools/check_jetlink_usb_policy.py',
+        'tools/setup_dependencies.sh',
+        'tools/ci/tests/test_setup_apt.py',
         'tools/naver_ci/tests/test_sync_upstream.py',
         '.github/workflows/ci.yml',
         '.github/workflows/dev-md-runtime.yml',
