@@ -47,7 +47,7 @@ jobs:
 
         sudo apt-get update
 
-        sudo apt-get install -y --no-install-recommends strace
+        sudo apt-get install -y --no-install-recommends capnproto libcapnp-dev g++ libzmq5 strace
 
         rustc +1.94.0 -Vv > "$DELETER_BASE/rust-provider.txt"
 
