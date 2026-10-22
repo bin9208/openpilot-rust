@@ -7069,3 +7069,28 @@ including the raw C++ fatal header error. The isolated original-oracle recipe
 now installs the explicit libzmq3-dev header provider, and coordinates its Rust
 host target with the existing host JSON11 action to reuse dependency builds.
 No production source, default build target or maintained gate is changed.
+
+### Manager three-controller predelete admission accepted; maintained deletion candidate
+
+Run39740337951 checks source dabbb2a604376e52809104a9cdb08790c344e1c7
+under workflow a80d2e72b86f8f2eb07e57d45d991f25e14c4d81. Compilation,
+strictClippy, twelve manager units, both original-backed integrations, two
+explicit LD-input variants, twelve fresh original/native CLI pairs, the
+empty-thread exec-audit regression and full two-root retirement proof pass.
+The #484 complete-PID-publication regressions also execute:2passed/0failed.
+Artifact12409078411 is9091291B/SHA
+5a6f7d067e4b4e548527761f53f88c15422a129dfa3b20073ce0447c660f1bf0;
+parent checks all27575CRCs, all seven complete case JSON values and logging
+result in each root against the pinned original fixtures, and all seven held
+ELF identities/content receipts before/after. The proof reports61closed native
+exec attempts:28perpositive root plus5source-admission negatives. The checkout
+still had the three sources; the independent private root did not.
+
+Delete exactly check_manager.py, check_manager_logging.py and manager_reference.py;
+replace their maintained platform calls with the mandatory native same-ELF proof,
+physical-absence checks and always-retained evidence. Original manager.py,
+Params/swaglog, binding bootstrap and generate_manager_cars.py remain live.
+Four explicit build/test/evidence reserves raise disk markers538→542 while
+preserving the inherited177aggregate. This is a deletion candidate: inventory
+credit remains270 until the actual postdelete platform and policy gates pass.
+No boot/device/recording/upload acceptance is inferred.

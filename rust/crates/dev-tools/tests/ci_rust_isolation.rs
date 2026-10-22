@@ -1121,14 +1121,24 @@ fn modem_requires_real_baseline_failure_and_fixed_helper_lifetimes() {
     ], &["helper-lifetime-tests"], false);
 }
 #[test]
-fn platform_runtime_requires_original_manager_and_retired_modem_hardwared_proof() {
+fn platform_runtime_requires_retired_manager_and_modem_hardwared_proof() {
     job_check(
         "platform-runtime",
         &[
             "rustup toolchain install 1.94.0 --profile minimal --component clippy",
-            "check_manager.py",
-            "check_manager_logging.py",
             "generate_manager_cars.py",
+            "for name in check_manager.py check_manager_logging.py manager_reference.py; do",
+            "test ! -e \"rust/tools/$name\" && test ! -L \"rust/tools/$name\"",
+            "test -f rust/tools/generate_manager_cars.py",
+            "--features manager-qa-native --bin check-manager-qa --bin check-manager --bin check-manager-logging",
+            "--features manager-qa-native --lib --test manager_qa --test manager_qa_compat",
+            "--test manager_retirement --no-run --message-format=json",
+            "--test manager_retirement -- -D warnings",
+            "--features manager-qa-native --lib manager_qa:: -- --nocapture",
+            "MANAGER_RETIREMENT_REQUIRE_ABSENT=1",
+            "manager_exec_audit_accepts_empty_threads_without_losing_execution_checks",
+            "manager_original_observations_survive_three_controller_retirement",
+            "cmp \"$proof/providers-before.sha256\" \"$proof/providers-after.sha256\"",
             "examples/manager_native",
             "examples/manager_adapters",
             "for name in check_modem.py modem_source.py modem_fixture.py modem_fixture_command.py check_modem_process_boundary.py; do",
@@ -1153,6 +1163,7 @@ fn platform_runtime_requires_original_manager_and_retired_modem_hardwared_proof(
         ],
         &[
             "python rust/tools/check_",
+            "MANAGER_RETIREMENT_REQUIRE_ABSENT=1",
             "HARDWARED_REQUIRE_RETIRED=1",
             "MODEM_REQUIRE_TOOLS_RETIRED=1",
         ],
@@ -1160,6 +1171,22 @@ fn platform_runtime_requires_original_manager_and_retired_modem_hardwared_proof(
     );
     let data = workflow();
     let run = commands(&data["jobs"]["platform-runtime"]);
+    for name in [
+        "check_manager.py",
+        "check_manager_logging.py",
+        "manager_reference.py",
+    ] {
+        let path = root().join("rust/tools").join(name);
+        assert!(
+            fs::symlink_metadata(path)
+                .is_err_and(|error| error.kind() == std::io::ErrorKind::NotFound),
+            "retired manager controller reappeared: {name}"
+        );
+    }
+    assert!(root().join("rust/tools/generate_manager_cars.py").is_file());
+    assert!(root().join("openpilot/system/manager/manager.py").is_file());
+    assert!(!run.contains("python rust/tools/check_manager.py"));
+    assert!(!run.contains("python rust/tools/check_manager_logging.py"));
     assert!(!run.contains("python rust/tools/check_hardwared.py"));
     assert!(!run.contains("python rust/tools/check_hardwared_daemon.py"));
     assert!(!run.contains("python rust/tools/check_modem.py"));

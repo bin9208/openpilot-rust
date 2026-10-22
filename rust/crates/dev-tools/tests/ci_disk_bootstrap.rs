@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 538);
+    assert_eq!(text.matches(marker).count(), 542);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -350,6 +350,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut hardware_info_native = vec![];
     let mut hardwared_native = vec![];
     let mut modem_native = vec![];
+    let mut manager_qa_native = vec![];
     let model_family_start = lines
         .iter()
         .position(|line| *line == "  model-family-retirement:")
@@ -439,6 +440,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             }
             if step == Some(&"      - name: Verify retired hardwared cases and continuous native state publication") {
                 hardwared_native.push(tail.to_owned());
+                continue;
+            }
+            if step == Some(&"      - name: Verify retired manager QA controllers against sealed original observations") {
+                manager_qa_native.push(tail.to_owned());
                 continue;
             }
             if step == Some(&"      - name: Verify retired modem tools and continuous native reconnect lifecycle") {
@@ -1030,6 +1035,15 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             " --path \"$GITHUB_WORKSPACE\" --growth-mib 512",
             " --path \"$GITHUB_WORKSPACE\" --growth-mib 512",
             " --path \"$RUNNER_TEMP\" --growth-mib 2048",
+        ]
+    );
+    assert_eq!(
+        manager_qa_native,
+        [
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 2048",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 512",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 512",
+            " --path \"$RUNNER_TEMP\" --growth-mib 1024",
         ]
     );
     assert_eq!(arguments.len(), 177);

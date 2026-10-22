@@ -4488,9 +4488,72 @@ jobs:
           python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/platform-params-binding"
       - name: Compare manager initialization, transitions and lifecycle logging
         run: |
-          python rust/tools/check_manager.py rust/target/debug/examples/manager_trace "$RUNNER_TEMP"/platform-params-binding/params_pyx*.so "$RUNNER_TEMP/platform-runtime/manager"
-          python rust/tools/check_manager_logging.py rust/target/debug/examples/manager_trace "$RUNNER_TEMP"/platform-params-binding/params_pyx*.so "$RUNNER_TEMP/platform-runtime/manager-logging"
           python rust/tools/generate_manager_cars.py rust/crates/manager/data/cars --check --binding "$RUNNER_TEMP"/platform-params-binding/params_pyx*.so
+      - name: Verify retired manager QA controllers against sealed original observations
+        run: |
+          set -euo pipefail
+          for name in check_manager.py check_manager_logging.py manager_reference.py; do
+            test ! -e "rust/tools/$name" && test ! -L "rust/tools/$name"
+          done
+          test -f rust/tools/generate_manager_cars.py
+          test -f rust/tools/original_params_binding.py
+          test -f openpilot/system/manager/manager.py
+          proof="$RUNNER_TEMP/platform-runtime/manager-retirement"
+          test ! -e "$proof"
+          mkdir -p "$proof"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools \
+            --features manager-qa-native --bin check-manager-qa --bin check-manager --bin check-manager-logging \
+            > "$proof/build.stdout" 2> "$proof/build.stderr"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools \
+            --features manager-qa-native --lib --test manager_qa --test manager_qa_compat \
+            --test manager_retirement --no-run --message-format=json \
+            > "$proof/compile.jsonl" 2> "$proof/compile.stderr"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo +1.94.0 clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools \
+            --features manager-qa-native --lib --bin check-manager-qa --bin check-manager \
+            --bin check-manager-logging --test manager_qa --test manager_qa_compat \
+            --test manager_retirement -- -D warnings \
+            > "$proof/clippy.stdout" 2> "$proof/clippy.stderr"
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools \
+            --features manager-qa-native --lib manager_qa:: -- --nocapture \
+            > "$proof/units.stdout" 2> "$proof/units.stderr"
+          grep -E '^test result: ok\. 12 passed; 0 failed;' "$proof/units.stdout"
+          command -v jq >/dev/null
+          mapfile -t manager_test_elf < <(jq -r 'select(.reason=="compiler-artifact" and .profile.test==true and .target.name=="manager_retirement") | .executable // empty' "$proof/compile.jsonl")
+          test "${#manager_test_elf[@]}" -eq 1
+          test -f "${manager_test_elf[0]}"
+          printf '%s\n' "${manager_test_elf[0]}" > "$proof/test-elf-path.txt"
+          shopt -s nullglob
+          bindings=("$RUNNER_TEMP"/platform-params-binding/params_pyx*.so)
+          test "${#bindings[@]}" -eq 1
+          export MANAGER_RETIREMENT_CHECKER="$GITHUB_WORKSPACE/rust/target/debug/check-manager-qa"
+          export MANAGER_RETIREMENT_MANAGER="$GITHUB_WORKSPACE/rust/target/debug/check-manager"
+          export MANAGER_RETIREMENT_LOGGING="$GITHUB_WORKSPACE/rust/target/debug/check-manager-logging"
+          export MANAGER_RETIREMENT_TRACE="$GITHUB_WORKSPACE/rust/target/debug/examples/manager_trace"
+          export MANAGER_RETIREMENT_BINDING="${bindings[0]}"
+          export MANAGER_RETIREMENT_EVIDENCE="$proof/actual"
+          export MANAGER_RETIREMENT_REQUIRE_ABSENT=1
+          providers=("$MANAGER_RETIREMENT_CHECKER" "$MANAGER_RETIREMENT_MANAGER" \
+            "$MANAGER_RETIREMENT_LOGGING" "$MANAGER_RETIREMENT_TRACE" \
+            "$MANAGER_RETIREMENT_BINDING" /usr/bin/strace /usr/bin/env "${manager_test_elf[0]}")
+          sha256sum "${providers[@]}" > "$proof/providers-before.sha256"
+          "${manager_test_elf[0]}" manager_exec_audit_accepts_empty_threads_without_losing_execution_checks \
+            --exact --nocapture > "$proof/exec-audit-unit.stdout" 2> "$proof/exec-audit-unit.stderr"
+          grep -Fx 'test manager_exec_audit_accepts_empty_threads_without_losing_execution_checks ... ok' \
+            "$proof/exec-audit-unit.stdout"
+          grep -E '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$proof/exec-audit-unit.stdout"
+          test ! -e "$MANAGER_RETIREMENT_EVIDENCE"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 1024
+          "${manager_test_elf[0]}" manager_original_observations_survive_three_controller_retirement \
+            --ignored --exact --nocapture > "$proof/retirement.stdout" 2> "$proof/retirement.stderr"
+          grep -Fx 'test manager_original_observations_survive_three_controller_retirement ... ok' "$proof/retirement.stdout"
+          grep -E '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$proof/retirement.stdout"
+          test -f "$MANAGER_RETIREMENT_EVIDENCE/result.json"
+          sha256sum "${providers[@]}" > "$proof/providers-after.sha256"
+          cmp "$proof/providers-before.sha256" "$proof/providers-after.sha256"
+          printf 'workflow_head=%s\nsource_commit=%s\n' "$GITHUB_SHA" "$(git rev-parse HEAD)" > "$proof/source-workflow.txt"
       - name: Exercise native manager IPC, owned children and boot composition
         run: |
           rust/target/debug/examples/manager_native "$RUNNER_TEMP/platform-runtime/manager-native" "$PWD/rust/target/debug/openpilot-process-child"
