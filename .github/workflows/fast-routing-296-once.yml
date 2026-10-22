@@ -1,0 +1,53 @@
+name: 296 current-source full Fast routing after hardware retirement
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/fast-routing-296-once.yml
+permissions:
+  contents: read
+jobs:
+  routing:
+    name: fast native routing checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    env:
+      RUSTUP_TOOLCHAIN: 1.94.0
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      EXPECTED_SOURCE: 422671ae50939f1f3e4e92c865b2e867548bff4f
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+        ref: 422671ae50939f1f3e4e92c865b2e867548bff4f
+    - name: Require exact committed issue source
+      run: test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - run: python -m pip install pytest==9.0.2 PyYAML==6.0.2
+    - name: Prepare native CI validation
+      run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        '
+    - name: Check CI routing and upstream synchronization guards
+      run: "python -m unittest discover -s tools/ci/tests -v\ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools\
+        \ --locked --lib \\\n  --test ci_workflow_policy --test ci_rust_isolation --test ci_disk_bootstrap --test ci_process_probe\
+        \ \\\n  --test panda_oracle_build --test upstream_sync --test native_build_closure --test updated_process_check \\\
+        \n  --test native_logging_build --test release_files --test logger_identifier_check --test qa_process \\\n  --test\
+        \ logging_oracle_build --test path_resolve --test bridge_source_build --test jpeg_sanitizers_check \\\n  --test ci_native_staging\
+        \ --test encoder_source_build --test ui_updater_handshake --test athena_vision_build \\\n  --test hardware_command_check\
+        \ --test pandad_firmware_spi_build --test panda_cli --test msgq_sanitizers_check \\\n  --test control_tools_policy_check\
+        \ --test five_cli --test registration_vendor_check --test ui_adapter_sanitizers \\\n  --test unix_argv --test python_fs\
+        \ --test unix_cli_paths --test panda_raw \\\n  --test startup_adapter_sanitizers --test python_glob --test ui_fixed_corpus_check\
+        \ --test ui_ci_runtime \\\n  --test ui_state_scheduler_check --test ui_translation_check --test ui_application_logic_check\
+        \ --test ui_headless_check \\\n  --test ui_scroll_check --test diagnostic_check --test message_state_ci --test timed_ci\
+        \ --test ci_artifact_list \\\n  --test miri_provenance --test image_array_math --test ui_egl_ci --test command_reference_check\
+        \ \\\n  --test params_reference_check --test beep_integer_ci --test ui_polygon_ci --test ui_application_lifecycle_ci\
+        \ --test ratekeeper_ci --test cutin_alert_ci \\\n  --test bluetooth_digits_generate --test encoder_runtime_ci\ncargo\
+        \ test --manifest-path rust/Cargo.toml -p openpilot-service-tools --locked\n"
