@@ -1,0 +1,30 @@
+{
+  "artifact": 12389225409,
+  "artifact_sha256": "4285c91ffd0b45568d79472a782c8ca05a4cd475eca8cb7ce196af65d74f911b",
+  "run": 39691148023,
+  "source_commit": "d39b1b08c2079e9b3356be06ddddf9db49551be6",
+  "source_files": {
+    "openpilot/system/hardware/tici/modem.py": "c193b3f5c669dab5e488ee982cbe565539a0410193b4302d524f68c157d47a13",
+    "rust/tools/check_modem.py": "6b7df54af0d948f9569f6e933f70a63fb30c696b6e7ef47d5ddbfe960e19a922",
+    "rust/tools/modem_source.py": "72c75ec2185003a861e1512edf06921352bb3ff02f5b27d3e1a5a743a3964060",
+    "rust/tools/modem_fixture.py": "07ab85b2f6dcb66750a557c7b9ed4dae32503c8b2f482d2a28e984a65c63d22a",
+    "rust/tools/modem_fixture_command.py": "c99e412facaf74f6830db1a50d32cf16ef773da69131ffacb07b69571d8cbb52",
+    "rust/tools/check_modem_process_boundary.py": "2a3cd0907ddc175a5c753490b11784a458d904065236c520dffd949548cd2abd"
+  },
+  "source_expectations": {
+    "absent_sim.json": "559cedf27ece6446e8dea25cdae16a97924d951ee7784ccea825165053a0f157",
+    "at_errors.json": "80c374086feeebeb62a82c13e369ec583d4934a80392068c15def573c9749283",
+    "dns_failure.json": "1d249da4b410c1276462d9567cd1614198f81f498c553164b94f4fe0f8d903a4",
+    "echo_retry.json": "6630fe201992731fac43be9d452bc66f82a44136bb9b88b319ae6cf1c3b17827",
+    "identity_retry.json": "4a13060f36d6011862de9804c36f1e39960b82cad6815417091f6bbe50e3dac0",
+    "invalid_route.json": "97e86500e4b5f75b7d198b7f6290f5018fce7afbbf3935a116d1783677b83c79",
+    "lpa_lock.json": "0ab6bb5277765629e017484a66ca15faaab2a96cd051559229ced19af7b4a50f",
+    "normal.json": "bd0c921972091ff5ec94fb436b04429e782aa37004c8a3f924739d4173b6b8ea",
+    "poll_errors.json": "4ba104a98ad768d2169f5dcba0907822cfc9daf6a7baf5ffa358a731e535e302",
+    "retry_limit.json": "993fad20692a9fc7f1b2c8f4b95b544e19fea709c848d93c51e9849e6958dfab",
+    "roaming_blocked.json": "9db4720ae7945e3d7ac277620665b6b18bc1b1f86c9833ab351810b1f8396f07",
+    "route_failure.json": "7c6ffea111a7ea91f09e93fc5970d6ad3c5422ff59f7f632764584ef1bd0bcb6",
+    "route_failure_retry.json": "39482d15c1d5aaa0b76e696c6ca2f2c0ce64249ef5e8a26dea838b6b9838ff05"
+  },
+  "process_boundary_source_sha256": "9b7d0fa7e3d8c79d6fe83519afcba2530a5f284f0c8c2fa31af960da3102c869"
+}
