@@ -1,0 +1,218 @@
+name: model driver CPU context diagnostic
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/model-driver-cpu-context-296-once.yml
+permissions:
+  contents: read
+jobs:
+  driver-cpu-context-diagnostic:
+    strategy:
+      fail-fast: false
+      matrix:
+        sample:
+        - 0
+        - 1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    env:
+      EXPECTED_SOURCE: a29832fd0d046253465621a05f02a91e9cfdb1d1
+      DIAGNOSTIC_SAMPLE: ${{ matrix.sample }}
+      RUSTUP_TOOLCHAIN: 1.94.0
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      DEV: CPU:LLVM
+      JIT: '1'
+      JIT_BATCH_SIZE: '0'
+      OPENPILOT_HACKS: '1'
+      LLVM_PATH: /usr/lib/x86_64-linux-gnu/libLLVM-18.so
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
+      CPU_COUNT: '2'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: a29832fd0d046253465621a05f02a91e9cfdb1d1
+        persist-credentials: false
+    - name: Reserve hosted capacity and install bounded native prerequisites
+      shell: bash
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 12288
+
+        mkdir "$RUNNER_TEMP/model-driver-cpu-context-296"
+
+        sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends g++ clang libclang-dev libllvm18 liblzma-dev capnproto libcapnp-dev
+        libzmq3-dev jq
+
+        rustup toolchain install 1.94.0 --profile minimal
+
+        '
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Install original model execution dependencies
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/model-driver-cpu-context-296"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        python -m pip install numpy==2.5.3 zstandard==0.25.0 pycapnp==2.1.0 pyzmq==27.2.0 Cython==3.2.4 setuptools==82.0.1
+        requests==2.34.2 pyserial==3.5 setproctitle==1.3.7
+
+        python -m pip freeze > "$proof/providers.before.txt"
+
+        '
+    - name: Build only the native fixture, catalog and CPU model runner
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/model-driver-cpu-context-296"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 6144
+
+        cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --bin model-run > "$proof/model-run-build.log"
+        2>&1 || { cat "$proof/model-run-build.log"; exit 1; }
+
+        cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features driver-daemon-native --bin
+        stage-driver-daemon-fixture --bin prepare-model-family-catalog > "$proof/driver-tools-build.log" 2>&1 || { cat "$proof/driver-tools-build.log";
+        exit 1; }
+
+        '
+    - name: Record actual hosted CPU and Rust toolchain profile
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/model-driver-cpu-context-296"
+
+        lscpu --json > "$proof/cpu-profile.json"
+
+        cat /proc/cpuinfo > "$proof/proc-cpuinfo.txt"
+
+        rustc -vV > "$proof/rustc-version.txt"
+
+        uname -a > "$proof/uname.txt"
+
+        '
+    - name: Stage the independent current driver inputs and compile current-host catalog
+      shell: bash
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/model-driver-cpu-context-296\"\ngit rev-parse HEAD > \"$proof/SOURCE_COMMIT\"\
+        \nprintf '%s\\n' \"$GITHUB_SHA\" > \"$proof/WORKFLOW_COMMIT\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path\
+        \ \"$RUNNER_TEMP\" --growth-mib 6144\nrust/target/debug/stage-driver-daemon-fixture --root \"$GITHUB_WORKSPACE\" --output\
+        \ \"$proof/driver-fixture\" > \"$proof/fixture-stage.json\"\nmodels=\"$proof/driver-fixture/no-collector/models\"\n\
+        manifest=\"$proof/driver-fixture/no-collector/observations/reference-manifest.json\"\nrust/target/debug/prepare-model-family-catalog\
+        \ --root \"$GITHUB_WORKSPACE\" --models \"$models\" --expected-model-manifest \"$manifest\" --expected-model-manifest-sha256\
+        \ 1b8e6cea511e9f212cd7737688b3e2ec0a165b9ff985b492f0e98c4639f18380 --kind driver --python \"$(command -v python)\"\
+        \ --llvm \"$LLVM_PATH\" --output \"$proof/driver-catalog\" > \"$proof/catalog.stdout\" 2> \"$proof/catalog.stderr\"\
+        \ || { cat \"$proof/catalog.stderr\"; exit 1; }\nrust/target/debug/model-run --check-catalog \"$proof/driver-catalog/catalog\"\
+        \ > \"$proof/catalog-check.json\"\ngeneration=$(jq -r .generation \"$proof/driver-catalog/catalog/current.json\")\n\
+        jq -e '.bundles | any(.kind == \"driver\" and .camera == [1344,760])' \"$proof/driver-catalog/catalog/$generation/index.json\"\
+        \ > /dev/null\ndirectory=$(jq -r '.bundles[] | select(.kind == \"driver\" and .camera == [1344,760]) | .directory'\
+        \ \"$proof/driver-catalog/catalog/$generation/index.json\")\ntest -n \"$directory\"\nprintf '%s\\n' \"$proof/driver-catalog/catalog/$generation/$directory\"\
+        \ > \"$proof/driver-bundle-path.txt\"\nfind \"$models\" -type f -print0 | sort -z | xargs -0 sha256sum > \"$proof/model-roster.sha256\"\
+        \nfor expected in expected-0.bin expected-1.bin; do\n  cp \"$proof/driver-fixture/collector-current/observations/1344-raw-1/reference/$expected\"\
+        \ \"$proof/$expected\"\ndone\nsha256sum \"$proof/expected-0.bin\" \"$proof/expected-1.bin\" > \"$proof/frozen-expected.sha256\"\
+        \nfind \"$proof/driver-catalog/catalog\" -type f -print0 | sort -z | xargs -0 sha256sum > \"$proof/catalog.before.sha256\"\
+        \nsha256sum \"$GITHUB_WORKSPACE/openpilot/selfdrive/modeld/dmonitoringmodeld.py\" \"$GITHUB_WORKSPACE/openpilot/common/transformations/model.py\"\
+        \ \"$GITHUB_WORKSPACE/openpilot/common/transformations/camera.py\" \"$GITHUB_WORKSPACE/openpilot/system/camerad/cameras/nv12_info.py\"\
+        \ \"$GITHUB_WORKSPACE/rust/tools/check_pipeline_reference.py\" \"$GITHUB_WORKSPACE/rust/tools/model_export/original.py\"\
+        \ \"$GITHUB_WORKSPACE/rust/tools/model_export/pipeline.py\" > \"$proof/source-closure.before.sha256\"\n"
+    - name: Compare exact original Python and current-host Rust stages on two captured frames
+      shell: bash
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/model-driver-cpu-context-296\"\nset +e\ntimeout --signal=TERM --kill-after=15s\
+        \ 1200s python - <<'PY' > \"$proof/diagnostic.log\" 2>&1\nimport hashlib, json, os, subprocess\nfrom pathlib import\
+        \ Path\nimport numpy as np\nfrom tinygrad.dtype import _to_np_dtype\nfrom model_export.original import DriverArtifacts,\
+        \ driver\nfrom check_pipeline_reference import execute, write_tensor\nfrom openpilot.common.transformations.model\
+        \ import dmonitoringmodel_intrinsics\nfrom openpilot.common.transformations.camera import _ar_ox_fisheye, _os_fisheye\n\
+        \nroot = Path(os.environ['GITHUB_WORKSPACE'])\nproof = Path(os.environ['RUNNER_TEMP']) / 'model-driver-cpu-context-296'\n\
+        obs = proof / 'driver-fixture/collector-current/observations/1344-raw-1'\nmodels = proof / 'driver-fixture/no-collector/models'\n\
+        bundle = Path((proof / 'driver-bundle-path.txt').read_text().strip())\ndescriptor = json.loads((bundle/'pipeline.json').read_text())\n\
+        graph = json.loads((bundle/'graph.json').read_text())\nframe_binding = next((item for item in graph['inputs'] if item['name']\
+        \ == 'frame'), None)\nif descriptor['kind'] != 'driver' or descriptor['camera'] != [1344, 760] or descriptor['nv12']['bytes']\
+        \ != 2428928 or frame_binding is None:\n  raise RuntimeError('catalog descriptor/driver frame binding changed')\n\
+        frame_view = graph['views'][frame_binding['view']]\nif frame_view['bytes'] != descriptor['nv12']['bytes']:\n  raise\
+        \ RuntimeError(f\"catalog frame view does not cover exact NV12 allocation: {frame_view}\")\nout = proof / 'comparison'\n\
+        out.mkdir()\noriginal = driver(DriverArtifacts(models/'dmonitoring_model_tinygrad.pkl', models/'dm_warp_1344x760_tinygrad.pkl',\
+        \ models/'dmonitoring_model_metadata.pkl'))\nframe_tensor = original.bindings.inputs['frame']\nraw_samples = [('warmup',\
+        \ obs/'warmup.bin'), ('frame-0', obs/'frame-0.bin')]\ncam = _os_fisheye if 1344 == _os_fisheye.width else _ar_ox_fisheye\n\
+        transform = np.linalg.inv(np.dot(dmonitoringmodel_intrinsics, np.linalg.inv(cam.intrinsics))).astype(np.float32)\n\
+        if transform.shape != tuple(original.bindings.inputs['transform'].shape):\n  raise RuntimeError(f'transform shape\
+        \ mismatch: {transform.shape}')\nif transform.dtype != np.dtype('float32'):\n  raise RuntimeError(f'transform dtype\
+        \ mismatch: {transform.dtype}')\nfixed = np.array([[0.75,0,132],[0,0.75,113],[0,0,1]], dtype=np.float32)\n(out/'original-transform.bin').write_bytes(transform.tobytes())\n\
+        (out/'native-fixed-transform.bin').write_bytes(fixed.tobytes())\n(out/'transform-contract.json').write_text(json.dumps({'original_bits':transform.view(np.uint32).tolist(),'native_bits':fixed.view(np.uint32).tolist(),'identical':transform.tobytes()==fixed.tobytes()},\
+        \ indent=2))\nif transform.tobytes()!=fixed.tobytes():\n  raise RuntimeError('original NumPy transform bits differ\
+        \ from actual fixed Rust transform; receipts retained')\ncalib_tensor = original.bindings.inputs['calib']\ncalib =\
+        \ np.zeros(tuple(calib_tensor.shape), dtype=np.float32)\nif _to_np_dtype(calib_tensor.dtype) != calib.dtype:\n  raise\
+        \ RuntimeError(f'calib dtype mismatch: {calib_tensor.dtype}')\nsequence = []\nreceipts = []\nfor label, path in raw_samples:\n\
+        \  raw = path.read_bytes()\n  frame_shape = tuple(frame_tensor.shape)\n  if _to_np_dtype(frame_tensor.dtype) != np.dtype('uint8')\
+        \ or frame_tensor.uop.base.buffer.nbytes != len(raw) or int(np.prod(frame_shape)) != len(raw):\n    raise RuntimeError(f'{label}:\
+        \ exact frame buffer contract mismatch shape={frame_shape} dtype={frame_tensor.dtype} bytes={len(raw)} buffer={frame_tensor.uop.base.buffer.nbytes}')\n\
+        \  frame = np.frombuffer(raw, dtype=np.uint8).copy().reshape(frame_shape)\n  if not frame.flags.writeable or frame.tobytes()!=raw:\n\
+        \    raise RuntimeError('mutable original copy changes frozen input bytes')\n  inputs = {'frame': frame, 'transform':\
+        \ transform, 'calib': calib}\n  input_names = {}\n  for name, values in inputs.items():\n    write_tensor(original.bindings.inputs[name],\
+        \ values)\n    filename = f'{label}-{name}.bin'\n    (out/filename).write_bytes(values.tobytes())\n    input_names[name]\
+        \ = filename\n  execute(original.stages[0])\n  execute(original.stages[1])\n  orig_values = {}\n  for name, tensor\
+        \ in original.bindings.outputs.items():\n    data = tensor.numpy().tobytes()\n    filename = f'{label}-original-{name}.bin'\n\
+        \    (out/filename).write_bytes(data)\n    orig_values[name] = data\n  sequence.extend([\n    {'entrypoint':'prepare','inputs':{'frame':input_names['frame'],'transform':input_names['transform']},'outputs':{'warped':f'{label}-native-warped.bin'}},\n\
+        \    {'entrypoint':'model','inputs':{'calib':input_names['calib']},'outputs':{'model':f'{label}-native-model.bin','warped':f'{label}-native-model-warped.bin'}},\n\
+        \  ])\n  receipts.append({'label':label,'input_sha256':hashlib.sha256(raw).hexdigest(),'input_bytes':len(raw),'frame_shape':frame_shape,'frame_dtype':str(frame_tensor.dtype),'transform_sha256':hashlib.sha256(transform.tobytes()).hexdigest(),'calib_sha256':hashlib.sha256(calib.tobytes()).hexdigest(),'original_outputs':{k:{'bytes':len(v),'sha256':hashlib.sha256(v).hexdigest(),'dtype':str(np.dtype(_to_np_dtype(original.bindings.outputs[k].dtype)))}\
+        \ for k,v in orig_values.items()}})\n(out/'input-receipts.json').write_text(json.dumps(receipts,indent=2)+'\\n')\n\
+        (out/'sequence.json').write_text(json.dumps(sequence, separators=(',',':')))\nresult = subprocess.run([str(root/'rust/target/debug/model-run'),'--trusted-bundle',str(bundle),str(out/'sequence.json')],\
+        \ cwd=out, capture_output=True, text=True, timeout=120)\n(out/'model-run.stdout').write_text(result.stdout)\n(out/'model-run.stderr').write_text(result.stderr)\n\
+        (out/'model-run.exit-status').write_text(str(result.returncode)+'\\n')\nif result.returncode:\n  raise RuntimeError(f'model-run\
+        \ status {result.returncode}')\ncomparisons = []\nfor row in receipts:\n  label = row['label']\n  for output_name\
+        \ in ('warped','model'):\n    expected = (out/f'{label}-original-{output_name}.bin').read_bytes()\n    actual_path\
+        \ = out/f'{label}-native-{output_name}.bin'\n    actual = actual_path.read_bytes()\n    if len(expected) != len(actual):\n\
+        \      raise RuntimeError(f'{label} {output_name}: size mismatch {len(expected)} != {len(actual)}')\n    left = np.frombuffer(expected,dtype=np.dtype(row['original_outputs'][output_name]['dtype']))\n\
+        \    right = np.frombuffer(actual,dtype=np.dtype(row['original_outputs'][output_name]['dtype']))\n    max_abs = float(np.max(np.abs(left.astype(np.float64)-right.astype(np.float64))))\
+        \ if left.size else 0.0\n    exact = hashlib.sha256(expected).digest() == hashlib.sha256(actual).digest()\n    comparisons.append({'label':label,'output':output_name,'bytes':len(expected),'original_sha256':hashlib.sha256(expected).hexdigest(),'native_sha256':hashlib.sha256(actual).hexdigest(),'exact':exact,'max_abs':max_abs})\n\
+        from openpilot.cereal import log\nfrozen_raw_predictions = {}\nfor index, label in enumerate(('warmup', 'frame-0')):\n\
+        \  with log.Event.from_bytes((proof/f'expected-{index}.bin').read_bytes()) as message:\n    raw_prediction = bytes(message.driverStateV2.rawPredictions)\n\
+        \  if len(raw_prediction) != 2212:\n    raise RuntimeError('independent frozen raw prediction width changed')\n  (out/f'{label}-frozen-original-model.bin').write_bytes(raw_prediction)\n\
+        \  frozen_raw_predictions[label] = hashlib.sha256(raw_prediction).hexdigest()\nif frozen_raw_predictions != {'warmup':'ace8ee6c6ff7cf8aa6f1881dd9eae6dc9cba15bb75bcc7bd70a5af03ddef500e','frame-0':'99b8b2fe7aa17098a366d1bb5e40a2b5a40561f0186ab4dcd33fb29a6dc358fc'}:\n\
+        \  raise RuntimeError('sealed independent raw predictions changed')\nfor row in receipts:\n  label = row['label']\n\
+        \  native_sha = hashlib.sha256((out/f'{label}-native-model.bin').read_bytes()).hexdigest()\n  original_sha = row['original_outputs']['model']['sha256']\n\
+        \  frozen_sha = frozen_raw_predictions[label]\n  row['frozen_raw_prediction_comparison'] = {'frozen_sha256':frozen_sha,'original_sha256':original_sha,'native_sha256':native_sha,'original_matches_frozen':original_sha\
+        \ == frozen_sha,'native_matches_frozen':native_sha == frozen_sha,'classification':'both_match_frozen' if original_sha\
+        \ == frozen_sha and native_sha == frozen_sha else 'original_only' if original_sha == frozen_sha else 'native_only'\
+        \ if native_sha == frozen_sha else 'neither_matches_frozen','data_only_not_acceptance':True}\nreport = {'source':os.environ['EXPECTED_SOURCE'],'sample':os.environ['DIAGNOSTIC_SAMPLE'],'actual_host':json.loads((proof/'cpu-profile.json').read_text()),'compiler_target':json.loads((proof/'driver-catalog/compiler-target.json').read_text()),'catalog_bundle':str(bundle),'catalog_check':json.loads((proof/'catalog-check.json').read_text()),'catalog_frame_view':frame_view,'catalog_nv12':descriptor['nv12'],'inputs':receipts,'comparisons':comparisons,'diagnostic_only':True,'retirement_acceptance':False,'frozen_predictions_are_data_only':True}\n\
+        (out/'report.json').write_text(json.dumps(report,indent=2)+'\\n')\nprint(json.dumps(report,indent=2))\nPY\nrc=$?\n\
+        set -e\nprintf '%s\\n' \"$rc\" > \"$proof/diagnostic.exit-status\"\npython -m pip freeze > \"$proof/providers.after.txt\"\
+        \ || true\nfind \"$proof/driver-fixture/no-collector/models\" -type f -print0 | sort -z | xargs -0 sha256sum > \"\
+        $proof/model-roster.after.sha256\"\ndiff -u \"$proof/model-roster.sha256\" \"$proof/model-roster.after.sha256\" >\
+        \ \"$proof/model-roster.diff\" || true\nfind \"$proof/driver-catalog/catalog\" -type f -print0 | sort -z | xargs -0\
+        \ sha256sum > \"$proof/catalog.after.sha256\"\ndiff -u \"$proof/catalog.before.sha256\" \"$proof/catalog.after.sha256\"\
+        \ > \"$proof/catalog.diff\" || true\nsha256sum \"$GITHUB_WORKSPACE/openpilot/selfdrive/modeld/dmonitoringmodeld.py\"\
+        \ \"$GITHUB_WORKSPACE/openpilot/common/transformations/model.py\" \"$GITHUB_WORKSPACE/openpilot/common/transformations/camera.py\"\
+        \ \"$GITHUB_WORKSPACE/openpilot/system/camerad/cameras/nv12_info.py\" \"$GITHUB_WORKSPACE/rust/tools/check_pipeline_reference.py\"\
+        \ \"$GITHUB_WORKSPACE/rust/tools/model_export/original.py\" \"$GITHUB_WORKSPACE/rust/tools/model_export/pipeline.py\"\
+        \ > \"$proof/source-closure.after.sha256\"\ndiff -u \"$proof/source-closure.before.sha256\" \"$proof/source-closure.after.sha256\"\
+        \ > \"$proof/source-closure.diff\" || true\ncmp \"$proof/model-roster.sha256\" \"$proof/model-roster.after.sha256\"\
+        \ncmp \"$proof/catalog.before.sha256\" \"$proof/catalog.after.sha256\"\ncmp \"$proof/source-closure.before.sha256\"\
+        \ \"$proof/source-closure.after.sha256\"\ncmp \"$proof/providers.before.txt\" \"$proof/providers.after.txt\"\nif [\
+        \ \"$rc\" -ne 0 ]; then tail -n 100 \"$proof/diagnostic.log\"; fi\ntest \"$rc\" -eq 0\n"
+    - name: Preserve bounded diagnostic and all input/output evidence
+      uses: actions/upload-artifact@v6
+      if: always()
+      with:
+        name: model-driver-cpu-context-296-${{ matrix.sample }}
+        include-hidden-files: true
+        retention-days: 14
+        if-no-files-found: warn
+        path: '${{ runner.temp }}/model-driver-cpu-context-296/
+
+          !${{ runner.temp }}/model-driver-cpu-context-296/driver-fixture/**
+
+          '
