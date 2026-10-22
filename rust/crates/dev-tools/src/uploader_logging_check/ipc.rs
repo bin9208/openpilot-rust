@@ -170,7 +170,8 @@ impl Peer {
         }
         let log = Subscriber::for_runtime("logMessage", false, BIG)?;
         let error = Subscriber::for_runtime("errorLogMessage", false, BIG)?;
-        let device = Publisher::for_runtime("deviceState", 1 << 20)?;
+        // services.py defaults deviceState to QueueSize.SMALL (250 KiB).
+        let device = Publisher::for_runtime("deviceState", 250 * 1024)?;
         let context = zmq::Context::new();
         let sender = context.socket(zmq::PUSH)?;
         sender.set_linger(0)?;

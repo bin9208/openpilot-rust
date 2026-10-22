@@ -474,3 +474,6 @@ impl Drop for Server {
         }
     }
 }
+
+#[cfg(test)]
+mod framing_tests;
