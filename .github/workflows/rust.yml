@@ -4872,6 +4872,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
+      BRIDGE_CATALOG_ROOTS: model-family-preparation-296
       EXPECTED_SOURCE: ${{ github.sha }}
       RUSTUP_TOOLCHAIN: 1.94.0
       CARGO_BUILD_JOBS: '2'
@@ -4939,7 +4940,7 @@ jobs:
           cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-driving-modeld --bin openpilot-driving-modeld --example usbgpu_daemon_fixture > "$proof/driving-build.log" 2>&1 || { cat "$proof/driving-build.log"; exit 1; }
           cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dmonitoringmodeld --bin openpilot-dmonitoringmodeld > "$proof/driver-build.log" 2>&1 || { cat "$proof/driver-build.log"; exit 1; }
           cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-usbgpu --example worker_protocol_fixture > "$proof/worker-build.log" 2>&1 || { cat "$proof/worker-build.log"; exit 1; }
-          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --bin model-run > "$proof/model-run-build.log" 2>&1 || { cat "$proof/model-run-build.log"; exit 1; }
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --bin model-run --bin offline-llvm-guarded-add > "$proof/model-run-build.log" 2>&1 || { cat "$proof/model-run-build.log"; exit 1; }
           cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features driving-daemon-native --bin stage-driving-daemon-fixture --bin generate-services-header > "$proof/stager-build.log" 2>&1 || { cat "$proof/stager-build.log"; exit 1; }
           mkdir "$proof/peer"
           rust/target/debug/generate-services-header > "$proof/peer/services.h"
@@ -4948,6 +4949,34 @@ jobs:
 
           g++ -std=c++17 -pthread -Imsgq_repo -I"$proof/peer" rust/tools/driver_daemon_peer.cc msgq_repo/msgq/{ipc,event,impl_msgq,impl_fake,msgq}.cc msgq_repo/msgq/visionipc/{visionipc,visionipc_client,visionipc_server,visionbuf}.cc -o "$proof/peer/driver-daemon-peer" > "$proof/driver-peer-build.log" 2>&1 || { cat "$proof/driver-peer-build.log"; exit 1; }
           cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-logmessaged --bin openpilot-logmessaged > "$proof/collector-build.log" 2>&1 || { cat "$proof/collector-build.log"; exit 1; }
+      - name: Bind same-source explicit helper for all affected catalog exports
+        id: bridge-bind
+        shell: bash
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/bridge-proof-296"
+          mkdir "$proof"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+          test -n "$LLVM_PATH" && test -s "$LLVM_PATH"
+          rustc -Vv > "$proof/rustc-version.txt"
+          cargo -V > "$proof/cargo-version.txt"
+          cargo clippy -V > "$proof/clippy-version.txt"
+          helper=$(readlink -f "$GITHUB_WORKSPACE/rust/target/debug/offline-llvm-guarded-add")
+          test -x "$helper"
+          digest=$(sha256sum "$helper" | cut -d' ' -f1)
+          printf 'MODEL_LLVM_GUARDED_ADD_BINARY=%s\nMODEL_LLVM_GUARDED_ADD_SHA256=%s\n' "$helper" "$digest" >> "$GITHUB_ENV"
+          printf '%s\n' "$helper" "$(readlink -f "$LLVM_PATH")" "$GITHUB_WORKSPACE/rust/crates/model-runtime/src/guarded_add.rs" "$GITHUB_WORKSPACE/rust/crates/model-runtime/src/bin/offline-llvm-guarded-add.rs" "$GITHUB_WORKSPACE/rust/crates/model-runtime/src/owned_outputs.rs" "$GITHUB_WORKSPACE/rust/crates/model-runtime/src/lib.rs" "$GITHUB_WORKSPACE/rust/crates/model-runtime/Cargo.toml" "$GITHUB_WORKSPACE/rust/Cargo.toml" "$GITHUB_WORKSPACE/rust/Cargo.lock" "$GITHUB_WORKSPACE/rust/rust-toolchain.toml" "$GITHUB_WORKSPACE/rust/tools/build_model_pipelines.py" "$GITHUB_WORKSPACE/rust/tools/model_export/native.py" "$GITHUB_WORKSPACE/rust/tools/model_export/capture.py" "$GITHUB_WORKSPACE/rust/tools/model_export/compile.py" "$GITHUB_WORKSPACE/rust/tools/model_export/schema.py" "$GITHUB_WORKSPACE/rust/crates/dev-tools/src/driver_daemon_current_catalog.rs" "$GITHUB_WORKSPACE/rust/crates/dev-tools/src/model_family_prepare/catalog.rs" "$GITHUB_WORKSPACE/rust/crates/model-runtime/tests/catalog.rs" > "$proof/binding-paths.txt"
+          if test -n "${MODEL_BRIDGE_CATALOG_TEST_BINARY:-}"; then
+           printf '%s\n' "$MODEL_BRIDGE_CATALOG_TEST_BINARY" >> "$proof/binding-paths.txt"
+          fi
+          printf '%s\n' "$(readlink -f "$(command -v python)")" "$GITHUB_WORKSPACE/rust/crates/dev-tools/src/driver_daemon_check.rs" "$GITHUB_WORKSPACE/rust/tools/model_export/publish.py" >> "$proof/binding-paths.txt"
+          while IFS= read -r path; do sha256sum "$path"; done < "$proof/binding-paths.txt" > "$proof/bindings.before.sha256"
+          while IFS= read -r path; do stat --printf '%n:%d:%i:%s:%f:%y:%z\n' "$path"; done < "$proof/binding-paths.txt" > "$proof/identities.before.txt"
+          lscpu --json > "$proof/lscpu.json"
+          cat /proc/cpuinfo > "$proof/proc-cpuinfo.txt"
+          uname -a > "$proof/uname.txt"
+          git rev-parse HEAD > "$proof/source.txt"
+          python -m pip freeze > "$proof/providers.before.txt"
       - name: Stage two independent model datasets and export separate current-host catalogs
         shell: bash
         run: |
@@ -5009,6 +5038,73 @@ jobs:
             fi
             exit "$gate_status"
           fi
+      - name: Retain bounded raw sidecars validated by native catalog gates
+        if: always() && steps.bridge-bind.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/bridge-proof-296"
+          : > "$proof/sidecar-paths.nul"
+          IFS=: read -r -a roots <<< "$BRIDGE_CATALOG_ROOTS"
+          for name in "${roots[@]}"; do
+           root="$RUNNER_TEMP/$name"
+           if test -d "$root"; then
+            test ! -L "$root"
+            find "$root" -type f \( -name compilation-evidence.json -o -name 'kernel-*.txt' -o -name 'kernel-*.compiled.ll' -o -name 'kernel-*.guarded-add.json' -o -name 'kernel-*.o' \) -print0 >> "$proof/sidecar-paths.nul"
+           fi
+          done
+          files=0; bytes=0; evidence=0
+          : > "$proof/sidecar-files.sha256"
+          while IFS= read -r -d '' file; do
+           test -f "$file" && test ! -L "$file"
+           size=$(stat -c '%s' "$file")
+           test "$size" -le 33554432
+           files=$((files + 1)); bytes=$((bytes + size))
+           test "$files" -le 10000 && test "$bytes" -le 268435456
+           if [[ "$file" == */compilation-evidence.json ]]; then evidence=$((evidence + 1)); fi
+           sha256sum "$file" >> "$proof/sidecar-files.sha256"
+          done < "$proof/sidecar-paths.nul"
+          # Receipts and complete kernel bindings are checked by the existing native gates.
+          # Require actual exports even if an earlier step failed before any catalog existed.
+          test "$evidence" -gt 0 && test "$files" -gt 0
+          printf 'files=%s\nbytes=%s\nevidence_directories=%s\n' "$files" "$bytes" "$evidence" > "$proof/sidecar-counts.txt"
+          # Stage only the exact bounded roster, never every matching file in RUNNER_TEMP.
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 512
+          : > "$proof/sidecar-relative-paths.nul"
+          while IFS= read -r -d '' file; do
+           case "$file" in "$RUNNER_TEMP"/*) ;; *) exit 1 ;; esac
+           printf '%s\0' "${file#"$RUNNER_TEMP"/}" >> "$proof/sidecar-relative-paths.nul"
+          done < "$proof/sidecar-paths.nul"
+          tar --create --gzip --null --verbatim-files-from --no-recursion \
+            --directory="$RUNNER_TEMP" --files-from="$proof/sidecar-relative-paths.nul" \
+            --file="$proof/complete-sidecars.tar.gz"
+          sha256sum --check --strict "$proof/sidecar-files.sha256" > "$proof/sidecar-files.after.log"
+          sha256sum "$proof/complete-sidecars.tar.gz" > "$proof/complete-sidecars.sha256"
+      - name: Independent final helper/provider/source/Python guards
+        if: always() && steps.bridge-bind.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/bridge-proof-296"
+          status=0
+          sha256sum --check --strict "$proof/bindings.before.sha256" > "$proof/bindings.after.log" 2>&1 || status=1
+          while IFS= read -r path; do stat --printf '%n:%d:%i:%s:%f:%y:%z\n' "$path" || status=1; done < "$proof/binding-paths.txt" > "$proof/identities.after.txt"
+          cmp "$proof/identities.before.txt" "$proof/identities.after.txt" || status=1
+          python -m pip freeze > "$proof/providers.after.txt" || status=1
+          cmp "$proof/providers.before.txt" "$proof/providers.after.txt" || status=1
+          printf '%s\n' "$status" > "$proof/final-guards.status"
+          test "$status" -eq 0
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: model-guarded-add-evidence-${{ github.job }}
+          retention-days: 7
+          if-no-files-found: error
+          path: |-
+            ${{ runner.temp }}/bridge-proof-296/
+            ${{ github.workspace }}/rust/target/debug/offline-llvm-guarded-add
+            ${{ runner.temp }}/bridge-catalog-checks/
+          include-hidden-files: true
       - name: Preserve native actual CLI, all reports and exact data/provider provenance
         uses: actions/upload-artifact@v6
         if: always()
@@ -5033,6 +5129,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 75
     env:
+      BRIDGE_CATALOG_ROOTS: native-catalog:road-pipeline-1928:road-pipeline-1344:dm-pipeline-1928:dm-pipeline-1344:model-input-pipelines:driving-four-source
+      EXPECTED_SOURCE: ${{ github.sha }}
       CARGO_BUILD_JOBS: '2'
       CPU_COUNT: '2'
       DEV: CPU:LLVM
@@ -5060,6 +5158,59 @@ jobs:
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-dmonitoringmodeld --locked
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-driving-modeld --locked
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-logmessaged --bins --locked
+      - name: Compile and seal actual bridge catalog test after grouped runtime builds
+        shell: bash
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/bridge-catalog-checks"
+          mkdir "$proof"
+          test -n "$LLVM_PATH" && test -s "$LLVM_PATH"
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --test catalog -- -D warnings > "$proof/catalog-clippy.log" 2>&1 || { cat "$proof/catalog-clippy.log"; exit 1; }
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --test catalog --no-run --message-format=json > "$proof/catalog-artifacts.jsonl" 2> "$proof/catalog-compile.log" || { cat "$proof/catalog-compile.log"; exit 1; }
+          binary=$(jq -sr '[.[] | select(.reason == "compiler-artifact" and .target.name == "catalog" and (.target.kind | index("test")) != null and .profile.test == true and .executable != null) | .executable] | unique | if length == 1 then .[0] else error("expected one catalog test executable") end' "$proof/catalog-artifacts.jsonl")
+          test -n "$binary" && test -x "$binary"
+          test "$(readlink -f "$binary")" = "$binary"
+          printf '%s\n' "$binary" > "$proof/catalog-test-path.txt"
+          printf 'MODEL_BRIDGE_CATALOG_TEST_BINARY=%s\n' "$binary" >> "$GITHUB_ENV"
+      - name: Bind same-source explicit helper for all affected catalog exports
+        id: bridge-bind
+        shell: bash
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/bridge-proof-296"
+          mkdir "$proof"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+          test -n "$LLVM_PATH" && test -s "$LLVM_PATH"
+          rustc -Vv > "$proof/rustc-version.txt"
+          cargo -V > "$proof/cargo-version.txt"
+          cargo clippy -V > "$proof/clippy-version.txt"
+          helper=$(readlink -f "$GITHUB_WORKSPACE/rust/target/debug/offline-llvm-guarded-add")
+          test -x "$helper"
+          digest=$(sha256sum "$helper" | cut -d' ' -f1)
+          printf 'MODEL_LLVM_GUARDED_ADD_BINARY=%s\nMODEL_LLVM_GUARDED_ADD_SHA256=%s\n' "$helper" "$digest" >> "$GITHUB_ENV"
+          printf '%s\n' "$helper" "$(readlink -f "$LLVM_PATH")" "$GITHUB_WORKSPACE/rust/crates/model-runtime/src/guarded_add.rs" "$GITHUB_WORKSPACE/rust/crates/model-runtime/src/bin/offline-llvm-guarded-add.rs" "$GITHUB_WORKSPACE/rust/crates/model-runtime/src/owned_outputs.rs" "$GITHUB_WORKSPACE/rust/crates/model-runtime/src/lib.rs" "$GITHUB_WORKSPACE/rust/crates/model-runtime/Cargo.toml" "$GITHUB_WORKSPACE/rust/Cargo.toml" "$GITHUB_WORKSPACE/rust/Cargo.lock" "$GITHUB_WORKSPACE/rust/rust-toolchain.toml" "$GITHUB_WORKSPACE/rust/tools/build_model_pipelines.py" "$GITHUB_WORKSPACE/rust/tools/model_export/native.py" "$GITHUB_WORKSPACE/rust/tools/model_export/capture.py" "$GITHUB_WORKSPACE/rust/tools/model_export/compile.py" "$GITHUB_WORKSPACE/rust/tools/model_export/schema.py" "$GITHUB_WORKSPACE/rust/crates/dev-tools/src/driver_daemon_current_catalog.rs" "$GITHUB_WORKSPACE/rust/crates/dev-tools/src/model_family_prepare/catalog.rs" "$GITHUB_WORKSPACE/rust/crates/model-runtime/tests/catalog.rs" > "$proof/binding-paths.txt"
+          if test -n "${MODEL_BRIDGE_CATALOG_TEST_BINARY:-}"; then
+           printf '%s\n' "$MODEL_BRIDGE_CATALOG_TEST_BINARY" >> "$proof/binding-paths.txt"
+          fi
+          printf '%s\n' "$(readlink -f "$(command -v python)")" "$GITHUB_WORKSPACE/rust/crates/dev-tools/src/driver_daemon_check.rs" "$GITHUB_WORKSPACE/rust/tools/model_export/publish.py" >> "$proof/binding-paths.txt"
+          while IFS= read -r path; do sha256sum "$path"; done < "$proof/binding-paths.txt" > "$proof/bindings.before.sha256"
+          while IFS= read -r path; do stat --printf '%n:%d:%i:%s:%f:%y:%z\n' "$path"; done < "$proof/binding-paths.txt" > "$proof/identities.before.txt"
+          lscpu --json > "$proof/lscpu.json"
+          cat /proc/cpuinfo > "$proof/proc-cpuinfo.txt"
+          uname -a > "$proof/uname.txt"
+          git rev-parse HEAD > "$proof/source.txt"
+          python -m pip freeze > "$proof/providers.before.txt"
+      - name: Exercise actual LLVM bridge and immutable publisher reuse before full model traffic
+        shell: bash
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/bridge-catalog-checks"
+          export MODEL_BRIDGE_PYTHON="$(readlink -f "$(command -v python)")"
+          test -n "$LLVM_PATH" && test -s "$LLVM_PATH"
+          # Execute the selected test ELF directly: no Cargo relink after helper binding.
+          "$MODEL_BRIDGE_CATALOG_TEST_BINARY" --ignored --exact guarded_add_bridge_retains_original_and_compiled_source_evidence --nocapture 2>&1 | tee "$proof/actual-bridge.log"
+          "$MODEL_BRIDGE_CATALOG_TEST_BINARY" --ignored --exact guarded_add_publish_reuse_requires_exact_evidence_roster --nocapture 2>&1 | tee "$proof/actual-publisher-reuse.log"
+          sha256sum --check --strict "$RUNNER_TEMP/bridge-proof-296/bindings.before.sha256"
       - run: python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/model-msgq-python"
       - run: git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx --exclude=''
       - name: Compile the original grouped driving and driver artifacts
@@ -5195,6 +5346,73 @@ jobs:
             --test driving_daemon_retirement -- --nocapture 2>&1 | tee "$proof/current-two-root-retirement.log"
           rust/target/debug/seal-driving-daemon-fixture --output "$DRIVING_FIXTURE_DIRECTORY" --verify-sha "$DRIVING_FIXTURE_MANIFEST_SHA256" > "$proof/historical-after.json"
           sha256sum -c "$proof/production-elf-seals.sha256"
+      - name: Retain bounded raw sidecars validated by native catalog gates
+        if: always() && steps.bridge-bind.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/bridge-proof-296"
+          : > "$proof/sidecar-paths.nul"
+          IFS=: read -r -a roots <<< "$BRIDGE_CATALOG_ROOTS"
+          for name in "${roots[@]}"; do
+           root="$RUNNER_TEMP/$name"
+           if test -d "$root"; then
+            test ! -L "$root"
+            find "$root" -type f \( -name compilation-evidence.json -o -name 'kernel-*.txt' -o -name 'kernel-*.compiled.ll' -o -name 'kernel-*.guarded-add.json' -o -name 'kernel-*.o' \) -print0 >> "$proof/sidecar-paths.nul"
+           fi
+          done
+          files=0; bytes=0; evidence=0
+          : > "$proof/sidecar-files.sha256"
+          while IFS= read -r -d '' file; do
+           test -f "$file" && test ! -L "$file"
+           size=$(stat -c '%s' "$file")
+           test "$size" -le 33554432
+           files=$((files + 1)); bytes=$((bytes + size))
+           test "$files" -le 10000 && test "$bytes" -le 268435456
+           if [[ "$file" == */compilation-evidence.json ]]; then evidence=$((evidence + 1)); fi
+           sha256sum "$file" >> "$proof/sidecar-files.sha256"
+          done < "$proof/sidecar-paths.nul"
+          # Receipts and complete kernel bindings are checked by the existing native gates.
+          # Require actual exports even if an earlier step failed before any catalog existed.
+          test "$evidence" -gt 0 && test "$files" -gt 0
+          printf 'files=%s\nbytes=%s\nevidence_directories=%s\n' "$files" "$bytes" "$evidence" > "$proof/sidecar-counts.txt"
+          # Stage only the exact bounded roster, never every matching file in RUNNER_TEMP.
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 512
+          : > "$proof/sidecar-relative-paths.nul"
+          while IFS= read -r -d '' file; do
+           case "$file" in "$RUNNER_TEMP"/*) ;; *) exit 1 ;; esac
+           printf '%s\0' "${file#"$RUNNER_TEMP"/}" >> "$proof/sidecar-relative-paths.nul"
+          done < "$proof/sidecar-paths.nul"
+          tar --create --gzip --null --verbatim-files-from --no-recursion \
+            --directory="$RUNNER_TEMP" --files-from="$proof/sidecar-relative-paths.nul" \
+            --file="$proof/complete-sidecars.tar.gz"
+          sha256sum --check --strict "$proof/sidecar-files.sha256" > "$proof/sidecar-files.after.log"
+          sha256sum "$proof/complete-sidecars.tar.gz" > "$proof/complete-sidecars.sha256"
+      - name: Independent final helper/provider/source/Python guards
+        if: always() && steps.bridge-bind.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/bridge-proof-296"
+          status=0
+          sha256sum --check --strict "$proof/bindings.before.sha256" > "$proof/bindings.after.log" 2>&1 || status=1
+          while IFS= read -r path; do stat --printf '%n:%d:%i:%s:%f:%y:%z\n' "$path" || status=1; done < "$proof/binding-paths.txt" > "$proof/identities.after.txt"
+          cmp "$proof/identities.before.txt" "$proof/identities.after.txt" || status=1
+          python -m pip freeze > "$proof/providers.after.txt" || status=1
+          cmp "$proof/providers.before.txt" "$proof/providers.after.txt" || status=1
+          printf '%s\n' "$status" > "$proof/final-guards.status"
+          test "$status" -eq 0
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: model-guarded-add-evidence-${{ github.job }}
+          retention-days: 7
+          if-no-files-found: error
+          path: |-
+            ${{ runner.temp }}/bridge-proof-296/
+            ${{ github.workspace }}/rust/target/debug/offline-llvm-guarded-add
+            ${{ runner.temp }}/bridge-catalog-checks/
+          include-hidden-files: true
       - uses: actions/upload-artifact@v6
         if: always()
         with:
