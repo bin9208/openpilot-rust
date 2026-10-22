@@ -171,8 +171,14 @@ jobs:
         unset MANAGER_DAEMON ZMQ CEREAL_FAKE LD_PRELOAD LD_LIBRARY_PATH RUSTFLAGS CARGO_ENCODED_RUSTFLAGS RUSTC_WRAPPER RUSTC_WORKSPACE_WRAPPER\n\
         unset PARAMSD_SANITIZER_LIBS\nexport RUSTUP_TOOLCHAIN=1.94.0\n# No cache restore: the complete target starts absent\
         \ in this hosted job.\ngit rev-parse HEAD > \"$proof/SOURCE_COMMIT\"\ntest \"$(git rev-parse HEAD)\" = \"$SOURCE_SHA\"\
-        \ngit diff --exit-code\ngit ls-files -z | xargs -0 sha256sum > \"$proof/source.sha256\"\nmkdir \"$proof/source-inputs\"\
-        \ngit ls-files -z 'rust/Cargo.toml' 'rust/Cargo.lock' 'rust/crates/dev-tools/Cargo.toml' 'rust/crates/paramsd/*' 'rust/crates/dev-tools/*paramsd*'\
+        \ngit diff --exit-code\n# Track literal symlink bytes, including directory and dangling aliases.\n# GNU tar follows\
+        \ no links; every regular tracked path remains included.\nseal_source_tree() {\n  tar --format=gnu --mtime=@0 --owner=0\
+        \ --group=0 --numeric-owner \\\n    --no-recursion --null --verbatim-files-from -C \"$1\" -cf - -T \"$2\" | sha256sum\n\
+        }\ngit ls-files --stage -z > \"$proof/source-index.nul\"\ngit ls-files -z > \"$proof/source-paths.nul\"\nwhile IFS=\
+        \ read -r -d '' source_path; do\n  if [[ \"$source_path\" != rust/tools/check_paramsd_startup.py ]]; then\n    printf\
+        \ '%s\\0' \"$source_path\"\n  fi\ndone < \"$proof/source-paths.nul\" > \"$proof/absent-source-paths.nul\"\nseal_source_tree\
+        \ \"$GITHUB_WORKSPACE\" \"$proof/source-paths.nul\" > \"$proof/source.sha256\"\nmkdir \"$proof/source-inputs\"\ngit\
+        \ ls-files -z 'rust/Cargo.toml' 'rust/Cargo.lock' 'rust/crates/dev-tools/Cargo.toml' 'rust/crates/paramsd/*' 'rust/crates/dev-tools/*paramsd*'\
         \ 'rust/tools/*paramsd*' 'openpilot/cereal/*.capnp' 'opendbc_repo/opendbc/car/car.capnp' | xargs -0 cp --parents -t\
         \ \"$proof/source-inputs\"\nsha256sum rust/Cargo.toml rust/Cargo.lock rust/crates/dev-tools/Cargo.toml > \"$proof/manifests.sha256\"\
         \nrustc -vV > \"$proof/rustc.txt\"\ncargo -V > \"$proof/cargo.txt\"\nclang++ --version > \"$proof/clang.txt\"\ncapnp\
@@ -206,8 +212,8 @@ jobs:
         \ --exclude=rust/tools/check_paramsd_startup.py\ntest ! -e \"$proof/absent-root/rust/tools/check_paramsd_startup.py\"\
         \ntest ! -L \"$proof/absent-root/rust/tools/check_paramsd_startup.py\"\n# Snapshot each isolated root before functional\
         \ execution. The private absent\n# copy is never built; both native lanes use the same current ELF and providers.\n\
-        find \"$proof/original-root\" -type f -print0 | sort -z | xargs -0 sha256sum > \"$proof/original-root.sha256\"\nfind\
-        \ \"$proof/absent-root\" -type f -print0 | sort -z | xargs -0 sha256sum > \"$proof/absent-root.sha256\"\nexport PYTHONPATH=\"\
+        seal_source_tree \"$proof/original-root\" \"$proof/source-paths.nul\" > \"$proof/original-root.sha256\"\nseal_source_tree\
+        \ \"$proof/absent-root\" \"$proof/absent-source-paths.nul\" > \"$proof/absent-root.sha256\"\nexport PYTHONPATH=\"\
         $proof/original-root:$proof/original-root/rust/tools\"\npython \"$proof/capture-original.py\" \"$proof/original\"\
         \ \"$daemon\" > \"$proof/original.stdout\" 2> \"$proof/original.stderr\"\nsha256sum \"$proof/original\"/inputs.json\
         \ \"$proof/original\"/results.json \"$proof/original\"/capture.json > \"$proof/original.sha256\"\nfind \"$proof/original\"\
@@ -219,12 +225,15 @@ jobs:
         \ 180s /usr/bin/env PATH=\"$proof/no-programs\" /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o \"$proof/native-$lane.exec\"\
         \ \"$checker\" --root \"$source_root\" --binary \"$daemon\" --evidence \"$proof/native-$lane\" > \"$proof/native-$lane.stdout\"\
         \ 2> \"$proof/native-$lane.stderr\"\ndone\npython \"$proof/audit.py\" \"$proof\" \"$checker\" \"$daemon\" \"$GITHUB_WORKSPACE\"\
-        \ \"$proof/absent-root\" > \"$proof/audit.stdout\" 2> \"$proof/audit.stderr\"\nsha256sum -c \"$proof/source.sha256\"\
-        \ > \"$proof/source-after.txt\"\nsha256sum -c \"$proof/manifests.sha256\" > \"$proof/manifests-after.txt\"\nsha256sum\
-        \ -c \"$proof/elf.sha256\" > \"$proof/elf-after.txt\"\nsha256sum -c \"$proof/providers.sha256\" > \"$proof/providers-after.txt\"\
-        \nsha256sum -c \"$proof/eigen.sha256\" > \"$proof/eigen-after.txt\"\nsha256sum -c \"$proof/original.sha256\" > \"\
-        $proof/original-after.txt\"\nsha256sum -c \"$proof/original-root.sha256\" > \"$proof/original-root-after.txt\"\nsha256sum\
-        \ -c \"$proof/absent-root.sha256\" > \"$proof/absent-root-after.txt\"\ntest ! -e \"$proof/absent-root/rust/tools/check_paramsd_startup.py\"\
+        \ \"$proof/absent-root\" > \"$proof/audit.stdout\" 2> \"$proof/audit.stderr\"\ngit ls-files --stage -z > \"$proof/source-index-after.nul\"\
+        \ncmp \"$proof/source-index.nul\" \"$proof/source-index-after.nul\"\nseal_source_tree \"$GITHUB_WORKSPACE\" \"$proof/source-paths.nul\"\
+        \ > \"$proof/source-after.txt\"\ncmp \"$proof/source.sha256\" \"$proof/source-after.txt\"\nsha256sum -c \"$proof/manifests.sha256\"\
+        \ > \"$proof/manifests-after.txt\"\nsha256sum -c \"$proof/elf.sha256\" > \"$proof/elf-after.txt\"\nsha256sum -c \"\
+        $proof/providers.sha256\" > \"$proof/providers-after.txt\"\nsha256sum -c \"$proof/eigen.sha256\" > \"$proof/eigen-after.txt\"\
+        \nsha256sum -c \"$proof/original.sha256\" > \"$proof/original-after.txt\"\nseal_source_tree \"$proof/original-root\"\
+        \ \"$proof/source-paths.nul\" > \"$proof/original-root-after.txt\"\ncmp \"$proof/original-root.sha256\" \"$proof/original-root-after.txt\"\
+        \nseal_source_tree \"$proof/absent-root\" \"$proof/absent-source-paths.nul\" > \"$proof/absent-root-after.txt\"\n\
+        cmp \"$proof/absent-root.sha256\" \"$proof/absent-root-after.txt\"\ntest ! -e \"$proof/absent-root/rust/tools/check_paramsd_startup.py\"\
         \ntest ! -L \"$proof/absent-root/rust/tools/check_paramsd_startup.py\"\ngit diff --exit-code\nprintf '%s\\n' 'Exact\
         \ original/native startup family complete; no source retirement or device acceptance claimed.' > \"$proof/complete.txt\"\
         \n"
