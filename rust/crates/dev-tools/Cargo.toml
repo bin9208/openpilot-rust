@@ -597,6 +597,7 @@ services-catalog-native = ["dep:capnp", "dep:openpilot-cereal"]
 timed-tools-native = ["dep:chrono", "dep:zmq"]
 timed-live-native = ["timed-tools-native", "dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq"]
 bootlog-artifact-native = ["dep:capnp", "dep:openpilot-cereal", "dep:zstd"]
+route-upload-native = ["bootlog-artifact-native", "dep:p256", "dep:url"]
 hardware-info-qa-native = []
 hardwared-qa-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-messaging", "openpilot-messaging/native", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq", "serde_json/float_roundtrip"]
 modem-qa-native = ["dep:openpilot-process-supervision", "rustix/termios"]
@@ -2212,3 +2213,17 @@ required-features = ["kalman-corpus-generator-native"]
 [[test]]
 name = "kalman_corpus_generator"
 required-features = ["kalman-corpus-generator-native"]
+
+[[bin]]
+name = "check-manager-log-upload"
+path = "src/bin/check_manager_log_upload.rs"
+required-features = ["route-upload-native"]
+
+[[bin]]
+name = "check-runtime-log-upload"
+path = "src/bin/check_runtime_log_upload.rs"
+required-features = ["route-upload-native"]
+
+[[test]]
+name = "route_upload_check"
+required-features = ["route-upload-native"]
