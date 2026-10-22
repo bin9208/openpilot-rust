@@ -239,7 +239,11 @@ fn invoke(
     }
 }
 
-fn checker_args(source: &Path, evidence: &Path, retired: bool) -> Vec<OsString> {
+fn checker_args(
+    source: &Path,
+    evidence: &Path,
+    source_state: modem_capture::SourceState,
+) -> Vec<OsString> {
     let mut args = vec![
         OsString::from("--binary"),
         required("MODEM_DAEMON_BINARY")
@@ -261,8 +265,14 @@ fn checker_args(source: &Path, evidence: &Path, retired: bool) -> Vec<OsString> 
         OsString::from("--source-root"),
         source.as_os_str().to_owned(),
     ];
-    if retired {
-        args.push(OsString::from("--require-retired"));
+    match source_state {
+        modem_capture::SourceState::OriginalPresent => {}
+        modem_capture::SourceState::ToolsRetiredRuntimePinned => {
+            args.push(OsString::from("--require-tools-retired"));
+        }
+        modem_capture::SourceState::AllRetired => {
+            args.push(OsString::from("--require-retired"));
+        }
     }
     args
 }
@@ -366,14 +376,24 @@ fn same_held_native_elfs_replay_modem_originals_in_checkout_and_private_absent_r
     let output = required("MODEM_RETIREMENT_OUTPUT");
     fs::create_dir(&output).unwrap();
     let checker = required("MODEM_CHECKER_BINARY").canonicalize().unwrap();
-    let retired_actual =
+    let require_all_retired =
         std::env::var_os("MODEM_REQUIRE_RETIRED").is_some_and(|value| value == "1");
+    let require_tools_retired =
+        std::env::var_os("MODEM_REQUIRE_TOOLS_RETIRED").is_some_and(|value| value == "1");
+    assert!(!(require_all_retired && require_tools_retired));
+    let actual_state = if require_all_retired {
+        modem_capture::SourceState::AllRetired
+    } else if require_tools_retired {
+        modem_capture::SourceState::ToolsRetiredRuntimePinned
+    } else {
+        modem_capture::SourceState::OriginalPresent
+    };
     let held = held_elfs();
     assert_eq!(
         held.iter().find(|elf| elf.name == "checker").unwrap().path,
         checker
     );
-    let source_receipts = [modem_capture::validate(&root, retired_actual).unwrap()];
+    let source_receipts = [modem_capture::validate_with_state(&root, actual_state).unwrap()];
     let private = output.join("private-source-root");
     fs::create_dir(&private).unwrap();
     // Retired project files must be absent beneath real source-parent directories.
@@ -399,9 +419,9 @@ fn same_held_native_elfs_replay_modem_originals_in_checkout_and_private_absent_r
     fs::create_dir(&empty_cwd).unwrap();
     let private_receipt = modem_capture::validate(&private, true).unwrap();
     let input_receipts = json!({
-        "actual":{"root_bytes":root.as_os_str().as_bytes(),"require_retired":retired_actual,
+            "actual":{"root_bytes":root.as_os_str().as_bytes(),"source_state":format!("{actual_state:?}"),
             "capture":source_receipts[0].report()},
-        "private":{"root_bytes":private.as_os_str().as_bytes(),"require_retired":true,
+            "private":{"root_bytes":private.as_os_str().as_bytes(),"source_state":"AllRetired",
             "capture":private_receipt.report(),"retired_absent":RETIRED},
         "empty_cwd_bytes":empty_cwd.as_os_str().as_bytes()
     });
@@ -419,12 +439,17 @@ fn same_held_native_elfs_replay_modem_originals_in_checkout_and_private_absent_r
 
     let mut totals = Vec::new();
     let mut full_cases_by_root = Vec::new();
-    for (label, source, cwd, retired) in [
-        ("actual", root.as_path(), root.as_path(), retired_actual),
-        ("private", private.as_path(), empty_cwd.as_path(), true),
+    for (label, source, cwd, source_state) in [
+        ("actual", root.as_path(), root.as_path(), actual_state),
+        (
+            "private",
+            private.as_path(),
+            empty_cwd.as_path(),
+            modem_capture::SourceState::AllRetired,
+        ),
     ] {
         let evidence = output.join(format!("{label}-run"));
-        let args = checker_args(source, &evidence, retired);
+        let args = checker_args(source, &evidence, source_state);
         let report = invoke(
             &checker,
             &args,
@@ -501,7 +526,11 @@ fn same_held_native_elfs_replay_modem_originals_in_checkout_and_private_absent_r
         let absent_output = output.join(format!("reappearance-output-{}", name.replace('/', "-")));
         let status = invoke(
             &checker,
-            &checker_args(&private, &absent_output, true),
+            &checker_args(
+                &private,
+                &absent_output,
+                modem_capture::SourceState::AllRetired,
+            ),
             &empty_cwd,
             &evidence,
             1,

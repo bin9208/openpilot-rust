@@ -54,6 +54,22 @@ const SOURCE_PINS: [(&str, &str); 6] = [
         "2a3cd0907ddc175a5c753490b11784a458d904065236c520dffd949548cd2abd",
     ),
 ];
+const TOOL_SOURCE_COUNT: usize = 5;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum SourceState {
+    OriginalPresent,
+    ToolsRetiredRuntimePinned,
+    AllRetired,
+}
+
+fn is_retired_in_state(source_state: SourceState, index: usize) -> bool {
+    match source_state {
+        SourceState::OriginalPresent => false,
+        SourceState::ToolsRetiredRuntimePinned => index >= SOURCE_PINS.len() - TOOL_SOURCE_COUNT,
+        SourceState::AllRetired => true,
+    }
+}
 const CASES: [(&str, &str); 13] = [
     (
         "normal",
@@ -311,6 +327,7 @@ pub struct Receipt {
     fixture: PathBuf,
     held: Vec<Held>,
     missing: Vec<PathBuf>,
+    source_state: SourceState,
 }
 
 pub struct Executables {
@@ -447,12 +464,24 @@ impl Receipt {
           "source_files": self.held.iter().filter(|input| input.path.starts_with(&self.root.join("openpilot")) || input.path.starts_with(&self.root.join("rust/tools"))).map(Held::report).collect::<Vec<_>>(),
           "original_oracles": self.held.iter().filter(|input| input.path.starts_with(&self.fixture) && input.name != "capture-manifest.json").map(Held::report).collect::<Vec<_>>(),
           "helper_original_reference": self.held.iter().find(|input| input.path == self.root.join("rust/crates/modem/tests/fixtures/original-source-reference.json")).map(Held::report),
+          "source_state": format!("{:?}", self.source_state),
           "retired_sources_absent": self.missing})
     }
 }
 
 /// Admit the fixed source-only oracle and exact source files before native execution.
 pub fn validate(root: &Path, require_retired: bool) -> Result<Receipt> {
+    validate_with_state(
+        root,
+        if require_retired {
+            SourceState::AllRetired
+        } else {
+            SourceState::OriginalPresent
+        },
+    )
+}
+
+pub fn validate_with_state(root: &Path, source_state: SourceState) -> Result<Receipt> {
     require(
         sha(MANIFEST) == MANIFEST_SHA256,
         "compiled modem capture manifest changed",
@@ -524,13 +553,7 @@ pub fn validate(root: &Path, require_retired: bool) -> Result<Receipt> {
             input.sha256 == hash,
             format!("modem original-source expectation changed: {name}"),
         )?;
-        let mut bytes = Vec::with_capacity(input.len as usize);
-        input
-            .file
-            .try_clone()?
-            .take(MAX_EXPECTATION + 1)
-            .read_to_end(&mut bytes)?;
-        let value: Value = serde_json::from_slice(&bytes)?;
+        let value = read_held_json(&input)?;
         require(
             value["rows"].is_array() && value["commands"].is_array() && value["calls"].is_array(),
             format!("modem source expectation has incomplete trace fields: {name}"),
@@ -547,13 +570,7 @@ pub fn validate(root: &Path, require_retired: bool) -> Result<Receipt> {
         process_boundary.sha256 == PROCESS_BOUNDARY_SHA256,
         "modem original process-boundary observation differs",
     )?;
-    let mut process_bytes = Vec::with_capacity(process_boundary.len as usize);
-    process_boundary
-        .file
-        .try_clone()?
-        .take(MAX_EXPECTATION + 1)
-        .read_to_end(&mut process_bytes)?;
-    let original_process: Value = serde_json::from_slice(&process_bytes)?;
+    let original_process = read_held_json(&process_boundary)?;
     require(
         original_process["source_error"]
             .as_str()
@@ -684,9 +701,10 @@ pub fn validate(root: &Path, require_retired: bool) -> Result<Receipt> {
     held.push(helper_reference);
 
     let mut missing = Vec::new();
-    for (name, hash) in SOURCE_PINS {
+    for (index, (name, hash)) in SOURCE_PINS.into_iter().enumerate() {
         let path = safe_path(&root, name)?;
-        if require_retired {
+        let is_retired = is_retired_in_state(source_state, index);
+        if is_retired {
             require(
                 fs::symlink_metadata(&path)
                     .is_err_and(|error| error.kind() == std::io::ErrorKind::NotFound),
@@ -707,6 +725,7 @@ pub fn validate(root: &Path, require_retired: bool) -> Result<Receipt> {
         fixture,
         held,
         missing,
+        source_state,
     };
     receipt.verify()?;
     Ok(receipt)
@@ -744,15 +763,9 @@ mod tests {
         }
     }
 
-    fn checkout_copy() -> TempDir {
+    fn evidence_copy() -> TempDir {
         let root = TempDir::new().unwrap();
         let repository = repository_root();
-        for (name, _) in SOURCE_PINS {
-            let source = repository.join(name);
-            let target = root.path().join(name);
-            fs::create_dir_all(target.parent().unwrap()).unwrap();
-            fs::copy(source, target).unwrap();
-        }
         let fixture = repository.join("rust/crates/dev-tools/tests/fixtures/modem-original");
         copy_directory(
             &fixture,
@@ -767,13 +780,26 @@ mod tests {
             .join("rust/crates/modem/tests/fixtures/original-source-reference.json");
         fs::create_dir_all(target.parent().unwrap()).unwrap();
         fs::copy(helper_reference, target).unwrap();
+        fs::create_dir_all(root.path().join("rust/tools")).unwrap();
+        fs::create_dir_all(root.path().join("openpilot/system/hardware/tici")).unwrap();
+        root
+    }
+
+    fn runtime_pinned_copy() -> TempDir {
+        let root = evidence_copy();
+        let repository = repository_root();
+        let (name, _) = SOURCE_PINS[0];
+        let source = repository.join(name);
+        let target = root.path().join(name);
+        fs::create_dir_all(target.parent().unwrap()).unwrap();
+        fs::copy(source, target).unwrap();
         root
     }
 
     #[test]
     fn original_capture_admission_rejects_mutated_expectation_after_hold() {
-        let root = checkout_copy();
-        let receipt = validate(root.path(), false).unwrap();
+        let root = evidence_copy();
+        let receipt = validate(root.path(), true).unwrap();
         receipt.verify().unwrap();
         let path = root
             .path()
@@ -786,8 +812,8 @@ mod tests {
 
     #[test]
     fn request_plans_and_helper_reference_are_held_with_the_original_receipt() {
-        let root = checkout_copy();
-        let receipt = validate(root.path(), false).unwrap();
+        let root = evidence_copy();
+        let receipt = validate(root.path(), true).unwrap();
         assert_eq!(
             receipt.request_plans().unwrap().as_array().unwrap().len(),
             26
@@ -807,8 +833,8 @@ mod tests {
         fs::write(path, bytes).unwrap();
         assert!(receipt.verify().is_err());
 
-        let second = checkout_copy();
-        let receipt = validate(second.path(), false).unwrap();
+        let second = evidence_copy();
+        let receipt = validate(second.path(), true).unwrap();
         let path = second
             .path()
             .join("rust/crates/modem/tests/fixtures/original-source-reference.json");
@@ -820,22 +846,81 @@ mod tests {
 
     #[test]
     fn retired_admission_rejects_reappearing_source_and_fixture_symlink() {
-        let root = checkout_copy();
-        for (name, _) in SOURCE_PINS {
-            fs::remove_file(root.path().join(name)).unwrap();
-        }
+        let root = evidence_copy();
         let receipt = validate(root.path(), true).unwrap();
         let returned = root.path().join(SOURCE_PINS[0].0);
         fs::write(&returned, b"returned retired Python source").unwrap();
         assert!(receipt.verify().is_err());
 
-        let second = checkout_copy();
+        let second = evidence_copy();
         let fixture = second
             .path()
             .join("rust/crates/dev-tools/tests/fixtures/modem-original/source");
         fs::remove_file(fixture.join("normal.json")).unwrap();
         symlink("at_errors.json", fixture.join("normal.json")).unwrap();
-        assert!(validate(second.path(), false).is_err());
+        assert!(validate(second.path(), true).is_err());
+    }
+
+    #[test]
+    fn tooling_retirement_holds_runtime_source_and_rejects_tool_reappearance() {
+        let root = runtime_pinned_copy();
+        let receipt =
+            validate_with_state(root.path(), SourceState::ToolsRetiredRuntimePinned).unwrap();
+        receipt.verify().unwrap();
+        assert_eq!(receipt.missing.len(), TOOL_SOURCE_COUNT);
+        assert!(receipt.held.iter().any(|source| {
+            source
+                .path
+                .ends_with("openpilot/system/hardware/tici/modem.py")
+        }));
+
+        let returned = root.path().join(SOURCE_PINS[1].0);
+        fs::write(&returned, b"returned retired modem tooling source").unwrap();
+        assert!(receipt.verify().is_err());
+
+        let second = runtime_pinned_copy();
+        let receipt =
+            validate_with_state(second.path(), SourceState::ToolsRetiredRuntimePinned).unwrap();
+        fs::remove_file(second.path().join(SOURCE_PINS[0].0)).unwrap();
+        assert!(receipt.verify().is_err());
+    }
+
+    #[test]
+    fn original_present_state_rejects_missing_tooling_source() {
+        let root = runtime_pinned_copy();
+        assert!(validate_with_state(root.path(), SourceState::OriginalPresent).is_err());
+    }
+
+    #[test]
+    fn held_json_inputs_can_be_read_repeatedly_after_admission_hashing() {
+        let root = evidence_copy();
+        let receipt = validate(root.path(), true).unwrap();
+        let first_expected = receipt.expected("normal").unwrap();
+        assert_eq!(receipt.expected("normal").unwrap(), first_expected);
+        let first_plans = receipt.request_plans().unwrap();
+        assert_eq!(receipt.request_plans().unwrap(), first_plans);
+        let first_process = receipt.original_process_startup().unwrap();
+        assert_eq!(receipt.original_process_startup().unwrap(), first_process);
+        receipt.verify().unwrap();
+    }
+
+    #[test]
+    fn source_state_matrix_keeps_runtime_until_manager_caller_migrates() {
+        let expected = [
+            [false, false, false, false, false, false],
+            [false, true, true, true, true, true],
+            [true, true, true, true, true, true],
+        ];
+        let states = [
+            SourceState::OriginalPresent,
+            SourceState::ToolsRetiredRuntimePinned,
+            SourceState::AllRetired,
+        ];
+        for (state, expected) in states.into_iter().zip(expected) {
+            for (index, retired) in expected.into_iter().enumerate() {
+                assert_eq!(is_retired_in_state(state, index), retired);
+            }
+        }
     }
 
     #[test]

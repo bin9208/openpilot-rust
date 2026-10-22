@@ -750,12 +750,12 @@ pub struct TraceOptions {
     pub trace: PathBuf,
     pub launcher: PathBuf,
     pub output: PathBuf,
-    pub require_retired: bool,
+    pub source_state: modem_capture::SourceState,
 }
 
 /// Run all original-source trace scenarios and retain their separate raw outputs.
 pub fn run_trace(options: &TraceOptions) -> Result<Value> {
-    let receipt = modem_capture::validate(&options.source_root, options.require_retired)?;
+    let receipt = modem_capture::validate_with_state(&options.source_root, options.source_state)?;
     let executables = modem_capture::validate_executables(&[
         ("daemon", &options.daemon),
         ("checker helper", &options.helper),
@@ -1341,7 +1341,7 @@ pub fn run_with_emit(
     options: &TraceOptions,
     emit: impl FnOnce(&Value) -> Result<()>,
 ) -> Result<Value> {
-    let receipt = modem_capture::validate(&options.source_root, options.require_retired)?;
+    let receipt = modem_capture::validate_with_state(&options.source_root, options.source_state)?;
     let executables = modem_capture::validate_executables(&[
         ("daemon", &options.daemon),
         ("checker helper", &options.helper),
@@ -1410,8 +1410,8 @@ pub fn dispatch_fixture_helper() -> Option<i32> {
 }
 
 /// Validate the fixed original-source inputs without starting a device or external service.
-pub fn admit(root: &Path, require_retired: bool) -> Result<Receipt> {
-    modem_capture::validate(root, require_retired)
+pub fn admit(root: &Path, source_state: modem_capture::SourceState) -> Result<Receipt> {
+    modem_capture::validate_with_state(root, source_state)
 }
 
 #[cfg(test)]
