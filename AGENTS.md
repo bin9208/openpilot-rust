@@ -23,12 +23,15 @@
   applies to the dev-md track; the separate #296 conversion remains separate.
 - On 2026-10-23 the user explicitly authorized choosing the fastest validated
   Actions runner across work chats, superseding the earlier self-hosted ban.
-  Prefer registered `bin-actions` for trusted x64 checks and AGNOS cross-builds:
+  Prefer registered `bin-actions` for trusted x64 checks, generic ARM cross-builds
+  and AGNOS cross-builds:
   paired checks and full AGNOS build/install validation succeeded on both runners,
   with `bin-actions` faster (#496/#498). Keep actual ARM CPU execution on a
   GitHub ARM runner. Apply routing to the next necessary job without cancelling
-  running checks or repeating unchanged successes. Generic GNU/musl ARM comparison
-  is still pending; record its result before claiming that route is validated.
+  running checks or repeating unchanged successes. The generic GNU workspace,
+  native daemon and musl static probe job also succeeded on `bin-actions` in
+  55m41s (#498). Prefer it now; the hosted counterpart's final time and preparation
+  delay remain under investigation and do not block this operational choice.
   The user also removed the fixed 25/35 GiB local build stop/resume rule.
 
 ## dev-md upstream port isolation (2026-10-15, issue #338)

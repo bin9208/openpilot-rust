@@ -107,11 +107,17 @@ is not a substitute for execution evidence.
 ## Runner selection and work-chat instructions
 
 The user's latest instruction supersedes the older self-hosted prohibition.
-Prefer `bin-actions` for the tested trusted x64 checks and full AGNOS cross-build.
+Prefer `bin-actions` for the tested trusted x64 checks, generic ARM cross-builds
+and full AGNOS cross-build.
 Actual ARM CPU execution stays on GitHub ARM runners: the registered local
-runner is X64. Generic GNU/musl selection remains pending its final paired result.
+runner is X64. The corrected full generic local job also succeeded in 55m41s.
+The owner confirmed that the local runner had already won; its operational
+selection is therefore settled without waiting for the hosted preparation to
+finish. The hosted job has already exceeded the local complete job duration,
+but its final outcome and pure compilation comparison remain pending.
 
-This policy was delivered to the ongoing CPU optimization (#422), tool
+The confirmed generic ARM preference was also delivered to the same four ongoing
+chats after local full-build success. This policy was delivered to CPU optimization (#422), tool
 conversion (#296), Jetlink (#487) and issue-maintenance chats. They were told to
 persist it in their own instructions/continuation records, apply it to the next
 necessary job, and preserve existing running validations and unchanged successful
