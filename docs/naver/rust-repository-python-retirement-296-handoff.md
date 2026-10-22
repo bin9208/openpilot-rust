@@ -6,6 +6,26 @@ unchanged evidence. Read this handoff and the linked evidence ledger first.
 
 ## Active continuation, superseding the earlier migration snapshot
 
+Latest checked source is **adff0392e61608c9a576550be78dd7eefb8b9065**, pushed to
+PR343→dev. Fast checks and mapped docs pass; Rust/Integration incomplete.
+Actual config parentgpt-6.1-sol/ultra and agent ceiling1000 are confirmed; eight
+Sol workers divide implementation/review/admission. Ceiling is not active count.
+Last serialized diagnostic is74fa569bb93a28e024a3a960eaf5bfe33df493c4,
+R4freshCPPcontext39846942148 at300f. It is not lifecycle admission.
+Logger format-only retries39846706091/39846713274 use new scratch
+publish-single-json.py (self-auth gates require JSON-as-YAML), source77100.
+Paramsd caller39839253286 is now admitted within nine-generator-case limits;
+actual maintained runtime audits remain unexecuted. Model-publisher39844894869
+succeeds after venv --copies repair; raw archive and parent catalog-byte admission pass,
+with all25Python compiler/emitter sources retained. Controlsd fixture39844836422
+fails its first compile on recipes.rs239/327 JSON-macro indexed arrays; Hegel
+owns minimal repair/retry and saved-original reuse. Estimator39844792873 pending.
+Controlsd normal/Feynman, malformed/Socrates, IPC/Hilbert candidates and separate
+Sol reviews continue; parent owns all tracked/shared integration. Descartes
+resolves startup old42 reuse boundaries before any new focused missing18 gate.
+CP949native39843159421 remains prerequisite to AST caller/source retirement.
+
+
 Read Git freshly for source/workflow publication. Source300f77e423750804b2a781d734128945a4b56765
 contains the logging lifecycle test-only continuation. The next13-file native
 estimator/controlsd fixture batch is separate; use Git for its publication SHA. Local implementation commits1d7189b6b(loggerd diagnostics/pipeline/IO) and
@@ -25,8 +45,11 @@ for next trustedx64 checks/builds and genericARM/AGNOS cross-builds. No automati
 GitHubdefaultx64 fallback or further runner comparison. Genericjob120013728323
 at source2ff834da04e2acaad3d63211c2b76e287679eeaa/run39832976197 succeeds
 in3341s on runner22; parent API verifies all steps, upload and cleanup success.
-Do not wait for the comparison counterpart; its owner handles cancellation. Actual ARM execution
-stays on GitHub ARM. RunnerAPI confirmsid22/online with labels self-hosted,
+Do not wait for the comparison counterpart; its owner handles cancellation. Latest human steering withdraws the GitHubARM exception: ARM-code execution
+uses local ARM QEMU on bin-actions, explicitly emulated, with no hosted fallback.
+Comparison chat owns the common routing/QEMU foundation (#502/PR504, candidate
+6a8e1c4c8c24d6e98ba404885c789e99476f16a3, focus39847632228 pending); do not duplicate it or
+merge dev-md runtime into this dev track. Preserve actual ARM target checks. RunnerAPI confirmsid22/online with labels self-hosted,
 Linux,X64,dev-md-local; the label grants no dev-md work scope. Isolate jobtemp/
 cache/target, preserve source/provider/runner/resource receipts and never run
 hosted-image global cleanup on the persistent runner. Do not cancel/restart
@@ -134,7 +157,7 @@ and acceptance boundaries below continue to apply.
   Bash/diff, Git/API and inert saved-data inspection. No local Cargo/build/test/
   Clippy/project-Python/model/provider execution or dependency installation.
   Registered Actions executes functional checks. Prefer verified bin-actions for
-  next trustedx64/cross jobs; actual ARM execution stays GitHub ARM. The latest
+  all next jobs; ARM code checks use local QEMU, explicitly emulated, no hosted fallback. The latest
   user withdrew fixed25/35GiB thresholds; retain actual operation growth checks.
 - User has no comma and personally owns final boot, recording, upload and drive
   checks after Git pull. Do not ask USB, deploy/reboot, claim device acceptance,

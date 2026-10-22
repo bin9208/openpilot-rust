@@ -9,6 +9,10 @@ use std::{
     path::Path,
 };
 
+pub fn canonical_inputs(value: &J) -> Result<Value> {
+    normalize(value)
+}
+
 fn normalize(value: &J) -> Result<Value> {
     Ok(match value.view() {
         V::Null => Value::Null,

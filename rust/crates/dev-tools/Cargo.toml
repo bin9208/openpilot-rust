@@ -2431,3 +2431,13 @@ required-features = ["controlsd-fixture-native"]
 [[test]]
 name = "controlsd_fixture_generate"
 required-features = ["controlsd-fixture-native"]
+
+[[bin]]
+name = "check-controlsd-native"
+path = "src/bin/check_controlsd_native.rs"
+required-features = ["controlsd-fixture-native"]
+
+[[test]]
+name = "controlsd_check"
+path = "tests/controlsd_check.rs"
+required-features = ["controlsd-fixture-native"]

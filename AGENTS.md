@@ -5,8 +5,10 @@
   Use registered `bin-actions` for the next necessary
   trusted x64 checks/builds, generic ARM cross-builds and AGNOS cross-builds. Its current labels are
   `self-hosted`, `Linux`, `X64`, `dev-md-local`; confirm actual runner provenance.
-  The label does not authorize mixing dev-md with #296. Actual ARM CPU execution
-  stays on GitHub ARM runners. Keep local checkout work to source/syntax/format/
+  The label does not authorize mixing dev-md with #296. The latest instruction
+  also withdraws the GitHub ARM exception: run ARM code checks in local ARM QEMU
+  on bin-actions and label them emulated, never native device/CPU validation.
+  Do not start GitHub-hosted x64 or ARM fallback jobs. Keep local checkout work to source/syntax/format/
   diff and inert evidence review; functional checks still run in Actions jobs.
   Do not cancel/restart active CI or repeat successful unchanged checks merely
   to change runners. Preserve existing required checks, source/ABI verification,
@@ -20,11 +22,15 @@
   This completes the operational runner choice; do not wait for the comparison
   counterpart or infer pure compiler speed, long-term reliability or device
   acceptance from this result. Keep the comparison's final timing in its own task.
-  Do not use GitHub default x64 runners as an automatic fallback or another
+  Do not use GitHub-hosted runners as an automatic fallback or another
   comparison target. Do not wait for the cancelled hosted generic comparison.
   The user's reported404errors are not a demonstrated cause in these results.
   QEMU offline-install timings include hashes and disk I/O; neither those timings
   nor x64 cross-builds establish native ARM CPU execution.
+  The runner-comparison task owns the common routing/QEMU foundation in its
+  separate issue/isolated branch. Reuse its verified delivery without duplicating
+  that foundation or merging dev-md runtime changes into the #296 dev track.
+  Preserve ARM target code/checks; do not replace them with x64 or skip them.
 
 - On 2026-10-23 the user selected GPT-6.1 Sol / Ultra for this parent chat and
   GPT-6.1 Sol for all subagents. Astra agents have completed their current

@@ -7,7 +7,7 @@ mod audit;
 mod parameters;
 mod recipes;
 mod wire;
-pub use audit::audit_saved;
+pub use audit::{audit_saved, canonical_inputs};
 pub use wire::{project_event, service};
 
 pub const SERVICES: [&str; 16] = [

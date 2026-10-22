@@ -236,7 +236,7 @@ pub(super) fn scenario_cases() -> Result<J> {
             "modelV2":{"jetlink":{"lossLatched":(380..390).contains(&i),"source":if (390..400).contains(&i){"jetlink"}else{"native"}}}
         }))?;
         let settings = json(
-            &v!({"StoppingAccel":["-200","-50","nan","-70"][phase%4],"SteerRatioRate":[29,30,100,200,201][phase%5],"CustomSR":if phase.is_multiple_of(3){150}else{0},"AlwaysLateral":i32::from(i<560),"DisableDM":phase%2,"SpeedFromPCM":phase%4}),
+            &v!({"StoppingAccel":(["-200","-50","nan","-70"][phase%4]),"SteerRatioRate":([29,30,100,200,201][phase%5]),"CustomSR":if phase.is_multiple_of(3){150}else{0},"AlwaysLateral":i32::from(i<560),"DisableDM":phase%2,"SpeedFromPCM":phase%4}),
         )?;
         transitions.push(change(i, &values, &[], Some(&settings))?);
     }
@@ -324,7 +324,7 @@ pub(super) fn scenario_cases() -> Result<J> {
     for i in 0..260 {
         let phase = i / 20;
         let values = json(
-            &v!({"carrotMan":{"desiredSpeed":[0.,-1.,250.,251.,60.][phase%5]},"lateralPlan":{"useLaneLines":true,"psis":(0..17).map(|j|0.001*j as f64).collect::<Vec<_>>(),"curvatures":vec![0.001;17],"distances":(0..17).map(|j|j as f64*0.5).collect::<Vec<_>>()},"modelV2":{"meta":{"laneChangeState":"laneChangeStarting","laneChangeDirection":if !phase.is_multiple_of(2){"left"}else{"right"},"desireState":[0.,if phase.is_multiple_of(4){0.2}else{0.},if phase%4==1{0.2}else{0.},if phase%4==2{0.2}else{0.},if phase%4==3{0.2}else{0.}]}}}),
+            &v!({"carrotMan":{"desiredSpeed":([0.,-1.,250.,251.,60.][phase%5])},"lateralPlan":{"useLaneLines":true,"psis":(0..17).map(|j|0.001*j as f64).collect::<Vec<_>>(),"curvatures":vec![0.001;17],"distances":(0..17).map(|j|j as f64*0.5).collect::<Vec<_>>()},"modelV2":{"meta":{"laneChangeState":"laneChangeStarting","laneChangeDirection":if !phase.is_multiple_of(2){"left"}else{"right"},"desireState":[0.,if phase.is_multiple_of(4){0.2}else{0.},if phase%4==1{0.2}else{0.},if phase%4==2{0.2}else{0.},if phase%4==3{0.2}else{0.}]}}}),
         )?;
         let settings = json(
             &v!({"UseLaneLineCurveSpeed":0,"LatSmoothSec":if !phase.is_multiple_of(2){0}else{30}}),

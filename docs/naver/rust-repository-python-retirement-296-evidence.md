@@ -8975,3 +8975,138 @@ pass locally. No local compile/test/Clippy/provider execution; exact-source
 compilation and full original/native admission remain Actions work. Inventory
 stays288/3/3289of3580. Maintained Paramsd caller39839253286 now reportsSUCCESS;
 its actual artifact admission is separate and in progress.
+
+### Latest all-local Actions instruction supersedes the ARM exception
+
+The human now directs all next necessary Actions to bin-actions, including ARM
+code checks through its local ARM QEMU environment. No new GitHub-hosted x64 or
+ARM fallback; explicitly report emulation rather than native ARM/device evidence.
+Keep existing in-flight CI and unchanged successful scopes. The comparison task
+owns the common routing/QEMU foundation in a separate issue/isolated branch;
+#296 reuses verified infrastructure without duplicate implementation or dev-md
+runtime integration. Preserve ARM code/target checks, never replace or skip them
+as x64. Earlier GitHubARM exception statements are historical and superseded.
+
+
+### Paramsd maintained generator diagnostic admitted, bounded scope
+
+Run39839253286/source6fea07022c77ff8ffedb8fd1efd765f7d1f825fb succeeds on
+bin-actions; workflow50eca8c819115f0e428dc94dd802cd920e7a5d23.
+Artifact12455100398,21387B,SHA256f94ef0eed3f6b0558fb48155f98d942b4bb6c6e4f3f0aca994ad8dcd2b9afd87
+has52validCRCs. Parent independently compares all nine288B original/native
+CarParams pairs: profiles0/1/2 times default/empty/custom; default==empty and
+custom differs. Each retained trace records one native generator, zero Python.
+Seven focused hosted tests and strict Clippy pass. The actual maintained atomic/
+FD and startup runtime audits stayed ignored in this diagnostic: do not claim
+those jobs executed. Earlier seven-case/two-root startup evidence is reused.
+Original helpers remain; newer adff Cargo registration is a separate source
+boundary. Small artifact keeps hosted provider/ELF seals rather than binaries
+or complete child DSO mappings. No source retirement/inventory credit.
+
+### Logger preflight serialization corrected without changing executable checks
+
+Main39839464771 and controllers39838024747 fail before functional execution:
+their self-authentication calls json.loads on the published workflow while the
+parent serializer had emitted YAML. Parent verifies actual saved workflows,
+logs and artifact hashes: main12453804203,1510428B,SHA2565d55d9fe41d966d88a04600b9d70f0c3dad8664a8ba6ea3c233e281c19ba2c38;
+controllers12454702476,93575B,SHA256d8e3508d98870f7e526a6a9b980ba6bd63221e40b0b4bea2aac7619e54175e42.
+New scratch publish-single-json.py preserves the parsed workflow and emits
+JSON-as-YAML. Source77100d33, gate payloads and strict assertions stay unchanged.
+Serialized retries: controllers39846706091/workflowb3bb5525bd19a216324d88a20b5824924a4d3c68;
+main39846713274/workflowb6d9ee00ccaf519e0546b8a256d885bbcf03975c.
+No successful functional scope is repeated merely for this format repair.
+
+### R4 fresh C++ context capture is separate from lifecycle admission
+
+Independently reviewed recipe2fd0e6b23854f996fe23aeb973075ee89993cffa17c2b62e7d7ca4625b3e1713
+publishes run39846942148/workflow74fa569bb93a28e024a3a960eaf5bfe33df493c4 at
+source300f77e423750804b2a781d734128945a4b56765. It keeps the26foundation segments
+unchanged and captures actual fresh C++source/header/compiler/DSO/root context,
+retaining the resulting ELF as inert evidence. One new original/native normal
+protocol observation preserves249/694 versus499/1391 packet/response counts,
+strict2s,86exec and112cwd assertions. No original root imitation, prefix mapping,
+CPU/compiler forcing or historical ELF execution. No unit/grammar/Clippy or
+lifecycle repetition. Historical/fresh console equality is observed honestly;
+this gate cannot authorize replacing the old provider hash or reusing all
+provider-dependent lifecycle cases. Remaining lifecycle cases stay pending.
+
+### New native batch published; fixture compile failure is under repair
+
+Sourceadff0392e61608c9a576550be78dd7eefb8b9065 contains the13new estimator/
+controlsd fixture files and opt-in registrations described above. Fast39844308434/
+39844299199 and mapped-docs39844308433/39845485206 succeed. Integration and Rust
+checks remain incomplete. Estimator39844792873 uses corrected original-observer
+prebinding and private owned roots. Controlsd fixture39844836422 reaches the first
+Rust compilation, then fails in recipes.rs239/327: bare indexed array expressions
+inside serde_json's JSON macro are parsed as arrays before their following index.
+No native fixture test or full original/native admission passed in that attempt.
+The original capture and any accepted unchanged evidence must be admitted and
+reused where its exact dependencies permit; repair/retry remains Actions-only.
+Normal controlsd caller, malformed-input controller and continuous IPC controller
+are independent Sol source lanes, still unaccepted. Python source/inventory remains
+unchanged at288replaced-local/3partial/3289pending of3580.
+
+
+### Real-emitter native publisher bridge admitted on bin-actions
+
+Run39844894869/source77100d33/workflow19e2c6dc6983a06e0f70e86b442aa46fd410f786
+succeeds after the isolated venv --copies repair. The prior39838416435 failure
+was the canonicalized interpreter escaping a symlink venv before NumPy import;
+no compiler-source change or pin relaxation was made. Artifact12454349634 is
+259195065B/SHA25625f668aacc8cd5941a8e3fbbd2bd98966e778a2f2ec7f7423fb2da2a24c43902.
+Lane verifies5ZIPCRCs/1445TARmembers/1416regularseals and all raw process traces.
+Parent independently streams both complete catalogs:579entries/574files and
+154943962B per lane, with identical paths/types/sizes/content hashes. Both lanes
+genuinely emit four CPU:LLVM driving/driver/camera-size bundles; the native lane
+executes the held publisher exactly once. Eight emitter/preparer failure controls
+and five source-defined catalog admission controls pass. Twelve monitored
+operations have zero new OOM events; old8publisher tests/10filesystem cases and
+already-passed caller Clippy/two units are reused, not repeated.
+
+Natural alderlake and LLVM18.1.3 provider5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0
+are observed, with no forced target. This is finalizer/caller transport and catalog
+publication evidence, not numerical inference, cached/guarded-add, QCOM/AMD,
+whole-model or device acceptance. Actual model inputs/helper executables remain
+bound by hosted receipts rather than retained executable bytes; full package/DSO
+closure is not independently retained. All25Python compiler/emitter files remain.
+Maintained-workflow activation is a separate next step; zero retirement credit.
+
+### Growth-only disk gate failure isolates stale expected receipt metadata
+
+Run39840086506 at6fea07022 fails the camera-growth test after14focused checks
+complete successfully. Artifact12457215090 is1035402B/SHA256f0b6be2c958d8c98c1e99c07c5b761eadc9d00820958ad1125fa1953534c6dfe;
+parent verifies87ZIPCRCs and parses the actual assertion's257file maps inertly.
+Only report.json/free_bytes differs: the test already injects the approved1GiB
+operation boundary but compares its receipt against the old26GiB reserve-era
+value. Every other byte of every artifact is identical. The repair translates
+only that expected field in this single named case, asserting its exact old value
+and unique occurrence. Original fixture files and runtime logic stay unchanged.
+The failed/current and unreached scopes still require focused Actions; unchanged
+passed scopes should be reused after source dependency review. No local test ran.
+
+Loggerd IO39843229925 fails its initial executable prerequisite loop before any
+native build/IO control. The existing log does not identify which executable is
+missing. A precise read-only prerequisite observation is being prepared; no host
+installation, audit-policy change, hosted fallback or inferred IO failure is made.
+
+
+### Native normal controlsd controller integrated, qualification pending
+
+Four new source/test files from patch2c4a4c720e7962d552e810d1a960d1f4f14b1bfb78d47a17b362aa71026e5b00
+and parent registrationa9b1a4c083d31b626f6e7be99418226841871f7197c0aabccbc37c95ca5e0e3f
+are integrated after independent source review found no concrete P1/P2.
+The controller retains30base/scenario cases plus10five-frame fingerprint cases,
+complete ordered Cereal Event publications and the existing Paramsd numeric
+comparator/tolerances. The original203-line trace oracle remains independent.
+Native execution uses the owned bounded process runner; no Python fallback.
+Only original DBC-prefix/exact checksum diagnostics are filtered, preserving
+all native text. The shared existing fixture normalizer is exported once.
+No new dependencies, feature or Cargo.lock change. The separate fixture macro
+repair wraps exactly three indexed Rust expressions on two lines; no values
+change. Local scoped rustfmt/TOML/patch/diff checks pass; no compile/test ran.
+
+Functional comparison, focused failure controls and caller activation remain
+pending. The malformed-input controller has an independent P2 on mutable case
+path ownership under repair; it is not integrated. Further publication must
+reuse the #502 common local runner foundation without importing dev-md runtime
+or triggering new legacy hosted jobs. This checkpoint changes no inventory.
