@@ -2460,3 +2460,6 @@ required-features = ["controlsd-daemon-native"]
 [[test]]
 name = "controlsd_daemon_check"
 required-features = ["controlsd-daemon-native"]
+
+[[test]]
+name = "ci_model_catalog_publisher"

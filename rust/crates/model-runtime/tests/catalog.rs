@@ -420,3 +420,144 @@ with tempfile.TemporaryDirectory() as td:
         String::from_utf8_lossy(&output.stderr)
     );
 }
+
+/// New combined caller boundary only; no full model or publisher-tail reruns.
+#[test]
+#[ignore = "requires isolated Actions Python/tinygrad/LLVM and retained proof directory"]
+fn native_publisher_with_guarded_emitter_preserves_binding_policy() {
+    use std::process::Command;
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .nth(3)
+        .unwrap();
+    let python = std::env::var_os("MODEL_BRIDGE_PYTHON").expect("explicit job Python");
+    let proof = std::env::var_os("MODEL_PUBLISHER_POLICY_PROOF").expect("owned proof root");
+    let publisher = std::path::Path::new(env!("CARGO_BIN_EXE_publish-model-catalog"));
+    let guarded = std::path::Path::new(env!("CARGO_BIN_EXE_offline-llvm-guarded-add"));
+    for (prefix, path) in [
+        ("MODEL_CATALOG_PUBLISH", publisher),
+        ("MODEL_LLVM_GUARDED_ADD", guarded),
+    ] {
+        assert_eq!(
+            std::env::var_os(format!("{prefix}_BINARY")).as_deref(),
+            Some(path.as_os_str()),
+            "maintained caller must pass the actual built helper"
+        );
+        assert_eq!(
+            std::env::var(format!("{prefix}_SHA256")).unwrap(),
+            format!("{:x}", Sha256::digest(fs::read(path).unwrap())),
+            "maintained caller hash differs"
+        );
+    }
+    let script = r#"
+import hashlib,importlib,json,os,subprocess,sys
+from pathlib import Path
+assert os.environ['GITHUB_ACTIONS']=='true'
+assert os.environ['DEV']=='CPU:LLVM'
+proof=Path(os.environ['MODEL_PUBLISHER_POLICY_PROOF']);proof.mkdir()
+publisher=importlib.import_module('model_export.publish')
+from model_export.native import guarded_add_binding,_identity
+from build_model_pipelines import llvm_target
+def seal(path):
+ path=Path(path);before=path.stat()
+ assert path.resolve(strict=True)==path and not path.is_symlink()
+ digest=hashlib.sha256(path.read_bytes()).hexdigest()
+ assert _identity(before)==_identity(path.stat())
+ return {'path':str(path),'sha256':digest,'identity':_identity(before)}
+def save(name,value):
+ (proof/name).write_text(json.dumps(value,sort_keys=True,indent=2)+'\n')
+before={key:seal(os.environ[key]) for key in ['MODEL_CATALOG_PUBLISH_BINARY','MODEL_LLVM_GUARDED_ADD_BINARY']}
+target=llvm_target();guard=guarded_add_binding();binding=publisher.catalog_publisher_binding()
+assert guard['enabled'] and binding['enabled']
+assert guard['sha256']==before['MODEL_LLVM_GUARDED_ADD_BINARY']['sha256']
+assert binding['sha256']==before['MODEL_CATALOG_PUBLISH_BINARY']['sha256']
+save('before.json',{'issuers':before,'target':target,'guard':guard,'publisher':binding})
+# This CLI invocation is the maintained entry point with BOTH issuers configured.
+# The bad publisher must reject before trying this deliberately absent model root.
+environment=dict(os.environ,MODEL_CATALOG_PUBLISH_SHA256='0'*64)
+negative=subprocess.run([sys.executable,'-P','rust/tools/build_model_pipelines.py',
+ '--trusted-model-directory',str(proof/'absent-models'),'--backend','cpu',
+ '--output',str(proof/'rejected-catalog')],env=environment,capture_output=True,timeout=120)
+(proof/'negative.stdout').write_bytes(negative.stdout);(proof/'negative.stderr').write_bytes(negative.stderr)
+assert negative.returncode!=0 and b'catalog publisher admission failed' in negative.stderr
+assert not (proof/'rejected-catalog').exists()
+# Exactly one new tiny real emission, preserving the guarded LLVM path. Never
+# substitute emit/provider/finalizer implementations or execute generated kernels.
+import numpy as np
+from tinygrad import Tensor,TinyJit
+from model_export import Bindings
+from model_export.original import Metadata,OriginalPipeline
+from model_export.pipeline import Stage,compose
+inputs=Tensor(np.zeros(16,dtype=np.float32)).realize()
+jit=TinyJit(lambda x:(x+2).realize());jit(inputs);result=jit(inputs)
+np.testing.assert_array_equal(result.numpy(),np.full(16,2,dtype=np.float32))
+bindings=Bindings({'x':inputs},{'model':result})
+stages=(Stage('prepare',jit,{'0':inputs}),)
+metadata=Metadata('publisher-policy-fixture',{'x':(16,)},{'outputs':(16,)},{'all':(0,16)})
+original=OriginalPipeline(metadata,stages,bindings,compose(stages,bindings))
+spec=publisher.BundleSpec('driving',(1344,760),original,{'model':'12'*32})
+calls=[];actual_run=publisher._run_publisher
+def observed_run(fd,args):
+ assert os.readlink('/proc/self/fd/'+str(fd))==binding['path']
+ assert _identity(os.fstat(fd))==binding['identity']
+ output=actual_run(fd,args)
+ calls.append({'fd_identity':_identity(os.fstat(fd)),'argv':args,'stdout':output.decode()})
+ return output
+publisher._run_publisher=observed_run
+catalog=proof/'catalog';publisher.publish(catalog,[spec],'cpu')
+assert len(calls)==1
+pointer=json.loads((catalog/'current.json').read_bytes());generation=catalog/pointer['generation']
+assert hashlib.sha256((generation/'index.json').read_bytes()).hexdigest()==pointer['generation']
+receipts=list(generation.rglob('*.guarded-add.json'))
+assert receipts and all(json.loads(p.read_bytes())['rewrite_count']==0 for p in receipts)
+assert list(generation.rglob('compilation-evidence.json'))
+assert list(generation.rglob('*.o')) and list(generation.rglob('kernels.so'))
+files={str(p.relative_to(catalog)):seal(p) for p in catalog.rglob('*') if p.is_file()}
+assert not any(p.name.startswith('.build-') for p in catalog.iterdir())
+assert before=={key:seal(os.environ[key]) for key in before}
+assert guard==guarded_add_binding() and binding==publisher.catalog_publisher_binding() and target==llvm_target()
+save('complete.json',{'negative_cli_returncode':negative.returncode,'negative_before_model_read':True,
+ 'real_tiny_emissions':1,'native_calls':calls,'guarded_receipts':len(receipts),'guarded_rewrite_count':0,
+ 'generation':pointer['generation'],'files':files,'issuers_after':before,'target_after':target,
+ 'cached_binding':False,'full_model_numeric_acceptance':False,'retirement_credit':0})
+print('combined caller policy: one tiny emission and one CLI binding rejection')
+"#;
+    let output = Command::new(python)
+        .args(["-P", "-c", script])
+        .current_dir(root)
+        .env(
+            "PYTHONPATH",
+            format!(
+                "{}:{}:{}",
+                root.display(),
+                root.join("tinygrad_repo").display(),
+                root.join("rust/tools").display()
+            ),
+        )
+        .env("PYTHONDONTWRITEBYTECODE", "1")
+        .env("DEV", "CPU:LLVM")
+        .env("JIT_BATCH_SIZE", "0")
+        .env("MODEL_PUBLISHER_POLICY_PROOF", proof)
+        .env("MODEL_CATALOG_PUBLISH_BINARY", publisher)
+        .env(
+            "MODEL_CATALOG_PUBLISH_SHA256",
+            format!("{:x}", Sha256::digest(fs::read(publisher).unwrap())),
+        )
+        .env("MODEL_LLVM_GUARDED_ADD_BINARY", guarded)
+        .env(
+            "MODEL_LLVM_GUARDED_ADD_SHA256",
+            format!("{:x}", Sha256::digest(fs::read(guarded).unwrap())),
+        )
+        .env_remove("MODEL_CACHED_CODE_BINARY")
+        .env_remove("MODEL_CACHED_CODE_SHA256")
+        .env_remove("MODEL_CACHED_CODE_REQUEST")
+        .env_remove("MODEL_CACHED_CODE_REQUEST_SHA256")
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "combined caller policy failed: {}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}

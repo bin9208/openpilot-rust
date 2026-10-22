@@ -5026,7 +5026,7 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features driver-daemon-native --lib driver_daemon_check:: -- --nocapture > "$proof/driver-unit.log" 2>&1 || { cat "$proof/driver-unit.log"; exit 1; }
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features driver-daemon-native --lib usbgpu_daemon_check:: -- --nocapture > "$proof/usb-unit.log" 2>&1 || { cat "$proof/usb-unit.log"; exit 1; }
           cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features driver-daemon-native --lib --bin stage-driver-daemon-fixture --bin prepare-model-family-catalog --bin stage-model-family-usb-assets --bin check-driver-daemon --bin check-model-startup --bin check-usbgpu-daemon --test driver_daemon_retirement --test model_family_prepare --test model_family_retirement --test model_startup_check --test usbgpu_daemon_check -- -D warnings > "$proof/grouped-clippy.log" 2>&1 || { cat "$proof/grouped-clippy.log"; exit 1; }
-          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features driver-daemon-native --test ci_disk_bootstrap --test ci_workflow_policy > "$proof/maintained-policy.stdout" 2> "$proof/maintained-policy.stderr" || { tail -n 100 "$proof/maintained-policy.stdout" "$proof/maintained-policy.stderr"; exit 1; }
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features driver-daemon-native --test ci_disk_bootstrap --test ci_workflow_policy --test ci_model_catalog_publisher > "$proof/maintained-policy.stdout" 2> "$proof/maintained-policy.stderr" || { tail -n 100 "$proof/maintained-policy.stdout" "$proof/maintained-policy.stderr"; exit 1; }
       - name: Build held runtime prerequisites and both C++ peers without original Python bindings
         shell: bash
         run: |
@@ -5036,7 +5036,7 @@ jobs:
           cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-driving-modeld --bin openpilot-driving-modeld --example usbgpu_daemon_fixture > "$proof/driving-build.log" 2>&1 || { cat "$proof/driving-build.log"; exit 1; }
           cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dmonitoringmodeld --bin openpilot-dmonitoringmodeld > "$proof/driver-build.log" 2>&1 || { cat "$proof/driver-build.log"; exit 1; }
           cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-usbgpu --example worker_protocol_fixture > "$proof/worker-build.log" 2>&1 || { cat "$proof/worker-build.log"; exit 1; }
-          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --bin model-run --bin offline-llvm-guarded-add > "$proof/model-run-build.log" 2>&1 || { cat "$proof/model-run-build.log"; exit 1; }
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --bin model-run --bin offline-llvm-guarded-add --bin publish-model-catalog > "$proof/model-run-build.log" 2>&1 || { cat "$proof/model-run-build.log"; exit 1; }
           cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features driving-daemon-native --bin stage-driving-daemon-fixture --bin generate-services-header > "$proof/stager-build.log" 2>&1 || { cat "$proof/stager-build.log"; exit 1; }
           mkdir "$proof/peer"
           rust/target/debug/generate-services-header > "$proof/peer/services.h"
@@ -5061,11 +5061,20 @@ jobs:
           test -x "$helper"
           digest=$(sha256sum "$helper" | cut -d' ' -f1)
           printf 'MODEL_LLVM_GUARDED_ADD_BINARY=%s\nMODEL_LLVM_GUARDED_ADD_SHA256=%s\n' "$helper" "$digest" >> "$GITHUB_ENV"
+          # Bind the optional publisher only through explicit step outputs.
+          publisher=$(readlink -f "$GITHUB_WORKSPACE/rust/target/debug/publish-model-catalog")
+          test -x "$publisher" && test -f "$publisher" && test ! -L "$publisher"
+          publisher_sha=$(sha256sum "$publisher" | cut -d' ' -f1)
+          printf 'catalog-publisher-binary=%s\ncatalog-publisher-sha256=%s\n' "$publisher" "$publisher_sha" >> "$GITHUB_OUTPUT"
           printf '%s\n' "$helper" "$(readlink -f "$LLVM_PATH")" "$GITHUB_WORKSPACE/rust/crates/model-runtime/src/guarded_add.rs" "$GITHUB_WORKSPACE/rust/crates/model-runtime/src/bin/offline-llvm-guarded-add.rs" "$GITHUB_WORKSPACE/rust/crates/model-runtime/src/owned_outputs.rs" "$GITHUB_WORKSPACE/rust/crates/model-runtime/src/lib.rs" "$GITHUB_WORKSPACE/rust/crates/model-runtime/Cargo.toml" "$GITHUB_WORKSPACE/rust/Cargo.toml" "$GITHUB_WORKSPACE/rust/Cargo.lock" "$GITHUB_WORKSPACE/rust/rust-toolchain.toml" "$GITHUB_WORKSPACE/rust/tools/build_model_pipelines.py" "$GITHUB_WORKSPACE/rust/tools/model_export/native.py" "$GITHUB_WORKSPACE/rust/tools/model_export/capture.py" "$GITHUB_WORKSPACE/rust/tools/model_export/compile.py" "$GITHUB_WORKSPACE/rust/tools/model_export/schema.py" "$GITHUB_WORKSPACE/rust/crates/dev-tools/src/driver_daemon_current_catalog.rs" "$GITHUB_WORKSPACE/rust/crates/dev-tools/src/model_family_prepare/catalog.rs" "$GITHUB_WORKSPACE/rust/crates/model-runtime/tests/catalog.rs" > "$proof/binding-paths.txt"
           if test -n "${MODEL_BRIDGE_CATALOG_TEST_BINARY:-}"; then
            printf '%s\n' "$MODEL_BRIDGE_CATALOG_TEST_BINARY" >> "$proof/binding-paths.txt"
           fi
           printf '%s\n' "$(readlink -f "$(command -v python)")" "$GITHUB_WORKSPACE/rust/crates/dev-tools/src/driver_daemon_check.rs" "$GITHUB_WORKSPACE/rust/tools/model_export/publish.py" >> "$proof/binding-paths.txt"
+          printf '%s\n' "$publisher" >> "$proof/binding-paths.txt"
+          git ls-files -- rust/crates/model-runtime/src rust/crates/model-runtime/Cargo.toml rust/Cargo.toml rust/Cargo.lock rust/rust-toolchain.toml rust/crates/dev-tools/src/model_family_prepare/catalog.rs rust/crates/dev-tools/src/driver_daemon_current_catalog.rs | while IFS= read -r path; do
+           printf '%s/%s\n' "$GITHUB_WORKSPACE" "$path"
+          done >> "$proof/binding-paths.txt"
           while IFS= read -r path; do sha256sum "$path"; done < "$proof/binding-paths.txt" > "$proof/bindings.before.sha256"
           while IFS= read -r path; do stat --printf '%n:%d:%i:%s:%f:%y:%z\n' "$path"; done < "$proof/binding-paths.txt" > "$proof/identities.before.txt"
           lscpu --json > "$proof/lscpu.json"
@@ -5074,6 +5083,9 @@ jobs:
           git rev-parse HEAD > "$proof/source.txt"
           python -m pip freeze > "$proof/providers.before.txt"
       - name: Stage two independent model datasets and export separate current-host catalogs
+        env:
+          MODEL_CATALOG_PUBLISH_BINARY: ${{ steps.bridge-bind.outputs.catalog-publisher-binary }}
+          MODEL_CATALOG_PUBLISH_SHA256: ${{ steps.bridge-bind.outputs.catalog-publisher-sha256 }}
         shell: bash
         run: |
           set -euo pipefail
@@ -5115,6 +5127,9 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features driver-daemon-native --test model_family_prepare actual_usb_stage_preserves_full_45_asset_and_three_license_rosters -- --ignored --exact --nocapture > "$proof/usb-stage.stdout" 2> "$proof/usb-stage.stderr" || { cat "$proof/usb-stage.stdout" "$proof/usb-stage.stderr"; exit 1; }
           rm "$archive"
       - name: Run same held native ELFs in actual checkout and private six-source-absent root
+        env:
+          MODEL_CATALOG_PUBLISH_BINARY: ${{ steps.bridge-bind.outputs.catalog-publisher-binary }}
+          MODEL_CATALOG_PUBLISH_SHA256: ${{ steps.bridge-bind.outputs.catalog-publisher-sha256 }}
         shell: bash
         run: |
           set -euo pipefail
@@ -5261,6 +5276,7 @@ jobs:
           proof="$RUNNER_TEMP/bridge-catalog-checks"
           mkdir "$proof"
           test -n "$LLVM_PATH" && test -s "$LLVM_PATH"
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test ci_model_catalog_publisher > "$proof/publisher-caller-policy.log" 2>&1 || { cat "$proof/publisher-caller-policy.log"; exit 1; }
           cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --test catalog -- -D warnings > "$proof/catalog-clippy.log" 2>&1 || { cat "$proof/catalog-clippy.log"; exit 1; }
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --test catalog --no-run --message-format=json > "$proof/catalog-artifacts.jsonl" 2> "$proof/catalog-compile.log" || { cat "$proof/catalog-compile.log"; exit 1; }
           binary=$(jq -sr '[.[] | select(.reason == "compiler-artifact" and .target.name == "catalog" and (.target.kind | index("test")) != null and .profile.test == true and .executable != null) | .executable] | unique | if length == 1 then .[0] else error("expected one catalog test executable") end' "$proof/catalog-artifacts.jsonl")
@@ -5284,11 +5300,20 @@ jobs:
           test -x "$helper"
           digest=$(sha256sum "$helper" | cut -d' ' -f1)
           printf 'MODEL_LLVM_GUARDED_ADD_BINARY=%s\nMODEL_LLVM_GUARDED_ADD_SHA256=%s\n' "$helper" "$digest" >> "$GITHUB_ENV"
+          # Bind the optional publisher only through explicit step outputs.
+          publisher=$(readlink -f "$GITHUB_WORKSPACE/rust/target/debug/publish-model-catalog")
+          test -x "$publisher" && test -f "$publisher" && test ! -L "$publisher"
+          publisher_sha=$(sha256sum "$publisher" | cut -d' ' -f1)
+          printf 'catalog-publisher-binary=%s\ncatalog-publisher-sha256=%s\n' "$publisher" "$publisher_sha" >> "$GITHUB_OUTPUT"
           printf '%s\n' "$helper" "$(readlink -f "$LLVM_PATH")" "$GITHUB_WORKSPACE/rust/crates/model-runtime/src/guarded_add.rs" "$GITHUB_WORKSPACE/rust/crates/model-runtime/src/bin/offline-llvm-guarded-add.rs" "$GITHUB_WORKSPACE/rust/crates/model-runtime/src/owned_outputs.rs" "$GITHUB_WORKSPACE/rust/crates/model-runtime/src/lib.rs" "$GITHUB_WORKSPACE/rust/crates/model-runtime/Cargo.toml" "$GITHUB_WORKSPACE/rust/Cargo.toml" "$GITHUB_WORKSPACE/rust/Cargo.lock" "$GITHUB_WORKSPACE/rust/rust-toolchain.toml" "$GITHUB_WORKSPACE/rust/tools/build_model_pipelines.py" "$GITHUB_WORKSPACE/rust/tools/model_export/native.py" "$GITHUB_WORKSPACE/rust/tools/model_export/capture.py" "$GITHUB_WORKSPACE/rust/tools/model_export/compile.py" "$GITHUB_WORKSPACE/rust/tools/model_export/schema.py" "$GITHUB_WORKSPACE/rust/crates/dev-tools/src/driver_daemon_current_catalog.rs" "$GITHUB_WORKSPACE/rust/crates/dev-tools/src/model_family_prepare/catalog.rs" "$GITHUB_WORKSPACE/rust/crates/model-runtime/tests/catalog.rs" > "$proof/binding-paths.txt"
           if test -n "${MODEL_BRIDGE_CATALOG_TEST_BINARY:-}"; then
            printf '%s\n' "$MODEL_BRIDGE_CATALOG_TEST_BINARY" >> "$proof/binding-paths.txt"
           fi
           printf '%s\n' "$(readlink -f "$(command -v python)")" "$GITHUB_WORKSPACE/rust/crates/dev-tools/src/driver_daemon_check.rs" "$GITHUB_WORKSPACE/rust/tools/model_export/publish.py" >> "$proof/binding-paths.txt"
+          printf '%s\n' "$publisher" >> "$proof/binding-paths.txt"
+          git ls-files -- rust/crates/model-runtime/src rust/crates/model-runtime/Cargo.toml rust/Cargo.toml rust/Cargo.lock rust/rust-toolchain.toml rust/crates/dev-tools/src/model_family_prepare/catalog.rs rust/crates/dev-tools/src/driver_daemon_current_catalog.rs | while IFS= read -r path; do
+           printf '%s/%s\n' "$GITHUB_WORKSPACE" "$path"
+          done >> "$proof/binding-paths.txt"
           while IFS= read -r path; do sha256sum "$path"; done < "$proof/binding-paths.txt" > "$proof/bindings.before.sha256"
           while IFS= read -r path; do stat --printf '%n:%d:%i:%s:%f:%y:%z\n' "$path"; done < "$proof/binding-paths.txt" > "$proof/identities.before.txt"
           lscpu --json > "$proof/lscpu.json"
@@ -5320,8 +5345,13 @@ jobs:
             python openpilot/selfdrive/modeld/compile_dm_warp.py --camera-resolution "$resolution" --warp-to 1440x960 --output "$RUNNER_TEMP/original-models/dm_warp_${resolution}_tinygrad.pkl"
           done
       - name: Build and validate immutable native pipeline catalog
+        env:
+          MODEL_CATALOG_PUBLISH_BINARY: ${{ steps.bridge-bind.outputs.catalog-publisher-binary }}
+          MODEL_CATALOG_PUBLISH_SHA256: ${{ steps.bridge-bind.outputs.catalog-publisher-sha256 }}
         run: |
-          python rust/tools/build_model_pipelines.py --trusted-model-directory "$RUNNER_TEMP/original-models" --backend cpu --output "$RUNNER_TEMP/native-catalog"
+          set -euo pipefail
+          MODEL_BRIDGE_PYTHON="$(command -v python)" MODEL_PUBLISHER_POLICY_PROOF="$RUNNER_TEMP/bridge-proof-296/publisher-policy" "$MODEL_BRIDGE_CATALOG_TEST_BINARY" --ignored --exact native_publisher_with_guarded_emitter_preserves_binding_policy --nocapture --test-threads=1
+          python rust/tools/build_model_pipelines.py --trusted-model-directory "$RUNNER_TEMP/original-models" --backend cpu --output "$RUNNER_TEMP/native-catalog" --target-receipt "$RUNNER_TEMP/bridge-proof-296/publisher-target.json"
           rust/target/debug/model-run --check-catalog "$RUNNER_TEMP/native-catalog"
       - name: Compare both camera resolutions including prepare-only and recurrent turnover
         run: |

@@ -9285,3 +9285,27 @@ of the other two already passed Panda retirement tests/two-root phases reruns.
 Independent source review closes the exact API job-name and field-size blockers;
 complete frozen payloads are authenticated before any qualification. No local
 functional execution, source deletion, main/dev merge, release or device action.
+
+## Maintained model publisher activation source candidate (2026-10-23)
+
+Independently reviewed source patch9514277f8d6a00eccccd9b14ef0c75574ea81c13ef821a051e5490d64b8cea9c
+is integrated with the repository's explicit policy-test registration. Both
+maintained model jobs build/link the actual publish-model-catalog first, publish
+its canonical path/SHA pair as step outputs, seal the complete tracked issuer
+source tree and actual ELF, then pass the pair only to matching export/consumer
+steps. No workflow/job ambient publisher activation is introduced. Source/math/
+golden/tolerance and25retained Python producers are unchanged; lock bytes stay
+identical. Two policy tests cover pair/scope/link/source failures, and one ignored
+tiny real guarded-emitter+publisher test exercises the maintained CLI's bad-hash
+admission and actual single native publication without exported-kernel execution.
+
+Source-only review finds no concrete P1/P2 in the three-target change. YAML/Bash,
+scoped Rust formatting, exact proposed-file hashes and registration/diff checks
+are local source evidence only. Actual tiny combined mode and maintained caller
+acceptance remain unrun. The focused recipe has a separate P2: publisher cleanup
+must also require successful complete packaging before raw proof deletion, even
+when a partial artifact uploads. A new reviewed recipe derivative is required;
+the source patch is unaffected. Full rust.yml execution is held for Hegel's
+local runner/private source/cache/target adapter. No admitted four-bundle,
+eight-tail/ten-filesystem, whole startup/USB/driver or foundation scope is rerun
+merely to activate the caller, and no numerical/retirement credit follows.
