@@ -248,7 +248,7 @@ jobs:
         env:
           PREPARE_ONLY: ${{ github.event_name == 'push' && !contains(fromJSON('["dev","dev-md","main"]'), github.ref_name) }}
         run: |
-          rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 512
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           npm ci --prefix openpilot/selfdrive/carrot/web
           npm run build --prefix openpilot/selfdrive/carrot/web
           git diff --binary -- openpilot/selfdrive/carrot/web/js/generated/tools.js openpilot/selfdrive/carrot/web/generated/asset-manifest.json > "$RUNNER_TEMP/jetlink-web-assets.patch"
