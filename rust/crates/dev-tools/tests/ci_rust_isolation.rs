@@ -3031,3 +3031,37 @@ fn cweb_redirect_allocation_keeps_full_http_daemon_and_address_comparisons_manda
         ],
     );
 }
+
+#[test]
+fn native_kalman_generation_remains_required_with_fixed_originals_and_live_cpp_oracles() {
+    job_check(
+        "workspace",
+        &[
+            "--features kalman-model-generator-native --bin generate-pose-model --bin generate-car-model",
+            "fresh_native_files_compile_and_match_original_functions_and_constant_bits -- --ignored --exact",
+        ],
+        &["kalman-model-generator-native"],
+        false,
+    );
+    job_check(
+        "estimation-runtime",
+        &[
+            "python rust/tools/build_locationd_oracle.py",
+            "python rust/tools/build_paramsd_oracle.py",
+            "for source in generate_pose_corpus.py generate_car_corpus.py; do",
+            "test ! -e \"rust/tools/$source\" && test ! -L \"rust/tools/$source\"",
+            "--features kalman-corpus-generator-native --bin generate-pose-corpus --bin generate-car-corpus",
+            "cp rust/crates/locationd/tests/data/model.json",
+            "cp rust/crates/paramsd/tests/data/model.json",
+            "native_cli_matches_fresh_original_complete_json_bits_and_order -- --ignored --exact",
+            "KALMAN_CORPUS_RETIRED_ROOT=",
+            "sha256sum -c \"$proof/held-inputs.sha256\"",
+            "sha256sum -c \"$proof/provider-dependencies.sha256\"",
+        ],
+        &["kalman-corpus-generator-native"],
+        true,
+    );
+    let script = commands(&workflow()["jobs"]["estimation-runtime"]);
+    assert!(!script.contains("python rust/tools/generate_pose_corpus.py"));
+    assert!(!script.contains("python rust/tools/generate_car_corpus.py"));
+}
