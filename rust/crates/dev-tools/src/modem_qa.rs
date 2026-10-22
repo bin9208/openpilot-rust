@@ -957,6 +957,24 @@ fn lifecycle(options: &TraceOptions) -> Result<Value> {
     )?;
     require(
         calls.contains(
+            &vec!["systemctl", "stop", "ModemManager"]
+                .into_iter()
+                .map(str::to_owned)
+                .collect(),
+        ),
+        "modem daemon did not stop ModemManager",
+    )?;
+    require(
+        calls.contains(
+            &vec!["systemctl", "unmask", "--runtime", "ModemManager"]
+                .into_iter()
+                .map(str::to_owned)
+                .collect(),
+        ),
+        "modem daemon did not unmask ModemManager",
+    )?;
+    require(
+        calls.contains(
             &vec!["systemctl", "start", "ModemManager"]
                 .into_iter()
                 .map(str::to_owned)
