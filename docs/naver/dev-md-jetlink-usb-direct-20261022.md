@@ -35,3 +35,11 @@
 추가 검토에서 [#489](https://github.com/bin9208/openpilot-rust/issues/489)의 기존 FunctionFS `Session::teardown`도 이미 해제된 UDC를 다시 쓰는 것을 확인했다. watchdog/백엔드가 먼저 해제하면 owner 정리가 실패해 ADB 복원까지 막을 수 있다. 완료된 ep0 소유자는 재호출 시 새 세션의 UDC를 건드리지 않으며, 아직 정리할 ep0가 있을 때만 현재 UDC를 확인하고 해제한다. 실제 오류는 기록을 유지해 다시 정리할 수 있게 한다.
 
 Actions는 고정된 이전 `6133c589c`의 ffs.rs SHA-256 `c8e32605ed535bed7523bf55ecbb840c7ac680e981364a7a15051d6b7e4ad930`를 검증한 뒤, 새 재바인딩/빈 UDC 회귀 두 개가 이전 소스에서 실제 실패함을 확인한다. 반드시 현재 소스 원본 바이트를 복원하고 Git diff가 없는지 확인한 다음 새 소스의 전체 FunctionFS·기존 긍정 검사를 실행한다. 원본 실패를 새 후보의 성공으로 오인하지 않도록 별도 RED artifact에 소스 식별자를 기록한다. 로컬 기능 실행은 하지 않는다. 이 추가 수정으로 전체 PR 검사를 새 소스에서 다시 실행한다.
+
+## 고정 OS 릴리스의 ADB Off 복원
+
+AGNOS `19.8-carrot-bt1` 릴리스의 실제 target commit은 `f5b3f77e59f1917f95e0752630ca08050463eede`다. [그 버전의 set_adb.sh](https://github.com/ajouatom/agnos-builder/blob/f5b3f77e59f1917f95e0752630ca08050463eede/userspace/usr/comma/set_adb.sh)와 [watcher service](https://github.com/ajouatom/agnos-builder/blob/f5b3f77e59f1917f95e0752630ca08050463eede/userspace/files/adb-param-watcher.service)를 직접 대조해 g1/04d8:1234/NCM+ADB/함수·컨트롤러·서비스 경로가 구현과 일치함을 확인했다.
+
+이 원본 스크립트의 Off 경로는 adbd 정지 후 빈 UDC를 다시 쓴다. 따라서 원하는 Off 상태가 이미 완료되어도 service가 ENODEV로 실패할 수 있다. native 복원은 그 오류를 무조건 무시하지 않으며, 현재 AdbEnabled가 Off이고 g1이 실제 해제되었으며 watcher script와 adbd가 모두 실행 중이 아님을 확인한 경우만 완료한다. On 요청·바인딩된 컨트롤러·실행 중 서비스·읽기 오류는 계속 실패로 남겨 복원 기록을 보존한다. 신규 회귀는 이 여섯 경우를 검증한다.
+
+RED driver는 고정 `5ec52243473fbba9a4833b371fe891b0fde37d87`의 실제 이전 restore 함수와 새 단위 fixture를 결합해 Off 복원 실패를 재현한 뒤, 후보 원본 파일 두 개를 모두 복원하고 긍정 검사를 실행한다. 원본 전체 adb.rs SHA-256은 `d1718ba555e62c8208191aef65dc58fa6143212829d95086ad60165155ff99f2`다. 이 추가 사항은 기기 실행 증거가 아니다.

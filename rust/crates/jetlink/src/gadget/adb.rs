@@ -226,7 +226,20 @@ pub(super) fn restore(paths: &Paths, os: &impl Services) -> Result<(), Error> {
         os.change("start", &[WATCHER])?;
     }
     if saved.adb || saved.watcher || value(&paths.params.join("AdbEnabled")) == "1" {
-        os.change("start", &[SERVICE])?;
+        if let Err(error) = os.change("start", &[SERVICE]) {
+            // AGNOS19.8's Off script writes an empty UDC after stopping adbd,
+            // which may already have unbound it. Accept that service failure
+            // only after the current Off state is independently verified.
+            let detached = !g1.exists() || fs::read_to_string(g1.join("UDC"))?.trim().is_empty();
+            if value(&paths.params.join("AdbEnabled")) == "1"
+                || !detached
+                || os.active(SERVICE)?
+                || os.active(ADB)?
+            {
+                return Err(error);
+            }
+            eprintln!("Jetlink verified ADB Off despite stock script unbind error");
+        }
     } else if !value(&g1.join("UDC")).is_empty() {
         fs::write(g1.join("UDC"), b"\n")?;
     }
@@ -240,18 +253,25 @@ pub(super) fn restore(paths: &Paths, os: &impl Services) -> Result<(), Error> {
 mod tests {
     use super::*;
     use std::{
-        cell::RefCell,
+        cell::{Cell, RefCell},
         os::unix::fs::{symlink, PermissionsExt},
     };
     #[derive(Default)]
     struct Fake {
         calls: RefCell<Vec<String>>,
         fail_stop: bool,
+        fail_service: Cell<bool>,
+        service_busy: Cell<bool>,
+        adb_stopped: Cell<bool>,
         detached_attribute: Option<std::path::PathBuf>,
     }
     impl Services for Fake {
-        fn active(&self, _: &str) -> Result<bool, Error> {
-            Ok(true)
+        fn active(&self, unit: &str) -> Result<bool, Error> {
+            Ok(match unit {
+                ADB => !self.adb_stopped.get(),
+                SERVICE => self.service_busy.get(),
+                _ => true,
+            })
         }
         fn change(&self, action: &str, units: &[&str]) -> Result<(), Error> {
             self.calls
@@ -259,6 +279,14 @@ mod tests {
                 .push(format!("{action}:{}", units.join(",")));
             if self.fail_stop && action == "stop" {
                 return Err(Error::Closed);
+            }
+            if action == "stop" && units.contains(&ADB) {
+                self.adb_stopped.set(true);
+            }
+            if action == "start" && units.contains(&SERVICE) && self.fail_service.get() {
+                return Err(Error::Contract(
+                    "stock script failed after empty UDC unbind",
+                ));
             }
             if action == "stop" {
                 if let Some(path) = &self.detached_attribute {
@@ -269,6 +297,42 @@ mod tests {
                 }
             }
             Ok(())
+        }
+    }
+    #[test]
+    fn off_setting_accepts_stock_unbind_error_only_after_verification() {
+        for kind in 0..6 {
+            let dir = tempfile::tempdir().unwrap();
+            let paths = fixture(dir.path());
+            let os = Fake::default();
+            claim(&paths, &os).unwrap();
+            fs::write(
+                paths.params.join("AdbEnabled"),
+                if kind == 1 { "1" } else { "0" },
+            )
+            .unwrap();
+            os.fail_service.set(true);
+            os.service_busy.set(kind == 2);
+            if kind == 3 {
+                os.adb_stopped.set(false);
+            }
+            let udc = paths.config.join("usb_gadget/g1/UDC");
+            match kind {
+                4 => fs::write(&udc, CONTROLLER).unwrap(),
+                5 => {
+                    fs::remove_file(&udc).unwrap();
+                    fs::create_dir(&udc).unwrap();
+                }
+                _ => {}
+            }
+            let result = restore(&paths, &os);
+            if kind == 0 {
+                result.unwrap();
+                assert_eq!(fs::metadata(&paths.state).unwrap().len(), 0);
+            } else {
+                assert!(result.is_err());
+                assert!(fs::metadata(&paths.state).unwrap().len() > 0);
+            }
         }
     }
     fn fixture(root: &Path) -> Paths {
