@@ -126,3 +126,74 @@ fn main() {
         std::process::exit(1)
     }
 }
+
+#[cfg(test)]
+mod output_ownership_tests {
+    use super::*;
+
+    fn staged(path: &Path) -> Outputs {
+        let mut output = Outputs {
+            paths: Vec::new(),
+            committed: false,
+        };
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(path)
+            .unwrap();
+        output.paths.push(path.to_owned());
+        file.write_all(b"owned output").unwrap();
+        output
+    }
+
+    #[test]
+    fn unchanged_owned_output_is_removed_on_failure() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("output");
+        drop(staged(&path));
+        assert!(!path.exists());
+    }
+
+    #[test]
+    fn foreign_replacement_survives_late_failure() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("output");
+        let transaction = staged(&path);
+        fs::rename(&path, dir.path().join("original")).unwrap();
+        fs::write(&path, b"foreign replacement").unwrap();
+        drop(transaction); // Same cleanup path as a later write/sync failure.
+        assert_eq!(
+            fs::read(&path).expect("foreign replacement must survive"),
+            b"foreign replacement"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn foreign_symlink_survives_late_failure() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("output");
+        let target = dir.path().join("target");
+        let transaction = staged(&path);
+        // Link to the very same owned inode: following metadata instead of
+        // inspecting the link itself would incorrectly authorize its removal.
+        fs::rename(&path, &target).unwrap();
+        std::os::unix::fs::symlink(&target, &path).unwrap();
+        drop(transaction);
+        assert!(fs::symlink_metadata(&path)
+            .expect("foreign symlink must survive")
+            .file_type()
+            .is_symlink());
+        assert_eq!(fs::read(&target).unwrap(), b"owned output");
+    }
+
+    #[test]
+    fn successful_output_is_retained() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("output");
+        let mut transaction = staged(&path);
+        transaction.committed = true;
+        drop(transaction);
+        assert_eq!(fs::read(path).unwrap(), b"owned output");
+    }
+}
