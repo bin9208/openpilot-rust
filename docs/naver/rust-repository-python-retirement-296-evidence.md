@@ -8031,3 +8031,21 @@ Old logger119870184634 exceeded its existing20minute limit after apt retries
 consumed9m28s, then ASan build was interrupted. No timeout change is made. The
 current maintained103188 logger119899439610 succeeds through Miri and both ASan
 steps; this confirms that complete current job, not the earlier cancelled job.
+
+Four-helper retirement [39805553255](https://github.com/bin9208/openpilot-rust/actions/runs/39805553255)
+succeeds at1d570b3459dae783da8bf021bb7bde87368e607a/workflowace2c50a4,
+job119917695936. Artifact12437338059:4898240B/SHA256
+ddc740b6d52bd6f6615111d49fd0b818dff283aba562159dd20b4283cc61d75a.
+Parent independently audits all194CRCs, all78complete original/corrected output
+and filesystem rows,3scope input pairs,5global ELF hash pairs and exact immutable
+corpus. Actual4integrations/7libraryunits/97policy tests pass with strictClippy.
+Idle SIGINT7.72029/SIGTERM7.216116ms, low-space deletion intervals
+101.733218/102.233181ms; original complete poststate and normal unmount pass.
+All four sources are absent before/after; the unchanged scan covers19131files/
+38431798read bytes and rejects aliases,bytecode,imports and workflow launchers.
+The separate current native gate executes52+7closed exec attempts with Python0;
+old native39802773197 and original39791032084 evidence are reused explicitly.
+All four retained runtime source hashes remain mandatory. Credit exactly four
+baseline entries:288replaced-local/3partially-replaced/3289pending of3580.
+All3580historical Git blob pins remain unchanged; routing14accepted/3292remaining,
+F03=1117/F07=49remaining. Embedded counts and other families stay unchanged.

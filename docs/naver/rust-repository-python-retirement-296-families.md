@@ -41,6 +41,14 @@ map retains10accepted rows and3296remaining pending/partial entries. This closes
 two F03 routes and eight F04 helper roles, leaving1120/F03 and416/F04 entries.
 Original runtime uploader/deleter/xattr/loggerd/Athena consumers remain live.
 
+The four deleter development helpers are also accepted at source1d570b345 by
+[39805553255](https://github.com/bin9208/openpilot-rust/actions/runs/39805553255).
+The current baseline is288replaced-local/3partially-replaced/3289pending;
+the routing map retains14accepted rows and3292remaining pending/partial entries.
+This removes three F03 roles and one F07 role, leaving1117/F03 and49/F07.
+The four retained runtime source dependencies remain live; embedded-edge counts
+are unchanged. Native logging and syntax-check candidates receive no credit yet.
+
 ## Current batches and blockers
 
 1. Panda device/protocol/CAN-I/O source deletion and maintained fixtures are

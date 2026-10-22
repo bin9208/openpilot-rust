@@ -2189,8 +2189,8 @@ F03-runtime-model-media-comparators	rust/tools/check_cweb_address.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_cweb_daemon.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_cweb_http.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_cweb_policy.py	pending
-F03-runtime-model-media-comparators	rust/tools/check_deleter_daemon.py	pending
-F03-runtime-model-media-comparators	rust/tools/check_deleter_reference.py	pending
+F03-runtime-model-media-comparators	rust/tools/check_deleter_daemon.py	replaced-local
+F03-runtime-model-media-comparators	rust/tools/check_deleter_reference.py	replaced-local
 F03-runtime-model-media-comparators	rust/tools/check_dmonitoring_daemon.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_input_pipeline.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_interrupted_send.py	pending
@@ -2418,7 +2418,7 @@ F03-runtime-model-media-comparators	rust/tools/controlsd_parameters.py	pending
 F03-runtime-model-media-comparators	rust/tools/controlsd_scenarios.py	pending
 F03-runtime-model-media-comparators	rust/tools/controlsd_source.py	pending
 F03-runtime-model-media-comparators	rust/tools/cweb_source_peer.py	pending
-F03-runtime-model-media-comparators	rust/tools/deleter_fixtures.py	pending
+F03-runtime-model-media-comparators	rust/tools/deleter_fixtures.py	replaced-local
 F03-runtime-model-media-comparators	rust/tools/device_probe.py	pending
 F03-runtime-model-media-comparators	rust/tools/dmonitoring_daemon_reference.py	pending
 F03-runtime-model-media-comparators	rust/tools/extract_runtime_sdk.py	pending
@@ -3186,7 +3186,7 @@ F07-ci-release-launch	rust/tools/tests/test_card_admission.py	pending
 F07-ci-release-launch	rust/tools/tests/test_card_ci.py	pending
 F07-ci-release-launch	rust/tools/tests/test_card_phase_fence.py	pending
 F07-ci-release-launch	rust/tools/tests/test_carrot_man_fixture_ports.py	pending
-F07-ci-release-launch	rust/tools/tests/test_deleter_observer.py	pending
+F07-ci-release-launch	rust/tools/tests/test_deleter_observer.py	replaced-local
 F07-ci-release-launch	rust/tools/tests/test_encoder_ci.py	partially-replaced
 F07-ci-release-launch	rust/tools/tests/test_logger_idle_observer.py	pending
 F07-ci-release-launch	rust/tools/tests/test_model_export.py	pending

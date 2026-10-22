@@ -59,8 +59,9 @@ and `observer` scopes. Build it with
 `cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --no-default-features --features deleter-check-native --bin check-deleter`.
 Maintained CI supplies the immutable original fixture and native providers;
 the daemon check creates a private temporary mount through CI's passwordless
-sudo. The four Python development helpers are removed in this candidate;
-current source-absence acceptance remains tracked in #296.
+sudo. The four Python development helpers are removed and their source-absence,
+functional and caller-policy checks pass. Repository-wide conversion remains
+open in #296.
 
 The Linux `check-native-logging` candidate compares the Rust logger with the
 original C++ producer, including packet bytes, console output and transport

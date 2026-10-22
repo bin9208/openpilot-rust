@@ -56,8 +56,9 @@ receipt는 최대 4MiB이며, JSON11의 `prefix`는 문자열이어야 합니다
 범위를 사용합니다. 빌드 명령은
 `cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --no-default-features --features deleter-check-native --bin check-deleter`입니다.
 유지 중인 CI가 고정된 원본 검증 자료와 네이티브 실행 파일을 전달하며, daemon 검사는
-CI의 비밀번호 없는 sudo로 임시 마운트 공간을 만듭니다. 이 후보에서는 Python 개발
-보조 도구 4개를 제거했으며, 현재 소스 부재 상태의 최종 검증은 #296에서 추적합니다.
+CI의 비밀번호 없는 sudo로 임시 마운트 공간을 만듭니다. Python 개발 보조 도구 4개를
+제거한 상태의 기능·소스 부재·호출 정책 검증이 통과했습니다. 전체 전환은 #296에서
+계속 진행합니다.
 
 Linux용 `check-native-logging` 후보는 Rust 로거와 원본 C++ 생산자의 패킷 바이트,
 콘솔 출력, 전송 실패 동작을 비교합니다. `openpilot-dev-tools`에서

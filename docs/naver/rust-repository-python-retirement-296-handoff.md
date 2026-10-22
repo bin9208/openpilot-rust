@@ -12,8 +12,8 @@ records; Git retains earlier handoffs. Do not restart accepted unchanged groups.
   and untracked `.omo/`. Only remote bin9208/openpilot-rust is authorized.
 - Entire remaining Python development/build/test/vendor/notebook/embedded scope
   stays active. A Rust wrapper around Python does not retire its functionality.
-- Accepted baseline: **284 replaced-local / 3 partially-replaced / 3293 pending
-  of3580**. Routing TSV retains10accepted rows and covers3296pending/partial entries. Additional observed
+- Accepted baseline: **288 replaced-local / 3 partially-replaced / 3289 pending
+  of3580**. Routing TSV retains14accepted rows and covers3292pending/partial entries. Additional observed
   embedded edges: **67total /39pending /25replaced-local /2non-executing-text /
   1native-existing**. The two hosted exporter tests are explicit temporary
   pending Python edges, without baseline credit.
@@ -69,8 +69,15 @@ admission binds actual R4 proof and rejects any file/link reappearance; four
 runtime Python source hashes remain mandatory. The original144901B corpus and
 all8source pins stay exact. Both maintained callers now use reference/daemon/
 observer CLIs and selected7libraryunits, with97policy cases and two added disk
-reserves547→549. Current-source absence/functionality gate remains pending;
-inventory stays284/3/3293 until that gate actually passes.
+reserves547→549. Current-source absence/functionality39805553255 is ACCEPTED at
+1d570b3459dae783da8bf021bb7bde87368e607a/workflowace2c50a4:
+artifact12437338059/4898240B/SHAddc740b6/all194CRC independently audited.
+All4integrations/7libraryunits/97policy cases,78whole output+snapshot rows,
+3scope input pairs/5global ELF hash pairs,3actual low-space cycles and normal
+unmount pass. Exact four absences and alias/bytecode/import scans are unchanged
+before/after over19131files/38431798read bytes;52+7exec attempts/Python0.
+Credit exactly4baseline rows:288/3/3289, routing3292remaining pending/partial.
+F03 now1117remaining,F07 now49; embedded edges remain unchanged.
 
 Published PR synthetic merge48abb4d87797d84c03be1595e9122c4b1e023e2d:
 Integration39754486834 passes all16jobs; both Fast39754486617/39754477763
