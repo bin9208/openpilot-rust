@@ -458,3 +458,21 @@ check_desire_reference.py and replaced the real workspace caller with mandatory
 native unit/integration/CLI/absence/default-CLI gates and full artifacts. Shared27
 original dependency pins remain. Actual-deleted-checkout cloud proof remains
 pending. Inventory229replaced-local/4partial/3347pending.
+
+### Native estimator comparison and controlsd fixture closure (2026-10-23)
+
+Integrate the six-file paramsd estimator controller and seven-file controlsd
+fixture generator as opt-in native tools. Reuse the accepted Paramsd seven-case
+input generator, Pose/CarParams and prior loop/daemon/startup scopes. Preserve
+original Python helpers as independent Actions oracles until the new full-schema
+comparisons and their maintained callers are admitted. No inventory credit yet.
+
+Estimator compares1196fresh original learner rows, exact Event shape/times/logs
+and existing asymmetric NumPy tolerances; focused mutation, process/cancellation
+and independent NumPy boundary controls precede acceptance. Controlsd builds the
+actual16-service roster, shallow mutations, vehicle settings/PSA tuning and all
+30cases/8605frames; compare complete original projections and float bits without
+changing runtime arithmetic. Parent owns shared Cargo/lib registration. The only
+Cargo.lock delta is existing workspace openpilot-card in dev-tools dependencies;
+no external package/version change is allowed. Independent source reviews and
+registered bin-actions build/original/native gates remain required.

@@ -8869,3 +8869,109 @@ Growth-only disk gate39840086506 uses source6fea07022/workflow
 commands. All are queued; none is counted as passed. Fast checks39839213128/
 39839200044 and mapped-docs39839330187/39839212353 pass at6fea07022; Rust port
 and Integration remain pending. Current full conversion is unfinished.
+
+### Driver R2 bounded parity observation; prior context still unresolved
+
+Source69bbee211a5bfde590ab9d85fb071d967892b580/workflow
+a565c35049f8a9118082dbd1671387c8ef59070c/run39833861115 succeeds. Artifact
+12451321365 is147265824B/SHA256
+0bd379314860cdb66c2448fe12e616575a17bb4374d9dc4000fcf3ac6bae6c5c.
+Parent independently checks617CRCs/616content seals, both2212B full outputs
+(original/native/frozen), both1382400B warped inputs, and four complete call3
+poststate bases1728000/1382400/9216/64B. All byte-equal; output changed1300110B
+from prestate. WarmupSHAace8ee6c6ff7cf8aa6f1881dd9eae6dc9cba15bb75bcc7bd70a5af03ddef500e;
+frame0SHA99b8b2fe7aa17098a366d1bb5e40a2b5a40561f0186ab4dcd33fb29a6dc358fc.
+The lane additionally authenticates17929paired before/after records,32critical
+Git source hashes,378catalog bodies and1657exporter dependency receipts.
+Actual machine ABI scalars/pointers agree. Calls4..87 are not individually
+traced; full output equality does not establish their intermediate equality.
+
+R1 EPYC9V74/znver4 and R2 EPYC7763/znver3 differ naturally. Source/provider/
+model/input/IR pins agree but native objects differ. Prior439/553differences
+(max0.01171875) remain failed; no CPU/FMA/rounding cause or fix is established.
+No fresh production patch or repeat of this passed scope is justified. Keep
+#476 open for an actual failing fresh full-path context. uv.lock is authenticated
+by compiler dependency receipts/Git but absent from the generic outer seal
+roster; retain that limit. Unarchived installed binaries/providers depend on
+hosted before/after records. No local artifact/provider execution occurred.
+
+### CP949 original admitted and next native comparison bound
+
+Original run39838081764/workflow77c24fb521ca3ecfee41edb9ff7265e60943efee
+succeeds on runner22/bin-actions at source77100d33. Artifact12452923687 is
+1600508B/SHA25666fcdac652643e19becb33af6c93ffce671ef8e75dbc1837269ddf7f615d608e.
+Parent independently verifies66uniqueCRCs/18manifestseals,122equal held-provider
+pairs, source Git hashes, exact supplement identities and raw plan coverage:
+261870new dense rows,4517new vectors,880source rows. Old45are not recaptured.
+ManifestSHAf65438fd67a1d967dc00cef0362427127ccbccfc944e3b20bde7fff94d2170eb;
+receiptSHA03f16d1c904cb7237655b364a6887d8deeddea3df53f39d0f08abec60037f2c4.
+Original/provider code was never executed locally. Bound native template
+f886d7645ad39a1ab06c931e151ab074452e3603adbd49756d23671e7695672a changes only
+admission pins and publishes39843159421/workflowbf0d3b72511a046a0bc4fc851bf69e96babfb0af
+at source300f77e4. Native comparison/source retirement remain pending.
+
+### Logger gate repairs and first actual persistent-runner boundary
+
+Independent R4 review found missing pack_traces() before completion verification.
+The minimal insertion is reviewed/frozen gate3f6923ad992c437ee065c165c70ff27c11ec77be40757a7dafbcc5c812a15c45,
+published at300f77e4/workflow8a2317e61d6d1028b6a7fdbcad39dc28d9c124fb,
+run39842793469. This run fails BEFORE remaining lifecycle/protocol executions:
+actual C++ELF793786e2342e2cece236ab804b998c0e86311fc5de78403c7ff3663ade200c1c
+versus required historicald540c13737a12ff46215fade79aa81ec705b7fe4ab37297890cde9f5d3a0d4b6.
+Artifact12453413508 is3253542B/SHA2565545c7b629d0c81130c4d3377d7f8e16b6c06198feca594e3a22a62499017890;
+parent verifies39CRCs and saved identity records. Current/root historical paths
+and compiler receipts differ in context; no causal attribution or relaxed pin
+is accepted. Existing17closed cases/31controls are not reclassified as failures.
+
+IO outerR3 fixes immediate post-spawn ownership and bounds normal/recovery audit
+reads before allocation, with five new hosted failure-control methods. Independent
+repair review finds no new P1/P2. Exact gate6a422a754887175e66800a2f47b643bf5dfce5b3edb3b548a061ffcbcf58c31b
+publishes39843229925/workflow19e5aa330ab4dc5430fa5afee40aa5c30d5034e4 at77100d33.
+Actual controls/audit prerequisites/IO behavior remain pending; unchanged normal/
+ASan roster and strict limits are retained.
+
+### Road selected InstCombine observation admitted; numerical issue stays open
+
+Run39839598730/workflowbec099d43d741d894ed79c281908173b838d7c77 succeeds on
+bin-actions at source1d5570e158bb7a799c4a816f78bc7f63f201d2a4. Artifact12451909424
+is380689B/SHA2563020c5345245d856b52b7fe30097b80694842490ce46d14a5cfb494c7de6823a;
+parent verifies84CRCs and frozen admissionb50787f9cec608e5f8032db3502fcd43c42fe37d82fc59dcf8c685185b4932c3.
+Lane independently verifies81seals/135held pairs/three reaped exit0workers with
+no omitted files. Exact LLVM18.1.3 provider remains5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0.
+Natural CPU is alderlake, unlike priorznver3. Only function(instcombine) runs;
+no object/kernel/model execution. At allfour guarded sites old post-add copy
+arms become negative-zero addend selects, while candidate becomes positive-zero
+select plus flag-free addition. Original retains its fast-math flags. This
+observes the selected-pass transformation, not sole historical cause or numeric
+equivalence. Prior five-case frozen-output failures remain failed;#482 stays open.
+No repeat of successful scopes or production fix is justified by this observation.
+
+### Operational runner selection finalized
+
+Latest human policy fixes next trustedx64 checks and genericARM/AGNOS cross-builds
+to bin-actions; no GitHubdefaultx64 fallback or new comparison. ActualARM CPU
+checks remain GitHubARM. Parent API confirms job120013728323/source2ff834da04e2acaad3d63211c2b76e287679eeaa,
+run39832976197, runner22, all stages/upload/cleanup SUCCESS in3341s. Its owner
+reports all15measured stages exit0 and noOOM; genericGNU/native components and
+musl staticprobe build/inspection are included. Previous AGNOS35m47local versus
+44m47hosted both pass. Reported404errors are not diagnosed causes; QEMU timing
+includes hashes/I/O and is not nativeARM or pure-compute evidence. Other active
+CI stays running; no unchanged passed scope repeats solely to switch runners.
+
+### Native estimator/controller and controlsd generator source batch
+
+Six new estimator files from frozen patchf2a5fb057915b7ec87878d29e4004302cf734a3293f0fcf43acf042454a37dc8
+and seven new controlsd fixture files fromf024707e27a4f27b61b4a5259267a90b8937bec6c9a328d8a52416bf488898f3
+are integrated with opt-in Cargo/bin/test/lib registration. Independent source
+reviews find no concrete Rust P1/P2; the estimator original-capture recipe has
+one prebinding P2 being repaired before publication. Parent also requires private
+pre-checkout growth checks, exact push triggers and upload-success-owned cleanup
+in both next recipes. Runtime implementation, numerical tolerances and Python
+sources remain unchanged. Only existing workspace openpilot-card is added to
+dev-tools lock dependencies; no external versions/other package records change.
+New lockSHA855f00e2e7751b242e5599d30708d1db8340a85675b522c7e83dac00bb24a667.
+Scoped13file rustfmt, TOML/lock semantic delta, YAML/Bash syntax and diff checks
+pass locally. No local compile/test/Clippy/provider execution; exact-source
+compilation and full original/native admission remain Actions work. Inventory
+stays288/3/3289of3580. Maintained Paramsd caller39839253286 now reportsSUCCESS;
+its actual artifact admission is separate and in progress.

@@ -3009,6 +3009,7 @@ dependencies = [
  "libloading",
  "nix 0.31.3",
  "num-bigint",
+ "openpilot-card",
  "openpilot-cereal",
  "openpilot-disk-space",
  "openpilot-image-codecs",

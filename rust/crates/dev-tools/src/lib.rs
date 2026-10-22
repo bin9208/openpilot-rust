@@ -77,6 +77,8 @@ pub mod camera_state_check;
 pub mod camera_stress_check;
 #[cfg(feature = "carrot-navi-compare-native")]
 pub mod carrot_navi_compare;
+#[cfg(feature = "controlsd-fixture-native")]
+pub mod controlsd_fixture_generate;
 pub mod cutin_alert_check;
 #[cfg(feature = "dbc-generator-native")]
 pub mod dbc_assets;

@@ -1,8 +1,9 @@
 # Independent Rust port repository (2026-09-29)
 
 - On 2026-10-23 the user requested applying the faster validated Actions runner
-  across active tasks. Prefer registered `bin-actions` for the next necessary
-  trusted x64 checks/builds and AGNOS cross-builds. Its current labels are
+  across active tasks, then explicitly fixed the choice to local Actions.
+  Use registered `bin-actions` for the next necessary
+  trusted x64 checks/builds, generic ARM cross-builds and AGNOS cross-builds. Its current labels are
   `self-hosted`, `Linux`, `X64`, `dev-md-local`; confirm actual runner provenance.
   The label does not authorize mixing dev-md with #296. Actual ARM CPU execution
   stays on GitHub ARM runners. Keep local checkout work to source/syntax/format/
@@ -13,6 +14,17 @@
   disk stop/resume thresholds; size each operation from actual space/resource
   evidence and expected growth. This supersedes older hosted-only and fixed
   reserve instructions. See #496/#498 for the runner comparison evidence.
+  Generic ARM job120013728323 also succeeded on registered runner22 in3341s
+  at source2ff834da04e2acaad3d63211c2b76e287679eeaa/run39832976197,
+  including workspace/native GNU and static musl probe builds and inspections.
+  This completes the operational runner choice; do not wait for the comparison
+  counterpart or infer pure compiler speed, long-term reliability or device
+  acceptance from this result. Keep the comparison's final timing in its own task.
+  Do not use GitHub default x64 runners as an automatic fallback or another
+  comparison target. Do not wait for the cancelled hosted generic comparison.
+  The user's reported404errors are not a demonstrated cause in these results.
+  QEMU offline-install timings include hashes and disk I/O; neither those timings
+  nor x64 cross-builds establish native ARM CPU execution.
 
 - On 2026-10-23 the user selected GPT-6.1 Sol / Ultra for this parent chat and
   GPT-6.1 Sol for all subagents. Astra agents have completed their current

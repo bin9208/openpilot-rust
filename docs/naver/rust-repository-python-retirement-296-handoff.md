@@ -6,9 +6,9 @@ unchanged evidence. Read this handoff and the linked evidence ledger first.
 
 ## Active continuation, superseding the earlier migration snapshot
 
-Read Git freshly for source/workflow publication. The most recent published source
-is6fea07022c77ff8ffedb8fd1efd765f7d1f825fb before the next logging lifecycle
-test-only continuation commit. Read Git freshly after that publication. Local implementation commits1d7189b6b(loggerd diagnostics/pipeline/IO) and
+Read Git freshly for source/workflow publication. Source300f77e423750804b2a781d734128945a4b56765
+contains the logging lifecycle test-only continuation. The next13-file native
+estimator/controlsd fixture batch is separate; use Git for its publication SHA. Local implementation commits1d7189b6b(loggerd diagnostics/pipeline/IO) and
 0bb757339(real-emitter native publisher caller) have completed independent
 review. Commit77100d33 removes obsolete fixed disk floors in35native/coupled
 targets. Functional acceptance for these new scopes remains pending Actions.
@@ -20,8 +20,12 @@ accepted the human-requested parent **GPT-6.1 Sol / Ultra** override for this
 chat. Do not repeatedly send the model-change message or alter global settings.
 
 Latest runner policy is verified against actual human messages in comparison
-chat01a1649e-4253-7112-a5cd-14784c7e5278: use the faster registeredbin-actions
-for next trustedx64 checks/builds and AGNOS cross-builds. Actual ARM execution
+chat01a1649e-4253-7112-a5cd-14784c7e5278: use registeredbin-actions exclusively
+for next trustedx64 checks/builds and genericARM/AGNOS cross-builds. No automatic
+GitHubdefaultx64 fallback or further runner comparison. Genericjob120013728323
+at source2ff834da04e2acaad3d63211c2b76e287679eeaa/run39832976197 succeeds
+in3341s on runner22; parent API verifies all steps, upload and cleanup success.
+Do not wait for the comparison counterpart; its owner handles cancellation. Actual ARM execution
 stays on GitHub ARM. RunnerAPI confirmsid22/online with labels self-hosted,
 Linux,X64,dev-md-local; the label grants no dev-md work scope. Isolate jobtemp/
 cache/target, preserve source/provider/runner/resource receipts and never run
@@ -48,8 +52,9 @@ Current authoritative results and artifact hashes are in the evidence ledger:
   Big5 native39833214339 and JP2 native39834039262 are also admitted, including
   parent independent dense/vector/source comparisons and complete ZIP checks.
   Newton hit429/closed; Hubble delivered CP949 and completed/closed. New original
-  capture39838081764 is queued; focused test7a67cd94 is integrated but native
-  publication waits admitted original evidence. Archimedes hit429/closed;
+  capture39838081764 is admitted:66CRCs/18seals/122held providers,261870dense/
+  4517vectors/880source rows; old45neverrecaptured. Focused test7a67cd94 is
+  integrated and bound native39843159421 is published at300f; acceptance pending. Archimedes hit429/closed;
   Schrodinger takes over AST caller. The new CP949 test is committed6fea07022.
 - AST lifecycle39826743607 accepts8tests/31scenarios/12Git and complete retained
   traces. Final caller/two-source retirement waits remaining codec admissions.
@@ -63,38 +68,49 @@ Current authoritative results and artifact hashes are in the evidence ledger:
   freshly checks Clippy and all unreached lifecycle/protocol behavior. The run
   failed on a118byte socket path and aggregate setup timeout. Test-only resume
   patch5aa9ad1a is integrated:17closed cases reused/10new, shared600s unchanged.
-  Maxwell reviews external reuse; normal strict2s protocol remains unrun.
+  Maxwell found and Socrates fixed trace-pack-before-verification. Published
+  continuation39842793469 at300f fails before remaining cases: fresh C++ELF
+  hash differs from the old immutable provider. Bacon owns concrete context
+  diagnosis in logging-r4-cpp-context-sol; strict2s protocol remains unrun.
 - Loggerd main third39832401630 passes5units/3lifecycle/one full-schema replay
   then fails a Clippy lock predicate. That fix and reviewed diagnostics/pipeline/
   IO are committed1d7189b6b. Hypatia hit429/closed; Descartes owns precise
   resumption on combined source. Controllers39838024747 is queued after fixing
-  pre-job runner-context registration. Hilbert IO outerR2 is under independent
-  review; no live IO acceptance. Feynman implements controlsd fixture consumers
-  after Sartre hit429/closed, using existing Sol rather than retry spawning.
+  pre-job runner-context registration. IO outerR3 fixes both ownership/bounded
+  audit-read P2s and passes independent source review;39843229925 is published
+  at77100. Feynman delivers seven-file controlsd fixture candidate; Maxwell
+  reviews source while Feynman repairs isolated recipe registration/cleanup.
 - ParamsdR3 39834626379 succeeds at source69bbee211 with seven cases/two
   native roots and controls. Parent independent inert value/source audit passes;
-  reviewed nine-target maintained caller is integrated, functional CLI admission
-  pending. Hegel continues missing native estimator comparison controller.
+  reviewed nine-target maintained caller is integrated;39839253286 succeeds,
+  Hilbert audits its saved new CLI/corpus evidence in paramsd-caller-admission-sol. Hegel delivers six-file estimator comparator/controller candidate;
+  Hilbert reviews source while Hegel repairs the isolated recipe cleanup.
 - Model publisher995383 passes39824199853 for8tests/10filesystem cases.
   James hit429/closed; Bacon delivers real-emitter caller0bb757339. Its next
   isolated-bin-actions recipe is queued as39838416435, source77100d33.
   OOM/resource observations replace the unsupported4GiB-free-memory cutoff.
+  Run39838416435 fails actual caller/failure-controls step after successful
+  compile/original admission; Socrates diagnoses retained data.
 - Road#482: actual two frames match all eight buffers, while five historical
   cases fail output9 index99. Fresh original/candidate object bytes agree;
   historical compilation context remains unresolved. Five-case diagnostic
  39833558563 fails the strict frozen values; fresh original/candidate match
-  all8buffers/all5cases. Old also quiets both sNaNs. A new isolated InstCombine
-  boundary observation is under review; no arithmetic fix or relaxed comparison.
+  all8buffers/all5cases. Old also quiets both sNaNs. InstCombine39839598730
+  succeeds with three held workers: old copy arms become -0 addend selects;
+  candidate becomes +0 select then flag-free addition. This is selected-pass
+  evidence only; the five-case failure and#482 stay open.
 - Driver#476 first observer39828495779 mixes pre-substitution core_id=None and
   native[0] at warp call1. Einstein's R2 39833861115 records actual worker ABI
   before strict comparison, keeping source69bbee211. R2 completed successfully;
-  Einstein hit429/closed; Bacon takes over saved-output diagnosis in
-  driver-r2-diagnosis-sol. Numerical drift is still open.
+  Einstein hit429/closed; Bacon completes driver-r2-diagnosis-sol: both whole
+  outputs and allfourcall3bases match. Parent independently admits raw bytes.
+  Natural R1znver4/R2znver3 contexts differ; no cause/fix, #476 remains open.
+  Do not rerun this successful scope without a new actual failure boundary.
 - Startup39819735679 reaches the90minute job limit after42completed positives.
   Provider/source integrity passes, completion fails because18positives and16
   controls are missing. Helmholtz hit429/closed; Descartes prepares actual bounded
-  recovery under startup-continuation-sol. Saved-data audit39835797062 remains
-  queued; no family-wide pass.
+  recovery under startup-continuation-sol. Saved-data audit39835797062 succeeds;
+  that does not run missing native cases or establish a family-wide pass.
 
 Inventory remains288/3/3289 of3580. Dev-md, device operations, protected
 integration and releases remain outside this continuation. Local restrictions
