@@ -6450,3 +6450,42 @@ complete output pairs, receipts and FP controls. Unchanged-binary hardware-watch
 probe39714658646 fails inside GDB embedded Python imports before numerical
 execution; environment-isolated retry8c34aec442a7c608c39fb9e52209d970b2abda64
 retains exact inferior/provider/ISA/output correspondence gates. #476 remains open.
+
+
+### Coordinated post-faeef failures and bounded repairs
+
+The complete published Rust39713242787 at synthetic939a190a11fc991a4eaff958d514dc2fca5c07e2
+(PRheadfaeef14da43d3a2c59ec71d7966e191828a748b3) finds a new QA race in ARM
+RadarCAN119609922672: FD4 closes between /proc enumeration and readlink. #481
+tracks the failure. f0d81af61 records individually vanished descriptors, preserves
+survivors, and continues to reject permission errors or disappearance of the FD
+directory. Deterministic race/error controls and the complete maintained ARM
+job run39717945321; no detection/timing/validity/NAS replay behavior changed.
+
+The same full workflow's original-model job119609922762 rejects road-model
+1344-dual frameindex0/frame_id3 raw output. Bounded206 inspection selects33ZIP
+members with CRCs using approximately4.9MB of network traffic; full173294568B
+artifact12399112257 is not claimed audited. Of10304bytes, onlyoffset399 differs:
+float99 original-0.0/raw00000080 versus native+0.0/raw00000000. Both input hashes
+match the frozen manifest. Actual CPU EPYC7763 and LLVM18 provider5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0
+are recorded. No equivalence/tolerance change is accepted, and causality shared
+with the earlier driver/#476 issue is not established.
+
+Modem39717257885 at8a97671a8 fails before functional execution. Complete5706B
+artifact12399378285 SHAa08bc9c84e9cef8309f21fdb76d8285c5673449a57c735f070ee814763edec42
+has all3CRCs checked. Full compiler log, not just its displayed tail, identifies
+24missing require-helper errors plus two type mismatches. e481a530c and9afb381a8
+repair all26; retry39718465632/workflow02e3fb3a4e61685e45730eb8509f044f2a8230f6
+pins9afb381a8978f300a0403a363899aeef5eb56a65. No modem removal/count credit yet.
+
+Hardwared complete maintained platform39716711789 atfc0f017bd and full Fast
+routing533guard policy both pass. Diagnostic copy omitted the workflowroot
+RUSTUP_TOOLCHAIN environment for unqualified inherited commands, so exact pinned
+platform retry39717847363/workflowc6929deae721b30e7eea0478dea78fc94b31685e
+retains1.94.0 globally and records rustc/cargo versions. Artifact audit precedes
+source-retirement acceptance; successful unchanged policy need not be repeated.
+
+Environment-isolated hardware-watch39716179228 allocates no EPYC9V45: all4
+samples explicitly skip without debugger/numerical execution. Retry39718507661
+uses8natural samples/maxparallel4 with unchanged helper/provider/ISA/output guards.
+No wrong-host observation, CPU target substitution or success-from-skip is allowed.

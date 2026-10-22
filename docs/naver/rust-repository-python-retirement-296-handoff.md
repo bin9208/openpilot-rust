@@ -31,26 +31,24 @@ an all-module clearance or complete runtime/device acceptance.
 Navigation startup #457 and historical PTRACE_LISTEN/EIO #474 remain unexplained.
 Generic ARM/QEMU is not a sealed AGNOS/device candidate. Keep #296 open.
 
-Published current PR headd61079461c0e217056095fcd56d6831230317137. Complete current
-Integration39703167608 and Fast39703167593 pass. Rust39703167508 has the known
-#476 model failure; Card119576923165 passes and workspace119576923681 is running;
-inspect actual latest results before acceptance. Previous f913de3aa checkout is
-synthetic merged39b1b08c2079e9b3356be06ddddf9db49551be6, independently same tree.
-Integration39691148113 passes. Rust39691148023 is complete:44successful jobs,
-including generic aarch64119537355478, four failures plus failed aggregate.
-Current d610 generic aarch64119576923156 also passes;46jobs succeed and workspace
-remains running, with known#476 model failure unchanged.
-Failures were workspace formatting/metadata binding (#475), Panda source roster
-(#477, now closed after complete focused proof), old Card policy (#475) and model
-numerics (#476). Fast39691148018 failed old host-staging assertions (#478).
+Latest published PR checkpoint is faeef14da43d3a2c59ec71d7966e191828a748b3,
+with tested synthetic merge939a190a11fc991a4eaff958d514dc2fca5c07e2 (baseb55552db).
+Rust39713242787 exposes four distinct current concerns: workspace stager policy
+#478 (22 actual callers versus old23; repaired), RadarCAN ARM provenance FD
+race#481 (repaired), driver model numerics#476, and a newly isolated driving
+model raw signed-zero difference. Full Integration39713242775 was canceled,
+not accepted. User-doc runs39713330818/39713242867 pass. Complete published Fast,
+workspace, ARM and integration checks remain required after the current batch.
+Earlier d610 Fast/Integration and generic ARM passes are earlier-source evidence.
 
-Source fixes for the CI contracts are committed. Current-source complete Fast
-routing/metadata/Card39696562943 atdf374b0ab passes, including77isolation checks,
-3host-stager controls,13disk/6workflow policies and all67metadata observations.
-Corpus postdelete39698084823 additionally passes whole formatting and78isolation
-checks after the new Kalman step/policy. Full Fast39703167593 confirms all78
-isolation checks and closes #478 (comment6330242277); #475 still needs final complete workspace. Diagnostic-branch automatic Fast runs
-inspect a different tree and are never evidence for their pinned source checkout.
+Focused full Fast routing39714146176 at422671ae5 and39716711789 atfc0f017bd pass,
+including13disk controls/78isolation checks and corrected22native-stager policy.
+#478 was reopened after the faeef regression; focused success alone does not
+close it. Diagnostic-branch automatic Fast runs inspect a different tree and
+are not proof for their separately pinned source checkout. Hardwared postdelete
+platform39717847363 repeats the complete maintained job with the original root
+RUSTUP_TOOLCHAIN=1.94.0; artifact review is in progress. First39716711789 also
+passed the whole platform job but its diagnostic copy omitted that root env.
 
 ## Accepted focused closures to reuse
 
@@ -247,3 +245,30 @@ Currentissuebranchremote is faeef14da; newer local commits need coherentpush.
 prehalf observations INVALID. Parent572CRC55MB audit. GDB39714658646 fails before
 inferior; env-isolated hardware-watch retry8c34aec is pending. No production
 numerical fix. USBtwo-root39713225978/faeef runs sixcases/root; finalproof pending.
+
+## Active coordinated validation after faeef
+
+- USB39713225978/faeef completed all six actual cases and exact original source
+  identity receipts, then timed out in an existing-output rejection control:
+  large input hashing preceded output admission.8a97671a8 now rejects foreign
+  files/directories/dangling links before hashing; authoritative create_dir still
+  owns final publication. USB-only39717263745 repeats actual/private roots and
+  all controls. Full model-family acceptance and#479 remain separate.
+- Modem39717257885/8a976 fails compilation:24missing assertion-helper errors and
+  two type mismatches. Parent/worker inspected the complete three-member artifact
+ 12399378285/SHAa08bc9c84e9cef8309f21fdb76d8285c5673449a57c735f070ee814763edec42.
+  e481a530c/9afb381a8 repair all reported errors; retry39718465632 is pending.
+  All six original runtime/tool sources remain live and unaccepted.
+- #481 is a QA-only /proc FD enumeration race, with explicit vanished-FD records
+  and fatal non-ENOENT/directory-loss behavior. f0d81af61 adds deterministic
+  controls;39717945321 runs them plus the complete maintained native ARM job.
+  No radar detection/lead algorithm or NAS replay source changes are involved.
+- Hardware-watch39716179228 had four explicit ineligible-host skips and no
+  numerical observations.39718507661 samples eight naturally allocated hosts,
+  maxparallel4, with the same exact host/ISA/provider/full-output guards. A skip
+  is not numerical success and no production CPU target is forced.
+- Full original model pipeline39713242787/job119609922762 fails on road model
+ 1344-dual frameindex0/frame_id3: of10304rawbytes onlybyte399 differs, float99
+  original-0.0/native+0.0. Both input-image hashes match frozen manifests. CPU is
+  EPYC7763 with the recorded LLVM18 provider. This is distinct from the2212B
+  driver/#476 observation; common causality is unproved. Preserve exact bytes.
