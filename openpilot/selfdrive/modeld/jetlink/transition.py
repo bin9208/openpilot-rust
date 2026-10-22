@@ -4,14 +4,19 @@ from enum import IntEnum, Enum
 
 
 def required_process_failures(not_running, external_source):
-  """The new owner is optional for native/Shadow; all existing processes stay required."""
+  """The new owner is optional for native; all existing processes stay required."""
   return set(not_running) if external_source else set(not_running) - {'jetlinkd'}
 
 
 class Mode(IntEnum):
   OFF = 0
-  SHADOW = 1
-  ACTIVE_REQUEST = 2
+  ACTIVE_REQUEST = 1
+
+  @classmethod
+  def _missing_(cls, value):
+    # Preserve the old activation value without exposing another UI mode.
+    if value == 2:
+      return cls.ACTIVE_REQUEST
 
 
 class Outcome(Enum):
@@ -44,27 +49,19 @@ class Transition:
   def __init__(self, previously_active=False):
     self.active = False
     self.loss_latched = bool(previously_active)
-    # A restart with setting=2 cannot create a new activation request.
-    self.armed = False
-    self.previous_mode = Mode.ACTIVE_REQUEST
 
-  def update(self, mode, ready, validated, controls, outcome):
-    mode = Mode(mode)
+  def update(self, mode, ready, compatible, controls, outcome):
+    mode = Mode(mode) if mode in (0, 1, 2) else Mode.OFF
     reset = False
-    if self.active and (outcome == Outcome.LOST or not ready or not validated or mode != Mode.ACTIVE_REQUEST):
+    if self.active and (outcome == Outcome.LOST or not ready or not compatible or mode != Mode.ACTIVE_REQUEST):
       self.active = False
       self.loss_latched = True
-      self.armed = False
-    if not self.active and mode != Mode.ACTIVE_REQUEST and controls.inactive_stop:
+    if not self.active and mode == Mode.OFF and controls.inactive_stop:
       # Explicit acknowledgement while stopped and all control is inactive.
-      if ready or mode == Mode.OFF:
-        self.loss_latched = False
-      self.armed = True
-    request_edge = mode == Mode.ACTIVE_REQUEST and self.previous_mode != Mode.ACTIVE_REQUEST
-    if not self.active and request_edge and self.armed and not self.loss_latched and ready and validated and controls.inactive_stop:
+      self.loss_latched = False
+    if (not self.active and mode == Mode.ACTIVE_REQUEST and not self.loss_latched and ready and compatible
+        and outcome != Outcome.LOST and controls.inactive_stop):
       self.active = True
       reset = True
-      self.armed = False
-    self.previous_mode = mode
     phase = 'LOST' if self.loss_latched else 'ACTIVE' if self.active else 'OFF' if mode == Mode.OFF else 'READY' if ready else 'PREPARING'
     return Decision('jetlink' if self.active else 'native', phase, self.loss_latched, reset)

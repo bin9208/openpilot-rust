@@ -4372,17 +4372,32 @@
       "group": "시스템",
       "name": "JetlinkMode",
       "title": "Jetlink 모드 (기본 꺼짐)",
-      "descr": "0: 끄기 / 1: 검증(Shadow) / 2: 활성 요청. USB 설정은 오프로드에서 적용됩니다. 실제 모델·기기 검증 기록과 정차·크루즈/조향 해제가 있어야 활성화됩니다. 재부팅 시 꺼짐이며 eGPU와 함께 사용할 수 없습니다.",
+      "descr": "0: 끄기(내부 모델) / 1: 외부 GPU 모델 사용. 연결·모델 계약과 실행 파일 해시가 일치하고 정차·크루즈/조향/제어 해제 시 외부 출력을 실제 사용합니다. 별도 Shadow 단계나 과거 실기 승인 기록은 필요하지 않습니다. 기존 값 2도 외부 모델 요청입니다. 재시작 시 꺼짐이며 eGPU와 함께 사용할 수 없습니다. 소실 후 정차·제어 해제 상태에서 끄기로 확인하고 다시 선택하세요.",
       "egroup": "System",
       "etitle": "Jetlink mode (off by default)",
-      "edescr": "0: Off / 1: Shadow / 2: Request activation. USB setup applies offroad. Activation requires a matching device validation record, standstill and cruise/lateral disengagement. Resets to Off on restart. Mutually exclusive with eGPU.",
+      "edescr": "0: Off (native model) / 1: Use external GPU model. Uses actual external output when the live session/model contract and artifact hash match, while stopped with cruise, lateral and all control disengaged. No separate comparison mode or historical device approval is required. Legacy value 2 also requests external output. Resets to Off on restart; mutually exclusive with eGPU. After loss, acknowledge Off while stopped/disengaged, then select external again.",
       "cgroup": "系统",
       "ctitle": "Jetlink 模式（默认关闭）",
-      "cdescr": "0：关闭 / 1：影子验证 / 2：请求启用。仅在停车且纵横向控制关闭、设备验证通过后启用。重启后关闭，不能与 eGPU 同时使用。",
+      "cdescr": "0：关闭（内部模型）/ 1：使用外部 GPU 模型。实时会话、模型契约和文件哈希匹配，且停车并关闭巡航、转向及所有控制时，实际使用外部输出。不需要单独比较模式或历史设备批准记录。旧值 2 也请求外部模型。重启后关闭，不能与 eGPU 同时使用。丢失后停车并关闭控制，先选择关闭确认，再重新选择外部模型。",
       "min": 0,
-      "max": 2,
+      "max": 1,
       "default": 0,
-      "unit": 1
+      "unit": 1,
+      "control": "segmented",
+      "options": {
+        "ko": [
+          "끄기 (내부 모델)",
+          "외부 GPU 모델"
+        ],
+        "en": [
+          "Off (native model)",
+          "External GPU model"
+        ],
+        "zh": [
+          "关闭（内部模型）",
+          "外部 GPU 模型"
+        ]
+      }
     }
   ]
 }

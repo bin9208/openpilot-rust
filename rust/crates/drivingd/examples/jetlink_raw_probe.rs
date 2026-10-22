@@ -14,7 +14,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         enabled: false,
     };
     let mut transition = Transition::new(false);
-    transition.update(Mode::Shadow, true, true, controls, Outcome::None);
     let selected = transition.update(Mode::ActiveRequest, true, true, controls, Outcome::Valid);
     if selected.source != Source::Jetlink {
         return Err("fixture did not activate".into());

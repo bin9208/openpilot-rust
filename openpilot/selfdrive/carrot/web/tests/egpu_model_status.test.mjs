@@ -171,3 +171,20 @@ test("host reasons use Korean translations while preserving unknown diagnostics"
     assert.ok(elements.get("jetlinkHealth").textContent.endsWith(expected));
   }
 });
+
+test("USB Jetlink needs no host IP and preserves the actual connection failure", (t) => {
+  const saved = globalThis.document;
+  t.after(() => { globalThis.document = saved; });
+  const elements = new Map();
+  globalThis.document = { getElementById(id) {
+    if (!elements.has(id)) elements.set(id, { dataset: {}, style: {}, classList: { toggle() {}, remove() {} } });
+    return elements.get(id);
+  } };
+  CarrotEgpuModel.render({ available: false, jetlink: {
+    label: "Jetlink", severity: "error", addresses: [], reason: "USB transport failed: EPIPE",
+  } });
+  assert.equal(elements.get("egpuModelTitle").textContent, "Jetlink");
+  assert.doesNotMatch(elements.get("jetlinkHealth").textContent, /Host IP|Unavailable|Cinque v2/);
+  assert.match(elements.get("jetlinkHealth").textContent, /USB transport failed: EPIPE/);
+  assert.equal(elements.get("egpuModelCard").dataset.state, "error");
+});

@@ -12,6 +12,8 @@ import sys
 import tarfile
 import zipfile
 
+from sealed_archive import extract_sealed_member
+
 assert os.environ.get("GITHUB_ACTIONS") == "true", "runtime validation/builds belong in GitHub Actions"
 assert os.environ.get("GITHUB_REPOSITORY") == "bin9208/openpilot-rust"
 assert os.environ.get("RUNNER_ENVIRONMENT") == "github-hosted", "runtime delivery requires a GitHub-hosted runner"
@@ -82,18 +84,40 @@ def source_path_allowed(path, source_entry="", inherited_entry=""):
         'rust/crates/xiaoge/',
         'rust/crates/dev-tools/src/publish.rs',
         'rust/crates/dev-tools/tests/publish.rs',
+        'rust/crates/drivingd/examples/jetlink_raw_probe.rs',
         'rust/crates/params/src/lib.rs',
         'rust/crates/params/tests/conditional_write.rs',
         'rust/crates/plannerd/src/native_parameters.rs',
         'rust/upstream/jetlink.json',
         'rust/tools/check_dmonitoring_daemon.py',
         'rust/tools/check_card_runtime_pumped.py',
+        'rust/tools/check_jetlink_reference.py',
+        'rust/tools/check_jetlink_teardown_regression.py',
+        'rust/tools/carrot_server_params_http_cases.py',
+        'openpilot/selfdrive/carrot_settings.json',
+        'openpilot/selfdrive/carrot/server/tests/test_settings_schema.py',
+        'openpilot/selfdrive/carrot/web/js/pages/setting.js',
+        'openpilot/selfdrive/carrot/web/src/features/tools/egpu_model.js',
+        'openpilot/selfdrive/carrot/web/js/generated/tools.js',
+        'openpilot/selfdrive/carrot/web/generated/asset-manifest.json',
+        'openpilot/selfdrive/carrot/web/tests/egpu_model_status.test.mjs',
+        'openpilot/selfdrive/carrot/web/tests/settings_jetlink.test.mjs',
+        'openpilot/selfdrive/modeld/jetlink/runtime.py',
+        'openpilot/selfdrive/modeld/jetlink/transition.py',
+        'openpilot/selfdrive/modeld/jetlink/validation.py',
+        'openpilot/selfdrive/modeld/tests/test_jetlink_runtime.py',
+        'openpilot/selfdrive/modeld/tests/test_jetlink_transition.py',
+        'openpilot/selfdrive/modeld/tests/test_jetlink_validation.py',
         'docs/naver/dev-md-jetlink-',
         'docs/naver/dev-md-lfs-checkout-validation.md',
         'docs/naver/dev-md-onnx-load-validation.md',
         'docs/naver/dev-md-cicd-409.md',
         'docs/user/en/lane-change.md',
         'docs/user/ko/lane-change.md',
+        'docs/user/en/jetlink.md',
+        'docs/user/ko/jetlink.md',
+        'docs/user/en/rust-port.md',
+        'docs/user/ko/rust-port.md',
         'docs/development_workflow.md',
         '.lfsconfig',
         '.github/actions/rust-path/',
@@ -131,6 +155,8 @@ def source_path_allowed(path, source_entry="", inherited_entry=""):
         'rust/tools/tests/test_web_upload_eintr_peer.py',
         'rust/tools/tests/test_xiaoge_ci.py',
         'rust/ci/runtime/package.py',
+        'rust/ci/runtime/sealed_archive.py',
+        'rust/ci/runtime/test_package_restore.py',
         'rust/ci/runtime/build-args.json',
         'rust/ci/runtime/elf-roots.json',
         'rust/ci/runtime/opencv.sha256',
@@ -605,8 +631,8 @@ def install(online):
     helper = RELEASE / "openpilot-runtime-install-aarch64"; helper.chmod(0o755)
     args = ["qemu-aarch64-static", helper, "--root", checkout]
     if not online: args += ["--archive", RELEASE / descriptor["archive"]["name"], "--descriptor", RELEASE / "runtime-release.json"]
-    run(args)
-    run(["qemu-aarch64-static", "-L", SDK, "-E", f"LD_LIBRARY_PATH={checkout}/rust/bin/lib:{SDK}/usr/lib/aarch64-linux-gnu:{SDK}/lib", checkout / "rust/bin/openpilot-launch", "--root", checkout, "--verify-package"])
+    run(args, cwd=checkout)
+    run(["qemu-aarch64-static", "-L", SDK, "-E", f"LD_LIBRARY_PATH={checkout}/rust/bin/lib:{SDK}/usr/lib/aarch64-linux-gnu:{SDK}/lib", checkout / "rust/bin/openpilot-launch", "--root", checkout, "--verify-package"], cwd=checkout)
     save(WORK / ("online-install.json" if online else "offline-install.json"), dict(source_commit=SHA, archive_sha256=descriptor["archive"]["sha256"], manifest_sha256=digest(checkout / "rust/runtime-manifest.json"), installer_exit=0, installed_agnos_launcher_exit=0, device_execution=False))
     shutil.rmtree(checkout)
 
@@ -626,7 +652,7 @@ def restore_release():
     with tarfile.open(archive) as payload:
         for member in payload:
             assert member.name.startswith("rust/bin/") or member.name == "rust/runtime-manifest.json" or member.name in assets, member.name
-            payload.extract(member, ROOT, filter="data")
+            extract_sealed_member(payload, member, ROOT)
     assert digest(ROOT / "rust/runtime-manifest.json") == descriptor["manifest_sha256"]
     run(["git", "add", "--renormalize", "--", *sorted(assets)])
     assert not git("status", "--porcelain")

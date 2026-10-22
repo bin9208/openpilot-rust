@@ -1,5 +1,6 @@
 //! Provision the exclusively owned Jetlink gadget independently of vehicle ignition.
 use crate::Error;
+mod adb;
 use std::{
     fs,
     os::unix::fs::symlink,
@@ -13,6 +14,7 @@ struct Paths {
     udc: PathBuf,
     mount: PathBuf,
     machine_id: PathBuf,
+    state: PathBuf,
 }
 impl Paths {
     fn device() -> Self {
@@ -23,6 +25,7 @@ impl Paths {
             udc: "/sys/class/udc".into(),
             mount: "/dev/ffs-carrot-jetlink".into(),
             machine_id: "/etc/machine-id".into(),
+            state: "/dev/shm/jetlink-adb-owner".into(),
         }
     }
 }
@@ -39,6 +42,14 @@ trait Platform {
     fn own_udc(&self, path: &Path, uid: u32) -> Result<(), Error>;
 }
 struct Linux;
+impl adb::Services for Linux {
+    fn active(&self, unit: &str) -> Result<bool, Error> {
+        adb::Services::active(&adb::Linux, unit)
+    }
+    fn change(&self, action: &str, units: &[&str]) -> Result<(), Error> {
+        adb::Services::change(&adb::Linux, action, units)
+    }
+}
 impl Platform for Linux {
     fn mounted(&self, path: &Path) -> Result<bool, Error> {
         Ok(Command::new("mountpoint")
@@ -100,7 +111,7 @@ pub fn egpu_present(usb: &Path) -> Result<bool, Error> {
     }
     Ok(false)
 }
-fn setup(paths: &Paths, platform: &impl Platform) -> Result<(), Error> {
+fn setup(paths: &Paths, platform: &(impl Platform + adb::Services)) -> Result<(), Error> {
     if ["UsbGpuActive", "UsbGpuLoading"]
         .iter()
         .any(|key| value(&paths.params.join(key)) == "1")
@@ -117,7 +128,10 @@ fn setup(paths: &Paths, platform: &impl Platform) -> Result<(), Error> {
     }
     for entry in fs::read_dir(&gadgets)? {
         let controller = entry?.path().join("UDC");
-        if controller.exists() && !value(&controller).is_empty() {
+        if controller.exists()
+            && !value(&controller).is_empty()
+            && !adb::stock(controller.parent().unwrap())?
+        {
             return Err(Error::Native(format!(
                 "USB gadget '{}' already holds the device controller ({})",
                 controller
@@ -173,6 +187,7 @@ fn setup(paths: &Paths, platform: &impl Platform) -> Result<(), Error> {
         return Err(Error::Contract("FunctionFS ep0 unavailable"));
     }
     platform.own_udc(&gadget.join("UDC"), uid)?;
+    adb::claim(paths, platform)?;
     Ok(())
 }
 pub fn provision_device() -> Result<(), Error> {
@@ -181,6 +196,12 @@ pub fn provision_device() -> Result<(), Error> {
     }
     setup(&Paths::device(), &Linux)
 }
+pub fn restore_device() -> Result<(), Error> {
+    if !rustix::process::geteuid().is_root() {
+        return Err(Error::Contract("gadget restoration requires root"));
+    }
+    adb::restore(&Paths::device(), &adb::Linux)
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -188,6 +209,14 @@ mod tests {
     #[derive(Default)]
     struct OsFixture {
         calls: RefCell<Vec<String>>,
+    }
+    impl adb::Services for OsFixture {
+        fn active(&self, _: &str) -> Result<bool, Error> {
+            Ok(false)
+        }
+        fn change(&self, _: &str, _: &[&str]) -> Result<(), Error> {
+            panic!("no stock ADB owner or watcher exists in this fixture")
+        }
     }
     impl Platform for OsFixture {
         fn mounted(&self, _: &Path) -> Result<bool, Error> {
@@ -206,7 +235,7 @@ mod tests {
             Ok(())
         }
     }
-    fn fixture(root: &Path) -> Paths {
+    pub(super) fn fixture(root: &Path) -> Paths {
         let paths = Paths {
             config: root.join("config"),
             usb: root.join("usb"),
@@ -214,6 +243,7 @@ mod tests {
             udc: root.join("udc"),
             mount: root.join("ffs"),
             machine_id: root.join("machine-id"),
+            state: root.join("adb-owner"),
         };
         for path in [
             &paths.config.join("usb_gadget"),

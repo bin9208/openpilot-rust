@@ -142,7 +142,11 @@ function render(status = lastStatus) {
   hostEl.hidden = !host;
   if (host) {
     const severity = ["ok", "warning", "error", "unknown"].includes(host.severity) ? host.severity : "unknown";
-    hostEl.textContent = `${host.label} · ${t(`host_${severity}`)} · ${t("host_ip")}: ${(host.addresses || []).join(", ") || t("host_no_ip")}`
+    // USB bulk needs no IP address. Show addresses only when the host reports them;
+    // readiness/errors still come from the actual connection/model diagnostics.
+    const addresses = (host.addresses || []).join(", ");
+    hostEl.textContent = `${host.label} · ${t(`host_${severity}`)}`
+      + (addresses ? ` · ${t("host_ip")}: ${addresses}` : "")
       + (Number.isFinite(host.temp_c) ? ` · ${host.temp_c.toFixed(1)} °C` : "")
         + (host.reason ? ` · ${({
           "Host not connected": t("host_not_connected"),
@@ -155,7 +159,7 @@ function render(status = lastStatus) {
     card.hidden = false;
     card.dataset.state = host.severity === "error" ? "error" : "compiled";
     card.classList.remove("is-running");
-    document.getElementById("egpuModelTitle").textContent = `${host.label} · Cinque v2`;
+    document.getElementById("egpuModelTitle").textContent = host.label;
     stateEl.textContent = t(`host_${host.severity || "unknown"}`);
     detailEl.textContent = "";
     progressEl.hidden = true;

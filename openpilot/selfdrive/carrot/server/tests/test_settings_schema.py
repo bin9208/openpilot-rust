@@ -43,6 +43,17 @@ def test_the_catalogue_is_readable_and_populated(params):
   assert all(isinstance(p.get("name"), str) and p["name"] for p in params)
 
 
+def test_jetlink_uses_two_actual_source_choices_and_legacy_writes_normalize(params):
+  from openpilot.selfdrive.carrot.server.services.params import clamp_numeric
+  mode = next(p for p in params if p['name'] == 'JetlinkMode')
+  assert (mode['min'], mode['max'], mode['default']) == (0, 1, 0)
+  assert mode['control'] == 'segmented'
+  assert mode['options']['en'] == ['Off (native model)', 'External GPU model']
+  assert [clamp_numeric(value, mode) for value in (0, 1, 2)] == [0, 1, 1]
+  # Startup clearing/defaults remain independent of selecting an external app backend.
+  assert '{"JetlinkMode", {CLEAR_ON_MANAGER_START, INT, "0"}}' in PARAMS_KEYS_PATH.read_text(encoding='utf-8')
+
+
 @pytest.mark.parametrize("maximum", (3, 4))
 def test_gap_cycle_catalog_uses_vehicle_maximum_without_mutating_cache(settings, maximum):
   groups, by_name, groups_list = group_index(settings)

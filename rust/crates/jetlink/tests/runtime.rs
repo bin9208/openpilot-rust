@@ -40,12 +40,13 @@ fn native() -> DrivingPrediction {
         .unwrap()
 }
 struct Peer {
+    identity: Identity,
     gate: Arc<(Mutex<bool>, Condvar)>,
     started: mpsc::Sender<u32>,
 }
 impl Backend for Peer {
     fn connect(&mut self) -> Result<Identity, Error> {
-        Ok(identity())
+        Ok(self.identity.clone())
     }
     fn infer(
         &mut self,
@@ -76,12 +77,18 @@ struct Fixture {
     runtime: Runtime,
     gate: Arc<(Mutex<bool>, Condvar)>,
     started: mpsc::Receiver<u32>,
-    validation: Vec<u8>,
+    validation: Option<Vec<u8>>,
+    controls: ControlState,
     // Last field: retain isolation until both real worker owners have been dropped.
     _serial: MutexGuard<'static, ()>,
 }
 impl Fixture {
     fn new(open: bool) -> Self {
+        let fixture = Self::with_identity(open, identity());
+        assert_eq!(fixture.runtime.status.decision.phase, Phase::Ready);
+        fixture
+    }
+    fn with_identity(open: bool, identity: Identity) -> Self {
         let serial = FIXTURE_LOCK.lock().unwrap();
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("rpc.sock");
@@ -89,6 +96,7 @@ impl Fixture {
         let gate = Arc::new((Mutex::new(open), Condvar::new()));
         let server = Server::spawn(
             Peer {
+                identity,
                 gate: Arc::clone(&gate),
                 started: tx,
             },
@@ -107,31 +115,40 @@ impl Fixture {
             runtime,
             gate,
             started,
-            validation: validation(),
+            validation: None,
+            controls: ControlState {
+                standstill: false,
+                cruise_enabled: true,
+                lateral_active: true,
+                enabled: true,
+            },
             _serial: serial,
         };
-        while fixture.runtime.status.decision.phase != Phase::Ready {
+        while fixture.runtime.status.decision.phase != Phase::Ready
+            && fixture.runtime.detail.is_empty()
+        {
             assert!(Instant::now() < end);
-            fixture.begin(Mode::Shadow, 1, true);
+            fixture.begin(Mode::ActiveRequest, 1, true);
             thread::yield_now();
         }
+        fixture.controls = ControlState {
+            standstill: true,
+            cruise_enabled: false,
+            lateral_active: false,
+            enabled: false,
+        };
         fixture
     }
     fn begin(&mut self, mode: Mode, frame: u32, prepare_only: bool) {
         self.runtime.begin(
             FrameInput {
                 mode,
-                controls: ControlState {
-                    standstill: true,
-                    cruise_enabled: false,
-                    lateral_active: false,
-                    enabled: false,
-                },
+                controls: self.controls,
                 frame,
                 source_sof: 0,
                 prepare_only,
                 camera_ready: true,
-                validation: Some(&self.validation),
+                validation: self.validation.as_deref(),
                 desire: [0.0; 8],
                 traffic: [1.0, 0.0],
                 action: [0.3, 0.8],
@@ -154,10 +171,11 @@ impl Drop for Fixture {
     }
 }
 #[test]
-fn shadow_never_waits_for_external_worker() {
+fn moving_selection_keeps_native_without_waiting_for_external_worker() {
     // Given a real external worker held at the hardware seam.
     let mut f = Fixture::new(false);
-    f.begin(Mode::Shadow, 42, false);
+    f.controls.standstill = false;
+    f.begin(Mode::ActiveRequest, 42, false);
     assert_eq!(f.started.recv_timeout(Duration::from_secs(1)).unwrap(), 42);
     // When native inference completes while USB is still held.
     let start = Instant::now();
@@ -169,8 +187,8 @@ fn shadow_never_waits_for_external_worker() {
     assert!(!f._dir.path().join("carrot-jetlink-fault").exists());
 }
 #[test]
-fn active_uses_matching_external_result_while_native_remains_executed() {
-    // Given validated stopped activation with a real local worker.
+fn explicit_selection_uses_current_external_result_without_historical_acceptance() {
+    // Given an explicit stopped selection, live contract, and no acceptance record.
     let mut f = Fixture::new(true);
     f.begin(Mode::ActiveRequest, 42, false);
     // When the caller executes its native model and then finishes the same frame.
@@ -181,6 +199,7 @@ fn active_uses_matching_external_result_while_native_remains_executed() {
     assert_eq!(output.plan[0][0], 2.0);
     assert_eq!(f.runtime.status.frame, 42);
     assert_eq!(f.runtime.status.decision.source, Source::Jetlink);
+    assert!(!f.runtime.status.validated);
     assert!(f.runtime.status.decision.reset_required);
     assert!(f.runtime.valid_at_publish());
 }
@@ -210,15 +229,65 @@ fn active_timeout_latches_loss_and_never_relabels_old_native_as_fresh() {
     assert_eq!(f.runtime.status.decision.source, Source::Native);
 }
 #[test]
-fn ready_without_exact_acceptance_record_cannot_activate() {
-    // Given a connected model with a mutated acceptance identity.
+fn historical_acceptance_mismatch_does_not_block_explicit_live_selection() {
+    // Given a connected model and an unrelated historical acceptance record.
     let mut f = Fixture::new(true);
-    let mut record: serde_json::Value = serde_json::from_slice(&f.validation).unwrap();
+    let mut record: serde_json::Value = serde_json::from_slice(&validation()).unwrap();
     record["identity"]["device_model"] = "other".into();
-    f.validation = serde_json::to_vec(&record).unwrap();
-    // When an activation edge is requested, then native remains the source.
+    f.validation = Some(serde_json::to_vec(&record).unwrap());
+    // Live selection is independent of recorded device acceptance.
     f.begin(Mode::ActiveRequest, 42, false);
     assert!(!f.runtime.status.validated);
+    assert_eq!(f.runtime.finish(Some(native())).unwrap().plan[0][0], 2.0);
+    assert_eq!(f.runtime.status.decision.source, Source::Jetlink);
+}
+
+#[test]
+fn matching_historical_acceptance_remains_visible_as_evidence() {
+    let mut f = Fixture::new(true);
+    f.validation = Some(validation());
+    f.begin(Mode::ActiveRequest, 42, false);
+    assert!(f.runtime.status.validated);
+    assert_eq!(f.runtime.finish(Some(native())).unwrap().plan[0][0], 2.0);
+}
+
+#[test]
+fn mismatched_or_missing_live_artifact_identity_cannot_select_external() {
+    for artifact in [Some("b".repeat(64)), None] {
+        let mut identity = identity();
+        if let Some(artifact) = artifact {
+            identity.insert("artifact_sha256".into(), artifact);
+        } else {
+            identity.remove("artifact_sha256");
+        }
+        let mut f = Fixture::with_identity(true, identity);
+        assert!(f.runtime.detail.contains("model identity"));
+        f.begin(Mode::ActiveRequest, 42, false);
+        assert_eq!(f.runtime.finish(Some(native())).unwrap().plan[0][0], 7.0);
+        assert_eq!(f.runtime.status.decision.source, Source::Native);
+        assert!(!f.runtime.status.validated);
+        assert!(f.started.try_recv().is_err());
+    }
+}
+
+#[test]
+fn off_does_not_warp_or_select_external_output() {
+    let mut f = Fixture::new(true);
+    f.runtime.begin(
+        FrameInput {
+            mode: Mode::Off,
+            controls: f.controls,
+            frame: 42,
+            source_sof: 0,
+            prepare_only: false,
+            camera_ready: true,
+            validation: None,
+            desire: [0.0; 8],
+            traffic: [1.0, 0.0],
+            action: [0.3, 0.8],
+        },
+        || panic!("Off must not warp for Jetlink"),
+    );
     assert_eq!(f.runtime.finish(Some(native())).unwrap().plan[0][0], 7.0);
-    assert_eq!(f.runtime.status.decision.source, Source::Native);
+    assert_eq!(f.runtime.status.decision.phase, Phase::Off);
 }
