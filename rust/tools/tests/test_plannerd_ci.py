@@ -27,15 +27,16 @@ def test_failed_comparison_is_recorded_and_stops_before_the_next_check(tmp_path:
 
 
 def test_planner_host_arm_and_memory_results_are_required() -> None:
-  jobs = yaml.safe_load((ROOT / ".github/workflows/rust.yml").read_text())["jobs"]
+  jobs = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())["jobs"]
   assert jobs["planner-runtime"]["strategy"]["matrix"]["runner"] == ["ubuntu-24.04", "ubuntu-24.04-arm"]
   assert {"planner-runtime", "planner-memory"} <= set(jobs["fast"]["needs"])
   gate = jobs["fast"]["steps"][0]
-  environment = dict(os.environ, **dict.fromkeys(gate["env"], "success"))
+  results = {name: {"result": "success"} for name in jobs["fast"]["needs"]}
+  environment = dict(os.environ, RESULTS=json.dumps(results), EXPECTED=gate["env"]["EXPECTED"])
   assert subprocess.run(["bash", "-e", "-c", gate["run"]], env=environment, check=False).returncode == 0
-  for name in ("PLANNER", "PLANNER_MEMORY"):
+  for name in ("planner-runtime", "planner-memory"):
     for state in ("failure", "cancelled", "skipped", ""):
-      result = subprocess.run(["bash", "-e", "-c", gate["run"]], env=dict(environment, **{name: state}), check=False)
+      result = subprocess.run(["bash", "-e", "-c", gate["run"]], env=dict(environment, RESULTS=json.dumps(results | {name: {"result": state}})), check=False)
       assert result.returncode != 0, (name, state)
   for job in ("planner-runtime", "planner-memory"):
     for step in jobs[job]["steps"]:
@@ -45,7 +46,7 @@ def test_planner_host_arm_and_memory_results_are_required() -> None:
 
 
 def test_planner_miri_failure_cannot_be_hidden_by_log_capture(tmp_path: Path) -> None:
-  jobs = yaml.safe_load((ROOT / ".github/workflows/rust.yml").read_text())["jobs"]
+  jobs = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())["jobs"]
   step = next(step for step in jobs["planner-memory"]["steps"] if "MIRIFLAGS=" in step.get("run", ""))
   commands = tmp_path / "bin"
   commands.mkdir()

@@ -81,10 +81,10 @@ def test_cold_bootstrap_builds_only_host_guard_and_survives_target_cleanup(tmp_p
 
 
 def test_workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths():
-    workflow = ROOT / '.github/workflows/rust.yml'
+    workflow = ROOT / '.github/workflows/ci.yml'
     text = workflow.read_text()
     assert 'card_ci_space.py' not in text
-    assert text.count('"$GITHUB_WORKSPACE/rust/tools/check-disk-space"') == 187
+    assert text.count('"$GITHUB_WORKSPACE/rust/tools/check-disk-space"') == 188
     jobs = yaml.safe_load(text)['jobs']
     guarded = [job for job in jobs.values() if any('check-disk-space' in step.get('run', '') for step in job.get('steps', []))]
     assert len(guarded) == 26
@@ -98,7 +98,7 @@ def test_workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths():
     # Preserve the original179 migration baseline independently of the five
     # #326 guards added specifically before compiling its native stager.
     lines = text.splitlines()
-    arguments, raylib_guards, replay_guards, encoder_guards = [], [], [], []
+    arguments, raylib_guards, replay_guards, encoder_guards, compute_guards = [], [], [], [], []
     for index, line in enumerate(lines):
         match = re.search(r'"\$GITHUB_WORKSPACE/rust/tools/check-disk-space"([^\n]*)', line)
         if match:
@@ -108,21 +108,26 @@ def test_workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths():
                 replay_guards.append(match.group(1))
             elif index + 1 < len(lines) and '-p openpilot-encoderd --lib --features' in lines[index + 1]:
                 encoder_guards.append(match.group(1))
+            elif index + 1 < len(lines) and '--example xiaoge_compute_bench' in lines[index + 1]:
+                compute_guards.append(match.group(1))
             else:
                 arguments.append(match.group(1))
     assert replay_guards == [' --path "$GITHUB_WORKSPACE" --growth-mib 1024']
     assert len(arguments) == 179
     assert raylib_guards == [' --path "$GITHUB_WORKSPACE" --growth-mib 2048'] * 5
     assert encoder_guards == [' --path "$GITHUB_WORKSPACE" --growth-mib 1024'] * 2
+    assert compute_guards == [' --path "$GITHUB_WORKSPACE" --growth-mib 4096']
     native_calls = [index for index, line in enumerate(lines) if '--bin stage-startup-ui-raylib' in line]
     assert len(native_calls) == 5
+    # Job execution order is governed by the CI graph; preserve the exact
+    # multiset of provider arguments and disk reservations independently.
     native_arguments = re.findall(r'--bin stage-startup-ui-raylib -- ([^\n]*)', text)
-    assert hashlib.sha256('\n'.join(native_arguments).encode()).hexdigest() == '2efc90425a3b4e1cecaabbc410c6d13649b89ad4fbc3a9d722b33b510694b396'
+    assert hashlib.sha256('\n'.join(sorted(native_arguments)).encode()).hexdigest() == '4035dc39d9f01018c578febe0de32e8802291867c2c50e2dc701f1a5990f3752'
     for index in native_calls:
         assert 'cargo +1.94.0 run' in lines[index]
         assert '"$GITHUB_WORKSPACE/rust/tools/check-disk-space"' in lines[index - 1]
     assert 'stage_startup_ui_raylib.py' not in text
-    assert hashlib.sha256('\n'.join(arguments).encode()).hexdigest() == '952f3b9fc8820e701aae55f88368236acddd3da2af55465448aa00eddaf9fe55'
+    assert hashlib.sha256('\n'.join(sorted(arguments)).encode()).hexdigest() == '1f04a3d2da75299a4f9aa0803d33c6c4e9f8715627d68274840673c647644e6b'
     template = (ROOT / 'rust/crates/carrot-man/ci-jobs.yml').read_text()
     assert 'card_ci_space.py' not in template
     assert template.count('"$GITHUB_WORKSPACE/rust/tools/check-disk-space"') == 9

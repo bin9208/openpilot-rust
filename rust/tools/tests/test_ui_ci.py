@@ -43,8 +43,8 @@ def test_vision_peer_rejects_missing_executable(tmp_path: Path) -> None:
 
 
 def test_arm_ui_commands_resolve_workspace_and_python_paths() -> None:
-  workflow = yaml.safe_load((ROOT / '.github/workflows/rust.yml').read_text())
-  job = workflow['jobs']['arm64']
+  workflow = yaml.safe_load((ROOT / '.github/workflows/ci.yml').read_text())
+  job = workflow['jobs']['arm-build']
   step = next(step for step in job['steps'] if 'cargo build -p openpilot-ui-application' in step.get('run', ''))
   directory = ROOT / step.get('working-directory', job.get('defaults', {}).get('run', {}).get('working-directory', '.'))
   scripts = [shlex.split(line)[1] for line in step['run'].splitlines() if line.strip().startswith('python ')]

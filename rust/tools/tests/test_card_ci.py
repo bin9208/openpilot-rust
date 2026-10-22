@@ -63,7 +63,7 @@ def test_retained_selection_is_bounded_and_preserves_source_bus(tmp_path: Path) 
 
 
 def test_required_ci_generates_fixtures_before_tests_and_checks_full_schemas() -> None:
-  workflow = yaml.safe_load((ROOT / '.github/workflows/rust.yml').read_text())
+  workflow = yaml.safe_load((ROOT / '.github/workflows/ci.yml').read_text())
   jobs = workflow['jobs']
   inherited = {'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime',
     'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime',
@@ -71,8 +71,8 @@ def test_required_ci_generates_fixtures_before_tests_and_checks_full_schemas() -
     'joystickd-runtime', 'planner-runtime', 'planner-memory', 'radar-runtime', 'radar-arm', 'radar-memory', 'navd-runtime', 'radard-runtime',
     'carrot-navi-runtime', 'carrot-navi-arm', 'selfdrive-runtime', 'panda-runtime', 'camera-runtime', 'encoder-runtime',
     'xiaoge-runtime', 'xiaoge-memory', 'ui-runtime', 'carrot-man-runtime'}
-  assert set(jobs['fast']['needs']) == inherited | {'card-runtime', 'webrtc-runtime', 'webcam-runtime'}
-  assert 'test "$CARD" = success' in jobs['fast']['steps'][0]['run']
+  assert set(jobs['fast']['needs']) == inherited | {'integration-gate', 'card-runtime', 'webrtc-runtime', 'webcam-runtime'}
+  assert 'card-runtime' in jobs['fast']['steps'][0]['env']['EXPECTED'].split(', ')
   for job, test_command in (('workspace', 'cargo test --workspace'), ('card-runtime', 'cargo test -p openpilot-can')):
     scripts = [step.get('run', '') for step in jobs[job]['steps']]
     generation = next(index for index, script in enumerate(scripts) if 'stage_card_fixtures.py' in script)
@@ -82,10 +82,10 @@ def test_required_ci_generates_fixtures_before_tests_and_checks_full_schemas() -
       assert any(f'check_card_hyundai_{checker}.py' in script for script in scripts[testing:])
     assert any(step.get('if') == 'always()' and step.get('uses', '').startswith('actions/upload-artifact')
                for step in jobs[job]['steps'])
-  scripts = [step.get('run', '') for step in jobs['arm64']['steps']]
+  scripts = [step.get('run', '') for step in jobs['arm-build']['steps']]
   assert any('cargo build -p openpilot-card --features native --bins --examples' in script and
              '--target aarch64-unknown-linux-gnu' in script for script in scripts)
-  uploads = [step['with']['path'] for step in jobs['arm64']['steps'] if step.get('uses', '').startswith('actions/upload-artifact')]
+  uploads = [step['with']['path'] for step in jobs['arm-build']['steps'] if step.get('uses', '').startswith('actions/upload-artifact')]
   assert any('aarch64-unknown-linux-gnu/release/openpilot-card' in path for path in uploads)
 
 

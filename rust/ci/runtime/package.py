@@ -10,7 +10,6 @@ import shutil
 import subprocess
 import sys
 import tarfile
-import time
 import zipfile
 
 assert os.environ.get("GITHUB_ACTIONS") == "true", "runtime validation/builds belong in GitHub Actions"
@@ -21,7 +20,7 @@ WORK = Path(os.environ["RUNNER_TEMP"]) / "agnos-runtime"
 WORK.mkdir(exist_ok=True)
 CONFIG = ROOT / "rust/ci/runtime"
 SHA = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
-assert SHA == os.environ["GITHUB_SHA"], "checkout must match the event source"
+assert SHA == os.environ.get("RUNTIME_SOURCE_SHA", os.environ["GITHUB_SHA"]), "wrong delivery source"
 BASE = "3496c4bbf300e7487d17b2bf25afc170584dfe02"
 INHERITED = "a2b06522a24f4a3533192daf99ac48f119782bda"
 SDK = WORK / "sdk"
@@ -72,39 +71,96 @@ def git(*args):
 
 
 def source_path_allowed(path, source_entry="", inherited_entry=""):
+    """Reviewed CI/consumer paths; OpenCV exceptions require fresh provider builds."""
     allowed = (
-        "AGENTS.md", "launch_openpilot.sh", "rust/Cargo.lock",
-        "rust/crates/jetlink/", "rust/crates/runtime-core/", "rust/crates/runtime-launcher/",
-        "rust/crates/xiaoge/", "rust/crates/dev-tools/src/publish.rs",
-        "rust/ci/runtime/package.py", "rust/ci/runtime/build-args.json",
-        "rust/ci/runtime/elf-roots.json", "rust/ci/runtime/opencv.sha256",
-        "rust/ci/runtime/opencv-headers.cmake", "rust/ci/runtime/test_package_policy.py",
-        # Issue #453: exact GPU producer/API files only. Their native provider
-        # is rebuilt below; these exceptions never authorize CPU binary reuse.
-        "rust/crates/dev-tools/src/opencv_build.rs",
-        "rust/crates/opencv-runtime/build.rs", "rust/crates/opencv-runtime/PROVENANCE.md",
-        "rust/crates/opencv-runtime/src/bridge.rs", "rust/crates/opencv-runtime/src/lib.rs",
-        "rust/crates/opencv-runtime/src/native/mod.rs", "rust/crates/opencv-runtime/src/native/net.rs",
-        "rust/crates/opencv-runtime/native/bridge.h", "rust/crates/opencv-runtime/native/net.cc",
-        "rust/crates/opencv-runtime/native/dnn_context.cc", "rust/crates/opencv-runtime/native/dnn_context.h",
-        "rust/crates/opencv-runtime/native/dnn_context_device.h",
-        "rust/crates/opencv-runtime/native/opencl_priority.h",
-        "rust/crates/opencv-runtime/src/native/net/tests.rs",
-        "rust/crates/opencv-runtime/tests/native.rs", "rust/crates/opencv-runtime/tests/contracts.rs",
-        "rust/crates/opencv-runtime/tests/dnn_target.rs",
-        "rust/crates/opencv-runtime/tests/fixtures/opencl_probe.c",
-        "rust/crates/opencv-runtime/tests/fixtures/opencl_priority.cc",
-        "rust/crates/opencv-runtime/tests/fixtures/dnn_context_device.cc",
-        "docs/naver/dev-md-xiaoge-gpu.md", "openpilot/common/params_keys.h",
-        "openpilot/selfdrive/carrot/xiaoge/v_asm_web.html",
-        "rust/upstream/jetlink.json", "docs/naver/dev-md-jetlink-",
-        "docs/naver/dev-md-lfs-checkout-validation.md", "docs/naver/dev-md-onnx-load-validation.md",
-        "docs/user/en/lane-change.md", "docs/user/ko/lane-change.md",
-        "docs/user/en/settings.md", "docs/user/ko/settings.md", ".lfsconfig",
-        ".github/workflows/jetlink-native.yml", ".github/workflows/dev-md-runtime.yml",
-        ".github/workflows/fast-checks.yml", "tools/check_jetlink_usb_policy.py",
-        ".github/workflows/rust.yml",
-        "tools/ci/tests/test_lfs_endpoint.py",
+        'AGENTS.md',
+        'launch_openpilot.sh',
+        'rust/Cargo.lock',
+        'rust/crates/jetlink/',
+        'rust/crates/runtime-core/',
+        'rust/crates/runtime-launcher/',
+        'rust/crates/xiaoge/',
+        'rust/crates/dev-tools/src/publish.rs',
+        'rust/crates/dev-tools/tests/publish.rs',
+        'rust/crates/params/src/lib.rs',
+        'rust/crates/params/tests/conditional_write.rs',
+        'rust/crates/plannerd/src/native_parameters.rs',
+        'rust/upstream/jetlink.json',
+        'rust/tools/check_dmonitoring_daemon.py',
+        'rust/tools/check_card_runtime_pumped.py',
+        'docs/naver/dev-md-jetlink-',
+        'docs/naver/dev-md-lfs-checkout-validation.md',
+        'docs/naver/dev-md-onnx-load-validation.md',
+        'docs/naver/dev-md-cicd-409.md',
+        'docs/user/en/lane-change.md',
+        'docs/user/ko/lane-change.md',
+        'docs/development_workflow.md',
+        '.lfsconfig',
+        '.github/actions/rust-path/',
+        '.github/actions/job-temp/',
+        'tools/check_jetlink_usb_policy.py',
+        'tools/naver_ci/tests/test_sync_upstream.py',
+        '.github/workflows/ci.yml',
+        '.github/workflows/dev-md-runtime.yml',
+        '.github/workflows/fast-checks.yml',
+        '.github/workflows/integration.yml',
+        '.github/workflows/jetlink-native.yml',
+        '.github/workflows/jetlink.yml',
+        '.github/workflows/naver-apk-tools.yml',
+        '.github/workflows/naver-ci.yml',
+        '.github/workflows/tests.yaml',
+        '.github/workflows/user-docs.yaml',
+        '.github/workflows/rust.yml',
+        'tools/ci/tests/test_changed_files.py',
+        'tools/ci/tests/test_card_warmup.py',
+        'tools/ci/tests/test_dmonitoring_snapshot.py',
+        'tools/ci/tests/test_eintr_cleanup.py',
+        'tools/ci/tests/test_job_temp.py',
+        'tools/ci/tests/test_lfs_endpoint.py',
+        'tools/ci/tests/test_native_disk_guard.py',
+        'tools/ci/tests/test_runtime_delivery.py',
+        'tools/ci/tests/test_rust_isolation.py',
+        'tools/ci/tests/test_rust_path.py',
+        'tools/ci/tests/test_staging_isolation.py',
+        'tools/ci/tests/test_sync_upstream.py',
+        'tools/ci/tests/test_updated_process_probe.py',
+        'tools/ci/tests/test_workflow_policy.py',
+        'rust/tools/tests/test_card_ci.py',
+        'rust/tools/tests/test_plannerd_ci.py',
+        'rust/tools/tests/test_ui_ci.py',
+        'rust/tools/tests/test_web_upload_eintr_peer.py',
+        'rust/tools/tests/test_xiaoge_ci.py',
+        'rust/ci/runtime/package.py',
+        'rust/ci/runtime/build-args.json',
+        'rust/ci/runtime/elf-roots.json',
+        'rust/ci/runtime/opencv.sha256',
+        'rust/ci/runtime/opencv-headers.cmake',
+        'rust/ci/runtime/test_package_policy.py',
+        'rust/crates/dev-tools/src/opencv_build.rs',
+        'rust/crates/opencv-runtime/build.rs',
+        'rust/crates/opencv-runtime/PROVENANCE.md',
+        'rust/crates/opencv-runtime/src/bridge.rs',
+        'rust/crates/opencv-runtime/src/lib.rs',
+        'rust/crates/opencv-runtime/src/native/mod.rs',
+        'rust/crates/opencv-runtime/src/native/net.rs',
+        'rust/crates/opencv-runtime/native/bridge.h',
+        'rust/crates/opencv-runtime/native/net.cc',
+        'rust/crates/opencv-runtime/native/dnn_context.cc',
+        'rust/crates/opencv-runtime/native/dnn_context.h',
+        'rust/crates/opencv-runtime/native/dnn_context_device.h',
+        'rust/crates/opencv-runtime/native/opencl_priority.h',
+        'rust/crates/opencv-runtime/src/native/net/tests.rs',
+        'rust/crates/opencv-runtime/tests/native.rs',
+        'rust/crates/opencv-runtime/tests/contracts.rs',
+        'rust/crates/opencv-runtime/tests/dnn_target.rs',
+        'rust/crates/opencv-runtime/tests/fixtures/opencl_probe.c',
+        'rust/crates/opencv-runtime/tests/fixtures/opencl_priority.cc',
+        'rust/crates/opencv-runtime/tests/fixtures/dnn_context_device.cc',
+        'docs/naver/dev-md-xiaoge-gpu.md',
+        'openpilot/common/params_keys.h',
+        'openpilot/selfdrive/carrot/xiaoge/v_asm_web.html',
+        'docs/user/en/settings.md',
+        'docs/user/ko/settings.md',
     )
     if any(path == prefix or prefix.endswith(("/", "-")) and path.startswith(prefix) for prefix in allowed):
         return True
@@ -579,7 +635,8 @@ def restore_release():
 
 def publish():
     assert os.environ["GITHUB_REF"] == "refs/heads/dev-md"
-    assert os.environ["GITHUB_EVENT_NAME"] == "push"
+    assert os.environ["GITHUB_EVENT_NAME"] == "workflow_dispatch"
+    assert os.environ["RUNTIME_SOURCE_SHA"] == SHA
     require_delivery_ref()
     identity = json.loads((WORK / "delivery-tools/identity.json").read_text())
     assert identity["source_commit"] == SHA
@@ -587,31 +644,18 @@ def publish():
     assert digest(publisher) == identity["publisher_sha256"]
     assert digest(RELEASE / "openpilot-runtime-install-aarch64") == identity["installer_sha256"]
     restore_release()
-    # The existing publisher independently checks every exact-SHA required gate
-    # and all sealed asset identities. Wait outside it, once a minute, for CI.
-    deadline = time.monotonic() + 3 * 3600
-    while True:
-        data = json.loads(subprocess.check_output(["gh", "api", f"repos/bin9208/openpilot-rust/actions/runs?head_sha={SHA}&event=push&branch=dev-md&per_page=100"]))
-        paths = (".github/workflows/rust.yml", ".github/workflows/fast-checks.yml", ".github/workflows/integration.yml", ".github/workflows/user-docs.yaml")
-        gates = {path: next((item for item in data["workflow_runs"] if item["path"] == path), None) for path in paths}
-        failed = [path for path, item in gates.items() if item and item["status"] == "completed" and item["conclusion"] != "success"]
-        assert not failed, f"required CI failed: {failed}"
-        if all(item and item["status"] == "completed" for item in gates.values()): break
-        assert time.monotonic() < deadline, "required CI still pending"
-        time.sleep(60)
+    # The dispatcher waited for this separate, completed CI run before building.
+    # The native publisher independently rechecks latest exact-SHA CI and all assets.
     run([publisher, "--root", ROOT, "--assets", RELEASE, "--branch", "dev-md"])
     install(True)
 
 
 def require_delivery_ref():
-    event = os.environ["GITHUB_EVENT_NAME"]
-    ref = os.environ["GITHUB_REF"]
-    if event == "workflow_dispatch":
-        assert ref == "refs/heads/codex/feat-453-xiaoge-gpu", "manual preflight is limited to issue #453"
-    else:
-        assert event == "push" and ref == "refs/heads/dev-md"
-        assert "[runtime-package]" in git("show", "-s", "--format=%B", SHA)
-        assert len(git("show", "-s", "--format=%P", SHA).split()) == 2, "runtime publication requires an exact marked merge"
+    assert os.environ["GITHUB_EVENT_NAME"] == "workflow_dispatch", "delivery requires verified unified CI dispatch"
+    assert os.environ["GITHUB_REF"] == "refs/heads/dev-md"
+    assert os.environ.get("RUNTIME_SOURCE_SHA") == SHA, "wrong verified delivery source"
+    assert "[runtime-package]" in git("show", "-s", "--format=%B", SHA)
+    assert len(git("show", "-s", "--format=%P", SHA).split()) == 2, "runtime publication requires an exact marked merge"
 
 
 if __name__ == "__main__":

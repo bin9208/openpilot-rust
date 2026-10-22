@@ -1,5 +1,19 @@
 # Independent Rust port repository (2026-09-29)
 
+## dev-md sequential CI policy (2026-10-20, issue #409)
+
+- The user approved a single sequential CI entry point, serial architecture
+  matrices, removal of dedicated Naver CI/APK checks, and PR-only changes to
+  dev/dev-md. Preserve common runtime checks and the five required check names.
+- Branch protection applies to administrators and bots without bypass. Keep PR
+  and post-merge checks. Implement on codex/feat-cicd-optimization targeting
+  dev-md only; this does not authorize dev/main integration or runtime delivery.
+- Preserve the runner routing already present on dev-md. The user-approved
+  infrastructure work may run those existing Actions jobs on the registered
+  self-hosted runner; do not run functional/build checks in a local checkout.
+- Marked runtime delivery builds the exact merged SHA after unified CI passes.
+  Do not request a runtime release for this CI change.
+
 ## dev-md validation execution (2026-10-20)
 
 - The user requires local checks to stay at syntax, formatting and diff review.

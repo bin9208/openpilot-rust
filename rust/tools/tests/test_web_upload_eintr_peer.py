@@ -15,6 +15,14 @@ def load(path):
   spec.loader.exec_module(module)
   return module
 
+def process_stopped(pid):
+  try:
+    return Path(f'/proc/{pid}/stat').read_text().rsplit(')', 1)[1].split()[0] == 'Z'
+  except (FileNotFoundError, ProcessLookupError):
+    # The tracee may vanish between opening its proc entry and reading it.
+    return True
+
+
 class ChildDiscovery(unittest.TestCase):
   path = PEER
   def setUp(self):
@@ -150,12 +158,7 @@ class ChildDiscovery(unittest.TestCase):
         self.peer.launch([sys.executable, '-c', 'import time;time.sleep(30)'], Path(temp)/'run', {}, dict(os.environ))
     process, pid = seen[0]
     self.assertIsNotNone(process.poll())
-    def stopped():
-      try:
-        return Path(f'/proc/{pid}/stat').read_text().rsplit(')',1)[1].split()[0] == 'Z'
-      except FileNotFoundError:
-        return True
-    self.peer.until(stopped)
+    self.peer.until(lambda: process_stopped(pid))
 
   def test_compare_closes_peer_when_launch_fails(self):
     module_path = self.path.with_name('web_upload_eintr_compare.py')

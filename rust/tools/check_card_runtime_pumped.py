@@ -73,8 +73,21 @@ def fixture(candidate: str, corpus_root: Path | None = None) -> list[Row]:
     messages['onroadEvents'] = list(wire('onroadEvents', []))
     messages['carControl'] = list(wire('carControl', control, valid=tick < 0 or tick % 11 != 0))
     can_frames = frames(candidate, max(tick, 0), corpus_root) if retained_frames is None else retained_frames[max(tick, 0)]
+    if tick < 0 and candidate == 'CHEVROLET_VOLT':
+      # Start before the first steering echo. Repeating a loopback on every
+      # fenced warmup step lets host pauses cross GM's 15ms retransmit guard
+      # and seed different last-steer frames in otherwise identical runs.
+      # All measured packets retain the original loopback confirmations.
+      can_frames = [frame for frame in can_frames if frame['bus'] != 128]
     rows.append({'messages': messages, 'frames': can_frames})
   return rows
+
+
+def comparison_output(capture_value: Capture, measured_rows: Publications) -> dict:
+  """Keep the cold-loopback setup's complete CAN history in the exact gate."""
+  return {'warmup_sendcan': [{key: value for key, value in row.items() if key != 'logMonoTime'}
+                            for row in capture_value['warmup']['sendcan']],
+          'measured': measured_rows}
 
 
 def measured(capture_value: Capture, sends: Path) -> Publications:
@@ -160,6 +173,9 @@ def compare_case(invocation: RuntimeInvocation, scenario: Scenario, input_bytes:
     # processes happened to admit different asynchronously published topics.
     expected = measured(source, source_folder / 'pump/sends.jsonl')
     actual = measured(native, native_folder / 'pump/sends.jsonl')
+    if candidate == 'CHEVROLET_VOLT':
+      expected = comparison_output(source, expected)
+      actual = comparison_output(native, actual)
     compare(source['params'], native['params'])
     passive = native['passive']
     return Attempt(input_history(source, source_folder, registry),

@@ -236,20 +236,22 @@ class FreshProviderTests(unittest.TestCase):
 
 
 class DeliveryRefTests(unittest.TestCase):
-    def test_only_feature_preflight_or_marked_dev_md_merge_is_allowed(self):
-        for event, ref, message, parents, accepted in (
-            ("workflow_dispatch", "codex/feat-453-xiaoge-gpu", "", "parent", True),
-            ("workflow_dispatch", "dev-md", "[runtime-package]", "one two", False),
-            ("push", "dev-md", "merge [runtime-package]", "one two", True),
-            ("push", "dev-md", "merge", "one two", False),
-            ("push", "dev-md", "[runtime-package]", "one", False),
-            ("push", "codex/feat-453-xiaoge-gpu", "[runtime-package]", "one two", False),
-            ("push", "dev", "[runtime-package]", "one two", False),
+    def test_only_verified_dispatch_of_marked_dev_md_merge_is_allowed(self):
+        for event, ref, message, parents, supplied, accepted in (
+            ("workflow_dispatch", "dev-md", "merge [runtime-package]", "one two", "exact-source", True),
+            ("workflow_dispatch", "codex/feat-453-xiaoge-gpu", "[runtime-package]", "one two", "exact-source", False),
+            ("workflow_dispatch", "dev-md", "merge", "one two", "exact-source", False),
+            ("workflow_dispatch", "dev-md", "[runtime-package]", "one", "exact-source", False),
+            ("workflow_dispatch", "dev-md", "[runtime-package]", "one two", "other-source", False),
+            ("push", "dev-md", "[runtime-package]", "one two", "exact-source", False),
+            ("pull_request", "dev-md", "[runtime-package]", "one two", "exact-source", False),
+            ("workflow_dispatch", "dev", "[runtime-package]", "one two", "exact-source", False),
         ):
             def git(*args):
                 return parents if "--format=%P" in args else message
             with self.subTest(event=event, ref=ref, message=message, parents=parents), \
-                 mock.patch.dict(os.environ, GITHUB_EVENT_NAME=event, GITHUB_REF="refs/heads/" + ref), \
+                 mock.patch.dict(os.environ, GITHUB_EVENT_NAME=event, GITHUB_REF="refs/heads/" + ref,
+                                 RUNTIME_SOURCE_SHA=supplied), \
                  mock.patch.dict(namespace, git=git):
                 if accepted:
                     namespace["require_delivery_ref"]()
