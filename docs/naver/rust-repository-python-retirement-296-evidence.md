@@ -7952,3 +7952,35 @@ R2 builds native providers and the controller, then strictClippy requires the
 permission literal0o0 instead of0. Sourcecbaed1bd0 changes only that spelling;
 functional traffic has not run. Artifact12433584061 retains the failed13CRC
 evidence; native R3 and four-source caller/absence acceptance remain required.
+
+Native R3 [39800162668](https://github.com/bin9208/openpilot-rust/actions/runs/39800162668)
+at1031884ccad7fa39957fb640aff70a03afade189/workflow4054adf25 passes provider/controller
+builds, strictClippy and no-default admission, then fails2of4integrations.
+Artifact12434958321:2417746B/SHA256
+7c72fd31c84ec4026bac29e7f8ccb3f35d3925a55e74aa32fe6301021e4eb4d6;
+parent independently checks all63CRCs and actual raw failures. Reference output
+parent creation is missing, so no trace provider executes. Daemon idle SIGINT/
+SIGTERM complete in9.30326/9.317581ms and three low-space deletions are emitted,
+but normal umount fails EBUSY because our own mount-root O_PATH FD remains open.
+The cleanup error masks the final cadence/poststate observation; no daemon/full
+acceptance is credited. Observer and corrupt-fixture admission pass; ownership
+units are not reached. The focused repair creates the reference parent, retains
+successful low-space observations before cleanup, and drops the authenticated
+FD before normal unmount. Timing, original28scenario/78row corpus and foreign
+replacement rejection remain unchanged. No atomic pathname-race claim follows.
+
+Road provenance [39799866072](https://github.com/bin9208/openpilot-rust/actions/runs/39799866072)
+at800e2c8f808d0abf347787a01d4c7b9ce1fec942/workflowf31596bce succeeds.
+Artifact12435337354:160507626B/SHA256
+e206e16f968a69ebb0874ae1f03e20cf10e26540b29d0fa93665584e2911a7a6;
+parent independently checks8CRCs, the tar SHA9e35cb2b,1092members/203097644expanded
+bytes and original stock report:2frames/4823648elements/identical output bytes.
+The EPYC9V45 host actually consumes91current images, all bound to the fresh
+same-host compile and launch ABI. Historical static images differ and are not
+executed. All source/provider and six-field identity guards pass, including ten
+stale-seal negatives. The archived original-output manifest contains10inputs,
+not raw original predictions; independent raw-prediction comparison is unavailable.
+This successful natural host does not explain the EPYC7763 failure, close #476,
+retire the Python compiler or establish full model/device acceptance. Preserve
+raw predictions in the next genuinely affected diagnostic; do not repeat this
+unchanged successful traffic merely to repair observation packaging.

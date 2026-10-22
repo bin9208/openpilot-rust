@@ -196,6 +196,11 @@ pub fn mount(options: &Options, corpus: &Corpus, output: &Path) -> Result<Value>
             json!({"passed":true,"low_space_cycles":3,"available_bytes":available,"remaining":remaining,"daemon":row,"original_source_waits":corpus.low_space_original["source_waits"]}),
         )
     })();
+    // Keep actual poststate/cadence evidence even if later cleanup fails.
+    let result = result.and_then(|observation| {
+        save(&output.join("low-space-observation.json"), &observation)?;
+        Ok(observation)
+    });
     use std::os::unix::fs::MetadataExt;
     let identity = mounted
         .metadata()
@@ -215,6 +220,10 @@ pub fn mount(options: &Options, corpus: &Corpus, output: &Path) -> Result<Value>
         std::mem::forget(work);
         return Err("private mount replaced; cleanup authority rejected".into());
     }
+    // Our own open mount descriptor keeps the filesystem busy. Authenticate
+    // while held, then close it before normal unmount; no lazy detach or atomic
+    // same-UID race guarantee is used here.
+    drop(mounted);
     let unmount = utility(&["/usr/bin/umount", target], &output.join("tmpfs-unmount"));
     if let Err(error) = unmount {
         std::mem::forget(work);

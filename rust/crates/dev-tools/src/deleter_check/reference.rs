@@ -69,6 +69,7 @@ pub fn snapshot(root: &Path) -> Result<Value> {
     Ok(json!(rows))
 }
 pub fn run(corpus: &Corpus, trace: &Path, output: &Path) -> Result<Value> {
+    fs::create_dir_all(output)?;
     let mut total = 0;
     let mut reports = Vec::new();
     for case in &corpus.reference {

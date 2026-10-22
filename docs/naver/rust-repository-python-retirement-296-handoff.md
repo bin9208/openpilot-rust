@@ -31,10 +31,26 @@ Latest implementation includes7c8ee5396 (ten-source retirement), e50ab0730
 (native deleter candidate),12af083b2 (dangling-link/caller policy), andc7c3a9c8a
 (explicit cached-driver/fresh-family scoping), pluscbaed1bd0 (octal permission literal).
 Model/runtime implementation800e2c8f8
-is unchanged. Published checkpoint before this batch iscefa1dd9c; use fresh Git/API
+is unchanged. Published checkpoint is1031884ccad7fa39957fb640aff70a03afade189; use fresh Git/API
 readback for current issue/PR/diagnostic heads before pinning a source. Final-ten
 accepted source is12af083b2e31bbb73cb8f73a9822e1c92d3ab8ea, workflowae18fe676.
 Do not lose newer commits or mix unrelated WIP into a source pin.
+
+Exact103188 Fast39800281535 and both mapped-docs39800281419/39800598592
+pass. Integration39800281579 and Rust39800281452 are still running; no full
+current aggregate acceptance is claimed. #491 is closed/completed after the
+accepted ten-source proof and publication (comment6343901944); #296 remains open
+(published milestone comment6344047422).
+
+Native deleter R3 run39800162668/source103188 builds and passes strict Clippy,
+then2/4integrations fail: missing reference-report parent before any trace
+provider exec, and normal umount EBUSY while our own O_PATH mount FD remains
+held. Observer and corrupt-fixture admission pass; ownership5tests are not run.
+Artifact12434958321/2417746B/SHA7c72fd31/all63CRC is independently audited.
+The focused follow-up creates that report parent, saves observed low-space
+poststate/cadence before cleanup, and closes the authenticated mount FD before
+normal unmount. Frozen28/78 observations, timing and ownership checks remain
+unchanged; the complete native gate and four-source retirement remain pending.
 
 Published PR synthetic merge48abb4d87797d84c03be1595e9122c4b1e023e2d:
 Integration39754486834 passes all16jobs; both Fast39754486617/39754477763
