@@ -1,4 +1,4 @@
-name: 296 fresh original C++ corpus native comparison
+name: 296 postdelete C++ corpus native byte parity and output links
 'on':
   push:
     branches:
@@ -22,12 +22,12 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 30f80e2f6d259e8773cd8e0212e3ed0269425f84
+        ref: 2e83f1dba7561bc56c1f3183a13049e8898be2f1
         persist-credentials: false
     - name: Bind exact source and reserve hosted growth
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = 30f80e2f6d259e8773cd8e0212e3ed0269425f84
+        test "$(git rev-parse HEAD)" = 2e83f1dba7561bc56c1f3183a13049e8898be2f1
 
         sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
 
@@ -73,6 +73,17 @@ jobs:
         2>&1 || { cat "$proof/native-clippy.log"; exit 1; }
 
         '
+    - name: Check changed maintained CI policy and full workspace formatting
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo fmt --manifest-path rust/Cargo.toml --all -- --check
+
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features kalman-corpus-generator-native
+        --test ci_disk_bootstrap --test ci_workflow_policy --test ci_rust_isolation -- --nocapture
+
+        '
     - name: Install original source generator dependencies
       run: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
 
@@ -95,17 +106,18 @@ jobs:
         }\nfor kind in pose car; do\n run_capture \"$kind-source-generator\" python \"openpilot/selfdrive/locationd/models/${kind}_kf.py\"\
         \ \"$kind\" \"$proof/$kind-oracle\"\n run_capture \"$kind-cpp-compiler\" clang++ -std=c++17 -O2 -shared -fPIC -Irednose_repo\
         \ -I/usr/include/eigen3 \"$proof/$kind-oracle/$kind.cpp\" -o \"$proof/$kind-oracle/lib$kind.so\"\n ldd \"$proof/$kind-oracle/lib$kind.so\"\
-        \ > \"$proof/$kind-provider-ldd.txt\"\n run_capture \"$kind-original-cli\" python \"rust/tools/generate_${kind}_corpus.py\"\
-        \ --oracle \"$proof/$kind-oracle\" --output \"$proof/original/$kind-original.json\"\ndone\nfind \"$proof/pose-oracle\"\
-        \ \"$proof/car-oracle\" -type f -print0 | sort -z | xargs -0 sha256sum > \"$proof/oracle-before.sha256\"\nawk '$2\
-        \ == \"=>\" && $3 ~ /^\\// { print $3 } $1 ~ /^\\// { print $1 }' \"$proof/pose-provider-ldd.txt\" \"$proof/car-provider-ldd.txt\"\
-        \ | sort -u | xargs sha256sum > \"$proof/provider-dependencies-before.sha256\"\nexport KALMAN_CORPUS_ORIGINAL_ROOT=\"\
-        $proof/original\"\nexport KALMAN_CORPUS_EVIDENCE=\"$proof\"\nexport KALMAN_POSE_BINARY=\"$GITHUB_WORKSPACE/rust/target/debug/generate-pose-corpus\"\
-        \nexport KALMAN_CAR_BINARY=\"$GITHUB_WORKSPACE/rust/target/debug/generate-car-corpus\"\nexport KALMAN_POSE_ORACLE=\"\
-        $proof/pose-oracle\"\nexport KALMAN_CAR_ORACLE=\"$proof/car-oracle\"\nrun_capture complete-native-pair cargo test\
-        \ --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features kalman-corpus-generator-native --test\
-        \ kalman_corpus_generator native_cli_matches_fresh_original_complete_json_bits_and_order -- --ignored --exact --nocapture\n\
-        xargs -0 sha256sum < \"$proof/source-paths.nul\" > \"$proof/sources-after.sha256\"\ncmp \"$proof/sources-before.sha256\"\
+        \ > \"$proof/$kind-provider-ldd.txt\"\n if [ \"$kind\" = pose ]; then data=rust/crates/locationd/tests/data/model.json;\
+        \ else data=rust/crates/paramsd/tests/data/model.json; fi\n run_capture \"$kind-fixed-original-data\" cp \"$data\"\
+        \ \"$proof/original/$kind-original.json\"\ndone\nfind \"$proof/pose-oracle\" \"$proof/car-oracle\" -type f -print0\
+        \ | sort -z | xargs -0 sha256sum > \"$proof/oracle-before.sha256\"\nawk '$2 == \"=>\" && $3 ~ /^\\// { print $3 }\
+        \ $1 ~ /^\\// { print $1 }' \"$proof/pose-provider-ldd.txt\" \"$proof/car-provider-ldd.txt\" | sort -u | xargs sha256sum\
+        \ > \"$proof/provider-dependencies-before.sha256\"\nexport KALMAN_CORPUS_RETIRED_ROOT=\"$GITHUB_WORKSPACE\"\nexport\
+        \ KALMAN_CORPUS_ORIGINAL_ROOT=\"$proof/original\"\nexport KALMAN_CORPUS_EVIDENCE=\"$proof\"\nexport KALMAN_POSE_BINARY=\"\
+        $GITHUB_WORKSPACE/rust/target/debug/generate-pose-corpus\"\nexport KALMAN_CAR_BINARY=\"$GITHUB_WORKSPACE/rust/target/debug/generate-car-corpus\"\
+        \nexport KALMAN_POSE_ORACLE=\"$proof/pose-oracle\"\nexport KALMAN_CAR_ORACLE=\"$proof/car-oracle\"\nrun_capture complete-native-pair\
+        \ cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features kalman-corpus-generator-native\
+        \ --test kalman_corpus_generator native_cli_matches_fresh_original_complete_json_bits_and_order -- --ignored --exact\
+        \ --nocapture\nxargs -0 sha256sum < \"$proof/source-paths.nul\" > \"$proof/sources-after.sha256\"\ncmp \"$proof/sources-before.sha256\"\
         \ \"$proof/sources-after.sha256\"\nsha256sum -c \"$proof/oracle-before.sha256\" > \"$proof/oracle-after-check.txt\"\
         \nsha256sum -c \"$proof/eigen-before.sha256\" > \"$proof/eigen-after-check.txt\"\nsha256sum -c \"$proof/executables-before.sha256\"\
         \ > \"$proof/executables-after-check.txt\"\nsha256sum -c \"$proof/provider-dependencies-before.sha256\" > \"$proof/provider-dependencies-after-check.txt\"\
