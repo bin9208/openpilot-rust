@@ -1,0 +1,148 @@
+name: 296 native Python312 AST and changed-path differential
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/changed-files-native-296-once.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      EXPECTED_SOURCE: 1cc88538d7190501f442e42b30bf0e47fb4ac72b
+      RUSTUP_TOOLCHAIN: 1.94.0
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: 1cc88538d7190501f442e42b30bf0e47fb4ac72b
+        persist-credentials: false
+    - name: Reserve capacity and record exact native providers
+      shell: bash
+      run: 'set -euo pipefail
+
+        export AST_BASE="$RUNNER_TEMP/changed-files-native-296"
+
+        printf ''AST_BASE=%s\n'' "$AST_BASE" >> "$GITHUB_ENV"
+
+        mkdir "$AST_BASE"
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        printf ''workflow_head=%s\nsource_commit=%s\n'' "$GITHUB_SHA" "$EXPECTED_SOURCE" > "$AST_BASE/source.txt"
+
+        git status --porcelain=v1 > "$AST_BASE/source-status.before.txt"
+
+        test ! -s "$AST_BASE/source-status.before.txt"
+
+        sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet /usr/local/.ghcup
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 6144
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends capnproto libcapnp-dev g++ libzmq5 strace
+
+        rustc +1.94.0 -Vv > "$AST_BASE/rustc.txt"
+
+        cargo +1.94.0 -Vv > "$AST_BASE/cargo.txt"
+
+        git --version > "$AST_BASE/git-provider.txt"
+
+        git --exec-path > "$AST_BASE/git-exec-path.txt"
+
+        dpkg-query -W libc6 libc-bin > "$AST_BASE/native-codec-packages.txt"
+
+        '
+    - name: Reuse accepted original72rows and12Git observations
+      shell: bash
+      run: 'set -euo pipefail
+
+        rust/tools/check-disk-space --path "$RUNNER_TEMP" --growth-mib 32
+
+        gh api repos/bin9208/openpilot-rust/actions/artifacts/12434037946/zip > "$AST_BASE/original.zip"
+
+        base64 --decode <<''INERT'' > "$AST_BASE/hosted_native_AST_default.py"
+
+        IiIiSG9zdGVkIGluZXJ0IGV2aWRlbmNlIGFkbWlzc2lvbi9hdWRpdDsgbm8gcHJvamVjdCBpbXBvcnRzIG9yIG5hdGl2ZSBleHBlY3RlZCBnZW5lcmF0aW9uLiIiIgpmcm9tIHBhdGhsaWIgaW1wb3J0IFBhdGgKaW1wb3J0IGhhc2hsaWIsanNvbixvcyxyZSxzeXMsemlwZmlsZSx0b21sbGliCkJBU0U9UGF0aChvcy5lbnZpcm9uWydBU1RfQkFTRSddKTtST09UPVBhdGgob3MuZW52aXJvblsnR0lUSFVCX1dPUktTUEFDRSddKQpQSU5TPXsndG9vbHMvY2kvY2hlY2tfY2hhbmdlZF9maWxlcy5weSc6JzZiY2IxNGYzYTZkNWQ0ZTg4NWM2NTVlMjJmZWQyM2ExZWNmMjE5OWIwNDhjZDNkYTk1ZWY1OWIyNzk1ZmFkODcnLCd0b29scy9jaS90ZXN0cy90ZXN0X2NoYW5nZWRfZmlsZXMucHknOidjZDlhMjExZDA3NmQ2OTM5Yjc2NDk4NDkyMTJlYTIxYzUyZTdlMDg5N2ZhNmQyNTFlODJiMGIyODA1ZTA4MjQyJ30KU0hBPScxMjM2MjBjMGU0ZDA4YjllZDM2ODg2N2Y2ZDIzOTk5ODllMTY3Y2JjNjZkNTQ4ZmZkMzBlZmVjYjBlZmNlMjM0JwpkZWYgc2hhKHApOnJldHVybiBoYXNobGliLnNoYTI1NihwLnJlYWRfYnl0ZXMoKSkuaGV4ZGlnZXN0KCkKZGVmIHNhdmUobmFtZSxkYXRhKTooQkFTRS9uYW1lKS53cml0ZV90ZXh0KGpzb24uZHVtcHMoZGF0YSxpbmRlbnQ9MikrJ1xuJykKZGVmIHNvdXJjZXMoKToKIGZvciBuYW1lLHBpbiBpbiBQSU5TLml0ZW1zKCk6YXNzZXJ0IHNoYShST09UL25hbWUpPT1waW4sbmFtZQoKZGVmIGFkbWl0KCk6CiBwYXRoPUJBU0UvJ29yaWdpbmFsLnppcCc7YXNzZXJ0IHBhdGguc3RhdCgpLnN0X3NpemU9PTE5NzIwIGFuZCBzaGEocGF0aCk9PVNIQQogd2l0aCB6aXBmaWxlLlppcEZpbGUocGF0aCkgYXMgejoKICBhc3NlcnQgbGVuKHouaW5mb2xpc3QoKSk9PWxlbihzZXQoei5uYW1lbGlzdCgpKSk9PTE2IGFuZCB6LnRlc3R6aXAoKSBpcyBOb25lCiAgYXNzZXJ0IHN1bShtLmZpbGVfc2l6ZSBmb3IgbSBpbiB6LmluZm9saXN0KCkpPDE8PDIwCiAgYXNzZXJ0IHoucmVhZCgnc291cmNlLnR4dCcpPT1iJ3dvcmtmbG93X2hlYWQ9NTkyOGFhZjI0YjY0NGFiZWI1MzczYjFiNjg5OTEzYzNlN2UxOWQ2Nlxuc291cmNlX2NvbW1pdD0xMmFmMDgzYjJlMzFiYmI3M2NiOGY3M2E5ODIyZTFjOTJkM2FiOGVhXG4nCiAgYXNzZXJ0IHoucmVhZCgnc291cmNlLXN0YXR1cy5iZWZvcmUudHh0Jyk9PXoucmVhZCgnc291cmNlLXN0YXR1cy5hZnRlci50eHQnKT09YicnCiAgYXNzZXJ0IGpzb24ubG9hZHMoei5yZWFkKCdzb3VyY2UtcGlucy5qc29uJykpPT1QSU5TCiAgbWFuaWZlc3Q9anNvbi5sb2Fkcyh6LnJlYWQoJ29ic2VydmF0aW9ucy9tYW5pZmVzdC5qc29uJykpWydmaWxlcyddO2Fzc2VydCBsZW4obWFuaWZlc3QpPT00CiAgdGFyZ2V0PUJBU0UvJ29yaWdpbmFsJzt0YXJnZXQubWtkaXIoKQogIGZvciBuYW1lLHNlYWwgaW4gbWFuaWZlc3QuaXRlbXMoKToKICAgcmF3PXoucmVhZCgnb2JzZXJ2YXRpb25zLycrbmFtZSkKICAgYXNzZXJ0IGxlbihyYXcpPT1zZWFsWydieXRlcyddIGFuZCBoYXNobGliLnNoYTI1NihyYXcpLmhleGRpZ2VzdCgpPT1zZWFsWydzaGEyNTYnXQogICBhc3NlcnQgbmFtZSBpbiB7J2dpdC1vYnNlcnZhdGlvbnMuanNvbicsJ3N5bnRheC1vYnNlcnZhdGlvbnMuanNvbicsJ3VuaWNvZGUtdGFibGVzLmpzb24nLCdyZWNlaXB0Lmpzb24nfQogICAodGFyZ2V0L25hbWUpLndyaXRlX2J5dGVzKHJhdykKICByZWNlaXB0PWpzb24ubG9hZHMoei5yZWFkKCdvYnNlcnZhdGlvbnMvcmVjZWlwdC5qc29uJykpO2Fzc2VydCByZWNlaXB0WydwYXNzZWQnXSBhbmQgbm90IHJlY2VpcHRbJ25hdGl2ZV9leGVjdXRpb24nXSBhbmQgbm90IHJlY2VpcHRbJ2V4cGVjdGVkX25hdGl2ZV9vdXRwdXRzX3VzZWQnXQogIGFzc2VydCByZWNlaXB0WydzeW50YXhfcm93cyddPT03MiBhbmQgcmVjZWlwdFsnZ2l0X3NjZW5hcmlvcyddPT0xMiBhbmQgcmVjZWlwdFsndW5pY29kZV92ZXJzaW9uJ109PScxNS4wLjAnCiAgYXNzZXJ0ICczLjEyLjE1JyBpbiByZWNlaXB0WydweXRob25fdmVyc2lvbiddCiBzYXZlKCdvcmlnaW5hbC1pbnB1dHMuYmVmb3JlLmpzb24nLHtuYW1lOnNoYShCQVNFLydvcmlnaW5hbCcvbmFtZSkgZm9yIG5hbWUgaW4gbWFuaWZlc3R9KQogc291cmNlcygpCiBsb2NrPVJPT1QvJ3J1c3QvQ2FyZ28ubG9jaycKIGFzc2VydCBzaGEobG9jayk9PSdlOTZkYmM5NjE0YzFiZjZmOWFhZjc4Mzc0YTY0ODA3MDQ2YTJkZWFhNTE3YjdmMWYyOGYyNmQ5OTVlNjkzNDhmJwogcGFja2FnZXM9dG9tbGxpYi5sb2Fkcyhsb2NrLnJlYWRfdGV4dCgpKVsncGFja2FnZSddCiBleHBlY3RlZD17J3J1c3RweXRob24tcnVmZl9weXRob25fcGFyc2VyJzonMDFlNmVlNzhiZDk2NzFmYjU3NjY2NjRiMjY5NWZlMWYyYTkyYTk2MWY0ZDkxMDE2NDZjNTcwZDhhY2RiMWUwYicsJ3J1c3RweXRob24tcnVmZl9weXRob25fYXN0JzonZjAyMWZmNzJjYWJmNWUyY2Q2ZDhlYzg4MTNkMzc2YTg0NDVhMjI4ZGM2MTBhYjU2YzI3YmQ5MDU0Y2RhNzBkNCcsJ3J1c3RweXRob24tcnVmZl9weXRob25fdHJpdmlhJzonNzllN2NmZDEwNTZmM2EwMmZmMGQyZDBlNDQ3NDI4NmNhOTYzMjYwNzgyZjg3OGI3YjgxYzFkZDg3NDMyZTY4MicsJ3J1c3RweXRob24tcnVmZl90ZXh0X3NpemUnOic4MjkxZWUwZjVhNzc5ZTU0Y2NkNGUwMTUxYTBjNDI2ZjhiNDlhMTIzZjk5YjViNjU0NWRiMTdjY2RkNDI3N2FhJywncnVzdHB5dGhvbi1ydWZmX3NvdXJjZV9maWxlJzonOTQ4MTA3YWFkNjJkZGIxMmExMWZjN2JmNjhhNDllNTJhMGIwYTM3MzdkNDE1YTI1MDVlNTRmNWE5ZWRhYzczNyd9CiBmb3IgbmFtZSxwaW4gaW4gZXhwZWN0ZWQuaXRlbXMoKToKICByb3dzPVtwIGZvciBwIGluIHBhY2thZ2VzIGlmIHBbJ25hbWUnXT09bmFtZSBhbmQgcFsndmVyc2lvbiddPT0nMC4xNS44J10KICBhc3NlcnQgbGVuKHJvd3MpPT0xIGFuZCByb3dzWzBdWydjaGVja3N1bSddPT1waW4sbmFtZQogc2F2ZSgncGFyc2VyLWxvY2stcHJvdmlkZXIuanNvbicseydhY2NlcHRlZF9tZXRhZGF0YV9ydW4nOjM5ODA0NTUzMzM2LCdsb2NrX3NoYTI1Nic6c2hhKGxvY2spLCdleGFjdF9jcmF0ZV9jaGVja3N1bXMnOmV4cGVjdGVkLCdzb3VyY2VfaW5wdXRfc2hhMjU2Jzp7c3RyKHApOnNoYShwKSBmb3IgcCBpbiAoUk9PVC8ncnVzdC9jcmF0ZXMvZGV2LXRvb2xzL3NyYy9jaGFuZ2VkX2ZpbGVzX2NoZWNrJykuaXRlcmRpcigpIGlmIHAuaXNfZmlsZSgpfX0pCiBzYXZlKCdvcmlnaW5hbC1hZG1pc3Npb24uanNvbicseydydW4nOjM5Nzk4MjM5MzE4LCdhcnRpZmFjdCc6MTI0MzQwMzc5NDYsJ3ppcF9zaGEyNTYnOlNIQSwnemlwX2J5dGVzJzoxOTcyMCwnY3JjX21lbWJlcnMnOjE2LCdvcmlnaW5hbF9zZWFscyc6NCwnc291cmNlX3BpbnMnOlBJTlMsJ3N5bnRheF9yb3dzJzo3MiwnZ2l0X2xhbmVzJzoxMiwndW5pY29kZSc6JzE1LjAuMCcsJ25hdGl2ZV9leHBlY3RlZF9kYXRhX2dlbmVyYXRlZCc6RmFsc2V9KQoKZGVmIGRpc2NvdmVyKCk6CiByb3dzPVtqc29uLmxvYWRzKGxpbmUpIGZvciBsaW5lIGluIChCQVNFLyd0ZXN0cy1idWlsZC5qc29ubCcpLnJlYWRfdGV4dCgpLnNwbGl0bGluZXMoKV0KIHRlc3RzPVtyWydleGVjdXRhYmxlJ10gZm9yIHIgaW4gcm93cyBpZiByLmdldCgncmVhc29uJyk9PSdjb21waWxlci1hcnRpZmFjdCcgYW5kIHIuZ2V0KCdleGVjdXRhYmxlJykgYW5kIHJbJ3RhcmdldCddWyduYW1lJ109PSdjaGFuZ2VkX2ZpbGVzX2NoZWNrJyBhbmQgclsndGFyZ2V0J11bJ2tpbmQnXT09Wyd0ZXN0J10gYW5kIHJbJ3Byb2ZpbGUnXVsndGVzdCddXQogYXNzZXJ0IGxlbih0ZXN0cyk9PTEsdGVzdHMKIHdpdGggUGF0aChvcy5lbnZpcm9uWydHSVRIVUJfRU5WJ10pLm9wZW4oJ2EnKSBhcyBvdXQ6b3V0LndyaXRlKCdBU1RfVEVTVF9FWEU9Jyt0ZXN0c1swXSsnXG4nKQogcHJvdmlkZXJzPVtQYXRoKHRlc3RzWzBdKSxST09ULydydXN0L3RhcmdldC9kZWJ1Zy9jaGVjay1jaGFuZ2VkLWZpbGVzJyxQYXRoKCcvdXNyL2Jpbi9naXQnKSxQYXRoKCcvdXNyL2Jpbi9lbnYnKV0KIGV4ZWNwYXRoPVBhdGgoKEJBU0UvJ2dpdC1leGVjLXBhdGgudHh0JykucmVhZF90ZXh0KCkuc3RyaXAoKSkvJ2dpdCcKIGlmIGV4ZWNwYXRoLmlzX2ZpbGUoKTpwcm92aWRlcnMuYXBwZW5kKGV4ZWNwYXRoKQogIyBSZWNvcmQgZXhwbGljaXQgZHluYW1pYyBHTlUgY29kZWMgaXNzdWVyIGlucHV0czsgaWNvbnYgaXMgbm90IGFuIGludGVycHJldGVyLgogZm9yIGRpcmVjdG9yeSBpbiBbUGF0aCgnL2xpYi94ODZfNjQtbGludXgtZ251JyksUGF0aCgnL3Vzci9saWIveDg2XzY0LWxpbnV4LWdudScpXToKICBsaWJjPWRpcmVjdG9yeS8nbGliYy5zby42JwogIGlmIGxpYmMuaXNfZmlsZSgpOnByb3ZpZGVycy5hcHBlbmQobGliYykKICBnY29udj1kaXJlY3RvcnkvJ2djb252JwogIGlmIGdjb252LmlzX2RpcigpOnByb3ZpZGVycy5leHRlbmQocCBmb3IgcCBpbiBnY29udi5pdGVyZGlyKCkgaWYgcC5pc19maWxlKCkpCiBzYXZlKCduYXRpdmUtaW5wdXRzLmJlZm9yZS5qc29uJyx7c3RyKHApOnNoYShwKSBmb3IgcCBpbiBzb3J0ZWQoc2V0KHByb3ZpZGVycykpfSkKCmRlZiBmaW5pc2goKToKIGJlZm9yZT1qc29uLmxvYWRzKChCQVNFLyduYXRpdmUtaW5wdXRzLmJlZm9yZS5qc29uJykucmVhZF9ieXRlcygpKQogYXNzZXJ0IGJlZm9yZT09e25hbWU6c2hhKFBhdGgobmFtZSkpIGZvciBuYW1lIGluIGJlZm9yZX0KIHNhdmUoJ25hdGl2ZS1pbnB1dHMuYWZ0ZXIuanNvbicsYmVmb3JlKQogc291cmNlcygpCiBmaXh0dXJlX2lucHV0cz1qc29uLmxvYWRzKChCQVNFLydvcmlnaW5hbC1pbnB1dHMuYmVmb3JlLmpzb24nKS5yZWFkX2J5dGVzKCkpCiBhc3NlcnQgZml4dHVyZV9pbnB1dHM9PXtuYW1lOnNoYShCQVNFLydvcmlnaW5hbCcvbmFtZSkgZm9yIG5hbWUgaW4gZml4dHVyZV9pbnB1dHN9CiBzYXZlKCdvcmlnaW5hbC1pbnB1dHMuYWZ0ZXIuanNvbicsZml4dHVyZV9pbnB1dHMpCiBhc3NlcnQgc2hhKEJBU0UvJ29yaWdpbmFsLnppcCcpPT1TSEEKIGZvciBuYW1lLHNlYWwgaW4ganNvbi5sb2FkcygoQkFTRS8nb3JpZ2luYWwtYWRtaXNzaW9uLmpzb24nKS5yZWFkX2J5dGVzKCkpWydzb3VyY2VfcGlucyddLml0ZW1zKCk6YXNzZXJ0IHNoYShST09UL25hbWUpPT1zZWFsCiBhc3NlcnQgKEJBU0UvJ3NvdXJjZS1zdGF0dXMuYmVmb3JlLnR4dCcpLnJlYWRfYnl0ZXMoKT09KEJBU0UvJ3NvdXJjZS1zdGF0dXMuYWZ0ZXIudHh0JykucmVhZF9ieXRlcygpPT1iJycKIGFzc2VydCAndGVzdCByZXN1bHQ6IG9rLiAzIHBhc3NlZDsgMCBmYWlsZWQ7IDAgaWdub3JlZDsnIGluIChCQVNFLyduYXRpdmUuc3Rkb3V0JykucmVhZF90ZXh0KCkKIHJvd3M9anNvbi5sb2FkcygoQkFTRS8nYWN0dWFsL3N5bnRheC1hY3R1YWwuanNvbicpLnJlYWRfYnl0ZXMoKSkKIGFzc2VydCBsZW4ocm93c1sncm93cyddKT09NzIgYW5kIG5vdCByb3dzWydkaWZmZXJlbmNlcyddCiBvcmlnaW5hbD1qc29uLmxvYWRzKChCQVNFLydvcmlnaW5hbC9zeW50YXgtb2JzZXJ2YXRpb25zLmpzb24nKS5yZWFkX2J5dGVzKCkpWydyb3dzJ10KIGZvciBhY3R1YWwsZXhwZWN0ZWQgaW4gemlwKHJvd3NbJ3Jvd3MnXSxvcmlnaW5hbCk6CiAgYXNzZXJ0IGFjdHVhbFsnbmFtZSddPT1leHBlY3RlZFsnbmFtZSddIGFuZCBhY3R1YWxbJ3NvdXJjZV9oZXgnXT09ZXhwZWN0ZWRbJ3NvdXJjZV9oZXgnXSBhbmQgYWN0dWFsWydvcmlnaW5hbF9hY2NlcHRlZCddPT1hY3R1YWxbJ25hdGl2ZV9hY2NlcHRlZCddPT1leHBlY3RlZFsnYWNjZXB0ZWQnXSBhbmQgbm90IGFjdHVhbFsnY2FwYWJpbGl0eV9lcnJvciddCiBnaXQ9anNvbi5sb2FkcygoQkFTRS8nYWN0dWFsL2dpdC1hY3R1YWwuanNvbicpLnJlYWRfYnl0ZXMoKSlbJ3Jvd3MnXQogZXhwZWN0ZWQ9anNvbi5sb2FkcygoQkFTRS8nb3JpZ2luYWwvZ2l0LW9ic2VydmF0aW9ucy5qc29uJykucmVhZF9ieXRlcygpKVsncm93cyddCiBhc3NlcnQgbGVuKGdpdCk9PWxlbihleHBlY3RlZCk9PTEyCiBmb3IgYSxiIGluIHppcChnaXQsZXhwZWN0ZWQpOmFzc2VydCBhWyduYW1lJ109PWJbJ25hbWUnXSBhbmQgYVsnb3JpZ2luYWxfYWNjZXB0ZWQnXT09YVsnbmF0aXZlX2FjY2VwdGVkJ109PWJbJ2FjY2VwdGVkJ10gYW5kIGFbJ3NlbGVjdGVkX3BhdGhzX2hleCddPT1iWydzZWxlY3RlZF9wYXRoc19oZXgnXQogdW5pY29kZT1qc29uLmxvYWRzKChCQVNFLydhY3R1YWwvdW5pY29kZS1hY3R1YWwuanNvbicpLnJlYWRfYnl0ZXMoKSkKIGFzc2VydCB1bmljb2RlWydzY2FsYXJfY291bnQnXT09MTExMjA2NCBhbmQgdW5pY29kZVsncHJvYmVzJ109PTIyMjQxMjggYW5kIHVuaWNvZGVbJ2RpZmZlcmVuY2VfY291bnQnXT09MAogdHJhY2U9KEJBU0UvJ25hdGl2ZS5leGVjdmUnKS5yZWFkX3RleHQoKTthc3NlcnQgJ2V4ZWN2ZWF0KCcgbm90IGluIHRyYWNlCiBhbGxvd2VkPXtuYW1lIGZvciBuYW1lIGluIGJlZm9yZSBpZiBuYW1lLmVuZHN3aXRoKCcvZ2l0Jykgb3IgbmFtZS5lbmRzd2l0aCgnL2NoZWNrLWNoYW5nZWQtZmlsZXMnKSBvciBuYW1lPT1vcy5lbnZpcm9uWydBU1RfVEVTVF9FWEUnXX18eycvdXNyL2Jpbi9lbnYnLHN0cihCQVNFLyduYXRpdmUtcGF0aC9naXQnKX0KIGNvdW50PTAKIGZvciBsaW5lIGluIHRyYWNlLnNwbGl0bGluZXMoKToKICBtYXRjaD1yZS5zZWFyY2gocidcYmV4ZWN2ZVwoIihbXiJcXF0rKSInLGxpbmUpCiAgaWYgbWF0Y2g6CiAgIGFzc2VydCBtYXRjaFsxXSBpbiBhbGxvd2VkLGxpbmUKICAgaWYgJyA9IDAnIGluIGxpbmU6Y291bnQrPTEKIGFzc2VydCBjb3VudD4xMgogY2xpcHB5PShCQVNFLydjbGlwcHkuc3RkZXJyJykucmVhZF90ZXh0KCk7YXNzZXJ0ICdGaW5pc2hlZCAnIGluIGNsaXBweSBhbmQgJ2Vycm9yOicgbm90IGluIGNsaXBweQogZGVmYXVsdD0oQkFTRS8nbm8tZGVmYXVsdC5zdGRlcnInKS5yZWFkX3RleHQoKTthc3NlcnQgJ0ZpbmlzaGVkICcgaW4gZGVmYXVsdCBhbmQgJ2Vycm9yOicgbm90IGluIGRlZmF1bHQKIG5vcm1hbD0oQkFTRS8nZGVmYXVsdC5zdGRlcnInKS5yZWFkX3RleHQoKTthc3NlcnQgJ0ZpbmlzaGVkICcgaW4gbm9ybWFsIGFuZCAnZXJyb3I6JyBub3QgaW4gbm9ybWFsCiByb3dzPVtqc29uLmxvYWRzKGxpbmUpIGZvciBsaW5lIGluIChCQVNFLydkZWZhdWx0Lmpzb25sJykucmVhZF90ZXh0KCkuc3BsaXRsaW5lcygpXQogcm9vdD1bciBmb3IgciBpbiByb3dzIGlmIHIuZ2V0KCdyZWFzb24nKT09J2NvbXBpbGVyLWFydGlmYWN0JyBhbmQgclsndGFyZ2V0J11bJ25hbWUnXT09J29wZW5waWxvdF9kZXZfdG9vbHMnIGFuZCByWyd0YXJnZXQnXVsna2luZCddPT1bJ2xpYiddXQogYXNzZXJ0IGxlbihyb290KT09MSBhbmQgcm9vdFswXVsnZmVhdHVyZXMnXT09W10scm9vdAogc2F2ZSgnZGVmYXVsdC1mZWF0dXJlLWFkbWlzc2lvbi5qc29uJyx7J3Bhc3NlZCc6VHJ1ZSwnbmF0aXZlX0FTVF9mZWF0dXJlX2luX25vcm1hbF9kZWZhdWx0JzpGYWxzZSwnYWN0dWFsX2RlZmF1bHRfbGlicmFyeV9mZWF0dXJlcyc6cm9vdFswXVsnZmVhdHVyZXMnXSwnbm9ybWFsX2RlZmF1bHRfYW5kX25vX2RlZmF1bHRfbGlicmFyeV9jaGVja3MnOlRydWV9KQogc2F2ZSgnZmluYWwtcmVjZWlwdC5qc29uJyx7J3Bhc3NlZCc6VHJ1ZSwnc291cmNlJzpvcy5lbnZpcm9uWydFWFBFQ1RFRF9TT1VSQ0UnXSwnb3JpZ2luYWxfcnVuJzozOTc5ODIzOTMxOCwnb3JpZ2luYWxfYXJ0aWZhY3QnOjEyNDM0MDM3OTQ2LCdvcmlnaW5hbF9zaGEyNTYnOlNIQSwnb3JpZ2luYWxfY3VycmVudF9waW5zX3VuY2hhbmdlZCc6UElOUywnc3ludGF4X2J5dGVfcm93cyc6NzIsJ3JlYWxfZ2l0X2xhbmVzJzoxMiwndW5pY29kZV9zY2FsYXJfcHJvYmVzJzoyMjI0MTI4LCduYXRpdmVfdGVzdHMnOjMsJ25hdGl2ZV9zdWNjZXNzZnVsX2V4ZWNzJzpjb3VudCwnb2JzZXJ2ZWRfcHl0aG9uX2V4ZWNzJzowLCdzdHJpY3RfY2xpcHB5JzpUcnVlLCdub19kZWZhdWx0X2xpYnJhcnknOlRydWUsJ25vcm1hbF9kZWZhdWx0X2xpYnJhcnknOlRydWUsJ25hdGl2ZV9mZWF0dXJlX2luX25vcm1hbF9kZWZhdWx0JzpGYWxzZSwnaW1tdXRhYmxlX29yaWdpbmFsX2lucHV0X3BhaXJzJzpUcnVlLCdhbGxfc291cmNlX2FuZF9wcm92aWRlcl9wYWlyc191bmNoYW5nZWQnOlRydWUsJ25hdGl2ZV9jb2RlY19ib3VuZGFyeSc6J2V4cGxpY2l0IEdOVSBsaWJjIGljb252IGZvciBVVEY3L1NoaWZ0SklTL0NQOTMyL0tPSThSOyBmaW5nZXJwcmludHMgcmV0YWluZWQnLCdjb21wbGV0ZV9ieXRlX2NvZGVjX2RvbWFpbl9wYXJpdHlfY2xhaW1lZCc6RmFsc2UsJ25ld19vbGRfY2hhcmFjdGVyX2FsaWFzX3ZlcnNpb25fZG9tYWluX2Nsb3NlZCc6RmFsc2UsJ21haW50YWluZWRfcHl0aG9uX2NhbGxlcl9yZXRpcmVtZW50JzpGYWxzZSwnaW52ZW50b3J5X2NyZWRpdCc6MH0pCmlmIF9fbmFtZV9fPT0nX19tYWluX18nOmdsb2JhbHMoKVtzeXMuYXJndlsxXV0oKQo=
+
+        INERT
+
+        printf ''5ba3ddf625fcb3a11a905edd4f6688b11b3f0b9ca3bd0a5201243f91ad286f52  %s/hosted_native_AST_default.py\n'' "$AST_BASE"
+        | sha256sum --check --strict
+
+        python3 "$AST_BASE/hosted_native_AST_default.py" admit
+
+        '
+      env:
+        GH_TOKEN: ${{ github.token }}
+    - name: Build and strictly check the native opt-in AST adapter
+      shell: bash
+      run: 'set -euo pipefail
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --no-default-features --features
+        changed-files-native --bin check-changed-files > "$AST_BASE/build.stdout" 2> "$AST_BASE/build.stderr"
+
+        cargo +1.94.0 clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --no-default-features --features
+        changed-files-native --lib --bin check-changed-files --test changed_files_check -- -D warnings > "$AST_BASE/clippy.stdout"
+        2> "$AST_BASE/clippy.stderr"
+
+        cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --no-default-features --features
+        changed-files-native --test changed_files_check --no-run --message-format=json > "$AST_BASE/tests-build.jsonl" 2>
+        "$AST_BASE/tests-build.stderr"
+
+        cargo +1.94.0 check --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --no-default-features --lib >
+        "$AST_BASE/no-default.stdout" 2> "$AST_BASE/no-default.stderr"
+
+        ldd rust/target/debug/check-changed-files > "$AST_BASE/native-libraries.txt"
+
+        cargo +1.94.0 check --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib --message-format=json >
+        "$AST_BASE/default.jsonl" 2> "$AST_BASE/default.stderr"
+
+        python3 "$AST_BASE/hosted_native_AST_default.py" discover
+
+        '
+    - name: Run actual native byte AST Git and all-scalar differential
+      shell: bash
+      run: 'set -euo pipefail
+
+        rust/tools/check-disk-space --path "$RUNNER_TEMP" --growth-mib 128
+
+        mkdir "$AST_BASE/native-path"
+
+        ln -s /usr/bin/git "$AST_BASE/native-path/git"
+
+        /usr/bin/timeout --signal=TERM --kill-after=10s 240s /usr/bin/strace -f -e trace=execve,execveat -s 4096 -o "$AST_BASE/native.execve"
+        /usr/bin/env AST_ORIGINAL_DIR="$AST_BASE/original" AST_PROOF="$AST_BASE/actual" PATH="$AST_BASE/native-path" "$AST_TEST_EXE"
+        --test-threads=1 --nocapture > "$AST_BASE/native.stdout" 2> "$AST_BASE/native.stderr"
+
+        git status --porcelain=v1 > "$AST_BASE/source-status.after.txt"
+
+        python3 "$AST_BASE/hosted_native_AST_default.py" finish
+
+        du -sm "$AST_BASE" > "$AST_BASE/artifact-size-mib.txt"
+
+        test "$(cut -f1 "$AST_BASE/artifact-size-mib.txt")" -le 64
+
+        '
+    - name: Preserve actual native failures and independent comparisons
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: changed-files-native-296
+        path: ${{ runner.temp }}/changed-files-native-296/
+        retention-days: 14
+        include-hidden-files: true
+        if-no-files-found: warn
