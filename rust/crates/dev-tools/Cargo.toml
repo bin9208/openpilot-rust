@@ -562,6 +562,7 @@ driving-daemon-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msg
 driver-daemon-native = ["driving-daemon-native"]
 paramsd-loop-native = ["paramsd-fixture-native"]
 paramsd-fixture-native = ["dep:capnp", "dep:openpilot-cereal", "serde_json/float_roundtrip"]
+paramsd-startup-check-native = ["paramsd-fixture-native"]
 paramsd-startup-gate-native = ["rustix/pipe"]
 paramsd-daemon-native = ["serde_json/float_roundtrip", "paramsd-startup-gate-native", "dep:capnp", "dep:openpilot-cereal", "dep:openpilot-messaging", "openpilot-messaging/native", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri"]
 eigen-tools-native = []
@@ -2345,3 +2346,12 @@ required-features = ["changed-files-native"]
 [[test]]
 name = "changed_files_codec_payloads"
 required-features = ["changed-files-native"]
+
+[[bin]]
+name = "check-paramsd-startup-native"
+path = "src/bin/check_paramsd_startup_native.rs"
+required-features = ["paramsd-startup-check-native"]
+
+[[test]]
+name = "paramsd_startup_check"
+required-features = ["paramsd-startup-check-native"]
