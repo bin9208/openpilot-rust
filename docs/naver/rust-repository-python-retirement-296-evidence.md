@@ -8795,3 +8795,42 @@ Static saved code shows historical post-add copy versus fresh pre-add masking.
 LLVM InstCombine select folding is a source-consistent explanation, not yet a
 measured pass sequence or sole historical cause. No tolerance/golden/target
 change, repeated matrix, compiler source retirement or#482 closure follows.
+
+### Paramsd startup admitted; maintained callers and CP949 next scope
+
+Parent independently runs the source-reviewed inert auditor over its own verified
+R3 ZIP extraction. All seven records/two roots,28regular Params pairs,2migration
+packets(except schema-validated Event.logMonoTime),153retained bindings,47original
+raw seals, final-provider receipts and source/index pairs pass. Exactly8execs
+per lane and zero Python execs; original checker is absent only in the private
+root. Unretained historical ELF/provider bytes rely on hosted final receipts,
+not a local rehash. Parent audit is saved under parent/paramsd-r3-admission/.
+
+Nine-target caller migration04f9c4245d212221b7dd1d6050a83391b9f73b2519c35b28a7c44715e272f874
+receives independent Sol review with no concrete P1/P2 finding against77100d33.
+The maintained startup step uses the native checker and saved original corpus;
+the atomic gate now consumes a real native raw CarParams CLI. Eight explicit
+growth calls extend the550roster to558 without restoring fixed floors. Five
+live paramsd_fixture Python importers remain; no helper/source retirement.
+The next focused Actions job covers only new nine CLI wire/exec pairs, corpus
+admission, caller policies and Clippy; accepted startup runtime is not repeated.
+Parent adds pre-checkout resource admission/CPU-memory-runner receipts and
+upload-success-only owned cleanup to the isolated recipe.
+
+CP949 test-only patch7a67cd940e20fb77ef6b2b01f141576d53219c4bf074c63aae6beef23df16a93
+adds one feature-gated integration target. Existing GNU decoder is unchanged.
+Original missing-domain capture39838081764 is queued at77100d33/workflow
+77c24fb521ca3ecfee41edb9ff7265e60943efee; native publication waits actual
+original artifact admission. The previously accepted45rows are reused without
+execution;261870new dense observations,4517vectors and880source cases remain.
+
+Controllers run39837752405 failed during GitHub workflow registration before
+any job: runner.temp was unavailable in job-level env. Parent moved only those
+path assignments into the first shell bootstrap/GITHUB_ENV, preserving all
+embedded payload bytes. Retry39838024747 registers successfully at77100d33/
+workflow43244523c25b26e32ad4262e95a38eebf3b1d5ea and is queued.
+Real-emitter publisher39838416435 is queued at the same source/workflow
+e4f0b4bd14c124794b3026e85d167dd3878d2845. Its operation RAM demand remains
+explicitly unmeasured; #496/#498 evidence selects two workers without an invented
+4GiB available-memory threshold. Raw pressure/OOM/exit evidence is retained.
+No queued job, source-only review or observation is full-conversion acceptance.

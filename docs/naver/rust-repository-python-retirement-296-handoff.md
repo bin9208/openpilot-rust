@@ -7,10 +7,10 @@ unchanged evidence. Read this handoff and the linked evidence ledger first.
 ## Active continuation, superseding the earlier migration snapshot
 
 Read Git freshly for source/workflow publication. The most recent published source
-is a63a6b9112cb1bf1be00dc57cae3cca51d8ba81a, after the CarrotNavi maintained-caller
-transition, logging cleanup Clippy fix and disk-guard inventory repair. Local implementation commits1d7189b6b(loggerd diagnostics/pipeline/IO) and
+is77100d33ce4d1202853bd6bf3597a0fc2014c590 before the next reviewed Paramsd
+caller/CP949-test commit. Local implementation commits1d7189b6b(loggerd diagnostics/pipeline/IO) and
 0bb757339(real-emitter native publisher caller) have completed independent
-review. The next commit removes obsolete fixed disk floors in35native/coupled
+review. Commit77100d33 removes obsolete fixed disk floors in35native/coupled
 targets. Functional acceptance for these new scopes remains pending Actions.
 
 Configured agent limit is1000, not observed productive capacity. Several429
@@ -47,7 +47,9 @@ Current authoritative results and artifact hashes are in the evidence ledger:
   the old missing extension identities. Full parent admission JSON is saved.
   Big5 native39833214339 and JP2 native39834039262 are also admitted, including
   parent independent dense/vector/source comparisons and complete ZIP checks.
-  Newton hit429 and was closed; Hubble takes over CP949 missing-domain work.
+  Newton hit429/closed; Hubble delivered CP949 and completed/closed. New original
+  capture39838081764 is queued; focused test7a67cd94 is integrated but native
+  publication waits admitted original evidence. Archimedes owns AST caller.
 - AST lifecycle39826743607 accepts8tests/31scenarios/12Git and complete retained
   traces. Final caller/two-source retirement waits remaining codec admissions.
 - Carrot comparator39826752939 and maintained-caller39832413264 are admitted.
@@ -62,13 +64,18 @@ Current authoritative results and artifact hashes are in the evidence ledger:
 - Loggerd main third39832401630 passes5units/3lifecycle/one full-schema replay
   then fails a Clippy lock predicate. That fix and reviewed diagnostics/pipeline/
   IO are committed1d7189b6b. Hypatia hit429/closed; Descartes owns precise
-  resumption on combined source. Hilbert completes IO outer Actions recipe.
+  resumption on combined source. Controllers39838024747 is queued after fixing
+  pre-job runner-context registration. Hilbert IO outerR2 is under independent
+  review; no live IO acceptance. Feynman implements controlsd fixture consumers
+  after Sartre hit429/closed, using existing Sol rather than retry spawning.
 - ParamsdR3 39834626379 succeeds at source69bbee211 with seven cases/two
-  native roots and controls. Parent ZIP CRC/size/hash checks pass; full provider/
-  value audit and maintained-caller preparation belong to Hegel.
+  native roots and controls. Parent independent inert value/source audit passes;
+  reviewed nine-target maintained caller is integrated, functional CLI admission
+  pending. Hegel continues missing native estimator comparison controller.
 - Model publisher995383 passes39824199853 for8tests/10filesystem cases.
   James hit429/closed; Bacon delivers real-emitter caller0bb757339. Its next
-  isolated-bin-actions recipe is being sized against actual runner resources.
+  isolated-bin-actions recipe is queued as39838416435, source77100d33.
+  OOM/resource observations replace the unsupported4GiB-free-memory cutoff.
 - Road#482: actual two frames match all eight buffers, while five historical
   cases fail output9 index99. Fresh original/candidate object bytes agree;
   historical compilation context remains unresolved. Five-case diagnostic

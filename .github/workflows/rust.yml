@@ -3650,6 +3650,15 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features kalman-corpus-generator-native --test kalman_corpus_generator native_cli_matches_fresh_original_complete_json_bits_and_order -- --ignored --exact --nocapture
           sha256sum -c "$proof/held-inputs.sha256" > "$proof/held-inputs-after.txt"
           sha256sum -c "$proof/provider-dependencies.sha256" > "$proof/provider-dependencies-after.txt"
+      - name: Build native paramsd atomic-gate CarParams generator
+        run: |
+          set -euo pipefail
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-fixture-native --bin generate-paramsd-car-params --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-fixture-native --test paramsd_car_params_cli --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-fixture-native --bin generate-paramsd-car-params --test paramsd_car_params_cli --locked -- -D warnings
       - name: Require native paramsd scoped child-FD handoff
         run: |
           set -euo pipefail
@@ -3660,12 +3669,16 @@ jobs:
           export PARAMSD_NATIVE_GATE_LIBRARY="$proof/startup-phase.so"
           export PARAMSD_NATIVE_GATE_CAR_PARAMS="$proof/CarParams.bin"
           export PARAMSD_NATIVE_GATE_EVIDENCE="$proof/native"
-          python -c 'import sys; from paramsd_fixture import car_params; sys.stdout.buffer.write(bytes(car_params()))' > "$PARAMSD_NATIVE_GATE_CAR_PARAMS"
+          generator="$GITHUB_WORKSPACE/rust/target/debug/generate-paramsd-car-params"
+          sha256sum "$generator" > "$proof/generator.sha256"
+          PATH=/nonexistent /usr/bin/timeout --kill-after=5s 30s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "$proof/car-params.exec" "$generator" --root "$GITHUB_WORKSPACE" --output "$PARAMSD_NATIVE_GATE_CAR_PARAMS"
           clang -std=c11 -O2 -shared -fPIC -Wall -Wextra -Werror rust/tools/paramsd_startup_phase.c -ldl -o "$PARAMSD_NATIVE_GATE_LIBRARY" > "$proof/phase-build.log" 2>&1
           sha256sum rust/tools/paramsd_startup_phase.c rust/tools/paramsd_fixture.py "$PARAMSD_NATIVE_GATE_DAEMON" "$PARAMSD_NATIVE_GATE_LIBRARY" "$PARAMSD_NATIVE_GATE_CAR_PARAMS" > "$proof/artifacts.sha256"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-startup-gate-native --test paramsd_startup_gate --locked -- --ignored --exact native_mapped_gate_holds_actual_paramsd_second_poll_and_shutdown --nocapture
+          PARAMSD_CAR_PARAMS_GATE_PROOF="$proof" cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-fixture-native --test paramsd_car_params_cli --locked -- --ignored --exact maintained_atomic_gate_uses_exact_native_generator_exec --nocapture
           sha256sum -c "$proof/artifacts.sha256"
+          sha256sum -c "$proof/generator.sha256"
       - name: Compare location model, complete source loop, timestamps and native IPC
         run: |
           python rust/tools/check_locationd.py --oracle "$RUNNER_TEMP/locationd-oracle" --trace "$PWD/rust/target/debug/examples/location_trace" --evidence "$RUNNER_TEMP/estimation/locationd/estimator"
@@ -3677,7 +3690,61 @@ jobs:
         run: |
           python rust/tools/check_paramsd.py --oracle "$RUNNER_TEMP/paramsd-oracle" --trace "$PWD/rust/target/debug/examples/paramsd_trace" --evidence "$RUNNER_TEMP/estimation/paramsd/estimator"
           python rust/tools/check_paramsd_daemon.py --oracle "$RUNNER_TEMP/paramsd-oracle" --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/estimation/paramsd/daemon"
-          python rust/tools/check_paramsd_startup.py --binary "$PWD/rust/target/debug/openpilot-paramsd" --evidence "$RUNNER_TEMP/estimation/paramsd/startup"
+      - name: Require native paramsd startup caller and private source absence
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/estimation/paramsd/native-startup-caller"
+          checker="$GITHUB_WORKSPACE/rust/target/debug/check-paramsd-startup-native"
+          daemon="$GITHUB_WORKSPACE/rust/target/debug/openpilot-paramsd"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-startup-check-native --bin check-paramsd-startup-native --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-startup-check-native --lib paramsd_startup_check:: --locked
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-startup-check-native --test paramsd_startup_check --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          mkdir -p "$proof"
+          git rev-parse HEAD > "$proof/SOURCE_COMMIT"
+          git diff --exit-code
+          sha256sum "$checker" "$daemon" > "$proof/held-elf.sha256"
+          ldd "$checker" > "$proof/checker.ldd"
+          ldd "$daemon" > "$proof/daemon.ldd"
+          awk '$2 == "=>" && $3 ~ /^\// {print $3} $1 ~ /^\// {print $1}' "$proof/checker.ldd" "$proof/daemon.ldd" | sort -u | xargs sha256sum > "$proof/providers.sha256"
+          export PARAMSD_STARTUP_CALLER_PROOF="$proof"
+          export PARAMSD_STARTUP_CALLER_ROOT="$GITHUB_WORKSPACE"
+          export PARAMSD_STARTUP_CALLER_ABSENT_ROOT="$proof/absent-root"
+          export PARAMSD_STARTUP_CALLER_CHECKER="$checker"
+          export PARAMSD_STARTUP_CALLER_DAEMON="$daemon"
+          mkdir "$PARAMSD_STARTUP_CALLER_ABSENT_ROOT"
+          # Copy exactly the controller's admitted sources, omitting only the historical
+          # startup checker. Both roots execute the same held checker/daemon/providers.
+          git archive HEAD rust/Cargo.lock rust/crates/dev-tools/Cargo.toml \
+            rust/crates/dev-tools/src/paramsd_fixture_generate.rs \
+            rust/crates/dev-tools/src/paramsd_startup_fixture.rs \
+            rust/crates/dev-tools/src/paramsd_startup_check.rs \
+            rust/crates/dev-tools/src/paramsd_startup_check/identity.rs \
+            rust/crates/dev-tools/src/bin/check_paramsd_startup_native.rs \
+            rust/crates/paramsd/src/main.rs rust/crates/paramsd/src/runtime.rs \
+            rust/crates/paramsd/src/cache.rs rust/crates/paramsd/src/wire.rs \
+            rust/crates/paramsd/src/estimator.rs rust/crates/paramsd/native/filter.cc \
+            rust/crates/paramsd/native/scheduler.cc rust/crates/paramsd/native/model.cc \
+            openpilot/cereal/log.capnp opendbc_repo/opendbc/car/car.capnp \
+            rust/tools/paramsd_fixture.py | tar -x -C "$PARAMSD_STARTUP_CALLER_ABSENT_ROOT"
+          test ! -e "$PARAMSD_STARTUP_CALLER_ABSENT_ROOT/rust/tools/check_paramsd_startup.py"
+          test ! -L "$PARAMSD_STARTUP_CALLER_ABSENT_ROOT/rust/tools/check_paramsd_startup.py"
+          for lane in 0 1; do
+            source_root="$GITHUB_WORKSPACE"
+            if [ "$lane" = 1 ]; then source_root="$PARAMSD_STARTUP_CALLER_ABSENT_ROOT"; fi
+            PATH=/nonexistent /usr/bin/timeout --signal=TERM --kill-after=5s 180s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "$proof/native-$lane.exec" "$checker" --root "$source_root" --binary "$daemon" --evidence "$proof/native-$lane" > "$proof/native-$lane.stdout" 2> "$proof/native-$lane.stderr"
+          done
+          sha256sum -c "$proof/held-elf.sha256"
+          sha256sum -c "$proof/providers.sha256"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-startup-check-native --test paramsd_startup_caller --locked -- --ignored --exact native_startup_caller_preserves_seven_cases_and_private_source_absence --nocapture
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-startup-check-native --lib --bin check-paramsd-startup-native --test paramsd_startup_check --test paramsd_startup_caller --locked -- -D warnings
+          sha256sum -c "$proof/held-elf.sha256"
+          sha256sum -c "$proof/providers.sha256"
+          git diff --exit-code
       - name: Compare full native paramsd controller against original source packets
         run: |
           set -euo pipefail

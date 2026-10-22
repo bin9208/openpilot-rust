@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 550);
+    assert_eq!(text.matches(marker).count(), 558);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -321,6 +321,8 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut messaging_update_allocation = vec![];
     let mut eigen_staging = vec![];
     let mut paramsd_gate = vec![];
+    let mut paramsd_startup_caller = vec![];
+    let mut paramsd_car_params = vec![];
     let mut logmessaged_startup_retirement = vec![];
     let mut lpa_cookie_header = vec![];
     let mut bluetooth_journal_controller = vec![];
@@ -541,6 +543,16 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 &"      - name: Require sound daemon same-ELF present and absent execution proof",
             ) {
                 soundd_retirement.push(tail.to_owned());
+                continue;
+            }
+            if step == Some(
+                &"      - name: Require native paramsd startup caller and private source absence",
+            ) {
+                paramsd_startup_caller.push(tail.to_owned());
+                continue;
+            }
+            if step == Some(&"      - name: Build native paramsd atomic-gate CarParams generator") {
+                paramsd_car_params.push(tail.to_owned());
                 continue;
             }
             if step == Some(&"      - name: Compare native paramsd loop checker against complete original observations") {
@@ -1427,6 +1439,16 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     assert_eq!(
         eigen_staging,
         [256, 512, 64, 512, 512]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        paramsd_startup_caller,
+        [512, 512, 128, 512, 512]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        paramsd_car_params,
+        [512, 512, 512]
             .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     assert_eq!(

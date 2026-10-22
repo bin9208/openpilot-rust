@@ -2395,3 +2395,19 @@ required-features = ["loggerd-check-native"]
 [[test]]
 name = "loggerd_controllers"
 required-features = ["loggerd-check-native"]
+
+[[bin]]
+name = "generate-paramsd-car-params"
+path = "src/bin/generate_paramsd_car_params.rs"
+required-features = ["paramsd-fixture-native"]
+
+[[test]]
+name = "paramsd_startup_caller"
+required-features = ["paramsd-startup-check-native"]
+
+[[test]]
+name = "paramsd_car_params_cli"
+required-features = ["paramsd-fixture-native"]
+[[test]]
+name = "changed_files_cp949"
+required-features = ["changed-files-native"]

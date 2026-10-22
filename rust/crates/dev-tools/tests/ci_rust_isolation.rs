@@ -735,7 +735,7 @@ fn estimators_require_original_models_loops_and_native_boundaries() {
             "check_paramsd.py",
             "--test paramsd_loop_retirement",
             "check_paramsd_daemon.py",
-            "check_paramsd_startup.py",
+            "--bin check-paramsd-startup-native",
             "check_paramsd_native.py",
             "rust/target/debug/check-lagd-numeric ",
             "rust/target/debug/check-lagd-loop ",
@@ -3317,4 +3317,56 @@ fn native_deleter_callers_reject_missing_rebound_softened_or_duplicated_blocks()
         validate_deleter_callers(&duplicate).is_err(),
         "duplicate native step admitted"
     );
+}
+
+#[test]
+fn paramsd_startup_maintained_caller_requires_native_two_root_exec_and_cleanup_audit() {
+    let data = workflow();
+    let steps = data["jobs"]["estimation-runtime"]["steps"]
+        .as_array()
+        .unwrap();
+    let step = steps
+        .iter()
+        .find(|step| {
+            step["name"] == "Require native paramsd startup caller and private source absence"
+        })
+        .unwrap();
+    absent(step, &["if", "continue-on-error"]);
+    required(step["run"].as_str().unwrap(), &[
+        "--features paramsd-startup-check-native --bin check-paramsd-startup-native --locked",
+        "PARAMSD_STARTUP_CALLER_ABSENT_ROOT=", "git archive HEAD", "for lane in 0 1; do",
+        "test ! -e \"$PARAMSD_STARTUP_CALLER_ABSENT_ROOT/rust/tools/check_paramsd_startup.py\"",
+        "test ! -L \"$PARAMSD_STARTUP_CALLER_ABSENT_ROOT/rust/tools/check_paramsd_startup.py\"",
+        "PATH=/nonexistent /usr/bin/timeout --signal=TERM --kill-after=5s 180s /usr/bin/strace",
+        "--test paramsd_startup_caller --locked -- --ignored --exact native_startup_caller_preserves_seven_cases_and_private_source_absence --nocapture",
+        "sha256sum -c \"$proof/held-elf.sha256\"", "sha256sum -c \"$proof/providers.sha256\"",
+    ]);
+    assert!(!commands(&data["jobs"]["estimation-runtime"])
+        .contains("python rust/tools/check_paramsd_startup.py"));
+}
+
+#[test]
+fn paramsd_atomic_gate_car_params_caller_is_native_and_preserves_shared_original_consumers() {
+    let data = workflow();
+    let run = commands(&data["jobs"]["estimation-runtime"]);
+    required(&run, &[
+        "--features paramsd-fixture-native --bin generate-paramsd-car-params --locked",
+        "--test paramsd_car_params_cli --locked", "-o \"$proof/car-params.exec\"",
+        "\"$generator\" --root \"$GITHUB_WORKSPACE\" --output \"$PARAMSD_NATIVE_GATE_CAR_PARAMS\"",
+        "python rust/tools/check_paramsd.py", "python rust/tools/check_paramsd_daemon.py",
+        "from paramsd_fixture import car_params, scenarios", "from check_paramsd_daemon import frames",
+    ]);
+    assert!(!run.contains("sys.stdout.buffer.write(bytes(car_params()))"));
+    for helper in [
+        "rust/tools/paramsd_fixture.py",
+        "rust/tools/check_paramsd.py",
+        "rust/tools/check_paramsd_daemon.py",
+        "rust/tools/controlsd_fixture.py",
+        "rust/tools/controlsd_scenarios.py",
+    ] {
+        assert!(
+            root().join(helper).is_file(),
+            "live shared consumer removed prematurely: {helper}"
+        );
+    }
 }
