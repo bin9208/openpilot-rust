@@ -21,17 +21,17 @@
   release publication in GitHub Actions. Separate quick branch checks from deep
   PR/release checks. Do not repeat successful unchanged checks locally. This
   applies to the dev-md track; the separate #296 conversion remains separate.
-- On 2026-10-23 the user explicitly authorized choosing the fastest validated
-  Actions runner across work chats, superseding the earlier self-hosted ban.
-  Prefer registered `bin-actions` for trusted x64 checks, generic ARM cross-builds
-  and AGNOS cross-builds:
-  paired checks and full AGNOS build/install validation succeeded on both runners,
-  with `bin-actions` faster (#496/#498). Keep actual ARM CPU execution on a
-  GitHub ARM runner. Apply routing to the next necessary job without cancelling
-  running checks or repeating unchanged successes. The generic GNU workspace,
-  native daemon and musl static probe job also succeeded on `bin-actions` in
-  55m41s (#498). Prefer it now; the hosted counterpart's final time and preparation
-  delay remain under investigation and do not block this operational choice.
+- On 2026-10-23 the user required registered `bin-actions` for trusted x64
+  checks, generic ARM cross-builds and AGNOS cross-builds, superseding the earlier
+  self-hosted ban and optional runner preference. Do not automatically fall back
+  to a GitHub-hosted x64 runner or continue hosted comparison runs. Keep actual
+  ARM CPU execution on a GitHub ARM runner while the local runner is X64;
+  QEMU verification is not native ARM CPU execution. Apply routing to the next
+  necessary job without cancelling other running validations or repeating
+  unchanged successes. Focused checks and AGNOS passed on both runners with
+  `bin-actions` faster; its generic GNU workspace, native daemon and musl static
+  probe job also succeeded in 55m41s (#496/#498). The owner ended the unfinished
+  hosted generic comparison after selecting the local runner.
   The user also removed the fixed 25/35 GiB local build stop/resume rule.
 
 ## dev-md upstream port isolation (2026-10-15, issue #338)

@@ -4,7 +4,9 @@ The owner requested paired full builds on GitHub-hosted `ubuntu-24.04` and
 registered Actions runner `bin-actions`, then instructed ongoing work chats to use
 the fastest validated runner. The [focused comparison (#496)](runner-comparison-496.md)
 already passed three rounds on each runner. [Issue #498](https://github.com/bin9208/openpilot-rust/issues/498)
-tracks the full build comparison.
+records the results and the owner's final decision to use bin-actions. The owner
+ended the unfinished hosted generic comparison after reporting recent hosted
+runner 404 problems; that report is not a diagnosed cause of this run's delay.
 
 ## Results
 
@@ -12,7 +14,8 @@ tracks the full build comparison.
 | --- | ---: | ---: | --- |
 | Complete AGNOS job, including setup/upload/cleanup | 44m 47s | 35m 47s | Both succeeded; bin-actions 20.1% shorter |
 | AGNOS runtime/OpenCV/ABI/seal/offline installation stage | 36m 51.520s | 27m 52.356s | Both succeeded; bin-actions 24.4% shorter |
-| Complete generic GNU workspace / musl probe ARM job | Pending | 55m 41s | bin-actions succeeded; hosted dependency preparation remains active |
+| Complete generic GNU workspace / musl probe ARM job | Ended by owner during setup | 55m 41s | bin-actions succeeded; no complete paired generic time |
+| QEMU ARM offline installation command interval | 103.238s | 75.393s | Both succeeded; local interval 27.0% shorter |
 
 The complete AGNOS jobs are [GitHub-hosted job 119987116428](https://github.com/bin9208/openpilot-rust/actions/runs/39825360851/job/119987116428)
 and [bin-actions job 119987118119](https://github.com/bin9208/openpilot-rust/actions/runs/39825360851/job/119987118119).
@@ -23,14 +26,19 @@ does not invalidate the finished AGNOS jobs.
 Corrected generic comparison: [run 39832976197](https://github.com/bin9208/openpilot-rust/actions/runs/39832976197),
 [hosted job 120013728693](https://github.com/bin9208/openpilot-rust/actions/runs/39832976197/job/120013728693)
 and [bin-actions job 120013728323](https://github.com/bin9208/openpilot-rust/actions/runs/39832976197/job/120013728323).
-Do not treat a running job as a successful build.
+The hosted generic job finished **cancelled** on the owner's instruction to
+use the local runner, after 4414s (73m 34s) elapsed during setup. That is an
+interrupted preparation duration, not a complete build time or a compiler failure.
 
 The corrected bin-actions job completed successfully in 3341s (55m 41s),
 including all 15 measured build/setup stages, upload and owned cleanup. The GNU
 workspace stage took 1176.028s and the musl static C3X probe stage 1266.828s.
 Every measured stage exited zero; recorded cgroup oom/oom_kill counters remained
-zero. Hosted dependency provisioning is still active, so its complete build
-time, compiler outcome and cause of the preparation delay remain unverified.
+zero. The hosted job was still provisioning dependencies when cancellation was
+requested. Completed logs show long package downloads and `Ign:` retries from
+`azure.archive.ubuntu.com` during APT installation. They do not establish an
+HTTP 404 runner fault; a branch name containing 404 is not an HTTP error. Its
+complete build time and compiler outcome are unmeasured. No retry was started.
 
 ## Comparable source and build scope
 
@@ -106,23 +114,25 @@ is not a substitute for execution evidence.
 
 ## Runner selection and work-chat instructions
 
-The user's latest instruction supersedes the older self-hosted prohibition.
-Prefer `bin-actions` for the tested trusted x64 checks, generic ARM cross-builds
-and full AGNOS cross-build.
-Actual ARM CPU execution stays on GitHub ARM runners: the registered local
-runner is X64. The corrected full generic local job also succeeded in 55m41s.
-The owner confirmed that the local runner had already won; its operational
-selection is therefore settled without waiting for the hosted preparation to
-finish. The hosted job has already exceeded the local complete job duration,
-but its final outcome and pure compilation comparison remain pending.
+The owner's final instruction is to use `bin-actions` for trusted x64 checks,
+generic ARM cross-builds and AGNOS cross-builds, with no automatic fallback to
+the standard GitHub-hosted x64 runner. The unfinished hosted generic comparison
+was stopped and its follow-up automation deleted. Existing unrelated running
+validations and unchanged successful checks are preserved.
 
-The confirmed generic ARM preference was also delivered to the same four ongoing
-chats after local full-build success. This policy was delivered to CPU optimization (#422), tool
-conversion (#296), Jetlink (#487) and issue-maintenance chats. They were told to
-persist it in their own instructions/continuation records, apply it to the next
-necessary job, and preserve existing running validations and unchanged successful
-checks. Completed or superseded chats were not restarted. The user also removed
-the fixed 25/35 GiB stop/resume instruction from AGENTS.md.
+Actual ARM CPU execution stays on GitHub ARM runners while the registered local
+runner is X64. QEMU ARM offline installation succeeded on both runners. The
+103.238s hosted / 75.393s local intervals run from the logged installer command
+to the subsequent installed-launcher verification command. They include hashing,
+filesystem work and controller overhead; they are not an isolated ARM instruction
+benchmark or a full runtime performance comparison. Installed-launcher package
+verification also passed on both; physical-device execution was false.
+
+This final policy was sent to the ongoing CPU optimization (#422), tool
+conversion (#296), Jetlink (#487) and issue-maintenance chats, with instructions
+to persist it and apply it to their next necessary workflow change. The fixed
+25/35 GiB stop/resume instruction was removed from AGENTS.md at the owner's
+request. No unfinished hosted outcome is a prerequisite for using bin-actions.
 
 No release publication, protected-branch merge or physical-device operation was
 performed by the comparison. Local work was limited to syntax/format/diff review
