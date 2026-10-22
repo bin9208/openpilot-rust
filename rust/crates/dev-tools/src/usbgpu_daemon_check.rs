@@ -10,11 +10,13 @@ use crate::{
     seal::Result,
 };
 use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
 use std::{
     collections::BTreeMap,
     ffi::OsString,
-    fs,
+    fs::{self, File, OpenOptions},
     io::Read,
+    os::unix::fs::{FileExt, MetadataExt},
     path::{Path, PathBuf},
     time::{Duration, Instant},
 };
@@ -109,7 +111,134 @@ fn lifecycle(path: &Path) -> Result<Vec<Value>> {
         .map(|line| Ok(serde_json::from_str(line)?))
         .collect()
 }
-fn setup(root: &Path, options: &Options, marker: &Value) -> Result<()> {
+// These independent inodes belong to this checker. Case hardlinks may change
+// their ctime/link count, but never their identity, mode, mtime, length or bytes.
+struct Snapshot {
+    path: PathBuf,
+    file: File,
+    identity: (u64, u64, u64, u32, i64, i64),
+    sha: String,
+}
+impl Snapshot {
+    fn identity(m: &fs::Metadata) -> (u64, u64, u64, u32, i64, i64) {
+        (
+            m.dev(),
+            m.ino(),
+            m.len(),
+            m.mode(),
+            m.mtime(),
+            m.mtime_nsec(),
+        )
+    }
+    fn hash(file: &File, length: u64) -> Result<String> {
+        let mut hash = Sha256::new();
+        let mut offset = 0;
+        let mut buffer = [0; 65536];
+        while offset < length {
+            let n = file.read_at(&mut buffer[..(length - offset).min(65536) as usize], offset)?;
+            require(n != 0, "USB owned snapshot truncated")?;
+            hash.update(&buffer[..n]);
+            offset += n as u64;
+        }
+        Ok(format!("{:x}", hash.finalize()))
+    }
+    fn create(source: &Path, target: &Path, original: &Held) -> Result<Self> {
+        original.verify()?;
+        let expected = original.pin();
+        let length = expected["bytes"].as_u64().ok_or("USB input size missing")?;
+        let input = File::from(rustix::fs::open(
+            source,
+            rustix::fs::OFlags::RDONLY
+                | rustix::fs::OFlags::NONBLOCK
+                | rustix::fs::OFlags::NOFOLLOW
+                | rustix::fs::OFlags::CLOEXEC,
+            rustix::fs::Mode::empty(),
+        )?);
+        require(
+            input.metadata()?.is_file(),
+            "USB snapshot source must be regular",
+        )?;
+        let mut output = OpenOptions::new()
+            .create_new(true)
+            .read(true)
+            .write(true)
+            .open(target)?;
+        let bytes = std::io::copy(&mut input.take(length + 1), &mut output)?;
+        output.sync_all()?;
+        require(bytes == length, "USB snapshot copy size changed")?;
+        let identity = Self::identity(&output.metadata()?);
+        let sha = Self::hash(&output, length)?;
+        require(
+            expected["sha256"].as_str() == Some(&sha),
+            "USB snapshot differs from held original",
+        )?;
+        original.verify()?;
+        let snapshot = Self {
+            path: target.into(),
+            file: output,
+            identity,
+            sha,
+        };
+        snapshot.verify()?;
+        Ok(snapshot)
+    }
+    fn verify(&self) -> Result<()> {
+        for parent in self.path.ancestors().skip(1) {
+            require(
+                fs::symlink_metadata(parent)?.is_dir(),
+                "USB owned snapshot parent became an alias",
+            )?;
+        }
+        let path = fs::symlink_metadata(&self.path)?;
+        require(
+            path.is_file()
+                && !path.file_type().is_symlink()
+                && Self::identity(&path) == self.identity
+                && Self::identity(&self.file.metadata()?) == self.identity
+                && Self::hash(&self.file, self.identity.2)? == self.sha
+                && Self::identity(&self.file.metadata()?) == self.identity
+                && Self::identity(&fs::symlink_metadata(&self.path)?) == self.identity,
+            "USB owned snapshot identity or contents changed",
+        )
+    }
+    fn report(&self) -> Value {
+        json!({"path":self.path,"identity":self.identity,"sha256":self.sha,
+        "ctime_and_link_count":"checker-owned case hardlinks may change these fields"})
+    }
+}
+struct OwnedInputs {
+    model: Snapshot,
+    runtime: Snapshot,
+}
+impl OwnedInputs {
+    fn link_case(&self, cache: &Path, target: &Path) -> Result<()> {
+        fs::hard_link(
+            &self.model.path,
+            cache.join(format!("model-{}.pkl", &MODEL_SHA[..16])),
+        )?;
+        fs::hard_link(&self.model.path, target.join("model.pkl"))?;
+        fs::hard_link(&self.runtime.path, target.join("runtime.tar.gz"))?;
+        Ok(())
+    }
+    fn verify(&self) -> Result<()> {
+        self.model.verify()?;
+        self.runtime.verify()
+    }
+    fn report(&self) -> Value {
+        json!({"model":self.model.report(),"runtime":self.runtime.report()})
+    }
+}
+fn original_input_report(paths: [&Path; 2], held: &[Held]) -> Result<Value> {
+    let mut rows = Vec::new();
+    for (path, input) in paths.into_iter().zip(held) {
+        input.verify()?;
+        let m = fs::symlink_metadata(path)?;
+        rows.push(json!({"path":path,"seal":input.pin(),"dev":m.dev(),"ino":m.ino(),
+            "mode":m.mode(),"links":m.nlink(),"mtime":[m.mtime(),m.mtime_nsec()],"ctime":[m.ctime(),m.ctime_nsec()]}));
+    }
+    Ok(json!(rows))
+}
+fn setup(root: &Path, owned: &OwnedInputs, marker: &Value) -> Result<()> {
     crate::disk_space::inspect(root, 5120 * 1024 * 1024)?.require()?;
     fs::create_dir(root)?;
     let cache = root.join("cache");
@@ -123,14 +252,9 @@ fn setup(root: &Path, options: &Options, marker: &Value) -> Result<()> {
             &json!({"active":{"model_id":"owned-generic","filename":"model.pkl","size":776634338,"sha256":MODEL_SHA,"url":"https://owned.invalid/model.pkl"},"previous":null}),
         )?,
     )?;
-    fs::hard_link(
-        &options.model,
-        cache.join(format!("model-{}.pkl", &MODEL_SHA[..16])),
-    )?;
-    fs::hard_link(&options.model, target.join("model.pkl"))?;
-    fs::hard_link(&options.runtime, target.join("runtime.tar.gz"))?;
+    owned.link_case(&cache, &target)?;
     fs::write(target.join("installed.json"), serde_json::to_vec(marker)?)?;
-    let decoder = flate2::read::GzDecoder::new(fs::File::open(&options.runtime)?);
+    let decoder = flate2::read::GzDecoder::new(fs::File::open(&owned.runtime.path)?);
     let mut archive = tar::Archive::new(decoder);
     let mut selected = BTreeMap::new();
     for entry in archive.entries()? {
@@ -284,6 +408,29 @@ fn execute(options: &Options, mut emit: impl FnMut(&Value) -> Result<()>) -> Res
         json!({"sha256":RUNTIME_SHA,"size":2731184,"url":"https://owned.invalid/runtime.tar.gz"});
     marker["runtime_directory"] = json!(format!("runtime-{}", &RUNTIME_SHA[..16]));
     fs::create_dir(&options.output)?;
+    let source_before = original_input_report([&options.model, &options.runtime], &inputs[3..5])?;
+    fs::write(
+        options.output.join("source-inputs-before.json"),
+        serde_json::to_vec_pretty(&source_before)?,
+    )?;
+    let growth = inputs[3].pin()["bytes"]
+        .as_u64()
+        .ok_or("model size missing")?
+        + inputs[4].pin()["bytes"]
+            .as_u64()
+            .ok_or("runtime size missing")?;
+    // Include filesystem block rounding and the owned directory/receipts.
+    crate::disk_space::inspect(&options.output, growth + 64 * 1024)?.require()?;
+    let copies = options.output.join("owned-usb-inputs");
+    fs::create_dir(&copies)?;
+    let owned = OwnedInputs {
+        model: Snapshot::create(&options.model, &copies.join("model.pkl"), &inputs[3])?,
+        runtime: Snapshot::create(&options.runtime, &copies.join("runtime.tar.gz"), &inputs[4])?,
+    };
+    fs::write(
+        options.output.join("owned-inputs-before.json"),
+        serde_json::to_vec_pretty(&owned.report())?,
+    )?;
     let modes = if options.modes.is_empty() {
         vec![Mode::Disconnect, Mode::Retry, Mode::Cancel]
     } else {
@@ -295,7 +442,7 @@ fn execute(options: &Options, mut emit: impl FnMut(&Value) -> Result<()>) -> Res
             cancel.check()?;
             let expected = original_case(&original, width, mode)?;
             let destination = options.output.join(format!("{width}-{}", mode.name()));
-            setup(&destination, options, &marker)?;
+            setup(&destination, &owned, &marker)?;
             let mut failure = FailedCase::new(
                 destination.join("report.json"),
                 json!({"camera":[width,layout(width)?.0],"mode":mode.name(),"passed":false}),
@@ -524,10 +671,25 @@ fn execute(options: &Options, mut emit: impl FnMut(&Value) -> Result<()>) -> Res
             reports.push(report);
         }
     }
+    owned.verify()?;
+    let source_after = original_input_report([&options.model, &options.runtime], &inputs[3..5])?;
+    require(
+        source_before == source_after,
+        "USB original input identity changed during cases",
+    )?;
+    fs::write(
+        options.output.join("source-inputs-after.json"),
+        serde_json::to_vec_pretty(&source_after)?,
+    )?;
+    fs::write(
+        options.output.join("owned-inputs-after.json"),
+        serde_json::to_vec_pretty(&owned.report())?,
+    )?;
     let report = json!({"runs":reports,"device_validation":false,"original_manifest_sha256":options.original_sha256,"source_absence":options.expect_absent,"inputs":inputs.iter().map(Held::pin).collect::<Vec<_>>()});
     publish_report(&options.output.join("report.json"), &report, || {
         cancel.check()?;
         original.verify()?;
+        owned.verify()?;
         for input in &inputs {
             input.verify()?;
         }
@@ -629,6 +791,55 @@ pub fn cli() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn case_hardlinks_preserve_original_inputs_and_snapshot_mutations_are_rejected() {
+        let root = tempfile::tempdir().unwrap();
+        let model = root.path().join("original-model");
+        let runtime = root.path().join("original-runtime");
+        fs::write(&model, b"synthetic model boundary bytes").unwrap();
+        fs::write(&runtime, b"synthetic archive boundary bytes").unwrap();
+        let held = [
+            Held::open(&model, 1024, false).unwrap(),
+            Held::open(&runtime, 1024, false).unwrap(),
+        ];
+        let before = original_input_report([&model, &runtime], &held).unwrap();
+        let owned = OwnedInputs {
+            model: Snapshot::create(&model, &root.path().join("owned-model"), &held[0]).unwrap(),
+            runtime: Snapshot::create(&runtime, &root.path().join("owned-runtime"), &held[1])
+                .unwrap(),
+        };
+        assert_ne!(
+            fs::metadata(&model).unwrap().ino(),
+            fs::metadata(&owned.model.path).unwrap().ino()
+        );
+        for case in ["first", "second"] {
+            let cache = root.path().join(case);
+            let target = cache.join("precompiled");
+            fs::create_dir_all(&target).unwrap();
+            owned.link_case(&cache, &target).unwrap();
+            owned.verify().unwrap();
+            assert_eq!(
+                before,
+                original_input_report([&model, &runtime], &held).unwrap()
+            );
+        }
+        assert_eq!(fs::metadata(&model).unwrap().nlink(), 1);
+        assert_eq!(fs::metadata(&runtime).unwrap().nlink(), 1);
+        let alias = root.path().join("second/precompiled/model.pkl");
+        let mut changed = fs::read(&alias).unwrap();
+        changed[0] ^= 1;
+        fs::write(alias, changed).unwrap();
+        assert!(owned.verify().is_err());
+        let runtime_alias = root.path().join("first/precompiled/runtime.tar.gz");
+        let mut changed = fs::read(&runtime_alias).unwrap();
+        changed[0] ^= 1;
+        fs::write(runtime_alias, changed).unwrap();
+        assert!(owned.runtime.verify().is_err());
+        assert_eq!(
+            before,
+            original_input_report([&model, &runtime], &held).unwrap()
+        );
+    }
     #[test]
     fn raw_predictions_retain_original_finite_and_exact_protocol_checks() {
         let root = tempfile::tempdir().unwrap();

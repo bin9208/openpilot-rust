@@ -4714,7 +4714,7 @@ jobs:
             ${{ runner.temp }}/logger-original/*.log
   model-family-retirement:
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 120
     env:
       EXPECTED_SOURCE: ${{ github.sha }}
       RUSTUP_TOOLCHAIN: 1.94.0
@@ -4865,6 +4865,8 @@ jobs:
             ${{ runner.temp }}/model-family-preparation-296/
             !${{ runner.temp }}/model-family-preparation-296/private-root/**
             !${{ runner.temp }}/model-family-preparation-296/grouped-native/**/cache/**/*.pkl
+            !${{ runner.temp }}/model-family-preparation-296/**/owned-usb-inputs/model.pkl
+            !${{ runner.temp }}/model-family-preparation-296/**/owned-usb-inputs/runtime.tar.gz
             !${{ runner.temp }}/model-family-preparation-296/usb-bundle/usb-assets/models/**/model.pkl
             !${{ runner.temp }}/model-family-preparation-296/openpilot-rust-*.tar.gz
             !${{ runner.temp }}/model-family-preparation-296/driver-fixture/**

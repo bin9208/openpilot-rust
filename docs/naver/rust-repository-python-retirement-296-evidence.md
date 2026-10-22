@@ -6109,3 +6109,28 @@ actual root, but USB final strict held-input verification fails. #480 tracks the
 case hardlinks changing original model/runtime inode ctime. Keep original input
 seals strict; use one independent checker-owned snapshot pair for case links.
 Private-root grouped replay has not run, and #479/#476 acceptance remains open.
+
+### USB fixture source ownership correction candidate (#480, 2026-10-22)
+
+Replace case hardlinks to the externally held model/runtime with links to one
+checker-owned copied pair. Copy admission is bounded to original length+1,
+requires original SHA/size, brackets original Held verification, and reserves
+779365522B+64KiB growth before copying. Six cases share the copied inodes.
+Original ctime/mtime/inode/mode/link-count/hash remain strict and get before/after
+receipts. Copied inputs retain descriptor/inode/mode/mtime/size/SHA checks, including
+metadata after hashing; only their own case-link ctime/link-count changes are
+permitted. Two-case synthetic regression additionally mutates model/runtime via
+case links and requires rejection. Full actual/private grouped acceptance is
+still pending. Keep the four JSON receipts, exclude owned model/runtime payloads.
+Actual first-root elapsed2273.54s plus build/preparation justifies extending the
+full60case job budget90→120min; per-invocation1200s bound is unchanged. This is
+not numerical#476 repair or #479 full-group acceptance.
+
+Parent independently downloads HardwareInfo artifacts12395500234/12395670435:
+32344B/10CRCs and166084B/59CRCs respectively; both match the previously recorded
+API SHA256. Each passes2inline+5capture+3QA unit tests; ignored outer is not a
+unit pass. The second passes strict Clippy, then fails original +02-name
+admission. Repair17c770c721f3af4787ccf72e549386b5dc749264 is hosted as39707436994,
+workflow9f780a3d88bf9a95761db9deecd20bab1416c5e1. Fourth first-kernel diagnostic
+39707504533/workflow96aab0c0df13a65f1669c150b33d520032e3a562 keeps exactd610
+source and backend-specific restoration; no valid first-kernel result yet.
