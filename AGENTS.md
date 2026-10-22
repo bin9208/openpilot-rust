@@ -19,9 +19,17 @@
 - The user requires local checks to stay at syntax, formatting and diff review.
   Run functional tests, ARM/AGNOS builds, sealing, installation verification and
   release publication in GitHub Actions. Separate quick branch checks from deep
-  PR/release checks. Do not repeat successful unchanged checks locally or use a
-  local/self-hosted runner as a workaround. This applies to the dev-md track;
-  the separate #296 conversion is not part of this task.
+  PR/release checks. Do not repeat successful unchanged checks locally. This
+  applies to the dev-md track; the separate #296 conversion remains separate.
+- On 2026-10-23 the user explicitly authorized choosing the fastest validated
+  Actions runner across work chats, superseding the earlier self-hosted ban.
+  Prefer registered `bin-actions` for trusted x64 checks and AGNOS cross-builds:
+  paired checks and full AGNOS build/install validation succeeded on both runners,
+  with `bin-actions` faster (#496/#498). Keep actual ARM CPU execution on a
+  GitHub ARM runner. Apply routing to the next necessary job without cancelling
+  running checks or repeating unchanged successes. Generic GNU/musl ARM comparison
+  is still pending; record its result before claiming that route is validated.
+  The user also removed the fixed 25/35 GiB local build stop/resume rule.
 
 ## dev-md upstream port isolation (2026-10-15, issue #338)
 

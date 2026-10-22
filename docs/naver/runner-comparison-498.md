@@ -1,20 +1,117 @@
-# Complete ARM/AGNOS runner comparison498
+# Full ARM/AGNOS runner comparison (#498)
 
-Requested2026-10-23 KST, following the focused comparison496.
-Issue: https://github.com/bin9208/openpilot-rust/issues/498 .
+The owner requested paired full builds on GitHub-hosted `ubuntu-24.04` and
+registered Actions runner `bin-actions`, then instructed ongoing work chats to use
+the fastest validated runner. The [focused comparison (#496)](runner-comparison-496.md)
+already passed three rounds on each runner. [Issue #498](https://github.com/bin9208/openpilot-rust/issues/498)
+tracks the full build comparison.
 
-Both runners build the same comparison commit, based on dev-md
-`dc95138076836ea3a5c1b6c27262be3f3b912f71`. Runtime functionality is unchanged.
-Only isolated comparison instrumentation, explicit self-hosted build admission,
-and the owner-requested fixed disk-reserve exception differ from that source.
+## Results
 
-The AGNOS job rebuilds every configured runtime executable and fresh OpenCV,
-audits genuine19.8-carrot-bt1 ELF dependency/symbol closure, seals, and verifies
-offline ARM/QEMU installation. The generic ARM job retains the existing complete
-GNU/musl workspace and native Card/navigation/Panda/camera/encoder/UI steps.
+| Workload | GitHub-hosted | bin-actions | Observed result |
+| --- | ---: | ---: | --- |
+| Complete AGNOS job, including setup/upload/cleanup | 44m 47s | 35m 47s | Both succeeded; bin-actions 20.1% shorter |
+| AGNOS runtime/OpenCV/ABI/seal/offline installation stage | 36m 51.520s | 27m 52.356s | Both succeeded; bin-actions 24.4% shorter |
+| Complete generic GNU/musl ARM job | Pending | Pending | Corrected paired run is still active |
 
-Both use fresh Cargo/target/provider directories, Rust1.94.0 and2 build jobs.
-Initial tool installation and downloads are measured separately from builds.
-No release publication, main/dev integration, permanent runner migration or
-physical-device operation is authorized. Only syntax/format/diff checks run on
-the workstation. Results remain pending until both jobs have final evidence.
+The complete AGNOS jobs are [GitHub-hosted job 119987116428](https://github.com/bin9208/openpilot-rust/actions/runs/39825360851/job/119987116428)
+and [bin-actions job 119987118119](https://github.com/bin9208/openpilot-rust/actions/runs/39825360851/job/119987118119).
+Both have conclusion **success**. Their parent run was subsequently cancelled to
+stop an incorrectly configured, separate generic comparison; that cancellation
+does not invalidate the finished AGNOS jobs.
+
+Corrected generic comparison: [run 39832976197](https://github.com/bin9208/openpilot-rust/actions/runs/39832976197),
+[hosted job 120013728693](https://github.com/bin9208/openpilot-rust/actions/runs/39832976197/job/120013728693)
+and [bin-actions job 120013728323](https://github.com/bin9208/openpilot-rust/actions/runs/39832976197/job/120013728323).
+Do not treat a running job as a successful build.
+
+## Comparable source and build scope
+
+- Runtime baseline: dev-md `dc95138076836ea3a5c1b6c27262be3f3b912f71`.
+- Exact paired AGNOS comparison source/controller:
+  `b538bb7d37eb3cd756ff1fe7c52fd23507142605`.
+- Exact corrected paired generic source/controller:
+  `2ff834da04e2acaad3d63211c2b76e287679eeaa`.
+- Both runners use Rust 1.94.0, two Cargo build jobs, no incremental compilation,
+  and isolated fresh Cargo, target and provider directories. System packages and
+  runner tool installations can be retained on the persistent host; setup time
+  is reported separately rather than described as a clean machine comparison.
+- Comparison changes are limited to instrumentation, the workflow, documentation,
+  and explicit build-side self-hosted/disk policy exceptions. Runtime behavior
+  is unchanged. Corrected generic source differs from the AGNOS source only in
+  the comparison workflow, restoring original Eigen exports and adding diagnostic
+  retention. No successful AGNOS build was repeated for those workflow changes.
+- AGNOS builds 66 project packages / 88 configured executable names with a fresh
+  OpenCV provider against genuine `19.8-carrot-bt1`, audits ELF closure, seals the
+  package and performs offline ARM/QEMU installation and installed-launcher
+  package verification. Unchanged non-OpenCV external companions, firmware and
+  models use verified pinned baseline assets, following the existing procedure;
+  they are not all rebuilt from source in this comparison.
+- Generic ARM retains the original full GNU/musl workspace and native Card,
+  selfdrived, navigation, Panda, camera, encoder and UI build/inspection steps,
+  including the original VisionIPC ION boundary and static C3X probe checks.
+- The hosted runner has four logical AMD EPYC 7763 CPUs and about 16 GiB RAM.
+  `bin-actions` exposes four logical Intel i9-13900 CPUs, 4 GiB RAM and 2 GiB swap.
+  This compares the actual registered environments, not CPU models in isolation.
+
+## AGNOS stage evidence
+
+| Measured stage | Hosted seconds | bin-actions seconds |
+| --- | ---: | ---: |
+| Dependencies/toolchain | 43.985 | 16.106 |
+| Focused source policy | 1.227 | 1.039 |
+| Genuine sysroot and verified baseline preparation | 123.891 | 200.279 |
+| Host release tools from fresh target | 264.963 | 205.432 |
+| Complete runtime/OpenCV/ABI/seal/offline installation | 2211.520 | 1672.356 |
+
+All listed stages exited zero on both runners. Network/preparation was slower
+on bin-actions for the sysroot stage even though its complete job was faster.
+Timestamped top-level command boundaries recorded OpenCV native compilation at
+376.029s hosted / 289.406s local and the full Rust runtime build at 1579.709s /
+1182.722s. These are intervals between controller log markers, not independent
+isolated compiler benchmarks.
+
+Both `elf.json` receipts report `compatible: true`, with 144 objects and 115
+roots. Both `offline-install.json` receipts bind the exact AGNOS source above,
+report `installer_exit: 0`, `installed_agnos_launcher_exit: 0`, and
+`device_execution: false`. Runner provenance records the actual hosted or
+self-hosted environment. The local full-stage cgroup `oom` and `oom_kill`
+counters were zero before and after the build; no out-of-memory or disk-full
+failure was observed in these successful jobs. This is one full cold-target
+trial per runner, not evidence of long-term reliability or physical-device boot.
+
+## Invalid initial generic attempt
+
+The comparison controller initially installed pinned Eigen but omitted the
+original `LOCATIOND_EIGEN_INCLUDE` and `PARAMSD_EIGEN_INCLUDE` exports. Local
+[job 120009804015](https://github.com/bin9208/openpilot-rust/actions/runs/39825360851/job/120009804015)
+failed at `openpilot-locationd` with `eigen3/Eigen/Dense: No such file or
+directory`. The corresponding hosted generic job was cancelled to avoid
+measuring the same incomplete setup. This is a comparison setup defect, not an
+observed runner resource or stability failure. The first attempt's logs remain
+part of the evidence.
+
+The corrected generic-only workflow restores both exports exactly and retains
+additional redirected FFmpeg/encoder/OpenCV diagnostics. The completed AGNOS
+jobs were preserved. Independent GPT-6.1 Sol review found the diagnostic
+retention gap, but did not detect the Eigen omission; review
+is not a substitute for execution evidence.
+
+## Runner selection and work-chat instructions
+
+The user's latest instruction supersedes the older self-hosted prohibition.
+Prefer `bin-actions` for the tested trusted x64 checks and full AGNOS cross-build.
+Actual ARM CPU execution stays on GitHub ARM runners: the registered local
+runner is X64. Generic GNU/musl selection remains pending its final paired result.
+
+This policy was delivered to the ongoing CPU optimization (#422), tool
+conversion (#296), Jetlink (#487) and issue-maintenance chats. They were told to
+persist it in their own instructions/continuation records, apply it to the next
+necessary job, and preserve existing running validations and unchanged successful
+checks. Completed or superseded chats were not restarted. The user also removed
+the fixed 25/35 GiB stop/resume instruction from AGENTS.md.
+
+No release publication, protected-branch merge or physical-device operation was
+performed by the comparison. Local work was limited to syntax/format/diff review
+and read-only collection/analysis of Actions evidence. Any release work by other
+chats retains its separate source-specific authorization and validation gates.
