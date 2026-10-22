@@ -23,7 +23,7 @@ def original(paths, hooks=None, ref=BASE):
 
 def main():
   parser = argparse.ArgumentParser()
-  parser.add_argument('scope', choices=['core', 'web', 'media', 'tools', 'vehicles'])
+  parser.add_argument('scope', choices=['core', 'web', 'media', 'tools', 'vehicles', 'athena', 'card-attribution'])
   parser.add_argument('--output', type=Path, required=True)
   options = parser.parse_args()
   options.output.mkdir(parents=True, exist_ok=False)
@@ -36,6 +36,7 @@ def main():
     if (result.returncode == 0 or marker not in result.stdout
         or any(failure in result.stdout for failure in invalid)
         or (name == 'issue_185_kia_key' and 'MissingTorque' not in result.stdout)
+        or (name == 'issue_214_upload_attribution' and ('exactly one receipt per failed upload call' not in result.stdout or 'left: 0' not in result.stdout))
         or (name == 'issue_501_public_registry_admits_exact_psa_dashcam_parameters' and 'MissingTorque' not in result.stdout)
         or (name == 'issue_501_public_registry_constructs_first_update_and_apply_from_known_angle_params'
             and 'behavioral RED: existing PSA RuntimeUnported' not in result.stdout)
@@ -78,6 +79,19 @@ def main():
             '--test', 'psa_admission_501', case, '--', '--exact'])
     with original(['rust/crates/card/data/vehicle.json']):
       red('issue_185_kia_key', cargo + ['-p', 'openpilot-card', '--features', 'native', '--test', 'hyundai_torque_key_497'])
+  elif options.scope == 'athena':
+    path = 'rust/crates/athena/src/upload_http.rs'
+    hook = '\n#[cfg(test)]\n#[path = "upload_http_attribution_tests.rs"]\nmod attribution_tests;\n'
+    with original([path], {path: hook}):
+      red('issue_214_upload_attribution', cargo + ['-p', 'openpilot-athena', '--lib',
+          'upload_http::attribution_tests::failure_receipts_are_sanitized_bounded_and_locate_real_upload_failures',
+          '--', '--exact', '--nocapture', '--test-threads=1'])
+  elif options.scope == 'card-attribution':
+    with original(['rust/tools/card_qa/runtime_pumped_shutdown.py']):
+      red('issue_201_shutdown_attribution', ['python', '-m', 'pytest', '-c', '/dev/null', '--rootdir=.',
+          '--confcutdir=rust/tools/tests', '-q',
+          'rust/tools/tests/test_card_attribution.py::test_real_shutdown_timeout_keeps_original_exception_and_captures_owned_process'],
+          'AssertionError: missing shutdown timeout receipt')
   elif options.scope == 'media':
     with original(['rust/crates/loggerd/src/raw_file.rs', 'rust/crates/loggerd/src/media.rs']):
       red('issue_54_failed_video_completion', cargo + ['-p', 'openpilot-loggerd', '--test', 'media', 'marks_raw_video_failed_after_enospc'])

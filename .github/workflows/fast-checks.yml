@@ -13,13 +13,18 @@ concurrency:
 jobs:
   fast:
     name: fast checks
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64","dev-md-local"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 7
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Record runner resources
+        run: |
+          printf 'runner=%s environment=%s arch=%s\n' "${{ runner.name }}" "${{ runner.environment }}" "${{ runner.arch }}"
+          free -h
+          df -h "$GITHUB_WORKSPACE"
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'

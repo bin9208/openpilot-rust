@@ -55,15 +55,6 @@ def main():
       mutate(cp)
       case['params']['CarParams'] = list(cp.to_bytes())
     fixtures.append(case)
-  case = copy.deepcopy(basic[0])
-  case['name'] = 'psa-valid-tuning'
-  case['frames'] = case['frames'][:5]
-  with car.CarParams.from_bytes(bytes(case['params']['CarParams'])) as original:
-    cp = original.as_builder()
-    cp.carFingerprint = 'PSA_PEUGEOT_208'
-    cp.brand = 'psa'
-    case['params']['CarParams'] = list(cp.to_bytes())
-  fixtures.append(case)
   case = copy.deepcopy(basic[1])
   case['name'] = 'zero-torque-factor'
   case['frames'] = case['frames'][:5]

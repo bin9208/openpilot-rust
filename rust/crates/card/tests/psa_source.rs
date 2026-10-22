@@ -281,13 +281,38 @@ fn timeout_diagnostics_belong_to_the_update_that_detects_them() {
             4_000_000_001,
         )
         .unwrap();
-    assert!(!state
+    // The source parser reports timeout diagnostics immediately, while its
+    // CAN_INVALID_CNT=5 debounce retains canValid for the first four failures.
+    assert!(state
         .get_root_as_reader::<car_state::Reader>()
         .unwrap()
         .get_can_valid());
+    assert!(state
+        .get_root_as_reader::<car_state::Reader>()
+        .unwrap()
+        .get_can_timeout());
     let logs = vehicle.take_logs();
     assert!(logs.iter().any(|log| log
         .message
         .contains("Dyn4_FRE not valid (timeout or missing)")));
     assert!(vehicle.take_logs().is_empty());
+    for missed in 2..=5 {
+        let now = 4_000_000_000 + missed;
+        let state = vehicle
+            .update(
+                &[Packet {
+                    mono_time: now,
+                    frames: vec![],
+                }],
+                now,
+            )
+            .unwrap();
+        assert_eq!(
+            state
+                .get_root_as_reader::<car_state::Reader>()
+                .unwrap()
+                .get_can_valid(),
+            missed < 5
+        );
+    }
 }

@@ -8,6 +8,7 @@ import signal
 from pathlib import Path
 import sys
 import threading
+import time
 
 
 def fixture_fence_due(path: Path, frame: int, limit: int) -> bool:
@@ -52,12 +53,16 @@ def main() -> None:
   stopped = threading.Event()
   reader = threading.Thread(target=runtime.params_thread, args=(stopped,))
   previous = None
+  previous_record_finished_ns = None
   observer = arguments.frequency_trace.open('w') if arguments.frequency_trace else None
   try:
     reader.start()
     for _ in range(arguments.steps):
+      started = (time.monotonic_ns(), time.thread_time_ns()) if observer is not None else None
       runtime.step()
       if observer is not None:
+        step_finished_ns, thread_cpu_finished_ns = time.monotonic_ns(), time.thread_time_ns()
+        record_started_ns = time.monotonic_ns()
         tracker = runtime.sm.freq_tracker['carControl']
         received = runtime.sm.recv_time['carControl']
         interval = None
@@ -76,8 +81,14 @@ def main() -> None:
           {'name': name, 'seen': runtime.sm.seen[name], 'updated': runtime.sm.updated[name],
            'receive_frame': runtime.sm.recv_frame[name], 'log_mono_time': runtime.sm.logMonoTime[name]}
           for name in runtime.sm.services]
+        sample['timing'] = {'step_started_ns': started[0], 'step_finished_ns': step_finished_ns,
+          'thread_cpu_started_ns': started[1], 'thread_cpu_finished_ns': thread_cpu_finished_ns,
+          'receive_ns': runtime.card_diag_recv_ns, 'stage_us': dict(runtime.card_diag_stage_current)}
+        sample['record_started_ns'] = record_started_ns
+        sample['previous_record_finished_ns'] = previous_record_finished_ns
         observer.write(json.dumps(sample) + '\n')
         observer.flush()
+        previous_record_finished_ns = time.monotonic_ns()
       runtime.rk.monitor_time()
       if arguments.fixture_phase_fence and fixture_fence_due(arguments.fixture_phase_fence, runtime.sm.frame, arguments.steps):
         observer.flush()

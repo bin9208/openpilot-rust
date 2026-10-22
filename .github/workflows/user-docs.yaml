@@ -13,11 +13,16 @@ on:
 jobs:
   check_user_docs:
     name: check mapped user docs
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64","dev-md-local"]' || '["ubuntu-24.04"]') }}
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+      - name: Record runner resources
+        run: |
+          printf 'runner=%s environment=%s arch=%s\n' "${{ runner.name }}" "${{ runner.environment }}" "${{ runner.arch }}"
+          free -h
+          df -h "$GITHUB_WORKSPACE"
       - name: Install pinned Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal
       - name: Check code and user documentation changes
@@ -27,8 +32,8 @@ jobs:
           DOCS_EVENT_NAME: ${{ github.event_name }}
         run: |
           free_bytes=$(df --output=avail -B1 "$GITHUB_WORKSPACE" | tail -n 1)
-          if (( free_bytes < (25 + 2) * 1024 * 1024 * 1024 )); then
-            echo 'Retain 25 GiB plus build growth; recover at least 35 GiB before retry.' >&2
+          if (( free_bytes < 2 * 1024 * 1024 * 1024 )); then
+            echo 'Insufficient space for the estimated 2 GiB build growth.' >&2
             exit 1
           fi
           args=(--base "$DOCS_BASE_SHA")
@@ -40,8 +45,8 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           free_bytes=$(df --output=avail -B1 "$GITHUB_WORKSPACE" | tail -n 1)
-          if (( free_bytes < (25 + 2) * 1024 * 1024 * 1024 )); then
-            echo 'Retain 25 GiB plus build growth; recover at least 35 GiB before retry.' >&2
+          if (( free_bytes < 2 * 1024 * 1024 * 1024 )); then
+            echo 'Insufficient space for the estimated 2 GiB build growth.' >&2
             exit 1
           fi
           CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test user_docs

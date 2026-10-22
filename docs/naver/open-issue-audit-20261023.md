@@ -40,11 +40,12 @@ The fix is isolated on `codex/fix-419-update-remote`, based on dev-md
 `dc95138076836ea3a5c1b6c27262be3f3b912f71`; it must return only through a checked
 dev-md PR. Local checks are limited to syntax, formatting and diff inspection.
 Regression, integration/ARM, sealing, publication and installer checks run in
-GitHub-hosted Actions. Device installation/testing remains user-owned.
+registered GitHub Actions jobs under the latest runner policy below. Device
+installation/testing remains user-owned.
 
 ## Issue decisions and remote readback
 
-GitHub PATCH readback confirms 120 audit closures: 110 completed items and
+GitHub PATCH readback confirms 121 audit closures: 111 completed items and
 10 obsolete, reserved or duplicate plans (including the later #27 and #291 decisions). The original body is retained below
 a dated status and evidence block. No unresolved physical acceptance is marked
 successful. Other open items were updated with remaining conditions.
@@ -228,7 +229,7 @@ complete; user-owned acceptance remains separate.
 | [#329](https://github.com/bin9208/openpilot-rust/issues/329) | completed | helper 종료 관찰 후 queued errno를 마지막 nonblocking accept로 회수한다. 실제 지연 syscall RED/GREEN과 UI/process CI가 성공했다. [e1](https://github.com/bin9208/openpilot-rust/issues/329) [e2](https://github.com/bin9208/openpilot-rust/pull/311) [e3](https://github.com/bin9208/openpilot-rust/commit/b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a) [e4](https://github.com/bin9208/openpilot-rust/blob/b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a/docs/naver/rust-exec-handshake-error-329.md) [e5](https://github.com/bin9208/openpilot-rust/actions/runs/38646726305/job/116135289948) |
 | [#330](https://github.com/bin9208/openpilot-rust/issues/330) | excluded | VW Card pumped IPC batching·130ms receiver gap 원인는 현재 #296/PR343의 구현·도구 전환/QA 범위다. 미병합 candidate 증거로 stable dev의 해결 또는 불필요 처리를 주장하지 않는다. [e1](https://github.com/bin9208/openpilot-rust/issues/330) [e2](https://github.com/bin9208/openpilot-rust/pull/343) [e3](https://github.com/bin9208/openpilot-rust/commit/3b997279f0ae16c25db9c4d9751e51ad1e017d5d) [e4](https://github.com/bin9208/openpilot-rust/issues/330#issuecomment-6248692474) [e5](https://github.com/bin9208/openpilot-rust/blob/3b997279f0ae16c25db9c4d9751e51ad1e017d5d/docs/naver/rust-runtime-module-audit-296.md) |
 | [#331](https://github.com/bin9208/openpilot-rust/issues/331) | completed | ARM 전체 job을 120분으로 확장하고 모든 기존 command/guard를 유지했다. 최종 b555 ARM job과 전체 required gate가 성공했다. [e1](https://github.com/bin9208/openpilot-rust/issues/331) [e2](https://github.com/bin9208/openpilot-rust/pull/311) [e3](https://github.com/bin9208/openpilot-rust/commit/b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a) [e4](https://github.com/bin9208/openpilot-rust/blob/b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a/docs/naver/rust-arm-ci-budget-331.md) [e5](https://github.com/bin9208/openpilot-rust/actions/runs/38646726305/job/116135290056) |
-| [#332](https://github.com/bin9208/openpilot-rust/issues/332) | keep | 실패한 Android doctor requirement의 typed detail 보존은 구현되고 최종 470-test gate도 성공했다. 과거 prerequisite 실패 원인·수정은 여전히 밝혀지지 않았다. [e1](https://github.com/bin9208/openpilot-rust/issues/332) [e2](https://github.com/bin9208/openpilot-rust/commit/b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a) [e3](https://github.com/bin9208/openpilot-rust/blob/b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a/docs/naver/rust-apk-doctor-diagnostics-332.md) [e4](https://github.com/bin9208/openpilot-rust/pull/311) [e5](https://github.com/bin9208/openpilot-rust/actions/runs/38646726375/job/116135289758) [e6](https://github.com/bin9208/openpilot-rust/releases/tag/runtime-b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a) |
+| [#332](https://github.com/bin9208/openpilot-rust/issues/332) | completed | 요청 범위인 실패한 doctor requirement 이름·typed detail 보존은 PR #311에 구현되어 있고 결정적 음성 대조에서도 두 assertion이 그대로 실패하며 정확한 이유만 남깁니다. 정확한 후보 7acb65c12의 host-toolkit 검증도 성공했습니다. 과거 SDK prerequisite 실패의 원인을 고쳤다는 주장은 하지 않으며, 추가 구현 근거가 없는 진단 작업 잔여 이슈로 완료 종료합니다. [e1](https://github.com/bin9208/openpilot-rust/issues/332#issuecomment-6174352329) [e2](https://github.com/bin9208/openpilot-rust/issues/332#issuecomment-6174394586) [e3](https://github.com/bin9208/openpilot-rust/actions/runs/39836434018/job/120025884932) [e4](https://github.com/bin9208/openpilot-rust/blob/b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a/docs/naver/rust-apk-doctor-diagnostics-332.md) |
 | [#333](https://github.com/bin9208/openpilot-rust/issues/333) | completed | 원본 worker 예외의 type/message/identity를 보존하며 정책 fixture의 traceback formatting 경로를 분리했다. 3초 join·20개 비교·6개 회귀와 telemetry CI가 성공했다. 실제 과거 formatter 정지 원인은 단정하지 않는다. [e1](https://github.com/bin9208/openpilot-rust/issues/333) [e2](https://github.com/bin9208/openpilot-rust/pull/311) [e3](https://github.com/bin9208/openpilot-rust/commit/b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a) [e4](https://github.com/bin9208/openpilot-rust/blob/b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a/docs/naver/rust-beep-worker-report-333.md) [e5](https://github.com/bin9208/openpilot-rust/actions/runs/38646726305/job/116135289952) |
 | [#334](https://github.com/bin9208/openpilot-rust/issues/334) | completed | 테스트 descendant의 live pidfd와 unwind-safe child guard를 사용한다. 원래 1초·unrelated child 생존 조건 및 UI CI가 통과했다. production 동작은 변경하지 않았다. [e1](https://github.com/bin9208/openpilot-rust/issues/334) [e2](https://github.com/bin9208/openpilot-rust/pull/311) [e3](https://github.com/bin9208/openpilot-rust/commit/b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a) [e4](https://github.com/bin9208/openpilot-rust/blob/b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a/docs/naver/rust-updater-cleanup-observation-334.md) [e5](https://github.com/bin9208/openpilot-rust/actions/runs/38646726305/job/116135289948) |
 | [#338](https://github.com/bin9208/openpilot-rust/issues/338) | excluded | 활성 세션이 전체 전환/런타임 후보 및 성능 수용의 부모 이슈로 계속 사용하는 추적 항목이므로 이 감사에서는 변경하지 않음. [e1](https://github.com/bin9208/openpilot-rust/issues/338) [e2](https://github.com/bin9208/openpilot-rust/pull/488) [e3](https://github.com/bin9208/openpilot-rust/pull/494) [e4](https://github.com/bin9208/openpilot-rust/commit/dc95138076836ea3a5c1b6c27262be3f3b912f71) [e5](https://github.com/bin9208/openpilot-rust/blob/dc95138076836ea3a5c1b6c27262be3f3b912f71/rust/upstream/carrot-wip.json) |
@@ -342,8 +343,8 @@ complete; user-owned acceptance remains separate.
 
 ## Candidate corrections and pending gates
 
-The initial 279 decisions currently comprise 110 completed, 10 not planned,
-106 active-scope exclusions, 32 remaining acceptance/investigation items and
+The initial 279 decisions currently comprise 111 completed, 10 not planned,
+106 active-scope exclusions, 31 remaining acceptance/investigation items and
 21 implementation or test repairs. #497 is the new audit parent; #498 is new
 runner work owned by another chat. The candidate patch is not a passing result.
 
@@ -366,16 +367,19 @@ ordinary-origin passes. At implementation SHA
 [focused job](https://github.com/bin9208/openpilot-rust/actions/runs/39826309141/job/119990403507)
 succeeded including full updater tests, strict lint and original-source/real-Git
 comparison. Review then added root-hosted URLs and bracketed IPv6 SSH controls
-in `6a5143b30dbc365e056de43518cfc97bcf16681f`; exact-head verification remains
-pending. Merge, post-merge checks and matching published AGNOS/installer proof
+in `6a5143b30dbc365e056de43518cfc97bcf16681f`; its
+[focused verification](https://github.com/bin9208/openpilot-rust/actions/runs/39829415962)
+passed all updater test groups, strict lint and five original-source scenarios.
+Full required PR verification remains pending. Merge, post-merge checks and matching published AGNOS/installer proof
 are separate remaining gates. No device operation is performed by this audit.
 
-The official PSA DBC supplies the generic codec asset but does **not** port its
-missing state/controller runtime. MLB literals are explicitly synthetic,
+The initial PSA DBC-only correction left its missing state/controller runtime
+explicit; the later #501 candidate below completes that implementation. MLB literals are explicitly synthetic,
 source-backed vectors, not known-good vehicle captures. Two exact official Ford
 overrides are admitted only under existing angle control; their NaN torque
-placeholders never become active torque tuning. PSA/Tesla-X tuning, GMC/KIA
-mapping and the FCA EPS_3 conflict remain explicit. The actual fork and its
+placeholders never become active torque tuning. The later PSA/Tesla-X admission
+and KIA key repair are described below; GMC mapping and the FCA EPS_3 conflict
+remain unresolved. The actual fork and its
 history were checked after the user confirmed no other authoritative source.
 No guessed mapping, checksum change or vehicle-success claim is substituted.
 
@@ -455,3 +459,49 @@ P1/P2 issue by source inspection. Local validation is changed-source syntax,
 formatting and whitespace only; functional, original/native, IPC and ARM evidence
 must come from the following Actions run. The separate terminal lint correction
 loads its status conversion module once without a lint waiver.
+
+At `b3705789764410d182e7bc9ac384634fa633e6cd`, the
+[focused run](https://github.com/bin9208/openpilot-rust/actions/runs/39832521906)
+passed core, media, tools and both Java variants. The web lane authenticated all
+six terminal setup receipts and actual owned-job baseline leaks, then passed all
+42 candidate unit tests; its separate strict-lint duplicate-module failure is
+corrected in `7acb65c12af5194e741dd1a1ea47769c0d31404d`. Vehicle validation had
+not passed dependency setup before the expanded PSA candidate superseded it.
+The [7ac focused run](https://github.com/bin9208/openpilot-rust/actions/runs/39836427068)
+is queued, so PSA/KIA/full vehicle claims remain pending.
+
+Follow-up source inspection removed the remaining fixed reserve in the affected
+Card asset staging and media/web QA helpers. Their input-size or explicit growth
+estimates remain admission requirements. Fast and mapped-docs checks also select
+the registered x64 runner for trusted same-repository events, retaining hosted
+execution for fork PRs and recording actual runner/resources. Unrelated provider
+builders and true ARM jobs are outside this bounded follow-up.
+
+A final acceptance recheck closed #332 for its requested failed-doctor diagnostic
+improvement: both strict negative controls retain the typed reason, and the
+[7ac host-toolkit job](https://github.com/bin9208/openpilot-rust/actions/runs/39836434018/job/120025884932)
+passed. This does not assert a cause or production fix for the older prerequisite
+failure. The audit closure count is now 121 (111 completed, ten not planned).
+
+The 7ac full control runtime exposed an additional PSA consumer boundary:
+source startup now succeeds, but native controlsd still contained its original
+missing-DBC rejection. The follow-up removes that rejection, retains the former
+usable-tuning case as a full positive comparison, and adds real PSA angle startup
+and 620-frame transitions. The other malformed-input cases remain strict.
+Exact-head Actions verification is pending; the existing 40-case zero-error result
+is evidence for that earlier scope only.
+
+The 7ac Card gate passed strict Clippy, both public PSA registry tests and four
+of five PSA source/runtime tests. Its timeout-log test incorrectly required
+`canValid=false` at the first missing update, despite the original and native
+parser `CAN_INVALID_CNT=5`. The corrected test retains immediate timeout/log
+assertions and now checks validity at every missing update through the fifth.
+No parser threshold or runtime behavior is relaxed. That correction still needs
+Actions execution ([job](https://github.com/bin9208/openpilot-rust/actions/runs/39836433939/job/120027300918)).
+
+The workspace 7ac gate reached compilation and found that both PSA examples
+import the native Common wrapper without declaring the native feature requirement.
+Their manifest entries now match the other native Card examples. Generic pure
+workspace checks keep native disabled; the existing explicit native Card gates
+continue to build and exercise both examples. This was a compile setup failure,
+not a failed disk-capacity or runtime assertion.

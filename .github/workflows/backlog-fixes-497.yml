@@ -83,6 +83,8 @@ jobs:
             vehicles)
               python3 rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
               python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3
+              PYTHONPATH="$GITHUB_WORKSPACE/rust/tools" python rust/tools/issue_497_baseline.py card-attribution --output "$RUNNER_TEMP/baseline-card-attribution"
+              PYTHONPATH="$GITHUB_WORKSPACE/rust/tools" python -m pytest -c /dev/null --rootdir=. --confcutdir=rust/tools/tests -q rust/tools/tests/test_card_attribution.py
               PYTHONPATH="$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/opendbc_repo:$GITHUB_WORKSPACE/rust/tools" python rust/tools/stage_card_fixtures.py --fixtures "$RUNNER_TEMP/card-497/fixtures" --dbc "$RUNNER_TEMP/card-497/dbc"
               export HYUNDAI_FIXTURE_DIR="$RUNNER_TEMP/card-497/fixtures"
               export HYUNDAI_DBC_DIR="$RUNNER_TEMP/card-497/dbc"
@@ -106,6 +108,8 @@ jobs:
             tools)
               python -m pip install pytest==9.0.2 PyYAML==6.0.3
               cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-disk-space --all-targets
+              cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test disk_space --test encoder_stage
+              cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib package::tests::disk_growth_checks_u64_boundaries_without_a_fixed_reserve
               python -m pytest -c /dev/null --rootdir=. --confcutdir=tools/ci/tests -q tools/ci/tests/test_native_disk_guard.py
               cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test torque_stage
               python3 -m unittest discover -s rust/tools/tests -p test_extract_runtime_sdk.py -v

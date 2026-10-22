@@ -50,6 +50,7 @@ def cases():
     ('MAZDA_3', 'pid'),
     ('MOCK', 'pid'),
     ('NISSAN_LEAF', 'angle'),
+    ('PSA_PEUGEOT_208', 'angle'),
     ('RIVIAN_R1_GEN1', 'torque'),
     ('SUBARU_ASCENT', 'pid'),
     ('TESLA_MODEL_3', 'angle'),
@@ -61,6 +62,7 @@ def cases():
     ('HYUNDAI_PALISADE', 'torque'),
     ('VOLKSWAGEN_ID4_MK1', 'angle'),
     ('TESLA_MODEL_3', 'angle'),
+    ('PSA_PEUGEOT_208', 'angle'),
   ]:
     rows = []
     for i in range(620):
