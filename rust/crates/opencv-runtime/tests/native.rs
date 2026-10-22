@@ -86,6 +86,10 @@ fn real_model_tensors_are_owned_across_input_release_and_next_forward() {
         net.forward(TensorView::new(&shape, &values).unwrap(), &names)
             .unwrap()
     };
+    let first_bits: Vec<Vec<u32>> = first
+        .iter()
+        .map(|tensor| tensor.view().values().iter().map(|v| v.to_bits()).collect())
+        .collect();
     let original = first[0].view().values().to_vec();
     let values = vec![0.; 3 * 416 * 416];
     let next = net
@@ -99,4 +103,30 @@ fn real_model_tensors_are_owned_across_input_release_and_next_forward() {
             &["missing-output".into()]
         )
         .is_err());
+    // Re-enter after an exception with fresh input storage. Both network outputs
+    // and previously returned outputs must retain exact bits across the failed
+    // call, dropped input and intervening inference on a different tensor.
+    let recovered = {
+        let mut values = vec![0.5; 3 * 416 * 416];
+        let result = net
+            .forward(TensorView::new(&shape, &values).unwrap(), &names)
+            .unwrap();
+        values.fill(f32::NAN);
+        result
+    };
+    for (output, expected) in recovered
+        .iter()
+        .chain(&first)
+        .zip(first_bits.iter().cycle())
+    {
+        assert_eq!(
+            output
+                .view()
+                .values()
+                .iter()
+                .map(|v| v.to_bits())
+                .collect::<Vec<_>>(),
+            *expected
+        );
+    }
 }

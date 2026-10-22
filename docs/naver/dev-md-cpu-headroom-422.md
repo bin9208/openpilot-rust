@@ -50,6 +50,9 @@ No changes to radar detection, lead selection, dev/main or the #296 conversion.
   Compact queued allocations and release scratch capacity above 1 MiB after a
   service drain; this cache budget must never reject a larger valid packet.
   Verify immediate reuse, independent queued storage and bounded retained cache.
+- [ ] `opencv-runtime/native/net.cc`: avoid the extra input clone before
+  OpenCV's own synchronous copy, and bulk-copy output floats into owned Rust
+  tensors. Check input release, intervening inference and exception recovery.
 - [ ] `signal-observer/process.rs`: transfer the completed grayscale image into
   previous-frame history. Verify consecutive-frame hashes, dimensions and error
   retention plus the existing 288-frame full-state source oracle on host/ARM;
@@ -71,6 +74,13 @@ immediate packets that fit retained storage. These are source-level avoided
 operations, not measured CPU savings; inference kernels and necessary camera
 ownership copies remain. Larger gains may require separately evidenced kernel
 or backend work; no percentage or sufficient future-feature capacity is promised.
+
+The pinned OpenCV revision's [`Net::Impl::setInput`](https://github.com/opencv/opencv/blob/fe38fc608f6acb8b68953438a62305d8318f4fcd/modules/dnn/src/net_impl.cpp#L1321)
+synchronously copies the input into its own `inputsData` storage before returning.
+Removing the preceding clone avoids 2,076,672 copied bytes per 1×3×416×416 FP32
+input without retaining the borrowed Rust pointer. Output tensors remain owned
+copies, now transferred in bulk rather than one float per CXX call. The pin and
+ownership regression must be reassessed when changing the OpenCV dependency.
 
 Functional execution and performance verification are pending. The user's
 local-execution restriction takes precedence over local test-first workflows:

@@ -67,7 +67,7 @@ pub(crate) mod ffi {
         area: f64,
     }
     // SAFETY: adapters check dimensions/products against slices before OpenCV,
-    // do not mutate borrowed input, retain only an owned setInput clone, and copy
+    // do not mutate borrowed input, retain only setInput's owned copy, and copy
     // all results into owned Rust vectors. CXX translates C++ exceptions to Result.
     unsafe extern "C++" {
         include!("bridge.h");
