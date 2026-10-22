@@ -6355,3 +6355,25 @@ strict Clippy identifies one needless indexed checker loop in the outer test.
 601a6c9ec2002d88a6e0184b79f6fb6923d79285 preserves all six CLI admission cases
 with enumerate; hosted retry39713055560/workflow2fd4aa00a935fb21182a1606b18bd0d4826cc069
 is pending. Original three tools stay live.
+
+
+### Published faeef checkpoint: native stager policy regression
+
+Published PR343headfaeef14da43d3a2c59ec71d7966e191828a748b3 Fast routing
+39713242804/job119609256319 fails only after passing13disk controls and the
+first two native staging tests. The third still expects23 active stager callers;
+HardwareInfo retirement97c33434c correctly removed its now-unused original
+Params-binding builder and native-json11 action, leaving22. The repair preserves
+all remaining per-caller missing-action/flag/Panda-binary negative controls,
+asserts hardware-runtime has no old direct builder/action, and requires its
+native hardware_info_retirement plus actual require-retired=1 gate. #478 is
+reopened for this regression; focused/full hosted acceptance remains pending.
+No native dependency or retained bootlog-builder staging is removed by this fix.
+
+Hardwared39713055560/601a6c9ec passes units, strictClippy and workspacefmt,
+then full trace rejects expected integer0 versus actualfloat0.0. Original Python
+uses != for integers (0 equals0.0), while native compared JSON number variants.
+A narrow original-semantic comparator fix is required, not an error-tolerance
+increase. Independent review also identifies original post-exit log/stats drain
+and raw-before-decode packet evidence ordering; both are being repaired before
+any native tool deletion. Hardwared remains pending.

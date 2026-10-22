@@ -52,7 +52,24 @@ fn callers(workflow: &Value) -> Result<usize, String> {
 fn all_runtime_and_template_callers_select_a_prepared_current_host_stager() {
     let workflow =
         parse(&fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap()).unwrap();
-    assert_eq!(callers(&workflow).unwrap(), 23);
+    // HardwareInfo's retired Python comparison no longer builds a Params
+    // binding. Its bootlog builders own their JSON11 staging internally.
+    assert_eq!(callers(&workflow).unwrap(), 22);
+    let hardware = &workflow["jobs"]["hardware-runtime"]["steps"];
+    assert!(hardware.as_array().unwrap().iter().all(|step| {
+        step["uses"] != "./.github/actions/native-json11"
+            && !step["run"]
+                .as_str()
+                .unwrap_or("")
+                .lines()
+                .any(direct_caller)
+    }));
+    assert!(hardware.as_array().unwrap().iter().any(|step| {
+        step["run"].as_str().is_some_and(|run| {
+            run.contains("--test hardware_info_retirement")
+                && run.contains("HARDWARE_INFO_REQUIRE_RETIRED=1")
+        })
+    }));
     let panda =
         fs::read_to_string(root().join("rust/crates/dev-tools/src/panda_ci_check.rs")).unwrap();
     assert!(panda.contains("fn executables(bin: &Path)"));
