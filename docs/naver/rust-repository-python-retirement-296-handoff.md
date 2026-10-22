@@ -300,3 +300,15 @@ held-file hashing. Repair must seek/read through the held admission helper.
 Retained Python manager launcher imports modem.py: current closure is5devtools,
 not runtime1, despite the native Rust catalog mapping. Add explicit original6,
 actual5retired/runtimepinned and private6absent states rather than weaken absence.
+
+USB-only39717263745/8a976 passes both roots×6 plus24reappearance controls and
+retained CLI/policy/foreign controls. Parent audits full185140936B/all1401CRCs
+artifact12400553554/SHAed59d34104fd76f0b8174030e702a090f69ef5b41a26f71563065ed4e7b64325,
+full JSONL summary/report equivalence and exact source/owned beforeafter receipts.
+Full grouped proof remains pending (#480/#479 and six counts unchanged).
+Current4d599 complete Fast39719156487/39719148455 and Integration39719156492
+pass;#478closedagain. Rust39719156536 navigation119628631058 repeats#457before
+SIGINT at unchanged10sbarrier; inspectnewretainedphase/procdiagnostics.
+Watch39719769987greenisall8explicitwrong-hostskips, notnumericalevidence.
+Compatible-host unchanged-binary2samplediagnostic retainsstrictrequiredISA and
+fullcapturedbase/debug-outputcorrespondence; it cannotestablishsame9V45behavior.

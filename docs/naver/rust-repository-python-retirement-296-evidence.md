@@ -6556,3 +6556,32 @@ wrapper diagnostic39719642723/workflowbba6fee627d029265440f90be5d3c57ad4a3caf1
 separately pins4d599, original fixture and exact failed catalog; it changes no IR,
 target or arithmetic and requires complete original/native unwrapped output
 correspondence before interpreting any intermediate snapshot.
+
+
+### Full USB-only actual/private success after owned-copy and admission fixes
+
+39717263745 at8a97671a8976425f44366da6523db449bed71b36, workflow
+a5ffc53429551e9d21df60e5a7e6fa8977084f2c, succeeds. Both absent roots complete
+sixUSBcases, exact three-field JSONL stdout, full initial/final/packet/cleanup
+assertions,24source-reappearance controls and CLI/policy/foreign-output checks.
+Parent downloads completeartifact12400553554/185140936B, independently checks all
+1401CRCs/SHAed59d34104fd76f0b8174030e702a090f69ef5b41a26f71563065ed4e7b64325,
+compares each root's six ordered CLI summaries against full report rows, and
+checks byte-identical original-source and separately-owned before/after receipts.
+Mutation/hardlink/earlyforeign/success-summary regressions and strictClippy pass.
+All138held ELF/data identities remain checked by the harness. No source inode
+is used for per-case links; no tolerance/expected bytes/source-seal relaxation.
+
+Scope remains explicit: USB-only diagnostic harness, driver/startup case runs0,
+full_group_acceptance:false, interpreter_execution:not_measured. Keep#480open
+for complete grouped actual/private acceptance; six source deletions remain
+unaccepted and accepted count265is unchanged. Current fullmodel-familyjob
+119628630925/run39719156536 may supply that independent remaining proof.
+
+Published4d599 complete Fast39719156487/39719148455 and Integration39719156492
+pass; current userdocs39719156450 passes. #478 is closed again with exact-source
+complete Fast acceptance (comment6332439497), not from a focused retry alone.
+Current Rust39719156536 navigation119628631058 reproduces#457's unchanged10s
+actual child-start barrier, before SIGINT;7other navd_config_check cases pass.
+The newly retained phase/proc diagnostics are being inspected. No timeout is
+increased and no passing retry is treated as a fix.
