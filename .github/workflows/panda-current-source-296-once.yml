@@ -18,16 +18,16 @@ jobs:
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
-      EXPECTED_SOURCE: df374b0abde72e93759bc2a2168505b5615f4d7a
+      EXPECTED_SOURCE: 6c6733f84c10f774bf818b02d54e9563819d1e1a
     steps:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: df374b0abde72e93759bc2a2168505b5615f4d7a
+        ref: 6c6733f84c10f774bf818b02d54e9563819d1e1a
     - name: Bind current source before any build
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = df374b0abde72e93759bc2a2168505b5615f4d7a
+        test "$(git rev-parse HEAD)" = 6c6733f84c10f774bf818b02d54e9563819d1e1a
 
         '
     - uses: actions/setup-python@v6
