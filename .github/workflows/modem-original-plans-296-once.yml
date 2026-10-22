@@ -58,6 +58,11 @@ jobs:
         cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-modem -p openpilot-process-supervision --bins --examples
         > "$proof/build.stdout" 2> "$proof/build.stderr" || { tail -n 100 "$proof/build.stderr"; exit 1; }
 
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-modem --features helper-lifetime-tests --test helper_lifetime
+        --no-run > "$proof/reference-build.log" 2>&1 || { tail -n 100 "$proof/reference-build.log"; exit 1; }
+
         sha256sum rust/target/debug/openpilot-modem rust/target/debug/examples/modem_trace rust/target/debug/openpilot-process-child
         > "$proof/native.before.sha256"
 
