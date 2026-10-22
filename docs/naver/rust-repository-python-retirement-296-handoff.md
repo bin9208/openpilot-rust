@@ -4,6 +4,46 @@ Current execution state, not completion. The [evidence ledger](rust-repository-p
 retains exact original captures, failed attempts, sources, workflows and artifact
 SHA/CRC audits; Git retains prior handoffs.
 
+## Current checkpoint — 2026-10-22 manager deletion candidate
+
+This checkpoint supersedes the older chronological notes below. Issue branch
+HEAD efd4350de deletes exactly three manager QA Python controllers after
+39740337951/source dabbb2a60 passed present-checkout/private-absent admission.
+Parent audited artifact12409078411/9091291B/SHA
+5a6f7d067e4b4e548527761f53f88c15422a129dfa3b20073ce0447c660f1bf0/all27575CRCs,
+seven case values and logging lifecycle results in each root, seven held ELF
+receipts, twelve manager units and the two #484 PID-publication regressions.
+The complete native proof reports61closed native exec attempts. Actual postdelete
+platform/policy run39742079076 checks efd4350de under workflow50e742d10; still
+pending. Inventory remains270/3/3307 until that source-absent gate is audited.
+
+Car generator present-source comparison39739972934/source94758a721 passes:
+artifact12408992459/99676B/SHA
+ef424c1d4bf53973f91645c532167cb4c4a082632cfa8636a0122e51f92c28ad/all95CRCs.
+Original/native/installed seven JSON bodies and stdout match; three units,
+strictClippy and fresh original comparison pass. The generator Python remains
+live; source retirement and its manager-QA retained-pin dependencies are being
+implemented separately. No inventory credit yet.
+
+Driver#476 actual nine-term emitted-pairing diagnostic39741736692/source67c21ea2
+under workflowe8f587eb5 passes; artifact12409875993/29665B/SHA
+86424eab91539ea34b11dde301731bd37d19de78347baca73bd6ecbe1324109b/all10CRCs
+reproduces originalbfdbe345/nativebfdbe347 across all288actual implementation
+rows. First divergencechannel13/term2 is separate-add versus FMA; no LLVM bug
+or general fix established. This changes no production code/tolerance and is
+not whole-model acceptance.
+Road#482 actual captured kernel92 half-input mutation diagnostic39742229755
+under workflow8dc4fed9e uses defb9011d; execution-versus-hardware-skip audit is
+complete: both attempt1hosts lack AVX-512 and skip, giving no numerical evidence.
+Same-run hardware-admission retry is pending. The diagnostic compares actual
+original raw code against the general guarded-copy candidate, preserves complete
+outputs/eight poststates, and assumes no authored NaN payload. Existing finite model goldens remain unchanged.
+
+Only diagnostic workflow branches have received these commits so far; issue
+branch/PR343 remote head remains4d599dde6 until the coherent batch is pushed.
+No device is available. User owns boot, recording, upload and driving checks.
+Local space is83GiB; no local build/functional test/model execution is authorized.
+
 ## Scope and boundaries
 
 - Work only in `/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust`,

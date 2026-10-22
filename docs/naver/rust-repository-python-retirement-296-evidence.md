@@ -7094,3 +7094,48 @@ Four explicit build/test/evidence reserves raise disk markers538→542 while
 preserving the inherited177aggregate. This is a deletion candidate: inventory
 credit remains270 until the actual postdelete platform and policy gates pass.
 No boot/device/recording/upload acceptance is inferred.
+
+Independent manager audit rechecks the accepted27575member archive:77raw
+tracefiles contain61complete successful execs, all in the held program roster,
+with zero Python exec attempts in native traffic. Both roots and five admission
+negatives match their receipts. Rehash4655retained original files, compare3523
+source hashes with Git, and verify both durable fixture rosters. External
+installed-provider receipts agree before/after; their bytes are not embedded
+for independent rehash. This is the precise limit of that provenance claim.
+
+### Car-document generation present-source comparison accepted
+
+39739972934/source94758a721355264319d370eec8fac894d2ff045c/workflow
+eba415424e89d6451ac07ad8f6e79256073355f1 passes strictClippy,3units and the
+fresh original/native comparison. Artifact12408992459 is99676B/SHA
+ef424c1d4bf53973f91645c532167cb4c4a082632cfa8636a0122e51f92c28ad/all95CRCs.
+Seven original/native/installed JSON files and generation/check stdout are
+byte-identical. Twenty held source/provider/data hashes and both native ELFs
+remain unchanged. Captured original uses a real Params provider; native has no
+Python binding bootstrap. Source absence and closed native exec proof remain
+pending; generate_manager_cars.py is not deleted or credited yet.
+
+### Driver#476 actual emitted contraction replay
+
+39741736692 checks source67c21ea2bb2209b4b5ce7ec73fe409c4712abc8c under
+workflowe8f587eb554e8fc8986befe6a0281e0feae99371. Artifact12409875993 is29665B/SHA
+86424eab91539ea34b11dde301731bd37d19de78347baca73bd6ecbe1324109b/all10CRCs.
+All288actual implementation rows are complete and continuous. Reviewed exact
+half-decoder/address/pixel/normalization bindings preserve nested product
+roundings; unknown leaves reject. The actual nine-term policies reproduce
+both measured prebias endpoints exactly:originalbfdbe345/nativebfdbe347.
+First differing accumulation is channel13/term2/source%v997: original separate
+multiply/addbfea32f6 versus nativeFMAbfea32f7. This supports the captured
+contraction explanation; it does not establish a provider/LLVM defect or a
+general compiler correction. Blanket contraction-off also produced the native
+endpoint in the separate strict source replay and is not an accepted fix.
+No production change, expected-output replacement, tolerance or target change.
+
+Road exceptional-input39742229755 attempt1/workflow8dc4fed9e5287602d6e4e0aa1d40cb3764d33481
+checks out defb9011df3fca924dca41a703b48ce5ff0c51e0. Both natural AMD EPYC7763
+hosts lack required AVX-512 and skip before setup/capture/model execution.
+Artifacts12410570047/2747B/SHAe510f3e89467da7f287f1e10912e6d69d35bd2dae499a3d06f400547345ce978
+and12409956289/2731B/SHA07a3f735731401bbdeeafd0b1d6796af6b18b5ee11e2f22ebd92dbc00b09ee92
+contain four checked members each. Successful workflow status is hardware
+admission evidence only; no twelve-pattern comparison occurred. The unchanged
+run is retried solely to obtain a naturally eligible host, preserving ISA guards.
