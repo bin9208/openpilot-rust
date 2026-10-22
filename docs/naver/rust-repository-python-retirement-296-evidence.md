@@ -6853,3 +6853,43 @@ unchanged, after the baseline native069/original9afb/whole-native poststate gate
 Full optimized IR/object/disassembly and provider/FP seals are retained. Emitted
 copy mapping and affected full-model/corpus validation remain required; no
 production fix, whole original pipeline proof or #482 closure is claimed.
+
+### Current published ARM completion and bounded static-probe audit
+
+Full39719156536 ARM119628631009 completes successfully; overall Rust remains
+failed on driver-family#476, raw-pipeline#482, navigation#457 and recovery
+tracing#474. Workspace and generic ARM are no longer running. Actual checked-out
+synthetic merge1c9e72be4b4a5f9593c804b2dc7cfc5b75ecd46d includes issue head4d599dde6.
+Parent audits complete static-probe artifact12404433648/306977B/4CRCs/SHA
+dd871412ac86c5f302f4fae047c197c095094900884a84c0301219eb3db356ae,
+all member SHA256SUMS, actual source marker and ELF64/AArch64 machine183.
+The native report observes three frames under QEMU/synthetic procfs and says
+static/no interpreter/shared dependencies, device_validation=not_run.
+This is one bounded generic ARM probe, not AGNOS/device boot or validation of
+later local commits. Other ARM job archives are not newly CRC-audited here.
+
+### Recovery separate complete lanes pass; added scratch ctime guard is false RED
+
+39729659238/job119661540569 under workflow215ee443849f034947a0299f5029dadcad17b830
+checks outdefb9011df3fca924dca41a703b48ce5ff0c51e0. It passes the full eight
+controllers in both actual/private absent roots without ptrace (182.20s), then
+again with unchanged full exec trace (214.48s) and the mandatory closed native
+post-audit. Overall Actions remains failed because an extra scratch-only global
+stat comparison rejects ctime changes on two intentionally hardlinked providers.
+Parent independently audits completeartifact12404562683/68969059B/12179CRCs/SHA
+66f56a8f1e4967c6daff36a22b0c8a4a89e875efb35794a293ec2be2d73f8fca.
+All2508raw trace hashes/lengths are recomputed. All25presealed program pairs
+match, with96created programs/two52-row owned-alias receipts;4795attempts split
+2393success/2400explicitENOENT/2explicitEACCES and observed Python exec0.
+
+All nine global ELF hashes/device/inode/length/mode/mtime fields remain equal.
+Onlyrecovery_actions/process-child ctime changes, and both providers are exactly
+those named by the verified same-inode hardlink alias relations. This is not a
+content/identity replacement or a complete green workflow; it is an overstrict
+extra metadata assumption caught in the scratch diagnostic. Do not repeat the
+unchanged complete traffic merely to relabel this auxiliary check. Preserve the
+existing executable/source/alias preflight and closed post-audit requirements.
+Hosted metadata identifies kernel7.0.0-1017-azure and strace6.8 binarySHA
+28f957c227012de0b18d1bd7fff2d396cb693ea60ed8013be68de071e84b5001.
+The original intermittent GETSIGINFO/LISTEN error cause remains unproved#474;
+separate successful lanes do not close it or prove a runtime fix.

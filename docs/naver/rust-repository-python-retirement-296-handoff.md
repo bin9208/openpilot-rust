@@ -44,7 +44,8 @@ Integration39719156492 pass. Rust39719156536 has four failed functional jobs: dr
 original-pipeline raw prediction comparison#482 (one signed-zero bit), navigation
 startup#457, and workspace recovery tracing#474 (PTRACE_LISTEN/EIO). Workspace
 Cargo tests and strict workspace Clippy passed before that later tracing failure;
-remaining steps were skipped. Generic ARM remains running. UI/connectivity and
+remaining steps were skipped. Generic ARM now passes; parent audits the four-member static probe source/
+ELF/SHA report, with QEMU-only/device-not-run limits. UI/connectivity and
 LLVM20 pass. This is not complete workspace or AGNOS/device acceptance. #478 and
 the QA-only RadarCAN FD race#481 are closed with focused/full evidence; #480
 remains open despite its focused two-root USB pass. Six model-controller
@@ -367,5 +368,8 @@ exceptional values and affected full-model/corpus validation pending.
 
 Current native manager retry39729826364 passes; frozen complete original data
 and source/provider roster auditing precedes three-tool source-absence support.
-No manager Python deletion is accepted. Recovery39729659238 separately runs
-complete untraced then traced same-ELF traffic to investigate recurring#474.
+No manager Python deletion is accepted. Recovery39729659238 passes complete untraced and traced same-ELF traffic in
+both roots plus closed native exec audit; overall workflow is false RED on an
+extra ctime guard because the two verified hardlink providers change ctime.
+Parent checks all12179CRCs/2508trace hashes/25program pairs and exact alias
+provider mapping. Historical#474 LISTEN/EIO cause remains open.
