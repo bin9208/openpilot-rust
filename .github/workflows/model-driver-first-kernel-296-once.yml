@@ -163,32 +163,39 @@ jobs:
         \            raise RuntimeError(\"original call left exporter host-buffer contract\")\n        base = buffer.base\n\
         \        if base.nbytes > MAX_BASE:\n            raise RuntimeError(\"diagnostic base exceeds 32 MiB\")\n        unique[id(base)]\
         \ = base\n    if sum(base.nbytes for base in unique.values()) > MAX_CALL_SNAPSHOT:\n        raise RuntimeError(\"\
-        diagnostic call snapshot exceeds 64 MiB\")\n    return {key: (base, bytes(base.ensure_allocated().as_memoryview(allow_zero_copy=True)))\
-        \ for key, base in unique.items()}\n\n\ndef restore(state):\n    for base, content in state.values():\n        # Tinygrad\
-        \ HCQAllocator._copyin calls helpers.from_mv, which obtains a\n        # writable ctypes pointer even though this\
-        \ is logically source data.\n        base.copyin(memoryview(bytearray(content)))\n\n\ndef after(state):\n    return\
-        \ {key: bytes(base.as_memoryview(allow_zero_copy=True)) for key, (base, _) in state.items()}\n\n\ndef first_difference(a,\
-        \ b):\n    if len(a) != len(b):\n        return min(len(a), len(b))\n    return next((index for index, (x, y) in enumerate(zip(a,\
-        \ b)) if x != y), None)\n\n\ndef bounded_bytes(prefix, name, data, limit=MAX_DUMP):\n    filename = f\"{prefix}-{name}.bin\"\
-        \n    (OUT / filename).write_bytes(data[:limit])\n    return {\"file\": filename, \"bytes\": len(data), \"sha256\"\
-        : sha(data), \"dumped_bytes\": min(len(data), limit)}\n\n\ndef difference_window(prefix, name, data, offset):\n  \
-        \  start = max(0, offset - 4096)\n    end = min(len(data), offset + 4097)\n    receipt = bounded_bytes(prefix, name,\
-        \ data[start:end])\n    return {**receipt, \"absolute_start\": start, \"absolute_end\": end}\n\n\ndef live_pointer(buffer):\n\
-        \    buffer.ensure_allocated()\n    if buffer.device.split(\":\")[0] == \"NPY\":\n        # NpyAllocator._as_buffer\
-        \ may call np.require, which could create a\n        # copy. Require the actual original buffer's contiguous backing\
-        \ here.\n        array = buffer._buf\n        if not array.flags.c_contiguous or array.nbytes != buffer.nbytes:\n\
-        \            raise RuntimeError(\"original NPY view has no direct contiguous pointer\")\n        return array.ctypes.data,\
-        \ array\n    if buffer.device.split(\":\")[0] == \"PYTHON\":\n        # PythonAllocator intentionally lacks _as_buffer;\
-        \ its owned _buf is a\n        # writable memoryview. Keep this fallback limited to original host\n        # COPY\
-        \ buffers, never the CPU PROGRAM launch.\n        view = memoryview(buffer._buf)\n    else:\n        view = buffer.as_memoryview(force_zero_copy=True)\n\
-        \    if view.readonly:\n        raise RuntimeError(\"original host view has no writable direct pointer\")\n    return\
-        \ ctypes.addressof(ctypes.c_char.from_buffer(view)), view\n\n\ndef verify_view(live, view_id, graph, aliases):\n \
-        \   view = graph[\"views\"][view_id]\n    allocation = view[\"allocation\"]\n    base = live.base\n    if base.nbytes\
-        \ != graph[\"allocations\"][allocation][\"bytes\"] or live.offset != view[\"offset\"] or live.nbytes != view[\"bytes\"\
-        ]:\n        raise RuntimeError(f\"graph/live view differs: {view_id}\")\n    prior = aliases.setdefault(allocation,\
-        \ id(base))\n    if prior != id(base):\n        raise RuntimeError(f\"graph allocation aliases two original bases:\
-        \ {allocation}\")\n\n\ndef original_inputs(original, label, raw):\n    frame = original.bindings.inputs[\"frame\"\
-        ]\n    shape = tuple(frame.shape)\n    if _to_np_dtype(frame.dtype) != np.dtype(\"uint8\") or int(np.prod(shape))\
+        diagnostic call snapshot exceeds 64 MiB\")\n    return {key: (base, bytes(raw_view(base))) for key, base in unique.items()}\n\
+        \n\ndef raw_view(buffer):\n    buffer.ensure_allocated()\n    kind = buffer.device.split(\":\")[0]\n    if kind ==\
+        \ \"NPY\":\n        array = buffer._buf\n        if not array.flags.c_contiguous or array.nbytes != buffer.nbytes:\n\
+        \            raise RuntimeError(\"original NPY buffer lacks direct contiguous storage\")\n        view = memoryview(array).cast(\"\
+        B\")\n    elif kind == \"PYTHON\":\n        view = memoryview(buffer._buf).cast(\"B\")\n    elif kind == \"CPU\":\n\
+        \        view = buffer.as_memoryview(force_zero_copy=True)\n    else:\n        raise RuntimeError(\"original host\
+        \ buffer kind changed\")\n    if len(view) != buffer.nbytes:\n        raise RuntimeError(\"original direct buffer\
+        \ view length changed\")\n    return view\n\n\ndef restore(state):\n    for base, content in state.values():\n   \
+        \     view = raw_view(base)\n        if bytes(view) == content:\n            continue  # Includes unchanged read-only\
+        \ input buffers.\n        if view.readonly:\n            raise RuntimeError(\"original execution changed a read-only\
+        \ host input\")\n        if base.device.split(\":\")[0] == \"CPU\":\n            # HCQAllocator._copyin obtains a\
+        \ writable ctypes pointer to its\n            # source, so immutable snapshot bytes need a bounded bytearray.\n  \
+        \          base.copyin(memoryview(bytearray(content)))\n        else:\n            # NpyAllocator has no _copyin;\
+        \ use its real contiguous ndarray\n            # backing. PythonAllocator likewise owns a direct memoryview.\n   \
+        \         view[:] = content\n        if bytes(raw_view(base)) != content:\n            raise RuntimeError(\"host buffer\
+        \ prestate restoration failed\")\n\n\ndef after(state):\n    return {key: bytes(raw_view(base)) for key, (base, _)\
+        \ in state.items()}\n\n\ndef first_difference(a, b):\n    if len(a) != len(b):\n        return min(len(a), len(b))\n\
+        \    return next((index for index, (x, y) in enumerate(zip(a, b)) if x != y), None)\n\n\ndef bounded_bytes(prefix,\
+        \ name, data, limit=MAX_DUMP):\n    filename = f\"{prefix}-{name}.bin\"\n    (OUT / filename).write_bytes(data[:limit])\n\
+        \    return {\"file\": filename, \"bytes\": len(data), \"sha256\": sha(data), \"dumped_bytes\": min(len(data), limit)}\n\
+        \n\ndef difference_window(prefix, name, data, offset):\n    start = max(0, offset - 4096)\n    end = min(len(data),\
+        \ offset + 4097)\n    receipt = bounded_bytes(prefix, name, data[start:end])\n    return {**receipt, \"absolute_start\"\
+        : start, \"absolute_end\": end}\n\n\ndef live_pointer(buffer):\n    if buffer.device.split(\":\")[0] == \"NPY\":\n\
+        \        # NpyAllocator._as_buffer may call np.require, which could create a\n        # copy. Require the actual original\
+        \ buffer's contiguous backing here.\n        raw_view(buffer)\n        array = buffer._buf\n        return array.ctypes.data,\
+        \ array\n    view = raw_view(buffer)\n    if view.readonly:\n        raise RuntimeError(\"original host view has no\
+        \ writable direct pointer\")\n    return ctypes.addressof(ctypes.c_char.from_buffer(view)), view\n\n\ndef verify_view(live,\
+        \ view_id, graph, aliases):\n    view = graph[\"views\"][view_id]\n    allocation = view[\"allocation\"]\n    base\
+        \ = live.base\n    if base.nbytes != graph[\"allocations\"][allocation][\"bytes\"] or live.offset != view[\"offset\"\
+        ] or live.nbytes != view[\"bytes\"]:\n        raise RuntimeError(f\"graph/live view differs: {view_id}\")\n    prior\
+        \ = aliases.setdefault(allocation, id(base))\n    if prior != id(base):\n        raise RuntimeError(f\"graph allocation\
+        \ aliases two original bases: {allocation}\")\n\n\ndef original_inputs(original, label, raw):\n    frame = original.bindings.inputs[\"\
+        frame\"]\n    shape = tuple(frame.shape)\n    if _to_np_dtype(frame.dtype) != np.dtype(\"uint8\") or int(np.prod(shape))\
         \ != len(raw) or frame.uop.base.buffer.nbytes != len(raw):\n        raise RuntimeError(\"source frame buffer does\
         \ not match sealed input\")\n    camera = _os_fisheye if _os_fisheye.width == 1344 else _ar_ox_fisheye\n    transform\
         \ = np.linalg.inv(np.dot(dmonitoringmodel_intrinsics, np.linalg.inv(camera.intrinsics))).astype(np.float32)\n    fixed\
@@ -271,47 +278,51 @@ jobs:
         \              native(argv, scalars)\n            native_fp_after = fp_state()\n            native_after = after(before)\n\
         \            differences = [(key, first_difference(original_after[key], native_after[key])) for key in before]\n \
         \           differences = [(key, offset) for key, offset in differences if offset is not None]\n            if differences:\n\
-        \                key, offset = differences[0]\n                base, prestate = before[key]\n                prefix\
-        \ = f\"{label}-call-{call_index}\"\n                if operation.op is Ops.PROGRAM:\n                    retained\
-        \ = operation.src[4].arg\n                    object_code = (bundle / f\"kernel-{emitted['kernel']}.o\").read_bytes()\n\
-        \                    if len(retained) > MAX_DUMP or len(object_code) > MAX_DUMP:\n                        raise RuntimeError(\"\
-        first differing machine code exceeds diagnostic bound\")\n                    binary = bounded_bytes(prefix, \"original-retained-machinecode\"\
-        , retained)\n                    native_object = bounded_bytes(prefix, \"native-object\", object_code)\n         \
-        \           ir = operation.src[3].arg.encode()\n                    if len(ir) > MAX_DUMP:\n                     \
-        \   raise RuntimeError(\"first differing original IR exceeds diagnostic bound\")\n                    original_ir\
-        \ = bounded_bytes(prefix, \"original-ir\", ir)\n                else:\n                    binary = native_object\
-        \ = original_ir = None\n                output_indices = operation.arg.outs if operation.op is Ops.PROGRAM else (0,)\n\
-        \                output_views = []\n                for output_index in output_indices:\n                    output_buffer\
-        \ = buffers[output_index]\n                    output_key = id(output_buffer.base)\n                    start, end\
-        \ = output_buffer.offset, output_buffer.offset + output_buffer.nbytes\n                    output_views.append({\"\
-        buffer_index\": output_index, \"allocation\": next(i for i, identity in aliases.items() if identity == output_key),\
-        \ \"offset\": start, \"bytes\": output_buffer.nbytes, \"original\": bounded_bytes(prefix, f\"output-{output_index}-original\"\
-        , original_after[output_key][start:end]), \"native\": bounded_bytes(prefix, f\"output-{output_index}-native\", native_after[output_key][start:end])})\n\
-        \                details = {\"diagnostic_only\": True, \"result\": \"FIRST_DIFFERING_CALL\", \"sample\": os.environ[\"\
+        \                key, offset = differences[0]\n                base, _ = before[key]\n                prefix = f\"\
+        {label}-call-{call_index}\"\n                prestate_bases = []\n                for base_index, (base_id, (source_base,\
+        \ source_bytes)) in enumerate(before.items()):\n                    prestate_bases.append({\"bytes\": source_base.nbytes,\
+        \ \"sha256\": sha(source_bytes), \"alias_allocations\": [i for i, identity in aliases.items() if identity == base_id],\
+        \ \"dump\": bounded_bytes(prefix, f\"base-{base_index}-prestate\", source_bytes, MAX_BASE), \"base_id\": base_id})\n\
+        \                selected_prestate = next(row[\"dump\"] for row in prestate_bases if row[\"base_id\"] == key)\n  \
+        \              for row in prestate_bases:\n                    del row[\"base_id\"]\n                if operation.op\
+        \ is Ops.PROGRAM:\n                    retained = operation.src[4].arg\n                    object_code = (bundle\
+        \ / f\"kernel-{emitted['kernel']}.o\").read_bytes()\n                    if len(retained) > MAX_DUMP or len(object_code)\
+        \ > MAX_DUMP:\n                        raise RuntimeError(\"first differing machine code exceeds diagnostic bound\"\
+        )\n                    binary = bounded_bytes(prefix, \"original-retained-machinecode\", retained)\n             \
+        \       native_object = bounded_bytes(prefix, \"native-object\", object_code)\n                    ir = operation.src[3].arg.encode()\n\
+        \                    if len(ir) > MAX_DUMP:\n                        raise RuntimeError(\"first differing original\
+        \ IR exceeds diagnostic bound\")\n                    original_ir = bounded_bytes(prefix, \"original-ir\", ir)\n \
+        \               else:\n                    binary = native_object = original_ir = None\n                output_indices\
+        \ = operation.arg.outs if operation.op is Ops.PROGRAM else (0,)\n                output_views = []\n             \
+        \   for output_index in output_indices:\n                    output_buffer = buffers[output_index]\n             \
+        \       output_key = id(output_buffer.base)\n                    start, end = output_buffer.offset, output_buffer.offset\
+        \ + output_buffer.nbytes\n                    output_views.append({\"buffer_index\": output_index, \"allocation\"\
+        : next(i for i, identity in aliases.items() if identity == output_key), \"offset\": start, \"bytes\": output_buffer.nbytes,\
+        \ \"original\": bounded_bytes(prefix, f\"output-{output_index}-original\", original_after[output_key][start:end]),\
+        \ \"native\": bounded_bytes(prefix, f\"output-{output_index}-native\", native_after[output_key][start:end])})\n  \
+        \              details = {\"diagnostic_only\": True, \"result\": \"FIRST_DIFFERING_CALL\", \"sample\": os.environ[\"\
         DIAGNOSTIC_SAMPLE\"], \"frame\": label, \"source_call\": source_index, \"exported_call\": call_index, \"operation\"\
         : operation.op.name, \"kernel\": emitted[\"kernel\"], \"launch\": {\"workers\": emitted[\"workers\"], \"scalars\"\
         : emitted[\"scalars\"], \"core_id\": emitted[\"core_id\"]}, \"argument_views\": [{\"view\": view_id, **graph[\"views\"\
         ][view_id]} for view_id in emitted[\"views\"]], \"source_input_indices\": list(operation.arg.ins) if operation.op\
         \ is Ops.PROGRAM else [1], \"source_output_indices\": list(output_indices), \"output_views\": output_views, \"prestate_bases\"\
-        : [{\"bytes\": item[0].nbytes, \"sha256\": sha(item[1]), \"alias_allocations\": [i for i, identity in aliases.items()\
-        \ if identity == base_id]} for base_id, item in before.items()], \"first_differing_base\": {\"bytes\": base.nbytes,\
-        \ \"first_differing_offset\": offset}, \"prestate\": bounded_bytes(prefix, \"prestate\", prestate, MAX_BASE), \"original_poststate\"\
-        : bounded_bytes(prefix, \"original\", original_after[key]), \"native_poststate\": bounded_bytes(prefix, \"native\"\
-        , native_after[key]), \"original_difference_window\": difference_window(prefix, \"original-window\", original_after[key],\
-        \ offset), \"native_difference_window\": difference_window(prefix, \"native-window\", native_after[key], offset),\
-        \ \"original_retained_machinecode\": binary, \"native_object\": native_object, \"original_ir\": original_ir, \"fp_state\"\
-        : {\"original_workers\": original_worker_fp, \"original_main_before\": original_main_fp_before, \"original_main_after\"\
-        : original_main_fp_after, \"native_main_before\": native_fp_before, \"native_main_after\": native_fp_after}, \"kernel_mapping\"\
-        : program_mapping[emitted[\"kernel\"]], \"inputs\": receipts}\n                save_json(\"result.json\", details)\n\
-        \                return\n            restore({key: (base, original_after[key]) for key, (base, _) in before.items()})\n\
-        \        actual_model = original.bindings.outputs[\"model\"].numpy().tobytes()\n        if actual_model != frozen:\n\
-        \            save_json(\"result.json\", {\"diagnostic_only\": True, \"result\": \"ORIGINAL_DISPATCH_OR_PRESTATE_DIFFERENCE\"\
-        , \"frame\": label, \"original_sha256\": sha(actual_model), \"frozen_sha256\": sha(frozen)})\n            return\n\
-        \    save_json(\"result.json\", {\"diagnostic_only\": True, \"result\": \"NO_PER_CALL_DIFFERENCE\", \"sample\": os.environ[\"\
-        DIAGNOSTIC_SAMPLE\"], \"inputs\": receipts, \"interpretation\": \"A runtime/dispatch or unmodeled state difference\
-        \ remains; this is not a fix or acceptance.\"})\n\n\ntry:\n    run()\nexcept Exception as error:\n    save_json(\"\
-        result.json\", {\"diagnostic_only\": True, \"result\": \"INCONCLUSIVE\", \"error\": repr(error)})\n    raise\nPY\n\
-        sha256sum \"$proof/diagnose.py\" > \"$proof/diagnose.sha256\"\nsha256sum \"$proof/driver-fixture/collector-current/observations/1344-raw-1/warmup.bin\"\
+        : prestate_bases, \"first_differing_base\": {\"bytes\": base.nbytes, \"first_differing_offset\": offset}, \"prestate\"\
+        : selected_prestate, \"original_poststate\": bounded_bytes(prefix, \"original\", original_after[key]), \"native_poststate\"\
+        : bounded_bytes(prefix, \"native\", native_after[key]), \"original_difference_window\": difference_window(prefix,\
+        \ \"original-window\", original_after[key], offset), \"native_difference_window\": difference_window(prefix, \"native-window\"\
+        , native_after[key], offset), \"original_retained_machinecode\": binary, \"native_object\": native_object, \"original_ir\"\
+        : original_ir, \"fp_state\": {\"original_workers\": original_worker_fp, \"original_main_before\": original_main_fp_before,\
+        \ \"original_main_after\": original_main_fp_after, \"native_main_before\": native_fp_before, \"native_main_after\"\
+        : native_fp_after}, \"kernel_mapping\": program_mapping[emitted[\"kernel\"]], \"inputs\": receipts}\n            \
+        \    save_json(\"result.json\", details)\n                return\n            restore({key: (base, original_after[key])\
+        \ for key, (base, _) in before.items()})\n        actual_model = original.bindings.outputs[\"model\"].numpy().tobytes()\n\
+        \        if actual_model != frozen:\n            save_json(\"result.json\", {\"diagnostic_only\": True, \"result\"\
+        : \"ORIGINAL_DISPATCH_OR_PRESTATE_DIFFERENCE\", \"frame\": label, \"original_sha256\": sha(actual_model), \"frozen_sha256\"\
+        : sha(frozen)})\n            return\n    save_json(\"result.json\", {\"diagnostic_only\": True, \"result\": \"NO_PER_CALL_DIFFERENCE\"\
+        , \"sample\": os.environ[\"DIAGNOSTIC_SAMPLE\"], \"inputs\": receipts, \"interpretation\": \"A runtime/dispatch or\
+        \ unmodeled state difference remains; this is not a fix or acceptance.\"})\n\n\ntry:\n    run()\nexcept Exception\
+        \ as error:\n    save_json(\"result.json\", {\"diagnostic_only\": True, \"result\": \"INCONCLUSIVE\", \"error\": repr(error)})\n\
+        \    raise\nPY\nsha256sum \"$proof/diagnose.py\" > \"$proof/diagnose.sha256\"\nsha256sum \"$proof/driver-fixture/collector-current/observations/1344-raw-1/warmup.bin\"\
         \ \"$proof/driver-fixture/collector-current/observations/1344-raw-1/frame-0.bin\" \"$proof/expected-0.bin\" \"$proof/expected-1.bin\"\
         \ \"$proof/driver-fixture/collector-current/observations/reference-manifest.json\" > \"$proof/original-inputs.before.sha256\"\
         \nset +e\ntimeout --signal=TERM --kill-after=15s 1200s python \"$proof/diagnose.py\" > \"$proof/diagnostic.log\" 2>&1\n\
