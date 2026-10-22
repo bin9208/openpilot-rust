@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "source_pins": {
+    "rust/tools/check_uploader.py": "b90a41b13ed1a9a99e23c771feaea3ad97ff9999c394e309e9d714f69f10a291",
+    "rust/tools/check_uploader_logging.py": "bdac9f00bbb0434a81f535aac7aa1b95007fd80a28aa52b4ede1060bb17ff637",
+    "rust/tools/logmessaged_native.py": "3366e64eb36b0bad9b10023c46217f61c66aae0fe823120ae23d597d2456c872",
+    "rust/tools/logmessaged_reference.py": "ce6d6764911daaab1e9e5ce70152d9f5efc9b5ea006482064bb8192d36f735e3",
+    "openpilot/system/loggerd/uploader.py": "8af80c2411a3303d9f3e9e2255dd0732177d9af280abab6e7f568c7576e3a02e",
+    "openpilot/system/loggerd/xattr_cache.py": "35b6460ce0d1ea99066d86d6e81ef10edcd989a2f0967f07a8bae3957720e631",
+    "openpilot/common/api.py": "10c6b0673654a798d7d32591dc5b67f39650aed086b812aff8ff62ae64da9177",
+    "openpilot/common/utils.py": "b1cc68b63cff1386ba397c0cc527dbb38fb50b154043ffcb066ed7acce65ec83",
+    "openpilot/common/logging_extra.py": "ce9b3b3d8498d76e1c4c0352a3e98e72759bb7f367ff8629c1329c46040595c3"
+  },
+  "source_unchanged": true,
+  "expected_values_origin": "actual original Python source, recorded before native comparisons; no Rust decisions used as expectations",
+  "filesystem_cases": 212,
+  "backoff_decisions": 10000,
+  "http_cases": 32,
+  "logging_cases": 18,
+  "logging_collector_rows": 36,
+  "original_assertions_completed": true,
+  "private_keys_archived": false,
+  "fresh_device_or_model_execution": false
+}
