@@ -14,7 +14,7 @@ acceptance are assessed separately. An old timestamp alone is not a closure reas
 | #296 / #343 | Repository Python and development/build/QA conversion, associated runtime/QA defects, and current numerical investigations |
 | #422 / #494 | dev-md CPU/resource optimization and its model/headroom acceptance follow-ups |
 | #487 / #488 | Jetlink USB ownership, #489 teardown, #460 general producer publication verification |
-| #496 / #498 | Hosted versus registered runner comparison; #496 was closed by its owner |
+| #496 / #498 → #502 / #504 | Runner comparison completed by its owner; common all-local/QEMU execution foundation remains owned by that chat |
 
 The primary checkout's uncommitted Athena/Cargo/optimization files and all other
 worktrees are preserved. Excluded issues receive no body, state or comment updates.
@@ -56,7 +56,7 @@ the exact original bodies and open states are restored. Source and other-session
 work remained untouched. Excluded entries below otherwise receive no mutation.
 
 The table records audit decisions, not unrun-fix success. `fix` remains open until
-source, focused hosted regressions, review and required integration evidence are
+source, focused Actions regressions, review and required integration evidence are
 complete; user-owned acceptance remains separate.
 
 | Issue | Decision | Evidence / reason |
@@ -433,7 +433,7 @@ buses and the unchanged 20 Hz angle/status policy. The exact primary speed helpe
 and official angle placeholder remove the inherited missing-method/data boundary.
 KIA's unique exact-token orphan is connected through the existing substitution
 resolver while preserving its original numeric row and identity. These are
-reviewed implementations with hosted results still pending; GMC's exact CC tune
+reviewed implementations with full exact-source results still pending; GMC's exact CC tune
 and the FCA EPS_3 conflict remain unresolved. No vehicle acceptance is inferred.
 
 The source/native PSA reference and immutable-primary controls remain separate.
@@ -443,16 +443,15 @@ requiring actual MissingTorque and RuntimeUnported failures after loading the
 real DBC. The KIA public test additionally requires the old missing-torque failure
 before comparing 64 complete parameter/safety cases and continuous state/control.
 
-The user's 2026-10-23 runner instruction was verified directly in the comparison
-chat: next necessary trusted ordinary x64 and AGNOS cross jobs prefer the measured
-`bin-actions` runner. Actual ARM execution stays on GitHub ARM. Existing running
-checks are preserved. The next focused run uses the registered labels
-`self-hosted/Linux/X64/dev-md-local` and records runner/resources; hosted-image
-cleanup never removes system bundles on that runner. The retired 25/35 GiB rule
-is removed from this track's AGENTS and build-side native/Bash/Python accounting.
-Admission still checks each operation's stated growth, with CLI overflow/cache
-ownership and device-install policy preserved. Required exact-SHA gates are not
-waived. No successful check is rerun solely as a runner benchmark.
+The user's latest 2026-10-23 instruction, verified directly in the comparison
+chat, requires every new necessary Actions job to use registered `bin-actions`
+(`self-hosted/Linux/X64/dev-md-local`). This supersedes the previous GitHub ARM
+exception: ARM execution uses the separately owned #502 QEMU/PRoot foundation,
+and results must identify emulation instead of physical ARM acceptance. There
+is no hosted fallback. Existing runs are preserved; no successful unchanged
+check is repeated just for routing. The retired 25/35 GiB rule is replaced by
+each operation's estimated growth; CLI overflow, ownership and device-install
+policies remain strict. Required exact-SHA gates are not waived.
 
 Independent review of this PSA/KIA and resource-policy diff found no concrete
 P1/P2 issue by source inspection. Local validation is changed-source syntax,
@@ -472,10 +471,10 @@ is queued, so PSA/KIA/full vehicle claims remain pending.
 
 Follow-up source inspection removed the remaining fixed reserve in the affected
 Card asset staging and media/web QA helpers. Their input-size or explicit growth
-estimates remain admission requirements. Fast and mapped-docs checks also select
-the registered x64 runner for trusted same-repository events, retaining hosted
-execution for fork PRs and recording actual runner/resources. Unrelated provider
-builders and true ARM jobs are outside this bounded follow-up.
+estimates remain admission requirements. The subsequent all-local instruction also removes hosted fallbacks; untrusted
+fork events must be blocked before local execution and by always-run aggregates.
+The shared execution foundation is adapted to stable dev separately, without
+importing dev-md runtime code or history.
 
 A final acceptance recheck closed #332 for its requested failed-doctor diagnostic
 improvement: both strict negative controls retain the typed reason, and the
@@ -505,3 +504,48 @@ Their manifest entries now match the other native Card examples. Generic pure
 workspace checks keep native disabled; the existing explicit native Card gates
 continue to build and exercise both examples. This was a compile setup failure,
 not a failed disk-capacity or runtime assertion.
+
+## Latest full-gate follow-ups
+
+The full `afed1a4638a8d0ec32b4f2744c47a80253748179`
+[run](https://github.com/bin9208/openpilot-rust/actions/runs/39841989845)
+exposed five failures, each retained as an actual failure until a new candidate
+passes its gate:
+
+- Workspace Clippy rejected the zero-reserve test's unsigned `free >= 0`
+  tautology. The test now checks successful zero-growth admission and typed
+  free-space evidence, with no guard-runtime change.
+- Athena's new actual upload-attribution child cases passed, but the minimal
+  toolchain lacked the Clippy component. The component is now explicitly
+  installed; the full later HTTP/source gate still needs to execute.
+- Card passed the corrected PSA public/source regressions and reached the Tesla
+  positive control. Source and native parsers lazily register `DAS_control` on
+  first update; the fixture now performs that registration before the real
+  active-to-cancel CAN edge. Expected press/release behavior is unchanged, and
+  cold-input loss plus wrong-bus/empty/touch controls are explicit.
+- Control-tools passed source comparison and all five joystick phases, then
+  timed out during finite IPC drain. New [#505](https://github.com/bin9208/openpilot-rust/issues/505)
+  repairs the checker to retain independent channel tails and producer status.
+  The failed job did not preserve its exact partial tail/status, so that
+  historical interleaving remains unknown. #208 is unchanged.
+- Logger compilation rejected the host-only #54 `fclose` interposer's redundant
+  null comparison under `-Werror=nonnull-compare`. Pointer-identity selection
+  keeps the nonnull stdio contract, strict warnings and all real I/O faults.
+
+The `afed` focused core/media jobs stopped in native APT preparation on foreign
+ARM indexes (404), before Rust regressions. [#503](https://github.com/bin9208/openpilot-rust/issues/503)
+uses a private APT architecture-default configuration, preserving explicit
+foreign source policy, signatures, pins and failure semantics. Its independent
+stable-dev proof branch `b90ae57c71b4c057bdcf6c8da9359d36d4a020e1`
+[run](https://github.com/bin9208/openpilot-rust/actions/runs/39845768239)
+passed on `bin-actions`: all four helper tests, a real native APT update and
+capnproto/libcapnp-dev/pkg-config installation commands succeeded while dpkg
+still reported foreign `arm64`. These packages were already installed; no new
+package unpack was required. This proves the host setup correction, not the
+full runtime gates.
+
+The focused Java job stopped before Gradle because a previous run's
+`diagnostic-close-red` directory survived in shared runner temp. Fresh per-job
+output paths are required for repeatable local-runner evidence; this failure
+is not the #21 close-order behavior assertion. Functional tests, fixtures and
+builds have not been executed from the workstation.

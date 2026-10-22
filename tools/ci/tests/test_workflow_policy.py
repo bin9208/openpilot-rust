@@ -5,6 +5,9 @@ import unittest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
+TRUST = ("github.repository == 'bin9208/openpilot-rust' && "
+         "(github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)")
+TRUST_IF = '${{ ' + TRUST + ' }}'
 
 
 def workflow(name):
@@ -27,12 +30,12 @@ class WorkflowPolicyTests(unittest.TestCase):
     self.assertEqual(spec['jobs']['build']['with']['run_number'], '1')
     gate = spec['jobs']['gate']
     self.assertEqual(set(gate['needs']), {'build', 'navigation', 'apk', 'jetlink'})
-    self.assertEqual(gate['if'], '${{ always() }}')
+    self.assertEqual(gate['if'], '${{ ' + TRUST + ' && (always()) }}')
     step = gate['steps'][0]
     for name in ('BUILD', 'NAVIGATION', 'APK', 'JETLINK'):
       self.assertIn(f'test "${name}" = success', step['run'])
     for job in ('build', 'navigation', 'apk', 'jetlink'):
-      self.assertNotIn('if', spec['jobs'][job])
+      self.assertEqual(spec['jobs'][job]['if'], TRUST_IF)
       self.assertNotIn('continue-on-error', spec['jobs'][job])
       called = Path(spec['jobs'][job]['uses']).name
       self.assertIn('workflow_call', workflow(called)['on'])

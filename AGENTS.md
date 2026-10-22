@@ -27,15 +27,19 @@
 
 - On 2026-10-23 the user removed the fixed 25/35 GiB stop/resume rule.
   Local work remains syntax, formatting and diff review only. Run functional
-  checks/builds in registered GitHub Actions jobs. Prefer the measured faster
-  trusted x64 `bin-actions` runner (`self-hosted`, `Linux`, `X64`,
-  `dev-md-local`) for the next necessary ordinary checks/builds and AGNOS cross
-  builds. Keep actual ARM CPU execution on GitHub ARM runners. Preserve running
+  checks/builds in registered GitHub Actions jobs. The latest instruction fixes
+  trusted x64 checks, generic ARM cross-builds and AGNOS cross-builds to
+  `bin-actions` (`self-hosted`, `Linux`, `X64`, `dev-md-local`), with no
+  GitHub-hosted x64/ARM fallback or further runner comparison. Run the existing ARM checks in local ARM QEMU under the separately owned
+  #502 foundation; label this as emulation, never native ARM hardware acceptance. Preserve running
   CI and do not repeat unchanged successful checks solely to change runners.
   Record runner identity and actual operation growth/resource observations;
   check that the operation fits without reinstating the retired fixed reserve.
   Native source, ABI, required PR gates, branch isolation and deployment
-  acceptance remain unchanged.
+  acceptance remain unchanged. The full generic local build succeeded in
+  55m41s at source 2ff834da04e2acaad3d63211c2b76e287679eeaa, Actions
+  39832976197/job/120013728323. QEMU checks do not establish native ARM CPU
+  execution. Apply routing changes at the next otherwise necessary workflow edit.
 - On 2026-10-09 the user explicitly authorized deleting old Rust-port records,
   archived validation artifacts and unused build caches without another approval
   or preservation/compression step. Preserve current source changes and files

@@ -12,12 +12,14 @@ on:
 
 jobs:
   check_user_docs:
-    name: check mapped user docs
-    runs-on: ${{ fromJSON(github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","Linux","X64","dev-md-local"]' || '["ubuntu-24.04"]') }}
+    if: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    name: ${{ (github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && 'check mapped user docs' || 'Blocked source - check mapped user docs awaits trusted validation' }}
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+      - uses: ./.github/actions/job-temp
       - name: Record runner resources
         run: |
           printf 'runner=%s environment=%s arch=%s\n' "${{ runner.name }}" "${{ runner.environment }}" "${{ runner.arch }}"
@@ -50,3 +52,6 @@ jobs:
             exit 1
           fi
           CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test user_docs
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}

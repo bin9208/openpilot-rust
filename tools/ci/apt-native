@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Native package preparation in Actions, isolated from persistent foreign arches.
+set -euo pipefail
+if [[ ${GITHUB_ACTIONS:-} != true ]]; then
+  echo 'apt-native is restricted to GitHub Actions jobs' >&2
+  exit 2
+fi
+case ${1:-} in
+  update|install) ;;
+  *) echo 'usage: apt-native {update|install} [apt-get arguments...]' >&2; exit 2 ;;
+esac
+task_apt_arch=$(dpkg --print-architecture)
+case "$task_apt_arch" in
+  amd64|arm64) ;;
+  *) echo 'unsupported native package architecture' >&2; exit 2 ;;
+esac
+task_apt_config=$(mktemp "${RUNNER_TEMP:?}/apt-native.XXXXXX")
+trap 'rm -f -- "$task_apt_config"' EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+cat > "$task_apt_config" <<EOF
+#clear APT::Architectures;
+APT::Architecture "$task_apt_arch";
+APT::Architectures { "$task_apt_arch"; };
+APT::Get::List-Cleanup "false";
+EOF
+printf 'apt-native package architecture=%s command=%s\n' "$task_apt_arch" "$1"
+# -c is read after system configuration. Never change dpkg or shared sources.
+sudo -n apt-get -c "$task_apt_config" "$@"

@@ -12,20 +12,24 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build:
+    if: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     uses: ./.github/workflows/tests.yaml
     with:
       run_number: '1'
   navigation:
+    if: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     uses: ./.github/workflows/naver-ci.yml
   apk:
+    if: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     uses: ./.github/workflows/naver-apk-tools.yml
   jetlink:
+    if: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     uses: ./.github/workflows/jetlink.yml
   gate:
-    name: integration gate
-    if: ${{ always() }}
+    name: ${{ (github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && 'integration gate' || 'Blocked source - integration gate awaits trusted validation' }}
+    if: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()) }}
     needs: [build, navigation, apk, jetlink]
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 2
     steps:
       - name: Require every integration suite to succeed
