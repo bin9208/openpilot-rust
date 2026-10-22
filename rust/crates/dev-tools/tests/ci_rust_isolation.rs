@@ -1558,7 +1558,9 @@ fn radar_requires_fresh_source_runtime_arm_and_memory_checks() {
             "sha256sum",
         ],
     );
-    assert!(!arm.contains("qemu-aarch64"));
+    assert_eq!(data["jobs"]["radar-arm"]["env"]["LOCAL_CI_ARCH"], "aarch64");
+    // ARM execution is explicitly emulated on the registered x64 runner.
+    required(&arm, &["test -x /usr/bin/qemu-aarch64-static"]);
     required(
         &commands(&data["jobs"]["radar-memory"]),
         &[
@@ -2995,7 +2997,7 @@ fn calibration_estimator_retirement_keeps_complete_sealed_oracle_and_native_call
     );
     assert_eq!(
         artifacts[0]["with"]["path"],
-        "${{ env.CI_JOB_TEMP }}/calibration-estimator-native/"
+        "${{ env.CI_JOB_TEMP }}/calibration-estimator-native/\n"
     );
 }
 
@@ -3118,7 +3120,7 @@ fn desire_controller_requires_retired_helper_and_private_absence_cli_command_gat
     assert_eq!(artifact["if"], TRUSTED_ALWAYS);
     assert_eq!(
         artifact["with"]["path"],
-        "${{ env.CI_JOB_TEMP }}/desire-controller-native/"
+        "${{ env.CI_JOB_TEMP }}/desire-controller-native/\n"
     );
 }
 

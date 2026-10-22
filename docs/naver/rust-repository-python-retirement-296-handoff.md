@@ -29,6 +29,17 @@ the feature PR343 remote at adff until the routing acceptance gates are met.
 Fixture original109-data reuse R2 additionally repairs cleanup authorization;
 fresh native constructors and the separate normal40/failure27 checks remain open.
 
+Actual routing-policy39871081170 reaches native tests on bin-actions at003eed6c:
+ci_rust_isolation has80passes/3failures. Two assertions omit the retained upload
+path's final newline; the third still forbids the now expressly required QEMU
+host executable. The narrow test repair requires the exact multiline paths,
+LOCAL_CI_ARCH=aarch64 and the executable preflight while retaining every original
+ARM build/execution assertion. Contract source seals are rebased. No workflow
+command changed. A new focused run must qualify the changed compacted YAML with
+the real Rust parser; no local native test has been run. Publisher39865031709
+fails during Set up job, Controls39867224185 and logging39865824906 fail their
+validation steps, and estimator39866247802 succeeds pending artifact admission.
+
 ## Active continuation, superseding the earlier migration snapshot
 
 Parent **gpt-6.1-sol / ultra** is verified from actual turn metadata; all continuing

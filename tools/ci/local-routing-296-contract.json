@@ -328,7 +328,7 @@
     "scope": "Declare file in the two existing guest APT lists; all original ELF checks and command routing unchanged",
     "source_file_sha256": {
       ".github/workflows/rust.yml": "aa409b0ee507b8f7c017a799822df270d6e44d074e1901f58a2c07eba466361c",
-      "rust/crates/dev-tools/tests/ci_rust_isolation.rs": "1b31f8df4504283bdf69a7fad43bccc6c55de4d7d67a49e888c6f140be215316"
+      "rust/crates/dev-tools/tests/ci_rust_isolation.rs": "35fc5086f1521c94f61a129a9e5124924e1b5ec5357ed336b612c92b19ab1aa0"
     },
     "jobs": [
       {

@@ -26,6 +26,23 @@ caller loading, private ownership policy/negative controls and changed ARM
 consumer execution. This grants no additional runtime or Python retirement
 acceptance; inventory remains288replaced-local/3partial/3289pending of3580.
 
+Actual [routing-policy39871081170](https://github.com/bin9208/openpilot-rust/actions/runs/39871081170)
+at003eed6c executes on bin-actions, job120145390532. Source/contract admission
+completes and ci_rust_isolation reports80passed/3failed. Artifact12466553025 is
+161128bytes, SHA256 ac6d4fc05a93d6e809e797aa112c0eeb1936c92e21e2562b4d61bf39ca7ec200;
+parent checks all19member CRCs. The raw failures are exact upload-path equality
+for calibration/desire (actual final newline) and the obsolete prohibition on
+qemu-aarch64 in radar-arm. The repairs retain exact path equality including the
+newline and positively require aarch64 transport plus the preprovisioned QEMU
+executable. Every original radar ARM command/runtime/memory assertion remains.
+Only the test and its contract seal change; no consumer command or helper changes.
+The separate ci_workflow_policy suite was not reached. The compacted R8 input
+changes the actual parser representation, warranting its focused parser/policy
+qualification, including the three repaired cases and new byte-size regression.
+No runtime, native ARM CPU, completed routing or retirement acceptance follows
+from this partial source-policy result. Existing successful foundation checks
+and unrelated module cohorts are reused rather than repeated.
+
 Current accepted source retirement: the outer Panda checker/test Python files
 are removed. Actual deleted-checkout maintained gate39625704015 passes at
 source249c1a08 after the prior153/152-source pre-deletion proof. Parent audited
