@@ -1,0 +1,70 @@
+{
+  "repository": "https://github.com/python/cpython",
+  "commit": "e848e4b09ca4bc67c0041c9ce7526dae471d4c36",
+  "version": "3.12.15",
+  "license_file": "big5-LICENSE.txt",
+  "source_files": {
+    "CPython-LICENSE.txt": {
+      "bytes": 13936,
+      "sha256": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf"
+    },
+    "_codecs_hk.c": {
+      "bytes": 5103,
+      "sha256": "2b1c4a0516cc930c58bf885baae06e7b7b676b5dc1713c0653bba1fc39c4e12d"
+    },
+    "_codecs_tw.c": {
+      "bytes": 2365,
+      "sha256": "bd156987b58714a877453fcc67f81cc569e46a2c29a33caebbd6aaa71ad10ede"
+    },
+    "cjkcodecs.h": {
+      "bytes": 17493,
+      "sha256": "79b8d3dd8c18a18377d6bc72524bf6e53cdedf5e7e108b6a403a476a8cde862b"
+    },
+    "mappings_hk.h": {
+      "bytes": 183811,
+      "sha256": "80259d8dababbbacbc214158aebb1f17a53bbbfa2cac30da3ce0fe43435f344e"
+    },
+    "mappings_tw.h": {
+      "bytes": 203654,
+      "sha256": "5055cd95f8d4a80014d6f3b6650d578eb424d2f9dcc86c5e4f4252fd93cf991c"
+    }
+  },
+  "source_data_only_never_executed": true,
+  "native_mapping_data_never_expected_oracle": true,
+  "layout": {
+    "blocks": [
+      "big5",
+      "cp950ext",
+      "big5hkscs"
+    ],
+    "rows": 128,
+    "columns": 256,
+    "first_lead": 128,
+    "scalar": "u32LE; 0xffffffff absent; HKSCS hint bits expanded to plane2",
+    "block_bytes": 131072
+  },
+  "source_semantics": [
+    "ASCII bytes pass through; every high byte requires a mapped pair",
+    "CP950 extension before Big5 fallback",
+    "HKSCS skips Big5 fallback at C6:A1..FF and C7..C8, then extension and four scalar pairs"
+  ],
+  "counts": {
+    "big5": {
+      "mapped": 13710,
+      "supplementary": 0
+    },
+    "cp950ext": {
+      "mapped": 53,
+      "supplementary": 0
+    },
+    "big5hkscs": {
+      "mapped": 4937,
+      "supplementary": 1693
+    }
+  },
+  "output": {
+    "bytes": 393216,
+    "sha256": "2ba60caee676c0600f21ea6406e4d7778a16279d465c2e08cdd818d69e0bfdbe"
+  },
+  "independent_original_capture_status": "pending hosted original-only capture; no native acceptance claimed"
+}

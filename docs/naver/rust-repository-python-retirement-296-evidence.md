@@ -8530,3 +8530,34 @@ including all7literal symlinks, plus before/after Git index inventories. It keep
 source69bbee211 fixed, original/candidate observers, disk reserves, strict fields,
 timing and two native roots unchanged. No aliases or runtime checks are removed;
 all new functional stages still require hosted execution.
+
+
+Big5/HKSCS/CP950, GB2312/GBK/GB18030 and ISO-2022-JP-2 native candidates are
+integrated with separate modules and opt-in comparison tests. Parent uses only
+valid Big5 additions9a5c97f6 plus registrationdb5ff6c3; the initial corrupt binary
+export is rejected. GB additionsd9281ccf and JP2 additionsba4aad17 are integrated
+with manually reconciled registration hunks preserving Korean and other lanes.
+Pinned PSF source/map provenance and licenses remain beside each table; parent
+verifies all binary bytes against frozen mirrors, scoped formatting, TOML and
+diff. Cargo.lock remains0f0f7383a4232516290c01a65f6875d7fb8304ae0b61c62ee054deffce201f37.
+Hosted equivalence is still pending, so no caller or inventory credit follows.
+
+Korean independent-original39830083354 at93bf098f39fe4142693b5a345c447d228e075d1c,
+workflow5bb975a4dac0a6ad770550d7bc1d89b820f0af46, succeeds. Artifact12447289141
+is756500bytes/SHA2565ba0d2cc9cbcbd745fb87bfd7c8b1a7f6169cd236f9d7dfb23190327e298f3b3;
+parent verifies53CRCs/43output seals/unchanged provider and source pairs.
+Manifest3ede98a5bdd00eb3ad3e20b98ba3d5d4db11bb06911078fa1651017ae1c23a03
+covers788687dense rows/36domains/24576vectors/72source cases. Native comparison
+is separately published frombcf7b88ef. Big5 original39830642816 and GB original
+39831243150 report success; their artifact admission remains separate.
+
+A concrete historical provenance gap remains: the original Japanese archive's
+non-Japanese vectors seal wrappers but omit actual _codecs_cn/_tw/_hk/_kr
+extensions. ISO-2022-KR and JP2 also import KR/CN mapping providers. Hubble prepares
+one narrow independent capture of540prior vectors across12affected codecs with
+complete current-provider seals and exact canonical old/new value comparisons.
+This supplies new observations; it cannot retroactively establish old extension
+identities. New dense captures remain valid, but final caller acceptance waits
+for that supplement. Successful native domains are not rerun for this bookkeeping.
+CP949's remaining GNU dependency receives its own focused observation/comparison
+lane; no full arbitrary-byte-string claim is made.

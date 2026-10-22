@@ -1,9 +1,12 @@
 //! Native changed-path selector and explicit Python 3.12 AST admission candidate.
 //! Opt-in adapter; maintained Python callers remain until differentials pass.
+mod big5;
+mod chinese_gb;
 mod codec_names;
 mod decode;
 mod hz;
 mod idna;
+mod iso2022_jp2;
 mod japanese;
 mod japanese_variants;
 mod korean;

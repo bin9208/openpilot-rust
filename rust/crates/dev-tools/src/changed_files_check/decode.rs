@@ -405,15 +405,15 @@ pub(super) fn payload(raw: &[u8], codec: &str) -> Result<String> {
             super::japanese_variants::iso2022(raw, name)?
         }
         "hz" => super::hz::decode(raw)?,
-        "big5" => native_codec(raw, c"BIG5")?,
-        "big5hkscs" => native_codec(raw, c"BIG5-HKSCS")?,
+        "big5" => super::big5::decode(raw, name)?,
+        "big5hkscs" => super::big5::decode(raw, name)?,
         "cp949" => native_codec(raw, c"CP949")?,
-        "cp950" => native_codec(raw, c"CP950")?,
+        "cp950" => super::big5::decode(raw, name)?,
         "euc_kr" => super::korean::euc(raw)?,
-        "gb18030" => native_codec(raw, c"GB18030")?,
-        "gb2312" => native_codec(raw, c"GB2312")?,
-        "gbk" => native_codec(raw, c"GBK")?,
-        "iso2022_jp_2" => native_codec(raw, c"ISO-2022-JP-2")?,
+        "gb18030" => super::chinese_gb::decode(raw, super::chinese_gb::Codec::Gb18030)?,
+        "gb2312" => super::chinese_gb::decode(raw, super::chinese_gb::Codec::Gb2312)?,
+        "gbk" => super::chinese_gb::decode(raw, super::chinese_gb::Codec::Gbk)?,
+        "iso2022_jp_2" => super::iso2022_jp2::decode(raw)?,
         "iso2022_kr" => super::korean::iso2022(raw)?,
         "johab" => super::korean::johab(raw)?,
         "base64_codec" | "bz2_codec" | "hex_codec" | "quopri_codec" | "rot_13" | "uu_codec"

@@ -2359,3 +2359,16 @@ required-features = ["paramsd-startup-check-native"]
 [[test]]
 name = "changed_files_korean"
 required-features = ["changed-files-native"]
+
+[[test]]
+name = "changed_files_big5"
+path = "tests/changed_files_big5.rs"
+required-features = ["changed-files-native"]
+
+[[test]]
+name = "changed_files_chinese_gb"
+required-features = ["changed-files-native"]
+
+[[test]]
+name = "changed_files_jp2"
+required-features = ["changed-files-native"]
