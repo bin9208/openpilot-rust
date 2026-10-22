@@ -1,5 +1,18 @@
 # Independent Rust port repository (2026-09-29)
 
+## Latest runner and validation override (2026-10-23)
+
+- All Actions work uses registered bin-actions (self-hosted/Linux/X64/dev-md-local).
+  No GitHub-hosted x64 or ARM fallback. ARM execution must keep its original
+  architecture under the separately owned local QEMU foundation and must be
+  identified as emulation, never native ARM hardware acceptance.
+- Existing runs are preserved; do not repeat successful unchanged checks just
+  to change routing. Apply runner changes at the next necessary workflow edit.
+- Local work is syntax/format/diff only. Functional checks/builds/package installs
+  run in registered Actions. No device or release authorization is added.
+- #503 is only native APT setup isolation; the common routing/QEMU migration
+  belongs to #502 and is not implemented again here.
+
 - On 2026-10-14 the user selected Astra for the parent agent and explicitly
   required GPT-6.1 Sol for all separately launched sub-agents. Specify
   `gpt-6.1-sol` when delegating; hand off prior agents rather than silently
@@ -25,10 +38,8 @@
   device comparison after the complete runtime candidate is ready. Keep unported
   components and native external dependencies explicit in the inventory.
 
-- The user required prevention of disk exhaustion on 2026-09-30. Check available
-  space before each local build, dependency install or large artifact copy. Keep
-  at least 25 GiB free plus the operation's estimated growth; when below that
-  floor, stop new build work and recover at least 35 GiB before resuming. Prefer
+- Observe free space and estimated operation growth before dependency installs
+  and large copies. On 2026-10-23 the user retired the fixed 25/35 GiB rule. Prefer
   bounded package builds with incremental compilation disabled and reuse a
   coordinated target cache. On 2026-10-09 the user explicitly authorized deleting
   old Rust-port records, archived validation artifacts and all unused build

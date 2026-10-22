@@ -1,0 +1,36 @@
+name: Native APT preparation 503
+on:
+  push:
+    branches: [codex/fix-503-native-apt]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: apt-native-503-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  native-apt:
+    if: github.repository == 'bin9208/openpilot-rust'
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Record actual runner and package architectures
+        run: |
+          printf 'runner=%s environment=%s arch=%s\n' "${{ runner.name }}" "${{ runner.environment }}" "${{ runner.arch }}"
+          dpkg --print-architecture
+          dpkg --print-foreign-architectures
+          free -h
+          df -h "$RUNNER_TEMP"
+      - name: Verify private APT defaults with the actual configuration parser
+        run: python3 -m unittest discover -s tools/ci/tests -p test_native_apt.py -v
+      - name: Prepare actual native package dependencies
+        run: |
+          python3 -c 'import os,shutil; free=shutil.disk_usage(os.environ["RUNNER_TEMP"]).free; growth=1024**3; print(dict(free_bytes=free,growth_bytes=growth)); assert free >= growth, "insufficient space for estimated package metadata/install growth"'
+          tools/ci/apt-native update
+          tools/ci/apt-native install -y capnproto libcapnp-dev pkg-config
