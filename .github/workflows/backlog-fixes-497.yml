@@ -28,7 +28,8 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: ./.github/actions/rust-path
+      - name: Use the hosted Rust toolchain path
+        run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'

@@ -378,3 +378,15 @@ placeholders never become active torque tuning. PSA/Tesla-X tuning, GMC/KIA
 mapping and the FCA EPS_3 conflict remain explicit. The actual fork and its
 history were checked after the user confirmed no other authoritative source.
 No guessed mapping, checksum change or vehicle-success claim is substituted.
+
+### First cloud execution at c7eb8538f
+
+[PR #500](https://github.com/bin9208/openpilot-rust/pull/500) targets `dev`.
+The [first focused run](https://github.com/bin9208/openpilot-rust/actions/runs/39829792239)
+completed the diagnostic-close job successfully: the controlled old expected-one
+assumption failed as expected with actual-zero, and both diagnostic variants
+passed their unchanged-budget candidate tests. The other five jobs stopped
+before compiling because this stable-dev baseline has no `rust-path` composite
+action. The focused workflow now explicitly uses the hosted cargo PATH. That
+setup failure is not reported as a runtime RED or a candidate functional result.
+Required PR and exact-head source/ARM evidence remain pending.
