@@ -8112,3 +8112,12 @@ allowances are scoped to declarations, owned-handle drop and three documented
 calls. Default and no-default library checks are both required by the frozen
 hosted recipe8452e7bc356de61afbe9395140b949685f69b626c3f99ebd1147134d5f63da5e;
 no functional acceptance precedes its actual result.
+
+The startup comparator now rejects any occupied output leaf before large
+original/catalog/binary admission. This fixes the demonstrated foreign-output
+120s stall without changing the command deadline or model results. The later
+create_dir still rejects a racing creation before output ownership is acquired.
+A focused regression checks preserved foreign report bytes, a dangling symlink
+and missing-input admission for a new path. Hosted affected-unit and family
+continuation validation remain required; earlier24case success is preserved as
+partial evidence and does not become full-family acceptance.

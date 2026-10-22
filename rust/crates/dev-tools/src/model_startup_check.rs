@@ -96,6 +96,13 @@ fn execute(options: &Options, mut emit: impl FnMut(&Value) -> Result<()>) -> Res
         options.output.is_absolute(),
         "startup output must be absolute",
     )?;
+    // Reject foreign evidence before authenticating the large model/catalog.
+    // The later create_dir remains the atomic ownership check against races.
+    match fs::symlink_metadata(&options.output) {
+        Ok(_) => return Err("startup evidence output already exists".into()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => return Err(error.into()),
+    }
     let original = Original::open(
         &options.root,
         &options.catalog,
@@ -384,6 +391,46 @@ pub fn cli() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn foreign_evidence_is_rejected_before_large_or_missing_input_admission() {
+        let root = tempfile::tempdir().unwrap();
+        let missing = root.path().join("missing-input");
+        let output = root.path().join("foreign");
+        fs::create_dir(&output).unwrap();
+        fs::write(output.join("report.json"), b"foreign-owned-report").unwrap();
+        let mut options = Options {
+            driving: missing.clone(),
+            driver: missing.clone(),
+            driving_peer: missing.clone(),
+            driver_peer: missing.clone(),
+            catalog: missing.clone(),
+            original: missing.clone(),
+            original_sha256: String::new(),
+            root: missing,
+            output: output.clone(),
+            expect: Expect::PreFrame,
+            expect_absent: true,
+        };
+        assert!(run(&options)
+            .unwrap_err()
+            .to_string()
+            .contains("startup evidence output already exists"));
+        assert_eq!(
+            fs::read(output.join("report.json")).unwrap(),
+            b"foreign-owned-report"
+        );
+        let link = root.path().join("foreign-link");
+        std::os::unix::fs::symlink(root.path().join("absent-target"), &link).unwrap();
+        options.output = link.clone();
+        assert!(run(&options)
+            .unwrap_err()
+            .to_string()
+            .contains("startup evidence output already exists"));
+        assert!(fs::symlink_metadata(link).unwrap().file_type().is_symlink());
+        options.output = root.path().join("new-evidence");
+        assert!(run(&options).is_err());
+        assert!(!options.output.exists());
+    }
     #[test]
     fn original_case_admission_rejects_missing_duplicate_or_early_frame_evidence() {
         let mut rows = Vec::new();
