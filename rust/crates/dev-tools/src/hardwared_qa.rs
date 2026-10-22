@@ -834,6 +834,22 @@ fn retain_packet_before_decode(output: &Path, index: usize, raw: &[u8]) -> Resul
     value_packet(raw)
 }
 
+fn kmsg_state(path: &Path) -> Result<Option<(bool, String)>> {
+    let text = fs::read_to_string(path)?;
+    let engaged = match text.as_str() {
+        "<3>[hardware] engaged: True\n" => true,
+        "<3>[hardware] engaged: False\n" => false,
+        partial
+            if "<3>[hardware] engaged: True\n".starts_with(partial)
+                || "<3>[hardware] engaged: False\n".starts_with(partial) =>
+        {
+            return Ok(None);
+        }
+        _ => return Err("hardwared engaged kmsg marker has unexpected content".into()),
+    };
+    Ok(Some((engaged, text)))
+}
+
 struct OwnedNamespace {
     path: PathBuf,
     identity: (u64, u64),
@@ -1261,9 +1277,16 @@ fn peer(
     )?);
     let params = root.join("data/params/d");
     let engaged_deadline = Instant::now() + Duration::from_secs(3);
-    while fs::read_to_string(params.join("IsEngaged")).unwrap_or_default() != "1" {
+    let kmsg_path = root.join("dev/kmsg");
+    let kmsg_engaged = loop {
+        let engaged = fs::read_to_string(params.join("IsEngaged")).unwrap_or_default() == "1";
+        if let Some((true, marker)) = kmsg_state(&kmsg_path)? {
+            if engaged {
+                break marker;
+            }
+        }
         if Instant::now() >= engaged_deadline {
-            return Err("hardwared did not persist IsEngaged".into());
+            return Err("hardwared did not persist IsEngaged and its engaged kmsg marker".into());
         }
         let _ = send_receive(
             &mut publisher,
@@ -1276,7 +1299,8 @@ fn peer(
             &mut input_count,
             &mut input_history,
         )?;
-    }
+    };
+    fs::write(output.join("kmsg-engaged.txt"), &kmsg_engaged)?;
     fs::write(params.join("OnroadCycleRequested"), b"1")?;
     transitions.push(until(
         &mut publisher,
@@ -1368,6 +1392,10 @@ fn peer(
         )?;
     }
     let exit = stop_and_drain(|| process.stop(), &logs, &stats, &mut records, &mut metrics)?;
+    let Some((false, kmsg)) = kmsg_state(&kmsg_path)? else {
+        return Err("hardwared offroad engaged kmsg marker missing".into());
+    };
+    fs::write(output.join("kmsg-offroad.txt"), &kmsg)?;
     publisher.stop()?;
     publisher.collect(&mut input_history, &mut input_count)?;
     let logs_ok = records
@@ -1380,10 +1408,6 @@ fn peer(
     }
     if input_count < 15 {
         return Err("hardwared test did not send enough invalid-flag inputs".into());
-    }
-    let kmsg = fs::read_to_string(root.join("dev/kmsg"))?;
-    if !kmsg.contains("engaged: True") || !kmsg.contains("engaged: False") {
-        return Err("hardwared engaged kmsg lifecycle markers missing".into());
     }
     if fs::read_dir(root.join("no-command-directory"))?
         .next()
@@ -1416,7 +1440,8 @@ fn peer(
     let stats_socket = stats_cleanup.cleanup()?;
     Ok((
         json!({"packets":packets,"transitions":transitions,"invalid_input_events":input_count,
-        "input_history":input_history,"status_packet":status,"params_after":params_after,"kmsg":kmsg,
+        "input_history":input_history,"status_packet":status,"params_after":params_after,
+        "kmsg":kmsg,"kmsg_engaged":kmsg_engaged,
         "records":records,"metrics":metrics,"publisher_flags_valid":false,
         "socket_cleanup":[log_socket,stats_socket],"peer_prefix":prefix}),
         exit,
@@ -1576,6 +1601,25 @@ mod tests {
             fs::read(output.path().join("deviceState-000.capnp")).unwrap(),
             malformed
         );
+    }
+
+    #[test]
+    fn regular_kmsg_fixture_retains_both_phase_observations_before_truncation() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("kmsg");
+        fs::write(&path, b"<3>[hardware] engaged: True\n").unwrap();
+        let (engaged, first) = kmsg_state(&path).unwrap().unwrap();
+        assert!(engaged);
+        fs::write(&path, b"<3>[hardware] engaged: False\n").unwrap();
+        let (offroad, second) = kmsg_state(&path).unwrap().unwrap();
+        assert!(!offroad);
+        assert_eq!(first, "<3>[hardware] engaged: True\n");
+        assert_eq!(second, "<3>[hardware] engaged: False\n");
+        assert!(!second.contains("engaged: True"));
+        fs::write(&path, b"<3>[hardware] engaged: F").unwrap();
+        assert!(kmsg_state(&path).unwrap().is_none());
+        fs::write(&path, b"<3>[hardware] engaged: unknown\n").unwrap();
+        assert!(kmsg_state(&path).is_err());
     }
 
     #[test]
