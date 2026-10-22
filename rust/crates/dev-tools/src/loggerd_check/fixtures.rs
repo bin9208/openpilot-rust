@@ -231,9 +231,9 @@ mod barrier_tests {
         let event = message.get_root::<event::Reader<'_>>().unwrap();
         assert!(!event.get_valid());
         assert!(event.get_log_mono_time() > 0);
-        assert_eq!(
-            event.get_log_message().unwrap().to_str().unwrap(),
-            "logger-qa-barrier"
-        );
+        let event::LogMessage(text) = event.which().unwrap() else {
+            panic!("barrier union differs");
+        };
+        assert_eq!(text.unwrap().to_str().unwrap(), "logger-qa-barrier");
     }
 }

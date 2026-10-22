@@ -85,7 +85,12 @@ fn sealed_original_inputs_and_full_schema_routes() {
             let event = message.get_root::<event::Reader<'_>>().unwrap();
             let service = row["service"].as_str().unwrap();
             if service == "logMessage"
-                && event.get_log_message().unwrap().to_str().unwrap() == "logger-qa-barrier"
+                && match event.which().unwrap() {
+                    event::LogMessage(text) => {
+                        text.unwrap().to_str().unwrap() == "logger-qa-barrier"
+                    }
+                    _ => panic!("wrong saved logMessage union"),
+                }
             {
                 assert!(!event.get_valid(), "independent source barrier validity");
                 let actual = fixtures::barrier();
