@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 547);
+    assert_eq!(text.matches(marker).count(), 549);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -351,6 +351,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut hardwared_native = vec![];
     let mut modem_native = vec![];
     let mut manager_qa_native = vec![];
+    let mut deleter_native_builds = vec![];
     let mut uploader_native_builds = vec![];
     let mut uploader_http_interposer = vec![];
     let mut guarded_add_archives = vec![];
@@ -369,6 +370,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 .iter()
                 .rev()
                 .find(|line| line.starts_with("      - name:"));
+            if step == Some(&"      - name: Compare log-space retention with the original loop and actual low-space filesystem") {
+                deleter_native_builds.push(tail.to_owned());
+                continue;
+            }
             if i + 1 < lines.len()
                 && (lines[i + 1].contains("--features uploader-reference-native")
                     || lines[i + 1].contains("--features uploader-logging-native")
@@ -966,6 +971,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             }
         }
     }
+    assert_eq!(
+        deleter_native_builds,
+        [" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024"; 2]
+    );
     assert_eq!(
         uploader_native_builds,
         [" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024"; 2]

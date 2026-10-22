@@ -3206,3 +3206,115 @@ fn retired_route_controllers_require_ordered_native_build_checks_and_current_cal
         );
     }
 }
+
+const DELETER_CALLER_NAME: &str =
+    "Compare log-space retention with the original loop and actual low-space filesystem";
+const DELETER_CALLER_BODY: &str = r###"set -euo pipefail
+"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+cargo build -p openpilot-deleter --bins --examples --locked
+"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+cargo build --manifest-path "$GITHUB_WORKSPACE/rust/Cargo.toml" -p openpilot-dev-tools --no-default-features --features deleter-check-native --bin check-deleter --locked
+cargo test --manifest-path "$GITHUB_WORKSPACE/rust/Cargo.toml" --locked -p openpilot-dev-tools --no-default-features --features deleter-check-native --lib deleter_check:: -- --test-threads=1
+"$GITHUB_WORKSPACE/rust/target/debug/check-deleter" --root "$GITHUB_WORKSPACE" --scope reference \
+  --trace "$GITHUB_WORKSPACE/rust/target/debug/examples/deleter_trace" --binary "$GITHUB_WORKSPACE/rust/target/debug/openpilot-deleter" \
+  --fixture "$GITHUB_WORKSPACE/rust/crates/dev-tools/tests/fixtures/deleter-original-group/source-observations.json" \
+  --fixture-sha256 b4e652323459d74d54acbd3cf05eb8ae0a1f543033686d039928f63c530f6a64 --output "$RUNNER_TEMP/deleter-reference"
+"$GITHUB_WORKSPACE/rust/target/debug/check-deleter" --root "$GITHUB_WORKSPACE" --scope daemon \
+  --trace "$GITHUB_WORKSPACE/rust/target/debug/examples/deleter_trace" --binary "$GITHUB_WORKSPACE/rust/target/debug/openpilot-deleter" \
+  --fixture "$GITHUB_WORKSPACE/rust/crates/dev-tools/tests/fixtures/deleter-original-group/source-observations.json" \
+  --fixture-sha256 b4e652323459d74d54acbd3cf05eb8ae0a1f543033686d039928f63c530f6a64 --output "$RUNNER_TEMP/deleter-native"
+"$GITHUB_WORKSPACE/rust/target/debug/check-deleter" --root "$GITHUB_WORKSPACE" --scope observer \
+  --trace "$GITHUB_WORKSPACE/rust/target/debug/examples/deleter_trace" --binary "$GITHUB_WORKSPACE/rust/target/debug/openpilot-deleter" \
+  --fixture "$GITHUB_WORKSPACE/rust/crates/dev-tools/tests/fixtures/deleter-original-group/source-observations.json" \
+  --fixture-sha256 b4e652323459d74d54acbd3cf05eb8ae0a1f543033686d039928f63c530f6a64 --output "$RUNNER_TEMP/deleter-native/observer"
+"###;
+fn validate_deleter_callers(data: &Value) -> Result<(), String> {
+    let job = &data["jobs"]["workspace"];
+    if job.get("if").is_some() || job.get("continue-on-error").is_some() {
+        return Err("optional workspace deleter gate".into());
+    }
+    let steps = job["steps"].as_array().ok_or("workspace steps absent")?;
+    let selected = steps
+        .iter()
+        .filter(|step| step["name"] == DELETER_CALLER_NAME)
+        .collect::<Vec<_>>();
+    if selected.len() != 1 {
+        return Err("deleter caller step missing or duplicated".into());
+    }
+    let step = selected[0];
+    if step.get("if").is_some() || step.get("continue-on-error").is_some() {
+        return Err("optional native deleter comparison".into());
+    }
+    let actual = step["run"].as_str().ok_or("native deleter script absent")?;
+    if actual.lines().map(str::trim).collect::<Vec<_>>()
+        != DELETER_CALLER_BODY
+            .lines()
+            .map(str::trim)
+            .collect::<Vec<_>>()
+    {
+        return Err("native deleter build, guard, fixture, hash, provider or scope changed".into());
+    }
+    let all = steps
+        .iter()
+        .filter_map(|s| s["run"].as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+    if all.contains("python tools/check_deleter_reference.py")
+        || all.contains("python tools/check_deleter_daemon.py")
+    {
+        return Err("original deleter launcher remains".into());
+    }
+    Ok(())
+}
+#[test]
+fn native_deleter_callers_bind_complete_original_reference_daemon_and_observer_scopes() {
+    validate_deleter_callers(&workflow()).unwrap();
+}
+#[test]
+fn native_deleter_callers_reject_missing_rebound_softened_or_duplicated_blocks() {
+    let baseline = workflow();
+    validate_deleter_callers(&baseline)
+        .expect("current complete native callers before negative mutations");
+    let index = baseline["jobs"]["workspace"]["steps"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .position(|s| s["name"] == DELETER_CALLER_NAME)
+        .unwrap();
+    for marker in DELETER_CALLER_BODY.lines().filter(|s| !s.is_empty()) {
+        let mut changed = baseline.clone();
+        let run = changed["jobs"]["workspace"]["steps"][index]["run"]
+            .as_str()
+            .unwrap()
+            .replace(marker, "REMOVED");
+        changed["jobs"]["workspace"]["steps"][index]["run"] = Value::String(run);
+        assert!(
+            validate_deleter_callers(&changed).is_err(),
+            "missing or rebound {marker} admitted"
+        );
+    }
+    for key in ["if", "continue-on-error"] {
+        let mut changed = baseline.clone();
+        changed["jobs"]["workspace"]["steps"][index][key] = Value::String("true".into());
+        assert!(validate_deleter_callers(&changed).is_err());
+    }
+    for suffix in [" || true", "\nset +e", DELETER_CALLER_BODY] {
+        let mut changed = baseline.clone();
+        changed["jobs"]["workspace"]["steps"][index]["run"] =
+            Value::String(format!("{DELETER_CALLER_BODY}{suffix}"));
+        assert!(
+            validate_deleter_callers(&changed).is_err(),
+            "softened or same-step duplicate admitted"
+        );
+    }
+    let mut duplicate = baseline.clone();
+    let step = duplicate["jobs"]["workspace"]["steps"][index].clone();
+    duplicate["jobs"]["workspace"]["steps"]
+        .as_array_mut()
+        .unwrap()
+        .push(step);
+    assert!(
+        validate_deleter_callers(&duplicate).is_err(),
+        "duplicate native step admitted"
+    );
+}

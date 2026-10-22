@@ -86,10 +86,7 @@ pub fn hash(bytes: &[u8]) -> String {
 }
 pub fn sources(root: &Path) -> Result<()> {
     for &(name, pin) in SOURCE_PINS {
-        require(
-            hash(&bytes(&root.join(name), 8 << 20)?) == pin,
-            &format!("deleter retained original source changed: {name}"),
-        )?;
+        super::admission::validate(root, name, pin)?;
     }
     Ok(())
 }

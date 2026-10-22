@@ -53,3 +53,11 @@ required Rust features and executables before use. The final source-absence
 acceptance for this transition is tracked in #296.
 Host recording, upload and shutdown checks pass with these sources absent;
 repository-wide conversion and device acceptance remain unfinished.
+
+Development log-retention checks use `check-deleter` with `reference`, `daemon`,
+and `observer` scopes. Build it with
+`cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --no-default-features --features deleter-check-native --bin check-deleter`.
+Maintained CI supplies the immutable original fixture and native providers;
+the daemon check creates a private temporary mount through CI's passwordless
+sudo. The four Python development helpers are removed in this candidate;
+current source-absence acceptance remains tracked in #296.

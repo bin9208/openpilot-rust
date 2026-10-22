@@ -1,4 +1,5 @@
 //! Native deleter controllers using immutable, independently captured originals.
+mod admission;
 mod corpus;
 mod daemon;
 mod owned;
@@ -107,6 +108,7 @@ fn worker(options: &Options) -> Result<Value> {
     save(&options.output.join("inputs.after.json"), &inputs)?;
     report["original_fixture_sha256"] = json!(options.fixture_sha256);
     report["inputs_unchanged"] = json!(true);
+    report["helper_retirement_evidence"] = admission::proof();
     save(&options.output.join("report.json"), &report)?;
     Ok(report)
 }

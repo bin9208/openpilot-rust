@@ -51,3 +51,10 @@ receipt는 최대 4MiB이며, JSON11의 `prefix`는 문자열이어야 합니다
 실행 파일을 먼저 빌드합니다. 이 전환의 최종 소스 부재 검증은 #296에서 추적합니다.
 소스가 없는 상태의 호스트 녹화·업로드·종료 검증은 통과했으며, 전체 전환과 실기 확인은
 아직 남아 있습니다.
+
+개발용 로그 보존 검사는 `check-deleter`의 `reference`, `daemon`, `observer`
+범위를 사용합니다. 빌드 명령은
+`cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --no-default-features --features deleter-check-native --bin check-deleter`입니다.
+유지 중인 CI가 고정된 원본 검증 자료와 네이티브 실행 파일을 전달하며, daemon 검사는
+CI의 비밀번호 없는 sudo로 임시 마운트 공간을 만듭니다. 이 후보에서는 Python 개발
+보조 도구 4개를 제거했으며, 현재 소스 부재 상태의 최종 검증은 #296에서 추적합니다.

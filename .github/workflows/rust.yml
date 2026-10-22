@@ -922,9 +922,24 @@ jobs:
           if-no-files-found: warn
       - name: Compare log-space retention with the original loop and actual low-space filesystem
         run: |
+          set -euo pipefail
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           cargo build -p openpilot-deleter --bins --examples --locked
-          python tools/check_deleter_reference.py --binary target/debug/examples/deleter_trace --output "$RUNNER_TEMP/deleter-reference"
-          python tools/check_deleter_daemon.py --binary target/debug/openpilot-deleter --output "$RUNNER_TEMP/deleter-native" --privileged-mount
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --manifest-path "$GITHUB_WORKSPACE/rust/Cargo.toml" -p openpilot-dev-tools --no-default-features --features deleter-check-native --bin check-deleter --locked
+          cargo test --manifest-path "$GITHUB_WORKSPACE/rust/Cargo.toml" --locked -p openpilot-dev-tools --no-default-features --features deleter-check-native --lib deleter_check:: -- --test-threads=1
+          "$GITHUB_WORKSPACE/rust/target/debug/check-deleter" --root "$GITHUB_WORKSPACE" --scope reference \
+            --trace "$GITHUB_WORKSPACE/rust/target/debug/examples/deleter_trace" --binary "$GITHUB_WORKSPACE/rust/target/debug/openpilot-deleter" \
+            --fixture "$GITHUB_WORKSPACE/rust/crates/dev-tools/tests/fixtures/deleter-original-group/source-observations.json" \
+            --fixture-sha256 b4e652323459d74d54acbd3cf05eb8ae0a1f543033686d039928f63c530f6a64 --output "$RUNNER_TEMP/deleter-reference"
+          "$GITHUB_WORKSPACE/rust/target/debug/check-deleter" --root "$GITHUB_WORKSPACE" --scope daemon \
+            --trace "$GITHUB_WORKSPACE/rust/target/debug/examples/deleter_trace" --binary "$GITHUB_WORKSPACE/rust/target/debug/openpilot-deleter" \
+            --fixture "$GITHUB_WORKSPACE/rust/crates/dev-tools/tests/fixtures/deleter-original-group/source-observations.json" \
+            --fixture-sha256 b4e652323459d74d54acbd3cf05eb8ae0a1f543033686d039928f63c530f6a64 --output "$RUNNER_TEMP/deleter-native"
+          "$GITHUB_WORKSPACE/rust/target/debug/check-deleter" --root "$GITHUB_WORKSPACE" --scope observer \
+            --trace "$GITHUB_WORKSPACE/rust/target/debug/examples/deleter_trace" --binary "$GITHUB_WORKSPACE/rust/target/debug/openpilot-deleter" \
+            --fixture "$GITHUB_WORKSPACE/rust/crates/dev-tools/tests/fixtures/deleter-original-group/source-observations.json" \
+            --fixture-sha256 b4e652323459d74d54acbd3cf05eb8ae0a1f543033686d039928f63c530f6a64 --output "$RUNNER_TEMP/deleter-native/observer"
       - name: Compare Jetlink policy, model adapter, descriptors and bidirectional RPC
         run: |
           python tools/check_jetlink_reference.py target/debug/examples/jetlink_probe "$RUNNER_TEMP/jetlink-reference"
@@ -1166,9 +1181,8 @@ jobs:
             rust/target/release/openpilot-dashcam-upload
             rust/target/release/journald-rs
             rust/target/release/openpilot-timed
-            ${{ runner.temp }}/deleter-reference/report.json
-            ${{ runner.temp }}/deleter-native/*.json
-            ${{ runner.temp }}/deleter-native/*.log
+            ${{ runner.temp }}/deleter-reference/
+            ${{ runner.temp }}/deleter-native/
             rust/target/release/openpilot-proclogd
             rust/target/release/openpilot-proclogd-runtime
             rust/target/release/openpilot-dmonitoringd

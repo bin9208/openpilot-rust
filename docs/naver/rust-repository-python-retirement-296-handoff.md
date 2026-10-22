@@ -37,8 +37,10 @@ accepted source is12af083b2e31bbb73cb8f73a9822e1c92d3ab8ea, workflowae18fe676.
 Do not lose newer commits or mix unrelated WIP into a source pin.
 
 Exact103188 Fast39800281535 and both mapped-docs39800281419/39800598592
-pass. Integration39800281579 and Rust39800281452 are still running; no full
-current aggregate acceptance is claimed. #491 is closed/completed after the
+pass. Integration39800281579 and maintained logger119899439610 also pass.
+Rust39800281452 is still running with original-model119899439089 failed after
+128frames at strict model-1.bin byte comparison; no full current aggregate
+acceptance is claimed. #491 is closed/completed after the
 accepted ten-source proof and publication (comment6343901944); #296 remains open
 (published milestone comment6344047422).
 
@@ -51,6 +53,24 @@ The focused follow-up creates that report parent, saves observed low-space
 poststate/cadence before cleanup, and closes the authenticated mount FD before
 normal unmount. Frozen28/78 observations, timing and ownership checks remain
 unchanged; the complete native gate and four-source retirement remain pending.
+
+R4 run39802773197/workflowc4ba28375/source6acad91831 is ACCEPTED:
+artifact12437510258/2461328B/SHAa723124881/all187CRC independently audited.
+All28cases/78whole original/corrected outputs and filesystem snapshots,3actual
+low-space cycles,6CLI cases,4integrations/5ownership units, strictClippy and
+source/provider guards pass. SIGINT9.80954/SIGTERM9.916167ms; deletion intervals
+101.677197/102.204734ms. Normal unmount succeeds and the retained low-space
+observation equals the final report. Redundant run39802775326 was cancelled
+before functional traffic. Do not rerun the unchanged original capture.
+
+The follow-up candidate removes only4development helpers:check_deleter_reference,
+check_deleter_daemon,deleter_fixtures,test_deleter_observer. Closed historical
+admission binds actual R4 proof and rejects any file/link reappearance; four
+runtime Python source hashes remain mandatory. The original144901B corpus and
+all8source pins stay exact. Both maintained callers now use reference/daemon/
+observer CLIs and selected7libraryunits, with97policy cases and two added disk
+reserves547→549. Current-source absence/functionality gate remains pending;
+inventory stays284/3/3293 until that gate actually passes.
 
 Published PR synthetic merge48abb4d87797d84c03be1595e9122c4b1e023e2d:
 Integration39754486834 passes all16jobs; both Fast39754486617/39754477763

@@ -7984,3 +7984,28 @@ This successful natural host does not explain the EPYC7763 failure, close #476,
 retire the Python compiler or establish full model/device acceptance. Preserve
 raw predictions in the next genuinely affected diagnostic; do not repeat this
 unchanged successful traffic merely to repair observation packaging.
+
+Native deleter R4 [39802773197](https://github.com/bin9208/openpilot-rust/actions/runs/39802773197)
+succeeds at6acad91831dc215e04f78ca7760da63baedec9a7/workflowc4ba28375.
+Artifact12437510258:2461328B/SHA256
+a723124881ec4081847a2865dded20b0e327ec4b17b6b6c2738f5ddafc7f4399;
+parent independently checks all187CRCs, all78full original/corrected output and
+filesystem rows across28scenarios,3scope input pairs and5global native ELF hash
+pairs. Actual4integrations/5ownership units and strictClippy pass. Six CLI cases
+pass, idle SIGINT9.80954/SIGTERM9.916167ms, actual low-space deletion intervals
+101.677197/102.204734ms. Complete low-space poststate agrees with the immutable
+source observation; retained pre-unmount observation equals the final report and
+normal unmount has empty stderr. Raw traces contain52native/7ownership exec
+attempts and no Python exec paths. Original capture is reused without fresh
+project-Python execution. Duplicate same-head run39802775326 is cancelled before
+functional traffic and receives no acceptance credit.
+
+The four-helper source retirement candidate now binds this actual R4 proof,
+preserves the144901B original corpus/SHA and all8historical source pins, replaces
+both maintained Python callers with three native scopes plus7selected library
+units, and raises disk-guard roster547→549 without changing prior residual guard
+arguments. Two closed-admission regressions and caller mutation tests are added.
+Only check_deleter_reference.py,check_deleter_daemon.py,deleter_fixtures.py and
+tests/test_deleter_observer.py are removed; runtime deleter/uploader/xattr/config
+and their consumers remain mandatory. Final current-source absence/native/policy
+execution is pending, so no additional inventory credit is claimed yet.

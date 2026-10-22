@@ -31,6 +31,11 @@ fn command(scope: &str) -> CommandSpec {
 }
 #[test]
 fn all_original_reference_rows_preserve_both_bookmark_histories() {
+    let nested = PathBuf::from(env("DELETER_PROOF")).join("reference/reference");
+    assert!(
+        !nested.exists(),
+        "reference starts with no nested output parent"
+    );
     let output = NativeRunner.run(&command("reference")).unwrap();
     assert_eq!(
         output.code,
@@ -42,6 +47,7 @@ fn all_original_reference_rows_preserve_both_bookmark_histories() {
     assert_eq!(report["reference_scenarios"], 28);
     assert_eq!(report["reference_comparisons"], 78);
     assert_eq!(report["original_and_corrected_rows_retained"], true);
+    assert!(nested.join("threshold-order/trace.json").is_file());
 }
 #[test]
 fn original_fixture_corruption_rejects_before_provider_start() {
@@ -67,6 +73,12 @@ fn real_daemon_cli_idle_shutdown_and_private_low_space_follow_original_contract(
     let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(report["idle_and_cli_cases"], 6);
     assert_eq!(report["low_space_cycles"], 3);
+    let details = PathBuf::from(env("DELETER_PROOF")).join("daemon/daemon/mount-details");
+    let retained: serde_json::Value =
+        serde_json::from_slice(&fs::read(details.join("low-space-observation.json")).unwrap())
+            .unwrap();
+    assert_eq!(retained, report["low_space"]);
+    assert!(details.join("tmpfs-unmount/stderr.bin").is_file());
 }
 
 #[test]
