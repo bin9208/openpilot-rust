@@ -33,7 +33,7 @@ jobs:
         run: |
           git fetch --no-tags --depth=1 origin dc95138076836ea3a5c1b6c27262be3f3b912f71
           mkdir -p "$CI_JOB_TEMP/baseline"
-          git archive dc95138076836ea3a5c1b6c27262be3f3b912f71 .github/workflows > "$CI_JOB_TEMP/baseline.tar"
+          git archive dc95138076836ea3a5c1b6c27262be3f3b912f71 .github/workflows tools/setup_dependencies.sh > "$CI_JOB_TEMP/baseline.tar"
           tar -xf "$CI_JOB_TEMP/baseline.tar" -C "$CI_JOB_TEMP/baseline"
           "$CI_JOB_TEMP/venv/bin/python" - <<'PY'
           import importlib.util,json,os,unittest
@@ -45,6 +45,14 @@ jobs:
           module.LocalRunnerPolicyTests('test_all_jobs_in_all_workflows_use_the_local_runner').run(result)
           assert result.failures and not result.errors, (result.failures,result.errors)
           record=dict(source_commit=os.environ['GITHUB_SHA'],baseline='dc95138076836ea3a5c1b6c27262be3f3b912f71',phase='baseline-red',tests=result.testsRun,expected_failures=len(result.failures),errors=len(result.errors))
+          spec=importlib.util.spec_from_file_location('native_apt_policy','tools/ci/tests/test_setup_dependencies.py')
+          module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+          baseline_setup=(Path(os.environ['CI_JOB_TEMP'])/'baseline/tools/setup_dependencies.sh').read_text()
+          module.FUNCTIONS=baseline_setup[baseline_setup.index('function retry()'):].split('# --- Main ---',1)[0]
+          result=unittest.TestResult()
+          unittest.defaultTestLoader.loadTestsFromTestCase(module.SetupDependenciesTests).run(result)
+          assert result.failures and not result.errors, (result.failures,result.errors)
+          record['native_apt_baseline']=dict(tests=result.testsRun,expected_failures=len(result.failures),errors=len(result.errors))
           (Path(os.environ['CI_JOB_TEMP'])/'baseline-red.json').write_text(json.dumps(record,indent=2)+'\n')
           print(json.dumps(record))
           PY
@@ -143,6 +151,7 @@ jobs:
           path: |
             ${{ env.CI_JOB_TEMP }}/local-arm/execution.json
             ${{ env.CI_JOB_TEMP }}/local-arm/qemu-version.txt
+            ${{ env.CI_JOB_TEMP }}/local-arm/proot-version.txt
             ${{ env.CI_JOB_TEMP }}/arm-elf.txt
             ${{ env.CI_JOB_TEMP }}/arm-exit.json
             ${{ env.LOCAL_CI_TARGET_DIR }}/bridge-binding.so

@@ -84,6 +84,8 @@ def source_path_allowed(path, source_entry="", inherited_entry=""):
         '.github/actions/local-arm/',
         'tools/ci/local-arm',
         'tools/ci/tests/test_local_runners.py',
+        'tools/ci/tests/test_setup_dependencies.py',
+        'tools/setup_dependencies.sh',
         'docs/naver/all-local-actions-502.md',
         'rust/crates/disk-space/src/lib.rs',
         'rust/crates/disk-space/tests/cli.rs',

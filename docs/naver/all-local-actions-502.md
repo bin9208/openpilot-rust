@@ -14,9 +14,9 @@ execution. Local checkout validation remains syntax/format/diff only.
 - [x] Inventory current workflows and runner registration; create an isolated
   dev-md issue branch without changing the dirty main checkout or #296 track.
 - [x] Add policy regressions before changing routing.
-- [ ] Run their baseline failure and final success in local Actions, without
+- [x] Run their baseline failure and final success in local Actions, without
   running functional tests locally.
-- [ ] Change every workflow's runner labels while retaining triggers, disabled
+- [x] Change every workflow's runner labels while retaining triggers, disabled
   inherited publishers, required check names and the serial validation chain.
 - [ ] Keep original ARM commands and aarch64 binaries, bindings and subprocesses
   in a separate Ubuntu ARM user space through QEMU/PRoot. Preserve exact Python,
@@ -25,7 +25,7 @@ execution. Local checkout validation remains syntax/format/diff only.
 - [ ] Preserve Actions environment-file changes, command exit status, workspace
   paths and owned temporary cleanup through the ARM shell transport. Validate
   actual ARM ELF loading, Python/C bindings, subprocess IPC and signal behavior.
-- [ ] Require actual self-hosted provenance in packaging without changing source,
+- [x] Require actual self-hosted provenance in packaging without changing source,
   archive, ABI, sealing, installation or publication approval guards. Remove the
   user-deleted fixed disk reserve while keeping estimated-growth rejection.
 - [ ] Run focused policy and ARM transport checks on bin-actions, review the
@@ -46,6 +46,28 @@ Node24; the focused workflow now uses the same setup. This is a validation
 configuration error, not runner instability. The failed policy job prevented ARM
 execution; no ARM functional success is claimed. No functional checks or builds
 have run on the workstation.
+
+On source d27cd41ee8082cd7feb76f8ec59c8d7a9701d37b, the focused
+[policy job120074319646](https://github.com/bin9208/openpilot-rust/actions/runs/39850292573/job/120074319646)
+passed on bin-actions:86 CI policy tests,9 package-policy tests,13 native disk-guard
+tests and4 Rust disk-space unit /5 CLI tests. The baseline-red phase correctly
+rejected60 inherited hosted job routes with no harness errors.
+
+The subsequent ARM job120076394086 failed during guest package installation:
+Ubuntu's PRoot5.1 let dpkg's database access check fail before unpacking packages.
+Upstream added faccessat2 translation in5.4; the helper now pins the official
+PRoot5.5.0 host binary by SHA256 and records its version and digest. The original
+dpkg operation remains required; the next Actions execution must verify this
+compatibility correction before ARM support can be accepted.
+
+The [PR CI39850289766](https://github.com/bin9208/openpilot-rust/actions/runs/39850289766)
+failed independently at native dependency setup: the persistent runner retains
+the intentionally registered arm64 foreign architecture, while the default
+x64 Ubuntu archive does not serve arm64 indexes. Native APT commands now select
+the executing environment's dpkg architecture per invocation, including inside
+the ARM guest. The explicit dual-source cross-build operation and foreign
+architecture registration are preserved. These preparation failures do not
+establish runtime defects or justify dropping the original ARM assertions.
 
 The ARM execution transport uses an official Ubuntu Base ARM64 rootfs and the
 existing pinned Python 3.12.14 / Rust 1.94.0 tools. Downloads are hash pinned.
@@ -74,4 +96,5 @@ evidence only; no functional success is claimed while Actions is queued.
 
 Sources for environment pins: [Ubuntu Base SHA256SUMS](https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/SHA256SUMS),
 [official Python 3.12.14 release](https://github.com/actions/python-versions/releases/tag/3.12.14-31661455385),
-and [PRoot QEMU interface](https://github.com/proot-me/proot/blob/master/doc/proot/manual.rst).
+the [PRoot QEMU interface](https://github.com/proot-me/proot/blob/master/doc/proot/manual.rst),
+and [PRoot syscall support and releases](https://github.com/proot-me/proot/releases).
