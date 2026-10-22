@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path
 
+from model_export.native import guarded_add_binding
 from model_export.original import DriverArtifacts, driver, driving
 from model_export.publish import BundleSpec, publish
 from openpilot.common.file_chunker import open_file_chunked
@@ -56,6 +57,9 @@ def main() -> None:
             parser.error("--target-receipt requires --backend cpu")
         if args.target_receipt.exists() or args.target_receipt.is_symlink():
             raise FileExistsError(args.target_receipt)
+    helper_before = guarded_add_binding()
+    if helper_before["enabled"] and args.backend != "cpu":
+        parser.error("guarded add requires --backend cpu")
     target_before = llvm_target() if args.target_receipt is not None else None
     root = args.trusted_model_directory
     road = args.trusted_driving or root / "driving_tinygrad.pkl"
@@ -71,13 +75,17 @@ def main() -> None:
         specs.append(BundleSpec("driver", resolution, driver(DriverArtifacts(model, warp, metadata)),
                                 driver_sources | {"warp":source_hash(warp)}))
     publish(args.output, specs, args.backend)
+    helper_after = guarded_add_binding()
+    if helper_before != helper_after:
+        raise RuntimeError("guarded add helper changed during catalog compilation")
     if args.target_receipt is not None:
         target_after = llvm_target()
         if target_before != target_after:
             raise RuntimeError("LLVM target changed during catalog compilation")
         with args.target_receipt.open("x") as receipt:
             json.dump({"version": 1, "stored_jit_executed": False,
-                       "before": target_before, "after": target_after}, receipt, indent=2, sort_keys=True)
+                       "before": target_before, "after": target_after,
+                       "guarded_add_before": helper_before, "guarded_add_after": helper_after}, receipt, indent=2, sort_keys=True)
             receipt.write("\n")
     print(f"Published native pipeline catalog: {args.output / 'current.json'}")
 

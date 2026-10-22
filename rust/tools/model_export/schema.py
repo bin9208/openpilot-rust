@@ -73,6 +73,13 @@ class Call:
 
 
 @dataclass(frozen=True, slots=True)
+class CompilationEvidence:
+    compiled_source: str
+    rewrite_receipt: bytes
+    binding: dict
+
+
+@dataclass(frozen=True, slots=True)
 class CapturedModel:
     allocations: tuple[Allocation, ...]
     views: tuple[View, ...]
@@ -85,6 +92,7 @@ class CapturedModel:
     wrappers: tuple[str, ...]
     weights: bytes
     backend: str
+    compilation: tuple[CompilationEvidence | None, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

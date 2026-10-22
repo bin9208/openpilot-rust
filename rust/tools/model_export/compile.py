@@ -28,6 +28,19 @@ def export_cpu(jit: TinyJit, bindings: Bindings, destination: Path, *, entrypoin
         object_path = destination / f"kernel-{index}.o"
         object_path.write_bytes(object_code)
         objects.append(str(object_path))
+    if captured.compilation:
+        if len(captured.compilation) != len(captured.sources):
+            raise ValueError("compiled evidence/source alignment differs")
+        evidence = {}
+        for index, item in enumerate(captured.compilation):
+            if item is None:
+                continue
+            compiled = item.compiled_source.encode("utf-8")
+            (destination / f"kernel-{index}.compiled.ll").write_bytes(compiled)
+            (destination / f"kernel-{index}.guarded-add.json").write_bytes(item.rewrite_receipt)
+            evidence[str(index)] = item.binding | {"compiled_source_sha256":hashlib.sha256(compiled).hexdigest()}
+        if evidence:
+            (destination / "compilation-evidence.json").write_text(json.dumps({"version":1, "kernels":evidence}, sort_keys=True, indent=2) + "\n")
     library = destination / "kernels.so"
     subprocess.run([os.environ.get("CC", "clang"), "-shared", "-fPIC", "-O2", "-ffreestanding", "-fno-math-errno",
                     str(source), *objects, "-o", str(library), "-lm"], check=True)

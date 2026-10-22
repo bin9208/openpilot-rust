@@ -109,7 +109,17 @@ fn seals(map: &BTreeMap<String, Snapshot>) -> Value {
         .map(|(n, p)| (n, p.seal.clone()))
         .collect::<BTreeMap<_, _>>())
 }
-fn source_tree(root: &Path) -> Result<BTreeMap<String, Snapshot>> {
+const HELPER_SOURCES: [&str; 8] = [
+    "rust/crates/model-runtime/src/guarded_add.rs",
+    "rust/crates/model-runtime/src/bin/offline-llvm-guarded-add.rs",
+    "rust/crates/model-runtime/src/owned_outputs.rs",
+    "rust/crates/model-runtime/src/lib.rs",
+    "rust/crates/model-runtime/Cargo.toml",
+    "rust/Cargo.toml",
+    "rust/Cargo.lock",
+    "rust/rust-toolchain.toml",
+];
+fn source_tree(root: &Path, guarded_add: bool) -> Result<BTreeMap<String, Snapshot>> {
     let mut out = BTreeMap::new();
     for name in SOURCES {
         let base = root.join(name);
@@ -123,7 +133,62 @@ fn source_tree(root: &Path) -> Result<BTreeMap<String, Snapshot>> {
         }
         require(out.len() <= 5000, "compiler source roster exceeds bound")?;
     }
+    if guarded_add {
+        for name in HELPER_SOURCES {
+            out.insert(
+                name.to_owned(),
+                Snapshot::open(&root.join(name), 16 * 1024 * 1024)?,
+            );
+            require(out.len() <= 5000, "compiler source roster exceeds bound")?;
+        }
+    }
     Ok(out)
+}
+fn guarded_helper() -> Result<Option<Input>> {
+    let path = std::env::var_os("MODEL_LLVM_GUARDED_ADD_BINARY");
+    let hash = std::env::var("MODEL_LLVM_GUARDED_ADD_SHA256");
+    match (path, hash) {
+        (None, Err(std::env::VarError::NotPresent)) => Ok(None),
+        (Some(path), Ok(hash)) => {
+            require(
+                hash.len() == 64
+                    && hash
+                        .bytes()
+                        .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)),
+                "invalid guarded add helper SHA256",
+            )?;
+            let input = Input::open(Path::new(&path), 128 * 1024 * 1024)?;
+            require(
+                input.path == fs::canonicalize(&input.path)? && input.seal["sha256"] == hash,
+                "guarded add helper path/hash differs",
+            )?;
+            let m = input.file.metadata()?;
+            let mut header = [0_u8; 64];
+            require(
+                std::os::unix::fs::FileExt::read_at(&input.file, &mut header, 0)? == header.len()
+                    && &header[..7] == b"\x7fELF\x02\x01\x01"
+                    && matches!(u16::from_le_bytes([header[16], header[17]]), 2 | 3)
+                    && u16::from_le_bytes([header[18], header[19]])
+                        == if cfg!(target_arch = "aarch64") {
+                            183
+                        } else {
+                            62
+                        }
+                    && m.mode() & 0o111 != 0,
+                "guarded add helper is not a native executable ELF",
+            )?;
+            Ok(Some(input))
+        }
+        _ => Err("guarded add requires paired explicit ELF path and SHA256".into()),
+    }
+}
+fn helper_binding(input: &Input) -> Result<Value> {
+    input.verify()?;
+    let m = input.file.metadata()?;
+    Ok(
+        json!({"enabled":true,"path":input.path,"bytes":m.len(),"sha256":input.seal["sha256"],
+        "identity":[m.dev(),m.ino(),m.len(),u64::from(m.mode()),i128::from(m.mtime())*1_000_000_000+i128::from(m.mtime_nsec()),i128::from(m.ctime())*1_000_000_000+i128::from(m.ctime_nsec())]}),
+    )
 }
 fn verify_map(map: &BTreeMap<String, Snapshot>) -> Result<()> {
     for pin in map.values() {
@@ -255,7 +320,9 @@ pub fn prepare_catalog(options: &CatalogOptions) -> Result<Value> {
         seals(&models) == *models_value,
         "actual model files differ from independent original full roster",
     )?;
-    let sources = source_tree(&options.root)?;
+    let helper = guarded_helper()?;
+    let helper_before = helper.as_ref().map(helper_binding).transpose()?;
+    let sources = source_tree(&options.root, helper.is_some())?;
     let compiler = Input::open(
         &options.root.join("rust/tools/build_model_pipelines.py"),
         1024 * 1024,
@@ -321,6 +388,23 @@ pub fn prepare_catalog(options: &CatalogOptions) -> Result<Value> {
                 .to_owned(),
         ),
     ]);
+    if let Some(input) = &helper {
+        spec.env.insert(
+            "MODEL_LLVM_GUARDED_ADD_BINARY".into(),
+            input
+                .path
+                .to_str()
+                .ok_or("guarded add helper path is not UTF-8")?
+                .to_owned(),
+        );
+        spec.env.insert(
+            "MODEL_LLVM_GUARDED_ADD_SHA256".into(),
+            input.seal["sha256"]
+                .as_str()
+                .ok_or("guarded add helper hash missing")?
+                .to_owned(),
+        );
+    }
     let result = execute(&spec, temp.path());
     if !matches!(&result, Ok(result) if result.code == 0) {
         let evidence = temp.keep();
@@ -336,7 +420,7 @@ pub fn prepare_catalog(options: &CatalogOptions) -> Result<Value> {
     verify_map(&models)?;
     verify_map(&sources)?;
     require(
-        seals(&source_tree(&options.root)?) == seals(&sources)
+        seals(&source_tree(&options.root, helper.is_some())?) == seals(&sources)
             && seals(&tree(&options.models, 5, 128 * 1024 * 1024)?) == seals(&models),
         "compiler source/model roster changed",
     )?;
@@ -348,6 +432,25 @@ pub fn prepare_catalog(options: &CatalogOptions) -> Result<Value> {
             && target["stored_jit_executed"] == false
             && target["before"] == target["after"],
         "compiler target changed or old JIT was executed",
+    )?;
+    let target_helper = &target["guarded_add_before"];
+    require(
+        target_helper == &target["guarded_add_after"],
+        "guarded add compiler binding changed",
+    )?;
+    match &helper_before {
+        Some(binding) => require(
+            target_helper == binding,
+            "guarded add compiler helper differs from held ELF",
+        )?,
+        None => require(
+            target_helper.is_null() || target_helper == &json!({"enabled":false}),
+            "unadmitted guarded add helper",
+        )?,
+    }
+    require(
+        helper.as_ref().map(helper_binding).transpose()? == helper_before,
+        "guarded add helper changed during compilation",
     )?;
     let target_host = &target["before"];
     require(
@@ -448,7 +551,10 @@ pub fn prepare_catalog(options: &CatalogOptions) -> Result<Value> {
         checkout.len() == 40 && checkout.bytes().all(|b| b.is_ascii_hexdigit()),
         "invalid checkout identity",
     )?;
-    let report = json!({"version":1,"provider":"CPU:LLVM","source_commit":checkout,"host":receipt_host,"models":seals(&models),"exporter_dependency_files":seals(&sources),"catalog_generation":generation,"catalog_files":seals(&files),"stored_jit_executed":false,"original_jit_execution_admitted":false,"compiler_entrypoint":compiler.seal,"compiler_interpreter":python.seal,"compiler_target_receipt":target_pin.seal,"original_model_manifest":manifest.seal,"scope":"native orchestration; existing Python compiler remains pending retirement"});
+    let mut report = json!({"version":1,"provider":"CPU:LLVM","source_commit":checkout,"host":receipt_host,"models":seals(&models),"exporter_dependency_files":seals(&sources),"catalog_generation":generation,"catalog_files":seals(&files),"stored_jit_executed":false,"original_jit_execution_admitted":false,"compiler_entrypoint":compiler.seal,"compiler_interpreter":python.seal,"compiler_target_receipt":target_pin.seal,"original_model_manifest":manifest.seal,"scope":"native orchestration; existing Python compiler remains pending retirement"});
+    if let Some(binding) = &helper_before {
+        report["guarded_add"] = binding.clone();
+    }
     let receipt = temp.path().join("current-catalog-receipt.json");
     write_json(&receipt, &report)?;
     let receipt_pin = Input::open(&receipt, 4_000_000)?;
@@ -528,6 +634,10 @@ pub fn prepare_catalog(options: &CatalogOptions) -> Result<Value> {
         identity(&published.file.metadata()?) == identity(&fs::symlink_metadata(&options.output)?),
         "catalog publication replaced",
     )?;
+    require(
+        helper.as_ref().map(helper_binding).transpose()? == helper_before,
+        "published guarded add helper changed",
+    )?;
     published.accepted = true;
     Ok(report)
 }
@@ -548,7 +658,9 @@ pub fn catalog_cli() -> Result<()> {
         ],
     )?;
     if parsed.help {
-        println!("Usage: prepare-model-family-catalog --root ROOT --models DIR --expected-model-manifest JSON --expected-model-manifest-sha256 SHA256 --kind family|driver --python PYTHON --llvm LIB --output DIR");
+        println!(
+            "Usage: prepare-model-family-catalog --root ROOT --models DIR --expected-model-manifest JSON --expected-model-manifest-sha256 SHA256 --kind family|driver --python PYTHON --llvm LIB --output DIR"
+        );
         return Ok(());
     }
     let value = |name: &str| -> Result<&std::ffi::OsStr> {

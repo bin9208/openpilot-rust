@@ -149,9 +149,14 @@ three partial baseline entries.
     Car-name generator predelete39744327540/source285b12a62 also passes: four
     generator/thirteen manager units, fresh seven-brand original comparison,
     same held native ELF in checkout/private-absent roots and11single-exec
-    admissions. The Python generator is now deleted in the candidate with its
-    maintained native caller; actual generator-postdelete platform/policy proof
-    remains pending. Credit covers only the three accepted QA controllers.
+    admissions. Complete generator-postdelete platform/policy39746277084 at
+    ac72102459752eec5936fb42b68aac2a05d6bef2 is accepted:8426platform/4policy
+    CRCs,62manager execs in78traces and12generator invocations, all original
+    results/JSON bodies and held seals agree. Credit includes the generator,
+    bringing the inventory to274replaced-local/3partially-replaced/3303pending.
+    Runtime manager/Params/swaglog remain live. Rust guarded-add/exporter
+    integration and the two recording-upload QA controllers are current groups;
+    their candidate source does not add retirement credit before hosted proof.
 
 ## Evidence reuse and delivery
 

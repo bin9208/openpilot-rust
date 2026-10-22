@@ -5,10 +5,11 @@ use serde_json::{json, Value};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
+    os::unix::fs::MetadataExt,
     path::{Path, PathBuf},
 };
 const MAX_RECEIPT: u64 = 4_000_000;
-fn source_roster(root: &Path) -> Result<BTreeSet<String>> {
+fn source_roster(root: &Path, guarded_add: bool) -> Result<BTreeSet<String>> {
     fn visit(root: &Path, path: &Path, names: &mut BTreeSet<String>) -> Result<()> {
         let metadata = fs::symlink_metadata(path)?;
         if metadata.file_type().is_symlink() {
@@ -47,7 +48,38 @@ fn source_roster(root: &Path) -> Result<BTreeSet<String>> {
     ] {
         visit(root, &root.join(name), &mut names)?;
     }
+    if guarded_add {
+        for name in [
+            "rust/crates/model-runtime/src/guarded_add.rs",
+            "rust/crates/model-runtime/src/bin/offline-llvm-guarded-add.rs",
+            "rust/crates/model-runtime/src/owned_outputs.rs",
+            "rust/crates/model-runtime/src/lib.rs",
+            "rust/crates/model-runtime/Cargo.toml",
+            "rust/Cargo.toml",
+            "rust/Cargo.lock",
+            "rust/rust-toolchain.toml",
+        ] {
+            visit(root, &root.join(name), &mut names)?;
+        }
+    }
     Ok(names)
+}
+fn helper_matches(binding: &Value) -> Result<()> {
+    let path = std::env::var_os("MODEL_LLVM_GUARDED_ADD_BINARY");
+    let hash = std::env::var_os("MODEL_LLVM_GUARDED_ADD_SHA256");
+    if binding.is_null() {
+        if path.is_some() || hash.is_some() {
+            return Err("unrecorded guarded add helper configured".into());
+        }
+        return Ok(());
+    }
+    if binding["enabled"] != true
+        || path.as_deref().and_then(|p| p.to_str()) != binding["path"].as_str()
+        || hash.as_deref().and_then(|p| p.to_str()) != binding["sha256"].as_str()
+    {
+        return Err("guarded add helper configuration differs from catalog".into());
+    }
+    Ok(())
 }
 fn cpu_identity(text: &str) -> Result<Value> {
     let mut profiles = Vec::new();
@@ -106,6 +138,7 @@ impl CurrentCatalog {
         {
             return Err("driver current catalog provider/source policy changed".into());
         }
+        helper_matches(&value["guarded_add"])?;
         let mut held = Vec::new();
         let mut source_seals = Vec::new();
         let recorded_models = value["models"]
@@ -123,7 +156,9 @@ impl CurrentCatalog {
         let sources = value["exporter_dependency_files"]
             .as_object()
             .ok_or("driver exporter dependencies missing")?;
-        if sources.keys().cloned().collect::<BTreeSet<_>>() != source_roster(root)? {
+        if sources.keys().cloned().collect::<BTreeSet<_>>()
+            != source_roster(root, !value["guarded_add"].is_null())?
+        {
             return Err("driver current exporter whole source roster changed".into());
         }
         if sources.is_empty() || sources.len() > 5000 {
@@ -191,6 +226,53 @@ impl CurrentCatalog {
         {
             return Err("driver current catalog generation changed".into());
         }
+        if !value["guarded_add"].is_null() {
+            let binding = &value["guarded_add"];
+            let path = Path::new(
+                binding["path"]
+                    .as_str()
+                    .ok_or("guarded add helper path missing")?,
+            );
+            if !path.is_absolute() || fs::canonicalize(path)? != path {
+                return Err("guarded add helper path is not canonical".into());
+            }
+            let helper = InputPin::open(path, true)?;
+            if helper.digest != binding["sha256"]
+                || Some(helper.identity.2) != binding["bytes"].as_u64()
+            {
+                return Err("guarded add helper seal differs from compiler binding".into());
+            }
+            let m = helper.file.metadata()?;
+            let mut header = [0_u8; 64];
+            if !(64..=128 * 1024 * 1024).contains(&m.len())
+                || m.mode() & 0o111 == 0
+                || std::os::unix::fs::FileExt::read_at(&helper.file, &mut header, 0)?
+                    != header.len()
+                || &header[..7] != b"\x7fELF\x02\x01\x01"
+                || !matches!(u16::from_le_bytes([header[16], header[17]]), 2 | 3)
+                || u16::from_le_bytes([header[18], header[19]])
+                    != if cfg!(target_arch = "aarch64") {
+                        183
+                    } else {
+                        62
+                    }
+            {
+                return Err("guarded add helper is not a bounded executable ELF".into());
+            }
+            if binding["identity"]
+                != json!([
+                    m.dev(),
+                    m.ino(),
+                    m.len(),
+                    u64::from(m.mode()),
+                    i128::from(m.mtime()) * 1_000_000_000 + i128::from(m.mtime_nsec()),
+                    i128::from(m.ctime()) * 1_000_000_000 + i128::from(m.ctime_nsec())
+                ])
+            {
+                return Err("guarded add helper metadata differs from compiler binding".into());
+            }
+            held.push(helper);
+        }
         let library = value["host"]["llvm_path"]
             .as_str()
             .ok_or("driver current LLVM path missing")?;
@@ -220,13 +302,14 @@ impl CurrentCatalog {
     }
     pub(super) fn verify(&self) -> Result<()> {
         self.receipt.verify()?;
+        helper_matches(&self.value["guarded_add"])?;
         if self.value["exporter_dependency_files"]
             .as_object()
             .ok_or("driver source roster missing")?
             .keys()
             .cloned()
             .collect::<BTreeSet<_>>()
-            != source_roster(&self.source_root)?
+            != source_roster(&self.source_root, !self.value["guarded_add"].is_null())?
         {
             return Err("driver current exporter source reappearance or removal".into());
         }
@@ -302,21 +385,22 @@ mod tests {
             fs::create_dir_all(root.path().join(name)).unwrap();
         }
         fs::write(root.path().join("uv.lock"), b"locked").unwrap();
-        let first = source_roster(root.path()).unwrap();
+        let first = source_roster(root.path(), false).unwrap();
+        assert!(source_roster(root.path(), true).is_err());
         let module = root.path().join("rust/tools/model_export/new.py");
         fs::write(&module, b"new exporter").unwrap();
-        assert_ne!(source_roster(root.path()).unwrap(), first);
+        assert_ne!(source_roster(root.path(), false).unwrap(), first);
         fs::remove_file(module).unwrap();
-        assert_eq!(source_roster(root.path()).unwrap(), first);
+        assert_eq!(source_roster(root.path(), false).unwrap(), first);
         let linked = root.path().join("rust/tools/model_export/linked.py");
         std::os::unix::fs::symlink(root.path().join("uv.lock"), &linked).unwrap();
-        assert!(source_roster(root.path()).is_err());
+        assert!(source_roster(root.path(), false).is_err());
         fs::remove_file(linked).unwrap();
         let linked = root.path().join("rust/tools/model_export/linked-directory");
         std::os::unix::fs::symlink(root.path().join("openpilot/common"), &linked).unwrap();
-        assert!(source_roster(root.path()).is_err());
+        assert!(source_roster(root.path(), false).is_err());
         fs::remove_file(linked).unwrap();
         fs::remove_file(root.path().join("uv.lock")).unwrap();
-        assert!(source_roster(root.path()).is_err());
+        assert!(source_roster(root.path(), false).is_err());
     }
 }

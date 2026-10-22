@@ -51,6 +51,7 @@ def capture_cpu(jit: TinyJit, bindings: Bindings) -> CapturedModel:
     sources: list[str] = []
     objects: list[bytes] = []
     wrappers: list[str] = []
+    compilation = []
     kernels: list[Kernel] = []
     calls: list[Call] = []
     kernel_ids: dict[str, int] = {}
@@ -74,6 +75,7 @@ def capture_cpu(jit: TinyJit, bindings: Bindings) -> CapturedModel:
                 kernels.append(Kernel(2, 0))
                 sources.append(key)
                 objects.append(b"")
+                compilation.append(None)
                 wrappers.append(f"void op_kernel_{index}(void **buffers, const int32_t *scalars) {{ memmove(buffers[0], buffers[1], {buffers[0].nbytes}); }}")
             table.read(buffers[1])
             table.write(buffers[0])
@@ -101,6 +103,7 @@ def capture_cpu(jit: TinyJit, bindings: Bindings) -> CapturedModel:
             sources.append(native.source)
             objects.append(native.object_code)
             wrappers.append(native.wrapper)
+            compilation.append(native.evidence)
         for index in info.ins:
             table.read(buffers[index])
         for index in info.outs:
@@ -110,4 +113,4 @@ def capture_cpu(jit: TinyJit, bindings: Bindings) -> CapturedModel:
     allocations, weights = table.weights()
     return CapturedModel(allocations, tuple(table.views), tuple(input_bindings), tuple(output_bindings), tuple(kernels), tuple(calls),
                          tuple(sources), tuple(objects), tuple(wrappers), weights,
-                         "cpu-clang" if isinstance(renderer.compiler, ClangCompiler) else "cpu-llvm")
+                         "cpu-clang" if isinstance(renderer.compiler, ClangCompiler) else "cpu-llvm", tuple(compilation))

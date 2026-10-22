@@ -142,3 +142,179 @@ fn generation_cli_matches_original_metadata_read_and_revalidates_catalog() {
         assert!(result.stdout.is_empty(), "invalid catalog printed metadata");
     }
 }
+
+/// Hosted-only bridge proof; full-model output equality is a separate gate.
+#[test]
+#[ignore = "requires hosted Python/tinygrad/LLVM environment"]
+fn guarded_add_bridge_retains_original_and_compiled_source_evidence() {
+    use std::process::Command;
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .nth(3)
+        .unwrap();
+    let python = std::env::var_os("MODEL_BRIDGE_PYTHON").expect("explicit hosted Python required");
+    let helper = std::path::Path::new(env!("CARGO_BIN_EXE_offline-llvm-guarded-add"));
+    let helper_sha = format!("{:x}", Sha256::digest(fs::read(helper).unwrap()));
+    let script = r#"
+import hashlib,json,os,subprocess,tempfile,time
+from pathlib import Path
+from types import SimpleNamespace
+from model_export.native import compile_kernel, guarded_add_binding, _guarded_add_helper
+from model_export.schema import ExportError
+from tinygrad.runtime.support.compiler_cpu import CPULLVMCompiler
+sha=lambda b:hashlib.sha256(b).hexdigest()
+source='define void @fixture(ptr %out, float %x, float %y, i1 %c) {\n %s = select i1 %c, float 0.0, float %y\n %r = fadd nsz contract float %s, %x\n store float %r, ptr %out\n ret void\n}\n'
+op=SimpleNamespace(arg=SimpleNamespace(function_name='fixture',globals=[0],vars=[]),src=[None,None,None,SimpleNamespace(arg=source)])
+compiler=CPULLVMCompiler(['x86_64','native'])
+helper=os.environ['MODEL_LLVM_GUARDED_ADD_BINARY']; digest=os.environ['MODEL_LLVM_GUARDED_ADD_SHA256']
+assert guarded_add_binding()['sha256']==digest
+kernel=compile_kernel(op,7,compiler)
+assert kernel.source==source
+assert kernel.evidence is not None
+body=kernel.evidence.compiled_source
+receipt=json.loads(kernel.evidence.rewrite_receipt)
+assert '@op_impl_7(' in body and 'diagnostic_guarded_sum' in body
+assert receipt['rewrite_count']==1
+assert receipt['original_source_sha256']==sha(source.replace('@fixture(', '@op_impl_7(').encode())
+assert receipt['output_source_sha256']==sha(body.encode())
+assert kernel.evidence.binding['object_sha256']==sha(kernel.object_code)
+assert kernel.evidence.binding['original_source_sha256']==sha(source.encode())
+assert kernel.evidence.binding['helper']['sha256']==digest
+# Genuine helper failures must terminate export; no original-source compilation.
+for bad in [source.replace(' %s =', ' %diagnostic_guarded_sum_0 = fadd float %x, %y\n %s ='), source+' '* (16*1024*1024)]:
+ invalid=SimpleNamespace(arg=op.arg,src=[None,None,None,SimpleNamespace(arg=bad)])
+ try:compile_kernel(invalid,7,compiler)
+ except ExportError:pass
+ else:raise AssertionError('failed helper fell back to compilation')
+with tempfile.TemporaryDirectory() as td:
+ held=Path(td)/'held';held.write_bytes(Path(helper).read_bytes());held.chmod(0o700)
+ os.environ['MODEL_LLVM_GUARDED_ADD_BINARY']=str(held)
+ try:
+  with _guarded_add_helper():held.chmod(0o500)
+ except ExportError:pass
+ else:raise AssertionError('held helper metadata mutation silently accepted')
+os.environ['MODEL_LLVM_GUARDED_ADD_BINARY']=helper
+for configuration in [
+ {'MODEL_LLVM_GUARDED_ADD_BINARY':helper},
+ {'MODEL_LLVM_GUARDED_ADD_SHA256':digest},
+ {'MODEL_LLVM_GUARDED_ADD_BINARY':helper,'MODEL_LLVM_GUARDED_ADD_SHA256':'0'*64},
+ {'MODEL_LLVM_GUARDED_ADD_BINARY':str(Path('/bin/false').resolve()),'MODEL_LLVM_GUARDED_ADD_SHA256':sha(Path('/bin/false').read_bytes())},
+]:
+ for key in ['MODEL_LLVM_GUARDED_ADD_BINARY','MODEL_LLVM_GUARDED_ADD_SHA256']:os.environ.pop(key,None)
+ os.environ.update(configuration)
+ try:compile_kernel(op,7,compiler)
+ except ExportError:pass
+ else:raise AssertionError('invalid helper configuration silently accepted')
+with tempfile.TemporaryDirectory() as td:
+ fake=Path(td)/'script';fake.write_bytes(b'#!/bin/sh\nexit 0\n');fake.chmod(0o700)
+ os.environ.update(MODEL_LLVM_GUARDED_ADD_BINARY=str(fake),MODEL_LLVM_GUARDED_ADD_SHA256=sha(fake.read_bytes()))
+ try:compile_kernel(op,7,compiler)
+ except ExportError:pass
+ else:raise AssertionError('interpreter helper silently accepted')
+# A real native peer leaves a descendant in its process group. Every bridge
+# exit must kill that descendant while retaining the leader until cleanup.
+peer_source=r'''
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+int main(int argc, char **argv) {
+ if(argc!=3 || strcmp(argv[1],"--receipt")) return 2;
+ pid_t descendant=fork(); if(descendant<0) return 2;
+ if(!descendant) { close(0);close(1);close(2);for(;;) pause(); }
+ FILE *pidfile=fopen(getenv("MODEL_BRIDGE_PEER_PIDFILE"),"w");
+ if(!pidfile) return 2;
+ fprintf(pidfile,"%ld",(long)descendant);fclose(pidfile);
+ const char *mode=getenv("MODEL_BRIDGE_PEER_MODE");
+ char input[65536];size_t bytes=0;ssize_t got;
+ if(!strcmp(mode,"overrun")) { memset(input,'x',sizeof(input));for(;;) if(write(1,input,sizeof(input))<0) return 3; }
+ while((got=read(0,input+bytes,sizeof(input)-bytes))>0) bytes+=(size_t)got;
+ if(!strcmp(mode,"timeout")) for(;;) pause();
+ if(!strcmp(mode,"nonzero")) return 3;
+ FILE *receipt=fopen(argv[2],"w");if(!receipt) return 2;
+ fputs(!strcmp(mode,"malformed") ? "{}" : getenv("MODEL_BRIDGE_PEER_RECEIPT"),receipt);fclose(receipt);
+ return write(1,input,bytes)==(ssize_t)bytes ? 0 : 3;
+}
+'''
+with tempfile.TemporaryDirectory() as td:
+ peer=Path(td)/'peer'
+ subprocess.run(['clang','-x','c','-','-o',str(peer)],input=peer_source.encode(),check=True,timeout=30)
+ renamed=source.replace('@fixture(', '@op_impl_7(').encode()
+ unchanged=dict(status='unchanged',original_source_sha256=sha(renamed),output_source_sha256=sha(renamed),input_bytes=len(renamed),output_bytes=len(renamed),rewrite_count=0,rewrites=[])
+ os.environ.update(MODEL_LLVM_GUARDED_ADD_BINARY=str(peer),MODEL_LLVM_GUARDED_ADD_SHA256=sha(peer.read_bytes()),MODEL_BRIDGE_PEER_RECEIPT=json.dumps(unchanged))
+ for mode in ['success','nonzero','malformed','overrun','timeout']:
+  pidfile=Path(td)/(mode+'.pid')
+  os.environ.update(MODEL_BRIDGE_PEER_MODE=mode,MODEL_BRIDGE_PEER_PIDFILE=str(pidfile))
+  try:compile_kernel(op,7,compiler)
+  except ExportError:
+   if mode=='success':raise
+  else:assert mode=='success', 'peer error did not terminate export: '+mode
+  pid=int(pidfile.read_text())
+  for _ in range(100):
+   state=Path(f'/proc/{pid}/stat')
+   try:observed=state.read_text().rsplit(')',1)[1].split()[0]
+   except FileNotFoundError:break
+   if observed=='Z':break
+   time.sleep(0.01)
+  else:raise AssertionError('owned helper descendant survived: '+mode)
+ for key in ['MODEL_BRIDGE_PEER_MODE','MODEL_BRIDGE_PEER_PIDFILE','MODEL_BRIDGE_PEER_RECEIPT']:os.environ.pop(key,None)
+# Real capture/export verifies per-kernel alignment, including host COPY entries.
+os.environ.update(MODEL_LLVM_GUARDED_ADD_BINARY=helper,MODEL_LLVM_GUARDED_ADD_SHA256=digest)
+from tinygrad import Tensor,TinyJit
+from model_export import Bindings,export_cpu
+from model_export.capture import capture_cpu
+x=Tensor([1.0,2.0,3.0],device='NPY').realize()
+jit=TinyJit(lambda value:(value.to('CPU')*2+1).realize())
+jit(x);y=jit(x)
+bindings=Bindings({'x':x},{'y':y})
+captured=capture_cpu(jit,bindings)
+assert len(captured.compilation)==len(captured.sources)
+assert any(source.startswith('copy:') for source in captured.sources)
+with tempfile.TemporaryDirectory() as td:
+ bundle=Path(td)/'bundle';export_cpu(jit,bindings,bundle)
+ index=json.loads((bundle/'compilation-evidence.json').read_bytes())
+ for i,source in enumerate(captured.sources):
+  assert (bundle/f'kernel-{i}.txt').read_bytes()==source.encode()
+  if source.startswith('copy:'):
+   assert str(i) not in index['kernels'] and not (bundle/f'kernel-{i}.compiled.ll').exists()
+  else:
+   record=index['kernels'][str(i)]
+   assert record['compiled_source_sha256']==sha((bundle/f'kernel-{i}.compiled.ll').read_bytes())
+   assert record['rewrite_receipt_sha256']==sha((bundle/f'kernel-{i}.guarded-add.json').read_bytes())
+   assert record['object_sha256']==sha((bundle/f'kernel-{i}.o').read_bytes())
+for key in ['MODEL_LLVM_GUARDED_ADD_BINARY','MODEL_LLVM_GUARDED_ADD_SHA256']:os.environ.pop(key,None)
+assert guarded_add_binding()=={'enabled':False}
+assert compile_kernel(op,7,compiler).evidence is None
+with tempfile.TemporaryDirectory() as td:
+ disabled=Path(td)/'disabled';export_cpu(jit,bindings,disabled)
+ assert not (disabled/'compilation-evidence.json').exists()
+ assert not list(disabled.glob('*.compiled.ll')) and not list(disabled.glob('*.guarded-add.json'))
+ assert set(json.loads((disabled/'graph.json').read_bytes()))=={'version','backend','arch','weights_sha256','library_sha256','allocations','views','inputs','outputs','kernels','calls'}
+ for i,source in enumerate(captured.sources):assert (disabled/f'kernel-{i}.txt').read_bytes()==source.encode()
+"#;
+    let output = Command::new(python)
+        .args(["-P", "-c", script])
+        .current_dir(root)
+        .env(
+            "PYTHONPATH",
+            format!(
+                "{}:{}:{}",
+                root.display(),
+                root.join("tinygrad_repo").display(),
+                root.join("rust/tools").display()
+            ),
+        )
+        .env("PYTHONDONTWRITEBYTECODE", "1")
+        .env("DEV", "CPU:LLVM")
+        .env("JIT_BATCH_SIZE", "0")
+        .env("MODEL_LLVM_GUARDED_ADD_BINARY", helper)
+        .env("MODEL_LLVM_GUARDED_ADD_SHA256", helper_sha)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "bridge failed: {}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
