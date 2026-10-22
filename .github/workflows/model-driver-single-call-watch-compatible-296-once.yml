@@ -18,10 +18,16 @@ jobs:
         sample:
         - 0
         - 1
-      max-parallel: 2
+        - 2
+        - 3
+        - 4
+        - 5
+        - 6
+        - 7
+      max-parallel: 4
     env:
       EXPECTED_SOURCE: 12fab44083b6dbd1f8c69f5f2b18bea8aca99461
-      DIAGNOSTIC_ATTEMPT: 20261022-single-call-watch-compatible-06
+      DIAGNOSTIC_ATTEMPT: 20261022-single-call-watch-compatible-07
       PYTHONDONTWRITEBYTECODE: '1'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
     steps:
@@ -29,16 +35,19 @@ jobs:
       with:
         ref: 12fab44083b6dbd1f8c69f5f2b18bea8aca99461
         persist-credentials: false
-    - name: Record natural CPU and admit x86_64 candidate for strict LLVM feature check
+    - name: Record CPU and cheaply admit only the known fully feature-compatible natural EPYC 9V45
       id: cpu
       shell: bash
       run: "set -euo pipefail\nmkdir \"$RUNNER_TEMP/driver-single-call-preflight\"\nlscpu --json > \"$RUNNER_TEMP/driver-single-call-preflight/lscpu.json\"\
         \ncat /proc/cpuinfo > \"$RUNNER_TEMP/driver-single-call-preflight/proc-cpuinfo.txt\"\nuname -a > \"$RUNNER_TEMP/driver-single-call-preflight/uname.txt\"\
         \ntest \"$(git rev-parse HEAD)\" = \"$EXPECTED_SOURCE\"\ngit rev-parse HEAD > \"$RUNNER_TEMP/driver-single-call-preflight/SOURCE_COMMIT\"\
-        \nstatus=SKIPPED_NON_X86_64_HOST\nrun=false\nif test \"$(uname -m)\" = x86_64; then\n  run=true\n  status=X86_64_CANDIDATE_PENDING_STRICT_LLVM_ISA_AND_BASELINE_REPLAY\n\
-        fi\nprintf 'run=%s\\n' \"$run\" >> \"$GITHUB_OUTPUT\"\nprintf '{\"status\":\"%s\",\"comparison_executed\":false,\"\
-        diagnostic_only\":true,\"retirement_acceptance\":false,\"same_recorded_cpu_claim\":false}\\n' \"$status\" > \"$RUNNER_TEMP/driver-single-call-preflight/result.json\"\
-        \nprintf '%s\\n' \"$status\"\n"
+        \nstatus=SKIPPED_NOT_RECORDED_EPYC_9V45_HOST\nrun=false\nif awk 'BEGIN { found=0; bad=0 } /^model name[[:space:]]*:/\
+        \ { sub(/^[^:]*:[[:space:]]*/, \"\"); found++; if ($0 != \"AMD EPYC 9V45 96-Core Processor\") bad=1 } END { exit !(found>0\
+        \ && bad==0) }' /proc/cpuinfo && awk 'BEGIN { found=0; bad=0 } /^vendor_id[[:space:]]*:/ { sub(/^[^:]*:[[:space:]]*/,\
+        \ \"\"); found++; if ($0 != \"AuthenticAMD\") bad=1 } END { exit !(found>0 && bad==0) }' /proc/cpuinfo; then\n run=true\n\
+        \ status=ELIGIBLE_RECORDED_EPYC_9V45_HOST\nfi\nprintf 'run=%s\\n' \"$run\" >> \"$GITHUB_OUTPUT\"\nprintf '{\"status\"\
+        :\"%s\",\"comparison_executed\":false,\"diagnostic_only\":true,\"retirement_acceptance\":false}\\n' \"$status\" >\
+        \ \"$RUNNER_TEMP/driver-single-call-preflight/result.json\"\nprintf '%s\\n' \"$status\"\n"
     - uses: actions/setup-python@v6
       if: success() && steps.cpu.outputs.run == 'true'
       with:
