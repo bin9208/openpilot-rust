@@ -31,8 +31,9 @@ an all-module clearance or complete runtime/device acceptance.
 Navigation startup #457 and historical PTRACE_LISTEN/EIO #474 remain unexplained.
 Generic ARM/QEMU is not a sealed AGNOS/device candidate. Keep #296 open.
 
-Published current PR headd61079461c0e217056095fcd56d6831230317137. Complete new
-Rust39703167508, Integration39703167608 and Fast39703167593 are running/queued;
+Published current PR headd61079461c0e217056095fcd56d6831230317137. Complete current
+Integration39703167608 and Fast39703167593 pass. Rust39703167508 has the known
+#476 model failure; Card119576923165 passes and workspace119576923681 is running;
 inspect actual latest results before acceptance. Previous f913de3aa checkout is
 synthetic merged39b1b08c2079e9b3356be06ddddf9db49551be6, independently same tree.
 Integration39691148113 passes. Rust39691148023 is complete:44successful jobs,
@@ -45,8 +46,8 @@ Source fixes for the CI contracts are committed. Current-source complete Fast
 routing/metadata/Card39696562943 atdf374b0ab passes, including77isolation checks,
 3host-stager controls,13disk/6workflow policies and all67metadata observations.
 Corpus postdelete39698084823 additionally passes whole formatting and78isolation
-checks after the new Kalman step/policy. #478 still needs final complete Fast;
-#475 still needs final complete workspace. Diagnostic-branch automatic Fast runs
+checks after the new Kalman step/policy. Full Fast39703167593 confirms all78
+isolation checks and closes #478 (comment6330242277); #475 still needs final complete workspace. Diagnostic-branch automatic Fast runs
 inspect a different tree and are never evidence for their pinned source checkout.
 
 ## Accepted focused closures to reuse
@@ -129,7 +130,12 @@ commit2ecf instead of authenticated current checkoutdf374. Candidatea29832fd0
 carries current checkout only to live logging; all historical manifest pins stay.
 Active grouped/dedicated regressions bind every collector report to the current
 checkout, and exact log-context rejection is unchanged. Retry39699899580, workflow
-94db924b4f2acc24e29ca250ffe5e4bdc8938b00, is running at that source.
+94db924b4f2acc24e29ca250ffe5e4bdc8938b00, passes all16driver/8startup and emits all6
+USB passed reports in actual root, then fails final original-held input ctime
+verification (#480); private root is not reached.5b5aa357b isolates case links
+from original inputs using one independent copied pair. Focused39707683464 passes
+regression+strictClippy; USB-only39708204175 atsame5b source is running both roots.
+This is not full-group/#479/#476 acceptance.
 
 Failure-only native postmortem stays diagnostic/non-acceptance and preserves gate
 failure. Two actual hosted contexts39700512883/workflow0e522bf2a prove EPYC7763/
@@ -139,10 +145,12 @@ texts match. Parent audits both258-CRC ZIPs and all raw predictions (439/553floa
 values differ, maxabs0.01171875). This is not Intel-specific. Static review sees
 original PROGRAM.src[4] retained code versus export recompiling src[3] IR for the
 current host; target/codegen causality is not yet established. First divergent
-kernel diagnostic39703190929 atd610/workflow9e66c65d35b0c074203577d63818b3a4284a11b6
-compares identical complete alias-preserving prestates and records original/native
-machine code plus read-only worker/main MXCSR/rounding states. Never force CPU,
-substitute original compiled objects as a fix or weaken independent predictions.
+kernel diagnostic39707504533 atd610 completes valid88call/two-frame comparison
+in both samples, but both actual hosts are EPYC7763/znver3 and return
+NO_PER_CALL_DIFFERENCE. This does not diagnose the mismatching host. Natural-host
+preflight retry39708871859 skips only exact already-matching non-AVX512 EPYC7763
+hosts; other hosts run unchanged comparison. No target forcing or old-object
+substitution is a fix. Preserve strict independent expectations.
 Keep #476/#479/#296 open until their actual criteria pass.
 
 ## HardwareInfo next-family candidate
@@ -159,13 +167,28 @@ are source-only gzip byte preservation,974members with compressed/expanded pins,
 All974 committed Git bodies preserve pins. Historical inherited env was not directly
 recorded; explicit later env must reproduce complete historical path observations.
 
-Native leaf/capture admission and CLI registered at148030ae65c6728155029f2ba2e17e4b3a5a99be,
-feature hardware-info-qa-native. Parent reviews/fixes plain-vs-gzip admission,
-source-root interpretation, reply-array normalization, peer cleanup/write timeout,
-raw OS argv/path suffixes and before/after input receipts. Actual hosted candidate
-recipe hardware-info-native-296-once.yml, workflow1baa7fac443e1319f60cf59fa5b730686dfb5b5f,
-now queued/pending. All3original Python paths remain live and accepted count stays
-259/3/3318. No original-binding/compiler/hardware-module retirement claim.
+Native leaf/capture/CLI registered148030, runner+outer review094f and lint891425.
+17c770c72 fixes the original thermal-suffix-+02 name admission and avoids repeated
+~40MB expansion on final verification while preserving exact compressed identity.
+39707436994 passes units/strictClippy then finds only filesystem failed-read order
+a,b versus originalb,a in keyfile-read-errors. Both fail with identical diagnostics
+before same fallbackc; values/wire match.212721e1b admits only these two failed-read
+orders in this case with exact diagnostics, retaining raw logs/explicit receipt;
+all other ordering remains exact. It also retains source receipts through fallible
+stdout and provisional manifest finalization. Full hosted retry is pending.
+All3original tools remain live; count stays259/3/3318.
+
+## Hardwared candidate in progress
+
+Original artifact12389225409/run39691148023 is fully audited3984CRCs/1029617B,
+SHA4285c91ffd0b45568d79472a782c8ca05a4cd475eca8cb7ce196af65d74f911b.
+Captured source.json264722B has12cases/891inputs/890expected observations. Parent
+verifies gzip exact equality and19oldGit/current source pins. Native daemon IPC
+artifacts are engineering baseline only, never frozen expected values. New capture,
+trace/live peer leaves, native CLI wrappers and actual/private outer are being
+integrated. Featurehardwared-qa-native uses existing nativeIPC dependencies. All3
+original tools remain live and pending hosted proof; five original runtime files
+and shared schema/import/Python bindings remain separately pending.
 
 ## Publication next
 

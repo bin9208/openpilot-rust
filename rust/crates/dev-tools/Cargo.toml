@@ -598,6 +598,7 @@ timed-tools-native = ["dep:chrono", "dep:zmq"]
 timed-live-native = ["timed-tools-native", "dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq"]
 bootlog-artifact-native = ["dep:capnp", "dep:openpilot-cereal", "dep:zstd"]
 hardware-info-qa-native = []
+hardwared-qa-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-messaging", "openpilot-messaging/native", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq", "serde_json/float_roundtrip"]
 journal-runtime-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "dep:zmq"]
 camera-sensor-native = ["dep:openpilot-runtime-version", "dep:capnp"]
 camera-runtime-native = ["camera-sensor-native", "dep:openpilot-msgq", "dep:zmq"]
@@ -729,6 +730,28 @@ required-features = ["hardware-info-qa-native"]
 [[test]]
 name = "hardware_info_retirement"
 required-features = ["hardware-info-qa-native"]
+
+[[test]]
+name = "hardwared_qa"
+required-features = ["hardwared-qa-native"]
+
+[[test]]
+name = "hardwared_capture"
+required-features = ["hardwared-qa-native"]
+
+[[test]]
+name = "hardwared_retirement"
+required-features = ["hardwared-qa-native"]
+
+[[bin]]
+name = "check-hardwared"
+path = "src/bin/check_hardwared.rs"
+required-features = ["hardwared-qa-native"]
+
+[[bin]]
+name = "check-hardwared-daemon"
+path = "src/bin/check_hardwared_daemon.rs"
+required-features = ["hardwared-qa-native"]
 
 # Keep unsafe denied across tools; only the reviewed C++ oracle loader module
 # permits the explicit FFI calls needed by kalman-corpus-generator-native.

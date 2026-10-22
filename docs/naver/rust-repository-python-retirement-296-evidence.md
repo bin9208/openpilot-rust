@@ -6181,3 +6181,55 @@ of17869B artifact12396142845,
 SHA2569d4186cff19d83bc565dc0f2239e67692fb9573cbe75be4386e023cc0b8156a0.
 Use negated is_ok_and with exact inode equality; preserve error-as-rejection.
 Neither unit nor full-case acceptance is inferred from this failed attempt.
+
+### First actual model kernel divergence isolated (#476, 2026-10-22)
+
+Natural-host39708871859/workflowafb2a727b57363d1cffa1fb742b857b1c5158fa5 atd610:
+sample0 is actual EPYC9V45/LLVMgeneric withAVX512, and unchanged original matches
+both frozen frames. Same-base prestate comparison finds first difference in
+frame0 PROGRAM source/exported call3, kernel3 (first convolution), after earlier
+COPY/PROGRAM calls match. Launch2workers/core_id0 and allfour argument views
+match. Original/native IR SHA93ca1a8ac1e234368e2d1eb55e34bc42d0719be636f4c3fcbe67bab20d923412
+is identical; retained8810B machine codeSHA36294f281843cbe42eed7905ce90024e3e46d5213f918cfec050c45105454a0c,
+current11640B objectSHA324e24e6c0229c6afd3eeaf7dacf53a8f04abd1233af847ac4972d099fd8980e.
+First differing byte121842 in1728000B output backing: half values -0.1328125
+versus -0.1326904296875. Parent verifies complete4base prestates, IR and both
+code dumps against their exact pins. Worker/main rounding is0; MXCSR control
+bits match, only sticky exception flags differ. This isolates a real compiled
+PROGRAM result divergence, not yet its particular instruction or an accepted fix.
+
+Sample0 artifact12395927967:20919077B/all259CRCs,
+SHA25685f524e2176c04d17374c9d352effe4de3c577fbd68cd55a874dff257210af8a.
+Samples1/2/3 are explicit known-host SKIP with no comparison execution; parent
+verifies all9CRCs each: artifacts12395932501/12396650122/12396077514,
+4408/4424/4412B respectively, SHA256
+28e9df35d2f22a44c44a6fae9d2dc0a8254838ba944bd1c9f5f24360f86769f9,
+06b2b5fb6cbd11a131088103eb15196e104922e67558024943edb5f739d7660a,
+7d431a32a1f445babc7dfbc7e953a4960ac2aeaedda193d46a925d9e354f9d8c.
+No production CPU/ISA/FP policy, retained objects or independent predictions are
+changed. #476, six-source model-family closure and compiler conversion remain open.
+
+### Native Hardwared three-tool candidate (2026-10-22)
+
+Add independent source capture admission,12-case/891-input native case generation,
+890-observation trace comparison with original rel1e-12/abs1e-8 semantics, and
+actual native daemon IPC assertions. Parent independently verifies source.json
+exact gzip expansion against artifact12389225409 and all19captured/current Git
+source pins. No native daemon output is a frozen expected answer. Pin/bind mode,
+mtime,ctime,inode,length/SHA and actual native/runner/launcher executable ABI;
+source reappearance, tampering and unchanged rewrites invalidate receipts.
+
+Live peer retains invalid incoming event flags, continuous separate10Hz publisher,
+nonconflated deviceState, original5s transitions, offroad/onroad/cycle/restart,
+engagement Params/kmsg, valid fresh PC/CPU/memory output, stats/logging and5s
+SIGTERM shutdown. Publisher readiness/send failures propagate; stop uses a bounded
+handshake. Owned socket/namespace/runtime-root cleanup is verified before PASS.
+CLI wrappers preserve original argument forms and raw repeatable runner arguments;
+source receipts remain active through fallible stdout and final owned publication.
+Parent outer retains actual/private CLI execution, full trace+live IPC in each,
+empty working directory, configured runner,12CLI admissions,6source-reappearance
+controls, source copy/SHA and before/after executable receipts. All3original tools
+remain live. Candidate needs hosted build/unit/lint/full actual/private proof,
+maintained CI migration, deletion and actual postdelete proof before acceptance.
+Five original runtime files, original bindings and broader module closure remain
+pending. Local checks are scoped rustfmt/diff and stored-data/Git inspection only.

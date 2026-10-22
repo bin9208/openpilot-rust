@@ -1,0 +1,160 @@
+{
+  "capture": {
+    "artifact_crc_entries": 3984,
+    "artifact_id": 12389225409,
+    "artifact_zip_sha256": "4285c91ffd0b45568d79472a782c8ca05a4cd475eca8cb7ce196af65d74f911b",
+    "compressed_bytes": 8797,
+    "compressed_file": "source.json.gz",
+    "compressed_sha256": "648961bfb0ae0c20d3a8d8e07b999e4e6dd65ae121f6f9bba38a963fae35c6d6",
+    "source_commit": "d39b1b08c2079e9b3356be06ddddf9db49551be6",
+    "source_json_artifact_path": "platform-runtime/hardwared-source/source.json",
+    "source_json_bytes": 264722,
+    "source_json_sha256": "92ed8579d96b4e555c8c9d8a1452de120da1944c60f189864d04e2cbc3a7ce89",
+    "workflow_run": 39691148023
+  },
+  "cases": [
+    {
+      "expected_observations": 216,
+      "input_steps": 216,
+      "name": "fan-tici"
+    },
+    {
+      "expected_observations": 216,
+      "input_steps": 216,
+      "name": "fan-tizi"
+    },
+    {
+      "expected_observations": 216,
+      "input_steps": 216,
+      "name": "fan-mici"
+    },
+    {
+      "expected_observations": 12,
+      "input_steps": 12,
+      "name": "normal-cycle-disconnect"
+    },
+    {
+      "expected_observations": 5,
+      "input_steps": 5,
+      "name": "panda-disconnect-timeout"
+    },
+    {
+      "expected_observations": 9,
+      "input_steps": 9,
+      "name": "startup-block-and-boot-latch"
+    },
+    {
+      "expected_observations": 154,
+      "input_steps": 154,
+      "name": "thermal-hysteresis"
+    },
+    {
+      "expected_observations": 5,
+      "input_steps": 5,
+      "name": "offroad-danger-boundary"
+    },
+    {
+      "expected_observations": 9,
+      "input_steps": 9,
+      "name": "tesla-awake-after-start"
+    },
+    {
+      "expected_observations": 5,
+      "input_steps": 6,
+      "name": "ignition-edge-between-ticks"
+    },
+    {
+      "expected_observations": 13,
+      "input_steps": 13,
+      "name": "power-integration-shutdown-boundaries"
+    },
+    {
+      "expected_observations": 30,
+      "input_steps": 30,
+      "name": "low-voltage-shutdown"
+    }
+  ],
+  "expected_observations_total": 890,
+  "input_steps_total": 891,
+  "provider_limits": "Captured original run used hosted Python dependencies; native daemon outputs from same artifact are retained only as diagnostic provenance, never expected values.",
+  "purpose": "original Python hardwared trace expectations and original checker/import closure; no native output is an expected answer",
+  "schema_version": 1,
+  "source_pins": {
+    "msgq_repo/msgq/__init__.py": {
+      "bytes": 2022,
+      "sha256": "9b9e5e26cf4190e9aaf056cd90771fb95228f665d1171a9ee919b432a0d2d368"
+    },
+    "opendbc_repo/opendbc/car/car.capnp": {
+      "bytes": 26049,
+      "sha256": "6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda"
+    },
+    "opendbc_repo/opendbc/car/include/c++.capnp": {
+      "bytes": 1354,
+      "sha256": "fb306076cd38c27af1aed20fac6395e9a46fbe5b5df6a248b5f1b6845a079c44"
+    },
+    "openpilot/cereal/__init__.py": {
+      "bytes": 992,
+      "sha256": "c8e54d7417631916d8c5842d0d509d8c573ca8089e9cad6fc7acad849503fb60"
+    },
+    "openpilot/cereal/custom.capnp": {
+      "bytes": 6365,
+      "sha256": "102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693"
+    },
+    "openpilot/cereal/deprecated.capnp": {
+      "bytes": 17671,
+      "sha256": "65079ff035a29c4c267d07ef7240c316c7eaa81b52f795142ed7603489a61355"
+    },
+    "openpilot/cereal/include/c++.capnp": {
+      "bytes": 1354,
+      "sha256": "fb306076cd38c27af1aed20fac6395e9a46fbe5b5df6a248b5f1b6845a079c44"
+    },
+    "openpilot/cereal/log.capnp": {
+      "bytes": 69627,
+      "sha256": "fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620"
+    },
+    "openpilot/cereal/services.py": {
+      "bytes": 5725,
+      "sha256": "a0745e2ef00036f0eef08b453a4798b4281549ea9ac6dc91c8b348ef76131edb"
+    },
+    "openpilot/common/filter_simple.py": {
+      "bytes": 1930,
+      "sha256": "38d315a00635c4093cf6cbc3ed46a90d0f1708daf7662cba8a00d069c20dbfb3"
+    },
+    "openpilot/common/pid.py": {
+      "bytes": 4567,
+      "sha256": "552286210f964e7fe0c2879219c0f958ea9514be11a0da78eb793cd8bbc40c65"
+    },
+    "openpilot/system/hardware/fan_controller.py": {
+      "bytes": 1052,
+      "sha256": "ad09eb17684e5a9e9f40299a1e5e68aa9727efd0cd63319624da5cacff987aab"
+    },
+    "openpilot/system/hardware/hardwared.py": {
+      "bytes": 20186,
+      "sha256": "9d8c68736835d61312f35eb8007dd3b232b4a84bebff993913ea53890f5daee4"
+    },
+    "openpilot/system/hardware/power_monitoring.py": {
+      "bytes": 5470,
+      "sha256": "6485dd6c6dbc308945f31db8c3a0984f71f3b841fb8f994d1a264ef432a6b208"
+    },
+    "pyproject.toml": {
+      "bytes": 8639,
+      "sha256": "393ce3bd5eb0c497bc0454a8336d0745b59c0253055864f94c89585a1cd81076"
+    },
+    "rust/tools/check_hardwared.py": {
+      "bytes": 6735,
+      "sha256": "a76b3183a970b2dca6c6aa5896df3dab30479b09758890288824f18ff8432e0e"
+    },
+    "rust/tools/check_hardwared_daemon.py": {
+      "bytes": 7509,
+      "sha256": "e357039d5cd1c2d94f5cf2585327cd0237061fcc9d13555d7d5e45c2518f76ec"
+    },
+    "rust/tools/hardwared_source.py": {
+      "bytes": 8371,
+      "sha256": "38227b99076a3626e9d4292680d5a4bd71b558fb56d326b7d4f06b077d6495cd"
+    },
+    "uv.lock": {
+      "bytes": 227279,
+      "sha256": "3d3a7e31e04e654a86ed332fb8b97d67f5648905ee0b276bc53cfbc87fe5dcdf"
+    }
+  }
+}
