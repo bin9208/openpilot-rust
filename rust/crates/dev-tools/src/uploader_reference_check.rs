@@ -1,5 +1,6 @@
 //! Replay original uploader observations without computing expectations from the daemon.
-//! Unregistered candidate: Python helpers retain live sibling consumers.
+//! Python helpers retain live sibling consumers.
+mod fixture;
 pub(crate) mod http;
 use crate::{
     qa_process::{CommandSpec, NativeRunner, Runner},
@@ -171,8 +172,8 @@ fn validate(corpus: &Corpus) -> Result<()> {
     }
     Ok(())
 }
-fn make_files(root: &Path, case: &Case) -> Result<()> {
-    for (name, size, uploaded) in &case.files {
+fn make_files(root: &Path, case: &Case, files: &[(String, u64, bool)]) -> Result<()> {
+    for (name, size, uploaded) in files {
         let path = root.join(relative(name)?);
         fs::create_dir_all(path.parent().ok_or("fixture parent missing")?)?;
         let mut file = File::create(&path)?;
@@ -255,9 +256,14 @@ pub fn run(options: &Options) -> Result<Value> {
     let keys = http::Keys::new()?;
     let mut runner = NativeRunner;
     let mut rows = Vec::new();
+    let mut unsorted_priority_fixtures = 0;
     for case in &corpus.cases {
-        let temp = tempfile::tempdir()?;
-        make_files(temp.path(), case)?;
+        let (temp, layout, unsorted) = fixture::make(case)?;
+        unsorted_priority_fixtures += usize::from(unsorted);
+        fs::write(
+            options.output.join(format!("{}.fixture.json", case.id)),
+            serde_json::to_vec_pretty(&layout)?,
+        )?;
         let mut input = case.config.clone();
         input["root"] = json!(temp.path());
         let server = if let Some(config) = &case.http {
@@ -319,7 +325,11 @@ pub fn run(options: &Options) -> Result<Value> {
         hash(&bounded(&options.binary, 256 << 20)?) == before,
         "uploader binary changed during replay",
     )?;
-    let result = json!({"passed":true,"filesystem_scenarios":212,"backoff_decisions":10000,"loopback_http_scenarios":32,"jwt_algorithms":["RS256","ES256"],"compressed_payloads":"byte-exact original captured/native","binary_sha256":before,"fixture_sha256":options.fixture_sha256,"scenarios":rows,"expected_values_origin":"sealed actual original observations; no Rust uploader decisions used as expectations","source_files_retired":false});
+    require(
+        unsorted_priority_fixtures > 0,
+        "fixture layout made priority sorting redundant",
+    )?;
+    let result = json!({"passed":true,"filesystem_scenarios":212,"backoff_decisions":10000,"loopback_http_scenarios":32,"jwt_algorithms":["RS256","ES256"],"compressed_payloads":"byte-exact original captured/native","binary_sha256":before,"fixture_sha256":options.fixture_sha256,"scenarios":rows,"expected_values_origin":"sealed actual original observations; no Rust uploader decisions used as expectations","fixture_enumeration":"controlled tmpfs; captured same-priority ties, original input slots across priorities; verified before daemon execution","unsorted_priority_fixtures":unsorted_priority_fixtures,"source_files_retired":false});
     fs::write(
         options.output.join("report.json"),
         serde_json::to_vec_pretty(&result)?,

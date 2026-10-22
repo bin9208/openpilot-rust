@@ -77,4 +77,5 @@ fn actual_native_controller_replays_complete_original_group() {
     assert_eq!(result["filesystem_scenarios"], 212);
     assert_eq!(result["backoff_decisions"], 10000);
     assert_eq!(result["loopback_http_scenarios"], 32);
+    assert!(result["unsorted_priority_fixtures"].as_u64().unwrap() > 0);
 }
