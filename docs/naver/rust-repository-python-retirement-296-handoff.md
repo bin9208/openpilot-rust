@@ -30,8 +30,9 @@ records; Git retains earlier handoffs. Do not restart accepted unchanged groups.
 Latest implementation includes7c8ee5396 (ten-source retirement), e50ab0730
 (native deleter candidate),12af083b2 (dangling-link/caller policy), andc7c3a9c8a
 (explicit cached-driver/fresh-family scoping), pluscbaed1bd0 (octal permission literal).
-Model/runtime implementation800e2c8f8
-is unchanged. Published checkpoint is1031884ccad7fa39957fb640aff70a03afade189; use fresh Git/API
+Model/runtime implementation800e2c8f8 was unchanged through6e4f51; the newer
+experimental guarded-add candidatef755005e7 retains zero-arm addition and needs
+affected hosted acceptance. Published checkpoint is6e4f51e5a3ed9bb4d7592669db976eb0f3215c6b; use fresh Git/API
 readback for current issue/PR/diagnostic heads before pinning a source. Final-ten
 accepted source is12af083b2e31bbb73cb8f73a9822e1c92d3ab8ea, workflowae18fe676.
 Do not lose newer commits or mix unrelated WIP into a source pin.
@@ -45,7 +46,12 @@ AST metadata-only39804553336 passes(all593old lock identities/checksums/edges
 preserved,29new optional parser packages). The opt-in parser candidate now includes
 that exact accepted lock delta, independent Unicode15 data and CPython3.12.15
 encoding-name provenance; maintained Python callers and inventory remain unchanged.
-Native syntax/Git/full-scalar and wider codec-domain acceptance remain pending.
+Native syntax/Git/full-scalar subset39812856128 passes at1cc88538d:72syntax,
+12Git lanes,2224128actual lexer probes, strictClippy and bothdefault checks.
+Artifact12441485872/2448537B/SHAdd4c82f1 has42CRCs and16nested originalCRCs,
+4immutable fixture pairs and517provider pairs independently checked. Wider
+codec/name-domain capture workflowc990dbd22 is running atcdc7f7c82; no full
+compatibility, maintained caller retirement or inventory credit is claimed.
 Full model continuation39796728026 fails on the120s startup foreign-output
 rejection after24root-0 driver/startup cases pass. Source/provider/sidecar guards
 pass; this timeout provides no numerical-failure inference. Road R4
@@ -53,6 +59,8 @@ workflowdbee1ef362/source103188 fails on EPYC9V74: all12raw original output
 files are retained; only3/2576model-1 floats differ(+0 original/-0 native),
 with every other byte exact. Strict comparison stays unchanged; the zero-arm
 forwarding hypothesis requires actual operand/exceptional-value validation.
+The early-rejection candidate52310bf93 has a preservation regression and is
+tracked in #493, still open pending actual affected-family execution.
 
 Exact103188 Fast39800281535 and both mapped-docs39800281419/39800598592
 pass. Integration39800281579 and maintained logger119899439610 also pass.

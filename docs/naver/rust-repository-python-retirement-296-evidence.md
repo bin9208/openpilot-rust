@@ -8144,3 +8144,33 @@ lose one ULP during JSON parsing for60captured values. The opt-in comparator now
 enables serde_json's float_roundtrip parser and includes an actual observed-value
 roundtrip regression. Raw packet comparisons and the original narrow projections
 stay unchanged; no timestamp tolerance or timing deadline is relaxed.
+
+First native AST subset [39812856128](https://github.com/bin9208/openpilot-rust/actions/runs/39812856128)
+passes at1cc88538d7190501f442e42b30bf0e47fb4ac72b/workflowf208719b3404dd9fa00716bb6e0f760fcc5cef8f.
+Artifact12441485872:2448537B/SHA256
+dd4c82f126ac4b063d0756f17aae8341109610ad641b9f0f727ffb3c3a4ed450.
+Parent independently verifies all42CRCs,16nested originalCRCs/four seals, all72
+syntax admissions/12raw Git path rosters,2224128actual lexer probes without a
+difference,4immutable input pairs,517provider pairs and6Git source-table seals.
+Three tests finish in23.45s; strictClippy, normal/default-off library checks pass
+and normal default features stay empty. There are230successful native execs and
+no observed Python exec in the native subtree. Count this source subset once;
+it is not full grammar, byte-codec or old-character-name-alias compatibility.
+Maintained Python callers are intact and inventory credit remains zero.
+Pinned encodings/__init__.py source5884B/SHA78c4744d is retained as source-data
+provenance only, never imported or executed. Wider original-only capture recipe
+23a7cbae/payloadc8524f5a is published as workflowc990dbd226b541a94eed08910a2ab3ff42f024e5
+atcdc7f7c822736e913a672d15227a8e8f0cd0199d. It adds460registry inputs, full
+canonical-name observations, byte/two-byte codec domains and an all-scalar UTF7
+corpus; the original72/12 traffic is not repeated or replaced by Rust outputs.
+
+Parent additionally checks logging R2's1229CRCs/1227content seals/69held input
+pairs,433raw packets and exactly60saved created values each oneULP from raw.
+The phase-observation follow-up is sourcecdc7f7c82/workflowccb0bf0f54b471309e7f8c80a7f75c67d4a6a156,
+recipe4c3f970c/payload a25254fb. Both untraced and traced native runs retain the
+same two-second bound. Native functionality and the logging pair's retirement
+remain unaccepted pending those actual results.
+
+Startup foreign-output admission is tracked in #493. Candidate52310bf93 remains
+open until hosted preservation/early-failure regression and affected-family
+continuation complete. The strict model drift issues #476/#482 stay open.
