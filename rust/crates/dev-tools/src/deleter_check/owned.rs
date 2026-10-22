@@ -54,7 +54,7 @@ impl Permission {
         )?;
         let mode = file.metadata()?.permissions().mode();
         let guard = Self(file, mode);
-        guard.0.set_permissions(fs::Permissions::from_mode(0))?;
+        guard.0.set_permissions(fs::Permissions::from_mode(0o0))?;
         Ok(guard)
     }
 }
