@@ -12,13 +12,10 @@ fn cli_reports_available_space_and_rejects_impossible_growth() {
     assert!(!output.status.success());
     let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(report["growth_bytes"], 1_000_000_000u64 * 1024 * 1024);
-    assert_eq!(
-        report["required_bytes"],
-        1_000_000_000u64 * 1024 * 1024 + 25 * 1024 * 1024 * 1024
-    );
+    assert_eq!(report["required_bytes"], 1_000_000_000u64 * 1024 * 1024);
     assert!(String::from_utf8(output.stderr)
         .unwrap()
-        .contains("recover at least 35 GiB"));
+        .contains("insufficient disk for estimated operation growth"));
 }
 
 #[test]
@@ -53,26 +50,32 @@ fn cli_preserves_nonexistent_non_utf8_paths_and_zero_growth() {
         .unwrap();
     let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(report["growth_bytes"], 0);
-    assert_eq!(
-        report["required_bytes"],
-        openpilot_disk_space::RESERVE_BYTES
-    );
-    assert_eq!(
-        output.status.success(),
-        report["free_bytes"].as_u64().unwrap() >= openpilot_disk_space::RESERVE_BYTES
-    );
+    assert_eq!(report["required_bytes"], 0);
+    assert!(output.status.success());
     assert!(!path.exists());
 }
 
 #[test]
-fn reserve_addition_overflow_is_rejected_before_json() {
+fn growth_conversion_overflow_is_rejected_before_json() {
     let output = Command::new(env!("CARGO_BIN_EXE_disk-space-guard"))
-        .args(["--path", ".", "--growth-mib", "17592186044415"])
+        .args(["--path", ".", "--growth-mib", "17592186044416"])
         .output()
         .unwrap();
     assert!(!output.status.success());
     assert!(output.stdout.is_empty());
     assert!(String::from_utf8(output.stderr)
         .unwrap()
-        .contains("disk reserve plus growth exceeds u64"));
+        .contains("growth exceeds u64"));
+}
+
+#[test]
+fn largest_representable_growth_is_reported_without_a_fixed_reserve() {
+    let output = Command::new(env!("CARGO_BIN_EXE_disk-space-guard"))
+        .args(["--path", ".", "--growth-mib", "17592186044415"])
+        .output()
+        .unwrap();
+    assert!(!output.status.success());
+    let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["growth_bytes"], u64::MAX - (1024 * 1024 - 1));
+    assert_eq!(report["required_bytes"], report["growth_bytes"]);
 }

@@ -17,7 +17,7 @@ concurrency:
 jobs:
   regression:
     name: Focused updater remote tests and lint
-    runs-on: ubuntu-24.04
+    runs-on: ${{ github.repository == 'bin9208/openpilot-rust' && fromJSON('["self-hosted","Linux","X64","dev-md-local"]') || fromJSON('["ubuntu-24.04"]') }}
     timeout-minutes: 20
     env:
       RUSTUP_TOOLCHAIN: '1.94.0'
@@ -40,7 +40,9 @@ jobs:
           python-version: '3.12'
       - name: Reserve capacity before dependency installation
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          if [ "${{ runner.environment }}" = github-hosted ]; then
+            sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
       - name: Install existing pinned toolchain and affected native prerequisites
         run: |

@@ -21,8 +21,10 @@ runs:
       shell: bash
       run: |
         free_bytes=$(df --output=avail -B1 "$RUNNER_TEMP" | tail -n 1)
-        if (( free_bytes < 25 * 1024 * 1024 * 1024 + 512 * 1024 * 1024 )); then
-          echo 'Retain 25 GiB plus Rust bootstrap growth; recover at least 35 GiB before retry.' >&2
+        growth_bytes=$((512 * 1024 * 1024))
+        printf '{"free_bytes":%s,"growth_bytes":%s}\n' "$free_bytes" "$growth_bytes"
+        if (( free_bytes < growth_bytes )); then
+          echo 'Insufficient disk for estimated Rust bootstrap growth.' >&2
           exit 1
         fi
         case "$(uname -m)" in

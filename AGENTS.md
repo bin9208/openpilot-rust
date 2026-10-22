@@ -8,9 +8,9 @@
 - Branch protection applies to administrators and bots without bypass. Keep PR
   and post-merge checks. Implement on codex/feat-cicd-optimization targeting
   dev-md only; this does not authorize dev/main integration or runtime delivery.
-- Preserve the runner routing already present on dev-md. The user-approved
-  infrastructure work may run those existing Actions jobs on the registered
-  self-hosted runner; do not run functional/build checks in a local checkout.
+- Preserve the serial CI chain, required check names and native ARM execution.
+  Apply the 2026-10-23 validated-runner policy below to the next necessary jobs;
+  do not run functional/build checks in a local checkout.
 - Marked runtime delivery builds the exact merged SHA after unified CI passes.
   Do not request a runtime release for this CI change.
 
@@ -19,9 +19,21 @@
 - The user requires local checks to stay at syntax, formatting and diff review.
   Run functional tests, ARM/AGNOS builds, sealing, installation verification and
   release publication in GitHub Actions. Separate quick branch checks from deep
-  PR/release checks. Do not repeat successful unchanged checks locally or use a
-  local/self-hosted runner as a workaround. This applies to the dev-md track;
+  PR/release checks. Do not repeat successful unchanged checks locally.
+  This applies to the dev-md track;
   the separate #296 conversion is not part of this task.
+- On 2026-10-23 the user authorized the fastest validated Actions runner across
+  work chats. Prefer registered `bin-actions` with labels
+  `[self-hosted, Linux, X64, dev-md-local]` for trusted x64 checks and AGNOS
+  cross-build/install validation. Actual ARM CPU execution stays on GitHub ARM.
+  Unverified heavy workspace, provider QA and memory-specialty jobs retain their
+  existing hosted routing until resource compatibility is demonstrated.
+  Generic GNU/musl ARM comparison is still pending: keep that cross-build on
+  GitHub-hosted x64 until its result is recorded. Do not cancel running checks
+  or repeat unchanged successes to change runners. The verified runner is
+  Ubuntu 24.04 Noble with clang/libclang 18; record actual job identity.
+- The same explicit instruction retired the fixed 25/35 GiB stop/resume floor.
+  Admit builds using estimated operation growth and observed free space instead.
 
 ## dev-md upstream port isolation (2026-10-15, issue #338)
 
@@ -79,10 +91,9 @@
   device comparison after the complete runtime candidate is ready. Keep unported
   components and native external dependencies explicit in the inventory.
 
-- The user required prevention of disk exhaustion on 2026-09-30. Check available
-  space before each local build, dependency install or large artifact copy. Keep
-  at least 25 GiB free plus the operation's estimated growth; when below that
-  floor, stop new build work and recover at least 35 GiB before resuming. Prefer
+- Prevent disk exhaustion by observing available space before dependency installs
+  or large artifact copies and checking the operation's estimated growth. The
+  2026-10-23 instruction supersedes the former fixed 25/35 GiB floor. Prefer
   bounded package builds with incremental compilation disabled and reuse a
   coordinated target cache. On 2026-10-09 the user explicitly authorized deleting
   old Rust-port records, archived validation artifacts and all unused build

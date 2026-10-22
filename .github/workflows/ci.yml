@@ -44,7 +44,7 @@ jobs:
   fast-checks:
     needs: [route]
     name: ${{ needs.route.outputs.fast == 'true' && 'fast checks' || 'PR owns fast validation' }}
-    runs-on: ubuntu-24.04
+    runs-on: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","dev-md-local"]') || fromJSON('["ubuntu-24.04"]') }}
     timeout-minutes: 7
     if: needs.route.outputs.fast == 'true'
     steps:
@@ -112,7 +112,7 @@ jobs:
   check_user_docs:
     needs: [route, fast-checks]
     name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'check mapped user docs' || 'Not requested - check mapped user docs' }}
-    runs-on: ubuntu-24.04
+    runs-on: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","dev-md-local"]') || fromJSON('["ubuntu-24.04"]') }}
     if: needs.route.outputs.full == 'true'
     steps:
       - uses: actions/checkout@v6
@@ -129,8 +129,10 @@ jobs:
           DOCS_EVENT_NAME: ${{ github.event_name }}
         run: |
           free_bytes=$(df --output=avail -B1 "$GITHUB_WORKSPACE" | tail -n 1)
-          if (( free_bytes < (25 + 2) * 1024 * 1024 * 1024 )); then
-            echo 'Retain 25 GiB plus build growth; recover at least 35 GiB before retry.' >&2
+          growth_bytes=$((2 * 1024 * 1024 * 1024))
+          printf '{"free_bytes":%s,"growth_bytes":%s}\n' "$free_bytes" "$growth_bytes"
+          if (( free_bytes < growth_bytes )); then
+            echo 'Insufficient disk for estimated documentation-check build growth.' >&2
             exit 1
           fi
           args=(--base "$DOCS_BASE_SHA")
@@ -142,8 +144,10 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           free_bytes=$(df --output=avail -B1 "$GITHUB_WORKSPACE" | tail -n 1)
-          if (( free_bytes < (25 + 2) * 1024 * 1024 * 1024 )); then
-            echo 'Retain 25 GiB plus build growth; recover at least 35 GiB before retry.' >&2
+          growth_bytes=$((2 * 1024 * 1024 * 1024))
+          printf '{"free_bytes":%s,"growth_bytes":%s}\n' "$free_bytes" "$growth_bytes"
+          if (( free_bytes < growth_bytes )); then
+            echo 'Insufficient disk for estimated documentation-test build growth.' >&2
             exit 1
           fi
           CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test user_docs
@@ -159,7 +163,7 @@ jobs:
   git_update:
     needs: [check_user_docs]
     name: Git update lifecycle
-    runs-on: ubuntu-24.04
+    runs-on: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","dev-md-local"]') || fromJSON('["ubuntu-24.04"]') }}
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7
@@ -234,7 +238,7 @@ jobs:
   model_web:
     needs: [build_release]
     name: Model and Bluetooth web controls
-    runs-on: ubuntu-24.04
+    runs-on: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","dev-md-local"]') || fromJSON('["ubuntu-24.04"]') }}
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7
@@ -281,8 +285,10 @@ jobs:
       - name: Reserve capacity and select a job-owned Android SDK
         run: |
           free_bytes=$(df --output=avail -B1 "$RUNNER_TEMP" | tail -n 1)
-          if (( free_bytes < (25 + 4) * 1024 * 1024 * 1024 )); then
-            echo 'Retain 25 GiB plus Android SDK/build growth; recover at least 35 GiB before retry.' >&2
+          growth_bytes=$((4 * 1024 * 1024 * 1024))
+          printf '{"free_bytes":%s,"growth_bytes":%s}\n' "$free_bytes" "$growth_bytes"
+          if (( free_bytes < growth_bytes )); then
+            echo 'Insufficient disk for estimated Android SDK/build growth.' >&2
             exit 1
           fi
           echo "ANDROID_HOME=$RUNNER_TEMP/jetlink-android-sdk" >> "$GITHUB_ENV"
@@ -308,7 +314,7 @@ jobs:
   jetlink-native:
     needs: [android-core]
     name: Jetlink power policy fast checks
-    runs-on: ubuntu-24.04
+    runs-on: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","dev-md-local"]') || fromJSON('["ubuntu-24.04"]') }}
     timeout-minutes: 15
     env:
       CARGO_INCREMENTAL: '0'

@@ -89,12 +89,12 @@ def test_required_ci_generates_fixtures_before_tests_and_checks_full_schemas() -
   assert any('aarch64-unknown-linux-gnu/release/openpilot-card' in path for path in uploads)
 
 
-def test_reference_phase_stops_before_brand_outputs_can_cross_disk_floor(tmp_path: Path, monkeypatch) -> None:
-  monkeypatch.setattr(card_ci_space.shutil, 'disk_usage', lambda _: type('Usage', (), {'free': 27 * 1024**3})())
+def test_reference_phase_stops_before_brand_outputs_exceed_estimated_growth(tmp_path: Path, monkeypatch) -> None:
+  monkeypatch.setattr(card_ci_space.shutil, 'disk_usage', lambda _: type('Usage', (), {'free': 3 * 1024**3})())
   executed = []
   monkeypatch.setattr(check_card_ci, 'run', lambda command, evidence, name: executed.append(name))
   arguments = argparse.Namespace(binaries=tmp_path, dbc=tmp_path, numerics=tmp_path, evidence=tmp_path,
     binding=tmp_path / 'binding')
-  with pytest.raises(OSError, match='recover at least 35 GiB'):
+  with pytest.raises(OSError, match='insufficient space for estimated growth'):
     check_card_ci.reference(arguments)
   assert executed == [*check_card_ci.SHARED, 'git_source', 'carlog', 'common']
