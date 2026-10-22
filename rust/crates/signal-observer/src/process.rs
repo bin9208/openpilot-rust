@@ -31,8 +31,8 @@ impl Process {
         timestamp: f64,
         allow_green: bool,
     ) -> Result<Value, Error> {
-        let gray = cv::rgb_to_gray(rgb.view()?)?;
-        let gray = gray.view().data();
+        let gray_image = cv::rgb_to_gray(rgb.view()?)?;
+        let gray = gray_image.view().data();
         let mut detections = detect(rgb, gray, true, false)?;
         let state = self.tracker.snapshot();
         if let (Some((width, height, previous)), Some(last)) =
@@ -192,7 +192,7 @@ impl Process {
                 d.green_rejected = Some("unlit_or_border");
             }
         }
-        self.previous_gray = Some((rgb.width, rgb.height, gray.to_vec()));
+        self.previous_gray = Some((rgb.width, rgb.height, gray_image.into_data()));
         Ok(self.tracker.update(&Frame {
             timestamp,
             detections: detections
@@ -200,5 +200,52 @@ impl Process {
                 .map(serde_json::to_value)
                 .collect::<Result<_, _>>()?,
         })?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn frame(width: u32, height: u32, shade: u8) -> Rgb {
+        Rgb {
+            width,
+            height,
+            data: vec![shade; width as usize * height as usize * 3],
+        }
+    }
+
+    #[test]
+    fn history_tracks_current_pixels_across_frames_and_size_changes() {
+        cv::initialize(1).unwrap();
+        let mut process = Process::default();
+        for (index, rgb) in [frame(32, 24, 0), frame(32, 24, 17), frame(40, 32, 23)]
+            .into_iter()
+            .enumerate()
+        {
+            let expected = cv::rgb_to_gray(rgb.view().unwrap()).unwrap().into_data();
+            process
+                .process(&rgb, 10.0 + index as f64 * 0.05, false)
+                .unwrap();
+            let (width, height, previous) = process.previous_gray.as_ref().unwrap();
+            assert_eq!((*width, *height), (rgb.width, rgb.height));
+            assert_eq!(previous, &expected);
+            assert_eq!(
+                process.snapshot()["previous_gray"]["sha256"],
+                format!("{:x}", Sha256::digest(&expected))
+            );
+        }
+    }
+
+    #[test]
+    fn invalid_current_image_preserves_previous_pixels_and_tracker_state() {
+        cv::initialize(1).unwrap();
+        let mut process = Process::default();
+        process.process(&frame(32, 24, 17), 10.0, false).unwrap();
+        let before = process.snapshot();
+        let mut invalid = frame(32, 24, 23);
+        invalid.data.pop();
+        assert!(process.process(&invalid, 10.05, true).is_err());
+        assert_eq!(process.snapshot(), before);
     }
 }

@@ -74,6 +74,13 @@ pub(crate) mod ffi {
         type Net;
         fn set_threads(count: i32) -> Result<()>;
         fn resize(data: &[u8], layout: Layout, output: Dimensions) -> Result<Vec<u8>>;
+        fn resize_gray_roi(
+            data: &[u8],
+            size: Dimensions,
+            stride: usize,
+            roi: Rect,
+            output: Dimensions,
+        ) -> Result<Vec<u8>>;
         fn bgr_gray(data: &[u8], size: Dimensions) -> Result<Vec<u8>>;
         fn rgb_gray(data: &[u8], size: Dimensions) -> Result<Vec<u8>>;
         fn rgb_hsv(data: &[u8], size: Dimensions) -> Result<Vec<u8>>;
@@ -97,6 +104,12 @@ pub(crate) mod ffi {
             mask: &[u8],
         ) -> Result<Vec<f32>>;
         fn nv12_rgb(data: &[u8], size: Dimensions) -> Result<Vec<u8>>;
+        fn nv12_masked_resize_rgb(
+            data: &[u8],
+            size: Dimensions,
+            mask: &[u8],
+            output: Dimensions,
+        ) -> Result<Vec<u8>>;
         fn nv12_planes_rgb(
             data: &[u8],
             size: Dimensions,
@@ -122,6 +135,59 @@ pub(crate) mod ffi {
 #[cfg(test)]
 mod tests {
     use super::ffi;
+
+    #[test]
+    fn composite_and_strided_roi_validate_extents_without_rust_adapter() {
+        let size = || ffi::Dimensions {
+            width: 4,
+            height: 2,
+        };
+        let roi = || ffi::Rect {
+            x: 1,
+            y: 0,
+            width: 2,
+            height: 2,
+        };
+        assert!(ffi::nv12_masked_resize_rgb(&[0; 11], size(), &[255; 8], size()).is_err());
+        assert!(ffi::nv12_masked_resize_rgb(&[0; 12], size(), &[255; 7], size()).is_err());
+        assert!(ffi::nv12_masked_resize_rgb(
+            &[0; 12],
+            size(),
+            &[255; 8],
+            ffi::Dimensions {
+                width: 0,
+                height: 2
+            }
+        )
+        .is_err());
+        assert!(ffi::resize_gray_roi(&[0; 9], size(), 5, roi(), size()).is_err());
+        assert!(ffi::resize_gray_roi(&[0; 10], size(), usize::MAX, roi(), size()).is_err());
+        assert!(ffi::resize_gray_roi(&[0; 10], size(), 3, roi(), size()).is_err());
+        assert!(ffi::resize_gray_roi(
+            &[0; 10],
+            size(),
+            5,
+            roi(),
+            ffi::Dimensions {
+                width: 0,
+                height: 2
+            }
+        )
+        .is_err());
+        for bounds in [
+            ffi::Rect { x: -1, ..roi() },
+            ffi::Rect { y: -1, ..roi() },
+            ffi::Rect { width: 0, ..roi() },
+            ffi::Rect { height: 0, ..roi() },
+            ffi::Rect { x: 3, ..roi() },
+            ffi::Rect {
+                width: u32::MAX,
+                ..roi()
+            },
+        ] {
+            assert!(ffi::resize_gray_roi(&[0; 10], size(), 5, bounds, size()).is_err());
+        }
+    }
 
     #[test]
     fn signal_primitives_reject_inconsistent_borrowed_extents() {

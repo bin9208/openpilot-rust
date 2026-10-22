@@ -13,6 +13,10 @@ mod baseline;
 #[path = "../tests/support/compute_cases.rs"]
 mod inputs;
 
+#[cfg(feature = "native-skip-miri")]
+#[path = "../tests/support/preprocessing_dc951380.rs"]
+mod preprocessing_baseline;
+
 #[derive(serde::Serialize)]
 struct Sample {
     wall_us: f64,
@@ -139,6 +143,26 @@ fn native(frame: &Frame<'_>, rows: &mut Vec<Value>) -> Result<(), Box<dyn std::e
 
     cv::initialize(2)?;
     let image = lane_image(frame)?;
+    let previous_image = preprocessing_baseline::lane_image(frame)?;
+    assert_eq!(image.view().data(), previous_image.view().data());
+    let mut measurement = pair(
+        "lane-image-strided-roi",
+        32,
+        || {
+            black_box(preprocessing_baseline::lane_image(black_box(frame)).unwrap());
+        },
+        || {
+            black_box(lane_image(black_box(frame)).unwrap());
+        },
+    );
+    let side = frame.layout().width.min(frame.layout().height);
+    measurement["baseline_source"] = json!("dc95138076836ea3a5c1b6c27262be3f3b912f71");
+    measurement["copied_bytes_avoided_per_inference"] =
+        json!(if side == 416 { 0 } else { side * side });
+    measurement["rust_image_allocations_avoided_per_inference"] = json!(usize::from(side != 416));
+    measurement["avoided_work_basis"] =
+        json!("source-counted center-square packing; not measured memory traffic");
+    rows.push(measurement);
     let old = original::lane::lane_tensor(&image)?;
     let new = lane_tensor(&image)?;
     assert_eq!(old.view().values(), new.view().values());
@@ -159,6 +183,7 @@ fn native(frame: &Frame<'_>, rows: &mut Vec<Value>) -> Result<(), Box<dyn std::e
     let size = Dimensions::new(1928, 1208)?;
     let before = original::geometry::Geometry::new(&config, size)?;
     let after = Geometry::new(&config, size)?;
+    let interop_before = preprocessing_baseline::geometry::Geometry::new(&config, size)?;
     assert_eq!(before.dimensions(), after.dimensions());
     for side in [Side::Left, Side::Right] {
         let old = before.region(side).unwrap();
@@ -179,6 +204,39 @@ fn native(frame: &Frame<'_>, rows: &mut Vec<Value>) -> Result<(), Box<dyn std::e
                 black_box(after.tensor(black_box(frame), side).unwrap());
             },
         ));
+        assert_eq!(interop_before.dimensions(), after.dimensions());
+        let baseline_region = interop_before.region(side).unwrap();
+        assert_eq!(baseline_region.bounds(), new.bounds());
+        assert_eq!(
+            baseline_region.mask().view().data(),
+            new.mask().view().data()
+        );
+        let baseline = interop_before.tensor(frame, side)?.unwrap();
+        let candidate = after.tensor(frame, side)?.unwrap();
+        assert_eq!(baseline.view().shape(), candidate.view().shape());
+        assert!(baseline
+            .view()
+            .values()
+            .iter()
+            .zip(candidate.view().values())
+            .all(|(a, b)| a.to_bits() == b.to_bits()));
+        let mut measurement = pair(
+            &format!("bsd-preprocess-interop-{}", side.name()),
+            4,
+            || {
+                black_box(interop_before.tensor(black_box(frame), side).unwrap());
+            },
+            || {
+                black_box(after.tensor(black_box(frame), side).unwrap());
+            },
+        );
+        let [_, _, width, height] = new.bounds();
+        measurement["baseline_source"] = json!("dc95138076836ea3a5c1b6c27262be3f3b912f71");
+        measurement["copied_bytes_avoided_per_inference"] = json!(6 * width * height);
+        measurement["rust_image_allocations_avoided_per_inference"] = json!(2);
+        measurement["avoided_work_basis"] =
+            json!("source-counted RGB and masked-RGB return copies; not measured memory traffic");
+        rows.push(measurement);
     }
 
     let models = std::env::var("XIAOGE_BENCH_MODELS")?;
@@ -298,6 +356,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         serde_json::to_string_pretty(&json!({
             "source_commit": std::env::var("GITHUB_SHA")?,
             "baseline_source": "0682e933d3fea06e8953ace63fc521a29ee02b6e",
+            "preprocessing_baseline_provenance": serde_json::from_str::<Value>(include_str!("../tests/support/preprocessing_dc951380.json"))?,
             "architecture": std::env::consts::ARCH,
             "native_models": cfg!(feature = "native-skip-miri"),
             "wait_policy": std::env::var("XIAOGE_BENCH_POLICY").unwrap_or_else(|_| "default".to_owned()),

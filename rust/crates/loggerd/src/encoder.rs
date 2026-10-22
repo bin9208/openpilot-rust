@@ -114,7 +114,7 @@ impl Encoder {
     pub fn handle(
         &mut self,
         logger: &mut Logger,
-        bytes: Vec<u8>,
+        bytes: &mut Vec<u8>,
         ready: usize,
     ) -> Result<Outcome, Error> {
         let message = capnp::serialize::read_message_from_flat_slice(
@@ -165,7 +165,7 @@ impl Encoder {
                     for queued in std::mem::take(&mut self.queue) {
                         written += self.write(logger, &queued)?;
                     }
-                    written += self.write(logger, &bytes)?;
+                    written += self.write(logger, bytes)?;
                 } else {
                     self.enqueue(bytes, true);
                 }
@@ -205,7 +205,7 @@ impl Encoder {
         }
     }
 
-    fn enqueue(&mut self, bytes: Vec<u8>, waiting_audio: bool) {
+    fn enqueue(&mut self, bytes: &mut Vec<u8>, waiting_audio: bool) {
         if self.queue.len() > 200 {
             if waiting_audio {
                 diagnostics::limited(&diagnostics::AUDIO_QUEUE, log_site!(), || {
@@ -223,7 +223,10 @@ impl Encoder {
                 });
             }
         } else {
-            self.queue.push(bytes);
+            // Retained packets own only their payload capacity, not a previous
+            // large receive's spare storage. Immediate writes keep the scratch.
+            self.queue
+                .push(std::mem::take(bytes).into_boxed_slice().into_vec());
         }
     }
 
@@ -292,3 +295,7 @@ impl Encoder {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "encoder_tests.rs"]
+mod tests;

@@ -16,6 +16,7 @@ mod native;
 pub use native::{
     apply_mask, bgr_to_gray, bounding_rect, connected_components, distance_transform,
     external_contours, initialize, match_template, match_template_ccorr, morphology_open,
-    morphology_tophat, nv12_planes_to_rgb, nv12_to_rgb, polygon_mask, resize_linear, rgb_to_gray,
-    rgb_to_hsv, Component, Components, Contour, DnnNet, DnnReport, DnnTarget,
+    morphology_tophat, nv12_masked_resize_rgb, nv12_planes_to_rgb, nv12_to_rgb, polygon_mask,
+    resize_gray_roi, resize_linear, rgb_to_gray, rgb_to_hsv, Component, Components, Contour,
+    DnnNet, DnnReport, DnnTarget,
 };

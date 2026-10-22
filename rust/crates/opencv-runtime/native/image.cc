@@ -15,21 +15,53 @@ rust::Vec<std::uint8_t> resize(rust::Slice<const std::uint8_t> data, Layout layo
   cv::resize(input, result, cv::Size(static_cast<int>(output.width), static_cast<int>(output.height)), 0, 0, cv::INTER_LINEAR);
   return owned_bytes(result);
 }
+rust::Vec<std::uint8_t> resize_gray_roi(rust::Slice<const std::uint8_t> data, Dimensions size, std::size_t stride, Rect roi, Dimensions output) {
+  checked_size(size, 1);
+  checked_size(output, 1);
+  const auto maximum = std::numeric_limits<std::size_t>::max();
+  if (stride < size.width || stride > maximum / size.height || data.size() < stride * size.height
+      || roi.x < 0 || roi.y < 0 || !roi.width || !roi.height
+      || std::uint64_t{static_cast<std::uint32_t>(roi.x)} + roi.width > size.width
+      || std::uint64_t{static_cast<std::uint32_t>(roi.y)} + roi.height > size.height)
+    throw std::invalid_argument("strided grayscale ROI differs from checked plane extent");
+  // Keep parent allocation bounds intact even when the ROI touches its last row.
+  // Both headers are synchronous borrows of caller-owned storage.
+  const cv::Mat plane(static_cast<int>(size.height), static_cast<int>(size.width), CV_8UC1,
+    const_cast<std::uint8_t*>(data.data()), stride);
+  const auto input = plane(cv::Rect(roi.x, roi.y, static_cast<int>(roi.width), static_cast<int>(roi.height)));
+  cv::Mat result;
+  cv::resize(input, result, cv::Size(static_cast<int>(output.width), static_cast<int>(output.height)), 0, 0, cv::INTER_LINEAR);
+  return owned_bytes(result);
+}
 rust::Vec<std::uint8_t> bgr_gray(rust::Slice<const std::uint8_t> data, Dimensions size) {
   const auto input = borrowed_image(data, Layout{size, 3});
   cv::Mat result;
   cv::cvtColor(input, result, cv::COLOR_BGR2GRAY);
   return owned_bytes(result);
 }
-rust::Vec<std::uint8_t> nv12_rgb(rust::Slice<const std::uint8_t> data, Dimensions size) {
+static cv::Mat borrowed_nv12(rust::Slice<const std::uint8_t> data, Dimensions size) {
   const auto pixels = checked_size(size, 1);
   if (size.width % 2 || size.height % 2 || pixels > std::numeric_limits<std::size_t>::max() - pixels / 2
       || data.size() != pixels + pixels / 2 || size.height > INT32_MAX / 3 * 2)
     throw std::invalid_argument("packed NV12 dimensions or slice mismatch");
-  const cv::Mat input(static_cast<int>(size.height + size.height / 2), static_cast<int>(size.width), CV_8UC1,
+  return cv::Mat(static_cast<int>(size.height + size.height / 2), static_cast<int>(size.width), CV_8UC1,
     const_cast<std::uint8_t*>(data.data()));
+}
+rust::Vec<std::uint8_t> nv12_rgb(rust::Slice<const std::uint8_t> data, Dimensions size) {
+  const auto input = borrowed_nv12(data, size);
   cv::Mat result;
   cv::cvtColor(input, result, cv::COLOR_YUV2RGB_NV12);
+  return owned_bytes(result);
+}
+rust::Vec<std::uint8_t> nv12_masked_resize_rgb(rust::Slice<const std::uint8_t> data, Dimensions size, rust::Slice<const std::uint8_t> mask, Dimensions output) {
+  const auto input = borrowed_nv12(data, size);
+  const auto filter = borrowed_image(mask, Layout{size, 1});
+  checked_size(output, 3);
+  cv::Mat rgb, masked, result;
+  cv::cvtColor(input, rgb, cv::COLOR_YUV2RGB_NV12);
+  // Separate fresh output retains bitwise_and's zero fill outside the mask.
+  cv::bitwise_and(rgb, rgb, masked, filter);
+  cv::resize(masked, result, cv::Size(static_cast<int>(output.width), static_cast<int>(output.height)), 0, 0, cv::INTER_LINEAR);
   return owned_bytes(result);
 }
 rust::Vec<std::uint8_t> nv12_planes_rgb(rust::Slice<const std::uint8_t> data, Dimensions size, std::size_t stride, std::size_t uv_offset) {

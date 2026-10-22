@@ -87,6 +87,22 @@ jobs:
             actual = receipt.with_suffix('.rs').read_bytes()
             assert actual == expected and hashlib.sha256(actual).hexdigest() == data['sha256'], receipt
           assert paths == {'rust/crates/xiaoge/src/lane/head.rs', 'rust/crates/xiaoge/src/inference/lane.rs', 'rust/crates/xiaoge/src/inference/geometry.rs'}
+          receipt = json.loads(Path('rust/crates/xiaoge/tests/support/preprocessing_dc951380.json').read_text())
+          assert receipt['source_commit'] == 'dc95138076836ea3a5c1b6c27262be3f3b912f71'
+          assert {item['source_path'] for item in receipt['references']} == {'rust/crates/xiaoge/src/inference/lane.rs', 'rust/crates/xiaoge/src/inference/geometry.rs'}
+          assert len(receipt['references']) == 2
+          for item in receipt['references']:
+            expected = subprocess.check_output(['git', 'show', receipt['source_commit'] + ':' + item['source_path']])
+            actual = Path(item['path']).read_bytes()
+            assert hashlib.sha256(expected).hexdigest() == item['source_sha256']
+            assert hashlib.sha256(actual).hexdigest() == item['sha256']
+            if item['source_path'].endswith('/geometry.rs'):
+              assert actual == expected
+            else:
+              assert item['source_lines_inclusive'] == [13, 25]
+              extracted = b''.join(expected.splitlines(keepends=True)[12:25])
+              assert hashlib.sha256(extracted).hexdigest() == item['extracted_sha256']
+              assert actual[actual.index(b'pub fn lane_image('):] == extracted
           PY
       - name: Check CI routing and upstream synchronization guards
         run: |
@@ -3190,11 +3206,11 @@ jobs:
       - name: Compile and check all native Xiaoge targets
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-xiaoge -p openpilot-opencv-runtime -p openpilot-jpeg --features native-skip-miri --all-targets --locked
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-xiaoge -p openpilot-opencv-runtime -p openpilot-jpeg -p openpilot-signal-observer --features native-skip-miri --all-targets --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-xiaoge -p openpilot-opencv-runtime -p openpilot-jpeg --features native-skip-miri --bins --examples --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-xiaoge -p openpilot-opencv-runtime -p openpilot-jpeg -p openpilot-signal-observer --features native-skip-miri --bins --examples --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-xiaoge -p openpilot-opencv-runtime -p openpilot-jpeg --features native-skip-miri --all-targets --locked -- -D warnings
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-xiaoge -p openpilot-opencv-runtime -p openpilot-jpeg -p openpilot-signal-observer --features native-skip-miri --all-targets --locked -- -D warnings
       - name: Compare source pixels, model results, sockets, live IPC and lifecycle
         run: |
           python rust/tools/check_xiaoge_ci.py --bin-dir rust/target/debug --models openpilot/selfdrive/carrot/xiaoge/assets \
@@ -3203,6 +3219,10 @@ jobs:
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
           XIAOGE_BENCH_MODELS="$GITHUB_WORKSPACE/openpilot/selfdrive/carrot/xiaoge/assets" cargo run --quiet --release --manifest-path rust/Cargo.toml -p openpilot-xiaoge --features native-skip-miri --example xiaoge_compute_bench --locked -- --assert > "$RUNNER_TEMP/xiaoge-cpu-equivalence.json"
+      - name: Compare signal tracking and previous-image history with pinned source
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          python rust/tools/check_signal_process.py --binary rust/target/debug/examples/signal_process_trace --output "$RUNNER_TEMP/signal-process-comparison"
       - uses: actions/upload-artifact@v6
         if: always()
         with:
@@ -3214,6 +3234,7 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/xiaoge-opencv/*.log
             ${{ env.CI_JOB_TEMP }}/xiaoge-opencv/native-libraries.sha256
             ${{ env.CI_JOB_TEMP }}/xiaoge-cpu-equivalence.json
+            ${{ env.CI_JOB_TEMP }}/signal-process-comparison/*.json
             rust/target/debug/openpilot-xiaoge
             rust/target/debug/examples/xiaoge_*
             rust/target/debug/examples/opencv_trace

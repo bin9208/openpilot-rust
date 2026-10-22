@@ -5,8 +5,8 @@ mod image;
 mod net;
 mod primitives;
 pub use image::{
-    apply_mask, bgr_to_gray, bounding_rect, nv12_planes_to_rgb, nv12_to_rgb, polygon_mask,
-    resize_linear,
+    apply_mask, bgr_to_gray, bounding_rect, nv12_masked_resize_rgb, nv12_planes_to_rgb,
+    nv12_to_rgb, polygon_mask, resize_gray_roi, resize_linear,
 };
 pub use net::{DnnNet, DnnReport, DnnTarget};
 pub use primitives::{

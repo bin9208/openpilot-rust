@@ -121,8 +121,6 @@ impl Geometry {
         }
         let cropped = frame.crop_nv12(region.bounds)?;
         let [_, _, width, height] = region.bounds;
-        let rgb = cv::nv12_to_rgb(&cropped, region.mask.view().layout().dimensions())?;
-        let masked = cv::apply_mask(rgb.view(), region.mask.view())?;
         let scale = 352.0
             / width
                 .max(height)
@@ -144,8 +142,10 @@ impl Geometry {
             .max(1.0)
             .to_usize()
             .ok_or(Error::Contract("resize height overflow"))?;
-        let resized = cv::resize_linear(
-            masked.view(),
+        let resized = cv::nv12_masked_resize_rgb(
+            &cropped,
+            region.mask.view().layout().dimensions(),
+            region.mask.view(),
             Dimensions::new(
                 u32::try_from(resized_width)
                     .map_err(|_| Error::Contract("resize width overflow"))?,
