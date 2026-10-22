@@ -538,6 +538,7 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
+loggerd-check-native = ["bootlog-artifact-native", "dep:openpilot-messaging", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq", "dep:zmq-sys", "rustix/net", "serde_json/float_roundtrip"]
 changed-files-native = ["dep:ruff_python_parser", "dep:ruff_python_ast", "dep:unicode_names2"]
 native-logging-check-native = ["dep:zmq", "dep:zmq-sys", "rustix/net", "serde_json/float_roundtrip"]
 deleter-check-native = []
@@ -2312,3 +2313,17 @@ required-features = ["changed-files-native"]
 [[test]]
 name = "native_logging_lifecycle"
 required-features = ["native-logging-check-native"]
+
+[[bin]]
+name = "check-loggerd-native"
+path = "src/bin/check_loggerd_native.rs"
+required-features = ["loggerd-check-native"]
+
+[[bin]]
+name = "loggerd-lifecycle-fixture"
+path = "src/bin/loggerd_lifecycle_fixture.rs"
+required-features = ["loggerd-check-native"]
+
+[[test]]
+name = "loggerd_check"
+required-features = ["loggerd-check-native"]

@@ -8329,3 +8329,62 @@ observations pass: artifact12445211799,6157234bytes/SHA256
 78d07491c268519c4e5c1835b570de9d68f8ef802060ad2150bc0db213b0c4a6,
 24CRCs/3seals/1112064scalars/1712vectors. Both source/provider guards agree.
 These authenticate expected data; native equivalence remains a separate gate.
+
+### Native Japanese and catalog publication evidence; continued Sol execution
+
+Latest user steering ends mixed-model delegation: current Astra workers finish
+their existing assignment and close; all subsequent assignments use GPT-6.1 Sol.
+The configured1000limit is not an observed productive capacity. Additional Sol
+workers have been admitted, with some429 failures closed and their work queued.
+Dev-md remains isolated, and inventory stays288replaced-local/3partial/3289pending.
+
+Japanese native39824008435 at8c965aa650af6b6df88c616ad8c24b231ba8d00d,
+workfloweafc82099e0239c09ff381dae73860cfbd13e7a0, succeeds. Parent authenticates
+artifact12445768600:5823576bytes/SHA256
+061d8dbdd12ad466fb126bab7a0d77f78b3b57d05f8485038f53f125f70dfa27/all749CRCs.
+The external receipt records4473153matrix rows,3550state-boundary rows,2tests,
+324original-file pairs,33source-input pairs and257native-provider pairs.
+Exactly one native exec and zero Python execs are recorded. This does not prove
+all byte strings or close other GNU multibyte domains. Duplicate queued
+39824012873 at the identical workflow head/path is cancelled after this success.
+The focused two-test codec follow-up39824019615 also succeeds; its artifact
+audit remains separate from the already accepted unchanged domains.
+
+The native model catalog publisher995383b2bbdd199fb925184914d8aa4f29837831
+passes39824199853/workflowb72d720627545da45d2632a5f1cc6d6b72b64d89.
+Parent authenticates artifact12445184190:59872bytes/SHA256
+381f26a4ee18c349ba5ec1bfd646a6054fdf136823efaa6d0e4375e11ee348b5,
+all7ZIPCRCs and252inner file seals. Eight new tests and ten independent
+original/native filesystem cases pass, including immutable generation reuse,
+corrupt/extra roster rejection and current-pointer alias replacement. The
+original observation uses the actual publication tail with an inert emitter;
+neither compilation nor model execution is accepted by this gate. Native traces
+contain exactly one exec each with PATH=/nonexistent. Caller migration remains.
+
+Driver diagnostic39822906822 atd3355349353c1b004f319c4612620ce1ca588607
+passes its separate RED/GREEN and saved-output checks. Artifact12445088133 is
+835923bytes/SHA256e766447108a52d1fb1b9c056f78d24c651c730948788ef065c583e9ce2ea0b2c;
+parent verifies all21CRCs. Saved frame0 contains439/553 finite nonzero float
+differences, no signed-zero/nonfinite differences, maximum absolute0.01171875.
+This improves reporting only; #476 and strict numerical acceptance remain open.
+
+AST lifecycle39822633617 fails before execution on four rustix Pid.as_raw calls;
+artifact12445048335 is66152bytes/SHA256
+fb0fec44b2d44028fb3a1cbb54ae52aec0a50eb740ba7d772ba31a97c3117075/all18CRCs.
+Commit8c965aa65 uses as_raw_pid. Corrected39823466717 still fails and remains
+under diagnosis; no lifecycle or caller/source-absence acceptance is claimed.
+Actual road operand39821958868 fails before capture because the observer compares
+the original tuple global_size against a list. Artifact12443874964 is144947552
+bytes/SHA25696c9f58fd2783fbd4fe7969bca92c7d564e8032169d0f52d69eaf0d8670a85f0/all8CRCs.
+The corrected observer requires tuple(2,1,1) and exactly one scalar; the same
+source is queued in39823666805. No numerical requirement is relaxed.
+
+The reviewed loggerd main group adds18source targets/+3824lines, patch
+74cf1a1cc0ab65779a81431cc4c7da7ebc98fc461f1b99311b8eea452caa7aec.
+It supplies source-authored complete Event inputs, owned process/receiver
+cleanup, original seven scenarios, edge cases, HEVC and unchanged fallback
+60/72/+2/<75second bounds. Parent source review, Rustfmt syntax/format, TOML
+and diff checks pass. Compile, lifecycle, independent saved replay and fresh
+original/native traffic are still required in hosted Actions. Four remaining
+diagnostics/pipeline/flush/IO controllers share Python helpers, so the family
+is not retired and maintained CI callers remain intact.

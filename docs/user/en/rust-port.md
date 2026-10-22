@@ -69,6 +69,18 @@ failures. Build it with `--features native-logging-check-native --bin check-nati
 in `openpilot-dev-tools`. Its Python comparison helpers remain until native
 functionality and source-absence checks pass.
 
+The Linux `check-loggerd-native` candidate compares the original and Rust logger
+with complete recorded messages, media, error paths and rotation timing. Build
+it in `openpilot-dev-tools` with `--features loggerd-check-native --bin check-loggerd-native`.
+It requires separate original/native providers and a new output directory.
+Its functional and shutdown checks are pending; existing CI callers remain.
+
+`publish-model-catalog` in `openpilot-model-runtime` publishes already emitted
+bundles from a private staging directory. It checks existing generation contents
+before reuse and atomically replaces the catalog pointer. Eight focused tests
+and ten original/native filesystem comparisons pass in hosted CI. Compiler,
+model execution and emitter caller migration remain separate validation gates.
+
 The experimental `check-changed-files` checks changed Python source bytes with
 an explicit Python 3.12 grammar. Build it in `openpilot-dev-tools` with
 `--features changed-files-native --bin check-changed-files`; run from the checkout

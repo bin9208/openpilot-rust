@@ -470,3 +470,6 @@ pub mod uploader_source_admission;
 
 #[cfg(all(target_os = "linux", feature = "changed-files-native"))]
 pub mod changed_files_check;
+
+#[cfg(all(target_os = "linux", feature = "loggerd-check-native"))]
+pub mod loggerd_check;

@@ -65,6 +65,18 @@ Linux용 `check-native-logging` 후보는 Rust 로거와 원본 C++ 생산자의
 `--features native-logging-check-native --bin check-native-logging`으로 빌드합니다.
 네이티브 기능과 소스 부재 검증을 통과할 때까지 기존 Python 비교 도구는 유지합니다.
 
+Linux용 `check-loggerd-native` 후보는 원본과 Rust 로거의 전체 기록 메시지,
+미디어, 오류 처리, 세그먼트 전환 시간을 비교합니다. `openpilot-dev-tools`에서
+`--features loggerd-check-native --bin check-loggerd-native`로 빌드합니다.
+원본·네이티브 실행 파일과 새 출력 디렉터리가 필요합니다.
+기능·종료 검증은 대기 중이며 기존 CI 호출은 유지합니다.
+
+`openpilot-model-runtime`의 `publish-model-catalog`는 전용 임시 디렉터리에
+이미 생성된 번들을 게시합니다. 기존 세대의 내용을 확인한 뒤 재사용하고 카탈로그
+포인터를 원자적으로 교체합니다. 호스팅 CI에서 집중 테스트 8개와 원본·네이티브
+파일시스템 비교 10개를 통과했습니다. 컴파일러·모델 실행과 생성기 호출 전환은
+별도의 검증 대상입니다.
+
 실험용 `check-changed-files`는 변경된 Python 소스 바이트를 Python 3.12 문법으로
 검사합니다. `openpilot-dev-tools`에서 `--features changed-files-native --bin check-changed-files`로
 빌드하고 저장소에서 실행하며, `--base SHA` 또는 `BASE_SHA`를 지정할 수 있습니다.

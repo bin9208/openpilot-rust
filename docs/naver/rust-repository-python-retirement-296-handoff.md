@@ -4,6 +4,55 @@ Work is unfinished. The user requests moving to a fresh session to increase
 parallelism; this is a continuation of #296, never dev-md/#338. Reuse accepted
 unchanged evidence. Read this handoff and the linked evidence ledger first.
 
+## Active continuation, superseding the earlier migration snapshot
+
+The current source includes995383b2bbdd199fb925184914d8aa4f29837831;
+the earlier515263b checkpoint and16-slot description below are historical.
+Always read the current Git head before publishing. The configured agent limit
+was subsequently raised to1000;12 simultaneous child creations were admitted,
+but several failed with429. Neither1000 nor12 productive workers is established.
+The latest user instruction supersedes the temporary mixed-model permission:
+**finish existing Astra assignments, close them, then use only GPT-6.1 Sol for
+every new or continued subagent assignment.** Do not restart Astra on failure.
+Loggerd Astra01a164a0-3a4b-7893-a611-4d35743d2013 is closed after delivering its
+frozen patch. Driver Banach and codec Peirce finish only their current assignments.
+
+Current scratch root is `.analysis/scratch/2026-10-23-resume-296/`; parent owns
+serialized publication through the existing21October `publish-single.py`.
+Do not execute scratch functional scripts locally. Parent authenticated saved
+ZIPs live in `parent/`; use these as inert evidence only.
+
+- Codec8c965aa65 focused two-failure follow-up39824019615 succeeds; original
+  successful domains remain reused. Japanese39824008435 succeeds with4473153
+  matrix rows and3550state vectors. Duplicate same-head/path queued39824012873
+  was cancelled to avoid repeating unchanged success.
+- IDNA source995383b2b workflow0d1358ef62458f33bd225f4d7350c77d028a98d3,
+  run39825221809 is executing; final frozen recipe hashfb919cf76b434e83646a9f223144a2973bc7f052800b81636eab2f1c7a1cc4dd.
+- AST lifecycle39822633617 failed four Pid method names;8c965aa65 corrects them.
+  Corrected39823466717 also fails; Newton is diagnosing actual saved evidence
+  before finishing the pending caller migration. Do not apply source deletion.
+- Model publisher995383b2b passes39824199853:8tests and10filesystem cases,
+  artifact12445184190. This covers publication only, not compiler/model behavior.
+  James prepares emitter caller integration separately.
+- Model actual-operand39821958868 failed an observer tuple/list comparison,
+  before operand capture. Parent preserves the exact(2,1,1)type/value requirement
+  in recipee83a07b185d43575bb4c10e7bc687cdb508e48ee3f4cd4d20f9ffa586d818a02;
+  corrected workflow4450f81b24b118f446fdf8288c2910c00425bf46/run39823666805
+  uses the same1d5570e15 source. Driver diagnostic39822906822 passes but does
+  not fix numerical drift. Startup39819735679 still awaits full-family results.
+- Loggerd frozen patch74cf1a1cc0ab65779a81431cc4c7da7ebc98fc461f1b99311b8eea452caa7aec
+  is integrated as a candidate;18targets/+3824lines, no lock change. Sol
+  `loggerd-gate-sol` prepares complete hosted admission. Four shared-helper
+  consumers in `loggerd-group/REMAINING.md` prevent retirement.
+- Sol `paramsd-sol` and `carrotnavi-sol` implement separate remaining families.
+  Logging R4 outer gate, HZ and positiveUTF16/32/Punycode remain separate active
+  lanes. Extra Sol diagnostics/pipeline and flush/IO workers failed429 and were
+  closed; these tasks are queued for freed Sol workers, not completed.
+
+Inventory remains288/3/3289 of3580. Dev-md, device operations, protected
+integration and releases remain outside this continuation. Local restrictions
+and acceptance boundaries below continue to apply.
+
 ## Workspace and boundaries
 
 - ONLY use `/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust`,
