@@ -373,3 +373,11 @@ both roots plus closed native exec audit; overall workflow is false RED on an
 extra ctime guard because the two verified hardlink providers change ctime.
 Parent checks all12179CRCs/2508trace hashes/25program pairs and exact alias
 provider mapping. Historical#474 LISTEN/EIO cause remains open.
+
+Manager three-controller closure now has a source-only candidate: immutable67
+observation/provenance files, same-ELF checkout/private-absent gate, five source
+admission negatives, exact native exec roster, and12 targeted unit controls.
+Two fresh original/native LD-input variants are required before deletion.
+Receipt rollback and named-field projection were reviewed; hosted proof pending.
+Inventory remains270 and all three manager Python QA sources remain present.
+Boundary-only152-row run39734107666 is queued/running; reuse prior graph proof.

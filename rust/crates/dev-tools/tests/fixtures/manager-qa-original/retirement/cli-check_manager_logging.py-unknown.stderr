@@ -1,0 +1,2 @@
+usage: check_manager_logging.py [-h] binary binding output
+check_manager_logging.py: error: the following arguments are required: binary, binding, output

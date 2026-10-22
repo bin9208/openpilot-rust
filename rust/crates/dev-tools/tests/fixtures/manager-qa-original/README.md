@@ -25,3 +25,14 @@ identity receipts. It can seed the candidate comparison but is not alone a
 retirement proof. A fresh hosted capture must pin those dependencies and then
 run the same native checker against checkout and source-absent roots before any
 Python deletion.
+
+The `retirement/` addition records original-only CLI and imported-source
+receipts from run 39728775823 (artifact 12404785057); its 67 raw files are
+bound by `retirement-manifest.json`. The seven `retirement/manager/*-source/result.json`
+files and the prior `logging/source/result.json` plus original source records
+are the independent behavior observations. In contrast,
+`retirement/manager-logging/summary.json` is a historical **tool output**
+written after the unchanged checker compared original source packets with
+native packets. It is retained for CLI receipt parity, but it is not an
+independently generated source packet or numerical oracle. The manifest names
+these provenance classes without modifying any captured raw bytes.

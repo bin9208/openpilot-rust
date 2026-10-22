@@ -11,7 +11,7 @@ use std::{
     collections::BTreeMap,
     fs::{self, File, OpenOptions},
     io::{Read, Seek, SeekFrom, Write},
-    os::unix::fs::MetadataExt,
+    os::unix::{ffi::OsStrExt, fs::MetadataExt},
     path::{Path, PathBuf},
     time::{Duration, Instant},
 };
@@ -26,6 +26,8 @@ const CASES: [&str; 7] = [
     "reset_defaults",
 ];
 const MANIFEST_SHA256: &str = "19fbf52a7d468ffac12a1d41b509970c4583766c966816801f5f3d07a05b4d2e";
+const RETIREMENT_MANIFEST_SHA256: &str =
+    "d598542767a0ea195ce44deceea271b4fe10b2bc874a99dc080eeb445e4d96bb";
 const MAX_SOURCE: u64 = 32 * 1024 * 1024;
 const MAX_EXPECTATION: u64 = 2 * 1024 * 1024;
 const MAX_ELF: u64 = 512 * 1024 * 1024;
@@ -280,6 +282,43 @@ impl Original {
                 "manager original logging file missing",
             )?;
         }
+        let closure = Held::open(base.join("retirement-manifest.json"), MAX_EXPECTATION)?;
+        require(
+            closure.sha256 == RETIREMENT_MANIFEST_SHA256,
+            "manager original imported-source capture manifest changed",
+        )?;
+        let closure_meta: Value = serde_json::from_slice(&closure.bytes()?)?;
+        require(
+            closure_meta["checked_out_source_commit"] == "83fb19a8cfda05bd2039253ceea8e0786676274d"
+                && closure_meta["run"] == 39728775823u64
+                && closure_meta["source_rosters"]["repo_git_objects"]["count"] == 3266
+                && closure_meta["source_rosters"]["opendbc_git_objects"]["count"] == 257
+                && closure_meta["source_rosters"]["installed_provider_rows"]["count"] == 3495,
+            "manager original imported-source capture provenance changed",
+        )?;
+        let closure_files = closure_meta["files"]
+            .as_object()
+            .ok_or("manager original imported-source files missing")?;
+        require(
+            closure_files.len() == 67,
+            "manager original imported-source file roster changed",
+        )?;
+        held.push(closure);
+        for (name, record) in closure_files {
+            require(
+                name.starts_with("retirement/")
+                    && !name.split('/').any(|part| part == ".." || part.is_empty())
+                    && !name.ends_with(".py"),
+                "unsafe manager imported-source capture path",
+            )?;
+            let file = Held::open(base.join(name), MAX_EXPECTATION)?;
+            require(
+                record["sha256"].as_str() == Some(file.sha256.as_str())
+                    && record["size"].as_u64() == Some(file.identity.2),
+                format!("manager imported-source capture changed: {name}"),
+            )?;
+            held.push(file);
+        }
         Ok(Self {
             files: held,
             values,
@@ -300,46 +339,104 @@ impl Original {
     }
 }
 
-fn sources(root: &Path, retired: bool) -> Result<Vec<Held>> {
-    let mut held = Vec::new();
-    for (name, expected) in SOURCE_PINS {
-        let path = root.join(name);
-        if retired && RETIREABLE.contains(&name) {
-            require(
-                fs::symlink_metadata(&path)
-                    .is_err_and(|e| e.kind() == std::io::ErrorKind::NotFound),
-                format!("retired manager QA source reappeared: {name}"),
-            )?;
-            require(
-                path.parent().is_some_and(Path::is_dir),
-                "manager QA source parent absent",
-            )?;
-        } else {
-            let pin = Held::open(path, MAX_SOURCE)?;
-            require(
-                pin.sha256 == expected,
-                format!("manager QA original source changed: {name}"),
-            )?;
-            held.push(pin);
-        }
-    }
-    Ok(held)
+struct SourceSet {
+    held: Vec<Held>,
+    parent: File,
+    parent_path: PathBuf,
+    parent_identity: FileIdentity,
+    retired: bool,
 }
 
-fn verify_sources(root: &Path, retired: bool, held: &[Held]) -> Result<()> {
-    for file in held {
-        file.verify()?;
-    }
-    if retired {
+impl SourceSet {
+    fn open(root: &Path, require_retired: bool) -> Result<Self> {
+        let parent_path = root.join("rust/tools");
+        let parent = File::from(rustix::fs::open(
+            &parent_path,
+            rustix::fs::OFlags::RDONLY
+                | rustix::fs::OFlags::DIRECTORY
+                | rustix::fs::OFlags::NOFOLLOW
+                | rustix::fs::OFlags::CLOEXEC,
+            rustix::fs::Mode::empty(),
+        )?);
+        let parent_identity = file_identity(&parent.metadata()?);
+        require(
+            file_identity(&fs::symlink_metadata(&parent_path)?) == parent_identity,
+            "manager QA historical parent changed while opening",
+        )?;
+        let mut present = 0;
         for name in RETIREABLE {
+            match fs::symlink_metadata(root.join(name)) {
+                Ok(_) => present += 1,
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                Err(error) => return Err(error.into()),
+            }
+        }
+        require(
+            present == 0 || present == RETIREABLE.len(),
+            "manager QA historical source roster is mixed",
+        )?;
+        let retired = present == 0;
+        require(
+            !require_retired || retired,
+            "manager QA historical sources still present",
+        )?;
+        let mut held = Vec::new();
+        for (name, expected) in SOURCE_PINS {
+            let path = root.join(name);
+            if retired && RETIREABLE.contains(&name) {
+                require(
+                    fs::symlink_metadata(&path)
+                        .is_err_and(|e| e.kind() == std::io::ErrorKind::NotFound),
+                    format!("retired manager QA source reappeared: {name}"),
+                )?;
+                require(
+                    path.parent().is_some_and(Path::is_dir),
+                    "manager QA source parent absent",
+                )?;
+            } else {
+                let pin = Held::open(path, MAX_SOURCE)?;
+                require(
+                    pin.sha256 == expected,
+                    format!("manager QA original source changed: {name}"),
+                )?;
+                held.push(pin);
+            }
+        }
+        let result = Self {
+            held,
+            parent,
+            parent_path,
+            parent_identity,
+            retired,
+        };
+        result.verify(root)?;
+        Ok(result)
+    }
+
+    fn verify(&self, root: &Path) -> Result<()> {
+        for current in [
+            self.parent.metadata()?,
+            fs::symlink_metadata(&self.parent_path)?,
+        ] {
             require(
-                fs::symlink_metadata(root.join(name))
-                    .is_err_and(|e| e.kind() == std::io::ErrorKind::NotFound),
-                format!("retired manager QA source reappeared: {name}"),
+                current.is_dir() && file_identity(&current) == self.parent_identity,
+                "manager QA historical parent identity changed",
             )?;
         }
+        for file in &self.held {
+            file.verify()?;
+        }
+        if self.retired {
+            for name in RETIREABLE {
+                require(
+                    fs::symlink_metadata(root.join(name))
+                        .is_err_and(|e| e.kind() == std::io::ErrorKind::NotFound),
+                    format!("retired manager QA source reappeared: {name}"),
+                )?;
+            }
+        }
+        Ok(())
     }
-    Ok(())
 }
 
 fn path_string(path: &Path) -> Result<String> {
@@ -393,13 +490,58 @@ fn selected(record: &Value) -> Result<Value> {
     Ok(json!({"msg":record["msg"], "daemon":ctx.get("daemon"), "level":record["level"]}))
 }
 
+// Python's dict repr quotes these environment values. Replace the complete
+// named field, so a path repeated in another variable is never normalized.
+fn python_repr(value: &str) -> String {
+    crate::plot_samples_source::text_repr(&value.chars().map(u32::from).collect::<Vec<_>>())
+}
+
+fn replace_environment_field(environ: &str, key: &str, old: &str, new: &str) -> Result<String> {
+    let before = format!("'{}': {}", key, python_repr(old));
+    require(
+        environ.matches(&before).count() == 1,
+        format!("manager environment {key} field missing or duplicated"),
+    )?;
+    let after = format!("'{}': {}", key, python_repr(new));
+    Ok(environ.replacen(&before, &after, 1))
+}
+
+fn project_optional_environment_field(
+    environ: &str,
+    key: &str,
+    old: Option<&str>,
+    new: Option<&str>,
+) -> Result<String> {
+    match (old, new) {
+        (Some(old), Some(new)) => replace_environment_field(environ, key, old, new),
+        (Some(old), None) => {
+            let field = format!(", '{key}': {}", python_repr(old));
+            require(
+                environ.matches(&field).count() == 1,
+                format!("manager environment {key} field missing or duplicated"),
+            )?;
+            Ok(environ.replacen(&field, "", 1))
+        }
+        (None, None) => Ok(environ.to_owned()),
+        (None, Some(_)) => Err(format!("historical manager environment {key} missing").into()),
+    }
+}
+
 /// Four source log packets include host/time/PID fields; compare the unchanged
 /// source checker's selected fields and retain the complete native packets.
+struct LogProjection<'a> {
+    old_prefix: &'a str,
+    new_prefix: &'a str,
+    old_pythonpath: &'a str,
+    new_pythonpath: &'a str,
+    old_ld_library_path: Option<&'a str>,
+    new_ld_library_path: Option<&'a str>,
+}
+
 fn compare_logs(
     source: &[Value],
     native: &[Value],
-    old_prefix: &str,
-    new_prefix: &str,
+    projection: LogProjection<'_>,
 ) -> Result<Vec<Value>> {
     require(
         source.len() == 4 && native.len() == 4,
@@ -412,11 +554,31 @@ fn compare_logs(
             let env = expected["msg"]["environ"]
                 .as_str()
                 .ok_or("manager environment record missing")?;
-            require(
-                env.contains(old_prefix),
-                "historical manager log prefix absent",
+            let env = replace_environment_field(
+                env,
+                "OPENPILOT_PREFIX",
+                projection.old_prefix,
+                projection.new_prefix,
             )?;
-            expected["msg"]["environ"] = env.replace(old_prefix, new_prefix).into();
+            let env = replace_environment_field(
+                &env,
+                "MANAGER_LOG_CAPTURE",
+                &format!("ipc:///tmp/logmessage{}", projection.old_prefix),
+                &format!("ipc:///tmp/logmessage{}", projection.new_prefix),
+            )?;
+            let env = replace_environment_field(
+                &env,
+                "PYTHONPATH",
+                projection.old_pythonpath,
+                projection.new_pythonpath,
+            )?;
+            expected["msg"]["environ"] = project_optional_environment_field(
+                &env,
+                "LD_LIBRARY_PATH",
+                projection.old_ld_library_path,
+                projection.new_ld_library_path,
+            )?
+            .into();
         }
         let actual = selected(native)?;
         require(
@@ -509,7 +671,25 @@ fn logging(binary: &Path, root: &Path, output: &Path, original: &Original) -> Re
     let old_prefix = old_env["OPENPILOT_PREFIX"]
         .as_str()
         .ok_or("original manager prefix missing")?;
-    let selected = compare_logs(original_records, &records, old_prefix, &prefix)?;
+    let old_pythonpath = old_env["PYTHONPATH"]
+        .as_str()
+        .ok_or("original manager Python path missing")?;
+    let current_pythonpath = path_string(root)?;
+    let selected = compare_logs(
+        original_records,
+        &records,
+        LogProjection {
+            old_prefix,
+            new_prefix: &prefix,
+            old_pythonpath,
+            new_pythonpath: &current_pythonpath,
+            old_ld_library_path: old_env["LD_LIBRARY_PATH"].as_str(),
+            new_ld_library_path: env
+                .iter()
+                .find(|(key, _)| *key == "LD_LIBRARY_PATH")
+                .map(|(_, value)| value.as_str()),
+        },
+    )?;
     let native_result: Value = serde_json::from_slice(&fs::read(output.join("result.json"))?)?;
     require(
         native_result == *original.get("logging/source/result.json")?,
@@ -527,15 +707,198 @@ fn logging(binary: &Path, root: &Path, output: &Path, original: &Original) -> Re
 }
 
 pub fn run(options: &Options) -> Result<Value> {
-    require(
-        !options.require_retired,
-        "manager QA source retirement requires a fresh complete imported-source capture",
-    )?;
+    run_with_emit(options, |_| Ok(()))
+}
+
+struct OwnedReceipt {
+    path: PathBuf,
+    file: File,
+    owner: (u64, u64),
+    committed: bool,
+}
+
+impl OwnedReceipt {
+    fn create(path: PathBuf) -> Result<Self> {
+        let file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create_new(true)
+            .open(&path)?;
+        let metadata = file.metadata()?;
+        Ok(Self {
+            path,
+            file,
+            owner: (metadata.dev(), metadata.ino()),
+            committed: false,
+        })
+    }
+
+    fn owned(&self) -> bool {
+        fs::symlink_metadata(&self.path).is_ok_and(|meta| {
+            meta.is_file()
+                && !meta.file_type().is_symlink()
+                && (meta.dev(), meta.ino()) == self.owner
+        })
+    }
+
+    fn verify(&self, bytes: &[u8]) -> Result<()> {
+        require(self.owned(), "manager QA result receipt ownership changed")?;
+        let mut reader = self.file.try_clone()?;
+        reader.seek(SeekFrom::Start(0))?;
+        let mut actual = Vec::new();
+        reader.take(MAX_EXPECTATION + 1).read_to_end(&mut actual)?;
+        require(actual == bytes, "manager QA result receipt content changed")
+    }
+}
+
+impl Drop for OwnedReceipt {
+    fn drop(&mut self) {
+        if !self.committed && self.owned() {
+            let _ = fs::remove_file(&self.path);
+        }
+    }
+}
+
+// Positional checkers permit an existing output directory and overwrite their
+// two summaries. Stage each replacement in that directory, retaining a hard
+// link to any old inode until stdout and the last input checks have completed.
+struct CompatReceipt {
+    path: PathBuf,
+    file: File,
+    owner: (u64, u64),
+    old: Option<tempfile::TempDir>,
+    committed: bool,
+}
+
+impl CompatReceipt {
+    fn publish(path: PathBuf, bytes: &[u8]) -> Result<Self> {
+        require(
+            bytes.len() as u64 <= MAX_EXPECTATION,
+            "manager compatibility receipt too large",
+        )?;
+        let parent = path.parent().ok_or("manager receipt parent missing")?;
+        let old = match fs::symlink_metadata(&path) {
+            Ok(meta) => {
+                require(
+                    meta.is_file() && !meta.file_type().is_symlink(),
+                    "manager compatibility receipt is not a regular file",
+                )?;
+                let backup = tempfile::Builder::new()
+                    .prefix(".manager-receipt-backup-")
+                    .tempdir_in(parent)?;
+                fs::hard_link(&path, backup.path().join("original"))?;
+                let current = fs::symlink_metadata(&path)?;
+                require(
+                    (current.dev(), current.ino(), current.len(), current.mode())
+                        == (meta.dev(), meta.ino(), meta.len(), meta.mode())
+                        && file_identity(&fs::symlink_metadata(backup.path().join("original"))?)
+                            == file_identity(&current),
+                    "manager compatibility receipt changed before replacement",
+                )?;
+                Some(backup)
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+            Err(error) => return Err(error.into()),
+        };
+        let mut staged = tempfile::Builder::new()
+            .prefix(".manager-receipt-")
+            .tempfile_in(parent)?;
+        staged.write_all(bytes)?;
+        staged.flush()?;
+        let owner_meta = staged.as_file().metadata()?;
+        let owner = (owner_meta.dev(), owner_meta.ino());
+        let file = staged.as_file().try_clone()?;
+        if let Some(ref backup) = old {
+            require(
+                file_identity(&fs::symlink_metadata(&path)?)
+                    == file_identity(&fs::symlink_metadata(backup.path().join("original"))?),
+                "manager compatibility receipt changed during replacement",
+            )?;
+        } else {
+            require(
+                fs::symlink_metadata(&path)
+                    .is_err_and(|error| error.kind() == std::io::ErrorKind::NotFound),
+                "manager compatibility receipt appeared during replacement",
+            )?;
+        }
+        staged.persist(&path)?;
+        Ok(Self {
+            path,
+            file,
+            owner,
+            old,
+            committed: false,
+        })
+    }
+
+    fn owned(&self) -> bool {
+        fs::symlink_metadata(&self.path).is_ok_and(|meta| {
+            meta.is_file()
+                && !meta.file_type().is_symlink()
+                && (meta.dev(), meta.ino()) == self.owner
+        })
+    }
+
+    fn verify(&self, bytes: &[u8]) -> Result<()> {
+        require(
+            self.owned(),
+            "manager compatibility receipt ownership changed",
+        )?;
+        let mut reader = self.file.try_clone()?;
+        reader.seek(SeekFrom::Start(0))?;
+        let mut actual = Vec::new();
+        reader.take(MAX_EXPECTATION + 1).read_to_end(&mut actual)?;
+        require(actual == bytes, "manager compatibility receipt changed")
+    }
+}
+
+impl Drop for CompatReceipt {
+    fn drop(&mut self) {
+        if !self.committed && self.owned() {
+            if let Some(ref backup) = self.old {
+                let _ = fs::rename(backup.path().join("original"), &self.path);
+            } else {
+                let _ = fs::remove_file(&self.path);
+            }
+        }
+    }
+}
+
+fn finish_compat<F, V>(
+    output: &Path,
+    summary: &[u8],
+    historical: &[u8],
+    verify: V,
+    emit: F,
+) -> Result<()>
+where
+    F: FnOnce() -> Result<()>,
+    V: Fn() -> Result<()>,
+{
+    verify()?;
+    let mut summary_receipt = CompatReceipt::publish(output.join("summary.json"), summary)?;
+    let mut historical_receipt =
+        CompatReceipt::publish(output.join("historical-source.json"), historical)?;
+    summary_receipt.verify(summary)?;
+    historical_receipt.verify(historical)?;
+    emit()?;
+    verify()?;
+    summary_receipt.verify(summary)?;
+    historical_receipt.verify(historical)?;
+    summary_receipt.committed = true;
+    historical_receipt.committed = true;
+    Ok(())
+}
+
+fn run_with_emit<F>(options: &Options, emit: F) -> Result<Value>
+where
+    F: FnOnce(&Value) -> Result<()>,
+{
     let root = options.root.canonicalize()?;
     let binary = options.binary.canonicalize()?;
     require(!options.output.exists(), "manager QA output already exists")?;
     let original = Original::open(&root)?;
-    let source = sources(&root, options.require_retired)?;
+    let source = SourceSet::open(&root, options.require_retired)?;
     let executable = Held::open(binary.clone(), MAX_ELF)?;
     require(
         executable.file.metadata()?.mode() & 0o111 != 0,
@@ -553,22 +916,29 @@ pub fn run(options: &Options) -> Result<Value> {
         cases.insert(case, json!({"status":candidate["status"],"trace_rows":candidate["trace"].as_array().map(Vec::len),
             "params":candidate["params"].as_object().map(|p|p.len())}));
         original.verify()?;
-        verify_sources(&root, options.require_retired, &source)?;
+        source.verify(&root)?;
         executable.verify()?;
     }
     let logs = logging(&binary, &root, &options.output.join("logging"), &original)?;
     original.verify()?;
-    verify_sources(&root, options.require_retired, &source)?;
+    source.verify(&root)?;
     executable.verify()?;
     let result = json!({"cases":cases,"logging":logs,"binary_sha256":executable.sha256,
-        "source_pin_count":SOURCE_PINS.len(),"source_roster_complete":false,
-        "scope":"candidate source comparison; imported-source closure pending hosted capture"});
-    let mut receipt = OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(options.output.join("result.json"))?;
-    receipt.write_all(&serde_json::to_vec_pretty(&result)?)?;
-    receipt.flush()?;
+        "source_pin_count":SOURCE_PINS.len(),"historical_sources_absent":source.retired,
+        "source_roster_complete":false,
+        "imported_source_capture_manifest_sha256":RETIREMENT_MANIFEST_SHA256,
+        "scope":"native manager observations; imported-source closure bound to independent hosted capture"});
+    let bytes = serde_json::to_vec_pretty(&result)?;
+    let mut receipt = OwnedReceipt::create(options.output.join("result.json"))?;
+    receipt.file.write_all(&bytes)?;
+    receipt.file.flush()?;
+    receipt.verify(&bytes)?;
+    emit(&result)?;
+    original.verify()?;
+    source.verify(&root)?;
+    executable.verify()?;
+    receipt.verify(&bytes)?;
+    receipt.committed = true;
     Ok(result)
 }
 
@@ -584,19 +954,27 @@ pub fn cli() -> Result<()> {
         ],
     )?;
     if parsed.help {
-        println!("check-manager-qa --binary MANAGER_TRACE --output DIR [--source-root ROOT] [--require-retired]");
+        println!(
+            "check-manager-qa --binary MANAGER_TRACE --output DIR [--source-root ROOT] [--require-retired]"
+        );
         return Ok(());
     }
     let root = parsed
         .values
         .get("--source-root")
         .map_or_else(std::env::current_dir, |value| Ok(PathBuf::from(value)))?;
-    run(&Options {
-        root,
-        binary: parsed.values["--binary"].clone().into(),
-        output: parsed.values["--output"].clone().into(),
-        require_retired: parsed.values.contains_key("--require-retired"),
-    })?;
+    run_with_emit(
+        &Options {
+            root,
+            binary: parsed.values["--binary"].clone().into(),
+            output: parsed.values["--output"].clone().into(),
+            require_retired: parsed.values.contains_key("--require-retired"),
+        },
+        |_| {
+            std::io::stdout().lock().flush()?;
+            Ok(())
+        },
+    )?;
     Ok(())
 }
 
@@ -608,6 +986,110 @@ fn expectation_for_scenario(case: &str) -> &str {
     } else {
         "normal"
     }
+}
+
+fn manager_argparse_error(
+    args: &[std::ffi::OsString],
+    program: &str,
+    scenarios: bool,
+) -> Option<String> {
+    let positionals = ["binary", "binding", "output"];
+    let mut positional_count = 0usize;
+    let mut unknown = Vec::new();
+    let mut literal = false;
+    let mut index = 0usize;
+    while index < args.len() {
+        let bytes = args[index].as_os_str().as_bytes();
+        if !literal && bytes == b"--" {
+            literal = true;
+            index += 1;
+            continue;
+        }
+        let is_negative_number =
+            std::str::from_utf8(bytes).is_ok_and(argparse_scan::negative_number);
+        if literal || !bytes.starts_with(b"-") || bytes == b"-" || is_negative_number {
+            if positional_count >= positionals.len() {
+                unknown.push(String::from_utf8_lossy(bytes).into_owned());
+            }
+            positional_count += 1;
+            index += 1;
+            continue;
+        }
+        if scenarios {
+            let option = bytes.split(|byte| *byte == b'=').next().unwrap_or(bytes);
+            if option.starts_with(b"--") && b"--scenario".starts_with(option) {
+                if bytes.contains(&b'=') {
+                    index += 1;
+                    continue;
+                }
+                let has_value = args.get(index + 1).is_some_and(|value| {
+                    let value = value.as_os_str().as_bytes();
+                    !value.starts_with(b"-")
+                        || value == b"-"
+                        || std::str::from_utf8(value).is_ok_and(argparse_scan::negative_number)
+                });
+                if !has_value {
+                    let usage = manager_usage(program, scenarios);
+                    return Some(format!(
+                        "usage: {usage}\n{program}: error: argument --scenario: expected one argument\n"
+                    ));
+                }
+                index += 2;
+                continue;
+            }
+        }
+        if bytes == b"--help" {
+            index += 1;
+            continue;
+        }
+        unknown.push(String::from_utf8_lossy(bytes).into_owned());
+        index += 1;
+    }
+
+    let missing = positionals
+        .iter()
+        .skip(positional_count.min(positionals.len()))
+        .copied()
+        .collect::<Vec<_>>();
+    let detail = if !missing.is_empty() {
+        format!(
+            "the following arguments are required: {}",
+            missing.join(", ")
+        )
+    } else if !unknown.is_empty() {
+        format!("unrecognized arguments: {}", unknown.join(" "))
+    } else {
+        return None;
+    };
+    Some(format!(
+        "usage: {}\n{program}: error: {detail}\n",
+        manager_usage(program, scenarios)
+    ))
+}
+
+fn manager_usage(program: &str, scenarios: bool) -> String {
+    if scenarios {
+        format!("{program} [-h] [--scenario SCENARIO] binary binding output")
+    } else {
+        format!("{program} [-h] binary binding output")
+    }
+}
+
+fn scan_manager_args(
+    args: &[std::ffi::OsString],
+    program: &str,
+    scenarios: bool,
+) -> Result<argparse_scan::ParsedOs, argparse_scan::ArgumentError> {
+    let specs = if scenarios {
+        vec![OptionSpec::append("--scenario")]
+    } else {
+        Vec::new()
+    };
+    argparse_scan::scan_os_with_positionals(args, &specs, 3).map_err(|error| {
+        argparse_scan::ArgumentError(
+            manager_argparse_error(args, program, scenarios).unwrap_or_else(|| error.to_string()),
+        )
+    })
 }
 
 fn positional_inputs(binary: PathBuf, binding: PathBuf) -> Result<(PathBuf, Held, Held)> {
@@ -626,12 +1108,16 @@ fn positional_inputs(binary: PathBuf, binding: PathBuf) -> Result<(PathBuf, Held
 fn original_command_paths(
     positionals: &[std::ffi::OsString],
 ) -> Result<(PathBuf, PathBuf, PathBuf)> {
-    let root = std::env::current_dir()?.canonicalize()?;
+    let cwd = std::env::current_dir()?.canonicalize()?;
+    let root = std::env::var_os("OPENPILOT_RUST_ROOT").map_or_else(
+        || cwd.canonicalize(),
+        |value| PathBuf::from(value).canonicalize(),
+    )?;
     let output = PathBuf::from(&positionals[2]);
     let output = if output.is_absolute() {
         output
     } else {
-        root.join(output)
+        cwd.join(output)
     };
     Ok((root, PathBuf::from(&positionals[0]), output))
 }
@@ -641,18 +1127,17 @@ fn original_command_paths(
 /// but is never imported by this native implementation.
 pub fn cli_manager_compat() -> Result<()> {
     let args = std::env::args_os().skip(1).collect::<Vec<_>>();
-    let parsed =
-        argparse_scan::scan_os_with_positionals(&args, &[OptionSpec::append("--scenario")], 3)?;
+    let parsed = scan_manager_args(&args, "check_manager.py", true)?;
     if parsed.help {
-        std::io::stdout().lock().write_all(
-            b"usage: check-manager [-h] [--scenario SCENARIO] binary binding output\n",
-        )?;
+        std::io::stdout().lock().write_all(include_bytes!(
+            "../tests/fixtures/manager-qa-original/retirement/cli-check_manager.py-help.stdout"
+        ))?;
         return Ok(());
     }
     let (root, binary, output) = original_command_paths(&parsed.positionals)?;
     let (_, executable, binding) =
         positional_inputs(binary, PathBuf::from(&parsed.positionals[1]))?;
-    let source = sources(&root, false)?;
+    let source = SourceSet::open(&root, false)?;
     let original = Original::open(&root)?;
     let scenarios = match parsed.append_values.get("--scenario") {
         Some(values) if !values.is_empty() => values
@@ -667,6 +1152,7 @@ pub fn cli_manager_compat() -> Result<()> {
         _ => CASES.iter().map(|case| (*case).to_owned()).collect(),
     };
     fs::create_dir_all(&output)?;
+    let mut completed = Vec::new();
     for case in &scenarios {
         let candidate = run_case(
             &executable.path,
@@ -680,80 +1166,306 @@ pub fn cli_manager_compat() -> Result<()> {
             format!("manager source comparison changed: {case}"),
         )?;
         original.verify()?;
-        verify_sources(&root, false, &source)?;
+        source.verify(&root)?;
         executable.verify()?;
         binding.verify()?;
-        let mut stdout = std::io::stdout().lock();
         writeln!(
-            stdout,
+            &mut completed,
             "PASS {case}: exact trace, Params bytes, environment"
         )?;
-        stdout.flush()?;
     }
     let summary = json!({"passed":scenarios,"source":"openpilot/system/manager/manager.py",
         "limitations":"isolated external boundaries; no device/production selection"});
-    fs::write(
-        output.join("summary.json"),
-        serde_json::to_vec_pretty(&summary)?,
+    let summary_bytes = serde_json::to_vec_pretty(&summary)?;
+    let historical_bytes = serde_json::to_vec_pretty(
+        &json!({"source_commit":"fc0f017bd96419c81af878ef211ed15152fc2eda",
+            "sealed_manifest_sha256":MANIFEST_SHA256,
+            "imported_source_capture_manifest_sha256":RETIREMENT_MANIFEST_SHA256,
+            "historical_sources_absent":source.retired,"fresh_original_execution":false}),
     )?;
-    fs::write(
-        output.join("historical-source.json"),
-        serde_json::to_vec_pretty(
-            &json!({"source_commit":"fc0f017bd96419c81af878ef211ed15152fc2eda",
-            "sealed_manifest_sha256":MANIFEST_SHA256,"fresh_original_execution":false}),
-        )?,
-    )?;
-    original.verify()?;
-    verify_sources(&root, false, &source)?;
-    executable.verify()?;
-    binding.verify()?;
-    Ok(())
+    finish_compat(
+        &output,
+        &summary_bytes,
+        &historical_bytes,
+        || {
+            original.verify()?;
+            source.verify(&root)?;
+            executable.verify()?;
+            binding.verify()
+        },
+        || {
+            let mut stdout = std::io::stdout().lock();
+            stdout.write_all(&completed)?;
+            stdout.flush()?;
+            Ok(())
+        },
+    )
 }
 
 /// Native counterpart of check_manager_logging.py's three positional paths.
 pub fn cli_logging_compat() -> Result<()> {
     let args = std::env::args_os().skip(1).collect::<Vec<_>>();
-    let parsed = argparse_scan::scan_os_with_positionals(&args, &[], 3)?;
+    let parsed = scan_manager_args(&args, "check_manager_logging.py", false)?;
     if parsed.help {
-        std::io::stdout()
-            .lock()
-            .write_all(b"usage: check-manager-logging [-h] binary binding output\n")?;
+        std::io::stdout().lock().write_all(include_bytes!(
+            "../tests/fixtures/manager-qa-original/retirement/cli-check_manager_logging.py-help.stdout"
+        ))?;
         return Ok(());
     }
     let (root, binary, output) = original_command_paths(&parsed.positionals)?;
     let (_, executable, binding) =
         positional_inputs(binary, PathBuf::from(&parsed.positionals[1]))?;
-    let source = sources(&root, false)?;
+    let source = SourceSet::open(&root, false)?;
     let original = Original::open(&root)?;
     fs::create_dir_all(&output)?;
     let result = logging(&executable.path, &root, &output.join("native"), &original)?;
     let summary = json!({"records":result["selected"],"source_order":true,
         "synthetic_environment_only":true});
-    fs::write(
-        output.join("summary.json"),
-        serde_json::to_vec_pretty(&summary)?,
+    let summary_bytes = serde_json::to_vec_pretty(&summary)?;
+    let historical_bytes = serde_json::to_vec_pretty(
+        &json!({"source_commit":"fc0f017bd96419c81af878ef211ed15152fc2eda",
+            "sealed_manifest_sha256":MANIFEST_SHA256,
+            "imported_source_capture_manifest_sha256":RETIREMENT_MANIFEST_SHA256,
+            "historical_sources_absent":source.retired,"fresh_original_execution":false}),
     )?;
-    fs::write(
-        output.join("historical-source.json"),
-        serde_json::to_vec_pretty(
-            &json!({"source_commit":"fc0f017bd96419c81af878ef211ed15152fc2eda",
-            "sealed_manifest_sha256":MANIFEST_SHA256,"fresh_original_execution":false}),
-        )?,
-    )?;
-    original.verify()?;
-    verify_sources(&root, false, &source)?;
-    executable.verify()?;
-    binding.verify()?;
-    let mut stdout = std::io::stdout().lock();
-    stdout.write_all(b"PASS manager lifecycle/default collector: 4 matching records, daemon context, full synthetic environment and exact transition/cleanup order\n")?;
-    stdout.flush()?;
-    Ok(())
+    finish_compat(
+        &output,
+        &summary_bytes,
+        &historical_bytes,
+        || {
+            original.verify()?;
+            source.verify(&root)?;
+            executable.verify()?;
+            binding.verify()
+        },
+        || {
+            let mut stdout = std::io::stdout().lock();
+            stdout.write_all(b"PASS manager lifecycle/default collector: 4 matching records, daemon context, full synthetic environment and exact transition/cleanup order\n")?;
+            stdout.flush()?;
+            Ok(())
+        },
+    )
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::os::unix::fs::PermissionsExt;
+
+    fn private_source_root() -> tempfile::TempDir {
+        let repository = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let private = tempfile::tempdir().unwrap();
+        let historical_count = RETIREABLE
+            .iter()
+            .filter(|name| repository.join(name).exists())
+            .count();
+        assert!(historical_count == 0 || historical_count == RETIREABLE.len());
+        for (name, _) in SOURCE_PINS {
+            if historical_count == 0 && RETIREABLE.contains(&name) {
+                continue;
+            }
+            let target = private.path().join(name);
+            fs::create_dir_all(target.parent().unwrap()).unwrap();
+            fs::copy(repository.join(name), target).unwrap();
+        }
+        private
+    }
+
+    #[test]
+    fn cli_diagnostics_cover_extra_positionals_and_negative_positional_values() {
+        let extra = ["bin", "binding", "output", "overflow"]
+            .into_iter()
+            .map(std::ffi::OsString::from)
+            .collect::<Vec<_>>();
+        assert_eq!(
+            manager_argparse_error(&extra, "check_manager_logging.py", false).as_deref(),
+            Some(
+                "usage: check_manager_logging.py [-h] binary binding output\ncheck_manager_logging.py: error: unrecognized arguments: overflow\n"
+            )
+        );
+
+        let negative = ["-0.5"]
+            .into_iter()
+            .map(std::ffi::OsString::from)
+            .collect::<Vec<_>>();
+        assert_eq!(
+            manager_argparse_error(&negative, "check_manager_logging.py", false).as_deref(),
+            Some(
+                "usage: check_manager_logging.py [-h] binary binding output\ncheck_manager_logging.py: error: the following arguments are required: binding, output\n"
+            )
+        );
+    }
+
+    #[test]
+    fn historical_source_state_rejects_mixed_rosters_and_reappearance() {
+        let private = private_source_root();
+        let initial = SourceSet::open(private.path(), false).unwrap();
+        if !initial.retired {
+            fs::remove_file(private.path().join(RETIREABLE[0])).unwrap();
+            assert!(initial.verify(private.path()).is_err());
+            assert!(SourceSet::open(private.path(), false).is_err());
+            for name in &RETIREABLE[1..] {
+                fs::remove_file(private.path().join(name)).unwrap();
+            }
+        }
+        let retired = SourceSet::open(private.path(), true).unwrap();
+        assert!(retired.retired);
+        retired.verify(private.path()).unwrap();
+        fs::write(
+            private.path().join(RETIREABLE[0]),
+            b"unexpected reappearance",
+        )
+        .unwrap();
+        assert!(retired.verify(private.path()).is_err());
+        assert!(SourceSet::open(private.path(), true).is_err());
+        assert!(SourceSet::open(private.path(), false).is_err());
+    }
+
+    #[test]
+    fn historical_parent_and_other_source_remain_pinned_when_retired() {
+        let private = private_source_root();
+        for name in RETIREABLE {
+            let path = private.path().join(name);
+            if path.exists() {
+                fs::remove_file(path).unwrap();
+            }
+        }
+        let retired = SourceSet::open(private.path(), true).unwrap();
+        fs::write(
+            private.path().join("openpilot/common/params.py"),
+            b"same parent, changed source",
+        )
+        .unwrap();
+        assert!(retired.verify(private.path()).is_err());
+
+        let private = private_source_root();
+        for name in RETIREABLE {
+            let path = private.path().join(name);
+            if path.exists() {
+                fs::remove_file(path).unwrap();
+            }
+        }
+        let retired = SourceSet::open(private.path(), true).unwrap();
+        fs::rename(
+            private.path().join("rust/tools"),
+            private.path().join("rust/old-tools"),
+        )
+        .unwrap();
+        fs::create_dir(private.path().join("rust/tools")).unwrap();
+        assert!(retired.verify(private.path()).is_err());
+    }
+
+    #[test]
+    fn owned_receipt_rolls_back_only_its_own_inode() {
+        let private = tempfile::tempdir().unwrap();
+        let path = private.path().join("result.json");
+        {
+            let mut receipt = OwnedReceipt::create(path.clone()).unwrap();
+            receipt.file.write_all(b"PASS").unwrap();
+            receipt.file.flush().unwrap();
+            receipt.verify(b"PASS").unwrap();
+        }
+        assert!(!path.exists());
+        {
+            let mut receipt = OwnedReceipt::create(path.clone()).unwrap();
+            receipt.file.write_all(b"PASS").unwrap();
+            receipt.file.flush().unwrap();
+            fs::rename(&path, private.path().join("displaced.json")).unwrap();
+            fs::write(&path, b"foreign").unwrap();
+            assert!(receipt.verify(b"PASS").is_err());
+        }
+        assert_eq!(fs::read(&path).unwrap(), b"foreign");
+    }
+
+    #[test]
+    fn compatibility_receipts_roll_back_late_input_and_writer_failures() {
+        let directory = tempfile::tempdir().unwrap();
+        let output = directory.path();
+        let source_path = output.join("held-source");
+        let elf_path = output.join("held-elf");
+        fs::write(&source_path, b"source").unwrap();
+        fs::write(&elf_path, b"elf").unwrap();
+        for fail in ["writer", "source", "elf", "receipt", "historical-receipt"] {
+            let source = Held::open(source_path.clone(), 64).unwrap();
+            let elf = Held::open(elf_path.clone(), 64).unwrap();
+            fs::write(output.join("summary.json"), b"old-summary").unwrap();
+            fs::write(output.join("historical-source.json"), b"old-history").unwrap();
+            let result = finish_compat(
+                output,
+                b"PASS summary",
+                b"PASS history",
+                || {
+                    source.verify()?;
+                    elf.verify()
+                },
+                || {
+                    match fail {
+                        "writer" => return Err("broken stdout writer".into()),
+                        "source" => fs::write(&source_path, b"drifted")?,
+                        "elf" => fs::write(&elf_path, b"bad")?,
+                        "receipt" => {
+                            fs::rename(
+                                output.join("summary.json"),
+                                output.join("displaced-summary.json"),
+                            )?;
+                            fs::write(output.join("summary.json"), b"foreign")?;
+                        }
+                        "historical-receipt" => {
+                            fs::rename(
+                                output.join("historical-source.json"),
+                                output.join("displaced-history.json"),
+                            )?;
+                            fs::write(output.join("historical-source.json"), b"foreign")?;
+                        }
+                        _ => unreachable!(),
+                    }
+                    Ok(())
+                },
+            );
+            assert!(result.is_err(), "late {fail} change was accepted");
+            if fail == "receipt" {
+                assert_eq!(fs::read(output.join("summary.json")).unwrap(), b"foreign");
+                fs::remove_file(output.join("displaced-summary.json")).unwrap();
+            } else {
+                assert_eq!(
+                    fs::read(output.join("summary.json")).unwrap(),
+                    b"old-summary"
+                );
+            }
+            if fail == "historical-receipt" {
+                assert_eq!(
+                    fs::read(output.join("historical-source.json")).unwrap(),
+                    b"foreign"
+                );
+                fs::remove_file(output.join("displaced-history.json")).unwrap();
+            } else {
+                assert_eq!(
+                    fs::read(output.join("historical-source.json")).unwrap(),
+                    b"old-history"
+                );
+            }
+            fs::write(&source_path, b"source").unwrap();
+            fs::write(&elf_path, b"elf").unwrap();
+        }
+    }
+
+    #[test]
+    fn compatibility_receipts_replace_existing_outputs_only_after_final_checks() {
+        let directory = tempfile::tempdir().unwrap();
+        let output = directory.path();
+        fs::write(output.join("summary.json"), b"old-summary").unwrap();
+        fs::write(output.join("historical-source.json"), b"old-history").unwrap();
+        finish_compat(output, b"new-summary", b"new-history", || Ok(()), || Ok(())).unwrap();
+        assert_eq!(
+            fs::read(output.join("summary.json")).unwrap(),
+            b"new-summary"
+        );
+        assert_eq!(
+            fs::read(output.join("historical-source.json")).unwrap(),
+            b"new-history"
+        );
+        assert_eq!(fs::read_dir(output).unwrap().count(), 2);
+    }
 
     #[test]
     fn held_file_rejects_rapid_mode_content_and_path_replacement() {
@@ -827,17 +1539,60 @@ mod tests {
             ["OPENPILOT_PREFIX"]
             .as_str()
             .unwrap();
-        assert_eq!(
-            compare_logs(source, source, prefix, prefix).unwrap().len(),
-            4
-        );
+        let pythonpath = original.get("logging/synthetic-environment.json").unwrap()["PYTHONPATH"]
+            .as_str()
+            .unwrap();
+        let ld =
+            original.get("logging/synthetic-environment.json").unwrap()["LD_LIBRARY_PATH"].as_str();
+        let projection = || LogProjection {
+            old_prefix: prefix,
+            new_prefix: prefix,
+            old_pythonpath: pythonpath,
+            new_pythonpath: pythonpath,
+            old_ld_library_path: ld,
+            new_ld_library_path: ld,
+        };
+        assert_eq!(compare_logs(source, source, projection()).unwrap().len(), 4);
         let mut changed = source.clone();
         changed[1]["level"] = "ERROR".into();
-        assert!(compare_logs(source, &changed, prefix, prefix).is_err());
+        assert!(compare_logs(source, &changed, projection()).is_err());
         changed = source.clone();
         changed[0]["msg"] = "different".into();
-        assert!(compare_logs(source, &changed, prefix, prefix).is_err());
-        assert!(compare_logs(source, &source[..3], prefix, prefix).is_err());
+        assert!(compare_logs(source, &changed, projection()).is_err());
+        assert!(compare_logs(source, &source[..3], projection()).is_err());
+    }
+
+    #[test]
+    fn environment_projection_changes_only_named_pythonpath_field() {
+        let original = "environ({'PYTHONPATH': \"/old'path\", 'LD_LIBRARY_PATH': \"/old'path\", 'FIXTURE_LABEL': '/old\\'path', 'OPENPILOT_PREFIX': 'old', 'MANAGER_LOG_CAPTURE': 'ipc:///tmp/logmessageold'})";
+        let projected =
+            replace_environment_field(original, "PYTHONPATH", "/old'path", "/new'path").unwrap();
+        assert!(projected.contains("'PYTHONPATH': \"/new'path\""));
+        assert!(projected.contains("'LD_LIBRARY_PATH': \"/old'path\""));
+        assert!(projected.contains("'FIXTURE_LABEL': '/old\\'path'"));
+        assert!(!projected.contains("'PYTHONPATH': \"/old'path\""));
+        assert!(replace_environment_field(&projected, "PYTHONPATH", "/old'path", "/new").is_err());
+        let with_ld = project_optional_environment_field(
+            &projected,
+            "LD_LIBRARY_PATH",
+            Some("/old'path"),
+            Some("/new path/it's \\\"quoted\\\""),
+        )
+        .unwrap();
+        assert!(with_ld.contains(&format!(
+            "'LD_LIBRARY_PATH': {}",
+            python_repr("/new path/it's \\\"quoted\\\"")
+        )));
+        assert!(with_ld.contains("'FIXTURE_LABEL': '/old\\'path'"));
+        let without_ld = project_optional_environment_field(
+            original,
+            "LD_LIBRARY_PATH",
+            Some("/old'path"),
+            None,
+        )
+        .unwrap();
+        assert!(!without_ld.contains("'LD_LIBRARY_PATH':"));
+        assert!(without_ld.contains("'FIXTURE_LABEL': '/old\\'path'"));
     }
 
     #[test]

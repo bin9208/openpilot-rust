@@ -6893,3 +6893,76 @@ Hosted metadata identifies kernel7.0.0-1017-azure and strace6.8 binarySHA
 28f957c227012de0b18d1bd7fff2d396cb693ea60ed8013be68de071e84b5001.
 The original intermittent GETSIGINFO/LISTEN error cause remains unproved#474;
 separate successful lanes do not close it or prove a runtime fix.
+
+### Three manager QA controllers: source-absence candidate, acceptance pending
+
+The next candidate covers only check_manager.py, check_manager_logging.py and
+manager_reference.py. generate_manager_cars.py and runtime manager/Params/swaglog
+remain required. The candidate holds the historical parent and retained files,
+rejects mixed/reappearing source states, and replays seven complete cases plus
+four source log packets in checkout and private source-absent roots. Its new
+ignored gate also checks twelve captured CLI admissions plus ten broader controls, five source-admission
+negatives, and the exact 28 successful native exec attempts per positive root. This is a candidate
+contract, not a passing hosted result or an accepted source removal.
+
+The data-only closure contains67 files from original capture39728775823,
+manifest SHA d598542767a0ea195ce44deceea271b4fe10b2bc874a99dc080eeb445e4d96bb.
+Parent independently checks every selected file's size/hash and the manifest
+pin. Comparison-tool summary is labeled separately from raw original packets
+and source results. Provider receipt equality does not claim rehashing absent
+external provider bytes. No Python implementation archive is introduced.
+
+The generic CLI now projects only declared serialized environment inputs:
+OPENPILOT_PREFIX, MANAGER_LOG_CAPTURE, PYTHONPATH and optional LD_LIBRARY_PATH.
+Other packet fields remain exact. This extends the previously unchanged leaf;
+it does not hardcode a hosted library path. The predelete recipe requires fresh
+original/native pairs under baseline and quoted library inputs before deletion.
+Receipt publication also restores prior outputs after late input/writer failure
+and preserves foreign replacements. Twelve unit controls plus the exact three
+integration-test selections are required by the new hosted gate. Scoped
+rustfmt, TOML/JSON parsing, fixture hashes and diff checks pass locally; no local
+functional execution or build was performed. All three Python files remain live.
+
+Boundary-only diagnostic39734107666 checks sourcec8e195c5950259f9fea70c9876045814f07e6445
+with workflow1b9c2af350b2e9d2d98d26b131d6d8d1bd37efcb. It expands the general
+copy/sum table to152 rows while reusing accepted39729562958 graph/base evidence;
+no unchanged graph execution is repeated. Result and artifact audit are pending.
+
+### Boundary expansion rejects the general scalar copy guarantee
+
+39734107666 finishes FAILURE with one eligible failure and one explicit ISA
+skip. Evidence12405449477 is4324639B/SHA
+109aa005af71a53b1ed0871a960e2212fffa741197c951dccb1d84ca1340bdcd;
+parent checks all24CRCs. Before reaching a complete152-row receipt, an exact
+copy-arm assertion fails. Its scalar optimized IR replaces select(c,x,x+y)
+with x+select(c,-0,y); disassembly masks the addend then executes vaddss.
+No per-row failure receipt was emitted, so the exact input remains unrecorded.
+The earlier full kernel92 output/base match and masked-copy instruction path
+are distinct evidence; the source rewrite alone is not a general exact-copy
+guarantee. Production lowering remains unaccepted. Issue482comment6334394472.
+
+### Driver convolution accumulation localized; legal-choice witness is not machine proof
+
+Unchanged-code39732108195/source67c21ea2bb2209b4b5ce7ec73fe409c4712abc8c/
+workflowea5f73e3b0bb43dee176778a01b454cc6d3b0e95 obtains two fully valid samples
+and two skips. Parent independently checks all2240CRCs and four archive hashes.
+Eligible12406095454 is91532284B/SHA
+837f89f4f48e9c4e0325efa79147ea81e6151066b44b2f6d974e37c981361353;
+12405334494 is91531953B/SHA
+650880e5049a97a3ab5300cbfb9b7137560c97ec080cdc77806337f7b6907a75.
+Both full-output/base guarded inferiors agree at mapped lane0: raw/clamped
+originalbfdbe345 and nativebfdbe347, identical bias3ef18000. Divergence is
+already in accumulation; this does not identify its earliest instruction.
+Issue476comment6334394132 retains the result and limits.
+
+Pure-data39734519738/workflowd39b8279682853a7a949065e0bac1790e655bf4c reuses
+that immutable corpus under the same source. Artifact12406452274 is15185B/SHA
+e3781daa2fb3270ef0733ae3d3a7fa2443fe97e4809a46c918699f442f2b48a6;
+parent checks all7CRCs. Exact rational FP32 evaluates144 source-ordered terms,
+without provider/model execution. Both uniform separate and outer-FMA policies
+end at nativebfdbe347. Complete bounded enumeration (756transitions/3reachable
+end states) finds an originalbfdbe345 witness with one adjacent contraction
+at step44/inner4/term8, productv1285 feedingv1286. This proves a source-ordered
+legal-choice witness exists, not that the original machine used that witness.
+Actual emitted operation/pairing still requires mapping; no numeric policy,
+tolerance, target flag, frozen oracle or production compiler was changed.

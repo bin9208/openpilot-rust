@@ -787,6 +787,10 @@ required-features = ["manager-qa-native"]
 name = "manager_qa_compat"
 required-features = ["manager-qa-native"]
 
+[[test]]
+name = "manager_retirement"
+required-features = ["manager-qa-native"]
+
 # Keep unsafe denied across tools; only the reviewed C++ oracle loader module
 # permits the explicit FFI calls needed by kalman-corpus-generator-native.
 [lints.rust]

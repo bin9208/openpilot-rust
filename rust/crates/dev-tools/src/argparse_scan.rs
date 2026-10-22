@@ -67,7 +67,7 @@ pub(crate) fn decimal(value: &str) -> bool {
     value.chars().all(|ch| decimal_value(ch).is_some())
 }
 
-fn negative_number(value: &str) -> bool {
+pub(crate) fn negative_number(value: &str) -> bool {
     let value = value.strip_suffix('\n').unwrap_or(value);
     let Some(body) = value.strip_prefix('-') else {
         return false;

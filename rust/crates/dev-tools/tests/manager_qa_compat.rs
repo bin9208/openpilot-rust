@@ -19,7 +19,12 @@ fn positional_manager_and_logging_keep_original_selected_stdout_and_summary() {
         .join("../../..")
         .canonicalize()
         .unwrap();
-    let original = env_path("MANAGER_QA_FRESH_ORIGINAL_CAPTURE");
+    let original = std::env::var_os("MANAGER_QA_FRESH_ORIGINAL_CAPTURE")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| {
+            root.join("rust/crates/dev-tools/tests/fixtures/manager-qa-original/retirement")
+        });
+    assert!(original.join("manager-selected.stdout").is_file());
     let output = env_path("MANAGER_QA_COMPAT_OUTPUT");
     let trace = env_path("MANAGER_QA_BINARY");
     let binding = env_path("MANAGER_QA_BINDING");

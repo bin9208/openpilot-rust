@@ -5,10 +5,11 @@ fn main() -> ExitCode {
     match openpilot_dev_tools::manager_qa::cli_manager_compat() {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
-            eprintln!("check-manager: {error}");
             if error.is::<openpilot_dev_tools::argparse_scan::ArgumentError>() {
+                eprint!("{error}");
                 ExitCode::from(2)
             } else {
+                eprintln!("check-manager: {error}");
                 ExitCode::FAILURE
             }
         }
