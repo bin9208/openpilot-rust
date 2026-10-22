@@ -12,7 +12,10 @@ use std::{
     fs::{self, OpenOptions},
     io::{self, Write},
     path::{Path, PathBuf},
-    sync::atomic::{AtomicBool, AtomicUsize, Ordering},
+    sync::{
+        atomic::{AtomicBool, AtomicUsize, Ordering},
+        OnceLock,
+    },
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 mod cases;
@@ -30,6 +33,7 @@ pub fn startup_phase(name: &'static str) -> Result<()> {
     let Some(directory) = std::env::var_os("NAVD_CONFIG_STARTUP_TRACE") else {
         return Ok(());
     };
+    static START: OnceLock<Instant> = OnceLock::new();
     let directory = PathBuf::from(directory);
     if !directory.is_absolute() {
         return Err("NAVD_CONFIG_STARTUP_TRACE must be absolute".into());
@@ -38,7 +42,11 @@ pub fn startup_phase(name: &'static str) -> Result<()> {
         .write(true)
         .create_new(true)
         .open(directory.join(name))?;
-    file.write_all(b"1\n")?;
+    writeln!(
+        file,
+        "{}",
+        START.get_or_init(Instant::now).elapsed().as_nanos()
+    )?;
     Ok(())
 }
 #[derive(Clone)]
@@ -258,14 +266,27 @@ fn run_inner(
     fs::create_dir(&options.output)?;
     startup_phase("06-output-created")?;
     no_core()?;
+    startup_phase("07-no-core-done")?;
     interrupted(cancel)?;
+    startup_phase("08-source-hash-begin")?;
     let sources = validate_source(&options.root)?;
+    startup_phase("09-source-hash-end")?;
+    startup_phase("10-worker-hash-begin")?;
     let worker_id = identity::Artifact::open(worker)?;
+    startup_phase("11-worker-hash-end")?;
+    startup_phase("12-binary-hash-begin")?;
     let binary_id = identity::Artifact::open(&options.binary);
+    startup_phase("13-binary-hash-returned")?;
+    startup_phase("14-candidate-hash-begin")?;
     let candidate = candidate_sources(&options.root)?;
+    startup_phase("15-candidate-hash-end")?;
+    startup_phase("16-rsa-generation-begin")?;
     let keys = Keys::new()?;
+    startup_phase("17-rsa-generation-end")?;
     let mut rows = Vec::new();
-    for case in cases()? {
+    let cases = cases()?;
+    startup_phase("18-first-case-begin")?;
+    for case in cases {
         interrupted(cancel)?;
         let output = options.output.join(&case.name);
         let source = side(
