@@ -8257,3 +8257,11 @@ exit observation and stop request/confirmation timestamps were not retained, so
 these data cannot distinguish interpreter teardown, parent scheduling or stop
 latency. The capture now saves those phases before enforcing the unchanged100ms
 bound. This adds diagnostic evidence only; it is not a timing or runtime fix.
+
+First codec gate39819451626 atf963b0812/workflow22d2ccd1d fails before any native
+comparison: Rust E0277 in UTF7's supplementary scalar arithmetic inferred the
+leading literal as i32. Parent verifies artifact12444596147,9721525bytes,
+SHA256505267101b747faf656edd00a1535505fa909120957ae37223f02635a4cff3ce/all26CRCs.
+The surrogate slot and leading scalar constant are now explicitly u32; no
+decoder arithmetic, original observations or acceptance condition is changed.
+The corrected candidate still requires the actual hosted compile/domain gate.

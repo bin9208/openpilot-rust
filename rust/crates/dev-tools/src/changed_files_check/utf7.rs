@@ -37,7 +37,7 @@ pub(super) fn decode(raw: &[u8]) -> Result<String, Diagnostic> {
         }
         let mut bits = 0u32;
         let mut buffer = 0u32;
-        let mut high = None;
+        let mut high: Option<u32> = None;
         while let Some(value) = raw.get(i).copied().and_then(base64) {
             buffer = (buffer << 6) | value;
             bits += 6;
@@ -50,7 +50,7 @@ pub(super) fn decode(raw: &[u8]) -> Result<String, Diagnostic> {
                     if !(0xdc00..=0xdfff).contains(&unit) {
                         return Err(invalid());
                     }
-                    let cp = 0x10000 + ((first - 0xd800) << 10) + (unit - 0xdc00);
+                    let cp = 0x10000u32 + ((first - 0xd800) << 10) + (unit - 0xdc00);
                     output.push(char::from_u32(cp).ok_or_else(invalid)?);
                 } else if (0xd800..=0xdbff).contains(&unit) {
                     high = Some(unit);
