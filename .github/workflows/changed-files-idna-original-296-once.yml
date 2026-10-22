@@ -1,0 +1,157 @@
+name: 296 original-only CPython312 IDNA Unicode32 observations
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/changed-files-idna-original-296-once.yml
+permissions:
+  contents: read
+jobs:
+  original:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      EXPECTED_SOURCE: 1d5570e158bb7a799c4a816f78bc7f63f201d2a4
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: 1d5570e158bb7a799c4a816f78bc7f63f201d2a4
+        persist-credentials: false
+    - name: Retain exact unchanged source and reserve capacity
+      shell: bash
+      run: 'set -euo pipefail
+
+        export IDNA_BASE="$RUNNER_TEMP/changed-files-idna-original-296"
+
+        printf ''IDNA_BASE=%s\n'' "$IDNA_BASE" >> "$GITHUB_ENV"
+
+        mkdir "$IDNA_BASE"
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        printf ''workflow_head=%s\nsource_commit=%s\n'' "$GITHUB_SHA" "$EXPECTED_SOURCE" > "$IDNA_BASE/source.txt"
+
+        git status --porcelain=v1 > "$IDNA_BASE/source-status.before.txt"
+
+        test ! -s "$IDNA_BASE/source-status.before.txt"
+
+        rust/tools/check-disk-space --path "$RUNNER_TEMP" --growth-mib 512
+
+        sha256sum tools/ci/check_changed_files.py tools/ci/tests/test_changed_files.py rust/Cargo.lock > "$IDNA_BASE/source-files.before.sha256"
+
+        printf ''%s\n'' ''6bcb14f3a6d5d4e885c655e22fed23a1ecf2199b048cd3da95ef59b2795fad87  tools/ci/check_changed_files.py''
+        ''cd9a211d076d6939b7649849212ea21c52e7e0897fa6d251e82b0b2805e08242  tools/ci/tests/test_changed_files.py'' | sha256sum
+        --check --strict
+
+        '
+    - uses: actions/setup-python@v6
+      with:
+        python-version: 3.12.15
+    - name: Admit source-pinned original-only capture
+      shell: bash
+      run: 'set -euo pipefail
+
+        mkdir "$IDNA_BASE/original"
+
+        base64 --decode <<''INPUT'' > "$IDNA_BASE/capture_idna_original.py"
+
+        IiIiSE9TVEVEIE9OTFkuIEluZGVwZW5kZW50IENQeXRob24gb3JhY2xlOyBuZXZlciBpbXBvcnQgb3IgZXhlY3V0ZSBuYXRpdmUgY29kZS4iIiIKaW1wb3J0IGFyZ3BhcnNlCmltcG9ydCBhc3QKaW1wb3J0IGVuY29kaW5ncy5pZG5hIGFzIGlkbmEKaW1wb3J0IGVuY29kaW5ncy5wdW55Y29kZSBhcyBwdW55Y29kZQppbXBvcnQgY29kZWNzCmltcG9ydCBzeXNjb25maWcKaW1wb3J0IGhhc2hsaWIKaW1wb3J0IGpzb24KZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCmltcG9ydCBzdHJ1Y3QKaW1wb3J0IHN5cwppbXBvcnQgdW5pY29kZWRhdGEKaW1wb3J0IHN0cmluZ3ByZXAKCgpkZWYgc2hhKHBhdGgpOgogICAgcmV0dXJuIGhhc2hsaWIuc2hhMjU2KHBhdGgucmVhZF9ieXRlcygpKS5oZXhkaWdlc3QoKQoKCmRlZiBzYXZlKHBhdGgsIHZhbHVlKToKICAgIHBhdGgud3JpdGVfdGV4dChqc29uLmR1bXBzKHZhbHVlLCBlbnN1cmVfYXNjaWk9VHJ1ZSwgc2VwYXJhdG9ycz0oJywnLCAnOicpKSArICdcbicpCgoKZGVmIHJlc3VsdChjYWxsKToKICAgIHRyeToKICAgICAgICByZXR1cm4gY2FsbCgpLmVuY29kZSgndXRmLTgnLCAnc3RyaWN0JykKICAgIGV4Y2VwdCBVbmljb2RlRXJyb3I6CiAgICAgICAgcmV0dXJuIE5vbmUKCgpkZWYgYmxvYihzdHJlYW0sIHJhdyk6CiAgICBzdHJlYW0ud3JpdGUoc3RydWN0LnBhY2soJzxJJywgMHhmZmZmZmZmZiBpZiByYXcgaXMgTm9uZSBlbHNlIGxlbihyYXcpKSkKICAgIGlmIHJhdyBpcyBub3QgTm9uZToKICAgICAgICBzdHJlYW0ud3JpdGUocmF3KQoKCmRlZiBtYWluKCk6CiAgICBwYXJzZXIgPSBhcmdwYXJzZS5Bcmd1bWVudFBhcnNlcigpCiAgICBwYXJzZXIuYWRkX2FyZ3VtZW50KCctLW91dHB1dCcsIHR5cGU9UGF0aCwgcmVxdWlyZWQ9VHJ1ZSkKICAgIHBhcnNlci5hZGRfYXJndW1lbnQoJy0tcGlubmVkLXNvdXJjZXMnLCB0eXBlPVBhdGgsIHJlcXVpcmVkPVRydWUpCiAgICBhcmdzID0gcGFyc2VyLnBhcnNlX2FyZ3MoKQogICAgYXNzZXJ0IHN5cy5pbXBsZW1lbnRhdGlvbi5uYW1lID09ICdjcHl0aG9uJyBhbmQgc3lzLnZlcnNpb25faW5mb1s6M10gPT0gKDMsIDEyLCAxNSkKICAgIGFzc2VydCB1bmljb2RlZGF0YS51bmlkYXRhX3ZlcnNpb24gPT0gJzE1LjAuMCcKICAgIGFzc2VydCB1bmljb2RlZGF0YS51Y2RfM18yXzAudW5pZGF0YV92ZXJzaW9uID09ICczLjIuMCcKICAgIHNvdXJjZXMgPSBhcmdzLnBpbm5lZF9zb3VyY2VzCiAgICAjIFBhcmVudCBhdXRoZW50aWNhdGVzIHRoZXNlIGluZXJ0IGZpbGVzIGFnYWluc3QgcHJvdmVuYW5jZS5qc29uIGJlZm9yZSBydW5uaW5nLgogICAgcGlucyA9IGpzb24ubG9hZHMoKHNvdXJjZXMucGFyZW50IC8gJ29yaWdpbmFsLXNvdXJjZS1waW5zLmpzb24nKS5yZWFkX2J5dGVzKCkpWydvcmlnaW5hbCddCiAgICBmb3IgbmFtZSwgcGluIGluIHBpbnMuaXRlbXMoKToKICAgICAgICBhc3NlcnQgc2hhKHNvdXJjZXMgLyBuYW1lKSA9PSBwaW5bJ3NoYTI1NiddLCBuYW1lCiAgICBmb3IgbW9kdWxlLCBuYW1lIGluIFsoaWRuYSwgJ2lkbmEucHknKSwgKHN0cmluZ3ByZXAsICdzdHJpbmdwcmVwLnB5JyksIChwdW55Y29kZSwgJ3B1bnljb2RlLnB5JyldOgogICAgICAgIGFzc2VydCBzaGEoUGF0aChtb2R1bGUuX19maWxlX18pKSA9PSBwaW5zW25hbWVdWydzaGEyNTYnXSwgbmFtZQogICAgcHJvdmlkZXJfcGF0aHMgPSBbUGF0aChzeXMuZXhlY3V0YWJsZSksIFBhdGgoaWRuYS5fX2ZpbGVfXyksIFBhdGgoc3RyaW5ncHJlcC5fX2ZpbGVfXyksIFBhdGgodW5pY29kZWRhdGEuX19maWxlX18pLCBQYXRoKHB1bnljb2RlLl9fZmlsZV9fKSwgUGF0aChjb2RlY3MuX19maWxlX18pLCBQYXRoKHN5c2NvbmZpZy5nZXRfY29uZmlnX3ZhcignTElCRElSJykpIC8gc3lzY29uZmlnLmdldF9jb25maWdfdmFyKCdMRExJQlJBUlknKV0KICAgIHByb3ZpZGVycyA9IHtzdHIocGF0aCk6IHNoYShwYXRoKSBmb3IgcGF0aCBpbiBwcm92aWRlcl9wYXRoc30KICAgIGFyZ3Mub3V0cHV0Lm1rZGlyKCkKICAgIHdpdGggKGFyZ3Mub3V0cHV0IC8gJ2lkbmEtc2NhbGFycy5iaW4nKS5vcGVuKCd3YicpIGFzIHN0cmVhbToKICAgICAgICBzdHJlYW0ud3JpdGUoYidJRE5BMjk2XHgwMScgKyBzdHJ1Y3QucGFjaygnPEknLCAxMTEyMDY0KSkKICAgICAgICBmb3IgY3AgaW4gcmFuZ2UoMHgxMTAwMDApOgogICAgICAgICAgICBpZiAweGQ4MDAgPD0gY3AgPD0gMHhkZmZmOgogICAgICAgICAgICAgICAgY29udGludWUKICAgICAgICAgICAgdGV4dCA9IGNocihjcCkKICAgICAgICAgICAgcmF3ID0gYid4bi0tJyArIHRleHQuZW5jb2RlKCdwdW55Y29kZScsICdzdHJpY3QnKQogICAgICAgICAgICBzdHJlYW0ud3JpdGUoc3RydWN0LnBhY2soJzxJJywgY3ApKQogICAgICAgICAgICBibG9iKHN0cmVhbSwgcmF3KQogICAgICAgICAgICBibG9iKHN0cmVhbSwgcmVzdWx0KGxhbWJkYTogaWRuYS5uYW1lcHJlcCh0ZXh0KSkpCiAgICAgICAgICAgIGJsb2Ioc3RyZWFtLCByZXN1bHQobGFtYmRhOiByYXcuZGVjb2RlKCdpZG5hJywgJ3N0cmljdCcpKSkKICAgIHJvd3MgPSBbXQogICAgZGVmIGFkZChvcGVyYXRpb24sIHJhdyk6CiAgICAgICAgZm91bmQgPSByZXN1bHQobGFtYmRhOiByYXcuZGVjb2RlKCdpZG5hJywgJ3N0cmljdCcpKSBpZiBvcGVyYXRpb24gPT0gJ2RlY29kZScgZWxzZSByZXN1bHQobGFtYmRhOiBpZG5hLm5hbWVwcmVwKHJhdy5kZWNvZGUoJ3V0Zi04JykpKQogICAgICAgIHJvd3MuYXBwZW5kKHsnb3BlcmF0aW9uJzogb3BlcmF0aW9uLCAnaW5wdXRfaGV4JzogcmF3LmhleCgpLCAnYWNjZXB0ZWQnOiBmb3VuZCBpcyBub3QgTm9uZSwgJ3V0ZjhfaGV4JzogTm9uZSBpZiBmb3VuZCBpcyBOb25lIGVsc2UgZm91bmQuaGV4KCl9KQogICAgZGVmIHByZXAodGV4dCk6CiAgICAgICAgYWRkKCduYW1lcHJlcCcsIHRleHQuZW5jb2RlKCd1dGYtOCcpKQogICAgICAgIGFkZCgnZGVjb2RlJywgYid4bi0tJyArIHRleHQuZW5jb2RlKCdwdW55Y29kZScsICdzdHJpY3QnKSkKICAgICMgRXh0cmFjdCBPTkxZIHRoZSBsaXRlcmFsIG9yaWdpbmFsIGlucHV0IGxpc3QsIG5ldmVyIGV4ZWN1dGUgdGhlIG9yaWdpbmFsIHRlc3QgbW9kdWxlLgogICAgcGFyc2VkID0gYXN0LnBhcnNlKChzb3VyY2VzIC8gJ3Rlc3RfY29kZWNzLnB5JykucmVhZF9ieXRlcygpKQogICAgYXNzaWdubWVudCA9IFtub2RlIGZvciBub2RlIGluIHBhcnNlZC5ib2R5IGlmIGlzaW5zdGFuY2Uobm9kZSwgYXN0LkFzc2lnbikgYW5kIGFueShpc2luc3RhbmNlKHQsIGFzdC5OYW1lKSBhbmQgdC5pZCA9PSAnbmFtZXByZXBfdGVzdHMnIGZvciB0IGluIG5vZGUudGFyZ2V0cyldCiAgICBhc3NlcnQgbGVuKGFzc2lnbm1lbnQpID09IDEKICAgIGZvciByYXcsIF91bnVzZWRfb3JpZ2luYWxfdGVzdF9leHBlY3RhdGlvbiBpbiBhc3QubGl0ZXJhbF9ldmFsKGFzc2lnbm1lbnRbMF0udmFsdWUpOgogICAgICAgIGlmIHJhdyBpcyBub3QgTm9uZToKICAgICAgICAgICAgdGV4dCA9IHJhdy5kZWNvZGUoJ3V0Zi04JywgJ3N1cnJvZ2F0ZXBhc3MnKQogICAgICAgICAgICAjIFN1cnJvZ2F0ZS1jb250YWluaW5nIG9yaWdpbmFsIGlucHV0cyByZW1haW4gYSBieXRlIEFDRSBkZWNvZGUgY2FzZS4KICAgICAgICAgICAgaWYgYW55KDB4ZDgwMCA8PSBvcmQoYykgPD0gMHhkZmZmIGZvciBjIGluIHRleHQpOgogICAgICAgICAgICAgICAgYWRkKCdkZWNvZGUnLCBiJ3huLS0nICsgdGV4dC5lbmNvZGUoJ3B1bnljb2RlJykpCiAgICAgICAgICAgIGVsc2U6CiAgICAgICAgICAgICAgICBwcmVwKHRleHQpCiAgICAjIE11bHRpLWNoYXJhY3RlciBpbnRlcmFjdGlvbiBpbnB1dHMsIG5vdCBhc3NlcnRlZC9ndWVzc2VkIGV4cGVjdGVkIG91dGNvbWVzLgogICAgZm9yIHRleHQgaW4gWydcdTExMDBcdTExNjEnLCAnXHUxMTAwXHUxMTYxXHUxMWE4JywgJ0FcdTAzMDFcdTAzMjcnLCAnYVx1MDMyN1x1MDMwMScsICdcdTAzMDFcdTAzMjdhJywgJ1x1MDVkMGEnLCAnYVx1MDVkMCcsICdcdTA1ZDAxXHUwNWQxJywgJ1x1MDVkMFx1MDMwMScsICdcdTA1ZDBcdTAzMDFcdTA1ZDEnLCAnXFUwMDAyZjg2OFxVMDAwMmY4NzRcVTAwMDJmOTFmXFUwMDAyZjk1ZlxVMDAwMmY5YmYnLCAnXHUxM2EwXHUxM2EwJywgJ1x1MTBhMC4nLCAnXHUwNGMwLmV4YW1wbGUnLCAnXHUyMTgzLmV4YW1wbGUuJywgJ1xVMDAwMWU5MDAnLCAnXFUwMDAxZTAzMCcsICd4bi0tXHUwMGU5JywgJ1x1MDBhZCcgKiAxMTAwXToKICAgICAgICBwcmVwKHRleHQpCiAgICBmb3IgY3AgaW4gcmFuZ2UoMHgzMDAsIDB4MzcwKToKICAgICAgICBwcmVwKCdhJyArIGNocihjcCkgKyAnXHUwMzI3XHUwMzAxJykKICAgICAgICBwcmVwKCdcdTA1ZDAnICsgY2hyKGNwKSArICdcdTA1ZDEnKQogICAgZm9yIHJhdyBpbiBbYicnLCBiJy4nLCBiJy4uJywgYid4bi0tJywgYid4bi0tYScsIGIneG4tLS0nLCBiJ3huLS1hYmMtJywgYid4bi0tcHl0aG4tbXVhJywgYid4bi0tUFlUSE4tTVVBJywgYidYTi0tcHl0aG4tbXVhJywgYidYbi0tcHl0aG4tbXVhJywgYid4Ti0tcHl0aG4tbXVhJywgYicueG4tLXB5dGhuLW11YS4uJywgYidub3R4bi0taGVyZScsIGIneG4tLXB5dGhuLW11YS5YTi0tQUJDJywgYid4bi0tdyYnLCBiJ3huLS1ceGZmJywgYidceGZmLnhuLS0nLCBiJ1x4ZmYnLCBiJ1x4MDBcclxuLnhuLS1weXRobi1tdWEuJywgYid4bi0tYVx4MDAnXToKICAgICAgICBhZGQoJ2RlY29kZScsIHJhdykKICAgIGZvciBuIGluIFswLCAxLCA1OSwgNjAsIDYzLCA2NCwgNjUsIDcwLCAxMDIzLCAxMDI0LCAxMDI1LCAxMTAwXToKICAgICAgICBmb3IgcmF3IGluIFtiJ2EnICogbiwgYidhJyAqIG4gKyBiJy54bi0tcHl0aG4tbXVhJywgYid4bi0tJyArIGInYScgKiBuLCBiJ3huLS0wMTZjJyArIGInYScgKiBuXToKICAgICAgICAgICAgYWRkKCdkZWNvZGUnLCByYXcpCiAgICAgICAgcHJlcCgnXHUwMGU5JyAqIG4pCiAgICAgICAgcHJlcCgnXHUwMGFkJyAqIG4gKyAnXHUwMGU5JykKICAgIGZvciBieXRlIGluIHJhbmdlKDI1Nik6CiAgICAgICAgZm9yIHJhdyBpbiBbYnl0ZXMoW2J5dGVdKSwgYid4bi0tJyArIGJ5dGVzKFtieXRlXSksIGIneG4tLXB5dGhuLW11YS4nICsgYnl0ZXMoW2J5dGVdKSwgYnl0ZXMoW2J5dGVdKSArIGInLnhuLS1weXRobi1tdWEnXToKICAgICAgICAgICAgYWRkKCdkZWNvZGUnLCByYXcpCiAgICBzYXZlKGFyZ3Mub3V0cHV0IC8gJ2lkbmEtdmVjdG9ycy5qc29uJywgeydyb3dzJzogcm93cywgJ2V4cGVjdGVkX2lzc3Vlcic6ICdhY3R1YWwgcGlubmVkIENQeXRob24zLjEyLjE1IG9ubHknfSkKICAgIGFzc2VydCBwcm92aWRlcnMgPT0ge3N0cihwYXRoKTogc2hhKHBhdGgpIGZvciBwYXRoIGluIHByb3ZpZGVyX3BhdGhzfQogICAgc2F2ZShhcmdzLm91dHB1dCAvICdyZWNlaXB0Lmpzb24nLCB7J3Bhc3NlZCc6IFRydWUsICdweXRob24nOiBzeXMudmVyc2lvbiwgJ3VuaWNvZGUnOiB1bmljb2RlZGF0YS51bmlkYXRhX3ZlcnNpb24sICdvbGRfdW5pY29kZSc6IHVuaWNvZGVkYXRhLnVjZF8zXzJfMC51bmlkYXRhX3ZlcnNpb24sICdwcm92aWRlcnNfYmVmb3JlX2FmdGVyJzogcHJvdmlkZXJzLCAnb3JpZ2luYWxfc291cmNlX3BpbnMnOiBwaW5zLCAnc2NhbGFyX3Jvd3MnOiAxMTEyMDY0LCAndmVjdG9yX3Jvd3MnOiBsZW4ocm93cyksICduYXRpdmVfZXhlY3V0aW9uJzogRmFsc2UsICduYXRpdmVfZXhwZWN0ZWRfZGF0YV91c2VkJzogRmFsc2UsICd1bmNoYW5nZWRfYWNjZXB0ZWRfZG9tYWluc19yZXBlYXRlZCc6IEZhbHNlfSkKICAgIGZpbGVzID0ge3BhdGgubmFtZTogeydieXRlcyc6IHBhdGguc3RhdCgpLnN0X3NpemUsICdzaGEyNTYnOiBzaGEocGF0aCl9IGZvciBwYXRoIGluIGFyZ3Mub3V0cHV0Lml0ZXJkaXIoKX0KICAgIGFzc2VydCBzdW0ocGluWydieXRlcyddIGZvciBwaW4gaW4gZmlsZXMudmFsdWVzKCkpIDwgMTI4IDw8IDIwCiAgICBzYXZlKGFyZ3Mub3V0cHV0IC8gJ21hbmlmZXN0Lmpzb24nLCB7J2ZpbGVzJzogZmlsZXN9KQoKCmlmIF9fbmFtZV9fID09ICdfX21haW5fXyc6CiAgICBtYWluKCkK
+
+        INPUT
+
+        printf ''9399505f1498d26782b026113cb07fda8ce69f2ef6e0510ccd585be9824fe20e  %s/capture_idna_original.py\n'' "$IDNA_BASE"
+        | sha256sum --check --strict
+
+        base64 --decode <<''INPUT'' > "$IDNA_BASE/original-source-pins.json"
+
+        ewogICJyZXBvc2l0b3J5IjogImh0dHBzOi8vZ2l0aHViLmNvbS9weXRob24vY3B5dGhvbiIsCiAgImNvbW1pdCI6ICJlODQ4ZTRiMDljYTRiYzY3YzAwNDFjOWNlNzUyNmRhZTQ3MWQ0YzM2IiwKICAidGFnIjogInYzLjEyLjE1IiwKICAibGljZW5zZSI6ICJQU0Y7IHJldGFpbiBDUHl0aG9uIExJQ0VOU0UiLAogICJvcmlnaW5hbCI6IHsKICAgICJpZG5hLnB5IjogewogICAgICAiYnl0ZXMiOiA5NzEwLAogICAgICAic2hhMjU2IjogIjljYTU4ZTgyZDEyYjE3MWYyNWQ1NzIzOWFkMjM3ZGFlNWM0NDIxNGE3MGYyZjRmMzkzNThjMjc1OWI4YjkwMTMiCiAgICB9LAogICAgInB1bnljb2RlLnB5IjogewogICAgICAiYnl0ZXMiOiA2ODgzLAogICAgICAic2hhMjU2IjogIjM0ZWRjOGZiMWM1MGU0ZDFjYmFhMWUwMDhiYjQ5MWNkN2MxMjExNmMzMTZlNTE5NzRmMzMzZmU3YjYyOGViN2MiCiAgICB9LAogICAgInN0cmluZ3ByZXAucHkiOiB7CiAgICAgICJieXRlcyI6IDI1ODM0LAogICAgICAic2hhMjU2IjogImE1OTg5MTUwZjdmNzRhNjhlYjk4YjQ3OTY2YzFlZDE2NjAzM2JhOGNhZTA3YzNmMzc2YmNjMTYyZWZkMmVlNDciCiAgICB9LAogICAgInRlc3RfY29kZWNzLnB5IjogewogICAgICAiYnl0ZXMiOiAxNDExNzQsCiAgICAgICJzaGEyNTYiOiAiN2M4ZWU3NWQ4MWY3MTg3Nzc4NjA3OGZkNzNjMTdkMmZkOTY0NWFkOGJmNTcwMGZjMTJlMDYyZDcyYjNjYjk3ZSIKICAgIH0sCiAgICAidW5pY29kZWN0eXBlLmMiOiB7CiAgICAgICJieXRlcyI6IDcyMzYsCiAgICAgICJzaGEyNTYiOiAiOWQ3YTM1YWM0MDAxOGFkMDg3YzVkMmQxNWY4MjE0ZDU4MzE0NTY5NDdkODU4ZTViNWMwY2Q5ZDUyOWU0Y2U2MSIKICAgIH0sCiAgICAidW5pY29kZWRhdGEuYyI6IHsKICAgICAgImJ5dGVzIjogNDg1MjQsCiAgICAgICJzaGEyNTYiOiAiYTQwYjQ4MjBlZjFiY2M2YzQ1ODk5ZjVkYTFjODA2MzYxMGJiYmEyMzQxYTYxMjlhNGQ1ZjY0NjMxNmViZjExZSIKICAgIH0sCiAgICAidW5pY29kZWRhdGFfZGIuaCI6IHsKICAgICAgImJ5dGVzIjogNTQ2MzM4LAogICAgICAic2hhMjU2IjogImYwMjljOTA5Y2JiMTcxNGRlYTE3N2ZlODA2NjJhMzVkMWY4ZTIxYTJjNTA1MDYwZThkODY3NGIwYmJlZDhlNTciCiAgICB9LAogICAgInVuaWNvZGV0eXBlX2RiLmgiOiB7CiAgICAgICJieXRlcyI6IDI2MDc1MSwKICAgICAgInNoYTI1NiI6ICJhYjYwZjBjYTZkYjg2ZGMxNGJiMTljYTViY2NlNmIwMjc0MjgyMTcyNTAwZGQxYzNlZjYxMDMwZTRiMDgwY2M4IgogICAgfQogIH0KfQo=
+
+        INPUT
+
+        printf ''bae352dc20ac4dc8d7b5dee58c1c479fe7b063ff884b4ae00b34e6cbfa84cf07  %s/original-source-pins.json\n'' "$IDNA_BASE"
+        | sha256sum --check --strict
+
+        curl --fail --location --silent --show-error --retry 3 ''https://raw.githubusercontent.com/python/cpython/e848e4b09ca4bc67c0041c9ce7526dae471d4c36/Lib/encodings/idna.py''
+        -o "$IDNA_BASE/original/idna.py"
+
+        printf ''9ca58e82d12b171f25d57239ad237dae5c44214a70f2f4f39358c2759b8b9013  %s/original/idna.py\n'' "$IDNA_BASE" |
+        sha256sum --check --strict
+
+        curl --fail --location --silent --show-error --retry 3 ''https://raw.githubusercontent.com/python/cpython/e848e4b09ca4bc67c0041c9ce7526dae471d4c36/Lib/encodings/punycode.py''
+        -o "$IDNA_BASE/original/punycode.py"
+
+        printf ''34edc8fb1c50e4d1cbaa1e008bb491cd7c12116c316e51974f333fe7b628eb7c  %s/original/punycode.py\n'' "$IDNA_BASE"
+        | sha256sum --check --strict
+
+        curl --fail --location --silent --show-error --retry 3 ''https://raw.githubusercontent.com/python/cpython/e848e4b09ca4bc67c0041c9ce7526dae471d4c36/Lib/stringprep.py''
+        -o "$IDNA_BASE/original/stringprep.py"
+
+        printf ''a5989150f7f74a68eb98b47966c1ed166033ba8cae07c3f376bcc162efd2ee47  %s/original/stringprep.py\n'' "$IDNA_BASE"
+        | sha256sum --check --strict
+
+        curl --fail --location --silent --show-error --retry 3 ''https://raw.githubusercontent.com/python/cpython/e848e4b09ca4bc67c0041c9ce7526dae471d4c36/Lib/test/test_codecs.py''
+        -o "$IDNA_BASE/original/test_codecs.py"
+
+        printf ''7c8ee75d81f71877786078fd73c17d2fd9645ad8bf5700fc12e062d72b3cb97e  %s/original/test_codecs.py\n'' "$IDNA_BASE"
+        | sha256sum --check --strict
+
+        curl --fail --location --silent --show-error --retry 3 ''https://raw.githubusercontent.com/python/cpython/e848e4b09ca4bc67c0041c9ce7526dae471d4c36/Objects/unicodectype.c''
+        -o "$IDNA_BASE/original/unicodectype.c"
+
+        printf ''9d7a35ac40018ad087c5d2d15f8214d5831456947d858e5b5c0cd9d529e4ce61  %s/original/unicodectype.c\n'' "$IDNA_BASE"
+        | sha256sum --check --strict
+
+        curl --fail --location --silent --show-error --retry 3 ''https://raw.githubusercontent.com/python/cpython/e848e4b09ca4bc67c0041c9ce7526dae471d4c36/Modules/unicodedata.c''
+        -o "$IDNA_BASE/original/unicodedata.c"
+
+        printf ''a40b4820ef1bcc6c45899f5da1c8063610bbba2341a6129a4d5f646316ebf11e  %s/original/unicodedata.c\n'' "$IDNA_BASE"
+        | sha256sum --check --strict
+
+        curl --fail --location --silent --show-error --retry 3 ''https://raw.githubusercontent.com/python/cpython/e848e4b09ca4bc67c0041c9ce7526dae471d4c36/Modules/unicodedata_db.h''
+        -o "$IDNA_BASE/original/unicodedata_db.h"
+
+        printf ''f029c909cbb1714dea177fe80662a35d1f8e21a2c505060e8d8674b0bbed8e57  %s/original/unicodedata_db.h\n'' "$IDNA_BASE"
+        | sha256sum --check --strict
+
+        curl --fail --location --silent --show-error --retry 3 ''https://raw.githubusercontent.com/python/cpython/e848e4b09ca4bc67c0041c9ce7526dae471d4c36/Objects/unicodetype_db.h''
+        -o "$IDNA_BASE/original/unicodetype_db.h"
+
+        printf ''ab60f0ca6db86dc14bb19ca5bcce6b0274282172500dd1c3ef61030e4b080cc8  %s/original/unicodetype_db.h\n'' "$IDNA_BASE"
+        | sha256sum --check --strict
+
+        '
+    - name: Capture only new IDNA domains without native execution
+      shell: bash
+      run: 'set -euo pipefail
+
+        python -I -B -VV > "$IDNA_BASE/python-provider.txt"
+
+        /usr/bin/timeout --signal=TERM --kill-after=10s 600s python -I -B "$IDNA_BASE/capture_idna_original.py" --pinned-sources
+        "$IDNA_BASE/original" --output "$IDNA_BASE/observations" > "$IDNA_BASE/capture.stdout" 2> "$IDNA_BASE/capture.stderr"
+
+        sha256sum tools/ci/check_changed_files.py tools/ci/tests/test_changed_files.py rust/Cargo.lock > "$IDNA_BASE/source-files.after.sha256"
+
+        cmp "$IDNA_BASE/source-files.before.sha256" "$IDNA_BASE/source-files.after.sha256"
+
+        git status --porcelain=v1 > "$IDNA_BASE/source-status.after.txt"
+
+        cmp "$IDNA_BASE/source-status.before.txt" "$IDNA_BASE/source-status.after.txt"
+
+        sha256sum "$IDNA_BASE/observations/manifest.json" > "$IDNA_BASE/original-manifest.sha256"
+
+        du -sm "$IDNA_BASE" > "$IDNA_BASE/artifact-size-mib.txt"
+
+        test "$(cut -f1 "$IDNA_BASE/artifact-size-mib.txt")" -le 132
+
+        '
+    - name: Retain original observations and provider/source receipts
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: changed-files-idna-original-296
+        path: ${{ runner.temp }}/changed-files-idna-original-296/
+        retention-days: 14
+        include-hidden-files: true
+        if-no-files-found: warn
