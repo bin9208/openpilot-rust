@@ -12,15 +12,53 @@ from updated_fixtures import git, normalize, seed, setup
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def selected_remote_commands(commands):
+  """Expand only #419's exact origin-fixture metadata/discovery differences.
+
+  The fixture begins on dev and each overlay mount recopies that active tree.
+  Unlike filtering native commands, building the full expected sequence also
+  detects missing, extra, reordered or wrongly scoped metadata operations.
+  """
+  merged = '<ROOT>/data/stage/merged'
+  branch = 'dev'
+  expected = []
+
+  def command(argv):
+    return {'argv': argv, 'cwd': merged}
+
+  options = [command(['git', 'config', key, value]) for key, value in [
+    ('core.trustctime', 'false'), ('core.checkStat', 'minimal'),
+    ('protocol.version', '2'), ('gc.auto', '0'), ('gc.autoDetach', 'false'),
+  ]]
+  fetch_setup = options + [command(['git', 'config', '--replace-all', 'remote.origin.fetch', '+refs/heads/*:refs/remotes/origin/*'])]
+  for index, item in enumerate(commands):
+    argv = item['argv']
+    if argv[:4] == ['sudo', 'mount', '-t', 'overlay']:
+      branch = 'dev'
+    if item == command(['git', 'ls-remote', 'origin', 'HEAD']) or commands[index:index + len(fetch_setup)] == fetch_setup:
+      expected.extend([
+        command(['git', 'rev-parse', '--abbrev-ref', 'HEAD']),
+        command(['git', 'config', '--get', f'branch.{branch}.remote']),
+        command(['git', 'remote', 'get-url', 'origin']),
+      ])
+    if item == command(['git', 'ls-remote', '--heads']):
+      item = command(['git', 'ls-remote', '--heads', 'origin'])
+    expected.append(item)
+    if item['cwd'] == merged and argv[:5] == ['git', 'checkout', '--force', '--no-recurse-submodules', '-B']:
+      branch = argv[5]
+  return expected
+
+
 def assert_equivalent(source, native):
   # #290/#297: native initialization recreates disposable overlay directories
   # internally, preserving the shared transaction lock and complete rollbacks.
-  # Only this exact obsolete command differs; every other field/order is strict.
+  # #419 additionally expands exact remote-selection reads and explicit heads.
+  # Every other field and the complete resulting command order remain strict.
   obsolete = {'argv': ['sudo', 'rm', '-rf', '<ROOT>/data/stage'], 'cwd': None}
   removed = sum(command == obsolete for command in source['commands'])
   assert removed > 0, 'source fixture did not exercise staging initialization'
-  expected = dict(source, commands=[command for command in source['commands'] if command != obsolete])
-  assert native == expected, 'source/native mismatch outside preserved staging-root lifecycle'
+  expected = dict(source, commands=selected_remote_commands([command for command in source['commands'] if command != obsolete]))
+  assert native == expected, 'source/native mismatch outside documented staging/selected-remote differences'
   return removed
 
 

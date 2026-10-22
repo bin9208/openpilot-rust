@@ -532,3 +532,23 @@ fn unsupported_remote_transports_are_rejected_before_remote_io() {
         assert_rejected(|f| f.config("remote.origin.url", url));
     }
 }
+
+#[test]
+fn local_instead_of_mapping_is_rejected_before_remote_io() {
+    assert_rejected(|f| f.config(&format!("url.{}.insteadOf", f.origin), ORIGIN_URL));
+}
+
+#[test]
+fn unsupported_instead_of_mapping_is_rejected_before_remote_io() {
+    assert_rejected(|f| f.config("url.ext::false.insteadOf", ORIGIN_URL));
+}
+
+#[test]
+fn option_like_remote_name_is_rejected_without_origin_fallback() {
+    assert_rejected(|f| f.config("branch.main.remote", "--upload-pack=false"));
+}
+
+#[test]
+fn whitespace_remote_name_is_rejected_without_origin_fallback() {
+    assert_rejected(|f| f.config("branch.main.remote", "origin "));
+}

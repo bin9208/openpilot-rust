@@ -141,22 +141,57 @@ impl<'a> Updater<'a> {
         }
         Ok(())
     }
+    fn update_remote(&mut self, path: &Path) -> Result<String, Error> {
+        let branch = self.get_branch(path)?;
+        let remote = match self.context.commands.run(
+            &args(&["git", "config", "--get", &format!("branch.{branch}.remote")]),
+            Some(path),
+        ) {
+            Ok(value) => value.strip_suffix('\n').unwrap_or(&value).to_owned(),
+            // Only an absent branch setting permits the conventional fallback.
+            Err(Error::Command { code: 1, .. }) => "origin".into(),
+            Err(error) => return Err(error),
+        };
+        if remote.is_empty()
+            || remote == "."
+            || remote.starts_with('-')
+            || !remote
+                .bytes()
+                .all(|c| c.is_ascii_alphanumeric() || b"_./-".contains(&c))
+        {
+            return Err(Error::Contract("unsupported update remote name"));
+        }
+        // get-url requires a configured remote and expands insteadOf mappings.
+        // Validate that effective fetch URL, rather than trusting a named alias.
+        let url = self
+            .context
+            .commands
+            .run(&args(&["git", "remote", "get-url", &remote]), Some(path))?;
+        if !supported_remote_url(url.strip_suffix('\n').unwrap_or(&url)) {
+            return Err(Error::Contract(
+                "update remote must use a supported network URL",
+            ));
+        }
+        Ok(remote)
+    }
     pub fn check_for_update(&mut self) -> Result<(), Error> {
         report::info(self.context.logger, "checking for updates")?;
         let merged = self.context.paths.merged();
-        match self.context.commands.run(
-            &args(&["git", "ls-remote", "origin", "HEAD"]),
-            Some(&merged),
-        ) {
+        let remote = self.update_remote(&merged)?;
+        match self
+            .context
+            .commands
+            .run(&args(&["git", "ls-remote", &remote, "HEAD"]), Some(&merged))
+        {
             Ok(_) => self.has_internet = true,
             Err(Error::Command { .. }) => self.has_internet = false,
             Err(error) => return Err(error),
         }
         self.setup_git_options(&merged)?;
-        let output = self
-            .context
-            .commands
-            .run(&args(&["git", "ls-remote", "--heads"]), Some(&merged))?;
+        let output = self.context.commands.run(
+            &args(&["git", "ls-remote", "--heads", &remote]),
+            Some(&merged),
+        )?;
         self.branches.clear();
         self.default_none = true;
         for line in output.split('\n') {
@@ -186,6 +221,8 @@ impl<'a> Updater<'a> {
         Ok(())
     }
     pub fn fetch_update(&mut self) -> Result<(), Error> {
+        let merged = self.context.paths.merged();
+        let remote = self.update_remote(&merged)?;
         report::info(
             self.context.logger,
             "attempting git fetch inside staging overlay",
@@ -205,15 +242,14 @@ impl<'a> Updater<'a> {
             )?;
             self.params.put_bool("UpdateAvailable", false)?;
         }
-        let merged = self.context.paths.merged();
         self.setup_git_options(&merged)?;
         self.context.commands.run(
             &args(&[
                 "git",
                 "config",
                 "--replace-all",
-                "remote.origin.fetch",
-                "+refs/heads/*:refs/remotes/origin/*",
+                &format!("remote.{remote}.fetch"),
+                &format!("+refs/heads/*:refs/remotes/{remote}/*"),
             ]),
             Some(&merged),
         )?;
@@ -221,7 +257,7 @@ impl<'a> Updater<'a> {
         let output = self
             .context
             .commands
-            .run(&args(&["git", "fetch", "origin", &branch]), Some(&merged))?;
+            .run(&args(&["git", "fetch", &remote, &branch]), Some(&merged))?;
         report::info(self.context.logger, &format!("git fetch success: {output}"))?;
         report::info(self.context.logger, "git reset in progress")?;
         let commands = [
@@ -238,7 +274,7 @@ impl<'a> Updater<'a> {
                 "git",
                 "branch",
                 "--set-upstream-to",
-                &format!("origin/{branch}"),
+                &format!("{remote}/{branch}"),
             ]),
             args(&["git", "reset", "--hard"]),
             args(&["git", "clean", "-xdff"]),
@@ -270,6 +306,33 @@ impl<'a> Updater<'a> {
         report::info(self.context.logger, "finalize success!")?;
         Ok(())
     }
+}
+fn supported_remote_url(value: &str) -> bool {
+    if value
+        .bytes()
+        .any(|c| c.is_ascii_control() || c.is_ascii_whitespace())
+    {
+        return false;
+    }
+    if value.contains("://") {
+        return url::Url::parse(value).is_ok_and(|url| {
+            matches!(url.scheme(), "https" | "http" | "ssh" | "git")
+                && url.host_str().is_some()
+                && url.path().len() > 1
+        });
+    }
+    // Git's scp-style SSH syntax: [user@]host:path. A local path or remote
+    // helper (such as ext::command) must not be interpreted as this form.
+    value.split_once(':').is_some_and(|(host, path)| {
+        !host.is_empty()
+            && !matches!(host, "." | "..")
+            && host
+                .bytes()
+                .all(|c| c.is_ascii_alphanumeric() || b"@._-".contains(&c))
+            && !host.starts_with('-')
+            && !path.is_empty()
+            && !path.starts_with(':')
+    })
 }
 fn short(value: &str) -> String {
     value.chars().take(7).collect()

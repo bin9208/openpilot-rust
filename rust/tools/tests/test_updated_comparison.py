@@ -1,4 +1,4 @@
-"""Keep the updater's single intentional lifecycle difference narrowly scoped."""
+"""Keep the updater's lifecycle and selected-remote differences narrowly scoped."""
 import copy
 import os
 
@@ -24,6 +24,89 @@ def traces():
 def test_only_exact_obsolete_staging_root_removal_is_allowed():
   source, native = traces()
   assert assert_equivalent(source, native) == 1
+
+
+def remote_traces():
+  source, native = traces()
+  cwd = '<ROOT>/data/stage/merged'
+
+  def commands(arguments):
+    return [{'argv': argv, 'cwd': cwd} for argv in arguments]
+
+  selection = [
+    ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+    ['git', 'config', '--get', 'branch.dev.remote'],
+    ['git', 'remote', 'get-url', 'origin'],
+  ]
+  options = [
+    ['git', 'config', 'core.trustctime', 'false'],
+    ['git', 'config', 'core.checkStat', 'minimal'],
+    ['git', 'config', 'protocol.version', '2'],
+    ['git', 'config', 'gc.auto', '0'],
+    ['git', 'config', 'gc.autoDetach', 'false'],
+  ]
+  probe = [['git', 'ls-remote', 'origin', 'HEAD']]
+  fetch = [
+    ['git', 'config', '--replace-all', 'remote.origin.fetch', '+refs/heads/*:refs/remotes/origin/*'],
+    ['git', 'fetch', 'origin', 'dev'],
+  ]
+  source['commands'] = source['commands'][:1] + commands(probe + options + [['git', 'ls-remote', '--heads']] + options + fetch)
+  native['commands'] = commands(selection + probe + options + [['git', 'ls-remote', '--heads', 'origin']] + selection + options + fetch)
+  return source, native
+
+
+def test_exact_selection_reads_and_explicit_origin_heads_are_allowed():
+  source, native = remote_traces()
+  assert assert_equivalent(source, native) == 1
+
+
+@pytest.mark.parametrize('reset_overlay', [False, True])
+def test_selection_exception_tracks_checkout_and_overlay_branch(reset_overlay):
+  source, native = remote_traces()
+  cwd = '<ROOT>/data/stage/merged'
+  transition = [{'argv': ['git', 'checkout', '--force', '--no-recurse-submodules', '-B', 'release-tizi', 'FETCH_HEAD'], 'cwd': cwd}]
+  if reset_overlay:
+    transition.append({'argv': ['sudo', 'mount', '-t', 'overlay', '-o', 'owned-options', 'none', cwd], 'cwd': None})
+  source['commands'].extend(copy.deepcopy(transition))
+  native['commands'].extend(copy.deepcopy(transition))
+  source['commands'].append({'argv': ['git', 'ls-remote', 'origin', 'HEAD'], 'cwd': cwd})
+  native['commands'].extend([
+    {'argv': ['git', 'rev-parse', '--abbrev-ref', 'HEAD'], 'cwd': cwd},
+    {'argv': ['git', 'config', '--get', 'branch.dev.remote' if reset_overlay else 'branch.release-tizi.remote'], 'cwd': cwd},
+    {'argv': ['git', 'remote', 'get-url', 'origin'], 'cwd': cwd},
+    {'argv': ['git', 'ls-remote', 'origin', 'HEAD'], 'cwd': cwd},
+  ])
+  assert assert_equivalent(source, native) == 1
+  native['commands'][-3]['argv'][-1] = 'branch.wrong.remote'
+  with pytest.raises(AssertionError):
+    assert_equivalent(source, native)
+
+
+@pytest.mark.parametrize('change', ['branch', 'remote', 'cwd', 'missing', 'extra', 'reordered', 'implicit-heads', 'other-heads', 'write', 'snapshot'])
+def test_remote_exception_rejects_any_other_change(change):
+  source, native = remote_traces()
+  if change == 'branch':
+    native['commands'][1]['argv'][-1] = 'branch.other.remote'
+  elif change == 'remote':
+    native['commands'][2]['argv'][-1] = 'rust'
+  elif change == 'cwd':
+    native['commands'][0]['cwd'] = '<ROOT>/base'
+  elif change == 'missing':
+    native['commands'].pop(1)
+  elif change == 'extra':
+    native['commands'].insert(0, copy.deepcopy(native['commands'][0]))
+  elif change == 'reordered':
+    native['commands'][1:3] = native['commands'][1:3][::-1]
+  elif change == 'implicit-heads':
+    native['commands'][9]['argv'].pop()
+  elif change == 'other-heads':
+    native['commands'][9]['argv'][-1] = 'rust'
+  elif change == 'write':
+    native['commands'][1]['argv'] = ['git', 'config', 'branch.dev.remote', 'origin']
+  else:
+    native['snapshots'][0]['params']['UpdateAvailable'] = '30'
+  with pytest.raises(AssertionError):
+    assert_equivalent(source, native)
 
 
 @pytest.mark.parametrize('change', ['snapshot', 'params', 'agnos', 'command', 'cwd', 'extra', 'unknown'])

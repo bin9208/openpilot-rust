@@ -5,6 +5,10 @@ on:
     paths:
       - .github/workflows/update-remote-419.yml
       - rust/crates/updated/**
+      - rust/tools/check_updated.py
+      - rust/tools/updated_fixtures.py
+      - rust/tools/tests/test_updated_comparison.py
+      - rust/tools/tests/test_updated_remote_fixture.py
 permissions:
   contents: read
 concurrency:
@@ -21,6 +25,7 @@ jobs:
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     defaults:
       run:
         working-directory: rust
@@ -30,6 +35,9 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
       - name: Reserve capacity before dependency installation
         run: |
           sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
@@ -40,6 +48,8 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           sudo apt-get update
           sudo apt-get install -y capnproto libcapnp-dev pkg-config g++ libzmq3-dev
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 pytest==9.0.2
       - name: Check affected Rust formatting
         run: cargo fmt -p openpilot-updated --check
       - name: Strict affected lint
@@ -47,11 +57,26 @@ jobs:
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
           cargo clippy -p openpilot-updated --all-targets --locked -- -D warnings
-      - name: Run remote regressions against the real updater
+      - name: Run full updater package including remote regressions
         if: ${{ !cancelled() && steps.lint.outcome != 'skipped' }}
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          cargo test -p openpilot-updated --locked --test update_remote -- --nocapture
+          cargo test -p openpilot-updated --all-targets --locked -- --nocapture
+      - name: Verify source comparison remains strict and transport fixture uses real Git
+        run: python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=tools/tests tools/tests/test_updated_comparison.py tools/tests/test_updated_remote_fixture.py -q
+      - name: Compare original updater behavior on owned Git repositories
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo build -p openpilot-updated -p openpilot-process-supervision --bins --examples --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 1024
+          python tools/build_params_python.py --output "$RUNNER_TEMP/updated-params-binding"
+          python tools/check_updated.py --binary "$PWD/target/debug/examples/updated_trace" --launcher "$PWD/target/debug/openpilot-process-child" --binding "$RUNNER_TEMP"/updated-params-binding/params_pyx*.so --output "$RUNNER_TEMP/updated-source"
+      - name: Retain focused original/native comparison evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: updater-remote-419-source-comparison
+          path: ${{ env.CI_JOB_TEMP }}/updated-source/
       - uses: ./.github/actions/job-temp
         if: always()
         with: {cleanup: 'true'}
