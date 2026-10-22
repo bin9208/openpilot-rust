@@ -571,67 +571,32 @@ fn helper_inherits_stdin_while_outputs_are_captured() {
 }
 
 #[test]
-fn unchanged_original_waits_for_retained_stdout_and_stderr() {
-    // This invokes the retained original in CI, not a rewritten source policy.
-    let python = std::env::var_os("MODEM_SOURCE_PYTHON").expect("CI source Python prerequisite");
-    let tools = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tools");
-    for mode in ["stdout", "stderr", "invaliderr"] {
-        let fixture = Fixture::new(mode);
-        let config_path = fixture.root.path().join("config.json");
-        fs::write(&config_path, serde_json::to_vec(&fixture.config).unwrap()).unwrap();
-        let output = fs::File::create(fixture.root.path().join("source.stdout")).unwrap();
-        let log = fs::File::create(fixture.root.path().join("source.stderr")).unwrap();
-        let mut source = Daemon(Command::new(&python).arg("-c").arg(
-            "import json,sys; sys.path.insert(0,sys.argv[1]); from modem_source import load; m,modem=load(json.load(open(sys.argv[2]))); print(json.dumps(modem._poll_iface()))"
-        ).arg(&tools).arg(config_path).stdout(output).stderr(log).stdin(Stdio::null()).spawn().unwrap());
-        let source_id = Identity::open(Pid::from_child(&source.0));
-        let identities = if mode == "invaliderr" {
-            None
-        } else {
-            let identities = fixture.acknowledged();
-            fixture.release();
-            Some(identities)
-        };
-        wait_for(
-            || source_id.exited(),
-            Duration::from_secs(5),
-            "original bounded interface request",
-        );
-        assert!(source.0.wait().unwrap().success());
+fn captured_original_waits_for_retained_stdout_and_stderr() {
+    // Independently captured before Python retirement. Native ownership/deadline
+    // assertions above stay live, including the historical Rust EOF regression.
+    let reference: serde_json::Value =
+        serde_json::from_slice(include_bytes!("fixtures/original-source-reference.json")).unwrap();
+    assert_eq!(reference["schema"], 1);
+    assert_eq!(reference["provenance"]["run"], 39_715_283_281_u64);
+    assert_eq!(reference["provenance"]["artifact"], 12_399_150_770_u64);
+    assert_eq!(
+        reference["provenance"]["zip_sha256"],
+        "efcb43bf1ab90f9345bf95a12064f7ccdb411da44a984d4b63051fbe42ec7d2a"
+    );
+    assert_eq!(reference["provenance"]["serial_version"], "3.5");
+    let rows = reference["original_reference_modes"].as_array().unwrap();
+    assert_eq!(rows.len(), 3);
+    for (row, mode) in rows.iter().zip(["stdout", "stderr", "invaliderr"]) {
+        assert_eq!(row["mode"], mode);
+        assert_eq!(row["original_exit_code"], 0);
+        assert_eq!(row["stdout_utf8"], "{}\n");
+        assert_eq!(row["original_result"], serde_json::json!({}));
+        assert_eq!(row["original_only"], true);
+        assert_eq!(row["direct_child_reaped"], true);
         assert_eq!(
-            fs::read_to_string(fixture.root.path().join("source.stdout"))
-                .unwrap()
-                .trim(),
-            "{}"
+            row["descendant_alive_after_direct_child_exit"],
+            mode != "invaliderr"
         );
-        if let Some((leader, descendant)) = identities {
-            assert_gone(&leader, "original direct-child reap");
-            // Original direct-child timeout leaves this child; never relabel that inherited
-            // behavior as native parity. The identity guard cleans it AFTER observation.
-            assert!(
-                !descendant.exited(),
-                "retained original does not own descendants"
-            );
-        }
-        if let Some(capture) = std::env::var_os("MODEM_SOURCE_REFERENCE_CAPTURE") {
-            let directory = PathBuf::from(capture).join(mode);
-            fs::create_dir(&directory).expect("new original-reference capture directory");
-            let stdout = fs::read(fixture.root.path().join("source.stdout")).unwrap();
-            let stderr = fs::read(fixture.root.path().join("source.stderr")).unwrap();
-            fs::write(directory.join("stdout"), &stdout).unwrap();
-            fs::write(directory.join("stderr"), &stderr).unwrap();
-            let record = serde_json::json!({
-                "mode":mode,"original_exit_code":0,"stdout_bytes":stdout,
-                "stderr_bytes":stderr,"direct_child_reaped":true,
-                "descendant_alive_after_direct_child_exit":mode != "invaliderr",
-                "invalid_stderr_was_rejected":mode == "invaliderr",
-                "original_result":{},"original_only":true
-            });
-            fs::write(
-                directory.join("observation.json"),
-                serde_json::to_vec_pretty(&record).unwrap(),
-            )
-            .unwrap();
-        }
+        assert_eq!(row["invalid_stderr_was_rejected"], mode == "invaliderr");
     }
 }

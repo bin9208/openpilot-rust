@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 529);
+    assert_eq!(text.matches(marker).count(), 533);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -348,6 +348,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut kalman_generators = vec![];
     let mut kalman_corpora = vec![];
     let mut hardware_info_native = vec![];
+    let mut hardwared_native = vec![];
     let model_family_start = lines
         .iter()
         .position(|line| *line == "  model-family-retirement:")
@@ -433,6 +434,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 || step == Some(&"      - name: Replay complete original HardwareInfo observations in both source-absent roots")
             {
                 hardware_info_native.push(tail.to_owned());
+                continue;
+            }
+            if step == Some(&"      - name: Verify retired hardwared cases and continuous native state publication") {
+                hardwared_native.push(tail.to_owned());
                 continue;
             }
             if step == Some(&"      - name: Verify retired updater controller against all original lifecycle cases") {
@@ -1010,6 +1015,15 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             " --path \"$GITHUB_WORKSPACE\" --growth-mib 2048",
             " --path \"$GITHUB_WORKSPACE\" --growth-mib 1024",
             " --path \"$GITHUB_WORKSPACE\" --growth-mib 1024",
+            " --path \"$RUNNER_TEMP\" --growth-mib 2048",
+        ]
+    );
+    assert_eq!(
+        hardwared_native,
+        [
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 2048",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 512",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 512",
             " --path \"$RUNNER_TEMP\" --growth-mib 2048",
         ]
     );

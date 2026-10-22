@@ -1115,13 +1115,13 @@ fn modem_requires_real_baseline_failure_and_fixed_helper_lifetimes() {
         "grep -F 'test result: FAILED'",
         "must time out, not accept leader's valid inet line",
         "MODEM_PROCESS_CHILD_BINARY=",
-        "MODEM_SOURCE_PYTHON=",
+        "cp rust/crates/modem/tests/fixtures/original-source-reference.json",
         "--features helper-lifetime-tests --test helper_lifetime --locked",
         "--features openpilot-modem/helper-lifetime-tests -p openpilot-process-supervision --all-targets --locked -- -D warnings",
     ], &["helper-lifetime-tests"], false);
 }
 #[test]
-fn platform_runtime_requires_original_source_and_live_native_processes() {
+fn platform_runtime_requires_original_manager_modem_and_retired_hardwared_proof() {
     job_check(
         "platform-runtime",
         &[
@@ -1133,12 +1133,22 @@ fn platform_runtime_requires_original_source_and_live_native_processes() {
             "examples/manager_adapters",
             "check_modem.py",
             "check_modem_process_boundary.py",
-            "check_hardwared.py",
-            "check_hardwared_daemon.py",
+            "for name in check_hardwared.py hardwared_source.py check_hardwared_daemon.py; do",
+            "--features hardwared-qa-native --bin check-hardwared --bin check-hardwared-daemon",
+            "--features hardwared-qa-native --lib hardwared_ -- --nocapture",
+            "--test hardwared_capture --test hardwared_qa --test hardwared_retirement",
+            "HARDWARED_REQUIRE_RETIRED=1",
+            "HARDWARED_RETIREMENT_OUTPUT=",
+            "same_native_clis_preserve_all_original_cases_and_live_ipc_in_both_roots",
+            "cmp -s \"$seals/before.sha256\" \"$seals/after.sha256\"",
         ],
-        &["python rust/tools/check_"],
+        &["python rust/tools/check_", "HARDWARED_REQUIRE_RETIRED=1"],
         false,
     );
+    let data = workflow();
+    let run = commands(&data["jobs"]["platform-runtime"]);
+    assert!(!run.contains("python rust/tools/check_hardwared.py"));
+    assert!(!run.contains("python rust/tools/check_hardwared_daemon.py"));
 }
 #[test]
 fn workspace_checks_run_without_waiting_for_runtime_jobs() {

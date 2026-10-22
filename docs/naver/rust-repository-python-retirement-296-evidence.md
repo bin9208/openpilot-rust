@@ -6377,3 +6377,76 @@ A narrow original-semantic comparator fix is required, not an error-tolerance
 increase. Independent review also identifies original post-exit log/stats drain
 and raw-before-decode packet evidence ordering; both are being repaired before
 any native tool deletion. Hardwared remains pending.
+
+
+### Complete Hardwared predelete acceptance, native maintained replacement prepared
+
+Hosted39715118940/job119615258426 atfd978e789398b8c27a54b221df6023da09beb328,
+workflow3badda2825fd847973fa5a159d16e4907e34f608, passes build/8inline and6capture
+controls/strictClippy/workspacefmt and complete two-root original-trace/liveIPC
+outer. Parent audits artifact12398269946/300618B/all220CRCs/SHA
+057f8836122f3d47e65abac7cff87fd988a8f55595863ae7ad4503bbf1cafc86.
+Both roots preserve12cases/891inputs/890observations, five live transitions and
+native exit0; both CLI stdout JSONs exactly equal their full result files.
+Configured runner repeats12cases/890observations. Twelve CLI admissions,
+six source-reappearance controls and held-ELF before/after identities pass.
+Actual originals are live in this proof; private originals are absent. No
+postdelete acceptance is inferred. kmsg markers are retained during each phase,
+since the owned regular file is truncated by each native write; shutdown log/
+stats are drained after exit. Actual/private markers and all receipts checked.
+
+The maintained platform step now requires native checkers/units/Clippy/full
+same-ELF two-root proof with require-retired=1 and retained strace/ELF seals.
+Original manager/modem comparisons and #398 old-Rust EOF failure/current helper
+regressions remain. Policy preserves mandatory original comparisons, adds
+mandatory native execution, and rejects either old hardwared Python invocation.
+Four explicitly classified reserves raise529to533; old177aggregate/hash unchanged.
+All three hardwared Python tools are deleted in the current candidate; acceptance
+counts stay262/3/3315 until the complete maintained postdelete job passes.
+
+### Fresh independent modem source/plan/provider and original helper reference
+
+39715283281 atca0bd03a16362fdaeb69339c1268d20d92ee5b64, workflow
+06b241263d6fc7278ee92c414aa48b29e1b3b69b, succeeds. Parent audits complete
+artifact12399150770/29019B/all44CRCs/SHA
+efcb43bf1ab90f9345bf95a12064f7ccdb411da44a984d4b63051fbe42ec7d2a.
+All13fresh original-source outputs exactly equal the earlier source-only oracle;
+26paired original/native request plans cover40original operations. All ten
+source pins, complete pyserial3.5 source/provider receipts, packages and native
+ELF before/after seals remain identical. The original three pipe-reference modes
+stdout/stderr/invaliderr execute successfully, with stdout{} and direct-child/
+unowned-descendant/invalid-stderr assertions intact. Earlier39714940036 captured
+all data but failed the final native ELF check because Cargo test rebuilt targets
+after initial pins; the corrected recipe prebuilds test targets before sealing.
+Parent audited that failed28496B/42CRC artifact12398633044/SHA
+6d5622050e2f5be6bf628bb9093df855f6192322c50b3d9ad9d540aa912d7bc7;
+its overall failure was never accepted.
+
+The remaining embedded Python modem_source reference in helper_lifetime.rs is
+replaced by derived original-only semantic observations and captured provenance,
+with raw stderr retained only outside Git (length/hash in the fixture). All live
+native ownership/deadline assertions and old-Rust EOF negative remain unchanged.
+The historical baseline gets the same immutable reference fixture before build.
+Full maintained #398 execution is pending; no embedded-site count is reduced yet.
+Modem QA native leaf/outer remain candidates; initial39715658566 at64e2a25c0
+fails compilation before any functional proof. Complete diagnostics are being
+repaired; all six original modem runtime/tool sources are still live.
+
+### Current Fast routing and first-kernel single-call evidence
+
+Exact-source full Fast routing39714146176 at422671ae50939f1f3e4e92c865b2e867548bff4f,
+workflow6ea85cc14af6f5ac377e360a6b6cd28b653964fe, succeeds after the stager
+count/native-retirement-policy repair. Current complete branch Fast remains
+required; #478 stays open. New published faeef integration was canceled rather
+than accepted. Its Rust workflow is still separate current-source evidence.
+
+39712961193/d610 single-call probe on actualEPYC9V45 reproduces retained original
+and native full1382400B outputs with their respective recorded znver3/generic
+recompiles.56half values differ, first byte121842. Both instrumented IRs perturb
+half outputs, so no pre-half measurements are valid. Parent independently audits
+artifact12398000737/55120979B/all572CRCs/SHA
+b347a0972c7a34ff1e8c08d287208771f196b1260424a40b946c7100ecb9fd26,
+complete output pairs, receipts and FP controls. Unchanged-binary hardware-watch
+probe39714658646 fails inside GDB embedded Python imports before numerical
+execution; environment-isolated retry8c34aec442a7c608c39fb9e52209d970b2abda64
+retains exact inferior/provider/ISA/output correspondence gates. #476 remains open.

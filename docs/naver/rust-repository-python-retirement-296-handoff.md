@@ -220,3 +220,30 @@ comparison; private root not reached. Explicit USB three-field exact summaries
 preserve immutable original CLI shape; complete reports and packet/cleanup/seal
 assertions remain. Original-source regression and full USB retry pending; no
 source acceptance or #480 closure. Parent selected25 members/CRC, not full ZIP.
+
+
+## Latest native platform candidates
+
+Hardwared predelete39715118940/fd978 succeeds completely: parent full220CRC/
+300618B artifact12398269946 audit, both12/891/890trace roots+two live roots,
+runner12, CLI12, reappearance6, finalELFreceipt equality. Actual3tools are now
+deleted and maintained platform native gate/policy533guards prepared. Counts
+remain262 until complete postdelete platform+policy proof; preserve all manager/
+modem/#398 checks. Parent caught and corrected scratch policy selectors so
+original Python comparisons AND new native Hardwared step stay mandatory.
+
+Modem fresh original39715283281/ca0 succeeds: full44CRC29019B artifact12399150770,
+13freshsourceoutputs equalold,26pairedplans/40ops,10source+pyserial3.5provider+
+ELFbeforeafter proof. Derived3mode helper reference replaces one embeddedPython
+caller; full#398test and historicalbaselinefixturecopy proof pending, no observed
+embedded-site count reduction accepted yet. Modemleaf+outer64e2 exists; initial
+39715658566compile35errors, agent repairs missingroot/OSargv/Seek/API closure.
+All6originalmodemruntime/tool sources remain live; private6absence is candidate
+proof only. Nextacceptance must state5devtools+runtime1separately ifall6retire.
+
+ExactfullFast routing39714146176/422 passes; #478 awaiting fullpublishedFast.
+Currentissuebranchremote is faeef14da; newer local commits need coherentpush.
+#476singlecall39712961193 is realcomparison with56half differences; instrumented
+prehalf observations INVALID. Parent572CRC55MB audit. GDB39714658646 fails before
+inferior; env-isolated hardware-watch retry8c34aec is pending. No production
+numerical fix. USBtwo-root39713225978/faeef runs sixcases/root; finalproof pending.

@@ -4502,7 +4502,6 @@ jobs:
       - name: Reproduce old modem EOF failure and require owned helper cleanup
         run: |
           set -euo pipefail
-          export MODEM_SOURCE_PYTHON="$(command -v python)"
           export MODEM_HELPER_EVIDENCE="$RUNNER_TEMP/platform-runtime/modem-helper-lifetime"
           export CARGO_TARGET_DIR="$GITHUB_WORKSPACE/rust/target"
           export MODEM_PROCESS_CHILD_BINARY="$CARGO_TARGET_DIR/debug/openpilot-process-child"
@@ -4514,6 +4513,7 @@ jobs:
           mkdir -p "$baseline/rust/crates/modem/tests/fixtures"
           cp rust/crates/modem/tests/helper_lifetime.rs "$baseline/rust/crates/modem/tests/"
           cp rust/crates/modem/tests/fixtures/helper-entry.sh "$baseline/rust/crates/modem/tests/fixtures/"
+          cp rust/crates/modem/tests/fixtures/original-source-reference.json "$baseline/rust/crates/modem/tests/fixtures/"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           cargo build --manifest-path "$baseline/rust/Cargo.toml" -p openpilot-modem -p openpilot-process-supervision --bins --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
@@ -4529,10 +4529,34 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml -p openpilot-modem --features helper-lifetime-tests --test helper_lifetime --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-modem --features openpilot-modem/helper-lifetime-tests -p openpilot-process-supervision --all-targets --locked -- -D warnings
-      - name: Compare hardware policy and continuous native state publication
+      - name: Verify retired hardwared cases and continuous native state publication
         run: |
-          python rust/tools/check_hardwared.py rust/target/debug/examples/hardwared_trace "$RUNNER_TEMP/platform-runtime/hardwared-source"
-          python rust/tools/check_hardwared_daemon.py --binary "$PWD/rust/target/debug/openpilot-hardwared" --output "$RUNNER_TEMP/platform-runtime/hardwared-ipc"
+          set -euo pipefail
+          for name in check_hardwared.py hardwared_source.py check_hardwared_daemon.py; do
+            test ! -e "rust/tools/$name" && test ! -L "rust/tools/$name"
+          done
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features hardwared-qa-native --bin check-hardwared --bin check-hardwared-daemon
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features hardwared-qa-native --lib hardwared_ -- --nocapture
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features hardwared-qa-native --test hardwared_capture --test hardwared_qa --test hardwared_retirement -- --nocapture
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo +1.94.0 clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features hardwared-qa-native --lib --bin check-hardwared --bin check-hardwared-daemon --test hardwared_capture --test hardwared_qa --test hardwared_retirement -- -D warnings
+          export HARDWARED_REQUIRE_RETIRED=1
+          export HARDWARED_TRACE_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/hardwared_trace"
+          export HARDWARED_DAEMON_BINARY="$GITHUB_WORKSPACE/rust/target/debug/openpilot-hardwared"
+          export HARDWARED_PROCESS_LAUNCHER="$GITHUB_WORKSPACE/rust/target/debug/openpilot-process-child"
+          export HARDWARED_RETIREMENT_OUTPUT="$RUNNER_TEMP/platform-runtime/hardwared-native"
+          seals="$RUNNER_TEMP/platform-runtime/hardwared-seals"
+          mkdir -p "$seals"
+          sha256sum "$HARDWARED_TRACE_BINARY" "$HARDWARED_DAEMON_BINARY" "$HARDWARED_PROCESS_LAUNCHER" \
+            "$GITHUB_WORKSPACE/rust/target/debug/check-hardwared" "$GITHUB_WORKSPACE/rust/target/debug/check-hardwared-daemon" > "$seals/before.sha256"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 2048
+          strace -ff -s 16384 -o "$seals/retirement.trace" -e trace=execve,execveat,clone,fork,vfork,exit,exit_group \
+            cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features hardwared-qa-native --test hardwared_retirement same_native_clis_preserve_all_original_cases_and_live_ipc_in_both_roots -- --ignored --exact --nocapture
+          sha256sum "$HARDWARED_TRACE_BINARY" "$HARDWARED_DAEMON_BINARY" "$HARDWARED_PROCESS_LAUNCHER" \
+            "$GITHUB_WORKSPACE/rust/target/debug/check-hardwared" "$GITHUB_WORKSPACE/rust/target/debug/check-hardwared-daemon" > "$seals/after.sha256"
+          cmp -s "$seals/before.sha256" "$seals/after.sha256"
       - name: Retain platform source comparison and native runtime evidence
         if: always()
         uses: actions/upload-artifact@v6
