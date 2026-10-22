@@ -106,9 +106,6 @@ jobs:
         with: {distribution: temurin, java-version: '17'}
       - name: Android Jetlink core regressions
         run: bash tools/jetlink_android/gradlew -p tools/jetlink_android :core:test :runtime:test
-      - uses: ./.github/actions/job-temp
-        if: always()
-        with: {cleanup: 'true'}
 
       - uses: actions/setup-node@v6
         with: {node-version: '24'}
@@ -136,6 +133,9 @@ jobs:
           name: jetlink-web-assets-${{ github.sha }}
           path: ${{ env.CI_JOB_TEMP }}/jetlink-web-assets.patch
           if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
 
   check_user_docs:
     needs: [route, fast-checks]
