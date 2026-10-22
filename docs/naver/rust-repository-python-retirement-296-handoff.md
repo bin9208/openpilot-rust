@@ -437,3 +437,26 @@ It builds/runs no Rust deleter and will confirm actual28scenario/78row counts,
 original/corrected #298 snapshots and three private-tmpfs loop cycles. Those
 counts are prospective until actual hosted evidence. Worker implements the native
 controller separately without generating its expected observations from Rust.
+
+R9u39789488992/workflow43beb8ad6 succeeds at9bd81fcd7. Parent authenticates
+artifact12431965287:3247639B/SHA c702b36e646431e4a6090ef25de014ef38e64defb801ddab6ea3d12ded0febf1,
+all3403CRCs/3402content seals+24explicit excluded nodes. Actual4lifecycle,
+7units/10integration/9default lifecycle tests and all8positive parity/exec lanes
+pass;304exec=296success+8declared df ENOENT,140chdir,Python exec0. Exact8helper
+admission and route maintained caller are applied with10authenticated deletions.
+Final current-native/source-absence acceptance and inventory update are pending;
+#491 stays open until that gate. #492 is closed after publishedcefa/acceptedR3.
+
+Original deleter39791032084 succeeds: artifact12432035228/29485B/SHA
+4befab6556f7ad324862b731fc631e028da8b94e61553c96d09afe9b03c7e4e2,
+all42CRCs/33seals/8source pins checked independently against exact Git blobs.
+Actual28scenarios/78rows and3original low-space cycles include both #298 histories,
+no native oracle. Native controller/registration candidate is applied; hosted
+4integration/5ownership/strictClippy gate pending. Do not delete its originals
+before that acceptance, future caller/policy and coordinated source closure.
+
+Exact upstream Cargo.toml.orig comment whitespace caused publishedcefa Fast
+119869424733 to fail. Local commit8b5e4a161 preserves the checksum-bound bytes
+with an exact-file whitespace attribute; base diff check now passes. Hold branch
+publication until the coherent native/source-closure batch; don't cancel expensive
+unchanged required CI merely to publish a documentation/status update.

@@ -7855,3 +7855,45 @@ The complete driver continuation is published at workflow
 It requires the accepted exact-source component before any image execution,
 strict genuine model-run/daemon prefix before the full family and original
 startup/USB/source-absence/reappearance gates. Hosted results remain pending.
+
+### Coordinated uploader source closure and native deleter candidate
+
+[R9u 39789488992](https://github.com/bin9208/openpilot-rust/actions/runs/39789488992)
+passes at9bd81fcd7d3bb817243cc8616878eab1c1e9dfd7,
+workflow43beb8ad66b7146db9581df63ade1df24a25a211. Actual INT/TERM replacement
+cases preserve foreign datagram/regular/closed-stream nodes; all4actual lifecycle
+tests,7units/10integration/9default lifecycle tests and strict Clippy pass. The
+complete present/absent manager/runtime comparison passes in both roots with
+unchanged real route/HTTP checks. Artifact12431965287:3247639B/SHA256
+c702b36e646431e4a6090ef25de014ef38e64defb801ddab6ea3d12ded0febf1;
+parent checks all3403CRCs and3402content seals, with24explicit excluded nodes.
+All8parity/exec lanes pass:304exec attempts=296success+8source-authored df ENOENT,
+140separate chdir events, observed Python exec0. Raw argv is retained without
+claiming argv parity. Unsupported kernel/filesystem/socket identity admissions
+remain fail closed. #491 final current-source retirement acceptance stays open.
+
+The coordinated candidate removes8uploader helpers and both route controllers,
+switches the maintained runtime-route caller to Rust and admits only that exact
+closed historical helper roster as absent. Every retained source still requires
+its original hash; reintroduced files, dangling symlinks and wrong historical
+pins reject. Frozen ordinary/logging/sibling observations remain unchanged.
+R3 functional acceptance and R9u original observations are reused separately
+from the pending final current-native/source-absence gate. No inventory credit
+is taken before that gate. #492 is closed after publishedcefa and acceptedR3.
+
+[Original deleter39791032084](https://github.com/bin9208/openpilot-rust/actions/runs/39791032084)
+passes at5fc4e8886/workflowbf0eba28fc04058fd19a85dbe993534187fcb15e.
+Artifact12432035228:29485B/SHA256
+4befab6556f7ad324862b731fc631e028da8b94e61553c96d09afe9b03c7e4e2;
+parent checks42CRCs/33seals and all8source pins against current files and exact
+capture Git blobs. Actual28scenarios/78rows retain both original and independently
+asserted corrected #298 bookmark histories, plus3original low-space cycles;
+zero native deleter executions supply the oracle. The native reference/daemon/
+observer controller, bounded child capture and held-directory/permission guards
+are now candidates for hosted4integration/5ownership tests and strict Clippy.
+Its four Python controller/fixture/test sources and runtime modules remain live.
+
+Publishedcefa Fast119869424733 fails only on an unchanged crates.io manifest's
+trailing comment space. Commit8b5e4a161 adds an exact-file Git attribute to retain
+the authenticated upstream bytes and Cargo checksum; full base diff check passes.
+The remaining source/dependency syntax and final required CI are separate gates.

@@ -44,3 +44,8 @@ receipt는 최대 4MiB이며, JSON11의 `prefix`는 문자열이어야 합니다
 `--cached-admission PATH --cached-admission-sha256 SHA256`을 함께 지정해야 합니다.
 이 검증 자료는 번들과 별개로 신뢰할 수 있는 원본·현재 증거에서 받아야 합니다.
 일반 로드는 캐시 번들을 거부하며, 이 옵션은 차량 설치나 정상 런타임 선택을 바꾸지 않습니다.
+
+개발용 로그 업로드 검사는 `check-uploader-reference`, `check-uploader-logging`,
+`check-uploader-siblings`, `check-manager-log-upload`, `check-runtime-log-upload`을
+사용합니다. 기존 Python 제어기 10개는 제거했으며, 유지 중인 CI가 필요한 Rust 기능과
+실행 파일을 먼저 빌드합니다. 이 전환의 최종 소스 부재 검증은 #296에서 추적합니다.

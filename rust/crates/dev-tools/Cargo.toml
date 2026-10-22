@@ -538,6 +538,7 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
+deleter-check-native = []
 kalman-model-generator-native = []
 kalman-corpus-generator-native = ["dep:libloading", "dep:openpilot-runtime-core", "serde_json/float_roundtrip"]
 ci-receipt-metadata-native = []
@@ -2266,3 +2267,12 @@ required-features = ["uploader-siblings-native"]
 [[test]]
 name = "uploader_lifecycle_check"
 required-features = ["uploader-siblings-native"]
+
+[[bin]]
+name = "check-deleter"
+path = "src/bin/check_deleter.rs"
+required-features = ["deleter-check-native"]
+
+[[test]]
+name = "deleter_check"
+required-features = ["deleter-check-native"]

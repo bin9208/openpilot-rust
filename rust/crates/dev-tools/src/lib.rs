@@ -80,6 +80,8 @@ pub mod cutin_alert_check;
 pub mod dbc_assets;
 #[cfg(feature = "dbc-generator-native")]
 pub mod dbc_generator;
+#[cfg(all(target_os = "linux", feature = "deleter-check-native"))]
+pub mod deleter_check;
 pub mod filter_reference;
 pub mod journald_check;
 pub mod journald_fixture;
