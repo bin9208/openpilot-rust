@@ -14,7 +14,6 @@ jobs:
     timeout-minutes: 35
     env:
       EXPECTED_SOURCE: b53be530319f2920975bf4087886d747feff7539
-      UPLOADER_PROOF: ${{ runner.temp }}/uploader-native-group-296
       RUSTUP_TOOLCHAIN: 1.94.0
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
@@ -28,6 +27,10 @@ jobs:
     - name: Reserve hosted capacity and record exact candidate source
       shell: bash
       run: 'set -euo pipefail
+
+        export UPLOADER_PROOF="$RUNNER_TEMP/uploader-native-group-296"
+
+        printf ''UPLOADER_PROOF=%s\n'' "$UPLOADER_PROOF" >> "$GITHUB_ENV"
 
         test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
 
