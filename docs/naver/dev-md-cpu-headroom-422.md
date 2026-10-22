@@ -39,27 +39,27 @@ scheduling, recording quality and camera shared-memory ownership boundaries.
 No changes to radar detection, lead selection, dev/main or the #296 conversion.
 
 - [x] Locate current logs, identify source and baseline consumers, audit source.
-- [ ] `opencv-runtime` / `xiaoge`: compose existing BSD NV12 conversion, mask
+- [x] `opencv-runtime` / `xiaoge`: compose existing BSD NV12 conversion, mask
   and resize inside native OpenCV; return only the resized image. Resize lane's
   checked strided Y-plane crop without its full-size packed temporary.
   Compare exact pixels/tensors on padded, odd-sized and portrait inputs, preserve
   original Y-only lane and full-UV BSD validation, and extend the existing same-input compute benchmark.
-- [ ] `loggerd/{daemon,encoder}.rs`: retain one receive allocation for immediately
+- [x] `loggerd/{daemon,encoder}.rs`: retain one receive allocation for immediately
   consumed encoder messages, transferring ownership only for admitted queued
   packets. Preserve FIFO/audio/rotation/error behavior and the 201-packet limit.
   Compact queued allocations and release scratch capacity above 1 MiB after a
   service drain; this cache budget must never reject a larger valid packet.
   Verify immediate reuse, independent queued storage and bounded retained cache.
-- [ ] `opencv-runtime/native/net.cc`: avoid the extra input clone before
+- [x] `opencv-runtime/native/net.cc`: avoid the extra input clone before
   OpenCV's own synchronous copy, and bulk-copy output floats into owned Rust
   tensors. Check input release, intervening inference and exception recovery.
-- [ ] `signal-observer/process.rs`: transfer the completed grayscale image into
+- [x] `signal-observer/process.rs`: transfer the completed grayscale image into
   previous-frame history. Verify consecutive-frame hashes, dimensions and error
   retention plus the existing 288-frame full-state source oracle on host/ARM;
   no tracking algorithm or temporal behavior changes.
 - [ ] Review focused diffs and run local syntax/format checks only. Execute
   functional, native-memory and resource comparisons in existing sequential
-  GitHub-hosted CI on x86_64 and ARM. Inspect exact-SHA required checks.
+  Actions CI on x86_64 and native ARM. Inspect exact-SHA required checks.
 - [ ] Obtain independent review, integrate through a checked dev-md PR, verify
   merged-source checks and genuine AGNOS build/seal/publication/public installer.
   Device installation, driving and actual CPU acceptance remain owner-owned.
@@ -96,3 +96,40 @@ GREEN claim. Existing unchanged successful checks are not rerun locally.
 The log has no separately identified signalcolord CPU sample. The classical
 signal history change therefore has no measured share of this upload; mode
 settings alone must not be used to claim that all inference paths were active.
+
+## Runner selection and continuation, 2026-10-23
+
+The user explicitly selected the existing registered `bin-actions` x86-64
+runner for ordinary checks, ARM cross builds and AGNOS build/package/publication.
+The `dev-md-local` label selects that runner; actual native ARM execution remains
+on GitHub's `ubuntu-24.04-arm`, as separately confirmed. This supersedes both the
+earlier hosted-only direction and the intermediate hosted-first fallback policy.
+The build-only Carrot Navi ARM job now uses the x86-64 runner's ARM cross compiler;
+its locked features, target ELF check and binary hash remain, with an accurate
+cross-build artifact name. The native execution matrices and RadarCAN ARM
+execution job retain their real ARM runners.
+Generic ARM graphics dependencies are authenticated/downloaded into a private APT
+state/cache and extracted into the job's sysroot, instead of registering a foreign
+host architecture or installing ARM libraries globally. The existing raylib stager
+links against that sysroot; package hashes are retained with its build receipt.
+The job cleanup removes the private package state. This follows APT's documented
+[configuration isolation](https://manpages.debian.org/bookworm/apt/apt.conf.5.en.html)
+and preserves the registered host for subsequent jobs.
+Checks still run as Actions jobs; the agent's local checkout is limited to
+syntax, formatting and diff review. Required checks, serial ordering, disk
+reserves and per-job temporary-directory cleanup are preserved. Receipts report
+the actual runner environment instead of describing self-hosted results as hosted.
+
+PR [#494](https://github.com/bin9208/openpilot-rust/pull/494) contains the CPU
+changes and this routing update. Its previous source `6441af39` passed fast
+checks, mapped user docs and the integration gate in
+[run 39818575855](https://github.com/bin9208/openpilot-rust/actions/runs/39818575855),
+which was cancelled during workspace validation to apply the user's runner
+direction. Those results do not validate the new routing commit. Independent
+review found no remaining issues in the CPU and release-source changes; fresh
+required-check results and native performance receipts remain pending.
+
+The user authorized automatic follow-up through exact-source dev-md delivery.
+The existing hourly follow-up now targets this task, uses the runner policy above
+and reports meaningful failures, completion or required user action. Installation
+on the vehicle and measured driving CPU acceptance remain user-owned.

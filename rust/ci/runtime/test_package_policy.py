@@ -12,7 +12,7 @@ import unittest
 
 
 SOURCE = Path(__file__).with_name("package.py")
-FUNCTIONS = {"source_path_allowed", "rebuild_opencv_artifact", "require_fresh_opencv", "require_delivery_ref", "stage_opencv_libraries", "digest"}
+FUNCTIONS = {"runner_environment_allowed", "source_path_allowed", "rebuild_opencv_artifact", "require_fresh_opencv", "require_delivery_ref", "stage_opencv_libraries", "digest"}
 tree = ast.parse(SOURCE.read_text())
 namespace = dict(Path=Path, hashlib=hashlib, json=json, os=os, shutil=shutil, SHA="exact-source", BASE="baseline")
 exec(compile(ast.Module(body=[node for node in tree.body if isinstance(node, ast.FunctionDef)
@@ -20,6 +20,20 @@ exec(compile(ast.Module(body=[node for node in tree.body if isinstance(node, ast
 
 
 class SourcePolicyTests(unittest.TestCase):
+    def test_only_hosted_or_named_registered_runner_is_admitted(self):
+        allowed = namespace["runner_environment_allowed"]
+        for environment, name, expected in (
+            ("github-hosted", "GitHub Actions", True),
+            ("self-hosted", "bin-actions", True),
+            ("self-hosted", "other-runner", False),
+            ("self-hosted", "bin-actions-extra", False),
+            ("self-hosted", None, False),
+            (None, "bin-actions", False),
+            ("", "", False),
+        ):
+            with self.subTest(environment=environment, name=name):
+                self.assertEqual(allowed(environment, name), expected)
+
     def test_cpu_copy_reduction_exceptions_are_exact_paths(self):
         allowed = namespace["source_path_allowed"]
         for path in (

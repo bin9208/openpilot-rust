@@ -1,4 +1,4 @@
-//! Hosted-only, same-input comparison with the frozen deployed implementation.
+//! Actions-only, same-input comparison with the frozen deployed implementation.
 use openpilot_xiaoge::lane::{select, Candidate, Head, ResultData, MASK_CHANNELS, PROTO_SIZE};
 use openpilot_xiaoge::nv12::{Frame, Layout};
 use openpilot_xiaoge::Error;
@@ -305,8 +305,14 @@ fn native(frame: &Frame<'_>, rows: &mut Vec<Value>) -> Result<(), Box<dyn std::e
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(std::env::var("GITHUB_ACTIONS").as_deref(), Ok("true"));
     assert_eq!(
-        std::env::var("RUNNER_ENVIRONMENT").as_deref(),
-        Ok("github-hosted")
+        std::env::var("GITHUB_REPOSITORY").as_deref(),
+        Ok("bin9208/openpilot-rust")
+    );
+    let runner_environment = std::env::var("RUNNER_ENVIRONMENT").unwrap_or_default();
+    let runner_name = std::env::var("RUNNER_NAME").unwrap_or_default();
+    assert!(
+        runner_environment == "github-hosted"
+            || runner_environment == "self-hosted" && runner_name == "bin-actions"
     );
     let mut rows = Vec::new();
     for case in inputs::cases() {
@@ -363,7 +369,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "nv12_full_frame_bytes_avoided_per_bsd_inference": layout.width * (layout.height + layout.height/2),
             "lane_normalizations_before": 3 * 416 * 416,
             "lane_normalizations_after": 416 * 416,
-            "scope":"Same hosted runner and inputs, alternating order; stage timings are not device CPU savings or GPU utilization.",
+            "runner_environment":runner_environment,
+            "runner_name":runner_name,
+            "architecture":std::env::consts::ARCH,
+            "scope":"Same Actions runner and inputs, alternating order; stage timings are not device CPU savings or GPU utilization.",
             "measurements": rows
         }))?
     );

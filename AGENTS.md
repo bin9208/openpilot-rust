@@ -1,5 +1,17 @@
 # Independent Rust port repository (2026-09-29)
 
+## dev-md CPU optimization runner direction (2026-10-23, issue #422)
+
+- Use the existing registered Actions runner `bin-actions` for x86-64 checks,
+  ARM cross builds and AGNOS packaging. Its dedicated label is `dev-md-local`.
+  Keep native ARM execution checks on GitHub's `ubuntu-24.04-arm` runners, as
+  expressly confirmed by the user. This supersedes the hosted-only restriction
+  below for this work; tests/builds still run as Actions jobs, not from the agent's
+  local working checkout. Preserve true runner/architecture evidence, isolated
+  job output, disk reserves, the sequential chain and all required checks.
+- The user authorized automatic continuation of #422 through checked dev-md
+  runtime delivery. Device installation and driving acceptance remain user-owned.
+
 ## dev-md sequential CI policy (2026-10-20, issue #409)
 
 - The user approved a single sequential CI entry point, serial architecture

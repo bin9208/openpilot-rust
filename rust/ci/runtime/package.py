@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GitHub-hosted exact-source AGNOS delivery. Never run on a workstation."""
+"""Registered Actions exact-source AGNOS delivery. Never run from a local checkout."""
 import hashlib
 import json
 import os
@@ -12,9 +12,13 @@ import sys
 import tarfile
 import zipfile
 
+def runner_environment_allowed(environment, name):
+    return environment == "github-hosted" or environment == "self-hosted" and name == "bin-actions"
+
+
 assert os.environ.get("GITHUB_ACTIONS") == "true", "runtime validation/builds belong in GitHub Actions"
 assert os.environ.get("GITHUB_REPOSITORY") == "bin9208/openpilot-rust"
-assert os.environ.get("RUNNER_ENVIRONMENT") == "github-hosted", "runtime delivery requires a GitHub-hosted runner"
+assert runner_environment_allowed(os.environ.get("RUNNER_ENVIRONMENT"), os.environ.get("RUNNER_NAME")), "runtime delivery requires an approved Actions runner"
 ROOT = Path(os.environ["GITHUB_WORKSPACE"])
 WORK = Path(os.environ["RUNNER_TEMP"]) / "agnos-runtime"
 WORK.mkdir(exist_ok=True)
@@ -567,7 +571,7 @@ def build():
     room(3 * 2**30)
     run(installer_cmd, env=installer_env)
     installer = TARGET / "aarch64-unknown-linux-musl/release/openpilot-runtime-install"
-    save(WORK / "installer-build.json", dict(schema=1, source_commit=SHA, architecture="aarch64", target="aarch64-unknown-linux-musl", installer_sha256=digest(installer), build_command=shlex.join(installer_cmd), validation="Built on GitHub-hosted runner; complete offline QEMU installation and installed AGNOS launcher verification follow before publication."))
+    save(WORK / "installer-build.json", dict(schema=1, source_commit=SHA, architecture="aarch64", target="aarch64-unknown-linux-musl", installer_sha256=digest(installer), build_command=shlex.join(installer_cmd), validation=f"Built in Actions on {os.environ['RUNNER_ENVIRONMENT']} runner {os.environ['RUNNER_NAME']} ({os.environ['RUNNER_ARCH']}); complete offline QEMU installation and installed AGNOS launcher verification follow before publication."))
     room(6 * 2**30)
     rows = []
     for name in NAMES:

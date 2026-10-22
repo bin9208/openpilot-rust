@@ -19,7 +19,7 @@ concurrency:
 jobs:
   route:
     name: Select validation scope
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 2
     outputs:
       fast: ${{ steps.scope.outputs.fast }}
@@ -44,7 +44,7 @@ jobs:
   fast-checks:
     needs: [route]
     name: ${{ needs.route.outputs.fast == 'true' && 'fast checks' || 'PR owns fast validation' }}
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 7
     if: needs.route.outputs.fast == 'true'
     steps:
@@ -128,7 +128,7 @@ jobs:
   check_user_docs:
     needs: [route, fast-checks]
     name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'check mapped user docs' || 'Not requested - check mapped user docs' }}
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     if: needs.route.outputs.full == 'true'
     steps:
       - uses: actions/checkout@v6
@@ -175,7 +175,7 @@ jobs:
   git_update:
     needs: [check_user_docs]
     name: Git update lifecycle
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7
@@ -199,7 +199,7 @@ jobs:
     needs: [git_update]
     name: build release
     # Legacy setup / noble multiarch packages require an isolated Ubuntu 24.04 host.
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7
@@ -250,7 +250,7 @@ jobs:
   model_web:
     needs: [build_release]
     name: Model and Bluetooth web controls
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7
@@ -266,7 +266,7 @@ jobs:
   model:
     needs: [model_web]
     name: model contract and CPU inference
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -284,7 +284,7 @@ jobs:
   android-core:
     needs: [model]
     name: Android protocol and Java inference
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -324,7 +324,7 @@ jobs:
   jetlink-native:
     needs: [android-core]
     name: Jetlink power policy fast checks
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 15
     env:
       CARGO_INCREMENTAL: '0'
@@ -366,7 +366,7 @@ jobs:
     name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'integration gate' || 'Not requested - integration gate' }}
     needs: [route, fast-checks, check_user_docs, git_update, build_release, model_web, model, android-core, jetlink-native]
     if: ${{ always() && (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) }}
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 2
     steps:
       - name: Require every preceding validation result
@@ -385,7 +385,7 @@ jobs:
   workspace:
     needs: [integration-gate]
     name: rust workspace checks
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 120
     env:
       CARGO_BUILD_JOBS: '2'
@@ -703,7 +703,7 @@ jobs:
   model-memory:
     needs: [workspace]
     name: rust model memory
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 15
     env:
       CARGO_BUILD_JOBS: '2'
@@ -770,7 +770,7 @@ jobs:
   model-pipelines:
     needs: [model-memory]
     name: rust original model pipelines
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -878,7 +878,7 @@ jobs:
   logger-runtime:
     needs: [model-pipelines]
     name: rust original route logger
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -983,7 +983,7 @@ jobs:
   support-runtime:
     needs: [logger-runtime]
     name: rust support runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1087,7 +1087,7 @@ jobs:
   telemetry-runtime:
     needs: [support-runtime]
     name: rust telemetry runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1179,7 +1179,7 @@ jobs:
   startup-runtime:
     needs: [telemetry-runtime]
     name: rust startup prerequisites
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1277,7 +1277,7 @@ jobs:
   hardware-runtime:
     needs: [startup-runtime]
     name: rust hardware and boot runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1345,7 +1345,7 @@ jobs:
   platform-runtime:
     needs: [hardware-runtime]
     name: rust platform runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1405,7 +1405,7 @@ jobs:
   startup-services:
     needs: [platform-runtime]
     name: rust startup services
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1470,7 +1470,7 @@ jobs:
   sensor-audio:
     needs: [startup-services]
     name: rust sensor and audio runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1528,7 +1528,7 @@ jobs:
   gnss-runtime:
     needs: [sensor-audio]
     name: rust GNSS runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1579,7 +1579,7 @@ jobs:
   estimation-runtime:
     needs: [gnss-runtime]
     name: rust estimation runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 35
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1655,7 +1655,7 @@ jobs:
   ui-connectivity:
     needs: [estimation-runtime]
     name: rust UI and connectivity
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 35
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1725,7 +1725,7 @@ jobs:
   athena-runtime:
     needs: [ui-connectivity]
     name: rust Athena runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1767,7 +1767,7 @@ jobs:
   controls-runtime:
     needs: [athena-runtime]
     name: rust control runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 35
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1828,7 +1828,7 @@ jobs:
   web-upload-timeouts:
     needs: [controls-runtime]
     name: active upload timeout contracts
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -1863,7 +1863,7 @@ jobs:
   joystickd-runtime:
     needs: [web-upload-timeouts]
     name: rust control tools source and native runtimes
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1923,7 +1923,7 @@ jobs:
   planner-runtime:
     needs: [joystickd-runtime]
     name: rust planner source comparison (${{ matrix.runner }})
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner == 'ubuntu-24.04' && fromJSON('["self-hosted","Linux","X64","dev-md-local"]') || matrix.runner }}
     strategy:
       max-parallel: 1
       fail-fast: true
@@ -2013,7 +2013,7 @@ jobs:
   planner-memory:
     needs: [planner-runtime]
     name: rust planner pure memory contracts
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 45
     env:
       CARGO_INCREMENTAL: '0'
@@ -2061,7 +2061,7 @@ jobs:
   card-runtime:
     needs: [planner-memory]
     name: rust Card and CAN runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 90
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2162,7 +2162,7 @@ jobs:
   radar-runtime:
     needs: [card-runtime]
     name: rust RadarCAN source and host runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 45
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2348,7 +2348,7 @@ jobs:
   radar-memory:
     needs: [radar-arm]
     name: rust RadarCAN buffer ownership with Miri
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2411,7 +2411,7 @@ jobs:
   navd-runtime:
     needs: [radar-memory]
     name: rust navigation runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 35
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2484,7 +2484,7 @@ jobs:
   radard-runtime:
     needs: [navd-runtime]
     name: rust radard source and native runtime (${{ matrix.runner }})
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner == 'ubuntu-24.04' && fromJSON('["self-hosted","Linux","X64","dev-md-local"]') || matrix.runner }}
     strategy:
       max-parallel: 1
       fail-fast: true
@@ -2642,7 +2642,7 @@ jobs:
   carrot-navi-runtime:
     needs: [radard-runtime]
     name: rust Carrot Navi original and host runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 30
     env:
       RUSTUP_TOOLCHAIN: '1.94.0'
@@ -2784,15 +2784,18 @@ jobs:
 
   carrot-navi-arm:
     needs: [carrot-navi-runtime]
-    name: rust Carrot Navi native ARM build
-    runs-on: ubuntu-24.04-arm
+    name: rust Carrot Navi ARM cross build
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 25
     env:
       RUSTUP_TOOLCHAIN: '1.94.0'
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_RELEASE_DEBUG: '0'
-      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: gcc
+      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+      CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
+      CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
+      AR_aarch64_unknown_linux_gnu: aarch64-linux-gnu-ar
     steps:
       - uses: actions/checkout@v7
         with:
@@ -2802,33 +2805,34 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12.14'
-      - name: Reserve runner capacity and install native ARM build dependencies
+      - name: Reserve runner capacity and install ARM cross build dependencies
         run: |
           # Only GitHub-hosted images contain these disposable tool bundles.
           if [ "${{ runner.environment }}" = github-hosted ]; then
             sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          sudo apt-get update && sudo apt-get install -y capnproto g++ binutils
+          sudo apt-get update && sudo apt-get install -y capnproto g++ g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           rustup toolchain install 1.94.0 --profile minimal
           rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
           mkdir -p "$RUNNER_TEMP/carrot-navi-arm"
           git rev-parse HEAD > "$RUNNER_TEMP/carrot-navi-arm/source-commit.txt"
-      - name: Build and inspect the actual native ARM executable
+          printf '%s\n' "$RUNNER_ENVIRONMENT" "$RUNNER_NAME" "$RUNNER_ARCH" > "$RUNNER_TEMP/carrot-navi-arm/build-runner.txt"
+      - name: Cross build and inspect the actual ARM executable
         run: |
-          test "$(uname -m)" = aarch64
+          test "$(uname -m)" = x86_64
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
           set -o pipefail
           cargo build --manifest-path rust/Cargo.toml -p openpilot-carrot-navi --features native --bin openpilot-carrot-navi --target aarch64-unknown-linux-gnu --release --locked 2>&1 | tee "$RUNNER_TEMP/carrot-navi-arm/build.log"
-          readelf -h rust/target/aarch64-unknown-linux-gnu/release/openpilot-carrot-navi | tee "$RUNNER_TEMP/carrot-navi-arm/elf.txt"
+          aarch64-linux-gnu-readelf -h rust/target/aarch64-unknown-linux-gnu/release/openpilot-carrot-navi | tee "$RUNNER_TEMP/carrot-navi-arm/elf.txt"
           grep -Eq 'Machine:.*AArch64' "$RUNNER_TEMP/carrot-navi-arm/elf.txt"
           sha256sum rust/target/aarch64-unknown-linux-gnu/release/openpilot-carrot-navi > "$RUNNER_TEMP/carrot-navi-arm/binary.sha256"
-      - name: Preserve native ARM build receipt and executable
+      - name: Preserve ARM cross build receipt and executable
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: rust-carrot-navi-native-arm
+          name: rust-carrot-navi-cross-arm
           path: |
             ${{ env.CI_JOB_TEMP }}/carrot-navi-arm/
             rust/target/aarch64-unknown-linux-gnu/release/openpilot-carrot-navi
@@ -2840,7 +2844,7 @@ jobs:
   selfdrive-runtime:
     needs: [carrot-navi-arm]
     name: rust selfdrived runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 45
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2938,7 +2942,7 @@ jobs:
   panda-runtime:
     needs: [selfdrive-runtime]
     name: rust Panda runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 40
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3004,7 +3008,7 @@ jobs:
   camera-runtime:
     needs: [panda-runtime]
     name: rust camera runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 40
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3075,7 +3079,7 @@ jobs:
   encoder-runtime:
     needs: [camera-runtime]
     name: rust encoder runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 45
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3152,7 +3156,7 @@ jobs:
   xiaoge-runtime:
     needs: [encoder-runtime]
     name: rust Xiaoge source comparison (${{ matrix.runner }})
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner == 'ubuntu-24.04' && fromJSON('["self-hosted","Linux","X64","dev-md-local"]') || matrix.runner }}
     strategy:
       max-parallel: 1
       fail-fast: true
@@ -3246,7 +3250,7 @@ jobs:
   xiaoge-memory:
     needs: [xiaoge-runtime]
     name: rust Xiaoge native memory
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 75
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3316,7 +3320,7 @@ jobs:
   ui-runtime:
     needs: [xiaoge-memory]
     name: rust UI application runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 60
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3429,7 +3433,7 @@ jobs:
   carrot-man-runtime:
     needs: [ui-runtime]
     name: rust CarrotMan owner (${{ matrix.arch }})
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner == 'ubuntu-24.04' && fromJSON('["self-hosted","Linux","X64","dev-md-local"]') || matrix.runner }}
     timeout-minutes: 25
     strategy:
       max-parallel: 1
@@ -3512,7 +3516,7 @@ jobs:
   webrtc-runtime:
     needs: [carrot-man-runtime]
     name: rust WebRTC source runtime (${{ matrix.runner }})
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner == 'ubuntu-24.04' && fromJSON('["self-hosted","Linux","X64","dev-md-local"]') || matrix.runner }}
     timeout-minutes: 45
     strategy:
       max-parallel: 1
@@ -3602,7 +3606,7 @@ jobs:
   webcam-runtime:
     needs: [webrtc-runtime]
     name: rust webcam source runtime (${{ matrix.runner }})
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner == 'ubuntu-24.04' && fromJSON('["self-hosted","Linux","X64","dev-md-local"]') || matrix.runner }}
     timeout-minutes: 35
     strategy:
       max-parallel: 1
@@ -3701,7 +3705,7 @@ jobs:
     name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'rust checks' || 'Not requested - rust checks' }}
     needs: [integration-gate, workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime, webrtc-runtime, webcam-runtime]
     if: ${{ always() && (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) }}
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 2
     steps:
       - name: Require every preceding validation result
@@ -3720,8 +3724,8 @@ jobs:
   arm-build:
     name: Build generic ARM64 artifacts
     needs: [fast]
-    # Legacy setup / noble multiarch packages require an isolated Ubuntu 24.04 host.
-    runs-on: ubuntu-24.04
+    # bin-actions provides Ubuntu 24.04; ARM graphics dependencies stay job-local.
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 120
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3745,13 +3749,42 @@ jobs:
           sudo apt-get update && sudo apt-get install -y g++-aarch64-linux-gnu capnproto libcapnp-dev qemu-user-static clang libclang-dev make cmake
       - name: Stage native GNU aarch64 startup renderer and portable loader headers
         run: |
-          sudo dpkg --add-architecture arm64
-          sudo apt-get -o Dir::Etc::sourcelist="$PWD/.github/apt/startup-ui-cross.sources" -o Dir::Etc::sourceparts=- update
-          sudo apt-get -o Dir::Etc::sourcelist="$PWD/.github/apt/startup-ui-cross.sources" -o Dir::Etc::sourceparts=- install -y libegl-dev:arm64 libgles-dev:arm64 libdrm-dev:arm64 libgbm-dev:arm64
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 2048
+          cross_root=$(mktemp -d "$RUNNER_TEMP/startup-ui-cross-XXXXXX")
+          mkdir -p "$cross_root/state/lists/partial" "$cross_root/cache/archives/partial" "$cross_root/sysroot"
+          touch "$cross_root/state/status"
+          # Download the authenticated ARM dependency closure without changing
+          # host packages, foreign architectures, repositories or APT hooks.
+          cat > "$cross_root/apt.conf" <<EOF
+          Dir::Etc::main "-";
+          Dir::Etc::parts "-";
+          Dir::Etc::sourcelist "$PWD/.github/apt/startup-ui-cross.sources";
+          Dir::Etc::sourceparts "-";
+          Dir::Etc::preferences "-";
+          Dir::Etc::preferencesparts "-";
+          Dir::State "$cross_root/state";
+          Dir::State::status "$cross_root/state/status";
+          Dir::Cache "$cross_root/cache";
+          Dir::Log "$cross_root/log";
+          APT::Architecture "arm64";
+          APT::Architectures { "arm64"; };
+          Acquire::Languages "none";
+          EOF
+          APT_CONFIG="$cross_root/apt.conf" apt-get update
+          APT_CONFIG="$cross_root/apt.conf" apt-get --download-only --no-install-recommends -y install libegl-dev:arm64 libgles-dev:arm64 libdrm-dev:arm64 libgbm-dev:arm64
+          for deb in "$cross_root/cache/archives/"*.deb; do
+            dpkg-deb --extract "$deb" "$cross_root/sysroot"
+          done
+          sha256sum "$cross_root/cache/archives/"*.deb > "$cross_root/packages.sha256"
+          # GNU linker scripts inside libc's development package use absolute
+          # paths, so resolve them inside the same extracted ARM sysroot.
+          printf '#!/usr/bin/env bash\nexec aarch64-linux-gnu-g++ --sysroot=%q "$@"\n' "$cross_root/sysroot" > "$cross_root/cxx"
+          chmod +x "$cross_root/cxx"
           raylib_root="$(mktemp -d "$RUNNER_TEMP/raylib-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-XXXXXX")/sdk"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-          cargo +1.94.0 run --manifest-path "$GITHUB_WORKSPACE/rust/Cargo.toml" -p openpilot-dev-tools --locked --bin stage-startup-ui-raylib -- --arch aarch64 --output "$raylib_root" --shared --cxx aarch64-linux-gnu-g++
+          cargo +1.94.0 run --manifest-path "$GITHUB_WORKSPACE/rust/Cargo.toml" -p openpilot-dev-tools --locked --bin stage-startup-ui-raylib -- --arch aarch64 --output "$raylib_root" --shared --cxx "$cross_root/cxx" --library-directory "$cross_root/sysroot/usr/lib/aarch64-linux-gnu"
           printf 'STARTUP_UI_RAYLIB_ROOT=%s\n' "$raylib_root" >> "$GITHUB_ENV"
+          printf 'STARTUP_UI_CROSS_ROOT=%s\n' "$cross_root" >> "$GITHUB_ENV"
       - name: Build pinned external FFmpeg for generic aarch64 GNU linking
         run: |
           rustup toolchain install 1.94.0 --profile minimal
@@ -3894,6 +3927,8 @@ jobs:
             ${{ env.STARTUP_UI_RAYLIB_ROOT }}/SOURCE_SHA256
             ${{ env.STARTUP_UI_RAYLIB_ROOT }}/plugin-build.json
             ${{ env.STARTUP_UI_RAYLIB_ROOT }}/lib/libopenpilot-raylib.so
+            ${{ env.STARTUP_UI_CROSS_ROOT }}/packages.sha256
+            ${{ env.STARTUP_UI_CROSS_ROOT }}/apt.conf
             ${{ env.CI_JOB_TEMP }}/logger-ffmpeg-gnu/ffmpeg-6.1.1/COPYING.LGPLv2.1
             ${{ env.CI_JOB_TEMP }}/logger-ffmpeg-gnu/ffmpeg-6.1.1/LICENSE.md
             ${{ env.CI_JOB_TEMP }}/logger-ffmpeg-musl/invocation.json
@@ -4029,7 +4064,7 @@ jobs:
     name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'rust aarch64 build' || 'Not requested - rust aarch64 build' }}
     needs: [route, fast-checks, check_user_docs, integration-gate, fast, workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime, webrtc-runtime, webcam-runtime, arm-build]
     if: ${{ always() && (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) }}
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 2
     steps:
       - name: Require all validation and the actual ARM build
@@ -4049,7 +4084,7 @@ jobs:
     name: Request marked runtime delivery
     needs: arm64
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev-md' && contains(github.event.head_commit.message, '[runtime-package]')
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 2
     permissions:
       contents: read

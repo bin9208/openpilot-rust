@@ -1,4 +1,4 @@
-"""Real Git/LFS checkout regressions; run on hosted CI, never against GitHub."""
+"""Real Git/LFS checkout regressions; run in Actions, never against GitHub."""
 
 import configparser
 import hashlib
@@ -22,8 +22,11 @@ POINTER = f'version https://git-lfs.github.com/spec/v1\noid sha256:{OID}\nsize {
 
 
 @unittest.skipUnless(
-  os.environ.get('GITHUB_ACTIONS') == 'true' and os.environ.get('RUNNER_ENVIRONMENT') == 'github-hosted',
-  'Real Git/LFS regressions run only on GitHub-hosted Actions',
+  os.environ.get('GITHUB_ACTIONS') == 'true' and (
+    os.environ.get('RUNNER_ENVIRONMENT') == 'github-hosted' or
+    os.environ.get('RUNNER_ENVIRONMENT') == 'self-hosted' and os.environ.get('RUNNER_NAME') == 'bin-actions'
+  ),
+  'Real Git/LFS regressions require an approved Actions runner',
 )
 class LfsEndpointTests(unittest.TestCase):
   def setUp(self):
