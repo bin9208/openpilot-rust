@@ -613,5 +613,25 @@ fn unchanged_original_waits_for_retained_stdout_and_stderr() {
                 "retained original does not own descendants"
             );
         }
+        if let Some(capture) = std::env::var_os("MODEM_SOURCE_REFERENCE_CAPTURE") {
+            let directory = PathBuf::from(capture).join(mode);
+            fs::create_dir(&directory).expect("new original-reference capture directory");
+            let stdout = fs::read(fixture.root.path().join("source.stdout")).unwrap();
+            let stderr = fs::read(fixture.root.path().join("source.stderr")).unwrap();
+            fs::write(directory.join("stdout"), &stdout).unwrap();
+            fs::write(directory.join("stderr"), &stderr).unwrap();
+            let record = serde_json::json!({
+                "mode":mode,"original_exit_code":0,"stdout_bytes":stdout,
+                "stderr_bytes":stderr,"direct_child_reaped":true,
+                "descendant_alive_after_direct_child_exit":mode != "invaliderr",
+                "invalid_stderr_was_rejected":mode == "invaliderr",
+                "original_result":{},"original_only":true
+            });
+            fs::write(
+                directory.join("observation.json"),
+                serde_json::to_vec_pretty(&record).unwrap(),
+            )
+            .unwrap();
+        }
     }
 }
