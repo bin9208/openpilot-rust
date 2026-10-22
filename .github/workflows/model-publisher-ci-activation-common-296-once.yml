@@ -36,7 +36,7 @@
         "X64",
         "dev-md-local"
       ],
-      "timeout-minutes": "60",
+      "timeout-minutes": 60,
       "steps": [
         {
           "name": "Verified common owned shell temp",
@@ -106,6 +106,7 @@
   },
   "concurrency": {
     "group": "296-model-publisher-ci-activation-common-focused",
-    "cancel-in-progress": "false"
+    "cancel-in-progress": false,
+    "queue": "max"
   }
 }
