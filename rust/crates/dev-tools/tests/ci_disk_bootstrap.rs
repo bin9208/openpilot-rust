@@ -375,7 +375,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 uploader_native_builds.push(tail.to_owned());
                 continue;
             }
-            if step == Some(&"      - name: Independent final helper/provider/source/Python guards")
+            if step
+                == Some(
+                    &"      - name: Retain bounded raw sidecars validated by native catalog gates",
+                )
             {
                 guarded_add_archives.push(tail.to_owned());
                 continue;
