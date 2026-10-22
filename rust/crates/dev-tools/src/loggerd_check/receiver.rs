@@ -49,6 +49,8 @@ impl Receiver {
             // ownership contract as native_logging_check::transport: a failed
             // bind retains the clone, a successful bind transfers it once.
             // This socket is never reused after failure.
+            // zmq 0.10 has no safe ZMQ_USE_FD setter; allow only this FFI call.
+            #[allow(unsafe_code)]
             let status = unsafe {
                 zmq_sys::zmq_setsockopt(
                     socket.as_mut_ptr(),

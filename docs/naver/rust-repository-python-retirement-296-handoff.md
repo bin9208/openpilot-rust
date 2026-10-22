@@ -6,48 +6,53 @@ unchanged evidence. Read this handoff and the linked evidence ledger first.
 
 ## Active continuation, superseding the earlier migration snapshot
 
-The current source includes995383b2bbdd199fb925184914d8aa4f29837831;
-the earlier515263b checkpoint and16-slot description below are historical.
-Always read the current Git head before publishing. The configured agent limit
-was subsequently raised to1000;12 simultaneous child creations were admitted,
-but several failed with429. Neither1000 nor12 productive workers is established.
-The latest user instruction supersedes the temporary mixed-model permission:
-**finish existing Astra assignments, close them, then use only GPT-6.1 Sol for
-every new or continued subagent assignment.** Do not restart Astra on failure.
-Loggerd Astra01a164a0-3a4b-7893-a611-4d35743d2013 is closed after delivering its
-frozen patch. Driver Banach and codec Peirce finish only their current assignments.
+Current integrated source/remote is69bbee211a5bfde590ab9d85fb071d967892b580;
+read Git freshly before binding further diagnostic sources. The older515263b
+checkpoint and16-slot description below are historical. Configured agent limit
+is1000, verified locally; admitted creations include429 failures, so this is
+not an observed productive capacity. The latest user instruction requires
+**GPT-6.1 Sol for every subagent**. All Astra workers completed their frozen
+assignments and are closed. Do not resume Astra. The user also requests the
+parent GPT-6.1 Sol / Ultra; the app accepted that model/effort override for this
+chat. No global model configuration was changed.
 
 Current scratch root is `.analysis/scratch/2026-10-23-resume-296/`; parent owns
 serialized publication through the existing21October `publish-single.py`.
-Do not execute scratch functional scripts locally. Parent authenticated saved
-ZIPs live in `parent/`; use these as inert evidence only.
+Do not execute scratch functional scripts locally. Authenticated saved ZIPs
+are in `parent/`; use them as inert evidence. Read the current evidence ledger
+`rust-repository-python-retirement-296-evidence.md` for exact hashes and limits.
 
-- Codec8c965aa65 focused two-failure follow-up39824019615 succeeds; original
-  successful domains remain reused. Japanese39824008435 succeeds with4473153
-  matrix rows and3550state vectors. Duplicate same-head/path queued39824012873
-  was cancelled to avoid repeating unchanged success.
-- IDNA source995383b2b workflow0d1358ef62458f33bd225f4d7350c77d028a98d3,
-  run39825221809 is executing; final frozen recipe hashfb919cf76b434e83646a9f223144a2973bc7f052800b81636eab2f1c7a1cc4dd.
-- AST lifecycle39822633617 failed four Pid method names;8c965aa65 corrects them.
-  Corrected39823466717 also fails; Newton is diagnosing actual saved evidence
-  before finishing the pending caller migration. Do not apply source deletion.
-- Model publisher995383b2b passes39824199853:8tests and10filesystem cases,
-  artifact12445184190. This covers publication only, not compiler/model behavior.
-  James prepares emitter caller integration separately.
-- Model actual-operand39821958868 failed an observer tuple/list comparison,
-  before operand capture. Parent preserves the exact(2,1,1)type/value requirement
-  in recipee83a07b185d43575bb4c10e7bc687cdb508e48ee3f4cd4d20f9ffa586d818a02;
-  corrected workflow4450f81b24b118f446fdf8288c2910c00425bf46/run39823666805
-  uses the same1d5570e15 source. Driver diagnostic39822906822 passes but does
-  not fix numerical drift. Startup39819735679 still awaits full-family results.
-- Loggerd frozen patch74cf1a1cc0ab65779a81431cc4c7da7ebc98fc461f1b99311b8eea452caa7aec
-  is integrated as a candidate;18targets/+3824lines, no lock change. Sol
-  `loggerd-gate-sol` prepares complete hosted admission. Four shared-helper
-  consumers in `loggerd-group/REMAINING.md` prevent retirement.
-- Sol `paramsd-sol` and `carrotnavi-sol` implement separate remaining families.
-  Logging R4 outer gate, HZ and positiveUTF16/32/Punycode remain separate active
-  lanes. Extra Sol diagnostics/pipeline and flush/IO workers failed429 and were
-  closed; these tasks are queued for freed Sol workers, not completed.
+- Accepted unchanged codec gates: focused39824019615, Japanese39824008435,
+  IDNA39825221809, UTF16/32/Punycode39826556236 and HZ39827297036.
+  HZ has197356dense rows/1992new vectors/45reused inputs/136source admissions.
+  Payloads have252rows. All are bounded observations, not arbitrary-string proof.
+- AST recapture39826743607 succeeds at8c965aa65:8tests/31scenarios/12Git,
+ 481successful execs/one expectedENOENT/no unexpected paths. Parent checks
+ 4ZIPCRCs/401raw-name tar members. Earlier39823466717 lost its raw proof only
+  at upload because of a deliberate newline filename. Packaging-only canary
+ 39826321541 passed before this essential same-source recapture. Caller/deletion
+  stays pending unclosed Korean/Chinese multibyte domains.
+- CarrotNavi comparator7a1c79f25 passes39826752939:3tests/72controls,
+ 20positive/52negative,122byte-equal source/native output pairs. This accepts
+  comparison only, not maintained-caller/embedded-source retirement.
+- Paramsd startup69bbee211 fails39827158238; Hegel diagnoses actual evidence.
+  Loggerd main0e38b0ea fails39827462896 before tests:five API errors and one
+  unsafe-code lint. Hypatia supplies minimal repairs; no runtime acceptance.
+  LoggingR4 admission39827448694 fails; Socrates diagnoses before caller changes.
+- Model publisher995383b2b passes39824199853:8tests/10filesystem cases;
+  James prepares real-emitter caller integration. Actual road operands
+ 39823666805 captures successfully but fails strict eight-buffer byte parity;
+  Schrodinger owns diagnosis. No numerical threshold is weakened.
+- Driver reporting39822906822 passes but numerical drift remains. New fresh
+  first-convolution diagnostic39828495779 uses source69bbee211 and workflow
+ 9e99a1e656a8c713cefc56a0c996d43ff5f6b409. It observes actual original/native
+  images and operands; a diagnostic success alone cannot establish a repair.
+  Startup39819735679 remains in progress at this checkpoint.
+- Active Sol scopes: Newton AST caller; Descartes loggerd diagnostics/pipeline;
+  Helmholtz Korean codecs; Socrates logging failure/caller; James model publisher
+  caller; Schrodinger road operands; Hegel Paramsd failure; Hilbert loggerd
+  flush/IO; Hypatia loggerd compile fixes; Archimedes Big5 family; Hubble GBK/
+  GB2312/GB18030. Parent alone reconciles shared registration and publishes.
 
 Inventory remains288/3/3289 of3580. Dev-md, device operations, protected
 integration and releases remain outside this continuation. Local restrictions

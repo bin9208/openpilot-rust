@@ -8424,3 +8424,77 @@ Artifact12446034737:9888bytes/SHA256
 2cd8e111b92ec2b674738504b75164b5ba006950ee6d9c3ad47aa62f399721d9,
 14CRCs/4seals/13provider pairs; manifest03ff78c12a96439dfac4555bf5309f006549574753db51e53930d4e24a8d6263.
 Native HZ and payload comparison is still required; no source retirement follows.
+
+
+### Sol-only continuation: retained AST, HZ, payload and comparator evidence
+
+All Astra assignments are frozen and closed under the latest user instruction;
+all continuing/new subagents use GPT-6.1 Sol. The app accepted the requested
+parent GPT-6.1 Sol / Ultra override. Configured1000slots is not an observed
+productive count. Dev-md stays isolated; inventory remains288/3/3289 of3580.
+
+AST packaging canary39826321541 succeeds first: artifact12447131583,
+1482bytes/SHA2561d027ade9fa3a0bf6caa236424d9f2e822982cf3a54db45bc9f1f953473626ae.
+The narrow essential recapture39826743607 then succeeds at unchanged source
+8c965aa650af6b6df88c616ad8c24b231ba8d00d, workflow
+5acf32d6d7d4657efe893729126dc69bf4925733. Artifact12447910785 is207683bytes,
+SHA2567936c69bd2dd60c5c4e0e85bcd87abc71fdbf29e8a107f301a69c0b5eb1c994c.
+Parent verifies4ZIPCRCs and all401tar member names/kinds/file lengths/hashes/
+symlink targets, including original newline names. Inner archive199072bytes
+has SHA2561bbce0949bc2020e3287fab04c452d3de872977ed30d2d254a935e32c85c2b56.
+Eight functional tests/31scenarios/12actual Git comparisons and strict Clippy
+pass. Exec audit accounts481successes and one expectedENOENT with no unexpected,
+pending or unparsed events. Source/provider/original snapshots are byte-equal.
+This recaptures proof lost by the previous upload failure; unchanged syntax,
+Unicode and original providers are not rerun. No caller/source retirement yet.
+
+Payload comparison39826556236 succeeds at0dbc9601c71fd9b31cc7a582a70abe295b1e0d2f,
+workflow186ed9cc0c7ee68ab54ca58787fe7e8861a9727e. Artifact12447346283 is1231299bytes,
+SHA25630deb0449e66433e86fb5b41642d4e482e89cb951d2ed6e68a712a845bee91b2,
+all33CRCs. Three new tests compare102UTF16/105UTF32/45Punycode rows. Parent
+independently joins all252original/native rows by ID, checking raw input, codec,
+acceptance and decoded bytes; zero differences. Source/native/original snapshots
+are unchanged, strict Clippy passes, native exec count1/Python0. Successful
+previous domains are not rerun; arbitrary payloads and source retirement remain.
+
+HZ comparison39827297036 succeeds at the same0dbc9601 source, workflow
+b0d672ffe050e5edc13562efe634401bffc5babb. Artifact12447207840 is4245093bytes,
+SHA2561f8d14a39d5807290d3ace7ef361e571f6c9e7784647a302bccb18ce9941b096,
+all382CRCs. Parent compares all9dense binary files byte-for-byte:197356rows;
+two tests also cover1992new vectors,45reused original inputs and136source
+admissions. Original/current-source/native-provider pairs are unchanged. Exactly
+one native exec and zero Python execs occur. Other multibyte families stay open.
+
+CarrotNavi comparator39826752939 succeeds at7a1c79f25ecc5a1eb71fab0564b13278bf3abba5,
+workflowe77fbdc1a3b2289cc590241c20cc0acac0c32fc7. Artifact12447566198 is19309995bytes,
+SHA2569e25cbbb637a451c3087c379d5600badc9d98108dc8eed76988c9c00534e3445,
+all3081CRCs. Three tests/strict Clippy and72controls pass:20positive/52negative,
+including exact signed-zero/directional numeric and cardinality behavior. Parent
+checks all statuses against actual files,122byte-equal original/native output
+pairs and21saved input seals. The held corpus has179policy/56socket/21lifecycle
+observations. This accepts the comparator only; maintained caller and embedded
+Python retirement are separate. No radar/runtime behavior or NAS deployment changes.
+
+Paramsd startup39827158238 fails in the actual original/two-native-root stage at
+69bbee211a5bfde590ab9d85fb071d967892b580, workflow
+b297d5fd6c009aeb95f71fd47ac54439550f5f39; Sol investigates before caller changes.
+LoggingR4 admission39827448694 also fails at69bbee211, workflow
+702ec8e4dbf1dd7550d31a01b5100755246941f4. Loggerd39827462896 at0e38b0ea/workflow
+02a94de5d815a9458fac227f65313a428312ae5d stops before tests with five API errors
+and one unsafe-code lint. The focused candidate fixes named Signal construction
+and Cap'n Proto union Builder access. The existing ZMQ_USE_FD FFI receives
+a statement-only unsafe-code allowance with its ownership rationale; no safe
+setter exists in locked zmq0.10. Crate policy and executable behavior remain
+unchanged. API patch4186b36a and FFI patchaf9b587c pass local scoped formatting
+and diff review; hosted compilation/execution remain required. No functional
+success is inferred from syntax or patch review.
+
+Actual road operand39823666805/workflow4450f81b24b118f446fdf8288c2910c00425bf46
+now reaches capture but fails strict original/candidate eight-buffer byte parity.
+Artifact12445763659 is193920144bytes/SHA256
+9bee6c21073a9ef3e5ff99f25d0a48a4b854079f508a642a423c2405f549ed40;
+parent authenticates all8ZIPCRCs, Sol diagnoses retained operands. Driver fresh
+first-convolution diagnostic39828495779 separately uses69bbee211/workflow
+9e99a1e656a8c713cefc56a0c996d43ff5f6b409. It has no numerical fix or acceptance
+claim; original/current compiled images, full same-call operands and FP controls
+must be inspected before attributing drift. Startup39819735679 remains pending.

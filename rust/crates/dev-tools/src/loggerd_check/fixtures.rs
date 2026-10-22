@@ -121,11 +121,11 @@ pub(super) fn encoded(
             "qRoadEncodeData" => root.set_q_road_encode_data(data)?,
             _ => return Err("unsupported source encoder service".into()),
         }
-        let data = match service {
-            "roadEncodeData" => root.get_road_encode_data()?,
-            "wideRoadEncodeData" => root.get_wide_road_encode_data()?,
-            "driverEncodeData" => root.get_driver_encode_data()?,
-            "qRoadEncodeData" => root.get_q_road_encode_data()?,
+        let data = match root.which()? {
+            event::RoadEncodeData(data)
+            | event::WideRoadEncodeData(data)
+            | event::DriverEncodeData(data)
+            | event::QRoadEncodeData(data) => data?,
             _ => unreachable!(),
         };
         let mut index = data.get_idx()?;

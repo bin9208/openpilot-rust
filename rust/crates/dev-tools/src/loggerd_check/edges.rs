@@ -163,7 +163,7 @@ pub(super) fn run(peer: &mut Peer, name: &str, fixtures: &Fixtures) -> Result<Va
             )?;
             peer.send("carState", &fixtures::event("carState", 1)?)?;
             let received =
-                rustix::process::Signal::from_raw(number).ok_or("invalid platform signal")?;
+                rustix::process::Signal::from_named_raw(number).ok_or("invalid platform signal")?;
             let logs = peer.stop(received)?;
             let sentinel = &logs[0]["rlog"]
                 .as_array()
