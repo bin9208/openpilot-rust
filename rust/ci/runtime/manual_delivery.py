@@ -6,6 +6,7 @@ source checkout. All build/seal/install functions and the native publisher come 
 source; its marker-only automatic entry point remains unchanged.
 """
 import hashlib
+from contextlib import contextmanager
 import json
 import os
 from pathlib import Path
@@ -87,8 +88,40 @@ def authorize():
     return root, sha
 
 
+@contextmanager
+def source_build_context(root, sha):
+    """Give source-owned build tools the verified checkout's commit identity.
+
+    Actions' GITHUB_SHA identifies this separate controller, whereas the existing
+    OpenCV producer reads that variable for its source receipt. Preserve the
+    controller identity separately and restore the process environment afterward.
+    Never rewrite a generated receipt or relax its exact-source validation.
+    """
+    actual = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+    assert actual == sha, "build source changed after authorization"
+    controller = os.environ["GITHUB_SHA"]
+    previous = os.environ.get("RUNTIME_CONTROLLER_SHA")
+    os.environ["RUNTIME_CONTROLLER_SHA"] = controller
+    os.environ["GITHUB_SHA"] = actual
+    try:
+        yield
+    finally:
+        os.environ["GITHUB_SHA"] = controller
+        if previous is None:
+            os.environ.pop("RUNTIME_CONTROLLER_SHA", None)
+        else:
+            os.environ["RUNTIME_CONTROLLER_SHA"] = previous
+
+
 def main(command):
     root, sha = authorize()
+    # Approval receipts record the real controller SHA before entering this
+    # source-only child-build context; the immutable Actions event is unchanged.
+    with source_build_context(root, sha):
+        execute(root, sha, command)
+
+
+def execute(root, sha, command):
     delivery = runpy.run_path(str(root / "rust/ci/runtime/package.py"))
     os.environ["RUSTUP_TOOLCHAIN"] = "1.94.0"
     if command == "source-policy":

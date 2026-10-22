@@ -1,8 +1,10 @@
 """Cloud-only tests of owner approval, exact CI evidence and source separation."""
 import copy
 import importlib.util
+import os
 from pathlib import Path
 import unittest
+from unittest import mock
 
 import yaml
 
@@ -28,6 +30,32 @@ def evidence():
 
 
 class ManualDeliveryTests(unittest.TestCase):
+  def test_provider_receipt_uses_checked_out_source_and_keeps_controller_separate(self):
+    controller = 'b' * 40
+    with mock.patch.dict(os.environ, GITHUB_SHA=controller, RUNTIME_CONTROLLER_SHA='previous'), \
+         mock.patch.object(DRIVER.subprocess, 'check_output', return_value=SHA + '\n'):
+      with DRIVER.source_build_context(ROOT, SHA):
+        # The original native OpenCV producer reads GITHUB_SHA verbatim.
+        self.assertEqual(os.environ['GITHUB_SHA'], SHA)
+        self.assertEqual(os.environ['RUNTIME_CONTROLLER_SHA'], controller)
+      self.assertEqual(os.environ['GITHUB_SHA'], controller)
+      self.assertEqual(os.environ['RUNTIME_CONTROLLER_SHA'], 'previous')
+
+  def test_source_identity_context_restores_after_failure_and_rejects_other_checkout(self):
+    controller = 'b' * 40
+    with mock.patch.dict(os.environ, GITHUB_SHA=controller), \
+         mock.patch.object(DRIVER.subprocess, 'check_output', return_value=SHA + '\n'):
+      os.environ.pop('RUNTIME_CONTROLLER_SHA', None)
+      with self.assertRaisesRegex(RuntimeError, 'producer failed'):
+        with DRIVER.source_build_context(ROOT, SHA):
+          raise RuntimeError('producer failed')
+      self.assertEqual(os.environ['GITHUB_SHA'], controller)
+      self.assertNotIn('RUNTIME_CONTROLLER_SHA', os.environ)
+      with self.assertRaisesRegex(AssertionError, 'build source changed'):
+        with DRIVER.source_build_context(ROOT, 'c' * 40):
+          self.fail('different source was admitted')
+      self.assertEqual(os.environ['GITHUB_SHA'], controller)
+
   def test_explicit_owner_request_for_exact_source_is_admitted(self):
     DRIVER.validate_request(request(), SHA, '42', REF, 'bin9208')
 
