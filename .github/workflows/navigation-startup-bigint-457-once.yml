@@ -1,0 +1,184 @@
+name: 457 Navigation QA bigint development profile measurement
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/navigation-startup-bigint-457-once.yml
+permissions:
+  contents: read
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
+jobs:
+  navd-runtime:
+    name: rust navigation runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+      EXPECTED_SOURCE: 7e32499c38d5e78434d5d4943637ae07af48555e
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        ref: 7e32499c38d5e78434d5d4943637ae07af48555e
+    - name: Admit exact current checkout
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        '
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Configure original navigation IPC imports
+      run: 'set -euo pipefail
+
+        printf ''PYTHONPATH=%s/navd-native/msgq:%s\n'' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"'
+    - name: Reserve runner capacity and install navigation prerequisites
+      run: 'set -euo pipefail
+
+        sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
+
+        sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0
+        requests==2.34.2 urllib3==2.7.0 charset-normalizer==3.5.1 brotli==1.2.0 PyJWT==2.14.0 cryptography==50.0.1
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        '
+    - name: Build current native dependency stager
+      uses: ./.github/actions/native-json11
+    - name: Build original navigation Params and IPC bindings
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/navd-native/params"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/navd-native/msgq"
+
+        python -P -c ''import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"navd-native/params/provenance.json";
+        print("NAVD_PARAMS_BINDING="+json.loads(p.read_text())["module"])'' >> "$GITHUB_ENV"
+
+        '
+    - name: Build and test native navigation and its source probes
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-navd --features native --bins --examples --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-navd --features native --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-navd --features native --all-targets --locked -- -D warnings
+
+        '
+    - name: Observe eight fresh cancellation starts with phase timing and retained failures
+      run: "set -euo pipefail\nexport OPENPILOT_RUST_ROOT=\"$GITHUB_WORKSPACE\"\nexport NAVD_CONFIG_BINARY=\"$GITHUB_WORKSPACE/rust/target/debug/examples/navd_config\"\
+        \nexport NAVD_CONFIG_WORKER_BINARY=\"$GITHUB_WORKSPACE/rust/target/debug/check-navd-config\"\nevidence=\"$RUNNER_TEMP/navd-native/repeated-cancellation\"\
+        \nmkdir -p \"$evidence\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib\
+        \ 1024\ncargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features navd-config-tools-native --bin\
+        \ check-navd-config --locked\nsha256sum \"$NAVD_CONFIG_WORKER_BINARY\" \"$GITHUB_WORKSPACE/rust/crates/dev-tools/tests/fixtures/navd-config/slow-probe.sh\"\
+        \ > \"$evidence/input-sha256-before.txt\"\nfailures=0\nfor attempt in $(seq -w 1 8); do\n  export NAVD_CONFIG_CANCEL_DIAGNOSTICS=\"\
+        $evidence/attempt-$attempt\"\n  if cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features navd-config-tools-native\
+        \ --test navd_config_check --locked -- actual_cli_interrupt_after_child_start_reaps_probe_and_retains_original_signal_status\
+        \ --exact --nocapture > \"$evidence/attempt-$attempt.log\" 2>&1; then\n    status=0\n  else\n    status=$?\n  fi\n\
+        \  if ! grep -Fq '1 passed; 0 failed' \"$evidence/attempt-$attempt.log\"; then\n    status=1\n  fi\n  if [ ! -f \"\
+        $NAVD_CONFIG_CANCEL_DIAGNOSTICS/state.json\" ]; then\n    status=1\n  fi\n  printf '%s %s\\n' \"$attempt\" \"$status\"\
+        \ >> \"$evidence/attempt-status.txt\"\n  if [ \"$status\" -ne 0 ]; then\n    failures=$((failures + 1))\n  fi\ndone\n\
+        sha256sum \"$NAVD_CONFIG_WORKER_BINARY\" \"$GITHUB_WORKSPACE/rust/crates/dev-tools/tests/fixtures/navd-config/slow-probe.sh\"\
+        \ > \"$evidence/input-sha256-after.txt\"\ncmp \"$evidence/input-sha256-before.txt\" \"$evidence/input-sha256-after.txt\"\
+        \nprintf 'attempts=8 failures=%s\\n' \"$failures\" | tee \"$evidence/result.txt\"\ntest \"$failures\" -eq 0\n"
+    - name: Require independent native navigation configuration source and lifecycle
+      run: 'set -euo pipefail
+
+        export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
+
+        export NAVD_CONFIG_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/navd_config"
+
+        export NAVD_CONFIG_WORKER_BINARY="$GITHUB_WORKSPACE/rust/target/debug/check-navd-config"
+
+        export NAVD_CONFIG_CANCEL_DIAGNOSTICS="$RUNNER_TEMP/navd-native/cancel-diagnostics"
+
+        export REGISTRATION_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/registration_trace"
+
+        export REGISTRATION_WORKER_BINARY="$GITHUB_WORKSPACE/rust/target/debug/check-registration"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features navd-config-tools-native --bin check-navd-config
+        --bin check-registration -p openpilot-registration --example registration_trace --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features navd-config-tools-native --test navd_config_check
+        --test navd_config_reference --test registration_navd_retirement --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features navd-config-tools-native --lib navd_config_check::publication::tests
+        --locked
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features navd-config-tools-native --lib --bin
+        check-navd-config --test navd_config_check --test navd_config_reference --test registration_navd_retirement --locked
+        -- -D warnings
+
+        '
+    - name: Compare navigation source policy, HTTP, authentication and destination CLI
+      run: 'set -euo pipefail
+
+        python rust/tools/check_navd_policy.py --binary rust/target/debug/examples/navd_policy --binding "$NAVD_PARAMS_BINDING"
+        --output "$RUNNER_TEMP/navd-native/policy"
+
+        python rust/tools/check_navd_engine.py --binary rust/target/debug/examples/navd_engine --binding "$NAVD_PARAMS_BINDING"
+        --output "$RUNNER_TEMP/navd-native/engine"
+
+        python rust/tools/check_navd_http.py --binary rust/target/debug/examples/navd_http --output "$RUNNER_TEMP/navd-native/http"
+        --timeouts
+
+        rust/target/debug/check-navd-config --binary rust/target/debug/examples/navd_config --output "$RUNNER_TEMP/navd-native/config"
+
+        python rust/tools/check_navd_destination.py --binary rust/target/debug/openpilot-set-destination --binding "$NAVD_PARAMS_BINDING"
+        --output "$RUNNER_TEMP/navd-native/destination"
+
+        '
+    - name: Compare actual navigation IPC, restart timers and signal lifecycle
+      run: 'set -euo pipefail
+
+        python rust/tools/check_navd_ipc.py --binary rust/target/debug/openpilot-navd --binding "$NAVD_PARAMS_BINDING" --output
+        "$RUNNER_TEMP/navd-native/ipc"'
+    - name: Preserve navigation source, wire and executable evidence
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: rust-navd-host-evidence
+        path: '${{ runner.temp }}/navd-native/
+
+          rust/target/debug/openpilot-navd
+
+          rust/target/debug/openpilot-set-destination
+
+          rust/target/debug/examples/navd_*
+
+          '
+        if-no-files-found: warn
