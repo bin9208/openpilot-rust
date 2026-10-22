@@ -12,7 +12,7 @@ tracks the full build comparison.
 | --- | ---: | ---: | --- |
 | Complete AGNOS job, including setup/upload/cleanup | 44m 47s | 35m 47s | Both succeeded; bin-actions 20.1% shorter |
 | AGNOS runtime/OpenCV/ABI/seal/offline installation stage | 36m 51.520s | 27m 52.356s | Both succeeded; bin-actions 24.4% shorter |
-| Complete generic GNU/musl ARM job | Pending | Pending | Corrected paired run is still active |
+| Complete generic GNU workspace / musl probe ARM job | Pending | 55m 41s | bin-actions succeeded; hosted dependency preparation remains active |
 
 The complete AGNOS jobs are [GitHub-hosted job 119987116428](https://github.com/bin9208/openpilot-rust/actions/runs/39825360851/job/119987116428)
 and [bin-actions job 119987118119](https://github.com/bin9208/openpilot-rust/actions/runs/39825360851/job/119987118119).
@@ -24,6 +24,13 @@ Corrected generic comparison: [run 39832976197](https://github.com/bin9208/openp
 [hosted job 120013728693](https://github.com/bin9208/openpilot-rust/actions/runs/39832976197/job/120013728693)
 and [bin-actions job 120013728323](https://github.com/bin9208/openpilot-rust/actions/runs/39832976197/job/120013728323).
 Do not treat a running job as a successful build.
+
+The corrected bin-actions job completed successfully in 3341s (55m 41s),
+including all 15 measured build/setup stages, upload and owned cleanup. The GNU
+workspace stage took 1176.028s and the musl static C3X probe stage 1266.828s.
+Every measured stage exited zero; recorded cgroup oom/oom_kill counters remained
+zero. Hosted dependency provisioning is still active, so its complete build
+time, compiler outcome and cause of the preparation delay remain unverified.
 
 ## Comparable source and build scope
 
@@ -47,9 +54,9 @@ Do not treat a running job as a successful build.
   package verification. Unchanged non-OpenCV external companions, firmware and
   models use verified pinned baseline assets, following the existing procedure;
   they are not all rebuilt from source in this comparison.
-- Generic ARM retains the original full GNU/musl workspace and native Card,
+- Generic ARM retains the original full GNU workspace and native Card,
   selfdrived, navigation, Panda, camera, encoder and UI build/inspection steps,
-  including the original VisionIPC ION boundary and static C3X probe checks.
+  including the original VisionIPC ION boundary and musl static C3X probe checks.
 - The hosted runner has four logical AMD EPYC 7763 CPUs and about 16 GiB RAM.
   `bin-actions` exposes four logical Intel i9-13900 CPUs, 4 GiB RAM and 2 GiB swap.
   This compares the actual registered environments, not CPU models in isolation.
