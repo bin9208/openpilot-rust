@@ -1,0 +1,57 @@
+name: Updater remote regression 419
+on:
+  push:
+    branches: [codex/fix-419-update-remote]
+    paths:
+      - .github/workflows/update-remote-419.yml
+      - rust/crates/updated/**
+permissions:
+  contents: read
+concurrency:
+  group: update-remote-419-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  regression:
+    name: Focused updater remote tests and lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      RUSTUP_TOOLCHAIN: '1.94.0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+    defaults:
+      run:
+        working-directory: rust
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+      - name: Reserve capacity before dependency installation
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+      - name: Install existing pinned toolchain and affected native prerequisites
+        run: |
+          rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          sudo apt-get update
+          sudo apt-get install -y capnproto libcapnp-dev pkg-config g++ libzmq3-dev
+      - name: Check affected Rust formatting
+        run: cargo fmt -p openpilot-updated --check
+      - name: Strict affected lint
+        id: lint
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo clippy -p openpilot-updated --all-targets --locked -- -D warnings
+      - name: Run remote regressions against the real updater
+        if: ${{ !cancelled() && steps.lint.outcome != 'skipped' }}
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo test -p openpilot-updated --locked --test update_remote -- --nocapture
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
