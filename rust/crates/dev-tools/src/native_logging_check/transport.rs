@@ -47,7 +47,9 @@ pub(super) fn check(source: &Path, native: &Path, root: &Path, output: &Path) ->
             original,
             false,
         )?;
+        let started_peer = start.elapsed().as_secs_f64();
         let response = peer.command(json!({"op":"flood","count":5000}))?;
+        let replied = start.elapsed().as_secs_f64();
         let sent = response["sent"].as_u64().ok_or("missing sent count")?;
         let dropped = response["dropped"]
             .as_u64()
@@ -58,6 +60,12 @@ pub(super) fn check(source: &Path, native: &Path, root: &Path, output: &Path) ->
         )?;
         peer.finish()?;
         let duration = start.elapsed().as_secs_f64();
+        fs::write(
+            output.join(name).join("backpressure/timing.json"),
+            serde_json::to_vec_pretty(
+                &json!({"start_peer_seconds":started_peer,"command_seconds":replied-started_peer,"finish_seconds":duration-replied,"send_and_shutdown_seconds":duration,"limit_seconds":2.0,"backpressure":response}),
+            )?,
+        )?;
         require(
             duration < 2.0,
             "backpressure send and shutdown exceeded bound",

@@ -735,6 +735,20 @@ mod tests {
             .collect()
     }
     #[test]
+    fn saved_created_number_preserves_actual_wire_float_bits() {
+        let record: Value = serde_json::from_slice(br#"{"created": 1792684466.2917035}"#).unwrap();
+        assert_eq!(
+            record["created"].as_f64().unwrap().to_bits(),
+            1792684466.2917035_f64.to_bits()
+        );
+        let saved = serde_json::to_vec(&record).unwrap();
+        let replay: Value = serde_json::from_slice(&saved).unwrap();
+        assert_eq!(
+            replay["created"].as_f64().unwrap().to_bits(),
+            1792684466.2917035_f64.to_bits()
+        );
+    }
+    #[test]
     fn validation_checks_level_lifetime_callsite_and_provenance_before_projection() {
         let root = tempfile::tempdir().unwrap();
         let data = packet(root.path(), false);

@@ -8133,3 +8133,14 @@ Original-nsz observations are retained independently and are not asserted equal
 to strict addition. Actual current model operands, previous opposite-sign case,
 affected exceptional/poststate and full-model validation are still required.
 No road/driver drift issue or compiler-source retirement is declared complete.
+
+R2 logging's actual first protocol error is the unchanged two-second backpressure
+send-and-shutdown bound: Rust reports1000sent/4000dropped and exits0, but the
+controller returns1. Phase durations were not saved, so scheduling/ptrace/runtime
+causality is not established. The next diagnostic saves peer-start, command and
+finish durations before asserting the same bound, and runs the same held providers
+once without tracing and once with tracing. Separately, saved created timestamps
+lose one ULP during JSON parsing for60captured values. The opt-in comparator now
+enables serde_json's float_roundtrip parser and includes an actual observed-value
+roundtrip regression. Raw packet comparisons and the original narrow projections
+stay unchanged; no timestamp tolerance or timing deadline is relaxed.

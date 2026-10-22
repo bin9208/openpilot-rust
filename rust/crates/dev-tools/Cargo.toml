@@ -539,7 +539,7 @@ required-features = ["manager-catalog-tools-native"]
 
 [features]
 changed-files-native = ["dep:ruff_python_parser", "dep:ruff_python_ast", "dep:unicode_names2"]
-native-logging-check-native = ["dep:zmq", "rustix/net"]
+native-logging-check-native = ["dep:zmq", "rustix/net", "serde_json/float_roundtrip"]
 deleter-check-native = []
 kalman-model-generator-native = []
 kalman-corpus-generator-native = ["dep:libloading", "dep:openpilot-runtime-core", "serde_json/float_roundtrip"]
