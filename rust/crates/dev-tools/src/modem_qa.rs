@@ -948,7 +948,7 @@ fn lifecycle(options: &TraceOptions) -> Result<Value> {
     let calls = fixture.calls()?;
     require(
         calls.contains(
-            &vec!["systemctl", "mask", "--runtime", "ModemManager"]
+            &["systemctl", "mask", "--runtime", "ModemManager"]
                 .into_iter()
                 .map(str::to_owned)
                 .collect(),
@@ -957,7 +957,7 @@ fn lifecycle(options: &TraceOptions) -> Result<Value> {
     )?;
     require(
         calls.contains(
-            &vec!["systemctl", "stop", "ModemManager"]
+            &["systemctl", "stop", "ModemManager"]
                 .into_iter()
                 .map(str::to_owned)
                 .collect(),
@@ -966,7 +966,7 @@ fn lifecycle(options: &TraceOptions) -> Result<Value> {
     )?;
     require(
         calls.contains(
-            &vec!["systemctl", "unmask", "--runtime", "ModemManager"]
+            &["systemctl", "unmask", "--runtime", "ModemManager"]
                 .into_iter()
                 .map(str::to_owned)
                 .collect(),
@@ -975,7 +975,7 @@ fn lifecycle(options: &TraceOptions) -> Result<Value> {
     )?;
     require(
         calls.contains(
-            &vec!["systemctl", "start", "ModemManager"]
+            &["systemctl", "start", "ModemManager"]
                 .into_iter()
                 .map(str::to_owned)
                 .collect(),
@@ -984,7 +984,7 @@ fn lifecycle(options: &TraceOptions) -> Result<Value> {
     )?;
     require(
         calls.contains(
-            &vec!["resolvectl", "dns", "ppp0", "1.1.1.1", "8.8.8.8"]
+            &["resolvectl", "dns", "ppp0", "1.1.1.1", "8.8.8.8"]
                 .into_iter()
                 .map(str::to_owned)
                 .collect(),

@@ -122,13 +122,13 @@ mod tests {
             source_state(&args(&base).unwrap()).unwrap(),
             SourceState::OriginalPresent
         );
-        let mut tools = base.clone().to_vec();
+        let mut tools = base.to_vec();
         tools.push("--require-tools-retired".into());
         assert_eq!(
             source_state(&args(&tools).unwrap()).unwrap(),
             SourceState::ToolsRetiredRuntimePinned
         );
-        let mut all = base.clone().to_vec();
+        let mut all = base.to_vec();
         all.push("--require-retired".into());
         assert_eq!(
             source_state(&args(&all).unwrap()).unwrap(),
