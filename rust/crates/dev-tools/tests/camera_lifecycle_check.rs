@@ -322,7 +322,21 @@ fn original_process_environment_sanitizer_failure_and_artifact_order() {
                 *value = serde_json::Value::String(text);
             }
         }
-        assert_eq!(serde_json::Value::Object(actual), case["files"], "{mode}");
+        let mut expected_files = case["files"].clone();
+        if mode == "disk-boundary" {
+            // The approved growth-only policy translates the injected boundary
+            // from 26 GiB to 1 GiB. Its receipt must report that actual input;
+            // every other byte of the immutable original artifacts stays exact.
+            let original_free = case["free"].as_u64().unwrap();
+            assert_eq!(original_free, 26u64 << 30);
+            let report = expected_files["report.json"].as_str().unwrap();
+            let old_field = format!("\"free_bytes\": {original_free},");
+            assert_eq!(report.matches(&old_field).count(), 1);
+            let new_field = format!("\"free_bytes\": {},", original_free - (25u64 << 30));
+            expected_files["report.json"] =
+                serde_json::Value::String(report.replacen(&old_field, &new_field, 1));
+        }
+        assert_eq!(serde_json::Value::Object(actual), expected_files, "{mode}");
     }
 }
 #[test]
