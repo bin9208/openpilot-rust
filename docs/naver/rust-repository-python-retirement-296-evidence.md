@@ -6966,3 +6966,31 @@ at step44/inner4/term8, productv1285 feedingv1286. This proves a source-ordered
 legal-choice witness exists, not that the original machine used that witness.
 Actual emitted operation/pairing still requires mapping; no numeric policy,
 tolerance, target flag, frozen oracle or production compiler was changed.
+
+### Outer diagnostic separates successful recovery traffic from two new failures
+
+39732279836/source defb9011df3fca924dca41a703b48ce5ff0c51e0/workflow
+2b9fb12adc563cebb212480f90fb2463278b4cfd finishes FAILURE. Both archives/all14716
+CRCs pass independent worker audit. Sample1 artifact12405814232 is68051971B/SHA
+d7c9a1046b37d22045cdac0adc203a9d4e8bc82d1fde82361742fe770626970a/all7362CRCs.
+Its actual two-root/eight-controller test passes1/0 in710.08s and full closed
+exec audit passes2508tracefiles/4795attempts/2393success/2402failed,25program
+seals/96created records/fouralias relations. The extra diagnostic raw ptrace log
+expands to1810213409B and trips the unchanged400MiB total evidence bound at
+1843MiB. This is successful controller/exec evidence and failed packaging, not
+a passing overall workflow. Reuse those successful checks rather than rerun them
+solely to clear the extra size guard.
+
+Sample0 artifact12406422350 is67797485B/SHA
+759ac67b7bbe348908bc62c2cf46c2bc157d6bc5516dcb8b781d6d170ba0424e/all7354CRCs.
+Its private/shutdown fails parsing an empty PID file, which later contains15815.
+The fixture redirection creates the file before printf publishes content; the
+native QA reader checked existence then parsed once. Issue484 tracks this
+independent readiness race. Candidate waits for a complete positive decimal PID
+line within the existing5s bound, with empty/partial/deadline/malformed controls;
+later SIGTERM3s/orphan/cleanup checks remain. Syntax/format/diff only locally;
+hosted regression and affected full-gate verification remain pending.
+
+Neither outer trace reproduces the historical ptrace fault: all4193GETSIGINFO
+calls and bothLISTEN calls succeed; no ptrace errno is recorded. Nested tracing
+changes scheduling, so this does not resolve474 or establish its old cause.

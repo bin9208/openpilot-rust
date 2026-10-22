@@ -37,6 +37,37 @@ fn state(pid: u32) -> Result<Option<String>> {
     }
 }
 
+fn wait_for_published_pid(path: &Path, timeout: Duration) -> Result<u32> {
+    let deadline = Instant::now() + timeout;
+    loop {
+        match fs::read_to_string(path) {
+            Ok(raw) => {
+                // Shell redirection creates the file before printf publishes
+                // its PID. Existence, or a partial decimal prefix, is not ready.
+                if let Some(line) = raw.strip_suffix('\n') {
+                    if line.is_empty() || !line.bytes().all(|byte| byte.is_ascii_digit()) {
+                        return Err("invalid owned tunnel PID publication".into());
+                    }
+                    let pid: u32 = line.parse()?;
+                    if pid == 0 {
+                        return Err("invalid owned tunnel PID publication".into());
+                    }
+                    return Ok(pid);
+                }
+                if !raw.bytes().all(|byte| byte.is_ascii_digit()) {
+                    return Err("invalid owned tunnel PID publication".into());
+                }
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error.into()),
+        }
+        let Some(remaining) = deadline.checked_duration_since(Instant::now()) else {
+            return Err("owned recovery tunnel did not publish a complete PID".into());
+        };
+        thread::sleep(remaining.min(Duration::from_millis(10)));
+    }
+}
+
 /// Requires the same pending-tunnel termination and request-disconnect
 /// relations observed by the unchanged original controller. The source rows
 /// must come from the independently authenticated original-only fixture.
@@ -55,7 +86,10 @@ fn run_support_shutdown_inner(
     let candidate = Pin::open(config.candidate, 256 * 1024 * 1024)?;
     let tunnel = config.output.join("cloudflared");
     let shell = config.output.join("fixture-shell");
-    fs::write(&tunnel, "#!/bin/sh\nprintf \"%s\\n\" \"$$\" > \"$CARROT_OWNED_TUNNEL_ENTERED\"\nwhile ! test -f \"$CARROT_OWNED_TUNNEL_RELEASE\"; do sleep 0.1; done\nprintf \"https://owned-fixture.trycloudflare.com\\n\"\nexec sleep 600\n")?;
+    fs::write(
+        &tunnel,
+        "#!/bin/sh\nprintf \"%s\\n\" \"$$\" > \"$CARROT_OWNED_TUNNEL_ENTERED\"\nwhile ! test -f \"$CARROT_OWNED_TUNNEL_RELEASE\"; do sleep 0.1; done\nprintf \"https://owned-fixture.trycloudflare.com\\n\"\nexec sleep 600\n",
+    )?;
     fs::write(&shell, "#!/bin/sh\nexec /bin/bash --noprofile --norc -i\n")?;
     fs::set_permissions(&tunnel, fs::Permissions::from_mode(0o700))?;
     fs::set_permissions(&shell, fs::Permissions::from_mode(0o700))?;
@@ -115,15 +149,7 @@ fn run_support_shutdown_inner(
             .map(|response| response.status)
             .map_err(|error| error.to_string())
         });
-        let entered_deadline = Instant::now() + Duration::from_secs(5);
-        while !entered.exists() {
-            if Instant::now() >= entered_deadline {
-                fs::write(&release, "release on fixture cleanup\n")?;
-                return Err("owned recovery tunnel did not enter".into());
-            }
-            thread::sleep(Duration::from_millis(10));
-        }
-        let tunnel_pid: u32 = fs::read_to_string(&entered)?.trim().parse()?;
+        let tunnel_pid = wait_for_published_pid(&entered, Duration::from_secs(5))?;
         let began = Instant::now();
         server.signal(Signal::TERM)?;
         let first_wait = server.wait_unreaped(Duration::from_secs(3));
@@ -233,4 +259,60 @@ fn run_support_shutdown_inner(
         let _ = server.signal(Signal::TERM);
     }
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::mpsc::{self, RecvTimeoutError};
+
+    #[test]
+    fn pid_publication_waits_for_complete_line() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("entered");
+        fs::write(&path, "").unwrap();
+        let reader_path = path.clone();
+        let (send, receive) = mpsc::channel();
+        let reader = thread::spawn(move || {
+            send.send(
+                wait_for_published_pid(&reader_path, Duration::from_secs(5))
+                    .map_err(|error| error.to_string()),
+            )
+            .unwrap();
+        });
+        assert_eq!(
+            receive.recv_timeout(Duration::from_millis(30)),
+            Err(RecvTimeoutError::Timeout)
+        );
+        fs::write(&path, "12").unwrap();
+        assert_eq!(
+            receive.recv_timeout(Duration::from_millis(30)),
+            Err(RecvTimeoutError::Timeout)
+        );
+        fs::write(&path, "123\n").unwrap();
+        assert_eq!(
+            receive.recv_timeout(Duration::from_secs(1)).unwrap(),
+            Ok(123)
+        );
+        reader.join().unwrap();
+    }
+
+    #[test]
+    fn pid_publication_deadline_and_malformed_controls() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("entered");
+        for content in [None, Some(""), Some("12")] {
+            if let Some(content) = content {
+                fs::write(&path, content).unwrap();
+            }
+            let error = wait_for_published_pid(&path, Duration::ZERO).unwrap_err();
+            assert!(error.to_string().contains("did not publish a complete PID"));
+        }
+        for content in ["0\n", "not-a-pid\n", "123\n456\n", "4294967296\n"] {
+            fs::write(&path, content).unwrap();
+            assert!(wait_for_published_pid(&path, Duration::ZERO).is_err());
+        }
+        fs::write(&path, "123\n").unwrap();
+        assert_eq!(wait_for_published_pid(&path, Duration::ZERO).unwrap(), 123);
+    }
 }
