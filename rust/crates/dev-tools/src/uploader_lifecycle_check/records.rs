@@ -204,7 +204,18 @@ pub fn worker(path: &Path) -> Result<Value> {
         permission.mode(0o111)?;
     }
     let _permission = permission;
-    let server = http::Server::start(&settings)?;
+    // The original endpoint ignores fixture/action flags. Only transport
+    // settings belong to the strict HTTP peer; keep fault controls in the probe.
+    let http_settings = Value::Object(
+        settings
+            .as_object()
+            .ok_or("fault settings absent")?
+            .iter()
+            .filter(|(key, _)| ["api_status", "put_status"].contains(&key.as_str()))
+            .map(|(key, value)| (key.clone(), value.clone()))
+            .collect(),
+    );
+    let server = http::Server::start(&http_settings)?;
     let home = request
         .work
         .parent()
