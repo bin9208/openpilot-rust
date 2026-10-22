@@ -101,7 +101,7 @@ fn write_record(file: &mut File, saved: &Record) -> Result<(), Error> {
 /// Identity includes all configured function links, not merely a conventional name.
 pub(super) fn stock(gadget: &Path) -> Result<bool, Error> {
     if gadget.file_name().is_none_or(|name| name != "g1")
-        || value(&gadget.join("idVendor")).to_ascii_lowercase() != "0x04d8"
+        || !value(&gadget.join("idVendor")).eq_ignore_ascii_case("0x04d8")
         || value(&gadget.join("idProduct")) != "0x1234"
         || value(&gadget.join("strings/0x409/manufacturer")) != "comma.ai"
         || value(&gadget.join("configs/c.1/strings/0x409/configuration")) != "NCM+ADB"
