@@ -14,6 +14,7 @@ import re
 import runpy
 import subprocess
 import sys
+import tarfile
 
 
 REPOSITORY = "bin9208/openpilot-rust"
@@ -121,6 +122,34 @@ def main(command):
         execute(root, sha, command)
 
 
+def restore_sealed_modes(root, release, sha):
+    """Restore canonical file modes after Python's data filter strips write bits.
+
+    Keep safe extraction and the sealed archive unchanged. The original native
+    publisher still independently checks every member, mode, hash and identity.
+    """
+    descriptor = json.loads((release / "runtime-release.json").read_text())
+    assert descriptor["source_commit"] == sha
+    name = descriptor["archive"]["name"]
+    assert name == f"openpilot-rust-{sha}-aarch64.tar.gz"
+    archive = release / name
+    with archive.open("rb") as stream:
+        assert hashlib.file_digest(stream, "sha256").hexdigest() == descriptor["archive"]["sha256"]
+    root = root.resolve()
+    with tarfile.open(archive) as payload:
+        for member in payload:
+            path = root / member.name
+            assert path.resolve().is_relative_to(root), "archive member escapes source"
+            assert 0 <= member.mode <= 0o777, "unsafe sealed mode"
+            assert member.isfile() or member.issym(), "unsupported sealed member"
+            if member.isfile():
+                assert not path.is_symlink() and path.is_file(), "restored member type changed"
+                before = path.stat().st_mode & 0o7777
+                if before != member.mode:
+                    print(f"Restore sealed mode {member.name}: {before:o} -> {member.mode:o}", flush=True)
+                    path.chmod(member.mode)
+
+
 def execute(root, sha, command):
     delivery = runpy.run_path(str(root / "rust/ci/runtime/package.py"))
     os.environ["RUSTUP_TOOLCHAIN"] = "1.94.0"
@@ -144,6 +173,7 @@ def execute(root, sha, command):
         assert delivery["digest"](publisher) == identity["publisher_sha256"]
         assert delivery["digest"](release / "openpilot-runtime-install-aarch64") == identity["installer_sha256"]
         delivery["restore_release"]()
+        restore_sealed_modes(root, release, sha)
         # This exact-source native binary independently rechecks latest push CI,
         # all five real gates, sealed assets and immutable publication identity.
         delivery["run"]([publisher, "--root", root, "--assets", release, "--branch", "dev-md"])

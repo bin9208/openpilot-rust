@@ -2,6 +2,11 @@
 import copy
 import importlib.util
 import os
+import hashlib
+import io
+import json
+import tarfile
+import tempfile
 from pathlib import Path
 import unittest
 from unittest import mock
@@ -55,6 +60,33 @@ class ManualDeliveryTests(unittest.TestCase):
         with DRIVER.source_build_context(ROOT, 'c' * 40):
           self.fail('different source was admitted')
       self.assertEqual(os.environ['GITHUB_SHA'], controller)
+
+  def test_safe_restore_keeps_sealed_modes_and_archive_bytes(self):
+    with tempfile.TemporaryDirectory() as folder:
+      root = Path(folder) / 'source'
+      root.mkdir()
+      release = Path(folder) / 'release'
+      release.mkdir()
+      archive = release / f'openpilot-rust-{SHA}-aarch64.tar.gz'
+      with tarfile.open(archive, 'w:gz') as payload:
+        for name, mode in (('library', 0o664), ('executable', 0o775), ('readonly', 0o444)):
+          member = tarfile.TarInfo(name)
+          member.mode, member.size = mode, 3
+          payload.addfile(member, io.BytesIO(b'elf'))
+      original = archive.read_bytes()
+      descriptor = dict(source_commit=SHA, archive=dict(name=archive.name, sha256=hashlib.sha256(original).hexdigest()))
+      (release / 'runtime-release.json').write_text(json.dumps(descriptor))
+      with tarfile.open(archive) as payload:
+        payload.extractall(root, filter='data')
+      self.assertEqual((root / 'library').stat().st_mode & 0o777, 0o644)
+      DRIVER.restore_sealed_modes(root, release, SHA)
+      for name, mode in (('library', 0o664), ('executable', 0o775), ('readonly', 0o444)):
+        self.assertEqual((root / name).stat().st_mode & 0o777, mode)
+      self.assertEqual(archive.read_bytes(), original)
+      descriptor['archive']['sha256'] = '0' * 64
+      (release / 'runtime-release.json').write_text(json.dumps(descriptor))
+      with self.assertRaises(AssertionError):
+        DRIVER.restore_sealed_modes(root, release, SHA)
 
   def test_explicit_owner_request_for_exact_source_is_admitted(self):
     DRIVER.validate_request(request(), SHA, '42', REF, 'bin9208')

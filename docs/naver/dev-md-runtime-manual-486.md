@@ -38,3 +38,24 @@ tests and all builds/install verification run in GitHub-hosted Actions. The
 runtime source and protected branch are not changed by the controller; device
 connection, installation and reboot remain user-owned. Publication and online
 verification are pending; append exact Actions/release evidence to #486.
+
+## 2026-10-22 sealed package / publication handoff
+
+Run [39771670638](https://github.com/bin9208/openpilot-rust/actions/runs/39771670638)
+completed the genuine exact-source AGNOS build, ABI audit, sealing and offline
+installation. The archived `offline-install.json` records source
+`dc95138076836ea3a5c1b6c27262be3f3b912f71`, installer exit 0 and installed
+AGNOS launcher verification exit 0 (`device_execution: false`). The sealed
+archive hash is `afd4775ecc24c2d9b8e68339d5b1def60c4d06b44a63bcaa0ff16242b9f9fea4`.
+
+Publication job 119828066569 correctly rejected `archive mode/identity mismatch`
+before publishing. The immutable source's restore function extracts with Python
+`filter="data"`, which removes group/other write bits and adds owner read/write
+bits. The native publisher compares the archive modes against the restored
+filesystem's exact modes. The manual controller now restores ordinary permission
+bits from the hash-verified sealed archive after safe extraction, logging each
+actual difference. It rejects escaping paths, symlink substitutions, unsupported
+members and special mode bits. Archive bytes, source files, native publisher and
+all independent archive/source/CI checks remain unchanged. A cloud regression
+covers 0664/0775/0444 round trips and rejects an altered archive digest.
+Public release and online installation remain pending; no device boot claim.
