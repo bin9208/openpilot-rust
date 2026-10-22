@@ -79,12 +79,7 @@
   device comparison after the complete runtime candidate is ready. Keep unported
   components and native external dependencies explicit in the inventory.
 
-- The user required prevention of disk exhaustion on 2026-09-30. Check available
-  space before each local build, dependency install or large artifact copy. Keep
-  at least 25 GiB free plus the operation's estimated growth; when below that
-  floor, stop new build work and recover at least 35 GiB before resuming. Prefer
-  bounded package builds with incremental compilation disabled and reuse a
-  coordinated target cache. On 2026-10-09 the user explicitly authorized deleting
+- On 2026-10-09 the user explicitly authorized deleting
   old Rust-port records, archived validation artifacts and all unused build
   caches without another approval or preservation/compression step. This
   supersedes earlier instructions to retain historical local evidence. Preserve

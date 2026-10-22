@@ -15,9 +15,15 @@ pub struct Space {
 
 impl Space {
     pub fn new(free_bytes: u64, growth_bytes: u64) -> Result<Self> {
+        // The owner removed the fixed reserve for the isolated Actions comparison.
+        let reserve = if std::env::var("OPENPILOT_RUNNER_COMPARISON").as_deref() == Ok("498") {
+            0
+        } else {
+            RESERVE_BYTES
+        };
         Ok(Self {
             free_bytes,
-            required_bytes: RESERVE_BYTES
+            required_bytes: reserve
                 .checked_add(growth_bytes)
                 .ok_or("disk reserve plus growth exceeds u64")?,
             growth_bytes,

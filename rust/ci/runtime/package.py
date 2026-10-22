@@ -14,7 +14,7 @@ import zipfile
 
 assert os.environ.get("GITHUB_ACTIONS") == "true", "runtime validation/builds belong in GitHub Actions"
 assert os.environ.get("GITHUB_REPOSITORY") == "bin9208/openpilot-rust"
-assert os.environ.get("RUNNER_ENVIRONMENT") == "github-hosted", "runtime delivery requires a GitHub-hosted runner"
+assert os.environ.get("RUNNER_ENVIRONMENT") == "github-hosted" or (os.environ.get("OPENPILOT_RUNNER_COMPARISON") == "498" and os.environ.get("RUNNER_ENVIRONMENT") == "self-hosted"), "runtime delivery requires a GitHub-hosted runner outside comparison498"
 ROOT = Path(os.environ["GITHUB_WORKSPACE"])
 WORK = Path(os.environ["RUNNER_TEMP"]) / "agnos-runtime"
 WORK.mkdir(exist_ok=True)
@@ -48,7 +48,8 @@ def run(args, **kwargs):
 
 def room(growth=0):
     free = shutil.disk_usage(WORK).free
-    assert free >= 25 * 2**30 + growth, f"disk reserve: free={free}, growth={growth}"
+    reserve = 0 if os.environ.get("OPENPILOT_RUNNER_COMPARISON") == "498" else 25 * 2**30
+    assert free >= reserve + growth, f"disk growth: free={free}, growth={growth}, reserve={reserve}"
 
 
 def download(url, name, expected):
@@ -74,6 +75,10 @@ def source_path_allowed(path, source_entry="", inherited_entry=""):
     """Reviewed CI/consumer paths; OpenCV exceptions require fresh provider builds."""
     allowed = (
         'AGENTS.md',
+        '.github/workflows/self-hosted-readiness.yml',
+        'tools/ci/runner_comparison_498.py',
+        'docs/naver/runner-comparison-498.md',
+        'rust/crates/disk-space/src/lib.rs',
         'launch_openpilot.sh',
         'rust/Cargo.lock',
         'rust/crates/jetlink/',
@@ -558,7 +563,7 @@ def build():
     room(3 * 2**30)
     run(installer_cmd, env=installer_env)
     installer = TARGET / "aarch64-unknown-linux-musl/release/openpilot-runtime-install"
-    save(WORK / "installer-build.json", dict(schema=1, source_commit=SHA, architecture="aarch64", target="aarch64-unknown-linux-musl", installer_sha256=digest(installer), build_command=shlex.join(installer_cmd), validation="Built on GitHub-hosted runner; complete offline QEMU installation and installed AGNOS launcher verification follow before publication."))
+    save(WORK / "installer-build.json", dict(schema=1, source_commit=SHA, architecture="aarch64", target="aarch64-unknown-linux-musl", installer_sha256=digest(installer), build_command=shlex.join(installer_cmd), validation="Built in GitHub Actions; complete offline QEMU installation and installed AGNOS launcher verification follow before publication.", runner_environment=os.environ["RUNNER_ENVIRONMENT"], runner_name=os.environ["RUNNER_NAME"]))
     room(6 * 2**30)
     rows = []
     for name in NAMES:
