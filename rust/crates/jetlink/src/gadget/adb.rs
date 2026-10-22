@@ -19,23 +19,32 @@ pub(super) trait Services {
     fn change(&self, action: &str, units: &[&str]) -> Result<(), Error>;
 }
 pub(super) struct Linux;
+fn active_state(state: &str) -> Result<bool, Error> {
+    match state.trim() {
+        "inactive" | "failed" => Ok(false),
+        "active" | "activating" | "deactivating" | "reloading" | "refreshing" | "maintenance" => {
+            Ok(true)
+        }
+        _ => Err(Error::Contract("unknown AGNOS ADB service state")),
+    }
+}
 impl Services for Linux {
     fn active(&self, unit: &str) -> Result<bool, Error> {
-        let status = Command::new("timeout")
+        let output = Command::new("timeout")
             .args([
                 "--kill-after=1s",
                 "2s",
                 "systemctl",
-                "is-active",
-                "--quiet",
+                "show",
+                "--property=ActiveState",
+                "--value",
                 unit,
             ])
-            .status()?;
-        match status.code() {
-            Some(0) => Ok(true),
-            Some(3 | 4) => Ok(false),
-            _ => Err(Error::Contract("cannot query AGNOS ADB owner")),
+            .output()?;
+        if !output.status.success() {
+            return Err(Error::Contract("cannot query AGNOS ADB owner"));
         }
+        active_state(&String::from_utf8_lossy(&output.stdout))
     }
     fn change(&self, action: &str, units: &[&str]) -> Result<(), Error> {
         if !Command::new("timeout")
@@ -256,6 +265,25 @@ mod tests {
         cell::{Cell, RefCell},
         os::unix::fs::{symlink, PermissionsExt},
     };
+    #[test]
+    fn service_transitions_are_busy_until_a_terminal_off_state() {
+        for state in [
+            "active",
+            "activating",
+            "deactivating",
+            "reloading",
+            "refreshing",
+            "maintenance",
+        ] {
+            assert!(active_state(state).unwrap());
+        }
+        for state in ["inactive", "failed\n"] {
+            assert!(!active_state(state).unwrap());
+        }
+        for state in ["", "unknown", "inactive\nactive"] {
+            assert!(active_state(state).is_err());
+        }
+    }
     #[derive(Default)]
     struct Fake {
         calls: RefCell<Vec<String>>,

@@ -43,3 +43,5 @@ AGNOS `19.8-carrot-bt1` 릴리스의 실제 target commit은 `f5b3f77e59f1917f95
 이 원본 스크립트의 Off 경로는 adbd 정지 후 빈 UDC를 다시 쓴다. 따라서 원하는 Off 상태가 이미 완료되어도 service가 ENODEV로 실패할 수 있다. native 복원은 그 오류를 무조건 무시하지 않으며, 현재 AdbEnabled가 Off이고 g1이 실제 해제되었으며 watcher script와 adbd가 모두 실행 중이 아님을 확인한 경우만 완료한다. On 요청·바인딩된 컨트롤러·실행 중 서비스·읽기 오류는 계속 실패로 남겨 복원 기록을 보존한다. 신규 회귀는 이 여섯 경우를 검증한다.
 
 RED driver는 고정 `5ec52243473fbba9a4833b371fe891b0fde37d87`의 실제 이전 restore 함수와 새 단위 fixture를 결합해 Off 복원 실패를 재현한 뒤, 후보 원본 파일 두 개를 모두 복원하고 긍정 검사를 실행한다. 원본 전체 adb.rs SHA-256은 `d1718ba555e62c8208191aef65dc58fa6143212829d95086ad60165155ff99f2`다. 이 추가 사항은 기기 실행 증거가 아니다.
+
+독립 검토의 후속 지적에 따라 `is-active`의 종료 코드만으로 정지 완료를 판단하지 않는다. `ActiveState`를 직접 조회하며 `inactive`/`failed`만 종료 상태로 받아들인다. `activating`(oneshot 실행 중 포함), `deactivating`, 기타 전환 상태나 조회 오류에는 기록을 남겨 재시도한다. [systemctl의 공식 상태 설명](https://www.freedesktop.org/software/systemd/man/latest/systemctl.html#is-active%20PATTERN%E2%80%A6)에 근거한 구분이며 종료 코드에 의존하지 않는다.
