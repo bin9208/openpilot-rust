@@ -7139,3 +7139,22 @@ and12409956289/2731B/SHA07a3f735731401bbdeeafd0b1d6796af6b18b5ee11e2f22ebd92dbc0
 contain four checked members each. Successful workflow status is hardware
 admission evidence only; no twelve-pattern comparison occurred. The unchanged
 run is retried solely to obtain a naturally eligible host, preserving ISA guards.
+
+### Generator source-absence candidate and manager retained-pin migration
+
+The generator now holds its historical parent and accepts either the exact
+unchanged original source or absence; reappearance/parent replacement during
+an invocation rejects. Manager QA retains the independent all-present/all-absent
+three-controller roster and separately holds the optional historical generator.
+The other four required Python source pins remain strict and live. Manager
+retirement adds a sixth generator-drift admission negative (62closedexecs).
+One additional manager source-state unit makes13; generator source-state unit
+makes4. A new generator same-ELF test compares seven original-only file hashes,
+seven exact stdout lines, two source-state lanes and11exact single-native-exec
+invocations, retaining raw traces and failures. The nine parser-source pins
+remain independent/current. Parent static review corrected a truncated GM pin
+and an ineffective escaped-path negative control before hosted execution.
+The historical generator itself is still present; fresh predelete hosted proof
+and actual deletion/maintained caller migration/postdelete proof are pending.
+Progressive per-brand writes preserve original behavior; no atomic rollback
+claim is made. Inventory is unchanged by this candidate.

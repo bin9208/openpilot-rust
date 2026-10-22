@@ -23,6 +23,9 @@ pub const BRANDS: [&str; 7] = [
     "tesla",
 ];
 const MAX_SOURCE: u64 = 2 * 1024 * 1024;
+const HISTORICAL_GENERATOR: &str = "rust/tools/generate_manager_cars.py";
+const HISTORICAL_GENERATOR_SHA256: &str =
+    "a090e5ba6e30856c4b072ed2d04e682971172fd096592693a0a98756ca9f4caf";
 // Source-only contract for the supported opendbc declaration subset. Changing
 // any of these definitions requires reviewing the parser and a fresh original
 // generator comparison; matching today's literal car names is insufficient.
@@ -179,6 +182,83 @@ fn pinned_source(root: &Path, name: &str) -> Result<Held> {
         format!("manager car source revision changed: {name}"),
     )?;
     Ok(held)
+}
+
+type DirectoryIdentity = (u64, u64, u32);
+
+fn directory_identity(meta: &fs::Metadata) -> DirectoryIdentity {
+    (meta.dev(), meta.ino(), meta.mode())
+}
+
+struct HistoricalGenerator {
+    parent: File,
+    parent_path: PathBuf,
+    parent_identity: DirectoryIdentity,
+    path: PathBuf,
+    held: Option<Held>,
+}
+
+impl HistoricalGenerator {
+    fn open(root: &Path) -> Result<Self> {
+        let parent_path = root.join("rust/tools");
+        let parent = File::from(rustix::fs::open(
+            &parent_path,
+            rustix::fs::OFlags::RDONLY
+                | rustix::fs::OFlags::DIRECTORY
+                | rustix::fs::OFlags::NOFOLLOW
+                | rustix::fs::OFlags::CLOEXEC,
+            rustix::fs::Mode::empty(),
+        )?);
+        let parent_identity = directory_identity(&parent.metadata()?);
+        require(
+            directory_identity(&fs::symlink_metadata(&parent_path)?) == parent_identity,
+            "manager car historical parent changed while opening",
+        )?;
+        let path = root.join(HISTORICAL_GENERATOR);
+        let held = match fs::symlink_metadata(&path) {
+            Ok(_) => {
+                let held = Held::open(path.clone(), MAX_SOURCE)?;
+                require(
+                    held.digest == HISTORICAL_GENERATOR_SHA256,
+                    "manager car historical generator source changed",
+                )?;
+                Some(held)
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+            Err(error) => return Err(error.into()),
+        };
+        let result = Self {
+            parent,
+            parent_path,
+            parent_identity,
+            path,
+            held,
+        };
+        result.verify()?;
+        Ok(result)
+    }
+
+    fn verify(&self) -> Result<()> {
+        for current in [
+            self.parent.metadata()?,
+            fs::symlink_metadata(&self.parent_path)?,
+        ] {
+            require(
+                current.is_dir() && directory_identity(&current) == self.parent_identity,
+                "manager car historical parent identity changed",
+            )?;
+        }
+        if let Some(held) = &self.held {
+            held.verify()?;
+        } else {
+            require(
+                fs::symlink_metadata(&self.path)
+                    .is_err_and(|error| error.kind() == std::io::ErrorKind::NotFound),
+                "manager car historical generator reappeared",
+            )?;
+        }
+        Ok(())
+    }
 }
 
 fn skip_space_and_comments(bytes: &[u8], mut pos: usize) -> usize {
@@ -499,6 +579,7 @@ pub fn generate_with_emit<F>(
 where
     F: FnMut(&str, usize) -> Result<()>,
 {
+    let historical = HistoricalGenerator::open(root)?;
     let platform_definitions = pinned_source(root, "opendbc/car/__init__.py")?;
     let documentation_definitions = pinned_source(root, "opendbc/car/docs_definitions.py")?;
     require(
@@ -510,6 +591,7 @@ where
         .iter()
         .map(|brand| pinned_source(root, &format!("opendbc/car/{brand}/values.py")))
         .collect::<Result<Vec<_>>>()?;
+    historical.verify()?;
     fs::create_dir_all(output)?;
     let mut results = Vec::new();
     for (brand, source) in BRANDS.into_iter().zip(&held) {
@@ -529,7 +611,9 @@ where
         source.verify()?;
         platform_definitions.verify()?;
         documentation_definitions.verify()?;
+        historical.verify()?;
         emit(brand, names.len())?;
+        historical.verify()?;
         results.push(BrandResult {
             brand,
             count: names.len(),
@@ -541,6 +625,7 @@ where
     }
     platform_definitions.verify()?;
     documentation_definitions.verify()?;
+    historical.verify()?;
     Ok(results)
 }
 
@@ -578,6 +663,28 @@ pub fn cli() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::os::unix::fs::symlink;
+
+    #[test]
+    fn historical_generator_absence_reappearance_and_parent_replacement() {
+        let root = tempfile::tempdir().unwrap();
+        let tools = root.path().join("rust/tools");
+        fs::create_dir_all(&tools).unwrap();
+        let source = tools.join("generate_manager_cars.py");
+        let absent = HistoricalGenerator::open(root.path()).unwrap();
+        absent.verify().unwrap();
+        fs::write(&source, b"unexpected reappearance").unwrap();
+        assert!(absent.verify().is_err());
+        assert!(HistoricalGenerator::open(root.path()).is_err());
+        fs::remove_file(&source).unwrap();
+        symlink("missing-target", &source).unwrap();
+        assert!(HistoricalGenerator::open(root.path()).is_err());
+        fs::remove_file(&source).unwrap();
+        let restored = HistoricalGenerator::open(root.path()).unwrap();
+        fs::rename(&tools, root.path().join("rust/old-tools")).unwrap();
+        fs::create_dir(&tools).unwrap();
+        assert!(restored.verify().is_err());
+    }
 
     #[test]
     fn ford_expansion_preserves_platform_then_variant_order() {

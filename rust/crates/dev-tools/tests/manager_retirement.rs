@@ -20,8 +20,8 @@ const RETIRED: [&str; 3] = [
     "rust/tools/check_manager_logging.py",
     "rust/tools/manager_reference.py",
 ];
-const REQUIRED: [&str; 5] = [
-    "rust/tools/generate_manager_cars.py",
+const GENERATOR: &str = "rust/tools/generate_manager_cars.py";
+const REQUIRED: [&str; 4] = [
     "rust/tools/original_params_binding.py",
     "openpilot/system/manager/manager.py",
     "openpilot/common/params.py",
@@ -168,6 +168,21 @@ fn private_root(checkout: &Path, root: &Path) {
         fs::write(&target, &bytes).unwrap();
         assert_eq!(sha(&fs::read(target).unwrap()), sha(&bytes));
     }
+    let generator = checkout.join(GENERATOR);
+    match fs::symlink_metadata(&generator) {
+        Ok(meta) => {
+            assert!(meta.is_file() && !meta.file_type().is_symlink());
+            let target = root.join(GENERATOR);
+            fs::create_dir_all(target.parent().unwrap()).unwrap();
+            fs::copy(&generator, &target).unwrap();
+            assert_eq!(
+                sha(&fs::read(target).unwrap()),
+                sha(&fs::read(generator).unwrap())
+            );
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => panic!("cannot inspect historical generator: {error}"),
+    }
     copy_tree(
         &checkout.join("rust/crates/dev-tools/tests/fixtures/manager-qa-original"),
         &root.join("rust/crates/dev-tools/tests/fixtures/manager-qa-original"),
@@ -209,6 +224,7 @@ fn source_negative_controls(
         .map(|(index, path)| (format!("reappearance-{index}"), private.join(*path)))
         .collect::<Vec<_>>();
     controls.push(("retained-drift".to_owned(), private.join(REQUIRED[0])));
+    controls.push(("generator-change".to_owned(), private.join(GENERATOR)));
     controls.push(("missing-parent".to_owned(), private.join("rust/tools")));
     let count = controls.len();
     for (control, path) in controls {
@@ -246,8 +262,10 @@ fn source_negative_controls(
         let stderr = String::from_utf8(stderr).unwrap();
         let expected_diagnostic = if control.starts_with("reappearance-") {
             "manager QA historical source roster is mixed"
-        } else if control == "retained-drift" {
+        } else if control == "generator-change" {
             "manager QA original source changed: rust/tools/generate_manager_cars.py"
+        } else if control == "retained-drift" {
+            "manager QA original source changed: rust/tools/original_params_binding.py"
         } else {
             "No such file or directory"
         };
@@ -260,6 +278,13 @@ fn source_negative_controls(
         }
         if control == "retained-drift" {
             fs::copy(checkout.join(REQUIRED[0]), &path).unwrap();
+        }
+        if control == "generator-change" {
+            if checkout.join(GENERATOR).is_file() {
+                fs::copy(checkout.join(GENERATOR), &path).unwrap();
+            } else {
+                fs::remove_file(&path).unwrap();
+            }
         }
         if control == "missing-parent" {
             fs::rename(private.join("rust/old-tools"), &path).unwrap();
@@ -413,6 +438,7 @@ fn manager_original_observations_survive_three_controller_retirement() {
         "1" => true,
         value => panic!("invalid MANAGER_RETIREMENT_REQUIRE_ABSENT {value}"),
     };
+    let generator_present = fs::symlink_metadata(checkout.join(GENERATOR)).is_ok();
     let binaries = [
         HeldElf::open("unified", required("MANAGER_RETIREMENT_CHECKER")),
         HeldElf::open("manager", required("MANAGER_RETIREMENT_MANAGER")),
@@ -494,6 +520,7 @@ fn manager_original_observations_survive_three_controller_retirement() {
             4
         );
         assert_eq!(result["historical_sources_absent"], absent);
+        assert_eq!(result["historical_generator_present"], generator_present);
         for (case, original) in CASES.iter().zip(&cases) {
             let actual: Value =
                 serde_json::from_slice(&fs::read(native.join(case).join("result.json")).unwrap())
@@ -710,6 +737,16 @@ fn manager_original_observations_survive_three_controller_retirement() {
             "retained manager QA source drift after controls: {name}"
         );
     }
+    if generator_present {
+        assert_eq!(
+            sha(&fs::read(private.join(GENERATOR)).unwrap()),
+            sha(&fs::read(checkout.join(GENERATOR)).unwrap()),
+            "manager generator source drift after controls"
+        );
+    } else {
+        assert!(fs::symlink_metadata(private.join(GENERATOR))
+            .is_err_and(|e| e.kind() == std::io::ErrorKind::NotFound));
+    }
     fs::write(
         evidence.join("result.json"),
         serde_json::to_vec_pretty(&json!({
@@ -719,7 +756,8 @@ fn manager_original_observations_survive_three_controller_retirement() {
             "total_cli_controls_per_root":11,"positive_traffic_exec_attempts_per_root":17,
             "closed_native_exec_attempts_per_positive_root":28,
             "source_admission_negative_exec_attempts":negative_count,
-            "total_closed_native_exec_attempts":61,
+            "total_closed_native_exec_attempts":62,
+            "historical_generator_present":generator_present,
             "source_capture_run":39728775823u64,"device_tested":false
         }))
         .unwrap(),

@@ -70,6 +70,7 @@ const RETIREABLE: [&str; 3] = [
     "rust/tools/check_manager_logging.py",
     "rust/tools/manager_reference.py",
 ];
+const HISTORICAL_GENERATOR: &str = "rust/tools/generate_manager_cars.py";
 
 pub struct Options {
     pub root: PathBuf,
@@ -350,6 +351,7 @@ struct SourceSet {
     parent_path: PathBuf,
     parent_identity: DirectoryIdentity,
     retired: bool,
+    generator_present: bool,
 }
 
 impl SourceSet {
@@ -381,6 +383,11 @@ impl SourceSet {
             "manager QA historical source roster is mixed",
         )?;
         let retired = present == 0;
+        let generator_present = match fs::symlink_metadata(root.join(HISTORICAL_GENERATOR)) {
+            Ok(_) => true,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => false,
+            Err(error) => return Err(error.into()),
+        };
         require(
             !require_retired || retired,
             "manager QA historical sources still present",
@@ -388,6 +395,13 @@ impl SourceSet {
         let mut held = Vec::new();
         for (name, expected) in SOURCE_PINS {
             let path = root.join(name);
+            if name == HISTORICAL_GENERATOR && !generator_present {
+                require(
+                    path.parent().is_some_and(Path::is_dir),
+                    "manager QA historical generator parent absent",
+                )?;
+                continue;
+            }
             if retired && RETIREABLE.contains(&name) {
                 require(
                     fs::symlink_metadata(&path)
@@ -413,6 +427,7 @@ impl SourceSet {
             parent_path,
             parent_identity,
             retired,
+            generator_present,
         };
         result.verify(root)?;
         Ok(result)
@@ -439,6 +454,13 @@ impl SourceSet {
                     format!("retired manager QA source reappeared: {name}"),
                 )?;
             }
+        }
+        if !self.generator_present {
+            require(
+                fs::symlink_metadata(root.join(HISTORICAL_GENERATOR))
+                    .is_err_and(|error| error.kind() == std::io::ErrorKind::NotFound),
+                "retired manager car generator reappeared",
+            )?;
         }
         Ok(())
     }
@@ -930,6 +952,7 @@ where
     executable.verify()?;
     let result = json!({"cases":cases,"logging":logs,"binary_sha256":executable.sha256,
         "source_pin_count":SOURCE_PINS.len(),"historical_sources_absent":source.retired,
+        "historical_generator_present":source.generator_present,
         "source_roster_complete":false,
         "imported_source_capture_manifest_sha256":RETIREMENT_MANIFEST_SHA256,
         "scope":"native manager observations; imported-source closure bound to independent hosted capture"});
@@ -1266,7 +1289,9 @@ mod tests {
             .count();
         assert!(historical_count == 0 || historical_count == RETIREABLE.len());
         for (name, _) in SOURCE_PINS {
-            if historical_count == 0 && RETIREABLE.contains(&name) {
+            if (historical_count == 0 && RETIREABLE.contains(&name))
+                || (name == HISTORICAL_GENERATOR && !repository.join(name).exists())
+            {
                 continue;
             }
             let target = private.path().join(name);
@@ -1323,6 +1348,25 @@ mod tests {
         .unwrap();
         assert!(retired.verify(private.path()).is_err());
         assert!(SourceSet::open(private.path(), true).is_err());
+        assert!(SourceSet::open(private.path(), false).is_err());
+    }
+
+    #[test]
+    fn generator_absence_is_independent_of_three_controller_roster() {
+        let private = private_source_root();
+        let path = private.path().join(HISTORICAL_GENERATOR);
+        let initial = SourceSet::open(private.path(), false).unwrap();
+        let controller_state = initial.retired;
+        if initial.generator_present {
+            fs::remove_file(&path).unwrap();
+            assert!(initial.verify(private.path()).is_err());
+        }
+        let absent = SourceSet::open(private.path(), false).unwrap();
+        assert!(!absent.generator_present);
+        assert_eq!(absent.retired, controller_state);
+        absent.verify(private.path()).unwrap();
+        fs::write(&path, b"unexpected generator reappearance").unwrap();
+        assert!(absent.verify(private.path()).is_err());
         assert!(SourceSet::open(private.path(), false).is_err());
     }
 

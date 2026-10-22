@@ -4519,7 +4519,7 @@ jobs:
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools \
             --features manager-qa-native --lib manager_qa:: -- --nocapture \
             > "$proof/units.stdout" 2> "$proof/units.stderr"
-          grep -E '^test result: ok\. 12 passed; 0 failed;' "$proof/units.stdout"
+          grep -E '^test result: ok\. 13 passed; 0 failed;' "$proof/units.stdout"
           command -v jq >/dev/null
           mapfile -t manager_test_elf < <(jq -r 'select(.reason=="compiler-artifact" and .profile.test==true and .target.name=="manager_retirement") | .executable // empty' "$proof/compile.jsonl")
           test "${#manager_test_elf[@]}" -eq 1
