@@ -6,6 +6,38 @@ unchanged evidence. Read this handoff and the linked evidence ledger first.
 
 ## Active continuation, superseding the earlier migration snapshot
 
+Latest local continuation supersedes the snapshots below: pushed source remains
+adff0392e61608c9a576550be78dd7eefb8b9065. Local e8bc208f0 adds the normal
+controlsd controller and fixture macro repair; 3e79829c4 repairs only camera
+receipt metadata; 606b14196 adds the four reviewed child-module paths after
+actual E0583 and the reviewed Panda growth-only receipt comparison. Their new
+functional checks are pending. The six-file malformed-controlsd controller is
+also source-reviewed and registered; its combined normal40/failure27 recipe
+93cdc1c04ec367b6bad27d9b2a832ae0e09350c2caf0c1922f00b88c9b3b0de7
+passes independent source review, but has not executed. IPC source is reviewed;
+its recipe needs the separately identified upload-receipt cleanup repair.
+
+Common CI foundation is now verified by its owner at
+77663836a95a9e2aff9aa66592d8b06ed9c87cd9, PR504 draft→dev-md,
+run39853582741. Parent independently confirms successful run and both jobs on
+bin-actions with self-hosted/Linux/X64/dev-md-local labels. This proves the
+reported QEMU-user/PRoot ARM transport contract, not all ARM runtime modules:
+runtime-core --lib reports0passed/1ignored. Import only needed common CI helper
+bytes/contracts, never the dev-md runtime commit. Hegel adapts #296 routing;
+hold feature/diagnostic publication until automatic legacy hosted Fast jobs are
+routed locally with owned source/cache/target. No hosted fallback or cancelled
+inflight jobs; existing required ARM commands and honest emulation evidence stay.
+
+CP949native39843159421 now succeeds; Schrodinger owns raw artifact admission
+before conditional AST caller activation. Estimator39844792873 and loggerd
+controllers39846706091/main39846713274 fail; inspect actual failed boundaries
+and reuse only unchanged accepted scopes. Parent saved original-model sidecar
+12454684602 (14971887bytes, SHA61faf235c10864637f498f84fa1be374d0123e9c9547151207546a94f6079e86)
+at actual merged source6f25f161aae5eb3f887df6d0147172e4f85d935c;
+model-1.bin mismatch remains unclassified until raw outputs are recovered.
+Inventory stays288/3/3289 of3580. Parent/subagents use GPT-6.1 Sol; Astra closed.
+
+
 Latest checked source is **adff0392e61608c9a576550be78dd7eefb8b9065**, pushed to
 PR343→dev. Fast checks and mapped docs pass; Rust/Integration incomplete.
 Actual config parentgpt-6.1-sol/ultra and agent ceiling1000 are confirmed; eight

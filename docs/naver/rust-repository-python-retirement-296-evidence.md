@@ -9110,3 +9110,46 @@ pending. The malformed-input controller has an independent P2 on mutable case
 path ownership under repair; it is not integrated. Further publication must
 reuse the #502 common local runner foundation without importing dev-md runtime
 or triggering new legacy hosted jobs. This checkpoint changes no inventory.
+
+## Controlsd rejection controller and local ARM foundation handoff (2026-10-23)
+
+The new six-file native rejection controller uses the reviewed frozen source
+patch cf59543d504137d979fb3a7aec86b1c697beabf1259d716cf799392215039eee.
+It retains27 malformed cases/70 frames plus5 health frames, source exceptions,
+native nonzero/no-output behavior and exact input semantics. A held CASE
+file descriptor anchors child outputs and receipts; private staged publication
+uses no-replace rename and never adopts a caller-replaced public directory.
+Nine unexecuted tests cover directory/symlink/file collisions, child-time output
+replacement, root replacement and INT/TERM cancellation. It reuses canonical
+input/numeric helpers without an alternate Python backend. Linux/feature-gated
+lib plus CLI/test registration use the existing optional dependency set; lock
+bytes are unchanged. Parent checked exact six file seals and scoped formatting;
+no local compilation or functional execution occurred. Original source remains.
+
+The combined normal40/8655-frame and rejection27/70-frame recipe is independently
+source-reviewed at full JSON SHA93cdc1c04ec367b6bad27d9b2a832ae0e09350c2caf0c1922f00b88c9b3b0de7.
+It shares bootstrap/build/staging, preserves independent original outputs,
+source/provider/ELF/runner/resource bindings and cleanup only after a real upload
+ID/digest. Each run field is bounded below18000characters. Actual-source binding,
+Actions execution, raw admission and retirement remain pending.
+
+Common runner owner reports source77663836a95a9e2aff9aa66592d8b06ed9c87cd9,
+[PR504](https://github.com/bin9208/openpilot-rust/pull/504), and successful
+[39853582741](https://github.com/bin9208/openpilot-rust/actions/runs/39853582741).
+Parent API confirms both successful jobs ran on bin-actions with
+self-hosted/Linux/X64/dev-md-local labels. Reported guest aarch64 execution uses
+QEMU-user/PRoot5.5.0 and physical_arm_cpu:false, with ARM ELF/ctypes, Python3.12.14,
+command-file/exit37/target mapping, subprocess socketpair/SIGTERM and Rust disk
+guard checks. The reported90policy+9package+13nativeguard+4unit/5CLI disk checks
+and baseline-red are bounded common-foundation evidence. Runtime-core --lib had
+0passed/1ignored and does not establish complete ARM runtime validation.
+
+#296 reuses only the common CI helpers and execution contract; dev-md stays
+separate and PR343 still targets dev. Next necessary jobs use bin-actions only,
+with ARM commands in the guest and actual host/source/emulation evidence. Native
+APT uses job-scoped scalar APT::Architectures; existing explicit cross sources
+and foreign architecture registration stay. No hosted fallback, fixed25/35GiB
+reserve, inflight cancellation or repeat of unchanged success is introduced.
+Feature/diagnostic pushes remain held until automatic legacy hosted Fast checks
+are correctly routed with private source/cache/target. These implementations and
+routing changes add no source retirement or device acceptance credit.

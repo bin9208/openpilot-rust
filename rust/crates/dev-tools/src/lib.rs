@@ -77,6 +77,8 @@ pub mod camera_state_check;
 pub mod camera_stress_check;
 #[cfg(feature = "carrot-navi-compare-native")]
 pub mod carrot_navi_compare;
+#[cfg(all(target_os = "linux", feature = "controlsd-fixture-native"))]
+pub mod control_failures_check;
 #[cfg(feature = "controlsd-fixture-native")]
 pub mod controlsd_fixture_generate;
 pub mod cutin_alert_check;
