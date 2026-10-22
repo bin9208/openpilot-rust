@@ -1,0 +1,241 @@
+name: 296 actual LLVM guarded zero-operation bit controls isolated targets R2
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/model-zero-operation-controls-r2-296-once.yml
+permissions:
+  contents: read
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
+  EXPECTED_SOURCE: f755005e7726e9a90a07846e9eec65cc5b272abe
+  CARGO_BUILD_JOBS: '2'
+  CARGO_INCREMENTAL: '0'
+  CARGO_PROFILE_DEV_DEBUG: '0'
+  CARGO_PROFILE_TEST_DEBUG: '0'
+jobs:
+  zero-controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: f755005e7726e9a90a07846e9eec65cc5b272abe
+        persist-credentials: false
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Reserve capacity and pinned native toolchain
+      id: setup
+      shell: bash
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 8192
+
+        sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends clang libllvm18 jq
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        mkdir "$RUNNER_TEMP/zero-operation-proof-296" "$RUNNER_TEMP/zero-operation-artifact-296"
+
+        printf ''ZERO_PROOF=%s\n'' "$RUNNER_TEMP/zero-operation-proof-296" >> "$GITHUB_ENV"
+
+        printf ''CARGO_TARGET_DIR=%s\n'' "$RUNNER_TEMP/zero-operation-current-target-296" >> "$GITHUB_ENV"
+
+        '
+    - name: Build exact previous helper source as explicit negative control
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$ZERO_PROOF"
+
+        git fetch --no-tags --depth=1 origin 1031884ccad7fa39957fb640aff70a03afade189
+
+        GIT_LFS_SKIP_SMUDGE=1 git worktree add --detach "$RUNNER_TEMP/old-guarded-source-296" 1031884ccad7fa39957fb640aff70a03afade189
+
+        test "$(git -C "$RUNNER_TEMP/old-guarded-source-296" rev-parse HEAD)" = "1031884ccad7fa39957fb640aff70a03afade189"
+
+        rust/tools/check-disk-space --path "$RUNNER_TEMP" --growth-mib 4096
+
+        CARGO_TARGET_DIR="$RUNNER_TEMP/zero-operation-old-target-296" cargo build --manifest-path "$RUNNER_TEMP/old-guarded-source-296/rust/Cargo.toml"
+        --locked -p openpilot-model-runtime --bin offline-llvm-guarded-add > "$proof/old-helper-build.log" 2>&1 || { cat "$proof/old-helper-build.log";
+        exit 1; }
+
+        cp "$RUNNER_TEMP/zero-operation-old-target-296/debug/offline-llvm-guarded-add" "$proof/old-guarded-add"
+
+        chmod 500 "$proof/old-guarded-add"
+
+        git -C "$RUNNER_TEMP/old-guarded-source-296" ls-files -z -- rust/crates/model-runtime rust/Cargo.toml rust/Cargo.lock
+        > "$proof/old-source-roster.nul"
+
+        (cd "$RUNNER_TEMP/old-guarded-source-296"; xargs -0 -r sha256sum < "$proof/old-source-roster.nul") > "$proof/old-source-files.sha256"
+
+        printf ''GUARDED_ADD_OLD_HELPER=%s\nGUARDED_ADD_OLD_SHA256=%s\n'' "$proof/old-guarded-add" "$(sha256sum "$proof/old-guarded-add"
+        | cut -d'' '' -f1)" >> "$GITHUB_ENV"
+
+        '
+    - name: Strict Clippy and compile affected current helper tests once
+      shell: bash
+      run: "set -euo pipefail\nproof=\"$ZERO_PROOF\"\nrust/tools/check-disk-space --path \"$RUNNER_TEMP\" --growth-mib 4096\n\
+        cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --lib --bin offline-llvm-guarded-add\
+        \ --bin offline-llvm-compile --test guarded_add --test guarded_add_cli -- -D warnings > \"$proof/current-clippy.log\"\
+        \ 2>&1 || { cat \"$proof/current-clippy.log\"; exit 1; }\ncargo test --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime\
+        \ --test guarded_add --test guarded_add_cli --no-run --message-format=json > \"$proof/test-artifacts.jsonl\" 2> \"\
+        $proof/test-build.log\" || { cat \"$proof/test-build.log\"; exit 1; }\nfor name in guarded_add guarded_add_cli; do\n\
+        \ binary=$(jq -sr --arg n \"$name\" '[.[] | select(.reason==\"compiler-artifact\" and .target.name==$n and .profile.test==true\
+        \ and .executable!=null)|.executable]|unique|if length==1 then .[0] else error(\"exact one selected test ELF required\"\
+        ) end' \"$proof/test-artifacts.jsonl\")\n printf '%s=%s\\n' \"TEST_${name}\" \"$binary\" >> \"$GITHUB_ENV\"\ndone\n"
+    - name: Seal all current and previous sources, helpers, actual executing LLVM target
+      id: bind
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$ZERO_PROOF"
+
+        # Never admit stale previous-checkout artifacts as a current-source helper.
+
+        current_pin=$(sha256sum "$CARGO_TARGET_DIR/debug/offline-llvm-guarded-add" | cut -d'' '' -f1)
+
+        test "$current_pin" != "$GUARDED_ADD_OLD_SHA256"
+
+        printf ''old=%s\ncurrent=%s\n'' "$GUARDED_ADD_OLD_SHA256" "$current_pin" > "$proof/distinct-source-helper-pins.txt"
+
+        llvm=$(readlink -f /usr/lib/x86_64-linux-gnu/libLLVM-18.so)
+
+        test -f "$llvm" && test ! -L "$llvm"
+
+        # Exact provider used in actual R4; a changed package rejects without a retry.
+
+        printf ''%s  %s\n'' 5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0 "$llvm" | sha256sum --check --strict
+        - > "$proof/LLVM-R4-provider.after.log"
+
+        printf ''LLVM_PATH=%s\nGUARDED_ADD_PROBE_CONFIG=%s\nGUARDED_ADD_PROBE_OUTPUT=%s\n'' "$llvm" "$proof/natural-host-config.json"
+        "$proof/controls" >> "$GITHUB_ENV"
+
+        export LLVM_PATH="$llvm"
+
+        python - <<''NATURAL_HOST_CONFIG''
+
+        import ctypes,hashlib,json,os,platform
+
+        from pathlib import Path
+
+        assert platform.machine()==''x86_64''
+
+        proof=Path(os.environ[''ZERO_PROOF'']);path=Path(os.environ[''LLVM_PATH'']);raw=path.read_bytes()
+
+        assert hashlib.sha256(raw).hexdigest()==''5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0''
+
+        lib=ctypes.CDLL(str(path))
+
+        for name in (''LLVMGetHostCPUName'',''LLVMGetHostCPUFeatures''):getattr(lib,name).restype=ctypes.c_char_p
+
+        cpu=lib.LLVMGetHostCPUName().decode();features=lib.LLVMGetHostCPUFeatures().decode();assert cpu and features
+
+        config=dict(library=str(path),library_sha256=hashlib.sha256(raw).hexdigest(),triple=''x86_64-none-unknown-elf'',cpu=cpu,features=features,passes=''default<O2>'',loop_unrolling=True,loop_vectorization=True,slp_vectorization=True,verify_each=True)
+
+        (proof/''natural-host-config.json'').write_text(json.dumps(config,indent=2)+''\n'')
+
+        (proof/''host-policy.json'').write_text(json.dumps(dict(actual_cpu=cpu,actual_features=features,requested_policy=''LLVM
+        actual executing host, unchanged'',historical_recorded_target_forcing=False,ISA_execution_admission=''all tiny test
+        functions compiled for this actual host only'',model_or_recorded_image_execution=False),indent=2)+''\n'')
+
+        NATURAL_HOST_CONFIG
+
+        printf ''%s\n'' "$EXPECTED_SOURCE" "$GITHUB_WORKFLOW_SHA" > "$proof/source-workflow.txt"
+
+        git ls-files -z -- rust/crates/model-runtime rust/Cargo.toml rust/Cargo.lock rust/rust-toolchain.toml > "$proof/held-paths.nul"
+
+        printf ''%s\0'' "$GUARDED_ADD_OLD_HELPER" "$TEST_guarded_add" "$TEST_guarded_add_cli" "$CARGO_TARGET_DIR/debug/offline-llvm-compile"
+        "$CARGO_TARGET_DIR/debug/offline-llvm-guarded-add" "$llvm" "$(readlink -f "$(command -v clang)")" "$proof/natural-host-config.json"
+        >> "$proof/held-paths.nul"
+
+        xargs -0 -r sha256sum < "$proof/held-paths.nul" > "$proof/before.sha256"
+
+        while IFS= read -r -d '''' path; do stat --printf ''%n:%d:%i:%s:%f:%y:%z\n'' "$path"; done < "$proof/held-paths.nul"
+        > "$proof/identities.before.txt"
+
+        rustc -Vv > "$proof/rustc.txt"
+
+        clang --version > "$proof/clang.txt"
+
+        cat /proc/cpuinfo > "$proof/proc-cpuinfo.txt"
+
+        '
+    - name: Require current source and CLI checks plus all256 actual LLVM bit controls
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$ZERO_PROOF"
+
+        timeout --signal=KILL 180 "$TEST_guarded_add" --nocapture > "$proof/source-unit.log" 2>&1 || { cat "$proof/source-unit.log";
+        exit 1; }
+
+        grep -E ''^test result: ok\. [1-9][0-9]* passed; 0 failed;'' "$proof/source-unit.log"
+
+        timeout --signal=KILL 180 "$TEST_guarded_add_cli" --nocapture > "$proof/cli-unit.log" 2>&1 || { cat "$proof/cli-unit.log";
+        exit 1; }
+
+        grep -E ''^test result: ok\. [1-9][0-9]* passed; 0 failed;'' "$proof/cli-unit.log"
+
+        timeout --signal=KILL 360 "$TEST_guarded_add" --ignored --exact zero_arm_keeps_addition_bits_and_records_original_codegen
+        --nocapture > "$proof/bit-control.log" 2>&1 || { cat "$proof/bit-control.log"; exit 1; }
+
+        grep -F ''test result: ok. 1 passed; 0 failed;'' "$proof/bit-control.log"
+
+        jq -e ''.rows==256 and .old_helper_negative_zero_defects==4 and .actual_model_operand_capture==false and .historical_or_current_full_model_acceptance==false''
+        "$proof/controls/complete.json" > /dev/null
+
+        printf ''%s\n'' complete > "$proof/selected.complete"
+
+        '
+    - name: Always authenticate held identities and required completion
+      if: always() && steps.bind.outcome == 'success'
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$ZERO_PROOF"
+
+        status=0
+
+        sha256sum --check --strict "$proof/before.sha256" > "$proof/after.log" 2>&1 || status=1
+
+        while IFS= read -r -d '''' path; do stat --printf ''%n:%d:%i:%s:%f:%y:%z\n'' "$path" || status=1; done < "$proof/held-paths.nul"
+        > "$proof/identities.after.txt"
+
+        cmp "$proof/identities.before.txt" "$proof/identities.after.txt" || status=1
+
+        test -s "$proof/selected.complete" || status=1
+
+        printf ''%s\n'' "$status" > "$proof/final-guards.status"
+
+        exit "$status"
+
+        '
+    - name: Preserve only bounded exact diagnostics even on failure
+      if: always() && steps.setup.outcome == 'success'
+      shell: bash
+      run: "set -euo pipefail\nproof=\"$ZERO_PROOF\";out=\"$RUNNER_TEMP/zero-operation-artifact-296\"\nfind \"$proof\" -type\
+        \ l -print -quit > \"$out/unexpected-symlinks.txt\"\ntest ! -s \"$out/unexpected-symlinks.txt\"\nfind \"$proof\" -type\
+        \ f -printf '%P\\0' > \"$out/roster.nul\"\ncount=0;bytes=0\nwhile IFS= read -r -d '' relative; do\n file=\"$proof/$relative\"\
+        ;test -f \"$file\" && test ! -L \"$file\"\n size=$(stat -c '%s' \"$file\");test \"$size\" -le 67108864\n count=$((count+1));bytes=$((bytes+size));test\
+        \ \"$count\" -le 2048 && test \"$bytes\" -le 536870912\n sha256sum \"$file\" >> \"$out/files.sha256\"\ndone < \"$out/roster.nul\"\
+        \ntest \"$count\" -gt 0\nrust/tools/check-disk-space --path \"$RUNNER_TEMP\" --growth-mib 512\ntar --create --gzip\
+        \ --null --verbatim-files-from --no-recursion --directory=\"$proof\" --files-from=\"$out/roster.nul\" --file=\"$out/proof.tar.gz\"\
+        \nsha256sum --check --strict \"$out/files.sha256\" > \"$out/files.after.log\"\nsha256sum \"$out/proof.tar.gz\" > \"\
+        $out/proof.sha256\"\nprintf 'files=%s\\nbytes=%s\\n' \"$count\" \"$bytes\" > \"$out/counts.txt\"\n"
+    - uses: actions/upload-artifact@v6
+      if: always()
+      with:
+        name: zero-operation-controls-f755005e772
+        path: ${{ runner.temp }}/zero-operation-artifact-296/
+        if-no-files-found: error
+        include-hidden-files: true
+        retention-days: 7
