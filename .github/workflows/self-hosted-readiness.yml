@@ -49,26 +49,15 @@ jobs:
     - uses: ./runner-comparison-498/.github/actions/job-temp
     - uses: ./runner-comparison-498/.github/actions/rust-path
     - name: Bind source and initialize isolated caches
-      run: 'set -euo pipefail
-
-        printf ''BENCH_ROOT=%s\nCARGO_HOME=%s/cargo\nCARGO_TARGET_DIR=%s/target\nPIP_CACHE_DIR=%s/pip-cache\n'' "$CI_JOB_TEMP"
-        "$CI_JOB_TEMP" "$CI_JOB_TEMP" "$CI_JOB_TEMP" >> "$GITHUB_ENV"
-
-        mkdir -p "$CI_JOB_TEMP/comparison"
-
-        git rev-parse HEAD | tee "$CI_JOB_TEMP/comparison/SOURCE_COMMIT"
-
-        test "$(git rev-parse HEAD)" = "$RUNTIME_SOURCE_SHA"
-
-        lscpu > "$CI_JOB_TEMP/comparison/lscpu.txt"
-
-        free -b > "$CI_JOB_TEMP/comparison/memory.txt"
-
-        df -h > "$CI_JOB_TEMP/comparison/disk.txt"
-
-        printf ''%s\n'' "$RUNNER_NAME $RUNNER_ENVIRONMENT" > "$CI_JOB_TEMP/comparison/runner.txt"
-
-        '
+      run: "set -euo pipefail\nprintf 'BENCH_ROOT=%s\\nCARGO_HOME=%s/cargo\\nCARGO_TARGET_DIR=%s/target\\nPIP_CACHE_DIR=%s/pip-cache\\\
+        n' \"$CI_JOB_TEMP\" \"$CI_JOB_TEMP\" \"$CI_JOB_TEMP\" \"$CI_JOB_TEMP\" >> \"$GITHUB_ENV\"\nmkdir -p \"$CI_JOB_TEMP/comparison\"\
+        \ngit rev-parse HEAD | tee \"$CI_JOB_TEMP/comparison/SOURCE_COMMIT\"\ntest \"$(git rev-parse HEAD)\" = \"$RUNTIME_SOURCE_SHA\"\
+        \nlscpu > \"$CI_JOB_TEMP/comparison/lscpu.txt\"\nfree -b > \"$CI_JOB_TEMP/comparison/memory.txt\"\ndf -h > \"$CI_JOB_TEMP/comparison/disk.txt\"\
+        \nprintf '%s\\n' \"$RUNNER_NAME $RUNNER_ENVIRONMENT\" > \"$CI_JOB_TEMP/comparison/runner.txt\"\n\n# Remove only this\
+        \ comparison's cancelled prior job output on the persistent host.\nif [ \"$RUNNER_ENVIRONMENT\" = self-hosted ]; then\n\
+        \  for prior in /tmp/openpilot-ci.*; do\n    test -d \"$prior\" || continue\n    test ! -L \"$prior\" || continue\n\
+        \    test -f \"$prior/owner\" || continue\n    if [ \"$(cat \"$prior/owner\")\" = '39825360851:1:generic-arm' ]; then\n\
+        \      rm -rf --one-file-system -- \"$prior\"\n    fi\n  done\nfi\n"
     - uses: actions/setup-python@v6
       with:
         python-version: '3.12'
