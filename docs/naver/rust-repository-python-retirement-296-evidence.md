@@ -7761,3 +7761,97 @@ security claim. Revised recipeSHAbbc1f7c29fe801fda533f84e68c2a3c22c3572646b1094a
 workflowab2e55569fe0f680e4209fafcb4c4ba9a4017126, requires4ownership/3affected
 logging/8sibling tests; accepted ordinary traffic is reused. Static checks pass;
 hosted acceptance and caller/helper-pin/source retirement remain pending.
+
+
+### Fresh sibling acceptance, routing repair and model candidate integration
+
+[Siblings39783963192](https://github.com/bin9208/openpilot-rust/actions/runs/39783963192)
+passes at sourcee5dfb68a41343ac2f51c8b9f002111656cf303c5,
+workflowa7397096440e66306d2bef095017867b7458845e. It corrects the R2 strict-HTTP
+fixture-flag failure without changing original expectations. All15tests pass:
+4ownership,3affected logging and8siblings; six daemon/three startup negatives,
+both interruption contracts,10timeouts,30fault/14Params/36logging collector rows
+and two lifecycle failures are retained. Artifact12427719093 is3497211bytes,
+SHA256 ec4a5f238befa9b4ffbd546a887ec503276e3799869a00b5432a4f535ebddb27;
+parent verifies1446CRCs,866frozen original seals,11unchanged input hash pairs,
+44complete fault/Params comparisons and30full fault HTTP body comparisons.
+Worker independently decodes all80collector rows:166log+10error+80readiness
+packets,128disk records,86HTTP requests. Sealed summary's old *.packet glob says0;
+actual *.bin records and decoder assertions are present. Receipt stays unchanged.
+Accepted ordinary212/10000/32traffic is reused, not repeated. #492 closure awaits
+publication. Original eight helpers/two route controllers are not yet removed.
+
+[Focused routing39784424007](https://github.com/bin9208/openpilot-rust/actions/runs/39784424007)
+passes13disk-policy+2timed routing/mutation tests and strict Clippy at9adb3fdf2,
+workflow6ff0f9c405619fd9b448c8d3265a6a145fbffc7b. The native multiline commands,
+fixture SHA and mandatory/fail-closed route replace only obsolete uploader tokens
+in preservation assertions; immutable captured baseline stays unchanged. Parent
+checks artifact12428132835:5860B/SHA256
+ af0fee98b960cf20f573e0a0c61309eb329499c963b1761304e5eda2a6817f0b/all6CRCs
+and four final input hashes. Published2ab Integration39780531265 passes16jobs;
+its Fast and workspace119830524051 actual failure was the same stale timed
+assertion, separately repaired here (not a disk-reserve failure). Full Rust39780531234 is not yet accepted. Its original model119830587318
+fails strict model-1.bin parity on EPYC7763; accepted road's EPYC9V45 has identical
+93source/91rewritten-IR/91rewrite receipts/LLVM/exporter and91different objects.
+This localizes codegen divergence without changing targets/tolerances or proving
+a universal cause; raw failing predictions were not retained.
+
+[Vendor-only39780897024](https://github.com/bin9208/openpilot-rust/actions/runs/39780897024)
+passes at2ab,workflow6fb7d4bba676d5ac80919400e3856e3abea069d9. Parent authenticates
+artifact12426398989:4586859B/SHA256
+ baa93da697e747bfa736ed0ab4b4c34fb777df57b2440a8bc86a09fb19a3c68d/all21CRCs,
+all164exact file hashes and official iced/lazy crate checksums. Commitbb08ad8ab
+vendors iced142unchanged upstream files plus its Cargo checksum, external pinned
+full MIT notice and provenance; locked lazy_static remains unchanged. No model
+compilation/image execution/numerical acceptance is claimed. Source6c35679d6a07573eae2957acd22df4eee55e4ccb integrates the explicit cached-mode
+runtime/exporter/QA candidate, packed relocation rejection and recursive
+canonical-JSON binding correction. Component workflow5be683a0b requires default/
+optional compilation, selected inert units, feature-union canonical tests and
+strict Clippy with final source/ELF guards; hosted acceptance remains pending.
+
+
+Native sibling caller policy [39787866142](https://github.com/bin9208/openpilot-rust/actions/runs/39787866142)
+passes at5fc4e8886/workflowa04f200f274a3c4c4be353c23cf0871826172044:
+13disk/78isolation/3timed tests and strict Clippy. Parent checks7883B artifact
+12429707796/SHA256 ef85989d930e079f410c76b999fcb66baacf8965abc70b16a2594ad76937b6a6,
+all6CRCs/five final source guards and actual94test stdout. All six remaining
+maintained uploader sibling calls are native. Frozen baseline JSON, provider flags,
+raw fixture bytes and ordinary traffic remain unchanged; originals still exist.
+
+Component39786499372/source6c35679d6 stops at first Clippy nested-if lint; no unit
+traffic ran. cc4b2ef51 corrects the predicate layout. Source800e2c8f8 adds explicit
+cached-only UTF8 canonical bytes and independently pinned Korean/astral digest
+controls, plus early authenticated current-exporter admission for startup/USB.
+R2 component workflow6a0cb99ea0a258f89f3358b5c68c0e2538ad06cc remains pending;
+no generated image execution/numerical claim follows.
+
+R9/39782431888 passes2RED/strictClippy/7units/10integration/9default lifecycle/
+existing3actual cases, then times out at first new INT/datagram probe SIGSTOP
+barrier before any foreign bind; full two-root never runs. Tracing stop-state
+interference is suspected, not a demonstrated /proc-state diagnosis. Worker
+checks artifact12429369059:310360B/SHA256
+ aa570bfb7a5e3c98fe1279f2b978911fcbacf8653d17afea4565c0a07c338234/all906CRCs.
+Source9bd81fcd7 adds failurecase/stage and preserved raw diagnostics;15second/T
+barriers stay fixed. R9u workflow43beb8ad66b7146db9581df63ade1df24a25a211 runs
+actual negative fault barriers untraced while retaining full closed-program traced
+positive traffic in both roots. #491/source-retirement acceptance stays open.
+
+
+[Component R2 39788805882](https://github.com/bin9208/openpilot-rust/actions/runs/39788805882)
+succeeds at800e2c8f808d0abf347787a01d4c7b9ce1fec942,
+workflow6a0cb99ea0a258f89f3358b5c68c0e2538ad06cc. Artifact12430267237:
+149077B/SHA256 06d356fddf4d0f34de5694504b0c40d05a674e4beaac2fb6677085dc7485ea79,
+all31CRCs/1139source hashes match exact committed Git blobs; source identities,
+3ELFs and active preserve_order feature union verified independently. Actual
+16runtime/2canonical/4currentcatalog units, default/optional/driver/devtools
+strict Clippy and full-family test compilation pass. No PROGRAM images execute.
+Full genuine driver model-run/daemon numerical prefix and complete family/USB/
+source-absence gates follow separately; no driver/compiler/ARM/device acceptance
+is claimed from the component pass.
+
+The complete driver continuation is published at workflow
+9d3571021bf4bfafd57c69b72fab353fdcbe436f/source800e2c8f8, recipeSHA
+9d4381ef055fc64f063e15ed8d3540fe287878f4b89352b90a8cac80dd33f57e.
+It requires the accepted exact-source component before any image execution,
+strict genuine model-run/daemon prefix before the full family and original
+startup/USB/source-absence/reappearance gates. Hosted results remain pending.

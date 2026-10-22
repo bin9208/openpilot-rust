@@ -1,8 +1,8 @@
 # 실험용 Rust 포팅
 
-이 독립 저장소에서는 오픈파일럿 기기 런타임의 Rust 전환을 시작했습니다.
-첫 workspace에는 스칼라 필터와 Linux CPU 계측 도구가 있습니다.
-아직 차량 프로세스를 대체하거나 추가 AI 모델을 활성화하지 않습니다.
+이 독립 저장소에서는 오픈파일럿 런타임과 개발 도구를 Rust로 전환하고 있습니다.
+저장소 전체의 Python 제거는 아직 진행 중이며, 검증 결과와 남은 작업은
+[#296 검증 기록](../../naver/rust-repository-python-retirement-296-evidence.md)에 정리합니다.
 
 Rust 1.94.0이 설치된 Linux 개발 호스트에서 `rust/` 디렉터리로 이동해 실행합니다.
 
@@ -31,3 +31,16 @@ CI의 Params 경로와 JSON11 receipt 경로를 읽는 도구는 `ci-receipt-met
 `module ENV FILE`, `first-binding ENV DIRECTORY`, `prefix FILE`을 지원합니다.
 receipt는 최대 4MiB이며, JSON11의 `prefix`는 문자열이어야 합니다. CI는 각 호스트용
 실행 파일을 먼저 빌드하고 `CI_RECEIPT_METADATA`로 경로를 전달합니다.
+
+실험용 `offline-cached-code`는 x86-64 Linux에서 원본 CPU 프로그램의 전체 실행 코드를
+묶고 검사하는 도구입니다. 빌드 명령은
+`cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --features cached-program-isa --bin offline-cached-code`입니다.
+명시한 요청 파일의 경로와 SHA256으로 원본·현재 소스 및 발행 도구의 검증 자료를
+연결합니다. 모델 소스를 컴파일하거나 해당 실행 코드를 실행하지 않으며, 출력 경로는
+새 파일이어야 합니다. 이 후보의 실제 수치 일치 검증은 아직 남아 있습니다.
+
+캐시 실행 코드가 포함된 번들은 `model-run --trusted-bundle BUNDLE SEQUENCE.json` 또는
+`openpilot-dmonitoringmodeld --trusted-catalog CATALOG`에
+`--cached-admission PATH --cached-admission-sha256 SHA256`을 함께 지정해야 합니다.
+이 검증 자료는 번들과 별개로 신뢰할 수 있는 원본·현재 증거에서 받아야 합니다.
+일반 로드는 캐시 번들을 거부하며, 이 옵션은 차량 설치나 정상 런타임 선택을 바꾸지 않습니다.

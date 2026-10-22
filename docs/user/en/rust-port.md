@@ -1,8 +1,8 @@
 # Experimental Rust port
 
-This independent repository has begun porting the openpilot device runtime to
-Rust. The initial workspace contains scalar filters and a Linux CPU diagnostic.
-It does not yet replace vehicle processes or enable an additional AI model.
+This independent repository ports the openpilot runtime and development tools to
+Rust. Repository-wide Python retirement is still in progress; current acceptance
+and outstanding work are recorded in the [#296 evidence ledger](../../naver/rust-repository-python-retirement-296-evidence.md).
 
 On a Linux development host, with Rust 1.94.0 installed, run from `rust/`:
 
@@ -31,3 +31,17 @@ Build it with `cargo build --manifest-path rust/Cargo.toml --locked -p openpilot
 It supports `module ENV FILE`, `first-binding ENV DIRECTORY`, and `prefix FILE`.
 Receipts are limited to 4MiB; JSON11 `prefix` must be a string. CI builds the
 native binary for each host first and exports its path as `CI_RECEIPT_METADATA`.
+
+The experimental `offline-cached-code` tool packages and checks complete original
+CPU program images on x86-64 Linux. Build it with
+`cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --features cached-program-isa --bin offline-cached-code`.
+Its explicit request path and SHA256 bind original and current source/issuer
+evidence; it does not compile model source or execute the images. Output paths
+must be new files. This candidate still requires numerical acceptance.
+
+Cached bundles require explicit `--cached-admission PATH --cached-admission-sha256 SHA256`
+arguments in `model-run --trusted-bundle BUNDLE SEQUENCE.json` or
+`openpilot-dmonitoringmodeld --trusted-catalog CATALOG`. Obtain that admission
+from independently trusted original/current evidence, separately from the bundle.
+Ordinary loading rejects cached bundles; this option does not enable vehicle
+installation or change the normal runtime selection.

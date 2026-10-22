@@ -27,9 +27,11 @@ records; Git retains earlier handoffs. Do not restart accepted unchanged groups.
 
 ## Source and full checks
 
-Implementation source: cd341b167a4c37dc4f189014672908c1e2a76d02.
-Issue-branch remote/PR343: f09eee7b8d352cc3b4463acf5f467a786f0d310d.
-Newest diagnostic branch: ab2e55569fe0f680e4209fafcb4c4ba9a4017126.
+Latest implementation source:9bd81fcd7d3bb817243cc8616878eab1c1e9dfd7;
+model integration6c35679d6, Unicode/early-admission800e2c8f8 and native caller5fc4e8886
+are ancestors. Vendorbb08ad8ab and original routing9adb3fdf2 are preserved.
+Issue-branch remote/PR343:2ab2738335f2632e32aedef4a83ef272c475f1dd.
+Newest diagnostic branch:43beb8ad66b7146db9581df63ade1df24a25a211.
 Do not lose newer commits or mix unrelated route WIP into a source pin.
 
 Published PR synthetic merge48abb4d87797d84c03be1595e9122c4b1e023e2d:
@@ -88,8 +90,8 @@ This does not close #474 or imply the complete Rust aggregate passes.
   SHA0ad014db/13CRCs, tests12417334939 SHA014a8ca8/17CRCs,19bindings and helper
   ELF526a524c independently audited. First39760699556 stopped before publisher
   execution because depth1 omitted old tree; R2 uses bounded3commit checkout and
-  reuses exact-source successful Clippy. Fix committed; close#490 after next
-  issue-branch publication. This is not exporter retirement/full-model acceptance.
+  reuses exact-source successful Clippy. Fix published at a79bfcb98; #490 closed after publication
+  (comment6340809072, confirmed closed/completed). This is not exporter retirement/full-model acceptance.
 
 ## Active model closure
 
@@ -207,9 +209,9 @@ including bootlog's original uploader helper-pin admission. Preserve model WIP.
 Source7689484bb switches three accepted maintained uploader calls (support
 ordinary/logging and startup signing) to actual Rust CLIs with exact independent
 fixture SHA, explicit root and selected locked build plus capacity guard. Existing
-timeout/fault sibling calls remain Python. Existing isolation-policy tests now
-require native calls. Worker read-only review has no blocker; maintained hosted
-execution is still pending publication.
+timeout/fault sibling calls remain Python pending the six-caller patch. Existing
+isolation-policy tests require native calls. Published2ab support job passes;
+the full model aggregate remains separate.
 Worker guarded_proof_r3 owns actual compile/Clippy/functional failure repair and
 then the remaining daemon/interrupted/timeouts/log_fault consumer closure.
 Do not repeat accepted ordinary source traffic merely to capture new siblings.
@@ -292,3 +294,146 @@ consumer conversion and native caller transitions. Push a coherent reviewed
 batch to the issue branch, refresh PR343/#296 and close only accepted defects.
 Follow exact-source required full gates; keep user device acceptance separate.
 Do not finish the task because a PR exists or CI is merely queued.
+
+
+## Latest focused acceptance and integration checkpoint (2026-10-22)
+
+Published2ab: Integration39780531265 passes all16jobs and docs39780531192 passes.
+Fast39780531203/39780517680 fails a newly stale timed_ci preservation assertion,
+not the corrected547capacity-guard roster. Source9adb3fdf2 admits only the exact
+accepted native ordinary/logging multiline commands and immutable fixture hashes,
+with mandatory/fail-closed and mutation controls; historical support JSON remains
+unchanged. Focused39784424007/workflow6ff0f9c40 passes13capacity+2routing tests and
+strict Clippy. Parent audits artifact12428132835:5860B/SHA
+ af0fee98b960cf20f573e0a0c61309eb329499c963b1761304e5eda2a6817f0b,
+all6CRCs and four final unchanged-input checks. Full Rust39780531234 is still running. Workspace119830524051 stops at the same
+stale timed_ci assertion, already repaired by focused39784424007; its step name
+mentions a capacity reserve, but disk exhaustion did not cause this failure.
+Original-model119830587318 fails actual model-1.bin byte comparison.
+Accepted-road EPYC9V45 and failed maintained EPYC7763 runs have identical93raw
+sources/91rewritten IR/91rewrite receipts and LLVM/exporter providers; all91object
+files differ. This localizes divergence to target-dependent code generation.
+Failed raw outputs were not retained; no universal root-cause or numerical fix is
+claimed. Preserve strict original tolerances and both CPU profiles as evidence.
+
+Sibling R1/39778730821 fails CLI compilation before traffic (automatic help API);
+source487a249f2 fixes it. R2/39779898611 compiles/Clippy and passes ownership4,
+logging3 and seven sibling tests; fault setup rejects fixture-only persistent flag
+forwarded to the strict HTTP peer. Sourcee5dfb68a4 separates transport flags from
+fault controls, leaving frozen expectations unchanged. R3/39783963192 succeeds at
+sourcee5dfb68a41343ac2f51c8b9f002111656cf303c5,
+workflowa7397096440e66306d2bef095017867b7458845e.
+Artifact12427719093:3497211B/SHA
+ ec4a5f238befa9b4ffbd546a887ec503276e3799869a00b5432a4f535ebddb27,
+all1446CRCs/866original seals/11final input pairs and15tests verified. Parent
+checks44complete fault/Params comparison rows,30full fault HTTP bodies and36
+logging original/cereal assertions. Worker independently decodes all80rows:
+166log+10error+80readiness packets,128disk records and86HTTP requests. The sealed
+receipt's stale *.packet counter incorrectly says0; actual retained files are
+*.bin. Do not edit that original receipt or claim missing packets. #492 awaits
+issue-branch publication; the prospective admission patch now cites accepted R3.
+Six maintained sibling callers/timed policy and exact-ten absence gate remain
+pending. All eight shared Python helpers and two route controllers stay live.
+
+R9 kernel/VFS ownership source31e9d0fb5 is published at workflowcc44b9a81,
+run39782431888 later fails the new SIGSTOP fixture barrier (details below). Held socket cookie+UNIX_DIAG_VFS associates
+kernel listener with held O_PATH inode/device; known regular/broken-symlink nodes
+preserve IPC before listener lookup. Explicit preserve acknowledgement handles
+foreign/error cases. ext-family representable inode/device and pidfd_getfd support
+are required; unsupported kernels/filesystems/permissions fail closed, with no
+privileged workaround. Fourteen extra actual-provider/non-listener preservation
+cases join focused RED/GREEN and the complete two-root gate. #491 stays open.
+
+Native vendor export39780897024/workflow6fb7d4bba/source2ab passes with no compile
+or image execution. Artifact12426398989:4586859B/SHA
+ baa93da697e747bfa736ed0ab4b4c34fb777df57b2440a8bc86a09fb19a3c68d,
+all21CRCs/all164exported file hashes checked by parent. The162upstream files plus
+2Cargo checksum files comprise iced142+1 and lazy_static20+1. Commitbb08ad8ab
+adds only the exact143iced files; existing locked registry lazy_static stays.
+Pinned upstream full MIT notice is an external sibling, SHA93a47598; provenance
+retains archive/run/source/commit identities. Six reviewed candidate patches, seven original runtime candidate files and
+canonical follow-up are committed6c35679d6a07573eae2957acd22df4eee55e4ccb. Packed relocation
+formats now reject in both reconstructor/library validator, with12inert cases.
+Independent worker review finds no further concrete blocker under the documented
+unsafe trusted/immutable-library contract. This is not a malicious-ELF sandbox.
+Canonical JSON binding hashing sorts recursive keys only in new hash boundaries;
+values and old receipt hashes remain unchanged. Two mutation/reordering units are
+authored. Component39786499372/workflow5be683a0b requires exact default/optional compilation,
+selected inert units and preserve_order feature-union tests, strict Clippy and
+unchanged full source/ELF identities. RecipeSHA7444e10d0dafb72efee0c56656332beb18ee081df5879d74e0bf960654c99e1e.
+Parent corrects three unit module selectors and installs real capnp prerequisites
+before publication; zero selected tests reject. Optional native issuer, explicit
+loader/catalog/exporter and real daemon/model-run still require hosted acceptance;
+no compiler retirement, default-mode change, ARM or device acceptance follows.
+
+
+### Follow-up gates and next consumer closure
+
+Six maintained sibling calls are native at5fc4e8886dde7d41840758dbdf113143b6bc0a78.
+Grouped support build emits reference/logging/siblings once; the exact existing
+interrupted-read provider is compiled explicitly with16MiB capacity reserve.
+Timed policy preserves the frozen baseline and binds all eight native routes,
+fixtures/providers/build ordering; duplicate blocks and softened/rebound routes
+reject. Policy39787866142/workflowa04f200f2 passes13disk+78isolation+3timed=94tests
+and strict Clippy. Artifact12429707796:7883B/SHA
+ ef85989d930e079f410c76b999fcb66baacf8965abc70b16a2594ad76937b6a6,
+all6CRCs and all5source guards checked by parent and worker. No Python source
+retirement credit yet. Candidate final8helper admission and exact10source-absence
+script are reviewed but unapplied; route closure remains a prerequisite.
+
+Component39786499372/source6c35679d6 fails first default Clippy on one nested if,
+before any units. cc4b2ef51 collapses it without changing the predicate. Parent
+also finds recursive sorted Rust/Python JSON hashes differ on Unicode because
+Python defaulted to ASCII escapes. Source800e2c8f8 uses explicit cached-only UTF8,
+with independently pinned Korean/astral bytes/hash a20da5d9 and both mutation
+units. It also authenticates current exporter admission before startup/USB compare
+changed exporter files with original historical pins. Frozen original manifests
+stay exact and changed current bindings are reported separately. R2 component
+workflow6a0cb99ea0a258f89f3358b5c68c0e2538ad06cc is running against800e2c8f8.
+No native model/image/numerical acceptance follows from syntax or artifact export.
+
+R9/39782431888 fails only the new first INT/datagram case's probe SIGSTOP wait,
+not provider/socket readiness; no foreign bind occurs. Actual strace shows
+SIGSTOP/group-stop, but the /proc state sample was lost. A tracing t/T barrier
+collision is suspected, not proved. Before failure,2RED/strictClippy/7units/
+10integration/9default lifecycle/existing3actual cases pass; full two-root does
+not execute. Worker audits artifact12429369059:310360B/SHA
+ aa570bfb7a5e3c98fe1279f2b978911fcbacf8653d17afea4565c0a07c338234/all906CRCs.
+Source9bd81fcd7 retains exact failedcase/stage, precleanup proc snapshots and
+stderr/ownership/provider files on unwind. Fifteen-second/T-state checks remain.
+R9u workflow43beb8ad6 runs actual fault barriers untraced; complete positive
+both-root traffic still requires strict closed-program strace audit. TemplateSHA
+6c58d606d22970e17ac0049e1636a47923347418bdd1bc411eda4f29159955fa.
+No source deletion or #491closure before actual accepted results.
+
+For fresh Actions status use `gh api -H 'Cache-Control: no-cache'`; connector job
+snapshots have lagged. Local gh API now works. Never infer unchanged running or
+passing state from a cached response. All publisher sessions are drained.
+Worker guarded_proof_r3 starts the next native deleter controller/original-capture
+batch, preserving #298 original/corrected bookmark behavior. Original uploader/
+deleter/xattr modules still have loggerd test and Athena consumers; don't remove
+these runtime roles or claim a whole logging-stack conversion from the8helper
+closure. Worker exporter_bridge_r3 continues actual cached driver/road numerical
+workflow composition. Worker route_upload_r3 owns R9u and the final10 absence gate.
+
+
+Component R2/39788805882/workflow6a0cb99ea succeeds at800e2c8f8. Artifact
+12430267237:149077B/SHA06d356fddf4d0f34de5694504b0c40d05a674e4beaac2fb6677085dc7485ea79,
+all31CRCs and1139source hashes independently checked against exact Git blobs,
+all source identities/3finalELFs/preserve_order feature union verified by parent.
+Actual16cached runtime+2canonical+4currentcatalog units pass; default/optional/
+driver/devtools strict Clippy and full-family test compilation pass. No program
+images execute. The fresh full driver recipe now requires this exact accepted
+component, rebuilds/binds both native helpers after the final feature build,
+preflights all44images before load, exercises a Unicode issuer path, and requires
+actual strict model-run/daemon prefix before full original family/source-absence
+and genuine USB gates. Full numerical workflow9d3571021bf4bfafd57c69b72fab353fdcbe436f is published
+at exact800e2c8f8; recipeSHA9d4381ef055fc64f063e15ed8d3540fe287878f4b89352b90a8cac80dd33f57e.
+Numerical execution is still pending.
+
+Independent original deleter capture is published at workflowbf0eba28fc04058fd19a85dbe993534187fcb15e,
+source5fc4e8886; recipeSHAdd90a5d795499aad2ceab348c070acc1d456b4ea053560eecd8483683d2307f5.
+It builds/runs no Rust deleter and will confirm actual28scenario/78row counts,
+original/corrected #298 snapshots and three private-tmpfs loop cycles. Those
+counts are prospective until actual hosted evidence. Worker implements the native
+controller separately without generating its expected observations from Rust.
