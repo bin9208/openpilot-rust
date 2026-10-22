@@ -230,7 +230,7 @@ impl Peer {
     }
     fn drain(&mut self) -> Result<bool> {
         let mut received = false;
-        for index in 0..2 {
+        for (index, topic) in TOPICS.iter().enumerate() {
             loop {
                 let packet = if index == 0 {
                     self.log.receive(Duration::ZERO)?
@@ -241,11 +241,11 @@ impl Peer {
                     break;
                 };
                 received = true;
-                let (record, _) = decode(&packet, TOPICS[index])?;
+                let (record, _) = decode(&packet, topic)?;
                 OpenOptions::new()
                     .create(true)
                     .append(true)
-                    .open(self.output.join(format!("{}.bin", TOPICS[index])))?
+                    .open(self.output.join(format!("{topic}.bin")))?
                     .write_all(&packet)?;
                 if index == 0 {
                     self.records.push(record);
