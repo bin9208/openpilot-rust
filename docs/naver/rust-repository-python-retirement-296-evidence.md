@@ -8834,3 +8834,38 @@ e4f0b4bd14c124794b3026e85d167dd3878d2845. Its operation RAM demand remains
 explicitly unmeasured; #496/#498 evidence selects two workers without an invented
 4GiB available-memory threshold. Raw pressure/OOM/exit evidence is retained.
 No queued job, source-only review or observation is full-conversion acceptance.
+
+### Logging R4 exact failed-cohort attribution and bounded continuation
+
+Run39833849895/source40eb0429013cd853c1e74dc9530cdb5f484aa32c/workflow
+564276896cd312749d99eeb4e3a6c152ccf16b89 remains FAILED. Artifact12451410669
+is5443810B/SHA25626911d3911ad1f596ce8e433a4c8721f639ea3b9874138d168724cd513aa0343.
+Parent independently checks all8426uniqueZIP CRCs/8424content seals and empty
+exclusions. The lane identifies a118byte Unix socket pathname, exceeding the
+107byte pathname limit, and aggregate600s supervision expiry during preparation
+of the next case. Completed shutdowns took0.100–0.109s; this is not evidence of
+a shutdown hang. Full normal protocol traffic was not reached.
+
+Test-only patch5aa9ad1a6c8ca8f21533dedce250e54e21ec9151992fe21a2dbffe1e898583ba
+shortens only the foreign listener leaf and adds an exact39833849895resume
+selector. Normal tests keep the full roster. A separately authenticated Actions
+continuation reuses17fully closed cases+31admission controls, then runs remaining
+2directory signals+8collisions within the SAME shared600s budget, before the
+unrun strict2s/998packet/2782response/92comparison normal lanes. Source-only
+rustfmt/diff checks pass; independent external-reuse review is pending. No
+production logger, tolerance, shutdown contract, original source or inventory
+change is claimed. The strict C++ELF identity may expose a new runner/compiler/
+path prerequisite mismatch; its instrumented gate is retained.
+
+Registered additional jobs: Paramsdcaller39839253286 uses source6fea07022 and
+workflow50eca8c819115f0e428dc94dd802cd920e7a5d23. Mainloggerd39839464771 uses
+source77100d33/workflow3139953cac0888e729c2802a49c393e574fdb3b6, fresh affected
+5units/3lifecycle functions and precise original-replay-only reuse, then the
+unrun37worker/71resource cohort. Road InstCombine-only39839598730 uses historical
+source1d5570e158bb7a799c4a816f78bc7f63f201d2a4/workflowbec099d43d741d894ed79c281908173b838d7c77;
+its all-exit child guard was repaired before publication, no numerical replay.
+Growth-only disk gate39840086506 uses source6fea07022/workflow
+39d099ae02c93c5e015d7c10e374e61ffb0d262d, isolated job paths and21focused
+commands. All are queued; none is counted as passed. Fast checks39839213128/
+39839200044 and mapped-docs39839330187/39839212353 pass at6fea07022; Rust port
+and Integration remain pending. Current full conversion is unfinished.

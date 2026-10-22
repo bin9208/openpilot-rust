@@ -7,8 +7,8 @@ unchanged evidence. Read this handoff and the linked evidence ledger first.
 ## Active continuation, superseding the earlier migration snapshot
 
 Read Git freshly for source/workflow publication. The most recent published source
-is77100d33ce4d1202853bd6bf3597a0fc2014c590 before the next reviewed Paramsd
-caller/CP949-test commit. Local implementation commits1d7189b6b(loggerd diagnostics/pipeline/IO) and
+is6fea07022c77ff8ffedb8fd1efd765f7d1f825fb before the next logging lifecycle
+test-only continuation commit. Read Git freshly after that publication. Local implementation commits1d7189b6b(loggerd diagnostics/pipeline/IO) and
 0bb757339(real-emitter native publisher caller) have completed independent
 review. Commit77100d33 removes obsolete fixed disk floors in35native/coupled
 targets. Functional acceptance for these new scopes remains pending Actions.
@@ -49,7 +49,8 @@ Current authoritative results and artifact hashes are in the evidence ledger:
   parent independent dense/vector/source comparisons and complete ZIP checks.
   Newton hit429/closed; Hubble delivered CP949 and completed/closed. New original
   capture39838081764 is queued; focused test7a67cd94 is integrated but native
-  publication waits admitted original evidence. Archimedes owns AST caller.
+  publication waits admitted original evidence. Archimedes hit429/closed;
+  Schrodinger takes over AST caller. The new CP949 test is committed6fea07022.
 - AST lifecycle39826743607 accepts8tests/31scenarios/12Git and complete retained
   traces. Final caller/two-source retirement waits remaining codec admissions.
 - Carrot comparator39826752939 and maintained-caller39832413264 are admitted.
@@ -60,7 +61,9 @@ Current authoritative results and artifact hashes are in the evidence ledger:
  39830442536 passed14units+cheap grammar then failed two checked unwraps in
   deferred cleanup. Third gate explicitly authenticates/reuses those scopes,
   freshly checks Clippy and all unreached lifecycle/protocol behavior. The run
-  failed; Socrates is diagnosing its actual next-stage failure.
+  failed on a118byte socket path and aggregate setup timeout. Test-only resume
+  patch5aa9ad1a is integrated:17closed cases reused/10new, shared600s unchanged.
+  Maxwell reviews external reuse; normal strict2s protocol remains unrun.
 - Loggerd main third39832401630 passes5units/3lifecycle/one full-schema replay
   then fails a Clippy lock predicate. That fix and reviewed diagnostics/pipeline/
   IO are committed1d7189b6b. Hypatia hit429/closed; Descartes owns precise
@@ -85,11 +88,13 @@ Current authoritative results and artifact hashes are in the evidence ledger:
 - Driver#476 first observer39828495779 mixes pre-substitution core_id=None and
   native[0] at warp call1. Einstein's R2 39833861115 records actual worker ABI
   before strict comparison, keeping source69bbee211. R2 completed successfully;
-  actual saved-output diagnosis is underway. Numerical drift is still open.
+  Einstein hit429/closed; Bacon takes over saved-output diagnosis in
+  driver-r2-diagnosis-sol. Numerical drift is still open.
 - Startup39819735679 reaches the90minute job limit after42completed positives.
   Provider/source integrity passes, completion fails because18positives and16
-  controls are missing. Helmholtz prepares bounded recovery; a separate immutable
-  saved-data audit is the first new bin-actions job. No family-wide pass.
+  controls are missing. Helmholtz hit429/closed; Descartes prepares actual bounded
+  recovery under startup-continuation-sol. Saved-data audit39835797062 remains
+  queued; no family-wide pass.
 
 Inventory remains288/3/3289 of3580. Dev-md, device operations, protected
 integration and releases remain outside this continuation. Local restrictions
