@@ -1,11 +1,17 @@
 """Exercise the actual delivery admission script with owned GitHub responses."""
 import ast
 import copy
+import hashlib
 import json
 import os
 from pathlib import Path
+import shlex
+import shutil
 import subprocess
+import tempfile
+from types import SimpleNamespace
 import unittest
+from unittest import mock
 
 import yaml
 
@@ -127,6 +133,96 @@ class RuntimeDeliveryTests(unittest.TestCase):
         result = invoke(f)
         self.assertNotEqual(result.returncode, 0, result.stdout)
         self.assertEqual(result.stdout, '')
+
+
+class RuntimePackageRunnerTests(unittest.TestCase):
+  @classmethod
+  def setUpClass(cls):
+    source = ROOT / 'rust/ci/runtime/package.py'
+    tree = ast.parse(source.read_text())
+    # Execute the real entry admission without initializing work directories,
+    # reading Git state or invoking any build/delivery command.
+    entry = []
+    for node in tree.body:
+      if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == 'ROOT' for target in node.targets):
+        break
+      entry.append(node)
+    cls.entry = compile(ast.Module(body=entry, type_ignores=[]), str(source), 'exec')
+    cls.namespace = dict(os=os, json=json, hashlib=hashlib, shlex=shlex, shutil=shutil, Path=Path, WORK=ROOT)
+    functions = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in {'save', 'save_receipt', 'room', 'digest'}]
+    exec(compile(ast.Module(body=functions, type_ignores=[]), str(source), 'exec'), cls.namespace)
+    build = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'build')
+    receipt = next(node for node in build.body if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call)
+                   and node.value.args and any(isinstance(part, ast.Constant) and part.value == 'installer-build.json'
+                                               for part in ast.walk(node.value.args[0])))
+    cls.installer_receipt = compile(ast.Module(body=[receipt], type_ignores=[]), str(source), 'exec')
+
+  def environment(self):
+    return dict(GITHUB_ACTIONS='true', GITHUB_REPOSITORY='bin9208/openpilot-rust',
+                RUNNER_ENVIRONMENT='self-hosted', RUNNER_NAME='bin-actions')
+
+  def test_real_self_hosted_actions_admission_preserves_environment(self):
+    environment = self.environment()
+    with mock.patch.dict(os.environ, environment, clear=True):
+      exec(self.entry, {})
+      self.assertEqual(dict(os.environ), environment)
+
+  def test_hosted_workstation_unknown_runner_and_wrong_repository_are_rejected(self):
+    faults = (
+      ('GITHUB_ACTIONS', None), ('GITHUB_ACTIONS', 'false'),
+      ('GITHUB_REPOSITORY', None), ('GITHUB_REPOSITORY', 'other/openpilot-rust'),
+      ('RUNNER_ENVIRONMENT', None), ('RUNNER_ENVIRONMENT', 'github-hosted'),
+      ('RUNNER_ENVIRONMENT', ''), ('RUNNER_NAME', None), ('RUNNER_NAME', 'other-runner'),
+    )
+    for key, value in faults:
+      environment = self.environment()
+      if value is None:
+        environment.pop(key)
+      else:
+        environment[key] = value
+      with self.subTest(key=key, value=value), mock.patch.dict(os.environ, environment, clear=True):
+        with self.assertRaises(AssertionError):
+          exec(self.entry, {})
+        self.assertEqual(dict(os.environ), environment)
+
+  def test_delivery_receipts_record_actual_runner_without_relabelling(self):
+    with tempfile.TemporaryDirectory() as temp, mock.patch.dict(os.environ, self.environment(), clear=True):
+      receipt = Path(temp) / 'installer-build.json'
+      installer = Path(temp) / 'installer'
+      installer.write_bytes(b'test')
+      namespace = dict(self.namespace, WORK=Path(temp), SHA=SHA, installer=installer, installer_cmd=['cargo', 'build'])
+      # Run the actual build receipt emission, without invoking the build.
+      exec(self.installer_receipt, namespace)
+      actual = json.loads(receipt.read_text())
+      self.assertEqual(actual['source_commit'], SHA)
+      self.assertEqual(actual['installer_sha256'], '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08')
+      self.assertEqual(actual['runner_environment'], 'self-hosted')
+      self.assertEqual(actual['runner_name'], 'bin-actions')
+      self.assertEqual(os.environ['RUNNER_ENVIRONMENT'], 'self-hosted')
+      self.assertEqual(os.environ['RUNNER_NAME'], 'bin-actions')
+
+  def test_receipt_provenance_comes_from_environment_instead_of_existing_fields(self):
+    environment = dict(self.environment(), RUNNER_NAME='receipt-runner-fixture')
+    with tempfile.TemporaryDirectory() as temp, mock.patch.dict(os.environ, environment, clear=True):
+      receipt = Path(temp) / 'receipt.json'
+      value = dict(runner_environment='github-hosted', runner_name='stale-runner')
+      self.namespace['save_receipt'](receipt, value)
+      self.assertEqual(json.loads(receipt.read_text()), dict(runner_environment='self-hosted', runner_name='receipt-runner-fixture'))
+      self.assertEqual(value, dict(runner_environment='github-hosted', runner_name='stale-runner'))
+
+  def test_room_admits_estimated_growth_without_fixed_reserve(self):
+    for free, growth in ((0, 0), (2 * 2**30, 2**30), (20 * 2**30, 20 * 2**30)):
+      with self.subTest(free=free, growth=growth), mock.patch.object(shutil, 'disk_usage', return_value=SimpleNamespace(free=free)):
+        if growth == 0:
+          self.namespace['room']()
+        else:
+          self.namespace['room'](growth)
+
+  def test_room_still_rejects_insufficient_estimated_growth(self):
+    for free, growth in ((0, 1), (20 * 2**30 - 1, 20 * 2**30)):
+      with self.subTest(free=free, growth=growth), mock.patch.object(shutil, 'disk_usage', return_value=SimpleNamespace(free=free)):
+        with self.assertRaisesRegex(AssertionError, f'free={free}, growth={growth}'):
+          self.namespace['room'](growth)
 
 
 if __name__ == '__main__':

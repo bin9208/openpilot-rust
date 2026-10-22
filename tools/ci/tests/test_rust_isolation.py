@@ -12,7 +12,7 @@ class RustIsolationTests(unittest.TestCase):
     def test_webcam_requires_two_architectures_and_real_capture_ipc(self):
         workflow = yaml.load((ROOT / '.github/workflows/ci.yml').read_text(), Loader=yaml.BaseLoader)
         job = workflow['jobs']['webcam-runtime']
-        self.assertEqual(job['strategy']['matrix']['runner'], ['ubuntu-24.04', 'ubuntu-24.04-arm'])
+        self.assertEqual(job['strategy']['matrix']['runner'], ['local-x64', 'local-arm64-qemu'])
         self.assertNotIn('if', job)
         self.assertEqual(job['env']['CARGO_BUILD_JOBS'], '2')
         self.assertEqual(job['env']['CARGO_INCREMENTAL'], '0')
@@ -242,13 +242,14 @@ class RustIsolationTests(unittest.TestCase):
                          '-p openpilot-radarcan -p openpilot-can', '--all-targets --locked -- -D warnings'):
             self.assertIn(required, host)
         arm = '\n'.join(step.get('run', '') for step in data['jobs']['radar-arm']['steps'])
-        self.assertEqual(data['jobs']['radar-arm']['runs-on'], 'ubuntu-24.04-arm')
+        self.assertEqual(data['jobs']['radar-arm']['runs-on'], ['self-hosted', 'Linux', 'X64', 'dev-md-local'])
         for required in ('--target aarch64-unknown-linux-gnu', '--no-run', '--message-format=json',
                          '"$radar_test" --test-threads=1', 'test "$(cat "$RUNNER_TEMP/radar-arm/machine.txt")" = aarch64',
                          'check_radarcan_ci.py --phase reference', 'check_radarcan_ci.py --phase ipc',
                          '--platform manylinux_2_27_aarch64', 'sha256sum'):
             self.assertIn(required, arm)
-        self.assertNotIn('qemu-aarch64', arm)
+        self.assertEqual(data['jobs']['radar-arm']['env']['LOCAL_CI_ARCH'], 'aarch64')
+        self.assertEqual(data['jobs']['radar-arm']['defaults']['run']['shell'], 'openpilot-local-shell {0}')
         memory = '\n'.join(step.get('run', '') for step in data['jobs']['radar-memory']['steps'])
         for required in ('nightly-2026-09-29', 'numerics_', 'scheduler_argument_abi_preserves_source_fifo_priority',
                          '-Zmiri-no-extra-rounding-error', '-Zmiri-strict-provenance', '-Zmiri-symbolic-alignment-check',
@@ -326,7 +327,7 @@ class RustIsolationTests(unittest.TestCase):
     def test_webrtc_requires_native_host_and_arm_real_media_and_failure_boundaries(self):
         jobs = yaml.load((ROOT / '.github/workflows/ci.yml').read_text(), Loader=yaml.BaseLoader)['jobs']
         job = jobs['webrtc-runtime']
-        self.assertEqual(job['strategy']['matrix']['runner'], ['ubuntu-24.04', 'ubuntu-24.04-arm'])
+        self.assertEqual(job['strategy']['matrix']['runner'], ['local-x64', 'local-arm64-qemu'])
         self.assertNotIn('if', job)
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('webrtc_source_requirements.txt', 'libavcodec-dev=7:6.1.1-*', 'build_params_python.py', 'build_msgq_python.py',
@@ -350,7 +351,7 @@ class RustIsolationTests(unittest.TestCase):
 
     def test_xiaoge_requires_both_architectures_and_instrumented_native_libraries(self):
         jobs = yaml.load((ROOT / '.github/workflows/ci.yml').read_text(), Loader=yaml.BaseLoader)['jobs']
-        self.assertEqual(jobs['xiaoge-runtime']['strategy']['matrix']['runner'], ['ubuntu-24.04', 'ubuntu-24.04-arm'])
+        self.assertEqual(jobs['xiaoge-runtime']['strategy']['matrix']['runner'], ['local-x64', 'local-arm64-qemu'])
         required = {
             'xiaoge-runtime': ('build-xiaoge-opencv', 'build_params_python.py', 'build_visionipc_python.py',
                               'check_xiaoge_ci.py', '--features native-skip-miri', 'test_xiaoge_ci.py'),

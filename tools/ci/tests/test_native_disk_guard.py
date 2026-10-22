@@ -56,10 +56,10 @@ def invoke(environment):
 
 
 def test_capacity_failure_precedes_rustup_and_cargo(tmp_path):
-    environment, log = fixture(tmp_path, str(25 * 1024**3 + 1024**3 - 1))
+    environment, log = fixture(tmp_path, str(1024**3 - 1))
     result = invoke(environment)
     assert result.returncode != 0
-    assert 'recover at least 35 GiB' in result.stderr
+    assert 'below estimated operation growth' in result.stderr
     assert not log.exists(), 'toolchain/build ran before capacity admission'
 
 
@@ -163,10 +163,10 @@ def test_requested_operation_filesystem_is_checked_before_toolchain_work(tmp_pat
     operation = tmp_path / 'operation space'
     operation.mkdir()
     environment['GUARD_OPERATION_PATH'] = str(operation / 'new output')
-    environment['GUARD_OPERATION_FREE'] = str(25 * 1024**3 + 128 * 1024**2 - 1)
+    environment['GUARD_OPERATION_FREE'] = str(128 * 1024**2 - 1)
     result = invoke(environment)
     assert result.returncode != 0
-    assert 'recover at least 35 GiB' in result.stderr
+    assert 'below estimated operation growth' in result.stderr
     assert not log.exists()
 
 

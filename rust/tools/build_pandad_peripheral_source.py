@@ -20,7 +20,7 @@ def main() -> None:
   prefix: Path = args.json11_prefix.resolve()
   output.mkdir(parents=True, exist_ok=False)
   free = shutil.disk_usage(output).free
-  if free < (25 * 1024**3 + 100 * 1024**2):
+  if free < (100 * 1024**2):
     raise OSError(f'Insufficient free space for source fixture: {free} bytes')
   source = ROOT / 'openpilot/selfdrive/pandad/pandad.cc'
   fixture = ROOT / 'rust/tools/pandad_peripheral_source.cc'

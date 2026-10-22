@@ -24,7 +24,7 @@ class FactoryInput(TypedDict):
 
 def run(binary: Path, output: Path, binding: Path, numerics: Path, brand: str | None = None) -> None:
   free = shutil.disk_usage(output.parent).free
-  assert free >= 25 * 1024**3 + 16 * 1024**2, free
+  assert free >= 16 * 1024**2, free
   output.mkdir(parents=True, exist_ok=True)
   load_binding(binding)
   from openpilot.common.params import Params

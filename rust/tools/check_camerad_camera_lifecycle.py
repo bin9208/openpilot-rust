@@ -86,7 +86,7 @@ def main() -> None:
   args = parser.parse_args()
   args.output.mkdir(parents=True)
   free = shutil.disk_usage(args.output).free
-  assert free >= 25*1024**3 + 1024**3
+  assert free >= 1024**3
   sensors = [('ar', 0x354), ('ox', 0x5803), ('os', 0x5304)]
   cases = [(f'{sensor}-mode-{mode}-depth-{depth}', [str(mode), str(depth), '3'], {'CK_SENSOR': str(sensor_id)})
            for sensor, sensor_id in sensors for mode in range(3) for depth in (1, 18)]

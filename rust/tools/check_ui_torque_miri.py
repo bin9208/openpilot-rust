@@ -31,7 +31,7 @@ def main() -> None:
   args = parser.parse_args()
   root = Path(__file__).resolve().parents[2]
   free = shutil.disk_usage(root).free
-  assert free > (25 + 0.5) * 1024**3, free
+  assert free > 512 * 1024**2, free
   args.output.mkdir(parents=True, exist_ok=True)
   arc = {'cx': 268.5, 'cy': 1438.5, 'radius': 1207.5, 'thickness': 14.5, 'start': -96.05, 'end': -83.95}
   steps = [

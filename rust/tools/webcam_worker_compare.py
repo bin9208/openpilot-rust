@@ -133,8 +133,8 @@ def main() -> None:
   parser.add_argument('--cases', nargs='+', default=['unequal-eof', 'odd-worker', 'unavailable-worker'])
   args = parser.parse_args()
   output = args.output.resolve()
-  if shutil.disk_usage(output.parent).free < 25 * 1024**3 + args.reserve_mib * 1024**2:
-    raise OSError('owned webcam worker fixtures require disk reserve')
+  if shutil.disk_usage(output.parent).free < args.reserve_mib * 1024**2:
+    raise OSError('insufficient space for estimated webcam worker fixture growth')
   output.mkdir(exist_ok=False)
   assert (args.native is None) == (args.source is None)
   rows = [source_case(output / name, name, args.native, args.source / name if args.source else None) for name in args.cases]

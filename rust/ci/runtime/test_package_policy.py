@@ -20,6 +20,22 @@ exec(compile(ast.Module(body=[node for node in tree.body if isinstance(node, ast
 
 
 class SourcePolicyTests(unittest.TestCase):
+    def test_growth_only_build_consumers_are_exact_paths(self):
+        allowed = namespace["source_path_allowed"]
+        for path in (
+            "rust/crates/dev-tools/src/encoder_stage.rs",
+            "rust/crates/dev-tools/src/package.rs",
+            "rust/crates/model-runtime/src/export.rs",
+            "rust/crates/radard/src/replay/package.rs",
+            "rust/tools/card_ci_space.py",
+            "rust/tools/tests/test_build_space_policy.py",
+        ):
+            with self.subTest(path=path):
+                self.assertTrue(allowed(path))
+                self.assertFalse(allowed(path + ".extra"))
+        self.assertFalse(allowed("rust/tools/unreviewed_space_tool.py"))
+        self.assertFalse(allowed("rust/crates/model-runtime/src/cpu.rs"))
+
     def test_gpu_exceptions_are_exact_paths(self):
         allowed = namespace["source_path_allowed"]
         for path in (
