@@ -39,6 +39,24 @@ const TESTS: [&str; 17] = [
 ];
 const BUILD_STEP: &str = "Build and test native timed QA tools";
 const ORIGINAL_LOG_STARTUP: &str = "python rust/tools/check_logmessaged_startup.py --collector rust/target/debug/openpilot-logmessaged --output \"$RUNNER_TEMP/support-runtime/logmessaged-startup\"";
+const ORIGINAL_UPLOADER: &str = "python rust/tools/check_uploader.py --binary rust/target/debug/examples/uploader_trace --output \"$RUNNER_TEMP/support-runtime/uploader-reference/report.json\"";
+const ORIGINAL_UPLOADER_LOGGING: [&str; 2] = [
+    "python rust/tools/check_uploader_logging.py --binary rust/target/debug/openpilot-uploader \\",
+    "--trace rust/target/debug/examples/uploader_trace --collector rust/target/debug/openpilot-logmessaged --output \"$RUNNER_TEMP/support-runtime/uploader-logging\"",
+];
+const NATIVE_UPLOADER: [&str; 4] = [
+    "rust/target/debug/check-uploader-reference --root \"$GITHUB_WORKSPACE\" \\",
+    "--binary rust/target/debug/examples/uploader_trace --output \"$RUNNER_TEMP/support-runtime/uploader-reference\" \\",
+    "--fixture rust/crates/dev-tools/tests/fixtures/uploader-original-group/reference-observations.json \\",
+    "--fixture-sha256 b1ce58a70769ab48c7893f26da0f7186b2e7d378fd8a19fd5e495f88d68d4eb5",
+];
+const NATIVE_UPLOADER_LOGGING: [&str; 5] = [
+    "rust/target/debug/check-uploader-logging --root \"$GITHUB_WORKSPACE\" \\",
+    "--binary rust/target/debug/openpilot-uploader --trace rust/target/debug/examples/uploader_trace \\",
+    "--collector rust/target/debug/openpilot-logmessaged --output \"$RUNNER_TEMP/support-runtime/uploader-logging\" \\",
+    "--fixture rust/crates/dev-tools/tests/fixtures/uploader-original-group/logging-observations.json \\",
+    "--fixture-sha256 cdf42bbfebd0613cfc4896c419d96927cf410301155d3ce6b2141cb10313abba",
+];
 const NATIVE_LOG_STARTUP: &str = "env OPENPILOT_RUST_ROOT=\"$root\" PATH=\"$proof/native-path\" /usr/bin/timeout --kill-after=5s 180s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o \"$proof/$lane.exec\" \"$checker\" --collector \"$collector\" --output \"$proof/$lane\" > \"$proof/$lane.stdout\" 2> \"$proof/$lane.stderr\"";
 const LOG_LANES: &str = "for lane in current absent; do";
 const LOG_ABSENT_ROOT: &str = "if [ \"$lane\" = absent ]; then root=\"$roots/absent\"; fi";
@@ -92,7 +110,7 @@ fn validate(workflow: &Value) -> Result<(), String> {
     mandatory(job)?;
     let baseline = original();
     // Native journal/timed builds and their full regressions exceed the old
-    // job-wide budget. Per-case deadlines and every original command stay fixed.
+    // job-wide budget. Per-case deadlines and unrelated commands stay fixed.
     require(
         baseline["timeout_minutes"] == "30" && job["timeout-minutes"] == "45",
         "support full-regression job budget changed",
@@ -171,6 +189,43 @@ fn validate(workflow: &Value) -> Result<(), String> {
                 "native logmessaged retirement lanes, collector or source absence changed",
             )?;
             NATIVE_LOG_STARTUP
+        } else if line == ORIGINAL_UPLOADER || ORIGINAL_UPLOADER_LOGGING.contains(&line) {
+            // Captures remain immutable. Admit the exact native routes accepted
+            // by grouped source/HTTP and both-collector proofs, including their
+            // original fixture hashes, rather than requiring retired launchers.
+            let native = if line == ORIGINAL_UPLOADER {
+                &NATIVE_UPLOADER[..]
+            } else {
+                &NATIVE_UPLOADER_LOGGING[..]
+            };
+            let matching = steps
+                .iter()
+                .filter(|step| {
+                    step["run"].as_str().is_some_and(|run| {
+                        run.lines()
+                            .map(str::trim)
+                            .collect::<Vec<_>>()
+                            .windows(native.len())
+                            .any(|lines| lines == native)
+                    })
+                })
+                .collect::<Vec<_>>();
+            require(
+                matching.len() == 1,
+                "native uploader route missing or duplicated",
+            )?;
+            mandatory(matching[0])?;
+            let run = matching[0]["run"]
+                .as_str()
+                .ok_or("native uploader script missing")?;
+            require(
+                run.starts_with("set -euo pipefail\n")
+                    && !run.contains("||")
+                    && !run.contains("set +e"),
+                "softened native uploader comparison",
+            )?;
+            require(!all.contains(line), "original uploader launcher remains")?;
+            native[0]
         } else {
             line
         };
@@ -353,6 +408,8 @@ fn missing_softened_or_reordered_timed_routes_and_regressions_cannot_pass() {
             LOG_COPIED_ABSENT.into(),
             LOG_COPIED_NOT_LINK.into(),
         ])
+        .chain(NATIVE_UPLOADER.map(str::to_owned))
+        .chain(NATIVE_UPLOADER_LOGGING.map(str::to_owned))
     {
         let mut mutation = baseline.clone();
         for step in mutation["jobs"]["support-runtime"]["steps"]
@@ -399,9 +456,11 @@ fn missing_softened_or_reordered_timed_routes_and_regressions_cannot_pass() {
     {
         let step = &baseline["jobs"]["support-runtime"]["steps"][index];
         if step["name"] != BUILD_STEP
-            && !step["run"]
-                .as_str()
-                .is_some_and(|run| run.contains("rust/target/debug/check-timed-"))
+            && !step["run"].as_str().is_some_and(|run| {
+                run.contains("rust/target/debug/check-timed-")
+                    || run.contains(NATIVE_UPLOADER[0])
+                    || run.contains(NATIVE_UPLOADER_LOGGING[0])
+            })
         {
             continue;
         }
