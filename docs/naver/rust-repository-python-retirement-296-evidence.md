@@ -9192,3 +9192,32 @@ its bounded evidence and limitations are recorded above. File SHA256 values:
 YAML parsing and shell syntax pass locally; no build, provider or guest execution
 was repeated. #296 workflow routing and source/cache/target isolation are separate
 consumer work and still pending. No hosted publication is enabled by this import.
+
+## Diagnostic branch automatic Fast routing slice (2026-10-23)
+
+The narrow routing patch0d9c3137988503392604f29e147528f67b8b9e0cb84220babe04d7892efbd0f8
+is source-reviewed and integrated separately from the held full74-job adapter.
+It preserves all six Fast workers, required aggregate, original commands, Git
+history, triggers, BASE_SHA and time limits. Every job has fixed bin-actions
+labels. Fork source is rejected before checkout and cannot pass the required
+aggregate through skipped jobs. Each worker consumes the verified common temp
+and Rust-path actions, allocates owned source before checkout after an actual
+source-filesystem2GiB growth check, and keeps Cargo/Rustup/Python/Gradle caches
+private. Source/index/runner/resource evidence is uploaded before bounded
+inode/UID/owner/path-checked cleanup requiring artifact ID and digest.
+
+The actual diagnostic branch has no open PR; at74fa569bb93a28e024a3a960eaf5bfe33df493c4
+only Fast automatically matches a push changing these CI paths. Existing
+one-shot diagnostics retain exact path filters. The first diagnostic publication
+must atomically contain this slice and all four verified common helpers, plus
+only selected private x64 recipes. Rescan actual trigger/ref/PR state before
+publication. Feature/PR publication remains held for the separate broad routing
+and isolation work; ARM diagnostic source/workflow split and Darwin/APFS
+execution are not solved by this x64 slice. No existing job is cancelled.
+
+Parent independently inspected bootstrap/private workspace mapping, preserved
+source commands, fork/aggregate checks and cleanup. YAML, all Bash blocks,
+scoped Rust formatting and diff checks pass; no local functional execution.
+Exact-SHA Actions Fast behavior, cold private toolchain provisioning and its
+retained seven-minute bound still require actual execution. No success claim
+or deletion credit follows from source-only routing.

@@ -1,5 +1,7 @@
 //! Native counterparts of tools/ci/tests/test_workflow_policy.py.
-use openpilot_dev_tools::ci_policy::{check_workflow_policy, parse, run_shell, validate_fast_gate};
+use openpilot_dev_tools::ci_policy::{
+    check_workflow_policy, parse, run_shell, validate_fast_gate, DIAGNOSTIC_LOCAL_RUNNER,
+};
 use std::{collections::BTreeMap, fs, path::PathBuf};
 
 fn root() -> PathBuf {
@@ -42,6 +44,11 @@ fn protected_workflow_mutations_are_rejected() {
             "fast-checks.yml",
             "branches: ['**']",
             "branches: ['**']\n    paths: ['rust/**']",
+        ),
+        (
+            "fast-checks.yml",
+            "cancel-in-progress: false",
+            "cancel-in-progress: true",
         ),
         ("integration.yml", "${{ always() }}", "${{ success() }}"),
         ("integration.yml", "test \"$BUILD\" = success", "true"),
@@ -94,6 +101,7 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
     let gate = &original["jobs"]["fast"];
     let script = gate["steps"][0]["run"].as_str().unwrap();
     let success = BTreeMap::from([
+        ("SOURCE_ALLOWED".into(), "true".into()),
         ("NATIVE".into(), "success".into()),
         ("NATIVE_CORPUS".into(), "success".into()),
         ("NATIVE_TIMING".into(), "success".into()),
@@ -314,7 +322,7 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         "native-alert-manager",
     ] {
         let job = &workflow["jobs"][worker];
-        assert_eq!(job["runs-on"], "ubuntu-24.04");
+        assert_eq!(job["runs-on"], serde_json::json!(DIAGNOSTIC_LOCAL_RUNNER));
         for (key, value) in [
             ("RUSTUP_TOOLCHAIN", "1.94.0"),
             ("CARGO_BUILD_JOBS", "2"),
@@ -400,6 +408,118 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
                 .count(),
             1,
             "dropped or duplicated {command}"
+        );
+    }
+}
+
+#[test]
+fn diagnostic_fast_slice_keeps_private_paths_and_explicit_fork_failure() {
+    use openpilot_dev_tools::ci_policy::DIAGNOSTIC_TRUSTED_SOURCE;
+    let workflow =
+        parse(&fs::read_to_string(root().join(".github/workflows/fast-checks.yml")).unwrap())
+            .unwrap();
+    validate_fast_gate(&workflow).unwrap();
+    for (name, worker) in workflow["jobs"].as_object().unwrap() {
+        assert_eq!(
+            worker["runs-on"],
+            serde_json::json!(DIAGNOSTIC_LOCAL_RUNNER)
+        );
+        if name == "fast" {
+            continue;
+        }
+        let steps = worker["steps"].as_array().unwrap();
+        let allocate = steps
+            .iter()
+            .position(|s| {
+                s["name"] == "Allocate private Fast source cache and target before checkout"
+            })
+            .unwrap();
+        let checkout = steps
+            .iter()
+            .position(|s| {
+                s["uses"]
+                    .as_str()
+                    .unwrap_or("")
+                    .starts_with("actions/checkout@")
+            })
+            .unwrap();
+        assert!(
+            allocate < checkout,
+            "source growth/allocation must precede checkout"
+        );
+        let body = steps[allocate]["run"].as_str().unwrap();
+        for marker in [
+            "2 * 1024 * 1024 * 1024",
+            "mktemp -d",
+            "CARGO_TARGET_DIR=$source/rust/target",
+            "CARGO_HOME=$job/cargo-home",
+            "RUSTUP_HOME=$job/rustup-home",
+            "GRADLE_USER_HOME=$job/cache/gradle",
+            "DIAG_ACTIONS_WORKSPACE=$workspace",
+            "if [[ ${GITHUB_WORKSPACE:-} == %q ]]; then",
+        ] {
+            assert!(
+                body.contains(marker),
+                "missing private bootstrap field {marker}"
+            );
+        }
+        assert!(
+            body.find("((available >= required))").unwrap()
+                < body.find("source_owner=$(mktemp").unwrap()
+        );
+        assert_eq!(
+            steps[checkout]["with"]["path"],
+            "${{ env.DIAG_CHECKOUT_PATH }}"
+        );
+        assert_eq!(steps[checkout]["with"]["fetch-depth"], "0");
+        for field in ["persist-credentials", "set-safe-directory", "clean", "lfs"] {
+            assert_eq!(steps[checkout]["with"][field], "false");
+        }
+        let clean = steps
+            .iter()
+            .find(|s| s["name"] == "Clean only uploaded private Fast source")
+            .unwrap();
+        let body = clean["run"].as_str().unwrap();
+        for marker in [
+            "UPLOAD_ID =~",
+            "UPLOAD_DIGEST =~",
+            "stat -c '%d:%i'",
+            "test ! -L",
+            ".diag296-owner",
+            "rm -rf --one-file-system -- \"$p\"",
+        ] {
+            assert!(
+                body.contains(marker),
+                "unsafe owned cleanup missing {marker}"
+            );
+        }
+        let mut hosted = workflow.clone();
+        hosted["jobs"][name]["runs-on"] = "ubuntu-24.04".into();
+        assert!(validate_fast_gate(&hosted).is_err());
+        assert_eq!(steps[0]["env"]["SOURCE_ALLOWED"], DIAGNOSTIC_TRUSTED_SOURCE);
+    }
+    let mut fork_pass = workflow.clone();
+    fork_pass["jobs"]["fast"]["steps"][0]["env"]["SOURCE_ALLOWED"] = "true".into();
+    assert!(validate_fast_gate(&fork_pass).is_err());
+}
+
+#[test]
+fn diagnostic_common_helpers_match_verified_7766383_bytes_without_reexecution() {
+    use sha2::{Digest, Sha256};
+    let contract: serde_json::Value = serde_json::from_str(
+        &fs::read_to_string(root().join("tools/ci/diagnostic-296-contract.json")).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        contract["common_source"],
+        "77663836a95a9e2aff9aa66592d8b06ed9c87cd9"
+    );
+    assert_eq!(contract["common_files"].as_object().unwrap().len(), 4);
+    for (name, seal) in contract["common_files"].as_object().unwrap() {
+        assert_eq!(
+            format!("{:x}", Sha256::digest(fs::read(root().join(name)).unwrap())),
+            seal["sha256"].as_str().unwrap(),
+            "common source drift {name}"
         );
     }
 }
