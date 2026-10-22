@@ -27,18 +27,18 @@ records; Git retains earlier handoffs. Do not restart accepted unchanged groups.
 
 ## Source and full checks
 
-Implementation source: c12f3d1191dbec9694478a3bed0b04bf2edf4e4e.
+Implementation source: cd341b167a4c37dc4f189014672908c1e2a76d02.
 Issue-branch remote/PR343: f09eee7b8d352cc3b4463acf5f467a786f0d310d.
-Newest diagnostic branch: 8bd27349a8955d95e83db4bda99060f65c785f72.
+Newest diagnostic branch: ab2e55569fe0f680e4209fafcb4c4ba9a4017126.
 Do not lose newer commits or mix unrelated route WIP into a source pin.
 
 Published PR synthetic merge48abb4d87797d84c03be1595e9122c4b1e023e2d:
 Integration39754486834 passes all16jobs; both Fast39754486617/39754477763
-and docs39754486636/39754745503 pass. Full Rust39754486991 currently has45
-successful jobs, two model failures and one running workspace119742946369.
-Generic ARM119742946791 succeeds. Workspace timeout210min
-is intentional, so avoid cancelling/repeating it merely for a small push.
-Successful LLVM20/UI gates are included in45. Generic ARM is not AGNOS.
+and docs39754486636/39754745503 pass. Full Rust39754486991 completes with46
+successful jobs, two model failures and the failed rust-checks aggregator.
+Workspace119742946369 succeeds, including full release build37m46s and all
+functional/source comparisons/sanitizers. Generic ARM119742946791 succeeds;
+generic ARM is not AGNOS. The publication hold for this old run is over.
 
 The old full-model failures are distinct: original pipeline119742946401 reaches
 actual raw-road prediction drift without helper; family119742946604 stops
@@ -47,7 +47,7 @@ historical PTRACE_LISTEN/EIO remains unexplained. #484 is closed after its
 complete affected recovery gate passes: artifact12421257859/34970712B/SHA445f5f07,
 all7340CRCs/2508trace seals parent-audited.8controllers×2roots,5271closedexecs,
 Python0; pending-tunnel SIGTERM exits182.981276/193.046875ms within unchanged3s.
-This does not close #474 or imply the complete workspace has finished.
+This does not close #474 or imply the complete Rust aggregate passes.
 
 ## Accepted results to reuse
 
@@ -192,11 +192,17 @@ Sibling capture39770735490/workflow72bfd4d8b/source67f099 succeeds for new daemo
 interruption,timeout/log-fault/typed-Params scopes. Parent verifies artifact
 12422761878:543998B/SHA69f9c16983a0699d7478455016b94dade68374e346b72a12a1e669354ad8abee/
 all886CRCs and original-only observationSHA30f9e1f2,23pins,10timeout/30fault/14Params
-rows; worker checks866seals. Native sibling WIP is registered but uncommitted.
-Parent review finds unauthenticated same-name namespace removal and pathname
-permission restoration; #492 tracks correction/regressions before first commit.
-Preserve the model-runtime WIP and .omo when staging. Parent-owned Cargo/lib
-registration is applied, has no new dependency, and must accompany sibling code.
+rows; worker checks866seals. Native sibling code and #492 ownership correction
+are committedcd341b167 (13files; no dependency/lock change). Parent creates and
+holds private IPC/msgq directories before workers; validated workers borrow with
+cleanup disabled. Held-FD permission restoration preserves foreign replacements.
+Contents inside the authenticated private directory are owned namespace contents;
+this is not per-leaf authentication or an adversarial atomic race-proof claim.
+New492recipeSHAbbc1f7c29fe801fda533f84e68c2a3c22c3572646b1094a10a3c1a73407f0db0
+atab2e55569/sourcecd341b167 requires4ownership+3affected logging+8sibling tests.
+Accepted ordinary traffic is not repeated. Worker guarded_proof_r3 follows actual
+hosted compile/Clippy/functional results and prepares maintained/source closure,
+including bootlog's original uploader helper-pin admission. Preserve model WIP.
 
 Source7689484bb switches three accepted maintained uploader calls (support
 ordinary/logging and startup signing) to actual Rust CLIs with exact independent
@@ -243,11 +249,20 @@ Sourcec12f3d119 selects a unique stream listening inode before descendant-FD
 authentication; a real connected-peer/ambiguous-replacement regression is added.
 Four QA validators also reject symlink roots with trailing / or /., retaining
 valid real-directory spellings/defaults/explicit collector override.
-R8/39775898808/workflowe515327503a2cd7c4bcf04d5931213003df4a713 is running five
+R8/39775898808/workflowe515327503a2cd7c4bcf04d5931213003df4a713 passes five
 expected-assertion RED cases, focused GREEN and fresh complete two-root proof.
 Pinned recipeSHAdcab047f07ad1f468a4ce70d04f259e07069942f9b671abadf68035cef900983.
-Review repaired actual results, raw
-traces/bodies/seals before deleting originals or crediting them.
+Parent checks artifact12425671147:3335846B/SHA1cd6e417/all3807CRCs; all12original/
+native lanes'36HTTP bodies/18PUT reports and8native complete route bytes agree.
+All77held identities/bytes match except4declared quarantined-source ctimes.
+All8native parity/closed-exec lanes PASS:304actual exec attempts=296success+8DF
+ENOENT;140additional auditedchdir records are not execs. Pythonexec0.
+Both originals are absent in both roots before/after all4absence invocations,
+then restored. R8 scope accepted, but parent follow-up review finds an initial
+pre-ack replacement can reuse an old kernel listener's pathname. Worker prepares
+actual kernel-listener/VFS-inode association plus deterministic negatives; do not
+apply the weaker socket-authentication-review.patch. #491/caller/source closure
+remain pending and both original controllers stay live.
 
 ## Publication and next steps
 

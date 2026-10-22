@@ -7727,3 +7727,37 @@ explicitly records generated_code_executed=false and ABI_or_numeric_acceptance=f
 Worker checks168provider hashes and both locked registry archive checksums;
 real Cargo vendor manifests are still required for production integration.
 This is inert ISA admission, not driver numerical or compiler retirement acceptance.
+
+### Full published workspace and R8 proof complete; follow-up fixes stay explicit
+
+Published full [39754486991](https://github.com/bin9208/openpilot-rust/actions/runs/39754486991)
+finishes46successful jobs,2model failures and the failed aggregate. Workspace
+119742946369 passes all functional/source comparisons/sanitizers and complete
+release build37m46s; generic ARM119742946791 passes. Neither result is AGNOS or
+device acceptance. The old-run publication hold ends; required new-head checks
+remain separate.
+
+R8/39775898808 succeeds. Parent checks artifact12425671147:3335846B/SHA
+1cd6e41756a97b52c118bc431ee58f04b9b99079b23fe4dd653a98623b0626bd/all3807CRCs.
+Five explicit RED101 assertion receipts and all8native parity/exec lanes pass.
+All12original/native lanes retain36HTTP requests/18PUT bodies with matching full
+body hashes/lengths and transfer reports; all8native lanes' actual complete route/
+boot bytes match their uploaded bodies. All77held input identities/bytes match,
+excluding only the four declared quarantined-source ctime changes. Native audits
+contain304actualexecs=296success+8source-authoredDF ENOENT and140separatechdir
+records; observedPythonexec0, without an argv-parity claim. Both controllers are
+absent simultaneously in both roots before/after all4absence lanes, then restored.
+Further review finds initial-before-first-ack replacement can still confuse
+pathname-only authentication. #491 remains open pending kernel-listener/VFS-inode
+binding and meaningful negatives; originals/callers are not yet retired.
+
+Sourcecd341b167a4c37dc4f189014672908c1e2a76d02 registers the full native sibling
+controller group and fixes #492's shared/new pathname-only cleanup/permission
+guards. Parent creates and retains authenticated private IPC/msgq directories
+before workers, workers borrow without cleanup authority, and permission changes
+target held FDs. Replaced roots are preserved. Contents of the authenticated
+private directory are owned namespace contents, not a per-leaf or atomic race
+security claim. Revised recipeSHAbbc1f7c29fe801fda533f84e68c2a3c22c3572646b1094a10a3c1a73407f0db0,
+workflowab2e55569fe0f680e4209fafcb4c4ba9a4017126, requires4ownership/3affected
+logging/8sibling tests; accepted ordinary traffic is reused. Static checks pass;
+hosted acceptance and caller/helper-pin/source retirement remain pending.
