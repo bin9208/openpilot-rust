@@ -24,6 +24,8 @@ from xiaoge_qa.http_cases import cases
 from xiaoge_qa.settings_phase import observed_settings, requested_settings, wait_settings_reload
 from xiaoge_qa.sockets import available_port, client, raw_http, telemetry, wait_ready
 
+from qa_space_policy import free_for_growth
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -111,7 +113,7 @@ def main() -> None:
   arguments = parser.parse_args()
   for name in ["binary", "binding", "assets", "opencv", "output"]:
     setattr(arguments, name, getattr(arguments, name).resolve())
-  assert shutil.disk_usage(arguments.output.parent).free > 25 * 2**30 + 128 * 2**20
+  assert free_for_growth(arguments.output.parent, 128 * 2**20) >= 128 * 2**20
   arguments.output.mkdir(parents=True, exist_ok=False)
   source = run_peer("source", arguments)
   native = run_peer("native", arguments)

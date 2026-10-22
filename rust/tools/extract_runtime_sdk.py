@@ -6,8 +6,9 @@ import json
 from pathlib import Path, PurePosixPath
 import posixpath
 import re
-import shutil
 import subprocess
+
+from qa_space_policy import free_for_growth
 
 
 def main():
@@ -24,8 +25,8 @@ def main():
     raise RuntimeError("SDK output escapes destination: output is a symlink")
   args.output.mkdir(parents=True, exist_ok=True)
   output_root = args.output.resolve()
-  if shutil.disk_usage(args.output).free < 27 * 1024**3:
-    raise RuntimeError("SDK extraction needs 25 GiB reserve plus 2 GiB estimated growth")
+  if free_for_growth(args.output, 2 * 1024**3) < 2 * 1024**3:
+    raise RuntimeError("SDK extraction needs 2 GiB estimated growth")
   identity = json.loads(args.identity.read_text())
   if args.image.stat().st_size != identity["raw_size"]:
     raise RuntimeError("pinned image size differs")

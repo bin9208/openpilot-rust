@@ -7,7 +7,6 @@ import io
 import json
 import os
 from pathlib import Path
-import shutil
 import subprocess
 import tempfile
 import uuid
@@ -16,6 +15,8 @@ from typing import TypedDict
 from card_runtime_source import load_binding
 from card_prepare_assets import prepare_assets
 
+from qa_space_policy import free_for_growth
+
 
 class FactoryInput(TypedDict):
   candidate: str
@@ -23,8 +24,8 @@ class FactoryInput(TypedDict):
 
 
 def run(binary: Path, output: Path, binding: Path, numerics: Path, brand: str | None = None) -> None:
-  free = shutil.disk_usage(output.parent).free
-  assert free >= 25 * 1024**3 + 16 * 1024**2, free
+  free = free_for_growth(output.parent, 16 * 1024**2)
+  assert free >= 16 * 1024**2, free
   output.mkdir(parents=True, exist_ok=True)
   load_binding(binding)
   from openpilot.common.params import Params

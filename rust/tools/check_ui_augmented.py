@@ -18,12 +18,13 @@ import copy
 import hashlib
 import json
 from pathlib import Path
-import shutil
 from openpilot.cereal import log
 import numpy as np
 from PIL import Image
 from ui_application_qa.camera_lane import capture
 from ui_application_qa.runtime_peer import SERVICES
+
+from qa_space_policy import free_for_growth
 
 
 def messages(speed: float, experimental: bool, alert: bool = False, *, standstill: bool = False) -> list[list[int]]:
@@ -88,7 +89,7 @@ def main() -> None:
   parser.add_argument('--filter', default='')
   args = parser.parse_args()
   root = Path(__file__).resolve().parents[2]
-  assert shutil.disk_usage(root).free > (25 + 0.5) * 1024**3
+  assert free_for_growth(root, 512 * 1024**2) >= 512 * 1024**2
   args.output.mkdir(parents=True, exist_ok=True)
   results = []
   for big in [False, True]:

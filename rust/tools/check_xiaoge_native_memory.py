@@ -6,9 +6,10 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import shutil
 import subprocess
 import sys
+
+from qa_space_policy import free_for_growth
 
 ROOT = Path(__file__).resolve().parents[2]
 PACKAGES = ("openpilot-opencv-runtime", "openpilot-jpeg")
@@ -51,8 +52,8 @@ def main() -> None:
   args = parser.parse_args()
   for name in ["opencv", "models", "target_dir", "output"]:
     setattr(args, name, getattr(args, name).resolve())
-  if shutil.disk_usage(args.output.parent).free < 25 * 1024**3 + 2 * 1024**3:
-    raise OSError("memory validation requires 25 GiB plus 2 GiB; recover 35 GiB before resuming")
+  if free_for_growth(args.output.parent, 2 * 1024**3) < 2 * 1024**3:
+    raise OSError("memory validation requires 2 GiB estimated growth")
   args.output.mkdir()
   library = Path(subprocess.check_output(["clang-18", "--print-file-name=libclang_rt.asan-x86_64.so"], text=True).strip()).resolve(strict=True)
   flags = "-fsanitize=address,undefined -fno-omit-frame-pointer"

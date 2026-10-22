@@ -9,7 +9,6 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
-import shutil
 import subprocess
 from typing import TypedDict
 
@@ -20,6 +19,8 @@ from numpy.typing import NDArray
 from openpilot.selfdrive.carrot.xiaoge.lane_inference import LaneInference, prepare_lane_image
 from openpilot.selfdrive.carrot.xiaoge.nv12 import nv12_y_plane, pack_nv12
 from openpilot.selfdrive.carrot.xiaoge.v_asm_inference import VASMInference
+
+from qa_space_policy import free_for_growth
 
 
 class Config(TypedDict):
@@ -101,7 +102,7 @@ def main() -> None:
   parser.add_argument("--models", type=Path, required=True)
   parser.add_argument("--output", type=Path, required=True)
   args = parser.parse_args()
-  assert shutil.disk_usage(args.output.parent).free > 25 * 2**30 + 256 * 2**20
+  assert free_for_growth(args.output.parent, 256 * 2**20) >= 256 * 2**20
   args.output = args.output.resolve()
   args.output.mkdir(parents=True, exist_ok=False)
   cv2.setNumThreads(2)

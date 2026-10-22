@@ -4,12 +4,13 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import shutil
 import subprocess
 import sys
 import sysconfig
 
 import numpy as np
+
+from qa_space_policy import free_for_growth
 
 
 def main():
@@ -26,8 +27,8 @@ def main():
               ['clang++', '-std=c++17', '-O2', '-shared', '-fPIC', '-I' + str(root / 'rednose_repo'), '-I' + str(args.eigen_include),
                str(output / 'car.cpp'), '-o', str(output / 'libcar.so')]]
   if args.reuse_wrapper is not None:
-    if shutil.disk_usage(output).free < 26 * 1024**3:
-      raise RuntimeError('25 GiB floor plus 1 GiB growth unavailable')
+    if free_for_growth(output, 1024**3) < 1024**3:
+      raise RuntimeError('1 GiB estimated growth unavailable')
     wrapper.symlink_to(args.reuse_wrapper.resolve())
     (output / 'reused-wrapper.json').write_text(json.dumps({'path': str(args.reuse_wrapper.resolve()),
       'sha256': hashlib.sha256(args.reuse_wrapper.read_bytes()).hexdigest()}, indent=2) + '\n')
@@ -41,9 +42,9 @@ def main():
   environment = os.environ | {'PYTHONPATH': str(root) + os.pathsep + os.environ.get('PYTHONPATH', '')}
   with (output / 'build.log').open('w') as log:
     for command in commands:
-      free = shutil.disk_usage(output).free
-      if free < 26 * 1024**3:
-        raise RuntimeError('25 GiB floor plus 1 GiB build estimate unavailable')
+      free = free_for_growth(output, 1024**3)
+      if free < 1024**3:
+        raise RuntimeError('1 GiB build estimate unavailable')
       log.write(json.dumps({'command': command, 'free_bytes': free}) + '\n')
       log.flush()
       result = subprocess.run(command, cwd=root, env=environment, stdout=log, stderr=subprocess.STDOUT)

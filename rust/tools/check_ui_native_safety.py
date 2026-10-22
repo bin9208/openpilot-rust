@@ -18,9 +18,10 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import shutil
 
 from check_startup_ui import Context, adapter_asan
+
+from qa_space_policy import free_for_growth
 
 
 def main() -> None:
@@ -32,8 +33,8 @@ def main() -> None:
   parser.add_argument('--raylib-library', type=Path, required=True)
   args = parser.parse_args()
   root = Path(__file__).resolve().parents[2]
-  free = shutil.disk_usage(root).free
-  assert free > (25 + 0.25) * 1024**3, free
+  free = free_for_growth(root, 256 * 1024**2)
+  assert free >= 256 * 1024**2, free
   output = args.output.resolve()
   output.mkdir(parents=True, exist_ok=True)
   environment = dict(os.environ, DISPLAY=args.display, OFFSCREEN='1', STARTUP_UI_RAYLIB_LIBRARY=str(args.raylib_library.resolve()))

@@ -19,6 +19,8 @@ from anyio.streams.buffered import BufferedByteReceiveStream
 from carrot_server_dashcam_media import read_response
 from carrot_server_dashcam_upload import save
 
+from qa_space_policy import free_for_growth
+
 
 async def exchange(port: int, wire: bytes, expect: bool = False) -> dict:
   stream = await anyio.connect_tcp('127.0.0.1', port)
@@ -62,8 +64,8 @@ async def run(args: argparse.Namespace) -> None:
     assets = Path('openpilot/selfdrive/carrot/web').resolve()
     helper = native_binary.with_name('openpilot-process-child')
     growth = native_binary.stat().st_size + helper.stat().st_size + sum(path.stat().st_size for path in assets.rglob('*') if path.is_file())
-    free = shutil.disk_usage(root).free
-    assert free >= 25 * 1024**3 + growth + 25 * 1024**2, (free, growth)
+    free = free_for_growth(root, growth + 25 * 1024**2)
+    assert free >= growth + 25 * 1024**2, (free, growth)
     (package / 'bin').mkdir(parents=True)
     for binary in [native_binary, helper]:
       shutil.copy2(binary, package / 'bin' / binary.name)

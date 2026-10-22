@@ -11,13 +11,14 @@ from dataclasses import dataclass
 import hashlib
 import json
 from pathlib import Path
-import shutil
 from typing import Literal, TypeAlias, TypedDict
 import cv2
 import numpy as np
 from numpy.typing import NDArray
 from openpilot.selfdrive.carrot.xiaoge.lane_inference import LaneInference, prepare_lane_image
 from openpilot.selfdrive.carrot.xiaoge.v_asm_inference import VASMInference
+
+from qa_space_policy import free_for_growth
 
 Json: TypeAlias = None | bool | int | float | str | list['Json'] | dict[str, 'Json']
 
@@ -100,7 +101,7 @@ def main() -> None:
   args.models = args.models.resolve()
   assert cv2.__version__ == '4.13.0'
   assert np.__version__ == '2.5.3'
-  assert shutil.disk_usage(args.output.parent).free >= 25 * 1024**3 + 256 * 1024**2
+  assert free_for_growth(args.output.parent, 256 * 1024**2) >= 256 * 1024**2
   args.output.mkdir()
   cv2.setNumThreads(2)
   (args.output / 'wheel-build-information.txt').write_text(cv2.getBuildInformation())

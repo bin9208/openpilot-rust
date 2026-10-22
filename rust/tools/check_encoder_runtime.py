@@ -19,6 +19,8 @@ import openpilot.cereal.messaging as messaging
 from openpilot.cereal import log
 from encoder_outcomes import check_outcome, stop_cleanly
 
+from qa_space_policy import free_for_growth
+
 
 STREAMS = [VisionStreamType.VISION_STREAM_ROAD, VisionStreamType.VISION_STREAM_DRIVER, VisionStreamType.VISION_STREAM_WIDE_ROAD]
 CASES = [
@@ -534,8 +536,8 @@ def main() -> None:
   arguments = parser.parse_args()
   output = arguments.output.resolve()
   output.mkdir(parents=True, exist_ok=False)
-  if shutil.disk_usage(output).free < 26 * 1024**3:
-    raise RuntimeError("runtime capture requires 25 GiB plus 1 GiB headroom")
+  if free_for_growth(output, 1024**3) < 1024**3:
+    raise RuntimeError("runtime capture requires 1 GiB estimated growth")
   cpus = set(sorted(os.sched_getaffinity(0))[:2])
   results: list[dict[str, object]] = []
   for index, case in enumerate(arguments.case or CASES):

@@ -3,9 +3,10 @@ import hashlib
 import json
 from pathlib import Path
 import re
-import shutil
 import subprocess
 from typing import Final
+
+from qa_space_policy import free_for_growth
 
 ROOT: Final = Path(__file__).resolve().parents[2]
 
@@ -19,8 +20,8 @@ def main() -> None:
   output: Path = args.output.resolve()
   prefix: Path = args.json11_prefix.resolve()
   output.mkdir(parents=True, exist_ok=False)
-  free = shutil.disk_usage(output).free
-  if free < (25 * 1024**3 + 100 * 1024**2):
+  free = free_for_growth(output, 100 * 1024**2)
+  if free < 100 * 1024**2:
     raise OSError(f'Insufficient free space for source fixture: {free} bytes')
   source = ROOT / 'openpilot/selfdrive/pandad/pandad.cc'
   fixture = ROOT / 'rust/tools/pandad_peripheral_source.cc'

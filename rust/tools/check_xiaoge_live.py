@@ -19,6 +19,8 @@ import uuid
 
 from tools.ci.provider_python_env import provider_library_path
 
+from qa_space_policy import free_for_growth
+
 ROOT: Final = Path(__file__).resolve().parents[2]
 
 
@@ -86,7 +88,7 @@ def main() -> None:
   if args.peer:
     peer(args)
     return
-  assert shutil.disk_usage(args.output.parent).free > 25 * 2**30 + 128 * 2**20
+  assert free_for_growth(args.output.parent, 128 * 2**20) >= 128 * 2**20
   args.output.mkdir(parents=True, exist_ok=False)
   for kind in ["source", "native"]:
     output = args.output / kind

@@ -9,7 +9,6 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
-import shutil
 import subprocess
 from typing import TypedDict
 
@@ -17,6 +16,8 @@ import numpy as np
 import numpy.typing as npt
 
 from openpilot.selfdrive.carrot.xiaoge import lane_inference as original
+
+from qa_space_policy import free_for_growth
 
 FloatArray = npt.NDArray[np.float32]
 
@@ -119,7 +120,7 @@ def main() -> None:
   parser.add_argument("--binary", type=Path, required=True)
   parser.add_argument("--output", type=Path, required=True)
   args = parser.parse_args()
-  assert shutil.disk_usage(args.output.parent).free > 25 * 2**30 + 64 * 2**20
+  assert free_for_growth(args.output.parent, 64 * 2**20) >= 64 * 2**20
   args.output.mkdir(parents=True, exist_ok=False)
   inputs = []
   expected = []

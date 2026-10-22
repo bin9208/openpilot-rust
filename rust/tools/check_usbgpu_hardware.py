@@ -12,7 +12,6 @@ import itertools
 import json
 import os
 from pathlib import Path
-import shutil
 import signal
 import struct
 import subprocess
@@ -20,6 +19,8 @@ import tempfile
 import time
 from types import SimpleNamespace
 from usbgpu_reference import ROOT, hardware_source, make_sysfs, source_power
+
+from qa_space_policy import free_for_growth
 
 
 def main() -> None:
@@ -65,7 +66,7 @@ def main() -> None:
     process.stdin.close()
     assert process.wait(timeout=5) == 0
     (args.output / 'hardware.json').write_text(json.dumps(records, indent=2) + '\n')
-  assert shutil.disk_usage(ROOT).free >= 26 * 1024**3, '25GiB reserve plus bounded fixture build headroom required'
+  assert free_for_growth(ROOT, 1024**3) >= 1024**3, '1 GiB estimated fixture build growth required'
   probe = args.output.resolve() / 'check-probe'
   command = [
     'cc',
@@ -78,8 +79,8 @@ def main() -> None:
     '-o',
     str(probe),
   ]
-  if shutil.disk_usage(args.output).free < 26 * 1024**3:
-    raise RuntimeError("fixture build requires 25 GiB free plus 1 GiB estimated headroom")
+  if free_for_growth(args.output, 1024**3) < 1024**3:
+    raise RuntimeError("fixture build requires 1 GiB estimated growth")
   built = subprocess.run(command, capture_output=True, text=True)
   (args.output / 'fixture-build.json').write_text(
     json.dumps({'command': command, 'returncode': built.returncode, 'stdout': built.stdout, 'stderr': built.stderr}, indent=2) + '\n'

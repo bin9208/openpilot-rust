@@ -12,6 +12,8 @@ import subprocess
 import tempfile
 import time
 
+from qa_space_policy import free_for_growth
+
 
 def main() -> None:
   parser = argparse.ArgumentParser(description=__doc__)
@@ -23,7 +25,7 @@ def main() -> None:
   parser.add_argument('--reserve-mib', type=int, default=32)
   args = parser.parse_args()
   output = args.output.resolve()
-  assert shutil.disk_usage(output.parent).free >= 25 * 1024**3 + args.reserve_mib * 1024**2
+  assert free_for_growth(output.parent, args.reserve_mib * 1024**2) >= args.reserve_mib * 1024**2
   output.mkdir(exist_ok=False)
   rows = []
   for name in ('get', 'closed', 'observer'):

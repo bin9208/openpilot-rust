@@ -10,6 +10,8 @@ import shutil
 import subprocess
 import time
 
+from qa_space_policy import free_for_growth
+
 
 ROLES = (
   'openpilot-runtime-install',
@@ -37,7 +39,7 @@ def records(path: Path) -> list[dict]:
 
 def run(binary: Path, provider: Path, output: Path, entry: Path | None = None) -> None:
   output.mkdir(parents=True, exist_ok=False)
-  if shutil.disk_usage(output).free < (25 * 1024**3 + 512 * 1024**2):
+  if free_for_growth(output, 512 * 1024**2) < 512 * 1024**2:
     raise RuntimeError('insufficient space for owned bootstrap package')
   rows = []
   for scenario in ('ready', 'package-corrupt', 'metadata-mismatch', 'installer-unlisted', 'installer-missing',

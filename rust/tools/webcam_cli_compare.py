@@ -7,13 +7,14 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import shutil
 import subprocess
 import sys
 import tempfile
 import time
 
 from webcam_worker_compare import fixture, ready, stop
+
+from qa_space_policy import free_for_growth
 
 
 def run(folder: Path, argv: list[str], shim: Path) -> dict[str, object]:
@@ -93,7 +94,7 @@ def main() -> None:
   parser.add_argument('--source-result', type=Path)
   args = parser.parse_args()
   output = args.output.resolve()
-  assert shutil.disk_usage(output.parent).free >= 25 * 1024**3 + args.reserve_mib * 1024**2
+  assert free_for_growth(output.parent, args.reserve_mib * 1024**2) >= args.reserve_mib * 1024**2
   output.mkdir(exist_ok=False)
   source = (
     json.loads(args.source_result.read_text())

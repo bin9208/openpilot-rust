@@ -11,9 +11,10 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import shutil
 import subprocess
 import sys
+
+from qa_space_policy import free_for_growth
 
 ROOT = Path(__file__).resolve().parents[2]
 TOOLS = ROOT / "rust/tools"
@@ -38,15 +39,15 @@ class Inputs:
 class InsufficientSpace(OSError):
   def __init__(self, free: int) -> None:
     self.free = free
-    super().__init__(f"Planner comparison requires 25 GiB plus 512 MiB; free={free}; recover 35 GiB before resuming")
+    super().__init__(f"Planner comparison requires 512 MiB estimated growth; free={free}")
 
 
 def run_checks(checks: tuple[Check, ...], output: Path) -> None:
   output.mkdir(parents=True, exist_ok=False)
   commands = []
   for check in checks:
-    free = shutil.disk_usage(output).free
-    if free < 25 * 1024**3 + 512 * 1024**2:
+    free = free_for_growth(output, 512 * 1024**2)
+    if free < 512 * 1024**2:
       raise InsufficientSpace(free)
     command = [sys.executable, "-u", "-P", str(check.script), *check.arguments,
                check.output_option, str(output / check.name)]
