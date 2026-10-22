@@ -23,7 +23,8 @@ pub fn retry<T>(
     Err(Error::Protocol("empty retry budget"))
 }
 pub fn logs(diag: &mut Diagnostic, types: &[u16], stop: &AtomicBool) -> Result<(), Error> {
-    let (opcode, payload) = diag.exchange(framing::LOG_CONFIG, &[0, 0, 0, 1, 0, 0, 0], stop)?;
+    let (opcode, payload) =
+        diag.exchange_prefix(framing::LOG_CONFIG, &[0, 0, 0, 1, 0, 0, 0], stop)?;
     let mut reader = Reader::new(
         payload
             .get(3..)
@@ -62,7 +63,7 @@ pub fn logs(diag: &mut Diagnostic, types: &[u16], stop: &AtomicBool) -> Result<(
             }
         }
         request.extend(mask);
-        let (opcode, payload) = diag.exchange(framing::LOG_CONFIG, &request, stop)?;
+        let (opcode, payload) = diag.exchange_prefix(framing::LOG_CONFIG, &request, stop)?;
         let mut reader = Reader::new(payload.get(3..).ok_or(Error::Protocol("log mask header"))?);
         if opcode != framing::LOG_CONFIG || reader.u32()? != 3 || reader.u32()? != 0 {
             return Err(Error::Protocol("log mask response"));
@@ -84,8 +85,8 @@ pub fn wait(config: &Config, stop: &AtomicBool) -> Result<(), Error> {
 }
 pub fn quectel(diag: &mut Diagnostic, config: &Config, stop: &AtomicBool) -> Result<bool, Error> {
     retry(5, stop, || {
-        diag.exchange(39, &[0xfd, 0x1b, 1, 0, 0, 0], stop)?;
-        diag.exchange(38, &[0xfd, 0x1b], stop)?;
+        diag.exchange_prefix(39, &[0xfd, 0x1b, 1, 0, 0, 0], stop)?;
+        diag.exchange_prefix(38, &[0xfd, 0x1b], stop)?;
         retry(10, stop, || logs(diag, &framing::LOG_TYPES, stop))?;
         if config.at.command("AT+QGPS?", stop)?.contains("QGPS: 1") {
             config.at.command("AT+QGPSEND", stop)?;
@@ -124,7 +125,7 @@ pub fn quectel(diag: &mut Diagnostic, config: &Config, stop: &AtomicBool) -> Res
             .at
             .command("AT+QGPSCFG=\"outport\",\"usbnmea\"", stop)?;
         config.at.command("AT+QGPS=1", stop)?;
-        diag.exchange(
+        diag.exchange_prefix(
             75,
             &[
                 13, 100, 0, 202, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

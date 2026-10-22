@@ -9,9 +9,15 @@ fn wheel(root: &Path, members: &[(&str, &[u8])]) -> (PathBuf, PathBuf) {
     let wheel = root.join("numpy-2.5.3-fixture.whl");
     let mut zip = zip::ZipWriter::new(fs::File::create(&wheel).unwrap());
     for (name, bytes) in members {
-        zip.start_file(*name, zip::write::SimpleFileOptions::default())
-            .unwrap();
-        zip.write_all(bytes).unwrap();
+        if name.ends_with('/') {
+            assert!(bytes.is_empty());
+            zip.add_directory(*name, zip::write::SimpleFileOptions::default())
+                .unwrap();
+        } else {
+            zip.start_file(*name, zip::write::SimpleFileOptions::default())
+                .unwrap();
+            zip.write_all(bytes).unwrap();
+        }
     }
     zip.finish().unwrap();
     let lock = root.join("uv.lock");
@@ -40,19 +46,47 @@ const MEMBERS: &[(&str, &[u8])] = &[
 ];
 
 #[test]
-fn exact_native_library_manifest_and_nested_licenses_match_original_contract() {
+fn directories_are_excluded_and_native_bytes_hashes_licenses_and_provenance_are_preserved() {
     let temp = tempfile::tempdir().unwrap();
-    let (wheel, lock) = wheel(temp.path(), MEMBERS);
+    let mut members = MEMBERS.to_vec();
+    members.extend([
+        ("numpy.libs/nested/", b"".as_slice()),
+        ("numpy-2.5.3.dist-info/licenses/", b"".as_slice()),
+        ("numpy-2.5.3.dist-info/licenses/nested/", b"".as_slice()),
+        ("unselected/", b"".as_slice()),
+    ]);
+    let (wheel, lock) = wheel(temp.path(), &members);
     let output = temp.path().join("stage");
     stage(&wheel, &output, &lock).unwrap();
+    assert!(!output.join("nested").exists());
     let manifest: serde_json::Value =
         serde_json::from_slice(&fs::read(output.join("manifest.json")).unwrap()).unwrap();
     assert_eq!(manifest["format"], 1);
     assert_eq!(manifest["numpy"], "2.5.3");
     assert_eq!(manifest["abi"], "scipy_dgesdd_64_");
     assert_eq!(manifest["library"], "libscipy_openblas64_fixture.so");
-    assert_eq!(manifest["files"].as_array().unwrap().len(), 3);
-    assert_eq!(fs::read(output.join("numpy.libs")).unwrap(), b"");
+    assert_eq!(manifest["files"].as_array().unwrap().len(), 2);
+    assert!(!output.join("numpy.libs").exists());
+    assert_eq!(
+        fs::read(output.join("libscipy_openblas64_fixture.so")).unwrap(),
+        b"native openblas fixture"
+    );
+    assert_eq!(
+        fs::read(output.join("libgfortran-fixture.so")).unwrap(),
+        b"native fortran fixture"
+    );
+    let provenance: serde_json::Value =
+        serde_json::from_slice(&fs::read(output.join("provenance.json")).unwrap()).unwrap();
+    assert_eq!(provenance["sha256"], digest(&wheel).unwrap());
+    assert_eq!(provenance["wheel"], "numpy-2.5.3-fixture.whl");
+    assert_eq!(
+        provenance["source"],
+        "https://github.com/numpy/numpy/tree/v2.5.3"
+    );
+    assert_eq!(
+        provenance["runtime"],
+        "native shared libraries only; no Python imports"
+    );
     for file in manifest["files"].as_array().unwrap() {
         assert_eq!(
             file["sha256"],
@@ -184,4 +218,59 @@ fn unsafe_paths_flattening_collisions_and_missing_or_multiple_openblas_fail_atom
         assert!(!output.exists());
         assert!(!temp.path().join("escaped").exists());
     }
+}
+
+// Hosted-only provider check: download the exact ARM wheel from uv.lock first.
+#[test]
+#[ignore = "requires NUMPY_ARM_WHEEL pointing at the source-locked ARM archive"]
+fn pinned_arm_wheel_retains_exactly_two_native_libraries_and_all_license_bytes() {
+    use std::io::Read;
+    let wheel = PathBuf::from(std::env::var_os("NUMPY_ARM_WHEEL").expect("NUMPY_ARM_WHEEL"));
+    assert_eq!(
+        digest(&wheel).unwrap(),
+        "76c2c1e6bfa5c84adc6434dfbf013aa92096a7985221762c8f11fedfd20fff58"
+    );
+    let lock = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../uv.lock");
+    let temp = tempfile::tempdir().unwrap();
+    let output = temp.path().join("stage");
+    stage(&wheel, &output, &lock).unwrap();
+    let manifest: serde_json::Value =
+        serde_json::from_slice(&fs::read(output.join("manifest.json")).unwrap()).unwrap();
+    let mut expected_files = Vec::new();
+    let mut licenses = 0;
+    let mut archive = zip::ZipArchive::new(fs::File::open(&wheel).unwrap()).unwrap();
+    for index in 0..archive.len() {
+        let mut member = archive.by_index(index).unwrap();
+        let name = member.name().unwrap().to_string();
+        if member.is_dir() {
+            continue;
+        }
+        let target = if name.starts_with("numpy.libs/") {
+            let name = name.rsplit('/').next().unwrap();
+            expected_files.push(serde_json::json!({
+                "name": name,
+                "sha256": digest(&output.join(name)).unwrap(),
+            }));
+            output.join(name)
+        } else if let Some((_, license)) = name.split_once(".dist-info/licenses/") {
+            licenses += 1;
+            output.join("licenses").join(license)
+        } else {
+            continue;
+        };
+        let mut expected = Vec::new();
+        member.read_to_end(&mut expected).unwrap();
+        assert_eq!(fs::read(target).unwrap(), expected, "{name}");
+    }
+    assert_eq!(expected_files.len(), 2);
+    assert!(licenses > 0);
+    assert_eq!(manifest["files"], serde_json::Value::Array(expected_files));
+    assert!(!output.join("numpy.libs").exists());
+    let provenance: serde_json::Value =
+        serde_json::from_slice(&fs::read(output.join("provenance.json")).unwrap()).unwrap();
+    assert_eq!(provenance["sha256"], digest(&wheel).unwrap());
+    assert_eq!(
+        provenance["wheel"],
+        wheel.file_name().unwrap().to_str().unwrap()
+    );
 }

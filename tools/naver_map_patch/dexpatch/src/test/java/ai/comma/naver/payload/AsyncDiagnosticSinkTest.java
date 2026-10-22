@@ -19,9 +19,10 @@ final class AsyncDiagnosticSinkTest {
   @Test
   void closeCannotPassAnOfferThatObservedOpen() throws Exception {
     RecordingConsumer consumer = new RecordingConsumer();
-    BlockingAcceptanceObserver acceptance = new BlockingAcceptanceObserver();
+    BlockingAcceptanceObserver acceptance = new BlockingAcceptanceObserver(true);
+    DiagnosticCounters counters = new DiagnosticCounters();
     AsyncDiagnosticSink sink = sink(
-        consumer, new DiagnosticCounters(), AsyncDiagnosticSink.Role.LOCAL, acceptance,
+        consumer, counters, AsyncDiagnosticSink.Role.LOCAL, acceptance,
         AsyncDiagnosticSink.DEFAULT_WAIT_STRATEGY);
     AtomicBoolean accepted = new AtomicBoolean();
     Thread offer = new Thread(() -> accepted.set(sink.offer(frame(1))), "offer-race-test");
@@ -35,16 +36,78 @@ final class AsyncDiagnosticSinkTest {
       assertTrue(acceptance.entered.await(1, TimeUnit.SECONDS));
       close.start();
       assertTrue(acceptance.closeWaitingForAcceptance.await(1, TimeUnit.SECONDS));
+      assertEquals(1L, acceptance.acceptanceClosed.getCount());
+      assertFalse(closeReturned.get());
       acceptance.release.countDown();
+      assertTrue(acceptance.acceptanceClosed.await(1, TimeUnit.SECONDS));
       offer.join(1000L);
-      close.join(1000L);
+      assertFalse(offer.isAlive());
       assertTrue(accepted.get());
+      // Keep close inside stopAccepting, before its drain budget starts. A delayed
+      // worker must not turn this acceptance-lock test into a cancellation race.
       assertTrue(consumer.received.await(1, TimeUnit.SECONDS));
+      assertFalse(closeReturned.get());
+      acceptance.releaseClose.countDown();
+      close.join(1000L);
+      assertFalse(close.isAlive());
       assertTrue(closeReturned.get());
       assertTrue(sink.awaitTermination(1, TimeUnit.SECONDS));
+      assertTrue(consumer.closed.await(1, TimeUnit.SECONDS));
+      assertFalse(sink.offer(frame(2)));
+      assertEquals(1L, consumer.closeCalls.get());
+      assertEquals(1, consumer.batches.size());
+      assertEquals(1, consumer.batches.get(0).size());
+      assertEquals(1L, consumer.batches.get(0).get(0).sequence());
+      assertEquals(0L, counters.snapshot().localQueueDropped);
+      assertEquals(0L, counters.snapshot().storageErrors);
     } finally {
       acceptance.release.countDown();
+      acceptance.releaseClose.countDown();
+      offer.join(1000L);
+      close.join(1000L);
       sink.drainAndClose(500L);
+    }
+  }
+
+  @Test
+  void acceptedFramePastCloseBudgetIsCancelledBeforeConsumerReservation() throws Exception {
+    RecordingConsumer consumer = new RecordingConsumer();
+    DiagnosticCounters counters = new DiagnosticCounters();
+    BlockingReservationObserver reservation = new BlockingReservationObserver();
+    AsyncDiagnosticSink sink = sink(
+        consumer, counters, AsyncDiagnosticSink.Role.LOCAL,
+        AsyncDiagnosticSink.NO_ACCEPTANCE_OBSERVER, AsyncDiagnosticSink.DEFAULT_WAIT_STRATEGY,
+        reservation);
+    CountDownLatch closeReturned = new CountDownLatch(1);
+    Thread close = new Thread(() -> {
+      sink.drainAndClose(500L);
+      closeReturned.countDown();
+    }, "accepted-frame-cancellation-test");
+    try {
+      assertTrue(sink.offer(frame(1)));
+      assertTrue(reservation.entered.await(1, TimeUnit.SECONDS));
+      close.start();
+      // Release the worker only after the real close budget has expired. The
+      // reservation hook ignores interrupts, so cancellation cannot drain it early.
+      assertTrue(closeReturned.await(1, TimeUnit.SECONDS));
+      assertTrue(sink.awaitTerminal(1, TimeUnit.SECONDS));
+      assertTrue(consumer.closed.await(1, TimeUnit.SECONDS));
+      assertFalse(sink.awaitTermination(0, TimeUnit.MILLISECONDS));
+      assertFalse(sink.offer(frame(2)));
+      reservation.release.countDown();
+      assertTrue(sink.awaitTermination(1, TimeUnit.SECONDS));
+      close.join(1000L);
+      assertFalse(close.isAlive());
+      assertEquals(0, consumer.batches.stream().mapToInt(List::size).sum());
+      assertEquals(1L, consumer.received.getCount());
+      assertEquals(1L, consumer.closeCalls.get());
+      assertEquals(0L, counters.snapshot().localQueueDropped);
+      assertEquals(0L, counters.snapshot().storageErrors);
+    } finally {
+      reservation.release.countDown();
+      close.join(1000L);
+      sink.drainAndClose(500L);
+      assertTrue(sink.awaitTermination(1, TimeUnit.SECONDS));
     }
   }
 
@@ -452,6 +515,15 @@ final class AsyncDiagnosticSinkTest {
     final CountDownLatch release = new CountDownLatch(1);
     final CountDownLatch closeWaitingForAcceptance = new CountDownLatch(1);
     final CountDownLatch acceptanceClosed = new CountDownLatch(1);
+    final CountDownLatch releaseClose;
+
+    BlockingAcceptanceObserver() {
+      this(false);
+    }
+
+    BlockingAcceptanceObserver(boolean blockAfterAcceptanceClosed) {
+      releaseClose = new CountDownLatch(blockAfterAcceptanceClosed ? 1 : 0);
+    }
 
     @Override
     public void beforeQueueOffer() {
@@ -471,6 +543,11 @@ final class AsyncDiagnosticSinkTest {
     @Override
     public void afterAcceptanceClosed() {
       acceptanceClosed.countDown();
+      try {
+        releaseClose.await();
+      } catch (InterruptedException error) {
+        Thread.currentThread().interrupt();
+      }
     }
   }
 
@@ -541,6 +618,8 @@ final class AsyncDiagnosticSinkTest {
   private static final class RecordingConsumer implements FrameBatchConsumer {
     final CopyOnWriteArrayList<List<EncodedDiagnosticFrame>> batches = new CopyOnWriteArrayList<>();
     final CountDownLatch received = new CountDownLatch(1);
+    final CountDownLatch closed = new CountDownLatch(1);
+    final AtomicLong closeCalls = new AtomicLong();
     final int expectedFrames;
 
     RecordingConsumer() {
@@ -559,6 +638,8 @@ final class AsyncDiagnosticSinkTest {
 
     @Override
     public void close() {
+      closeCalls.incrementAndGet();
+      closed.countDown();
     }
   }
 

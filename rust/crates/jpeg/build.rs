@@ -1,4 +1,25 @@
-use std::{env, path::PathBuf, process::Command};
+use std::{
+    env, fs,
+    path::{Path, PathBuf},
+    process::Command,
+};
+
+fn invalidate_foreign_source_cache(source: &Path, output: &Path) {
+    let cache = match fs::read_to_string(output.join("CMakeCache.txt")) {
+        Ok(cache) => cache,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return,
+        Err(error) => panic!("read native JPEG CMake cache: {error}"),
+    };
+    if cache.lines().any(|line| {
+        line.strip_prefix("CMAKE_HOME_DIRECTORY:INTERNAL=")
+            .is_some_and(|home| Path::new(home) != source)
+    }) {
+        // Cargo may reuse OUT_DIR across checkouts. Only this build script's
+        // JPEG cache belongs here; leave sibling outputs and vendor sources alone.
+        fs::remove_dir_all(output).expect("remove native JPEG cache from another checkout");
+    }
+}
+
 fn checked(command: &mut Command) {
     let status = command.status().expect("start native JPEG build command");
     assert!(
@@ -13,6 +34,7 @@ fn main() {
     let source = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").expect("manifest directory"))
         .join("native/vendor");
     let output = PathBuf::from(env::var_os("OUT_DIR").expect("build output")).join("jpeg");
+    invalidate_foreign_source_cache(&source, &output);
     let compiler = cc::Build::new().get_compiler();
     let mut configure = Command::new("cmake");
     configure

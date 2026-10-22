@@ -1,4 +1,4 @@
-"""Exercise every unchanged source checksum plugin, including GEN2 fallback and known source failures."""
+"""Exercise every source checksum plugin, including GEN2 fallback and explicit inherited vector gaps."""
 
 import argparse
 import ast
@@ -100,8 +100,7 @@ def main():
         known_failures.append(dict(input=request[index], source=one, native=two, recorded_checksum=recorded))
       else:
         assert two['checksum'] == recorded, (index, request[index], two)
-    if one['error'] is not None and one['error'].startswith('TypeError'):
-      assert 'inherited Volkswagen MLB' in two['error'], (index, one, two)
+    assert one['error'] is None or one['error'].startswith('IndexError'), (index, one, two)
   (args.evidence / 'known-source-vector-failures.json').write_text(json.dumps(known_failures, indent=2) + '\n')
   result = dict(status='native_matches_source_with_known_vector_failure', cases=len(request), kinds=len({case['dbc'] for case in request}),
                 source_vectors=sum(case.get('known_good', False) for case in request),

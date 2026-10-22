@@ -1,0 +1,12 @@
+{
+  "source_repository": "https://github.com/commaai/opendbc",
+  "source_commit": "c3955753ae7258412814e2cdca3ee8af979e4679",
+  "source_path": "opendbc/dbc/psa_aee2010_r3.dbc",
+  "source_blob": "fb9a0c5159a7501a83a447234761ce58842f6eeb",
+  "sha256": "e9791b8603861a86b2f2acc93e6327ef82587ce84f28d1438a1338d35cce5db5",
+  "size": 56757,
+  "license": "opendbc_repo/LICENSE",
+  "license_matches_pinned_primary": true,
+  "modifications": false,
+  "scope": "DBC asset and generic codec only; complete PSA runtime remains blocked"
+}

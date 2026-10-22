@@ -16,7 +16,9 @@ pub fn raw_predictions(
     }
     match source {
         Source::Native => Ok(Some(native)),
-        Source::Jetlink => Err(Error::JetlinkRawPredictionsUnavailable),
+        // The external protocol carries parsed outputs, not a native raw tensor.
+        // SEND_RAW_PRED remains valid for native frames; daemon startup reports this limit once.
+        Source::Jetlink => Ok(None),
     }
 }
 pub fn persist(

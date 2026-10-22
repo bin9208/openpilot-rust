@@ -1,0 +1,16 @@
+--- a/rust/crates/loggerd/src/raw_file.rs
++++ b/rust/crates/loggerd/src/raw_file.rs
+@@ -57,8 +57,12 @@
+                 let error = io::Error::last_os_error();
+                 // A positive/full count plus EINTR/ferror can follow lost buffered
+                 // bytes. Retrying or clearing ferror cannot prove video recovery.
+-                if check_stream_error || error.kind() != io::ErrorKind::Interrupted {
++                if error.kind() != io::ErrorKind::Interrupted {
+                     return Err(error);
++                }
++                if check_stream_error {
++                    // Review RED only: reproduce the former false recovery.
++                    unsafe { libc::clearerr(self.0.as_ptr()) };
+                 }
+             }
+             written += count;

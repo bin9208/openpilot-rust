@@ -1,0 +1,26 @@
+{
+  "source_repository": "https://github.com/commaai/opendbc",
+  "source_commit": "c3955753ae7258412814e2cdca3ee8af979e4679",
+  "source_path": "opendbc/car/torque_data/override.toml",
+  "source_blob": "f406ae64da4f2fa5a6b50e42b87feb2c7561d16b",
+  "accepted": {
+    "FORD_ESCAPE_MK4_5": [
+      "nan",
+      1.5,
+      "nan"
+    ],
+    "FORD_EXPEDITION_MK4": [
+      "nan",
+      1.5,
+      "nan"
+    ]
+  },
+  "native_representation": "null LAT_ACCEL_FACTOR/FRICTION retains nonfinite placeholder; actual final Ford CarParams selects Angle, not Torque",
+  "deferred": {
+    "PSA_PEUGEOT_208": "source parse_wheel_speeds/native runtime unimplemented; asset import is not runtime admission",
+    "TESLA_MODEL_X": "source platform and native catalog have no DBC party mapping; full runtime controller admission unproved",
+    "GMC_YUKON_CC": "no exact primary mapping",
+    "KIA_K5_DL3_24_HEV": "no exact primary mapping; no similar-name alias"
+  },
+  "validation": "cloud full CarParams/angle/controller and nonfinite guards required; no local functional execution"
+}

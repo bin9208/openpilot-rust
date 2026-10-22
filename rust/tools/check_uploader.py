@@ -169,6 +169,17 @@ def compare(root, binary, work, number, files, config, http=None):
   uploader, events = source(root, reference_config, http)
   expected = observe(uploader, events, reference_config)
   actual = native(binary, {**config, 'root': str(rust), **({'http': http} if http else {})})
+  if expected['results'] == [{'error': 'UnboundLocalError'}]:
+    # #51 is the sole policy exception: a skipped file's failed marking must retry.
+    assert config.get('fail_mark') or config.get('readonly'), (number, config)
+    assert len(files) == 1 and not files[0][2], (number, files)
+    key, size, _ = files[0]
+    assert size == 0 or (Path(key).name == 'qlog' and size > 25_000_000) or (Path(key).name == 'qcam' and size > 5_000_000)
+    assert config.get('steps', 0) <= 1
+    assert expected['last'] == ''
+    assert expected['events'] == ['upload_start'] + (['uploader_too_large'] if size else [])
+    expected['results'] = [False]
+    expected['events'].append('uploader_setxattr_failed')
   assert actual == expected, (number, config, expected, actual)
   for key, _, _ in files:
 

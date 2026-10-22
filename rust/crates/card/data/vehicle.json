@@ -241,7 +241,11 @@
       "flags": 1,
       "dbc_pt": "ford_lincoln_base_pt",
       "dbc_radar": null,
-      "torque": null
+      "torque": {
+        "LAT_ACCEL_FACTOR": null,
+        "MAX_LAT_ACCEL_MEASURED": 1.5,
+        "FRICTION": null
+      }
     },
     {
       "candidate": "FORD_EXPLORER_MK6",
@@ -275,7 +279,11 @@
       "flags": 1,
       "dbc_pt": "ford_lincoln_base_pt",
       "dbc_radar": null,
-      "torque": null
+      "torque": {
+        "LAT_ACCEL_FACTOR": null,
+        "MAX_LAT_ACCEL_MEASURED": 1.5,
+        "FRICTION": null
+      }
     },
     {
       "candidate": "FORD_F_150_MK14",

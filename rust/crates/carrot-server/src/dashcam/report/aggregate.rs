@@ -5,6 +5,10 @@ use openpilot_cereal::{
     log_capnp::{event, onroad_event::EventName},
 };
 
+#[cfg(test)]
+#[path = "warning_tests.rs"]
+mod warning_tests;
+
 fn delta(first: u64, second: u64) -> Result<f64, capnp::Error> {
     (i128::from(first) - i128::from(second))
         .to_f64()
@@ -101,7 +105,13 @@ impl State {
                         match name {
                             EventName::Fcw | EventName::StockFcw => present[0] = true,
                             EventName::Ldw => present[1] = true,
-                            EventName::TooDistracted => present[2] = true,
+                            EventName::DriverDistracted1
+                            | EventName::DriverDistracted2
+                            | EventName::DriverDistracted3
+                            | EventName::DriverUnresponsive1
+                            | EventName::DriverUnresponsive2
+                            | EventName::DriverUnresponsive3
+                            | EventName::TooDistracted => present[2] = true,
                             _ => {}
                         }
                     }

@@ -1,4 +1,8 @@
 legend = ["LAT_ACCEL_FACTOR", "MAX_LAT_ACCEL_MEASURED", "FRICTION"]
+# Exact angle-control placeholders from commaai/opendbc c3955753ae7258412814e2cdca3ee8af979e4679.
+# NaNs are not measured torque/friction; the Ford interface selects angle control.
+"FORD_ESCAPE_MK4_5" = [nan, 1.5, nan]
+"FORD_EXPEDITION_MK4" = [nan, 1.5, nan]
 ### angle control
 # Nissan appears to have torque
 "NISSAN_XTRAIL" = [nan, 1.5, nan]

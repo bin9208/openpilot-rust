@@ -1,7 +1,12 @@
 use openpilot_carrot_server::terminal_commands::{self, Config};
 
+fn main() {
+    openpilot_carrot_server::terminal::supervisor_entry();
+    run();
+}
+
 #[tokio::main(flavor = "current_thread")]
-async fn main() {
+async fn run() {
     let args: Vec<_> = std::env::args().skip(1).collect();
     let result = async { terminal_commands::run(&Config::original()?, &args).await }.await;
     let code = match result {

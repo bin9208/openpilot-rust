@@ -31,6 +31,9 @@ def trace(case):
     except (KeyError, FileNotFoundError, AttributeError) as error:
       failure = {'kind': type(error).__name__, 'message': str(error)}
     else:
+      if case['op'] == 'constructor':
+        return {'constructor': 'candidate_only_source_success', 'runtime_admitted': False,
+                'writes': settings.writes, 'prints': output.getvalue().splitlines()}
       raise AssertionError('pinned source boundary unexpectedly succeeded')
   return {'failure': failure, 'writes': settings.writes, 'prints': output.getvalue().splitlines()}
 

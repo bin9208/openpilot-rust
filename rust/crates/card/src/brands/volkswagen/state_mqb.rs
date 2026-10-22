@@ -3,7 +3,7 @@ use super::{
     Error, STOCK_HCA_PRESENT,
 };
 use openpilot_cereal::car_capnp::{
-    car_params::TransmissionType,
+    car_params::{NetworkLocation, TransmissionType},
     car_state::{self, GearShifter},
 };
 impl State {
@@ -58,7 +58,8 @@ impl State {
             self.signed(Bus::Pt, ("ESP_02", "ESP_Gierrate", "ESP_VZ_Gierrate"), now)?
                 * (std::f64::consts::PI / 180.),
         )?);
-        self.signal(Bus::Pt, ("LH_EPS_03", "EPS_HCA_Status"), now)?;
+        let hca = self.signal(Bus::Pt, ("LH_EPS_03", "EPS_HCA_Status"), now)?;
+        let hca_status = self.hca_status(hca)?;
         if self.config.flags & STOCK_HCA_PRESENT != 0 {
             ret.set_car_faulted_non_critical(
                 self.signal(Bus::Cam, ("HCA_01", "EA_Ruckfreigabe"), now)? != 0.
@@ -104,8 +105,9 @@ impl State {
         self.extras.acc_type = Some(self.signal(Bus::External, ("ACC_06", "ACC_Typ"), now)?);
         self.extras.esp_hold_confirmation =
             self.signal(Bus::Pt, ("ESP_21", "ESP_Haltebestaetigung"), now)? != 0.;
-        self.signal(Bus::External, ("ACC_02", "ACC_Gesetzte_Zeitluecke"), now)?;
-        self.signal(Bus::Pt, ("TSK_06", "TSK_Limiter_ausgewaehlt"), now)?;
+        let acc_limiter =
+            self.signal(Bus::External, ("ACC_02", "ACC_Gesetzte_Zeitluecke"), now)? == 0.;
+        let speed_limiter = self.signal(Bus::Pt, ("TSK_06", "TSK_Limiter_ausgewaehlt"), now)? != 0.;
         let status = self.signal(Bus::Pt, ("TSK_06", "TSK_Status"), now)?;
         let speed = if self.config.pcm {
             float(self.signal(Bus::External, ("ACC_02", "ACC_Wunschgeschw_02"), now)? * (1. / 3.6))?
@@ -123,7 +125,51 @@ impl State {
         ret.set_right_blinker(
             self.signal(Bus::Pt, ("Blinkmodi_02", "Comfort_Signal_Right"), now)? != 0.,
         );
-        // The original module reaches np.mean here without importing numpy.
-        Err(Error::InheritedMqbNumpy)
+        // NumPy receives the four stored cereal Float32 wheel values as Float64.
+        let raw = float(values.into_iter().map(f64::from).sum::<f64>() / 4.)?;
+        ret.set_v_ego_raw(raw);
+        let [speed, accel] = self.speed.update(f64::from(raw));
+        ret.set_v_ego(float(speed)?);
+        ret.set_a_ego(float(accel)?);
+        ret.set_steering_angle_deg(float(self.signed(
+            Bus::Pt,
+            ("LWI_01", "LWI_Lenkradwinkel", "LWI_VZ_Lenkradwinkel"),
+            now,
+        )?)?);
+        ret.set_steering_rate_deg(float(self.signed(
+            Bus::Pt,
+            ("LWI_01", "LWI_Lenkradw_Geschw", "LWI_VZ_Lenkradw_Geschw"),
+            now,
+        )?)?);
+        let torque = float(self.signed(
+            Bus::Pt,
+            ("LH_EPS_03", "EPS_Lenkmoment", "EPS_VZ_Lenkmoment"),
+            now,
+        )?)?;
+        ret.set_steering_torque(torque);
+        ret.set_steering_pressed(f64::from(torque.abs()) > self.config.driver_allowance());
+        self.hca_faults(ret, hca_status.as_deref(), true);
+        ret.set_gas_pressed(ret.reborrow_as_reader().get_gas() > 0.);
+        ret.set_esp_active(self.signal(Bus::Pt, ("ESP_21", "ESP_Eingriff"), now)? != 0.);
+        ret.set_esp_disabled(self.signal(Bus::Pt, ("ESP_21", "ESP_Tastung_passiv"), now)? != 0.);
+        ret.set_seatbelt_unlatched(
+            self.signal(Bus::Pt, ("Airbag_02", "AB_Gurtschloss_FA"), now)? != 3.,
+        );
+        ret.set_standstill(raw == 0.);
+        let mut cruise = ret.reborrow().get_cruise_state()?;
+        cruise.set_standstill(self.config.pcm && self.extras.esp_hold_confirmation);
+        cruise.set_non_adaptive(acc_limiter || speed_limiter);
+        if cruise.reborrow_as_reader().get_speed() > 90. {
+            cruise.set_speed(0.);
+        }
+        self.extras.eps_stock_values =
+            super::state::Stock::Values(self.copied(Bus::Pt, "LH_EPS_03", now)?);
+        self.extras.ldw_stock_values = Some(match self.config.network {
+            NetworkLocation::FwdCamera => self.copied(Bus::Cam, "LDW_02", now)?,
+            NetworkLocation::Gateway => Default::default(),
+        });
+        self.extras.gra_stock_values = Some(self.copied(Bus::Pt, "GRA_ACC_01", now)?);
+        self.buttons(ret, now, false)?;
+        Ok(())
     }
 }

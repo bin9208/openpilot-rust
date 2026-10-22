@@ -251,15 +251,48 @@ fn clamps_interpolation_when_action_time_exceeds_horizon() {
 }
 
 #[test]
-fn preserves_dynamic_smoothing_fallback_when_plan_std_index_is_invalid() {
-    // Given
-    let cases = [(-0.1, 0.0), (0.0, 0.0), (0.2, 0.2), (0.6, 0.6), (0.9, 0.6)];
-    // When
-    let results = cases.map(|(base, expected)| (dynamic_lat_smooth_seconds(base), expected));
-    // Then
-    for (actual, expected) in results {
-        close(actual, expected);
+fn dynamic_smoothing_uses_only_selected_lateral_position_std() {
+    let mut std = [[9.; 15]; 33];
+    for (y_std, expected) in [
+        (0.0, 0.1),
+        (0.125, 0.1),
+        (0.15, 0.10000001192092896),
+        (0.1875, 0.175),
+        (0.2, 0.2000000059604645),
+        (0.25, 0.3),
+        (1.0, 0.3),
+    ] {
+        std[10][1] = y_std;
+        close(dynamic_lat_smooth_seconds(0.1, &std), expected);
     }
+}
+
+#[test]
+fn dynamic_smoothing_retains_disabled_setting_and_existing_cap() {
+    let mut std = [[0.; 15]; 33];
+    std[10][1] = 0.25;
+    for (base, expected) in [(-0.1, 0.0), (0.0, 0.0), (0.2, 0.6), (0.6, 0.6), (0.9, 0.6)] {
+        close(dynamic_lat_smooth_seconds(base, &std), expected);
+    }
+}
+
+#[test]
+fn nonfinite_uncertainty_preserves_the_prior_base_only_fallback() {
+    let mut std = [[0.; 15]; 33];
+    for invalid in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+        std[10][1] = invalid;
+        for (base, expected) in [(-0.1, 0.), (0., 0.), (0.1, 0.1), (0.9, 0.6)] {
+            close(dynamic_lat_smooth_seconds(base, &std), expected);
+        }
+    }
+}
+
+#[test]
+fn nonfinite_base_retains_the_preexisting_api_policy() {
+    let std = [[0.; 15]; 33];
+    assert!(dynamic_lat_smooth_seconds(f64::NAN, &std).is_nan());
+    close(dynamic_lat_smooth_seconds(f64::INFINITY, &std), 0.6);
+    close(dynamic_lat_smooth_seconds(f64::NEG_INFINITY, &std), 0.);
 }
 
 #[test]

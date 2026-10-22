@@ -64,3 +64,29 @@ fn direct_state_update_reports_missing_source_method() {
         Err(psa::Error::SourceMethod("parse_wheel_speeds"))
     ));
 }
+
+#[test]
+fn available_dbc_does_not_admit_the_unported_vehicle_runtime() {
+    let root = tempfile::tempdir().unwrap();
+    let settings = Params::open(root.path(), "d").unwrap();
+    let mut message = openpilot_card::core::Message::new_default();
+    message
+        .init_root::<openpilot_cereal::car_capnp::car_params::Builder>()
+        .set_car_fingerprint("PSA_PEUGEOT_208");
+    let dbc = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../../opendbc_repo/opendbc/dbc");
+    let error = psa::Psa::new(psa::Setup {
+        params_bytes: &capnp::serialize::write_message_to_words(&message),
+        dbc_root: &dbc,
+        settings: Params::open(root.path(), "d").unwrap(),
+        fingerprints: &[],
+        now_ns: 0,
+    })
+    .err()
+    .unwrap();
+    assert!(matches!(error, psa::Error::RuntimeUnported));
+    assert!(settings
+        .get("LongitudinalPersonalityMax")
+        .unwrap()
+        .is_none());
+}

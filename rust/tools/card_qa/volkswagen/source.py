@@ -93,13 +93,7 @@ def trace(case):
     now = step['now']
     if case['op'] not in ('before_update', 'seeded_controller') and 'seed_state' not in case:
       packets = [(packet['mono_time'], [(frame['address'], bytes(frame['data']), frame['bus']) for frame in packet['frames']]) for packet in step['packets']]
-      try:
-        state = vehicle.update(packets)
-      except NameError as failure:
-        if case['op'] != 'mqb_failure':
-          raise
-        error = {'kind': type(failure).__name__, 'message': str(failure)}
-        break
+      state = vehicle.update(packets)
     else:
       state = vehicle.CS.out.as_reader().as_builder()
     if case['op'] != 'before_update':

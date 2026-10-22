@@ -32,8 +32,6 @@ pub enum Error {
     Capnp(#[from] capnp::Error),
     #[error("{0}")]
     Configuration(&'static str),
-    #[error("uploader setxattr failed before last_exc was initialized: {0}")]
-    UninitializedLastException(io::Error),
     #[error("invalid uploaded Content-Length: {0}")]
     ContentLength(String),
 }
@@ -178,7 +176,6 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
             _ => false,
         };
         let transferred = size != 0 && !too_large;
-        let mut last_exception = None;
         let success = if !transferred {
             if too_large {
                 self.events.emit(Event::Fields {
@@ -219,6 +216,7 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
                 }
                 other => {
                     let mut fields = fields.clone();
+                    let mut last_exception = None;
                     fields["stat"] = match other {
                         Ok(response) => json!(format!("<Response [{}]>", response.status)),
                         Err(error) => {
@@ -238,14 +236,16 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
         };
         if success {
             if let Err(error) = self.attributes.mark_uploaded(&file.path) {
-                if !transferred {
-                    return Err(Error::UninitializedLastException(error));
-                }
                 self.events.emit(Event::Fields {
                     site: log_site!(),
                     name: "uploader_setxattr_failed",
-                    fields: json!({"exc":last_exception,"key":file.key.to_string_lossy(),"fn":file.path.to_string_lossy(),"sz":size}),
+                    fields: json!({"exc":diagnostics::error_details(log_site!(), &error),"key":file.key.to_string_lossy(),"fn":file.path.to_string_lossy(),"sz":size}),
                 })?;
+                // A skipped file is complete only after marking. Retry through the existing
+                // backoff loop; transferred files retain their source success semantics.
+                if !transferred {
+                    return Ok(Outcome::Failure);
+                }
             }
         }
         Ok(if success {

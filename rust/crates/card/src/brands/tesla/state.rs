@@ -553,9 +553,6 @@ impl State {
             }
         }
         if let Some(vehicle) = &mut self.vehicle {
-            // The pinned Python ret.buttonEvents self-copy clears its existing Cap'n Proto readers.
-            // Preserve that source behavior when the vehicle-bus infotainment list is rebuilt.
-            buttons.fill((Button::Unknown, false));
             let mut tpms = ret.reborrow().init_tpms();
             let pressure = |p: &mut Parser, s: &str| -> Result<f32, Error> {
                 let value = p.signal_lazy("VCSEC_TPMSDisplay", s, now)?;

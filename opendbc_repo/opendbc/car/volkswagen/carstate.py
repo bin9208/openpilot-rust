@@ -1,3 +1,5 @@
+import numpy as np
+
 from opendbc.can import CANParser
 from opendbc.car import Bus, structs
 from opendbc.car.interfaces import CarStateBase

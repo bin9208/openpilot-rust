@@ -322,7 +322,9 @@ class CarState(CarStateBase):
 
       prev_infotainment = self.infotainment_3_finger_press
       self.infotainment_3_finger_press = int(cp_adas.vl["UI_status2"]["UI_activeTouchPoints"])
-      ret.buttonEvents = [*ret.buttonEvents, *create_button_events(
+      # Materialize values before replacing the Cap'n Proto list they refer to.
+      button_events = [event.to_dict() for event in ret.buttonEvents]
+      ret.buttonEvents = [*button_events, *create_button_events(
         self.infotainment_3_finger_press, prev_infotainment,
         {3: ButtonType.lkas})]
 

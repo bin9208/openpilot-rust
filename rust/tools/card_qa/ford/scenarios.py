@@ -28,9 +28,11 @@ def cases():
     case = dict(result[0])
     case.update(name=f"secoc-{camera}", candidate="FORD_F_150_MK14", fingerprints=[[2, camera]])
     result.append(case)
-  missing = {"FORD_ESCAPE_MK4_5", "FORD_EXPEDITION_MK4"}
   rng = random.Random(177114)
-  for profile, candidate in enumerate(c for c in CAR if str(c) not in missing):
+  # Preserve the established fixture identities/offsets for all earlier cars.
+  newly_admitted = {'FORD_ESCAPE_MK4_5', 'FORD_EXPEDITION_MK4'}
+  ordered = [c for c in CAR if str(c) not in newly_admitted] + [c for c in CAR if str(c) in newly_admitted]
+  for profile, candidate in enumerate(ordered):
     offset = 4 if profile % 2 else 0
     automatic = profile % 3 != 0
     packer = CANPacker("ford_lincoln_base_pt")
@@ -84,6 +86,8 @@ def cases():
     fingerprints = [[offset, [[0x5a if automatic else 0x123, 8], [0x3a6, 8], [0x3a7, 8]]]]
     result.append({"name": f"runtime-{candidate}", "op": "runtime", "candidate": str(candidate), "alpha_long": profile % 2 == 0,
       "fingerprints": fingerprints, "firmware": [], "settings": {}, "now": 2_000_000_000, "steps": steps})
+    if str(candidate) in newly_admitted:
+      result.append({**result[-1], "name": f"runtime-nnff-{candidate}", "settings": {"NNFF": "1", "NNFFLite": "1"}})
   runtime = next(case for case in result if case["op"] == "runtime")
   for pitch in (-0.1, 0., 0.1):
     control = car.CarControl.new_message(longActive=True, orientationNED=[0., pitch, 0.], actuators={"accel": float("nan")})

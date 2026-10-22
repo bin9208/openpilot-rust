@@ -69,11 +69,7 @@ def lifecycle(path):
   update(1_000_000_000, [], 1)
   steps.append(dict(op='ready', enabled=True))
   for index in range(16):
-    try:
-      data = packer.pack(message.address, {})
-    except TypeError:
-      # The MLB source error is fully covered by codec vectors; it cannot produce a valid lifecycle frame.
-      return None
+    data = packer.pack(message.address, {})
     update(1_010_000_000 + index * 10_000_000, [frame(data)])
   bad = bytearray(data)
   bad[-1] ^= 0xFF

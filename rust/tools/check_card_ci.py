@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import sys
 from card_qa.ci import ROOT, TOOLS, hashes, require_space, run, source_command
@@ -48,6 +49,18 @@ def reference(arguments: argparse.Namespace) -> None:
   require_space(output, 1024**3)
   run(source_command(TOOLS / 'check_can_checksums.py', ['--binary', str(binary / 'checksum_trace'),
     '--evidence', str(output / 'checksums')], dbc), commands, 'checksums')
+  for name, example in (('check_mlb_primary_497', 'checksum_trace'), ('check_psa_asset_497', 'can_trace')):
+    require_space(output, 1024**3)
+    run(source_command(TOOLS / f'{name}.py', ['--binary', str(binary / example),
+      '--evidence', str(output / name)], dbc), commands, name)
+  require_space(output, 1024**3)
+  run(source_command(TOOLS / 'check_vehicle_source_fixes_497.py',
+    ['--output', str(output / 'source-fixes-497')], dbc), commands, 'source-fixes-497')
+  require_space(output, 1024**3)
+  run(source_command(TOOLS / 'card_hyundai_alt_buttons_defect.py',
+    [str(Path(os.environ['HYUNDAI_FIXTURE_DIR'])), str(output / 'hyundai-alt-controls')], dbc),
+    commands, 'hyundai-alt-controls')
+
 
 
 def ipc(arguments: argparse.Namespace) -> None:

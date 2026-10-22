@@ -61,6 +61,7 @@ fn trace(case: Case, dbc: &Path) -> Result<serde_json::Value, Box<dyn std::error
                 }) if error.kind() == io::ErrorKind::NotFound => {
                     json!({"kind":"MissingDbc","path":path})
                 }
+                Err(psa::Error::RuntimeUnported) => json!({"kind":"RuntimeUnported"}),
                 Err(error) => return Err(error.into()),
                 Ok(_) => return Err("pinned PSA constructor unexpectedly succeeded".into()),
             }

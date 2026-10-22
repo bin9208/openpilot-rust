@@ -91,14 +91,14 @@ fn source_and_loss_persist_together_for_restart_safety() {
 }
 
 #[test]
-fn requested_external_raw_predictions_preserve_original_failure_boundary() {
+fn requested_external_raw_predictions_are_unsupported_without_failing() {
     // Given an active external source and a native buffer that must not be relabeled.
     let native = [13, 42];
-    // When raw output is requested, then the original missing raw_pred is a dedicated typed error.
-    assert!(matches!(
-        jetlink::raw_predictions(true, Source::Jetlink, &native),
-        Err(openpilot_driving_modeld::Error::JetlinkRawPredictionsUnavailable)
-    ));
+    // The unsupported diagnostic must neither terminate publication nor relabel native bytes.
+    assert_eq!(
+        jetlink::raw_predictions(true, Source::Jetlink, &native).unwrap(),
+        None
+    );
 }
 #[test]
 fn ordinary_external_output_does_not_require_raw_predictions() {

@@ -147,7 +147,7 @@ pub fn stage(wheel: &Path, output: &Path, lock: &Path) -> Result<Provenance> {
             matches!(kind, 0 | 0o100000 | 0o040000),
             "numerical wheel link or special member",
         )?;
-        if member.is_dir() && !name.starts_with("numpy.libs/") {
+        if member.is_dir() || kind == 0o040000 {
             continue;
         }
         let target = if name.starts_with("numpy.libs/") {

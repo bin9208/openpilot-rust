@@ -1,0 +1,174 @@
+name: Backlog fixes 497 focused checks
+on:
+  push:
+    branches: [codex/fix-497-stale-runtime-defects]
+permissions:
+  contents: read
+concurrency:
+  group: backlog-497-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  focused:
+    name: Focused ${{ matrix.scope }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        scope: [core, web, media, tools, vehicles]
+    env:
+      RUSTUP_TOOLCHAIN: '1.94.0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      ENCODER_LIBYUV_LIB: /usr/lib/x86_64-linux-gnu
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/rust-path
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Reserve capacity and install affected native prerequisites
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update
+          sudo apt-get install -y g++ clang libclang-dev cmake pkg-config capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libyuv-dev libzmq3-dev ffmpeg e2fsprogs
+          rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
+      - name: Build actual terminal executables for ownership regressions
+        if: matrix.scope == 'web'
+        run: |
+          rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-carrot-server -p openpilot-process-supervision --bins
+      - name: Prove behavioral regressions against original production code
+        if: matrix.scope == 'core' || matrix.scope == 'web' || matrix.scope == 'media' || matrix.scope == 'tools'
+        env:
+          CHECK_SCOPE: ${{ matrix.scope }}
+        run: |
+          rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          python3 rust/tools/issue_497_baseline.py "$CHECK_SCOPE" --output "$RUNNER_TEMP/baseline-$CHECK_SCOPE"
+      - name: Run affected functional regressions and strict lint
+        env:
+          CHECK_SCOPE: ${{ matrix.scope }}
+        run: |
+          set -euo pipefail
+          rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          case "$CHECK_SCOPE" in
+            core)
+              packages=(-p openpilot-torqued -p openpilot-uploader -p openpilot-qcomgpsd -p openpilot-modeld -p openpilot-driving-modeld)
+              cargo test --manifest-path rust/Cargo.toml --locked "${packages[@]}" --all-targets
+              cargo clippy --manifest-path rust/Cargo.toml --locked "${packages[@]}" --all-targets -- -D warnings
+              cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-qcomgpsd --example framing_trace
+              python3 rust/tools/check_qcomgps_framing.py rust/target/debug/examples/framing_trace "$RUNNER_TEMP/qcom-framing-source.json"
+              ;;
+            web)
+              cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-carrot-server --lib
+              cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-carrot-server --all-targets -- -D warnings
+              ;;
+            media)
+              packages=(-p openpilot-loggerd -p openpilot-encoderd -p openpilot-uploader -p openpilot-deleter)
+              cargo test --manifest-path rust/Cargo.toml --locked "${packages[@]}" --features openpilot-encoderd/native --all-targets
+              cargo clippy --manifest-path rust/Cargo.toml --locked "${packages[@]}" --features openpilot-encoderd/native --all-targets -- -D warnings
+              ;;
+            vehicles)
+              rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 2048
+              python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3
+              PYTHONPATH="$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/opendbc_repo:$GITHUB_WORKSPACE/rust/tools" python rust/tools/stage_card_fixtures.py --fixtures "$RUNNER_TEMP/card-497/fixtures" --dbc "$RUNNER_TEMP/card-497/dbc"
+              export HYUNDAI_FIXTURE_DIR="$RUNNER_TEMP/card-497/fixtures"
+              export HYUNDAI_DBC_DIR="$RUNNER_TEMP/card-497/dbc"
+              cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-card -p openpilot-can --features openpilot-card/native --all-targets
+              cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-card -p openpilot-can --features openpilot-card/native --all-targets -- -D warnings
+              ;;
+            tools)
+              cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test torque_stage
+              python3 -m unittest discover -s rust/tools/tests -p test_extract_runtime_sdk.py -v
+              cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-jpeg
+              mapfile -t scripts < <(find rust/target/debug/build -path '*/openpilot-jpeg-*/build-script-build' -type f)
+              test "${#scripts[@]}" -eq 1
+              python3 rust/crates/jpeg/tests/build_cache.py --build-script "${scripts[0]}"
+              rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 2048
+              export NUMPY_ARM_WHEEL="$RUNNER_TEMP/numpy-2.5.3-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl"
+              curl --fail --location --retry 5 --retry-all-errors --output "$NUMPY_ARM_WHEEL" https://files.pythonhosted.org/packages/f1/32/84146fc020ad3c25f805f70ab60da46fe3c540a21369754a7e4369754b6f/numpy-2.5.3-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl
+              cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test torque_stage pinned_arm_wheel_retains_exactly_two_native_libraries_and_all_license_bytes -- --ignored --exact
+              rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+              sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+              rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
+              export CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc
+              export CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++
+              export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+              cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-jpeg --target aarch64-unknown-linux-gnu --target-dir "$RUNNER_TEMP/jpeg-345-arm"
+              mapfile -t arm_scripts < <(find "$RUNNER_TEMP/jpeg-345-arm/debug/build" -path '*/openpilot-jpeg-*/build-script-build' -type f)
+              test "${#arm_scripts[@]}" -eq 1
+              python3 rust/crates/jpeg/tests/build_cache.py --target aarch64-unknown-linux-gnu --build-script "${arm_scripts[0]}"
+              ;;
+          esac
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: backlog-497-${{ matrix.scope }}-evidence
+          path: |
+            ${{ runner.temp }}/baseline-*
+            ${{ runner.temp }}/qcom-framing-source.json
+          if-no-files-found: ignore
+  diagnostic-close:
+    name: Diagnostic acceptance and close ordering
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with: {persist-credentials: false}
+      - uses: actions/setup-java@v5
+        with: {distribution: temurin, java-version: '21'}
+      - uses: gradle/actions/setup-gradle@4c125117fe7c5aed11272ec4213f602f012f89f2
+        with: {gradle-version: '9.0.0'}
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
+        with:
+          packages: 'platform-tools'
+          log-accepted-android-sdk-licenses: false
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - name: Prove accepted frames may be cancelled after the unchanged close budget
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os, subprocess, xml.etree.ElementTree as ET
+          path = Path('tools/naver_map_patch/dexpatch/src/test/java/ai/comma/naver/payload/AsyncDiagnosticSinkTest.java')
+          source = path.read_bytes()
+          before = b'assertEquals(0, consumer.batches.stream().mapToInt(List::size).sum());'
+          after = b'assertEquals(1, consumer.batches.stream().mapToInt(List::size).sum());'
+          assert source.count(before) == 1
+          evidence = Path(os.environ['RUNNER_TEMP']) / 'diagnostic-close-red'
+          evidence.mkdir()
+          try:
+            path.write_bytes(source.replace(before, after))
+            result = subprocess.run(['gradle', '-p', 'tools/naver_map_patch/dexpatch', 'clean', 'test', '--no-daemon', '--dependency-verification=strict', '-PpayloadMode=diagnostic', '--tests', 'ai.comma.naver.payload.AsyncDiagnosticSinkTest.acceptedFramePastCloseBudgetIsCancelledBeforeConsumerReservation'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            (evidence / 'gradle.log').write_bytes(result.stdout)
+            assert result.returncode != 0, 'old unconditional delivery expectation unexpectedly passed'
+            reports = list(Path('tools/naver_map_patch/dexpatch/build/test-results/test').glob('TEST-*.xml'))
+            failures = []
+            for report in reports:
+              (evidence / report.name).write_bytes(report.read_bytes())
+              failures += list(ET.parse(report).getroot().iter('failure'))
+            assert len(failures) == 1, 'expected exactly one actual JUnit assertion failure'
+            message = failures[0].attrib.get('message', '')
+            assert 'expected: <1> but was: <0>' in message, message
+          finally:
+            path.write_bytes(source)
+          PY
+      - name: Verify both diagnostic variants with deterministic ordering
+        run: |
+          gradle -p tools/naver_map_patch/dexpatch clean test --no-daemon --dependency-verification=strict -PpayloadMode=diagnostic --tests 'ai.comma.naver.payload.AsyncDiagnosticSinkTest'
+          mkdir -p "$RUNNER_TEMP/diagnostic-close-green/diagnostic"
+          cp tools/naver_map_patch/dexpatch/build/test-results/test/*.xml "$RUNNER_TEMP/diagnostic-close-green/diagnostic/"
+          gradle -p tools/naver_map_patch/dexpatch clean test --no-daemon --dependency-verification=strict -PpayloadMode=diagnostic -PfieldAcceptance=true --tests 'ai.comma.naver.payload.AsyncDiagnosticSinkTest'
+          mkdir -p "$RUNNER_TEMP/diagnostic-close-green/field"
+          cp tools/naver_map_patch/dexpatch/build/test-results/test/*.xml "$RUNNER_TEMP/diagnostic-close-green/field/"
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: backlog-497-diagnostic-close-evidence
+          path: ${{ runner.temp }}/diagnostic-close-*
+          if-no-files-found: warn

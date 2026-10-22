@@ -41,7 +41,6 @@ def main() -> None:
   state = CarState(cp)
   calls = [
     ('params', lambda: CarInterface.get_params(candidate, {bus: {} for bus in range(8)}, [], False, True, False), KeyError, repr(candidate)),
-    ('constructor_candidate_only', lambda: CarInterface(cp), FileNotFoundError, 'psa_aee2010_r3.dbc'),
     (
       'state_candidate_only',
       lambda: state.update({Bus.main: object(), Bus.adas: object(), Bus.cam: object()}),
@@ -63,20 +62,30 @@ def main() -> None:
         raise AssertionError(f'{name} unexpectedly succeeded')
   assert not settings.writes
   assert not hasattr(state, 'parse_wheel_speeds')
-  assert not (ROOT / 'opendbc_repo/opendbc/dbc/psa_aee2010_r3.dbc').exists()
+  dbc_asset = ROOT / 'opendbc_repo/opendbc/dbc/psa_aee2010_r3.dbc'
+  assert dbc_asset.is_file()
+  with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
+    CarInterface(cp)
+  constructor_writes = list(settings.writes)
+  assert ['LongitudinalPersonalityMax', '3'] in constructor_writes
   files = list((ROOT / 'opendbc_repo/opendbc/car/psa').glob('*.py'))
-  files += [ROOT / 'opendbc_repo/opendbc/car/interfaces.py', ROOT / 'rust/crates/card/data/vehicle.json']
+  files += [ROOT / 'opendbc_repo/opendbc/car/interfaces.py', ROOT / 'rust/crates/card/data/vehicle.json', dbc_asset,
+            dbc_asset.with_suffix('.provenance.json')]
   files += list((ROOT / 'opendbc_repo/opendbc/car/torque_data').glob('*.toml'))
   tracked = subprocess.check_output(['git', 'ls-files', 'opendbc_repo/opendbc/dbc'], cwd=ROOT, text=True).splitlines()
-  assert not any(Path(path).stem == 'psa_aee2010_r3' for path in tracked)
+  # Newly added files may not be staged by an authoring caller; actual bytes are pinned below.
+  assert hashlib.sha256(dbc_asset.read_bytes()).hexdigest() == 'e9791b8603861a86b2f2acc93e6327ef82587ce84f28d1438a1338d35cce5db5'
   report = {
     'status': 'source_blocked',
     'candidate': candidate,
     'failures': failures,
-    'params_writes': settings.writes,
+    'params_writes': [],
+    'candidate_only_constructor_writes': constructor_writes,
     'constructor_scope': 'candidate-only to isolate later failures; normal get_params already fails',
     'runtime_gate_complete': False,
-    'dbc_absent_tracked_and_local': True,
+    'dbc_available': True,
+    'constructor_boundary': 'source candidate-only constructor succeeds; native explicitly refuses the unported runtime before Params effects',
+    'dbc_tracked': str(dbc_asset.relative_to(ROOT)) in tracked,
     'base_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
     'numpy': {'version': numpy.__version__, 'path': numpy.__file__},
     'source_sha256': {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(set(files))},
@@ -89,7 +98,7 @@ def main() -> None:
     dbc = ROOT / 'opendbc_repo/opendbc/dbc'
     expected = [
       {'kind': 'MissingTorque', 'candidate': candidate},
-      {'kind': 'MissingDbc', 'path': str(dbc / 'psa_aee2010_r3.dbc')},
+      {'kind': 'RuntimeUnported'},
       {'kind': 'MissingMethod', 'method': 'parse_wheel_speeds'},
     ]
     native_path = args.evidence.resolve() / 'native.json'

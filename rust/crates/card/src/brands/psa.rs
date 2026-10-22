@@ -1,4 +1,4 @@
-//! Fatal boundaries in the pinned PSA source; this is not a working CAN interface.
+//! Explicit incomplete PSA runtime boundary; the generic DBC codec is available.
 use crate::{core::Message, firmware::Firmware, vehicle_params};
 use openpilot_cereal::car_capnp::car_params;
 use openpilot_params::Params;
@@ -21,8 +21,10 @@ pub enum Error {
     },
     #[error("pinned PSA source has no CarState method: {0}")]
     SourceMethod(&'static str),
-    #[error("PSA source boundary changed: the pinned missing DBC is now present")]
-    SourceChanged,
+    #[error(
+        "PSA state/controller runtime is not ported; DBC availability does not admit the vehicle"
+    )]
+    RuntimeUnported,
 }
 
 pub struct ParamsInput<'a> {
@@ -39,7 +41,7 @@ pub fn parameters(input: ParamsInput<'_>) -> Result<Message, Error> {
     }
     // get_std_params reads torque before brand parameters or any Params writes.
     vehicle_params::baseline(input.candidate)?;
-    Err(Error::SourceChanged)
+    Err(Error::RuntimeUnported)
 }
 
 pub struct Setup<'a> {
@@ -65,12 +67,12 @@ impl Psa {
             return Err(Error::Platform(candidate.to_owned()));
         }
         let path = input.dbc_root.join("psa_aee2010_r3.dbc");
-        // Preserve the actual filesystem failure before constructor Params effects.
-        std::fs::read(&path).map_err(|error| Error::DbcLoad {
+        // Validate the asset without silently admitting the unimplemented runtime.
+        openpilot_can::dbc::Dbc::load(&path).map_err(|error| Error::DbcLoad {
             path,
-            source: openpilot_can::Error::Io(error),
+            source: error,
         })?;
-        Err(Error::SourceChanged)
+        Err(Error::RuntimeUnported)
     }
 }
 

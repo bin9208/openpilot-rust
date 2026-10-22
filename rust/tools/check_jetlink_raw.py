@@ -3,7 +3,7 @@
 # dependencies = ["numpy", "pycapnp"]
 # ///
 # Run: PYTHONPATH=. uv run rust/tools/check_jetlink_raw.py <jetlink_raw_probe> <evidence>
-"""Preserve the original active-Jetlink raw output failure during the parity port."""
+"""Reproduce #49 in the original and verify nonfatal unsupported Rust diagnostics."""
 import json
 import subprocess
 import sys
@@ -47,11 +47,8 @@ def main() -> None:
     for mode in ("raw", "normal"):
         result = subprocess.run([binary, mode], text=True, capture_output=True, timeout=2, check=False)
         (evidence / f"rust-{mode}-boundary.log").write_text(result.stdout + result.stderr)
-        if mode == "raw":
-            assert result.returncode != 0 and "JetlinkRawPredictionsUnavailable" in result.stderr
-        else:
-            assert result.returncode == 0
-            assert json.loads(result.stdout) == {"source": "jetlink", "raw_requested": False, "raw_present": False}
+        assert result.returncode == 0
+        assert json.loads(result.stdout) == {"source": "jetlink", "raw_requested": mode == "raw", "raw_present": False}
         cases.append({"mode": mode, "invocation": [str(binary), mode], "exit_code": result.returncode})
     report = {"result": "PASS", "original_raw_error": {"type": "KeyError", "key": "raw_pred"}, "original_non_raw": "PASS", "native": cases}
     (evidence / "raw-boundary-summary.json").write_text(json.dumps(report, indent=2) + "\n")

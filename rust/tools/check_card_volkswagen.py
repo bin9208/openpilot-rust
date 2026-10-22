@@ -41,10 +41,13 @@ def main():
   parser.add_argument('--binary', type=Path, required=True)
   parser.add_argument('--numerics', type=Path, required=True)
   parser.add_argument('--evidence', type=Path, required=True)
-  parser.add_argument('--op', choices=['params', 'runtime', 'mqb_failure', 'seeded_controller', 'before_update', 'numeric_error'])
+  parser.add_argument('--op', choices=['params', 'runtime', 'mqb_runtime', 'mqb_failure', 'seeded_controller', 'before_update', 'numeric_error'])
   parser.add_argument('--candidate')
   parser.add_argument('--name', action='append')
   args = parser.parse_args()
+  # Old CI callers retain their spelling, but must now pass the complete normal loop.
+  if args.op == 'mqb_failure':
+    args.op = 'mqb_runtime'
   args.evidence.mkdir(parents=True, exist_ok=True)
   (args.evidence / 'result.json').unlink(missing_ok=True)
   (args.evidence / 'failure.txt').unlink(missing_ok=True)
@@ -53,7 +56,7 @@ def main():
   assert numpy.__version__ == '2.5.3'
   captured = io.StringIO()
   with contextlib.redirect_stdout(captured), contextlib.redirect_stderr(captured):
-    request = [case for case in cases(args.op, args.candidate) if (args.op is None or case['op'] == args.op) and (args.name is None or case['name'] in args.name)]
+    request = [case for case in cases(args.op, args.candidate) if (args.op is None or case['op'] == args.op or args.op == 'runtime' and case['op'] == 'mqb_runtime') and (args.name is None or case['name'] in args.name)]
     assert request
     expected = normalize([trace(case) for case in request])
   (args.evidence / 'source.log').write_text(captured.getvalue() or 'no source diagnostics\n')
@@ -78,9 +81,6 @@ def main():
       source_error, native_error = left.pop('error'), right.pop('error')
       if source_error is None:
         assert native_error is None
-      elif case['op'] == 'mqb_failure':
-        assert source_error == {'kind': 'NameError', 'message': "name 'np' is not defined"}
-        assert native_error == {'kind': 'InheritedMqbNumpy', 'message': "inherited Volkswagen MQB first-update failure: name 'np' is not defined"}
       elif source_error['kind'] == 'AttributeError' and source_error['message'].startswith('module '):
         module, function = source_error['message'].split("'")[1::2]
         assert native_error == {'kind': 'SourceFunction', 'module': module.rsplit('.', 1)[-1], 'function': function}
@@ -95,6 +95,11 @@ def main():
       if source_error:
         errors.append({'name': case['name'], 'source': source_error, 'native': native_error})
     left, right = decoded(left), decoded(right)
+    if case['op'] == 'mqb_runtime':
+      assert len(left['steps']) == len(right['steps']) == len(case['steps']) == 96
+      assert left['final_extra']['frame'] == right['final_extra']['frame'] == 96
+      assert left['steps'][0]['state']['standstill']
+      assert any(row['state']['vEgoRaw'] > 0 for row in left['steps'])
     try:
       compare(left, right, case['name'])
     except AssertionError as error:
@@ -116,6 +121,9 @@ def main():
             'runtime_python': False, 'binary_sha256': hashlib.sha256(args.binary.read_bytes()).hexdigest(),
             'source_sha256': {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest() for path in source},
             'rust_sha256': {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest() for path in rust}}
+  if args.op == 'mqb_runtime' and args.candidate is None and args.name is None:
+    assert len(report['candidates']) == 23
+    assert len(request) == 23 * 2 * 2 * 3
   (args.evidence / 'result.json').write_text(json.dumps(report, indent=2) + '\n')
   print(json.dumps({key: report[key] for key in ('status', 'cases', 'frames', 'healthy_frames', 'invalid_frames', 'binary_sha256')}))
 

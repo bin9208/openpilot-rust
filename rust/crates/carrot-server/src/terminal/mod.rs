@@ -11,6 +11,8 @@ mod pty;
 mod receive;
 mod session;
 mod state;
+mod supervisor;
+mod supervisor_client;
 mod tmux;
 use crate::{
     web_sound::{socket, Shutdown},
@@ -223,5 +225,20 @@ impl Drop for Service {
                 }
             }
         }
+    }
+}
+
+/// Route this private mode before managed-entry, Tokio, logging or receipt setup.
+/// Re-execution keeps the installed server/command identity and confines child
+/// adoption to a dedicated process rather than the shared web-server process.
+pub fn supervisor_entry() {
+    let mut args = std::env::args_os().skip(1);
+    if args.next().as_deref() == Some(std::ffi::OsStr::new("--terminal-supervisor")) {
+        let status = supervisor::entry(&args.collect::<Vec<_>>());
+        std::process::exit(if status == std::process::ExitCode::SUCCESS {
+            0
+        } else {
+            1
+        });
     }
 }

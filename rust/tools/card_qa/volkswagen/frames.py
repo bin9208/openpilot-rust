@@ -30,17 +30,12 @@ def runtime_steps(profile, count=660, quiet=False, focused=False):
   load()
   from opendbc.can import CANPacker, CANDefine
   from opendbc.car.volkswagen.interface import CarInterface
-  from opendbc.car.volkswagen.values import VolkswagenFlags as F
   from opendbc.can import parser
   parser.time = type('Clock', (), {'monotonic_ns': staticmethod(lambda: profile['now'])})
   with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
     cp = parameters(profile, Settings(profile['settings']))
     vehicle = CarInterface(cp)
-    try:
-      vehicle.update([])
-    except NameError as failure:
-      assert str(failure) == "name 'np' is not defined"
-      assert not cp.flags & (F.PQ | F.MEB)
+    vehicle.update([])
   packer = CANPacker(vehicle.CC.packer_pt.dbc.name)
   definitions = CANDefine(packer.dbc.name).dv
   messages = [(parser_.bus, state.name) for parser_ in vehicle.can_parsers.values() for state in parser_.message_states.values()]
@@ -64,6 +59,7 @@ def runtime_steps(profile, count=660, quiet=False, focused=False):
             label = 'FAULT' if index < 620 else 'ACTIVE'
             values[key] = next(value for value, text in definitions[name][key].items() if text.upper() == label)
         if key in ('VL_Radgeschw', 'VR_Radgeschw', 'HL_Radgeschw', 'HR_Radgeschw',
+                   'ESP_VL_Radgeschw_02', 'ESP_VR_Radgeschw_02', 'ESP_HL_Radgeschw_02', 'ESP_HR_Radgeschw_02',
                    'Radgeschw__VL_4_1', 'Radgeschw__VR_4_1', 'Radgeschw__HL_4_1', 'Radgeschw__HR_4_1', 'Geschwindigkeit_neu__Bremse_1_'):
           values[key] = (0. if index < 210 else 0.36 if index < 220 else 1.8) if focused else (0., 0.36, 1.8, 3.6, 18., 60.)[index // 17 % 6]
         if key in ('EPS_Lenkmoment', 'LH3_LM'):

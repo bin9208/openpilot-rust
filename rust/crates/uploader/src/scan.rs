@@ -3,7 +3,7 @@ use openpilot_logging::log_site;
 use serde::Serialize;
 use serde_json::json;
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     ffi::{OsStr, OsString},
     fs, io,
     path::{Path, PathBuf},
@@ -137,8 +137,23 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
             {
                 continue;
             }
+            // Closed failed recordings have per-file evidence, not an active
+            // writer lock. Leave healthy files eligible and never upload either
+            // the damaged file or its marker as a valid recording.
+            let failures: HashSet<_> = names
+                .iter()
+                .filter(|name| name.as_encoded_bytes().ends_with(b".failed"))
+                .cloned()
+                .collect();
             names.sort_by_key(|name| priority(name));
             for name in names {
+                let mut failed_marker = name.clone();
+                failed_marker.push(".failed");
+                if name.as_encoded_bytes().ends_with(b".failed")
+                    || failures.contains(&failed_marker)
+                {
+                    continue;
+                }
                 let file = path.join(&name);
                 let key = PathBuf::from(&directory).join(&name);
                 let uploaded = fs::metadata(&file).and_then(|_| self.attributes.get(&file));

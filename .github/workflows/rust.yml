@@ -1211,6 +1211,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2708,6 +2709,7 @@ jobs:
       - run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           cargo build -p openpilot-loggerd -p openpilot-logmessaged -p openpilot-uploader --locked
+          cargo build -p openpilot-uploader --example uploader_trace -p openpilot-deleter --example deleter_trace --locked
       - name: Verify managed crash recording and existing route upload
         run: |
           PYTHONPATH="$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python -P tools/check_runtime_log_upload.py \
@@ -2739,6 +2741,7 @@ jobs:
             --binary target/debug/openpilot-loggerd --original "$RUNNER_TEMP/logger-original/original-loggerd" --output "$RUNNER_TEMP/logger-flush"
           PYTHONPATH="$RUNNER_TEMP/logger-msgq:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python tools/check_loggerd_io.py \
             --binary target/debug/openpilot-loggerd --original "$RUNNER_TEMP/logger-original/original-loggerd" \
+            --uploader target/debug/examples/uploader_trace --deleter target/debug/examples/deleter_trace \
             --fixtures "$RUNNER_TEMP/logger-native/fixtures" --output "$RUNNER_TEMP/logger-io"
       - name: Check pure Rust rotation boundaries with Miri
         env:

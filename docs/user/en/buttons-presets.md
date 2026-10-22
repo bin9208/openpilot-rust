@@ -214,3 +214,11 @@ Remember that SET/- in custom mode 3 does not walk backward through the preset t
 - Initial Params values: `openpilot/common/params_keys.h`
 
 [Back to Understanding Settings](settings.md)
+
+## CANFD alternate cruise-button candidate
+
+The #497 follow-up candidate corrects missing cancel, resume and speed requests
+after alternate-button messages on affected Hyundai/Kia CANFD vehicles. Existing
+button settings, pedal/hold interlocks, transmission timing, counters and bus
+selection remain. Vehicle acceptance is separate; this correction does not
+establish support for every CANFD vehicle.

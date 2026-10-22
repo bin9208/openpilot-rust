@@ -108,6 +108,7 @@ async fn run() -> Result<(), Error> {
 }
 
 fn main() {
+    openpilot_carrot_server::terminal::supervisor_entry();
     if let Err(error) = openpilot_managed_entry::runtime(
         "openpilot.selfdrive.carrot.carrot_server",
         "carrot_server",

@@ -44,3 +44,10 @@ Normal stock TACC operation is not treated as an Autosteer conflict. Where the v
 Valid Tesla power-state messages can keep the device awake during accessory or conditioning operation without putting openpilot on-road. R, N, or D selects the on-road ignition state. In P, an unlatched seatbelt or an open door switches it off-road; with the belt latched and doors closed, P preserves the previous ignition state. Entering P alone therefore does not always switch the driving screen off.
 
 Wake and ignition indications expire independently when their corresponding CAN messages stop. These states control device power and on-road status; they do not engage driving control by themselves.
+
+## Cancellation-event preservation candidate
+
+The #497 follow-up candidate preserves stock ACC cancellation when vehicle-bus
+and infotainment button events are processed together, including simultaneous
+button presses and releases. Vehicle acceptance remains separate. This event
+correction does not supply missing vehicle torque data or change supported status.
