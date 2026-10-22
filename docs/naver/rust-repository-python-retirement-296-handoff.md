@@ -193,7 +193,7 @@ step and preserves original behavioral RED and source-stager contracts. Retry
 39696562943 (workflow18b45283fe0b57f788586691731629e8f54d1222) executes complete
 Fast routing, actual workspace metadata and original Card policy atdf374b0ab.
 Corrected full Panda outer proof39696533789 (workflow423fb364b75cb0a57e5ecbf05bf5032357b8779a)
-at the same source retains four lanes/38phases/34ELFs and the165-source roster.
+at the same source retains four lanes/38phases/34ELFs and the163-source roster.
 
 Bounded driver diagnostic39694362489 at2c22e46ef passes original Python/direct
 model-run warped and raw-output byte equality, including frozen predictions. Its

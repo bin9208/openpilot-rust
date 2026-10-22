@@ -354,7 +354,7 @@ fn prepare_private_root(repo: &Path, private: &Path, expect_absent: bool) -> Val
     ] {
         assert!(current_names.insert(format!("rust/crates/dev-tools/src/{name}")));
     }
-    current_names.insert("rust/crates/pandad/Cargo.toml".into());
+    assert!(current_names.insert("rust/crates/pandad/Cargo.toml".into()));
     if expect_absent {
         current_names.remove(RETIRED[0]);
     }
@@ -391,7 +391,11 @@ fn prepare_private_root(repo: &Path, private: &Path, expect_absent: bool) -> Val
         .map(|(name, hash)| (name.clone(), hash.clone()))
         .collect::<BTreeMap<_, _>>();
     assert_eq!(copied, expected_copied);
-    assert_eq!(copied.len(), 165);
+    // 151 historical + 17 explicit helpers + Panda manifest - 5 retired phase
+    // helpers - the old orchestrator = 163. The two reference-stager bins were
+    // already in the expected extension roster; fixing enumeration adds no
+    // new expected members. Keep the exact roster equality above and count.
+    assert_eq!(copied.len(), 163);
     openpilot_disk_space::inspect(private, 2 * GIB)
         .unwrap()
         .require()

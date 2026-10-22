@@ -5839,3 +5839,17 @@ SHA25625ef9657deb575c47a618a60306c544875da2caf4df0c5ea3a6cfb116194676d.
 Accept only generate_pose_model.py/generate_car_model.py: inventory257/3/3320;
 remove their two pending routing rows. Corpus2 and model-family6 source deletions
 remain pending their own gates. No installed runtime equation module changes.
+
+### Panda expected roster arithmetic correction (2026-10-22)
+
+Correctly pinned1.94.0 run39697209006 passes native Panda packages,14controller
+units, strict Clippy, original CLI admissions and the reference-stager hash
+regression. Full private-root exact source-set equality passes; the following
+count assertion fails163actual vs165expected. The earlier037724874 repair wrongly
+added2 to an expected roster that already named both stagers. Retain the missing
+source_paths enumeration fix, and restore the independently derived expected163:
+151historical +17explicit helpers +1Panda Cargo manifest -5retired phase helpers
+-1old orchestrator. Require the manifest insertion to be unique. No source hash,
+phase, executable, original-comparison or source-set equality check is removed.
+This supersedes the attempted165 count recorded above; complete outer four-lane
+38phase proof still requires a passing run after this correction.

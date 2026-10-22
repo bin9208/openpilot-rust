@@ -39,7 +39,7 @@ three partial baseline entries.
    accepted in39640526320 and39647358174. The shared corpus is removed with both
    native callers. Complete independent observations and parser/failure effects
    are preserved. Final actual outer38-phase/two-root integration must cover
-   the165-source/34-executable current composition; its14 mock controls alone
+   the163-source/34-executable current composition; its14 mock controls alone
    do not replace that gate.
 2. Driving/driver/logging faults: complete fixture/source-absence/finalization
    and optional-collector candidates are committed. Driving native collector
