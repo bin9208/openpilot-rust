@@ -1,0 +1,65 @@
+name: 296 USB checker independent snapshot regression
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/usb-owned-inputs-296-once.yml
+permissions:
+  contents: read
+jobs:
+  usb-owned-inputs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      EXPECTED_SOURCE: 5b5aa357be47596a6927da677db33ae2629f327f
+      RUSTUP_TOOLCHAIN: 1.94.0
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: 5b5aa357be47596a6927da677db33ae2629f327f
+        persist-credentials: false
+    - name: Run focused native snapshot regression and checker Clippy
+      shell: bash
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        mkdir "$RUNNER_TEMP/usb-owned-inputs-296"
+
+        git rev-parse HEAD > "$RUNNER_TEMP/usb-owned-inputs-296/SOURCE_COMMIT"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 6144
+
+        sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev liblzma-dev
+        pkg-config
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features driver-daemon-native --lib usbgpu_daemon_check::tests::case_hardlinks_preserve_original_inputs_and_snapshot_mutations_are_rejected
+        -- --exact --nocapture > "$RUNNER_TEMP/usb-owned-inputs-296/regression.log" 2>&1 || { cat "$RUNNER_TEMP/usb-owned-inputs-296/regression.log";
+        exit 1; }
+
+        grep -F ''1 passed; 0 failed'' "$RUNNER_TEMP/usb-owned-inputs-296/regression.log"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features driver-daemon-native --lib
+        --bin check-usbgpu-daemon -- -D warnings > "$RUNNER_TEMP/usb-owned-inputs-296/clippy.log" 2>&1 || { cat "$RUNNER_TEMP/usb-owned-inputs-296/clippy.log";
+        exit 1; }
+
+        '
+    - uses: actions/upload-artifact@v6
+      if: always()
+      with:
+        name: usb-owned-inputs-296
+        path: ${{ runner.temp }}/usb-owned-inputs-296/
+        if-no-files-found: error
