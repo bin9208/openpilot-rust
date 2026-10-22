@@ -238,6 +238,10 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
         workflow["concurrency"]["cancel-in-progress"] == "false",
         "Fast must not cancel an existing run",
     )?;
+    require(
+        workflow["concurrency"]["queue"] == "max",
+        "Fast must retain pending runs rather than replace them",
+    )?;
     let bindings = [
         ("NATIVE", "native"),
         ("NATIVE_CORPUS", "native-corpus"),

@@ -10,6 +10,7 @@ permissions:
 concurrency:
   group: fast-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: false
+  queue: max
 jobs:
   native:
     name: fast native routing checks
