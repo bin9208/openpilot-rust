@@ -183,7 +183,23 @@ jobs:
 
           ${{ env.BENCH_ROOT }}/agnos-runtime/opencv/*.log
 
-          ${{ env.BENCH_ROOT }}/agnos-runtime/release/runtime-release.json'
+          ${{ env.BENCH_ROOT }}/agnos-runtime/release/runtime-release.json
+
+          ${{ env.BENCH_ROOT }}/logger-ffmpeg-gnu/*.log
+
+          ${{ env.BENCH_ROOT }}/logger-ffmpeg-gnu/**/config.log
+
+          ${{ env.BENCH_ROOT }}/logger-ffmpeg-musl/*.log
+
+          ${{ env.BENCH_ROOT }}/logger-ffmpeg-musl/**/config.log
+
+          ${{ env.BENCH_ROOT }}/encoder-arm/*.log
+
+          ${{ env.BENCH_ROOT }}/agnos-runtime/opencv-smoke/*.log
+
+          ${{ env.BENCH_ROOT }}/agnos-runtime/sysroot-extract.log
+
+          '
         retention-days: 7
     - uses: ./runner-comparison-498/.github/actions/job-temp
       if: always()
@@ -626,7 +642,23 @@ jobs:
 
           ${{ env.BENCH_ROOT }}/agnos-runtime/opencv/*.log
 
-          ${{ env.BENCH_ROOT }}/agnos-runtime/release/runtime-release.json'
+          ${{ env.BENCH_ROOT }}/agnos-runtime/release/runtime-release.json
+
+          ${{ env.BENCH_ROOT }}/logger-ffmpeg-gnu/*.log
+
+          ${{ env.BENCH_ROOT }}/logger-ffmpeg-gnu/**/config.log
+
+          ${{ env.BENCH_ROOT }}/logger-ffmpeg-musl/*.log
+
+          ${{ env.BENCH_ROOT }}/logger-ffmpeg-musl/**/config.log
+
+          ${{ env.BENCH_ROOT }}/encoder-arm/*.log
+
+          ${{ env.BENCH_ROOT }}/agnos-runtime/opencv-smoke/*.log
+
+          ${{ env.BENCH_ROOT }}/agnos-runtime/sysroot-extract.log
+
+          '
         retention-days: 7
     - uses: ./runner-comparison-498/.github/actions/job-temp
       if: always()
