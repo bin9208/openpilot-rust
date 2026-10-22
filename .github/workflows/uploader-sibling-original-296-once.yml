@@ -1,0 +1,164 @@
+name: 296 original uploader sibling group capture
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/uploader-sibling-original-296-once.yml
+permissions:
+  contents: read
+jobs:
+  capture:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      EXPECTED_SOURCE: 67f099bffbdda2396ea2f64e1f168a76ce19d560
+      RUSTUP_TOOLCHAIN: 1.94.0
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: 67f099bffbdda2396ea2f64e1f168a76ce19d560
+        persist-credentials: false
+    - uses: actions/setup-python@v6
+      with:
+        python-version: 3.12.15
+    - name: Reserve hosted capacity and pin exact source
+      shell: bash
+      run: 'set -euo pipefail
+
+        export UPLOADER_SIBLING_PROOF="$RUNNER_TEMP/uploader-sibling-original-296"
+
+        printf ''UPLOADER_SIBLING_PROOF=%s
+
+        '' "$UPLOADER_SIBLING_PROOF" >> "$GITHUB_ENV"
+
+        mkdir "$UPLOADER_SIBLING_PROOF"
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        printf ''workflow_head=%s
+
+        source_commit=%s
+
+        '' "$GITHUB_SHA" "$(git rev-parse HEAD)" > "$UPLOADER_SIBLING_PROOF/source.txt"
+
+        sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet /usr/local/.ghcup
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 10240
+
+        rustup toolchain install 1.94.0 --profile minimal
+
+        sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends capnproto libcapnp-dev g++ libzmq5
+
+        python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0
+        requests==2.34.2 PyJWT==2.15.1 cryptography==50.0.1
+
+        python -m pip freeze > "$UPLOADER_SIBLING_PROOF/providers.before.txt"
+
+        '
+    - name: Build current native JSON11 provider stager once
+      uses: ./.github/actions/native-json11
+    - name: Build shared native probes and unchanged original IPC/Params providers once
+      shell: bash
+      run: 'set -euo pipefail
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 6144
+
+        cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-uploader -p openpilot-logmessaged --bins
+        --examples > "$UPLOADER_SIBLING_PROOF/build.stdout" 2> "$UPLOADER_SIBLING_PROOF/build.stderr"
+
+        mkdir "$UPLOADER_SIBLING_PROOF/bin"
+
+        cp rust/target/debug/openpilot-uploader "$UPLOADER_SIBLING_PROOF/bin/openpilot-uploader"
+
+        python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/uploader-sibling-msgq" > "$UPLOADER_SIBLING_PROOF/msgq-build.stdout"
+        2> "$UPLOADER_SIBLING_PROOF/msgq-build.stderr"
+
+        python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/uploader-sibling-params"
+        > "$UPLOADER_SIBLING_PROOF/params-build.stdout" 2> "$UPLOADER_SIBLING_PROOF/params-build.stderr"
+
+        printf ''PYTHONPATH=%s/uploader-sibling-msgq:%s:%s/rust/tools
+
+        '' "$RUNNER_TEMP" "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+
+        gcc -Wall -Wextra -Werror -O2 -fPIC -DZMQ_LINK_WRAP -c rust/tools/zmq_send_boundary.c -o "$UPLOADER_SIBLING_PROOF/send-wrap.o"
+
+        cargo +1.94.0 rustc --manifest-path rust/Cargo.toml --locked -p openpilot-uploader --bin openpilot-uploader -- -C
+        link-arg=-Wl,--wrap=zmq_msg_send -C "link-arg=$UPLOADER_SIBLING_PROOF/send-wrap.o" > "$UPLOADER_SIBLING_PROOF/wrapped-build.stdout"
+        2> "$UPLOADER_SIBLING_PROOF/wrapped-build.stderr"
+
+        cp rust/target/debug/openpilot-uploader "$UPLOADER_SIBLING_PROOF/bin/uploader-send-interrupted"
+
+        sha256sum "$UPLOADER_SIBLING_PROOF/bin/openpilot-uploader" "$UPLOADER_SIBLING_PROOF/bin/uploader-send-interrupted"
+        rust/target/debug/examples/uploader_trace rust/target/debug/examples/uploader_log_fault rust/target/debug/openpilot-logmessaged
+        > "$UPLOADER_SIBLING_PROOF/binaries.before.sha256"
+
+        cp "$RUNNER_TEMP/uploader-sibling-params/commands.json" "$UPLOADER_SIBLING_PROOF/params-commands.json"
+
+        cp "$RUNNER_TEMP/uploader-sibling-params/provenance.json" "$UPLOADER_SIBLING_PROOF/params-provenance.json"
+
+        '
+    - name: Run all new original controller scopes and capture Python-only expected lanes
+      shell: bash
+      run: 'set -euo pipefail
+
+        base64 --decode <<''CAPTURE'' > "$UPLOADER_SIBLING_PROOF/capture_original_siblings.py"
+
+        IiIiSG9zdGVkLW9ubHkgb3JpZ2luYWwtY29udHJvbGxlciBjYXB0dXJlOyBubyBvcmlnaW5hbCBhc3NlcnRpb25zIGFyZSByZXBsYWNlZC4iIiIKaW1wb3J0IGFyZ3BhcnNlCmltcG9ydCBjb250ZXh0bGliCmltcG9ydCBoYXNobGliCmltcG9ydCBqc29uCmltcG9ydCBvcwpmcm9tIHBhdGhsaWIgaW1wb3J0IFBhdGgKaW1wb3J0IHJ1bnB5CmltcG9ydCBzeXMKaW1wb3J0IHRyYWNlYmFjawoKCmRlZiBzaGEocGF0aCk6CiAgICB3aXRoIHBhdGgub3BlbigncmInKSBhcyBzb3VyY2U6CiAgICAgICAgcmV0dXJuIGhhc2hsaWIuZmlsZV9kaWdlc3Qoc291cmNlLCAnc2hhMjU2JykuaGV4ZGlnZXN0KCkKCgpkZWYgc2F2ZShwYXRoLCB2YWx1ZSk6CiAgICBwYXRoLnBhcmVudC5ta2RpcihwYXJlbnRzPVRydWUsIGV4aXN0X29rPVRydWUpCiAgICBkYXRhID0ganNvbi5kdW1wcyh2YWx1ZSwgZW5zdXJlX2FzY2lpPUZhbHNlLCBpbmRlbnQ9MiwgYWxsb3dfbmFuPUZhbHNlKS5lbmNvZGUoKSArIGInXG4nCiAgICBhc3NlcnQgbGVuKGRhdGEpIDwgNjQgPDwgMjAKICAgIHdpdGggcGF0aC5vcGVuKCd4YicpIGFzIG91dHB1dDoKICAgICAgICBvdXRwdXQud3JpdGUoZGF0YSkKCgpkZWYgbWFpbigpOgogICAgcGFyc2VyID0gYXJncGFyc2UuQXJndW1lbnRQYXJzZXIoKQogICAgZm9yIG5hbWUgaW4gWydyb290JywgJ2JpbmFyeScsICdpbnRlcnJ1cHRlZCcsICd0cmFjZScsICdmYXVsdCcsICdjb2xsZWN0b3InLCAnYmluZGluZycsICdwaW5zJywgJ291dHB1dCddOgogICAgICAgIHBhcnNlci5hZGRfYXJndW1lbnQoJy0tJyArIG5hbWUsIHR5cGU9UGF0aCwgcmVxdWlyZWQ9VHJ1ZSkKICAgIGFyZ3MgPSBwYXJzZXIucGFyc2VfYXJncygpCiAgICBhcmdzLnJvb3QgPSBhcmdzLnJvb3QucmVzb2x2ZSgpCiAgICBhcmdzLm91dHB1dC5ta2RpcihwYXJlbnRzPVRydWUpCiAgICBwaW5zID0ganNvbi5sb2FkcyhhcmdzLnBpbnMucmVhZF9ieXRlcygpKQogICAgYXNzZXJ0IGxlbihwaW5zKSA9PSAyMwogICAgYXNzZXJ0IGFsbChzaGEoYXJncy5yb290IC8gbmFtZSkgPT0gcGluIGZvciBuYW1lLCBwaW4gaW4gcGlucy5pdGVtcygpKQogICAgc3lzLnBhdGguaW5zZXJ0KDAsIHN0cihhcmdzLnJvb3QgLyAncnVzdC90b29scycpKQogICAgaW1wb3J0IGNoZWNrX3VwbG9hZGVyCiAgICBvcmlnaW5hbF9lbmRwb2ludCA9IGNoZWNrX3VwbG9hZGVyLmVuZHBvaW50CiAgICBmYW1pbHkgPSAnJwogICAgY2FsbHMgPSBbXQoKICAgIEBjb250ZXh0bGliLmNvbnRleHRtYW5hZ2VyCiAgICBkZWYgZW5kcG9pbnQoc2V0dGluZ3MsIGNhcHR1cmVzKToKICAgICAgICAjIE9ic2VydmVyIG9ubHkuIFRoZSBvcmlnaW5hbCBzZXJ2ZXIsIHByb2R1Y2VyIGNhbGxzIGFuZCBhc3NlcnRpb25zIHJ1bgogICAgICAgICMgdW5jaGFuZ2VkLiBQcmVzZXJ2ZSBmdWxsIHJlcXVlc3RzIGV2ZW4gZm9yIGNvbnRyb2xsZXJzIHRoYXQgcmVwb3J0IGNvdW50cy4KICAgICAgICB3aXRoIG9yaWdpbmFsX2VuZHBvaW50KHNldHRpbmdzLCBjYXB0dXJlcykgYXMgaG9zdDoKICAgICAgICAgICAgeWllbGQgaG9zdAogICAgICAgIGNhbGxzLmFwcGVuZCh7J2ZhbWlseSc6IGZhbWlseSwgJ3NldHRpbmdzJzogc2V0dGluZ3MsICdob3N0JzogaG9zdCwgJ3JlcXVlc3RzJzogWwogICAgICAgICAgICB7J21ldGhvZCc6IG1ldGhvZCwgJ3BhdGgnOiBwYXRoLCAnaGVhZGVycyc6IGhlYWRlcnMsICdib2R5X2hleCc6IGJvZHkuaGV4KCl9CiAgICAgICAgICAgIGZvciBtZXRob2QsIHBhdGgsIGhlYWRlcnMsIGJvZHkgaW4gY2FwdHVyZXMKICAgICAgICBdfSkKCiAgICBjaGVja191cGxvYWRlci5lbmRwb2ludCA9IGVuZHBvaW50CiAgICBiaW5kaW5nID0gYXJncy5iaW5kaW5nLnJlc29sdmUoKQogICAgdG9vbHMgPSBbCiAgICAgICAgKCdkYWVtb24nLCAnY2hlY2tfdXBsb2FkZXJfZGFlbW9uLnB5JywgWyctLWJpbmFyeScsIHN0cihhcmdzLmJpbmFyeS5yZXNvbHZlKCkpXSksCiAgICAgICAgKCdpbnRlcnJ1cHRlZC1zZW5kJywgJ2NoZWNrX3VwbG9hZGVyX2ludGVycnVwdGVkLnB5JywgWyctLWJpbmFyeScsIHN0cihhcmdzLmludGVycnVwdGVkLnJlc29sdmUoKSldKSwKICAgICAgICAoJ2ludGVycnVwdGVkLWh0dHAnLCAnY2hlY2tfdXBsb2FkZXJfaHR0cF9pbnRlcnJ1cHRlZC5weScsIFsnLS1iaW5hcnknLCBzdHIoYXJncy5iaW5hcnkucmVzb2x2ZSgpKV0pLAogICAgICAgICgndGltZW91dHMnLCAnY2hlY2tfdXBsb2FkZXJfdGltZW91dHMucHknLCBbJy0tcm9vdCcsIHN0cihhcmdzLnJvb3QpLCAnLS1iaW5hcnknLCBzdHIoYXJncy50cmFjZS5yZXNvbHZlKCkpXSksCiAgICAgICAgKCdmYXVsdCcsICdjaGVja191cGxvYWRlcl9sb2dfZmF1bHQucHknLCBbJy0tbmF0aXZlJywgc3RyKGFyZ3MuZmF1bHQucmVzb2x2ZSgpKSwgJy0tY29sbGVjdG9yJywgc3RyKGFyZ3MuY29sbGVjdG9yLnJlc29sdmUoKSksICctLWJpbmRpbmcnLCBzdHIoYmluZGluZyldKSwKICAgICAgICAoJ3BhcmFtcycsICdjaGVja19wYXJhbXNfc3RyaW5nX3VwbG9hZGVyLnB5JywgWyctLWJpbmFyeScsIHN0cihhcmdzLmJpbmFyeS5yZXNvbHZlKCkpLCAnLS1jb2xsZWN0b3InLCBzdHIoYXJncy5jb2xsZWN0b3IucmVzb2x2ZSgpKSwgJy0tYmluZGluZycsIHN0cihiaW5kaW5nKV0pLAogICAgXQogICAgcmVzdWx0cywgZmFpbHVyZXMgPSBbXSwgW10KICAgIGZvciBmYW1pbHksIGZpbGVuYW1lLCBvcHRpb25zIGluIHRvb2xzOgogICAgICAgIHNjcmlwdCA9IGFyZ3Mucm9vdCAvICdydXN0L3Rvb2xzJyAvIGZpbGVuYW1lCiAgICAgICAgb3V0cHV0ID0gYXJncy5vdXRwdXQgLyBmYW1pbHkKICAgICAgICBlbnZpcm9ubWVudCA9IGRpY3Qob3MuZW52aXJvbikKICAgICAgICBhcmd2ID0gW3N0cihzY3JpcHQpLCAqb3B0aW9ucywgJy0tb3V0cHV0Jywgc3RyKG91dHB1dCldCiAgICAgICAgdHJ5OgogICAgICAgICAgICB3aXRoIChhcmdzLm91dHB1dCAvIChmYW1pbHkgKyAnLnN0ZG91dCcpKS5vcGVuKCd3JykgYXMgc3Rkb3V0LCAoYXJncy5vdXRwdXQgLyAoZmFtaWx5ICsgJy5zdGRlcnInKSkub3BlbigndycpIGFzIHN0ZGVycjoKICAgICAgICAgICAgICAgIHdpdGggY29udGV4dGxpYi5yZWRpcmVjdF9zdGRvdXQoc3Rkb3V0KSwgY29udGV4dGxpYi5yZWRpcmVjdF9zdGRlcnIoc3RkZXJyKToKICAgICAgICAgICAgICAgICAgICBzeXMuYXJndiA9IGFyZ3YKICAgICAgICAgICAgICAgICAgICB0cnk6CiAgICAgICAgICAgICAgICAgICAgICAgIHJ1bnB5LnJ1bl9wYXRoKHN0cihzY3JpcHQpLCBydW5fbmFtZT0nX19tYWluX18nKQogICAgICAgICAgICAgICAgICAgIGV4Y2VwdCBTeXN0ZW1FeGl0IGFzIHN0YXR1czoKICAgICAgICAgICAgICAgICAgICAgICAgaWYgc3RhdHVzLmNvZGUgbm90IGluIChOb25lLCAwKToKICAgICAgICAgICAgICAgICAgICAgICAgICAgIHJhaXNlCiAgICAgICAgICAgIHJlc3VsdHMuYXBwZW5kKHsnZmFtaWx5JzogZmFtaWx5LCAnYXJndic6IGFyZ3YsICdvcmlnaW5hbF9hc3NlcnRpb25zX2NvbXBsZXRlZCc6IFRydWV9KQogICAgICAgIGV4Y2VwdCBCYXNlRXhjZXB0aW9uOgogICAgICAgICAgICBmYWlsdXJlcy5hcHBlbmQoeydmYW1pbHknOiBmYW1pbHksICd0cmFjZSc6IHRyYWNlYmFjay5mb3JtYXRfZXhjKCl9KQogICAgICAgIGZpbmFsbHk6CiAgICAgICAgICAgIG9zLmVudmlyb24uY2xlYXIoKQogICAgICAgICAgICBvcy5lbnZpcm9uLnVwZGF0ZShlbnZpcm9ubWVudCkKICAgICMgVGhlc2UgY29udGFpbiByZWFsIFB5dGhvbiB1cGxvYWRlci9QYXJhbXMgb2JzZXJ2YXRpb25zLCBpbmRlcGVuZGVudGx5CiAgICAjIG9idGFpbmVkIGJlZm9yZSBuYXRpdmUgY29tcGFyaXNvbi4gTmF0aXZlLW9ubHkgZGFlbW9uIGNvbnRyb2xsZXIgcmVwb3J0cwogICAgIyBzdGF5IHJhdyBldmlkZW5jZSBhbmQgYXJlIGRlbGliZXJhdGVseSBleGNsdWRlZCBmcm9tIGV4cGVjdGVkIGRhdGEuCiAgICBleHBlY3RlZCA9IHsndmVyc2lvbic6IDEsICdzb3VyY2VfcGlucyc6IHBpbnMsICdvcmlnaW4nOiAnYWN0dWFsIG9yaWdpbmFsIFB5dGhvbiBydW50aW1lIGxhbmVzIG9ubHk7IGRhZW1vbi9pbnRlcnJ1cHQgY29udHJvbGxlciB0cmFmZmljIGlzIHNlcGFyYXRlIGV2aWRlbmNlJ30KICAgIGlmIChhcmdzLm91dHB1dCAvICd0aW1lb3V0cy9yZXBvcnQuanNvbicpLmV4aXN0cygpOgogICAgICAgIHJlcG9ydCA9IGpzb24ubG9hZHMoKGFyZ3Mub3V0cHV0IC8gJ3RpbWVvdXRzL3JlcG9ydC5qc29uJykucmVhZF9ieXRlcygpKQogICAgICAgIGV4cGVjdGVkWyd0aW1lb3V0cyddID0gW3JvdyBmb3Igcm93IGluIHJlcG9ydFsncmVjb3JkcyddIGlmIHJvd1snaW1wbGVtZW50YXRpb24nXSA9PSAncHl0aG9uJ10KICAgIGlmIChhcmdzLm91dHB1dCAvICdmYXVsdC9yZXBvcnQuanNvbicpLmV4aXN0cygpOgogICAgICAgIHJlcG9ydCA9IGpzb24ubG9hZHMoKGFyZ3Mub3V0cHV0IC8gJ2ZhdWx0L3JlcG9ydC5qc29uJykucmVhZF9ieXRlcygpKQogICAgICAgIGV4cGVjdGVkWydmYXVsdCddID0gW3JvdyBmb3Igcm93IGluIHJlcG9ydFsnc2NlbmFyaW9zJ10gaWYgcm93WydvcmlnaW5hbCddXQogICAgaWYgKGFyZ3Mub3V0cHV0IC8gJ3BhcmFtcy9yZXBvcnQuanNvbicpLmV4aXN0cygpOgogICAgICAgIHJlcG9ydCA9IGpzb24ubG9hZHMoKGFyZ3Mub3V0cHV0IC8gJ3BhcmFtcy9yZXBvcnQuanNvbicpLnJlYWRfYnl0ZXMoKSkKICAgICAgICBleHBlY3RlZFsncGFyYW1zJ10gPSBbcm93IGZvciByb3cgaW4gcmVwb3J0WydzY2VuYXJpb3MnXSBpZiByb3dbJ3NvdXJjZSddXQogICAgaWYgbm90IGZhaWx1cmVzOgogICAgICAgIGRhZW1vbiA9IGpzb24ubG9hZHMoKGFyZ3Mub3V0cHV0IC8gJ2RhZW1vbi9yZXBvcnQuanNvbicpLnJlYWRfYnl0ZXMoKSkKICAgICAgICBhc3NlcnQgZGFlbW9uWydwYXNzZWQnXSBhbmQgbGVuKGRhZW1vblsnc2NlbmFyaW9zJ10pID09IDYgYW5kIGxlbihkYWVtb25bJ3N0YXJ0dXBfZXJyb3JzJ10pID09IDMKICAgICAgICBhc3NlcnQgbGVuKGV4cGVjdGVkWyd0aW1lb3V0cyddKSA9PSAxMCBhbmQgbGVuKGV4cGVjdGVkWydmYXVsdCddKSA9PSAzMCBhbmQgbGVuKGV4cGVjdGVkWydwYXJhbXMnXSkgPT0gMTQKICAgICAgICBhc3NlcnQganNvbi5sb2FkcygoYXJncy5vdXRwdXQgLyAnZmF1bHQvcmVwb3J0Lmpzb24nKS5yZWFkX2J5dGVzKCkpWydwYXNzZWQnXQogICAgICAgIGFzc2VydCBqc29uLmxvYWRzKChhcmdzLm91dHB1dCAvICd0aW1lb3V0cy9yZXBvcnQuanNvbicpLnJlYWRfYnl0ZXMoKSlbJ3Bhc3NlZCddCiAgICAgICAgYXNzZXJ0IGpzb24ubG9hZHMoKGFyZ3Mub3V0cHV0IC8gJ3BhcmFtcy9yZXBvcnQuanNvbicpLnJlYWRfYnl0ZXMoKSlbJ3Bhc3NlZCddCiAgICBzYXZlKGFyZ3Mub3V0cHV0IC8gJ3NvdXJjZS1vYnNlcnZhdGlvbnMuanNvbicsIGV4cGVjdGVkKQogICAgc2F2ZShhcmdzLm91dHB1dCAvICdhY3R1YWwtZW5kcG9pbnQtY2FwdHVyZXMuanNvbicsIGNhbGxzKQogICAgc2F2ZShhcmdzLm91dHB1dCAvICdvcmlnaW5hbC10b29scy5qc29uJywgeydyZXN1bHRzJzogcmVzdWx0cywgJ2ZhaWx1cmVzJzogZmFpbHVyZXN9KQogICAgZm9yIHBhdGggaW4gYXJncy5vdXRwdXQucmdsb2IoJyonKToKICAgICAgICBpZiBwYXRoLmlzX2ZpbGUoKSBhbmQgcGF0aC5uYW1lIGluIFsnaWRfcnNhJywgJ2lkX2VjZHNhJ106CiAgICAgICAgICAgIHBhdGgudW5saW5rKCkKICAgIGFzc2VydCBhbGwoc2hhKGFyZ3Mucm9vdCAvIG5hbWUpID09IHBpbiBmb3IgbmFtZSwgcGluIGluIHBpbnMuaXRlbXMoKSkKICAgIHNhdmUoYXJncy5vdXRwdXQgLyAnY2FwdHVyZS1yZWNlaXB0Lmpzb24nLCB7J3Bhc3NlZCc6IG5vdCBmYWlsdXJlcywgJ29yaWdpbmFsX2Fzc2VydGlvbnNfY29tcGxldGVkJzogbm90IGZhaWx1cmVzLCAnc291cmNlX3BpbnMnOiBwaW5zLCAnc291cmNlX3VuY2hhbmdlZCc6IFRydWUsICdkYWVtb25fc2NlbmFyaW9zJzogNiwgJ3N0YXJ0dXBfbmVnYXRpdmVfY2FzZXMnOiAzLCAnaW50ZXJydXB0ZWRfc2VuZF9zY2VuYXJpb3MnOiAxLCAnaW50ZXJydXB0ZWRfaHR0cF9zY2VuYXJpb3MnOiAxLCAndGltZW91dF9zY2VuYXJpb3MnOiAxMCwgJ3RpbWVvdXRfZXhlY3V0aW9ucyc6IDIwLCAnZmF1bHRfY2FzZXMnOiAxNSwgJ2ZhdWx0X3Jvd3MnOiA2MCwgJ3BhcmFtc19jYXNlcyc6IDcsICdwYXJhbXNfcm93cyc6IDI4LCAncHJpdmF0ZV9rZXlzX2FyY2hpdmVkJzogRmFsc2UsICdleHBlY3RlZF9uYXRpdmVfZGFlbW9uX29ic2VydmF0aW9ucyc6IEZhbHNlLCAnZnJlc2hfb3JkaW5hcnlfb3JfbG9nZ2luZ19zb3VyY2VfdHJhZmZpYyc6IEZhbHNlfSkKICAgIGZpbGVzID0ge3N0cihwYXRoLnJlbGF0aXZlX3RvKGFyZ3Mub3V0cHV0KSk6IHsnYnl0ZXMnOiBwYXRoLnN0YXQoKS5zdF9zaXplLCAnc2hhMjU2Jzogc2hhKHBhdGgpfSBmb3IgcGF0aCBpbiBhcmdzLm91dHB1dC5yZ2xvYignKicpIGlmIHBhdGguaXNfZmlsZSgpfQogICAgc2F2ZShhcmdzLm91dHB1dCAvICdtYW5pZmVzdC5qc29uJywgeyd2ZXJzaW9uJzogMSwgJ2ZpbGVzJzogZmlsZXN9KQogICAgcHJpbnQoanNvbi5kdW1wcyh7J3Bhc3NlZCc6IG5vdCBmYWlsdXJlcywgJ2ZhbWlsaWVzJzogbGVuKHJlc3VsdHMpLCAnZmFpbHVyZXMnOiBmYWlsdXJlc30pKQogICAgaWYgZmFpbHVyZXM6CiAgICAgICAgcmFpc2UgU3lzdGVtRXhpdCgxKQoKCmlmIF9fbmFtZV9fID09ICdfX21haW5fXyc6CiAgICBtYWluKCkK
+
+        CAPTURE
+
+        base64 --decode <<''PINS'' > "$UPLOADER_SIBLING_PROOF/source-pins.json"
+
+        ewogICJydXN0L3Rvb2xzL2NoZWNrX3VwbG9hZGVyX2RhZW1vbi5weSI6ICIxMjc2ZTgwMWVhNzljZDY4MTQyZDM2MmM0ZTMxZWI2YzNjZDU4MjA0MDRjM2UxNTAzY2FiM2JjMTkzNTg2MDFjIiwKICAicnVzdC90b29scy9jaGVja191cGxvYWRlcl9pbnRlcnJ1cHRlZC5weSI6ICJjMDg2NzZhZDdiNjhjMDYzZTQyN2Y4Y2M5MGUyZDlmZDZlZGIwYzQzNjlmODcwNGIzOWY2ZTQ1OGJkYjZiZjIzIiwKICAicnVzdC90b29scy9jaGVja191cGxvYWRlcl9odHRwX2ludGVycnVwdGVkLnB5IjogIjk0MzE4YTc5NmQ2ZjFiMmJiNzVjOGU4YjVkNWJmMjkwZmE5MGJmMDM1ZWZiMmU1NDFiN2NiMmVkZjllZGRjNzciLAogICJydXN0L3Rvb2xzL2NoZWNrX3VwbG9hZGVyX3RpbWVvdXRzLnB5IjogIjEwYTQ0N2IwNjcyYmVjZDk3OGYwNjQ3YmYxOGIzMzU0MTNiMzlkNjgyNmFlZDYwOTY2YmY2NDRjOWQ1ZDI1ZTEiLAogICJydXN0L3Rvb2xzL2NoZWNrX3VwbG9hZGVyX2xvZ19mYXVsdC5weSI6ICI0ZGFhNzM5NmRiNjkyNzQxNGNhNDA4ODcwNTM5MGU3NGE1ZjIyNjQ4MjkzODZkYjRlNzQxODliYTU0NmVmM2ZjIiwKICAicnVzdC90b29scy9jaGVja19wYXJhbXNfc3RyaW5nX3VwbG9hZGVyLnB5IjogIjY0NDQ0NDVkYjg3ZjFlYTEwOWVlYjdjZmU4YzVkYTdmMGU5OGU3ZDVlNTc5MzRkMjAxZDhmYjZiMzM0ZmU1ODAiLAogICJydXN0L3Rvb2xzL2NoZWNrX2ludGVycnVwdGVkX3NlbmQucHkiOiAiMWQ5MjU5MzA4ZmJmMzI2ZDI5MTRhYjQwM2JiY2Q2YTgyY2M3YTg4Y2JkZTdmYzBhNmEzZmNkMzE2YjExNDk1MSIsCiAgInJ1c3QvdG9vbHMvZml4dHVyZXMvaHR0cC9pbnRlcnJ1cHRlZF9yZWFkLmMiOiAiOGQ5NTljMWY5NmFiMDU0MDM3YzdhNDdlYzg4ZmE0ZTVhZDE5MmVhZmMxNzkyYzVhZTlkMjQzYWNhZDAwZWI1OSIsCiAgInJ1c3QvdG9vbHMvem1xX3NlbmRfYm91bmRhcnkuYyI6ICI1MTU3Mzg4ZWY3YWUzYjlhMDI2ZjEzOGIzNGVjN2Y4Y2VkNDhkNzZkZTBlMjAwNTRiMmVmMGI5YjU3MjhlZGRkIiwKICAicnVzdC90b29scy9vcmlnaW5hbF9wYXJhbXNfYmluZGluZy5weSI6ICJiNWZhMTBkYTk2YWVjY2E2M2JhZmVmMGMwM2Y2ZGRmOWZlNWZkZTg5NjgzZjEwZTcwNzQyYjRlOTE5YzM4NDU3IiwKICAicnVzdC90b29scy9idWlsZF9wYXJhbXNfcHl0aG9uLnB5IjogIjdhMWExNmE2MzYxOTBkM2JjMmE4Y2VkZDRkODE1NjdmMGM2ZGI2YjM4MmMzM2NiZTAzZTNiYTQwYTQzYTU1NTIiLAogICJydXN0L3Rvb2xzL2J1aWxkX21zZ3FfcHl0aG9uLnB5IjogIjgxZTMxYjQyMTMzMzc5NGMyMTAxZDJkM2RmYjUyMjgwYTAzMWU0YTM1YjY5YTlkYzdmNWY1M2I4NzYyZDhjMTgiLAogICJydXN0L2NyYXRlcy91cGxvYWRlci9leGFtcGxlcy91cGxvYWRlcl9sb2dfZmF1bHQucnMiOiAiYTQzMDlhYTM5MDNlZWFhOWNlNGNhNTRjYmNhZWM0NzlkZjY0MjM3YTQ0ZjJkNWU5ZTM3NzE0YzNiYjE4ZTEyMCIsCiAgInJ1c3QvY3JhdGVzL3VwbG9hZGVyL2V4YW1wbGVzL3VwbG9hZGVyX3RyYWNlLnJzIjogIjhlYWYyNTQ4NWFhZGFiNjE3Mzk2ODVlMDUwOGEzYjJiMDI3OWU2ZjkwYTRhMTNmNmEyM2I2ODNlMjNkOTk4YWUiLAogICJydXN0L3Rvb2xzL2NoZWNrX3VwbG9hZGVyLnB5IjogImI5MGE0MWIxM2VkMWE5YTk5ZTIzYzc3MWZlYWVhM2FkOTdmZjk5OTljMzk0ZTMwOWU5ZDcxNGY2OWYxMGEyOTEiLAogICJydXN0L3Rvb2xzL2NoZWNrX3VwbG9hZGVyX2xvZ2dpbmcucHkiOiAiYmRhYzlmMDBiYmIwNDM0YTgxZjUzNWFhYzdhYTFiOTUwMDdmZDgwYTI4YWE1MmI0ZWRlMTA2MGJiMTdmZjYzNyIsCiAgInJ1c3QvdG9vbHMvbG9nbWVzc2FnZWRfbmF0aXZlLnB5IjogIjMzNjZlNjRlYjM2YjBiYWQ5YjEwMDIzYzQ2MjE3ZjYxYzY2YWFlMGZlODIzMTIwYWUyM2Q1OTdkMjQ1NmM4NzIiLAogICJydXN0L3Rvb2xzL2xvZ21lc3NhZ2VkX3JlZmVyZW5jZS5weSI6ICJjZTZkNjc2NDkxMWRhYWFiMWU5ZTVjZTcwMTUyZDlmNWVmYzliNWVhMDA2NDgyMDY0YmI4MTkyZDM2ZjczNWUzIiwKICAib3BlbnBpbG90L3N5c3RlbS9sb2dnZXJkL3VwbG9hZGVyLnB5IjogIjhhZjgwYzI0MTFhMzMwM2Q5ZjNlOWUyMjU1ZGQwNzMyMTc3ZDlhZjI4MGFiYWI2ZTdmNTY4Yzc1NzZlM2EwMmUiLAogICJvcGVucGlsb3Qvc3lzdGVtL2xvZ2dlcmQveGF0dHJfY2FjaGUucHkiOiAiMzViNjQ2MGNlMGQxZWE5OTA2NmQ4NmQ2ZTgxZWYxMGVkY2Q5ODlhMmYwOTY3ZjA3YThiYWUzOTU3NzIwZTYzMSIsCiAgIm9wZW5waWxvdC9jb21tb24vYXBpLnB5IjogIjEwYzZiMDY3MzY1NGE3OThkN2QzMjU5MWRjNWI2N2YzOTY1MGFlZDA4NmI4MTJhZmY4ZmY2MmFlNjRkYTkxNzciLAogICJvcGVucGlsb3QvY29tbW9uL3V0aWxzLnB5IjogImIxY2M2OGI2M2NmZjEzODZiYTM5N2MwY2M1MjdkYmIzOGZiNTBiMTU0MDQzZmZjYjA2NmVkN2FjY2U2NWVjODMiLAogICJvcGVucGlsb3QvY29tbW9uL2xvZ2dpbmdfZXh0cmEucHkiOiAiY2U5YjNiM2Q4NDk4ZDc2ZTFjNGMwMzUyYTNlOThlNzI3NTliYjdmMzY3ZmY4NjI5YzEzMjljNDYwNDA1OTVjMyIKfQo=
+
+        PINS
+
+        printf ''e2e2f0c8cb764f89afbb3769ad499e859cc0c3b8481a60148f865f7d8a62a6ca  %s/capture_original_siblings.py
+
+        '' "$UPLOADER_SIBLING_PROOF" | sha256sum --check --strict
+
+        printf ''375e4a2597d335422c2e0cb82de644950479c271c631d393fe0301c5083d7c06  %s/source-pins.json
+
+        '' "$UPLOADER_SIBLING_PROOF" | sha256sum --check --strict
+
+        bindings=("$RUNNER_TEMP"/uploader-sibling-params/params_pyx*.so)
+
+        test "${#bindings[@]}" = 1
+
+        rust/tools/check-disk-space --path "$RUNNER_TEMP" --growth-mib 512
+
+        timeout --signal=TERM --kill-after=10s 1200s python "$UPLOADER_SIBLING_PROOF/capture_original_siblings.py" --root
+        "$GITHUB_WORKSPACE" --binary "$UPLOADER_SIBLING_PROOF/bin/openpilot-uploader" --interrupted "$UPLOADER_SIBLING_PROOF/bin/uploader-send-interrupted"
+        --trace "$GITHUB_WORKSPACE/rust/target/debug/examples/uploader_trace" --fault "$GITHUB_WORKSPACE/rust/target/debug/examples/uploader_log_fault"
+        --collector "$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged" --binding "${bindings[0]}" --pins "$UPLOADER_SIBLING_PROOF/source-pins.json"
+        --output "$UPLOADER_SIBLING_PROOF/observations" > "$UPLOADER_SIBLING_PROOF/capture.stdout" 2> "$UPLOADER_SIBLING_PROOF/capture.stderr"
+
+        sha256sum --check --strict "$UPLOADER_SIBLING_PROOF/binaries.before.sha256" > "$UPLOADER_SIBLING_PROOF/binaries.after.txt"
+
+        python -m pip freeze > "$UPLOADER_SIBLING_PROOF/providers.after.txt"
+
+        cmp "$UPLOADER_SIBLING_PROOF/providers.before.txt" "$UPLOADER_SIBLING_PROOF/providers.after.txt"
+
+        '
+    - name: Exclude private keys and build products from bounded evidence
+      if: always()
+      shell: bash
+      run: "set -euo pipefail\nif [ -d \"$UPLOADER_SIBLING_PROOF/observations\" ]; then\n  find \"$UPLOADER_SIBLING_PROOF/observations\"\
+        \ -type f \\( -name id_rsa -o -name id_ecdsa \\) -delete\nfi\nrm -rf \"$UPLOADER_SIBLING_PROOF/bin\" \"$UPLOADER_SIBLING_PROOF/send-wrap.o\"\
+        \n"
+    - name: Retain original assertions, raw HTTP/log packets and Python source observations
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: uploader-sibling-original-296
+        path: ${{ runner.temp }}/uploader-sibling-original-296/
+        include-hidden-files: true
+        retention-days: 14
+        if-no-files-found: warn
