@@ -1,0 +1,148 @@
+name: 296 native new UTF16 UTF32 Punycode payloads
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/changed-files-codec-payloads-native-296-once.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      EXPECTED_SOURCE: 0dbc9601c71fd9b31cc7a582a70abe295b1e0d2f
+      ORIGINAL_SOURCE_SHA: 0e38b0ea419ac059a2e0628ca6422eac45af81e4
+      ORIGINAL_WORKFLOW_SHA: 662cf5803b3a36ec725c89c591afd3e065a5188f
+      ORIGINAL_ARTIFACT_ID: '12446034737'
+      ORIGINAL_ARTIFACT_BYTES: '9888'
+      ORIGINAL_ARTIFACT_SHA256: 2cd8e111b92ec2b674738504b75164b5ba006950ee6d9c3ad47aa62f399721d9
+      ORIGINAL_MANIFEST_SHA256: 03ff78c12a96439dfac4555bf5309f006549574753db51e53930d4e24a8d6263
+      CARGO_INCREMENTAL: '0'
+      RUST_BACKTRACE: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: 0dbc9601c71fd9b31cc7a582a70abe295b1e0d2f
+        persist-credentials: false
+    - name: Fresh source and isolated native target
+      shell: bash
+      run: 'set -euo pipefail
+
+        export CODEC_PAYLOAD_BASE="$RUNNER_TEMP/changed-files-codec-payloads-native-296"
+
+        export CARGO_TARGET_DIR="$RUNNER_TEMP/changed-files-codec-payloads-native-296-target"
+
+        printf ''CODEC_PAYLOAD_BASE=%s\nCARGO_TARGET_DIR=%s\n'' "$CODEC_PAYLOAD_BASE" "$CARGO_TARGET_DIR" >> "$GITHUB_ENV"
+
+        mkdir "$CODEC_PAYLOAD_BASE" "$CARGO_TARGET_DIR"
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        printf ''workflow_head=%s\nsource_commit=%s\n'' "$GITHUB_SHA" "$EXPECTED_SOURCE" > "$CODEC_PAYLOAD_BASE/source.txt"
+
+        git status --porcelain=v1 > "$CODEC_PAYLOAD_BASE/source.before"
+
+        test ! -s "$CODEC_PAYLOAD_BASE/source.before"
+
+        sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet /usr/local/.ghcup
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 8192
+
+        sudo apt-get update -qq
+
+        sudo apt-get install -y --no-install-recommends capnproto libcapnp-dev libzmq5 g++ strace
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        rustc +1.94.0 -Vv > "$CODEC_PAYLOAD_BASE/rustc.txt"
+
+        dpkg-query -W libc6 libc-bin > "$CODEC_PAYLOAD_BASE/native-codec-packages.txt"
+
+        '
+    - name: Admit new immutable original artifact
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: 'set -euo pipefail
+
+        base64 --decode <<''PAYLOAD'' > "$CODEC_PAYLOAD_BASE/audit-native.py"
+
+        IiIiSG9zdGVkIG5hdGl2ZSBuZXctZG9tYWluIGFkbWlzc2lvbi9hdWRpdDsgb25seSBzYXZlZCBkYXRhIGFuZCBzb3VyY2UgcmVhZHMuIiIiCmZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aAppbXBvcnQgaGFzaGxpYixqc29uLG9zLHJlLHN1YnByb2Nlc3Msc3lzLHppcGZpbGUKQj1QYXRoKG9zLmVudmlyb25bJ0NPREVDX1BBWUxPQURfQkFTRSddKTtSPVBhdGgob3MuZW52aXJvblsnR0lUSFVCX1dPUktTUEFDRSddKQpGQU1JTElFUz17J3V0ZjE2JzoxMDIsJ3V0ZjMyJzoxMDUsJ3B1bnljb2RlJzo0NX0KUElOUz17J3Rvb2xzL2NpL2NoZWNrX2NoYW5nZWRfZmlsZXMucHknOic2YmNiMTRmM2E2ZDVkNGU4ODVjNjU1ZTIyZmVkMjNhMWVjZjIxOTliMDQ4Y2QzZGE5NWVmNTliMjc5NWZhZDg3JywndG9vbHMvY2kvdGVzdHMvdGVzdF9jaGFuZ2VkX2ZpbGVzLnB5JzonY2Q5YTIxMWQwNzZkNjkzOWI3NjQ5ODQ5MjEyZWEyMWM1MmU3ZTA4OTdmYTZkMjUxZTgyYjBiMjgwNWUwODI0Mid9CkNBUFRVUkVfU0hBPSdlMGY2MzRiZDZkZWRlNDJlMzNlNjIxOGQxODk4OTUyM2QzYzA0NjRiYzY1OTkwMDk2YWUxNzhkYWU4N2Q1NjU1JwpkZWYgc2hhKHApOnJldHVybiBoYXNobGliLnNoYTI1NihwLnJlYWRfYnl0ZXMoKSkuaGV4ZGlnZXN0KCkKZGVmIGRpZ2VzdChyYXcpOnJldHVybiBoYXNobGliLnNoYTI1NihyYXcpLmhleGRpZ2VzdCgpCmRlZiBzYXZlKG4sdik6KEIvbikud3JpdGVfdGV4dChqc29uLmR1bXBzKHYsaW5kZW50PTIpKydcbicpCmRlZiBnaXQoKmFyZ3MpOnJldHVybiBzdWJwcm9jZXNzLmNoZWNrX291dHB1dChbJ2dpdCcsKmFyZ3NdLGN3ZD1SKQpkZWYgc291cmNlcygpOgogYXNzZXJ0IGdpdCgncmV2LXBhcnNlJywnSEVBRCcpLmRlY29kZSgpLnN0cmlwKCk9PW9zLmVudmlyb25bJ0VYUEVDVEVEX1NPVVJDRSddCiBhc3NlcnQgZ2l0KCdzdGF0dXMnLCctLXBvcmNlbGFpbj12MScpPT1iJycKIGZvciBuLHBpbiBpbiBQSU5TLml0ZW1zKCk6YXNzZXJ0IHNoYShSL24pPT1waW4sbgogYXNzZXJ0IChSLydydXN0L0NhcmdvLmxvY2snKS5yZWFkX2J5dGVzKCk9PWdpdCgnc2hvdycsJ0hFQUQ6cnVzdC9DYXJnby5sb2NrJykKZGVmIHNvdXJjZV9pbnB1dHMoKToKIG5hbWVzPXNldChuIGZvciBuIGluIGdpdCgnbHMtZmlsZXMnLCcteicsJ3J1c3QnLCcuY2FyZ28nLCdydXN0LXRvb2xjaGFpbi50b21sJykuZGVjb2RlKCkuc3BsaXQoJ1wwJykgaWYgbil8c2V0KFBJTlMpCiByZXR1cm4ge246c2hhKFIvbikgZm9yIG4gaW4gc29ydGVkKG5hbWVzKSBpZiAoUi9uKS5pc19maWxlKCl9CmRlZiBhZG1pdCgpOgogc291cmNlcygpO3NhdmUoJ3NvdXJjZS1pbnB1dHMuYmVmb3JlLmpzb24nLHNvdXJjZV9pbnB1dHMoKSkKIHA9Qi8nb3JpZ2luYWwuemlwJzthc3NlcnQgcC5zdGF0KCkuc3Rfc2l6ZT09aW50KG9zLmVudmlyb25bJ09SSUdJTkFMX0FSVElGQUNUX0JZVEVTJ10pIGFuZCBzaGEocCk9PW9zLmVudmlyb25bJ09SSUdJTkFMX0FSVElGQUNUX1NIQTI1NiddCiBleHBlY3RlZD17J2NhcHR1cmUtb3JpZ2luYWwucHknLCdjYXB0dXJlLnN0ZG91dCcsJ2NhcHR1cmUuc3RkZXJyJywncHl0aG9uLXByb3ZpZGVyLnR4dCcsJ3NvdXJjZS50eHQnLCdzb3VyY2UuYmVmb3JlJywnc291cmNlLmFmdGVyJywnb3JpZ2luYWwtbWFuaWZlc3Quc2hhMjU2JywnYXJ0aWZhY3Qtc2l6ZS1taWIudHh0J318eydvYnNlcnZhdGlvbnMvJyt4KycuanNvbicgZm9yIHggaW4gWyd1dGYxNicsJ3V0ZjMyJywncHVueWNvZGUnLCdyZWNlaXB0JywnbWFuaWZlc3QnXX0KIHdpdGggemlwZmlsZS5aaXBGaWxlKHApIGFzIHo6CiAgYXNzZXJ0IHNldCh6Lm5hbWVsaXN0KCkpPT1leHBlY3RlZCBhbmQgbGVuKHouaW5mb2xpc3QoKSk9PWxlbihleHBlY3RlZCkgYW5kIHoudGVzdHppcCgpIGlzIE5vbmUKICBhc3NlcnQgc3VtKHguZmlsZV9zaXplIGZvciB4IGluIHouaW5mb2xpc3QoKSk8NDw8MjAKICBhc3NlcnQgZGlnZXN0KHoucmVhZCgnY2FwdHVyZS1vcmlnaW5hbC5weScpKT09Q0FQVFVSRV9TSEEKICBhc3NlcnQgei5yZWFkKCdzb3VyY2UudHh0Jyk9PSgnd29ya2Zsb3dfaGVhZD0nK29zLmVudmlyb25bJ09SSUdJTkFMX1dPUktGTE9XX1NIQSddKydcbnNvdXJjZV9jb21taXQ9Jytvcy5lbnZpcm9uWydPUklHSU5BTF9TT1VSQ0VfU0hBJ10rJ1xuJykuZW5jb2RlKCkKICBhc3NlcnQgei5yZWFkKCdzb3VyY2UuYmVmb3JlJyk9PXoucmVhZCgnc291cmNlLmFmdGVyJyk9PWInJwogIHJhdz16LnJlYWQoJ29ic2VydmF0aW9ucy9tYW5pZmVzdC5qc29uJyk7cGluPW9zLmVudmlyb25bJ09SSUdJTkFMX01BTklGRVNUX1NIQTI1NiddO2Fzc2VydCBkaWdlc3QocmF3KT09cGluIGFuZCB6LnJlYWQoJ29yaWdpbmFsLW1hbmlmZXN0LnNoYTI1NicpLmRlY29kZSgpLnN0cmlwKCk9PXBpbgogIG1hbmlmZXN0PWpzb24ubG9hZHMocmF3KTthc3NlcnQgbWFuaWZlc3RbJ3NjaGVtYSddPT0xIGFuZCBzZXQobWFuaWZlc3RbJ2NvdW50cyddKT09c2V0KEZBTUlMSUVTKQogIGFzc2VydCBzZXQobWFuaWZlc3RbJ2ZpbGVzJ10pPT17eCsnLmpzb24nIGZvciB4IGluIFsndXRmMTYnLCd1dGYzMicsJ3B1bnljb2RlJywncmVjZWlwdCddfQogIGQ9Qi8nb3JpZ2luYWwnO2QubWtkaXIoKTsoZC8nbWFuaWZlc3QuanNvbicpLndyaXRlX2J5dGVzKHJhdykKICBmb3IgbixzZWFsIGluIG1hbmlmZXN0WydmaWxlcyddLml0ZW1zKCk6CiAgIHBheWxvYWQ9ei5yZWFkKCdvYnNlcnZhdGlvbnMvJytuKTthc3NlcnQgbGVuKHBheWxvYWQpPT1zZWFsWydieXRlcyddIGFuZCBkaWdlc3QocGF5bG9hZCk9PXNlYWxbJ3NoYTI1NiddOyhkL24pLndyaXRlX2J5dGVzKHBheWxvYWQpCiAgcmVjZWlwdD1qc29uLmxvYWRzKChkLydyZWNlaXB0Lmpzb24nKS5yZWFkX2J5dGVzKCkpO2Fzc2VydCByZWNlaXB0WydwYXNzZWQnXSBhbmQgbm90IHJlY2VpcHRbJ25hdGl2ZV9leGVjdXRpb24nXSBhbmQgbm90IHJlY2VpcHRbJ25hdGl2ZV9leHBlY3RlZF9kYXRhX3VzZWQnXSBhbmQgbm90IHJlY2VpcHRbJ3VuY2hhbmdlZF9wcmlvcl9kb21haW5zX3JlZXhlY3V0ZWQnXQogIGFzc2VydCByZWNlaXB0Wydzb3VyY2UnXT09b3MuZW52aXJvblsnT1JJR0lOQUxfU09VUkNFX1NIQSddIGFuZCByZWNlaXB0WydieXRlb3JkZXInXT09J2xpdHRsZScgYW5kIHJlY2VpcHRbJ3NvdXJjZV9waW5zJ109PVBJTlMKICBhc3NlcnQgcmVjZWlwdFsncHJvdmlkZXJzX2JlZm9yZSddPT1yZWNlaXB0Wydwcm92aWRlcnNfYWZ0ZXInXSBhbmQgcmVjZWlwdFsnY291bnRzJ109PW1hbmlmZXN0Wydjb3VudHMnXQogIGZvciBmYW1pbHksY291bnQgaW4gRkFNSUxJRVMuaXRlbXMoKToKICAgY29ycHVzPWpzb24ubG9hZHMoKGQvKGZhbWlseSsnLmpzb24nKSkucmVhZF9ieXRlcygpKTthc3NlcnQgY29ycHVzWydmYW1pbHknXT09ZmFtaWx5IGFuZCBsZW4oY29ycHVzWydyb3dzJ10pPT1jb3VudAogICBhY2NlcHRlZD1zdW0oclsnYWNjZXB0ZWQnXSBmb3IgciBpbiBjb3JwdXNbJ3Jvd3MnXSk7YXNzZXJ0IGFjY2VwdGVkPj0xMCBhbmQgY291bnQtYWNjZXB0ZWQ+PTMKICAgYXNzZXJ0IG1hbmlmZXN0Wydjb3VudHMnXVtmYW1pbHldPT17J3Jvd3MnOmNvdW50LCdhY2NlcHRlZCc6YWNjZXB0ZWQsJ3JlamVjdGVkJzpjb3VudC1hY2NlcHRlZH0KICAgYXNzZXJ0IGxlbih7clsnaWQnXSBmb3IgciBpbiBjb3JwdXNbJ3Jvd3MnXX0pPT1jb3VudAogc2F2ZSgnb3JpZ2luYWwtaW5wdXRzLmJlZm9yZS5qc29uJyx7c3RyKHAucmVsYXRpdmVfdG8oQikpOnNoYShwKSBmb3IgcCBpbiBbQi8nb3JpZ2luYWwuemlwJywqKEIvJ29yaWdpbmFsJykuaXRlcmRpcigpXX0pCmRlZiBkaXNjb3ZlcigpOgogc291cmNlcygpO3Jvd3M9W2pzb24ubG9hZHMoeCkgZm9yIHggaW4gKEIvJ3Rlc3RzLWJ1aWxkLmpzb25sJykucmVhZF90ZXh0KCkuc3BsaXRsaW5lcygpXQogZm91bmQ9W3JbJ2V4ZWN1dGFibGUnXSBmb3IgciBpbiByb3dzIGlmIHIuZ2V0KCdyZWFzb24nKT09J2NvbXBpbGVyLWFydGlmYWN0JyBhbmQgci5nZXQoJ2V4ZWN1dGFibGUnKSBhbmQgclsndGFyZ2V0J11bJ25hbWUnXT09J2NoYW5nZWRfZmlsZXNfY29kZWNfcGF5bG9hZHMnIGFuZCByWyd0YXJnZXQnXVsna2luZCddPT1bJ3Rlc3QnXSBhbmQgclsncHJvZmlsZSddWyd0ZXN0J11dCiBhc3NlcnQgbGVuKGZvdW5kKT09MTtleGU9UGF0aChmb3VuZFswXSk7YXNzZXJ0IGV4ZS5pc19maWxlKCkgYW5kIGV4ZS5pc19yZWxhdGl2ZV90byhQYXRoKG9zLmVudmlyb25bJ0NBUkdPX1RBUkdFVF9ESVInXSkpCiB3aXRoIFBhdGgob3MuZW52aXJvblsnR0lUSFVCX0VOViddKS5vcGVuKCdhJykgYXMgb3V0Om91dC53cml0ZSgnQVNUX1BBWUxPQURfRVhFPScrc3RyKGV4ZSkrJ1xuJykKIHNhdmUoJ2V4ZWN1dGFibGUuanNvbicseyd0YXJnZXQnOidjaGFuZ2VkX2ZpbGVzX2NvZGVjX3BheWxvYWRzJywnZXhlY3V0YWJsZSc6c3RyKGV4ZSl9KQogcHJvdmlkZXJzPXtleGV9CiBmb3Igcm9vdCBpbiBbJy9saWIveDg2XzY0LWxpbnV4LWdudScsJy91c3IvbGliL3g4Nl82NC1saW51eC1nbnUnXToKICBwcm92aWRlcnMuYWRkKFBhdGgocm9vdCkvJ2xpYmMuc28uNicpO2c9UGF0aChyb290KS8nZ2NvbnYnO2Fzc2VydCBnLmlzX2RpcigpO3Byb3ZpZGVycy51cGRhdGUocCBmb3IgcCBpbiBnLnJnbG9iKCcqJykgaWYgcC5pc19maWxlKCkpCiBsaW5rZWQ9c3VicHJvY2Vzcy5jaGVja19vdXRwdXQoWycvdXNyL2Jpbi9sZGQnLHN0cihleGUpXSx0ZXh0PVRydWUpOyhCLyduYXRpdmUtbGlua2VkLWxpYnJhcmllcy50eHQnKS53cml0ZV90ZXh0KGxpbmtlZCkKIGZvciBuIGluIHJlLmZpbmRhbGwocicoL1teXHMoKV0rKScsbGlua2VkKToKICBwPVBhdGgobik7YXNzZXJ0IHAuaXNfZmlsZSgpO3Byb3ZpZGVycy5hZGQocCkKIHNhdmUoJ25hdGl2ZS1pbnB1dHMuYmVmb3JlLmpzb24nLHtzdHIocCk6c2hhKHApIGZvciBwIGluIHNvcnRlZChwcm92aWRlcnMpfSkKZGVmIGZpbmlzaCgpOgogc291cmNlcygpO2N1cnJlbnQ9c291cmNlX2lucHV0cygpO2Fzc2VydCBjdXJyZW50PT1qc29uLmxvYWRzKChCLydzb3VyY2UtaW5wdXRzLmJlZm9yZS5qc29uJykucmVhZF9ieXRlcygpKTtzYXZlKCdzb3VyY2UtaW5wdXRzLmFmdGVyLmpzb24nLGN1cnJlbnQpCiBmb3Iga2luZCBpbiBbJ25hdGl2ZScsJ29yaWdpbmFsJ106CiAgcGlucz1qc29uLmxvYWRzKChCLyhraW5kKyctaW5wdXRzLmJlZm9yZS5qc29uJykpLnJlYWRfYnl0ZXMoKSk7YXNzZXJ0IGFsbChzaGEoUGF0aChuKSBpZiBraW5kPT0nbmF0aXZlJyBlbHNlIEIvbik9PXYgZm9yIG4sdiBpbiBwaW5zLml0ZW1zKCkpO3NhdmUoa2luZCsnLWlucHV0cy5hZnRlci5qc29uJyxwaW5zKQogYXNzZXJ0IChCLydzb3VyY2UuYmVmb3JlJykucmVhZF9ieXRlcygpPT0oQi8nc291cmNlLmFmdGVyJykucmVhZF9ieXRlcygpPT1iJycKIGV4ZT1qc29uLmxvYWRzKChCLydleGVjdXRhYmxlLmpzb24nKS5yZWFkX2J5dGVzKCkpWydleGVjdXRhYmxlJ107dHJhY2U9KEIvJ25hdGl2ZS5leGVjdmUnKS5yZWFkX3RleHQoKTthc3NlcnQgJ2V4ZWN2ZWF0KCcgbm90IGluIHRyYWNlCiBjYWxscz1beCBmb3IgeCBpbiB0cmFjZS5zcGxpdGxpbmVzKCkgaWYgJ2V4ZWN2ZSgnIGluIHggb3IgJzwuLi4gZXhlY3ZlIHJlc3VtZWQ+JyBpbiB4XTthc3NlcnQgbGVuKGNhbGxzKT09MQogbT1yZS5zZWFyY2gocidcYmV4ZWN2ZVwoIihbXiJcXF0rKSInLGNhbGxzWzBdKTthc3NlcnQgbSBhbmQgbVsxXT09ZXhlIGFuZCBjYWxsc1swXS5yc3RyaXAoKS5lbmRzd2l0aCgnPSAwJykKIHN0YXR1cz0oQi8nbmF0aXZlLnN0YXR1cycpLnJlYWRfdGV4dCgpLnN0cmlwKCkKIGlmIHN0YXR1cz09JzAnOmFzc2VydCAnMyBwYXNzZWQ7IDAgZmFpbGVkOyAwIGlnbm9yZWQ7IDAgbWVhc3VyZWQ7IDAgZmlsdGVyZWQgb3V0OycgaW4gKEIvJ25hdGl2ZS5zdGRvdXQnKS5yZWFkX3RleHQoKQogZm9yIG4gaW4gWydjbGlwcHkuc3RkZXJyJywndGVzdHMtYnVpbGQuc3RkZXJyJ106CiAgdD0oQi9uKS5yZWFkX3RleHQoKTthc3NlcnQgJ0ZpbmlzaGVkICcgaW4gdCBhbmQgJ2Vycm9yOicgbm90IGluIHQKIG1hbmlmZXN0PWpzb24ubG9hZHMoKEIvJ29yaWdpbmFsL21hbmlmZXN0Lmpzb24nKS5yZWFkX2J5dGVzKCkpO3N1bW1hcmllcz17fTttaXNzaW5nPVtdCiBmb3IgZmFtaWx5LGNvdW50IGluIEZBTUlMSUVTLml0ZW1zKCk6CiAgZXhwZWN0ZWQ9anNvbi5sb2FkcygoQi8nb3JpZ2luYWwnLyhmYW1pbHkrJy5qc29uJykpLnJlYWRfYnl0ZXMoKSlbJ3Jvd3MnXTtwYXRoPUIvJ2FjdHVhbCcvKGZhbWlseSsnLmpzb24nKQogIGlmIG5vdCBwYXRoLmlzX2ZpbGUoKTptaXNzaW5nLmFwcGVuZChmYW1pbHkpO2NvbnRpbnVlCiAgYWN0dWFsPWpzb24ubG9hZHMocGF0aC5yZWFkX2J5dGVzKCkpO2Fzc2VydCBhY3R1YWxbJ2ZhbWlseSddPT1mYW1pbHkgYW5kIGxlbihhY3R1YWxbJ3Jvd3MnXSk9PWNvdW50CiAgYXNzZXJ0IGFjdHVhbFsnb3JpZ2luYWxfbWFuaWZlc3Rfc2hhMjU2J109PW9zLmVudmlyb25bJ09SSUdJTkFMX01BTklGRVNUX1NIQTI1NiddIGFuZCBhY3R1YWxbJ29yaWdpbmFsX2ZpbGVfc2hhMjU2J109PW1hbmlmZXN0WydmaWxlcyddW2ZhbWlseSsnLmpzb24nXVsnc2hhMjU2J10KICBiYWQ9W10KICBmb3IgaSwoZSxhKSBpbiBlbnVtZXJhdGUoemlwKGV4cGVjdGVkLGFjdHVhbFsncm93cyddKSk6CiAgIGFzc2VydCAoZVsnaWQnXSxlWydjb2RlYyddLGVbJ3NvdXJjZV9oZXgnXSxlWydhY2NlcHRlZCddLGUuZ2V0KCd1dGY4X2hleCcpKT09KGFbJ2lkJ10sYVsnY29kZWMnXSxhWydzb3VyY2VfaGV4J10sYVsnb3JpZ2luYWxfYWNjZXB0ZWQnXSxhWydvcmlnaW5hbF91dGY4X2hleCddKQogICBtYXRjaD1ub3QgYVsnY2FwYWJpbGl0eV9lcnJvciddIGFuZCBhWyduYXRpdmVfYWNjZXB0ZWQnXT09ZVsnYWNjZXB0ZWQnXSBhbmQgYVsnbmF0aXZlX3V0ZjhfaGV4J109PWUuZ2V0KCd1dGY4X2hleCcpO2Fzc2VydCBhWydtYXRjaGVkJ109PW1hdGNoCiAgIGlmIG5vdCBtYXRjaDpiYWQuYXBwZW5kKHsnaW5kZXgnOmksJ29yaWdpbmFsJzplLCdhY3R1YWwnOmF9KQogIGFzc2VydCBhY3R1YWxbJ2RpZmZlcmVuY2VzJ109PWxlbihiYWQpCiAgc3VtbWFyaWVzW2ZhbWlseV09eydyb3dzJzpjb3VudCwnb3JpZ2luYWxfYWNjZXB0ZWQnOnN1bShlWydhY2NlcHRlZCddIGZvciBlIGluIGV4cGVjdGVkKSwnZGlmZmVyZW5jZXMnOmJhZH0KIHBhc3NlZD1zdGF0dXM9PScwJyBhbmQgbm90IG1pc3NpbmcgYW5kIG5vdCBhbnkodlsnZGlmZmVyZW5jZXMnXSBmb3IgdiBpbiBzdW1tYXJpZXMudmFsdWVzKCkpCiBzYXZlKCdmaW5hbC1yZWNlaXB0Lmpzb24nLHsncGFzc2VkJzpwYXNzZWQsJ3NvdXJjZSc6b3MuZW52aXJvblsnRVhQRUNURURfU09VUkNFJ10sJ2N1cnJlbnRfbG9ja19zaGEyNTYnOnNoYShSLydydXN0L0NhcmdvLmxvY2snKSwnb3JpZ2luYWxfc291cmNlJzpvcy5lbnZpcm9uWydPUklHSU5BTF9TT1VSQ0VfU0hBJ10sJ29yaWdpbmFsX3dvcmtmbG93Jzpvcy5lbnZpcm9uWydPUklHSU5BTF9XT1JLRkxPV19TSEEnXSwnb3JpZ2luYWxfYXJ0aWZhY3QnOm9zLmVudmlyb25bJ09SSUdJTkFMX0FSVElGQUNUX0lEJ10sJ29yaWdpbmFsX3ppcF9zaGEyNTYnOm9zLmVudmlyb25bJ09SSUdJTkFMX0FSVElGQUNUX1NIQTI1NiddLCdvcmlnaW5hbF9tYW5pZmVzdF9zaGEyNTYnOm9zLmVudmlyb25bJ09SSUdJTkFMX01BTklGRVNUX1NIQTI1NiddLCduYXRpdmVfZXhlY3MnOjEsJ3B5dGhvbl9leGVjc19pbl9uYXRpdmVfdHJhY2UnOjAsJ25hdGl2ZV90ZXN0cyc6MywnbmF0aXZlX3N0YXR1cyc6c3RhdHVzLCdzdW1tYXJpZXMnOnN1bW1hcmllcywnbWlzc2luZ19vdXRwdXRzJzptaXNzaW5nLCdwcmlvcl9kb21haW5zX3JlZXhlY3V0ZWQnOkZhbHNlLCdpbnZlbnRvcnlfY3JlZGl0JzowfSkKIGFzc2VydCBwYXNzZWQsJ05ldyBwYXlsb2FkIGZhaWx1cmVzIHJldGFpbmVkOyBubyBub3JtYWxpemF0aW9uLCBDYXBhYmlsaXR5IGNyZWRpdCBvciB1bmNoYW5nZWQtZG9tYWluIHJlcnVucycKaWYgX19uYW1lX189PSdfX21haW5fXyc6Z2xvYmFscygpW3N5cy5hcmd2WzFdXSgpCg==
+
+        PAYLOAD
+
+        printf ''796bf9c99f778a4ffa5a670f7aaeffedb3f2c425e4b92dffa7103beb070437e0  %s/audit-native.py\n'' "$CODEC_PAYLOAD_BASE"
+        | sha256sum --check --strict
+
+        [[ "$ORIGINAL_ARTIFACT_ID" =~ ^[0-9]+$ ]]
+
+        gh api "repos/bin9208/openpilot-rust/actions/artifacts/$ORIGINAL_ARTIFACT_ID/zip" > "$CODEC_PAYLOAD_BASE/original.zip"
+
+        python3 -I -B "$CODEC_PAYLOAD_BASE/audit-native.py" admit
+
+        '
+    - name: Build only the new payload integration target
+      shell: bash
+      run: 'set -euo pipefail
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo +1.94.0 clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --no-default-features --features
+        changed-files-native --lib --test changed_files_codec_payloads -- -D warnings > "$CODEC_PAYLOAD_BASE/clippy.stdout"
+        2> "$CODEC_PAYLOAD_BASE/clippy.stderr"
+
+        cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --no-default-features --features
+        changed-files-native --test changed_files_codec_payloads --no-run --message-format=json > "$CODEC_PAYLOAD_BASE/tests-build.jsonl"
+        2> "$CODEC_PAYLOAD_BASE/tests-build.stderr"
+
+        python3 -I -B "$CODEC_PAYLOAD_BASE/audit-native.py" discover
+
+        '
+    - name: Run only the three new payload domains
+      shell: bash
+      run: 'set -euo pipefail
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 256
+
+        mkdir "$CODEC_PAYLOAD_BASE/actual" "$CODEC_PAYLOAD_BASE/no-executables"
+
+        export AST_CODEC_PAYLOAD_ORIGINAL_DIR="$CODEC_PAYLOAD_BASE/original" AST_CODEC_PAYLOAD_MANIFEST_SHA256="$ORIGINAL_MANIFEST_SHA256"
+        AST_CODEC_PAYLOAD_PROOF="$CODEC_PAYLOAD_BASE/actual"
+
+        export PATH="$CODEC_PAYLOAD_BASE/no-executables"
+
+        set +e
+
+        /usr/bin/timeout --signal=TERM --kill-after=10s 60s /usr/bin/strace -f -qq -s 4096 -e trace=execve,execveat -o "$CODEC_PAYLOAD_BASE/native.execve"
+        "$AST_PAYLOAD_EXE" --test-threads=1 --nocapture > "$CODEC_PAYLOAD_BASE/native.stdout" 2> "$CODEC_PAYLOAD_BASE/native.stderr"
+
+        status=$?
+
+        set -e
+
+        printf ''%s\n'' "$status" > "$CODEC_PAYLOAD_BASE/native.status"
+
+        export PATH=/usr/bin:/bin
+
+        /usr/bin/git status --porcelain=v1 > "$CODEC_PAYLOAD_BASE/source.after"
+
+        /usr/bin/python3 -I -B "$CODEC_PAYLOAD_BASE/audit-native.py" finish
+
+        '
+    - if: always()
+      name: Bound retained evidence
+      shell: bash
+      run: "set -euo pipefail\nif test -d \"$CODEC_PAYLOAD_BASE\"; then\n du -sm \"$CODEC_PAYLOAD_BASE\" > \"$CODEC_PAYLOAD_BASE/artifact-size-mib.txt\"\
+        \n test \"$(cut -f1 \"$CODEC_PAYLOAD_BASE/artifact-size-mib.txt\")\" -le 16\nfi\n"
+    - if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: changed-files-codec-payloads-native-296
+        path: ${{ runner.temp }}/changed-files-codec-payloads-native-296/
+        include-hidden-files: true
+        retention-days: 14
+        if-no-files-found: warn
