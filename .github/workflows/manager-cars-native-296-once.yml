@@ -23,12 +23,12 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: a4797fb639e4b1020dbc797f1e357744e9fa6d97
+        ref: 94758a721355264319d370eec8fac894d2ff045c
         persist-credentials: false
     - name: Admit exact checked source and disk
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = a4797fb639e4b1020dbc797f1e357744e9fa6d97
+        test "$(git rev-parse HEAD)" = 94758a721355264319d370eec8fac894d2ff045c
 
         sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet /usr/local/.ghcup
 
