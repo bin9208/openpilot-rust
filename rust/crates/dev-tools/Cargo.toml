@@ -597,6 +597,7 @@ services-catalog-native = ["dep:capnp", "dep:openpilot-cereal"]
 timed-tools-native = ["dep:chrono", "dep:zmq"]
 timed-live-native = ["timed-tools-native", "dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq"]
 bootlog-artifact-native = ["dep:capnp", "dep:openpilot-cereal", "dep:zstd"]
+hardware-info-qa-native = []
 journal-runtime-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "dep:zmq"]
 camera-sensor-native = ["dep:openpilot-runtime-version", "dep:capnp"]
 camera-runtime-native = ["camera-sensor-native", "dep:openpilot-msgq", "dep:zmq"]
@@ -711,6 +712,19 @@ path = "src/bin/check_ui_updater_handshake.rs"
 [[bin]]
 name = "check-hardware-command"
 path = "src/bin/check_hardware_command.rs"
+
+[[bin]]
+name = "check-hardware-info"
+path = "src/bin/check_hardware_info.rs"
+required-features = ["hardware-info-qa-native"]
+
+[[test]]
+name = "hardware_info_qa"
+required-features = ["hardware-info-qa-native"]
+
+[[test]]
+name = "hardware_info_capture"
+required-features = ["hardware-info-qa-native"]
 
 # Keep unsafe denied across tools; only the reviewed C++ oracle loader module
 # permits the explicit FFI calls needed by kalman-corpus-generator-native.

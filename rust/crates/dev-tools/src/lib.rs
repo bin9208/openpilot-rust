@@ -254,6 +254,10 @@ pub mod paramsd_startup_gate;
 pub mod ffmpeg_build;
 pub mod hardware_command_check;
 pub mod hardware_control_policy_check;
+#[cfg(all(target_os = "linux", feature = "hardware-info-qa-native"))]
+pub mod hardware_info_capture;
+#[cfg(all(target_os = "linux", feature = "hardware-info-qa-native"))]
+pub mod hardware_info_qa;
 #[cfg(feature = "image-array")]
 pub mod image_array;
 pub mod image_array_math;
