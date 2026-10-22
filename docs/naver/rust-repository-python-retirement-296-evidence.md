@@ -6640,3 +6640,32 @@ The diagnostic retry and proposed maintained gate now select the actual function
 and require its exact success line plus1passed/0failed/0ignored. Parent must
 review actual JSON/source/ELF/case receipts before any deletion. Inventory265
 is unchanged; a green Cargo exit alone is insufficient.
+
+Corrected39724889094 atf7f5ab578d855572fc52c8651655e8bbb8d208be, workflow
+8223057697212476bd92740dbdd8d0d941dfa16a, now executes the intended test and fails
+closed. Actual-root13cases pass full independent original/native equality:
+40rows/144ATcommands/93helpercalls per side, live5snapshots and3process boundaries.
+It then fails because the outer test requests name fields absent from the held
+ELF report schema. Parent downloads completeartifact12402668432/2595818B,
+SHA9eed7afa0835f67d489ff512a493169281fe39d02fbe6424d8cbde46d51a0a99,
+checks all2171CRCs, recomputes all13case equalities and uniquely matches all4ELFs
+by raw path/length/hash/device/inode against elf-before.json.93c803046 makes that
+actual identity the outer assertion; no executable seal is weakened. Private
+root/CLI controls had not executed at this failure, so no deletion is accepted.
+c7b0c220b separately restores original stdout passed14/evidence while preserving
+full enhanced17check results in the evidence file. Source acceptance remains
+265; all five tools and the runtime remain live.
+
+Driver unchanged-binary watch39723492162 (workflow9d01d9ea7e525b32a2a761177b7e5101cf104601,
+checked sourcebaf585d4e403a2b636d2356dc45b2b6ac849175d) obtains one eligible
+EPYC9V45 sample and seven explicit host skips. Fullartifact12401574642/45783446B,
+SHA8fb65bfa3f5b26045df143a77510d9b763c0dc7da3bd16db88752e58c607d6b3,
+passes all563CRCs. Original/native full1382400B debugger outputs and1728000B
+bases each reproduce their ordinary sealed counterparts. Real store observations
+at element60921 contain halfb040 versusb03f. All13source/496input/provider seals
+are byte-identical before/after; this proves store correspondence, not raw F32
+rounding cause. Captured registers/stack contain already-packed results and no
+identified pre-half value. A bounded hardware-execute diagnostic is being
+reviewed at original+bc4/native+9e7, with independently derived counter17721 plus
+43200element store displacement, unchanged full-output gates and original GDB
+environment/provider protections. It is not a numerical fix or retirement proof.

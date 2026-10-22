@@ -38,10 +38,11 @@ Generic ARM/QEMU is not a sealed AGNOS/device candidate. Keep #296 open.
 
 Latest published PR checkpoint is4d599dde6ec461cc43089d6f87381631aabdee6c.
 Current full Fast PR39719156487, Fast push39719148455 and
-Integration39719156492 pass. Rust39719156536 has41successful jobs and three
+Integration39719156492 pass. Rust39719156536 has43successful jobs and three
 failures so far: driver-family numerics#476, original-pipeline raw prediction
-comparison (new artifact audit pending), and navigation startup#457. Workspace,
-generic ARM, UI/connectivity and LLVM20 remain running. These are not a complete
+comparison#482 (full691CRC audit confirms one signed-zero bit), and navigation
+startup#457. Workspace and generic ARM remain running; UI/connectivity and
+LLVM20 now pass. These are not a complete
 workspace or AGNOS/device acceptance. #478 and the QA-only RadarCAN FD race#481
 are now closed with their focused/full evidence; #480 remains open despite its
 focused two-root USB pass. Six model-controller deletions remain unaccepted.
@@ -65,6 +66,19 @@ platform39717847363 repeats the complete maintained job with the original root
 RUSTUP_TOOLCHAIN=1.94.0; parent full4165-member CRC/SHA/source/CLI audit is accepted.
 First39716711789 also
 passed the whole platform job but its diagnostic copy omitted that root env.
+
+Modem five-tool deletion is still pending, runtime1 remains pinned for the
+retained Python manager caller.39723865391 was false green:13units pass but
+the stale exact filter selected0retirement tests (#483). Corrected39724889094
+executes the real test: actual-root13cases/40rows/144ATcommands/93helpercalls,
+live5snapshots and3process boundaries pass; it fails the outer ELF report check
+because that report has no name field. Full2171CRC parent audit independently
+matches all4ELFs by path/hash/size/device/inode.93c803046 fixes the outer binding;
+c7b0c220b also preserves the original CLI's two-field14case/evidence summary,
+while keeping enhanced17check details in results.json. Current diagnostic retry
+uses exact success-line and1passed/0failed/0ignored assertions. The proposed
+maintained platform/policy edits are still uncommitted, and all5Python tools
+remain live until a complete actual/private proof and postdelete gate pass.
 
 ## Accepted focused closures to reuse
 
