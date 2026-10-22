@@ -549,3 +549,21 @@ The focused Java job stopped before Gradle because a previous run's
 output paths are required for repeatable local-runner evidence; this failure
 is not the #21 close-order behavior assertion. Functional tests, fixtures and
 builds have not been executed from the workstation.
+
+## Validated common execution basis and next candidate
+
+The independently owned #502 neutral transport has now passed its exact
+`77663836a95a9e2aff9aa66592d8b06ed9c87cd9`
+[focused probe](https://github.com/bin9208/openpilot-rust/actions/runs/39853582741).
+Completed artifact readback identifies an X64 `bin-actions` host and AArch64
+QEMU guest; actual ARM ELF/native binding, environment/exit propagation and
+subprocess IPC/SIGTERM checks passed. The runtime-core lib harness had zero
+active tests (one ignored benchmark), so no runtime-core behavioral coverage is
+claimed from it. The separate #503 host APT proof passed at `b90ae57c7`.
+
+The prepared general candidate includes the five actual gate follow-ups and
+#505, with the original full functional/IPC/ARM gates retained. Its own exact-head
+Actions execution and normal dev integration still need to pass. #419 remains
+on its independent dev-md track and requires the common migration's checked
+integration, its own exact-source validation and sealed/public installer
+candidate delivery. No dev-md runtime source or history was imported into dev.

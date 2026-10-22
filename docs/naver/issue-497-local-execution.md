@@ -168,7 +168,7 @@ check display still requires execution evidence; no fork PR or external status
 was created for this review. See the primary [GitHub required-check guidance](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks)
 and [conditional job behavior](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-jobs-with-conditions).
 
-### Foundation proof is still incomplete
+### Version 1 failure before the version 2 proof
 
 The owner's later `d27cd41ee8082cd7feb76f8ec59c8d7a9701d37b` [policy job](https://github.com/bin9208/openpilot-rust/actions/runs/39850292573/job/120074319646) passed. Its [ARM transport job](https://github.com/bin9208/openpilot-rust/actions/runs/39850292573/job/120076394086) stopped in guest package preparation with `dpkg: error: required read/write access to the dpkg database directory /var/lib/dpkg`. No ARM lifecycle proof passed. The selected neutral helper requires the owning #502 track's repair and a successful execution proof before this full candidate is published. This is an execution-foundation failure, not an application runtime result. The host-only #503 proof above remains valid for its own exact source and scope.
 
@@ -216,3 +216,30 @@ remains a prerequisite for publishing the new PR #500 head. This preparation
 does not push the local candidate or change the remote `afed` source. Local
 review remains syntax/AST/YAML/Bash and diff only; no functional tests, builds,
 fixtures, transport execution or Actions dispatch run in this session.
+
+### Version 2 foundation proof succeeded; candidate gates remain pending
+
+The exact `77663836a95a9e2aff9aa66592d8b06ed9c87cd9`
+[probe](https://github.com/bin9208/openpilot-rust/actions/runs/39853582741)
+completed successfully, including [policy job 120085864083](https://github.com/bin9208/openpilot-rust/actions/runs/39853582741/job/120085864083)
+and [ARM job 120086462570](https://github.com/bin9208/openpilot-rust/actions/runs/39853582741/job/120086462570).
+The completed log and [artifact 12459003068](https://github.com/bin9208/openpilot-rust/actions/runs/39853582741/artifacts/12459003068)
+were read back. The manifest identifies `bin-actions`, X64 host, AArch64 guest,
+`qemu-user`, `physical_arm_cpu: false` and the exact PRoot/rootfs/Python hashes.
+The ELF header is AArch64; ARM Python 3.12.14 loaded its real native binding.
+Environment propagation, host-visible isolated target, exit code 37, subprocess
+socketpair IPC and SIGTERM exit 23 all passed. Evidence upload and owned cleanup
+completed successfully.
+
+The ARM Rust disk-space CLI ran, and the runtime-core harness compiled and ran;
+its only lib test is an ignored syscall benchmark, so that harness reported
+**zero active unit tests**, not runtime-core behavioral coverage. The existing
+full original/native and ARM workflow gates are retained and still required.
+This proof admits the neutral execution interface; it does not validate this
+backlog candidate's runtime, physical ARM hardware, AGNOS or vehicle behavior.
+
+The stable adapter keeps only its two host APT substitutions, whose helper has
+independent actual host proof at `b90ae57c7` above. With the common transport
+proof now available, publishing the prepared #500 source can proceed to its own
+exact-head focused regressions and all five required pre-merge checks. Normal
+merge and post-merge evidence remain required before closing its code issues.
