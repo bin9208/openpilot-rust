@@ -231,6 +231,39 @@ pub fn cases() -> Vec<TraceCase> {
     out
 }
 
+fn python_integer(value: &Value) -> Option<i128> {
+    match value {
+        Value::Bool(flag) => Some(if *flag { 1 } else { 0 }),
+        Value::Number(number) if !number.is_f64() => number
+            .as_i64()
+            .map(i128::from)
+            .or_else(|| number.as_u64().map(i128::from)),
+        _ => None,
+    }
+}
+
+fn python_number_as_f64(value: &Value) -> Option<f64> {
+    match value {
+        Value::Bool(flag) => Some(if *flag { 1.0 } else { 0.0 }),
+        Value::Number(number) => number.as_f64(),
+        _ => None,
+    }
+}
+
+fn python_exact_integer_equal(expected: i128, actual: &Value) -> bool {
+    if let Some(actual) = python_integer(actual) {
+        return expected == actual;
+    }
+    let Some(actual) = actual.as_f64() else {
+        return false;
+    };
+    actual.is_finite()
+        && actual.fract() == 0.0
+        && actual > -18_446_744_073_709_551_616.0
+        && actual < 18_446_744_073_709_551_616.0
+        && expected == actual as i128
+}
+
 fn compare_value(expected: &Value, actual: &Value, path: &str) -> Result<()> {
     match expected {
         Value::Object(fields) => {
@@ -262,14 +295,19 @@ fn compare_value(expected: &Value, actual: &Value, path: &str) -> Result<()> {
         }
         Value::Number(number) if number.is_f64() => {
             let left = number.as_f64().ok_or("expected float")?;
-            let right = actual
-                .as_f64()
+            let right = python_number_as_f64(actual)
                 .ok_or_else(|| format!("{path}: expected float value"))?;
             let difference = (left - right).abs();
             if !difference.is_finite()
                 || difference > 1e-8f64.max(1e-12 * left.abs().max(right.abs()))
             {
                 return Err(format!("{path}: {left:?} != {right:?}").into());
+            }
+        }
+        Value::Bool(_) | Value::Number(_) => {
+            let integer = python_integer(expected).ok_or("expected exact Python integer")?;
+            if !python_exact_integer_equal(integer, actual) {
+                return Err(format!("{path}: {expected} != {actual}").into());
             }
         }
         _ if expected != actual => return Err(format!("{path}: {expected} != {actual}").into()),
@@ -791,6 +829,11 @@ fn value_packet(raw: &[u8]) -> Result<Value> {
     Ok(value)
 }
 
+fn retain_packet_before_decode(output: &Path, index: usize, raw: &[u8]) -> Result<Value> {
+    fs::write(output.join(format!("deviceState-{index:03}.capnp")), raw)?;
+    value_packet(raw)
+}
+
 struct OwnedNamespace {
     path: PathBuf,
     identity: (u64, u64),
@@ -856,6 +899,27 @@ fn drain_zmq(
         }
     }
     Ok(())
+}
+
+fn stop_and_drain(
+    stop: impl FnOnce() -> Result<i32>,
+    logs: &zmq::Socket,
+    stats: &zmq::Socket,
+    records: &mut Vec<Value>,
+    metrics: &mut Vec<String>,
+) -> Result<i32> {
+    let exit = stop()?;
+    if exit != 0 {
+        return Err(format!("hardwared SIGTERM exit {exit}").into());
+    }
+    // The original checker drains both sockets after the daemon has exited.
+    while logs.poll(zmq::POLLIN, 100)? != 0 {
+        drain_zmq(logs, stats, records, metrics)?;
+    }
+    while stats.poll(zmq::POLLIN, 100)? != 0 {
+        drain_zmq(logs, stats, records, metrics)?;
+    }
+    Ok(exit)
 }
 
 struct PeerEnvironment {
@@ -1080,7 +1144,12 @@ impl Drop for ProcessGuard {
     }
 }
 
-fn peer(root: &Path, output: &Path, prefix: &str) -> Result<Value> {
+fn peer(
+    root: &Path,
+    output: &Path,
+    prefix: &str,
+    process: &mut ProcessGuard,
+) -> Result<(Value, i32)> {
     static ENV_LOCK: Mutex<()> = Mutex::new(());
     let _lock = ENV_LOCK.lock().map_err(|_| "hardwared env lock poisoned")?;
     let _environment = PeerEnvironment::set(prefix);
@@ -1124,14 +1193,10 @@ fn peer(root: &Path, output: &Path, prefix: &str) -> Result<Value> {
         let Some(raw) = received else {
             return Err("missing deviceState".into());
         };
-        let value = value_packet(&raw)?;
+        let value = retain_packet_before_decode(output, packets.len(), &raw)?;
         if value["memoryUsagePercent"] != 50 || value["cpuUsagePercent"] != json!([0]) {
             return Err("hardwared CPU/memory observations differ".into());
         }
-        fs::write(
-            output.join(format!("deviceState-{:03}.capnp", packets.len())),
-            &raw,
-        )?;
         packets.push(value.clone());
         Ok(Some(value))
     };
@@ -1302,6 +1367,7 @@ fn peer(root: &Path, output: &Path, prefix: &str) -> Result<Value> {
             &mut input_history,
         )?;
     }
+    let exit = stop_and_drain(|| process.stop(), &logs, &stats, &mut records, &mut metrics)?;
     publisher.stop()?;
     publisher.collect(&mut input_history, &mut input_count)?;
     let logs_ok = records
@@ -1348,12 +1414,13 @@ fn peer(root: &Path, output: &Path, prefix: &str) -> Result<Value> {
     drop(context);
     let log_socket = log_cleanup.cleanup()?;
     let stats_socket = stats_cleanup.cleanup()?;
-    Ok(
+    Ok((
         json!({"packets":packets,"transitions":transitions,"invalid_input_events":input_count,
         "input_history":input_history,"status_packet":status,"params_after":params_after,"kmsg":kmsg,
         "records":records,"metrics":metrics,"publisher_flags_valid":false,
         "socket_cleanup":[log_socket,stats_socket],"peer_prefix":prefix}),
-    )
+        exit,
+    ))
 }
 
 /// Run the live IPC suite against the actual daemon ELF in a private PC root.
@@ -1451,11 +1518,7 @@ fn run_daemon_admitted(
     )?;
     // Every peer wait is bounded by an absolute per-transition deadline. Running
     // synchronously avoids an unbounded join during error cleanup.
-    let peer_value = peer(runtime_root, output, &prefix)?;
-    let exit = process.stop()?;
-    if exit != 0 {
-        return Err(format!("hardwared SIGTERM exit {exit}").into());
-    }
+    let (peer_value, exit) = peer(runtime_root, output, &prefix, &mut process)?;
     if process.child.is_some() {
         return Err("hardwared child was not reaped after SIGTERM".into());
     }
@@ -1484,6 +1547,70 @@ fn run_daemon_admitted(
 mod tests {
     use super::*;
     use std::os::unix::net::UnixListener;
+
+    #[test]
+    fn original_integer_equality_accepts_exact_float_and_bool_without_rounding() {
+        compare_value(
+            &json!({"state":{"used":0}}),
+            &json!({"state":{"used":0.0}}),
+            "case",
+        )
+        .unwrap();
+        compare_value(&json!(true), &json!(1), "flag").unwrap();
+        compare_value(&json!(false), &json!(0.0), "flag").unwrap();
+        assert!(compare_value(&json!(0), &json!(0.1), "state.used").is_err());
+        assert!(compare_value(
+            &json!(9_007_199_254_740_993_u64),
+            &json!(9_007_199_254_740_992.0),
+            "large"
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn malformed_device_state_is_retained_before_decode_failure() {
+        let output = tempfile::tempdir().unwrap();
+        let malformed = b"not a capnp deviceState";
+        assert!(retain_packet_before_decode(output.path(), 0, malformed).is_err());
+        assert_eq!(
+            fs::read(output.path().join("deviceState-000.capnp")).unwrap(),
+            malformed
+        );
+    }
+
+    #[test]
+    fn shutdown_sent_log_and_metric_are_drained_after_stop() {
+        let context = zmq::Context::new();
+        let logs = context.socket(zmq::PULL).unwrap();
+        logs.bind("inproc://hardwared-shutdown-logs").unwrap();
+        let log_sender = context.socket(zmq::PUSH).unwrap();
+        log_sender
+            .connect("inproc://hardwared-shutdown-logs")
+            .unwrap();
+        let stats = context.socket(zmq::PULL).unwrap();
+        stats.bind("inproc://hardwared-shutdown-stats").unwrap();
+        let stat_sender = context.socket(zmq::PUSH).unwrap();
+        stat_sender
+            .connect("inproc://hardwared-shutdown-stats")
+            .unwrap();
+        let mut records = Vec::new();
+        let mut metrics = Vec::new();
+        let exit = stop_and_drain(
+            || {
+                log_sender.send(&b"x{\"msg\":{\"event\":\"SHUTDOWN_SENTINEL\"}}"[..], 0)?;
+                stat_sender.send("power_draw:shutdown", 0)?;
+                Ok(0)
+            },
+            &logs,
+            &stats,
+            &mut records,
+            &mut metrics,
+        )
+        .unwrap();
+        assert_eq!(exit, 0);
+        assert_eq!(records[0]["msg"]["event"], "SHUTDOWN_SENTINEL");
+        assert_eq!(metrics, vec!["power_draw:shutdown".to_owned()]);
+    }
 
     #[test]
     fn socket_cleanup_preserves_a_foreign_replacement() {
