@@ -2533,7 +2533,13 @@ jobs:
           python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/support-params-binding"
       - name: Compare uploader policy, signed local HTTP and compressed payloads with original source
         run: |
-          python rust/tools/check_uploader.py --binary rust/target/debug/examples/uploader_trace --output "$RUNNER_TEMP/support-runtime/uploader-reference/report.json"
+          set -euo pipefail
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features uploader-reference-native --bin check-uploader-reference --locked
+          rust/target/debug/check-uploader-reference --root "$GITHUB_WORKSPACE" \
+            --binary rust/target/debug/examples/uploader_trace --output "$RUNNER_TEMP/support-runtime/uploader-reference" \
+            --fixture rust/crates/dev-tools/tests/fixtures/uploader-original-group/reference-observations.json \
+            --fixture-sha256 b1ce58a70769ab48c7893f26da0f7186b2e7d378fd8a19fd5e495f88d68d4eb5
           python rust/tools/check_uploader_timeouts.py --binary rust/target/debug/examples/uploader_trace --output "$RUNNER_TEMP/support-runtime/uploader-timeouts"
       - name: Compare active Carrot upload helpers and actual loopback request bytes
         run: python rust/tools/check_web_upload.py --binary rust/target/debug/examples/web_upload_trace --output "$RUNNER_TEMP/support-runtime/web-upload-reference"
@@ -2629,8 +2635,14 @@ jobs:
           cmp "$proof/inputs.stat" "$proof/inputs-after.stat"
       - name: Compare uploader logs and transport failures through both collectors
         run: |
-          python rust/tools/check_uploader_logging.py --binary rust/target/debug/openpilot-uploader \
-            --trace rust/target/debug/examples/uploader_trace --collector rust/target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/support-runtime/uploader-logging"
+          set -euo pipefail
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features uploader-logging-native --bin check-uploader-logging --locked
+          rust/target/debug/check-uploader-logging --root "$GITHUB_WORKSPACE" \
+            --binary rust/target/debug/openpilot-uploader --trace rust/target/debug/examples/uploader_trace \
+            --collector rust/target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/support-runtime/uploader-logging" \
+            --fixture rust/crates/dev-tools/tests/fixtures/uploader-original-group/logging-observations.json \
+            --fixture-sha256 cdf42bbfebd0613cfc4896c419d96927cf410301155d3ce6b2141cb10313abba
           python rust/tools/check_uploader_log_fault.py --native rust/target/debug/examples/uploader_log_fault \
             --binding "$RUNNER_TEMP"/support-params-binding/params_pyx*.so --collector rust/target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/support-runtime/uploader-log-fault"
       - name: Require dashcam progress equivalence and allocation accounting
@@ -3035,7 +3047,14 @@ jobs:
           REGISTRATION_COLLECTOR_DELAY_MS=800 rust/target/debug/check-registration rust/target/debug/examples/registration_trace \
             "$RUNNER_TEMP/startup-runtime/registration-ready" --case clock_year_ten_thousand
       - name: Compare uploader signing after shared registration key support
-        run: python rust/tools/check_uploader.py --binary rust/target/debug/examples/uploader_trace --output "$RUNNER_TEMP/startup-runtime/uploader-signing.json"
+        run: |
+          set -euo pipefail
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features uploader-reference-native --bin check-uploader-reference --locked
+          rust/target/debug/check-uploader-reference --root "$GITHUB_WORKSPACE" \
+            --binary rust/target/debug/examples/uploader_trace --output "$RUNNER_TEMP/startup-runtime/uploader-signing" \
+            --fixture rust/crates/dev-tools/tests/fixtures/uploader-original-group/reference-observations.json \
+            --fixture-sha256 b1ce58a70769ab48c7893f26da0f7186b2e7d378fd8a19fd5e495f88d68d4eb5
       - name: Build and test native manager catalog QA tools
         run: |
           rustup component add clippy --toolchain 1.94.0

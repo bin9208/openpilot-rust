@@ -2526,8 +2526,9 @@ fn registration_and_navd_require_native_full_policy_and_real_delayed_collector()
         "\"$RUNNER_TEMP/startup-runtime/registration-timeouts\" --timeouts",
         "REGISTRATION_COLLECTOR_DELAY_MS=800 rust/target/debug/check-registration",
         "--case clock_year_ten_thousand",
-        "build_msgq_python.py", "build_params_python.py", "check_process_supervision.py", "check_uploader.py",
+        "build_msgq_python.py", "build_params_python.py", "check_process_supervision.py", "rust/target/debug/check-uploader-reference",
     ]);
+    mandatory(startup, &["rust/target/debug/check-uploader-reference"]);
     assert!(!run.contains("check_registration.py"));
     assert!(!run.contains("LD_PRELOAD="));
     let navd = &data["jobs"]["navd-runtime"];
