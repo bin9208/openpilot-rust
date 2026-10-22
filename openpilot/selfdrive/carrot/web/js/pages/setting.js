@@ -844,6 +844,8 @@ function getDeclaredSettingOptionLabel(name, value) {
 }
 
 function formatSettingDisplayValue(p, value) {
+  // Historical activation value; present the same single external choice.
+  if (p?.name === "JetlinkMode" && Number(value) === 2) value = 1;
   if (String(p?.name || "") === "SoundLanguageSetting") {
     return getSoundLanguageSettingOptionLabel(value);
   }
@@ -1119,6 +1121,8 @@ function getSettingOptionLabel(name, value) {
 
 function syncSettingControlState(row, value) {
   if (!row) return;
+  // Display compatibility only: reading a setting never writes/enables Jetlink.
+  if (row.dataset.settingName === "JetlinkMode" && Number(value) === 2) value = 1;
   const text = String(value);
   const valueButton = row.querySelector(".val");
   if (valueButton) {

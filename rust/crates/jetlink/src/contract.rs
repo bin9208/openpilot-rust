@@ -11,6 +11,12 @@ pub type Identity = BTreeMap<String, String>;
 pub fn contract() -> Result<Value, Error> {
     Ok(serde_json::from_str(CONTRACT_JSON)?)
 }
+/// Live artifact binding; device-test acceptance is recorded separately below.
+pub fn identity_matches_model(identity: &Identity, sha256: &str) -> bool {
+    identity
+        .get("artifact_sha256")
+        .is_some_and(|value| value == sha256)
+}
 pub fn validation_matches(raw: Option<&[u8]>, identity: &Identity) -> bool {
     validation_matches_model(raw, identity, SHA256)
 }

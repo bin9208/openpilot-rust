@@ -9,6 +9,11 @@ WARP_CONTRACT = 'native-c3x-512x256-v1'
 IDENTITY_KEYS = {'device_model', 'android_api', 'backend_requested', 'runtime_version', 'app_version', 'artifact_sha256'}
 
 
+def identity_matches_model(identity, sha256=CONTRACT['sha256']):
+  """Bind the parsed live session to the reported artifact, independently of acceptance."""
+  return identity.get('artifact_sha256') == sha256
+
+
 def validation_matches(raw, identity):
   try:
     if raw is None or len(raw) > 16_384 or set(identity) != IDENTITY_KEYS or not all(identity.values()):

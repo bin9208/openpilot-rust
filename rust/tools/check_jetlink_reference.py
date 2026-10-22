@@ -43,7 +43,7 @@ def main() -> None:
         for _ in range(20000):
             mode, ready, valid, controls, outcome = rng.choice(choices)
             controls = ControlState(*controls)
-            steps.append({"mode": ["Off", "Shadow", "ActiveRequest"][mode], "ready": ready, "validated": valid,
+            steps.append({"mode": ["Off", "ActiveRequest", "ActiveRequest"][mode], "ready": ready, "validated": valid,
                           "controls": vars(controls), "outcome": outcome.name.title()})
             answers.append(vars(state.update(mode, ready, valid, controls, outcome)))
         add({"op": "transition", "previously_active": restarted, "steps": steps}, answers, "transition")

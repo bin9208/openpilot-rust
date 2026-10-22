@@ -121,6 +121,27 @@ fn setup_backoff(detail: &str) -> Duration {
         Duration::from_secs(60)
     }
 }
+fn restore_adb_owner(
+    pending: &mut bool,
+    retry_at: &mut Instant,
+    now: Instant,
+    egpu: bool,
+    restore: impl FnOnce() -> std::io::Result<()>,
+) -> Result<(), Error> {
+    if !*pending || egpu || now < *retry_at {
+        return Ok(());
+    }
+    match restore() {
+        Ok(()) => {
+            *pending = false;
+            Ok(())
+        }
+        Err(error) => {
+            *retry_at = now + Duration::from_secs(60);
+            Err(error.into())
+        }
+    }
+}
 fn setup_plain_gadget() -> Result<(), Error> {
     let mut output = tempfile::tempfile()?;
     let mut child = Command::new("sudo")
@@ -328,6 +349,10 @@ fn run() -> Result<(), EntryError> {
         openpilot_jetlink::mobile::helper(&helper_args[1])?;
         return Ok(());
     }
+    if helper_args == ["--restore-gadget", "adb"] {
+        openpilot_jetlink::gadget::restore_device()?;
+        return Ok(());
+    }
     if env::args().skip(1).collect::<Vec<_>>() == ["--setup-gadget"] {
         openpilot_jetlink::gadget::provision_device()?;
         return Ok(());
@@ -415,6 +440,9 @@ fn run() -> Result<(), EntryError> {
     let clock = Instant::now();
     let mut port_active = true;
     let agnos = Path::new("/AGNOS").is_file();
+    let mut restore_adb =
+        agnos && fs::metadata("/dev/shm/jetlink-adb-owner").is_ok_and(|meta| meta.len() > 0);
+    let mut adb_restore_at = Instant::now();
     let mut link: Option<Link> = None;
     let mut usb_probes = 0usize;
     let mut grace = Duration::from_secs(5);
@@ -428,7 +456,7 @@ fn run() -> Result<(), EntryError> {
             .and_then(|v| v.parse::<i32>().ok())
             .unwrap_or(0);
         let wants_link = matches!(mode, 1 | 2);
-        let egpu = wants_link
+        let egpu = (wants_link || restore_adb)
             && (bool_param(&params, "UsbGpuActive")?
                 || bool_param(&params, "UsbGpuLoading")?
                 || openpilot_jetlink::gadget::egpu_present(Path::new("/sys/bus/usb/devices"))?);
@@ -533,7 +561,7 @@ fn run() -> Result<(), EntryError> {
             reconnect_at = Instant::now() + Duration::from_secs(5);
             failed = false;
         }
-        let result = if mode == 0 || egpu {
+        let result = if !wants_link || egpu {
             let result = owner.disable(|| {
                 if let Some(link) = &mut link {
                     link.teardown()?;
@@ -542,7 +570,9 @@ fn run() -> Result<(), EntryError> {
             });
             if result.is_ok() {
                 link = None;
-                failed = false;
+                if !restore_adb {
+                    failed = false;
+                }
                 effective_transport = transport_mode;
                 usb_probes = 0;
                 grace = Duration::from_secs(5);
@@ -571,6 +601,7 @@ fn run() -> Result<(), EntryError> {
                 }
             } else {
                 owner.enable(egpu, || {
+                    restore_adb = agnos;
                     setup_gadget(effective_transport)?;
                     let session = Session::open(
                         Path::new("/dev/ffs-carrot-jetlink"),
@@ -620,6 +651,21 @@ fn run() -> Result<(), EntryError> {
         } else {
             Ok(())
         };
+        let result = result.and_then(|()| {
+            if agnos && !wants_link && link.is_none() {
+                restore_adb_owner(
+                    &mut restore_adb,
+                    &mut adb_restore_at,
+                    Instant::now(),
+                    egpu,
+                    || root_command("--restore-gadget", "adb", Duration::from_secs(15)),
+                )?;
+                if !restore_adb {
+                    failed = false;
+                }
+            }
+            Ok(())
+        });
         if agnos && wants_link && !egpu {
             tuning.update(true, usb_command);
         }
@@ -627,6 +673,20 @@ fn run() -> Result<(), EntryError> {
         if let Err(error) = result {
             failed = true;
             failure_detail = error.to_string();
+            if agnos && wants_link && restore_adb && link.is_none() {
+                match restore_adb_owner(
+                    &mut restore_adb,
+                    &mut adb_restore_at,
+                    Instant::now(),
+                    egpu,
+                    || root_command("--restore-gadget", "adb", Duration::from_secs(15)),
+                ) {
+                    Ok(()) => {}
+                    Err(restore) => {
+                        failure_detail.push_str(&format!("; ADB restoration: {restore}"));
+                    }
+                }
+            }
             reconnect_at = Instant::now() + setup_backoff(&failure_detail);
             if transport_mode == TransportMode::Auto
                 && effective_transport.composite()
@@ -726,6 +786,9 @@ fn run() -> Result<(), EntryError> {
     if let Some(link) = &mut link {
         link.teardown()?;
     }
+    if agnos && !wanted_at_stop && restore_adb {
+        root_command("--restore-gadget", "adb", Duration::from_secs(15))?;
+    }
     Ok(())
 }
 
@@ -746,6 +809,47 @@ fn main() -> std::process::ExitCode {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn adb_restore_failure_is_deferred_and_retried_without_losing_ownership() {
+        let now = Instant::now();
+        let mut retry = now;
+        let mut pending = true;
+        restore_adb_owner(&mut pending, &mut retry, now, true, || {
+            panic!("eGPU owns USB")
+        })
+        .unwrap();
+        assert!(pending);
+        assert!(restore_adb_owner(&mut pending, &mut retry, now, false, || {
+            Err(std::io::Error::other("transient service failure"))
+        })
+        .is_err());
+        assert!(pending);
+        restore_adb_owner(
+            &mut pending,
+            &mut retry,
+            now + Duration::from_secs(1),
+            false,
+            || panic!("backoff"),
+        )
+        .unwrap();
+        restore_adb_owner(
+            &mut pending,
+            &mut retry,
+            now + Duration::from_secs(60),
+            false,
+            || Ok(()),
+        )
+        .unwrap();
+        assert!(!pending);
+        restore_adb_owner(
+            &mut pending,
+            &mut retry,
+            now + Duration::from_secs(61),
+            false,
+            || panic!("already restored"),
+        )
+        .unwrap();
+    }
     #[test]
     fn controller_conflict_can_recover_after_adb_releases_without_hot_retry() {
         assert_eq!(

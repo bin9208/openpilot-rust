@@ -1,7 +1,7 @@
 """Overlap external inference with a continuously warm native model.
 
-Off performs no USB work. Shadow never waits for an external result to publish
-native output. Active waits only for the remainder of the complete 50ms budget.
+Off performs no USB work. Explicit external selection waits only for the remainder
+of the complete 50ms budget after live contract checks and stopped activation.
 """
 from concurrent.futures import ThreadPoolExecutor
 import time
@@ -9,7 +9,7 @@ import time
 from openpilot.selfdrive.modeld.jetlink.model_state import JetlinkModelState
 from openpilot.selfdrive.modeld.jetlink.rpc import ProxyClient
 from openpilot.selfdrive.modeld.jetlink.transition import Transition, Mode, Outcome, Decision
-from openpilot.selfdrive.modeld.jetlink.validation import validation_matches
+from openpilot.selfdrive.modeld.jetlink.validation import identity_matches_model, validation_matches
 
 
 class Runtime:
@@ -37,6 +37,8 @@ class Runtime:
     client = self.client_factory()
     try:
       spec = client.connect()
+      if not identity_matches_model(client.identity, spec.sha256):
+        raise ValueError('Jetlink model identity does not match session')
       return JetlinkModelState(*self.camera_size, client, spec, self.warp)
     except Exception:
       client.close()
@@ -64,7 +66,7 @@ class Runtime:
     self.deadline = self.started + 50_000_000
     self.frame_id, self.controls = frame_id, controls
     self.mode = Mode(mode) if mode in (0, 1, 2) else Mode.OFF
-    # Collect a previous Shadow frame without waiting for it.
+    # Collect a previous frame while waiting for stopped source selection.
     if self.pending is not None and self.pending.done():
       try:
         _, ended, started, frame = self.pending.result()
@@ -91,7 +93,7 @@ class Runtime:
     ready = self.model is not None and not self.model.client.dead and camera_ready and self.pending is None
     identity = self.model.client.identity if self.model is not None else {}
     self.validated = validation_matches(self.params.get('JetlinkValidation'), identity)
-    self.decision = self.transition.update(self.mode, ready, self.validated, controls, Outcome.NONE)
+    self.decision = self.transition.update(self.mode, ready, identity_matches_model(identity), controls, Outcome.NONE)
     self._persist()
     if not ready or self.mode == Mode.OFF:
       return

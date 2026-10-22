@@ -5,6 +5,14 @@ def cases():
     'bulk-missing': ('GET', bulk, None),
     'bulk-commas': ('GET', bulk + '?names=,,', None),
     'bulk-read': ('GET', bulk + '?names=IsMetric,CruiseGapLevels,FutureSetting,Unknown,DeviceType,IsMetric', None),
+    'jetlink-default': ('GET', bulk + '?names=JetlinkMode', None),
+    'jetlink-legacy-read': ('GET', bulk + '?names=JetlinkMode', None),
+    'jetlink-legacy-write': ('POST', put, {'name': 'JetlinkMode', 'value': 2}),
+    'jetlink-canonical-read': ('GET', bulk + '?names=JetlinkMode', None),
+    'jetlink-off': ('POST', put, {'name': 'JetlinkMode', 'value': 0}),
+    'jetlink-off-read': ('GET', bulk + '?names=JetlinkMode', None),
+    'jetlink-on': ('POST', put, {'name': 'JetlinkMode', 'value': 1}),
+    'jetlink-on-read': ('GET', bulk + '?names=JetlinkMode', None),
     'bulk-hidden': ('GET', bulk + '?names=HiddenSetting', None),
     'bulk-hidden-malformed': ('GET', bulk + '?names=HiddenSetting', None),
     'bulk-head': ('HEAD', bulk + '?names=IsMetric', None),
@@ -35,10 +43,13 @@ def cases():
 def prepare(scenario, root, params, definition):
   if scenario == 'bulk-missing':
     definition['params'].append({'name': 'FutureSetting', 'group': 'Fixture', 'min': 0, 'max': 60, 'default': 20})
+    from pathlib import Path
+    import json
+    catalog = json.loads((Path(__file__).resolve().parents[2] / 'openpilot/selfdrive/carrot_settings.json').read_text())
+    definition['params'].append(next(item for item in catalog['params'] if item['name'] == 'JetlinkMode'))
     definition['params'].append({'name': 'HiddenSetting', 'group': 'Fixture', 'min': 0, 'max': 60, 'default': 7, 'hidden_brands': ['hyundai']})
     for store in params:
       store.put('CarName', 'HYUNDAI FIXTURE')
-    import json
     import os
     settings = root / 'settings.json'
     settings.write_text(json.dumps(definition))
@@ -47,6 +58,9 @@ def prepare(scenario, root, params, definition):
     from pathlib import Path
     for store in params:
       Path(store.get_param_path('FutureSetting')).write_bytes(b'19')
+  if scenario == 'jetlink-legacy-read':
+    for store in params:
+      store.put('JetlinkMode', '2')
   if scenario == 'bulk-hidden-malformed':
     import json
     import os
