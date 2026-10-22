@@ -1300,7 +1300,7 @@ impl Drop for OwnedReport {
 fn finalize_report(
     path: &Path,
     report: &Value,
-    verify: impl Fn() -> Result<()>,
+    mut verify: impl FnMut() -> Result<()>,
     emit: impl FnOnce(&Value) -> Result<()>,
 ) -> Result<()> {
     verify()?;
