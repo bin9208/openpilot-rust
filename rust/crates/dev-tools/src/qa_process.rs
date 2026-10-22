@@ -256,6 +256,69 @@ struct Owned {
     reaped: bool,
     own_group: bool,
 }
+/// A direct child inside a worker group already owned by NativeRunner.
+/// The outer owner terminates descendants even if the worker is interrupted.
+#[cfg(feature = "controlsd-daemon-native")]
+pub struct LiveChild {
+    owner: Owned,
+    code: Option<i32>,
+}
+#[cfg(feature = "controlsd-daemon-native")]
+impl LiveChild {
+    pub fn spawn_in_owned_worker(command: &mut Command) -> Result<Self> {
+        if rustix::process::getpgrp() != rustix::process::getpid() {
+            return Err("live child requires an isolated owned worker group".into());
+        }
+        let child = command.spawn()?;
+        let pid = Pid::from_child(&child);
+        Ok(Self {
+            owner: Owned {
+                child,
+                pid,
+                reaped: false,
+                own_group: false,
+            },
+            code: None,
+        })
+    }
+    pub fn pid(&self) -> Result<u32> {
+        if self.owner.reaped {
+            return Err("live child identity already reaped".into());
+        }
+        Ok(self.owner.child.id())
+    }
+    pub fn poll(&mut self) -> Result<Option<i32>> {
+        if self.code.is_some() {
+            return Ok(self.code);
+        }
+        match waitid(
+            WaitId::Pid(self.owner.pid),
+            WaitIdOptions::EXITED | WaitIdOptions::NOHANG | WaitIdOptions::NOWAIT,
+        ) {
+            Ok(Some(_)) => {
+                let status = self.owner.child.wait()?;
+                self.owner.reaped = true;
+                self.code = Some(
+                    status
+                        .code()
+                        .unwrap_or_else(|| -status.signal().unwrap_or(1)),
+                );
+                Ok(self.code)
+            }
+            Ok(None) | Err(rustix::io::Errno::INTR) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+    pub fn signal(&self, signal: Signal) -> Result<()> {
+        if self.owner.reaped {
+            return Err("cannot signal a reaped live child".into());
+        }
+        match rustix::process::kill_process(self.owner.pid, signal) {
+            Ok(()) | Err(rustix::io::Errno::SRCH) => Ok(()),
+            Err(error) => Err(error.into()),
+        }
+    }
+}
 impl Drop for Owned {
     fn drop(&mut self) {
         if !self.reaped {

@@ -9153,3 +9153,26 @@ reserve, inflight cancellation or repeat of unchanged success is introduced.
 Feature/diagnostic pushes remain held until automatic legacy hosted Fast checks
 are correctly routed with private source/cache/target. These implementations and
 routing changes add no source retirement or device acceptance credit.
+
+## Continuous controlsd native IPC controller source candidate (2026-10-23)
+
+The five-file source patch b38e3e3b124673325d5d5036b4503d0ef832183decd707c19a1328ebda6edffb
+and additive63-line LiveChild proposal fdf1d9fb65a38a2d75554356e8cd6f820615f0194c8d2dd151933e1cdbcbb87c
+are independently source-reviewed and integrated with an opt-in feature/bin/test.
+Dependencies reuse existing messaging/msgq/fixture crates; lock bytes remain
+unchanged. No lib export or runtime selection/math/timing change is introduced.
+The controller observes two real140-pair native IPC phases, INT then TERM,
+original CarParams/frame30 semantics, all16reader slots and actual writer IDs,
+loaded executable/providers, persisted3/0 values and bounded shutdown. The
+independent original observer/comparator remains separate and retained.
+
+The peer role is in-process; its close duration and owned worker exit are
+observed, with a180s outer bound rather than an independently killable peer PID.
+The shared child guard preserves live PID reservation until reap and rejects
+post-reap signaling. Eight new tests, actual IPC/numerical/provider/FD/cancellation
+behavior and Clippy are unexecuted. Scoped formatting/source review are not
+functional acceptance. Source review identified one recipe P2: missing upload
+ID/digest could allow cleanup after a no-files warning. A separate recipe-only
+revision must require a real receipt before publication; the frozen source is
+unaffected. Fixture input admission remains a prerequisite. No Python deletion,
+retirement credit or device result follows from this implementation.

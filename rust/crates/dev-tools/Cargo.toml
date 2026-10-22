@@ -572,6 +572,7 @@ driver-daemon-native = ["driving-daemon-native"]
 paramsd-loop-native = ["paramsd-fixture-native"]
 paramsd-fixture-native = ["dep:capnp", "dep:openpilot-cereal", "serde_json/float_roundtrip"]
 controlsd-fixture-native = ["paramsd-fixture-native", "dep:openpilot-card", "dep:openpilot-params"]
+controlsd-daemon-native = ["controlsd-fixture-native", "dep:openpilot-messaging", "openpilot-messaging/native", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri"]
 paramsd-startup-check-native = ["paramsd-fixture-native"]
 paramsd-startup-gate-native = ["rustix/pipe"]
 paramsd-daemon-native = ["serde_json/float_roundtrip", "paramsd-startup-gate-native", "dep:capnp", "dep:openpilot-cereal", "dep:openpilot-messaging", "openpilot-messaging/native", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri"]
@@ -2450,3 +2451,12 @@ required-features = ["controlsd-fixture-native"]
 [[test]]
 name = "control_failures_check"
 required-features = ["controlsd-fixture-native"]
+
+[[bin]]
+name = "check-controlsd-daemon-native"
+path = "src/bin/check_controlsd_daemon_native.rs"
+required-features = ["controlsd-daemon-native"]
+
+[[test]]
+name = "controlsd_daemon_check"
+required-features = ["controlsd-daemon-native"]
