@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      EXPECTED_SOURCE: 64e2a25c07fbc844901b006be78b9f6e6829b9b4
+      EXPECTED_SOURCE: 8a97671a8976425f44366da6523db449bed71b36
       RUSTUP_TOOLCHAIN: 1.94.0
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
@@ -21,7 +21,7 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 64e2a25c07fbc844901b006be78b9f6e6829b9b4
+        ref: 8a97671a8976425f44366da6523db449bed71b36
         persist-credentials: false
     - name: Build actual native checker and require complete original and live two-root proof
       shell: bash
