@@ -20,15 +20,20 @@ jobs:
         - 1
         - 2
         - 3
+        - 4
+        - 5
+        - 6
+        - 7
+      max-parallel: 4
     env:
-      EXPECTED_SOURCE: d61079461c0e217056095fcd56d6831230317137
-      DIAGNOSTIC_ATTEMPT: 20261022-single-call-hardware-watch-env-02
+      EXPECTED_SOURCE: 9afb381a8978f300a0403a363899aeef5eb56a65
+      DIAGNOSTIC_ATTEMPT: 20261022-single-call-hardware-watch-env-03
       PYTHONDONTWRITEBYTECODE: '1'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: d61079461c0e217056095fcd56d6831230317137
+        ref: 9afb381a8978f300a0403a363899aeef5eb56a65
         persist-credentials: false
     - name: Record CPU and select only exact naturally allocated EPYC 9V45 host
       id: cpu
