@@ -4,9 +4,8 @@ Tracking: [#54](https://github.com/bin9208/openpilot-rust/issues/54), parent
 [#497](https://github.com/bin9208/openpilot-rust/issues/497).
 Baseline: `b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a`.
 Worktree: `backlog-fixes-497/openpilot-rust`, branch
-`codex/fix-497-stale-runtime-defects`. Status: scoped patch prepared; hosted
-RED/GREEN, parent review and exact-SHA acceptance remain pending. No commit,
-push, GitHub mutation, device operation or local functional test was performed.
+`codex/fix-497-stale-runtime-defects`. Status: candidate implementation is in PR #500. Exact-SHA Actions acceptance remains
+pending; local checks are limited to syntax, formatting and diff review.
 
 ## Failure and bounded correction
 
@@ -96,9 +95,9 @@ The first reviewed lock-retention patch incorrectly blocked every file in a
 failed segment from upload and prevented reclamation. The revised tests were
 updated before this correction; the old literal lock assertions were removed.
 
-## GitHub-hosted Actions commands only
+## Registered Actions commands only
 
-These commands belong in the parent's GitHub-hosted aggregate job, using the
+These commands belong in the parent's registered `bin-actions` aggregate job, using the
 existing native logger dependencies (FFmpeg development libraries, capnproto,
 libyuv, strace, C compiler and oracle Python dependencies). They have **not**
 been run locally. From repository root:
@@ -181,3 +180,7 @@ claim.
 
 Docs-Not-Needed: internal recording failure completion; no user settings,
 production selector or paired user documentation changed.
+
+## Compiler follow-up from the actual full gate
+
+The `afed1a4` [logger job](https://github.com/bin9208/openpilot-rust/actions/runs/39841989845/job/120045870372) stopped while compiling the host-only interposer with `-Wall -Wextra -Werror`: glibc marks `fclose`'s stream nonnull, so comparing that parameter to null raised `-Werror=nonnull-compare`. The fixture now selects the raw stream by pointer identity alone. The valid `fclose` input contract, raw-stream selection, exactly-once real close, injected ENOSPC behavior and all strict warnings remain unchanged. This was a fixture compile failure before the I/O comparison, not evidence that the production behavior passed or failed. The next exact-source full I/O run is still required.

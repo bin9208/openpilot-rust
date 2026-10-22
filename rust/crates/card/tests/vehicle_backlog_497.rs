@@ -122,64 +122,224 @@ fn mqb_all_23_identities_complete_first_and_continuous_updates() {
 #[test]
 fn tesla_cancel_press_and_release_survive_simultaneous_infotainment_events() {
     for has_vehicle_bus in [false, true] {
-        let flags = if has_vehicle_bus {
+        for active in [3., 4.] {
+            for cancel in [0., 1., 2., 12., 13., 14., 15.] {
+                let mut state = tesla_button_state(has_vehicle_bus);
+                let mut party = Packer::new(Arc::clone(&state.party.dbc));
+                let mut vehicle = Packer::new(Arc::new(
+                    Dbc::load(&dbc_root().join("tesla_model3_vehicle.dbc")).unwrap(),
+                ));
+                // Both original parsers are lazy: an ordinary first update registers DAS_control.
+                // The next CAN update, not constructor-time input, establishes the active state.
+                let first = state.update(&[], 2_000_000_000).unwrap();
+                assert!(tesla_button_events(&first).is_empty());
+                assert_eq!(state.extras.das_acc_state_last, Some(0.));
+                let mut history = Vec::new();
+                // Source pulse is four samples; infotainment changes on both cancel edges.
+                for (tick, (acc, touch)) in [
+                    (active, 0.),
+                    (cancel, 3.),
+                    (active, 3.),
+                    (active, 3.),
+                    (active, 3.),
+                    (active, 0.),
+                ]
+                .into_iter()
+                .enumerate()
+                {
+                    let now = 2_010_000_000 + tick as u64 * 10_000_000;
+                    let das = frame(&mut party, "DAS_control", 2, &[("DAS_accState", acc)]);
+                    let address = das.address;
+                    let bytes = das.data.clone();
+                    let mut frames = vec![das];
+                    if has_vehicle_bus {
+                        frames.push(frame(
+                            &mut vehicle,
+                            "UI_status2",
+                            1,
+                            &[("UI_activeTouchPoints", touch)],
+                        ));
+                    }
+                    let output = state
+                        .update(
+                            &[Packet {
+                                mono_time: now,
+                                frames,
+                            }],
+                            now,
+                        )
+                        .unwrap();
+                    history.push(now);
+                    assert_eq!(state.autopilot.raw.get(&address), Some(&bytes));
+                    assert_eq!(
+                        state.autopilot.states[&address]
+                            .timestamps
+                            .iter()
+                            .copied()
+                            .collect::<Vec<_>>(),
+                        history
+                    );
+                    assert_eq!(state.extras.das_acc_state_last, Some(acc));
+                    let expected = if tick == 1 || tick == 5 {
+                        let mut expected = vec![(car_state::button_event::Type::Cancel, tick == 1)];
+                        if has_vehicle_bus {
+                            expected.push((car_state::button_event::Type::Lkas, tick == 1));
+                        }
+                        expected
+                    } else {
+                        vec![]
+                    };
+                    assert_eq!(tesla_button_events(&output), expected,
+                        "vehicle bus {has_vehicle_bus}, active {active}, cancel {cancel}, tick {tick}");
+                }
+            }
+        }
+    }
+}
+
+fn tesla_button_state(has_vehicle_bus: bool) -> tesla::state::State {
+    tesla::state::State::new(
+        &dbc_root(),
+        if has_vehicle_bus {
             tesla::HAS_VEHICLE_BUS
         } else {
             0
-        };
-        let mut state =
-            tesla::state::State::new(&dbc_root(), flags, 12., true, 2_000_000_000).unwrap();
+        },
+        12.,
+        true,
+        2_000_000_000,
+    )
+    .unwrap()
+}
+
+fn tesla_button_events(
+    message: &openpilot_card::core::Message,
+) -> Vec<(car_state::button_event::Type, bool)> {
+    message
+        .get_root_as_reader::<car_state::Reader>()
+        .unwrap()
+        .get_button_events()
+        .unwrap()
+        .iter()
+        .map(|event| (event.get_type().unwrap(), event.get_pressed()))
+        .collect()
+}
+
+#[test]
+fn tesla_cold_first_packet_cannot_establish_a_stock_cancel_transition() {
+    for has_vehicle_bus in [false, true] {
+        let mut state = tesla_button_state(has_vehicle_bus);
         let mut party = Packer::new(Arc::clone(&state.party.dbc));
-        let mut vehicle = Packer::new(Arc::new(
-            Dbc::load(&dbc_root().join("tesla_model3_vehicle.dbc")).unwrap(),
-        ));
-        // Cancel is held for four samples; infotainment changes on both cancel edges.
-        for (tick, (acc, touch)) in [(4., 0.), (0., 3.), (4., 3.), (4., 3.), (4., 3.), (4., 0.)]
-            .into_iter()
-            .enumerate()
+        // Literal source contract: the first unregistered 4 is lost, so the following 0
+        // is not a 4->0 edge. A later actually parsed 4->0 must still emit Cancel.
+        for (tick, (acc, expected_last, pressed)) in [
+            (4., 0., false),
+            (0., 0., false),
+            (4., 4., false),
+            (0., 0., true),
+        ]
+        .into_iter()
+        .enumerate()
         {
             let now = 2_000_000_000 + tick as u64 * 10_000_000;
-            let mut frames = vec![frame(
-                &mut party,
-                "DAS_control",
-                2,
-                &[("DAS_accState", acc)],
-            )];
-            if has_vehicle_bus {
-                frames.push(frame(
-                    &mut vehicle,
-                    "UI_status2",
-                    1,
-                    &[("UI_activeTouchPoints", touch)],
-                ));
-            }
+            let das = frame(&mut party, "DAS_control", 2, &[("DAS_accState", acc)]);
+            let address = das.address;
+            let bytes = das.data.clone();
             let output = state
                 .update(
                     &[Packet {
                         mono_time: now,
-                        frames,
+                        frames: vec![das],
                     }],
                     now,
                 )
                 .unwrap();
-            let cs = output.get_root_as_reader::<car_state::Reader>().unwrap();
-            let events: Vec<_> = cs
-                .get_button_events()
-                .unwrap()
-                .iter()
-                .map(|e| (e.get_type().unwrap(), e.get_pressed()))
-                .collect();
-            let expected = if tick == 1 || tick == 5 {
-                let mut expected = vec![(car_state::button_event::Type::Cancel, tick == 1)];
-                if has_vehicle_bus {
-                    expected.push((car_state::button_event::Type::Lkas, tick == 1));
-                }
-                expected
+            assert_eq!(state.extras.das_acc_state_last, Some(expected_last));
+            if tick == 0 {
+                assert!(!state.autopilot.raw.contains_key(&address));
+                assert!(state.autopilot.states[&address].timestamps.is_empty());
             } else {
+                assert_eq!(state.autopilot.raw.get(&address), Some(&bytes));
+                assert_eq!(state.autopilot.states[&address].timestamps.len(), tick);
+            }
+            assert_eq!(
+                tesla_button_events(&output),
+                if pressed {
+                    vec![(car_state::button_event::Type::Cancel, true)]
+                } else {
+                    vec![]
+                }
+            );
+        }
+    }
+}
+
+#[test]
+fn tesla_wrong_bus_and_partial_packets_do_not_invent_cancel_or_infotainment_edges() {
+    for has_vehicle_bus in [false, true] {
+        let mut state = tesla_button_state(has_vehicle_bus);
+        let mut party = Packer::new(Arc::clone(&state.party.dbc));
+        let mut vehicle = Packer::new(Arc::new(
+            Dbc::load(&dbc_root().join("tesla_model3_vehicle.dbc")).unwrap(),
+        ));
+        state.update(&[], 2_000_000_000).unwrap();
+        let mut history = Vec::new();
+        let mut accepted_bytes = None;
+        // Wrong buses (0/2 instead of AP2/vehicle1), then empty input retain old values.
+        // Independent touch edges occur during the four-update cancel pulse.
+        for tick in 0..8_u64 {
+            let now = 2_010_000_000 + tick * 10_000_000;
+            let mut frames = Vec::new();
+            if tick != 2 && tick != 5 {
+                let acc = if tick == 1 || tick == 3 { 0. } else { 4. };
+                let touch = if tick == 1 || tick == 4 { 3. } else { 0. };
+                let das = frame(
+                    &mut party,
+                    "DAS_control",
+                    if tick == 1 { 0 } else { 2 },
+                    &[("DAS_accState", acc)],
+                );
+                if tick != 1 {
+                    history.push(now);
+                    accepted_bytes = Some(das.data.clone());
+                }
+                frames.push(das);
+                frames.push(frame(
+                    &mut vehicle,
+                    "UI_status2",
+                    if tick == 1 { 2 } else { 1 },
+                    &[("UI_activeTouchPoints", touch)],
+                ));
+            }
+            let packets = if tick == 5 {
                 vec![]
+            } else {
+                vec![Packet {
+                    mono_time: now,
+                    frames,
+                }]
+            };
+            let output = state.update(&packets, now).unwrap();
+            let address = party.dbc.message("DAS_control").unwrap().address;
+            assert_eq!(state.autopilot.raw.get(&address), accepted_bytes.as_ref());
+            assert_eq!(
+                state.autopilot.states[&address]
+                    .timestamps
+                    .iter()
+                    .copied()
+                    .collect::<Vec<_>>(),
+                history
+            );
+            let expected = match tick {
+                3 => vec![(car_state::button_event::Type::Cancel, true)],
+                4 if has_vehicle_bus => vec![(car_state::button_event::Type::Lkas, true)],
+                6 if has_vehicle_bus => vec![(car_state::button_event::Type::Lkas, false)],
+                7 => vec![(car_state::button_event::Type::Cancel, false)],
+                _ => vec![],
             };
             assert_eq!(
-                events, expected,
+                tesla_button_events(&output),
+                expected,
                 "vehicle bus {has_vehicle_bus}, tick {tick}"
             );
         }

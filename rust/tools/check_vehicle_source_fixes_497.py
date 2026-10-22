@@ -64,7 +64,7 @@ def mqb_controls() -> dict:
 
 
 def tesla_controls() -> dict:
-  from opendbc.car import interfaces
+  from opendbc.car import Bus, interfaces
   from opendbc.car.tesla.interface import CarInterface
   from opendbc.can import CANPacker, parser
   old, identity = baseline_module('tesla')
@@ -77,34 +77,79 @@ def tesla_controls() -> dict:
       fingerprint = {bus: {} for bus in range(8)}
       if vehicle_bus:
         fingerprint[1][0x3df] = 8
-      outputs = {}
-      for label, state_class in (('baseline', old.CarState), ('current', current)):
+
+      def observe(state_class, steps, vehicle_bus, fingerprint, *, prime, unconfigured_ui=False):
+        nonlocal now
+        now = 2_000_000_000
         interfaces.Params = lambda: Settings({})
-        cp = CarInterface.get_params('TESLA_MODEL_3', fingerprint, [], False, True, False)
         CarInterface.CarState = state_class
+        cp = CarInterface.get_params('TESLA_MODEL_3', fingerprint, [], False, True, False)
         ci = CarInterface(cp)
         party = CANPacker('tesla_model3_party')
         vehicle = CANPacker('tesla_model3_vehicle')
-        events = []
-        for index, (acc, touch) in enumerate(((4, 0), (0, 3), (4, 3), (4, 3), (4, 3), (4, 0))):
-          now = 2_000_000_000 + index * 10_000_000
-          frames = [party.make_can_msg('DAS_control', 2, {'DAS_accState': acc})]
-          if vehicle_bus:
-            frames.append(vehicle.make_can_msg('UI_status2', 1, {'UI_activeTouchPoints': touch}))
-          state = ci.update([(now, frames)])
+        initial = []
+        if prime:
+          initial = [event.to_dict() for event in ci.update([]).buttonEvents]
+          assert not initial and ci.CS.das_acc_state_last == 0
+        events, receipts = [], []
+        for index, step in enumerate(steps):
+          now = 2_000_000_000 + (index + int(prime)) * 10_000_000
+          frames = []
+          if step:
+            acc, bus, touch, touch_bus = step
+            frames.append(party.make_can_msg('DAS_control', bus, {'DAS_accState': acc}))
+            if touch is not None and (vehicle_bus or unconfigured_ui):
+              frames.append(vehicle.make_can_msg('UI_status2', touch_bus, {'UI_activeTouchPoints': touch}))
+          packets = [] if step is None else [(now, frames)]
+          state = ci.update(packets)
           events.append([event.to_dict() for event in state.buttonEvents])
-        outputs[label] = events
+          ap = ci.can_parsers[Bus.ap_party]
+          address = ap.dbc.name_to_msg['DAS_control'].address
+          raw = ap.dat.get(address)
+          receipts.append({'now': now, 'packet_count': len(packets),
+            'input': [{'address': a, 'data': bytes(data).hex(), 'bus': bus} for a, data, bus in frames],
+            'accepted_raw': None if raw is None else raw.hex(),
+            'accepted_timestamps': list(ap.message_states[address].timestamps), 'last_acc': ci.CS.das_acc_state_last})
+        return {'initial_events': initial, 'events': events, 'receipts': receipts}
+
+      positive = [(4, 2, 0, 1), (0, 2, 3, 1), (4, 2, 3, 1), (4, 2, 3, 1), (4, 2, 3, 1), (4, 2, 0, 1)]
+      outputs = {label: observe(state_class, positive, vehicle_bus, fingerprint, prime=True)
+                 for label, state_class in (('baseline', old.CarState), ('current', current))}
       expected = [[{'type': 'cancel', 'pressed': pressed}] +
                   ([{'type': 'lkas', 'pressed': pressed}] if vehicle_bus else []) for pressed in (True, False)]
-      assert [outputs['current'][i] for i in (1, 5)] == expected
-      assert all(not outputs['current'][i] for i in (0, 2, 3, 4))
+      assert [outputs['current']['events'][i] for i in (1, 5)] == expected
+      assert all(not outputs['current']['events'][i] for i in (0, 2, 3, 4))
+      for value in outputs.values():
+        for index, receipt in enumerate(value['receipts']):
+          assert receipt['accepted_raw'] == receipt['input'][0]['data']
+          assert receipt['accepted_timestamps'] == [r['now'] for r in value['receipts'][:index+1]]
       if vehicle_bus:
         for index, pressed in ((1, True), (5, False)):
-          assert outputs['baseline'][index] == [
+          assert outputs['baseline']['events'][index] == [
             {'type': 'unknown', 'pressed': False}, {'type': 'lkas', 'pressed': pressed}]
       else:
         assert outputs['baseline'] == outputs['current']
-      rows.append({'vehicle_bus': vehicle_bus, **outputs})
+      cold = observe(current, [(4, 2, None, 1), (0, 2, None, 1), (4, 2, None, 1), (0, 2, None, 1)],
+        vehicle_bus, fingerprint, prime=False)
+      assert cold['events'] == [[], [], [], [{'type': 'cancel', 'pressed': True}]]
+      assert [r['last_acc'] for r in cold['receipts']] == [0, 0, 4, 0]
+      assert [len(r['accepted_timestamps']) for r in cold['receipts']] == [0, 1, 2, 3]
+      assert cold['receipts'][0]['accepted_raw'] is None
+      for index in (1, 2, 3):
+        receipt = cold['receipts'][index]
+        assert receipt['accepted_raw'] == receipt['input'][0]['data']
+        assert receipt['accepted_timestamps'] == [r['now'] for r in cold['receipts'][1:index+1]]
+      partial = observe(current, [(4, 2, 0, 1), (0, 0, 3, 2), (), (0, 2, 0, 1),
+        (4, 2, 3, 1), None, (4, 2, 0, 1), (4, 2, 0, 1)], vehicle_bus, fingerprint, prime=True, unconfigured_ui=True)
+      assert partial['events'] == [[], [], [], [{'type': 'cancel', 'pressed': True}],
+        [{'type': 'lkas', 'pressed': True}] if vehicle_bus else [], [],
+        [{'type': 'lkas', 'pressed': False}] if vehicle_bus else [], [{'type': 'cancel', 'pressed': False}]]
+      assert [len(r['accepted_timestamps']) for r in partial['receipts']] == [1, 1, 1, 2, 3, 3, 4, 5]
+      for index, accepted in enumerate((0, 0, 0, 3, 4, 4, 6, 7)):
+        receipt = partial['receipts'][index]
+        assert receipt['accepted_raw'] == partial['receipts'][accepted]['input'][0]['data']
+        assert receipt['accepted_timestamps'] == [partial['receipts'][i]['now'] for i in (0, 3, 4, 6, 7) if i <= index]
+      rows.append({'vehicle_bus': vehicle_bus, **outputs, 'cold_first_packet': cold, 'wrong_bus_and_partial': partial})
   finally:
     CarInterface.CarState = current
   return {**identity, 'cases': rows}

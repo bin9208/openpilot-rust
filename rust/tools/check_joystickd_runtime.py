@@ -14,9 +14,11 @@ import shutil
 import signal
 import struct
 import subprocess
+import sys
 import time
 import uuid
 
+from joystick_publications import Publications
 from joystickd_source import SourceRun, load_binding
 
 
@@ -37,6 +39,14 @@ def snapshot(cc, cs) -> dict:
     'actuators': [bits(v) for v in (control.actuators.accel, control.actuators.torque,
                                   control.actuators.steeringAngleDeg, control.actuators.curvature)]},
     'curvature': bits(cs.controlsState.curvature), 'error': None}
+
+
+def validate_publication(name, event) -> None:
+  assert event.valid, f'invalid {name} publication'
+  assert event.logMonoTime > 0, f'invalid {name} timestamp'
+  assert str(event.which()) == name, f'unexpected {name} payload'
+  if name == 'controlsState':
+    assert str(event.controlsState.lateralControlState.which()) == 'debugState'
 
 
 def main() -> None:
@@ -88,7 +98,10 @@ def main() -> None:
   stdout = (args.output / 'daemon.stdout.log').open('w')
   stderr = (args.output / 'daemon.stderr.log').open('w')
   process = subprocess.Popen([binary, '--frames', '240'], stdout=stdout, stderr=stderr)
-  records, matches = [], []
+  sockets = {'carControl': cc_socket, 'controlsState': cs_socket}
+  receiver = Publications(lambda name: messaging.recv_one_or_none(sockets[name]), process.poll,
+                          validate=validate_publication, serialize=lambda event: event.to_dict())
+  records, matches = receiver.records, []
 
   def publish(row: dict) -> None:
     car_event = messaging.new_message('carState')
@@ -109,20 +122,8 @@ def main() -> None:
       publisher.send(name, event)
 
   def receive() -> dict | None:
-    cc, cs = None, None
-    deadline = time.monotonic() + 2
-    while cc is None or cs is None:
-      if cc is None:
-        cc = messaging.recv_one_or_none(cc_socket)
-      if cs is None:
-        cs = messaging.recv_one_or_none(cs_socket)
-      if cc is None and cs is None and process.poll() is not None:
-        return None
-      assert time.monotonic() < deadline, 'publication timeout'
-      if cc is None or cs is None:
-        time.sleep(0.001)
-    records.append({'carControl': cc.to_dict(), 'controlsState': cs.to_dict()})
-    return snapshot(cc, cs)
+    pair = receiver.receive_pair()
+    return None if pair is None else snapshot(*pair)
 
   def match_phase(name: str) -> None:
     consecutive = 0
@@ -150,15 +151,30 @@ def main() -> None:
     while receive() is not None:
       pass
     assert len(records) >= 235, len(records)
+    receiver.validate_complete()
     assert process.wait(timeout=3) == 0
   finally:
-    if process.poll() is None:
-      process.send_signal(signal.SIGTERM)
-      process.wait(timeout=3)
-    stdout.close()
-    stderr.close()
-    (args.output / 'publications.json').write_text(json.dumps(records) + '\n')
-    (args.output / 'matches.json').write_text(json.dumps(matches, indent=2) + '\n')
+    failure = sys.exception()
+    before_cleanup = process.poll()
+    evidence = receiver.diagnostics(returncode_before_cleanup=before_cleanup)
+    evidence['failure'] = None if failure is None else {'type': type(failure).__name__, 'message': str(failure)}
+    try:
+      if before_cleanup is None:
+        process.send_signal(signal.SIGTERM)
+        process.wait(timeout=3)
+    except BaseException as cleanup_failure:
+      evidence['cleanup_failure'] = {'type': type(cleanup_failure).__name__, 'message': str(cleanup_failure)}
+      if failure is None:
+        raise
+      failure.add_note(f'producer cleanup failed: {cleanup_failure!r}')
+    finally:
+      evidence['returncode_after_cleanup'] = process.poll()
+      stdout.close()
+      stderr.close()
+      (args.output / 'publications.json').write_text(json.dumps(records) + '\n')
+      (args.output / 'matches.json').write_text(json.dumps(matches, indent=2) + '\n')
+      (args.output / 'channel_publications.json').write_text(json.dumps(receiver.channels) + '\n')
+      (args.output / 'receiver.json').write_text(json.dumps(evidence, indent=2) + '\n')
 
   checks = {}
   cp_path.unlink()
@@ -209,6 +225,8 @@ def main() -> None:
   elapsed = (last - first) / 1e9
   assert 2.0 <= elapsed <= 4.0, elapsed
   receipt = {'phases': len(matches), 'publications_per_service': len(records),
+    'channel_counts': evidence['channel_counts'], 'unmatched_tail_counts': evidence['unmatched_tail_counts'],
+    'returncode_before_cleanup': evidence['returncode_before_cleanup'], 'receiver_evidence': 'receiver.json',
     'duration_seconds': elapsed, 'rate_hz': (len(records) - 1) / elapsed, 'startup_read_error_recovered': True,
     'exit_codes': checks, 'invalid_cli_cases': 3, 'binary_sha256': hashlib.sha256(args.binary.read_bytes()).hexdigest(),
     'command': [binary, '--frames', '240'], 'prefix': os.environ['OPENPILOT_PREFIX']}

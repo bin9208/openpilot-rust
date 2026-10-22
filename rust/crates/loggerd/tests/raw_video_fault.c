@@ -75,7 +75,7 @@ size_t fwrite(const void *bytes, size_t size, size_t count, FILE *stream) {
 
 int fclose(FILE *stream) {
   const char *fault = getenv("LOGGERD_RAW_FAULT");
-  int selected = stream && stream == raw_stream;
+  int selected = stream == raw_stream;
   int fail = selected && fault && !strcmp(fault, "close");
   if (selected) raw_stream = NULL;
   int (*next)(FILE *) = dlsym(RTLD_NEXT, "fclose");

@@ -46,6 +46,57 @@ Cancel-state detection, the four-frame lifetime, event order and infotainment
 gesture policy remain unchanged. Actual State/CAN regressions check simultaneous
 cancel/infotainment press and release, with and without the vehicle bus.
 
+#### afed hosted regression: lazy-parser fixture correction
+
+Exact head `afed1a4638a8d0ec32b4f2744c47a80253748179`, Card job
+`120045870465`, failed this regression at tick1 without a vehicle bus: actual
+events were empty. The retained primary `card-afed.log` records all new PSA tests
+passing before this Tesla test stopped the full suite. This is a fixture setup
+failure, not evidence that the materialization repair should be reverted.
+
+The original `CarState.get_can_parsers` constructs party/AP-party with empty
+message lists. `CANParser.update` skips unregistered addresses, and only the
+later `VLDict.__getitem__` registers `DAS_control` with zero signal defaults.
+Native `State::new`/`update`/`signal_lazy` preserve that order. Thus the fixture's
+first `DAS_accState=4` frame was not parsed. Its next zero followed last state
+zero, not active3/4, so neither source nor native should emit Cancel. Changing
+the runtime to consume that first frame would violate the original contract.
+
+The positive fixture now performs an ordinary empty first update to register
+the lazy messages, then sends real AP-party bus2 CAN for active3/4 followed by
+each official cancel code0/1/2/12/13/14/15. It still requires the original exact
+Cancel press at tick1 and release at tick5 after the four-sample pulse. With
+vehicle bus enabled, real `UI_status2` bus1 touch0→3/3→0 adds LKAS press/release
+after Cancel in the same list. Without that parser, only Cancel is emitted.
+No pulse, event order, bus policy, parser validation or production code changes.
+
+Separate actual-CAN negatives retain the cold first-frame loss explicitly,
+reject wrong AP/UI buses, and distinguish empty CAN packets from no packet.
+Independent touch edges during an existing Cancel pulse do not invent Cancel
+edges; unconfigured vehicle-bus frames do not invent LKAS. Raw accepted DAS
+payloads and complete accepted timestamp prefixes are checked at every step.
+The source failure control uses the same ordinary registration setup for both
+immutable baseline and maintained source, retaining input bytes, accepted raw
+payload/timestamp receipts and all event rows. It still requires the baseline's
+Unknown/false event loss with the vehicle bus and correct maintained values.
+
+Parent Actions verification (already registered test/tool entry points):
+
+```sh
+cargo test --manifest-path rust/Cargo.toml -p openpilot-card --features native --locked --test vehicle_backlog_497 tesla_
+PYTHONPATH=.:opendbc_repo:rust/tools python rust/tools/check_vehicle_source_fixes_497.py --output "$RUNNER_TEMP/vehicle-497/source-controls"
+```
+
+Use the existing staged-DBC `source_command` bootstrap for the Python call and
+retain the unchanged full Card/Tesla source/native gates afterward. The 16×620
+runtime rows, full state/actuator/CAN byte comparison and input-admission history
+requirements are unchanged. No local functional execution, tests, imports,
+builds, CI dispatch, commit or push; syntax/format/diff review only. This follow-up
+owns the Tesla portions of the regression/tool and this section, no other lane.
+Static receipt: Python AST parsing, pinned Rust1.94 formatting/check and scoped
+three-file whitespace review pass. The original/native Tesla runtime files,
+materialization correction and full comparison/scenario definitions have no diff.
+
 ### #189: actual MQB first and continuous updates
 
 The source imports NumPy normally. No oracle injects an `np` global. The native

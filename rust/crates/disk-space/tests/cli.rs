@@ -50,14 +50,12 @@ fn cli_preserves_nonexistent_non_utf8_paths_and_zero_growth() {
         .unwrap();
     let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(report["growth_bytes"], 0);
+    assert!(report["free_bytes"].is_u64());
     assert_eq!(
         report["required_bytes"],
         openpilot_disk_space::RESERVE_BYTES
     );
-    assert_eq!(
-        output.status.success(),
-        report["free_bytes"].as_u64().unwrap() >= openpilot_disk_space::RESERVE_BYTES
-    );
+    assert!(output.status.success());
     assert!(!path.exists());
 }
 
