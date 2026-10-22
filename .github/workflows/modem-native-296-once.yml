@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      EXPECTED_SOURCE: baf585d4e403a2b636d2356dc45b2b6ac849175d
+      EXPECTED_SOURCE: f7f5ab578d855572fc52c8651655e8bbb8d208be
       RUSTUP_TOOLCHAIN: 1.94.0
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
@@ -21,7 +21,7 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: baf585d4e403a2b636d2356dc45b2b6ac849175d
+        ref: f7f5ab578d855572fc52c8651655e8bbb8d208be
         persist-credentials: false
     - name: Build actual native checker and require complete original and live two-root proof
       shell: bash
@@ -100,8 +100,13 @@ jobs:
 
         strace -ff -s 16384 -o "$proof/retirement.trace" -e trace=execve,execveat,clone,fork,vfork,exit,exit_group cargo test
         --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features modem-qa-native --test modem_retirement
-        modem_qa_replays_original_oracle_and_owned_native_processes -- --ignored --exact --nocapture > "$proof/retirement.log"
-        2>&1 || { tail -n 120 "$proof/retirement.log"; exit 1; }
+        same_held_native_elfs_replay_modem_originals_in_checkout_and_private_absent_root -- --ignored --exact --nocapture
+        > "$proof/retirement.log" 2>&1 || { tail -n 120 "$proof/retirement.log"; exit 1; }
+
+
+        grep -Fx "test same_held_native_elfs_replay_modem_originals_in_checkout_and_private_absent_root ... ok" "$proof/retirement.log"
+
+        grep -E "^test result: ok\. 1 passed; 0 failed; 0 ignored;" "$proof/retirement.log"
 
         '
     - uses: actions/upload-artifact@v6
