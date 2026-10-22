@@ -6512,3 +6512,47 @@ execution-edge TSV. Its3independent original-only captures39715283281 and pinned
 maintained platform proof now justify one newly recorded closed edge. Correct
 accounting is25recorded replaced edges and37pending (previous24/37); do not claim
 37→36 or exhaustive detection. No hidden source relocation executes Python.
+
+
+### Published4d599 checkpoint and ARM QA race closure
+
+PR343 publishes4d599dde6ec461cc43089d6f87381631aabdee6c; dev-md/#338 and protected
+branches are unchanged. Current Fast39719156487, Integration39719156492 and
+Rust39719156536 provide the new exact-head required checks; do not substitute
+older source results. User docs39719156450/39719250498 are separate current runs.
+
+#481 is closed after39717945321 checks outf0d81af610f5c96d0f87f2ba58d9a69a111a0795
+under workflowff1d770a5d2c6b55011ba747d3592b692a37d263. Focused8race/error cases
+and complete maintained ARM119624468112 pass. Parent independently audits full
+artifact12399818333/52181563B/all1576CRCs/SHA8fcbe0ddc61fed3ad31c7c7b965d1b40f1e7c297f0235b9fa37a43ebc939fc07,
+recomputes54Git source pins, and checks normal/joined/lifecycle rosters23/5/15.
+Independent review additionally checks two AArch64 releaseELFs/11testELFs and
+86processFDreceipts. No FD naturally vanished in that full run; deterministic
+race coverage directly exercises the repair. No radar detection/lead/NAS source
+changed, so this QA-only fix does not require NAS deployment. Closing#481 does
+not retire its pending Python QA sources or establish device validation.
+
+Modem39718465632/9afb passes checker/runtime build but test compilation finds a
+mutating late-verification callback cannot satisfy Fn.4d599dde6 makes that
+explicit FnMut.39719117814/4d599 passes builds and reaches units; three capture
+admission tests expose EOF while reading JSON after hashing a held file.
+Full failure artifact review and a narrow shared-descriptor-position repair are
+in progress. Original5tools+runtime1 remain live. Caller review finds retained
+PythonProcess.prepare and launcher still import the runtime modem module via
+process_config.py. Rust manager's native mapping alone does not migrate that
+Python caller. Retire five tools first only after actual absence proof, retain
+runtime source until its manager dependency closes. Private six-absent proof
+remains useful and must not be relabeled as actual caller closure.
+
+Hardware-watch39718507661 allocates three eligibleEPYC9V45 hosts and five explicit
+skips, but all eligible samples exit GDBstatus1 before preflight/numerical proof.
+Original diagnostics lost exception details before the inferior output directory
+existed. Attempt04/workflowa6f1a55c291c1abbf2604b0a5eae019d6f425d16 records entry,
+stage/type/traceback in the already existing preflight directory and admits
+built-in module metadata without assuming __file__. Inferior/source/provider/
+CPU/ISA/fulloutput guards and strong hashlib interop assertions remain exact.
+39719769987 is pending, not accepted numerical evidence. Road#482 kernel92
+wrapper diagnostic39719642723/workflowbba6fee627d029265440f90be5d3c57ad4a3caf1
+separately pins4d599, original fixture and exact failed catalog; it changes no IR,
+target or arithmetic and requires complete original/native unwrapped output
+correspondence before interpreting any intermediate snapshot.

@@ -33,7 +33,8 @@ an all-module clearance or complete runtime/device acceptance.
 Navigation startup #457 and historical PTRACE_LISTEN/EIO #474 remain unexplained.
 Generic ARM/QEMU is not a sealed AGNOS/device candidate. Keep #296 open.
 
-Latest published PR checkpoint is faeef14da43d3a2c59ec71d7966e191828a748b3,
+Latest published PR checkpoint is4d599dde6ec461cc43089d6f87381631aabdee6c.
+Prior faeef14da43d3a2c59ec71d7966e191828a748b3 was validated
 with tested synthetic merge939a190a11fc991a4eaff958d514dc2fca5c07e2 (baseb55552db).
 Rust39713242787 exposes four distinct current concerns: workspace stager policy
 #478 (22 actual callers versus old23; repaired), RadarCAN ARM provenance FD
@@ -290,3 +291,12 @@ and64trace files/35successful execs/Python0. Original manager/modem14scenarios,
 unchanged full533guard policy39716711789; accept precisely3baseline tools.
 Modem embedded reference was absent from the earlier execution-edge inventory;
 add one explicitly closed row rather than incorrectly decrementing37pending.
+
+Current published4d599 full checks are Fast39719156487, Integration39719156492,
+Rust39719156536 and userdocs39719156450/39719250498. #481 is now closed after
+parent full artifact/source/roster audit; its Python QA remains pending conversion.
+Modem39719117814 reaches units but fails three capture reads with EOF after
+held-file hashing. Repair must seek/read through the held admission helper.
+Retained Python manager launcher imports modem.py: current closure is5devtools,
+not runtime1, despite the native Rust catalog mapping. Add explicit original6,
+actual5retired/runtimepinned and private6absent states rather than weaken absence.
