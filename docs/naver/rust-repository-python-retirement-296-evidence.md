@@ -1,5 +1,31 @@
 # Repository-wide Python retirement: current evidence (#296)
 
+## R8 workflow registration size repair (2026-10-23)
+
+Actual [39871079714](https://github.com/bin9208/openpilot-rust/actions/runs/39871079714)
+at workflow8bd7575b9d418678166363eb74b41b6dbede7e7e registers zero jobs and
+reports the500KB workflow limit. Full source003eed6c078139280ac703920335e8334057a1c6
+contains a721935-byte rust.yml. Its source-only representation repair is499875
+bytes, SHA256 aa409b0ee507b8f7c017a799822df270d6e44d074e1901f58a2c07eba466361c.
+Independent recursive type-sensitive comparison confirms all43jobs,1106steps,
+758run strings,1063step conditions and235step IDs, including every ownership
+guard and finalizer. No command/provider/model/ARM policy changes are included.
+Standard scalar/container anchors and2213aliases refer to120completed nodes;
+no forward/recursive alias, merge key, explicit tag or duplicate key was found.
+The only scalar-text distinction is empty versus explicit-null workflow_dispatch;
+native-typed YAML meaning is equal. Source review of ci_policy::parse supports
+these event kinds, but the actual Rust parser and GitHub admission are unrun.
+
+The added maintained_workflow_files_fit_github_registration_byte_limit case
+checks UTF-8 byte length against500000 across maintained inputs. Old source
+would fail by direct size measurement; this Rust case has not run locally.
+The disjoint policy/contract patch d13c5fe9e0bbcaa097ee4167a19f0e9b2bb62a1942835293f4ef23c026e5c074
+updates exactly the test and three contract seals. Local rustfmt/diff/hash/source
+checks pass. Focused Actions qualification remains required, as do actual common
+caller loading, private ownership policy/negative controls and changed ARM
+consumer execution. This grants no additional runtime or Python retirement
+acceptance; inventory remains288replaced-local/3partial/3289pending of3580.
+
 Current accepted source retirement: the outer Panda checker/test Python files
 are removed. Actual deleted-checkout maintained gate39625704015 passes at
 source249c1a08 after the prior153/152-source pre-deletion proof. Parent audited
