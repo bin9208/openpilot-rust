@@ -23,7 +23,7 @@ const INPUTS: usize = 891;
 const OBSERVATIONS: usize = 890;
 const MAX_PINNED_SOURCE: u64 = 32 * 1024 * 1024;
 const MAX_EXECUTABLE: u64 = 512 * 1024 * 1024;
-const MAX_CAPTURE: u64 = 1 * 1024 * 1024;
+const MAX_CAPTURE: u64 = 1024 * 1024;
 const RETIRED_TOOLS: [&str; 3] = [
     "rust/tools/check_hardwared.py",
     "rust/tools/hardwared_source.py",

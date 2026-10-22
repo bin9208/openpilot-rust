@@ -1302,8 +1302,6 @@ fn peer(root: &Path, output: &Path, prefix: &str) -> Result<Value> {
             &mut input_history,
         )?;
     }
-    drop(until);
-    drop(send_receive);
     publisher.stop()?;
     publisher.collect(&mut input_history, &mut input_count)?;
     let logs_ok = records

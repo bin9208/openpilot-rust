@@ -6284,3 +6284,25 @@ Hardwared review additionally restores original peripheral/selfdrive/panda send
 order and1000ms missing-deviceState rejection while retaining continuous10Hz
 producer. No behavioral deadline is relaxed. The current83a6fdf82 candidate is
 already rebuilding; apply this precise source fix before its final full proof.
+
+Hardwared39710862783/source83a6fdf8270d8bbaca0cef6e0c598292e05f223d builds
+and passes4inline+6capture controls (three hosted functional tests remain
+ignored here), then strict Clippy rejects identity_op and two no-op Copy closure
+drops. Parent audits artifact12397156830:37923B/all10CRCs,
+SHA25627a39c330b19c3c5e1e6745b113ca22bc9ce7ca0a42699c68a6897b3251bd89b.
+Remove the redundant multiplier/drops without suppressing lint. Include the
+reviewed exact publication order/receive deadline in the next full candidate.
+
+HardwareInfo postdelete full maintained hardware119601261069/run39710753791
+succeeds at97c33434c, including unchanged native bootlog/control/amplifier/ASan
+boundaries and full native HardwareInfo two-root replay. Separate corrected
+policy119602929645/run39711275087 at028919c8d passes13disk controls,78isolation
+controls and whole formatting. Actual postdelete artifact12397456757 full audit
+is in progress; do not increase accepted inventory until that audit finishes.
+
+Single-call diagnostic first recipe39711175217 and later validation39711273764
+fail workflow admission before any job: runner.temp was used in job-level env.
+Move those two values to the replay step's env and keep pinned helper bytes.
+Corrected39711589963/workflow61c82092966337c4805d5f0196c5aebef13624c5 runs
+one eligible natural host and explicitly skips three known hosts. Single-call
+artifact audit/interpretation is pending; no numerical production change yet.
