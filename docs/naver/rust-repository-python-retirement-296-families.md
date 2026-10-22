@@ -105,12 +105,11 @@ three partial baseline entries.
    staging edge, preserves the full checker/finalization/source/ELF contract and
    does not retire remaining audio-job Python binding/policy consumers.
 
-8. Kalman equation generators pass fresh original/native compiled function and
-   constant comparisons39693981650. Two source deletions in706e26861 require
-   postdelete39697287904 accepts both equation-generator entries. Two additional corpus CLI
-   candidates30f80e2f6 call the unchanged C++ oracle, preserve RNG/function order
-   and remain pending fresh original comparison39696759740. Both Python corpus
-   commands and original symbolic definitions/builders remain live/pending.
+8. All four Kalman development commands are deleted and accepted: equation
+   generators39697287904 and original-C++ corpus tools39698084823. Both native
+   corpus CLIs retain full independent JSON bytes, RNG/function order, actual and
+   empty-cwd execution, and symlink/hardlink output behavior. Original symbolic
+   model definitions, C++/Cython builders and remaining consumers stay pending.
 
 ## Evidence reuse and delivery
 

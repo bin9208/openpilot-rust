@@ -5853,3 +5853,28 @@ source_paths enumeration fix, and restore the independently derived expected163:
 phase, executable, original-comparison or source-set equality check is removed.
 This supersedes the attempted165 count recorded above; complete outer four-lane
 38phase proof still requires a passing run after this correction.
+
+### Both corpus commands accepted after actual deletion (2026-10-22)
+
+[39698084823](https://github.com/bin9208/openpilot-rust/actions/runs/39698084823)
+passes at2e83f1dba7561bc56c1f3183a13049e8898be2f1, workflow
+da59a756e867fd1518a4dc36a484f035a8825cc9. Pure corpus/ABI controls, strict Clippy,
+whole workspace formatting,13disk/78isolation/6workflow policies and the actual
+native commands pass. Both Python source paths are absent in that Git tree.
+Actual-checkout and fresh empty-cwd output is byte-identical to the independently
+captured original Pose144596B/Car90295B JSON and exact function/value/key order.
+Symlink/hardlink cases use actual native CLI and retain target inode/mode/bytes;
+provider failure still precedes writes. Original model definitions and C++/Cython
+builders remain live/pending; no native candidate function supplies an oracle.
+
+Parent audits artifact12391214759:716601B/113CRCs/3076413B expanded,
+SHA2562b9ffaebd5b04af9e5764b3d41ba3982aeb72914ddf7b222ee31a2f802f59a1b.
+All4047 captured source bodies independently match that Git commit, every provider
+before/after check passes and all6native statuses are0. Both complete original
+and native datasets, both ELF before/after hashes and original input hashes match.
+Parent also compares all six stdout streams with the captured original, replacing
+only its output path with the actual argv path; all stderr is empty. Independent
+review corroborates both link bytes and cwd/environment/argv receipts; it does
+not infer hardlink inode identity from ZIP storage. Accept generate_pose_corpus.py
+and generate_car_corpus.py: inventory259/3/3318. All four Kalman commands are now
+accepted,37observed embedded edges remain pending, and model-family6 remains open.

@@ -27,7 +27,7 @@ family records. Git retains earlier handoff versions.
 
 ## Accepted source retirement and open global gates
 
-Inventory:257replaced-local/3partial/3320pending of3580 baseline entries. Additional
+Inventory:259replaced-local/3partial/3318pending of3580 baseline entries. Additional
 helpers/notebooks and observed execution edges are tracked separately. The latter
 has37pending sites after metadata14caller acceptance, recovery CWP and soundd source staging.
 
@@ -240,3 +240,14 @@ fixed already-existing original JSON, now also testing symlink/hardlink write
 semantics and empty cwd. Workflowda59a756e867fd1518a4dc36a484f035a8825cc9 is
 published; its run remains pending acceptance. Full Fast routing/metadata/Card
 focused39696562943 passes; latest complete PR run still awaits generic ARM.
+
+Corpus postdelete39698084823 passes at2e83f1dba7561bc56c1f3183a13049e8898be2f1,
+workflowda59a756e867fd1518a4dc36a484f035a8825cc9. Pure/strict Clippy, full format,
+13disk/78isolation/6policy and both current C++ provider comparisons pass. Parent
+audits113CRCs/all4047source bodies, six successful CLI receipts, both unchanged
+ELFs, full JSON bytes, original stdout with output-path-only projection and
+provider dependencies. Independent review corroborates both link/cwd receipts.
+Accept both corpus entries; total259/3/3318. All four Kalman development commands
+are now accepted; original model definitions, C++/Cython builders and their other
+Python consumers remain pending. Panda retry39698464972 at6c6733f84 restores the
+correct163-source count without weakening exact set/38phase/34ELF checks.
