@@ -1,4 +1,5 @@
 //! Unchanged original orchestration captured before native implementation.
+use openpilot_dev_tools::ci_policy::{validate_local_routing, TRUSTED_SOURCE};
 use openpilot_dev_tools::{
     camera_ci_check::{execute, Options},
     qa_process::{Captured, CommandSpec, Runner},
@@ -416,7 +417,7 @@ fn mandatory_camera_gate_builds_native_controller_and_orchestrator_before_live_c
         .unwrap();
     assert!(build < live);
     for step in [&steps[build], &steps[live]] {
-        assert!(step.get("if").is_none());
+        assert_eq!(step["if"], TRUSTED_SOURCE);
         assert!(step.get("continue-on-error").is_none());
     }
     let build_command = steps[build]["run"].as_str().unwrap();
@@ -442,6 +443,7 @@ fn mandatory_camera_gate_builds_native_controller_and_orchestrator_before_live_c
 }
 
 fn camera_native_peer_policy(job: &Value) -> std::result::Result<(), String> {
+    validate_local_routing(&serde_json::json!({"jobs":{"camera-runtime":job}}))?;
     if job.get("if").is_some() || job.get("continue-on-error").is_some() {
         return Err("camera job must remain mandatory".into());
     }
@@ -488,7 +490,15 @@ fn camera_native_peer_policy(job: &Value) -> std::result::Result<(), String> {
                     ));
                 }
             }
-            if step.get("if").is_some() || step.get("continue-on-error").is_some() {
+            if (step["if"] != TRUSTED_SOURCE
+                && !matches!(
+                    step["name"].as_str().unwrap_or(""),
+                    "Deny fork source and require registered local runner"
+                        | "Seal private source and index after maintained checks"
+                        | "Clean only uploaded owned source alias and target"
+                ))
+                || step.get("continue-on-error").is_some()
+            {
                 return Err("camera native commands must remain unconditional".into());
             }
             commands.extend(run.lines().map(str::trim));
@@ -508,7 +518,7 @@ fn camera_native_peer_policy(job: &Value) -> std::result::Result<(), String> {
     }
     if !commands.iter().any(|command| {
         command.contains(
-            "apt-get install -y capnproto libcapnp-dev g++ clang-18 libclang-rt-18-dev libzmq3-dev",
+            "apt-get -o \"APT::Architectures=$(dpkg --print-architecture)\" install -y capnproto libcapnp-dev g++ clang-18 libclang-rt-18-dev libzmq3-dev",
         )
     }) {
         return Err("camera native schema/compiler/IPC prerequisites missing".into());
@@ -541,7 +551,7 @@ fn camera_gate_uses_native_visionipc_peers_without_python_setup_or_bindings() {
 fn camera_native_peer_policy_rejects_python_and_lost_or_skipped_native_coverage() {
     let baseline = camera_job();
     camera_native_peer_policy(&baseline).unwrap();
-    for step in [
+    for mut step in [
         serde_json::json!({"uses":"actions/setup-python@v6"}),
         serde_json::json!({"run":"python -m pip install pycapnp Cython"}),
         serde_json::json!({"run":"python rust/tools/build_visionipc_python.py --output binding"}),
@@ -549,6 +559,10 @@ fn camera_native_peer_policy_rejects_python_and_lost_or_skipped_native_coverage(
         serde_json::json!({"run":"pip3 install pyzmq"}),
         serde_json::json!({"run":"true","env":{"PYTHONPATH":"binding"}}),
     ] {
+        step["if"] = TRUSTED_SOURCE.into();
+        if step.get("run").is_some() {
+            step["working-directory"] = "${{ env.CI296_SOURCE }}".into();
+        }
         let mut changed = baseline.clone();
         changed["steps"].as_array_mut().unwrap().push(step);
         assert!(camera_native_peer_policy(&changed).is_err());

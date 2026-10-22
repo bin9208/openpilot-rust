@@ -1,5 +1,5 @@
 //! Production polygon checking must include the full decoder set and its SDK.
-use openpilot_dev_tools::ci_policy::parse;
+use openpilot_dev_tools::ci_policy::{parse, uses_native_action, TRUSTED_SOURCE};
 use std::{fs, path::PathBuf};
 
 fn root() -> PathBuf {
@@ -32,7 +32,7 @@ fn forms_native_reference_runs_real_pixels_with_owned_display_and_raw_helper() {
         .unwrap();
     assert!(raw < test);
     for step in [build, &steps[raw], &steps[test]] {
-        assert!(step.get("if").is_none());
+        assert_eq!(step["if"], TRUSTED_SOURCE);
         assert!(step.get("continue-on-error").is_none());
     }
     let raw_script = steps[raw]["run"].as_str().unwrap();
@@ -126,7 +126,9 @@ fn production_polygon_requires_native_codecs_and_ci_runs_the_real_gate() {
         .unwrap();
     let stage = steps
         .iter()
-        .position(|s| s["uses"] == "./.github/actions/native-image-sdk")
+        .position(|s| {
+            uses_native_action(&workflow["jobs"]["ui-connectivity"], s, "native-image-sdk")
+        })
         .unwrap();
     let build = steps
         .iter()
@@ -138,7 +140,7 @@ fn production_polygon_requires_native_codecs_and_ci_runs_the_real_gate() {
         .unwrap();
     assert!(stage < build);
     for step in [&steps[stage], &steps[build]] {
-        assert!(step.get("if").is_none());
+        assert_eq!(step["if"], TRUSTED_SOURCE);
         assert!(step.get("continue-on-error").is_none());
     }
     let command = steps[build]["run"].as_str().unwrap();

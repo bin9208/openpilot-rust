@@ -1,5 +1,7 @@
 //! Mandatory native encoder workflow routing; no interpreter fixture bootstrap.
-use openpilot_dev_tools::ci_policy::parse;
+use openpilot_dev_tools::ci_policy::{
+    parse, uses_native_action, validate_local_routing, LOCAL_RUNNER, TRUSTED_ALWAYS, TRUSTED_SOURCE,
+};
 use serde_json::Value;
 use std::{fs, path::Path};
 fn workflow() -> Value {
@@ -21,7 +23,8 @@ fn encoder_host_job_uses_native_checkers_without_python_bootstrap() {
     let workflow = workflow();
     let job = &workflow["jobs"]["encoder-runtime"];
     let commands = runs(job);
-    assert_eq!(job["runs-on"], "ubuntu-24.04");
+    assert_eq!(job["runs-on"], serde_json::json!(LOCAL_RUNNER));
+    validate_local_routing(&workflow).unwrap();
     assert_eq!(job["env"]["CARGO_BUILD_JOBS"], "2");
     assert_eq!(job["env"]["CARGO_INCREMENTAL"], "0");
     assert!(job.get("if").is_none());
@@ -29,9 +32,16 @@ fn encoder_host_job_uses_native_checkers_without_python_bootstrap() {
     for step in steps(job) {
         assert!(!step["uses"].as_str().unwrap_or("").contains("setup-python"));
         assert!(step.get("continue-on-error").is_none());
-        if step.get("run").is_some() {
+        if step.get("run").is_some()
+            && !matches!(
+                step["name"].as_str().unwrap_or(""),
+                "Deny fork source and require registered local runner"
+                    | "Seal private source and index after maintained checks"
+                    | "Clean only uploaded owned source alias and target"
+            )
+        {
             assert!(
-                step.get("if").is_none(),
+                step["if"] == TRUSTED_SOURCE,
                 "mandatory encoder stage gated: {}",
                 step["name"]
             );
@@ -85,7 +95,7 @@ fn encoder_host_job_uses_native_checkers_without_python_bootstrap() {
     );
     assert!(steps(job)
         .iter()
-        .any(|s| s["uses"] == "./.github/actions/native-json11"));
+        .any(|s| uses_native_action(job, s, "native-json11")));
 }
 #[test]
 fn encoder_host_retains_all_native_tests_build_provenance_and_strict_checks() {
@@ -154,7 +164,7 @@ fn encoder_host_retains_all_native_tests_build_provenance_and_strict_checks() {
                 .is_some_and(|v| v.starts_with("actions/upload-artifact@"))
         })
         .unwrap();
-    assert_eq!(artifact["if"], "always()");
+    assert_eq!(artifact["if"], TRUSTED_ALWAYS);
     for path in [
         "encoder-native/",
         "openpilot-encoderd",
@@ -205,7 +215,7 @@ fn encoder_native_allocations_keep_capacity_guards_and_host_dependencies() {
             let line = line.trim();
             if line.starts_with("cargo ")
                 || line.starts_with("rustup ")
-                || line.contains("apt-get install")
+                || line.contains("apt-get -o ") && line.contains(" install ")
             {
                 assert!(
                     lines[..index]

@@ -128,10 +128,10 @@ fn miri_workflow_hashes_actual_sysroot_before_all_original_memory_checks() {
     assert!(steps
         .iter()
         .any(|step| step["uses"] == "actions/upload-artifact@v6"
-            && step["if"] == "always()"
+            && step["if"] == openpilot_dev_tools::ci_policy::TRUSTED_ALWAYS
             && step["with"]["path"]
                 .as_str()
-                .is_some_and(|path| path.contains("${{ runner.temp }}/radar-memory/"))));
+                .is_some_and(|path| path.contains("${{ env.CI_JOB_TEMP }}/radar-memory/"))));
 }
 
 #[test]

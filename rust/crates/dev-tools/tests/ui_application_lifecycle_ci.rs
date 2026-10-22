@@ -1,5 +1,5 @@
 //! Required full framework routing and negative policy mutations.
-use openpilot_dev_tools::ci_policy::parse;
+use openpilot_dev_tools::ci_policy::{parse, TRUSTED_SOURCE};
 use serde_json::Value;
 use std::{fs, path::Path};
 const SUITE:&str="--features ui-application-lifecycle-native --test ui_application_lifecycle_loop --test ui_application_lifecycle_recording --test ui_application_lifecycle_reference --test ui_application_lifecycle_raw --test ui_application_lifecycle_check --test ui_application_lifecycle_native --locked";
@@ -89,14 +89,14 @@ fn validate(workflow: &Value, caller: &str) -> Result<(), String> {
         }) {
             return Err("lifecycle command suppresses failure".into());
         }
-        if steps[index].get("if").is_some() || steps[index].get("continue-on-error").is_some() {
+        if steps[index]["if"] != TRUSTED_SOURCE || steps[index].get("continue-on-error").is_some() {
             return Err("lifecycle step must be mandatory".into());
         }
     }
     if !steps.iter().any(|s| {
-        s["run"]
-            .as_str()
-            .is_some_and(|s| s.contains("apt-get install") && s.contains("libxtst6"))
+        s["run"].as_str().is_some_and(|s| {
+            s.contains("apt-get -o ") && s.contains(" install ") && s.contains("libxtst6")
+        })
     }) {
         return Err("native XTest dependency missing".into());
     }

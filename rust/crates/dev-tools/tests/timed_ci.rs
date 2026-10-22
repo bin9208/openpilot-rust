@@ -1,5 +1,5 @@
 //! Preserve the complete timed gate and every unrelated support command.
-use openpilot_dev_tools::ci_policy::parse;
+use openpilot_dev_tools::ci_policy::{parse, TRUSTED_SOURCE};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
@@ -115,7 +115,11 @@ fn route(kind: &str) -> String {
 }
 fn mandatory(step: &Value) -> Result<(), String> {
     require(
-        step.get("if").is_none() && step.get("continue-on-error").is_none(),
+        (if step.get("steps").is_some() {
+            step.get("if").is_none()
+        } else {
+            step["if"] == TRUSTED_SOURCE
+        }) && step.get("continue-on-error").is_none(),
         "conditional or optional timed gate",
     )
 }
@@ -233,10 +237,36 @@ fn validate(workflow: &Value) -> Result<(), String> {
         .as_object()
         .ok_or("missing captured environment")?
     {
-        require(
-            job["env"][key] == *value,
-            "unrelated support environment changed",
-        )?;
+        if key == "PYTHONPATH" {
+            let export = job["steps"]
+                .as_array()
+                .ok_or("missing private source exports")?
+                .iter()
+                .find(|step| {
+                    step["name"] == "Configure source-dependent job environment on private paths"
+                })
+                .ok_or("private PYTHONPATH export missing")?;
+            mandatory(export)?;
+            require(
+                export["env"]["CI296_LATE_PYTHONPATH"]
+                    == value
+                        .as_str()
+                        .ok_or("bad original PYTHONPATH")?
+                        .replace("${{ github.workspace }}", "${{ env.CI296_SOURCE }}"),
+                "private support PYTHONPATH changed",
+            )?;
+            require(
+                export["run"].as_str().is_some_and(|run| {
+                    run.contains("\"PYTHONPATH=$CI296_LATE_PYTHONPATH\" >> \"$GITHUB_ENV\"")
+                }),
+                "private support PYTHONPATH not exported",
+            )?;
+        } else {
+            require(
+                job["env"][key] == *value,
+                "unrelated support environment changed",
+            )?;
+        }
     }
     let steps = job["steps"].as_array().ok_or("support steps missing")?;
     let scripts = steps
@@ -326,7 +356,10 @@ fn validate(workflow: &Value) -> Result<(), String> {
             )?;
             native[0].clone()
         } else {
-            line.to_owned()
+            line.replace(
+                "apt-get ",
+                "apt-get -o \"APT::Architectures=$(dpkg --print-architecture)\" ",
+            )
         };
         require(
             actual_lines
@@ -362,7 +395,7 @@ fn validate(workflow: &Value) -> Result<(), String> {
         .iter()
         .find(|step| {
             step["run"].as_str().is_some_and(|run| {
-                run.starts_with("sudo apt-get update && sudo apt-get install -y ")
+                run.starts_with("sudo apt-get -o \"APT::Architectures=$(dpkg --print-architecture)\" update && sudo apt-get -o \"APT::Architectures=$(dpkg --print-architecture)\" install -y ")
             })
         })
         .ok_or("native IPC prerequisites missing")?;
@@ -392,7 +425,7 @@ fn validate(workflow: &Value) -> Result<(), String> {
     mandatory(build)?;
     require(
         build["env"]["TIMED_NATIVE_ENTRY"]
-            == "${{ github.workspace }}/rust/target/debug/openpilot-timed",
+            == "${{ env.CI296_SOURCE }}/rust/target/debug/openpilot-timed",
         "actual lifecycle entrypoint test prerequisite missing",
     )?;
     let script = build["run"]

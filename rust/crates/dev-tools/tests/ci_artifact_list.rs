@@ -32,10 +32,10 @@ fn arm_workflow_uses_native_list_and_retains_execution_and_evidence() {
     assert!(steps
         .iter()
         .any(|step| step["uses"] == "actions/upload-artifact@v6"
-            && step["if"] == "always()"
+            && step["if"] == openpilot_dev_tools::ci_policy::TRUSTED_ALWAYS
             && step["with"]["path"]
                 .as_str()
-                .is_some_and(|path| path.contains("${{ runner.temp }}/radar-arm/"))));
+                .is_some_and(|path| path.contains("${{ env.CI_JOB_TEMP }}/radar-arm/"))));
 }
 
 fn bytes(hex: &str) -> Vec<u8> {

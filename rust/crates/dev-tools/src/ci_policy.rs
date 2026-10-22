@@ -117,11 +117,419 @@ fn expected_strings<'a>(values: &[&'a str]) -> BTreeSet<&'a str> {
     values.iter().copied().collect()
 }
 
+/// #296 routing consumes the pinned #502 interfaces; it adds no ARM transport.
+pub fn uses_native_action(job: &Value, step: &Value, name: &str) -> bool {
+    let prefix = match job["env"].get("CI296_ALIAS_BASENAME") {
+        Some(alias) => {
+            let Some(alias) = alias
+                .as_str()
+                .filter(|alias| alias.starts_with(".ci296-source-") && !alias.contains('/'))
+            else {
+                return false;
+            };
+            format!("./{alias}/source")
+        }
+        None => ".".into(),
+    };
+    step["uses"] == format!("{prefix}/.github/actions/{name}")
+}
+
+pub const LOCAL_RUNNER: [&str; 4] = ["self-hosted", "Linux", "X64", "dev-md-local"];
+pub const TRUSTED_SOURCE: &str = "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}";
+pub const TRUSTED_SUCCESS: &str = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (success()) }}";
+pub const TRUSTED_ALWAYS: &str = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()) }}";
+pub const FORK_DENIAL: &str = "test \"${SOURCE_ALLOWED:-}\" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }\n";
+fn source_result_binding(step: &Value) -> Result<(), String> {
+    absent(step, &["if", "continue-on-error"])?;
+    require(
+        step["env"]["SOURCE_ALLOWED"] == TRUSTED_SOURCE,
+        "missing exact source trust binding",
+    )?;
+    require(
+        step["run"]
+            .as_str()
+            .is_some_and(|s| s.starts_with(FORK_DENIAL)),
+        "fork source must fail before other commands",
+    )
+}
+// A prefix alone would also admit `trusted && (false) || always()`. Require
+// the entire remaining expression to stay inside the guarded parentheses.
+fn trusted_condition(condition: &str) -> bool {
+    if condition == TRUSTED_SOURCE {
+        return true;
+    }
+    let Some(body)=condition.strip_prefix("${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (").and_then(|s|s.strip_suffix(" }}")) else {return false;};
+    let mut depth = 1usize;
+    let mut quote = None;
+    let mut chars = body.char_indices().peekable();
+    while let Some((index, ch)) = chars.next() {
+        if let Some(active) = quote {
+            if ch == active {
+                if chars.peek().is_some_and(|(_, next)| *next == active) {
+                    chars.next();
+                } else {
+                    quote = None;
+                }
+            }
+            continue;
+        }
+        match ch {
+            '\'' | '"' => quote = Some(ch),
+            '(' => depth += 1,
+            ')' => {
+                if depth == 0 {
+                    return false;
+                }
+                depth -= 1;
+                if depth == 0 && index + ch.len_utf8() != body.len() {
+                    return false;
+                }
+            }
+            _ => {}
+        }
+    }
+    depth == 0 && quote.is_none()
+}
+fn private_source_condition(body: &str) -> String {
+    format!(
+        "${{{{ ({}) && ({body}) }}}}",
+        TRUSTED_SOURCE
+            .trim_start_matches("${{ ")
+            .trim_end_matches(" }}")
+    )
+}
+fn private_upload_conditions(steps: &[Value]) -> Result<Vec<String>, String> {
+    let mut conditions = vec!["always()".into()];
+    // Match the maintained direct-upload order, then nested provider receipts.
+    for nested in [false, true] {
+        for step in steps {
+            let called = step["uses"].as_str().unwrap_or("");
+            let selected = if nested {
+                called.ends_with("/.github/actions/native-eigen")
+            } else {
+                called.starts_with("actions/upload-artifact@")
+            };
+            if selected {
+                let id = step["id"]
+                    .as_str()
+                    .ok_or("upload receipt has no explicit step ID")?;
+                conditions.extend([
+                    format!("steps.{id}.outcome == 'success'"),
+                    format!("steps.{id}.outputs.artifact-id != ''"),
+                    format!("steps.{id}.outputs.artifact-digest != ''"),
+                ]);
+            }
+        }
+    }
+    Ok(conditions)
+}
+
+/// Validate the #296 owned source/alias consumer. Existing private x64
+/// diagnostics and the separately admitted Fast schema retain their own gates.
+pub fn validate_private_job_layout(job: &Value) -> Result<(), String> {
+    let Some(alias) = job["env"]["CI296_ALIAS_BASENAME"].as_str() else {
+        return Ok(());
+    };
+    require(
+        alias.starts_with(".ci296-source-") && !alias.contains('/'),
+        "invalid private local-action alias",
+    )?;
+    let steps = job["steps"].as_array().ok_or("missing private job steps")?;
+    let position = |name: &str| {
+        steps
+            .iter()
+            .position(|s| s["name"] == name)
+            .ok_or_else(|| format!("missing private stage {name}"))
+    };
+    let allocate =
+        position("Allocate private source cache target and local action alias before checkout")?;
+    let checkout = steps
+        .iter()
+        .position(|s| {
+            s["uses"]
+                .as_str()
+                .unwrap_or("")
+                .starts_with("actions/checkout@")
+        })
+        .ok_or("missing private checkout")?;
+    require(
+        allocate < checkout,
+        "private source allocation must precede checkout",
+    )?;
+    let stage = steps[allocate]["run"]
+        .as_str()
+        .ok_or("missing private allocation body")?;
+    for marker in [
+        "((available >= required))",
+        "source_owner=$(mktemp",
+        "ln -sT",
+        "CI296_ALIAS_IDENTITY=",
+        "LOCAL_CI_SOURCE_ROOT=$source",
+        "CARGO_TARGET_DIR=$source/rust/target",
+        "CARGO_HOME=$job/cargo-home",
+        "RUSTUP_HOME=$job/rustup-home",
+        "if [[ ${GITHUB_WORKSPACE:-} == %q ]]; then",
+    ] {
+        require(
+            stage.contains(marker),
+            format!("private allocation/transport gap: {marker}"),
+        )?;
+    }
+    require(
+        stage.find("((available >= required))") < stage.find("source_owner=$(mktemp"),
+        "source growth checked after allocation",
+    )?;
+    require(
+        steps[checkout]["with"]["path"] == "${{ env.CI296_CHECKOUT_PATH }}",
+        "checkout escaped owned private source",
+    )?;
+    for key in ["persist-credentials", "set-safe-directory", "clean"] {
+        require(
+            steps[checkout]["with"][key] == "false",
+            format!("unsafe private checkout flag {key}"),
+        )?;
+    }
+    let admission = position("Admit exact private source and index")?;
+    let seal = position("Seal private source and index after maintained checks")?;
+    require(
+        checkout < admission && admission < seal,
+        "private admission/seal order changed",
+    )?;
+    require(
+        steps[seal]["id"] == "ci296_source_seal",
+        "source seal outcome ID missing",
+    )?;
+    require(
+        steps[seal]["if"] == private_source_condition("always() && env.CI296_SOURCE != ''"),
+        "source seal guard changed",
+    )?;
+    for marker in ["cmp \"$CI_JOB_TEMP/proof/index-before.bin\" \"$CI_JOB_TEMP/proof/index-after.bin\"", "cmp \"$CI_JOB_TEMP/proof/source-before.sha256\" \"$CI_JOB_TEMP/proof/source-after.sha256\"", "git diff --exit-code", "git diff --cached --exit-code"] {
+        require(steps[seal]["run"].as_str().is_some_and(|body| body.contains(marker)), "source seal comparison lost")?;
+    }
+    for step in steps {
+        if step["uses"]
+            .as_str()
+            .is_some_and(|called| called.starts_with("android-actions/setup-android@"))
+        {
+            require(
+                step["env"]["ANDROID_SDK_ROOT"] == "${{ env.CI_JOB_TEMP }}/android-sdk",
+                "Android setup escaped owned SDK root",
+            )?;
+        }
+        if let Some(called) = step["uses"].as_str().filter(|s| s.starts_with("./")) {
+            require(
+                called.starts_with(&format!("./{alias}/source/.github/actions/")),
+                "local action escaped same private source",
+            )?;
+        }
+        if step.get("run").is_some() {
+            let directory = step["working-directory"]
+                .as_str()
+                .ok_or("missing private command directory")?;
+            let host = directory == "${{ github.workspace }}"
+                && step["env"]["CI296_HOST_CONTROL"] == "1"
+                && matches!(step["name"].as_str().unwrap_or(""),
+                "Deny fork source and require registered local runner" |
+                "Require unavailable Darwin execution interface" |
+                "Allocate private source cache target and local action alias before checkout" |
+                "Clean only uploaded owned source alias and target");
+            let private = directory
+                .strip_prefix("${{ env.CI296_SOURCE }}")
+                .is_some_and(|suffix| !suffix.split('/').any(|part| part == ".."));
+            require(
+                host || private,
+                "run command escaped private source/owned host boundary",
+            )?;
+        }
+    }
+    if job["env"].get("LOCAL_CI_ARCH").is_some() {
+        require(
+            steps[admission]["id"] == "ci296_source_admission",
+            "fresh ARM source admission outcome missing",
+        )?;
+        require(
+            steps[admission]["if"] == TRUSTED_SOURCE,
+            "fresh ARM admission guard changed",
+        )?;
+        let finish = position("Finish emulated architecture evidence")?;
+        require(admission < finish, "ARM finalizer precedes fresh admission")?;
+        require(
+            steps[finish]["if"]
+                == private_source_condition(
+                    "always() && steps.ci296_source_admission.outcome == 'success'",
+                ),
+            "ARM finalizer may load an unadmitted retained alias",
+        )?;
+        require(
+            job["defaults"]["run"]["shell"] == "openpilot-local-shell {0}",
+            "ARM-routed job lost its explicit command-file transport",
+        )?;
+        for step in steps {
+            if step.get("run").is_some() && step["env"]["CI296_HOST_CONTROL"] != "1" {
+                require(
+                    step["shell"] == "openpilot-local-shell {0}",
+                    "target command escaped explicit QEMU command-file shell",
+                )?;
+            }
+            if step["uses"].as_str().is_some_and(|called| {
+                ["native-json11", "native-eigen", "native-image-sdk"]
+                    .iter()
+                    .any(|name| called.ends_with(&format!("/.github/actions/{name}")))
+            }) {
+                require(
+                    step["with"]["run-shell"] == "openpilot-local-shell {0}",
+                    "ARM native action must receive explicit run-shell input",
+                )?;
+            }
+        }
+    }
+    let cleanup = &steps[position("Clean only uploaded owned source alias and target")?];
+    let condition = cleanup["if"]
+        .as_str()
+        .ok_or("missing private cleanup condition")?;
+    for step in steps {
+        if (step["uses"]
+            .as_str()
+            .unwrap_or("")
+            .starts_with("actions/upload-artifact@")
+            || step["uses"]
+                .as_str()
+                .unwrap_or("")
+                .ends_with("/.github/actions/native-eigen"))
+            && step.get("id").is_some()
+        {
+            let id = step["id"].as_str().ok_or("invalid upload id")?;
+            for suffix in [
+                ".outcome == 'success'",
+                ".outputs.artifact-id != ''",
+                ".outputs.artifact-digest != ''",
+            ] {
+                require(
+                    condition.contains(&format!("steps.{id}{suffix}")),
+                    format!("cleanup before authenticated upload {id}"),
+                )?;
+            }
+        }
+    }
+    let mut expected = private_upload_conditions(steps)?;
+    expected.extend([
+        "steps.ci296_source_seal.outcome == 'success'".into(),
+        "env.CI296_SOURCE_OWNER != ''".into(),
+    ]);
+    require(
+        condition == private_source_condition(&expected.join(" && ")),
+        "source cleanup requires the exact successful seal and upload receipts",
+    )?;
+    let common = &steps[position("Clean common owned temporary paths after uploaded source")?];
+    let mut expected = private_upload_conditions(steps)?;
+    expected.push("steps.ci296_source_cleanup.outcome == 'success'".into());
+    require(
+        common["if"] == private_source_condition(&expected.join(" && ")),
+        "common cleanup bypasses retained source/proof hold",
+    )?;
+    let cleanup = cleanup["run"]
+        .as_str()
+        .ok_or("missing private cleanup body")?;
+    for marker in [
+        "UPLOAD_ID =~",
+        "UPLOAD_DIGEST =~",
+        "stat -c '%d:%i'",
+        ".ci296-owner",
+        "readlink --",
+        "CI296_ALIAS_IDENTITY",
+        "test ! -L",
+        "rm -- \"$alias_path\"",
+    ] {
+        require(
+            cleanup.contains(marker),
+            format!("private cleanup guard missing {marker}"),
+        )?;
+    }
+    Ok(())
+}
+/// Preserve pending as well as running jobs. GitHub defaults to replacing the
+/// pending job even when cancel-in-progress is false; queue: max opts into the
+/// supported queue (up to 100 pending jobs) without changing concurrency groups.
+pub fn validate_concurrency(workflow: &Value) -> Result<(), String> {
+    let check = |scope: &Value| -> Result<(), String> {
+        if let Some(concurrency) = scope.get("concurrency") {
+            require(
+                concurrency["cancel-in-progress"] == "false",
+                "concurrency must preserve running jobs",
+            )?;
+            require(
+                concurrency["queue"] == "max",
+                "concurrency must retain pending jobs with queue: max",
+            )?;
+        }
+        Ok(())
+    };
+    check(workflow)?;
+    if let Some(jobs) = workflow["jobs"].as_object() {
+        for job in jobs.values() {
+            check(job)?;
+        }
+    }
+    Ok(())
+}
+
+/// Every current or newly published diagnostic workflow is checked, not just
+/// the inherited Fast/Rust files. Matrix roles never select hosted machines.
+pub fn validate_local_routing(workflow: &Value) -> Result<(), String> {
+    validate_concurrency(workflow)?;
+    require(
+        workflow["on"].get("pull_request_target").is_none(),
+        "pull_request_target cannot execute source on persistent runner",
+    )?;
+    let jobs = workflow["jobs"]
+        .as_object()
+        .ok_or("missing local workflow jobs")?;
+    for (name, job) in jobs {
+        if let Some(called) = job["uses"].as_str() {
+            require(
+                called.starts_with("./.github/workflows/"),
+                "external reusable runner routing is not admitted",
+            )?;
+            continue;
+        }
+        require(
+            job["runs-on"] == serde_json::json!(LOCAL_RUNNER),
+            format!("{name}: fixed bin-actions labels required; no hosted/matrix fallback"),
+        )?;
+        validate_private_job_layout(job)?;
+        let steps = job["steps"]
+            .as_array()
+            .ok_or("missing source trust boundary")?;
+        source_result_binding(steps.first().ok_or("missing fork refusal step")?)?;
+        if steps[0]["name"] == "Deny fork source and require registered local runner" {
+            require(
+                steps[0].get("if").is_none(),
+                "fork refusal must not be skipped",
+            )?;
+            for step in &steps[1..] {
+                let condition = step["if"]
+                    .as_str()
+                    .ok_or("source-reading step lacks trust condition")?;
+                require(trusted_condition(condition), "untrusted source step bypass")?;
+            }
+        } else {
+            require(
+                job["if"] == "${{ always() }}",
+                "result aggregate must still run and explicitly reject forks",
+            )?;
+        }
+    }
+    Ok(())
+}
+
 pub fn check_workflow_policy(files: &[(String, String)]) -> Result<(), String> {
     let workflows = files
         .iter()
         .map(|(name, text)| parse(text).map(|v| (name.as_str(), v)))
         .collect::<Result<BTreeMap<_, _>, _>>()?;
+    for workflow in workflows.values() {
+        validate_local_routing(workflow)?;
+    }
     let get = |name: &str| {
         workflows
             .get(name)
@@ -168,6 +576,69 @@ pub fn check_workflow_policy(files: &[(String, String)]) -> Result<(), String> {
             script.contains(&format!("test \"${name}\" = success")),
             format!("integration gate no longer requires {name}"),
         )?;
+    }
+    absent(gate, &["continue-on-error"])?;
+    let gate_steps = gate["steps"]
+        .as_array()
+        .ok_or("missing integration result step")?;
+    require(
+        gate_steps.len() == 1,
+        "integration aggregate must retain one mandatory result step",
+    )?;
+    let step = &gate_steps[0];
+    source_result_binding(step)?;
+    let bindings = [
+        ("BUILD", "build"),
+        ("NAVIGATION", "navigation"),
+        ("APK", "apk"),
+        ("JETLINK", "jetlink"),
+    ];
+    let environment = step["env"]
+        .as_object()
+        .ok_or("missing integration bindings")?;
+    require(
+        environment.len() == bindings.len() + 1,
+        "integration binding count changed",
+    )?;
+    for (variable, worker) in bindings {
+        require(
+            step["env"][variable] == format!("${{{{ needs.{worker}.result }}}}"),
+            format!("integration binding changed: {variable}"),
+        )?;
+    }
+    let mut success = bindings
+        .iter()
+        .map(|(name, _)| ((*name).into(), "success".into()))
+        .collect::<BTreeMap<_, _>>();
+    success.insert("SOURCE_ALLOWED".into(), "true".into());
+    require(
+        run_shell(script, &success)
+            .map_err(|e| e.to_string())?
+            .success(),
+        "integration rejects successful workers",
+    )?;
+    for variable in ["BUILD", "NAVIGATION", "APK", "JETLINK", "SOURCE_ALLOWED"] {
+        for state in [
+            None,
+            Some(""),
+            Some("failure"),
+            Some("cancelled"),
+            Some("skipped"),
+            Some("false"),
+        ] {
+            let mut values = success.clone();
+            if let Some(state) = state {
+                values.insert(variable.into(), state.into());
+            } else {
+                values.remove(variable);
+            }
+            require(
+                !run_shell(script, &values)
+                    .map_err(|e| e.to_string())?
+                    .success(),
+                format!("integration accepts {variable}={state:?}"),
+            )?;
+        }
     }
     for name in ["build", "navigation", "apk", "jetlink"] {
         let job = &integration["jobs"][name];
@@ -488,7 +959,7 @@ pub fn validate_rust_gate(workflow: &Value) -> Result<(), String> {
         .as_object()
         .ok_or("missing gate result bindings")?;
     require(
-        bindings.len() == RUST_GATE_BINDINGS.len(),
+        bindings.len() == RUST_GATE_BINDINGS.len() + 1,
         "Rust gate result binding count changed",
     )?;
     for (name, job) in RUST_GATE_BINDINGS {
@@ -500,10 +971,20 @@ pub fn validate_rust_gate(workflow: &Value) -> Result<(), String> {
     let script = step["run"]
         .as_str()
         .ok_or("missing Rust aggregation script")?;
-    let all_success = RUST_GATE_BINDINGS
+    source_result_binding(step)?;
+    let mut all_success = RUST_GATE_BINDINGS
         .iter()
         .map(|(name, _)| ((*name).into(), "success".into()))
         .collect::<BTreeMap<_, _>>();
+    all_success.insert("SOURCE_ALLOWED".into(), "true".into());
+    let mut denied = all_success.clone();
+    denied.insert("SOURCE_ALLOWED".into(), "false".into());
+    require(
+        !run_shell(script, &denied)
+            .map_err(|e| e.to_string())?
+            .success(),
+        "Rust fork aggregate must fail",
+    )?;
     require(
         run_shell(script, &all_success)
             .map_err(|e| e.to_string())?

@@ -9438,3 +9438,34 @@ and reviewed current Cargo/pipeline-checker pins. Native compilation, combined
 guarded/cached-driver/publisher and guarded/fresh-family/publisher execution are
 unrun; integration of this test is not their acceptance. No original source,
 model, tolerance, cached image, compiler or common CI helper is changed/deleted.
+
+## Maintained local routing source and ownership review (2026-10-23)
+
+R5 patch58736194cc8ff5f35b2099a84aa8060ba8811fb5b75b5bba65ea5c47f313f43f
+is integrated on9de275e61 after all34 Git preimages and resulting file hashes are
+checked. Independent ownership closure covers60successful-final-seal cleanup
+conditions,8fresh-admission finalizers and2private Android SDK roots. Separate
+policy review retains13workflow/74job rosters,599domain/control command blocks,
+558Rust growth guards,22direct plus1template native-stager callers and14receipt
+consumers. The four new negative controls remain unrun and explicitly exercise
+source-condition fixtures; they do not claim actual Actions-engine/SDK behavior.
+
+ARM source review confirms8routed jobs/41explicit guest command steps and6nested
+JSON11 forwards, with host setup/finish/sealing/uploads and matching guest-native
+producers/consumers. It finds missing file utilities in two fresh guest APT lists.
+R6 delta1d50d133f93f6283e97a7fcee6af17d850a33ffbb5b8beaf4b1a554faaed96aa
+adds only those package declarations, two source assertions and matching contract
+metadata; all34integrated postimages match its frozen manifest. Actual guest
+installation, source-policy controls and consumer execution remain pending.
+Huygens independently closes this exact three-target R6 source delta, reusing
+the unchanged R5 review; no actual guest-provider acceptance follows.
+All common7766helpers,9368publisher payloads,dd439output-pairs globs,241torque
+fixes and the9de startup adapter are retained. No local functional execution or
+new full feature publication occurs at this checkpoint.
+
+Job-level inspection matters: local Fast39857487263 still reports queued while
+five individual jobs on bin-actions already failed. Their actual failure is
+under separate caller analysis. At22:52UTC the runner is online/busy with ARM
+job120120936438 from run39863489224;58other jobs are queued in the latest100run
+snapshot. This does not authorize cancelling/restarting that job or a hosted
+fallback. Counts and successful source review do not establish runtime acceptance.

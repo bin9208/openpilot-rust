@@ -1,5 +1,5 @@
 //! Telemetry integer retirement must run both the live source and candidate.
-use openpilot_dev_tools::ci_policy::parse;
+use openpilot_dev_tools::ci_policy::{parse, TRUSTED_SOURCE};
 use serde_json::Value;
 use std::{fs, path::Path};
 const BUILD:&str = "rust/target/debug/build-beep-integer-reference --output \"$RUNNER_TEMP/telemetry-integer-reference\"";
@@ -16,7 +16,7 @@ fn required_routing(workflow: &Value) -> Result<(), String> {
                     return Err("retired Python integer checker routed".into());
                 }
                 if text.trim() == BUILD || text.trim() == CHECK {
-                    if step.get("if").is_some() || step.get("continue-on-error").is_some() {
+                    if step["if"] != TRUSTED_SOURCE || step.get("continue-on-error").is_some() {
                         return Err(
                             "required integer source comparison is conditional or softened".into(),
                         );
@@ -40,7 +40,7 @@ fn telemetry_builds_fresh_original_params_reference_then_requires_native_compari
 }
 #[test]
 fn missing_skipped_softened_and_wrong_reference_routes_are_rejected() {
-    let good = serde_json::json!({"jobs":{"telemetry-runtime":{"steps":[{"run":format!("{BUILD}\n{CHECK}\n")}]}}});
+    let good = serde_json::json!({"jobs":{"telemetry-runtime":{"steps":[{"if":TRUSTED_SOURCE,"run":format!("{BUILD}\n{CHECK}\n")}]}}});
     required_routing(&good).unwrap();
     for mutation in [
         "missing-build",

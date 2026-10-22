@@ -233,7 +233,10 @@ fn camera_ci_builds_and_uses_native_generators_before_original_comparisons() {
         })
         .unwrap();
     assert!(native < compare);
-    assert!(steps[native].get("if").is_none());
+    assert_eq!(
+        steps[native]["if"],
+        openpilot_dev_tools::ci_policy::TRUSTED_SOURCE
+    );
     assert!(steps[native].get("continue-on-error").is_none());
     let run = steps[native]["run"].as_str().unwrap();
     for required in [

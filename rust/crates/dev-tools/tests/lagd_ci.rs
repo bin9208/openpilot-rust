@@ -1,5 +1,5 @@
 //! Keep the complete six-checker native closure and every unrelated estimator gate.
-use openpilot_dev_tools::ci_policy::parse;
+use openpilot_dev_tools::ci_policy::{parse, LOCAL_RUNNER, TRUSTED_ALWAYS, TRUSTED_SOURCE};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
@@ -30,7 +30,7 @@ const OLD_ATOMIC: &str = "python -P -m pytest -c /dev/null --noconftest -p no:ca
 const NATIVE_ATOMIC: &str = "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features paramsd-startup-gate-native --test paramsd_startup_gate";
 const NATIVE_ATOMIC_CLIPPY: &str = "cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features paramsd-startup-gate-native --lib --test paramsd_startup_gate -- -D warnings";
 const OLD_ESTIMATOR_DEPS: &str = "sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev";
-const NATIVE_ESTIMATOR_DEPS: &str = "sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev bzip2 strace";
+const NATIVE_ESTIMATOR_DEPS: &str = "sudo apt-get -o \"APT::Architectures=$(dpkg --print-architecture)\" update && sudo apt-get -o \"APT::Architectures=$(dpkg --print-architecture)\" install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev bzip2 strace";
 const OLD_LOOP: &str = "python rust/tools/check_paramsd_loop.py --oracle \"$RUNNER_TEMP/paramsd-oracle\" --trace \"$PWD/rust/target/debug/examples/paramsd_loop\" --evidence \"$RUNNER_TEMP/estimation/paramsd/loop\"";
 const NATIVE_LOOP_STEP: &str =
     "Compare native paramsd loop checker against complete original observations";
@@ -62,7 +62,11 @@ fn require(ok: bool, message: &str) -> Result<(), String> {
 }
 fn mandatory(value: &Value) -> Result<(), String> {
     require(
-        value.get("if").is_none() && value.get("continue-on-error").is_none(),
+        (if value.get("steps").is_some() {
+            value.get("if").is_none()
+        } else {
+            value["if"] == TRUSTED_SOURCE
+        }) && value.get("continue-on-error").is_none(),
         "lagd gate became conditional/optional",
     )
 }
@@ -79,7 +83,17 @@ fn command(tool: &str) -> String {
 }
 fn lines(steps: &[Value]) -> BTreeMap<String, usize> {
     let mut out = BTreeMap::new();
-    for step in steps {
+    for step in steps.iter().filter(|step| {
+        !matches!(
+            step["name"].as_str().unwrap_or(""),
+            "Allocate private source cache target and local action alias before checkout"
+                | "Admit exact private source and index"
+                | "Configure source-dependent job environment on private paths"
+                | "Keep original Python installations private"
+                | "Seal private source and index after maintained checks"
+                | "Clean only uploaded owned source alias and target"
+        )
+    }) {
         if let Some(run) = step["run"].as_str() {
             for line in run.lines().map(str::trim).filter(|line| !line.is_empty()) {
                 *out.entry(line.to_owned()).or_default() += 1;
@@ -93,7 +107,11 @@ fn validate(workflow: &Value) -> Result<(), String> {
     mandatory(job)?;
     let baseline = original();
     let old = &baseline["job"];
-    for key in ["name", "runs-on", "timeout-minutes"] {
+    require(
+        job["runs-on"] == serde_json::json!(LOCAL_RUNNER),
+        "fixed bin-actions runner labels changed",
+    )?;
+    for key in ["name", "timeout-minutes"] {
         require(
             job[key] == old[key],
             "unrelated estimation job metadata/environment changed",
@@ -109,6 +127,29 @@ fn validate(workflow: &Value) -> Result<(), String> {
         )?;
         expected_env[key] = "0".into();
     }
+    expected_env.as_object_mut().unwrap().remove("PYTHONPATH");
+    expected_env["CI296_ALIAS_BASENAME"] = ".ci296-source-rust--estimation-runtime".into();
+    let source_env = job["steps"]
+        .as_array()
+        .ok_or("missing private source exports")?
+        .iter()
+        .find(|s| s["name"] == "Configure source-dependent job environment on private paths")
+        .ok_or("missing private PYTHONPATH export")?;
+    mandatory(source_env)?;
+    require(
+        source_env["env"]["CI296_LATE_PYTHONPATH"]
+            == old["env"]["PYTHONPATH"]
+                .as_str()
+                .unwrap()
+                .replace("${{ github.workspace }}", "${{ env.CI296_SOURCE }}"),
+        "private source PYTHONPATH changed",
+    )?;
+    require(
+        source_env["run"].as_str().is_some_and(|run| {
+            run.contains("\"PYTHONPATH=$CI296_LATE_PYTHONPATH\" >> \"$GITHUB_ENV\"")
+        }),
+        "private source PYTHONPATH not exported",
+    )?;
     require(
         job["env"] == expected_env,
         "unrelated estimation environment or bounded debug settings changed",
@@ -158,9 +199,36 @@ fn validate(workflow: &Value) -> Result<(), String> {
         "native paramsd loop checker moved before estimator build",
     )?;
     for oldstep in old["steps"].as_array().unwrap() {
-        if oldstep.get("uses").is_some() {
+        if let Some(called) = oldstep["uses"].as_str() {
+            let mut expected = oldstep.clone();
+            expected["if"] = if oldstep["if"] == "always()" {
+                TRUSTED_ALWAYS
+            } else {
+                TRUSTED_SOURCE
+            }
+            .into();
+            if called.starts_with("./.github/actions/") {
+                expected["uses"] = called
+                    .replacen("./", "./.ci296-source-rust--estimation-runtime/source/", 1)
+                    .into();
+            }
+            if called.starts_with("actions/checkout@") {
+                expected["with"]["path"] = "${{ env.CI296_CHECKOUT_PATH }}".into();
+                for flag in ["persist-credentials", "set-safe-directory", "clean", "lfs"] {
+                    expected["with"][flag] = "false".into();
+                }
+            }
+            if called.starts_with("actions/upload-artifact@") {
+                expected["with"]["path"] = oldstep["with"]["path"]
+                    .as_str()
+                    .unwrap()
+                    .replace("${{ runner.temp }}", "${{ env.CI_JOB_TEMP }}")
+                    .into();
+                // An explicit ID binds this existing upload to guarded cleanup.
+                expected["id"] = "local_evidence_1".into();
+            }
             require(
-                steps.iter().any(|step| step == oldstep),
+                steps.iter().any(|step| step == &expected),
                 "original estimator action changed",
             )?;
         }

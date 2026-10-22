@@ -1,5 +1,7 @@
 //! Assertion-for-assertion native migration of test_rust_isolation.py.
-use openpilot_dev_tools::ci_policy::{parse, run_shell, validate_rust_gate};
+use openpilot_dev_tools::ci_policy::{
+    parse, run_shell, validate_rust_gate, LOCAL_RUNNER, TRUSTED_ALWAYS, TRUSTED_SOURCE,
+};
 use serde_json::Value;
 use std::{collections::BTreeMap, fs, path::PathBuf};
 fn root() -> PathBuf {
@@ -57,7 +59,7 @@ fn dbc_native_tools_are_built_before_every_required_consumer() {
     let data = workflow();
     let darwin = &data["jobs"]["dbc-darwin"];
     absent(darwin, &["if", "continue-on-error"]);
-    assert_eq!(darwin["runs-on"], "macos-15");
+    assert_eq!(darwin["runs-on"], serde_json::json!(LOCAL_RUNNER));
     for (key, expected) in [
         ("RUSTUP_TOOLCHAIN", "1.94.0"),
         ("CARGO_BUILD_JOBS", "2"),
@@ -80,7 +82,7 @@ fn dbc_native_tools_are_built_before_every_required_consumer() {
         .collect::<Vec<_>>();
     assert_eq!(bootstrap_steps.len(), 2, "reserve before build and tests");
     for (_, step) in &bootstrap_steps {
-        absent(step, &["if", "continue-on-error"]);
+        trusted_step(step);
     }
     let build_run = bootstrap_steps[0].1["run"].as_str().unwrap();
     required(
@@ -121,7 +123,7 @@ fn dbc_native_tools_are_built_before_every_required_consumer() {
             "xcrun --find clang",
         ],
     );
-    absent(&darwin_steps[reclaim], &["if", "continue-on-error"]);
+    trusted_step(&darwin_steps[reclaim]);
     assert!(data["jobs"]["fast"]["needs"]
         .as_array()
         .unwrap()
@@ -171,7 +173,7 @@ fn dbc_native_tools_are_built_before_every_required_consumer() {
         }
     }
     for index in [reserve, setup, export] {
-        absent(&steps[index], &["if", "continue-on-error"]);
+        trusted_step(&steps[index]);
     }
     required(
         steps[export]["run"].as_str().unwrap(),
@@ -263,7 +265,7 @@ fn dbc_native_tools_are_built_before_every_required_consumer() {
         .iter()
         .find(|step| step["name"] == "Require native DBC and Version source contracts")
         .unwrap();
-    absent(checks, &["if", "continue-on-error"]);
+    trusted_step(checks);
     let run = checks["run"].as_str().unwrap();
     required(
         run,
@@ -326,8 +328,8 @@ fn workspace_source_tests_use_the_real_msgq_binding_before_importing_oracles() {
         .as_str()
         .unwrap()
         .contains("PYTHONPATH=\"$RUNNER_TEMP/rust-msgq-python:$PYTHONPATH\" python -m pytest"));
-    absent(builders[0].1, &["if", "continue-on-error"]);
-    absent(step, &["if", "continue-on-error"]);
+    trusted_step(builders[0].1);
+    trusted_step(step);
 }
 #[test]
 fn workspace_requires_pinned_llvm20_graph_and_primitive_regressions() {
@@ -342,7 +344,7 @@ fn workspace_requires_pinned_llvm20_graph_and_primitive_regressions() {
             .unwrap_or_else(|| panic!("missing required {name}"))
     };
     let (stage_index, stage) = find("Stage independently captured LLVM20 provider");
-    absent(stage, &["if", "continue-on-error"]);
+    trusted_step(stage);
     let stage_run = stage["run"].as_str().unwrap();
     required(
         stage_run,
@@ -404,7 +406,7 @@ fn workspace_requires_pinned_llvm20_graph_and_primitive_regressions() {
     ] {
         let (index, step) = find(name);
         assert!(stage_index < index);
-        absent(step, &["if", "continue-on-error"]);
+        trusted_step(step);
         let run = step["run"].as_str().unwrap();
         required(run, &[
             "LLVM_PATH=\"$RUNNER_TEMP/llvm20-captured/usr/lib/x86_64-linux-gnu/libLLVM.so.20.1\"",
@@ -436,7 +438,7 @@ fn llvm20_has_an_independent_mandatory_budget_without_removing_workspace_checks(
         "LLVM20 must not consume the workspace job's remaining budget"
     );
     absent(job, &["needs", "if", "continue-on-error"]);
-    assert_eq!(job["runs-on"], "ubuntu-24.04");
+    assert_eq!(job["runs-on"], serde_json::json!(LOCAL_RUNNER));
     assert_eq!(job["timeout-minutes"], "90");
     assert_eq!(job["env"]["CARGO_BUILD_JOBS"], "2");
     assert_eq!(job["env"]["CARGO_INCREMENTAL"], "0");
@@ -478,11 +480,31 @@ fn llvm20_has_an_independent_mandatory_budget_without_removing_workspace_checks(
         "LLVM20 must run exactly once in its own required job"
     );
 }
+// Keep the existing domain command assertions about their original steps.
+// The new ownership/transport scaffolding is validated separately below.
+fn private_infrastructure(step: &Value) -> bool {
+    matches!(
+        step["name"].as_str().unwrap_or(""),
+        "Allocate private source cache target and local action alias before checkout"
+            | "Admit exact private source and index"
+            | "Configure source-dependent job environment on private paths"
+            | "Keep original Python installations private"
+            | "Seal private source and index after maintained checks"
+            | "Clean only uploaded owned source alias and target"
+    )
+}
+fn private_local_action(step: &Value, name: &str) -> bool {
+    step["uses"].as_str().is_some_and(|value| {
+        value.starts_with("./.ci296-source-")
+            && value.ends_with(&format!("/source/.github/actions/{name}"))
+    })
+}
 fn commands(job: &Value) -> String {
     job["steps"]
         .as_array()
         .unwrap()
         .iter()
+        .filter(|step| !private_infrastructure(step))
         .map(|s| s["run"].as_str().unwrap_or(""))
         .collect::<Vec<_>>()
         .join("\n")
@@ -497,15 +519,22 @@ fn absent(value: &Value, keys: &[&str]) {
         assert!(value.get(*key).is_none(), "unexpected {key}: {value}");
     }
 }
+fn trusted_step(step: &Value) {
+    assert_eq!(step["if"], TRUSTED_SOURCE);
+    absent(step, &["continue-on-error"]);
+}
 fn mandatory(job: &Value, selectors: &[&str]) {
     absent(job, &["if"]);
     for step in job["steps"].as_array().unwrap() {
-        if step.get("run").is_some()
+        if !private_infrastructure(step)
+            && step["name"] != "Deny fork source and require registered local runner"
+            && step.get("run").is_some()
             && selectors
                 .iter()
                 .any(|s| step["run"].as_str().unwrap_or("").contains(s))
         {
-            absent(step, &["if", "continue-on-error"]);
+            assert_eq!(step["if"], TRUSTED_SOURCE);
+            absent(step, &["continue-on-error"]);
         }
     }
 }
@@ -515,21 +544,22 @@ fn artifacts(job: &Value) {
         .unwrap()
         .iter()
         .filter(|s| {
-            s["uses"]
-                .as_str()
-                .unwrap_or("")
-                .starts_with("actions/upload-artifact@")
+            s["id"] != "ci296_private_evidence"
+                && s["uses"]
+                    .as_str()
+                    .unwrap_or("")
+                    .starts_with("actions/upload-artifact@")
         })
         .collect::<Vec<_>>();
     assert_eq!(selected.len(), 1);
-    assert_eq!(selected[0]["if"], "always()");
+    assert_eq!(selected[0]["if"], TRUSTED_ALWAYS);
 }
 fn some_artifact(job: &Value) {
     assert!(job["steps"]
         .as_array()
         .unwrap()
         .iter()
-        .any(|s| s["if"] == "always()"
+        .any(|s| s["if"] == TRUSTED_ALWAYS
             && s["uses"]
                 .as_str()
                 .unwrap_or("")
@@ -550,7 +580,7 @@ fn webcam_requires_two_architectures_and_real_capture_ipc() {
     let job = &data["jobs"]["webcam-runtime"];
     assert_eq!(
         job["strategy"]["matrix"]["runner"],
-        serde_json::json!(["ubuntu-24.04", "ubuntu-24.04-arm"])
+        serde_json::json!(["local-x64", "local-arm64-qemu"])
     );
     for (key, value) in [
         ("CARGO_BUILD_JOBS", "2"),
@@ -563,6 +593,7 @@ fn webcam_requires_two_architectures_and_real_capture_ipc() {
         "webcam-runtime",
         &[
             "webcam_source_requirements.txt",
+            r#"sudo apt-get -o "APT::Architectures=$(dpkg --print-architecture)" install -y g++ clang-18 libclang-18-dev cmake pkg-config file capnproto"#,
             "build-xiaoge-opencv -- --prepare-only",
             "build-webcam-opencv",
             "build_visionipc_python.py",
@@ -769,10 +800,10 @@ fn estimators_require_original_models_loops_and_native_boundaries() {
             .as_array()
             .unwrap()
             .iter()
-            .filter(|step| step["uses"] == "./.github/actions/native-eigen")
+            .filter(|step| private_local_action(step, "native-eigen"))
             .collect::<Vec<_>>();
         assert_eq!(selected.len(), 1);
-        absent(selected[0], &["if", "continue-on-error"]);
+        trusted_step(selected[0]);
         assert_eq!(selected[0]["with"]["architecture"], architecture);
     }
     for name in ["workspace", "arm64", "estimation-runtime"] {
@@ -1098,7 +1129,7 @@ fn startup_services_require_source_and_live_native_protocols() {
         .unwrap();
     assert_eq!(
         ownership["env"]["UPDATED_OWNER_LAUNCHER"],
-        "${{ github.workspace }}/rust/target/debug/openpilot-process-child"
+        "${{ env.CI296_SOURCE }}/rust/target/debug/openpilot-process-child"
     );
     let run = ownership["run"].as_str().unwrap();
     assert!(
@@ -1415,7 +1446,7 @@ fn interrupted_send_boundary_is_a_required_support_check() {
         })
         .collect::<Vec<_>>();
     assert_eq!(matches.len(), 1);
-    absent(matches[0], &["if", "continue-on-error"]);
+    trusted_step(matches[0]);
     required(
         matches[0]["run"].as_str().unwrap(),
         &[
@@ -1509,7 +1540,10 @@ fn radar_requires_fresh_source_runtime_arm_and_memory_checks() {
         ],
     );
     let arm = commands(&data["jobs"]["radar-arm"]);
-    assert_eq!(data["jobs"]["radar-arm"]["runs-on"], "ubuntu-24.04-arm");
+    assert_eq!(
+        data["jobs"]["radar-arm"]["runs-on"],
+        serde_json::json!(LOCAL_RUNNER)
+    );
     required(
         &arm,
         &[
@@ -1556,7 +1590,7 @@ fn selfdrived_requires_source_loop_native_ipc_and_failure_checks() {
             .iter()
             .find(|s| s["run"].as_str().unwrap_or("").contains(checker))
             .unwrap();
-        absent(step, &["if", "continue-on-error"]);
+        trusted_step(step);
     }
     required(
         &commands(job),
@@ -1630,7 +1664,7 @@ fn navigation_requires_original_transport_auth_and_timer_evidence() {
         .as_array()
         .unwrap()
         .iter()
-        .any(|s| s["if"] == "always()"
+        .any(|s| s["if"] == TRUSTED_ALWAYS
             && s["with"]["path"]
                 .as_str()
                 .unwrap_or("")
@@ -1687,13 +1721,14 @@ fn webrtc_requires_native_host_and_arm_real_media_and_failure_boundaries() {
     let job = &data["jobs"]["webrtc-runtime"];
     assert_eq!(
         job["strategy"]["matrix"]["runner"],
-        serde_json::json!(["ubuntu-24.04", "ubuntu-24.04-arm"])
+        serde_json::json!(["local-x64", "local-arm64-qemu"])
     );
     mandatory(job, &[""]);
     required(
         &commands(job),
         &[
             "webrtc_source_requirements.txt",
+            r#"sudo apt-get -o "APT::Architectures=$(dpkg --print-architecture)" install -y g++ clang-18 libclang-18-dev cmake pkg-config file capnproto"#,
             "libavcodec-dev=7:6.1.1-*",
             "build_params_python.py",
             "build_msgq_python.py",
@@ -1726,7 +1761,7 @@ fn xiaoge_requires_both_architectures_and_instrumented_native_libraries() {
     let data = workflow();
     assert_eq!(
         data["jobs"]["xiaoge-runtime"]["strategy"]["matrix"]["runner"],
-        serde_json::json!(["ubuntu-24.04", "ubuntu-24.04-arm"])
+        serde_json::json!(["local-x64", "local-arm64-qemu"])
     );
     for (name, needles) in [
         (
@@ -1794,12 +1829,12 @@ fn encoder_requires_source_runtime_and_pinned_arm_artifacts() {
         .iter()
         .find(|s| s["name"] == "Build encoder daemon and probes with pinned ARM codecs and ION")
         .unwrap();
-    assert_eq!(arm["working-directory"], "rust");
+    assert_eq!(arm["working-directory"], "${{ env.CI296_SOURCE }}/rust");
     required(
         arm["run"].as_str().unwrap(),
         &["--features static-ffmpeg,visionipc-ion"],
     );
-    absent(arm, &["if", "continue-on-error"]);
+    trusted_step(arm);
     required(
         arm["env"]["FFMPEG_DIR"].as_str().unwrap(),
         &["ENCODER_ARM_FFMPEG"],
@@ -2194,7 +2229,7 @@ fn diagnostics_family_keeps_all_three_native_consumers_mandatory() {
         })
         .unwrap();
     assert!(
-        evidence.get("if").is_none(),
+        evidence["if"] == TRUSTED_SOURCE,
         "preserve original successful-run artifact publication"
     );
     required(
@@ -2227,7 +2262,7 @@ fn command_reader_gates_keep_both_native_consumers_and_desire_check_mandatory() 
     assert!(!run.contains("python tools/check_command_json_boundary.py"));
     assert!(job["steps"].as_array().unwrap().iter().any(|step| {
         step["uses"] == "actions/upload-artifact@v6"
-            && step.get("if").is_none()
+            && step["if"] == TRUSTED_SOURCE
             && step["with"]["path"]
                 .as_str()
                 .is_some_and(|path| path.contains("model-commands/report.json"))
@@ -2291,8 +2326,8 @@ fn workspace_preserves_complete_proclog_packets_and_checker_ownership() {
         .any(|step| {
             step["uses"] == "actions/upload-artifact@v6"
                 && step["with"]["name"] == "rust-c3x-static-probe-pending-device-test"
-                && step["with"]["path"] == "rust/target/c3x-probe/"
-                && step.get("if").is_none()
+                && step["with"]["path"] == "${{ env.CI296_SOURCE }}/rust/target/c3x-probe/"
+                && step["if"] == TRUSTED_SOURCE
         }));
     let arm = commands(&data["jobs"]["arm64"]);
     assert!(!arm.contains("python tools/check_aarch64.py"));
@@ -2816,7 +2851,7 @@ fn logmessaged_startup_retirement_keeps_sealed_original_and_same_elf_absent_proo
         })
         .collect();
     assert_eq!(selected.len(), 1);
-    absent(selected[0], &["if", "continue-on-error"]);
+    trusted_step(selected[0]);
     required(
         selected[0]["run"].as_str().unwrap(),
         &[
@@ -2930,7 +2965,7 @@ fn calibration_estimator_retirement_keeps_complete_sealed_oracle_and_native_call
         })
         .collect::<Vec<_>>();
     assert_eq!(selected.len(), 1);
-    absent(selected[0], &["if", "continue-on-error"]);
+    trusted_step(selected[0]);
     required(selected[0]["run"].as_str().unwrap(), &[
         "CALIBRATION_REFERENCE_BINARY=",
         "CALIBRATION_REFERENCE_CHECKER_BINARY=",
@@ -2952,7 +2987,7 @@ fn calibration_estimator_retirement_keeps_complete_sealed_oracle_and_native_call
         .filter(|step| step["name"] == "Retain complete calibration estimator retirement evidence")
         .collect::<Vec<_>>();
     assert_eq!(artifacts.len(), 1);
-    assert_eq!(artifacts[0]["if"], "always()");
+    assert_eq!(artifacts[0]["if"], TRUSTED_ALWAYS);
     assert_eq!(artifacts[0]["uses"], "actions/upload-artifact@v6");
     assert_eq!(
         artifacts[0]["with"]["name"],
@@ -2960,7 +2995,7 @@ fn calibration_estimator_retirement_keeps_complete_sealed_oracle_and_native_call
     );
     assert_eq!(
         artifacts[0]["with"]["path"],
-        "${{ runner.temp }}/calibration-estimator-native/"
+        "${{ env.CI_JOB_TEMP }}/calibration-estimator-native/"
     );
 }
 
@@ -2975,7 +3010,7 @@ fn retired_updater_controller_keeps_all_original_cases_and_remaining_live_gates(
             step["name"] == "Verify retired updater controller against all original lifecycle cases"
         })
         .unwrap();
-    absent(step, &["if", "continue-on-error"]);
+    trusted_step(step);
     required(step["run"].as_str().unwrap(), &[
         "for source in rust/tools/check_updated.py rust/tools/updated_source.py rust/tools/tests/test_updated_comparison.py rust/tools/updated_fixtures.py; do",
         "test ! -e \"$source\"", "test ! -L \"$source\"",
@@ -2997,7 +3032,7 @@ fn retired_updater_controller_keeps_all_original_cases_and_remaining_live_gates(
         ],
     );
     let daemon = job["steps"].as_array().unwrap().iter().find(|step| step["name"] == "Verify retired updater daemon and helper against independent original lifecycle observations").unwrap();
-    absent(daemon, &["if", "continue-on-error"]);
+    trusted_step(daemon);
     required(daemon["run"].as_str().unwrap(), &[
         "for source in rust/tools/check_updated_daemon.py rust/tools/updated_fixtures.py; do",
         "test ! -e \"$source\"", "test ! -L \"$source\"",
@@ -3025,7 +3060,7 @@ fn dashcam_progress_allocation_proof_keeps_functional_and_full_upload_routes() {
             step["name"] == "Require dashcam progress equivalence and allocation accounting"
         })
         .unwrap();
-    absent(step, &["if", "continue-on-error"]);
+    trusted_step(step);
     required(step["run"].as_str().unwrap(), &[
         "cargo test --manifest-path rust/Cargo.toml -p openpilot-dashcam-upload --lib --locked -- --nocapture",
         "cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dashcam-upload --all-targets --locked -- -D warnings",
@@ -3055,8 +3090,8 @@ fn desire_controller_requires_retired_helper_and_private_absence_cli_command_gat
             step["name"] == "Verify native desire controller after shared Python helper retirement"
         })
         .unwrap();
-    absent(step, &["if", "continue-on-error"]);
-    assert_eq!(step["working-directory"], ".");
+    trusted_step(step);
+    assert_eq!(step["working-directory"], "${{ env.CI296_SOURCE }}");
     required(step["run"].as_str().unwrap(), &[
         "test ! -e rust/tools/check_desire_reference.py", "test ! -L rust/tools/check_desire_reference.py",
         "export DESIRE_REFERENCE_EXPECT_ABSENT=1", "DESIRE_REFERENCE_CHECKER=", "DESIRE_REFERENCE_PROBE=",
@@ -3080,10 +3115,10 @@ fn desire_controller_requires_retired_helper_and_private_absence_cli_command_gat
         .iter()
         .find(|step| step["name"] == "Retain complete desire controller retirement evidence")
         .unwrap();
-    assert_eq!(artifact["if"], "always()");
+    assert_eq!(artifact["if"], TRUSTED_ALWAYS);
     assert_eq!(
         artifact["with"]["path"],
-        "${{ runner.temp }}/desire-controller-native/"
+        "${{ env.CI_JOB_TEMP }}/desire-controller-native/"
     );
 }
 
@@ -3098,7 +3133,7 @@ fn cweb_redirect_allocation_keeps_full_http_daemon_and_address_comparisons_manda
             step["name"] == "Require cweb redirect byte equivalence and allocation accounting"
         })
         .unwrap();
-    absent(allocation, &["if", "continue-on-error"]);
+    trusted_step(allocation);
     required(allocation["run"].as_str().unwrap(), &[
         "cargo test --manifest-path rust/Cargo.toml -p openpilot-cweb-push --all-targets --locked -- --nocapture",
         "cargo clippy --manifest-path rust/Cargo.toml -p openpilot-cweb-push --all-targets --locked -- -D warnings",
@@ -3155,7 +3190,10 @@ fn retired_route_controllers_require_ordered_native_build_checks_and_current_cal
     let data = workflow();
     let job = &data["jobs"]["logger-runtime"];
     absent(job, &["if", "continue-on-error"]);
-    assert_eq!(job["defaults"]["run"]["working-directory"], "rust");
+    assert_eq!(
+        job["defaults"]["run"]["working-directory"],
+        "${{ github.workspace }}"
+    );
     let required_commands = [
         "cargo +1.94.0 build -p openpilot-dev-tools --features route-upload-native --bin check-runtime-log-upload --locked",
         "cargo +1.94.0 test -p openpilot-dev-tools --features route-upload-native --lib route_upload_check:: --locked",
@@ -3242,7 +3280,7 @@ fn validate_deleter_callers(data: &Value) -> Result<(), String> {
         return Err("deleter caller step missing or duplicated".into());
     }
     let step = selected[0];
-    if step.get("if").is_some() || step.get("continue-on-error").is_some() {
+    if step["if"] != TRUSTED_SOURCE || step.get("continue-on-error").is_some() {
         return Err("optional native deleter comparison".into());
     }
     let actual = step["run"].as_str().ok_or("native deleter script absent")?;
@@ -3331,7 +3369,7 @@ fn paramsd_startup_maintained_caller_requires_native_two_root_exec_and_cleanup_a
             step["name"] == "Require native paramsd startup caller and private source absence"
         })
         .unwrap();
-    absent(step, &["if", "continue-on-error"]);
+    trusted_step(step);
     required(step["run"].as_str().unwrap(), &[
         "--features paramsd-startup-check-native --bin check-paramsd-startup-native --locked",
         "PARAMSD_STARTUP_CALLER_ABSENT_ROOT=", "git archive HEAD", "for lane in 0 1; do",

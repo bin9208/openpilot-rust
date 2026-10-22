@@ -1,5 +1,5 @@
 //! Actual workflow callers must build and explicitly select a host stager.
-use openpilot_dev_tools::ci_policy::parse;
+use openpilot_dev_tools::ci_policy::{parse, uses_native_action};
 use serde_json::Value;
 use std::{fs, path::PathBuf};
 
@@ -21,7 +21,7 @@ fn callers(workflow: &Value) -> Result<usize, String> {
         };
         let mut ready = false;
         for step in steps {
-            if step["uses"] == "./.github/actions/native-json11" {
+            if uses_native_action(job, step, "native-json11") {
                 ready = true;
             }
             let script = step["run"].as_str().unwrap_or("");
@@ -57,7 +57,7 @@ fn all_runtime_and_template_callers_select_a_prepared_current_host_stager() {
     assert_eq!(callers(&workflow).unwrap(), 22);
     let hardware = &workflow["jobs"]["hardware-runtime"]["steps"];
     assert!(hardware.as_array().unwrap().iter().all(|step| {
-        step["uses"] != "./.github/actions/native-json11"
+        !uses_native_action(&workflow["jobs"]["hardware-runtime"], step, "native-json11")
             && !step["run"]
                 .as_str()
                 .unwrap_or("")
@@ -86,7 +86,7 @@ fn all_runtime_and_template_callers_select_a_prepared_current_host_stager() {
             continue;
         };
         for (index, step) in steps.iter().enumerate() {
-            if step["uses"] == "./.github/actions/native-json11" {
+            if uses_native_action(value, step, "native-json11") {
                 let mut changed = workflow.clone();
                 changed["jobs"][job]["steps"]
                     .as_array_mut()
@@ -262,5 +262,33 @@ done
         assert_eq!(run(guard_status, cargo_status).status.code(), Some(code));
         assert_eq!(fs::read_to_string(&trace).unwrap(), expected);
         assert!(!export.exists());
+    }
+}
+
+// Parent-owned semantic splice for rust/crates/dev-tools/tests/ci_native_staging.rs.
+// Reuse that file's parse, Value, fs and root imports; append once, do not create
+// a second integration-test target or a fixture copy of the composite actions.
+#[test]
+fn native_composites_forward_the_optional_execution_shell() {
+    for name in ["native-json11", "native-eigen", "native-image-sdk"] {
+        let relative = format!(".github/actions/{name}/action.yml");
+        let action = parse(&fs::read_to_string(root().join(&relative)).unwrap()).unwrap();
+        assert_eq!(action["runs"]["using"], "composite", "{relative}");
+        let input = &action["inputs"]["run-shell"];
+        assert_eq!(input["default"], "bash", "{relative}: host default");
+        assert_eq!(input["required"], "false", "{relative}: optional input");
+        let mut commands = 0;
+        for step in action["runs"]["steps"].as_array().unwrap() {
+            if step.get("run").is_some() {
+                commands += 1;
+                assert_eq!(
+                    step["shell"], "${{ inputs.run-shell }}",
+                    "{relative}: native command bypasses the caller's execution shell"
+                );
+            } else if step.get("uses").is_some() {
+                assert!(step.get("shell").is_none(), "{relative}: host action");
+            }
+        }
+        assert_eq!(commands, 1, "{relative}: native prepare/consumer step");
     }
 }

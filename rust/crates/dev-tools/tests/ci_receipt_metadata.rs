@@ -1,3 +1,4 @@
+use openpilot_dev_tools::ci_policy::uses_native_action;
 use openpilot_dev_tools::ci_receipt_metadata::{
     first_binding, first_binding_from_names, module, prefix, read_receipt, MAX_RECEIPT_BYTES,
 };
@@ -244,7 +245,7 @@ fn maintained_callers_build_native_metadata_before_all_fourteen_uses() {
             };
             let mut built = false;
             for step in steps {
-                if step["uses"] == "./.github/actions/native-json11" {
+                if uses_native_action(job, step, "native-json11") {
                     built = true;
                 }
                 let Some(run) = step["run"].as_str() else {

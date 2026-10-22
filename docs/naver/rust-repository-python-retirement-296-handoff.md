@@ -44,12 +44,16 @@ was not an actual failure. Logging39857487070 fails dep-info parsing of literal
 apostrophes in a tracked Prius filename. Narrow repaired observer ab04b0b2 is
 published as39865824906 at source300f; all strict holds remain.
 
-Hegel's full routing r4 is held for three independently found P2 repairs: require
-successful final source seals before cleanup, successful fresh admission before
-loading retained aliases in eight finalizers, and private ANDROID_SDK_ROOT for two
-setup actions. Kepler owns closure; Carver reviews policy preservation and Huygens
-ARM/native semantics. Preserve the two dd439 output-pairs upload globs and all
-four common helper hashes. Never integrate the older r3 patch that removes them.
+Full routing R5's three P2 repairs pass Kepler source closure and Carver policy
+review:60 final-seal cleanup guards,8 fresh-admission finalizer guards and2owned
+Android SDK roots. The applied R6 delta additionally declares guest file packages
+for webcam/WebRTC while preserving their ELF checks; Huygens closes that narrow
+source finding. All34 frozen postimages match; actual source-policy/negative
+controls and changed ARM consumer execution remain pending before feature push.
+Preserve the two dd439 output-pairs upload globs and all four common helper
+hashes. Never integrate the older r3 patch that removes them. Oldest local Fast
+39857487263 is only partly queued:5jobs have failed; Carver now diagnoses their
+actual first failure. Inspect job-level states even when a run says queued.
 Socrates/Aristotle own private APT repair/review; Schrodinger owns AST activation;
 Descartes/Feynman own focused startup source/review; Maxwell owns whole-logger
 source completion; Bacon owns growth admission and fixture data-reuse recipe;

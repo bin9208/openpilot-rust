@@ -34,9 +34,9 @@ fn message_state_gate_builds_native_checker_and_preserves_service_check_and_evid
             assert!(!run.contains("python tools/check_message_state.py"));
             assert!(steps.iter().any(|step| {
                 step["uses"] == "actions/upload-artifact@v6"
-                    && step["with"]["path"]
-                        .as_str()
-                        .is_some_and(|paths| paths.contains("${{ runner.temp }}/message-state/"))
+                    && step["with"]["path"].as_str().is_some_and(|paths| {
+                        paths.contains("${{ env.CI_JOB_TEMP }}/message-state/")
+                    })
             }));
         }
     }

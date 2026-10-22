@@ -38,7 +38,7 @@ below are historical focused evidence, not current repository-wide retirement.
 - Repository-wide means current tracked source, including vendored Python, Cython, SCons and executable embedded Python. Git history and licensing/provenance remain intact. The operating system's independent installed software is outside repository deletion.
 - Preserve existing functionality, failure/cleanup behavior and test assertions. No weakened tolerances, cadence, validity limits, skipped suites or self-generated expected answers.
 - Count every remaining source/dependency explicitly. Native runtime success does not complete development tools, compiler functionality, Python removal or device acceptance.
-- The23October user instruction removes fixed25/35GiB disk thresholds. Admit Actions builds, installs and large copies against actual available resources and estimated operation growth. Prefer measured registeredbin-actions for next trustedx64/cross jobs; actual ARM execution stays GitHub ARM. Isolate owned source/targets/toolchain caches, keep bounded build concurrency/incremental disabled, and do not interrupt another track or repeat unchanged successful checks for this switch.
+- The23October user instruction removes fixed25/35GiB disk thresholds. Admit Actions builds, installs and large copies against actual available resources and estimated operation growth. All next jobs use registeredbin-actions with self-hosted/Linux/X64/dev-md-local labels, without hosted fallback. Original ARM commands run in its verified77663836 QEMU-user/PRoot guest and record physical_arm_cpu:false; emulation is not physical ARM/device acceptance. Isolate owned source/targets/toolchain caches, keep bounded build concurrency/incremental disabled, and do not interrupt another track or repeat unchanged successful checks for this switch.
 - The latest23October user choice is GPT-6.1 Sol/Ultra for the parent and GPT-6.1 Sol for every subagent. Astra deliveries are finished/closed; do not launch or resume Astra. Parent owns shared Cargo manifests, workflows, deletion integration and serialized Git publication. Configured1000agent capacity is not a measured productive concurrency count; close429failures and reuse existing Sol workers.
 - On2026-10-18 the user confirmed the device is unavailable and will personally pull and test normal boot, recording and upload. Finish code/test/commit integration without waiting for a connection; user device results remain separate evidence.
 - Preserve the five required PR checks and separate exact merged-dev PUSH checks. No completion merely from opening a PR or scheduling CI.
@@ -111,7 +111,7 @@ diagnosis. Shared Desire and its original driving consumer are now retired
 after the complete two-root gate. Accepted earlier bridge, soundd, logmessaged
 and Bluetooth removals remain recorded below. Remaining original helpers, model
 compiler/tool families and vendor Python are still explicit pending scope. Keep
-functional execution in GitHub-hosted Actions and inspect each exact source result.
+functional execution in bin-actions through GitHub Actions and inspect each exact source result.
 
 ### Task3: native model compiler operations, then the full compiler chain
 
