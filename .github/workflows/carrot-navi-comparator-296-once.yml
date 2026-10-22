@@ -1,0 +1,104 @@
+name: 296 Carrot Navi strict saved-capture comparator
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/carrot-navi-comparator-296-once.yml
+permissions:
+  contents: read
+  actions: read
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
+  CARGO_BUILD_JOBS: '2'
+  CARGO_INCREMENTAL: '0'
+  CARGO_PROFILE_DEV_DEBUG: '0'
+  CARGO_PROFILE_TEST_DEBUG: '0'
+  EXPECTED_SOURCE: 7a1c79f25ecc5a1eb71fab0564b13278bf3abba5
+jobs:
+  comparator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: 7a1c79f25ecc5a1eb71fab0564b13278bf3abba5
+        persist-credentials: false
+    - name: Bind newly integrated source
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        git rev-parse HEAD > "$RUNNER_TEMP/carrot-navi-comparator-source.txt"
+
+        '
+    - uses: actions/setup-python@v6
+      with:
+        python-version: 3.12.14
+    - name: Install hosted diagnostic tools
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        sudo apt-get update
+
+        sudo apt-get install -y strace
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy --component rustfmt
+
+        printf ''CARROT_NAVI_ORIGINAL_PYTHON=%s\n'' "$(command -v python)" >> "$GITHUB_ENV"
+
+        '
+    - name: Authenticate saved capture archive and extract inert JSON whitelist only
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: "set -euo pipefail\narchive=\"$RUNNER_TEMP/carrot-navi-39809085536.zip\"\ngh api repos/bin9208/openpilot-rust/actions/artifacts/12438818777/zip\
+        \ > \"$archive\"\nprintf '%s  %s\\n' '1f6602631c6ac4fe70e5d81f12c2159f2f9bb075a85e0014aab8daea6daf5343' \"$archive\"\
+        \ | sha256sum --check --strict\nunzip -tq \"$archive\" > \"$RUNNER_TEMP/carrot-navi-comparator-crc.txt\"\nsaved=\"\
+        $RUNNER_TEMP/carrot-navi-comparator-saved\"\nmkdir \"$saved\"\nwhile read -r digest relative; do\n  case \"$relative\"\
+        \ in\n    *.json) ;;\n    *) exit 1 ;;\n  esac\n  case \"$relative\" in\n    /*|*..*|*\\\\*) exit 1 ;;\n  esac\n \
+        \ mkdir -p \"$saved/$(dirname \"$relative\")\"\n  unzip -p \"$archive\" \"_temp/carrot-navi/$relative\" > \"$saved/$relative\"\
+        \n  printf '%s  %s\\n' \"$digest\" \"$saved/$relative\" | sha256sum --check --strict\ndone < rust/crates/dev-tools/tests/fixtures/carrot-navi-comparator/saved-members.sha256\n\
+        printf 'CARROT_NAVI_SAVED_ROOT=%s\\nCARROT_NAVI_COMPARE_EVIDENCE=%s\\n' \"$saved\" \"$RUNNER_TEMP/carrot-navi-comparator-controls\"\
+        \ >> \"$GITHUB_ENV\"\n"
+    - name: Build only current comparator and run focused independent gate
+      run: 'set -euo pipefail
+
+        evidence="$RUNNER_TEMP/carrot-navi-comparator-logs"
+
+        mkdir "$evidence"
+
+        rustfmt --edition 2021 --config skip_children=true --check rust/crates/dev-tools/src/carrot_navi_compare.rs rust/crates/dev-tools/src/bin/check_carrot_navi_comparison.rs
+        rust/crates/dev-tools/tests/carrot_navi_compare.rs
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --no-default-features --features carrot-navi-compare-native
+        --bin check-carrot-navi-comparison --locked 2>&1 | tee "$evidence/build.log"
+
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --no-default-features --features carrot-navi-compare-native
+        --test carrot_navi_compare --locked -- --nocapture 2>&1 | tee "$evidence/tests.log"
+
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --no-default-features --features carrot-navi-compare-native
+        --lib --bin check-carrot-navi-comparison --test carrot_navi_compare --locked -- -D warnings 2>&1 | tee "$evidence/clippy.log"
+
+        '
+    - name: Preserve successful and failed comparison controls
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: carrot-navi-comparator-296-evidence
+        if-no-files-found: warn
+        path: '${{ runner.temp }}/carrot-navi-comparator-source.txt
+
+          ${{ runner.temp }}/carrot-navi-comparator-crc.txt
+
+          ${{ runner.temp }}/carrot-navi-comparator-logs/
+
+          ${{ runner.temp }}/carrot-navi-comparator-controls/
+
+          ${{ runner.temp }}/carrot-navi-comparator-saved/
+
+          rust/target/debug/check-carrot-navi-comparison
+
+          '
