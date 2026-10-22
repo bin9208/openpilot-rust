@@ -185,31 +185,31 @@ jobs:
         \ --version > \"$proof/capnp.txt\"\npython -m pip freeze > \"$proof/python-packages.txt\"\nuname -a > \"$proof/kernel.txt\"\
         \nlscpu > \"$proof/cpu.txt\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$RUNNER_TEMP\" --growth-mib\
         \ 8192\ncargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features eigen-tools-native\
-        \ --bin stage-eigen-headers > \"$proof/eigen-build.log\" 2>&1\ncurl --fail --location --retry 3 --output \"$proof/eigen.whl\"\
+        \ --bin stage-eigen-headers > \"$proof/eigen-build.log\" 2>&1\ncurl --fail --location --retry 3 --output \"$proof/eigen-3.4.0-py3-none-linux_x86_64.whl\"\
         \ https://github.com/commaai/dependencies/releases/download/eigen/v3.4.0/eigen-3.4.0-py3-none-linux_x86_64.whl\n\"\
-        $target/debug/stage-eigen-headers\" --wheel \"$proof/eigen.whl\" --output \"$proof/eigen-native\" --architecture x86_64\
-        \ > \"$proof/eigen-stage.json\"\nexport PARAMSD_EIGEN_INCLUDE=\"$proof/eigen-native/install\"\nfind \"$proof/eigen-native\"\
-        \ -type f -print0 | sort -z | xargs -0 sha256sum > \"$proof/eigen.sha256\"\n# The startup family has no source-oracle/Cython/model\
-        \ build dependency.\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$RUNNER_TEMP\" --growth-mib 8192\n\
-        cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-paramsd --bin openpilot-paramsd > \"$proof/daemon-build.log\"\
-        \ 2>&1\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$RUNNER_TEMP\" --growth-mib 2048\ncargo build --manifest-path\
-        \ rust/Cargo.toml --locked -p openpilot-dev-tools --features paramsd-startup-check-native --bin check-paramsd-startup-native\
-        \ > \"$proof/checker-build.log\" 2>&1\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$RUNNER_TEMP\" --growth-mib\
-        \ 1024\ncargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features paramsd-startup-check-native\
-        \ --lib paramsd_startup_check:: > \"$proof/controller-unit.log\" 2>&1\ncargo test --manifest-path rust/Cargo.toml\
-        \ --locked -p openpilot-dev-tools --features paramsd-startup-check-native --test paramsd_startup_check > \"$proof/fixture-cli-unit.log\"\
-        \ 2>&1\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$RUNNER_TEMP\" --growth-mib 1024\ncargo clippy\
-        \ --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features paramsd-startup-check-native --lib --bin\
-        \ check-paramsd-startup-native --test paramsd_startup_check -- -D warnings > \"$proof/clippy.log\" 2>&1\nchecker=\"\
-        $target/debug/check-paramsd-startup-native\"\ndaemon=\"$target/debug/openpilot-paramsd\"\nsha256sum \"$checker\" \"\
-        $daemon\" \"$target/debug/stage-eigen-headers\" > \"$proof/elf.sha256\"\n# Seal resolved loader/provider files, and\
-        \ retain ldd output. No old ELF runs.\nldd \"$checker\" > \"$proof/checker.ldd\"\nldd \"$daemon\" > \"$proof/daemon.ldd\"\
-        \nawk '/=> \\/|^[[:space:]]*\\// {for(i=1;i<=NF;i++) if($i ~ /^\\//) print $i}' \"$proof/checker.ldd\" \"$proof/daemon.ldd\"\
-        \ | sort -u > \"$proof/providers.paths\"\ntest -s \"$proof/providers.paths\"\nwhile IFS= read -r library; do sha256sum\
-        \ \"$(readlink -f \"$library\")\"; done < \"$proof/providers.paths\" > \"$proof/providers.sha256\"\nrust/tools/check-disk-space\
-        \ --path \"$RUNNER_TEMP\" --growth-mib 8192\nmkdir \"$proof/original-root\" \"$proof/absent-root\"\ngit archive \"\
-        $SOURCE_SHA\" | tar -x -C \"$proof/original-root\"\ngit archive \"$SOURCE_SHA\" | tar -x -C \"$proof/absent-root\"\
-        \ --exclude=rust/tools/check_paramsd_startup.py\ntest ! -e \"$proof/absent-root/rust/tools/check_paramsd_startup.py\"\
+        $target/debug/stage-eigen-headers\" --wheel \"$proof/eigen-3.4.0-py3-none-linux_x86_64.whl\" --output \"$proof/eigen-native\"\
+        \ --architecture x86_64 > \"$proof/eigen-stage.json\"\nexport PARAMSD_EIGEN_INCLUDE=\"$proof/eigen-native/install\"\
+        \nfind \"$proof/eigen-native\" -type f -print0 | sort -z | xargs -0 sha256sum > \"$proof/eigen.sha256\"\n# The startup\
+        \ family has no source-oracle/Cython/model build dependency.\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path\
+        \ \"$RUNNER_TEMP\" --growth-mib 8192\ncargo build --manifest-path rust/Cargo.toml --locked -p openpilot-paramsd --bin\
+        \ openpilot-paramsd > \"$proof/daemon-build.log\" 2>&1\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"\
+        $RUNNER_TEMP\" --growth-mib 2048\ncargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features\
+        \ paramsd-startup-check-native --bin check-paramsd-startup-native > \"$proof/checker-build.log\" 2>&1\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$RUNNER_TEMP\" --growth-mib 1024\ncargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools\
+        \ --features paramsd-startup-check-native --lib paramsd_startup_check:: > \"$proof/controller-unit.log\" 2>&1\ncargo\
+        \ test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features paramsd-startup-check-native --test\
+        \ paramsd_startup_check > \"$proof/fixture-cli-unit.log\" 2>&1\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$RUNNER_TEMP\" --growth-mib 1024\ncargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools\
+        \ --features paramsd-startup-check-native --lib --bin check-paramsd-startup-native --test paramsd_startup_check --\
+        \ -D warnings > \"$proof/clippy.log\" 2>&1\nchecker=\"$target/debug/check-paramsd-startup-native\"\ndaemon=\"$target/debug/openpilot-paramsd\"\
+        \nsha256sum \"$checker\" \"$daemon\" \"$target/debug/stage-eigen-headers\" > \"$proof/elf.sha256\"\n# Seal resolved\
+        \ loader/provider files, and retain ldd output. No old ELF runs.\nldd \"$checker\" > \"$proof/checker.ldd\"\nldd \"\
+        $daemon\" > \"$proof/daemon.ldd\"\nawk '/=> \\/|^[[:space:]]*\\// {for(i=1;i<=NF;i++) if($i ~ /^\\//) print $i}' \"\
+        $proof/checker.ldd\" \"$proof/daemon.ldd\" | sort -u > \"$proof/providers.paths\"\ntest -s \"$proof/providers.paths\"\
+        \nwhile IFS= read -r library; do sha256sum \"$(readlink -f \"$library\")\"; done < \"$proof/providers.paths\" > \"\
+        $proof/providers.sha256\"\nrust/tools/check-disk-space --path \"$RUNNER_TEMP\" --growth-mib 8192\nmkdir \"$proof/original-root\"\
+        \ \"$proof/absent-root\"\ngit archive \"$SOURCE_SHA\" | tar -x -C \"$proof/original-root\"\ngit archive \"$SOURCE_SHA\"\
+        \ | tar -x -C \"$proof/absent-root\" --exclude=rust/tools/check_paramsd_startup.py\ntest ! -e \"$proof/absent-root/rust/tools/check_paramsd_startup.py\"\
         \ntest ! -L \"$proof/absent-root/rust/tools/check_paramsd_startup.py\"\n# Snapshot each isolated root before functional\
         \ execution. The private absent\n# copy is never built; both native lanes use the same current ELF and providers.\n\
         seal_source_tree \"$proof/original-root\" \"$proof/source-paths.nul\" > \"$proof/original-root.sha256\"\nseal_source_tree\
