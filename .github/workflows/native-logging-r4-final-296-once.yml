@@ -20,7 +20,7 @@ jobs:
       run:
         shell: bash
     env:
-      SOURCE_SHA: 69bbee211a5bfde590ab9d85fb071d967892b580
+      SOURCE_SHA: bcf7b88ef40072adbaead10e980a84d018f00390
       LOGGING_PHASE: admission
       LOGGING_GATE_SHA256: b24beb0b0d44886f7a57b450014af5fa6b02bb4de23b5f2fe99e98140a3540c4
       LOGGING_GATE_B64: 'IiIiSG9zdGVkIGFkbWlzc2lvbiBvbmx5LiBTdGFuZGFyZC1saWJyYXJ5IGV2aWRlbmNlIHN1cGVydmlzb3I7IG5vIHByb2plY3Qg
