@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
-      EXPECTED_SOURCE: df374b0abde72e93759bc2a2168505b5615f4d7a
+      EXPECTED_SOURCE: a29832fd0d046253465621a05f02a91e9cfdb1d1
       RUSTUP_TOOLCHAIN: 1.94.0
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
@@ -33,7 +33,7 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-        ref: df374b0abde72e93759bc2a2168505b5615f4d7a
+        ref: a29832fd0d046253465621a05f02a91e9cfdb1d1
     - name: Reserve hosted capacity before dependencies
       shell: bash
       run: "set -euo pipefail\ntest \"$(git rev-parse HEAD)\" = \"$EXPECTED_SOURCE\"\nsudo rm -rf /usr/local/lib/android /usr/share/dotnet\
