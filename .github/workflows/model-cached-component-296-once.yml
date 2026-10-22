@@ -1,0 +1,119 @@
+name: 296 committed cached runtime bounded compile and unit gate
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/model-cached-component-296-once.yml
+permissions:
+  contents: read
+jobs:
+  components:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      EXPECTED_SOURCE: 6c35679d6a07573eae2957acd22df4eee55e4ccb
+      RUSTUP_TOOLCHAIN: 1.94.0
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: 6c35679d6a07573eae2957acd22df4eee55e4ccb
+        persist-credentials: false
+    - name: Bind committed source and exact vendored provider
+      id: prepare
+      shell: bash
+      run: "set -euo pipefail\ntest \"$(git rev-parse HEAD)\" = \"$EXPECTED_SOURCE\"\n# This gate must use a coherent committed\
+        \ integration, never apply scratch patches.\ntest -s rust/crates/model-runtime/src/cached_code.rs\ntest -s rust/crates/model-runtime/src/bin/offline-cached-code.rs\n\
+        grep -F 'cached-program-isa' rust/crates/model-runtime/Cargo.toml\ngrep -F 'sort_all_objects' rust/crates/dev-tools/src/driver_daemon_current_catalog.rs\n\
+        sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$RUNNER_TEMP\" --growth-mib 6144\nproof=\"$RUNNER_TEMP/native-cached-component-proof\"\nmkdir \"$proof\"\
+        \nsudo apt-get update\nsudo apt-get install -y --no-install-recommends capnproto libcapnp-dev g++ libzmq5 jq\nrustup\
+        \ toolchain install 1.94.0 --profile minimal --component clippy\nrustc -Vv > \"$proof/rustc.txt\"\ncargo -V > \"$proof/cargo.txt\"\
+        \nprintf '%s\\n' \"$EXPECTED_SOURCE\" \"$GITHUB_WORKFLOW_SHA\" > \"$proof/source-workflow.txt\"\n# Exact tracked code/provider\
+        \ closure, excluding large inert fixture archives.\ngit ls-files -z -- rust/Cargo.toml rust/Cargo.lock rust/rust-toolchain.toml\
+        \ \\\n rust/crates/model-runtime rust/crates/dmonitoringmodeld rust/crates/dev-tools/src \\\n rust/crates/dev-tools/tests/model_family_retirement.rs\
+        \ rust/vendor/iced-x86-1.21.0 \\\n rust/vendor/iced-x86-1.21.0.LICENSE.txt rust/vendor/iced-x86-1.21.0.provenance.json\
+        \ \\\n rust/tools/model_export rust/tools/build_model_pipelines.py > \"$proof/source-candidates.nul\"\n: > \"$proof/source-roster.nul\"\
+        \nwhile IFS= read -r -d '' file; do\n case \"$file\" in *.rs|*.toml|*.lock|*.py|*.json|*.txt|*.md) ;; *) continue\
+        \ ;; esac\n test -f \"$file\" && test ! -L \"$file\"\n printf '%s\\0' \"$file\" >> \"$proof/source-roster.nul\"\n\
+        done < \"$proof/source-candidates.nul\"\nxargs -0 -r sha256sum < \"$proof/source-roster.nul\" > \"$proof/sources.before.sha256\"\
+        \nwhile IFS= read -r -d '' file; do stat --printf '%n:%d:%i:%s:%f:%y:%z\\n' \"$file\"; done < \"$proof/source-roster.nul\"\
+        \ > \"$proof/sources.before.identities\"\n"
+    - name: Strict affected default and optional compilation plus selected units
+      shell: bash
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/native-cached-component-proof\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 4096\n# Default feature graph first: optional ISA decoder must not be\
+        \ required here.\ncargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --lib --test catalog\
+        \ -- -D warnings > \"$proof/runtime-default-clippy.log\" 2>&1 || { cat \"$proof/runtime-default-clippy.log\"; exit\
+        \ 1; }\ncargo test --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --lib --no-run --message-format=json\
+        \ > \"$proof/runtime-test-artifacts.jsonl\" 2> \"$proof/runtime-test-compile.log\" || { cat \"$proof/runtime-test-compile.log\"\
+        ; exit 1; }\ntest_binary=$(jq -sr '[.[] | select(.reason == \"compiler-artifact\" and .profile.test == true and .executable\
+        \ != null) | .executable] | unique | if length == 1 then .[0] else error(\"one runtime test ELF required\") end' \"\
+        $proof/runtime-test-artifacts.jsonl\")\nfor selection in cached_code:: cached_elf:: cpu::cached_admission_tests::ordinary_load_rejects_cached_mode_before_any_library_or_sidecar_access\
+        \ graph::cached_schema_tests::disabled_fresh_schema_serializes_without_cached_metadata graph::cached_schema_tests::cached_metadata_cannot_be_added_to_a_fresh_backend_or_old_version;\
+        \ do\n log=\"$proof/runtime-${selection//:/_}.log\"\n timeout --signal=KILL 120 \"$test_binary\" \"$selection\" --nocapture\
+        \ > \"$log\" 2>&1 || { cat \"$log\"; exit 1; }\n grep -F 'test result: ok.' \"$log\"\n ! grep -F 'running 0 tests'\
+        \ \"$log\"\ndone\ncargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --features cached-program-isa\
+        \ --lib --bin offline-cached-code --bin model-run -- -D warnings > \"$proof/runtime-optional-clippy.log\" 2>&1 ||\
+        \ { cat \"$proof/runtime-optional-clippy.log\"; exit 1; }\ncargo clippy --manifest-path rust/Cargo.toml --locked -p\
+        \ openpilot-dmonitoringmodeld --lib --bin openpilot-dmonitoringmodeld -- -D warnings > \"$proof/driver-clippy.log\"\
+        \ 2>&1 || { cat \"$proof/driver-clippy.log\"; exit 1; }\nfeatures=driver-daemon-native,uploader-logging-native\ncargo\
+        \ tree --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features \"$features\" -e features -i serde_json\
+        \ > \"$proof/serde-json-feature-union.txt\"\ngrep -F 'serde_json feature \"preserve_order\"' \"$proof/serde-json-feature-union.txt\"\
+        \ncargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features \"$features\" --lib cached_binding_canonical_tests\
+        \ -- --nocapture > \"$proof/canonical-units.log\" 2>&1 || { cat \"$proof/canonical-units.log\"; exit 1; }\ngrep -F\
+        \ '2 passed; 0 failed' \"$proof/canonical-units.log\"\ncargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools\
+        \ --features \"$features\" --lib driver_daemon_check::current_catalog::tests -- --nocapture > \"$proof/current-catalog-units.log\"\
+        \ 2>&1 || { cat \"$proof/current-catalog-units.log\"; exit 1; }\n! grep -F 'running 0 tests' \"$proof/current-catalog-units.log\"\
+        \ncargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features \"$features\" --lib --bin\
+        \ prepare-model-family-catalog --bin check-driver-daemon --bin check-model-startup --test model_family_prepare --test\
+        \ model_family_retirement -- -D warnings > \"$proof/current-catalog-clippy.log\" 2>&1 || { cat \"$proof/current-catalog-clippy.log\"\
+        ; exit 1; }\ncargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features \"$features\" --test\
+        \ model_family_retirement --no-run --message-format=json > \"$proof/family-test-artifacts.jsonl\" 2> \"$proof/family-test-compile.log\"\
+        \ || { cat \"$proof/family-test-compile.log\"; exit 1; }\n# Final same-source helper build follows every feature-unifying\
+        \ build. This gate\n# does not load libraries or execute supplied/generated PROGRAM images.\ncargo build --manifest-path\
+        \ rust/Cargo.toml --locked -p openpilot-model-runtime --features cached-program-isa --bin offline-cached-code --bin\
+        \ model-run --bin offline-llvm-guarded-add > \"$proof/final-helper-build.log\" 2>&1 || { cat \"$proof/final-helper-build.log\"\
+        ; exit 1; }\nfor file in rust/target/debug/offline-cached-code rust/target/debug/offline-llvm-guarded-add rust/target/debug/model-run;\
+        \ do\n test -x \"$file\" && test ! -L \"$file\"\n sha256sum \"$file\" >> \"$proof/native-ELFs.sha256\"\n stat --printf\
+        \ '%n:%d:%i:%s:%f:%y:%z\\n' \"$file\" >> \"$proof/native-ELFs.identities\"\ndone\nprintf 'COMPONENT_CHECKS_PASS_NO_PROGRAM_IMAGES_EXECUTED\\\
+        n' > \"$proof/completion.txt\"\n"
+    - name: Always fail-closed independent source and ELF guards
+      if: always() && steps.prepare.outcome == 'success'
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/native-cached-component-proof"
+
+        status=0
+
+        sha256sum --check --strict "$proof/sources.before.sha256" > "$proof/sources.after.log" 2>&1 || status=1
+
+        while IFS= read -r -d '''' file; do stat --printf ''%n:%d:%i:%s:%f:%y:%z\n'' "$file" || status=1; done < "$proof/source-roster.nul"
+        > "$proof/sources.after.identities"
+
+        cmp "$proof/sources.before.identities" "$proof/sources.after.identities" || status=1
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE" || status=1
+
+        test "$(cat "$proof/completion.txt")" = COMPONENT_CHECKS_PASS_NO_PROGRAM_IMAGES_EXECUTED || status=1
+
+        sha256sum --check --strict "$proof/native-ELFs.sha256" > "$proof/native-ELFs.after.log" 2>&1 || status=1
+
+        printf ''%s\n'' "$status" > "$proof/final-guards.status"
+
+        test "$status" -eq 0
+
+        '
+    - uses: actions/upload-artifact@v6
+      if: always()
+      with:
+        name: native-cached-component-6c35679d6a0
+        path: ${{ runner.temp }}/native-cached-component-proof/
+        include-hidden-files: true
+        if-no-files-found: error
+        retention-days: 7
