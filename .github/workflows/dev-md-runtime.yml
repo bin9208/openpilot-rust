@@ -28,7 +28,7 @@ jobs:
     name: Verify completed exact-source merge CI
     if: github.repository == 'bin9208/openpilot-rust' && (github.ref == 'refs/heads/dev-md' || (inputs.release_request != '' && startsWith(github.ref, 'refs/heads/codex/')))
     runs-on: ubuntu-24.04
-    timeout-minutes: 360
+    timeout-minutes: 10
     outputs:
       source_sha: ${{ steps.verify.outputs.source_sha }}
     steps:
@@ -62,7 +62,7 @@ jobs:
             });
             if (!prs.some(pr => pr.merged_at && pr.merge_commit_sha === sha && pr.base.ref === 'dev-md')) throw new Error('Not a dev-md PR merge');
             let run;
-            for (let attempt = 0; attempt < (requestId ? 4200 : 60); attempt++) {
+            for (let attempt = 0; attempt < 60; attempt++) {
               run = (await github.rest.actions.getWorkflowRun({...context.repo, run_id: Number(id)})).data;
               if (run.path !== '.github/workflows/ci.yml' || run.head_sha !== sha || run.head_branch !== 'dev-md' || run.event !== 'push' || run.repository.full_name !== 'bin9208/openpilot-rust') throw new Error('Wrong validation identity');
               if (run.status === 'completed') break;
