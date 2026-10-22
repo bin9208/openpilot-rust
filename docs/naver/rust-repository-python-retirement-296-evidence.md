@@ -5878,3 +5878,30 @@ review corroborates both link bytes and cwd/environment/argv receipts; it does
 not infer hardlink inode identity from ZIP storage. Accept generate_pose_corpus.py
 and generate_car_corpus.py: inventory259/3/3318. All four Kalman commands are now
 accepted,37observed embedded edges remain pending, and model-family6 remains open.
+
+### Same-host model result distinguishes the next logging bug (2026-10-22)
+
+[39696467591](https://github.com/bin9208/openpilot-rust/actions/runs/39696467591)
+atdf374b0abde72e93759bc2a2168505b5615f4d7a, workflow
+2282e4f967ace29bf9bd5ca80f5ba4c2ffd9da06, passes all preflight/catalog/USB data
+controls and proceeds past first-case numerical comparisons on **znver3**.
+It then fails `logging source commit differs from checkout`. The failure-only
+same-host model-run completes0: full2212B warmup and first nonuniform frame from
+daemon/model-run/frozen original agree exactly (ace8ee6c/99b8b2fe hashes above).
+This is an AMD pass, **not** an explanation of the earlier graniterapids #476.
+Static review finds identical warp IR and exact quarter-integer coordinates;
+ordinary FMA rounding alone is not established as the Intel failure cause.
+
+Parent audits artifact12390729707:166409420B/949CRCs/217465986B expanded,
+SHA256b52d403831ec7a8deafdfb7740ed9f3d56bfb2dadd44cf1dc263855499dad0f6.
+Independently resolves the complete2212B Capnp Data pointer in both actual
+packets (segment0/word7/byte80), compares all raw bytes and separately reads all
+five disk log contexts: each correctly records currentdf374b0ab. #479 identifies
+`driver_daemon_check::case` supplying historical capture2ecf3f6813f... to Collector
+instead of the already authenticated current checkout. Fix carries that checkout
+through CaseContext only for live logging; original manifest/source/report pins
+retain their historical meaning and Collector's exact context equality remains.
+Both the dedicated and active grouped hosted tests now require distinct historical
+and current provenance and bind every collector report to the current checkout.
+Original failing strict rejection supplies negative evidence; hosted full green
+acceptance remains pending. Six-source retirement and #476 stay open.

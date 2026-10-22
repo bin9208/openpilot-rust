@@ -432,6 +432,10 @@ fn same_elf_replays_all_three_native_clis_in_both_absent_roots() {
                 );
                 for row in report["runs"].as_array().unwrap() {
                     assert_eq!(row["logging"].is_null(), !collector);
+                    if collector {
+                        assert_ne!(report["checkout_commit"], report["source_commit"]);
+                        assert_eq!(row["logging"]["source_commit"], report["checkout_commit"]);
+                    }
                 }
                 remember(
                     &label,

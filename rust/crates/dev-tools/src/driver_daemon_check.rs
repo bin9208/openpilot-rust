@@ -1256,6 +1256,7 @@ struct CaseContext<'a> {
     options: &'a Options,
     original: &'a OriginalCapture,
     signals: &'a Signals,
+    checkout_commit: &'a str,
     width: u64,
     height: u64,
     raw: bool,
@@ -1266,6 +1267,7 @@ fn case(context: &CaseContext<'_>) -> Result<Value> {
         options,
         original,
         signals,
+        checkout_commit,
         width,
         height,
         raw,
@@ -1298,7 +1300,7 @@ fn case(context: &CaseContext<'_>) -> Result<Value> {
                 &env,
                 &shm_prefix,
                 &options.root,
-                &options.source_commit,
+                checkout_commit,
             )
         })
         .transpose()?;
@@ -1679,6 +1681,7 @@ pub fn run(options: &Options) -> Result<Value> {
             options,
             original: &original,
             signals: &signals,
+            checkout_commit: &checkout,
             width,
             height,
             raw,

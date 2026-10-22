@@ -128,6 +128,10 @@ fn same_elf_replays_both_modes_in_both_roots_and_rejects_all_retired_sources() {
             assert_eq!(runs.len(), 4);
             for run in runs {
                 assert_eq!(run["logging"].is_null(), mode == "no-collector");
+                if mode == "collector" {
+                    assert_ne!(report["checkout_commit"], report["source_commit"]);
+                    assert_eq!(run["logging"]["source_commit"], report["checkout_commit"]);
+                }
             }
             assert_eq!(String::from_utf8(result.stdout).unwrap().lines().count(), 4);
             accepted.push(json!({"root":index,"mode":mode,"report":root_proof.join(format!("{mode}-output/report.json")),"report_sha256":sha(&root_proof.join(format!("{mode}-output/report.json")))}));
