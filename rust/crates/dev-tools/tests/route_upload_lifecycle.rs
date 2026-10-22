@@ -509,21 +509,26 @@ fn actual_manager_cancelled_with_running_native_children_reaps_tree_and_owned_ip
         let checker_pid = checker.child.as_ref().unwrap().id() as i32;
         let mut peers = Vec::new();
         checker.wait_for(|| {
-            let has_stats = fs::read_to_string(output.join("ownership.jsonl")).is_ok_and(|text| {
-                text.lines().any(|line| {
-                    serde_json::from_str::<Value>(line).is_ok_and(|row| {
-                        row["path"].as_array().is_some_and(|bytes| {
-                            bytes
-                                .iter()
-                                .filter_map(Value::as_u64)
-                                .map(|b| b as u8)
-                                .collect::<Vec<_>>()
-                                .ends_with(b"/stats")
+            let has_both_sockets =
+                fs::read_to_string(output.join("ownership.jsonl")).is_ok_and(|text| {
+                    [b"/stats".as_slice(), b"/logmessage".as_slice()]
+                        .iter()
+                        .all(|suffix| {
+                            text.lines().any(|line| {
+                                serde_json::from_str::<Value>(line).is_ok_and(|row| {
+                                    row["path"].as_array().is_some_and(|bytes| {
+                                        bytes
+                                            .iter()
+                                            .filter_map(Value::as_u64)
+                                            .map(|b| b as u8)
+                                            .collect::<Vec<_>>()
+                                            .ends_with(suffix)
+                                    })
+                                })
+                            })
                         })
-                    })
-                })
-            });
-            if !has_stats {
+                });
+            if !has_both_sockets {
                 return false;
             }
             peers = live_descendants(checker_pid);
