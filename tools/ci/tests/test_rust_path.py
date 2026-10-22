@@ -72,7 +72,7 @@ done
                                 env=env, capture_output=True, text=True)
         self.assertNotEqual(result.returncode, 0)
         if low_space:
-          self.assertIn('recover at least 35 GiB', result.stderr)
+          self.assertIn('Insufficient disk for estimated Rust bootstrap growth', result.stderr)
           self.assertFalse(calls.exists())
         else:
           self.assertTrue(calls.exists())

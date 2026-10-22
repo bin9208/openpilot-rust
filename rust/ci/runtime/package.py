@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""GitHub-hosted exact-source AGNOS delivery. Never run on a workstation."""
+"""Exact-source AGNOS delivery in trusted GitHub Actions. Never run locally."""
 import hashlib
 import json
 import os
+import platform
 from pathlib import Path
 import re
 import shlex
@@ -14,7 +15,15 @@ import zipfile
 
 assert os.environ.get("GITHUB_ACTIONS") == "true", "runtime validation/builds belong in GitHub Actions"
 assert os.environ.get("GITHUB_REPOSITORY") == "bin9208/openpilot-rust"
-assert os.environ.get("RUNNER_ENVIRONMENT") == "github-hosted", "runtime delivery requires a GitHub-hosted runner"
+assert os.environ.get("RUNNER_ENVIRONMENT") == "github-hosted" or (
+    os.environ.get("RUNNER_ENVIRONMENT") == "self-hosted"
+    and os.environ.get("RUNNER_NAME") == "bin-actions"
+    and os.environ.get("RUNNER_OS") == "Linux"
+    and os.environ.get("RUNNER_ARCH") == "X64"
+), "runtime delivery requires a GitHub-hosted runner or the registered bin-actions Linux X64 runner"
+RUNNER = dict(name=os.environ.get("RUNNER_NAME"), environment=os.environ["RUNNER_ENVIRONMENT"],
+              os=os.environ.get("RUNNER_OS"), architecture=os.environ.get("RUNNER_ARCH"),
+              distribution=platform.freedesktop_os_release())
 ROOT = Path(os.environ["GITHUB_WORKSPACE"])
 WORK = Path(os.environ["RUNNER_TEMP"]) / "agnos-runtime"
 WORK.mkdir(exist_ok=True)
@@ -48,7 +57,12 @@ def run(args, **kwargs):
 
 def room(growth=0):
     free = shutil.disk_usage(WORK).free
-    assert free >= 25 * 2**30 + growth, f"disk reserve: free={free}, growth={growth}"
+    assert growth >= 0, "estimated operation growth must be nonnegative"
+    observation = dict(source_commit=SHA, path=str(WORK), free_bytes=free,
+                       required_bytes=growth, growth_bytes=growth, runner=RUNNER)
+    with (WORK / "space-observations.jsonl").open("a") as output:
+        output.write(json.dumps(observation) + "\n")
+    assert free >= growth, f"insufficient disk for estimated operation growth: {observation}"
 
 
 def download(url, name, expected):
@@ -76,6 +90,26 @@ def source_path_allowed(path, source_entry="", inherited_entry=""):
         'AGENTS.md',
         'launch_openpilot.sh',
         'rust/Cargo.lock',
+        # #419: exact reviewed pure-Rust consumer and validation paths only.
+        'rust/crates/updated/Cargo.toml',
+        'rust/crates/updated/src/updater.rs',
+        'rust/crates/updated/tests/runtime_package.rs',
+        'rust/crates/updated/tests/update_remote.rs',
+        'rust/tools/check_updated.py',
+        'rust/tools/updated_fixtures.py',
+        'rust/tools/tests/test_updated_comparison.py',
+        'rust/tools/tests/test_updated_remote_fixture.py',
+        '.github/workflows/update-remote-419.yml',
+        'docs/naver/dev-md-update-remote-419.md',
+        'docs/user/en/rust-port.md',
+        'docs/user/ko/rust-port.md',
+        # Neutral host admission policy; no native provider sources admitted.
+        'rust/crates/disk-space/src/lib.rs',
+        'rust/crates/disk-space/tests/cli.rs',
+        'rust/crates/dev-tools/src/package.rs',
+        'rust/crates/dev-tools/tests/disk_space.rs',
+        'rust/tools/check-disk-space',
+        'rust/tools/card_ci_space.py',
         'rust/crates/jetlink/',
         'rust/crates/runtime-core/',
         'rust/crates/runtime-launcher/',
@@ -558,7 +592,7 @@ def build():
     room(3 * 2**30)
     run(installer_cmd, env=installer_env)
     installer = TARGET / "aarch64-unknown-linux-musl/release/openpilot-runtime-install"
-    save(WORK / "installer-build.json", dict(schema=1, source_commit=SHA, architecture="aarch64", target="aarch64-unknown-linux-musl", installer_sha256=digest(installer), build_command=shlex.join(installer_cmd), validation="Built on GitHub-hosted runner; complete offline QEMU installation and installed AGNOS launcher verification follow before publication."))
+    save(WORK / "installer-build.json", dict(schema=1, source_commit=SHA, architecture="aarch64", target="aarch64-unknown-linux-musl", installer_sha256=digest(installer), build_command=shlex.join(installer_cmd), validation=f"Built in GitHub Actions on {RUNNER['name']} ({RUNNER['environment']}, {RUNNER['distribution'].get('PRETTY_NAME')}, {RUNNER['architecture']}); complete offline QEMU installation and installed AGNOS launcher verification follow before publication."))
     room(6 * 2**30)
     rows = []
     for name in NAMES:
@@ -661,6 +695,7 @@ def require_delivery_ref():
 if __name__ == "__main__":
     os.environ["RUSTUP_TOOLCHAIN"] = "1.94.0"
     require_delivery_ref()
+    save(WORK / "runner-identity.json", RUNNER)
     if sys.argv[1] == "source-policy": check_source_policy()
     elif sys.argv[1] == "prepare": stage_baseline(); sysroot(); environment()
     elif sys.argv[1] == "host-tools": host_tools()

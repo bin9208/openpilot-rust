@@ -6,6 +6,8 @@ import shutil
 import subprocess
 import sys
 
+REMOTE_URL = 'https://github.com/fixture/updated.git'
+
 
 def git(root, *args):
   return (
@@ -53,6 +55,7 @@ def setup(root, remote, previous, launcher):
   base = root / 'base'
   git(root, 'clone', str(remote), str(base))
   git(base, 'reset', '--hard', previous)
+  git(base, 'remote', 'set-url', 'origin', REMOTE_URL)
   params = root / 'data/params/d'
   params.mkdir(parents=True)
   (root / 'tmp').mkdir()
@@ -84,11 +87,22 @@ elif args[:2] == ['umount','-l'] and len(args)==3: owned(args[2])
 else: raise AssertionError(args)
 ''')
   sudo.chmod(0o755)
-  for name in ['git', 'bash', 'ionice', 'find']:
+  # Keep configured/effective URL metadata realistic. Only transport invocations
+  # get a command-scoped rewrite; real Git still handles all refs and objects.
+  git_wrapper = bindir / 'git'
+  git_wrapper.write_text(f'''#!{sys.executable}
+import os, sys
+args = sys.argv[1:]
+if args and args[0] in ('ls-remote', 'fetch'):
+ args = ['-c', {f'url.{remote.resolve()}.insteadOf={REMOTE_URL}'!r}, *args]
+os.execv('/usr/bin/git', ['git', *args])
+''')
+  git_wrapper.chmod(0o755)
+  for name in ['bash', 'ionice', 'find']:
     target = shutil.which(name)
     assert target, name
     (bindir / name).symlink_to(target)
-  env = dict(os.environ, PATH=str(bindir) + ":/usr/bin:/bin", UPDATED_FIXTURE_ROOT=str(root), GIT_CONFIG_NOSYSTEM='1', GIT_CONFIG_GLOBAL='/dev/null', TZ='UTC')
+  env = dict(os.environ, PATH=str(bindir) + ":/usr/bin:/bin", UPDATED_FIXTURE_ROOT=str(root), GIT_CONFIG_NOSYSTEM='1', GIT_CONFIG_GLOBAL='/dev/null', GIT_ALLOW_PROTOCOL='file', GIT_TERMINAL_PROMPT='0', TZ='UTC')
   env.pop('OPENPILOT_PREFIX', None)
   config = {
     'paths': {'base': str(base), 'staging': str(root / 'data/stage'), 'lock': str(root / 'tmp/updated.lock'), 'system_root': str(root)},

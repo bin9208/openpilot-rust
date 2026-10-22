@@ -32,3 +32,14 @@ private Jetlink connection and waits for host preparation before inference.
 Wi-Fi passwords are excluded from status files and logs. A legacy host can
 request the pinned model; its download is verified before transfer, and
 preparation stops if the device goes onroad or the cable disconnects.
+
+The `dev-md` native updater uses the current branch's configured Git remote for
+update checks, available branches, downloads, and tracking the downloaded target.
+For example, a branch tracking `rust/dev-md` downloads from `rust`, even if the
+clone also has an `origin` remote. Selecting another update target keeps the
+current branch's remote. If no branch remote is configured, it uses `origin`.
+An explicitly configured remote that is missing, local, or unsupported causes
+the update to fail without silently switching repositories. Supported network
+URLs use HTTPS, HTTP, SSH (including `git@host:path`), or Git transport; local
+paths, `file://` URLs and local/unsupported URL rewrites are rejected. No new
+setting is needed. Device update acceptance remains pending.

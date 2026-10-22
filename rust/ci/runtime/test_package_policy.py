@@ -8,11 +8,12 @@ import tempfile
 from unittest import mock
 import os
 import shutil
+import subprocess
 import unittest
 
 
 SOURCE = Path(__file__).with_name("package.py")
-FUNCTIONS = {"source_path_allowed", "rebuild_opencv_artifact", "require_fresh_opencv", "require_delivery_ref", "stage_opencv_libraries", "digest"}
+FUNCTIONS = {"source_path_allowed", "rebuild_opencv_artifact", "require_fresh_opencv", "require_delivery_ref", "stage_opencv_libraries", "digest", "room"}
 tree = ast.parse(SOURCE.read_text())
 namespace = dict(Path=Path, hashlib=hashlib, json=json, os=os, shutil=shutil, SHA="exact-source", BASE="baseline")
 exec(compile(ast.Module(body=[node for node in tree.body if isinstance(node, ast.FunctionDef)
@@ -20,6 +21,53 @@ exec(compile(ast.Module(body=[node for node in tree.body if isinstance(node, ast
 
 
 class SourcePolicyTests(unittest.TestCase):
+    def test_reviewed_updater_and_host_growth_paths_have_exact_boundaries(self):
+        allowed = namespace["source_path_allowed"]
+        for path in (
+            "rust/crates/updated/Cargo.toml", "rust/crates/updated/src/updater.rs",
+            "rust/crates/updated/tests/runtime_package.rs", "rust/crates/updated/tests/update_remote.rs",
+            "rust/tools/check_updated.py", "rust/tools/updated_fixtures.py",
+            "rust/tools/tests/test_updated_comparison.py", "rust/tools/tests/test_updated_remote_fixture.py",
+            ".github/workflows/update-remote-419.yml", "docs/naver/dev-md-update-remote-419.md",
+            "docs/user/en/rust-port.md", "docs/user/ko/rust-port.md",
+            "rust/crates/disk-space/src/lib.rs", "rust/crates/disk-space/tests/cli.rs",
+            "rust/crates/dev-tools/src/package.rs", "rust/crates/dev-tools/tests/disk_space.rs",
+            "rust/tools/check-disk-space", "rust/tools/card_ci_space.py",
+        ):
+            with self.subTest(path=path):
+                self.assertTrue(allowed(path))
+                self.assertFalse(allowed(path + ".extra"))
+                self.assertFalse(allowed(path + "/child"))
+        for path in (
+            "rust/crates/updated/", "rust/crates/updated/build.rs",
+            "rust/crates/updated/src/process.rs", "rust/crates/updated/src/unreviewed.rs",
+            "rust/crates/updated-other/src/updater.rs", "rust/tools/check_updated_other.py",
+            "rust/crates/disk-space/build.rs", "rust/crates/disk-space/src/other.rs",
+            "rust/crates/dev-tools/src/ffmpeg_build.rs", "rust/tools/build_model_tinygrad.py",
+            "rust/tools/build_other_provider.py", "third_party/ffmpeg/configure",
+            ".github/workflows/update-remote-other.yml", "docs/user/en/other-guide.md",
+        ):
+            with self.subTest(path=path):
+                self.assertFalse(allowed(path, "same", "same"))
+
+    def test_actual_package_base_diff_is_admitted_with_inherited_entry_checks(self):
+        root = SOURCE.resolve().parents[3]
+        constants = {node.targets[0].id: ast.literal_eval(node.value) for node in tree.body
+                     if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name)
+                     and node.targets[0].id in ("BASE", "INHERITED")}
+
+        def git(*args):
+            return subprocess.check_output(["git", *args], cwd=root, text=True).strip()
+
+        inherited_path = "docs/naver/self-hosted-runner-404.md"
+        current_entry = git("ls-tree", "HEAD", "--", inherited_path)
+        inherited_entry = git("ls-tree", constants["INHERITED"], "--", inherited_path)
+        changed = git("diff", "--no-renames", "--name-only", constants["BASE"], "HEAD").splitlines()
+        self.assertIn("rust/crates/updated/src/updater.rs", changed)
+        for path in changed:
+            with self.subTest(path=path):
+                self.assertTrue(namespace["source_path_allowed"](path, current_entry, inherited_entry))
+
     def test_gpu_exceptions_are_exact_paths(self):
         allowed = namespace["source_path_allowed"]
         for path in (
@@ -77,6 +125,45 @@ class SourcePolicyTests(unittest.TestCase):
         for path in ("rust/bin/lib/libavcodec.so.60", "rust/bin/lib/libonnxruntime.so",
                      "rust/bin/licenses/ffmpeg/provenance.json", "rust/bin/lib/not-opencv.so"):
             self.assertFalse(replaced(path))
+
+
+class RunnerAdmissionTests(unittest.TestCase):
+    def test_only_hosted_or_registered_linux_x64_actions_are_admitted(self):
+        setup_end = next(node.lineno for node in tree.body if isinstance(node, ast.Assign)
+                         and isinstance(node.targets[0], ast.Name) and node.targets[0].id == "ROOT")
+        assertions = ast.Module(body=[node for node in tree.body if isinstance(node, ast.Assert)
+                                      and node.lineno < setup_end], type_ignores=[])
+        gate = compile(assertions, str(SOURCE), "exec")
+        baseline = dict(GITHUB_ACTIONS="true", GITHUB_REPOSITORY="bin9208/openpilot-rust",
+                        RUNNER_ENVIRONMENT="self-hosted", RUNNER_NAME="bin-actions",
+                        RUNNER_OS="Linux", RUNNER_ARCH="X64")
+        for change, accepted in (({}, True), ({"RUNNER_ENVIRONMENT": "github-hosted", "RUNNER_NAME": "hosted"}, True),
+                                 ({"RUNNER_NAME": "unregistered"}, False), ({"RUNNER_OS": "Windows"}, False),
+                                 ({"RUNNER_ARCH": "ARM64"}, False), ({"GITHUB_ACTIONS": "false"}, False),
+                                 ({"GITHUB_REPOSITORY": "someone/fork"}, False)):
+            with self.subTest(change=change), mock.patch.dict(os.environ, baseline | change, clear=True):
+                if accepted:
+                    exec(gate, dict(os=os))
+                else:
+                    with self.assertRaises(AssertionError):
+                        exec(gate, dict(os=os))
+
+
+class BuildSpaceTests(unittest.TestCase):
+    def test_delivery_room_uses_only_growth_and_records_actual_runner(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            runner = dict(name="bin-actions", environment="self-hosted", architecture="X64")
+            with mock.patch.dict(namespace, WORK=root, RUNNER=runner), \
+                 mock.patch.object(shutil, "disk_usage", return_value=shutil._ntuple_diskusage(1000, 900, 100)):
+                namespace["room"](100)
+                with self.assertRaisesRegex(AssertionError, "estimated operation growth"):
+                    namespace["room"](101)
+                with self.assertRaisesRegex(AssertionError, "nonnegative"):
+                    namespace["room"](-1)
+            rows = [json.loads(line) for line in (root / "space-observations.jsonl").read_text().splitlines()]
+            self.assertEqual([row["required_bytes"] for row in rows], [100, 101])
+            self.assertTrue(all(row["free_bytes"] == 100 and row["runner"] == runner for row in rows))
 
 
 class LibraryStagingTests(unittest.TestCase):

@@ -146,16 +146,38 @@ class WorkflowPolicyTests(unittest.TestCase):
     self.assertIn('buildToolsVersion = "35.0.0"', app)
     self.assertIn("'platforms;android-35' 'build-tools;35.0.0'", steps[install]['run'])
     reserve = next(step['run'] for step in steps[:setup] if 'ANDROID_HOME=' in step.get('run', ''))
-    self.assertIn('25 + 4', reserve)
+    self.assertIn('growth_bytes=$((4 * 1024 * 1024 * 1024))', reserve)
+    self.assertNotIn('25 +', reserve)
     self.assertIn('ANDROID_SDK_ROOT=', reserve)
 
-  def test_latest_base_hosted_runner_policy_is_preserved(self):
+  def test_only_trusted_low_impact_jobs_move_to_the_validated_x64_runner(self):
+    quick = {'fast-checks', 'check_user_docs', 'git_update', 'model_web', 'jetlink-native'}
+    labels = ['self-hosted', 'Linux', 'X64', 'dev-md-local']
     for name in ('ci.yml', 'dev-md-runtime.yml'):
       for key, job in workflow(name)['jobs'].items():
         if 'matrix' in job.get('strategy', {}):
           self.assertEqual(job['runs-on'], '${{ matrix.runner }}', (name, key))
+        elif name == 'ci.yml' and key in quick:
+          expression = job['runs-on'].removeprefix('${{ ').removesuffix(' }}')
+          for repository, event, head, expected in (
+              ('bin9208/openpilot-rust', 'push', 'bin9208/openpilot-rust', labels),
+              ('bin9208/openpilot-rust', 'pull_request', 'bin9208/openpilot-rust', labels),
+              ('bin9208/openpilot-rust', 'pull_request', 'someone/fork', ['ubuntu-24.04']),
+              ('someone/fork', 'push', 'someone/fork', ['ubuntu-24.04'])):
+            environment = dict(os.environ, ROUTING=json.dumps(dict(repository=repository, event_name=event,
+                               event=dict(pull_request=dict(head=dict(repo=dict(full_name=head)))))))
+            script = 'const github=JSON.parse(process.env.ROUTING);const fromJSON=JSON.parse;process.stdout.write(JSON.stringify(' + expression + '));'
+            result = subprocess.run(['node', '-e', script], env=environment, capture_output=True, text=True, check=True)
+            self.assertEqual(json.loads(result.stdout), expected, (key, event, head))
+        elif name == 'dev-md-runtime.yml' and key in ('package', 'publish'):
+          self.assertEqual(job['runs-on'], labels)
         else:
           self.assertIn(job['runs-on'], ('ubuntu-24.04', 'ubuntu-24.04-arm'), (name, key))
+    jobs = workflow()['jobs']
+    for key in ('workspace', 'planner-memory', 'radar-memory', 'model-memory', 'arm-build'):
+      self.assertEqual(jobs[key]['runs-on'], 'ubuntu-24.04', key)
+    for key in ('radar-arm', 'carrot-navi-arm'):
+      self.assertEqual(jobs[key]['runs-on'], 'ubuntu-24.04-arm', key)
     commands = '\n'.join(step.get('run', '') for step in workflow()['jobs']['check_user_docs']['steps'])
     self.assertNotIn('package.py source-policy', commands)
     delivery = '\n'.join(step.get('run', '') for step in workflow('dev-md-runtime.yml')['jobs']['package']['steps'])
@@ -164,6 +186,16 @@ class WorkflowPolicyTests(unittest.TestCase):
     self.assertIn('--features native-skip-miri --all-targets', native)
     self.assertTrue((ROOT / 'rust/crates/xiaoge/tests/cadence.rs').is_file())
     self.assertTrue((ROOT / 'rust/crates/xiaoge/tests/camera_pixels.rs').is_file())
+
+  def test_hosted_bundle_cleanup_is_guarded_on_persistent_runners(self):
+    for name in ('ci.yml', 'dev-md-runtime.yml', 'update-remote-419.yml'):
+      for key, job in workflow(name)['jobs'].items():
+        for step in job.get('steps', []):
+          script = step.get('run', '')
+          if 'sudo rm -rf /usr/local/lib/android' in script:
+            guard = 'if [ "${{ runner.environment }}" = github-hosted ]; then'
+            self.assertIn(guard, script, (name, key))
+            self.assertLess(script.index(guard), script.index('sudo rm -rf'), (name, key))
 
   def test_runtime_delivery_is_serial_and_requires_a_marked_merge(self):
     delivery = workflow()['jobs']['runtime-delivery']

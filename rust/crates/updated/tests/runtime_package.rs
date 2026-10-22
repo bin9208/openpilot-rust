@@ -223,9 +223,10 @@ fn updater_does_not_erase_pending_native_update_or_previous_generation() {
 #[derive(Default)]
 struct OverlayCommands {
     calls: Vec<Vec<String>>,
+    real_git: bool,
 }
 impl Commands for OverlayCommands {
-    fn run(&mut self, argv: &[String], _: Option<&Path>) -> Result<String, Error> {
+    fn run(&mut self, argv: &[String], cwd: Option<&Path>) -> Result<String, Error> {
         self.calls.push(argv.to_vec());
         if argv.first().is_some_and(|arg| arg == "git")
             && argv.get(1).is_some_and(|arg| arg == "fetch")
@@ -236,6 +237,9 @@ impl Commands for OverlayCommands {
                 output: "owned fetch failure".into(),
             });
         }
+        if self.real_git {
+            return LocalCommands.run(argv, cwd);
+        }
         Ok(String::new())
     }
 }
@@ -245,13 +249,50 @@ fn failed_fetch_preserves_ready_update_and_its_available_status() {
     let (_root, paths) = checkout(0);
     std::fs::create_dir_all(&paths.base).unwrap();
     std::fs::create_dir_all(paths.merged()).unwrap();
+    LocalCommands
+        .run(
+            &openpilot_updated::process::args(&["git", "init", "-b", "dev-md"]),
+            Some(&paths.merged()),
+        )
+        .unwrap();
+    LocalCommands
+        .run(
+            &openpilot_updated::process::args(&[
+                "git",
+                "-c",
+                "user.name=Fixture",
+                "-c",
+                "user.email=fixture@example.invalid",
+                "commit",
+                "--allow-empty",
+                "-qm",
+                "fixture",
+            ]),
+            Some(&paths.merged()),
+        )
+        .unwrap();
+    LocalCommands
+        .run(
+            &openpilot_updated::process::args(&[
+                "git",
+                "remote",
+                "add",
+                "origin",
+                "https://github.com/fixture/updater.git",
+            ]),
+            Some(&paths.merged()),
+        )
+        .unwrap();
     std::fs::write(
         paths.finalized().join(".runtime-update-ready.json"),
         "ready",
     )
     .unwrap();
     common::set_consistent_flag(&paths, &paths.finalized(), true).unwrap();
-    let mut commands = OverlayCommands::default();
+    let mut commands = OverlayCommands {
+        real_git: true,
+        ..OverlayCommands::default()
+    };
     let result = with_commands(&paths, &mut commands, |updater| {
         updater.params.put("UpdaterTargetBranch", b"dev-md")?;
         updater.params.put_bool("UpdateAvailable", true)?;
