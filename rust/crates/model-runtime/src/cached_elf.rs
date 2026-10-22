@@ -438,10 +438,9 @@ pub fn reconstruct(bytes: &[u8]) -> Result<Reconstruction, String> {
         }
         offsets[index] = Some(start);
         image.extend_from_slice(data);
-        if u64_at(section, 8)? & 4 != 0 {
-            if executable.replace((index, start, data.len())).is_some() {
-                return Err("cached reconstruction multiple executable sections".into());
-            }
+        if u64_at(section, 8)? & 4 != 0 && executable.replace((index, start, data.len())).is_some()
+        {
+            return Err("cached reconstruction multiple executable sections".into());
         }
     }
     let (text_index, text_offset, text_bytes) =
