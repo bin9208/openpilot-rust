@@ -1,0 +1,54 @@
+name: 296 unchanged hardware case plans and CLI admissions
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/hardware-info-original-plan-296-once.yml
+permissions:
+  contents: read
+jobs:
+  capture:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      EXPECTED_SOURCE: 3ddae8cbb9a5e7ab9aae1e9d7491aea3ff9af777
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: 3ddae8cbb9a5e7ab9aae1e9d7491aea3ff9af777
+        persist-credentials: false
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Capture only unchanged case generation and original CLI admissions
+      shell: bash
+      run: "set -euo pipefail\ntest \"$(git rev-parse HEAD)\" = \"$EXPECTED_SOURCE\"\nmkdir \"$RUNNER_TEMP/hardware-info-original-plan-296\"\
+        \nPYTHONPATH=rust/tools python - <<'PY'\nimport hashlib, json, os, pathlib, subprocess, sys\nfrom hardware_info_cases\
+        \ import build_cases\nroot=pathlib.Path.cwd()\nout=pathlib.Path(os.environ['RUNNER_TEMP'])/'hardware-info-original-plan-296'\n\
+        source_names=['rust/tools/check_hardware_info.py','rust/tools/hardware_info_cases.py','rust/tools/hardware_info_reference.py','rust/tools/original_params_binding.py','rust/tools/build_params_python.py','openpilot/system/hardware/__init__.py','openpilot/system/hardware/hw.py','openpilot/system/hardware/base.py','openpilot/system/hardware/pc/hardware.py','openpilot/system/hardware/tici/hardware.py','openpilot/system/hardware/tici/iwlist.py','openpilot/common/utils.py']\n\
+        before={n:hashlib.sha256((root/n).read_bytes()).hexdigest() for n in source_names}\ncases=build_cases()\nplans=[{'name':c.name,'hardware':c.hardware,'pc':c.pc,'darwin':c.darwin,'endpoint_file':c.endpoint_file,'steps':c.steps,'wire':[{'request_hex':request.encode().hex(),'replies_hex':[r.hex()\
+        \ for r in replies]} for request,replies in c.wire]} for c in cases]\nassert len(plans)==136 and len({c['name'] for\
+        \ c in plans})==136\nassert sum(sum(s['action']=='call' for s in c['steps']) for c in plans)==3110\nassert sum(len(c['wire'])\
+        \ for c in plans)==70\nenvironment={n:list(os.environb[n.encode()]) if n.encode() in os.environb else None for n in\
+        \ ('HOME','OPENPILOT_PREFIX','LOG_ROOT','COMMA_CACHE')}\nenvironment['OPENPILOT_PREFIX']=None\n(out/'plans.json').write_text(json.dumps({'source_commit':os.environ['EXPECTED_SOURCE'],'environment':environment,'cases':plans},ensure_ascii=True,indent=2)+'\\\
+        n')\nfake=out/'admissions'\nfake.mkdir()\nbinding=fake/'fake-binding.so'\nbinding.write_bytes(b'')\nbinding.with_name('provenance.json').write_text(json.dumps({'module_sha256':hashlib.sha256(b'').hexdigest(),'sources':{}}))\n\
+        bad_request=fake/'malformed-request.json'\nbad_request.write_text('{')\noccupied=fake/'occupied-output'\noccupied.write_bytes(b'original-output-guard')\n\
+        checks=[('controller-help',['rust/tools/check_hardware_info.py','--help'],0),('controller-missing',['rust/tools/check_hardware_info.py'],2),('controller-unknown',['rust/tools/check_hardware_info.py','--invalid-option'],2),('controller-no-cases',['rust/tools/check_hardware_info.py','/not-run',str(binding),str(fake/'no-cases'),'--cases','^no-such-hardware-case$'],1),('controller-bad-regex',['rust/tools/check_hardware_info.py','/not-run',str(binding),str(fake/'bad-regex'),'--cases','['],1),('controller-output-file',['rust/tools/check_hardware_info.py','/not-run',str(binding),str(occupied)],1),('reference-help',['rust/tools/hardware_info_reference.py','--help'],0),('reference-missing',['rust/tools/hardware_info_reference.py'],2),('reference-malformed-json',['rust/tools/hardware_info_reference.py',str(binding),str(bad_request),str(fake/'bad-request-output')],1)]\n\
+        receipts=[]\nfor name,args,expected in checks:\n  result=subprocess.run([sys.executable,*args],cwd=root,capture_output=True,timeout=20,env={**os.environ,'PYTHONPATH':'rust/tools'})\n\
+        \  (out/(name+'.stdout')).write_bytes(result.stdout)\n  (out/(name+'.stderr')).write_bytes(result.stderr)\n  receipts.append({'name':name,'argv':[sys.executable,*args],'exit_code':result.returncode,'expected_exit':expected,'stdout':name+'.stdout','stderr':name+'.stderr','admission_only_fake_binding':str(binding)\
+        \ in args})\n  assert result.returncode==expected,(name,result.returncode,result.stderr)\nassert occupied.read_bytes()==b'original-output-guard'\n\
+        after={n:hashlib.sha256((root/n).read_bytes()).hexdigest() for n in source_names}\nassert before==after\n(out/'cli-admissions.json').write_text(json.dumps(receipts,indent=2)+'\\\
+        n')\nmembers={p.relative_to(out).as_posix():{'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()}\
+        \ for p in out.rglob('*') if p.is_file()}\nreport={'source_commit':os.environ['EXPECTED_SOURCE'],'workflow_commit':os.environ['GITHUB_SHA'],'python':sys.version,'source_before':before,'source_after':after,'case_count':136,'observation_count':3110,'packet_count':70,'members':members,'scope':'Case\
+        \ plan and original CLI admissions only. Positive API oracle is separately retained from run39691148023; no fake binding\
+        \ is executed.'}\n(out/'manifest.json').write_text(json.dumps(report,indent=2)+'\\n')\nprint(json.dumps({k:report[k]\
+        \ for k in ('source_commit','case_count','observation_count','packet_count')}))\nPY\n"
+    - uses: actions/upload-artifact@v6
+      if: always()
+      with:
+        name: hardware-info-original-plan-296
+        path: ${{ runner.temp }}/hardware-info-original-plan-296/
+        if-no-files-found: error
+        retention-days: 14
