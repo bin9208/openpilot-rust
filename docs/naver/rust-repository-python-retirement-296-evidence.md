@@ -9420,3 +9420,21 @@ local functional execution, unchanged-success rerun, cancellation, device action
 or inventory credit occurred. Sixteen Sol slots were accepted, three new workers
 failed with429 before starting and were closed/reassigned; this is not sixteen
 productive workers. Parent remains gpt-6.1-sol/ultra and no Astra is used.
+
+## Focused current startup adapter source (2026-10-23)
+
+The independently reviewed additive720-line test adapter from patch7121fa4d758e3ea8981c2701deef7d0b4f4582c5ad3ae46a28cd31bbbaa75ee1
+is integrated as model_family_missing_current_diagnostic.rs. It uses actual
+current checker/daemon binaries and independent retained original data for only
+startup8, USB6, no-collector/raw-alias driver4 and16source/output controls. Both
+source roots receive integrity/absence checks; positive traffic runs on the
+private root. It explicitly reports no full60/current-family acceptance, no
+transfer of old42cases and no retirement credit. Cargo autodiscovery is enabled;
+the test requires Linux/driver-daemon-native and exact ignored-test selection.
+
+Source review finds no concrete P1/P2 in this adapter. Its recipe remains held
+for the already identified publisher roster1666→1734 repair, private venv --copies
+and reviewed current Cargo/pipeline-checker pins. Native compilation, combined
+guarded/cached-driver/publisher and guarded/fresh-family/publisher execution are
+unrun; integration of this test is not their acceptance. No original source,
+model, tolerance, cached image, compiler or common CI helper is changed/deleted.
