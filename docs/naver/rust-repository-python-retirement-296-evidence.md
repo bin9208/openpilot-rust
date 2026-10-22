@@ -9176,3 +9176,19 @@ ID/digest could allow cleanup after a no-files warning. A separate recipe-only
 revision must require a real receipt before publication; the frozen source is
 unaffected. Fixture input admission remains a prerequisite. No Python deletion,
 retirement credit or device result follows from this implementation.
+
+## Exact common CI helper reuse in #296 (2026-10-23)
+
+Imported only four CI helper files byte-for-byte from verified common source
+`77663836a95a9e2aff9aa66592d8b06ed9c87cd9`, preserving script mode100755. No dev-md runtime or workflow is merged. The common validation remains
+[39853582741](https://github.com/bin9208/openpilot-rust/actions/runs/39853582741);
+its bounded evidence and limitations are recorded above. File SHA256 values:
+
+- `.github/actions/local-arm/action.yml`: `70b18b56a4abe6c5dd0327edbf4c5409900e37c3840f67b5b9e763cbb20532a1`.
+- `tools/ci/local-arm`: `1c69c096fa890b478a5b157aba021ba412ff0106e9e31b4b0b840f30f618c090`.
+- `.github/actions/job-temp/action.yml`: `d03bca53cd15a4fa57bcff731798054ca4a92253c6ca0b94315bb8b6eb053a94`.
+- `.github/actions/rust-path/action.yml`: `cded6237e2f0a0bb4433d78b3c83918a42cc7319bc22e79350c1a1abb0a86fba`.
+
+YAML parsing and shell syntax pass locally; no build, provider or guest execution
+was repeated. #296 workflow routing and source/cache/target isolation are separate
+consumer work and still pending. No hosted publication is enabled by this import.
