@@ -160,7 +160,10 @@ jobs:
           cargo +1.94.0 run --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --bin build-webcam-opencv -- --source "$RUNNER_TEMP/webcam-opencv-source/opencv-fe38fc608f6acb8b68953438a62305d8318f4fcd" --output "$RUNNER_TEMP/webcam/provider" --growth-mib 4096
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/webcam/binding"
-          printf 'OPENPILOT_WEBCAM_OPENCV_ROOT=%s/webcam/provider\nLD_LIBRARY_PATH=%s/webcam/provider/install/lib\nPYTHONPATH=%s/webcam/binding:%s\n' "$RUNNER_TEMP" "$RUNNER_TEMP" "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+          python -P tools/ci/provider_python_env.py before --job webcam --provider "$RUNNER_TEMP/webcam/provider/install/lib" --output "$RUNNER_TEMP/webcam/python-provider"
+          printf 'OPENPILOT_WEBCAM_OPENCV_ROOT=%s/webcam/provider\nLD_LIBRARY_PATH=%s/webcam/provider/install/lib%s\nPYTHONPATH=%s/webcam/binding:%s\n' "$RUNNER_TEMP" "$RUNNER_TEMP" "${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Require unchanged Python identity and pinned webcam imports after provider ENV
+        run: python -P tools/ci/provider_python_env.py after --job webcam --provider "$RUNNER_TEMP/webcam/provider/install/lib" --output "$RUNNER_TEMP/webcam/python-provider"
       - name: Build native daemon and check all webcam targets
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
@@ -974,7 +977,10 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/xiaoge-original/ipc"
           python -P -c 'import json,os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"xiaoge-original/params/provenance.json"; print("XIAOGE_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
-          printf 'OPENPILOT_OPENCV_ROOT=%s/xiaoge-opencv\nLD_LIBRARY_PATH=%s/xiaoge-opencv/install/lib\nPYTHONPATH=%s/xiaoge-original/ipc:%s\nOPENCV_TEST_LANE_MODEL=%s/openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx\n' "$RUNNER_TEMP" "$RUNNER_TEMP" "$RUNNER_TEMP" "$PYTHONPATH" "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+          python -P tools/ci/provider_python_env.py before --job xiaoge --provider "$RUNNER_TEMP/xiaoge-opencv/install/lib" --output "$RUNNER_TEMP/xiaoge-python-provider"
+          printf 'OPENPILOT_OPENCV_ROOT=%s/xiaoge-opencv\nLD_LIBRARY_PATH=%s/xiaoge-opencv/install/lib%s\nPYTHONPATH=%s/xiaoge-original/ipc:%s\nOPENCV_TEST_LANE_MODEL=%s/openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx\n' "$RUNNER_TEMP" "$RUNNER_TEMP" "${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" "$RUNNER_TEMP" "$PYTHONPATH" "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+      - name: Require unchanged Python identity and pinned Xiaoge imports after provider ENV
+        run: python -P tools/ci/provider_python_env.py after --job xiaoge --provider "$RUNNER_TEMP/xiaoge-opencv/install/lib" --output "$RUNNER_TEMP/xiaoge-python-provider"
       - name: Compile and check all native Xiaoge targets
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
@@ -996,6 +1002,7 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/local-arm/qemu-version.txt
             ${{ env.CI_JOB_TEMP }}/local-arm/proot-version.txt
             ${{ env.CI_JOB_TEMP }}/xiaoge-comparison/
+            ${{ env.CI_JOB_TEMP }}/xiaoge-python-provider/
             ${{ env.CI_JOB_TEMP }}/xiaoge-original/params/*.json
             ${{ env.CI_JOB_TEMP }}/xiaoge-opencv/*.json
             ${{ env.CI_JOB_TEMP }}/xiaoge-opencv/*.log

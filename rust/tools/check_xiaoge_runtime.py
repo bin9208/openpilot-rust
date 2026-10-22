@@ -19,6 +19,7 @@ import uuid
 
 import httpx2
 
+from tools.ci.provider_python_env import provider_library_path
 from xiaoge_qa.http_cases import cases
 from xiaoge_qa.settings_phase import observed_settings, requested_settings, wait_settings_reload
 from xiaoge_qa.sockets import available_port, client, raw_http, telemetry, wait_ready
@@ -32,6 +33,8 @@ def run_peer(kind: str, arguments: argparse.Namespace):
   prefix = "xiaoge_" + uuid.uuid4().hex
   environment = dict(os.environ, OPENPILOT_PREFIX=prefix, PARAMS_ROOT=str(output / "params"),
                      LD_LIBRARY_PATH=str(arguments.opencv / "install/lib"), PWD=str(output))
+  if kind == "source":
+    environment["LD_LIBRARY_PATH"] = provider_library_path(environment["LD_LIBRARY_PATH"])
   queue = Path("/dev/shm") / ("msgq_" + prefix)
   queue.mkdir()
   tcp_port, http_port = available_port(), available_port()

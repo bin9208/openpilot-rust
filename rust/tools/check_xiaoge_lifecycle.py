@@ -23,6 +23,7 @@ import uuid
 
 import httpx2
 
+from tools.ci.provider_python_env import provider_library_path
 from xiaoge_qa.sockets import available_port, client, telemetry
 
 ROOT: Final = Path(__file__).resolve().parents[2]
@@ -72,6 +73,8 @@ def run_peer(kind: str, case: Case, arguments: argparse.Namespace):
     http_port = available_port()
   environment = dict(os.environ, OPENPILOT_PREFIX=prefix, PARAMS_ROOT=str(params),
                      LD_LIBRARY_PATH=str(arguments.opencv / "install/lib"), PWD=str(output))
+  if kind == "source":
+    environment["LD_LIBRARY_PATH"] = provider_library_path(environment["LD_LIBRARY_PATH"])
   try:
     with ExitStack() as stack:
       match case:
