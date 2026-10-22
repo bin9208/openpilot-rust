@@ -1,253 +1,146 @@
 # #296 current implementation handoff
 
-This is the current execution state, not a completion report. Historical exact
-runs, failures and artifact identities remain in the
-[evidence ledger](rust-repository-python-retirement-296-evidence.md) and focused
-family records. Git retains earlier handoff versions.
+Current execution state, not completion. The [evidence ledger](rust-repository-python-retirement-296-evidence.md)
+retains exact original captures, failed attempts, sources, workflows and artifact
+SHA/CRC audits; Git retains prior handoffs.
 
-## Scope and execution boundaries
+## Scope and boundaries
 
-- Worktree: `/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust`.
-  Branch `codex/feat-296-repository-python-retirement`, draft PR343→dev.
-- Preserve dev-md/#338, the primary checkout and `.omo`. Do not merge the two
-  tracks, change protected branches, publish a release or deploy a device here.
-- Parent6.1Sol owns supervision, review, Cargo/lib/bin registration, maintained
-  workflows, source deletion, documentation and Git publication. The latest user
-  permits6Sol/6Luna worker selection by task complexity; preserve worker ownership.
-- Local checks: syntax, scoped rustfmt/diff and stored-data inspection only.
-  Functional tests, builds, Clippy, original executions and ARM run in GitHub
-  Actions. Never import or execute project Python locally as a workaround.
-- Reserve25GiB plus estimated growth before builds/downloads/large copies; recover
-  at least35GiB if below the floor. Incremental disabled, two Cargo build jobs.
-- The user has no device connected and will pull/test boot, recording and upload.
-  Do not request USB or claim device/drive acceptance or vehicle CPU improvements.
-- Continue all maintained Python conversion, including compilers, development,
-  tests, vendor code, notebooks and embedded execution. A Rust launcher invoking
-  Python does not retire the underlying Python functionality.
+- Work only in `/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust`,
+  branch `codex/feat-296-repository-python-retirement`, draft PR343→dev.
+  Preserve primary dev-md/#338 and `.omo`; no protected merge/release/deployment.
+- Parent6.1Sol owns integration/review, registration/workflows, deletion and Git.
+  Latest user permits6Sol/6Luna workers by complexity; reuse existing ownership.
+- Local syntax, scoped rustfmt/diff and stored-data inspection only. Builds,
+  functional/original tests, Clippy and ARM use GitHub-hosted Actions.
+- Reserve25GiB plus growth; recover35GiB below floor. Two build jobs, incremental
+  disabled. Local free space is about93GiB; keep needed current evidence only.
+- User has no device and will pull/test boot, recording, upload and driving.
+  Do not request USB or claim device acceptance, CPU savings or an AGNOS release.
+- Continue development/build/test/vendor/notebook/embedded conversion. A Rust
+  launcher around Python does not retire the underlying Python functionality.
 
-## Accepted source retirement and open global gates
+## Accepted inventory and global gates
 
-Inventory:259replaced-local/3partial/3318pending of3580 baseline entries. Additional
-helpers/notebooks and observed execution edges are tracked separately. The latter
-has37pending sites after metadata14caller acceptance, recovery CWP and soundd source staging.
+**259replaced-local /3partial /3318pending of3580 baseline entries.** Additional
+helpers/notebooks are separate;37observed embedded execution sites remain pending.
+The [functional closure ledger](rust-repository-python-retirement-296-families.md)
+and exact pending routing TSV retain ownership/dependencies. No source count is
+an all-module clearance or complete runtime/device acceptance.
 
-Accepted focused families include outer Panda39625704015, device39640526320,
-protocol/CAN-I/O39647358174, and actual four-source Driving/Desire39663027128.
-The last run covers two absent roots, model6/collector6/fault2 per root, eight
-reappearance controls and all24,585 Desire rows/47scenarios. Retain independent
-original data; never restore the four deleted shared Python helpers.
+Navigation startup #457 and historical PTRACE_LISTEN/EIO #474 remain unexplained.
+Generic ARM/QEMU is not a sealed AGNOS/device candidate. Keep #296 open.
 
-Teleop39670630661 passes34 independent computations/10 disposable Git effects;
-its maintained caller policy integration passes39674181956. No real repository
-tag or remote was modified by the Git fixtures.
+Published full PR headf913de3aa3c0f2c261f4ae4b87e41f3eb317fb82 checks out synthetic
+merged39b1b08c2079e9b3356be06ddddf9db49551be6; parent verifies identical trees.
+Integration39691148113 passes. Rust39691148023 has43successful jobs,4functional/
+policy failures plus failed aggregate; generic ARM remains running. Failures:
+workspace module format/empty metadata executable (#475), Panda missing source
+roster (#477), old Card aggregate policy (#475), and model driver numerics (#476).
+Fast39691148018 fails inherited host-staging assertions (#478).
 
-Final current-source full PR/workspace, ARM and updated outer Panda proof remain
-pending. The earlier full PR39617311670 at f5c8ee8d failed only on the Desire source
-hash; the later focused four-source gate fixes that failure. Current full
-39691148023 is described below and does not yet supply final acceptance. Generic ARM/QEMU outputs are not sealed AGNOS
-release/device evidence. #457 startup stall and #474 PTRACE_LISTEN EIO remain
-unexplained; later successful runs do not establish root causes.
+Source fixes for the CI contracts are committed. Current-source complete Fast
+routing/metadata/Card39696562943 atdf374b0ab passes, including77isolation checks,
+3host-stager controls,13disk/6workflow policies and all67metadata observations.
+Corpus postdelete39698084823 additionally passes whole formatting and78isolation
+checks after the new Kalman step/policy. #478 still needs final complete Fast;
+#475 still needs final complete workspace. Diagnostic-branch automatic Fast runs
+inspect a different tree and are never evidence for their pinned source checkout.
 
-## Recovery:13-source retirement accepted
+## Accepted focused closures to reuse
 
-[39687004413](https://github.com/bin9208/openpilot-rust/actions/runs/39687004413)
-passes at57594f054a4454d09247f88d0630c39145853dd7, workflow
-ba1cfe4dd7a61f82b70988477fcd245a27faaf18. Eight controllers in two actual
-13-source-absent roots, ownership regressions, strict Clippy and13disk/6workflow
-policy cases pass. Eight maintained calls/CWP selector are native; obsolete
-Python-only APIs/test were removed. server.py/repo_update.py remain live elsewhere.
+- Recovery13:39687004413 at57594f054, eight controllers in two actual absent
+  roots, strict Clippy/ownership/policies. Parent audits7346CRCs,2508trace files,
+  4795exec attempts (2393success/2402explicit failure),96created bodies and two
+  52-row held alias receipts. Observed Python exec0 in those lanes; raw argv is
+  retained without claiming argv parity. server.py/repo_update.py remain live.
+- SoundD staging:39688832018 at7219cf5e7. Original/native20files/173533B,21pins,
+  five controls/Clippy, seven audio modes in both roots; each runtime lane has
+  22closed native execs/Python0. Other audio Python remains pending.
+- Metadata:39681730943 at9076ccc41,14actual maintained callers/real host binary,
+  67original cases (34success/27errors/6explicit schema), seven units and strict
+  Clippy/policies. Preserve raw paths and measured filesystem enumeration order.
+  Current workspace executable binding is rechecked39696562943; parent audits
+  all70CRCs and independently recomputes all67cases/order projection.
+- Driving/Desire actual four-source deletion:39663027128 at2ecf3f681. Two absent
+  roots, model/collector/fault lanes,24585rows/47scenarios and eight reappearance
+  controls. Preserve independent source data and keep deleted shared helpers gone.
+- Teleop:39670630661 plus maintained policy39674181956;34computations/10disposable
+  Git effects. No real repository tag/remote effect is inferred.
+- Panda device39640526320 and protocol/CAN-I/O39647358174 remain accepted.
+  Updated complete outer39698464972 at6c6733f84 now passes all packages/Clippy,
+  14controller/3retirement controls, **two current native roots×38phases**,
+  42disk receipts per root and34held ELF bindings. Correct source roster163:
+  151historical+17helpers+1manifest-5phase sources-1orchestrator. Parent audits
+  17095CRCs,163Git source hashes,76phase records/argv and84disk receipts.
+  Earlier independent original evidence is retained; live Python phase helpers
+  still run. #477 acceptance is met; no additional inventory count changes.
 
-Parent audits artifact12386833535:35,078,352B/7,346CRCs, SHA256
-41891171b8c74c2c1dc9e7965e4d9645bdbb989dba55dfa4690d7ddc18da31d8.
-All2,508trace files/roster/SHA and4,795exec attempts are independently counted:
-2,393success/2,402explicit failures, observed Python exec0.25unchanged presealed
-program pairs,96created executable bodies (86scripts/4copies/4hardlink aliases/
-2tmux symlinks), two52-row owned-alias receipts and symlink creation/final rows
-are independently checked. The exact executable/result contract retains raw argv
-without claiming argv parity. tmux source-created symlinks hold O_PATH inodes and
-bind the presealed provider; unknown exec rejection remains unchanged.
+## Kalman four-command development closure accepted
 
-Earlier compile-tuple and missing tmux-alias admission failures are retained in
-the evidence ledger. #472 functional closure stays accepted; #474 historical
-PTRACE_LISTEN/EIO root cause remains unexplained. This proves no device behavior.
+Native equation generators use a typed Rust symbolic DAG, analytic derivatives
+and deterministic Rust emission; they do not copy the independent expected files.
+Original capture39692474248 atf913 has30files/42input dependencies; parent matches
+3298Python/schema source hashes and all30output pins. A zero-speed Car derivative
+failed original-inf/native-NaN; algebraic denominator simplification fixes it
+without changing values/tolerance. Predelete39693981650 passes758function rows,
+constant bits and singular/NaN/infinite boundaries. Actual deletion39697287904 at
+df374b0ab passes same-ELF actual/empty-cwd emission, full11/19-file rosters and fresh
+compiled comparisons. Equation2 entries accepted; installed modules unchanged.
 
-## Metadata:14 maintained callers migrated, provider-order correction accepted
+Native corpus tools retain Pose16/Car24 PCG64 inputs and evaluate the explicitly
+selected original C++ oracle. Private FFI validates ABI/exact widths, holds header/
+ELF and serializes C++ global setter/load/call/drop lifetimes. Dev-tools denies
+unsafe except that private boundary. Original39696759740 at30f80e2f6 proves both
+full JSON outputs equal fresh Python and existing independent runtime corpora.
+Postdelete39698084823 at2e83f1dba passes current writer, same-ELF actual/empty-cwd,
+full byte equality and symlink/hardlink inode/mode behavior. Parent audits113CRCs,
+4047Git source hashes, six successful CLI/stdout receipts and provider seals;
+independent review corroborates link/cwd receipts. Corpus2 entries accepted.
+Original symbolic definitions, C++/Cython builders and other consumers stay pending.
 
-Original39677845650 seals67 observations/14 actual callers. Manifest SHA256
-`71d33e6e25f62c7a51240ecb4eb908acd35351a911b482869181fbfdffd130c1`.
-Pure data lives at `tests/fixtures/ci-receipt-original/original` in dev-tools;
-its69-file roster excludes the sibling README.
+Both commands are maintained in required workspace/estimation jobs. Eight new
+capacity markers raise exact guard count517→525; existing budgets are preserved.
 
-Native39679579648 at3abd3a50b passes34successful outputs/27error categories/
-six explicit non-string-prefix schema rejections, four units and strict Clippy.
-Parent audited artifact12383687016 (38,385bytes/78CRCs), SHA256
-`6ccd1b156c2b260b5927aa24c0b99d064a01e48890436b6fc9c471011b56aeaf`.
-The reader retains raw path bytes, unsorted glob semantics and4MiB bounded reads.
-Four null original error summaries are resolved from sealed qualified traceback
-lines; the original dataset is unchanged.
+## Driver/startup/USB six-source deletion still pending
 
-Main/template14 callers use `CI_RECEIPT_METADATA` built by native-json11 for the
-host target. The missing Panda producer caught by39680000548 is fixed3851ac65d.
-39680731634 passes five units/actual host producer but catches case61's different
-filesystem enumeration order.9076ccc41 preserves original fixed-order selector
-comparison and permits only the measured current-provider first basename in the
-actual CLI comparison, with exact member roster and retained projection receipts.
-Run39681730943 passes using the **actual maintained host binary**, seven units,
-all67original observations,13disk/6workflow policy cases and strict Clippy.
-Parent audited all83CRCs and independently recomputed every case. Artifact
-12384097663 is44,650bytes, SHA256
-`3e7b85fe188eeb151983fad2540b7c4cb406fb6cb6ba920642084fe7d13369ea`.
-The14 metadata execution edges are accepted; recovery CWP subsequently reduces pending sites39→38. Metadata baseline file counts are unchanged.
+Maintain separate4-model driver and5-model family data/catalog receipts. Only the
+metadata PKL matches; do not substitute datasets, relabel CPU targets or reuse
+old compiled kernels. Existing model compiler remains Python and pending.
+Original startup/USB capture39680582209 uses immutable runtime-b55552db data:
+45assets+3licenses, original e758b96d model/a25b81e9 runtime/1bb0c80c manifest.
+USB original controller exits0; its wrapper fails only a late unused-msgq inventory
+assertion. Preserve explicit incomplete-wrapper status and unknown ELF lengths.
+Both fixed manifests/114data files stay byte-preserving; a CRLF normalization
+failure was repaired without changing pins. Full native prep39685067872 passes.
 
-## Driver/startup/USB six-source gate
+Graniterapids first nonuniform frame fails #476 in39689390187 and full119537355539.
+Bounded original Python/model-run39694362489 onznver4 matches all warped/model
+bytes and frozen predictions. Original collector provider is **znver3/EPYC7763,
+LLVM18**, not earlier unusable Intel objects. Current same-host39696467591 on
+znver3 matches daemon/model-run/frozen complete2212B warmup/frame0 predictions;
+all47IR texts and both1382400B warped outputs also match znver4. This does not
+explain the Intel failure. Do not relax tolerances or replace original expectations.
 
-Startup/USB native ports reuse strict current-catalog/CPU/LLVM admission, held
-sources/assets and descendant cleanup.39674181956 accepts eight units/process
-controls, strict Clippy,13disk-bootstrap and6policy tests.39675298032 separately
-accepts three USB bounds/roster controls; its separate800MiB/file/1GiB asset
-bound leaves ordinary512MiB catalog admission intact.
+The znver3 gate then exposes #479: driver Collector receives historical capture
+commit2ecf instead of authenticated current checkoutdf374. Candidatea29832fd0
+carries current checkout only to live logging; all historical manifest pins stay.
+Active grouped/dedicated regressions bind every collector report to the current
+checkout, and exact log-context rejection is unchanged. Retry39699899580, workflow
+94db924b4f2acc24e29ca250ffe5e4bdc8938b00, is running at that source.
 
-Grouped native Rust test `model_family_retirement` is registered with
-`driver-daemon-native`. Preflight39680642370 at ec13cc17e passes four regressions
-and strict Clippy; parent audits artifact12383198793 (5,582bytes/sixCRCs), SHA256
-`1345c77d44d0c458cede76b8aa01bc227af4ec2289eb15d85288685405b46d41`.
-It holds final accepted reports, compares full stdout JSONL with report rows,
-keeps both roots unchanged, and reports interpreter execution as not measured.
-Full8startup/6USB plus driver ordinary/raw/collector traffic and24reappearance
-controls remain pending after actual six-source deletion.
+Failure-only native postmortem stays diagnostic/non-acceptance and preserves gate
+failure. Additional diagnostic39700512883/workflow0e522bf2a uses two actual hosted
+contexts, each with both warmup/frame0 sequentially, fresh native catalog and
+unchanged original Python pipeline. It records actual CPU/provider and decodes
+sealed frozen predictions only as diagnostic classification. Never force a CPU
+or present the diagnostic as six-source acceptance. Keep #476/#479/#296 open until
+their actual criteria pass.
 
-Keep **separate4-model driver and5-model startup/USB data/catalog receipts**.
-Only metadata PKL matches; the other DM/warp PKLs differ. Do not relabel a five-
-model receipt as four-model, or replace independent model/source observations.
+## Publication next
 
-Original capture39680582209 at fixed0ec6cbae2 used authenticated helpers and the
-correct immutable runtime-b55552db release. Parent independently verified whole
-archive1,155,620,561bytes/SHA256
-`6dc8965b2423f111631b6fb6eb9dc5fde3800f46b7785595f595fe348b66d807`,
-45assets+3licenses/780,342,357bytes, original e758b96d model, a25b81e9 runtime and
-1bb0c80c manifest. The previously selected1f00f0b7 release has a different model;
-no pin was relaxed. Never execute ARM release binaries to stage these data.
-
-Parent independently audited capture artifact12383214627 (130,144,004bytes/735CRCs),
-all34startup and80USB sealed data files, eight/six case rows, and68byte-identical
-original USB observation bodies. Durable pure data is
-`tests/fixtures/model-family-original`; startup manifest4c54c0d6/USB8774d675. USB
-original controller exited0; wrapper failed only the late unused-msgq import inventory
-assertion after its before/after equality checks. Data-only finalization explicitly
-retains original-wrapper-incomplete status and three SHA-bound ELF entries with unknown
-lengths (`bytes:null`); it never invents observations, reruns source or substitutes
-native output.
-
-Native preparation aaf5efa0e provides archive staging and separate driver/family catalog
-bundles, current model/source/CPU/LLVM seals and atomic publication. Bounded compiler
-execution preserves timeout partials and states when limit-error partials are
-unavailable. Hosted preflight39685067872 passes four new preparation and four grouped
-support regressions/compilation/strict Clippy; parent audited artifact12385584115
-(6443B/eightCRCs/SHA26e41bc9d39505830a7bf10ea936a893c3781d1b41465eda1d0d656e21c8ab96).
-Full39686001854 atcb9f508e0 passes separate4/5-model catalog exports and
-genuine45-asset/three-license USB staging, then catches Git CRLF normalization of a
-sealed installed marker (879→849B).1ccf8437c sets byte-preserving attributes and
-restores original bytes without changing either manifest; all114sealed staged Git blobs
-match original pins. Retry39689390187 source1ccf8437c/workflowba2ca41f4 passes byte
-admission/preparation, then fails the first nonuniform driver image comparison
-(#476). Frozen input hashes and warmup orientation match; retain all packet
-tolerances/original observations and diagnose warp/raw-model boundaries before
-accepting these six sources. Current candidate removes the actual six Python sources and
-two old workflow calls, adds required `model-family-retirement` to the aggregate gate,
-and binds explicit atomic bundle paths. The independent review caught and excluded USB
-cache model hardlinks from artifact upload (about18.6GB of duplicate input). Acceptance
-remains pending the full grouped gate; six-source counts are unchanged. Native soundd
-source staging7219cf5e7 is accepted39688832018: five controls/strict Clippy, actual
-original-vs-native CLI20file comparisons/173533B, seven audio modes in both roots
-and22closed native execs/Python0 per runtime trace lane. Parent audits
-artifact12388550588
-(20121548B/462CRCs/SHAf34db8b407a66daa9140cd8efde7ac37300f7de09c711d1e971fd571de751586),
-exact original heredoc
-SHA56630b535e2da704cf44ce523f9fbcfe662f9e32d2c42821a6938f00a500bf77,21pins/two native
-stage receipts and both traces/provenance. No receipt enters the20-file root; other
-audio Python remains pending. fbb6a007f adds an early frozen-byte regression and
-failure-tail diagnostics to the model gate; that regression and all preflight
-controls pass the current full job, which then reproduces #476.
-The existing unconverted model compiler remains explicit pending scope; invoking
-it from a Rust preparation command does not count as compiler retirement.
-
-## Publication and records
-
-Publish a coherent issue-branch batch, update PR343 and inspect exact-source
-required/full checks. Diagnostic candidate workflows execute an explicitly pinned
-checkout; their unrelated Fast checks use the diagnostic tree and are not proof
-for that checkout. Serialize diagnostic branch pushes.
-
-Published checkpoint f913de3aa3c0f2c261f4ae4b87e41f3eb317fb82 starts full Rust
-39691148023, Integration39691148113 and Fast39691148018. Actual PR checkout is
-synthetic merge d39b1b08c2079e9b3356be06ddddf9db49551be6; parent verifies its tree
-exactly equals the PR head. Integration passes; Fast fails inherited host-stager
-assertions (#478). Full Rust has workspace formatting (#475), Panda outer source
-roster (#477), driver numerics (#476) and inherited Card dependency-set assertion
-(#475) failures; other long jobs remain running. Scoped source fixes for the three
-CI assertion categories are committed; native model failure remains unresolved.
-
-Focused routing39695084680 at706e26861 passes all three fixed host-stager controls,
-then catches old SoundD count8 vs10. df374b0ab partitions exact commands by named
-step and preserves original behavioral RED and source-stager contracts. Retry
-39696562943 (workflow18b45283fe0b57f788586691731629e8f54d1222) executes complete
-Fast routing, actual workspace metadata and original Card policy atdf374b0ab.
-Corrected full Panda outer proof39696533789 (workflow423fb364b75cb0a57e5ecbf05bf5032357b8779a)
-at the same source retains four lanes/38phases/34ELFs and the163-source roster.
-
-Bounded driver diagnostic39694362489 at2c22e46ef passes original Python/direct
-model-run warped and raw-output byte equality, including frozen predictions. Its
-znver4 CPU differs from the earlier graniterapids failure. All47 LLVM IR kernels,
-weights and LLVM provider agree; target libraries differ. Do not infer the cause.
-Maintained failure-only same-host/catalog postmortem is wired indf374b0ab and runs
-with full model gate39696467591 (workflow2282e4f967ace29bf9bd5ca80f5ba4c2ffd9da06).
-Diagnostics cannot convert a failed retirement gate to success; six-source
-acceptance remains pending and expected values/tolerances stay unchanged.
-
-## Kalman development tools in progress
-
-Fresh native equation generators pass39693981650 at44ece72556 against all30
-frozen original files, exact constants and758function comparisons/boundaries.
-The singular zero-speed Jacobian issue is fixed with algebraic denominator
-simplification, preserving original infinite/NaN classifications.706e26861
-actually deletes only generate_pose_model.py/generate_car_model.py and adds the
-maintained workspace fresh-file gate (four growth markers; exact disk count521).
-Postdelete diagnostic prerequisites initially omitted rustfmt, then capnp for
-Panda source tests. Corrected retry39696496964 (workflowc84cbb6390b4ce96b67ae4d3067ab59f34e48ea2)
-atdf374b0ab must pass before accepting two more inventory entries. Installed
-runtime modules are unchanged; original model definitions remain live/pending.
-
-New30f80e2f6 registers generate-pose-corpus/generate-car-corpus through explicitly
-selected unchanged C++ providers. Provider calls are serialized, exact ABI/buffer
-sizes checked and files held. Existing output symlinks are deliberately rejected
-before evaluation (different from Python); ordinary output publication is atomic.
-Both Python commands remain present/pending.39696759740 (workflowc4029a1db2eff203ad3e7073fdb6deb5c9da4d6b)
-compares complete fresh original C++ corpora, float bits and key order; raw JSON
-byte equality remains separately recorded/unproven. No inventory count changes.
-
-Latest #296 checkpoint comment6329291714 records the newer failures/candidates;
-update it and PR343 after coherent acceptance evidence. Keep #296 open until full
-criteria are met; source inventory, partial gates, queued CI and PR creation are
-not completion. Detailed functional ownership is in
-[the grouped ledger](rust-repository-python-retirement-296-families.md).
-
-Native equation generator postdelete39697287904 now passes atdf374b0ab, workflow
-1e78c7beb0ee93fc067f85fa54f35084db3c773f. Parent audits128CRCs and all30 original
-byte pins, both source-absent Git paths, two native output rosters and all758
-function/constant/singular comparisons. Accept two equation-generator entries
-(257/3/3320). Corpus postdelete source2e83f1dba uses original C++ providers and
-fixed already-existing original JSON, now also testing symlink/hardlink write
-semantics and empty cwd. Workflowda59a756e867fd1518a4dc36a484f035a8825cc9 is
-published; its run remains pending acceptance. Full Fast routing/metadata/Card
-focused39696562943 passes; latest complete PR run still awaits generic ARM.
-
-Corpus postdelete39698084823 passes at2e83f1dba7561bc56c1f3183a13049e8898be2f1,
-workflowda59a756e867fd1518a4dc36a484f035a8825cc9. Pure/strict Clippy, full format,
-13disk/78isolation/6policy and both current C++ provider comparisons pass. Parent
-audits113CRCs/all4047source bodies, six successful CLI receipts, both unchanged
-ELFs, full JSON bytes, original stdout with output-path-only projection and
-provider dependencies. Independent review corroborates both link/cwd receipts.
-Accept both corpus entries; total259/3/3318. All four Kalman development commands
-are now accepted; original model definitions, C++/Cython builders and their other
-Python consumers remain pending. Panda retry39698464972 at6c6733f84 restores the
-correct163-source count without weakening exact set/38phase/34ELF checks.
+Keep source changes and `.omo` intact. Publish a coherent issue-branch batch and
+update draft343/#296; final complete exact-source required/workspace/ARM results
+remain necessary. Do not stop at queued CI or a PR, merge protected branches or
+claim device acceptance. Latest #296 checkpoint6329291714 predates the four-command
+acceptance and current #479 evidence; replace with an accurate new checkpoint.

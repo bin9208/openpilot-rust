@@ -5905,3 +5905,36 @@ Both the dedicated and active grouped hosted tests now require distinct historic
 and current provenance and bind every collector report to the current checkout.
 Original failing strict rejection supplies negative evidence; hosted full green
 acceptance remains pending. Six-source retirement and #476 stay open.
+
+### Updated outer Panda composition accepted (2026-10-22)
+
+[39698464972](https://github.com/bin9208/openpilot-rust/actions/runs/39698464972)
+passes at6c6733f84c10f774bf818b02d54e9563819d1e1a, workflow
+ea50983e7122195fec33afae1da6b8b367daceab. Complete Panda packages/Clippy,
+14controller controls, all3retirement tests and actual checkout/private source-
+absent lanes pass. Each current lane runs all38phases with42capacity receipts;
+this is **two current native lanes**, with earlier independent original evidence
+retained, not four new native lanes. Each phase's original/source/native checks
+remain. Already-live Python phase helpers are still explicitly run and pending.
+
+Parent audits artifact12392941991:83436682B/17095CRCs/936238221B expanded,
+SHA25618207d35a7e97869c84015216e7cb80b868fc97e4b6f05183a1b411dd19d7076.
+All163 current/private source hashes match each other and the exact Git source.
+The34held ELF receipts match each other and real Cargo executable artifact paths;
+33child hashes and build-messages SHA match both invocation receipts. Parent
+independently checks both exit0, all76phase exit records/full streams, all84disk
+receipts, exact command-file counts and complete argv equality after only root/
+output projections. Build metadata names the exact source6c6733f84. This accepts
+#477; it neither retires additional Python phases nor establishes device behavior.
+
+Sealed original collector provider/admission SHA a3c611b09d0afeed8b4ffdaf5d2fc061e1f624686f137c085fb82deaf6663df8 /
+c95135a02aaa886a56aca48f92e3c2964d62f9b4bedca41fec14a7b0e9e57ac1
+identify **znver3/AMD EPYC7763, LLVM18**, captured after historical SIGILL retry.
+They are not the older unusable Intel objects. Current znver3 and successful
+znver4 have all47 identical driver1344 IR bodies and byte-identical full warped
+and model outputs. This clarifies oracle context; graniterapids #476 remains
+unresolved. Two bounded diagnostic hosts in39700512883/sourcea29832fd0/workflow
+0e522bf2a968082195f08ffa4692a3f2ecf6d775 each run both frames sequentially with
+fresh actual-host exports and unchanged original Python stages. Actual targets
+are recorded, never forced/relabelled; frozen predictions are decoded from the
+sealed Cereal packets and used only as diagnostic classification data.
