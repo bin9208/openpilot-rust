@@ -300,12 +300,60 @@ jobs:
         test "$(cut -f1 "$AST_BASE/artifact-size-mib.txt")" -le 128
 
         '
+    - name: Preserve raw Unix evidence names in a verified safe-name archive
+      if: always()
+      shell: bash
+      run: "set -euo pipefail\ncat > \"$RUNNER_TEMP/lifecycle-pack-evidence.py\" <<'PY'\n\"\"\"Hosted inert packaging: preserve\
+        \ raw Unix names inside a safe-name archive.\n\nNo project imports, extraction, provider execution or source mutation.\n\
+        \"\"\"\nimport argparse\nimport hashlib\nimport io\nimport json\nimport os\nfrom pathlib import Path\nimport tarfile\n\
+        \n\ndef sha(raw):\n    return hashlib.sha256(raw).hexdigest()\n\n\ndef save(path, value):\n    path.write_text(json.dumps(value,\
+        \ indent=2, ensure_ascii=True) + '\\n')\n\n\ndef pack(root, output):\n    assert not root.is_symlink()\n    output.mkdir(exist_ok=False)\n\
+        \    root, output = root.resolve(), output.resolve()\n    assert not output.is_relative_to(root)\n    if not root.is_dir():\n\
+        \        save(output / 'packaging-status.json', {'source_directory_present': False,\n             'native_acceptance_claimed':\
+        \ False, 'archive_created': False})\n        return\n    paths = []\n    for directory, dirs, files in os.walk(root,\
+        \ followlinks=False):\n        for name in dirs + files:\n            paths.append(Path(directory) / name)\n    assert\
+        \ len(paths) <= 10000, 'evidence member bound exceeded'\n    estimated = sum(path.lstat().st_size for path in paths)\n\
+        \    assert estimated <= 128 << 20, 'evidence byte bound exceeded'\n    capacity = os.statvfs(output)\n    free =\
+        \ capacity.f_bavail * capacity.f_frsize\n    required = (25 << 30) + 2 * estimated + (1 << 20)\n    assert free >=\
+        \ required, 'retain 25GiB+growth; recover35GiB before retrying'\n    archive = output / 'evidence.tar.gz'\n    members\
+        \ = {}\n    total = 0\n    with tarfile.open(archive, 'w:gz', format=tarfile.GNU_FORMAT,\n                      encoding='utf-8',\
+        \ errors='surrogateescape', dereference=False) as saved:\n        for path in sorted(paths, key=lambda p: os.fsencode(str(p.relative_to(root)))):\n\
+        \            relative = str(path.relative_to(root))\n            assert not relative.startswith('/') and '..' not\
+        \ in Path(relative).parts\n            key = os.fsencode(relative).hex()\n            assert key not in members\n\
+        \            info = saved.gettarinfo(str(path), arcname=relative)\n            if info.isfile():\n               \
+        \ # Snapshot available bytes; failure evidence may be partial.\n                # Verify the archived snapshot, never\
+        \ execute its contents.\n                with path.open('rb') as source:\n                    raw = source.read((128\
+        \ << 20) + 1)\n                total += len(raw)\n                assert total <= 128 << 20\n                info.size\
+        \ = len(raw)\n                saved.addfile(info, io.BytesIO(raw))\n                members[key] = {'kind': 'file',\
+        \ 'bytes': len(raw), 'sha256': sha(raw)}\n            elif info.isdir():\n                saved.addfile(info)\n  \
+        \              members[key] = {'kind': 'directory'}\n            elif info.issym():\n                saved.addfile(info)\n\
+        \                members[key] = {'kind': 'symlink', 'target_hex': os.fsencode(info.linkname).hex()}\n            else:\n\
+        \                raise AssertionError(('unexpected special/hardlink evidence member', key))\n    observed = {}\n \
+        \   with tarfile.open(archive, 'r:gz', encoding='utf-8', errors='surrogateescape') as saved:\n        for member in\
+        \ saved:\n            name = member.name.rstrip('/') if member.isdir() else member.name\n            key = os.fsencode(name).hex()\n\
+        \            assert key in members and key not in observed, ('unexpected/duplicate archived name', key)\n        \
+        \    expected = members[key]\n            if expected['kind'] == 'file':\n                assert member.isfile() and\
+        \ member.size == expected['bytes']\n                with saved.extractfile(member) as source:\n                  \
+        \  raw = source.read((128 << 20) + 1)\n                assert len(raw) == expected['bytes'] and sha(raw) == expected['sha256']\n\
+        \            elif expected['kind'] == 'directory':\n                assert member.isdir()\n            else:\n   \
+        \             assert member.issym() and os.fsencode(member.linkname).hex() == expected['target_hex']\n           \
+        \ observed[key] = expected\n    assert observed == members\n    archive_bytes = archive.read_bytes()\n    save(output\
+        \ / 'archive-members.json', members)\n    (output / 'evidence.tar.gz.sha256').write_text(sha(archive_bytes) + '  evidence.tar.gz\\\
+        n')\n    save(output / 'packaging-status.json', {'source_directory_present': True,\n         'archive_created': True,\
+        \ 'raw_name_roundtrip_verified': True,\n         'member_count': len(members), 'file_bytes': total,\n         'archive_bytes':\
+        \ len(archive_bytes), 'archive_sha256': sha(archive_bytes),\n         'source_mutation': False, 'native_acceptance_claimed':\
+        \ False})\n\n\nif __name__ == '__main__':\n    parser = argparse.ArgumentParser()\n    parser.add_argument('--root',\
+        \ type=Path, required=True)\n    parser.add_argument('--output', type=Path, required=True)\n    arguments = parser.parse_args()\n\
+        \    pack(arguments.root, arguments.output)\nPY\nprintf 'a01175698ed291215b8af44ba7b8484309af68aada2f3c2cb134d0c6f5756d59\
+        \  %s/lifecycle-pack-evidence.py\\n' \"$RUNNER_TEMP\" | sha256sum --check --strict\npython3 \"$RUNNER_TEMP/lifecycle-pack-evidence.py\"\
+        \ --root \"${AST_BASE:-$RUNNER_TEMP/changed-files-lifecycle-296}\" --output \"$RUNNER_TEMP/changed-files-lifecycle-296-upload\"\
+        \ncat \"$RUNNER_TEMP/changed-files-lifecycle-296-upload/packaging-status.json\"\n"
     - name: Preserve actual first compile and lifecycle failures
       if: always()
       uses: actions/upload-artifact@v6
       with:
         name: changed-files-lifecycle-296
-        path: ${{ runner.temp }}/changed-files-lifecycle-296/
+        path: ${{ runner.temp }}/changed-files-lifecycle-296-upload/
         retention-days: 14
         include-hidden-files: true
         if-no-files-found: warn
