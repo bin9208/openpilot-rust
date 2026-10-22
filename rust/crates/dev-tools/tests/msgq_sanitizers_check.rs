@@ -162,7 +162,7 @@ fn disk_guard_precedes_cargo_and_does_not_create_target() {
     let tmp = tempfile::tempdir().unwrap();
     let target = tmp.path().join("missing");
     assert!(
-        msgq_sanitizers_check::check(tmp.path(), &target, &mut runner, 25 * 1024u64.pow(3))
+        msgq_sanitizers_check::check(tmp.path(), &target, &mut runner, 4 * 1024u64.pow(3) - 1)
             .is_err()
     );
     assert!(runner.calls.is_empty());

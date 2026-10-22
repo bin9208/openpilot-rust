@@ -157,10 +157,10 @@ fn success(output: &openpilot_dev_tools::qa_process::Captured) {
 }
 #[test]
 fn capacity_failure_precedes_rustup_and_cargo() {
-    let f = Fixture::new(&(25 * 1024u64.pow(3) + 1024u64.pow(3) - 1).to_string());
+    let f = Fixture::new(&(1024u64.pow(3) - 1).to_string());
     let r = f.invoke();
     assert_ne!(r.code, 0);
-    assert!(String::from_utf8_lossy(&r.stderr).contains("recover at least 35 GiB"));
+    assert!(String::from_utf8_lossy(&r.stderr).contains("operation growth exceeds available space"));
     assert!(!f.log.exists());
 }
 #[test]
@@ -1697,11 +1697,12 @@ fn requested_operation_filesystem_is_checked_before_toolchain_work() {
     );
     f.env.insert(
         "GUARD_OPERATION_FREE".into(),
-        (25 * 1024u64.pow(3) + 128 * 1024u64.pow(2) - 1).to_string(),
+        (128 * 1024u64.pow(2) - 1).to_string(),
     );
     let result = f.invoke();
     assert_ne!(result.code, 0);
-    assert!(String::from_utf8_lossy(&result.stderr).contains("recover at least 35 GiB"));
+    assert!(String::from_utf8_lossy(&result.stderr)
+        .contains("operation growth exceeds available space"));
     assert!(!f.log.exists());
 }
 #[test]
@@ -1909,4 +1910,46 @@ fn local_cache_uses_private_user_cache_and_secure_modes() {
         f.lines().iter().filter(|l| l.starts_with("cargo ")).count(),
         1
     );
+}
+
+#[test]
+fn exact_bootstrap_growth_admits_well_below_the_withdrawn_fixed_floor() {
+    let f = Fixture::new(&1024u64.pow(3).to_string());
+    success(&f.invoke());
+    assert_eq!(
+        f.lines()
+            .iter()
+            .filter(|line| line.starts_with("cargo "))
+            .count(),
+        1
+    );
+}
+
+#[test]
+fn zero_and_maximum_growth_keep_bootstrap_integer_semantics() {
+    let f = Fixture::new("999999999999");
+    success(&f.invoke_args(
+        bootstrap().to_str().unwrap(),
+        &["--path", ".", "--growth-mib", "0"],
+    ));
+    assert!(f.lines().last().unwrap().ends_with("--growth-mib 0"));
+    // A distinct cold cache exercises Bash, not the published fixture executable.
+    let cold = Fixture::new("999999999999");
+    let too_large = cold.invoke_args(
+        bootstrap().to_str().unwrap(),
+        &["--path", ".", "--growth-mib", "17592186044416"],
+    );
+    assert_ne!(too_large.code, 0);
+    assert!(too_large.stdout.is_empty());
+    assert!(String::from_utf8_lossy(&too_large.stderr).contains("growth exceeds u64"));
+    assert!(!cold.log.exists());
+    let admitted_integer = cold.invoke_args(
+        bootstrap().to_str().unwrap(),
+        &["--path", ".", "--growth-mib", "17592186044415"],
+    );
+    assert_ne!(admitted_integer.code, 0);
+    let report: serde_json::Value = serde_json::from_slice(&admitted_integer.stdout).unwrap();
+    assert_eq!(report["required_bytes"], report["growth_bytes"]);
+    assert_eq!(report["growth_bytes"], u64::MAX - (1024 * 1024 - 1));
+    assert!(!cold.log.exists());
 }

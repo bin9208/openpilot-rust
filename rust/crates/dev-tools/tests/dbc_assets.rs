@@ -237,10 +237,7 @@ fn radar_original_103_assets_and_live_space_input_metadata_are_preserved() -> Te
         report["growth_bound"].as_u64(),
         Some(4 * input_size + 64 * 1024 * 1024)
     );
-    assert!(
-        report["free_before"].as_u64().unwrap()
-            >= 25 * 1024u64.pow(3) + report["growth_bound"].as_u64().unwrap()
-    );
+    assert!(report["free_before"].as_u64().unwrap() >= report["growth_bound"].as_u64().unwrap());
     assert_eq!(
         serde_json::from_slice::<Value>(&fs::read(destination.join("radarcan-assets.json"))?)?,
         report

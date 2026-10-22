@@ -196,10 +196,10 @@ pub fn arm_elf(path: &Path) -> Result<()> {
 }
 pub fn disk_guard(directory: &Path, growth: u64) -> Result<()> {
     let free = crate::disk_space::inspect(directory, 0)?.free_bytes;
-    writeln!(OpenOptions::new().create(true).append(true).open(directory.join("disk-guards.jsonl"))?,"{{\"free_bytes\": {free}, \"growth_bytes\": {growth}, \"floor_bytes\": {}, \"monotonic_ns\": {}}}",25u64*1024*1024*1024,monotonic())?;
+    writeln!(OpenOptions::new().create(true).append(true).open(directory.join("disk-guards.jsonl"))?,"{{\"free_bytes\": {free}, \"growth_bytes\": {growth}, \"floor_bytes\": {}, \"monotonic_ns\": {}}}",0,monotonic())?;
     require(
-        free >= 25u64 * 1024 * 1024 * 1024 + growth,
-        "insufficient disk space; recover at least 35 GiB before resuming",
+        free >= growth,
+        "insufficient disk space for operation growth",
     )
 }
 fn argv_json(argv: &[OsString]) -> Result<String> {

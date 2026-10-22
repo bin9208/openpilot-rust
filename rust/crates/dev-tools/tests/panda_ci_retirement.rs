@@ -608,10 +608,7 @@ fn run_lane(
             let row: Value = serde_json::from_str(line).unwrap();
             assert_eq!(row.as_object().unwrap().len(), 3);
             let growth = row["growth_bytes"].as_u64().unwrap();
-            assert_eq!(
-                row["required_bytes"].as_u64().unwrap(),
-                25 * 1024_u64.pow(3) + growth
-            );
+            assert_eq!(row["required_bytes"].as_u64().unwrap(), growth);
             assert!(row["free_bytes"].as_u64().unwrap() >= row["required_bytes"].as_u64().unwrap());
             assert_eq!(growth % (1024 * 1024), 0);
             pending_growth.push(growth / (1024 * 1024));

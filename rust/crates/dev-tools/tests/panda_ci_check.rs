@@ -91,7 +91,7 @@ fn assert_stdout_receipts(
         let free = receipt["free_bytes"].as_u64().unwrap();
         let required = receipt["required_bytes"].as_u64().unwrap();
         let growth = receipt["growth_bytes"].as_u64().unwrap();
-        assert_eq!(required, 25 * 1024_u64.pow(3) + growth);
+        assert_eq!(required, growth);
         assert!(free >= required, "successful phase had insufficient disk");
         assert_eq!(growth % (1024 * 1024), 0);
         *growths.entry(growth / (1024 * 1024)).or_default() += 1;
@@ -124,10 +124,7 @@ fn assert_only_reservations(stdout: &[u8], expected_growth_mib: &[u64]) {
         let receipt: Value = serde_json::from_str(line).unwrap();
         assert_eq!(receipt.as_object().unwrap().len(), 3);
         assert_eq!(receipt["growth_bytes"], expected * 1024 * 1024);
-        assert_eq!(
-            receipt["required_bytes"],
-            25 * 1024_u64.pow(3) + expected * 1024 * 1024
-        );
+        assert_eq!(receipt["required_bytes"], expected * 1024 * 1024);
         assert!(
             receipt["free_bytes"].as_u64().unwrap() >= receipt["required_bytes"].as_u64().unwrap()
         );

@@ -153,6 +153,32 @@ fn seventy_four_independent_original_cases_preserve_invocations_disks_and_partia
         let mut row = frozen.clone();
         let temp = tempfile::tempdir().unwrap();
         let case = frozen["case"].as_str().unwrap();
+        // Exercise the same boundary and phase at the operation-growth limit.
+        // Keep historical source/captures intact and preserve all other fields.
+        if case.starts_with("disk-") {
+            for disk in row["disks"].as_array_mut().unwrap() {
+                let before = disk["free"].as_u64().unwrap();
+                if before < 40u64 << 30 {
+                    disk["free"] = (before - (25u64 << 30)).into();
+                }
+            }
+            for (name, file) in row["files"].as_object_mut().unwrap() {
+                if name.ends_with("-disk.json") {
+                    let bytes = decode(file.as_str().unwrap());
+                    let text = String::from_utf8(bytes).unwrap();
+                    let parsed: Value = serde_json::from_str(&text).unwrap();
+                    let before = parsed["free_bytes"].as_u64().unwrap();
+                    if before < 40u64 << 30 {
+                        let changed = text
+                            .replace(&before.to_string(), &(before - (25u64 << 30)).to_string());
+                        let mut expected = parsed;
+                        expected["free_bytes"] = (before - (25u64 << 30)).into();
+                        assert_eq!(serde_json::from_str::<Value>(&changed).unwrap(), expected);
+                        *file = hex(changed.as_bytes()).into();
+                    }
+                }
+            }
+        }
         let mut root = temp.path().to_path_buf();
         if case == "raw-root" {
             root = root.join(OsString::from_vec(b"work-\xff".to_vec()));
@@ -300,11 +326,11 @@ fn seventy_four_independent_original_cases_preserve_invocations_disks_and_partia
         let mut free = |path: &Path| {
             let n = disks.borrow().len();
             let value = match case {
-                "disk-initial-equal" => 25 * 1024u64.pow(3) + 256 * 1024 * 1024,
-                "disk-initial-low" => 25 * 1024u64.pow(3) + 256 * 1024 * 1024 - 1,
-                "disk-first-low" => 26 * 1024u64.pow(3) - 1,
-                "disk-second-low" if n == 1 => 26 * 1024u64.pow(3) - 1,
-                "disk-equal" => 26 * 1024u64.pow(3),
+                "disk-initial-equal" => 256 * 1024 * 1024,
+                "disk-initial-low" => 256 * 1024 * 1024 - 1,
+                "disk-first-low" => 1024u64.pow(3) - 1,
+                "disk-second-low" if n == 1 => 1024u64.pow(3) - 1,
+                "disk-equal" => 1024u64.pow(3),
                 _ => 40 * 1024u64.pow(3),
             };
             disks.borrow_mut().push(json!({"path_hex":hex(&normalized(path.as_os_str().as_bytes(),&root)),"free":value}));
@@ -393,7 +419,7 @@ fn additional_safety_policy_guards_every_compiler_before_its_log_or_child() {
             assert_eq!(path, output);
             let current = checks;
             checks += 1;
-            Ok(26 * 1024u64.pow(3) - u64::from(failing == Some(current)))
+            Ok(1024u64.pow(3) - u64::from(failing == Some(current)))
         };
         let mut printed = vec![];
         let result = startup_adapter_sanitizers::check_guarded(

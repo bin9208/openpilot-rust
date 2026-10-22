@@ -379,7 +379,7 @@ pub fn execute(
     for (i, command) in builds.iter().enumerate() {
         let free = space(output)?;
         let growth = 128 * 1024 * 1024u64;
-        let floor = 25 * 1024 * 1024 * 1024u64;
+        let floor = 0u64;
         pretty(
             &output.join(format!("build-{i}-space.json")),
             &format!("{{\"free\":{free},\"growth\":{growth},\"floor\":{floor}}}"),

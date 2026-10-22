@@ -130,19 +130,19 @@ jobs:
           selected=$(xcode-select -p)
           selected_app=${selected%/Contents/Developer}
           test -d "$selected_app"
-          # The standard runner promises only14GB. Recover35GiB before any
-          # installation/build; keep the active compiler/SDK and its aliases.
+          # Reclaim only if the 2 GiB host-tool build growth is unavailable;
+          # keep the active compiler/SDK and its aliases.
           for application in /Applications/Xcode*.app; do
             free_kib=$(LC_ALL=C df -Pk "$GITHUB_WORKSPACE" | awk 'END {print $4}')
             [[ $free_kib =~ ^[0-9]+$ ]] || exit 1
-            (( free_kib >= 35 * 1024 * 1024 )) && break
+            (( free_kib >= 2 * 1024 * 1024 )) && break
             [[ -d $application && ! -L $application ]] || continue
             [[ $application -ef $selected_app ]] && continue
             sudo rm -rf -- "$application"
           done
           df -Pk "$GITHUB_WORKSPACE" > "$RUNNER_TEMP/dbc-darwin/disk-after.txt"
           free_kib=$(LC_ALL=C df -Pk "$GITHUB_WORKSPACE" | awk 'END {print $4}')
-          [[ $free_kib =~ ^[0-9]+$ ]] && (( free_kib >= 35 * 1024 * 1024 ))
+          [[ $free_kib =~ ^[0-9]+$ ]] && (( free_kib >= 2 * 1024 * 1024 ))
           test -d "$selected_app"
           xcrun --find clang
       - name: Build and execute the pinned native host bootstrap
@@ -158,7 +158,7 @@ jobs:
       - name: Require 15 APFS-compatible DBC generator and actual CLI tests
         run: |
           set -euo pipefail
-          # Reuse the portable bootstrap's25GiB+growth checks immediately
+          # Reuse the portable bootstrap's operation-growth checks immediately
           # before tests; this second Cargo freshness check is normally a no-op.
           "$GITHUB_WORKSPACE/rust/tools/build-dbc-generator" >/dev/null
           env -u RUSTFLAGS -u CARGO_ENCODED_RUSTFLAGS -u CARGO_BUILD_TARGET -u RUSTC_WRAPPER -u RUSTC_WORKSPACE_WRAPPER \

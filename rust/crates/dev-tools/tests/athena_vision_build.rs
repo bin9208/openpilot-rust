@@ -191,7 +191,7 @@ impl Runner for Peer {
     }
 }
 #[test]
-fn exact_root_disk_floor_precedes_parent_creation_and_preserves_unbounded_inherited_compiler() {
+fn exact_root_disk_growth_precedes_parent_creation_and_preserves_unbounded_inherited_compiler() {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path().join("root");
     fs::create_dir(&root).unwrap();
@@ -203,7 +203,7 @@ fn exact_root_disk_floor_precedes_parent_creation_and_preserves_unbounded_inheri
         &args,
         "custom compiler -Dliteral",
         &mut peer,
-        26 * 1024_u64.pow(3) - 1
+        1024_u64.pow(3) - 1
     )
     .is_err());
     assert!(!output.parent().unwrap().exists());
@@ -213,7 +213,7 @@ fn exact_root_disk_floor_precedes_parent_creation_and_preserves_unbounded_inheri
         &args,
         "custom compiler -Dliteral",
         &mut peer,
-        26 * 1024_u64.pow(3),
+        1024_u64.pow(3),
     )
     .unwrap();
     assert_eq!(peer.calls[0].argv[0], "custom compiler -Dliteral");

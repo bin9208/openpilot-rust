@@ -117,7 +117,7 @@ fn dbc_native_tools_are_built_before_every_required_consumer() {
             "test \"$(uname -m)\" = arm64",
             "xcode-select -p",
             "$application -ef $selected_app",
-            "35 * 1024 * 1024",
+            "2 * 1024 * 1024",
             "xcrun --find clang",
         ],
     );

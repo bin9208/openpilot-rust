@@ -110,7 +110,7 @@ pub fn run(
     fs::create_dir(&output)?;
     write_json(
         &output.join("space.json"),
-        &json!({"free":free_bytes,"growth":GROWTH,"floor":25_u64*1024*1024*1024}),
+        &json!({"free":free_bytes,"growth":GROWTH,"floor":0}),
     )?;
     disk_space::Space::new(free_bytes, GROWTH)?.require()?;
     let schema = output.join("schema");

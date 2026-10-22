@@ -86,16 +86,20 @@ fn original_main_success_selection_duplicate_and_failure_effects() {
             &opts,
             &[2, 4],
             if c["name"] == "space" {
-                25 << 30
+                (1 << 30) - 1
             } else {
-                27 << 30
+                1 << 30
             },
             &mut peer,
             &mut stdout,
         );
         assert_eq!(
             result.err().map(|e| e.to_string()),
-            c["error"].as_str().map(str::to_owned),
+            if c["name"] == "space" {
+                Some("runtime capture requires 1 GiB operation growth".to_owned())
+            } else {
+                c["error"].as_str().map(str::to_owned)
+            },
             "{}",
             c["name"]
         );

@@ -58,6 +58,28 @@ fn normalize(text: &str, output: &Path) -> String {
 // captured argument tail, ordering, return codes, diagnostics and artifacts.
 fn native_network_case(original: &Value, target: &str) -> Value {
     let mut case = original.clone();
+    // Explicit policy migration: preserve the original below/equal/above
+    // boundary, all child calls and every non-space artifact byte.
+    if let Some(free) = case["space"].as_u64() {
+        if ((26u64 << 30) - 1..=(26u64 << 30) + 1).contains(&free) {
+            case["space"] = (free - (25u64 << 30)).into();
+        }
+    }
+    if let Some(disk) = case["files"].get_mut("egl-build-disk.json") {
+        let text = disk.as_str().unwrap();
+        let mut parsed: Value = serde_json::from_str(text).unwrap();
+        assert_eq!(parsed["required_bytes"], 26u64 << 30);
+        let free = parsed["available_bytes"].as_u64().unwrap();
+        let changed = text
+            .replace("27917287424", "1073741824")
+            .replace("27917287425", "1073741825");
+        parsed["required_bytes"] = (1u64 << 30).into();
+        if ((26u64 << 30)..=(26u64 << 30) + 1).contains(&free) {
+            parsed["available_bytes"] = (free - (25u64 << 30)).into();
+        }
+        assert_eq!(serde_json::from_str::<Value>(&changed).unwrap(), parsed);
+        *disk = changed.into();
+    }
     if let Some(calls) = case["calls"].as_array_mut() {
         for call in calls {
             let kind = call["name"]

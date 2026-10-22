@@ -113,7 +113,7 @@ fn original_fifteen_cases_preserve_commands_and_artifacts() {
             &target,
             &output,
             &mut runner,
-            26 * 1024u64.pow(3) - u64::from(case == "low-disk"),
+            1024u64.pow(3) - u64::from(case == "low-disk"),
         );
         assert_eq!(
             result.is_err(),

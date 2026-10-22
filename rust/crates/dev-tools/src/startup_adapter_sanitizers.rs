@@ -122,8 +122,8 @@ impl Context<'_> {
                 output.join(format!("{name}-disk.json")),
                 format!("{{\"free_bytes\": {free}, \"estimated_growth_bytes\": 1073741824}}"),
             )?;
-            if free < 26 * 1024u64.pow(3) {
-                return Err("25 GiB reserve plus 1 GiB build growth required".into());
+            if free < 1024u64.pow(3) {
+                return Err("1 GiB operation build growth required".into());
             }
         }
         let prefix = format!("Invocation: {}\n", argv_json(&args)?);
@@ -280,8 +280,8 @@ pub fn check(
 ) -> Result<()> {
     let (target, output, raylib, library) = match kind {
         Kind::Safety => {
-            if free(&options.root)? <= 25 * 1024u64.pow(3) + 256 * 1024 * 1024 {
-                return Err("startup safety disk reserve insufficient".into());
+            if free(&options.root)? <= 256 * 1024 * 1024 {
+                return Err("startup safety operation growth unavailable".into());
             }
             let resolve = |p: &Path| resolve_non_strict(&physical(&options.cwd, p));
             let output = resolve(&options.output)?;

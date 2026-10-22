@@ -152,6 +152,26 @@ fn files(base: &Path, path: &Path, out: &mut BTreeMap<String, Value>) {
         }
     }
 }
+// Original captures remain immutable. Only the withdrawn fixed-floor field
+// changes; compare every other artifact byte and command as captured.
+fn growth_only_files(original: &Value) -> Value {
+    let mut files = original.clone();
+    for (name, file) in files.as_object_mut().unwrap() {
+        if name == "space.json" || (name.starts_with("build-") && name.ends_with("-space.json")) {
+            let text = file["text"].as_str().unwrap();
+            let parsed: Value = serde_json::from_str(text).unwrap();
+            assert_eq!(parsed["floor"], 25u64 << 30);
+            let changed = text.replace("26843545600", "0");
+            let expected: Value = serde_json::from_str(&changed).unwrap();
+            let mut without_floor = parsed;
+            without_floor["floor"] = 0.into();
+            assert_eq!(expected, without_floor);
+            file["text"] = changed.into();
+        }
+    }
+    files
+}
+
 #[test]
 fn original_codec_main_preserves_all_commands_and_partial_artifact_bytes() {
     let original: Value = serde_json::from_str(ORIGINAL).unwrap();
@@ -238,7 +258,11 @@ fn original_codec_main_preserves_all_commands_and_partial_artifact_bytes() {
         );
         let mut actual = BTreeMap::new();
         files(base, &output, &mut actual);
-        assert_eq!(json!(actual), case["files"], "{name}: partial artifacts");
+        assert_eq!(
+            json!(actual),
+            growth_only_files(&case["files"]),
+            "{name}: partial artifacts"
+        );
     }
 }
 

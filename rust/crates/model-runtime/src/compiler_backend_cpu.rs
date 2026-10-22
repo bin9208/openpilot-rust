@@ -76,8 +76,8 @@ fn require_space(path: &Path, growth: u64) -> Result<(), String> {
     // SAFETY: successful statvfs initialized the structure.
     let stats = unsafe { stats.assume_init() };
     let free = u128::from(stats.f_bavail) * u128::from(stats.f_frsize);
-    if free < (25u128 << 30) + u128::from(growth) {
-        return Err("native CPU compilation requires25GiB free plus estimated growth".into());
+    if free < u128::from(growth) {
+        return Err("native CPU compilation requires estimated operation growth".into());
     }
     Ok(())
 }

@@ -232,8 +232,7 @@ fn low_disk_refuses_before_any_rustup_or_cargo_process() {
     let output = f.bootstrap(&[("DBC_TEST_FREE_KIB", "1")]);
     assert_ne!(output.code, 0);
     let error = String::from_utf8_lossy(&output.stderr);
-    assert!(error.contains("retain 25 GiB plus 2048 MiB"));
-    assert!(error.contains("recover at least 35 GiB"));
+    assert!(error.contains("operation requires 2048 MiB growth"));
     assert!(f.lines().iter().all(|line| line.starts_with("df:")));
     assert!(!f.binary().exists());
 }
@@ -332,4 +331,20 @@ fn publication_is_exact_executable_and_atomic_for_existing_inode_readers() {
             .file_name()
             .to_string_lossy()
             .starts_with(".dbc-generator.")));
+}
+
+#[test]
+fn exact_operation_growth_replaces_the_withdrawn_fixed_floor() {
+    for free_kib in [2048 * 1024 - 1, 2048 * 1024] {
+        let f = Fixture::new();
+        let value = free_kib.to_string();
+        let output = f.bootstrap(&[("DBC_TEST_FREE_KIB", &value)]);
+        assert_eq!(output.code == 0, free_kib == 2048 * 1024);
+        if free_kib < 2048 * 1024 {
+            assert!(f.lines().iter().all(|line| line.starts_with("df:")));
+            assert!(!f.binary().exists());
+        } else {
+            assert!(f.binary().exists());
+        }
+    }
 }

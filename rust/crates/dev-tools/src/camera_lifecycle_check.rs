@@ -416,7 +416,7 @@ fn compare(
     runner: &mut dyn Runner,
     printed: &mut dyn Write,
 ) -> Result<usize> {
-    values::assert(free_bytes >= 26 * 1024u64.pow(3), "")?;
+    values::assert(free_bytes >= 1024u64.pow(3), "")?;
     let source = lexical(source);
     let native = lexical(native);
     let library = lexical(library);
@@ -633,7 +633,7 @@ pub fn cli() -> Result<usize> {
     fresh_directory(&output)?;
     let stat = rustix::fs::statvfs(&output)?;
     let free = stat.f_bavail.saturating_mul(stat.f_frsize);
-    values::assert(free >= 26 * 1024u64.pow(3), "")?;
+    values::assert(free >= 1024u64.pow(3), "")?;
     let selected = options
         .append_values
         .get("--case")

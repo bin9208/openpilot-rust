@@ -179,7 +179,7 @@ pub fn execute(
     ]);
     let available = free(&options.output)?;
     let growth = 128 * 1024 * 1024u64;
-    let floor = 25 * 1024 * 1024 * 1024u64;
+    let floor = 0u64;
     write_json(
         &options.output.join("space.json"),
         &format!("{{\"free\":{available},\"growth\":{growth},\"floor\":{floor}}}"),

@@ -8679,3 +8679,119 @@ worker[0]/[1]values are not relabeled prior raw observations. No numerical fix.
 JP2 native39834039262 uses source40eb04290/workflow107d485efd98389a41e19af869e915f8be6aac11.
 Provider supplement39833544500 reports success, awaiting full saved-data admission.
 Road five-case39833558563 fails; retain the actual failure before further changes.
+
+### Big5/JP2/provider completion and revised runner policy
+
+Big5 native39833214339 is admitted ate8744f656/workflowb8689ae6a4a7d04d9e3387ce9d2d8fc910ebcde6.
+Artifact12449922490 is4794980B/SHA256
+02b85697d83f1411ede53f9faca5e1f4019ac6da14daa44057f30ddefbf2a8d4,
+382CRCs. Parent independently checks9dense binaries/197322rows,
+11274new vectors/135prior values/180source cases, all exact. Six tests, one
+native exec/zero Python execs, strictClippy and three paired snapshots pass.
+
+JP2 native39834039262 is admitted at40eb04290/workflow107d485efd98389a41e19af869e915f8be6aac11.
+Artifact12449139636 is5632848B/SHA256
+261150fa9512a2025da1306deb582d9f35c90ed4986167aa1e590c12510eb2df,
+454CRCs. Parent checks45dense binaries/986871rows,28296new vectors,
+45prior values and101source cases. Two tests, strictClippy, one native exec/
+zero Python execs and all paired snapshots pass. Its single-codec row schema
+omits the redundant codec field; parent compares it under explicit iso2022_jp_2.
+
+Provider supplement39833544500 is independently admitted: artifact12449398021,
+1103845B/SHA256c4b8b8c47e6d714d44b16683cdb865b68b3e725cb13032a723b27ceb8a5b7f52,
+32CRCs/21seals, manifesta729086b442caed12185b737d55ec9f0969044d7fb4bf37871c2cc6adcc4bcd7.
+The saved-data-only auditor confirms all540old/new tuples and the21145B
+canonical stream,161held identities/hashes and unchanged module/DSO/source
+inventories. Sourcee8744f656/workflow86da06ba978a01872f189b807c4aa6ad4012191e
+remain exact. Historical extension identity is still explicitly false. This
+supports transitive value agreement for accepted native comparisons; remaining
+CP949 domain and actual AST caller gates still prevent full tool retirement.
+
+Latest runner instruction is verified against actual human messages in comparison
+chat01a1649e-4253-7112-a5cd-14784c7e5278: apply the faster runner to active tasks
+and remove the obsolete fixed disk thresholds. RunnerAPI confirmsbin-actions,
+id22, labels self-hosted/Linux/X64/dev-md-local. AGNOS comparison source
+b538bb7d37eb3cd756ff1fe7c52fd23507142605 has successful self job119987118119
+and hosted job119987116428 under run39825360851, despite its cancelled parent.
+The reported elapsed times35m47s/44m47s establish this benchmark, not a future
+queue/wall-time guarantee. Actual ARM CPU execution stays GitHub ARM.
+Next trustedx64/cross jobs preferbin-actions with isolated temp/cache/target,
+actual runner/CPU/memory/disk/provider receipts and operation-specific growth.
+No running or successful unchanged check is restarted for this change. No
+hosted-image global cleanup is authorized on the persistent runner. Device,
+protected-branch, release and dev-md isolation boundaries remain unchanged.
+
+Startup39819735679 cancellation is the90minute job timeout. Exact source
+52310bf93d687c8470afdf4699a8739779bc9eb4/workflowbc49a1f79a29b13141daeddb3c066d67338ea48c
+retains42completed positives;18positives/16controls and final complete-corpus
+checks remain. All47bindings, identity/package rosters and135cached-input
+after-checks pass; missing completion marker caused the final guard failure.
+Artifact12448589411 is437503663B/SHA256
+c00ee17f679b267d5a2fec12e1dc9e9b8a6d2110d74ba55ec04353dcaa980cda,
+2568CRCs; sidecar12449701764 is11337507B/SHA256
+2dfd9f08e67b975684eb04f095ac0079ef25cd7cbe012314480b6057dce55330,
+24CRCs/1754tar seals. A separate saved-data audit39835797062 onbin-actions
+uses workflowadd1119f3644d48bb477679a8bf5096485b0c876. This executes no historical
+native/provider binaries and cannot by itself complete startup acceptance.
+
+Loggerd main39832401630 passed5library units/3lifecycle integrations/one full-schema
+original replay, then failed strictClippy on a negated lock predicate. Equivalent
+is_none_or repair36fd3ab2 preserves shutdown semantics. Artifact12449871629 is
+2904704B/SHA25609f3b2fdd60dd3bb5ec3c93f968d919880e50372bef755400bf9039005fd331e,
+145CRCs/141seals, empty omissions. The original C++ build/live main cohort was
+unreached. New shared Owner/peer/validation changes need affected current checks;
+unrelated previously accepted schema evidence must not be reexecuted gratuitously.
+
+Additional loggerd controllers76d03d8e and IO8bed64af receive independent Sol
+review before publication. Parent preserves dedicated Owner::new_for identity,
+requires actual Params fsync rather than fdatasync alone, adds that rejection
+case, and resolves exclusively created output paths before trace comparison.
+The external controller audit must also hold mapped /etc/ld.so.cache. Original
+Python controllers/helpers remain; no family retirement or inventory credit.
+
+Model emitter callerf14a34ae adds opt-in held native-finalizer dispatch after real
+unchanged emission, strict issuer identity/receipt checks and complete source
+rosters. Independent review finds no concrete blocker; hosted genuine-emitter
+comparison remains required. The25compiler/orchestration/regression Python files
+are retained, including the disabled original publication tail; zero source
+deletions or conversion inventory credit are claimed by this candidate.
+
+### Reviewed combined source and operation growth policy
+
+Loggerd candidate is committed1d7189b6b and model native-finalizer caller
+0bb757339; both have completed independent source review. Functional acceptance
+remains pending new exact-source Actions gates. Original executable Python
+controllers/compiler/orchestration references remain; inventory is unchanged.
+
+Growth-only patchb8d14c4388638f6649e191d228ed3edcb6ad943cb5e94126c30a422b03fbe7b1
+is applied across35native/coupled targets. Independent review finds no concrete
+P1/P2 defect. Required space equals actual requested growth; integer-overflow
+rejection, bootstrap cache safety, positive operation estimates and all550
+ordered workflow guard arguments remain. Carrot job bytes are unchanged.
+Original fixture captures remain byte-identical; documented historical disk
+inputs/receipts are adapted in memory with assertions on their old values.
+The original strict startup boundary remains strict. Device install policy and
+model arithmetic are unchanged. Retained Python reference floors remain explicit.
+Parent checks32Rust files with scoped rustfmt, both Bash scripts with bash-n,
+workflow YAML and git diff; all pass. No local functional execution occurred.
+The first draft gate had shared provisioning/cleanup unsuitable for persistent
+bin-actions; it is being revised before publication. No gate is claimed passed.
+
+ParamsdR3 run39834626379 succeeds. Artifact12450652846 is5117600B/SHA256
+93089e39039b72c15623481c8d7f0a88a6ac418302dbc3c3477230cccafdbff3;
+all376ZIP CRCs pass. The saved audit reports seven original cases/two native
+roots, eight execs per root and zero Python execs, plus foreign/changed-original/
+SIGINT/SIGTERM controls. Detailed provider/value admission remains separately
+recorded before caller retirement. Driver observerR2 39833861115 also completed
+successfully; this observation does not close numerical drift or#476.
+
+Road five-case39833558563 retains strict failure: fresh original equals candidate
+for all8buffers/all5cases, while both differ from frozen values at output9/float99.
+Three cases change -0 to+0; two quiet sNaNs. Old also quiets those sNaNs.
+Artifact12449897200 is26734808B/SHA256
+fae8695cefb272f44c5bf5c33f608ad2e2d69d6d4504c1c8ee883cef51d51317.
+Lane inert audit validates265CRCs/262seals/408held pairs and120raw poststates.
+Static saved code shows historical post-add copy versus fresh pre-add masking.
+LLVM InstCombine select folding is a source-consistent explanation, not yet a
+measured pass sequence or sole historical cause. No tolerance/golden/target
+change, repeated matrix, compiler source retirement or#482 closure follows.

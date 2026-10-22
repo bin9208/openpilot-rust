@@ -18,7 +18,7 @@ use std::{
 };
 const SOURCE: &str = "rust/tools/check_ui_framework.py";
 const SOURCE_SHA: &str = "657c638fc5cc2a071f45b8482ecb1866e3b6ee26eef4a04746a52226e5bdfcd3";
-const REQUIRED: u64 = 26 * 1024 * 1024 * 1024;
+const REQUIRED: u64 = 1024 * 1024 * 1024;
 const CHECKS: [(&str, Option<&str>, &str, bool); 13] = [
     ("widgets", None, "widget_trace", false),
     ("scroll", None, "scroll_trace", false),
@@ -107,7 +107,7 @@ pub fn check(
         if name == "egl" {
             let available = free_bytes(&output)?;
             if available < REQUIRED {
-                return Err("requires 25GiB floor plus 1GiB fixture build allowance".into());
+                return Err("requires 1GiB operation growth for fixture build".into());
             }
             fs::write(
                 output.join("egl-build-disk.json"),

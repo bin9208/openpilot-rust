@@ -56,8 +56,8 @@ pub fn execute(
         fs::create_dir_all(parent)?;
     }
     fs::create_dir(&output)?;
-    if free < 26 * 1024 * 1024 * 1024 {
-        return Err("runtime capture requires 25 GiB plus 1 GiB headroom".into());
+    if free < 1024 * 1024 * 1024 {
+        return Err("runtime capture requires 1 GiB operation growth".into());
     }
     let cases = if options.cases.is_empty() {
         CASES.iter().map(|v| (*v).to_owned()).collect()

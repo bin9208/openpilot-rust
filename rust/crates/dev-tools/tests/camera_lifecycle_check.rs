@@ -234,7 +234,13 @@ fn original_process_environment_sanitizer_failure_and_artifact_order() {
             )
             .unwrap_or_default(),
             &environment,
-            case["free"].as_u64().unwrap(),
+            if matches!(mode, "disk-low" | "disk-boundary") {
+                let free = case["free"].as_u64().unwrap();
+                assert!(((26u64 << 30) - 1..=(26u64 << 30)).contains(&free));
+                free - (25u64 << 30)
+            } else {
+                case["free"].as_u64().unwrap()
+            },
             &mut peer,
             &mut printed,
         );
@@ -632,6 +638,6 @@ fn actual_cli_raw_paths_stdin_environment_removal_and_namespace_cleanup() {
         .unwrap()
         .as_u64()
         .unwrap();
-    assert!(free >= 26 * 1024u64.pow(3));
+    assert!(free >= 1024u64.pow(3));
     assert_eq!(report, expected["report"]);
 }

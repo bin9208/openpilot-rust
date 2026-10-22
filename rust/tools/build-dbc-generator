@@ -12,9 +12,9 @@ reserve() {
   while [[ ! -e $ancestor ]]; do ancestor=$(dirname -- "$ancestor"); done
   free_kib=$(LC_ALL=C df -Pk "$ancestor" | awk 'END {print $4}')
   [[ $free_kib =~ ^[0-9]+$ ]] || { printf 'DBC bootstrap: invalid disk-space response\n' >&2; return 1; }
-  required_kib=$(( (25 * 1024 + growth_mib) * 1024 ))
+  required_kib=$(( growth_mib * 1024 ))
   if (( free_kib < required_kib )); then
-    printf 'DBC bootstrap: retain 25 GiB plus %s MiB; recover at least 35 GiB before resuming (%s)\n' "$growth_mib" "$path" >&2
+    printf 'DBC bootstrap: operation requires %s MiB growth before resuming (%s)\n' "$growth_mib" "$path" >&2
     return 1
   fi
 }

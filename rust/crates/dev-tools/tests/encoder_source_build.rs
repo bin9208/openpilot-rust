@@ -219,10 +219,17 @@ fn assert_live_glob(call: &CommandSpec, output: &Path) {
 fn original_success_prefix_resolution_and_failure_artifact_contracts() {
     let cases: Vec<Value> =
         serde_json::from_slice(&fs::read(fixtures().join("original.json")).unwrap()).unwrap();
-    for case in cases {
+    for mut case in cases {
         if case["case"] == "services-failure" || case["case"] == "abbreviated-help" {
             continue;
         } // Python generator failures disappear with the compiled catalog.
+        if case["case"] == "low-space" {
+            let historical_free = (25u64 << 30) + (512u64 << 20) - 1;
+            assert_eq!(case["free_bytes"], historical_free);
+            assert_eq!(case["files"]["space.json"]["free"], historical_free);
+            case["free_bytes"] = ((512u64 << 20) - 1).into();
+            case["files"]["space.json"]["free"] = ((512u64 << 20) - 1).into();
+        }
         let tmp = tempfile::tempdir().unwrap();
         let source = tmp.path().join("root");
         let output = tmp.path().join("output");
@@ -295,6 +302,10 @@ fn original_success_prefix_resolution_and_failure_artifact_contracts() {
         files(&output, &output, &normalize, &mut actual);
         actual.remove("services-provenance.json");
         let mut expected_files = case["files"].clone();
+        if let Some(space) = expected_files.get_mut("space.json") {
+            assert_eq!(space["floor"], 25u64 << 30);
+            space["floor"] = 0.into();
+        }
         if let Some(command) = actual.get_mut("build-command.json") {
             *command = canonical_globs(command);
         }

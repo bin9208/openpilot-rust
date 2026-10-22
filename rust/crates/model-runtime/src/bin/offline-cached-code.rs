@@ -205,10 +205,8 @@ fn run() -> Result<(), String> {
         }
         // SAFETY: the successful call initialized this structure.
         let stat = unsafe { stat.assume_init() };
-        if u128::from(stat.f_bavail) * u128::from(stat.f_frsize)
-            < (25_u128 << 30) + (128_u128 << 20)
-        {
-            return Err("cached output requires 25 GiB free plus bounded growth".into());
+        if u128::from(stat.f_bavail) * u128::from(stat.f_frsize) < 128_u128 << 20 {
+            return Err("cached output requires bounded operation growth".into());
         }
     }
     let mut transaction = Outputs::default();

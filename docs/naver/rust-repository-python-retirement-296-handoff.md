@@ -6,56 +6,83 @@ unchanged evidence. Read this handoff and the linked evidence ledger first.
 
 ## Active continuation, superseding the earlier migration snapshot
 
-The integrated source now includes native Chinese/JP2 candidatee568706b8 and
-loggerd test-API repair28033be26;
-read Git freshly before binding further diagnostic sources. The older515263b
-checkpoint and16-slot description below are historical. Configured agent limit
-is1000, verified locally; admitted creations include429 failures, so this is
-not an observed productive capacity. The latest user instruction requires
-**GPT-6.1 Sol for every subagent**. All Astra workers completed their frozen
-assignments and are closed. Do not resume Astra. The user also requests the
-parent GPT-6.1 Sol / Ultra; the app accepted that model/effort override for this
-chat. No global model configuration was changed.
+Read Git freshly for source/workflow publication. The most recent published source
+is a63a6b9112cb1bf1be00dc57cae3cca51d8ba81a, after the CarrotNavi maintained-caller
+transition, logging cleanup Clippy fix and disk-guard inventory repair. Local implementation commits1d7189b6b(loggerd diagnostics/pipeline/IO) and
+0bb757339(real-emitter native publisher caller) have completed independent
+review. The next commit removes obsolete fixed disk floors in35native/coupled
+targets. Functional acceptance for these new scopes remains pending Actions.
 
-Current scratch root is `.analysis/scratch/2026-10-23-resume-296/`; parent owns
-serialized publication through the existing21October `publish-single.py`.
-Do not execute scratch functional scripts locally. Authenticated saved ZIPs
-are in `parent/`; use them as inert evidence. Read the current evidence ledger
-`rust-repository-python-retirement-296-evidence.md` for exact hashes and limits.
+Configured agent limit is1000, not observed productive capacity. Several429
+workers have been closed/reassigned. Every continuing/new subagent uses
+**GPT-6.1 Sol**; all Astra deliveries are frozen and their agents closed. The app
+accepted the human-requested parent **GPT-6.1 Sol / Ultra** override for this
+chat. Do not repeatedly send the model-change message or alter global settings.
 
-- Accepted unchanged codec gates: focused39824019615, Japanese39824008435,
-  IDNA39825221809, UTF16/32/Punycode39826556236 and HZ39827297036.
-  HZ has197356dense rows/1992new vectors/45reused inputs/136source admissions.
-  Payloads have252rows. All are bounded observations, not arbitrary-string proof.
-- AST recapture39826743607 succeeds at8c965aa65:8tests/31scenarios/12Git,
- 481successful execs/one expectedENOENT/no unexpected paths. Parent checks
- 4ZIPCRCs/401raw-name tar members. Earlier39823466717 lost its raw proof only
-  at upload because of a deliberate newline filename. Packaging-only canary
- 39826321541 passed before this essential same-source recapture. Caller/deletion
-  stays pending unclosed Korean/Chinese multibyte domains.
-- CarrotNavi comparator7a1c79f25 passes39826752939:3tests/72controls,
- 20positive/52negative,122byte-equal source/native output pairs. This accepts
-  comparison only, not maintained-caller/embedded-source retirement.
-- Paramsd startup69bbee211 fails39827158238; Hegel diagnoses actual evidence.
-  Loggerd main0e38b0ea fails39827462896 before tests:five API errors and one
-  unsafe-code lint. Hypatia supplies minimal repairs; no runtime acceptance.
-  LoggingR4 admission39827448694 fails; Socrates diagnoses before caller changes.
-- Model publisher995383b2b passes39824199853:8tests/10filesystem cases;
-  James prepares real-emitter caller integration. Actual road operands
- 39823666805 captures successfully but fails strict eight-buffer byte parity;
-  Schrodinger owns diagnosis. No numerical threshold is weakened.
-- Driver reporting39822906822 passes but numerical drift remains. New fresh
-  first-convolution diagnostic39828495779 uses source69bbee211 and workflow
- 9e99a1e656a8c713cefc56a0c996d43ff5f6b409. It observes actual original/native
-  images and operands; a diagnostic success alone cannot establish a repair.
-  Startup39819735679 remains in progress at this checkpoint.
-- Active Sol scopes: Newton AST caller/CP949; Descartes loggerd diagnostics/pipeline;
-  Helmholtz Korean codecs; Socrates logging failure/caller; James model publisher
-  caller; Schrodinger road operands; Hegel Paramsd failure; Hilbert loggerd
-  flush/IO; Hypatia loggerd compile fixes; Archimedes Big5 family; Hubble GBK/
-  GB2312/GB18030 plus the540prior-vector provenance supplement; Nietzsche JP2;
-  Pasteur Carrot comparator caller. Parent alone reconciles shared registration
-  and publishes. Source and run identities after this snapshot are in the ledger.
+Latest runner policy is verified against actual human messages in comparison
+chat01a1649e-4253-7112-a5cd-14784c7e5278: use the faster registeredbin-actions
+for next trustedx64 checks/builds and AGNOS cross-builds. Actual ARM execution
+stays on GitHub ARM. RunnerAPI confirmsid22/online with labels self-hosted,
+Linux,X64,dev-md-local; the label grants no dev-md work scope. Isolate jobtemp/
+cache/target, preserve source/provider/runner/resource receipts and never run
+hosted-image global cleanup on the persistent runner. Do not cancel/restart
+inflight jobs or repeat unchanged successful checks for this switch. Fixed
+25/35GiB rules are removed; actual operation growth still matters.
+
+Only mutable checkout: `/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust`.
+Primary `/home/fma1/rust/openpilot-rust` is dev-md and must stay untouched.
+Current scratch root: `.analysis/scratch/2026-10-23-resume-296/`; authenticated
+ZIPs and parent admissions are under `parent/`. Parent owns commits, shared
+registration and serialized21October `publish-single.py` publication. No local
+functional execution; only source/syntax/format/diff/Git/API/inert saved data.
+
+Current authoritative results and artifact hashes are in the evidence ledger:
+
+- Accepted focused39824019615, Japanese39824008435, IDNA39825221809,
+  UTF16/32/Punycode39826556236, HZ39827297036, Korean39831621316,
+  GB39832418520. Do not rerun unchanged passed scopes.
+- Provider supplement39833544500 is admitted:540old inputs,12codecs×45,
+  161held provider/source pairs, zero canonical differences. It supplies fresh
+  provider identity plus exact old value agreement, never retroactively proves
+  the old missing extension identities. Full parent admission JSON is saved.
+  Big5 native39833214339 and JP2 native39834039262 are also admitted, including
+  parent independent dense/vector/source comparisons and complete ZIP checks.
+  Newton hit429 and was closed; Hubble takes over CP949 missing-domain work.
+- AST lifecycle39826743607 accepts8tests/31scenarios/12Git and complete retained
+  traces. Final caller/two-source retirement waits remaining codec admissions.
+- Carrot comparator39826752939 and maintained-caller39832413264 are admitted.
+  Caller42cases/205byte-identical output pairs, Bash+native only;72accepted
+  controls reused. Original Python oracle remains an executable test fixture.
+  Disk guard repaira63a6b911 still needs exact-source fast-check acceptance.
+- Logging R4 third admission39833849895 uses source40eb04290; previous run
+ 39830442536 passed14units+cheap grammar then failed two checked unwraps in
+  deferred cleanup. Third gate explicitly authenticates/reuses those scopes,
+  freshly checks Clippy and all unreached lifecycle/protocol behavior. The run
+  failed; Socrates is diagnosing its actual next-stage failure.
+- Loggerd main third39832401630 passes5units/3lifecycle/one full-schema replay
+  then fails a Clippy lock predicate. That fix and reviewed diagnostics/pipeline/
+  IO are committed1d7189b6b. Hypatia hit429/closed; Descartes owns precise
+  resumption on combined source. Hilbert completes IO outer Actions recipe.
+- ParamsdR3 39834626379 succeeds at source69bbee211 with seven cases/two
+  native roots and controls. Parent ZIP CRC/size/hash checks pass; full provider/
+  value audit and maintained-caller preparation belong to Hegel.
+- Model publisher995383 passes39824199853 for8tests/10filesystem cases.
+  James hit429/closed; Bacon delivers real-emitter caller0bb757339. Its next
+  isolated-bin-actions recipe is being sized against actual runner resources.
+- Road#482: actual two frames match all eight buffers, while five historical
+  cases fail output9 index99. Fresh original/candidate object bytes agree;
+  historical compilation context remains unresolved. Five-case diagnostic
+ 39833558563 fails the strict frozen values; fresh original/candidate match
+  all8buffers/all5cases. Old also quiets both sNaNs. A new isolated InstCombine
+  boundary observation is under review; no arithmetic fix or relaxed comparison.
+- Driver#476 first observer39828495779 mixes pre-substitution core_id=None and
+  native[0] at warp call1. Einstein's R2 39833861115 records actual worker ABI
+  before strict comparison, keeping source69bbee211. R2 completed successfully;
+  actual saved-output diagnosis is underway. Numerical drift is still open.
+- Startup39819735679 reaches the90minute job limit after42completed positives.
+  Provider/source integrity passes, completion fails because18positives and16
+  controls are missing. Helmholtz prepares bounded recovery; a separate immutable
+  saved-data audit is the first new bin-actions job. No family-wide pass.
 
 Inventory remains288/3/3289 of3580. Dev-md, device operations, protected
 integration and releases remain outside this continuation. Local restrictions
@@ -78,7 +105,9 @@ and acceptance boundaries below continue to apply.
 - Local only syntax, scoped rustfmt(edition2021,skip_children=true), TOML/YAML/
   Bash/diff, Git/API and inert saved-data inspection. No local Cargo/build/test/
   Clippy/project-Python/model/provider execution or dependency installation.
-  Hosted Actions executes functional checks. Keep25GiB+growth;79GiB currently free.
+  Registered Actions executes functional checks. Prefer verified bin-actions for
+  next trustedx64/cross jobs; actual ARM execution stays GitHub ARM. The latest
+  user withdrew fixed25/35GiB thresholds; retain actual operation growth checks.
 - User has no comma and personally owns final boot, recording, upload and drive
   checks after Git pull. Do not ask USB, deploy/reboot, claim device acceptance,
   merge protected branches or publish a release.
@@ -86,7 +115,7 @@ and acceptance boundaries below continue to apply.
   every exec session. Start mutation/publisher/commit shell scripts with set-e.
   Independent agents work in distinct scratch areas and deliver frozen patches.
 
-## Parallelism change requested by user
+## Historical parallelism snapshot (superseded by current1000configuration)
 
 `/home/fma1/.codex/config.toml` now has agents.max_concurrent_threads_per_session=16.
 The installed Codex0.163.0-alpha.11.1 strict app-server config/read returns16;

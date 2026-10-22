@@ -1,5 +1,23 @@
 # Independent Rust port repository (2026-09-29)
 
+- On 2026-10-23 the user requested applying the faster validated Actions runner
+  across active tasks. Prefer registered `bin-actions` for the next necessary
+  trusted x64 checks/builds and AGNOS cross-builds. Its current labels are
+  `self-hosted`, `Linux`, `X64`, `dev-md-local`; confirm actual runner provenance.
+  The label does not authorize mixing dev-md with #296. Actual ARM CPU execution
+  stays on GitHub ARM runners. Keep local checkout work to source/syntax/format/
+  diff and inert evidence review; functional checks still run in Actions jobs.
+  Do not cancel/restart active CI or repeat successful unchanged checks merely
+  to change runners. Preserve existing required checks, source/ABI verification,
+  PR targets and device/release boundaries. The user also removed the fixed
+  disk stop/resume thresholds; size each operation from actual space/resource
+  evidence and expected growth. This supersedes older hosted-only and fixed
+  reserve instructions. See #496/#498 for the runner comparison evidence.
+
+- On 2026-10-23 the user selected GPT-6.1 Sol / Ultra for this parent chat and
+  GPT-6.1 Sol for all subagents. Astra agents have completed their current
+  deliveries and are closed; do not launch or resume Astra.
+
 - On 2026-10-19 the user changed the #296 validation workflow: local work is
   limited to quick diff, formatting and syntax checks. Do not rebuild or run
   local tests, reference comparisons or regression gates after each change.
@@ -41,11 +59,9 @@
   device comparison after the complete runtime candidate is ready. Keep unported
   components and native external dependencies explicit in the inventory.
 
-- The user required prevention of disk exhaustion on 2026-09-30. Check available
-  space before each local build, dependency install or large artifact copy. Keep
-  at least 25 GiB free plus the operation's estimated growth; when below that
-  floor, stop new build work and recover at least 35 GiB before resuming. Prefer
-  bounded package builds with incremental compilation disabled and reuse a
+- Check actual available space and expected growth before each Actions build,
+  dependency install or large artifact copy; no fixed stop/resume floor applies.
+  Prefer bounded package builds with incremental compilation disabled and reuse a
   coordinated target cache. On 2026-10-09 the user explicitly authorized deleting
   old Rust-port records, archived validation artifacts and all unused build
   caches without another approval or preservation/compression step. This
