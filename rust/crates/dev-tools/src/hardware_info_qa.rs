@@ -66,7 +66,7 @@ pub fn encode_hex(bytes: &[u8]) -> String {
 }
 pub fn decode_hex(text: &str) -> Result<Vec<u8>> {
     let bytes = text.as_bytes();
-    if bytes.len() % 2 != 0 {
+    if !bytes.len().is_multiple_of(2) {
         return Err("odd-length hexadecimal packet".into());
     }
     if !bytes.iter().all(u8::is_ascii_hexdigit) {

@@ -6052,3 +6052,38 @@ staging and78isolation controls. Parent routing log confirms actual synthetic
 mergeb13a720713e25944d1c66336921e9f7b53f5725f; fetched Git tree
 7cf3f74bbdfb089e6b6307205f4bef910ceb3f11 equals the published head's tree.
 #478 closes with comment6330242277. This is not protected-branch integration.
+
+### HardwareInfo native build/units pass; lint and full model regression (2026-10-22)
+
+Native candidate39705243823/source094f6223c8050a821156496507861ff479f5a866,
+workflow38c28e70ad37b9a6f3a36c5e1274621b3b6b32ed, builds both actual native
+executables and passes inline/capture/CLI unit controls. Strict pinned1.94Clippy
+then rejects a manual len()%2 check; use is_multiple_of(2) without relaxing lint.
+The complete original-case/outer replay step has not run. Artifact12395500234:
+32344B, advertised API SHA2568d0a27e3546620383b67191b8cdf61f631fbb27310c1962b0747270a1ed967f9;
+retain actual build/control logs before claiming their detailed coverage. No
+source deletion/count change is accepted from this partial attempt.
+
+Published full model119576923267/run39703167508 on EPYC9V45/generic reproduces
+existing#476 at the first ordinary1344raw1 frame. The whole2576B packet carries
+2212B raw prediction at offset88 with known failing58456ffe SHA. This is not
+new#479 or another regression. Independent artifact audit12394851100 verifies
+all939CRCs/API digest570196921be8b13fdf6bb2ab95dab28abb495d3ad5d5ee84406b12664283668c.
+The focused a298 group39699899580 is still running; no completed group claim.
+
+First-kernel39704565700 gets through original firstCOPY but diagnostic restore
+passes readonly bytes to HCQ _copyin, which requires writable ctypes source.
+Use bounded bytearray backing; CPU PROGRAM storage/launch contracts remain.
+NPY pointers now use the actual contiguous ndarray rather than permitting a
+hidden np.require copy. This remains a diagnostic recipe correction, not a
+measured model failure or repair. Third same-source recipe workflow776b5f1e090a5b8289b9046cdb3b01d690384608,
+run39705593445, continues atd610 with original/candidate input/source seals.
+
+Next Hardwared family preparation selects the successful full platform artifact
+12389225409/run39691148023:1029617B/all3984CRCs,
+SHA2564285c91ffd0b45568d79472a782c8ca05a4cd475eca8cb7ce196af65d74f911b.
+Source-side source.json264722B retains12original cases; parent verifies checker3
+and runtime5 original Git bodies unchanged from capturedd39b1b08. Native IPC
+packets/metrics in the same artifact are engineering evidence only and never
+become original expected output. Native leaf implementation is started; all
+original Hardwared source/tool paths remain pending.
