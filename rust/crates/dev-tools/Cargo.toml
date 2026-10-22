@@ -9,6 +9,15 @@ publish = false
 autobins = false
 
 [[bin]]
+name = "check-carrot-navi-comparison"
+path = "src/bin/check_carrot_navi_comparison.rs"
+required-features = ["carrot-navi-compare-native"]
+
+[[test]]
+name = "carrot_navi_compare"
+required-features = ["carrot-navi-compare-native"]
+
+[[bin]]
 name = "check-version-reference"
 path = "src/bin/check_version_reference.rs"
 required-features = ["version-tools-native"]
@@ -545,6 +554,7 @@ deleter-check-native = []
 kalman-model-generator-native = []
 kalman-corpus-generator-native = ["dep:libloading", "dep:openpilot-runtime-core", "serde_json/float_roundtrip"]
 ci-receipt-metadata-native = []
+carrot-navi-compare-native = []
 beep-reference-native = ["dep:zmq", "serde_json/float_roundtrip"]
 updated-fixture-native = []
 updated-daemon-native = ["updated-fixture-native", "dep:zmq", "dep:chrono"]
