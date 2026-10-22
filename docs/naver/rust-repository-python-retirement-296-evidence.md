@@ -5938,3 +5938,54 @@ unresolved. Two bounded diagnostic hosts in39700512883/sourcea29832fd0/workflow
 fresh actual-host exports and unchanged original Python stages. Actual targets
 are recorded, never forced/relabelled; frozen predictions are decoded from the
 sealed Cereal packets and used only as diagnostic classification data.
+
+### CPU-context diagnostic reproduces #476 beyond Intel (2026-10-22)
+
+[39700512883](https://github.com/bin9208/openpilot-rust/actions/runs/39700512883)
+at a29832fd0d046253465621a05f02a91e9cfdb1d1, workflow
+0e522bf2a968082195f08ffa4692a3f2ecf6d775, runs unchanged original Python stages
+and actual model-run on two fresh hosted catalogs, both complete input frames.
+Sample0 is EPYC7763/znver3 and all original/native/frozen outputs agree. Sample1
+is EPYC9V45/generic **with AVX-512 features enabled**: original still agrees with
+frozen99b8b2fe, but native frame0 has58456ffe, exactly the prior daemon failure.
+439/553float32 values differ, max absolute0.01171875. Both full1382400B warps and
+warmup outputs agree. Neither new context is Intel; daemon IPC is not necessary
+for the mismatch. All47IR texts and weights agree between the contexts.
+
+Parent independently audits both258-CRC ZIPs, all complete raw output pairs,
+seven Git source pins per host and provider/catalog/model before-after seals.
+Sample0 ZIP20550808B SHA256a318335767594bfe8bcd08878f15e4f6a03bb0d8d13541d56f3b83243b19f461;
+sample1 ZIP20589754B SHA256c42baf5debcae273271cd4d0c9b2cbc8dd6990e8708645c71f3a1302c0d4960a.
+Static review distinguishes original execution of PROGRAM.src[4] retained binary
+from export recompiling src[3] IR for the current host. This is a narrowing
+observation, not established target/codegen causality. First divergent kernel
+comparison with identical buffers is next; no pin/tolerance/CPU policy changes.
+#476 remains open; comment6329994446 retains this evidence. #477 is closed with
+accepted full outer source proof (comment6329891483); #296 stays open.
+
+### HardwareInfo independent next-family inputs retained (2026-10-22)
+
+The current full hardware job119537355450 in39691148023 passes unchanged source
+comparison:136ordered scenarios,3110 observations and70datagram requests per
+implementation. Parent selects only source request/result/normalized/commands/
+wire/stdout/stderr plus original manifest and Params provenance/commands from
+artifact12388879432, using206-only bounded HTTP ranges.955selected member CRCs
+pass;37,599,615B expanded selected bodies,7,416,798B network ranges including ZIP
+metadata. No full3GB download/full-ZIP hash or CRC claim. All28 original source/
+binding provenance hashes match exact Git checkoutd39b1b08c (tree equalsf913).
+
+Additional unchanged plan/CLI capture39702167583 at3ddae8cbb9a5e7ab9aae1e9d7491aea3ff9af777,
+workflow10185ac563b237e73696c7a4d90f7fec19d04ce4, passes all136case generation and
+nine actual original CLI admissions. Artifact12393307239:44817B/25CRCs,
+SHA2563b61d990524bf00b749f2c9b550f8a4ce39b16ad395d71a0d52847522922bb1f.
+Parent matches12 tool/source hashes against both commits, every source request's
+full steps and all wire bytes against the independently generated plans. Fake
+binding is restricted to admission-only negatives and is never executed.
+
+Only independent original data is retained under tests/fixtures/hardware-info-original:
+gzip bodies preserve original bytes; manifest binds compressed/expanded hashes,
+30source pins and original binding provenance. Historical raw inherited env was
+not directly recorded. Later original-plan environment is captured; native replay
+must explicitly reproduce it and match the complete old paths-actual-environment
+result. Rust leaf implementation is in progress; all3Python files remain live,
+inventory259/3/3318 unchanged. This is not functional retirement acceptance.
