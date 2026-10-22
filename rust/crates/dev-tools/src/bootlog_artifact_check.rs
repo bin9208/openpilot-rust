@@ -67,9 +67,16 @@ pub fn validate_source(root: &Path) -> Result<Value> {
     let mut pins = Map::new();
     for &(name, expected) in SOURCES {
         if name == "rust/tools/check_bootlog.py" {
-            match fs::read(root.join(name)) {
-                Ok(bytes) if format!("{:x}", Sha256::digest(&bytes)) == expected => {}
+            match fs::symlink_metadata(root.join(name)) {
                 Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+                Ok(meta) if meta.is_file() && !meta.file_type().is_symlink() => {
+                    let bytes = fs::read(root.join(name))?;
+                    if format!("{:x}", Sha256::digest(&bytes)) != expected {
+                        return Err(
+                            format!("bootlog checker source changed or missing: {name}").into()
+                        );
+                    }
+                }
                 _ => {
                     return Err(format!("bootlog checker source changed or missing: {name}").into())
                 }

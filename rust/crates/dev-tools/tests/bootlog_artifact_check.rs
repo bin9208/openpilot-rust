@@ -198,6 +198,28 @@ fn original_retirement_is_narrow_and_every_live_source_pin_is_required() {
             fs::write(&path, original.unwrap()).unwrap();
         }
     }
+    // Both the already-retired bootlog checker and the newly-retired uploader
+    // dependency must reject a dangling link instead of treating ENOENT from
+    // its target as absence of the source path itself.
+    for name in [
+        "rust/tools/check_bootlog.py",
+        "rust/tools/check_uploader.py",
+    ] {
+        let path = temp.path().join(name);
+        let previous = fs::read(&path).ok();
+        if path.exists() {
+            fs::remove_file(&path).unwrap();
+        }
+        symlink("nonexistent-retired-source", &path).unwrap();
+        assert!(validate_source(temp.path())
+            .unwrap_err()
+            .to_string()
+            .contains(name));
+        fs::remove_file(&path).unwrap();
+        if let Some(bytes) = previous {
+            fs::write(&path, bytes).unwrap();
+        }
+    }
     let retired = temp.path().join("rust/tools/check_bootlog.py");
     if retired.exists() {
         fs::remove_file(retired).unwrap();

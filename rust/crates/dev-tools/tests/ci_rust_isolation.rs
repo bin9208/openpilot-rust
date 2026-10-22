@@ -3149,3 +3149,60 @@ fn native_kalman_generation_remains_required_with_fixed_originals_and_live_cpp_o
     assert!(!script.contains("python rust/tools/generate_pose_corpus.py"));
     assert!(!script.contains("python rust/tools/generate_car_corpus.py"));
 }
+
+#[test]
+fn retired_route_controllers_require_ordered_native_build_checks_and_current_caller() {
+    let data = workflow();
+    let job = &data["jobs"]["logger-runtime"];
+    absent(job, &["if", "continue-on-error"]);
+    assert_eq!(job["defaults"]["run"]["working-directory"], "rust");
+    let required_commands = [
+        "cargo +1.94.0 build -p openpilot-dev-tools --features route-upload-native --bin check-runtime-log-upload --locked",
+        "cargo +1.94.0 test -p openpilot-dev-tools --features route-upload-native --lib route_upload_check:: --locked",
+        "cargo +1.94.0 test -p openpilot-dev-tools --features route-upload-native --test route_upload_check --test route_upload_lifecycle --locked -- --test-threads=1",
+        "target/debug/check-runtime-log-upload --root \"$GITHUB_WORKSPACE\" ",
+    ];
+    mandatory(job, &required_commands);
+    let run = commands(job);
+    let mut previous = None;
+    for command in required_commands {
+        assert_eq!(
+            run.matches(command).count(),
+            1,
+            "required route command must occur exactly once: {command}"
+        );
+        let position = run.find(command).unwrap();
+        assert!(
+            previous.is_none_or(|before| before < position),
+            "route build/check/caller order changed"
+        );
+        previous = Some(position);
+    }
+    required(
+        &run,
+        &["--binaries target/debug --output \"$RUNNER_TEMP/runtime-log-upload\""],
+    );
+    for name in [
+        "check_manager_log_upload.py",
+        "check_runtime_log_upload.py",
+        "check_uploader.py",
+        "check_uploader_logging.py",
+        "check_uploader_daemon.py",
+        "check_uploader_interrupted.py",
+        "check_uploader_http_interrupted.py",
+        "check_uploader_timeouts.py",
+        "check_uploader_log_fault.py",
+        "check_params_string_uploader.py",
+    ] {
+        assert!(
+            !run.contains(name),
+            "retired uploader controller remains a logger-runtime caller: {name}"
+        );
+        let path = root().join("rust/tools").join(name);
+        assert!(
+            matches!(fs::symlink_metadata(&path), Err(error) if error.kind() == std::io::ErrorKind::NotFound),
+            "retired source, alias or broken symlink remains: {}",
+            path.display()
+        );
+    }
+}
