@@ -18,6 +18,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   route:
+    if: github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     name: Select validation scope
     runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 2
@@ -145,8 +146,8 @@ jobs:
           DOCS_EVENT_NAME: ${{ github.event_name }}
         run: |
           free_bytes=$(df --output=avail -B1 "$GITHUB_WORKSPACE" | tail -n 1)
-          if (( free_bytes < (25 + 2) * 1024 * 1024 * 1024 )); then
-            echo 'Retain 25 GiB plus build growth; recover at least 35 GiB before retry.' >&2
+          if (( free_bytes < 2 * 1024 * 1024 * 1024 )); then
+            echo 'Insufficient disk space for estimated documentation build growth (2 GiB).' >&2
             exit 1
           fi
           args=(--base "$DOCS_BASE_SHA")
@@ -158,8 +159,8 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           free_bytes=$(df --output=avail -B1 "$GITHUB_WORKSPACE" | tail -n 1)
-          if (( free_bytes < (25 + 2) * 1024 * 1024 * 1024 )); then
-            echo 'Retain 25 GiB plus build growth; recover at least 35 GiB before retry.' >&2
+          if (( free_bytes < 2 * 1024 * 1024 * 1024 )); then
+            echo 'Insufficient disk space for estimated documentation build growth (2 GiB).' >&2
             exit 1
           fi
           CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test user_docs
@@ -297,8 +298,8 @@ jobs:
       - name: Reserve capacity and select a job-owned Android SDK
         run: |
           free_bytes=$(df --output=avail -B1 "$RUNNER_TEMP" | tail -n 1)
-          if (( free_bytes < (25 + 4) * 1024 * 1024 * 1024 )); then
-            echo 'Retain 25 GiB plus Android SDK/build growth; recover at least 35 GiB before retry.' >&2
+          if (( free_bytes < 4 * 1024 * 1024 * 1024 )); then
+            echo 'Insufficient disk space for estimated Android SDK/build growth (4 GiB).' >&2
             exit 1
           fi
           echo "ANDROID_HOME=$RUNNER_TEMP/jetlink-android-sdk" >> "$GITHUB_ENV"
@@ -337,7 +338,7 @@ jobs:
       - name: Install pinned compiler
         run: rustup toolchain install 1.94.0 --profile minimal
       - name: Native build prerequisites
-        run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev
+        run: sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ libzmq3-dev
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: rust
@@ -365,7 +366,7 @@ jobs:
   integration-gate:
     name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'integration gate' || 'Not requested - integration gate' }}
     needs: [route, fast-checks, check_user_docs, git_update, build_release, model_web, model, android-core, jetlink-native]
-    if: ${{ always() && (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) }}
+    if: ${{ (github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && (always() && (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name))) }}
     runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 2
     steps:
@@ -420,7 +421,7 @@ jobs:
             sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 12288
-      - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang libllvm18 git-lfs libclang-dev libavcodec-dev libavformat-dev libavutil-dev ffmpeg libsdl2-2.0-0 cmake qemu-user-static libc6-arm64-cross libstdc++6-arm64-cross strace
+      - run: sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ clang libllvm18 git-lfs libclang-dev libavcodec-dev libavformat-dev libavutil-dev ffmpeg libsdl2-2.0-0 cmake qemu-user-static libc6-arm64-cross libstdc++6-arm64-cross strace
       - run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python -m pip install numpy==2.5.3 onnx==1.20.1 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 aiohttp==3.13.3 anyio==4.12.1 PyJWT==2.15.1 cryptography==50.0.1 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3
@@ -482,7 +483,7 @@ jobs:
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 1024
           mkdir -p "$RUNNER_TEMP/qcom-downloads"
-          sudo apt-get install -y gcc-aarch64-linux-gnu
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y gcc-aarch64-linux-gnu
           rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc cargo +1.94.0 build --locked -p openpilot-model-runtime --target aarch64-unknown-linux-gnu --bin offline-qcom-compile
           curl --fail --location --retry 3 --max-time 180 --max-filesize 67108864 \
@@ -519,7 +520,7 @@ jobs:
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           cargo build -p openpilot-carrot-recovery -p openpilot-process-supervision --bins --examples --locked
-          sudo apt-get install -y tmux
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y tmux
       - name: Compare recovery HTTP, terminal, support, actions and upload paths
         working-directory: .
         run: |
@@ -718,7 +719,7 @@ jobs:
       - uses: ./.github/actions/rust-path
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
-      - run: sudo apt-get update && sudo apt-get install -y clang capnproto libcapnp-dev g++-aarch64-linux-gnu
+      - run: sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y clang capnproto libcapnp-dev g++-aarch64-linux-gnu
       - run: rustup toolchain install nightly-2026-09-29 --profile minimal --component miri,rust-src
       - name: Check Rust allocation and aliasing on ARM with Miri
         env:
@@ -793,7 +794,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
-      - run: sudo apt-get update && sudo apt-get install -y clang libllvm18 git-lfs capnproto libcapnp-dev
+      - run: sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y clang libllvm18 git-lfs capnproto libcapnp-dev
       - run: python -m pip install numpy==2.5.3 zstandard==0.25.0 pycapnp==2.1.0 pyzmq==27.2.0 Cython==3.2.4 setuptools==82.0.1 pytest==9.0.2
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-model-runtime --bins --locked
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-modeld --examples --locked
@@ -895,7 +896,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libyuv-dev libzmq5 ffmpeg strace
+      - run: sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libyuv-dev libzmq5 ffmpeg strace
       - run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
       - run: rustup toolchain install nightly-2026-09-29 --profile minimal --component miri,rust-src
       - run: |
@@ -998,7 +999,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
-      - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq5
+      - run: sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ libzmq5
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0 requests==2.34.2 aiohttp==3.13.3 anyio==4.12.1 PyJWT==2.15.1 cryptography==50.0.1 pyserial==3.5
       - name: Configure original support IPC imports
         run: printf 'PYTHONPATH=%s/support-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
@@ -1104,7 +1105,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
-      - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq5
+      - run: sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ libzmq5
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 sentry-sdk==2.55.0 zstandard==0.25.0
       - name: Configure original telemetry IPC imports
         run: printf 'PYTHONPATH=%s/telemetry-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
@@ -1197,7 +1198,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
-      - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq5
+      - run: sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ libzmq5
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 sentry-sdk==2.55.0 zstandard==0.25.0 setproctitle==1.3.7 requests==2.34.2 PyJWT==2.14.0 cryptography==50.0.1 brotli==1.2.0 charset-normalizer==3.5.1 urllib3==2.7.0 pyserial==3.5
       - name: Configure original startup IPC imports
         run: printf 'PYTHONPATH=%s/startup-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
@@ -1293,7 +1294,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libzmq5
+      - run: sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libzmq5
       - run: rustup toolchain install 1.94.0 --profile minimal
       - run: rustup toolchain install nightly-2026-09-29 --profile minimal
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 PyJWT==2.14.0 cryptography==50.0.1
@@ -1362,7 +1363,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
-      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libzmq5
+      - run: sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libzmq5
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 PyJWT==2.14.0 cryptography==50.0.1
       - name: Configure original platform IPC imports
         run: printf 'PYTHONPATH=%s/platform-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
@@ -1422,7 +1423,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
-      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev openssl iproute2
+      - run: sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y g++ clang libclang-dev capnproto libcapnp-dev openssl iproute2
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 PyJWT==2.14.0 cryptography==50.0.1 pytest==9.0.2
       - name: Configure original startup service IPC imports
         run: printf 'PYTHONPATH=%s/services-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
@@ -1430,7 +1431,7 @@ jobs:
       - run: python -m pip install comma-deps-raylib==6.0.0.1.post103 Pillow==12.3.0 python-xlib==0.33 setproctitle==1.3.7 psutil==7.2.2
       - name: Stage pinned native startup renderer
         run: |
-          sudo apt-get install -y libgl-dev libgles-dev libx11-dev libxrandr2 libxinerama1 libxcursor1 libxi6 xvfb xauth
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y libgl-dev libgles-dev libx11-dev libxrandr2 libxinerama1 libxcursor1 libxi6 xvfb xauth
           raylib_root="$(mktemp -d "$RUNNER_TEMP/raylib-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-XXXXXX")/sdk"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
           cargo +1.94.0 run --manifest-path "$GITHUB_WORKSPACE/rust/Cargo.toml" -p openpilot-dev-tools --locked --bin stage-startup-ui-raylib -- --arch x86_64 --output "$raylib_root" --shared
@@ -1486,7 +1487,7 @@ jobs:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
       - run: rustup toolchain install nightly-2026-09-29 --profile minimal --component miri
-      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libzmq5
+      - run: sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libzmq5
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0
       - name: Configure original sensor and audio IPC imports
         run: printf 'PYTHONPATH=%s/sensor-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
@@ -1544,7 +1545,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
-      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libzmq5
+      - run: sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libzmq5
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0 pyserial==3.5 requests==2.32.5 pytest==9.0.2
       - name: Configure original GNSS IPC imports
         run: printf 'PYTHONPATH=%s/gnss-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
@@ -1596,7 +1597,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
-      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev
+      - run: sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 cffi==2.1.1 sympy==1.14.0 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 pytest==9.0.2
       - name: Check atomic paramsd fixture input boundaries
         run: python -P -m pytest -c /dev/null --noconftest -p no:cacheprovider -q rust/tools/tests/test_paramsd_atomic_gate.py
@@ -1674,7 +1675,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
-      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev libgl-dev libgles-dev libx11-dev libxrandr2 libxinerama1 libxcursor1 libxi6 xvfb xauth ffmpeg dbus-daemon
+      - run: sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev libgl-dev libgles-dev libx11-dev libxrandr2 libxinerama1 libxcursor1 libxi6 xvfb xauth ffmpeg dbus-daemon
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 cffi==2.1.1 pillow==12.3.0 python-xlib==0.33 jeepney==0.9.0 comma-deps-raylib==6.0.0.1.post103 setproctitle==1.3.7 psutil==7.2.2 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 pytest==9.0.2 anyio==4.12.1
       - name: Stage source-pinned native renderer
         run: |
@@ -1741,7 +1742,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
-      - run: sudo apt-get update && sudo apt-get install -y g++ clang cmake pkg-config libzmq3-dev capnproto libcapnp-dev strace iproute2
+      - run: sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y g++ clang cmake pkg-config libzmq3-dev capnproto libcapnp-dev strace iproute2
       - run: python -m pip install requests==2.34.2 json-rpc==1.15.0 websocket-client==1.9.2 websockets==15.0.1 PyJWT==2.14.0 cryptography==50.0.1 numpy==2.5.3 pillow==12.3.0 pycapnp==2.1.0 zstandard==0.25.0 pyzmq==27.2.0
       - name: Check Athena camera child discovery race
         run: python rust/tools/test_athena_camera_children.py
@@ -1786,7 +1787,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
-      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev
+      - run: sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 pycryptodome==3.23.0 cffi==2.1.1 zstandard==0.25.0 pyzmq==27.2.0
       - name: Stage source-pinned control numerical dependency
         run: |
@@ -1840,7 +1841,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
-      - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ strace
+      - run: sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ strace
       - run: python -m pip install aiohttp==3.13.3 anyio==4.12.1 requests==2.34.2
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-web-upload --examples --locked
       - name: Check EINTR fixture child ownership and failed-launch cleanup
@@ -1879,7 +1880,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
-      - run: sudo apt-get update && sudo apt-get install -y g++ capnproto libcapnp-dev libzmq3-dev cmake
+      - run: sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y g++ capnproto libcapnp-dev libzmq3-dev cmake
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 pytest==9.0.2 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 setproctitle==1.3.7 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 inputs==0.5
       - name: Build joystickd and unchanged source boundary bindings
         run: |
@@ -1923,29 +1924,35 @@ jobs:
   planner-runtime:
     needs: [joystickd-runtime]
     name: rust planner source comparison (${{ matrix.runner }})
-    runs-on: ${{ matrix.runner == 'ubuntu-24.04' && fromJSON('["self-hosted","Linux","X64","dev-md-local"]') || matrix.runner }}
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     strategy:
       max-parallel: 1
       fail-fast: true
       matrix:
-        runner: [ubuntu-24.04, ubuntu-24.04-arm]
-    timeout-minutes: 45
+        runner: [local-x64, local-arm64-qemu]
+    timeout-minutes: ${{ matrix.runner == 'local-arm64-qemu' && 180 || 45 }}
     env:
+      LOCAL_CI_ARCH: ${{ matrix.runner == 'local-arm64-qemu' && 'aarch64' || 'x86_64' }}
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       OPENBLAS_NUM_THREADS: '1'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    defaults:
+      run:
+        shell: openpilot-local-shell {0}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
+      - uses: ./.github/actions/local-arm
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
+        if: env.LOCAL_CI_ARCH == 'x86_64'
         with:
           python-version: '3.12.14'
       - name: Reserve capacity and install original planner dependencies
@@ -1955,7 +1962,7 @@ jobs:
             sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang-18 libzmq3-dev
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ clang-18 libzmq3-dev
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.3.0 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0 requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3 pytest==9.0.2
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
@@ -1989,7 +1996,7 @@ jobs:
         run: |
           python -P rust/tools/check_plannerd_ci.py --bin-dir rust/target/debug --artifact "$RUNNER_TEMP/planner-artifact" --source-native "$RUNNER_TEMP/planner-source" --binding "$PLANNER_PARAMS_BINDING" --output "$RUNNER_TEMP/planner-comparison"
       - name: Check generated C with ASan, UBSan and allocator leak detection
-        if: matrix.runner == 'ubuntu-24.04'
+        if: matrix.runner == 'local-x64'
         run: |
           python rust/tools/build_plannerd_acados.py --source-fixture rust/upstream/planner-source.json --architecture x86_64 --cc gcc --sanitize --python "$(command -v python)" --acados "$PLANNER_GENERATOR" --wheel "$RUNNER_TEMP"/planner-wheel/*.whl --output "$RUNNER_TEMP/planner-sanitized"
           python -P rust/tools/check_plannerd_native_memory.py --bin-dir rust/target/debug --artifact "$RUNNER_TEMP/planner-sanitized" --source-native "$RUNNER_TEMP/planner-source" --binding "$PLANNER_PARAMS_BINDING" --asan-library "$(gcc -print-file-name=libasan.so)" --output "$RUNNER_TEMP/planner-native-memory"
@@ -1998,14 +2005,21 @@ jobs:
         with:
           name: rust-planner-${{ matrix.runner }}-evidence
           path: |
+            ${{ env.CI_JOB_TEMP }}/local-arm/execution.json
+            ${{ env.CI_JOB_TEMP }}/local-arm/qemu-version.txt
+            ${{ env.CI_JOB_TEMP }}/local-arm/proot-version.txt
             ${{ env.CI_JOB_TEMP }}/planner-comparison/
             ${{ env.CI_JOB_TEMP }}/planner-native-memory/
             ${{ env.CI_JOB_TEMP }}/planner-artifact/
             ${{ env.CI_JOB_TEMP }}/planner-source/
             ${{ env.CI_JOB_TEMP }}/planner-sanitized/
             ${{ env.CI_JOB_TEMP }}/planner-original/params/*.json
-            rust/target/debug/openpilot-plannerd
-            rust/target/debug/examples/plannerd_*
+            ${{ env.LOCAL_CI_TARGET_DIR }}/debug/openpilot-plannerd
+            ${{ env.LOCAL_CI_TARGET_DIR }}/debug/examples/plannerd_*
+      - uses: ./.github/actions/local-arm
+        if: always()
+        with:
+          cleanup: 'true'
       - uses: ./.github/actions/job-temp
         if: always()
         with: {cleanup: 'true'}
@@ -2031,7 +2045,7 @@ jobs:
             sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
-          sudo apt-get update && sudo apt-get install -y capnproto
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           rustup toolchain install nightly-2026-09-29 --component miri --profile minimal
           cargo +nightly-2026-09-29 miri setup
@@ -2090,7 +2104,7 @@ jobs:
             sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ libzmq3-dev
       - name: Install pinned Card oracle dependencies
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -2191,7 +2205,7 @@ jobs:
             sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ libzmq3-dev
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -2247,10 +2261,11 @@ jobs:
 
   radar-arm:
     needs: [radar-runtime]
-    name: rust RadarCAN native ARM functional validation
-    runs-on: ubuntu-24.04-arm
-    timeout-minutes: 45
+    name: rust RadarCAN ARM QEMU functional validation
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    timeout-minutes: 180
     env:
+      LOCAL_CI_ARCH: aarch64
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_RELEASE_DEBUG: '0'
@@ -2258,15 +2273,20 @@ jobs:
       CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: gcc
       OPENBLAS_NUM_THREADS: '1'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    defaults:
+      run:
+        shell: openpilot-local-shell {0}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
+      - uses: ./.github/actions/local-arm
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
+        if: env.LOCAL_CI_ARCH == 'x86_64'
         with:
           python-version: '3.12'
       - name: Configure original Radar IPC imports
@@ -2278,7 +2298,7 @@ jobs:
             sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ binutils libzmq3-dev
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ binutils libzmq3-dev
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -2336,11 +2356,18 @@ jobs:
         with:
           name: rust-radar-arm-not-device-validated
           path: |
+            ${{ env.CI_JOB_TEMP }}/local-arm/execution.json
+            ${{ env.CI_JOB_TEMP }}/local-arm/qemu-version.txt
+            ${{ env.CI_JOB_TEMP }}/local-arm/proot-version.txt
             ${{ env.CI_JOB_TEMP }}/radar-arm/
             ${{ env.CI_JOB_TEMP }}/radar-native/
-            rust/target/aarch64-unknown-linux-gnu/release/openpilot-radarcan
-            rust/target/aarch64-unknown-linux-gnu/release/examples/radarcan-policy
+            ${{ env.LOCAL_CI_TARGET_DIR }}/aarch64-unknown-linux-gnu/release/openpilot-radarcan
+            ${{ env.LOCAL_CI_TARGET_DIR }}/aarch64-unknown-linux-gnu/release/examples/radarcan-policy
           if-no-files-found: warn
+      - uses: ./.github/actions/local-arm
+        if: always()
+        with:
+          cleanup: 'true'
       - uses: ./.github/actions/job-temp
         if: always()
         with: {cleanup: 'true'}
@@ -2371,7 +2398,7 @@ jobs:
             sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
-          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           rustup toolchain install nightly-2026-09-29 --profile minimal --component miri,rust-src
           printf 'CARGO_TARGET_DIR=%s/radar-miri-target\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
@@ -2437,7 +2464,7 @@ jobs:
             sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ libzmq3-dev
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0 requests==2.34.2 urllib3==2.7.0 charset-normalizer==3.5.1 brotli==1.2.0 PyJWT==2.14.0 cryptography==50.0.1
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -2483,19 +2510,20 @@ jobs:
 
   radard-runtime:
     needs: [navd-runtime]
-    name: rust radard source and native runtime (${{ matrix.runner }})
-    runs-on: ${{ matrix.runner == 'ubuntu-24.04' && fromJSON('["self-hosted","Linux","X64","dev-md-local"]') || matrix.runner }}
+    name: rust radard source runtime (${{ matrix.runner }})
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     strategy:
       max-parallel: 1
       fail-fast: true
       matrix:
         include:
-          - runner: ubuntu-24.04
+          - runner: local-x64
             machine: x86_64
-          - runner: ubuntu-24.04-arm
+          - runner: local-arm64-qemu
             machine: aarch64
-    timeout-minutes: 45
+    timeout-minutes: ${{ matrix.runner == 'local-arm64-qemu' && 180 || 45 }}
     env:
+      LOCAL_CI_ARCH: ${{ matrix.runner == 'local-arm64-qemu' && 'aarch64' || 'x86_64' }}
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
@@ -2503,15 +2531,20 @@ jobs:
       OPENBLAS_NUM_THREADS: '1'
       PYTHONDONTWRITEBYTECODE: '1'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    defaults:
+      run:
+        shell: openpilot-local-shell {0}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
+      - uses: ./.github/actions/local-arm
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
+        if: env.LOCAL_CI_ARCH == 'x86_64'
         with:
           python-version: '3.12.14'
       - name: Reserve capacity and install original oracle dependencies
@@ -2526,7 +2559,7 @@ jobs:
             sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ binutils libzmq3-dev
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ binutils libzmq3-dev
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.3.0 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1
           python -m pip freeze > "$RUNNER_TEMP/radard-native/python-packages.txt"
@@ -2623,6 +2656,9 @@ jobs:
         with:
           name: rust-radard-${{ matrix.runner }}-not-device-validated
           path: |
+            ${{ env.CI_JOB_TEMP }}/local-arm/execution.json
+            ${{ env.CI_JOB_TEMP }}/local-arm/qemu-version.txt
+            ${{ env.CI_JOB_TEMP }}/local-arm/proot-version.txt
             ${{ env.CI_JOB_TEMP }}/radard-native/logs/
             ${{ env.CI_JOB_TEMP }}/radard-native/source-*/
             ${{ env.CI_JOB_TEMP }}/radard-native/ipc/
@@ -2635,6 +2671,10 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/radard-native/params/*.so
             ${{ env.CI_JOB_TEMP }}/radard-native/msgq/msgq/*.so
           if-no-files-found: warn
+      - uses: ./.github/actions/local-arm
+        if: always()
+        with:
+          cleanup: 'true'
       - uses: ./.github/actions/job-temp
         if: always()
         with: {cleanup: 'true'}
@@ -2668,7 +2708,7 @@ jobs:
             sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev iproute2 util-linux
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ libzmq3-dev iproute2 util-linux
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python -m pip install aiohttp==3.13.3 pycapnp==2.2.4 Cython==3.2.4 setuptools==82.0.1 psutil==7.2.2 zstandard==0.25.0 pyzmq==27.2.0 numpy==2.5.3 requests==2.34.2 pyserial==3.5
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -2784,59 +2824,68 @@ jobs:
 
   carrot-navi-arm:
     needs: [carrot-navi-runtime]
-    name: rust Carrot Navi ARM cross build
+    name: rust Carrot Navi ARM QEMU build
     runs-on: [self-hosted, Linux, X64, dev-md-local]
-    timeout-minutes: 25
+    timeout-minutes: 180
     env:
+      LOCAL_CI_ARCH: aarch64
       RUSTUP_TOOLCHAIN: '1.94.0'
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_RELEASE_DEBUG: '0'
-      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
-      CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
-      CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
-      AR_aarch64_unknown_linux_gnu: aarch64-linux-gnu-ar
+      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: gcc
+    defaults:
+      run:
+        shell: openpilot-local-shell {0}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
+      - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
+        if: env.LOCAL_CI_ARCH == 'x86_64'
         with:
           python-version: '3.12.14'
-      - name: Reserve runner capacity and install ARM cross build dependencies
+      - name: Reserve runner capacity and install native ARM build dependencies
         run: |
           # Only GitHub-hosted images contain these disposable tool bundles.
           if [ "${{ runner.environment }}" = github-hosted ]; then
             sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          sudo apt-get update && sudo apt-get install -y capnproto g++ g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto g++ binutils
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           rustup toolchain install 1.94.0 --profile minimal
           rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
           mkdir -p "$RUNNER_TEMP/carrot-navi-arm"
           git rev-parse HEAD > "$RUNNER_TEMP/carrot-navi-arm/source-commit.txt"
-          printf '%s\n' "$RUNNER_ENVIRONMENT" "$RUNNER_NAME" "$RUNNER_ARCH" > "$RUNNER_TEMP/carrot-navi-arm/build-runner.txt"
-      - name: Cross build and inspect the actual ARM executable
+      - name: Build and inspect the actual native ARM executable
         run: |
-          test "$(uname -m)" = x86_64
+          test "$(uname -m)" = aarch64
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
           set -o pipefail
           cargo build --manifest-path rust/Cargo.toml -p openpilot-carrot-navi --features native --bin openpilot-carrot-navi --target aarch64-unknown-linux-gnu --release --locked 2>&1 | tee "$RUNNER_TEMP/carrot-navi-arm/build.log"
-          aarch64-linux-gnu-readelf -h rust/target/aarch64-unknown-linux-gnu/release/openpilot-carrot-navi | tee "$RUNNER_TEMP/carrot-navi-arm/elf.txt"
+          readelf -h rust/target/aarch64-unknown-linux-gnu/release/openpilot-carrot-navi | tee "$RUNNER_TEMP/carrot-navi-arm/elf.txt"
           grep -Eq 'Machine:.*AArch64' "$RUNNER_TEMP/carrot-navi-arm/elf.txt"
           sha256sum rust/target/aarch64-unknown-linux-gnu/release/openpilot-carrot-navi > "$RUNNER_TEMP/carrot-navi-arm/binary.sha256"
-      - name: Preserve ARM cross build receipt and executable
+      - name: Preserve native ARM build receipt and executable
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: rust-carrot-navi-cross-arm
+          name: rust-carrot-navi-native-arm
           path: |
+            ${{ env.CI_JOB_TEMP }}/local-arm/execution.json
+            ${{ env.CI_JOB_TEMP }}/local-arm/qemu-version.txt
+            ${{ env.CI_JOB_TEMP }}/local-arm/proot-version.txt
             ${{ env.CI_JOB_TEMP }}/carrot-navi-arm/
-            rust/target/aarch64-unknown-linux-gnu/release/openpilot-carrot-navi
+            ${{ env.LOCAL_CI_TARGET_DIR }}/aarch64-unknown-linux-gnu/release/openpilot-carrot-navi
           if-no-files-found: warn
+      - uses: ./.github/actions/local-arm
+        if: always()
+        with:
+          cleanup: 'true'
       - uses: ./.github/actions/job-temp
         if: always()
         with: {cleanup: 'true'}
@@ -2873,7 +2922,7 @@ jobs:
             sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ libzmq3-dev
       - name: Install pinned selfdrived oracle dependencies
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -2968,7 +3017,7 @@ jobs:
             sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang libusb-1.0-0-dev libzmq3-dev cmake pkg-config curl
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ clang libusb-1.0-0-dev libzmq3-dev cmake pkg-config curl
       - name: Install pinned Panda oracle dependencies
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -3036,7 +3085,7 @@ jobs:
             sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang-18 libclang-rt-18-dev libzmq3-dev
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ clang-18 libclang-rt-18-dev libzmq3-dev
       - name: Install pinned camera oracle dependencies
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
@@ -3106,7 +3155,7 @@ jobs:
             sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev cmake pkg-config capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libyuv-dev libzmq3-dev ffmpeg
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y g++ clang libclang-dev cmake pkg-config capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libyuv-dev libzmq3-dev ffmpeg
       - name: Install pinned encoder oracle dependencies
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -3156,29 +3205,35 @@ jobs:
   xiaoge-runtime:
     needs: [encoder-runtime]
     name: rust Xiaoge source comparison (${{ matrix.runner }})
-    runs-on: ${{ matrix.runner == 'ubuntu-24.04' && fromJSON('["self-hosted","Linux","X64","dev-md-local"]') || matrix.runner }}
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     strategy:
       max-parallel: 1
       fail-fast: true
       matrix:
-        runner: [ubuntu-24.04, ubuntu-24.04-arm]
-    timeout-minutes: 75
+        runner: [local-x64, local-arm64-qemu]
+    timeout-minutes: ${{ matrix.runner == 'local-arm64-qemu' && 180 || 75 }}
     env:
+      LOCAL_CI_ARCH: ${{ matrix.runner == 'local-arm64-qemu' && 'aarch64' || 'x86_64' }}
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       OPENCV_TEST_GPU: reject
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    defaults:
+      run:
+        shell: openpilot-local-shell {0}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
+      - uses: ./.github/actions/local-arm
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
+        if: env.LOCAL_CI_ARCH == 'x86_64'
         with:
           python-version: '3.12'
       - name: Reserve capacity and install Xiaoge build prerequisites
@@ -3188,7 +3243,7 @@ jobs:
             sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ cmake ninja-build libzmq3-dev git-lfs
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ cmake ninja-build libzmq3-dev git-lfs
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0 requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3 pytest==9.0.2 opencv-python-headless==4.13.0.92 pillow==12.3.0 'httpx2[http2,brotli,zstd]==2.13.1'
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -3232,6 +3287,9 @@ jobs:
         with:
           name: rust-xiaoge-${{ matrix.runner }}-evidence
           path: |
+            ${{ env.CI_JOB_TEMP }}/local-arm/execution.json
+            ${{ env.CI_JOB_TEMP }}/local-arm/qemu-version.txt
+            ${{ env.CI_JOB_TEMP }}/local-arm/proot-version.txt
             ${{ env.CI_JOB_TEMP }}/xiaoge-comparison/
             ${{ env.CI_JOB_TEMP }}/xiaoge-original/params/*.json
             ${{ env.CI_JOB_TEMP }}/xiaoge-opencv/*.json
@@ -3239,10 +3297,14 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/xiaoge-opencv/native-libraries.sha256
             ${{ env.CI_JOB_TEMP }}/xiaoge-cpu-equivalence.json
             ${{ env.CI_JOB_TEMP }}/signal-process-comparison/*.json
-            rust/target/debug/openpilot-xiaoge
-            rust/target/debug/examples/xiaoge_*
-            rust/target/debug/examples/opencv_trace
-            rust/target/debug/examples/jpeg_options
+            ${{ env.LOCAL_CI_TARGET_DIR }}/debug/openpilot-xiaoge
+            ${{ env.LOCAL_CI_TARGET_DIR }}/debug/examples/xiaoge_*
+            ${{ env.LOCAL_CI_TARGET_DIR }}/debug/examples/opencv_trace
+            ${{ env.LOCAL_CI_TARGET_DIR }}/debug/examples/jpeg_options
+      - uses: ./.github/actions/local-arm
+        if: always()
+        with:
+          cleanup: 'true'
       - uses: ./.github/actions/job-temp
         if: always()
         with: {cleanup: 'true'}
@@ -3276,7 +3338,7 @@ jobs:
             sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          sudo apt-get update && sudo apt-get install -y clang-18 cmake g++ git-lfs
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y clang-18 cmake g++ git-lfs
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python -m pip install numpy==2.5.3 opencv-python-headless==4.13.0.92 pillow==12.3.0
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
@@ -3349,7 +3411,7 @@ jobs:
             sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang cmake pkg-config libgl-dev libgles-dev libx11-dev xvfb xauth x11-utils mesa-utils ffmpeg strace
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ clang cmake pkg-config libgl-dev libgles-dev libx11-dev xvfb xauth x11-utils mesa-utils ffmpeg strace
       - name: Install pinned original GUI dependencies
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -3433,26 +3495,32 @@ jobs:
   carrot-man-runtime:
     needs: [ui-runtime]
     name: rust CarrotMan owner (${{ matrix.arch }})
-    runs-on: ${{ matrix.runner == 'ubuntu-24.04' && fromJSON('["self-hosted","Linux","X64","dev-md-local"]') || matrix.runner }}
-    timeout-minutes: 25
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    timeout-minutes: ${{ matrix.runner == 'local-arm64-qemu' && 180 || 25 }}
     strategy:
       max-parallel: 1
       fail-fast: true
       matrix:
         include:
-          - { arch: x86_64, runner: ubuntu-24.04 }
-          - { arch: aarch64, runner: ubuntu-24.04-arm }
+          - { arch: x86_64, runner: local-x64 }
+          - { arch: aarch64, runner: local-arm64-qemu }
     env:
+      LOCAL_CI_ARCH: ${{ matrix.runner == 'local-arm64-qemu' && 'aarch64' || 'x86_64' }}
       CARGO_INCREMENTAL: '0'
       CARGO_BUILD_JOBS: '2'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARROT_EXCEPTION_DISCORD_WEBHOOK_DISABLE: '1'
       PYTHONPATH: ${{ github.workspace }}
+    defaults:
+      run:
+        shell: openpilot-local-shell {0}
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
+      - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
+        if: env.LOCAL_CI_ARCH == 'x86_64'
         with:
           python-version: '3.12.14'
       - name: Reserve runner capacity and install pinned dependencies
@@ -3462,7 +3530,7 @@ jobs:
             sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          sudo apt-get update && sudo apt-get install -y g++ clang cmake pkg-config libzmq3-dev capnproto libcapnp-dev
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y g++ clang cmake pkg-config libzmq3-dev capnproto libcapnp-dev
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 aiohttp==3.13.3 psutil==7.2.2 pytest==9.0.2
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -3504,11 +3572,18 @@ jobs:
         with:
           name: carrot-man-owner-${{ matrix.arch }}-evidence
           path: |
+            ${{ env.CI_JOB_TEMP }}/local-arm/execution.json
+            ${{ env.CI_JOB_TEMP }}/local-arm/qemu-version.txt
+            ${{ env.CI_JOB_TEMP }}/local-arm/proot-version.txt
             ${{ env.CI_JOB_TEMP }}/carrot-man-policy/**
             ${{ env.CI_JOB_TEMP }}/carrot-man-owned/**
             ${{ env.CI_JOB_TEMP }}/carrot-man-input-tests/**
             ${{ env.CI_JOB_TEMP }}/carrot-man-geos/**
-            rust/target/debug/openpilot-carrot-man
+            ${{ env.LOCAL_CI_TARGET_DIR }}/debug/openpilot-carrot-man
+      - uses: ./.github/actions/local-arm
+        if: always()
+        with:
+          cleanup: 'true'
       - uses: ./.github/actions/job-temp
         if: always()
         with: {cleanup: 'true'}
@@ -3516,14 +3591,15 @@ jobs:
   webrtc-runtime:
     needs: [carrot-man-runtime]
     name: rust WebRTC source runtime (${{ matrix.runner }})
-    runs-on: ${{ matrix.runner == 'ubuntu-24.04' && fromJSON('["self-hosted","Linux","X64","dev-md-local"]') || matrix.runner }}
-    timeout-minutes: 45
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    timeout-minutes: ${{ matrix.runner == 'local-arm64-qemu' && 180 || 45 }}
     strategy:
       max-parallel: 1
       fail-fast: true
       matrix:
-        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+        runner: [local-x64, local-arm64-qemu]
     env:
+      LOCAL_CI_ARCH: ${{ matrix.runner == 'local-arm64-qemu' && 'aarch64' || 'x86_64' }}
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
@@ -3531,13 +3607,18 @@ jobs:
       LIBCLANG_PATH: /usr/lib/llvm-18/lib
       CARROT_EXCEPTION_DISCORD_WEBHOOK_DISABLE: '1'
       PYTHONPATH: ${{ github.workspace }}/rust/tools:${{ github.workspace }}:${{ github.workspace }}/teleoprtc_repo:${{ github.workspace }}/opendbc_repo
+    defaults:
+      run:
+        shell: openpilot-local-shell {0}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
+      - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
+        if: env.LOCAL_CI_ARCH == 'x86_64'
         with:
           python-version: '3.12.14'
       - name: Reserve capacity and install pinned source and native providers
@@ -3547,8 +3628,8 @@ jobs:
             sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          sudo apt-get update
-          sudo apt-get install -y g++ clang-18 libclang-18-dev cmake pkg-config capnproto libcapnp-dev libzmq3-dev ffmpeg 'libavcodec-dev=7:6.1.1-*' 'libavformat-dev=7:6.1.1-*' 'libavutil-dev=7:6.1.1-*'
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y g++ clang-18 libclang-18-dev cmake pkg-config capnproto libcapnp-dev libzmq3-dev ffmpeg 'libavcodec-dev=7:6.1.1-*' 'libavformat-dev=7:6.1.1-*' 'libavutil-dev=7:6.1.1-*'
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python -m pip install -r rust/tools/webrtc_source_requirements.txt
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -3594,11 +3675,18 @@ jobs:
         with:
           name: rust-webrtc-${{ matrix.runner }}-evidence
           path: |
+            ${{ env.CI_JOB_TEMP }}/local-arm/execution.json
+            ${{ env.CI_JOB_TEMP }}/local-arm/qemu-version.txt
+            ${{ env.CI_JOB_TEMP }}/local-arm/proot-version.txt
             ${{ env.CI_JOB_TEMP }}/webrtc/
-            rust/target/debug/openpilot-webrtcd
-            rust/target/debug/openpilot-carrot-webrtcd
-            rust/target/debug/examples/webrtc_owned_http
-            rust/target/debug/examples/webrtc_stun_checks
+            ${{ env.LOCAL_CI_TARGET_DIR }}/debug/openpilot-webrtcd
+            ${{ env.LOCAL_CI_TARGET_DIR }}/debug/openpilot-carrot-webrtcd
+            ${{ env.LOCAL_CI_TARGET_DIR }}/debug/examples/webrtc_owned_http
+            ${{ env.LOCAL_CI_TARGET_DIR }}/debug/examples/webrtc_stun_checks
+      - uses: ./.github/actions/local-arm
+        if: always()
+        with:
+          cleanup: 'true'
       - uses: ./.github/actions/job-temp
         if: always()
         with: {cleanup: 'true'}
@@ -3606,14 +3694,15 @@ jobs:
   webcam-runtime:
     needs: [webrtc-runtime]
     name: rust webcam source runtime (${{ matrix.runner }})
-    runs-on: ${{ matrix.runner == 'ubuntu-24.04' && fromJSON('["self-hosted","Linux","X64","dev-md-local"]') || matrix.runner }}
-    timeout-minutes: 35
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    timeout-minutes: ${{ matrix.runner == 'local-arm64-qemu' && 180 || 35 }}
     strategy:
       max-parallel: 1
       fail-fast: true
       matrix:
-        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+        runner: [local-x64, local-arm64-qemu]
     env:
+      LOCAL_CI_ARCH: ${{ matrix.runner == 'local-arm64-qemu' && 'aarch64' || 'x86_64' }}
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
@@ -3621,13 +3710,18 @@ jobs:
       LIBCLANG_PATH: /usr/lib/llvm-18/lib
       CARROT_EXCEPTION_DISCORD_WEBHOOK_DISABLE: '1'
       PYTHONPATH: ${{ github.workspace }}/rust/tools:${{ github.workspace }}
+    defaults:
+      run:
+        shell: openpilot-local-shell {0}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
+      - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
+        if: env.LOCAL_CI_ARCH == 'x86_64'
         with:
           python-version: '3.12.14'
       - name: Install exact source closure and native capture providers
@@ -3637,8 +3731,8 @@ jobs:
             sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          sudo apt-get update
-          sudo apt-get install -y g++ clang-18 libclang-18-dev cmake pkg-config capnproto libcapnp-dev libzmq3-dev 'libavcodec-dev=7:6.1.1-*' 'libavformat-dev=7:6.1.1-*' 'libavutil-dev=7:6.1.1-*' 'libswscale-dev=7:6.1.1-*'
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y g++ clang-18 libclang-18-dev cmake pkg-config capnproto libcapnp-dev libzmq3-dev 'libavcodec-dev=7:6.1.1-*' 'libavformat-dev=7:6.1.1-*' 'libavutil-dev=7:6.1.1-*' 'libswscale-dev=7:6.1.1-*'
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python -m pip install -r rust/tools/webcam_source_requirements.txt
           rustup toolchain install 1.94.0 --profile minimal --component clippy
@@ -3679,6 +3773,9 @@ jobs:
         with:
           name: rust-webcam-${{ matrix.runner }}-evidence
           path: |
+            ${{ env.CI_JOB_TEMP }}/local-arm/execution.json
+            ${{ env.CI_JOB_TEMP }}/local-arm/qemu-version.txt
+            ${{ env.CI_JOB_TEMP }}/local-arm/proot-version.txt
             ${{ env.CI_JOB_TEMP }}/webcam/**/result.json
             ${{ env.CI_JOB_TEMP }}/webcam/**/*invocation.json
             ${{ env.CI_JOB_TEMP }}/webcam/**/*.log
@@ -3696,7 +3793,11 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/webcam/provider/install/lib/
             ${{ env.CI_JOB_TEMP }}/webcam-opencv-source/source.json
             ${{ env.CI_JOB_TEMP }}/webcam-opencv-source/hardening.json
-            rust/target/debug/openpilot-webcam
+            ${{ env.LOCAL_CI_TARGET_DIR }}/debug/openpilot-webcam
+      - uses: ./.github/actions/local-arm
+        if: always()
+        with:
+          cleanup: 'true'
       - uses: ./.github/actions/job-temp
         if: always()
         with: {cleanup: 'true'}
@@ -3704,7 +3805,7 @@ jobs:
   fast:
     name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'rust checks' || 'Not requested - rust checks' }}
     needs: [integration-gate, workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime, webrtc-runtime, webcam-runtime]
-    if: ${{ always() && (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) }}
+    if: ${{ (github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && (always() && (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name))) }}
     runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 2
     steps:
@@ -3746,7 +3847,7 @@ jobs:
             sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           fi
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 12288
-          sudo apt-get update && sudo apt-get install -y g++-aarch64-linux-gnu capnproto libcapnp-dev qemu-user-static clang libclang-dev make cmake
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update && sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y g++-aarch64-linux-gnu capnproto libcapnp-dev qemu-user-static clang libclang-dev make cmake
       - name: Stage native GNU aarch64 startup renderer and portable loader headers
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 2048
@@ -4063,7 +4164,7 @@ jobs:
   arm64:
     name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'rust aarch64 build' || 'Not requested - rust aarch64 build' }}
     needs: [route, fast-checks, check_user_docs, integration-gate, fast, workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime, webrtc-runtime, webcam-runtime, arm-build]
-    if: ${{ always() && (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) }}
+    if: ${{ (github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && (always() && (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name))) }}
     runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 2
     steps:

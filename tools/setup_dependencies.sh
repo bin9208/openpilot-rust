@@ -24,29 +24,6 @@ function is_ubuntu_pc() {
   (source /etc/os-release && [[ "${ID:-}" == "ubuntu" ]])
 }
 
-function install_native_apt_deps() (
-  # These development packages run in the current userspace. A persistent
-  # runner may also have foreign dpkg architectures with different repositories.
-  local native_arch apt_config
-  native_arch=$(dpkg --print-architecture) || return
-  if [[ ! "$native_arch" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
-    echo "Invalid native package architecture: $native_arch" >&2
-    return 1
-  fi
-  apt_config=$(mktemp "${TMPDIR:-/tmp}/openpilot-apt.XXXXXX") || return
-  trap 'rm -f -- "$apt_config"' EXIT
-  cat > "$apt_config" <<EOF
-#clear APT::Architectures;
-APT::Architecture "$native_arch";
-APT::Architectures { "$native_arch"; };
-APT::Get::List-Cleanup "false";
-EOF
-  # -c loads after the host configuration; clearing the list also excludes
-  # foreign entries without changing dpkg registration or system APT sources.
-  $SUDO apt-get --config-file "$apt_config" update || return
-  $SUDO apt-get --config-file "$apt_config" install -y --no-install-recommends "$@"
-)
-
 function install_linux_deps() {
   SUDO=""
 
@@ -56,6 +33,11 @@ function install_linux_deps() {
       exit 1
     fi
     SUDO="sudo"
+  fi
+
+  local native_arch=""
+  if command -v apt-get > /dev/null 2>&1; then
+    native_arch="$(dpkg --print-architecture)"
   fi
 
   local -a ubuntu_tool_deps=()
@@ -91,7 +73,7 @@ function install_linux_deps() {
 
   if [[ "$missing_linux_deps" -eq 0 ]]; then
     for package in "${ubuntu_tool_deps[@]}"; do
-      if ! dpkg-query -W -f='${Status}\n' "$package" 2>/dev/null | grep -q '^install ok installed$'; then
+      if ! dpkg-query -W -f='${Status}\n' "$package:$native_arch" 2>/dev/null | grep -q '^install ok installed$'; then
         missing_linux_deps=1
         break
       fi
@@ -103,7 +85,11 @@ function install_linux_deps() {
     # the native package managers are slow, so skip if we can
     echo "[ ] system packages already installed t=$SECONDS"
   elif command -v apt-get > /dev/null 2>&1; then
-    install_native_apt_deps \
+    # Bootstrap native tools without inheriting foreign targets from prior jobs.
+    # The scalar list overrides inherited entries; :: would append to them.
+    # Keep dpkg registration and cross-build/ARM guest sources unchanged.
+    $SUDO apt-get -o "APT::Architectures=$native_arch" update
+    $SUDO apt-get -o "APT::Architectures=$native_arch" install -y --no-install-recommends \
       ca-certificates build-essential curl libcurl4-openssl-dev locales git \
       "${ubuntu_tool_deps[@]}"
   elif command -v dnf > /dev/null 2>&1; then

@@ -59,7 +59,7 @@ No changes to radar detection, lead selection, dev/main or the #296 conversion.
   no tracking algorithm or temporal behavior changes.
 - [ ] Review focused diffs and run local syntax/format checks only. Execute
   functional, native-memory and resource comparisons in existing sequential
-  Actions CI on x86_64 and native ARM. Inspect exact-SHA required checks.
+  Actions CI on x86_64 and ARM binaries in QEMU/PRoot (emulated). Inspect exact-SHA required checks.
 - [ ] Obtain independent review, integrate through a checked dev-md PR, verify
   merged-source checks and genuine AGNOS build/seal/publication/public installer.
   Device installation, driving and actual CPU acceptance remain owner-owned.
@@ -97,7 +97,7 @@ The log has no separately identified signalcolord CPU sample. The classical
 signal history change therefore has no measured share of this upload; mode
 settings alone must not be used to claim that all inference paths were active.
 
-## Runner selection and continuation, 2026-10-23
+## Earlier runner selection, superseded by the all-local policy below
 
 The user explicitly selected the existing registered `bin-actions` x86-64
 runner for ordinary checks, ARM cross builds and AGNOS build/package/publication.
@@ -179,15 +179,15 @@ growth estimates and resource evidence. Current run `39833346797` is preserved.
 Legacy numerical limits found in validation helpers are recorded for the next
 necessary scoped correction; this policy update does not restart the current CI.
 
-The runner-comparison task owns the shared dev-md routing and QEMU/PRoot execution
+The runner-comparison task owns the shared dev-md routing and QEMU/PRoot
 foundation in [#502](https://github.com/bin9208/openpilot-rust/issues/502) /
-[PR #504](https://github.com/bin9208/openpilot-rust/pull/504), including validation in registered
-local Actions. This CPU task will reuse that verified change and does not duplicate
-it. The currently committed #494 workflow still has the earlier GitHub ARM route;
-the new all-local implementation has not yet been delivered. Preserve the existing
-execution and use the verified common foundation for the next necessary run,
-without starting a hosted ARM fallback while waiting. These instructions do not
-expand device, release, protected-branch or separate #296 permissions.
+[PR #504](https://github.com/bin9208/openpilot-rust/pull/504). This task reuses
+its verified source `77663836a95a9e2aff9aa66592d8b06ed9c87cd9`; the common PR
+remains draft and unmerged. The CPU branch preserves its signal-history and
+preprocessing comparisons, source receipts, private ARM graphics sysroot and
+artifact captures while adopting the all-local shell and ARM target mapping.
+Full validation of the combined CPU source remains necessary. These changes do
+not expand device, release, protected-branch or separate #296 permissions.
 
 ## Host dependency installation failure, 2026-10-23
 
@@ -202,25 +202,32 @@ the three downstream aggregate gates failed closed. This is direct evidence of
 the local job's package-index failure, not a CPU runtime failure or proof of the
 cause of the user's separately reported hosted-runner failures.
 
-The prepared setup fix scopes both APT update and install to the current
-userspace's native `dpkg --print-architecture`, using a temporary command-line
-configuration. It clears the inherited architecture list without modifying host
-sources or foreign dpkg registrations, and retains foreign cached indexes. APT
-documents that [`-c` configuration overrides the defaults and `#clear` removes
-list entries](https://manpages.debian.org/bookworm/apt/apt.conf.5.en.html).
-Focused regression cases cover amd64/arm64 userspaces with a foreign-architecture
-list, direct/sudo invocation, update failure and temporary-config cleanup, and
-invalid architecture rejection. They are included in the existing fast-test
-discovery; only Bash/Python syntax and diff review have run locally.
-The exact-source delivery allowlist adds only the setup script and its regression
-file, with neighboring paths still rejected. This does not change the AGNOS SDK
-or native-provider build inputs. A Sol review found no actionable setup-patch
-issues; actual APT repository/privilege behavior still requires Actions evidence.
+The final setup fix reuses the common source's validated per-command scalar
+`APT::Architectures=$(dpkg --print-architecture)` for native APT update/install
+and queries native-architecture package status explicitly. Existing foreign
+registrations and the explicit cross-build sources remain. The earlier local
+temporary-config helper and its duplicate regression file were superseded by
+`tools/ci/tests/test_setup_dependencies.py`; the exact-source delivery allowlist
+admits the setup script and its current regression file without allowing siblings.
+This does not change AGNOS SDK or native-provider build inputs.
 
-The patch is held locally pending the common all-local execution foundation.
-PR #504 at `d27cd41ee8082cd7feb76f8ec59c8d7a9701d37b` passed its focused local
-policy checks but its ARM setup failed in
-[run 39850292573](https://github.com/bin9208/openpilot-rust/actions/runs/39850292573)
-at guest dpkg database access. That separate task owns the fix. No new execution
-of the old hosted-ARM workflow is requested; the setup repair and full CPU
-validation remain unverified until the next registered all-local Actions run.
+## Shared ARM execution foundation verified; CPU validation pending
+
+[Focused run 39853582741](https://github.com/bin9208/openpilot-rust/actions/runs/39853582741)
+succeeded on the common source `77663836a95a9e2aff9aa66592d8b06ed9c87cd9`.
+The real runner was `bin-actions` / self-hosted X64; guest execution used
+AArch64 QEMU-user and PRoot 5.5.0 with `physical_arm_cpu: false`. Evidence covers
+ARM ELF/shared-library loading via ctypes, Python 3.12.14, environment-file and
+exit-code propagation, guest target visibility, ARM socketpair/SIGTERM behavior,
+and the Rust disk guard. Policy 90, package 9, native guard 13, and disk guard
+4 unit / 5 CLI cases passed, including the baseline rejection check.
+`runtime-core --lib` had 0 passed / 1 ignored (the existing benchmark); it is
+not counted as full ARM module validation. The older guest dpkg failure was
+resolved in that verified common source.
+
+The original per-module ARM tests still run through the serial PR pipeline with
+`tools/ci/local-arm` and `.github/actions/local-arm`; environment/PATH command
+files and target upload mappings retain host-visible artifacts. No hosted runner
+fallback is used. These infrastructure results do not establish this merged CPU
+candidate's functional equivalence, performance gain, full AGNOS package, or
+vehicle acceptance; those gates remain part of #422's continuation.

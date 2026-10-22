@@ -20,14 +20,16 @@ exec(compile(ast.Module(body=[node for node in tree.body if isinstance(node, ast
 
 
 class SourcePolicyTests(unittest.TestCase):
-    def test_only_hosted_or_named_registered_runner_is_admitted(self):
+    def test_only_named_self_hosted_runner_is_admitted(self):
         allowed = namespace["runner_environment_allowed"]
         for environment, name, expected in (
-            ("github-hosted", "GitHub Actions", True),
+            ("github-hosted", "GitHub Actions", False),
+            ("github-hosted", "bin-actions", False),
             ("self-hosted", "bin-actions", True),
             ("self-hosted", "other-runner", False),
             ("self-hosted", "bin-actions-extra", False),
             ("self-hosted", None, False),
+            ("self-hosted", "", False),
             (None, "bin-actions", False),
             ("", "", False),
         ):
@@ -54,13 +56,38 @@ class SourcePolicyTests(unittest.TestCase):
 
     def test_host_setup_repair_exceptions_are_exact_paths(self):
         allowed = namespace["source_path_allowed"]
-        for path in ("tools/setup_dependencies.sh", "tools/ci/tests/test_setup_apt.py"):
+        for path in ("tools/setup_dependencies.sh", "tools/ci/tests/test_setup_dependencies.py"):
             with self.subTest(path=path):
                 self.assertTrue(allowed(path))
                 self.assertFalse(allowed(path + ".extra"))
                 self.assertFalse(allowed(path + "/child"))
         self.assertFalse(allowed("tools/setup_dependencies_other.sh"))
-        self.assertFalse(allowed("tools/ci/tests/test_setup_apt_other.py"))
+        self.assertFalse(allowed("tools/ci/tests/test_setup_dependencies_other.py"))
+        self.assertFalse(allowed("tools/ci/tests/test_setup_apt.py"))
+
+    def test_common_local_runner_exceptions_are_scoped_paths(self):
+        allowed = namespace["source_path_allowed"]
+        for path in (
+            "rust/crates/carrot-man/ci-jobs.yml",
+            "rust/tools/check-disk-space",
+            "tools/ci/local-arm",
+            "tools/ci/tests/test_local_runners.py",
+            "docs/naver/all-local-actions-502.md",
+            "rust/crates/disk-space/src/lib.rs",
+            "rust/crates/disk-space/tests/cli.rs",
+            ".github/workflows/self-hosted-readiness.yml",
+            ".github/workflows/wiki-settings-check.yaml",
+            ".github/workflows/wiki-settings-publish.yaml",
+            ".github/workflows/carrot-route-vault-publish.yaml",
+            ".github/workflows/naver-upstream-sync.yml",
+            ".github/workflows/sync.yml",
+        ):
+            with self.subTest(path=path):
+                self.assertTrue(allowed(path))
+                self.assertFalse(allowed(path + ".extra"))
+                self.assertFalse(allowed(path + "/child"))
+        self.assertTrue(allowed(".github/actions/local-arm/action.yml"))
+        self.assertFalse(allowed(".github/actions/local-arm-other/action.yml"))
 
     def test_gpu_exceptions_are_exact_paths(self):
         allowed = namespace["source_path_allowed"]

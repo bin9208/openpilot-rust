@@ -148,24 +148,13 @@ class WorkflowPolicyTests(unittest.TestCase):
     self.assertIn('buildToolsVersion = "35.0.0"', app)
     self.assertIn("'platforms;android-35' 'build-tools;35.0.0'", steps[install]['run'])
     reserve = next(step['run'] for step in steps[:setup] if 'ANDROID_HOME=' in step.get('run', ''))
-    self.assertIn('25 + 4', reserve)
+    self.assertIn('free_bytes < 4 * 1024 * 1024 * 1024', reserve)
     self.assertIn('ANDROID_SDK_ROOT=', reserve)
 
-  def test_registered_x64_runner_and_native_arm_execution_are_preserved(self):
-    local = ['self-hosted', 'Linux', 'X64', 'dev-md-local']
-    matrix_route = "${{ matrix.runner == 'ubuntu-24.04' && fromJSON('[\"self-hosted\",\"Linux\",\"X64\",\"dev-md-local\"]') || matrix.runner }}"
+  def test_user_selected_local_runner_policy_preserves_validation_scope(self):
     for name in ('ci.yml', 'dev-md-runtime.yml'):
       for key, job in workflow(name)['jobs'].items():
-        if 'matrix' in job.get('strategy', {}):
-          self.assertEqual(job['runs-on'], matrix_route, (name, key))
-          matrix = job['strategy']['matrix']
-          runners = matrix.get('runner', [row['runner'] for row in matrix.get('include', [])])
-          self.assertEqual(set(runners), {'ubuntu-24.04', 'ubuntu-24.04-arm'}, (name, key))
-          self.assertEqual(job['strategy']['max-parallel'], '1', (name, key))
-        elif name == 'ci.yml' and key == 'radar-arm':
-          self.assertEqual(job['runs-on'], 'ubuntu-24.04-arm', (name, key))
-        else:
-          self.assertEqual(job['runs-on'], local, (name, key))
+        self.assertEqual(job['runs-on'], ['self-hosted', 'Linux', 'X64', 'dev-md-local'], (name, key))
     commands = '\n'.join(step.get('run', '') for step in workflow()['jobs']['check_user_docs']['steps'])
     self.assertNotIn('package.py source-policy', commands)
     delivery = '\n'.join(step.get('run', '') for step in workflow('dev-md-runtime.yml')['jobs']['package']['steps'])
@@ -175,16 +164,16 @@ class WorkflowPolicyTests(unittest.TestCase):
     self.assertTrue((ROOT / 'rust/crates/xiaoge/tests/cadence.rs').is_file())
     self.assertTrue((ROOT / 'rust/crates/xiaoge/tests/camera_pixels.rs').is_file())
 
-  def test_build_only_carrot_navi_uses_cross_tools_and_checks_target_elf(self):
+  def test_carrot_navi_build_uses_arm_guest_and_preserves_target_inspection(self):
     job = workflow()['jobs']['carrot-navi-arm']
-    self.assertEqual(job['env']['CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER'], 'aarch64-linux-gnu-gcc')
-    self.assertEqual(job['env']['CXX_aarch64_unknown_linux_gnu'], 'aarch64-linux-gnu-g++')
+    self.assertEqual(job['env']['LOCAL_CI_ARCH'], 'aarch64')
+    self.assertEqual(job['env']['CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER'], 'gcc')
+    self.assertEqual(job['defaults']['run']['shell'], 'openpilot-local-shell {0}')
     commands = '\n'.join(step.get('run', '') for step in job['steps'])
-    self.assertIn('g++-aarch64-linux-gnu binutils-aarch64-linux-gnu', commands)
-    self.assertIn('test "$(uname -m)" = x86_64', commands)
+    self.assertIn('test "$(uname -m)" = aarch64', commands)
     self.assertIn('--target aarch64-unknown-linux-gnu --release --locked', commands)
-    self.assertIn('aarch64-linux-gnu-readelf -h', commands)
-    self.assertIn("grep -Eq 'Machine:.*AArch64'", commands)
+    self.assertIn('readelf -h', commands)
+    self.assertIn('sha256sum', commands)
 
   def test_arm_graphics_dependencies_do_not_change_persistent_host_packages(self):
     commands = '\n'.join(step.get('run', '') for step in workflow()['jobs']['arm-build']['steps'])

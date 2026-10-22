@@ -1,56 +1,29 @@
 # Independent Rust port repository (2026-09-29)
 
-## dev-md CPU optimization runner direction (2026-10-23, issue #422)
-
-- The latest user instruction sends all next necessary Actions jobs to the
-  existing `bin-actions` runner (`self-hosted`, `Linux`, `X64`, `dev-md-local`).
-  The earlier GitHub ARM exception is withdrawn. Execute ARM binaries/tests in
-  local ARM QEMU and report emulation explicitly; do not substitute x64 tests,
-  remove ARM coverage, or call QEMU native hardware validation. Do not start
-  GitHub-hosted x64 or ARM fallback jobs or further runner comparisons.
-- The runner-comparison task owns the shared dev-md routing and ARM QEMU/PRoot
-  foundation in issue #502 / PR #504 and will validate it in local
-  Actions. Reuse its verified delivery; do not duplicate that implementation in
-  #422 or start a hosted ARM fallback while it is pending. Current committed
-  #422 workflows still contain the earlier ARM route until that foundation is
-  integrated. Preserve current CI and apply the new route to the next necessary
-  execution. The agent's working checkout remains syntax/format/diff only.
-- Preserve true host/target/emulation evidence, isolated job output, actual
-  operation-specific space estimates, the sequential chain and required checks.
-  #496/#498 validated local x64/AGNOS work; generic cross-build job 120013728323
-  passed source `2ff834da04e2acaad3d63211c2b76e287679eeaa` in 55m41s. This does
-  not yet validate the new shared QEMU execution foundation or #422's source.
-  Do not wait for the cancelled hosted comparison. User-reported 404 errors are
-  not an established cause of that comparison's hosted delay.
-- Keep already-running CI and successful unchanged checks; do not cancel,
-  restart or repeat them solely to change runners. Apply runner changes to the
-  next needed execution. The user's fixed free-space stop/recovery rule has
-  been removed; use the operation's actual estimated growth and resource evidence.
-- The user authorized automatic continuation of #422 through checked dev-md
-  runtime delivery. Device installation and driving acceptance remain user-owned.
-
-## dev-md sequential CI policy (2026-10-20, issue #409)
-
-- The user approved a single sequential CI entry point, serial architecture
-  matrices, removal of dedicated Naver CI/APK checks, and PR-only changes to
-  dev/dev-md. Preserve common runtime checks and the five required check names.
-- Branch protection applies to administrators and bots without bypass. Keep PR
-  and post-merge checks. Implement on codex/feat-cicd-optimization targeting
-  dev-md only; this does not authorize dev/main integration or runtime delivery.
-- Preserve the runner routing already present on dev-md. The user-approved
-  infrastructure work may run those existing Actions jobs on the registered
-  self-hosted runner; do not run functional/build checks in a local checkout.
-- Marked runtime delivery builds the exact merged SHA after unified CI passes.
-  Do not request a runtime release for this CI change.
-
 ## dev-md validation execution (2026-10-20)
 
 - The user requires local checks to stay at syntax, formatting and diff review.
   Run functional tests, ARM/AGNOS builds, sealing, installation verification and
   release publication in GitHub Actions. Separate quick branch checks from deep
-  PR/release checks. Do not repeat successful unchanged checks locally. The
-  user's 2026-10-23 runner direction above supersedes the prior self-hosted ban.
-  This applies to the dev-md track; the separate #296 conversion remains separate.
+  PR/release checks. Do not repeat successful unchanged checks locally. This
+  applies to the dev-md track; the separate #296 conversion remains separate.
+- On 2026-10-23 the user required **every Actions job** on the registered local
+  runner `bin-actions`, including ARM execution (#502). This supersedes both the
+  earlier self-hosted ban and the previous GitHub ARM exception. Do not schedule
+  GitHub-hosted x64 or ARM jobs or use them as an automatic fallback. Preserve the
+  original ARM tests in a separate ARM user space through QEMU/PRoot on the X64
+  local runner, recording host/guest architectures and emulated execution. Do not
+  label it physical ARM CPU validation or replace ARM checks with X64 duplicates.
+  Preserve other running validations and unchanged successful checks; apply the
+  new route to the next necessary execution. All work chats must carry this
+  policy in their own workflow and continuation records. The fixed 25/35 GiB
+  stop/resume rule was removed; retain operation-specific growth admission.
+
+- CPU task #422 / PR #494 reuses the focused-validated all-local foundation from
+  #502 / PR #504 source `77663836a95a9e2aff9aa66592d8b06ed9c87cd9`. Its common
+  PR remains unmerged; focused execution transport checks are not full module
+  or physical ARM validation. Preserve CPU-specific source/performance tests and
+  continue exact-source dev-md delivery under the existing task authorization.
 
 ## dev-md upstream port isolation (2026-10-15, issue #338)
 
