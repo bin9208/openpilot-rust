@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+# Execute the original ARM workflow commands on the real self-hosted X64 runner.
+set -euo pipefail
+
+fail() { printf '%s\n' "$*" >&2; exit 1; }
+[[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_ENVIRONMENT:-} == self-hosted && ${RUNNER_NAME:-} == bin-actions ]] || fail 'Local Actions runner required'
+[[ ${LOCAL_CI_ARCH:-} == x86_64 || ${LOCAL_CI_ARCH:-} == aarch64 ]] || fail 'Explicit local execution architecture required'
+[[ ${CI_JOB_TEMP:-} == /tmp/openpilot-ci.* && ${CI_JOB_TEMP%/*} == /tmp && ! -L $CI_JOB_TEMP ]] || fail 'Owned job-temp directory required'
+[[ -f $CI_JOB_TEMP/owner && ! -L $CI_JOB_TEMP/owner && $(cat "$CI_JOB_TEMP/owner") == "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" ]] || fail 'Wrong job-temp owner'
+
+source_dir=${LOCAL_CI_SOURCE_ROOT:-$GITHUB_WORKSPACE}
+[[ $(git -C "$source_dir" rev-parse HEAD) == "$GITHUB_SHA" ]] || fail 'Wrong source checkout'
+arm_dir="$CI_JOB_TEMP/local-arm"
+rootfs="$arm_dir/rootfs"
+qemu=/usr/bin/qemu-aarch64-static
+host_machine=$(uname -m)
+
+# Guest filesystem paths retain the real Actions workspace and command-file paths.
+# CARGO_TARGET_DIR is private to ARM in the guest; uploads use its real host path.
+guest() {
+  proot -0 -r "$rootfs" -q "$qemu" \
+    -b /dev -b /proc -b /sys -b /etc/resolv.conf -b /etc/hosts \
+    -b "$source_dir" -b "$CI_RUNNER_TEMP" -b "$CI_JOB_TEMP" \
+    -b "$arm_dir/target:$source_dir/rust/target" -w "$PWD" \
+    /usr/bin/env GITHUB_WORKSPACE="$source_dir" HOME=/root CARGO_HOME=/root/.cargo RUSTUP_HOME=/root/.rustup \
+    CARGO_TARGET_DIR="$source_dir/rust/target" \
+    PATH="/opt/openpilot-python/bin:/root/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH" \
+    OPENPILOT_CI_EXECUTION_MODE=qemu-user OPENPILOT_CI_HOST_ARCH="$host_machine" \
+    OPENPILOT_CI_TARGET_ARCH=aarch64 "$@"
+}
+
+download() {
+  local url=$1 destination=$2 expected=$3
+  curl --proto '=https' --tlsv1.2 --fail --location --retry 5 --retry-all-errors \
+    --connect-timeout 20 --max-time 600 "$url" --output "$destination"
+  printf '%s  %s\n' "$expected" "$destination" | sha256sum --check -
+}
+
+case ${1:-} in
+  prepare)
+    [[ $host_machine == x86_64 ]] || fail 'This transport expects the registered X64 host'
+    mkdir -p "$CI_JOB_TEMP/bin" "$arm_dir"
+    ln -s "$source_dir/tools/ci/local-arm" "$CI_JOB_TEMP/bin/openpilot-local-shell"
+    printf '%s\n' "$CI_JOB_TEMP/bin" >> "$GITHUB_PATH"
+    if [[ $LOCAL_CI_ARCH == x86_64 ]]; then
+      printf 'LOCAL_CI_TARGET_DIR=%s/rust/target\n' "$source_dir" >> "$GITHUB_ENV"
+      exit 0
+    fi
+    printf 'LOCAL_CI_TARGET_DIR=%s/target\n' "$arm_dir" >> "$GITHUB_ENV"
+    free_bytes=$(df --output=avail -B1 "$CI_JOB_TEMP" | tail -n 1)
+    (( free_bytes >= 2 * 1024 * 1024 * 1024 )) || fail 'Insufficient space for estimated ARM bootstrap growth'
+    if ! command -v proot >/dev/null || [[ ! -x $qemu ]]; then
+      sudo -n apt-get -o APT::Architectures::=amd64 update
+      sudo -n apt-get install -y proot qemu-user-static
+    fi
+    mkdir -p "$rootfs" "$arm_dir/target" "$source_dir/rust/target"
+    download 'https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.5-base-arm64.tar.gz' \
+      "$arm_dir/ubuntu.tar.gz" a91d5a93010193712d346d761372b7c9db6dfcf093893161c64ca107f05914f2
+    tar --extract --gzip --file "$arm_dir/ubuntu.tar.gz" --directory "$rootfs" --no-same-owner
+    rm "$arm_dir/ubuntu.tar.gz"
+    download 'https://github.com/actions/python-versions/releases/download/3.12.14-31661455385/python-3.12.14-linux-24.04-arm64.tar.gz' \
+      "$arm_dir/python.tar.gz" 6163a77a3339ad4d3729f44065ef0ba51865b90cf92e5b247443cdb4bed5cbab
+    download 'https://static.rust-lang.org/rustup/archive/1.29.1/aarch64-unknown-linux-gnu/rustup-init' \
+      "$arm_dir/rustup-init" 15f6e4ce9f583b929c996c91562bad6d4454f3281de858b02cdfdef615fac433
+    chmod u+x "$arm_dir/rustup-init"
+    mkdir -p "$rootfs$source_dir/rust/target" "$rootfs$CI_RUNNER_TEMP" "$rootfs$CI_JOB_TEMP"
+    guest /bin/bash -euo pipefail -c '
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update
+      apt-get install -y ca-certificates curl git git-lfs sudo make gcc g++ pkg-config xz-utils \
+        libssl3t64 libbz2-1.0 libffi8 liblzma5 libreadline8t64 libsqlite3-0 libncursesw6 libexpat1 zlib1g
+      python_root=/opt/hostedtoolcache/Python/3.12.14/arm64
+      mkdir -p "$python_root"
+      tar -xzf "$1/python.tar.gz" -C "$python_root"
+      test -e "$python_root/bin/python" || ln -s python3.12 "$python_root/bin/python"
+      "$python_root/bin/python" -m venv /opt/openpilot-python
+      /opt/openpilot-python/bin/python -c "import platform,sys; assert platform.machine()==\"aarch64\"; assert sys.version_info[:3]==(3,12,14)"
+      "$1/rustup-init" -y --default-toolchain none --no-modify-path
+      git config --global --add safe.directory "$GITHUB_WORKSPACE"
+    ' local-arm-bootstrap "$arm_dir"
+    rm "$arm_dir/python.tar.gz" "$arm_dir/rustup-init"
+    guest_machine=$(guest /bin/uname -m)
+    [[ $guest_machine == aarch64 ]] || fail 'ARM guest did not execute'
+    [[ $GITHUB_SHA =~ ^[0-9a-f]{40}$ ]] || fail 'Exact source SHA required'
+    printf '{"schema":1,"source_commit":"%s","runner_name":"%s","runner_environment":"%s","host_architecture":"%s","guest_architecture":"%s","execution_mode":"qemu-user","rootfs_sha256":"a91d5a93010193712d346d761372b7c9db6dfcf093893161c64ca107f05914f2","python_sha256":"6163a77a3339ad4d3729f44065ef0ba51865b90cf92e5b247443cdb4bed5cbab","physical_arm_cpu":false}\n' \
+      "$GITHUB_SHA" "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$host_machine" "$guest_machine" > "$arm_dir/execution.json"
+    "$qemu" --version > "$arm_dir/qemu-version.txt"
+    cat "$arm_dir/execution.json"
+    ;;
+  finish)
+    # Rootfs, interpreter caches and target all belong to CI_JOB_TEMP. The existing
+    # job-temp action removes them after evidence uploads with its owner checks.
+    if [[ -f $arm_dir/execution.json ]]; then cat "$arm_dir/execution.json"; fi
+    ;;
+  *)
+    [[ $# == 1 && -f $1 ]] || fail 'One existing Actions command file is required'
+    if [[ $LOCAL_CI_ARCH == x86_64 ]]; then
+      exec bash --noprofile --norc -e -o pipefail "$1"
+    fi
+    [[ -f $arm_dir/execution.json ]] || fail 'ARM setup did not complete'
+    guest /bin/bash --noprofile --norc -e -o pipefail "$1"
+    ;;
+esac
