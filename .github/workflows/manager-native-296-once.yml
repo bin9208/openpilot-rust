@@ -19,15 +19,16 @@ jobs:
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+      PYTHONDONTWRITEBYTECODE: '1'
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 83fb19a8cfda05bd2039253ceea8e0786676274d
+        ref: defb9011df3fca924dca41a703b48ce5ff0c51e0
         persist-credentials: false
     - name: Admit exact checked source and disk
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = 83fb19a8cfda05bd2039253ceea8e0786676274d
+        test "$(git rev-parse HEAD)" = defb9011df3fca924dca41a703b48ce5ff0c51e0
 
         sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet /usr/local/.ghcup
 
@@ -51,7 +52,7 @@ jobs:
 
         sudo apt-get update
 
-        sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev
+        sudo apt-get install -y jq g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev
         libzstd-dev libzmq5 strace
 
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -61,25 +62,19 @@ jobs:
 
         '
     - name: Fail fast on all manager QA tests compiling and strict Clippy
-      run: 'set -euo pipefail
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
-
-        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features manager-qa-native --lib --test
-        manager_qa --test manager_qa_compat --no-run 2>&1 | tee "$RUNNER_TEMP/manager-native/compile.log"
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-
-        cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features manager-qa-native --lib --bin
-        check-manager-qa --bin check-manager --bin check-manager-logging --test manager_qa --test manager_qa_compat -- -D
-        warnings 2>&1 | tee "$RUNNER_TEMP/manager-native/clippy.log"
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-
-        cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features manager-qa-native --bin check-manager-qa
-        --bin check-manager --bin check-manager-logging 2>&1 | tee "$RUNNER_TEMP/manager-native/bins.log"
-
-        '
+      run: "set -euo pipefail\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib\
+        \ 4096\ncargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features manager-qa-native --lib\
+        \ --test manager_qa --test manager_qa_compat --no-run --message-format=json > \"$RUNNER_TEMP/manager-native/compile.jsonl\"\
+        \ 2> \"$RUNNER_TEMP/manager-native/compile.stderr\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\"\
+        \ --growth-mib 2048\ncargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features manager-qa-native\
+        \ --lib --bin check-manager-qa --bin check-manager --bin check-manager-logging --test manager_qa --test manager_qa_compat\
+        \ -- -D warnings 2>&1 | tee \"$RUNNER_TEMP/manager-native/clippy.log\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
+        \ --path \"$GITHUB_WORKSPACE\" --growth-mib 2048\ncargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools\
+        \ --features manager-qa-native --bin check-manager-qa --bin check-manager --bin check-manager-logging 2>&1 | tee \"\
+        $RUNNER_TEMP/manager-native/bins.log\"\nfor target in manager_qa manager_qa_compat; do\n  mapfile -t harness < <(jq\
+        \ -r --arg target \"$target\" 'select(.reason==\"compiler-artifact\" and .profile.test==true and .target.name==$target)\
+        \ | .executable // empty' \"$RUNNER_TEMP/manager-native/compile.jsonl\")\n  test \"${#harness[@]}\" -eq 1\n  test\
+        \ -f \"${harness[0]}\"\n  printf '%s\\n' \"${harness[0]}\" > \"$RUNNER_TEMP/manager-native/$target.elf-path\"\ndone\n"
     - name: Configure original platform IPC imports
       run: printf 'PYTHONPATH=%s/platform-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
     - name: Build unchanged manager trace and original IPC/Params providers
@@ -150,7 +145,7 @@ jobs:
         \ || status=1\n    cmp \"$proof/opendbc-python-before.sha256\" \"$proof/opendbc-python-after.sha256\" || status=1\n\
         \    cmp \"$proof/providers-before.sha256\" \"$proof/providers-after.sha256\" || status=1\n    cmp \"$proof/python-providers-before.json\"\
         \ \"$proof/python-providers-after.json\" || status=1\n    printf '%s\\n' \"$status\" > \"$proof/final-status.txt\"\
-        \n  fi\n  exit \"$status\"\n}\ntrap finalize EXIT\ntest \"$(git rev-parse HEAD)\" = '83fb19a8cfda05bd2039253ceea8e0786676274d'\n\
+        \n  fi\n  exit \"$status\"\n}\ntrap finalize EXIT\ntest \"$(git rev-parse HEAD)\" = 'defb9011df3fca924dca41a703b48ce5ff0c51e0'\n\
         test -f \"$MANAGER_PARAMS_BINDING\"\ntest -x \"$MANAGER_TRACE_BINARY\"\ntest -f \"$RUNNER_TEMP/platform-params-binding/provenance.json\"\
         \ntest -f \"$RUNNER_TEMP/platform-params-binding/commands.json\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
         \ --path \"$RUNNER_TEMP\" --growth-mib 1024\nprintf '%s\\n' \"$(git rev-parse HEAD)\" > \"$proof/source-commit.txt\"\
@@ -186,27 +181,27 @@ jobs:
         \nexport MANAGER_QA_CHECKER_BINARY=\"$GITHUB_WORKSPACE/rust/target/debug/check-manager-qa\"\nexport MANAGER_QA_COMPAT_MANAGER_BINARY=\"\
         $GITHUB_WORKSPACE/rust/target/debug/check-manager\"\nexport MANAGER_QA_COMPAT_LOGGING_BINARY=\"$GITHUB_WORKSPACE/rust/target/debug/check-manager-logging\"\
         \nexport MANAGER_QA_FRESH_ORIGINAL_CAPTURE=\"$RUNNER_TEMP/manager-qa-original\"\nexport MANAGER_QA_OUTPUT=\"$RUNNER_TEMP/manager-native/unified\"\
-        \nexport MANAGER_QA_COMPAT_OUTPUT=\"$RUNNER_TEMP/manager-native/compat\"\nfor provider in \"$MANAGER_QA_BINDING\"\
-        \ \"$MANAGER_QA_BINARY\" \"$MANAGER_QA_CHECKER_BINARY\" \"$MANAGER_QA_COMPAT_MANAGER_BINARY\" \"$MANAGER_QA_COMPAT_LOGGING_BINARY\"\
-        ; do\n  test -f \"$provider\"\ndone\nsha256sum \"$MANAGER_QA_BINDING\" \"$MANAGER_QA_BINARY\" \"$MANAGER_QA_CHECKER_BINARY\"\
+        \nexport MANAGER_QA_COMPAT_OUTPUT=\"$RUNNER_TEMP/manager-native/compat\"\nmanager_qa_elf=\"$(cat \"$RUNNER_TEMP/manager-native/manager_qa.elf-path\"\
+        )\"\nmanager_qa_compat_elf=\"$(cat \"$RUNNER_TEMP/manager-native/manager_qa_compat.elf-path\")\"\nfor provider in\
+        \ \"$manager_qa_elf\" \"$manager_qa_compat_elf\" \"$MANAGER_QA_BINDING\" \"$MANAGER_QA_BINARY\" \"$MANAGER_QA_CHECKER_BINARY\"\
+        \ \"$MANAGER_QA_COMPAT_MANAGER_BINARY\" \"$MANAGER_QA_COMPAT_LOGGING_BINARY\"; do\n  test -f \"$provider\"\ndone\n\
+        sha256sum \"$manager_qa_elf\" \"$manager_qa_compat_elf\" \"$MANAGER_QA_BINDING\" \"$MANAGER_QA_BINARY\" \"$MANAGER_QA_CHECKER_BINARY\"\
         \ \"$MANAGER_QA_COMPAT_MANAGER_BINARY\" \"$MANAGER_QA_COMPAT_LOGGING_BINARY\" > \"$RUNNER_TEMP/manager-native/native-providers-before.sha256\"\
         \nfind \"$RUNNER_TEMP/manager-qa-original\" -type f -print0 | sort -z | xargs -0 sha256sum > \"$RUNNER_TEMP/manager-native/original-capture-before.sha256\"\
         \n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$RUNNER_TEMP\" --growth-mib 1024\ncargo test --manifest-path\
         \ rust/Cargo.toml --locked -p openpilot-dev-tools --features manager-qa-native --lib manager_qa::tests:: -- --nocapture\
-        \ 2>&1 | tee \"$RUNNER_TEMP/manager-native/units.log\"\ncargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools\
-        \ --features manager-qa-native --test manager_qa fresh_manager_trace_matches_independent_seven_cases_and_four_log_packets\
-        \ -- --ignored --exact --nocapture 2>&1 | tee \"$RUNNER_TEMP/manager-native/unified-test.log\"\ngrep -Fx 'test fresh_manager_trace_matches_independent_seven_cases_and_four_log_packets\
+        \ 2>&1 | tee \"$RUNNER_TEMP/manager-native/units.log\"\n\"$manager_qa_elf\" fresh_manager_trace_matches_independent_seven_cases_and_four_log_packets\
+        \ --ignored --exact --nocapture 2>&1 | tee \"$RUNNER_TEMP/manager-native/unified-test.log\"\ngrep -Fx 'test fresh_manager_trace_matches_independent_seven_cases_and_four_log_packets\
         \ ... ok' \"$RUNNER_TEMP/manager-native/unified-test.log\"\ngrep -E '^test result: ok\\. 1 passed; 0 failed; 0 ignored;'\
-        \ \"$RUNNER_TEMP/manager-native/unified-test.log\"\ncargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools\
-        \ --features manager-qa-native --test manager_qa_compat positional_manager_and_logging_keep_original_selected_stdout_and_summary\
-        \ -- --ignored --exact --nocapture 2>&1 | tee \"$RUNNER_TEMP/manager-native/compat-test.log\"\ngrep -Fx 'test positional_manager_and_logging_keep_original_selected_stdout_and_summary\
+        \ \"$RUNNER_TEMP/manager-native/unified-test.log\"\n\"$manager_qa_compat_elf\" positional_manager_and_logging_keep_original_selected_stdout_and_summary\
+        \ --ignored --exact --nocapture 2>&1 | tee \"$RUNNER_TEMP/manager-native/compat-test.log\"\ngrep -Fx 'test positional_manager_and_logging_keep_original_selected_stdout_and_summary\
         \ ... ok' \"$RUNNER_TEMP/manager-native/compat-test.log\"\ngrep -E '^test result: ok\\. 1 passed; 0 failed; 0 ignored;'\
-        \ \"$RUNNER_TEMP/manager-native/compat-test.log\"\nsha256sum \"$MANAGER_QA_BINDING\" \"$MANAGER_QA_BINARY\" \"$MANAGER_QA_CHECKER_BINARY\"\
-        \ \"$MANAGER_QA_COMPAT_MANAGER_BINARY\" \"$MANAGER_QA_COMPAT_LOGGING_BINARY\" > \"$RUNNER_TEMP/manager-native/native-providers-after.sha256\"\
-        \ncmp \"$RUNNER_TEMP/manager-native/native-providers-before.sha256\" \"$RUNNER_TEMP/manager-native/native-providers-after.sha256\"\
-        \nfind \"$RUNNER_TEMP/manager-qa-original\" -type f -print0 | sort -z | xargs -0 sha256sum > \"$RUNNER_TEMP/manager-native/original-capture-after.sha256\"\
-        \ncmp \"$RUNNER_TEMP/manager-native/original-capture-before.sha256\" \"$RUNNER_TEMP/manager-native/original-capture-after.sha256\"\
-        \n"
+        \ \"$RUNNER_TEMP/manager-native/compat-test.log\"\nsha256sum \"$manager_qa_elf\" \"$manager_qa_compat_elf\" \"$MANAGER_QA_BINDING\"\
+        \ \"$MANAGER_QA_BINARY\" \"$MANAGER_QA_CHECKER_BINARY\" \"$MANAGER_QA_COMPAT_MANAGER_BINARY\" \"$MANAGER_QA_COMPAT_LOGGING_BINARY\"\
+        \ > \"$RUNNER_TEMP/manager-native/native-providers-after.sha256\"\ncmp \"$RUNNER_TEMP/manager-native/native-providers-before.sha256\"\
+        \ \"$RUNNER_TEMP/manager-native/native-providers-after.sha256\"\nfind \"$RUNNER_TEMP/manager-qa-original\" -type f\
+        \ -print0 | sort -z | xargs -0 sha256sum > \"$RUNNER_TEMP/manager-native/original-capture-after.sha256\"\ncmp \"$RUNNER_TEMP/manager-native/original-capture-before.sha256\"\
+        \ \"$RUNNER_TEMP/manager-native/original-capture-after.sha256\"\n"
     - name: Retain all original, native and failure-phase evidence
       if: always()
       uses: actions/upload-artifact@v4
