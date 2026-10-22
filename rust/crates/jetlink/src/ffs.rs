@@ -110,12 +110,29 @@ impl Session {
             .usb_role
             .lock()
             .map_err(|_| Error::Contract("USB role mutex poisoned"))?;
-        self.stopped.store(true, Ordering::Release);
-        fs::write(self.gadget.join("UDC"), b"\n")?;
-        self.ep0
+        let mut ep0 = self
+            .ep0
             .lock()
-            .map_err(|_| Error::Contract("ep0 mutex poisoned"))?
-            .take();
+            .map_err(|_| Error::Contract("ep0 mutex poisoned"))?;
+        // A completed owner may outlive a reconnect; it must not unbind that
+        // newer session. Retaining ep0 on error still permits cleanup retries.
+        if ep0.is_none() {
+            return Ok(());
+        }
+        self.stopped.store(true, Ordering::Release);
+        self.unbind()?;
+        ep0.take();
+        Ok(())
+    }
+    fn unbind(&self) -> Result<(), Error> {
+        // AGNOS configfs returns ENODEV on a second empty-UDC unbind. Both
+        // callers hold usb_role, including when a watchdog already detached it.
+        if !fs::read_to_string(self.gadget.join("UDC"))?
+            .trim()
+            .is_empty()
+        {
+            fs::write(self.gadget.join("UDC"), b"\n")?;
+        }
         Ok(())
     }
     fn abort_write(&self) -> Result<(), Error> {
@@ -126,8 +143,7 @@ impl Session {
         if self.stopped.load(Ordering::Acquire) {
             return Ok(());
         }
-        fs::write(self.gadget.join("UDC"), b"\n")?;
-        Ok(())
+        self.unbind()
     }
 }
 

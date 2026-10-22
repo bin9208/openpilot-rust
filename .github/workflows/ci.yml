@@ -358,15 +358,23 @@ jobs:
           cache-bin: false
       - name: Focused policy and CPU-bound regressions
         run: |
+          python3 rust/tools/check_jetlink_teardown_regression.py
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-core --test jetlink_power
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-jetlink --bin jetlinkd-rs
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-jetlink --lib gadget::
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-jetlink --test transition --test runtime
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-jetlink --test ffs -- --test-threads=1
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-jetlink --test socket
           cargo +1.94.0 check --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-launcher
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib publish::policy_tests
           cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-jetlink --example usb_policy_probe
           python3 tools/check_jetlink_usb_policy.py rust/target/debug/examples/usb_policy_probe "$RUNNER_TEMP/jetlink-upstream"
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: jetlink-teardown-red-${{ github.sha }}
+          path: ${{ env.CI_JOB_TEMP }}/jetlink-teardown-red/
+          if-no-files-found: warn
       - name: Reject stale Params repairs before full workspace validation
         run: |
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-params --test conditional_write

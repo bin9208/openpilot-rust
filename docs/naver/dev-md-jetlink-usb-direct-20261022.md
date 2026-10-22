@@ -27,3 +27,11 @@
 - 최초 소스 `64a56f885ed607cb1d37305943c2da903985a04f`: [39752504852](https://github.com/bin9208/openpilot-rust/actions/runs/39752504852)에서 archive 복원 13개 회귀가 통과했으나 신규 웹 빌드 디스크 예약의 검사 개수 기대값이 기존 26개에 머물러 실패했다. 기존 179개 baseline 예약은 보존하며 웹 512MiB 예약을 별도로 검증하도록 수정했다.
 - 빠른 검사 `084b8096ef1b4089278f4fca91835d559e2d5a51`: [39753010962 / fast checks](https://github.com/bin9208/openpilot-rust/actions/runs/39753010962/job/119738045677) 성공. Python 모델/계약/전환, Android core/runtime, 웹 선택/레거시 값 표시/USB 진단과 일반 archive 복원 검사를 수행했다. 아직 Rust 실행/ARM/AGNOS 검증은 아니다.
 - 같은 Actions 실행의 artifact `12413619026`에서 생성 patch를 받았다. 생성된 `tools.js`와 asset manifest 두 파일만 바뀌었으며 manifest의 tools SHA-256은 `a52d66fb22e8777d483f7e918abce2b0db61fe77a6dc0a3f2c2288f21a4f264e`다. 로컬 빌드는 수행하지 않았다. PR와 보호 브랜치 검사에서는 동일 생성물 재현 후 차이가 없어야 통과한다.
+
+## 네이티브 실행 결과와 해제 경로 후속 (#489)
+
+[PR #488](https://github.com/bin9208/openpilot-rust/pull/488) 소스 `6133c589c71d765e9a27a5961fc26c8dce099b67`의 [네이티브 Jetlink 검사](https://github.com/bin9208/openpilot-rust/actions/runs/39753576074/job/119749134075)가 통과했다. gadget 10개, 전환 4개, 실제 RPC runtime 7개를 포함하며 승인 기록 없이 현재 외부 결과를 실제 선택하고, 잘못된 실행 파일은 거부하는 동작을 확인했다. 이는 파일/프로세스 fixture이며 물리 USB 검증이 아니다.
+
+추가 검토에서 [#489](https://github.com/bin9208/openpilot-rust/issues/489)의 기존 FunctionFS `Session::teardown`도 이미 해제된 UDC를 다시 쓰는 것을 확인했다. watchdog/백엔드가 먼저 해제하면 owner 정리가 실패해 ADB 복원까지 막을 수 있다. 완료된 ep0 소유자는 재호출 시 새 세션의 UDC를 건드리지 않으며, 아직 정리할 ep0가 있을 때만 현재 UDC를 확인하고 해제한다. 실제 오류는 기록을 유지해 다시 정리할 수 있게 한다.
+
+Actions는 고정된 이전 `6133c589c`의 ffs.rs SHA-256 `c8e32605ed535bed7523bf55ecbb840c7ac680e981364a7a15051d6b7e4ad930`를 검증한 뒤, 새 재바인딩/빈 UDC 회귀 두 개가 이전 소스에서 실제 실패함을 확인한다. 반드시 현재 소스 원본 바이트를 복원하고 Git diff가 없는지 확인한 다음 새 소스의 전체 FunctionFS·기존 긍정 검사를 실행한다. 원본 실패를 새 후보의 성공으로 오인하지 않도록 별도 RED artifact에 소스 식별자를 기록한다. 로컬 기능 실행은 하지 않는다. 이 추가 수정으로 전체 PR 검사를 새 소스에서 다시 실행한다.

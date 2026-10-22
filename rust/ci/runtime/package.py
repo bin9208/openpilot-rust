@@ -92,6 +92,7 @@ def source_path_allowed(path, source_entry="", inherited_entry=""):
         'rust/tools/check_dmonitoring_daemon.py',
         'rust/tools/check_card_runtime_pumped.py',
         'rust/tools/check_jetlink_reference.py',
+        'rust/tools/check_jetlink_teardown_regression.py',
         'rust/tools/carrot_server_params_http_cases.py',
         'openpilot/selfdrive/carrot_settings.json',
         'openpilot/selfdrive/carrot/server/tests/test_settings_schema.py',
