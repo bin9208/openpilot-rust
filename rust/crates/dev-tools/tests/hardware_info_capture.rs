@@ -120,6 +120,27 @@ fn altered_expected_bytes_and_additional_members_are_rejected() {
 }
 
 #[test]
+fn final_revalidation_rejects_rewritten_or_altered_capture_members() {
+    let data = Admission::prepare();
+    let receipt = data.admit().unwrap();
+    let target = data.capture.join("missing-base/source/normalized.json.gz");
+    let original = fs::read(&target).unwrap();
+    fs::write(&target, &original).unwrap();
+    assert!(
+        receipt.verify().is_err(),
+        "identical rewrite changes identity"
+    );
+    let receipt = data.admit().unwrap();
+    let mut altered = original;
+    altered[0] ^= 1;
+    fs::write(&target, altered).unwrap();
+    assert!(
+        receipt.verify().is_err(),
+        "altered compressed bytes rejected"
+    );
+}
+
+#[test]
 fn alias_plan_cannot_replace_the_original_plan_identity() {
     let data = Admission::prepare();
     let alternate = data.capture.join("alternate-plan.json.gz");

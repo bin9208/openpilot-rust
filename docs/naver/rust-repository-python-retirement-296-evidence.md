@@ -6087,3 +6087,25 @@ and runtime5 original Git bodies unchanged from capturedd39b1b08. Native IPC
 packets/metrics in the same artifact are engineering evidence only and never
 become original expected output. Native leaf implementation is started; all
 original Hardwared source/tool paths remain pending.
+
+### HardwareInfo full-case admission repair (2026-10-22)
+
+Candidate39706116921/source8914251502aec6403d260c35bbc3eba30ab6e22f,
+workflowb786ca337cb0ec3d67cdbc634b2b8f46745c1791 passes native build, unit
+controls, strict Clippy and formatting, then fails the outer replay before any
+API comparison: the real original case thermal-suffix-+02 was rejected by an
+unnecessarily narrow case-name allowlist. Admit safe single POSIX components
+while rejecting empty/dot/dot-dot/slash/NUL; add a regression reading all136
+independent captured names. Initial capture admission still inflates/checks all
+974 members once. Final revalidation binds identical metadata and compressed
+SHA instead of inflating the same ~40MB repeatedly; a separate regression rejects
+identical rewrites and changed compressed members after admission. Hosted retry
+is required; no original source deletion or count increase is accepted yet.
+
+Full published d610 Card job119576923165 now succeeds. Workspace job119576923681
+and overall Rust39703167508 remain incomplete; #475 stays open. Focused model
+39699899580 finishes with all16driver,8startup and6USB case reports passing in
+actual root, but USB final strict held-input verification fails. #480 tracks the
+case hardlinks changing original model/runtime inode ctime. Keep original input
+seals strict; use one independent checker-owned snapshot pair for case links.
+Private-root grouped replay has not run, and #479/#476 acceptance remains open.

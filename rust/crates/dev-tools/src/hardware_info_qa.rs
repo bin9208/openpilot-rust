@@ -79,9 +79,9 @@ pub fn decode_hex(text: &str) -> Result<Vec<u8>> {
 }
 pub fn valid_case_name(name: &str) -> bool {
     !name.is_empty()
-        && name
-            .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
+        && name != "."
+        && name != ".."
+        && !name.bytes().any(|byte| byte == b'/' || byte == 0)
 }
 const MAX_EVIDENCE_BYTES: u64 = 128 * 1024 * 1024;
 fn read_json(path: &Path) -> Result<Value> {

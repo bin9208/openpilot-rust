@@ -131,6 +131,18 @@ struct Snapshot {
     compressed: (u64, String),
     expanded: (u64, String),
 }
+fn verify_snapshot(path: &Path, before: &Snapshot) -> Result<()> {
+    let current = Held::open(path, 512 * 1024)?;
+    if current.id != before.id
+        || current.id.2 != before.compressed.0
+        || current.sha != before.compressed.1
+    {
+        return Err("capture member identity or compressed bytes changed".into());
+    }
+    // The exact compressed bytes were expanded and verified at admission.
+    // Rehashing those bytes preserves that result without inflating them again.
+    Ok(())
+}
 fn snapshot(path: &Path, expected: &Value) -> Result<Snapshot> {
     let held = Held::open(path, 512 * 1024)?;
     let compressed = (held.id.2, held.sha.clone());
@@ -241,7 +253,6 @@ pub struct Receipt {
     retired: bool,
     held: Vec<Held>,
     missing: Vec<String>,
-    manifest: Value,
     files: BTreeMap<String, Snapshot>,
     runner: Vec<Vec<u8>>,
 }
@@ -262,13 +273,7 @@ impl Receipt {
             return Err("capture member roster changed".into());
         }
         for (name, before) in &self.files {
-            if snapshot(
-                &self.capture.join(relative(name)?),
-                &self.manifest["files"][name],
-            )? != *before
-            {
-                return Err("capture member identity changed".into());
-            }
+            verify_snapshot(&self.capture.join(relative(name)?), before)?;
         }
         for held in &self.held {
             held.verify()?;
@@ -386,7 +391,6 @@ pub fn validate_for_runner(
         retired: require_retired,
         held,
         missing,
-        manifest,
         files,
         runner: runner.iter().map(|arg| arg.as_bytes().to_vec()).collect(),
     };

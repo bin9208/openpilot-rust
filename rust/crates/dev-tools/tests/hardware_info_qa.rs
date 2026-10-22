@@ -31,10 +31,42 @@ fn packet_hex_is_strict_and_round_trips() {
 
 #[test]
 fn plan_names_cannot_escape_case_output_directory() {
-    for name in ["", "../case", "nested/name", "space name", "é"] {
+    for name in [
+        "",
+        ".",
+        "..",
+        "/absolute",
+        "../case",
+        "nested/name",
+        "nul\0name",
+    ] {
         assert!(!valid_case_name(name));
     }
-    for name in ["case", "case-17", "case_17"] {
+    for name in [
+        "case",
+        "case-17",
+        "case_17",
+        "thermal-suffix-+02",
+        "space name",
+        "é",
+    ] {
         assert!(valid_case_name(name));
+    }
+}
+
+#[test]
+fn every_independently_captured_original_case_name_is_admitted() {
+    use std::io::Read;
+    let compressed = include_bytes!("fixtures/hardware-info-original/plans.json.gz");
+    let mut original = Vec::new();
+    flate2::read::GzDecoder::new(compressed.as_slice())
+        .read_to_end(&mut original)
+        .unwrap();
+    let plans: serde_json::Value = serde_json::from_slice(&original).unwrap();
+    let cases = plans["cases"].as_array().unwrap();
+    assert_eq!(cases.len(), 136);
+    for case in cases {
+        let name = case["name"].as_str().unwrap();
+        assert!(valid_case_name(name), "original case rejected: {name}");
     }
 }
