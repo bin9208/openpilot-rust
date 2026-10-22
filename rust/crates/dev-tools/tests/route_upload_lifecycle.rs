@@ -90,19 +90,37 @@ impl Checker {
             peers: Vec::new(),
         }
     }
-    fn wait_for(&mut self, mut condition: impl FnMut() -> bool) {
+    fn wait_for(&mut self, condition: impl FnMut() -> bool) {
+        self.wait_for_stage("fixture readiness", condition);
+    }
+    fn wait_for_stage(&mut self, stage: &str, mut condition: impl FnMut() -> bool) {
         let deadline = Instant::now() + Duration::from_secs(15);
         while !condition() {
-            assert!(
-                self.child.as_mut().unwrap().try_wait().unwrap().is_none(),
-                "checker exited before fixture readiness: {}",
-                fs::read_to_string(&self.stderr).unwrap()
-            );
-            assert!(
-                Instant::now() < deadline,
-                "fixture readiness exceeded bound: {}",
-                fs::read_to_string(&self.stderr).unwrap()
-            );
+            let child = self.child.as_mut().unwrap();
+            let pid = child.id() as i32;
+            let running = child.try_wait().unwrap().is_none();
+            if !running || Instant::now() >= deadline {
+                let descendants = if running {
+                    live_descendants(pid)
+                } else {
+                    Vec::new()
+                };
+                let processes = descendants.iter().map(|(pid, _, executable)| {
+                    serde_json::json!({"pid":pid,"executable":executable,
+                        "status":fs::read_to_string(format!("/proc/{pid}/status")).ok(),
+                        "cmdline":fs::read(format!("/proc/{pid}/cmdline")).ok(),
+                        "children":fs::read_to_string(format!("/proc/{pid}/task/{pid}/children")).ok()})
+                }).collect::<Vec<_>>();
+                let diagnostic = self.stderr.with_extension("diagnostics.json");
+                let row = serde_json::json!({"stage":stage,"checker_pid":pid,"checker_running":running,
+                    "descendants":processes,"unix_sockets":fs::read_to_string("/proc/net/unix").ok()});
+                if let Err(error) = fs::write(&diagnostic, serde_json::to_vec_pretty(&row).unwrap())
+                {
+                    eprintln!("failed to retain {stage} diagnostics: {error}");
+                }
+                panic!("{stage}: checker_running={running}; 15-second readiness bound; diagnostics={}; stderr: {}",
+                    diagnostic.display(), fs::read_to_string(&self.stderr).unwrap());
+            }
             thread::sleep(Duration::from_millis(5));
         }
     }
@@ -811,6 +829,23 @@ fn replacement_before_first_ack_cannot_claim_a_stale_listener_or_remove_the_fore
         fs::remove_dir_all(ipc_root).unwrap();
     }
 }
+// The hosted recipe places these under its bounded evidence tree. Successful
+// cases remain disposable; unwind retains the actual stderr/ownership/provider
+// logs alongside the pre-cleanup process snapshot emitted by wait_for_stage.
+struct ActualReplacementRoot(Option<tempfile::TempDir>);
+impl ActualReplacementRoot {
+    fn path(&self) -> &Path {
+        self.0.as_ref().unwrap().path()
+    }
+}
+impl Drop for ActualReplacementRoot {
+    fn drop(&mut self) {
+        if thread::panicking() {
+            let path = self.0.take().unwrap().keep();
+            eprintln!("actual replacement failure retained at {}", path.display());
+        }
+    }
+}
 #[test]
 #[ignore = "hosted actual manager/provider prerequisites required"]
 fn actual_manager_replacements_keep_foreign_datagram_regular_and_closed_stream_nodes() {
@@ -821,7 +856,18 @@ fn actual_manager_replacements_keep_foreign_datagram_regular_and_closed_stream_n
         PathBuf::from(std::env::var_os("ROUTE_UPLOAD_LIVE_PROBE").expect("actual probe required"));
     for signal in [Signal::INT, Signal::TERM] {
         for kind in ["datagram", "regular", "closed-stream"] {
-            let temporary = tempfile::tempdir().unwrap();
+            let case = format!("signal={signal:?} kind={kind}");
+            eprintln!("actual replacement case: {case}");
+            let parent = std::env::var_os("ROUTE_UPLOAD_LIFECYCLE_DIAGNOSTICS")
+                .map(PathBuf::from)
+                .unwrap_or_else(std::env::temp_dir);
+            fs::create_dir_all(&parent).unwrap();
+            let temporary = ActualReplacementRoot(Some(
+                tempfile::Builder::new()
+                    .prefix("actual-replacement-")
+                    .tempdir_in(parent)
+                    .unwrap(),
+            ));
             let output = temporary.path().join("output");
             let mut checker = Checker::start(
                 true,
@@ -833,7 +879,7 @@ fn actual_manager_replacements_keep_foreign_datagram_regular_and_closed_stream_n
             );
             let checker_pid = checker.child.as_ref().unwrap().id() as i32;
             let mut peers = Vec::new();
-            checker.wait_for(|| {
+            checker.wait_for_stage(&format!("{case} provider/socket readiness"), || {
                 peers = live_descendants(checker_pid);
                 ["openpilot-manager", "openpilot-logmessaged", "statsd-rs"]
                     .iter()
@@ -862,7 +908,7 @@ fn actual_manager_replacements_keep_foreign_datagram_regular_and_closed_stream_n
                 .find(|(_, _, exe)| exe.file_name() == probe.file_name())
                 .expect("actual held probe missing");
             pidfd_send_signal(probe_fd, Signal::STOP).unwrap();
-            checker.wait_for(|| {
+            checker.wait_for_stage(&format!("{case} probe SIGSTOP T-state"), || {
                 fs::read_to_string(format!("/proc/{probe_pid}/status"))
                     .is_ok_and(|text| text.lines().any(|line| line.starts_with("State:\tT")))
             });
@@ -885,7 +931,7 @@ fn actual_manager_replacements_keep_foreign_datagram_regular_and_closed_stream_n
             let foreign = foreign_node(&socket, kind);
             let metadata = fs::symlink_metadata(&socket).unwrap();
             let identity = (metadata.dev(), metadata.ino());
-            checker.wait_for(|| {
+            checker.wait_for_stage(&format!("{case} foreign-node preservation"), || {
                 preserved_ipc(&output) || socket_bindings(&output, &socket).contains(&identity)
             });
             assert!(
