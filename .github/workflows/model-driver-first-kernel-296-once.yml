@@ -164,21 +164,28 @@ jobs:
         \        if base.nbytes > MAX_BASE:\n            raise RuntimeError(\"diagnostic base exceeds 32 MiB\")\n        unique[id(base)]\
         \ = base\n    if sum(base.nbytes for base in unique.values()) > MAX_CALL_SNAPSHOT:\n        raise RuntimeError(\"\
         diagnostic call snapshot exceeds 64 MiB\")\n    return {key: (base, bytes(base.ensure_allocated().as_memoryview(allow_zero_copy=True)))\
-        \ for key, base in unique.items()}\n\n\ndef restore(state):\n    for base, content in state.values():\n        base.copyin(memoryview(content))\n\
-        \n\ndef after(state):\n    return {key: bytes(base.as_memoryview(allow_zero_copy=True)) for key, (base, _) in state.items()}\n\
-        \n\ndef first_difference(a, b):\n    if len(a) != len(b):\n        return min(len(a), len(b))\n    return next((index\
-        \ for index, (x, y) in enumerate(zip(a, b)) if x != y), None)\n\n\ndef bounded_bytes(prefix, name, data, limit=MAX_DUMP):\n\
-        \    filename = f\"{prefix}-{name}.bin\"\n    (OUT / filename).write_bytes(data[:limit])\n    return {\"file\": filename,\
-        \ \"bytes\": len(data), \"sha256\": sha(data), \"dumped_bytes\": min(len(data), limit)}\n\n\ndef difference_window(prefix,\
-        \ name, data, offset):\n    start = max(0, offset - 4096)\n    end = min(len(data), offset + 4097)\n    receipt =\
-        \ bounded_bytes(prefix, name, data[start:end])\n    return {**receipt, \"absolute_start\": start, \"absolute_end\"\
-        : end}\n\n\ndef writable_view(buffer):\n    buffer.ensure_allocated()\n    if buffer.device.split(\":\")[0] == \"\
-        PYTHON\":\n        # PythonAllocator intentionally lacks _as_buffer; its owned _buf is a\n        # writable memoryview.\
-        \ Keep this fallback limited to original host\n        # COPY buffers, never the CPU PROGRAM launch.\n        return\
-        \ memoryview(buffer._buf)\n    return buffer.as_memoryview(force_zero_copy=True)\n\n\ndef verify_view(live, view_id,\
-        \ graph, aliases):\n    view = graph[\"views\"][view_id]\n    allocation = view[\"allocation\"]\n    base = live.base\n\
-        \    if base.nbytes != graph[\"allocations\"][allocation][\"bytes\"] or live.offset != view[\"offset\"] or live.nbytes\
-        \ != view[\"bytes\"]:\n        raise RuntimeError(f\"graph/live view differs: {view_id}\")\n    prior = aliases.setdefault(allocation,\
+        \ for key, base in unique.items()}\n\n\ndef restore(state):\n    for base, content in state.values():\n        # Tinygrad\
+        \ HCQAllocator._copyin calls helpers.from_mv, which obtains a\n        # writable ctypes pointer even though this\
+        \ is logically source data.\n        base.copyin(memoryview(bytearray(content)))\n\n\ndef after(state):\n    return\
+        \ {key: bytes(base.as_memoryview(allow_zero_copy=True)) for key, (base, _) in state.items()}\n\n\ndef first_difference(a,\
+        \ b):\n    if len(a) != len(b):\n        return min(len(a), len(b))\n    return next((index for index, (x, y) in enumerate(zip(a,\
+        \ b)) if x != y), None)\n\n\ndef bounded_bytes(prefix, name, data, limit=MAX_DUMP):\n    filename = f\"{prefix}-{name}.bin\"\
+        \n    (OUT / filename).write_bytes(data[:limit])\n    return {\"file\": filename, \"bytes\": len(data), \"sha256\"\
+        : sha(data), \"dumped_bytes\": min(len(data), limit)}\n\n\ndef difference_window(prefix, name, data, offset):\n  \
+        \  start = max(0, offset - 4096)\n    end = min(len(data), offset + 4097)\n    receipt = bounded_bytes(prefix, name,\
+        \ data[start:end])\n    return {**receipt, \"absolute_start\": start, \"absolute_end\": end}\n\n\ndef live_pointer(buffer):\n\
+        \    buffer.ensure_allocated()\n    if buffer.device.split(\":\")[0] == \"NPY\":\n        # NpyAllocator._as_buffer\
+        \ may call np.require, which could create a\n        # copy. Require the actual original buffer's contiguous backing\
+        \ here.\n        array = buffer._buf\n        if not array.flags.c_contiguous or array.nbytes != buffer.nbytes:\n\
+        \            raise RuntimeError(\"original NPY view has no direct contiguous pointer\")\n        return array.ctypes.data,\
+        \ array\n    if buffer.device.split(\":\")[0] == \"PYTHON\":\n        # PythonAllocator intentionally lacks _as_buffer;\
+        \ its owned _buf is a\n        # writable memoryview. Keep this fallback limited to original host\n        # COPY\
+        \ buffers, never the CPU PROGRAM launch.\n        view = memoryview(buffer._buf)\n    else:\n        view = buffer.as_memoryview(force_zero_copy=True)\n\
+        \    if view.readonly:\n        raise RuntimeError(\"original host view has no writable direct pointer\")\n    return\
+        \ ctypes.addressof(ctypes.c_char.from_buffer(view)), view\n\n\ndef verify_view(live, view_id, graph, aliases):\n \
+        \   view = graph[\"views\"][view_id]\n    allocation = view[\"allocation\"]\n    base = live.base\n    if base.nbytes\
+        \ != graph[\"allocations\"][allocation][\"bytes\"] or live.offset != view[\"offset\"] or live.nbytes != view[\"bytes\"\
+        ]:\n        raise RuntimeError(f\"graph/live view differs: {view_id}\")\n    prior = aliases.setdefault(allocation,\
         \ id(base))\n    if prior != id(base):\n        raise RuntimeError(f\"graph allocation aliases two original bases:\
         \ {allocation}\")\n\n\ndef original_inputs(original, label, raw):\n    frame = original.bindings.inputs[\"frame\"\
         ]\n    shape = tuple(frame.shape)\n    if _to_np_dtype(frame.dtype) != np.dtype(\"uint8\") or int(np.prod(shape))\
@@ -254,8 +261,8 @@ jobs:
         \ do not cover every worker\")\n            original_after = after(before)\n            restore(before)\n        \
         \    emitted = graph[\"calls\"][call_index]\n            pointers = []\n            live_views = []\n            for\
         \ buffer in live_args:\n                if operation.op is Ops.PROGRAM and buffer.device.split(\":\")[0] != \"CPU\"\
-        :\n                    raise RuntimeError(\"original PROGRAM global left CPU storage\")\n                view = writable_view(buffer)\n\
-        \                live_views.append(view)\n                pointers.append(ctypes.addressof(ctypes.c_char.from_buffer(view)))\n\
+        :\n                    raise RuntimeError(\"original PROGRAM global left CPU storage\")\n                pointer,\
+        \ owner = live_pointer(buffer)\n                live_views.append(owner)\n                pointers.append(pointer)\n\
         \            argv = (ctypes.c_void_p * len(pointers))(*pointers)\n            scalars = (ctypes.c_int32 * max(1, len(emitted[\"\
         scalars\"])))(*emitted[\"scalars\"])\n            native = getattr(library, f\"op_kernel_{emitted['kernel']}\")\n\
         \            native.argtypes = [ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_int32)]\n            native.restype\
