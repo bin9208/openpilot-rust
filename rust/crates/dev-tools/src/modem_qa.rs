@@ -355,11 +355,10 @@ impl PtyServer {
         let thread = thread::spawn(move || {
             let mut pending = Vec::new();
             let mut bytes = [0u8; 4096];
+            let poll_timeout = Timespec::try_from(Duration::from_millis(50)).ok();
             while !thread_stop.load(Ordering::Relaxed) {
                 let mut fd = [PollFd::new(&master, PollFlags::IN)];
-                if let Err(error) =
-                    poll(&mut fd, Timespec::try_from(Duration::from_millis(50)).ok())
-                {
+                if let Err(error) = poll(&mut fd, poll_timeout.as_ref()) {
                     if error == rustix::io::Errno::INTR {
                         continue;
                     }

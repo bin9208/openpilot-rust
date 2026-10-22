@@ -494,10 +494,8 @@ pub fn validate(root: &Path, require_retired: bool) -> Result<Receipt> {
     require(
         source_expectations.len() == CASES.len()
             && CASES.iter().all(|(name, hash)| {
-                source_expectations
-                    .get(format!("{name}.json"))
-                    .and_then(Value::as_str)
-                    == Some(*hash)
+                let key = format!("{name}.json");
+                source_expectations.get(&key).and_then(Value::as_str) == Some(*hash)
             }),
         "modem source expectation roster differs",
     )?;
