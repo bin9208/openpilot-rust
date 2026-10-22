@@ -14,8 +14,8 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 use support::{
-    absence, pair, pin, read_json, replace, required, run, success, text, write_json, Held,
-    OwnedPath,
+    absence, pair, pin, read_json, replace, required, run, success, success_usbgpu, text,
+    write_json, Held, OwnedPath,
 };
 
 const COLLECTOR_SOURCE: &str = "2ecf3f6813f601ea52e7a61ccf75219952daefa0";
@@ -459,7 +459,11 @@ fn same_elf_replays_all_three_native_clis_in_both_absent_roots() {
                 Some(&inputs.family_receipt),
                 false,
             );
-            let report = success(&result, &output, if startup { 8 } else { 6 });
+            let report = if startup {
+                success(&result, &output, 8)
+            } else {
+                success_usbgpu(&result, &output)
+            };
             assert_eq!(report["source_absence"], true);
             assert_eq!(
                 report["original_manifest_sha256"],

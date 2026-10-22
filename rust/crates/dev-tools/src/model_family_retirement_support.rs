@@ -201,6 +201,12 @@ fn stdout_matches_runs(stdout: &[u8], runs: &[Value], count: usize) -> Result<()
     Ok(())
 }
 pub fn success(result: &Captured, output: &Path, lines: usize) -> Value {
+    success_rows(result, output, lines, false)
+}
+pub fn success_usbgpu(result: &Captured, output: &Path) -> Value {
+    success_rows(result, output, 6, true)
+}
+fn success_rows(result: &Captured, output: &Path, lines: usize, usb_summary: bool) -> Value {
     assert_eq!(
         result.code,
         0,
@@ -208,7 +214,20 @@ pub fn success(result: &Captured, output: &Path, lines: usize) -> Value {
         String::from_utf8_lossy(&result.stderr)
     );
     let report = read_json(&output.join("report.json"));
-    stdout_matches_runs(&result.stdout, report["runs"].as_array().unwrap(), lines)
+    let runs = report["runs"].as_array().unwrap();
+    // The original USB CLI publishes three summary fields per case; its report
+    // retains the full packets, worker lifecycle and process receipts separately.
+    let summaries;
+    let stdout_rows = if usb_summary {
+        summaries = runs
+            .iter()
+            .map(|row| json!({"camera":row["camera"],"mode":row["mode"],"passed":row["passed"]}))
+            .collect::<Vec<_>>();
+        &summaries
+    } else {
+        runs
+    };
+    stdout_matches_runs(&result.stdout, stdout_rows, lines)
         .expect("native stdout must publish exactly every aggregate report row");
     report
 }
@@ -417,6 +436,45 @@ mod tests {
             assert!(stdout_matches_runs(invalid, &runs, 2).is_err());
         }
         assert!(stdout_matches_runs(valid, &runs, 3).is_err());
+    }
+    #[test]
+    fn usb_stdout_preserves_original_summaries_without_discarding_full_reports() {
+        let root = tempfile::tempdir().unwrap();
+        let report: Value = serde_json::from_str(include_str!(
+            "../tests/fixtures/model-family-original/usbgpu/original/report.json"
+        ))
+        .unwrap();
+        let stdout = include_bytes!(
+            "../tests/fixtures/model-family-original/usbgpu/original/capture-evidence/checker.stdout"
+        );
+        write_json(&root.path().join("report.json"), &report);
+        let result = Captured {
+            code: 0,
+            stdout: stdout.to_vec(),
+            stderr: Vec::new(),
+        };
+        assert_eq!(success_usbgpu(&result, root.path()), report);
+        assert!(std::panic::catch_unwind(|| success(&result, root.path(), 6)).is_err());
+        let rows = stdout
+            .split(|&byte| byte == b'\n')
+            .filter(|row| !row.is_empty())
+            .map(|row| serde_json::from_slice::<Value>(row).unwrap())
+            .collect::<Vec<_>>();
+        for field in ["camera", "mode", "passed", "unexpected"] {
+            let mut changed = rows.clone();
+            changed[0][field] = Value::Null;
+            let mut bytes = Vec::new();
+            for row in changed {
+                serde_json::to_writer(&mut bytes, &row).unwrap();
+                bytes.push(b'\n');
+            }
+            let invalid = Captured {
+                code: 0,
+                stdout: bytes,
+                stderr: Vec::new(),
+            };
+            assert!(std::panic::catch_unwind(|| success_usbgpu(&invalid, root.path())).is_err());
+        }
     }
     #[test]
     fn accepted_report_seal_rejects_later_traffic_mutation() {

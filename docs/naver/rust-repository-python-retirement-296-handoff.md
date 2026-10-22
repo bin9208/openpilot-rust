@@ -197,8 +197,8 @@ artifacts are engineering baseline only, never frozen expected values. New captu
 trace/live peer leaves, native CLI wrappers and actual/private outer are being
 integrated. Firstbuildrepair83a6fdf82 passes4inline+6capture controls but strict
 Clippy fails on multiplier/Copydrops. ce496c303 removes both and preserves exact
-original input order/1000ms receive and5s transition contracts. Retry39711992268
-atce496c303/workflowcd99c6221aebe3d844168174f9dd0485089523dc is running.
+original input order/1000ms receive and5s transition contracts. Retry39711992268 atce496 passes builds/units but strictClippy finds one indexed
+outer checker loop.601a6c9ec fixes it; retry39713055560/workflow2fd4aa00a935fb21182a1606b18bd0d4826cc069 is pending.
 Featurehardwared-qa-native uses existing nativeIPC dependencies. All3
 original tools remain live and pending hosted proof; five original runtime files
 and shared schema/import/Python bindings remain separately pending.
@@ -210,3 +210,13 @@ update draft343/#296; final complete exact-source required/workspace/ARM results
 remain necessary. Do not stop at queued CI or a PR, merge protected branches or
 claim device acceptance. Latest #296 checkpoint6330165232 and draft343 describe publishedd610, four Kalman
 closures, corrected Panda, AMD reproduction and pending current complete gates.
+
+
+## Current USB follow-up failure and exact repair
+
+39708204175 at5b5 passes all six actual-root USB scenarios, unchanged complete
+original input receipts and native exit0. Outer then fails summary-vs-full-row
+comparison; private root not reached. Explicit USB three-field exact summaries
+preserve immutable original CLI shape; complete reports and packet/cleanup/seal
+assertions remain. Original-source regression and full USB retry pending; no
+source acceptance or #480 closure. Parent selected25 members/CRC, not full ZIP.

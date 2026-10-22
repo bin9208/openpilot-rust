@@ -6323,3 +6323,35 @@ Accept exactly3inventory entries:259→262replaced-local,3318→3315pending,3par
 unchanged. Routing TSV still covers every pending/partial baseline path once.
 Original27HardwareInfo source/provider dependencies and whole-project closure
 remain pending. Generic d610 aarch64119576923156 passes; workspace still runs.
+
+
+### USB summary admission repair after independent owned-input replay
+
+USB-only hosted39708204175 at5b5aa357be47596a6927da677db33ae2629f327f,
+workflow79fb511de5ee412bd73ae3462b68ac68a8cc64e8/job119593101918,
+fails after1126.40s at the outer stdout comparator. Native check-usbgpu-daemon
+itself exits0 with all six actual-root cases passed and worker/shared-file cleanup.
+Complete original source-input before/after receipts are identical, including
+ctime/inode/SHA; its321B stdout SHA045f4628152e7c23e667c588e6d5f534b5b49fec28a27016cd8287e8a1d1e14e
+matches exactly the three-field camera/mode/passed summaries derived from the
+full reports and the immutable original CLI format. The outer incorrectly
+compared those summaries against full packet/process/lifecycle report rows.
+Parent inspected25 selected artifact12397502597 members/447545B with member CRCs,
+using21931768B bounded206 traffic;1107-member/168732408B complete ZIP was NOT
+claimed audited. Private-root replay and final acceptance were not reached.
+
+Repair gives USB an explicit exact summary-row comparator while preserving full
+report return, existing six-case roster/final/initial/packet/cleanup assertions,
+source receipts and same-ELF checks. Driver/startup retain full-row comparison.
+A regression consumes unchanged independently captured original stdout/full report,
+rejects altered camera/mode/pass/extra keys, and proves the previous comparison
+fails on that legitimate pair. Existing order/count/malformed/trailing/duplicate
+controls remain unchanged. Local checks are scoped rustfmt/diff only; hosted
+regression and full two-root proof are pending. This adds no accepted sources;
+#480/#479/#476/#296 remain open.
+
+Hardwared39711992268 atce496c303 passes build and inline/capture controls, then
+strict Clippy identifies one needless indexed checker loop in the outer test.
+601a6c9ec2002d88a6e0184b79f6fb6923d79285 preserves all six CLI admission cases
+with enumerate; hosted retry39713055560/workflow2fd4aa00a935fb21182a1606b18bd0d4826cc069
+is pending. Original three tools stay live.
