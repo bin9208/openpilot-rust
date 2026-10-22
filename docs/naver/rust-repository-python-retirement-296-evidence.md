@@ -9309,3 +9309,27 @@ the source patch is unaffected. Full rust.yml execution is held for Hegel's
 local runner/private source/cache/target adapter. No admitted four-bundle,
 eight-tail/ten-filesystem, whole startup/USB/driver or foundation scope is rerun
 merely to activate the caller, and no numerical/retirement credit follows.
+
+## Preserve actual model output bytes on the first mismatch (2026-10-23)
+
+The original model failure at run39844308544/job120055270508/source6f25f161
+has no retained raw original/native output pair: sidecar12454684602 contains
+only1467sealed catalog files. Its model-1.bin mismatch remains unclassified.
+The current-source two-target diagnostic patch640a58929139d15db2a9a22023854a77fd53e880ae7b9b386167473ea3fdbc14
+is independently reviewed and integrated with a narrow P2 error-path correction.
+Original output bytes are spooled from the existing single tobytes result used
+for their reference digest. The first compared native mismatch bytes and raw
+original bytes are retained with actual shape/dtype/length/hash metadata before
+the unchanged mismatch RuntimeError. Diagnostic-print I/O is best-effort so it
+cannot replace that error. No arithmetic, tolerance, frame/schedule/RNG/native
+invocation, successful report or original oracle expectation changes.
+
+Actual spool-growth admission and an inclusive64MiB first-pair cap are explicit;
+oversize/partial/missing/corrupt pair evidence is not numerical acceptance.
+Always-upload adds only road/dm output-pairs globs, excluding original spool,
+inputs, weights and bundles. No separate old model replay or artificial failure
+is scheduled. Source/AST/YAML/diff checks only were performed locally; the next
+required full PR run must validate natural retention if a mismatch recurs. Both
+raw_pair_complete and original_preservation_verified plus actual file hashes/
+lengths are required before classification. This cannot retroactively diagnose
+old missing bytes or establish byte identity with the unavailable6f25 checker.

@@ -8,13 +8,15 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
+import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 from numpy.typing import NDArray
-from tinygrad import Tensor
+from tinygrad import Tensor, dtypes
 from tinygrad.engine.jit import _prepare_jit_inputs
 
 from model_export import export_cpu
@@ -44,6 +46,30 @@ class Comparison:
     frames: int
 
 
+PAIR_RAW_LIMIT = 64 * 1024 * 1024
+
+
+def retain_output_pair(destination: Path, filename: str, expected: str, actual: bytes, descriptor: dict) -> None:
+    original = (destination / "original-output-bytes" / filename).read_bytes()
+    pair = destination / "output-pairs" / "first-mismatch"
+    pair.mkdir(exist_ok=False)
+    within_limit = len(original) + len(actual) <= PAIR_RAW_LIMIT
+    metadata = {"filename":filename, "comparison":"SHA256 of exact output bytes", "result":"mismatch",
+                "original":dict(descriptor, sha256=hashlib.sha256(original).hexdigest(), length=len(original), raw_file="original.bin"),
+                "native":{"sha256":hashlib.sha256(actual).hexdigest(), "length":len(actual), "raw_file":"native.bin"},
+                "expected_original_sha256":expected, "original_preservation_verified":hashlib.sha256(original).hexdigest() == expected,
+                "raw_pair_limit_bytes":PAIR_RAW_LIMIT, "raw_pair_complete":False,
+                "raw_pair_omission":None if within_limit else "output pair exceeds diagnostic byte bound"}
+    record = pair / "comparison.json"
+    record.write_text(json.dumps(metadata, indent=2) + "\n")
+    if within_limit:
+        for name, raw in (("original.bin", original), ("native.bin", actual)):
+            with (pair / name).open("xb") as output:
+                output.write(raw)
+        metadata["raw_pair_complete"] = True
+        record.write_text(json.dumps(metadata, indent=2) + "\n")
+
+
 def compare(original: OriginalPipeline, settings: Comparison) -> None:
     destination = settings.output
     destination.mkdir(parents=True, exist_ok=False)
@@ -57,6 +83,23 @@ def compare(original: OriginalPipeline, settings: Comparison) -> None:
     sequence = []
     compared = 0
     skipped = 0
+    # Additional growth is output-only; the spool is never an artifact upload root.
+    # Match Tensor.numpy's existing bfloat16/fp8-to-float32 representation.
+    planned_original_bytes = settings.frames * sum(math.prod(tensor.shape) *
+        (4 if tensor.dtype.base in (dtypes.bfloat16, *dtypes.fp8s) else tensor.dtype.itemsize)
+        for tensor in original.bindings.outputs.values())
+    planned_growth = planned_original_bytes + PAIR_RAW_LIMIT + 65536
+    if shutil.disk_usage(destination).free < planned_growth:
+        raise RuntimeError("insufficient space for planned original output retention growth")
+    original_outputs = destination / "original-output-bytes"
+    original_outputs.mkdir(exist_ok=False)
+    pairs = destination / "output-pairs"
+    pairs.mkdir(exist_ok=False)
+    (pairs / "retention.json").write_text(json.dumps({"role":"first-mismatch output diagnostics only",
+        "planned_original_bytes":planned_original_bytes, "planned_growth_bytes":planned_growth,
+        "raw_pair_limit_bytes":PAIR_RAW_LIMIT, "spool_uploaded":False}, indent=2) + "\n")
+    output_descriptors = {}
+    retained_original_bytes = 0
     for frame in range(settings.frames):
         inputs = {}
         for name in (("frame", "big_frame") if road else ("frame",)):
@@ -103,7 +146,14 @@ def compare(original: OriginalPipeline, settings: Comparison) -> None:
         for name, tensor in original.bindings.outputs.items():
             values = tensor.numpy()
             filename = f"{name}-{frame}.bin"
-            references[filename] = hashlib.sha256(values.tobytes()).hexdigest()
+            raw = values.tobytes()
+            references[filename] = hashlib.sha256(raw).hexdigest()
+            retained_original_bytes += len(raw)
+            if retained_original_bytes > planned_original_bytes:
+                raise RuntimeError("original output retention exceeds static output growth estimate")
+            with (original_outputs / filename).open("xb") as output:
+                output.write(raw)
+            output_descriptors[filename] = {"shape":list(values.shape), "dtype":values.dtype.str, "frame":frame}
             outputs[name] = filename
             compared += values.size
         for index, stage in enumerate(stages):
@@ -114,7 +164,15 @@ def compare(original: OriginalPipeline, settings: Comparison) -> None:
     (destination / "sequence.json").write_text(json.dumps(sequence))
     subprocess.run([settings.binary, "--trusted-bundle", destination / "bundle", destination / "sequence.json"], check=True)
     for filename, expected in references.items():
-        if hashlib.sha256((destination / filename).read_bytes()).hexdigest() != expected:
+        actual = (destination / filename).read_bytes()
+        if hashlib.sha256(actual).hexdigest() != expected:
+            try:
+                retain_output_pair(destination, filename, expected, actual, output_descriptors[filename])
+            except OSError as error:
+                try:
+                    print(f"output-pair retention incomplete for {filename}: {error}", flush=True)
+                except OSError:
+                    pass
             raise RuntimeError(f"original/native output bytes differ: {filename}")
     report = {"frames":settings.frames, "prepare_only_frames":skipped, "compared_elements":compared,
               "comparison":"identical output bytes", "outputs":list(original.bindings.outputs),

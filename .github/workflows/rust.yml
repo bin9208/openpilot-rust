@@ -5545,7 +5545,9 @@ jobs:
           name: rust-original-pipeline-comparison
           path: |
             ${{ runner.temp }}/road-pipeline-*/report.json
+            ${{ runner.temp }}/road-pipeline-*/output-pairs/**
             ${{ runner.temp }}/dm-pipeline-*/report.json
+            ${{ runner.temp }}/dm-pipeline-*/output-pairs/**
             ${{ runner.temp }}/native-catalog/current.json
             ${{ runner.temp }}/model-outputs-*/**/report.json
             ${{ runner.temp }}/model-input-pipelines/**/report.json
