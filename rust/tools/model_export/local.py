@@ -121,8 +121,8 @@ def publish(sources: Sources, root: Path) -> Path:
     raise ExportError('packed source layout disagrees with captured policy')
   growth = 2 * pickle_bytes + (128 << 20)
   root.mkdir(parents=True, exist_ok=True)
-  if shutil.disk_usage(root).free < (25 << 30) + growth:
-    raise ExportError('native local export requires 25 GiB free plus estimated package growth')
+  if shutil.disk_usage(root).free < growth:
+    raise ExportError('insufficient space for estimated native local package growth')
   model_root = root / 'local' / name
   destination = model_root / pickle_digest
   destination.parent.mkdir(parents=True, exist_ok=True)

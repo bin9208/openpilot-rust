@@ -90,8 +90,8 @@ def write_json(path: Path, value: Json) -> None:
 def hardware(directory: Path, *, fresh: bool) -> list[HardwareReceipt]:
   """Reuse SHA-verified firmware or fetch only the canonical source's eight blobs."""
   free = shutil.disk_usage(directory.parent).free
-  if free < (25 << 30) + (128 << 20):
-    message = f'firmware fixture needs 25 GiB free plus 128 MiB growth; available={free}'
+  if free < (128 << 20):
+    message = f'firmware fixture needs 128 MiB estimated growth; available={free}'
     raise RuntimeError(message)
   directory.mkdir()
   hashes = json.loads((ROOT / 'rust/crates/usbgpu/assets/amd-metadata.json').read_text())['firmware_hashes']

@@ -75,6 +75,31 @@ PRoot supplies the guest filesystem and QEMU executes ARM user-space code on
 the registered X64 host. Physical-device timing or native ARM CPU performance
 is outside this CI environment; original functional assertions are retained.
 
+The focused transport run39853582741 completed successfully on source
+77663836a95a9e2aff9aa66592d8b06ed9c87cd9. Downloaded evidence records the real
+bin-actions X64 host, aarch64 guest, PRoot5.5.0/QEMU8.2.2 and
+physical_arm_cpu:false. ARM ELF/ctypes, Python3.12.14, environment-file and exit37
+transport, host artifact visibility, subprocess IPC/SIGTERM, the native ARM Rust
+disk guard and owned cleanup passed. The runtime-core --lib command reported
+0passed/1ignored benchmark; it is not ARM runtime-core integration evidence.
+The verified foundation and its limits were delivered to all four work chats.
+
+PR run39853578189 passed fast checks, mapped docs, the original build, web/CPU
+model, Android, Jetlink policy and integration gate. Workspace compilation and
+clippy passed, but cargo test --workspace stopped at three dev-tools tests:
+the encoder stager still independently required25GiB plus growth, and two
+packaging tests still expected the deleted reserve and its addition overflow.
+The actual encoder check had21,227,675,648 free bytes against512MiB growth.
+This is an incomplete policy migration, not a runner hardware failure.
+
+The encoder now delegates to the common growth admission. Packaging tests retain
+zero/exact/insufficient/maximum-byte coverage with the new policy. Remaining
+build/reference helper floors are removed while keeping their original growth
+budgets and all source/ABI, extraction, fixture and functional assertions. The
+device installer policy is unchanged. A focused space-only Actions dispatch
+checks the Rust tool tests and Python admission contracts; the successful,
+unchanged ARM transport is preserved. Full PR acceptance remains pending.
+
 ## Implementation snapshot
 
 All workflow runner labels and the saved CarrotMan job template now select

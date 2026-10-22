@@ -104,8 +104,8 @@ def normalized(value: Capture, conditional: bool) -> Capture:
 async def main(binary: Path, output: Path, real: bool, composed: bool, smoke: bool) -> None:
     output.mkdir(parents=True, exist_ok=False)
     free = __import__('shutil').disk_usage(output).free
-    save(output/'diskguard.json', {'free_bytes': free, 'reserve_bytes': 25*1024**3, 'estimated_growth_bytes': 16*1024**2})
-    assert free >= 25*1024**3+16*1024**2
+    save(output/'diskguard.json', {'free_bytes': free, 'estimated_growth_bytes': 16*1024**2})
+    assert free >= 16*1024**2
     root = output/'owned-root';root.mkdir()
     tools = output/'owned-bin';tools.mkdir()
     provider = tools/'ffmpeg';provider.write_text(WRAPPER);provider.chmod(0o700)

@@ -24,8 +24,8 @@ def digest(path: Path) -> str:
 
 def disk_guard(path: Path) -> int:
   available = shutil.disk_usage(path).free
-  if available < 25 * 1024**3 + 128 * 1024**2:
-    raise RuntimeError(f'planner build requires 25 GiB free plus 128 MiB growth; available={available}')
+  if available < 128 * 1024**2:
+    raise RuntimeError(f'planner build requires 128 MiB estimated growth; available={available}')
   return available
 
 

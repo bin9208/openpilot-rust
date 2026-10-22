@@ -1,6 +1,12 @@
 name: All-local Actions validation502
 on:
   workflow_dispatch:
+    inputs:
+      scope:
+        description: Run changed space checks without repeating verified ARM transport
+        type: choice
+        options: [all, space-only]
+        default: all
 permissions:
   contents: read
 jobs:
@@ -8,6 +14,11 @@ jobs:
     name: local Actions policy and regression checks
     runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 15
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
     defaults:
       run:
         working-directory: all-local-502
@@ -62,6 +73,13 @@ jobs:
           "$CI_JOB_TEMP/venv/bin/python" rust/ci/runtime/test_package_policy.py
           "$CI_JOB_TEMP/venv/bin/python" -m pytest -c /dev/null --noconftest -q tools/ci/tests/test_native_disk_guard.py
           cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-disk-space --locked
+      - name: Require build-tool growth admission and retained native tool contracts
+        if: inputs.scope == 'space-only'
+        run: |
+          PYTHONPATH=rust/tools "$CI_JOB_TEMP/venv/bin/python" -m pytest -c /dev/null --noconftest -q rust/tools/tests/test_build_space_policy.py rust/tools/tests/test_card_ci.py::test_reference_phase_stops_before_brand_outputs_exceed_available_growth
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --lib --test disk_space --locked
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-model-runtime --lib --locked
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-radard --lib replay::package::tests --locked
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -74,6 +92,7 @@ jobs:
   arm:
     name: local QEMU ARM execution and command-file transport
     needs: policy
+    if: inputs.scope != 'space-only'
     runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 90
     env:

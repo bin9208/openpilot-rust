@@ -81,7 +81,7 @@ def main() -> None:
   if args.peer:
     peer(args)
     return
-  assert shutil.disk_usage(args.output.parent).free > 25 * 2**30 + 128 * 2**20
+  assert shutil.disk_usage(args.output.parent).free > 128 * 2**20
   args.output.mkdir(parents=True, exist_ok=False)
   for kind in ["source", "native"]:
     output = args.output / kind

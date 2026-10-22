@@ -262,8 +262,8 @@ def main() -> None:
   args = parser.parse_args()
   args.output.mkdir(parents=True, exist_ok=False)
   free = shutil.disk_usage(ROOT).free
-  guard = {'free_bytes': free, 'floor_bytes': 25 * 1024**3, 'estimated_growth_bytes': 16 * 1024**2,
-           'allowed': free >= 25 * 1024**3 + 16 * 1024**2}
+  guard = {'free_bytes': free, 'estimated_growth_bytes': 16 * 1024**2,
+           'allowed': free >= 16 * 1024**2}
   (args.output / 'guard.json').write_text(json.dumps(guard, indent=2) + '\n')
   assert guard['allowed']
   environment = os.environ | {'GIT_AUTHOR_DATE': '2026-09-30T12:00:00+00:00', 'GIT_COMMITTER_DATE': '2026-09-30T12:00:00+00:00',

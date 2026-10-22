@@ -24,7 +24,7 @@ def digest(path: Path) -> str:
 
 
 def setup(root: Path, model: Path, archive: Path, marker: dict, scenario: str) -> None:
-  assert shutil.disk_usage(root.parent).free > (25 * 1024 + 5120) * 1024**2
+  assert shutil.disk_usage(root.parent).free > 5120 * 1024**2
   cache = root / "cache"
   target = cache / "precompiled" / MODEL_SHA
   target.mkdir(parents=True)

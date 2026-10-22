@@ -377,7 +377,7 @@ async def native_package(args):
     files.setup('active-ready')
     manifest={'model_id':'owned-final-native-mdm','filename':'big_driving_tinygrad.pkl','size':pickle['size'],'sha256':sha,'url':'https://owned.invalid/model.pkl'}
     (files.cache/'state.json').write_text(json.dumps({'active':manifest,'previous':None}))
-    assert shutil.disk_usage(files.cache).free >= 25*1024**3+pickle['size'], 'insufficient free space for owned native fixture'
+    assert shutil.disk_usage(files.cache).free >= pickle['size'], 'insufficient free space for owned native fixture'
     cached=files.cache/f'big_driving_tinygrad-{sha[:16]}.pkl';shutil.copyfile(source,cached)
     installed=files.cache/'precompiled'/sha;installed.mkdir(parents=True)
     (installed/'native-provider.json').write_text(json.dumps(identity));os.link(cached,installed/'model.pkl')
