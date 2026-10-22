@@ -619,7 +619,7 @@ pub fn validate_with_state(root: &Path, source_state: SourceState) -> Result<Rec
     let providers = read_held_json(plan_index("provider.before.json")?)?;
     require(
         providers == read_held_json(plan_index("provider.after.json")?)?
-            && providers["python"] == "3.12.15 (main, Oct  1, 2026 02:35:59) [GCC 13.3.0]"
+            && providers["python"] == "3.12.15 (main, Oct  1 2026, 02:35:59) [GCC 13.3.0]"
             && providers["serial_version"] == "3.5",
         "modem original provider provenance differs",
     )?;
