@@ -1,11 +1,11 @@
-name: Complete ARM and AGNOS runner comparison498
-run-name: Cold full ARM/AGNOS comparison498
+name: Complete generic ARM runner comparison498
+run-name: Full GNU and musl ARM comparison498 (correct Eigen headers)
 'on':
   workflow_dispatch: {}
 permissions:
   contents: read
 concurrency:
-  group: runner-comparison-498
+  group: runner-comparison-498-generic-repair
   cancel-in-progress: false
 env:
   GIT_LFS_SKIP_SMUDGE: '1'
@@ -17,12 +17,13 @@ env:
   RUNTIME_SOURCE_SHA: ${{ github.sha }}
   SOURCE_ROOT: ${{ github.workspace }}/runner-comparison-498
 jobs:
-  agnos:
-    name: Full AGNOS (${{ matrix.kind }})
+  generic-arm:
+    name: Full generic ARM (${{ matrix.kind }})
+    if: ${{ !cancelled() }}
     strategy:
       fail-fast: false
       matrix:
-        include: &id001
+        include:
         - kind: github-hosted
           labels:
           - ubuntu-24.04
@@ -93,187 +94,8 @@ jobs:
 
         "$BENCH_ROOT/venv/bin/python" -m pip install ''git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen''
 
-        # Same compiler executable aliases for the original generic job.
-
-        command -v clang >/dev/null || sudo -n ln -s /usr/bin/clang-18 /usr/local/bin/clang
-
-        command -v clang++ >/dev/null || sudo -n ln -s /usr/bin/clang++-18 /usr/local/bin/clang++
-
-        COMPARISON_SHELL
-
-        python3 "$SOURCE_ROOT/tools/ci/runner_comparison_498.py" stage install-identical-cross-and-host-dependencies "$BENCH_ROOT/commands/install-identical-cross-and-host-dependencies.sh"
-
-        '
-    - name: Verify focused source policy
-      run: 'mkdir -p "$BENCH_ROOT/commands"
-
-        cat > "$BENCH_ROOT/commands/verify-focused-source-policy.sh" <<''COMPARISON_SHELL''
-
-        python3 rust/ci/runtime/test_package_policy.py
-
-        python3 tools/ci/runner_comparison_498.py package source-policy
-
-        COMPARISON_SHELL
-
-        python3 "$SOURCE_ROOT/tools/ci/runner_comparison_498.py" stage verify-focused-source-policy "$BENCH_ROOT/commands/verify-focused-source-policy.sh"
-
-        '
-    - name: Prepare verified baseline companions and genuine AGNOS sysroot
-      run: 'mkdir -p "$BENCH_ROOT/commands"
-
-        cat > "$BENCH_ROOT/commands/prepare-verified-baseline-companions-and-genuine-agnos-sysroot.sh" <<''COMPARISON_SHELL''
-
-        python3 tools/ci/runner_comparison_498.py package prepare
-
-        COMPARISON_SHELL
-
-        python3 "$SOURCE_ROOT/tools/ci/runner_comparison_498.py" stage prepare-verified-baseline-companions-and-genuine-agnos-sysroot
-        "$BENCH_ROOT/commands/prepare-verified-baseline-companions-and-genuine-agnos-sysroot.sh"
-
-        '
-    - name: Compile host release tools from fresh target
-      run: 'mkdir -p "$BENCH_ROOT/commands"
-
-        cat > "$BENCH_ROOT/commands/compile-host-release-tools-from-fresh-target.sh" <<''COMPARISON_SHELL''
-
-        python3 tools/ci/runner_comparison_498.py package host-tools
-
-        COMPARISON_SHELL
-
-        python3 "$SOURCE_ROOT/tools/ci/runner_comparison_498.py" stage compile-host-release-tools-from-fresh-target "$BENCH_ROOT/commands/compile-host-release-tools-from-fresh-target.sh"
-
-        '
-    - name: Build all runtime executables OpenCV audit seal offline installation
-      run: 'mkdir -p "$BENCH_ROOT/commands"
-
-        cat > "$BENCH_ROOT/commands/build-all-runtime-executables-opencv-audit-seal-offline-installation.sh" <<''COMPARISON_SHELL''
-
-        python3 tools/ci/runner_comparison_498.py package build
-
-        COMPARISON_SHELL
-
-        python3 "$SOURCE_ROOT/tools/ci/runner_comparison_498.py" stage build-all-runtime-executables-opencv-audit-seal-offline-installation
-        "$BENCH_ROOT/commands/build-all-runtime-executables-opencv-audit-seal-offline-installation.sh"
-
-        '
-    - name: Write stage summary and preserve resource evidence
-      if: always()
-      run: "if [ -z \"${BENCH_ROOT:-}\" ]; then exit 0; fi\nfree -b > \"$BENCH_ROOT/comparison/memory-after.txt\"\ndf -h >\
-        \ \"$BENCH_ROOT/comparison/disk-after.txt\"\nif [ -r /sys/fs/cgroup/memory.events ]; then cp /sys/fs/cgroup/memory.events\
-        \ \"$BENCH_ROOT/comparison/memory-events-after.txt\"; fi\nif [ -f \"$BENCH_ROOT/comparison/timing.jsonl\" ]; then\n\
-        \  python3 - <<'SUMMARY'\nimport json, os\nfrom pathlib import Path\nroot=Path(os.environ['BENCH_ROOT'])/'comparison'\n\
-        rows=[json.loads(line) for line in (root/'timing.jsonl').read_text().splitlines()]\nwith open(os.environ['GITHUB_STEP_SUMMARY'],'a')\
-        \ as f:\n f.write('| Stage | Seconds | Exit |\\n|---|---:|---:|\\n')\n for r in rows:f.write(f\"| {r['stage']} | {r['seconds']}\
-        \ | {r['exit_code']} |\\n\")\nSUMMARY\nfi\n"
-    - uses: actions/upload-artifact@v4
-      if: always() && env.BENCH_ROOT != ''
-      with:
-        name: comparison498-agnos-${{ matrix.kind }}
-        path: '${{ env.BENCH_ROOT }}/comparison/
-
-          ${{ env.BENCH_ROOT }}/agnos-runtime/elf.json
-
-          ${{ env.BENCH_ROOT }}/agnos-runtime/installer-build.json
-
-          ${{ env.BENCH_ROOT }}/agnos-runtime/offline-install.json
-
-          ${{ env.BENCH_ROOT }}/agnos-runtime/source-policy.json
-
-          ${{ env.BENCH_ROOT }}/agnos-runtime/opencv/*.json
-
-          ${{ env.BENCH_ROOT }}/agnos-runtime/opencv/*.log
-
-          ${{ env.BENCH_ROOT }}/agnos-runtime/release/runtime-release.json
-
-          ${{ env.BENCH_ROOT }}/logger-ffmpeg-gnu/*.log
-
-          ${{ env.BENCH_ROOT }}/logger-ffmpeg-gnu/**/config.log
-
-          ${{ env.BENCH_ROOT }}/logger-ffmpeg-musl/*.log
-
-          ${{ env.BENCH_ROOT }}/logger-ffmpeg-musl/**/config.log
-
-          ${{ env.BENCH_ROOT }}/encoder-arm/*.log
-
-          ${{ env.BENCH_ROOT }}/agnos-runtime/opencv-smoke/*.log
-
-          ${{ env.BENCH_ROOT }}/agnos-runtime/sysroot-extract.log
-
-          '
-        retention-days: 7
-    - uses: ./runner-comparison-498/.github/actions/job-temp
-      if: always()
-      with:
-        cleanup: 'true'
-  generic-arm:
-    name: Full generic ARM (${{ matrix.kind }})
-    needs: agnos
-    if: ${{ !cancelled() }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include: *id001
-    runs-on: ${{ matrix.labels }}
-    timeout-minutes: 300
-    defaults:
-      run:
-        working-directory: ${{ github.workspace }}/runner-comparison-498
-        shell: bash
-    steps:
-    - uses: actions/checkout@v7
-      with:
-        ref: ${{ github.sha }}
-        path: runner-comparison-498
-        fetch-depth: 0
-        persist-credentials: false
-        lfs: false
-    - uses: ./runner-comparison-498/.github/actions/job-temp
-    - uses: ./runner-comparison-498/.github/actions/rust-path
-    - name: Bind source and initialize isolated caches
-      run: 'set -euo pipefail
-
-        printf ''BENCH_ROOT=%s\nCARGO_HOME=%s/cargo\nCARGO_TARGET_DIR=%s/target\nPIP_CACHE_DIR=%s/pip-cache\n'' "$CI_JOB_TEMP"
-        "$CI_JOB_TEMP" "$CI_JOB_TEMP" "$CI_JOB_TEMP" >> "$GITHUB_ENV"
-
-        mkdir -p "$CI_JOB_TEMP/comparison"
-
-        git rev-parse HEAD | tee "$CI_JOB_TEMP/comparison/SOURCE_COMMIT"
-
-        test "$(git rev-parse HEAD)" = "$RUNTIME_SOURCE_SHA"
-
-        lscpu > "$CI_JOB_TEMP/comparison/lscpu.txt"
-
-        free -b > "$CI_JOB_TEMP/comparison/memory.txt"
-
-        df -h > "$CI_JOB_TEMP/comparison/disk.txt"
-
-        printf ''%s\n'' "$RUNNER_NAME $RUNNER_ENVIRONMENT" > "$CI_JOB_TEMP/comparison/runner.txt"
-
-        '
-    - uses: actions/setup-python@v6
-      with:
-        python-version: '3.12'
-    - name: Install identical cross and host dependencies
-      run: 'mkdir -p "$BENCH_ROOT/commands"
-
-        cat > "$BENCH_ROOT/commands/install-identical-cross-and-host-dependencies.sh" <<''COMPARISON_SHELL''
-
-        sudo -n apt-get -o APT::Architectures::=amd64 update
-
-        sudo -n apt-get install -y g++ g++-aarch64-linux-gnu clang-18 libclang-18-dev cmake pkg-config capnproto libcapnp-dev
-        libzmq3-dev qemu-user-static android-sdk-libsparse-utils e2fsprogs git-lfs nasm make
-
-        sudo -n apt-get install -y ''libavcodec-dev=7:6.1.1-*'' ''libavformat-dev=7:6.1.1-*'' ''libavutil-dev=7:6.1.1-*''
-
-        rustup toolchain install 1.94.0 --profile minimal
-
-        rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu aarch64-unknown-linux-musl
-
-        python -m venv "$BENCH_ROOT/venv"
-
-        printf ''%s\n'' "$BENCH_ROOT/venv/bin" >> "$GITHUB_PATH"
-
-        "$BENCH_ROOT/venv/bin/python" -m pip install ''git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen''
+        "$BENCH_ROOT/venv/bin/python" -c ''import eigen; print("LOCATIOND_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR); print("PARAMSD_EIGEN_INCLUDE="
+        + eigen.INCLUDE_DIR)'' >> "$GITHUB_ENV"
 
         # Same compiler executable aliases for the original generic job.
 
