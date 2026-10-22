@@ -261,11 +261,16 @@ with tempfile.TemporaryDirectory() as td:
 # Real capture/export verifies per-kernel alignment, including host COPY entries.
 os.environ.update(MODEL_LLVM_GUARDED_ADD_BINARY=helper,MODEL_LLVM_GUARDED_ADD_SHA256=digest)
 from tinygrad import Tensor,TinyJit
+import numpy as np
 from model_export import Bindings,export_cpu
 from model_export.capture import capture_cpu
-x=Tensor([1.0,2.0,3.0],device='NPY').realize()
+# Match the established exporter host-COPY fixture: NPY directly wraps ndarray
+# storage; Python-list construction would require unsupported NPY _copyin.
+x=Tensor(np.arange(64,dtype=np.float32),device='NPY').realize()
+assert x.uop.base.buffer.device=='NPY'
 jit=TinyJit(lambda value:(value.to('CPU')*2+1).realize())
 jit(x);y=jit(x)
+np.testing.assert_array_equal(y.numpy(),np.arange(64,dtype=np.float32)*2+1)
 bindings=Bindings({'x':x},{'y':y})
 captured=capture_cpu(jit,bindings)
 assert len(captured.compilation)==len(captured.sources)

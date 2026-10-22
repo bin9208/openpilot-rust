@@ -7299,3 +7299,33 @@ Rust correctly preserves the original missing EOF newline. No production
 contract, golden, tolerance or ISA change is made to fit this diagnostic.
 A corrected diagnostic must expose both renderer boundaries and establish
 compiler-object identity before claiming numerical evidence reuse.
+
+### Bridge fixture and initial upload proof failures retained
+
+Bridge39754225912/source77bd306efb8131f32472a0cffe0fcb070515c725 under
+workflow5cab8a76738c29f530c73528f75dff5c90061013 passes helper/module/catalog
+checks and strictClippy, then its actual ignored test fails at authored NPY
+Python-list construction: vendor NPY has no copyin. Its real compiler/receipt/
+owned descendant success/error/30s deadline cases run before this fixture error;
+full-model jobs correctly skip. Artifacts12415167718:12930B/SHA
+da9df1d54cf0b09ff3bceb891f03921898eee6c3f9481c0aa25d7bf620e17cd4 and
+12415073202:476020B/SHA367eb2a869d7cec59f1277bee2f1de72164d842a25c33829bb7d51e45cc97254
+retain failed evidence; this entry does not claim their full parent CRC audit.
+The fixture now follows the existing original export test's ndarray-backed
+NPY input, retains genuine host COPY and asserts actual64float32 results.
+No vendor/production behavior changes. Hosted R2 proof remains pending.
+The newly added inline Python bridge test is explicitly entered as pending in
+the execution-edge inventory:37→38pending/66observed, baseline274/3/3303unchanged.
+
+First grouped route-upload39753960752/source192ff501f40116022419e470d14a3e732243960c/
+workflowceba660780e97111ffa31c40e549b23751a308d8 builds all native prerequisites,
+passes strictClippy,3units and8integration cases. Fresh actual original/native
+manager route/HTTP semantic comparison passes. Its execution audit then rejects
+an unlisted actual checkout-status Git argv:--no-optional-locks rev-parse --verify
+HEAD^{commit}, through the installed probe's symlink to held /usr/bin/git.
+Runtime traffic does not start after that failure. Artifact12414812843:
+52560029B/SHA0d5e1d640224cd937bc7ccb5f626f92b55ea6525d55ebd4e71620e33c2143c2a,
+parent checks all741CRCs and actual manager parity/groupstatus1. This is failed
+native-exec admission, not accepted two-controller retirement. Review only
+source-authored exact Git calls and replay stored traces before repeating any
+unchanged successful manager traffic. Both originals remain present.

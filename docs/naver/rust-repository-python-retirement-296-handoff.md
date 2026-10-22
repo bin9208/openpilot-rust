@@ -65,7 +65,9 @@ No local builds, functional tests or model execution are authorized.
 ## Accepted inventory and global gates
 
 **274 replaced-local / 3 partially-replaced / 3303 pending of 3580 baseline entries.** Additional
-helpers/notebooks are separate;37observed embedded execution sites remain pending.
+helpers/notebooks are separate;38observed embedded execution sites remain pending.
+The added hosted exporter bridge test is explicitly pending until its Python
+compiler consumer is retired; it does not gain baseline source credit.
 One previously missed modem reference site is now explicitly recorded as closed;
 it increases recorded closed edges24→25 and does not reduce those37pending sites.
 The [functional closure ledger](rust-repository-python-retirement-296-families.md)

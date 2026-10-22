@@ -26,7 +26,8 @@ they are not completed functionality. All families below still contain work.
 Additional scope outside the baseline source inventory remains explicit:
 `selfdrived_helpers_source.py`, `tests/test_selfdrived_source.py`,
 `tests/test_params_native_stager.py` under `rust/tools`, six car-porting notebooks,
-and the 37 currently recorded pending entries in the [execution-edge inventory](rust-repository-python-retirement-296-execution-edges.tsv).
+and the 38 currently recorded pending entries in the [execution-edge inventory](rust-repository-python-retirement-296-execution-edges.tsv).
+The added hosted exporter bridge test remains an explicit pending Python edge.
 Those include generated extensionless helpers, dynamic launch, embedded Python
 and vendor release/build paths. The22October follow-up adds34 explicit sites
 (30 missed paths, one generated-exporter subedge and three bootstrap retry sites).
