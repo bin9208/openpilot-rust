@@ -117,7 +117,7 @@ The job cleanup removes the private package state. This follows APT's documented
 and preserves the registered host for subsequent jobs.
 Checks still run as Actions jobs; the agent's local checkout is limited to
 syntax, formatting and diff review. Required checks, serial ordering, disk
-reserves and per-job temporary-directory cleanup are preserved. Receipts report
+estimates and per-job temporary-directory cleanup are preserved. Receipts report
 the actual runner environment instead of describing self-hosted results as hosted.
 
 PR [#494](https://github.com/bin9208/openpilot-rust/pull/494) contains the CPU
@@ -141,3 +141,82 @@ the new `cross_root` initialization. Include that allocation before expanding th
 linker path. The native execution routing, private APT configuration and actual
 Git/LFS regressions passed their individual checks; the full gate did not pass.
 Fresh exact-source validation remains required after this fixture repair.
+
+## Confirmed runner comparison and current execution policy
+
+The separate #496 comparison reported three successful runs per runner: median
+fast checks were 16.592 s on `bin-actions` versus 37.559 s on GitHub x64, and
+clean Rust/C++ builds were 6.655 s versus 13.512 s. The #498 full AGNOS comparison
+on `b538bb7d37eb3cd756ff1fe7c52fd23507142605` completed its runtime, OpenCV,
+ABI, seal, offline installation and installed-launcher checks on both runners:
+[bin-actions](https://github.com/bin9208/openpilot-rust/actions/runs/39825360851/job/119987118119)
+took 35m47s and
+[GitHub x64](https://github.com/bin9208/openpilot-rust/actions/runs/39825360851/job/119987116428)
+took 44m47s, a 20.1% elapsed-time reduction. Both AGNOS jobs succeeded; the parent
+run's cancellation concerns a later separate generic ARM comparison. These
+measurements support CI runner choice, not this candidate's device CPU savings
+or exact-source validation. The incomplete hosted generic GNU/musl comparison
+has been requested cancelled by its owning task; its result is no longer a
+continuation condition. The [bin-actions job](https://github.com/bin9208/openpilot-rust/actions/runs/39832976197/job/120013728323)
+passed on `2ff834da04e2acaad3d63211c2b76e287679eeaa` in 55m41s, including the
+GNU builds and static musl probe. This establishes that comparison job's cross
+build on x64; it is neither actual ARM execution nor validation of PR #494's
+different source and dependency-staging changes. At the user's final runner
+selection, the hosted job remained in dependency preparation after exceeding
+the local job's entire 55m41s. There is no completed paired generic timing result;
+neither the delay's cause nor a pure compilation speed ratio is inferred. The
+user's reported 404 errors are not independently established as its cause.
+
+The user's latest direction fixes **all next needed jobs** to `bin-actions`,
+including ARM code execution under local ARM QEMU. The earlier GitHub ARM
+exception is withdrawn; neither hosted x64 nor hosted ARM is a fallback. ARM
+tests must still execute ARM binaries with their existing coverage, with results
+explicitly labelled as emulated rather than native hardware validation. Already
+running CI and unchanged successful checks must not be cancelled or repeated
+solely to change runners. The fixed free-space stop/recovery rule has been
+removed from task instructions and the heartbeat; retain operation-specific
+growth estimates and resource evidence. Current run `39833346797` is preserved.
+Legacy numerical limits found in validation helpers are recorded for the next
+necessary scoped correction; this policy update does not restart the current CI.
+
+The runner-comparison task owns the shared dev-md routing and QEMU/PRoot execution
+foundation in [#502](https://github.com/bin9208/openpilot-rust/issues/502) /
+[PR #504](https://github.com/bin9208/openpilot-rust/pull/504), including validation in registered
+local Actions. This CPU task will reuse that verified change and does not duplicate
+it. The currently committed #494 workflow still has the earlier GitHub ARM route;
+the new all-local implementation has not yet been delivered. Preserve the existing
+execution and use the verified common foundation for the next necessary run,
+without starting a hosted ARM fallback while waiting. These instructions do not
+expand device, release, protected-branch or separate #296 permissions.
+
+## Host dependency installation failure, 2026-10-23
+
+Source `91c4cc6751229499a7daf18246482e9a87faabd2` passed fast checks, mapped
+user docs and Git update lifecycle in
+[CI 39833346797](https://github.com/bin9208/openpilot-rust/actions/runs/39833346797).
+Its [build-release job](https://github.com/bin9208/openpilot-rust/actions/runs/39833346797/job/120069041471)
+failed during `tools/op.sh setup`: APT requested `binary-arm64/Packages` for
+`noble`, `noble-updates` and `noble-security` from `archive.ubuntu.com/ubuntu`,
+which returned 404. The build and subsequent runtime checks did not execute;
+the three downstream aggregate gates failed closed. This is direct evidence of
+the local job's package-index failure, not a CPU runtime failure or proof of the
+cause of the user's separately reported hosted-runner failures.
+
+The prepared setup fix scopes both APT update and install to the current
+userspace's native `dpkg --print-architecture`, using a temporary command-line
+configuration. It clears the inherited architecture list without modifying host
+sources or foreign dpkg registrations, and retains foreign cached indexes. APT
+documents that [`-c` configuration overrides the defaults and `#clear` removes
+list entries](https://manpages.debian.org/bookworm/apt/apt.conf.5.en.html).
+Focused regression cases cover amd64/arm64 userspaces with a foreign-architecture
+list, direct/sudo invocation, update failure and temporary-config cleanup, and
+invalid architecture rejection. They are included in the existing fast-test
+discovery; only Bash/Python syntax and diff review have run locally.
+
+The patch is held locally pending the common all-local execution foundation.
+PR #504 at `d27cd41ee8082cd7feb76f8ec59c8d7a9701d37b` passed its focused local
+policy checks but its ARM setup failed in
+[run 39850292573](https://github.com/bin9208/openpilot-rust/actions/runs/39850292573)
+at guest dpkg database access. That separate task owns the fix. No new execution
+of the old hosted-ARM workflow is requested; the setup repair and full CPU
+validation remain unverified until the next registered all-local Actions run.

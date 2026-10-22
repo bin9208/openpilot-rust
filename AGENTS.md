@@ -2,13 +2,30 @@
 
 ## dev-md CPU optimization runner direction (2026-10-23, issue #422)
 
-- Use the existing registered Actions runner `bin-actions` for x86-64 checks,
-  ARM cross builds and AGNOS packaging. Its dedicated label is `dev-md-local`.
-  Keep native ARM execution checks on GitHub's `ubuntu-24.04-arm` runners, as
-  expressly confirmed by the user. This supersedes the hosted-only restriction
-  below for this work; tests/builds still run as Actions jobs, not from the agent's
-  local working checkout. Preserve true runner/architecture evidence, isolated
-  job output, disk reserves, the sequential chain and all required checks.
+- The latest user instruction sends all next necessary Actions jobs to the
+  existing `bin-actions` runner (`self-hosted`, `Linux`, `X64`, `dev-md-local`).
+  The earlier GitHub ARM exception is withdrawn. Execute ARM binaries/tests in
+  local ARM QEMU and report emulation explicitly; do not substitute x64 tests,
+  remove ARM coverage, or call QEMU native hardware validation. Do not start
+  GitHub-hosted x64 or ARM fallback jobs or further runner comparisons.
+- The runner-comparison task owns the shared dev-md routing and ARM QEMU/PRoot
+  foundation in issue #502 / PR #504 and will validate it in local
+  Actions. Reuse its verified delivery; do not duplicate that implementation in
+  #422 or start a hosted ARM fallback while it is pending. Current committed
+  #422 workflows still contain the earlier ARM route until that foundation is
+  integrated. Preserve current CI and apply the new route to the next necessary
+  execution. The agent's working checkout remains syntax/format/diff only.
+- Preserve true host/target/emulation evidence, isolated job output, actual
+  operation-specific space estimates, the sequential chain and required checks.
+  #496/#498 validated local x64/AGNOS work; generic cross-build job 120013728323
+  passed source `2ff834da04e2acaad3d63211c2b76e287679eeaa` in 55m41s. This does
+  not yet validate the new shared QEMU execution foundation or #422's source.
+  Do not wait for the cancelled hosted comparison. User-reported 404 errors are
+  not an established cause of that comparison's hosted delay.
+- Keep already-running CI and successful unchanged checks; do not cancel,
+  restart or repeat them solely to change runners. Apply runner changes to the
+  next needed execution. The user's fixed free-space stop/recovery rule has
+  been removed; use the operation's actual estimated growth and resource evidence.
 - The user authorized automatic continuation of #422 through checked dev-md
   runtime delivery. Device installation and driving acceptance remain user-owned.
 
@@ -31,9 +48,9 @@
 - The user requires local checks to stay at syntax, formatting and diff review.
   Run functional tests, ARM/AGNOS builds, sealing, installation verification and
   release publication in GitHub Actions. Separate quick branch checks from deep
-  PR/release checks. Do not repeat successful unchanged checks locally or use a
-  local/self-hosted runner as a workaround. This applies to the dev-md track;
-  the separate #296 conversion is not part of this task.
+  PR/release checks. Do not repeat successful unchanged checks locally. The
+  user's 2026-10-23 runner direction above supersedes the prior self-hosted ban.
+  This applies to the dev-md track; the separate #296 conversion remains separate.
 
 ## dev-md upstream port isolation (2026-10-15, issue #338)
 
@@ -91,12 +108,7 @@
   device comparison after the complete runtime candidate is ready. Keep unported
   components and native external dependencies explicit in the inventory.
 
-- The user required prevention of disk exhaustion on 2026-09-30. Check available
-  space before each local build, dependency install or large artifact copy. Keep
-  at least 25 GiB free plus the operation's estimated growth; when below that
-  floor, stop new build work and recover at least 35 GiB before resuming. Prefer
-  bounded package builds with incremental compilation disabled and reuse a
-  coordinated target cache. On 2026-10-09 the user explicitly authorized deleting
+- On 2026-10-09 the user explicitly authorized deleting
   old Rust-port records, archived validation artifacts and all unused build
   caches without another approval or preservation/compression step. This
   supersedes earlier instructions to retain historical local evidence. Preserve
