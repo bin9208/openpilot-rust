@@ -232,9 +232,9 @@ impl Drop for Codec {
         }
     }
 }
-#[allow(unsafe_code)] // Length-bounded iconv FFI; each call documents buffer validity.
 fn native_codec(raw: &[u8], name: &CStr) -> Result<String> {
     // SAFETY: Static nul-terminated names; the result is checked before use.
+    #[allow(unsafe_code)] // Confined to this checked GNU libc FFI call.
     let handle = unsafe { iconv_open(c"UTF-8".as_ptr(), name.as_ptr()) };
     if handle as usize == usize::MAX {
         return Err(Diagnostic::new(
@@ -255,6 +255,7 @@ fn native_codec(raw: &[u8], name: &CStr) -> Result<String> {
     let mut output_left = out.len();
     // SAFETY: Both cursor pairs point to live buffers with their exact lengths;
     // iconv may read input and write output only within the remaining lengths.
+    #[allow(unsafe_code)] // Confined to this bounded GNU libc FFI call.
     let status = unsafe {
         iconv(
             codec.0,
@@ -271,6 +272,7 @@ fn native_codec(raw: &[u8], name: &CStr) -> Result<String> {
         )));
     }
     // SAFETY: Null input flushes this live codec state into remaining output.
+    #[allow(unsafe_code)] // Confined to this bounded GNU libc FFI call.
     let flushed = unsafe {
         iconv(
             codec.0,
@@ -342,7 +344,7 @@ pub fn source(raw: &[u8]) -> Result<String> {
     let mut key = String::new();
     let mut separator = false;
     for c in codec.chars() {
-        if c.is_ascii_alphanumeric() {
+        if c.is_ascii_alphanumeric() || c == '.' {
             if separator && !key.is_empty() {
                 key.push('_');
             }

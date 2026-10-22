@@ -72,6 +72,17 @@ fn all_72_original_raw_byte_admissions_use_actual_python312_syntax() {
         "syntax-actual.json",
         &json!({"rows":rows,"differences":differences}),
     );
+    // Regression derived from pinned CPython registry source, distinct from
+    // the72 retained original observations. Dot fallback applies to aliases
+    // only: utf.8 is not a module alias, while ansi_x3.4_1968 aliases ASCII.
+    let mut registry = vec![];
+    for (codec, expected) in [("utf.8", false), ("ansi_x3.4_1968", true)] {
+        let source = format!("# coding: {codec}\nx=1\n");
+        let actual = check_bytes(source.as_bytes());
+        registry.push(json!({"codec":codec,"expected_from_pinned_registry":expected,"accepted":actual.is_ok(),"diagnostic":actual.as_ref().err().map(|e|e.to_string())}));
+        save("registry-controls.json", &json!({"rows":registry}));
+        assert_eq!(actual.is_ok(), expected, "registry dot boundary {codec}");
+    }
     assert!(
         differences.is_empty(),
         "actual original byte-source mismatches: {differences:?}"

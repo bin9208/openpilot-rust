@@ -8103,3 +8103,12 @@ Every other byte agrees and final guards pass. Strict comparison stays failed.
 Kernel92's zero-arm forwarding is a concrete candidate cause, requiring actual
 operand and exceptional-value validation. Earlier opposite-sign #482 evidence
 and nonzero #476 drift are not explained or accepted by this observation.
+
+Before its first hosted native gate, source review separates the exact326codec
+aliases from120canonical modules: CPython's dot-to-underscore fallback consults
+aliases only. Regression controls distinguish valid ansi_x3.4_1968 from invalid
+utf.8. Parent independently rechecks both sorted source-data rosters. The GNU FFI
+allowances are scoped to declarations, owned-handle drop and three documented
+calls. Default and no-default library checks are both required by the frozen
+hosted recipe8452e7bc356de61afbe9395140b949685f69b626c3f99ebd1147134d5f63da5e;
+no functional acceptance precedes its actual result.
