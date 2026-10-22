@@ -390,8 +390,13 @@ fn descendant_socket(root: Pid, path: &Path) -> Result<bool> {
         .lines()
         .filter_map(|line| {
             let fields = line.split_whitespace().collect::<Vec<_>>();
-            (fields.len() == 8 && fields[7].as_bytes() == path.as_os_str().as_bytes())
-                .then(|| fields[6].to_owned())
+            (fields.len() == 8
+                // Accepted stream sockets inherit the listener's pathname.
+                // Only SO_ACCEPTCON identifies the live listening endpoint.
+                && fields[3] == "00010000"
+                && fields[4] == "0001"
+                && fields[7].as_bytes() == path.as_os_str().as_bytes())
+            .then(|| fields[6].to_owned())
         })
         .collect::<Vec<_>>();
     if sockets.len() != 1 {
@@ -816,4 +821,38 @@ pub(super) fn supervise(manager: bool, options: &Options) -> Result<String> {
         receipt.preserve = true;
     }
     Ok(text)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn connected_unix_streams_keep_the_owned_listener_authenticatable() {
+        use std::os::unix::net::{UnixListener, UnixStream};
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("logmessage");
+        let listener = UnixListener::bind(&path).unwrap();
+        let client = UnixStream::connect(&path).unwrap();
+        let (accepted, _) = listener.accept().unwrap();
+        let network = fs::read_to_string("/proc/net/unix").unwrap();
+        assert!(
+            network
+                .lines()
+                .filter(|line| line.split_whitespace().last() == path.to_str())
+                .count()
+                >= 2,
+            "regression requires accepted socket pathname duplication"
+        );
+        assert!(
+            descendant_socket(rustix::process::getpid(), &path).unwrap(),
+            "connected peers must not hide the owned listening socket"
+        );
+        fs::remove_file(&path).unwrap();
+        let replacement = UnixListener::bind(&path).unwrap();
+        assert!(
+            !descendant_socket(rustix::process::getpid(), &path).unwrap(),
+            "two live listeners sharing a pathname remain ambiguous"
+        );
+        drop((replacement, accepted, client, listener));
+    }
 }

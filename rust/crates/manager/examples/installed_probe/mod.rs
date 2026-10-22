@@ -27,6 +27,18 @@ pub struct Probe {
     native_owned_ipc: bool,
     qa_ipc_root: Option<PathBuf>,
 }
+fn owned_qa_directory(path: &Path, parent: &Path, prefix: &[u8]) -> Result<()> {
+    if path.parent() != Some(parent)
+        || !path
+            .file_name()
+            .is_some_and(|name| name.as_encoded_bytes().starts_with(prefix))
+        || !std::fs::symlink_metadata(path)?.is_dir()
+        || std::fs::canonicalize(path)? != path
+    {
+        return Err("invalid route-upload owned directory".into());
+    }
+    Ok(())
+}
 impl Probe {
     pub fn new(output: &Path, root: &Path, binaries: &Path, mode: &str) -> Result<Self> {
         let qa_namespace = std::env::var_os("ROUTE_UPLOAD_QA_NAMESPACE");
@@ -45,15 +57,7 @@ impl Probe {
         // spawning the probe. Ordinary callers retain the original allocation.
         let (namespace_owner, namespace) = if let Some(path) = qa_namespace {
             let path = PathBuf::from(path);
-            if path.parent() != Some(Path::new("/dev/shm"))
-                || !path.file_name().is_some_and(|name| {
-                    name.as_encoded_bytes()
-                        .starts_with(b"msgq_rust-probe-installed-")
-                })
-                || !std::fs::symlink_metadata(&path)?.is_dir()
-            {
-                return Err("invalid route-upload owned namespace".into());
-            }
+            owned_qa_directory(&path, Path::new("/dev/shm"), b"msgq_rust-probe-installed-")?;
             (None, path)
         } else {
             let owner = tempfile::Builder::new()
@@ -72,6 +76,7 @@ impl Probe {
         std::env::set_var("PARAMS_ROOT", output.join("params"));
         if native_owned_ipc {
             let ipc = qa_ipc_root.as_ref().ok_or("native QA IPC root missing")?;
+            owned_qa_directory(ipc, Path::new("/tmp"), b"route-upload-ipc-")?;
             std::env::set_var("ROUTE_UPLOAD_QA_IPC_ROOT", ipc);
         } else if qa_ipc_root.is_some() {
             return Err("QA IPC root requires native-owned namespace".into());
@@ -359,4 +364,37 @@ pub fn packet(topic: &str, started: bool) -> Result<Vec<u8>> {
         _ => return Err("unknown input topic".into()),
     }
     Ok(capnp::serialize::write_message_to_words(&message))
+}
+
+#[cfg(test)]
+mod qa_endpoint_tests {
+    use super::*;
+    #[test]
+    fn owned_qa_roots_reject_aliases_even_with_trailing_separators() {
+        for (parent, prefix) in [
+            ("/tmp", "route-upload-ipc-"),
+            ("/dev/shm", "msgq_rust-probe-installed-"),
+        ] {
+            let root = tempfile::Builder::new()
+                .prefix(prefix)
+                .tempdir_in(parent)
+                .unwrap();
+            let alias = root.path().with_extension("alias");
+            symlink(root.path(), &alias).unwrap();
+            for suffix in ["", "/", "/."] {
+                let mut spelling = alias.as_os_str().to_owned();
+                spelling.push(suffix);
+                assert!(
+                    owned_qa_directory(Path::new(&spelling), Path::new(parent), prefix.as_bytes())
+                        .is_err(),
+                    "QA alias must be rejected, including trailing separators: {suffix}"
+                );
+                let mut genuine = root.path().as_os_str().to_owned();
+                genuine.push(suffix);
+                owned_qa_directory(Path::new(&genuine), Path::new(parent), prefix.as_bytes())
+                    .unwrap();
+            }
+            std::fs::remove_file(alias).unwrap();
+        }
+    }
 }

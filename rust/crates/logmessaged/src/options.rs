@@ -101,6 +101,7 @@ fn qa_endpoint(prefix: &str, qa_root: Option<OsString>) -> Result<String, Error>
                     .file_name()
                     .is_some_and(|name| name.as_encoded_bytes().starts_with(b"route-upload-ipc-"))
                 || !std::fs::symlink_metadata(&path).is_ok_and(|meta| meta.is_dir())
+                || !std::fs::canonicalize(&path).is_ok_and(|actual| actual == path)
             {
                 return Err(Error::Arguments("invalid route-upload QA IPC root"));
             }
@@ -152,7 +153,17 @@ mod qa_endpoint_tests {
         }
         let alias = root.path().with_extension("alias");
         std::os::unix::fs::symlink(root.path(), &alias).unwrap();
-        assert!(qa_endpoint("-original", Some(alias.as_os_str().to_owned())).is_err());
+        for suffix in ["", "/", "/."] {
+            let mut spelling = alias.as_os_str().to_owned();
+            spelling.push(suffix);
+            assert!(
+                qa_endpoint("-original", Some(spelling)).is_err(),
+                "QA alias must be rejected, including trailing separators: {suffix}"
+            );
+            let mut genuine = root.path().as_os_str().to_owned();
+            genuine.push(suffix);
+            assert!(qa_endpoint("-original", Some(genuine)).is_ok());
+        }
         std::fs::remove_file(alias).unwrap();
     }
 }
