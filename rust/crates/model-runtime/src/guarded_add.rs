@@ -321,13 +321,16 @@ pub fn canonicalize(source: &str) -> Result<CanonicalizedSource, RewriteError> {
         }
 
         let generated_sum_name = format!("%diagnostic_guarded_sum_{}", rewrites.len());
-        if function.ssa_names.contains(&generated_sum_name) {
-            return Err(RewriteError::GeneratedNameCollision {
-                function: function.name.clone(),
-                name: generated_sum_name,
-            });
+        let generated_zero_name = format!("{generated_sum_name}.zero");
+        for name in [&generated_sum_name, &generated_zero_name] {
+            if function.ssa_names.contains(name) {
+                return Err(RewriteError::GeneratedNameCollision {
+                    function: function.name.clone(),
+                    name: name.clone(),
+                });
+            }
+            function.ssa_names.insert(name.clone());
         }
-        function.ssa_names.insert(generated_sum_name.clone());
 
         if rewrites.len() >= MAX_REWRITES {
             return Err(RewriteError::TooManyRewrites {
@@ -373,10 +376,20 @@ pub fn canonicalize(source: &str) -> Result<CanonicalizedSource, RewriteError> {
             input,
             select.value
         );
+        // Adding explicit +0 is observable: -0 + +0 becomes +0, and a
+        // signaling NaN is quieted. Forwarding input bits loses that operation.
+        // Keep this arm free of nsz and all other fast-math flags. The SSA name
+        // derives from the receipt's generated_sum_name; both names are checked.
+        let generated_zero = format!(
+            "{}{} = fadd float {}, 0.0",
+            leading_whitespace(line.content),
+            generated_zero_name,
+            input
+        );
         let (true_value, false_value) = if select.zero_arm_when_true {
-            (input, generated_sum_name.as_str())
+            (generated_zero_name.as_str(), generated_sum_name.as_str())
         } else {
-            (generated_sum_name.as_str(), input)
+            (generated_sum_name.as_str(), generated_zero_name.as_str())
         };
         let replacement = format!(
             "{}{} = select i1 {}, float {}, float {}",
@@ -393,6 +406,8 @@ pub fn canonicalize(source: &str) -> Result<CanonicalizedSource, RewriteError> {
             line.ending
         };
         push_bounded(&mut output, &generated_sum)?;
+        push_bounded(&mut output, separator)?;
+        push_bounded(&mut output, &generated_zero)?;
         push_bounded(&mut output, separator)?;
         push_bounded(&mut output, &replacement)?;
         push_bounded(&mut output, line.ending)?;

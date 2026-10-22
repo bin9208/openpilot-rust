@@ -32,7 +32,7 @@ fn cli_emits_rewrite_and_hash_receipt_and_preserves_unchanged_bytes() {
     let path = dir.path().join("receipt.json");
     let result = run(&path, SOURCE);
     assert!(result.status.success(), "{:?}", result);
-    let expected = b"define float @f(float %x, float %y, i1 %c) {\n %s = select i1 %c, float 0.0, float %y\n %diagnostic_guarded_sum_0 = fadd arcp contract afn float %x, %y\n %r = select i1 %c, float %x, float %diagnostic_guarded_sum_0\n ret float %r\n}\n";
+    let expected = b"define float @f(float %x, float %y, i1 %c) {\n %s = select i1 %c, float 0.0, float %y\n %diagnostic_guarded_sum_0 = fadd arcp contract afn float %x, %y\n %diagnostic_guarded_sum_0.zero = fadd float %x, 0.0\n %r = select i1 %c, float %diagnostic_guarded_sum_0.zero, float %diagnostic_guarded_sum_0\n ret float %r\n}\n";
     assert_eq!(result.stdout, expected);
     let receipt: serde_json::Value = serde_json::from_slice(&fs::read(path).unwrap()).unwrap();
     assert_eq!(receipt["rewrite_count"], 1);

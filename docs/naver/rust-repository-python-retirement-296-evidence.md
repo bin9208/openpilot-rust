@@ -8121,3 +8121,15 @@ A focused regression checks preserved foreign report bytes, a dangling symlink
 and missing-input admission for a new path. Hosted affected-unit and family
 continuation validation remain required; earlier24case success is preserved as
 partial evidence and does not become full-family acceptance.
+
+The experimental guarded-add rewrite now emits an explicit flag-free x+(+0)
+operation for its zero arm instead of forwarding x's bits. This addresses the
+operation lost by the candidate for negative zero and signaling NaNs; it is
+not final-output normalization or a per-index fix. Both generated SSA names
+are collision-checked, receipt fields stay unchanged and CLI/source regressions
+are updated. An ignored explicit-provider hosted control records256bit/half
+comparisons across strict addition, original nsz, old helper and new candidate.
+Original-nsz observations are retained independently and are not asserted equal
+to strict addition. Actual current model operands, previous opposite-sign case,
+affected exceptional/poststate and full-model validation are still required.
+No road/driver drift issue or compiler-source retirement is declared complete.
