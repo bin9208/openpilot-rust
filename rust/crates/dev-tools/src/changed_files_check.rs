@@ -6,6 +6,8 @@ mod hz;
 mod idna;
 mod japanese;
 mod japanese_variants;
+mod korean;
+mod korean_indices;
 mod names15;
 mod process;
 mod punycode;

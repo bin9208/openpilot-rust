@@ -8498,3 +8498,16 @@ first-convolution diagnostic39828495779 separately uses69bbee211/workflow
 9e99a1e656a8c713cefc56a0c996d43ff5f6b409. It has no numerical fix or acceptance
 claim; original/current compiled images, full same-call operands and FP controls
 must be inspected before attributing drift. Startup39819735679 remains pending.
+
+
+Korean codec candidate0e1ad9f1 is integrated separately: EUC-KR, ISO-2022-KR
+and Johab dispatch through native strict state/index logic. The pinned PSF
+KS X1001 map has8226mapped cells in17672bytes, SHA256
+89ccd2a574c53dbdcb0f53ebaf703fb60602fa8b4d8e3b8f54ecf2cc7b44f686;
+source-derived map data is implementation, never expected observations. No
+Japanese/HZ/IDNA logic, dependency or lock changes. Original-only recipe
+228b14f87cd7f8eefb4b58523921eb1c4c0c34c294e76989b20613d28b5524ae
+captures only missing Korean cases, reusing135prior observations. Its independent
+results and new native comparisons remain required before acceptance. Local
+review covers source/provenance, static table shape, scoped Rustfmt, TOML and
+diff only. Maintained source/callers and inventory stay unchanged.

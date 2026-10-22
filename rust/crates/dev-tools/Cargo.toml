@@ -2355,3 +2355,7 @@ required-features = ["paramsd-startup-check-native"]
 [[test]]
 name = "paramsd_startup_check"
 required-features = ["paramsd-startup-check-native"]
+
+[[test]]
+name = "changed_files_korean"
+required-features = ["changed-files-native"]

@@ -409,13 +409,13 @@ pub(super) fn payload(raw: &[u8], codec: &str) -> Result<String> {
         "big5hkscs" => native_codec(raw, c"BIG5-HKSCS")?,
         "cp949" => native_codec(raw, c"CP949")?,
         "cp950" => native_codec(raw, c"CP950")?,
-        "euc_kr" => native_codec(raw, c"EUC-KR")?,
+        "euc_kr" => super::korean::euc(raw)?,
         "gb18030" => native_codec(raw, c"GB18030")?,
         "gb2312" => native_codec(raw, c"GB2312")?,
         "gbk" => native_codec(raw, c"GBK")?,
         "iso2022_jp_2" => native_codec(raw, c"ISO-2022-JP-2")?,
-        "iso2022_kr" => native_codec(raw, c"ISO-2022-KR")?,
-        "johab" => native_codec(raw, c"JOHAB")?,
+        "iso2022_kr" => super::korean::iso2022(raw)?,
+        "johab" => super::korean::johab(raw)?,
         "base64_codec" | "bz2_codec" | "hex_codec" | "quopri_codec" | "rot_13" | "uu_codec"
         | "zlib_codec" => {
             return Err(invalid(
