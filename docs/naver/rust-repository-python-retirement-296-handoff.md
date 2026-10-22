@@ -31,13 +31,15 @@ an all-module clearance or complete runtime/device acceptance.
 Navigation startup #457 and historical PTRACE_LISTEN/EIO #474 remain unexplained.
 Generic ARM/QEMU is not a sealed AGNOS/device candidate. Keep #296 open.
 
-Published full PR headf913de3aa3c0f2c261f4ae4b87e41f3eb317fb82 checks out synthetic
-merged39b1b08c2079e9b3356be06ddddf9db49551be6; parent verifies identical trees.
-Integration39691148113 passes. Rust39691148023 has43successful jobs,4functional/
-policy failures plus failed aggregate; generic ARM remains running. Failures:
-workspace module format/empty metadata executable (#475), Panda missing source
-roster (#477), old Card aggregate policy (#475), and model driver numerics (#476).
-Fast39691148018 fails inherited host-staging assertions (#478).
+Published current PR headd61079461c0e217056095fcd56d6831230317137. Complete new
+Rust39703167508, Integration39703167608 and Fast39703167593 are running/queued;
+inspect actual latest results before acceptance. Previous f913de3aa checkout is
+synthetic merged39b1b08c2079e9b3356be06ddddf9db49551be6, independently same tree.
+Integration39691148113 passes. Rust39691148023 is complete:44successful jobs,
+including generic aarch64119537355478, four failures plus failed aggregate.
+Failures were workspace formatting/metadata binding (#475), Panda source roster
+(#477, now closed after complete focused proof), old Card policy (#475) and model
+numerics (#476). Fast39691148018 failed old host-staging assertions (#478).
 
 Source fixes for the CI contracts are committed. Current-source complete Fast
 routing/metadata/Card39696562943 atdf374b0ab passes, including77isolation checks,
@@ -74,7 +76,7 @@ inspect a different tree and are never evidence for their pinned source checkout
   151historical+17helpers+1manifest-5phase sources-1orchestrator. Parent audits
   17095CRCs,163Git source hashes,76phase records/argv and84disk receipts.
   Earlier independent original evidence is retained; live Python phase helpers
-  still run. #477 acceptance is met; no additional inventory count changes.
+  still run. #477 is closed with comment6329891483; no additional inventory count changes.
 
 ## Kalman four-command development closure accepted
 
@@ -130,17 +132,45 @@ checkout, and exact log-context rejection is unchanged. Retry39699899580, workfl
 94db924b4f2acc24e29ca250ffe5e4bdc8938b00, is running at that source.
 
 Failure-only native postmortem stays diagnostic/non-acceptance and preserves gate
-failure. Additional diagnostic39700512883/workflow0e522bf2a uses two actual hosted
-contexts, each with both warmup/frame0 sequentially, fresh native catalog and
-unchanged original Python pipeline. It records actual CPU/provider and decodes
-sealed frozen predictions only as diagnostic classification. Never force a CPU
-or present the diagnostic as six-source acceptance. Keep #476/#479/#296 open until
-their actual criteria pass.
+failure. Two actual hosted contexts39700512883/workflow0e522bf2a prove EPYC7763/
+znver3 matches, while EPYC9V45/generic withAVX512 reproduces58456ffe without the
+daemon. Original Python still matches frozen99b8b2fe; both full warps and47IR
+texts match. Parent audits both258-CRC ZIPs and all raw predictions (439/553float
+values differ, maxabs0.01171875). This is not Intel-specific. Static review sees
+original PROGRAM.src[4] retained code versus export recompiling src[3] IR for the
+current host; target/codegen causality is not yet established. First divergent
+kernel diagnostic39703190929 atd610/workflow9e66c65d35b0c074203577d63818b3a4284a11b6
+compares identical complete alias-preserving prestates and records original/native
+machine code plus read-only worker/main MXCSR/rounding states. Never force CPU,
+substitute original compiled objects as a fix or weaken independent predictions.
+Keep #476/#479/#296 open until their actual criteria pass.
+
+## HardwareInfo next-family candidate
+
+Original hardware119537355450/run39691148023 passes136cases/3110observations/
+70datagrams. Parent selects955source members from3GB artifact12388879432 with
+bounded206ranges (7.4MB network,37.6MB selected expanded); no full-ZIP claim.
+Original-plan/9CLI admission capture39702167583 at3ddae8/workflow10185ac563b237e73696c7a4d90f7fec19d04ce4
+passes;25CRCs/SHA3b61d990524bf00b749f2c9b550f8a4ce39b16ad395d71a0d52847522922bb1f.
+Parent matches all136 source request schedules and70wire bytes,28original source/
+binding Git hashes and12plan-source hashes at both captures. Current fixtures
+are source-only gzip byte preservation,974members with compressed/expanded pins,
+30source hashes; manifestSHA2a0296cd351c530457f7fc9a3219176f0e533eb30a5da325a5bc1f0307a545af.
+All974 committed Git bodies preserve pins. Historical inherited env was not directly
+recorded; explicit later env must reproduce complete historical path observations.
+
+Native leaf/capture admission and CLI registered at148030ae65c6728155029f2ba2e17e4b3a5a99be,
+feature hardware-info-qa-native. Parent reviews/fixes plain-vs-gzip admission,
+source-root interpretation, reply-array normalization, peer cleanup/write timeout,
+raw OS argv/path suffixes and before/after input receipts. Actual hosted candidate
+recipe hardware-info-native-296-once.yml, workflow1baa7fac443e1319f60cf59fa5b730686dfb5b5f,
+now queued/pending. All3original Python paths remain live and accepted count stays
+259/3/3318. No original-binding/compiler/hardware-module retirement claim.
 
 ## Publication next
 
 Keep source changes and `.omo` intact. Publish a coherent issue-branch batch and
 update draft343/#296; final complete exact-source required/workspace/ARM results
 remain necessary. Do not stop at queued CI or a PR, merge protected branches or
-claim device acceptance. Latest #296 checkpoint6329291714 predates the four-command
-acceptance and current #479 evidence; replace with an accurate new checkpoint.
+claim device acceptance. Latest #296 checkpoint6330165232 and draft343 describe publishedd610, four Kalman
+closures, corrected Panda, AMD reproduction and pending current complete gates.

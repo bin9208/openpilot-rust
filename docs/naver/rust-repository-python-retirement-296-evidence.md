@@ -5989,3 +5989,32 @@ not directly recorded. Later original-plan environment is captured; native repla
 must explicitly reproduce it and match the complete old paths-actual-environment
 result. Rust leaf implementation is in progress; all3Python files remain live,
 inventory259/3/3318 unchanged. This is not functional retirement acceptance.
+
+### Published d610 and native HardwareInfo candidate (2026-10-22)
+
+Issue branch/PR343 now publishesd61079461c0e217056095fcd56d6831230317137; protected
+branches are not changed. #296 comment6330165232 and rewritten draft body retain
+259/3/3318 and all pending boundaries. Prior full f913 Rust39691148023 finishes
+44successful jobs including aarch64119537355478, four failures plus aggregate.
+New exact branch-wide Rust39703167508/Integration39703167608/Fast39703167593 are
+running/queued and cannot yet be called accepted.
+
+HardwareInfo native candidate148030ae65c6728155029f2ba2e17e4b3a5a99be registers
+feature-gated checker/capture admission and focused controls; original3Python
+paths remain live. Capture admission binds fixed manifestSHA,974member full/
+expanded hashes,30source pins, original completion, native ELF and before/after
+identity/hash receipts. It holds critical native/manifest/source descriptors but
+reopens fixture bodies to avoid retaining nearly1024FDs. Parent review fixes
+plain member gzip decoding, source checkout versus scratch interpretation,
+reply-array JSON encoding, raw suffix argv/path conversion, bounded peer writes
+and readiness-error cleanup. Scope is Linux fixture QA, not a runtime policy
+change. Only scoped syntax/format/diff and immutable source-data inspections ran
+locally. Hosted predelete recipe workflow1baa7fac443e1319f60cf59fa5b730686dfb5b5f
+checks units/Clippy/format and all original cases in actual/private roots, with
+traces and unchanged ELF/source/evidence seals. Acceptance is pending.
+
+First-kernel diagnostic39703190929 atd610, workflow9e66c65d35b0c074203577d63818b3a4284a11b6,
+adds same-prestate original retained-code/native-object calls, complete alias and
+launch mapping, first-difference byte windows/prestate, IR/object/machine-code
+bodies and read-only original CPU-worker/main MXCSR/rounding observations. This
+is diagnostic-only; no numerical acceptance or production target change.
