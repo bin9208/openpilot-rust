@@ -2,6 +2,7 @@
 //! Opt-in adapter; maintained Python callers remain until differentials pass.
 mod codec_names;
 mod decode;
+mod hz;
 mod idna;
 mod japanese;
 mod japanese_variants;

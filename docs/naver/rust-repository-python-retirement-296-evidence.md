@@ -8388,3 +8388,39 @@ and diff checks pass. Compile, lifecycle, independent saved replay and fresh
 original/native traffic are still required in hosted Actions. Four remaining
 diagnostics/pipeline/flush/IO controllers share Python helpers, so the family
 is not retired and maintained CI callers remain intact.
+
+IDNA native39825221809 succeeds at995383b2bbdd199fb925184914d8aa4f29837831,
+workflow0d1358ef62458f33bd225f4d7350c77d028a98d3. Parent authenticates
+artifact12446696914:18502255bytes/SHA256
+cfa863529a80e3cda3cd70828e773cd84485e437eb95ada57ea42ba68dafab41/all61CRCs.
+Both tests execute, with exactly two native execs and zero Python execs. All
+1112064scalar rows/2224128outputs and1712vectors agree;280536original scalar
+rejections remain rejections. Full scalar binary SHA256 is3d0e97cad555fa1a62cdbdf62363e9da019c1b49b002443ef1aa8bf2904c0a96
+on both sides. Parent verifies byte-equal paired snapshots. This bounded Unicode
+domain is accepted; arbitrary strings and source retirement remain separate.
+Focused codec artifact12446386747 is20238143bytes/SHA256
+d0f6b1a6dc781927aacc31e910dd21c3aec649ef350ec266469421c399d20770/all48CRCs;
+its independent receipt confirms both repaired tests and zero registry differences.
+
+AST39823466717's failure is now localized to upload-artifact rejecting a deliberate
+newline-containing filename. Compile/Clippy,8lifecycle tests/31scenarios,12Git
+observations and the saved-output auditor completed successfully, but the artifact
+API reports zero artifacts. Job status alone cannot replace lost raw proof.
+A separate inert packaging canary runs first; after its acceptance, narrowly
+recapture essential lifecycle evidence with the same source and unchanged tests.
+
+HZ candidate223081ee adds the44line strict native state machine and pinned
+7445cell CPython GB2312 mapping with provenance/license. The separate new
+UTF16/32/Punycode integration target adds3tests without changing those decoders.
+Parent resolves only Cargo test-registration overlap; scoped Rustfmt/TOML/diff
+checks pass. Original HZ additions39825902289 at0e38b0ea419ac059a2e0628ca6422eac45af81e4
+pass197356dense rows,1992new vectors and136source admissions while reusing45prior
+inputs. Artifact12446442070:105986bytes/SHA256
+88f3419403fc78823a1698db65263e1d91c68f991f31783e16d7f5fd5bb006ca,
+26CRCs/16seals; manifestd4bf7362d9d878b6f9df3967064490188355ade15a9e8addd2284f0a55d6fda8.
+Original payload39825895420 at the same source passes252observations:
+UTF16 accepts75/rejects27, UTF32 accepts53/rejects52, Punycode accepts36/rejects9.
+Artifact12446034737:9888bytes/SHA256
+2cd8e111b92ec2b674738504b75164b5ba006950ee6d9c3ad47aa62f399721d9,
+14CRCs/4seals/13provider pairs; manifest03ff78c12a96439dfac4555bf5309f006549574753db51e53930d4e24a8d6263.
+Native HZ and payload comparison is still required; no source retirement follows.

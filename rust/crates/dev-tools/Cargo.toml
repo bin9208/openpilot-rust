@@ -2327,3 +2327,11 @@ required-features = ["loggerd-check-native"]
 [[test]]
 name = "loggerd_check"
 required-features = ["loggerd-check-native"]
+
+[[test]]
+name = "changed_files_hz"
+required-features = ["changed-files-native"]
+
+[[test]]
+name = "changed_files_codec_payloads"
+required-features = ["changed-files-native"]

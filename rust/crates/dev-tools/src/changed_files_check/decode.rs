@@ -404,9 +404,7 @@ pub(super) fn payload(raw: &[u8], codec: &str) -> Result<String> {
         "iso2022_jp" | "iso2022_jp_1" | "iso2022_jp_3" | "iso2022_jp_2004" | "iso2022_jp_ext" => {
             super::japanese_variants::iso2022(raw, name)?
         }
-        "hz" if raw.is_ascii() && !raw.contains(&b'~') => {
-            String::from_utf8(raw.to_vec()).expect("HZ ASCII without shift introducer")
-        }
+        "hz" => super::hz::decode(raw)?,
         "big5" => native_codec(raw, c"BIG5")?,
         "big5hkscs" => native_codec(raw, c"BIG5-HKSCS")?,
         "cp949" => native_codec(raw, c"CP949")?,
@@ -415,7 +413,6 @@ pub(super) fn payload(raw: &[u8], codec: &str) -> Result<String> {
         "gb18030" => native_codec(raw, c"GB18030")?,
         "gb2312" => native_codec(raw, c"GB2312")?,
         "gbk" => native_codec(raw, c"GBK")?,
-        "hz" => native_codec(raw, c"HZ")?,
         "iso2022_jp_2" => native_codec(raw, c"ISO-2022-JP-2")?,
         "iso2022_kr" => native_codec(raw, c"ISO-2022-KR")?,
         "johab" => native_codec(raw, c"JOHAB")?,
