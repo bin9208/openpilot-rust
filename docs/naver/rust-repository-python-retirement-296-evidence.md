@@ -8561,3 +8561,20 @@ identities. New dense captures remain valid, but final caller acceptance waits
 for that supplement. Successful native domains are not rerun for this bookkeeping.
 CP949's remaining GNU dependency receives its own focused observation/comparison
 lane; no full arbitrary-byte-string claim is made.
+
+
+Loggerd retry39829741094 passes the production controller and loggerd builds,
+but test compilation finds two remaining generated-union getter calls. Patch
+bf1b3e19 uses strict event::LogMessage matches, preserving payload/validity checks;
+no functional test had yet passed. The new source still needs the complete gate.
+
+CarrotNavi maintained-caller candidatee774f207 replaces only the embedded exact
+comparison with a freshly built native comparator. Every existing runtime QA
+step and the shared exact helper remain byte-identical. The independently
+accepted original program is frozen first with SHA256
+a6aa33955b981c9308729c89d744d794acf6127140421d10c01ae76147256262
+in an explicitly retained executable Python test oracle; it is not relabeled
+non-executing text or removed source. Two new focused hosted tests will execute
+the actual extracted build/caller over42file-effect controls while reusing the
+accepted72comparison controls. The gate is pending. Paired user docs describe
+the native command and this limited scope; baseline inventory remains unchanged.

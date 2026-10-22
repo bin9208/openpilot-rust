@@ -63,6 +63,14 @@ sudo. The four Python development helpers are removed and their source-absence,
 functional and caller-policy checks pass. Repository-wide conversion remains
 open in #296.
 
+Carrot Navi CI builds `check-carrot-navi-comparison` in `openpilot-dev-tools`
+with `--no-default-features --features carrot-navi-compare-native --bin check-carrot-navi-comparison`.
+Run it with one capture-directory argument. It performs the existing exact policy,
+socket, lifecycle and discovery comparisons and writes the normalized rows and
+`comparison.json`. The independent original comparator is retained as a sealed
+test fixture. Original runtime/QA traffic stays in CI; whole-family retirement
+and device acceptance remain pending in #296.
+
 The Linux `check-native-logging` candidate compares the Rust logger with the
 original C++ producer, including packet bytes, console output and transport
 failures. Build it with `--features native-logging-check-native --bin check-native-logging`

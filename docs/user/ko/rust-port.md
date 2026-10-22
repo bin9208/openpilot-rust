@@ -60,6 +60,14 @@ CI의 비밀번호 없는 sudo로 임시 마운트 공간을 만듭니다. Pytho
 제거한 상태의 기능·소스 부재·호출 정책 검증이 통과했습니다. 전체 전환은 #296에서
 계속 진행합니다.
 
+Carrot Navi CI는 `openpilot-dev-tools`에서
+`--no-default-features --features carrot-navi-compare-native --bin check-carrot-navi-comparison`으로
+`check-carrot-navi-comparison`을 빌드합니다. 캡처 디렉터리 하나를 인자로 전달하면
+기존 정책·소켓·수명주기·디스커버리를 정확히 비교하고 정규화된 행과
+`comparison.json`을 기록합니다. 독립 원본 비교기는 해시로 고정한 테스트 자료로
+보존합니다. 기존 런타임·QA 트래픽은 CI에서 유지하며, 전체 도구군 제거와 실기
+확인은 #296의 미완료 검증입니다.
+
 Linux용 `check-native-logging` 후보는 Rust 로거와 원본 C++ 생산자의 패킷 바이트,
 콘솔 출력, 전송 실패 동작을 비교합니다. `openpilot-dev-tools`에서
 `--features native-logging-check-native --bin check-native-logging`으로 빌드합니다.

@@ -1,5 +1,5 @@
 //! Hosted-only differential gate. Never execute archived programs: read the
-//! sealed JSON members, run the current comparator and retained workflow oracle.
+//! sealed JSON members, run the current comparator and frozen independent oracle.
 use openpilot_dev_tools::carrot_navi_compare::{assert_exact, normalize};
 use openpilot_log_format::JsonValue;
 use sha2::{Digest, Sha256};
@@ -132,28 +132,13 @@ fn row_case(name: &str, source: &str, native: &str, pass: bool) -> Case {
 }
 
 fn oracle(repo: &Path) -> String {
-    let workflow = fs::read_to_string(repo.join(".github/workflows/rust.yml")).unwrap();
-    let section = workflow
-        .split("      - name: Require exact existing policy and normalized process comparisons\n")
-        .nth(1)
-        .expect("retained embedded oracle required until this gate is accepted");
-    let script = section
-        .split("          python -P - <<'PY'\n")
-        .nth(1)
-        .unwrap()
-        .split("          PY\n")
-        .next()
-        .unwrap();
-    let script = script
-        .lines()
-        .map(|l| l.strip_prefix("          ").unwrap())
-        .collect::<Vec<_>>()
-        .join("\n")
-        + "\n";
+    // Frozen byte-for-byte from the accepted pre-migration embedded program.
+    // The oracle is test data, never a maintained workflow entrypoint.
+    let script = include_str!("fixtures/carrot-navi-comparator/original-embedded.py").to_owned();
     assert_eq!(
         hash(script.as_bytes()),
         ORACLE_SHA,
-        "original embedded oracle changed"
+        "frozen original oracle changed"
     );
     assert_eq!(
         hash(&fs::read(repo.join("rust/tools/radarcan_exact.py")).unwrap()),
@@ -467,4 +452,377 @@ fn held_captures_and_mutations_match_actual_original_cli_and_file_effects() {
         let (sha, name) = line.split_once("  ").unwrap();
         assert_eq!(hash(&fs::read(saved.join(name)).unwrap()), sha);
     }
+}
+
+const RETAINED_JOB_SHA: &str = "fe4b08ff2bab5d8d199c827c6ed13ac392576ed710544a0adef1e6f6160e34cf";
+const BUILD_SHA: &str = "aca5431dabde67b28fa11ce90fc3e71d7f6c0c3c5794025ebb947075deae7e51";
+const CALLER_SHA: &str = "0e1d027a4ca577b885be3551757efe560ecfb31e2f559eb886ca07ca538a9bd2";
+const ACCEPTED_CONTROLS_SHA: &str =
+    "815af34faaf6cf9f2cd02a8934d7c328f8fe7ee16716ed8bea16c7378abdc180";
+
+// Preserve every byte of the existing runtime QA job outside these two steps.
+// This intentionally fails if another Carrot traffic step changes: review its
+// independent evidence before updating this bound, never merely refresh a hash.
+fn maintained_steps(workflow: &str) -> Result<(String, String), String> {
+    let (_, tail) = workflow
+        .split_once("  carrot-navi-runtime:\n")
+        .ok_or("Carrot job missing")?;
+    let (body, _) = tail
+        .split_once("  carrot-navi-arm:\n")
+        .ok_or("Carrot job end missing")?;
+    let mut retained = format!("  carrot-navi-runtime:\n{body}");
+    let mut scripts = Vec::new();
+    for (name, expected_hash) in [
+        ("Build current native Carrot Navi comparator", BUILD_SHA),
+        (
+            "Require exact existing policy and normalized process comparisons",
+            CALLER_SHA,
+        ),
+    ] {
+        let header = format!("      - name: {name}\n        run: |\n");
+        if retained.matches(&header).count() != 1 {
+            return Err(format!("expected one exact {name} step"));
+        }
+        let start = retained.find(&header).unwrap();
+        let rest = &retained[start + header.len()..];
+        let end = rest.find("      - ").ok_or("next step absent")?;
+        let script = rest[..end]
+            .lines()
+            .map(|line| {
+                line.strip_prefix("          ")
+                    .ok_or("nonliteral step body")
+            })
+            .collect::<Result<Vec<_>, _>>()?
+            .join("\n")
+            + "\n";
+        if hash(script.as_bytes()) != expected_hash {
+            return Err(format!("{name} command changed"));
+        }
+        retained.replace_range(start..start + header.len() + end, "");
+        scripts.push(script);
+    }
+    if hash(retained.as_bytes()) != RETAINED_JOB_SHA {
+        return Err("retained original runtime/QA traffic changed".into());
+    }
+    Ok((scripts.remove(0), scripts.remove(0)))
+}
+
+#[test]
+fn maintained_policy_rejects_embedded_oracle_and_changed_traffic() {
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let workflow = fs::read_to_string(repo.join(".github/workflows/rust.yml")).unwrap();
+    maintained_steps(&workflow).unwrap();
+    // Mutation checks prove the policy is sensitive to reintroduction, a caller
+    // bypass and removal of original QA traffic. These do not rerun that traffic.
+    for changed in [
+        workflow.replace("\"$CARROT_NAVI_COMPARISON\" \"$RUNNER_TEMP/carrot-navi\"", "true"),
+        workflow.replace("python -P rust/tools/carrot_navi_cases.py", "echo"),
+        workflow.replace("      - name: Preserve original and native raw captures and failures", &format!("          python -P - <<'PY'\n{}          PY\n      - name: Preserve original and native raw captures and failures", oracle(&repo))),
+    ] {
+        assert_ne!(changed, workflow);
+        assert!(maintained_steps(&changed).is_err());
+    }
+    for entry in fs::read_dir(repo.join(".github/workflows")).unwrap() {
+        let path = entry.unwrap().path();
+        if matches!(
+            path.extension().and_then(|s| s.to_str()),
+            Some("yml" | "yaml")
+        ) {
+            let text = fs::read_to_string(&path).unwrap();
+            assert!(
+                !(text.contains("def normalize(rows):")
+                    && text.contains("cereal_publish_count")
+                    && text.contains("'discovery/wire'")),
+                "Carrot embedded comparison remains executable in {}",
+                path.display()
+            );
+        }
+    }
+    // Its independent helper remains shared by the unchanged runtime QA family.
+    oracle(&repo);
+}
+
+fn saved_seals(saved: &Path) {
+    for line in include_str!("fixtures/carrot-navi-comparator/saved-members.sha256").lines() {
+        let (sha, name) = line.split_once("  ").unwrap();
+        assert_eq!(
+            hash(&fs::read(saved.join(name)).unwrap()),
+            sha,
+            "saved {name}"
+        );
+    }
+}
+
+fn input_state(root: &Path) -> Vec<(bool, Option<Vec<u8>>)> {
+    INPUTS
+        .iter()
+        .map(|name| (root.join(name).is_dir(), fs::read(root.join(name)).ok()))
+        .collect()
+}
+
+#[test]
+fn maintained_caller_matches_frozen_oracle_on_held_capture_and_remaining_edges() {
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let (_, caller) =
+        maintained_steps(&fs::read_to_string(repo.join(".github/workflows/rust.yml")).unwrap())
+            .unwrap();
+    let script = oracle(&repo);
+    let saved =
+        PathBuf::from(std::env::var_os("CARROT_NAVI_SAVED_ROOT").expect("sealed held JSON"));
+    saved_seals(&saved);
+    // This exact receipt is from accepted hosted39826752939. Reuse its 72
+    // controls; do not execute them or infer new source-family acceptance.
+    let accepted =
+        fs::read(std::env::var_os("CARROT_NAVI_ACCEPTED_CONTROLS").expect("accepted receipt"))
+            .unwrap();
+    assert_eq!(hash(&accepted), ACCEPTED_CONTROLS_SHA);
+    let accepted: serde_json::Value = serde_json::from_slice(&accepted).unwrap();
+    let prior = accepted["cases"].as_array().unwrap();
+    assert_eq!(prior.len(), 72);
+    assert_eq!(
+        prior.iter().filter(|c| c["expected_pass"] == true).count(),
+        20
+    );
+    assert_eq!(
+        prior
+            .iter()
+            .map(|c| c["output_sha256"].as_object().unwrap().len())
+            .sum::<usize>(),
+        122
+    );
+    for control in prior {
+        let status = if control["expected_pass"] == true {
+            0
+        } else {
+            1
+        };
+        assert_eq!(control["source_status"], status);
+        assert_eq!(control["native_status"], status);
+        assert_eq!(control["native_execs"], 1);
+    }
+    assert_eq!(accepted["oracle_sha256"], ORACLE_SHA);
+    let evidence = PathBuf::from(
+        std::env::var_os("CARROT_NAVI_CALLER_EVIDENCE").expect("fresh evidence root"),
+    );
+    fs::create_dir(&evidence).unwrap();
+    write(&evidence.join("maintained-caller.sh"), &caller);
+    write(&evidence.join("original-embedded.py"), &script);
+    let binary = PathBuf::from(
+        std::env::var_os("CARROT_NAVI_COMPARISON").expect("actual maintained build output"),
+    );
+    assert!(binary.is_absolute());
+    let binary_hash = hash(&fs::read(&binary).unwrap());
+    let build_proof =
+        fs::read_to_string(std::env::var_os("CARROT_NAVI_MAINTAINED_BUILD_PROOF").unwrap())
+            .unwrap();
+    assert_eq!(
+        build_proof,
+        format!("{binary_hash}  {}\n", binary.display())
+    );
+    write(&evidence.join("native-elf.sha256"), &build_proof);
+    let python =
+        std::env::var_os("CARROT_NAVI_ORIGINAL_PYTHON").expect("explicit hosted oracle Python");
+    let mut cases = vec![(
+        case("held-179-policy-56-socket-21-lifecycle", true, vec![]),
+        None,
+        None,
+    )];
+    for name in INPUTS {
+        cases.push((
+            case(
+                &format!("missing-{}", name.replace('/', "-")),
+                false,
+                vec![(name, None)],
+            ),
+            None,
+            None,
+        ));
+        cases.push((
+            case(
+                &format!("malformed-{}", name.replace('/', "-")),
+                false,
+                vec![(name, Some("{".into()))],
+            ),
+            None,
+            None,
+        ));
+    }
+    for name in OUTPUTS {
+        cases.push((
+            case(&format!("blocked-{}", name), false, vec![]),
+            Some(name),
+            None,
+        ));
+    }
+    for name in ["socket-source/rows.json", "startup-native/discovery.json"] {
+        cases.push((
+            case(
+                &format!("directory-{}", name.replace('/', "-")),
+                false,
+                vec![(name, None)],
+            ),
+            None,
+            Some(name),
+        ));
+    }
+    cases.push((
+        case(
+            "discovery-wire-order",
+            false,
+            vec![
+                (
+                    "startup-source/discovery.json",
+                    Some(r#"[{"wire_hex":"aa"},{"wire_hex":"bb"}]"#.into()),
+                ),
+                (
+                    "startup-native/discovery.json",
+                    Some(r#"[{"wire_hex":"bb"},{"wire_hex":"aa"}]"#.into()),
+                ),
+            ],
+        ),
+        None,
+        None,
+    ));
+    cases.push((case("held path with space '[$]", true, vec![]), None, None));
+    assert_eq!(cases.len(), 42);
+    let mut receipts = Vec::new();
+    for (case, blocked_output, directory_input) in cases {
+        let destination = evidence.join(&case.name);
+        let source_parent = destination.join("source");
+        let native_parent = destination.join("native");
+        let source_root = seed(&saved, &source_parent, &case.edits);
+        let native_root = seed(&saved, &native_parent, &case.edits);
+        for root in [&source_root, &native_root] {
+            // Preserve inherited in-place overwrite and failure semantics, even
+            // when an old success receipt exists. Status, not presence, decides.
+            for name in OUTPUTS {
+                if blocked_output == Some(name) {
+                    fs::create_dir(root.join(name)).unwrap();
+                } else {
+                    write(&root.join(name), format!("stale:{name}\n"));
+                }
+            }
+            if let Some(name) = directory_input {
+                fs::create_dir(root.join(name)).unwrap();
+            }
+        }
+        let before_source = input_state(&source_root);
+        let before_native = input_state(&native_root);
+        let source = Command::new(&python)
+            .args(["-P", "-c", &script])
+            .env("RUNNER_TEMP", &source_parent)
+            .env("PYTHONPATH", repo.join("rust/tools"))
+            .env("PYTHONDONTWRITEBYTECODE", "1")
+            .current_dir(&repo)
+            .output()
+            .unwrap();
+        save_output(&source_parent, &source);
+        let trace_path = native_parent.join("exec.trace");
+        let native = Command::new("strace")
+            .args([
+                "-f",
+                "-qq",
+                "-s",
+                "4096",
+                "-e",
+                "trace=execve,execveat",
+                "-e",
+                "signal=none",
+                "-o",
+            ])
+            .arg(&trace_path)
+            .args([
+                "--",
+                "/bin/bash",
+                "--noprofile",
+                "--norc",
+                "-e",
+                "-o",
+                "pipefail",
+            ])
+            .arg(evidence.join("maintained-caller.sh"))
+            .env("RUNNER_TEMP", &native_parent)
+            .env("CARROT_NAVI_COMPARISON", &binary)
+            .current_dir(&repo)
+            .output()
+            .unwrap();
+        save_output(&native_parent, &native);
+        let trace = fs::read_to_string(&trace_path).unwrap();
+        let execs = trace.lines().collect::<Vec<_>>();
+        assert_eq!(
+            execs.len(),
+            2,
+            "{} unexpected child/interpreter: {trace}",
+            case.name
+        );
+        for (line, executable) in execs.iter().zip([Path::new("/bin/bash"), binary.as_path()]) {
+            assert!(
+                line.contains(&format!("execve(\"{}\"", executable.display()))
+                    && line.ends_with("= 0"),
+                "unexpected exec: {trace}"
+            );
+        }
+        assert_eq!(
+            source.status.code(),
+            Some(if case.pass { 0 } else { 1 }),
+            "{} original: {}",
+            case.name,
+            String::from_utf8_lossy(&source.stderr)
+        );
+        assert_eq!(
+            native.status.code(),
+            source.status.code(),
+            "{} native: {}",
+            case.name,
+            String::from_utf8_lossy(&native.stderr)
+        );
+        assert!(source.stdout.is_empty() && native.stdout.is_empty());
+        assert_eq!(
+            input_state(&source_root),
+            before_source,
+            "{} original mutated inputs",
+            case.name
+        );
+        assert_eq!(
+            input_state(&native_root),
+            before_native,
+            "{} caller mutated inputs",
+            case.name
+        );
+        let mut outputs = serde_json::Map::new();
+        for name in OUTPUTS {
+            assert_eq!(
+                native_root.join(name).is_dir(),
+                source_root.join(name).is_dir()
+            );
+            assert_eq!(
+                native_root.join(name).is_dir(),
+                blocked_output == Some(name)
+            );
+            let a = fs::read(native_root.join(name)).ok();
+            let e = fs::read(source_root.join(name)).ok();
+            assert_eq!(
+                a, e,
+                "{} bytes/existence/partial-write order {name}",
+                case.name
+            );
+            if let Some(bytes) = a {
+                if case.pass {
+                    assert_eq!(
+                        bytes,
+                        fs::read(saved.join(name)).unwrap(),
+                        "historical {name}"
+                    );
+                }
+                outputs.insert(name.into(), hash(&bytes).into());
+            }
+        }
+        receipts.push(serde_json::json!({"name":case.name,"expected_pass":case.pass,"source_status":source.status.code(),"native_status":native.status.code(),"shell_execs":1,"native_execs":1,"input_files_unchanged":true,"output_sha256":outputs}));
+    }
+    saved_seals(&saved);
+    write(&evidence.join("caller-controls.json"), serde_json::to_vec_pretty(&serde_json::json!({
+        "historical_source":CAPTURE_SHA,"oracle_sha256":ORACLE_SHA,"retained_job_sha256":RETAINED_JOB_SHA,
+        "reused_accepted_run":39826752939_u64,"reused_controls":72,"reused_controls_sha256":ACCEPTED_CONTROLS_SHA,
+        "current_binary_sha256":binary_hash,"cases":receipts
+    })).unwrap());
 }

@@ -6,7 +6,8 @@ unchanged evidence. Read this handoff and the linked evidence ledger first.
 
 ## Active continuation, superseding the earlier migration snapshot
 
-Current integrated source/remote is69bbee211a5bfde590ab9d85fb071d967892b580;
+The integrated source now includes native Chinese/JP2 candidatee568706b8 and
+loggerd test-API repair28033be26;
 read Git freshly before binding further diagnostic sources. The older515263b
 checkpoint and16-slot description below are historical. Configured agent limit
 is1000, verified locally; admitted creations include429 failures, so this is
@@ -48,11 +49,13 @@ are in `parent/`; use them as inert evidence. Read the current evidence ledger
  9e99a1e656a8c713cefc56a0c996d43ff5f6b409. It observes actual original/native
   images and operands; a diagnostic success alone cannot establish a repair.
   Startup39819735679 remains in progress at this checkpoint.
-- Active Sol scopes: Newton AST caller; Descartes loggerd diagnostics/pipeline;
+- Active Sol scopes: Newton AST caller/CP949; Descartes loggerd diagnostics/pipeline;
   Helmholtz Korean codecs; Socrates logging failure/caller; James model publisher
   caller; Schrodinger road operands; Hegel Paramsd failure; Hilbert loggerd
   flush/IO; Hypatia loggerd compile fixes; Archimedes Big5 family; Hubble GBK/
-  GB2312/GB18030. Parent alone reconciles shared registration and publishes.
+  GB2312/GB18030 plus the540prior-vector provenance supplement; Nietzsche JP2;
+  Pasteur Carrot comparator caller. Parent alone reconciles shared registration
+  and publishes. Source and run identities after this snapshot are in the ledger.
 
 Inventory remains288/3/3289 of3580. Dev-md, device operations, protected
 integration and releases remain outside this continuation. Local restrictions
