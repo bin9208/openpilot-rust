@@ -191,10 +191,9 @@ pub fn cli() -> Result<()> {
             S::value("--fixture", true),
             S::value("--fixture-sha256", true),
             S::value("--output", true),
-            S::flag("--help"),
         ],
     )?;
-    if parsed.flags.contains("--help") {
+    if parsed.help {
         println!("Usage: check-uploader-siblings --root ROOT --scope all|daemon|interrupted-send|interrupted-http|timeouts|late-timeouts|fault|params|cleanup --fixture JSON --fixture-sha256 SHA256 --output DIR [--binary PATH --trace PATH --fault PATH --collector PATH --interrupted PATH --http-provider PATH]");
         return Ok(());
     }
