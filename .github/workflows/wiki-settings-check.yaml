@@ -22,8 +22,9 @@ concurrency:
 
 jobs:
   check:
+    if: github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     name: read-only catalog and Wiki diff
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     steps:
       - name: Check out candidate code
         uses: actions/checkout@v6

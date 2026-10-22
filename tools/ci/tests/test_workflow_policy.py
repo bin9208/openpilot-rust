@@ -146,16 +146,13 @@ class WorkflowPolicyTests(unittest.TestCase):
     self.assertIn('buildToolsVersion = "35.0.0"', app)
     self.assertIn("'platforms;android-35' 'build-tools;35.0.0'", steps[install]['run'])
     reserve = next(step['run'] for step in steps[:setup] if 'ANDROID_HOME=' in step.get('run', ''))
-    self.assertIn('25 + 4', reserve)
+    self.assertIn('free_bytes < 4 * 1024 * 1024 * 1024', reserve)
     self.assertIn('ANDROID_SDK_ROOT=', reserve)
 
-  def test_latest_base_hosted_runner_policy_is_preserved(self):
+  def test_user_selected_local_runner_policy_preserves_validation_scope(self):
     for name in ('ci.yml', 'dev-md-runtime.yml'):
       for key, job in workflow(name)['jobs'].items():
-        if 'matrix' in job.get('strategy', {}):
-          self.assertEqual(job['runs-on'], '${{ matrix.runner }}', (name, key))
-        else:
-          self.assertIn(job['runs-on'], ('ubuntu-24.04', 'ubuntu-24.04-arm'), (name, key))
+        self.assertEqual(job['runs-on'], ['self-hosted', 'Linux', 'X64', 'dev-md-local'], (name, key))
     commands = '\n'.join(step.get('run', '') for step in workflow()['jobs']['check_user_docs']['steps'])
     self.assertNotIn('package.py source-policy', commands)
     delivery = '\n'.join(step.get('run', '') for step in workflow('dev-md-runtime.yml')['jobs']['package']['steps'])
