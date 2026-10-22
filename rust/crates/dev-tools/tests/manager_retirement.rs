@@ -337,13 +337,13 @@ fn traced(
     );
     command.cwd = Some(root.to_path_buf());
     command.env_remove = vec!["PYTHONPATH".into(), "PYTHONHOME".into()];
-    command.env.insert(
-        "OPENPILOT_RUST_ROOT".into(),
-        root.as_os_str().to_os_string(),
-    );
-    command
-        .env
-        .insert("PATH".into(), OsString::from("/nonexistent"));
+    command.set_os_env(BTreeMap::from([
+        (
+            OsString::from("OPENPILOT_RUST_ROOT"),
+            root.as_os_str().to_os_string(),
+        ),
+        (OsString::from("PATH"), OsString::from("/nonexistent")),
+    ]));
     let captured =
         NativeRunner.run_to_files(&command, &lane.join("stdout.log"), &lane.join("stderr.log"));
     let stdout = fs::read(lane.join("stdout.log")).unwrap();
