@@ -27,24 +27,27 @@ records; Git retains earlier handoffs. Do not restart accepted unchanged groups.
 
 ## Source and full checks
 
-Implementation source: 67f099bffbdda2396ea2f64e1f168a76ce19d560.
+Implementation source: bb3b4fdd34498c253d030468832bebe3db09224e.
 Issue-branch remote/PR343: f09eee7b8d352cc3b4463acf5f467a786f0d310d.
-Newest diagnostic branch: 728f3586fc987e539f69e38d0827f70532d62a8e.
+Newest diagnostic branch: 9eedccf30d67e9a5f6d39f6e95eab0a6ee580fe1.
 Do not lose newer commits or mix unrelated route WIP into a source pin.
 
 Published PR synthetic merge48abb4d87797d84c03be1595e9122c4b1e023e2d:
 Integration39754486834 passes all16jobs; both Fast39754486617/39754477763
-and docs39754486636/39754745503 pass. Full Rust39754486991 currently has44
-successful jobs, two model failures and two running jobs. Remaining workspace
-119742946369 and generic ARM119742946791 must finish; workspace timeout210min
+and docs39754486636/39754745503 pass. Full Rust39754486991 currently has45
+successful jobs, two model failures and one running workspace119742946369.
+Generic ARM119742946791 succeeds. Workspace timeout210min
 is intentional, so avoid cancelling/repeating it merely for a small push.
 Successful LLVM20/UI gates are now included in44. Generic ARM is not AGNOS.
 
 The old full-model failures are distinct: original pipeline119742946401 reaches
 actual raw-road prediction drift without helper; family119742946604 stops
 before numerical traffic at the historical schema.py source digest. #474's
-historical PTRACE_LISTEN/EIO remains unexplained; #484's complete-PID fix still
-needs its affected complete workspace recovery gate, despite focused success.
+historical PTRACE_LISTEN/EIO remains unexplained. #484 is closed after its
+complete affected recovery gate passes: artifact12421257859/34970712B/SHA445f5f07,
+all7340CRCs/2508trace seals parent-audited.8controllers×2roots,5271closedexecs,
+Python0; pending-tunnel SIGTERM exits182.981276/193.046875ms within unchanged3s.
+This does not close #474 or imply the complete workspace has finished.
 
 ## Accepted results to reuse
 
@@ -104,8 +107,14 @@ Python files through authenticated current-catalog receipts. Runtime/checker
 historical pins remain strict; mutation/alias/stale-receipt tests added.
 Continuation39761920908/workflow738785adb/source3fd4e7a4 remaining-road
 job119767923402 passes all four tests including the complete two-root retirement
-gate (1896.83s). Its1,534,656,177B artifact12420199425/SHA48fa9b05 requires raw
-audit; helper/caller integration remains necessary. Updated family119767922950
+gate (1896.83s). Parent and worker audit all4614CRCs in1,534,656,177B artifact
+12420199425/SHA48fa9b05, both roots'6model/6collector configurations and all8
+reappearance rejections. Worker audits1092sidecar hashes/20bindings. Same-source
+helper/caller integration is committedbb3b4fdd3 in both maintained model jobs;
+raw sidecars use only bounded checked-NUL-roster archives, with postarchive source
+hash guards. No new inline Python auditor; existing75min bound is retained from
+measured50m44s composition. Maintained hosted execution remains pending.
+Updated family119767922950
 has failed the actual first driver
 collector case after source admission passes. Both explicitly select1.94 and
 keep original complete numerical/absence/fault gates. New source/host catalogs
@@ -119,10 +128,16 @@ and those complete bodies. Worker checks1454sidecar hashes and20bindings. Later
 startup/USB and second-root cases do not execute after the required driver failure.
 Current exporter admission is accepted only as admission, not numerical closure.
 
-Worker exporter_bridge_r3 owns model diagnosis/caller continuation. If full road
-passes, integrate same-source helper build/explicit absolute ELF+SHA and source
-closure into maintained model jobs; current PR default still disables helper.
-Retain complete driver acceptance separately. Do not stop at a diagnostic PASS.
+Worker exporter_bridge_r3 owns model diagnosis/native cached-program candidate.
+Nonexecuting packaging39769969526/workflowfd93a4ff/source3fd4e7a4 passes all44
+complete cached image-to-ELF comparisons. Parent audits500840B artifact12421643434/
+SHA10b55633/all71CRCs; worker verifies17heldinputs/51generated hashes. Generated
+code is never loaded/called; no ISA/ABI/numerical acceptance follows. A native
+iced-x86 predicate is scratch-only with an isolated dependency manifest, pending
+hosted5negative tests/all44images. No production dependency/loader change exists.
+Maintained model integrationbb3b4fdd3 awaits issue-branch publication and actual
+hosted result. Retain complete driver acceptance separately; do not stop at a
+diagnostic PASS or treat cached-model consumption as compiler retirement.
 
 ## Active ordinary uploader/logging group
 
@@ -160,7 +175,22 @@ chunked redirected PUT. Backoff/logging have not run. Source67f099bf adds bounde
 chunk framing and flushes HTTP observations before comparisons, leaving daemon
 and oracle unchanged. R5 run39767931037/workflow728f3586/source67f099bf uses recipe
 SHAd9f7c6a50a8b109d9ffbe442cba5998e8f4a571b90bfc33823395a84d276d099;
-its actual result remains pending.
+ordinary scope passes3tests/all212filesystem/10000backoff/32HTTP cases. Parent
+audits artifact12421835922/3242922B/SHA536ead05/all1308CRCs, all244complete outputs
+and10000backoff values. Logging separately fails mismatched new peer queue size;
+source40f37bea3 restores pinned250KiB deviceState and adds two actual-TCP framing
+tests. R6 run39770418874/workflow276c346d8 succeeds: all18cases×2collectors,
+74disk/10error records,3logging tests and2framing tests. Parent checks6166637B
+artifact12422391683/SHA23ac056a/all1084CRCs and all36complete comparison rows.
+Ordinary traffic runs0times in R6; its sealed source/provider/feature closure is
+explicitly reused, without emitted-binary equality claims.
+
+Exact independent observations and original capture/report are committedffefb1539
+under tests/fixtures/uploader-original-group, with provenance manifest. All four
+Git blobs retain original bytes/SHA. This does not retire either Python helper.
+Sibling capture39770735490/workflow72bfd4d8b/source67f099 captures only new daemon,
+interruption,timeout/log-fault/typed-Params scopes. Native sibling controller WIP
+uploader_lifecycle_check.rs is unregistered/uncommitted; preserve it.
 Worker guarded_proof_r3 owns actual compile/Clippy/functional failure repair and
 then the remaining daemon/interrupted/timeouts/log_fault consumer closure.
 Do not repeat accepted ordinary source traffic merely to capture new siblings.
@@ -186,8 +216,14 @@ external payloads; recipe SHA89bdde5082506ef76f8cffe7a4d78b6bb86d064627fb75b7cc6
 Focused strictClippy,3controller units,4provider endpoint tests,10CLI/semantics
 and7default lifecycle tests pass. Two of three actual-provider tests pass;
 actual-manager cancellation fails at missing acknowledged logmessage ownership.
-Two-root proof does not run after that failure. Worker owns diagnosis; preserve
-the required real ownership assertion. Review repaired actual results, raw
+Source3f60fdc35 fixes the readiness predicate without dropping the assertion.
+R5/39769134663 and R6/39770477410 pass ALL focused gates, including3actual-provider
+tests. R5 private checkout fails LFS smudge before traffic; R6 skip-smudge matches
+primary tracked pointers and full tracked-byte equality, then original help emits
+pycapnp's inherited-PWD mismatch warning. Strict help stderr checks stay intact.
+R7/39772010352/workflow9eedccf30/source3f60 uses actual-cwd PWD in both lanes and
+early CLI preflight before provider gates. Full positive/source-absence proof is
+still pending. Review repaired actual results, raw
 traces/bodies/seals before deleting originals or crediting them.
 
 ## Publication and next steps
@@ -199,7 +235,7 @@ artifacts through connector temporary links without printing signed URLs/data.
 All scratch recipes/evidence live under
 `.analysis/scratch/2026-10-22-family-execution-296/`.
 
-Continue remaining-road, model compiler diagnosis and uploader R5; repair actual failures without
+Continue model compiler diagnosis, native uploader consumers and route R7; repair actual failures without
 altering original evidence. Complete route ownership fix/proof, then grouped
 consumer conversion and native caller transitions. Push a coherent reviewed
 batch to the issue branch, refresh PR343/#296 and close only accepted defects.

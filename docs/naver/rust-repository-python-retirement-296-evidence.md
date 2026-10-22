@@ -7581,3 +7581,83 @@ two-root proof does not run. Preserve that assertion and diagnose the actual
 provider path/ownership boundary before retrying. No aggregate pass is claimed.
 #491 stays open; inventory274/3/3303
 and observed embedded67/39pending remain unchanged. Device acceptance is user-owned.
+
+### Published complete recovery gate accepts #484; historical #474 remains open
+
+At PR343 headf09eee7b/synthetic48abb4d8, full Rust39754486991's affected complete
+recovery step passes in303.75s. Parent checks artifact12421257859:34970712B/SHA
+445f5f0713f2a9f27043ccfce22ae75297e0bc7d57e51009d76ebfbdcb916728/all7340CRCs
+and all2508raw trace seals. Eight controllers run in both original-absent roots,
+six held ELF digests agree and native failures=[]; the closed exec audit accounts
+for5271attempts/2393success/2878explicit failures, observed Python exec0. Pending
+support-tunnel SIGTERM cases retain entered PID markers, observed_exit0/no tunnel
+before owner cleanup and unchanged3s deadline:182.981276/193.046875ms. The earlier
+two deterministic #484 partial/complete-publication regressions passed39740337951.
+Issue#484 is closed, comment6339620319, while #474's historical PTRACE_LISTEN/EIO
+cause stays open. Generic ARM119742946791 also succeeds; at this checkpoint the
+complete Rust run has45successful jobs/two model failures/one running workspace.
+
+### Native ordinary and logging scopes accepted; sibling/source closure remains
+
+R5 [39767931037](https://github.com/bin9208/openpilot-rust/actions/runs/39767931037)
+passes3ordinary tests/212filesystem/10000backoff/32HTTP cases before the separate
+logging peer fails its new1MiB deviceState queue against pinned250KiB. Parent
+checks artifact12421835922:3242922B/SHA536ead05a4deffced043f2b1a6fbf9ed3c849444e927e9c33c1d0f972158424a/
+all1308CRCs, all244complete saved output objects and the entire10000decision array
+against unchanged original observations. No expectation/daemon/tolerance change.
+
+Source40f37bea345009bfcadf2275916f4322af45ffba restores250*1024queue capacity and
+adds two actual-TCP framing tests, including ambiguous/unknown/duplicate/oversized
+and malformed input rejection. [R6 39770418874](https://github.com/bin9208/openpilot-rust/actions/runs/39770418874),
+workflow276c346d84b08be6dc0d79f385c027712c93296f, succeeds. Artifact12422391683:
+6166637B/SHA23ac056a8d725868214bcf03aa9d8e99d9929ea99f6388af7bd504ecbc19df16/
+all1084CRCs parent-audited. All18cases×2actual collectors compare full original
+records/cereal packets,74disk/10error records;3logging/2framing tests pass.
+R6 admits exact R5 source/provider/feature/lock/vendor closure and runs0fresh
+ordinary traffic, without asserting newly emitted binary equality.
+
+Sourceffefb153917faa64ea6f464b461776d7478b31e4 stores only two independent synthetic
+original observation JSONs, original capture receipt/reference report and a
+provenance manifest under dev-tools/tests/fixtures/uploader-original-group.
+All four committed Git blobs have exactly the original bytes/SHA. Native output
+is never expected data; private keys/raw vehicle captures are not included.
+Both Python helpers remain live. Source67f099/workflow72bfd4d8b11903d34237982ee0c2bb0f0ec584bf/
+run39770735490 captures new sibling scopes only; native lifecycle WIP remains
+unregistered. Inventory274/3/3303 and observed embedded67/39pending are unchanged.
+
+### Road raw audit and maintained helper integration; driver transport is separate
+
+Parent independently verifies all4614CRCs of road artifact12420199425/SHA48fa9b05
+and both roots'6model/6collector configurations, unchanged1e-6/2e-5polynomial
+tolerances, byte-exact raw comparisons, linked fault modes and8status1reappearance
+rejections. Worker verifies1092sidecar hashes/20bindings. Maintained source
+bb3b4fdd34498c253d030468832bebe3db09224e builds/binds the same-source actual helper
+and absolute SHA in both model jobs, runs actual bridge/publisher regressions and
+retains raw original/compiled IR/objects/receipts through bounded exact-NUL-roster
+archives with postarchive source hashes. The former global RUNNER_TEMP glob
+bypass is removed. No new inline Python auditor is added; existing Python
+exporter/provider dependency remains explicit. Measured job composition50m44s
+supports retaining75min. Maintained hosted execution/publication remains pending.
+
+Nonexecuting cached-program packaging39769969526/workflowfd93a4ff/source3fd4e7a4
+succeeds: all44complete original cached images are byte-identical in the new
+shared ELF. Parent checks artifact12421643434:500840B/SHA10b556335f30e0f9cf96e2d7679c2f95205d24d1f07239c28f8baa8ecdd50c35/
+all71CRCs and explicit program_code_executed=false/ISA_eligibility_proven=false/
+runtime_ABI_or_numerical_acceptance=false. Worker audits17held inputs/51generated
+hashes. Scratch native iced-x86 admission candidate/negative tests/full44harness
+require hosted execution and locked dependency provenance; no production loader
+or dependency integration is accepted. Full driver #476 remains strictly failed.
+
+### Route focused lifecycle accepted; fresh traffic remains pending
+
+Source3f60fdc355b6b34fda13cb28b796ec3d18bed5db waits for both real socket ownership
+acknowledgements before actual-manager cancellation, preserving all signal/reap/
+foreign-resource assertions. R5/39769134663 passes all focused gates, then LFS
+smudge fails private checkout before any traffic. R6/39770477410 skips smudge to
+match primary pointer bytes; complete tracked-byte equality and all focused gates
+pass. Original help then emits pycapnp's inherited-PWD mismatch warning in the
+fresh cwd; strict help-stderr admission correctly fails before positive traffic.
+R6 artifact12422761787:1890134B/SHAda84aafae331730aa5426e3456d043791524ebf65fc58fa15157e35ecbb59a64/
+482CRCs worker-audited. R7/39772010352/workflow9eedccf30/source3f60 sets actual-cwd
+PWD for both CLI lanes and runs CLI preflight early, leaving the strict checks
+and complete two-root proof intact. No source retirement/#491closure yet.
