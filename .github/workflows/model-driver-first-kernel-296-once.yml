@@ -1,4 +1,4 @@
-name: model driver first kernel diagnostic
+name: model driver first kernel natural-host preflight diagnostic
 'on':
   push:
     branches:
@@ -15,6 +15,8 @@ jobs:
         sample:
         - 0
         - 1
+        - 2
+        - 3
     runs-on: ubuntu-24.04
     timeout-minutes: 50
     env:
@@ -33,11 +35,27 @@ jobs:
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
       CPU_COUNT: '2'
       CARGO_PROFILE_TEST_DEBUG: '0'
+      DIAGNOSTIC_ATTEMPT: 20261022-natural-avx512-attempt-01
     steps:
     - uses: actions/checkout@v7
       with:
         ref: d61079461c0e217056095fcd56d6831230317137
         persist-credentials: false
+    - name: Record natural CPU and skip only already matching non-AVX512 EPYC 7763
+      id: cpu_preflight
+      shell: bash
+      run: "set -euo pipefail\npreflight=\"$RUNNER_TEMP/model-driver-first-kernel-preflight-296\"\nmkdir \"$preflight\"\n\
+        test \"$(git rev-parse HEAD)\" = \"$EXPECTED_SOURCE\"\ngit rev-parse HEAD > \"$preflight/SOURCE_COMMIT\"\nprintf '%s\\\
+        n' \"$DIAGNOSTIC_ATTEMPT\" > \"$preflight/DIAGNOSTIC_ATTEMPT\"\nprintf '%s\\n' \"$DIAGNOSTIC_SAMPLE\" > \"$preflight/DIAGNOSTIC_SAMPLE\"\
+        \nlscpu --json > \"$preflight/lscpu.json\"\ncat /proc/cpuinfo > \"$preflight/proc-cpuinfo.txt\"\nuname -a > \"$preflight/uname.txt\"\
+        \nrun=true\nstatus=ELIGIBLE_NATURAL_HOST\nif awk 'BEGIN { found=0; bad=0 } /^model name[[:space:]]*:/ { sub(/^[^:]*:[[:space:]]*/,\
+        \ \"\"); found++; if ($0 != \"AMD EPYC 7763 64-Core Processor\") bad=1 } END { exit !(found>0 && bad==0) }' \"$preflight/proc-cpuinfo.txt\"\
+        \ && ! grep -Eq '(^|[[:space:]])avx512f([[:space:]]|$)' \"$preflight/proc-cpuinfo.txt\"; then\n  run=false\n  status=SKIPPED_ALREADY_MATCHING_HOST\n\
+        fi\nprintf 'run_diagnostic=%s\\n' \"$run\" >> \"$GITHUB_OUTPUT\"\nprintf 'status=%s\\n' \"$status\" >> \"$GITHUB_OUTPUT\"\
+        \nprintf '%s\\n' \"$status\" > \"$preflight/status.txt\"\nprintf '{\"status\":\"%s\",\"diagnostic_only\":true,\"comparison_executed\"\
+        :false,\"retirement_acceptance\":false}\\n' \"$status\" > \"$preflight/preflight.json\"\nsha256sum \"$preflight/lscpu.json\"\
+        \ \"$preflight/proc-cpuinfo.txt\" \"$preflight/uname.txt\" > \"$preflight/cpu-evidence.sha256\"\nprintf '%s\\n' \"\
+        $status\"\n"
     - name: Reserve hosted capacity and install bounded native prerequisites
       shell: bash
       run: 'set -euo pipefail
@@ -58,9 +76,11 @@ jobs:
         rustup toolchain install 1.94.0 --profile minimal
 
         '
+      if: success() && steps.cpu_preflight.outputs.run_diagnostic == 'true'
     - uses: actions/setup-python@v6
       with:
         python-version: '3.12'
+      if: success() && steps.cpu_preflight.outputs.run_diagnostic == 'true'
     - name: Install original model execution dependencies
       shell: bash
       run: 'set -euo pipefail
@@ -75,6 +95,7 @@ jobs:
         python -m pip freeze > "$proof/providers.before.txt"
 
         '
+      if: success() && steps.cpu_preflight.outputs.run_diagnostic == 'true'
     - name: Build only the native fixture, catalog and CPU model runner
       shell: bash
       run: 'set -euo pipefail
@@ -91,6 +112,7 @@ jobs:
         exit 1; }
 
         '
+      if: success() && steps.cpu_preflight.outputs.run_diagnostic == 'true'
     - name: Record actual hosted CPU and Rust toolchain profile
       shell: bash
       run: 'set -euo pipefail
@@ -106,6 +128,7 @@ jobs:
         uname -a > "$proof/uname.txt"
 
         '
+      if: success() && steps.cpu_preflight.outputs.run_diagnostic == 'true'
     - name: Stage the independent current driver inputs and compile current-host catalog
       shell: bash
       run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/model-driver-first-kernel-296\"\ngit rev-parse HEAD > \"$proof/SOURCE_COMMIT\"\
@@ -130,6 +153,7 @@ jobs:
         \ \"$GITHUB_WORKSPACE/rust/tools/check_pipeline_reference.py\" \"$GITHUB_WORKSPACE/rust/tools/model_export/original.py\"\
         \ \"$GITHUB_WORKSPACE/rust/tools/model_export/pipeline.py\" \"$GITHUB_WORKSPACE/rust/tools/model_export/capture.py\"\
         \ \"$GITHUB_WORKSPACE/tinygrad_repo/tinygrad/engine/realize.py\" > \"$proof/source-closure.before.sha256\"\n"
+      if: success() && steps.cpu_preflight.outputs.run_diagnostic == 'true'
     - name: Identify the first differing original retained-binary versus native exported kernel
       shell: bash
       run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/model-driver-first-kernel-296\"\ncat > \"$proof/fp-observe.c\" <<'C'\n\
@@ -342,16 +366,20 @@ jobs:
         cmp \"$proof/providers.before.txt\" \"$proof/providers.after.txt\"\nsha256sum -c \"$proof/diagnose.sha256\"\nsha256sum\
         \ -c \"$proof/fp-observe.sha256\"\ntest \"$rc\" -eq 0 || { tail -n 100 \"$proof/diagnostic.log\"; exit 1; }\ntest\
         \ -s \"$proof/first-kernel/result.json\"\n"
+      if: success() && steps.cpu_preflight.outputs.run_diagnostic == 'true'
     - name: Preserve bounded diagnostic and all input/output evidence
       uses: actions/upload-artifact@v6
       if: always()
       with:
-        name: model-driver-first-kernel-296-${{ matrix.sample }}
+        name: model-driver-first-kernel-296-${{ env.DIAGNOSTIC_ATTEMPT }}-${{ matrix.sample }}
         include-hidden-files: true
         retention-days: 14
         if-no-files-found: warn
         path: '${{ runner.temp }}/model-driver-first-kernel-296/
 
           !${{ runner.temp }}/model-driver-first-kernel-296/driver-fixture/**
+
+
+          ${{ runner.temp }}/model-driver-first-kernel-preflight-296/
 
           '
