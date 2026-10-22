@@ -36,6 +36,17 @@ readback for current issue/PR/diagnostic heads before pinning a source. Final-te
 accepted source is12af083b2e31bbb73cb8f73a9822e1c92d3ab8ea, workflowae18fe676.
 Do not lose newer commits or mix unrelated WIP into a source pin.
 
+New commits6acad91831 fix both deleter report/mount failures,1d570b345 retires its
+four helpers,dd8b99eb2 records accepted288/3/3289 inventory,665ab15e2 adds the
+opt-in native logging candidate,915aad61b fixes two readiness-count compilation
+errors. Logger R1 failed before tests; R2 workflow90d9fff3d requires actual native
+acceptance. Both old logging Python helpers/caller remain; no inventory credit.
+AST metadata-only39804553336 passes(all593old lock identities/checksums/edges
+preserved,29new optional parser packages); no production lock/parser change is
+applied yet. Full model continuation39796728026 remains pending; road R4
+workflowdbee1ef362/source103188 observes actual original raw predictions after
+the repeated EPYC7763 model-1 failure, without a numerical/target policy change.
+
 Exact103188 Fast39800281535 and both mapped-docs39800281419/39800598592
 pass. Integration39800281579 and maintained logger119899439610 also pass.
 Rust39800281452 is still running with original-model119899439089 failed after

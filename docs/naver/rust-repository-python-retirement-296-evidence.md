@@ -8049,3 +8049,13 @@ All four retained runtime source hashes remain mandatory. Credit exactly four
 baseline entries:288replaced-local/3partially-replaced/3289pending of3580.
 All3580historical Git blob pins remain unchanged; routing14accepted/3292remaining,
 F03=1117/F07=49remaining. Embedded counts and other families stay unchanged.
+
+Native logging R1 [39806888993](https://github.com/bin9208/openpilot-rust/actions/runs/39806888993)
+at665ab15e29a8a640acf29480d472158f2d92810d/workflowb5475adde stops during compilation:
+two ZMQ poll calls return readiness counts(i32), not bool. No unit, Clippy or
+protocol acceptance follows. Job119922391188 retains exact E0308 diagnostics;
+always artifact12437529062 is278B/SHA7a8c05bc and contains no functional evidence.
+Source915aad61b tests the returned count as==0 for empty and>0 for ready, preserving
+the original timeout/error contract. R2 workflow90d9fff3d88c96d85262056e8823ab30884acc29
+uses the unchanged reviewed recipef26e2d72 and requires actual tests/strictClippy/
+native replay. Both Python helpers and their maintained caller stay pending.
