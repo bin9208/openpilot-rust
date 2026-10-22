@@ -6585,3 +6585,40 @@ Current Rust39719156536 navigation119628631058 reproduces#457's unchanged10s
 actual child-start barrier, before SIGINT;7other navd_config_check cases pass.
 The newly retained phase/proc diagnostics are being inspected. No timeout is
 increased and no passing retry is treated as a fix.
+
+### Current navigation timing and independent road failure provenance
+
+Navigation phase39721672474 at12fab44083b6dbd1f8c69f5f2b18bea8aca99461,
+workflowfdf580b6ab9e8a69495ea325e0d4dfd0a6a076c4, passes eight fresh
+cancellation attempts under the unchanged10s barrier and the full navigation
+suite. RSA generation takes2.04–7.77s; candidate hashing takes about2.6ms.
+The ordinary cancellation case spends4.39s generating keys. Input seals match.
+Artifact12401668808/37376550B/SHA16710899eb402c380c51afefe95598b2b3a4b36741b73a4c80a038c7834bc559
+passes all1682CRCs. This measures the dominant admission cost, not the exact
+phase of the older failure.7e32499c3 optimizes only num-bigint-dig in dev/test;
+fresh RSA2048, release behavior and the10s barrier remain unchanged. Hosted
+measurement is required before claiming improvement or closing#457.
+
+Published4d599 original-pipeline119628630959/run39719156536 reproduces#482,
+not a new unexplained failure. Parent downloads completeartifact12401158574,
+173295774B/SHA2ff2e33434f661e7d412751ea45be7d17bf683603cf566f5a48c319c16f6747d,
+checks all691CRCs and independently extracts the sole rawPredictions Cap'n Proto
+byte-list pointer against the original JSON and binary. First1344-dual frame3
+has10304raw bytes, with only byte399 differing: float99 original00000080(-0.0),
+native00000000(+0.0). Full original/native raw hashes remain9afb2defff4ff29e5bf70e54db32d0d531d5e2b44507c8de652ee2c0dfcb67fe
+and069099e1d4d8081ed9de155494cd18dd00cf2d8be3e12cfe04be08d2e6857f87.
+Host is EPYC7763, LLVM18 SHA5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0.
+Keep exact raw-byte comparison and#482 open; shared cause with driver#476 is unproved.
+
+Whole-original road diagnostic39723078857 atdc50ce5e40774707cdc4623a0255cfb2ff9acf50,
+workflow63cbd3919883164f62c80ca330bf05193c03fd05, has five explicit early ISA
+skips and three actual SIGILL captures. All eight complete ZIPs pass123CRCs.
+Each actual fault is unchanged original kernel r_8_64_32_2_4_4_24_3_3 at code
+offset10106, vmovw xmm0,WORD PTR[r10+rdx*2-0x1fa], bytes62d57d086e845206feffff.
+Code SHAd16435aa9ee1d3a90767eb14a2d4f966f1e81c8495a89c22d337529e8bb84555
+matches the sealed program at fault. Numerical/kernel92 interpretation is
+invalid because whole-original first-frame execution never completes. The
+bounded scratch audit retains all artifact IDs/SHA values and signal contexts.
+A narrower unchanged-kernel92 replay is being prepared as single-function
+evidence, with complete native graph/output guards; it cannot replace whole
+original-pipeline proof or authorize ISA forcing.

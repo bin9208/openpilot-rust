@@ -30,10 +30,21 @@ The [functional closure ledger](rust-repository-python-retirement-296-families.m
 and exact pending routing TSV retain ownership/dependencies. No source count is
 an all-module clearance or complete runtime/device acceptance.
 
-Navigation startup #457 and historical PTRACE_LISTEN/EIO #474 remain unexplained.
+Navigation startup #457 remains open: eight phase-instrumented attempts pass,
+with RSA generation measured at2.04–7.77s under the unchanged10s barrier; the
+older failed attempt's precise phase is unproved. Historical PTRACE_LISTEN/EIO
+#474 remains unexplained.
 Generic ARM/QEMU is not a sealed AGNOS/device candidate. Keep #296 open.
 
 Latest published PR checkpoint is4d599dde6ec461cc43089d6f87381631aabdee6c.
+Current full Fast PR39719156487, Fast push39719148455 and
+Integration39719156492 pass. Rust39719156536 has41successful jobs and three
+failures so far: driver-family numerics#476, original-pipeline raw prediction
+comparison (new artifact audit pending), and navigation startup#457. Workspace,
+generic ARM, UI/connectivity and LLVM20 remain running. These are not a complete
+workspace or AGNOS/device acceptance. #478 and the QA-only RadarCAN FD race#481
+are now closed with their focused/full evidence; #480 remains open despite its
+focused two-root USB pass. Six model-controller deletions remain unaccepted.
 Prior faeef14da43d3a2c59ec71d7966e191828a748b3 was validated
 with tested synthetic merge939a190a11fc991a4eaff958d514dc2fca5c07e2 (baseb55552db).
 Rust39713242787 exposes four distinct current concerns: workspace stager policy
@@ -47,10 +58,12 @@ Earlier d610 Fast/Integration and generic ARM passes are earlier-source evidence
 Focused full Fast routing39714146176 at422671ae5 and39716711789 atfc0f017bd pass,
 including13disk controls/78isolation checks and corrected22native-stager policy.
 #478 was reopened after the faeef regression; focused success alone does not
-close it. Diagnostic-branch automatic Fast runs inspect a different tree and
+close it by itself. The current published full Fast closes#478.
+Diagnostic-branch automatic Fast runs inspect a different tree and
 are not proof for their separately pinned source checkout. Hardwared postdelete
 platform39717847363 repeats the complete maintained job with the original root
-RUSTUP_TOOLCHAIN=1.94.0; artifact review is in progress. First39716711789 also
+RUSTUP_TOOLCHAIN=1.94.0; parent full4165-member CRC/SHA/source/CLI audit is accepted.
+First39716711789 also
 passed the whole platform job but its diagnostic copy omitted that root env.
 
 ## Accepted focused closures to reuse
