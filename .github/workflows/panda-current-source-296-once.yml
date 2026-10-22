@@ -150,3 +150,5 @@ jobs:
         path: ${{ runner.temp }}/panda-native/
         include-hidden-files: true
         if-no-files-found: error
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
