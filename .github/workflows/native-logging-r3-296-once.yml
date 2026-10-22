@@ -1,0 +1,477 @@
+name: Native logging comparator R3 timing diagnostic
+permissions:
+  contents: read
+  actions: read
+jobs:
+  logging-comparator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      SOURCE_SHA: cdc7f7c822736e913a672d15227a8e8f0cd0199d
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      GIT_LFS_SKIP_SMUDGE: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+      RUSTUP_TOOLCHAIN: 1.94.0
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: ${{ env.SOURCE_SHA }}
+        persist-credentials: false
+    - name: Establish external evidence root and initial disk guard
+      shell: bash
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+
+        printf ''LOGGING_PROOF_OUTPUT=%s/native-logging-r1\n'' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+
+        sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet /usr/local/.ghcup
+
+        free=$(df -B1 --output=avail "$RUNNER_TEMP" | tail -n 1)
+
+        test "$free" -ge $((25*1024*1024*1024+2*1024*1024*1024))
+
+        mkdir -p "$RUNNER_TEMP/native-logging-r1"
+
+        printf ''workflow_head=%s\nsource_commit=%s\n'' "$GITHUB_SHA" "$SOURCE_SHA" > "$RUNNER_TEMP/native-logging-r1/source.txt"
+
+        '
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Install normal comparator prerequisites
+      shell: bash
+      run: 'set -euo pipefail
+
+        sudo apt-get update
+
+        sudo apt-get install -y g++ capnproto libcapnp-dev libzmq5 strace
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 512
+
+        printf ''LOGGING_SELECTED_PYTHON=%s\n'' "$(command -v python)" >> "$GITHUB_ENV"
+
+        '
+    - name: Build and check candidate before native-only replay
+      working-directory: rust
+      shell: bash
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo +1.94.0 build --locked -p openpilot-dev-tools --features native-logging-check-native --bin check-native-logging
+        --bin build-native-logging-reference
+
+        cargo +1.94.0 build --locked -p openpilot-logging --example native_logging_probe
+
+        cargo +1.94.0 test --locked -p openpilot-dev-tools --features native-logging-check-native --lib native_logging_check::
+        -- --nocapture
+
+        cargo +1.94.0 clippy --locked -p openpilot-dev-tools --features native-logging-check-native --lib --bin check-native-logging
+        -- -D warnings
+
+        cargo +1.94.0 check --locked -p openpilot-dev-tools --no-default-features --lib
+
+        '
+    - name: Reuse sealed independent observations and prepare actual native C++ provider
+      env:
+        GH_TOKEN: ${{ github.token }}
+      shell: bash
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 512
+
+        gh api -H ''Cache-Control: no-cache'' repos/bin9208/openpilot-rust/actions/artifacts/12432287942/zip > "$RUNNER_TEMP/native-logging-original-39791779545.zip"
+
+        printf ''%s  %s\n'' ''3655dfbe1524303c7927bcdd0ede43599e75094fe787f0ec80d84a82cba3a516'' "$RUNNER_TEMP/native-logging-original-39791779545.zip"
+        | sha256sum --check --strict
+
+        "$GITHUB_WORKSPACE/rust/target/debug/build-native-logging-reference" --root "$GITHUB_WORKSPACE" --output "$RUNNER_TEMP/native-logging-reference-r1"
+        > "$LOGGING_PROOF_OUTPUT/reference-builder.stdout"
+
+        cp "$RUNNER_TEMP/native-logging-reference-r1/provenance.json" "$LOGGING_PROOF_OUTPUT/reference-provenance.json"
+
+        printf ''LOGGING_REFERENCE_BINARY=%s/native-logging-reference-r1/native_logging_reference\n'' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+
+        printf ''LOGGING_ORIGINAL_ARCHIVE=%s/native-logging-original-39791779545.zip\n'' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+
+        '
+    - name: Stage checksum-bound diagnostic payload outside checkout
+      shell: bash
+      run: 'set -euo pipefail
+
+        base64 --decode > "$RUNNER_TEMP/r3-dual-measurement.py" <<''PAYLOAD''
+
+        IiIiRnJlc2ggbmF0aXZlLW9ubHkgcnVuIGFnYWluc3QgaW5kZXBlbmRlbnRseSBjYXB0dXJlZCBvcmlnaW5hbCBvYnNlcnZh
+
+        dGlvbnMuIiIiCmltcG9ydCBhc3QKZnJvbSBjb2xsZWN0aW9ucyBpbXBvcnQgQ291bnRlcgppbXBvcnQgYmFzZTY0CmltcG9y
+
+        dCBoYXNobGliCmltcG9ydCBqc29uCmltcG9ydCBvcwpmcm9tIHBhdGhsaWIgaW1wb3J0IFBhdGgKaW1wb3J0IHJlCmltcG9y
+
+        dCBzdWJwcm9jZXNzCmltcG9ydCBzeXMKaW1wb3J0IHppcGZpbGUKCnJvb3QgPSBQYXRoKG9zLmVudmlyb25bJ0dJVEhVQl9X
+
+        T1JLU1BBQ0UnXSkucmVzb2x2ZSgpCm91dHB1dCA9IFBhdGgob3MuZW52aXJvblsnTE9HR0lOR19QUk9PRl9PVVRQVVQnXSku
+
+        cmVzb2x2ZSgpCm91dHB1dC5ta2RpcihwYXJlbnRzPVRydWUsIGV4aXN0X29rPVRydWUpCnB5dGhvbiA9IFBhdGgoc3lzLmV4
+
+        ZWN1dGFibGUpLnJlc29sdmUoKQpiaW5hcnkgPSByb290IC8gJ3J1c3QvdGFyZ2V0L2RlYnVnL2V4YW1wbGVzL25hdGl2ZV9s
+
+        b2dnaW5nX3Byb2JlJwpidWlsZGVyID0gcm9vdCAvICdydXN0L3RhcmdldC9kZWJ1Zy9idWlsZC1uYXRpdmUtbG9nZ2luZy1y
+
+        ZWZlcmVuY2UnCmNvbnRyb2xsZXIgPSByb290IC8gJ3J1c3QvdGFyZ2V0L2RlYnVnL2NoZWNrLW5hdGl2ZS1sb2dnaW5nJwpy
+
+        ZWZlcmVuY2U9UGF0aChvcy5lbnZpcm9uWydMT0dHSU5HX1JFRkVSRU5DRV9CSU5BUlknXSkucmVzb2x2ZSgpCnBhdGhzID0g
+
+        W3B5dGhvbiwgYmluYXJ5LCBidWlsZGVyLCBjb250cm9sbGVyLCByZWZlcmVuY2UsIFBhdGgoJy91c3IvYmluL2dpdCcpLnJl
+
+        c29sdmUoKSwgUGF0aCgnL3Vzci9iaW4vc3RyYWNlJykucmVzb2x2ZSgpLCByb290LydydXN0L0NhcmdvLmxvY2snLCByb290
+
+        Lyd1di5sb2NrJ10KZm9yIG5hbWUgaW4gWydydXN0L3Rvb2xzL2NoZWNrX25hdGl2ZV9sb2dnaW5nLnB5JywgJ3J1c3QvdG9v
+
+        bHMvbmF0aXZlX2xvZ2dpbmdfdHJhbnNwb3J0LnB5JywgJ3J1c3QvdG9vbHMvbmF0aXZlX2xvZ2dpbmdfcmVmZXJlbmNlLmNj
+
+        JywgJ29wZW5waWxvdC9jb21tb24vc3dhZ2xvZy5jYycsICdvcGVucGlsb3QvY29tbW9uL3N3YWdsb2cuaCcsICdvcGVucGls
+
+        b3QvY29tbW9uL3RpbWluZy5oJ106CiAgICBwYXRocy5hcHBlbmQocm9vdC9uYW1lKQpwYXRocyArPSBzb3J0ZWQoKHJvb3Qv
+
+        J3J1c3QvY3JhdGVzL2xvZ2dpbmcnKS5yZ2xvYignKi5ycycpKQpwYXRocyArPSBzb3J0ZWQoKHJvb3QvJ3J1c3QvY3JhdGVz
+
+        L2xvZ2dpbmcnKS5nbG9iKCdDYXJnby50b21sJykpCnBhdGhzICs9IFtyb290LydydXN0L2NyYXRlcy9kZXYtdG9vbHMvc3Jj
+
+        L25hdGl2ZV9sb2dnaW5nX2NoZWNrLnJzJyxyb290LydydXN0L2NyYXRlcy9kZXYtdG9vbHMvc3JjL25hdGl2ZV9sb2dnaW5n
+
+        X2NoZWNrL3RyYW5zcG9ydC5ycycscm9vdC8ncnVzdC9jcmF0ZXMvZGV2LXRvb2xzL3NyYy9iaW4vY2hlY2tfbmF0aXZlX2xv
+
+        Z2dpbmcucnMnLHJvb3QvJ3J1c3QvY3JhdGVzL2Rldi10b29scy9zcmMvbmF0aXZlX2xvZ2dpbmdfY2hlY2svc29ja2V0LnJz
+
+        Jyxyb290LydydXN0L2NyYXRlcy9kZXYtdG9vbHMvc3JjL3JvdXRlX3VwbG9hZF9jaGVjay9saWZlY3ljbGUvc29ja2V0X2lk
+
+        ZW50aXR5LnJzJyxyb290LydydXN0L2NyYXRlcy9kZXYtdG9vbHMvc3JjL25hdGl2ZV9sb2dnaW5nX2J1aWxkLnJzJyxyb290
+
+        LydydXN0L2NyYXRlcy9kZXYtdG9vbHMvc3JjL2pzb24xMV9zdGFnZS5ycycscm9vdC8ncnVzdC9jcmF0ZXMvZGV2LXRvb2xz
+
+        L3NyYy9xYV9wcm9jZXNzLnJzJyxyb290LydydXN0L2NyYXRlcy9kZXYtdG9vbHMvQ2FyZ28udG9tbCcscm9vdC8ncnVzdC9j
+
+        cmF0ZXMvZGV2LXRvb2xzL3NyYy9saWIucnMnXQphcmNoaXZlPVBhdGgob3MuZW52aXJvblsnTE9HR0lOR19PUklHSU5BTF9B
+
+        UkNISVZFJ10pLnJlc29sdmUoKQphc3NlcnQgaGFzaGxpYi5zaGEyNTYoYXJjaGl2ZS5yZWFkX2J5dGVzKCkpLmhleGRpZ2Vz
+
+        dCgpPT0nMzY1NWRmYmUxNTI0MzAzYzc5MjdiY2RkMGVkZTQzNTk5ZTc1MDk0ZmU3ODdmMGVjODBkODRhODJjYmEzYTUxNicK
+
+        b3JpZ2luYWw9emlwZmlsZS5aaXBGaWxlKGFyY2hpdmUpCmFzc2VydCBvcmlnaW5hbC50ZXN0emlwKCkgaXMgTm9uZQpwcm92
+
+        ZW5hbmNlPWpzb24ubG9hZHMob3JpZ2luYWwucmVhZCgnbmF0aXZlLWxvZ2dpbmcvcmVmZXJlbmNlL3Byb3ZlbmFuY2UuanNv
+
+        bicpKQpmb3IgbmFtZSxzaGEgaW4gcHJvdmVuYW5jZVsnc291cmNlcyddLml0ZW1zKCk6CiAgICBhc3NlcnQgaGFzaGxpYi5z
+
+        aGEyNTYoKHJvb3QvbmFtZSkucmVhZF9ieXRlcygpKS5oZXhkaWdlc3QoKT09c2hhLG5hbWUKcGF0aHMuYXBwZW5kKGFyY2hp
+
+        dmUpCihvdXRwdXQvJ29yaWdpbmFsLWFyY2hpdmUuanNvbicpLndyaXRlX3RleHQoanNvbi5kdW1wcyh7J3J1bic6Mzk3OTE3
+
+        Nzk1NDUsJ2FydGlmYWN0JzoxMjQzMjI4Nzk0Miwnc2l6ZSc6YXJjaGl2ZS5zdGF0KCkuc3Rfc2l6ZSwnc2hhMjU2JzpoYXNo
+
+        bGliLnNoYTI1NihhcmNoaXZlLnJlYWRfYnl0ZXMoKSkuaGV4ZGlnZXN0KCksJ2NyY19lbnRyaWVzJzpsZW4ob3JpZ2luYWwu
+
+        aW5mb2xpc3QoKSksJ3NvdXJjZXMnOnByb3ZlbmFuY2VbJ3NvdXJjZXMnXX0saW5kZW50PTIpKydcbicpCiMgQ29tcGlsZXIg
+
+        YW5kIHJlZmVyZW5jZSBwcm92aWRlciBEU09zIGFyZSBoZWxkIHRvbzsgc3ltbGluayBzcGVsbGluZ3MgcmVzb2x2ZQojIG9u
+
+        Y2UgYW5kIHRoZSBoZWxkIHJlZ3VsYXItZmlsZSBpZGVudGl0eSBpcyB2ZXJpZmllZCBhZ2FpbiBhZnRlciBib3RoIGxhbmVz
+
+        Lgpmb3IgZXhlY3V0YWJsZSBpbiBbJy91c3IvYmluL2MrKycsJy91c3IvYmluL2FzJywnL3Vzci9iaW4vbGQnLCcvdXNyL2Jp
+
+        bi9jdXJsJ106CiAgICBwYXRocy5hcHBlbmQoUGF0aChleGVjdXRhYmxlKS5yZXNvbHZlKCkpCmZvciBkaXJlY3RvcnkgaW4g
+
+        WycvbGliL3g4Nl82NC1saW51eC1nbnUnLCcvdXNyL2xpYi94ODZfNjQtbGludXgtZ251J106CiAgICBmb3IgbmFtZSBpbiBb
+
+        J2xpYnptcS5zby41JywnbGlic3RkYysrLnNvLjYnLCdsaWJnY2Nfcy5zby4xJywnbGliYy5zby42JywnbGlibS5zby42Jywn
+
+        bGlic29kaXVtLnNvLjIzJywnbGlicGdtLTUuMy5zby4wJywnbGlibm9ybS5zby4xJywnbGliZ3NzYXBpX2tyYjUuc28uMidd
+
+        OgogICAgICAgIHBhdGggPSBQYXRoKGRpcmVjdG9yeSkvbmFtZQogICAgICAgIGlmIHBhdGguZXhpc3RzKCk6IHBhdGhzLmFw
+
+        cGVuZChwYXRoLnJlc29sdmUoKSkKaGVsZCA9IHt9CmRlZiBzbmFwc2hvdChwYXRoLCBmZCk6CiAgICBzdGF0dXMgPSBvcy5m
+
+        c3RhdChmZCkKICAgIHBhdGhfc3RhdHVzID0gcGF0aC5zdGF0KCkKICAgIGFzc2VydCAoc3RhdHVzLnN0X2RldixzdGF0dXMu
+
+        c3RfaW5vKT09KHBhdGhfc3RhdHVzLnN0X2RldixwYXRoX3N0YXR1cy5zdF9pbm8pLCBwYXRoCiAgICBjb250ZW50ID0gaGFz
+
+        aGxpYi5zaGEyNTYoKQogICAgd2hpbGUgVHJ1ZToKICAgICAgICBjaHVuaz1vcy5yZWFkKGZkLCAxPDwyMCkKICAgICAgICBp
+
+        ZiBub3QgY2h1bms6IGJyZWFrCiAgICAgICAgY29udGVudC51cGRhdGUoY2h1bmspCiAgICBvcy5sc2VlayhmZCwwLG9zLlNF
+
+        RUtfU0VUKQogICAgcmV0dXJuIHsnZGV2JzpzdGF0dXMuc3RfZGV2LCdpbm8nOnN0YXR1cy5zdF9pbm8sJ3NpemUnOnN0YXR1
+
+        cy5zdF9zaXplLCdtdGltZV9ucyc6c3RhdHVzLnN0X210aW1lX25zLCdjdGltZV9ucyc6c3RhdHVzLnN0X2N0aW1lX25zLCdt
+
+        b2RlJzpzdGF0dXMuc3RfbW9kZSwnc2hhMjU2Jzpjb250ZW50LmhleGRpZ2VzdCgpfQpmb3IgcGF0aCBpbiBzb3J0ZWQoc2V0
+
+        KHBhdGhzKSk6CiAgICBmZD1vcy5vcGVuKHBhdGgsb3MuT19SRE9OTFl8b3MuT19OT0ZPTExPV3xvcy5PX0NMT0VYRUMpCiAg
+
+        ICBoZWxkW3N0cihwYXRoKV09KHBhdGgsZmQsc25hcHNob3QocGF0aCxmZCkpCihvdXRwdXQvJ3B5dGhvbi1wcm92aWRlci5q
+
+        c29uJykud3JpdGVfdGV4dChqc29uLmR1bXBzKHsnZXhlY3V0YWJsZSc6c3RyKHB5dGhvbiksJ3ZlcnNpb24nOnN5cy52ZXJz
+
+        aW9uLCdyb2xlJzonc3RhbmRhcmQtbGlicmFyeSBkaWFnbm9zdGljIG9ubHk7IG5vIHByb2plY3QgUHl0aG9uIGNvbnRyb2xs
+
+        ZXIgaW52b2NhdGlvbid9LGluZGVudD0yKSsnXG4nKQoob3V0cHV0LydoZWxkLWJlZm9yZS5qc29uJykud3JpdGVfdGV4dChq
+
+        c29uLmR1bXBzKHtwOnJvd1syXSBmb3IgcCxyb3cgaW4gaGVsZC5pdGVtcygpfSxpbmRlbnQ9MikrJ1xuJykKZW52PWRpY3Qo
+
+        b3MuZW52aXJvbixQWVRIT05ET05UV1JJVEVCWVRFQ09ERT0nMScpCmRlZiBpbnZva2UobGFiZWwsIGFyZ3YsIGVudmlyb25t
+
+        ZW50KToKICAgIHRyYWNlPW91dHB1dC8obGFiZWwrJy50cmFjZScpCiAgICBjb21tYW5kPShbKm1hcChzdHIsYXJndildIGlm
+
+        IGxhYmVsPT0ndW50cmFjZWQnIGVsc2UgWycvdXNyL2Jpbi9zdHJhY2UnLCctZmYnLCctcycsJzY1NTM2JywnLW8nLHN0cih0
+
+        cmFjZSksJy1lJywndHJhY2U9ZXhlY3ZlLGV4ZWN2ZWF0LGNoZGlyJywqbWFwKHN0cixhcmd2KV0pCiAgICAob3V0cHV0Lyhs
+
+        YWJlbCsnLWludm9jYXRpb24uanNvbicpKS53cml0ZV90ZXh0KGpzb24uZHVtcHMoeydhcmd2Jzpjb21tYW5kLCdjd2QnOnN0
+
+        cihyb290LydydXN0JyksJ1BXRCc6ZW52aXJvbm1lbnQuZ2V0KCdQV0QnKSwnUEFUSCc6ZW52aXJvbm1lbnQuZ2V0KCdQQVRI
+
+        Jyl9LGluZGVudD0yKSsnXG4nKQogICAgd2l0aCAob3V0cHV0LyhsYWJlbCsnLnN0ZG91dCcpKS5vcGVuKCd3YicpIGFzIHN0
+
+        ZG91dCwob3V0cHV0LyhsYWJlbCsnLnN0ZGVycicpKS5vcGVuKCd3YicpIGFzIHN0ZGVycjoKICAgICAgICByZXN1bHQ9c3Vi
+
+        cHJvY2Vzcy5ydW4oY29tbWFuZCxjd2Q9cm9vdC8ncnVzdCcsZW52PWVudmlyb25tZW50LHN0ZG91dD1zdGRvdXQsc3RkZXJy
+
+        PXN0ZGVycix0aW1lb3V0PTM2MCkKICAgIHJldHVybiByZXN1bHQucmV0dXJuY29kZQpjb2Rlcz17fQp0cnk6CiAgICBjb2Rl
+
+        c1sndW50cmFjZWQnXT1pbnZva2UoJ3VudHJhY2VkJyxbY29udHJvbGxlciwnLS1yb290Jyxyb290LCctLWJpbmFyeScsYmlu
+
+        YXJ5LCctLWJ1aWxkZXInLGJ1aWxkZXIsJy0tcmVmZXJlbmNlJyxyZWZlcmVuY2UsJy0tb3V0cHV0JyxvdXRwdXQvJ3VudHJh
+
+        Y2VkJ10sZGljdChlbnYsUEFUSD0nL3Vzci9iaW46L2JpbicpKQogICAgY29kZXNbJ25hdGl2ZSddPWludm9rZSgnbmF0aXZl
+
+        JyxbY29udHJvbGxlciwnLS1yb290Jyxyb290LCctLWJpbmFyeScsYmluYXJ5LCctLWJ1aWxkZXInLGJ1aWxkZXIsJy0tcmVm
+
+        ZXJlbmNlJyxyZWZlcmVuY2UsJy0tb3V0cHV0JyxvdXRwdXQvJ25hdGl2ZSddLGRpY3QoZW52LFBBVEg9Jy91c3IvYmluOi9i
+
+        aW4nKSkKZmluYWxseToKICAgIGFmdGVyPXtwOnNuYXBzaG90KHBhdGgsZmQpIGZvciBwLChwYXRoLGZkLG9sZCkgaW4gaGVs
+
+        ZC5pdGVtcygpfQogICAgKG91dHB1dC8naGVsZC1hZnRlci5qc29uJykud3JpdGVfdGV4dChqc29uLmR1bXBzKGFmdGVyLGlu
+
+        ZGVudD0yKSsnXG4nKQogICAgKG91dHB1dC8nZXhpdC1jb2Rlcy5qc29uJykud3JpdGVfdGV4dChqc29uLmR1bXBzKGNvZGVz
+
+        LGluZGVudD0yKSsnXG4nKQogICAgYXNzZXJ0IGFsbChvbGQ9PWFmdGVyW3BdIGZvciBwLChwYXRoLGZkLG9sZCkgaW4gaGVs
+
+        ZC5pdGVtcygpKSwnaGVsZCBwcm92aWRlciBjaGFuZ2VkJwogICAgZm9yIHBhdGgsZmQsb2xkIGluIGhlbGQudmFsdWVzKCk6
+
+        IG9zLmNsb3NlKGZkKQphc3NlcnQgY29kZXM9PXsndW50cmFjZWQnOjAsJ25hdGl2ZSc6MH0sY29kZXMKIyBSZWNvbXB1dGUg
+
+        dGhlIGluZGVwZW5kZW50IGNvbW1hbmQvd2lyZSBjb21wYXJpc29uIGZyb20gb3JpZ2luYWwgcmF3IHBhY2tldHMuCiMgVGhl
+
+        IG9yaWdpbmFsIHJlZ2V4IHByb2plY3Rpb24gaXMgcmVjb3JkZWQgZXhwbGljaXRseTsgbmV2ZXIgZGVzZXJpYWxpemUgYW5k
+
+        CiMgcmVzZXJpYWxpemUgcGF5bG9hZCBKU09OIHRvIGNyZWF0ZSBlcXVhbGl0eS4KZGVmIG5vcm1hbGl6ZShwYWNrZXQpOgog
+
+        ICAgdGV4dD1wYWNrZXRbMTpdLmRlY29kZSgpCiAgICB0ZXh0PXJlLnN1YihyJyJjcmVhdGVkIjogW14sfV0rJywnImNyZWF0
+
+        ZWQiOiAwJyx0ZXh0KQogICAgZm9yIGtleSBpbiBbJ2ZpbGVuYW1lJywnZnVuY25hbWUnXToKICAgICAgICB0ZXh0PXJlLnN1
+
+        YignIicra2V5K3InIjogIig/OlteIlxcXXxcXC4pKiInLCciJytrZXkrJyI6ICJtZXRhZGF0YSInLHRleHQpCiAgICB0ZXh0
+
+        PXJlLnN1YihyJyJsaW5lbm8iOiBcZCsnLCcibGluZW5vIjogMCcsdGV4dCkKICAgIGZvciBrZXkgaW4gWydydW50aW1lX2xh
+
+        bmd1YWdlJywnc291cmNlX2NvbW1pdCcsJ3NvdXJjZV90cmVlJ106CiAgICAgICAgdGV4dD1yZS5zdWIoJyInK2tleStyJyI6
+
+        ICIoPzpbXiJcXF18XFwuKSoiLCAnLCcnLHRleHQpCiAgICByZXR1cm4gcGFja2V0WzoxXSt0ZXh0LmVuY29kZSgpCm1hbmlm
+
+        ZXN0PXt9CmZvciByZWxhdGl2ZSBpbiBbKihmJ2NvbnNvbGUte2l9L3traW5kfScgZm9yIGkgaW4gcmFuZ2UoNykgZm9yIGtp
+
+        bmQgaW4gWydzb3VyY2UnLCdydXN0J10pLCooZidyYXRlL3traW5kfScgZm9yIGtpbmQgaW4gWydzb3VyY2UnLCdydXN0J10p
+
+        XToKICAgIGxhbmVzPVtdCiAgICBmb3IgbGFiZWwgaW4gWydvcmlnaW5hbCcsJ25hdGl2ZSddOgogICAgICAgIGRpcmVjdG9y
+
+        eT1vdXRwdXQvbGFiZWwvcmVsYXRpdmUKICAgICAgICBkZWYgY29udGVudChuYW1lKToKICAgICAgICAgICAgcmV0dXJuIG9y
+
+        aWdpbmFsLnJlYWQoZiduYXRpdmUtbG9nZ2luZy97cmVsYXRpdmV9L3tuYW1lfScpIGlmIGxhYmVsPT0nb3JpZ2luYWwnIGVs
+
+        c2UgKGRpcmVjdG9yeS9uYW1lKS5yZWFkX2J5dGVzKCkKICAgICAgICBwYWNrZXRzPWpzb24ubG9hZHMoY29udGVudCgncGFj
+
+        a2V0cy5qc29uJykpCiAgICAgICAgcmF3PVtiYXNlNjQuYjY0ZGVjb2RlKHJvd1sncmF3X2Jhc2U2NCddLHZhbGlkYXRlPVRy
+
+        dWUpIGZvciByb3cgaW4gcGFja2V0c10KICAgICAgICBhc3NlcnQgYWxsKGpzb24ubG9hZHMocGFja2V0WzE6XSk9PXJvd1sn
+
+        cmVjb3JkJ10gYW5kIHBhY2tldFswXT09cm93WydyZWNvcmQnXVsnbGV2ZWxudW0nXSBmb3IgcGFja2V0LHJvdyBpbiB6aXAo
+
+        cmF3LHBhY2tldHMsc3RyaWN0PVRydWUpKQogICAgICAgIGNvbW1hbmRzPWpzb24ubG9hZHMoY29udGVudCgncmVzcG9uc2Vz
+
+        Lmpzb24nKSkKICAgICAgICBsYW5lcy5hcHBlbmQoKFtub3JtYWxpemUocGFja2V0KSBmb3IgcGFja2V0IGluIHJhd10sY29t
+
+        bWFuZHMsY29udGVudCgnc3Rkb3V0LnR4dCcpKSkKICAgIGFzc2VydCBsYW5lc1swXT09bGFuZXNbMV0scmVsYXRpdmUKICAg
+
+        IG1hbmlmZXN0W3JlbGF0aXZlXT17J3BhY2tldHMnOmxlbihsYW5lc1swXVswXSksJ2NvbW1hbmRzJzpsZW4obGFuZXNbMF1b
+
+        MV0pfQpmb3IgbGFiZWwgaW4gWydvcmlnaW5hbCcsJ25hdGl2ZSddOgogICAgcmVwb3J0PWpzb24ubG9hZHMob3JpZ2luYWwu
+
+        cmVhZCgnbmF0aXZlLWxvZ2dpbmcvcmVwb3J0Lmpzb24nKSBpZiBsYWJlbD09J29yaWdpbmFsJyBlbHNlIChvdXRwdXQvbGFi
+
+        ZWwvJ3JlcG9ydC5qc29uJykucmVhZF9ieXRlcygpKQogICAgYXNzZXJ0IGFsbChyZXBvcnRba2V5XT09Y291bnQgZm9yIGtl
+
+        eSxjb3VudCBpbiBbKCd3aXJlX3JlY29yZHMnLDE2OCksKCdsb2dwcmludF9jYXNlcycsNyksKCdyYXRlX2lucHV0cycsNTE2
+
+        KSwoJ3JhdGVfcmVjb3JkcycsMTYpXSkKICAgIGZvciBraW5kIGluIFsnc291cmNlJywncnVzdCddOgogICAgICAgIHRyYW5z
+
+        cG9ydD1yZXBvcnRbJ3RyYW5zcG9ydCddW2tpbmRdCiAgICAgICAgcmVzcG9uc2U9dHJhbnNwb3J0WydiYWNrcHJlc3N1cmUn
+
+        XQogICAgICAgIGFzc2VydCByZXNwb25zZVsnc2VudCddPjAgYW5kIHJlc3BvbnNlWydkcm9wcGVkJ10+MCBhbmQgcmVzcG9u
+
+        c2VbJ3NlbnQnXStyZXNwb25zZVsnZHJvcHBlZCddPT01MDAwCiAgICAgICAgYXNzZXJ0IHRyYW5zcG9ydFsnc2VuZF9hbmRf
+
+        c2h1dGRvd25fc2Vjb25kcyddPDIKICAgICAgICBmb3Igc2lnbmFsLGNvZGUgaW4gWygnU0lHSU5UJywtMiksKCdTSUdURVJN
+
+        JywtMTUpXToKICAgICAgICAgICAgc3RhdHVzPWpzb24ubG9hZHMob3JpZ2luYWwucmVhZChmJ25hdGl2ZS1sb2dnaW5nL3Ry
+
+        YW5zcG9ydC97a2luZH0ve3NpZ25hbH0vc2lnbmFsLmpzb24nKSBpZiBsYWJlbD09J29yaWdpbmFsJyBlbHNlIChvdXRwdXQv
+
+        bGFiZWwvJ3RyYW5zcG9ydCcva2luZC9zaWduYWwvJ3NpZ25hbC5qc29uJykucmVhZF9ieXRlcygpKQogICAgICAgICAgICBh
+
+        c3NlcnQgc3RhdHVzWydyZXR1cm5jb2RlJ109PWNvZGUgYW5kIHN0YXR1c1snc2Vjb25kcyddPDIKIyBSZWZlcmVuY2UgYnVp
+
+        bGRzIG11c3QgYmUgYWN0dWFsIHNhbWUgc291cmNlLWdlbmVyYXRlZCBDKysgYnl0ZXMgYWNyb3NzIGxhbmVzLgphc3NlcnQg
+
+        anNvbi5sb2FkcyhvcmlnaW5hbC5yZWFkKCduYXRpdmUtbG9nZ2luZy9yZXBvcnQuanNvbicpKVsnc291cmNlX2JpbmFyeV9z
+
+        aGEyNTYnXT09anNvbi5sb2Fkcygob3V0cHV0LyduYXRpdmUvcmVwb3J0Lmpzb24nKS5yZWFkX3RleHQoKSlbJ3NvdXJjZV9i
+
+        aW5hcnlfc2hhMjU2J10KKG91dHB1dC8ncmF3LXJlcGxheS1hdWRpdC5qc29uJykud3JpdGVfdGV4dChqc29uLmR1bXBzKHsn
+
+        cmVzdWx0JzoncGFzcycsJ2xhbmVzJzptYW5pZmVzdCwndHJhbnNwb3J0JzoncmFuZ2Uvc2lnbmFsIGNvbnRyYWN0cyByZWNo
+
+        ZWNrZWQnLCduYXRpdmVfc291cmNlX2J1aWxkJzonc2FtZSBDKysgRUxGIFNIQTI1NicsJ29yaWdpbmFsX3J1bic6Mzk3OTE3
+
+        Nzk1NDUsJ29yaWdpbmFsX2FydGlmYWN0JzoxMjQzMjI4Nzk0MiwncHJvamVjdF9weXRob25fZXhlY3V0aW9ucyc6MH0saW5k
+
+        ZW50PTIpKydcbicpCgphc3NlcnQganNvbi5sb2Fkcygob3V0cHV0LyduYXRpdmUvcHJvdmlkZXJzLmJlZm9yZS5qc29uJyku
+
+        cmVhZF90ZXh0KCkpPT1qc29uLmxvYWRzKChvdXRwdXQvJ25hdGl2ZS9wcm92aWRlcnMuYWZ0ZXIuanNvbicpLnJlYWRfdGV4
+
+        dCgpKQoKIyBTb3VyY2UtYXV0aG9yZWQgY2xvc2VkIG5hdGl2ZSBleGVjdXRpb24gcm9zdGVyLCB3aXRoIGV4YWN0IGNvbW1h
+
+        bmQgY291bnRzLgpleHBlY3RlZD1Db3VudGVyKCkKZXhwZWN0ZWRbKHN0cihjb250cm9sbGVyKSxzdHIoY29udHJvbGxlciks
+
+        Jy0tcm9vdCcsc3RyKHJvb3QpLCctLWJpbmFyeScsc3RyKGJpbmFyeSksJy0tYnVpbGRlcicsc3RyKGJ1aWxkZXIpLCctLXJl
+
+        ZmVyZW5jZScsc3RyKHJlZmVyZW5jZSksJy0tb3V0cHV0JyxzdHIob3V0cHV0LyduYXRpdmUnKSldPTEKcGVlcnM9W10KZm9y
+
+        IGtpbmQgaW4gWydzb3VyY2UnLCdydXN0J106CiAgICBwZWVycyArPSBbKGYnY29uc29sZS17aX0ve2tpbmR9JyxraW5kLCdu
+
+        b3JtYWwnKSBmb3IgaSBpbiByYW5nZSg3KV0KICAgIHBlZXJzICs9IFsoZidyYXRlL3traW5kfScsa2luZCwnbm9ybWFsJyld
+
+        CiAgICBwZWVycyArPSBbKGYndHJhbnNwb3J0L3traW5kfS97Y2FzZX0nLGtpbmQsJ2Fic2VudCcgaWYgY2FzZSBpbiBbJ2Jh
+
+        Y2twcmVzc3VyZScsJ1NJR0lOVCcsJ1NJR1RFUk0nXSBlbHNlICdub3JtYWwnKSBmb3IgY2FzZSBpbiBbJ2JhY2twcmVzc3Vy
+
+        ZScsJ3RocmVhZHMnLCdjb25zb2xlLWZhaWx1cmUnLCdTSUdJTlQnLCdTSUdURVJNJ11dCnBlZXJzLmFwcGVuZCgoJ3RyYW5z
+
+        cG9ydC9ydW50aW1lLXByZWZpeCcsJ3J1c3QnLCdydW50aW1lJykpCmZvciByZWxhdGl2ZSxraW5kLG1vZGUgaW4gcGVlcnM6
+
+        CiAgICByZWNlaXB0PWpzb24ubG9hZHMoKG91dHB1dC8nbmF0aXZlJy9yZWxhdGl2ZS8naW52b2NhdGlvbi5qc29uJykucmVh
+
+        ZF90ZXh0KCkpCiAgICBwcm9ncmFtPXJlZmVyZW5jZSBpZiBraW5kPT0nc291cmNlJyBlbHNlIGJpbmFyeQogICAgYXNzZXJ0
+
+        IHJlY2VpcHRbJ2JpbmFyeSddPT1zdHIocHJvZ3JhbSkgYW5kIHJlY2VpcHRbJ29yaWdpbmFsJ109PShraW5kPT0nc291cmNl
+
+        JykgYW5kIHJlY2VpcHRbJ2N3ZCddPT1zdHIocm9vdCkscmVsYXRpdmUKICAgIGVuZHBvaW50PXJlY2VpcHRbJ2VuZHBvaW50
+
+        J10KICAgIGlmIG1vZGU9PSdydW50aW1lJzogYXNzZXJ0IGVuZHBvaW50PT0ncnVudGltZScKICAgIGVsaWYgbW9kZT09J2Fi
+
+        c2VudCc6IGFzc2VydCByZS5mdWxsbWF0Y2gocidpcGM6Ly8vdG1wL25hdGl2ZS1sb2ctYWJzZW50LVtBLVphLXowLTldezZ9
+
+        L21pc3NpbmcnLGVuZHBvaW50KQogICAgZWxzZTogYXNzZXJ0IHJlLmZ1bGxtYXRjaChyJ2lwYzovLy90bXAvbmF0aXZlLWxv
+
+        Zy1bQS1aYS16MC05XXs2fS9zb2NrZXQnLGVuZHBvaW50KQogICAgYXJndj1bc3RyKHByb2dyYW0pXSsoW10gaWYga2luZD09
+
+        J3NvdXJjZScgZWxzZSBbZW5kcG9pbnRdKQogICAgZXhwZWN0ZWRbKHN0cihwcm9ncmFtKSwqYXJndildKz0xCiAgICBleHBl
+
+        Y3RlZFsoJy91c3IvYmluL2dpdCcsJ2dpdCcsJ3Jldi1wYXJzZScsJ0hFQUQnKV0rPTEKICAgIGV4cGVjdGVkWygnL3Vzci9i
+
+        aW4vZ2l0JywnZ2l0Jywnc3RhdHVzJywnLS1wb3JjZWxhaW4nLCctLXVudHJhY2tlZC1maWxlcz1ub3JtYWwnKV0rPTEKZXhw
+
+        ZWN0ZWRbKHN0cihyZWZlcmVuY2UpLHN0cihyZWZlcmVuY2UpKV0rPTIKZXhwZWN0ZWRbKHN0cihiaW5hcnkpLHN0cihiaW5h
+
+        cnkpLCdpbnZhbGlkOi8vZW5kcG9pbnQnKV0rPTIKc2Vlbj1Db3VudGVyKCk7IGNoZGlyPTAKcXVvdGU9ciciKD86W14iXFxd
+
+        fFxcLikqIicKZm9yIHRyYWNlIGluIHNvcnRlZChvdXRwdXQuZ2xvYignbmF0aXZlLnRyYWNlLionKSk6CiAgICBmb3IgbGlu
+
+        ZSBpbiB0cmFjZS5yZWFkX3RleHQoKS5zcGxpdGxpbmVzKCk6CiAgICAgICAgaWYgbGluZS5zdGFydHN3aXRoKCdleGVjdmVh
+
+        dCgnKTogcmFpc2UgQXNzZXJ0aW9uRXJyb3IoKCd1bmV4cGVjdGVkIGV4ZWN2ZWF0JyxsaW5lKSkKICAgICAgICBpZiBsaW5l
+
+        LnN0YXJ0c3dpdGgoJ2V4ZWN2ZSgnKToKICAgICAgICAgICAgbWF0Y2g9cmUuZnVsbG1hdGNoKHInZXhlY3ZlXCgoJytxdW90
+
+        ZStyJyksIChcWy4qXF0pLCAuKlwpID0gMCcsbGluZSkKICAgICAgICAgICAgYXNzZXJ0IG1hdGNoLCgndW5jbGFzc2lmaWVk
+
+        IG5hdGl2ZSBleGVjJyxsaW5lKQogICAgICAgICAgICBwcm9ncmFtPWFzdC5saXRlcmFsX2V2YWwobWF0Y2hbMV0pOyBhcmd2
+
+        PWFzdC5saXRlcmFsX2V2YWwobWF0Y2hbMl0pOyBrZXk9KHByb2dyYW0sKmFyZ3YpCiAgICAgICAgICAgIGFzc2VydCBrZXkg
+
+        aW4gZXhwZWN0ZWQsKCdjbG9zZWQgbmF0aXZlIHJvc3RlciByZWplY3RlZCcsa2V5KQogICAgICAgICAgICBzZWVuW2tleV0r
+
+        PTEKICAgICAgICBlbGlmIGxpbmUuc3RhcnRzd2l0aCgnY2hkaXIoJyk6CiAgICAgICAgICAgIG1hdGNoPXJlLmZ1bGxtYXRj
+
+        aChyJ2NoZGlyXCgoJytxdW90ZStyJylcKSA9IDAnLGxpbmUpCiAgICAgICAgICAgIGFzc2VydCBtYXRjaCBhbmQgYXN0Lmxp
+
+        dGVyYWxfZXZhbChtYXRjaFsxXSk9PXN0cihyb290KSwoJ3VuZXhwZWN0ZWQgY3dkJyxsaW5lKQogICAgICAgICAgICBjaGRp
+
+        cis9MQphc3NlcnQgc2Vlbj09ZXhwZWN0ZWQsKHNlZW4tZXhwZWN0ZWQsZXhwZWN0ZWQtc2VlbikKYXNzZXJ0IHN1bShzZWVu
+
+        LnZhbHVlcygpKT09ODYgYW5kIGNoZGlyPT04NSwoc3VtKHNlZW4udmFsdWVzKCkpLGNoZGlyKQoob3V0cHV0LydjbG9zZWQt
+
+        ZXhlYy1hdWRpdC5qc29uJykud3JpdGVfdGV4dChqc29uLmR1bXBzKHsncmVzdWx0JzoncGFzcycsJ2V4ZWNfc3VjY2Vzcyc6
+
+        ODYsJ2NoZGlyJzo4NSwncHJvamVjdF9weXRob25fZXhlYyc6MCwncm9zdGVyJzpbeydwcm9ncmFtJzprZXlbMF0sJ2FyZ3Yn
+
+        OmtleVsxOl0sJ2NvdW50Jzpjb3VudH0gZm9yIGtleSxjb3VudCBpbiBzb3J0ZWQoc2Vlbi5pdGVtcygpKV19LGluZGVudD0y
+
+        KSsnXG4nKQo=
+
+        PAYLOAD
+
+        printf ''%s  %s\n'' ''a25254fb732f53a783820297c33065aa4b8e9ad02dc1ab0813bae86fbf5e7995'' "$RUNNER_TEMP/r3-dual-measurement.py"
+        | sha256sum --check --strict
+
+        '
+    - name: Measure the same held ELFs without and with ptrace under unchanged bounds
+      shell: bash
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 1024
+
+        "$LOGGING_SELECTED_PYTHON" "$RUNNER_TEMP/r3-dual-measurement.py"
+
+        '
+    - name: Assemble bounded always evidence with explicit source/provider exclusions
+      if: always()
+      shell: bash
+      run: "set -euo pipefail\nlogging_evidence_python=${LOGGING_SELECTED_PYTHON:-$(command -v python3)}\n\"$logging_evidence_python\"\
+        \ - <<'PY'\nimport hashlib,json,os,shutil\nfrom pathlib import Path\nsource=Path(os.environ.get('LOGGING_PROOF_OUTPUT',str(Path(os.environ['RUNNER_TEMP'])/'native-logging-r1')));\
+        \ output=Path(os.environ['RUNNER_TEMP'])/'native-logging-r1-public'\noutput.mkdir(exist_ok=True)\nmanifest={}; size=0;\
+        \ excluded=[]\nif source.exists():\n    for path in sorted(source.rglob('*')):\n        if not path.is_file(): continue\n\
+        \        relative=path.relative_to(source)\n        if path.suffix not in {'.json','.jsonl','.bin','.txt','.stdout','.stderr','.raw','.log'}\
+        \ and '.trace' not in path.name:\n            excluded.append(str(relative)); continue\n        data=path.read_bytes()\n\
+        \        assert not data.startswith(b'\\x7fELF'),relative\n        size+=len(data); assert size<=32<<20,'bounded logging\
+        \ evidence exceeded32MiB'\n        destination=output/relative; destination.parent.mkdir(parents=True,exist_ok=True);\
+        \ destination.write_bytes(data)\n        manifest[str(relative)]={'size':len(data),'sha256':hashlib.sha256(data).hexdigest()}\n\
+        (output/'content-seals.json').write_text(json.dumps(manifest,indent=2)+'\\n')\n(output/'excluded.json').write_text(json.dumps(excluded,indent=2)+'\\\
+        n')\nPY\n"
+    - uses: actions/upload-artifact@v6
+      if: always()
+      with:
+        name: native-logging-r3
+        if-no-files-found: error
+        include-hidden-files: true
+        path: ${{ runner.temp }}/native-logging-r1-public/
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/native-logging-r3-296-once.yml
