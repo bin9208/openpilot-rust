@@ -133,3 +133,11 @@ The user authorized automatic follow-up through exact-source dev-md delivery.
 The existing hourly follow-up now targets this task, uses the runner policy above
 and reports meaningful failures, completion or required user action. Installation
 on the vehicle and measured driving CPU acceptance remain user-owned.
+
+The first local-runner PR run, `39828316661` on `12ccf5bf`, confirmed actual
+assignment to `bin-actions`. Its fast checks ran 76 CI-policy tests; one existing
+raylib output-isolation fixture failed because its selected shell fragment omitted
+the new `cross_root` initialization. Include that allocation before expanding the
+linker path. The native execution routing, private APT configuration and actual
+Git/LFS regressions passed their individual checks; the full gate did not pass.
+Fresh exact-source validation remains required after this fixture repair.
