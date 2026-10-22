@@ -21,8 +21,9 @@ head, completed latest push CI and all five successful exact-source gates are
 checked before any package build. An incomplete CI run is waited for, never
 accepted as success. Pure approval/evidence tests run in the normal fast CI.
 
-The controller is copied into runner temporary storage before the checkout is
-replaced with the immutable requested source. The requested source's
+The immutable requested source is checked out first, preserving its existing
+temporary storage and Rust PATH initialization. The controller is retrieved at
+the exact dispatch commit into owned runner temporary storage. The requested source's
 `package.py` is loaded as a library, without modifying its marker-only entry
 point or any runtime source. Its own source policy, baseline/sysroot/provider
 verification, complete AGNOS build, sealing and offline installer checks are

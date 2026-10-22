@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Explicit owner-requested delivery of an unchanged, CI-verified source checkout.
 
-This controller is copied outside the checkout before checking out the requested
-source. All build/seal/install functions and the native publisher come from that
+This controller is retrieved at its pinned dispatch commit outside the immutable
+source checkout. All build/seal/install functions and the native publisher come from that
 source; its marker-only automatic entry point remains unchanged.
 """
 import hashlib

@@ -96,22 +96,18 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v7
-        if: inputs.release_request != ''
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-      - name: Preserve manual delivery controller outside the source tree
-        if: inputs.release_request != ''
-        run: |
-          cp rust/ci/runtime/manual_delivery.py "$RUNNER_TEMP/manual-delivery.py"
-          echo "RUNTIME_MANUAL_DRIVER=$RUNNER_TEMP/manual-delivery.py" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.verify.outputs.source_sha }}
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
+      - name: Retrieve pinned manual controller outside the source tree
+        if: inputs.release_request != ''
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/contents/rust/ci/runtime/manual_delivery.py?ref=$GITHUB_SHA" --jq .content | base64 --decode > "$RUNNER_TEMP/manual-delivery.py"
+          echo "RUNTIME_MANUAL_DRIVER=$RUNNER_TEMP/manual-delivery.py" >> "$GITHUB_ENV"
       - name: Check focused source policy before downloads or builds
         run: |
           python3 - <<'PY'
@@ -284,21 +280,17 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v7
-        if: inputs.release_request != ''
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-      - name: Preserve manual delivery controller outside the source tree
-        if: inputs.release_request != ''
-        run: |
-          cp rust/ci/runtime/manual_delivery.py "$RUNNER_TEMP/manual-delivery.py"
-          echo "RUNTIME_MANUAL_DRIVER=$RUNNER_TEMP/manual-delivery.py" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.verify.outputs.source_sha }}
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/job-temp
+      - name: Retrieve pinned manual controller outside the source tree
+        if: inputs.release_request != ''
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/contents/rust/ci/runtime/manual_delivery.py?ref=$GITHUB_SHA" --jq .content | base64 --decode > "$RUNNER_TEMP/manual-delivery.py"
+          echo "RUNTIME_MANUAL_DRIVER=$RUNNER_TEMP/manual-delivery.py" >> "$GITHUB_ENV"
       - name: Reserve disk and install ARM execution tools
         run: |
           # Only GitHub-hosted images contain these disposable tool bundles.

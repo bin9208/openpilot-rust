@@ -69,18 +69,22 @@ class ManualDeliveryTests(unittest.TestCase):
       with self.subTest(fault=fault), self.assertRaises(AssertionError):
         DRIVER.validate_ci(run, latest, jobs, SHA, '42')
 
-  def test_controller_is_preserved_before_immutable_source_checkout(self):
+  def test_pinned_controller_stays_outside_immutable_source_checkout(self):
     workflow = yaml.load((ROOT / '.github/workflows/dev-md-runtime.yml').read_text(), Loader=yaml.BaseLoader)
     for name in ('package', 'publish'):
       steps = workflow['jobs'][name]['steps']
       checkouts = [(i, step) for i, step in enumerate(steps) if step.get('uses', '').startswith('actions/checkout@')]
-      self.assertEqual(checkouts[0][1]['if'], "inputs.release_request != ''")
-      self.assertEqual(checkouts[0][1]['with']['ref'], '${{ github.sha }}')
-      self.assertEqual(checkouts[1][1]['with']['ref'], '${{ needs.verify.outputs.source_sha }}')
-      self.assertNotIn('if', checkouts[1][1])
-      between = '\n'.join(step.get('run', '') for step in steps[checkouts[0][0]:checkouts[1][0]])
-      self.assertIn('"$RUNNER_TEMP/manual-delivery.py"', between)
-      self.assertNotIn('git commit', between)
+      self.assertEqual(len(checkouts), 1)
+      self.assertEqual(checkouts[0][1]['with']['ref'], '${{ needs.verify.outputs.source_sha }}')
+      self.assertNotIn('if', checkouts[0][1])
+      self.assertEqual(steps[checkouts[0][0] + 1]['uses'], './.github/actions/job-temp')
+      index, retrieve = next((i, step) for i, step in enumerate(steps)
+                             if step.get('name') == 'Retrieve pinned manual controller outside the source tree')
+      self.assertGreater(index, checkouts[0][0] + 1)
+      self.assertEqual(retrieve['if'], "inputs.release_request != ''")
+      self.assertIn('?ref=$GITHUB_SHA', retrieve['run'])
+      self.assertIn('"$RUNNER_TEMP/manual-delivery.py"', retrieve['run'])
+      self.assertNotIn('git commit', retrieve['run'])
     source = (ROOT / 'rust/ci/runtime/manual_delivery.py').read_text()
     self.assertIn('runpy.run_path(str(root / "rust/ci/runtime/package.py"))', source)
     self.assertIn('delivery["build"]()', source)
