@@ -21,3 +21,27 @@ audited artifact12354710648 (37,344,767bytes/1,650members, all CRCs), ZIP SHA256
 All12 retain state/probe/phase evidence, signal2 and reaped probe, and no false
 success report. They did not reproduce the stall. Keep457 open and retain
 failure diagnostics in the maintained full gate; no root-cause or device claim.
+
+The later full navigation run
+[39719156536](https://github.com/bin9208/openpilot-rust/actions/runs/39719156536)
+failed the same 10-second barrier. Its controller was runnable for 10,003 ms,
+with 946 user CPU ticks and no source record or probe marker. That build had
+only the earlier phase markers, so the failing operation remains unproved.
+Source `12fab44083b6dbd1f8c69f5f2b18bea8aca99461` added opt-in markers
+around source, worker, binary and candidate hashing and fresh RSA generation.
+The pinned follow-up
+[39721672474](https://github.com/bin9208/openpilot-rust/actions/runs/39721672474)
+passed all eight fresh cancellation starts and the full navigation suite.
+Artifact `12401668808` has 1,682 CRC-valid members and SHA-256
+`16710899eb402c380c51afefe95598b2b3a4b36741b73a4c80a038c7834bc559`.
+RSA generation took 2.04–7.77 seconds across the eight attempts; candidate
+hashing took about 2.6 ms. This identifies the dominant measured admission
+cost in successful runs, not the exact phase of the historical failure.
+
+The next scoped candidate compiles the locked `num-bigint-dig` dependency at
+`opt-level=3` for Cargo's `dev` profile; `test` inherits that profile. It leaves
+fresh random 2048-bit RSA generation, its error order, release builds and the
+10-second start barrier unchanged. The same pinned eight-attempt/full-suite
+hosted gate must measure the candidate before attributing any timing change.
+Even a faster passing run would not establish that the intermittent failure is
+fixed without a reproduced failure or otherwise discriminating evidence.
