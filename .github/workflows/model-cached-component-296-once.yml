@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
-      EXPECTED_SOURCE: 6c35679d6a07573eae2957acd22df4eee55e4ccb
+      EXPECTED_SOURCE: 800e2c8f808d0abf347787a01d4c7b9ce1fec942
       RUSTUP_TOOLCHAIN: 1.94.0
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
@@ -21,7 +21,7 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 6c35679d6a07573eae2957acd22df4eee55e4ccb
+        ref: 800e2c8f808d0abf347787a01d4c7b9ce1fec942
         persist-credentials: false
     - name: Bind committed source and exact vendored provider
       id: prepare
@@ -112,7 +112,7 @@ jobs:
     - uses: actions/upload-artifact@v6
       if: always()
       with:
-        name: native-cached-component-6c35679d6a0
+        name: native-cached-component-800e2c8f808
         path: ${{ runner.temp }}/native-cached-component-proof/
         include-hidden-files: true
         if-no-files-found: error
