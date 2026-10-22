@@ -54,6 +54,14 @@ const MAX_PTY_PENDING_BYTES: usize = 8192;
 const MAX_PTY_RESPONSE_BYTES: usize = 16 * 1024;
 const MAX_TRACE_OUTPUT_BYTES: u64 = 4 * 1024 * 1024;
 
+fn require(ok: bool, message: impl Into<String>) -> Result<()> {
+    if ok {
+        Ok(())
+    } else {
+        Err(message.into().into())
+    }
+}
+
 #[derive(Clone)]
 struct Case {
     name: &'static str,
