@@ -27,7 +27,7 @@ family records. Git retains earlier handoff versions.
 
 ## Accepted source retirement and open global gates
 
-Inventory:255replaced-local/3partial/3322pending of3580 baseline entries. Additional
+Inventory:257replaced-local/3partial/3320pending of3580 baseline entries. Additional
 helpers/notebooks and observed execution edges are tracked separately. The latter
 has37pending sites after metadata14caller acceptance, recovery CWP and soundd source staging.
 
@@ -225,8 +225,18 @@ Both Python commands remain present/pending.39696759740 (workflowc4029a1db2eff20
 compares complete fresh original C++ corpora, float bits and key order; raw JSON
 byte equality remains separately recorded/unproven. No inventory count changes.
 
-Latest #296 checkpoint comment6328549833 predates these new failures/candidates;
+Latest #296 checkpoint comment6329291714 records the newer failures/candidates;
 update it and PR343 after coherent acceptance evidence. Keep #296 open until full
 criteria are met; source inventory, partial gates, queued CI and PR creation are
 not completion. Detailed functional ownership is in
 [the grouped ledger](rust-repository-python-retirement-296-families.md).
+
+Native equation generator postdelete39697287904 now passes atdf374b0ab, workflow
+1e78c7beb0ee93fc067f85fa54f35084db3c773f. Parent audits128CRCs and all30 original
+byte pins, both source-absent Git paths, two native output rosters and all758
+function/constant/singular comparisons. Accept two equation-generator entries
+(257/3/3320). Corpus postdelete source2e83f1dba uses original C++ providers and
+fixed already-existing original JSON, now also testing symlink/hardlink write
+semantics and empty cwd. Workflowda59a756e867fd1518a4dc36a484f035a8825cc9 is
+published; its run remains pending acceptance. Full Fast routing/metadata/Card
+focused39696562943 passes; latest complete PR run still awaits generic ARM.

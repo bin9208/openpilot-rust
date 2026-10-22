@@ -5821,3 +5821,21 @@ without their environment. The one new pure Panda roster check passes. Do not
 weaken the mandatory tests: separate Panda's complete gate and resume only the
 pending same-source postdelete mathematical comparison in39697287904, workflow
 1e78c7beb0ee93fc067f85fa54f35084db3c773f. Successful unchanged checks are reused.
+
+### Two equation generators accepted after actual deletion (2026-10-22)
+
+[39697287904](https://github.com/bin9208/openpilot-rust/actions/runs/39697287904)
+passes atdf374b0abde72e93759bc2a2168505b5615f4d7a, workflow
+1e78c7beb0ee93fc067f85fa54f35084db3c773f. This resumes only the still-pending
+postdelete comparison; successful8pure/Clippy/formatting/policy checks at the
+same source in39696496964 and full routing39696562943 are reused. Both real Git
+Python paths are absent. Actual-checkout and empty-cwd native CLIs share each
+ELF, emit complete identical11/19 rosters, and fresh rustc comparisons pass all
+200Pose/558Car function rows, exact constant bits and singular classifications.
+Parent independently verifies all128CRCs, all30 original manifest/body pins,
+all8command statuses, same binary argv and every native output pair. Artifact
+12391691102:2428836B/8663033B expanded,
+SHA25625ef9657deb575c47a618a60306c544875da2caf4df0c5ea3a6cfb116194676d.
+Accept only generate_pose_model.py/generate_car_model.py: inventory257/3/3320;
+remove their two pending routing rows. Corpus2 and model-family6 source deletions
+remain pending their own gates. No installed runtime equation module changes.

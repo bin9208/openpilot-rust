@@ -2345,14 +2345,14 @@ rust/tools/generate_camerad_sensor_lifecycle_reference.py	608ecf83b7969f2d4f5952
 rust/tools/generate_camerad_state_reference.py	064f0f32c6968419bfccc0f795b22e93322c06d0	replaced-local	rust/crates/dev-tools/src/camera_lifecycle_generate.rs
 rust/tools/generate_camerad_stress_reference.py	36166e3a41c6af38cfbb6c258ed3784578288244	replaced-local	rust/crates/dev-tools/src/camera_lifecycle_generate.rs
 rust/tools/generate_car_corpus.py	bba77b027803e0f2e035e8a9f358b487f984a5e9	pending	-
-rust/tools/generate_car_model.py	46523225170a39f78be57fb3f2eefa13930d4fb4	pending	-
+rust/tools/generate_car_model.py	46523225170a39f78be57fb3f2eefa13930d4fb4	replaced-local	rust/crates/dev-tools/src/kalman_model_generator.rs
 rust/tools/generate_card_catalog.py	61bd63c0f181c89c08b2f25e600444706ef1a73c	pending	-
 rust/tools/generate_cluster_config.py	7a19fcba142835c6fc382ee9bad9fb59248d603f	pending	-
 rust/tools/generate_cluster_models.py	3ca42eb443e0f12113e24d930242ae2b43f47f11	pending	-
 rust/tools/generate_control_registry.py	cdc54d3442e1a323c80fce8a86d1a9410e0d9cb9	pending	-
 rust/tools/generate_manager_cars.py	2e64f168b654f80a57c5c9a2e4337f6cd2ed55a8	pending	-
 rust/tools/generate_pose_corpus.py	2b4d7153f462d7c1620c54f8af0e8fc4de04b3eb	pending	-
-rust/tools/generate_pose_model.py	ca7db69192840793c42847e7c73e465c06a31b3f	pending	-
+rust/tools/generate_pose_model.py	ca7db69192840793c42847e7c73e465c06a31b3f	replaced-local	rust/crates/dev-tools/src/kalman_model_generator.rs
 rust/tools/generate_selfdrive_alerts.py	08e794f0087fba1f115909d16fa6428d4d475cb4	pending	-
 rust/tools/generate_ublox_layouts.py	f420207b2e9769b7da9ecba7dc679df4cd6c588c	pending	-
 rust/tools/generate_xiaoge_opencv_reference.py	46030a6e85bec5a60c13f7b78b6a163829afc99c	pending	-

@@ -107,7 +107,7 @@ three partial baseline entries.
 
 8. Kalman equation generators pass fresh original/native compiled function and
    constant comparisons39693981650. Two source deletions in706e26861 require
-   postdelete39696496964 before inventory acceptance. Two additional corpus CLI
+   postdelete39697287904 accepts both equation-generator entries. Two additional corpus CLI
    candidates30f80e2f6 call the unchanged C++ oracle, preserve RNG/function order
    and remain pending fresh original comparison39696759740. Both Python corpus
    commands and original symbolic definitions/builders remain live/pending.
