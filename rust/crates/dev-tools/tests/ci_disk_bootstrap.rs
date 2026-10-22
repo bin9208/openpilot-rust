@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 549);
+    assert_eq!(text.matches(marker).count(), 550);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -351,6 +351,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut hardwared_native = vec![];
     let mut modem_native = vec![];
     let mut manager_qa_native = vec![];
+    let mut carrot_navi_comparator_build = vec![];
     let mut deleter_native_builds = vec![];
     let mut uploader_native_builds = vec![];
     let mut uploader_http_interposer = vec![];
@@ -370,6 +371,15 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 .iter()
                 .rev()
                 .find(|line| line.starts_with("      - name:"));
+            if step == Some(&"      - name: Build current native Carrot Navi comparator")
+                && i + 1 < lines.len()
+                && lines[i + 1].contains(
+                    "--features carrot-navi-compare-native --bin check-carrot-navi-comparison",
+                )
+            {
+                carrot_navi_comparator_build.push(tail.to_owned());
+                continue;
+            }
             if step == Some(&"      - name: Compare log-space retention with the original loop and actual low-space filesystem") {
                 deleter_native_builds.push(tail.to_owned());
                 continue;
@@ -971,6 +981,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             }
         }
     }
+    assert_eq!(
+        carrot_navi_comparator_build,
+        [" --path \"$GITHUB_WORKSPACE\" --growth-mib 4096"]
+    );
     assert_eq!(
         deleter_native_builds,
         [" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024"; 2]

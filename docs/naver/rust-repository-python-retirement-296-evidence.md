@@ -8654,3 +8654,28 @@ ends cancelled with a final-guard failure; no whole-family startup success claim
 Carrot maintained-caller39832413264 reports success, with artifact admission
 still required. Fast checks39832017496 fail the disk-bootstrap workflow guard
 roster after the new caller; the reserve contract must be preserved in its fix.
+
+Carrot maintained-caller39832413264 is now admitted at sourcee8744f656,
+workflowae473ec891a971039f6fb12fff67d9def2db5013. Artifact12449556959 is16664382B,
+SHA256f0eb0be1e511792586a67684ba7d5c0edaea815fbe2c47070c407441b10a166e,
+2051CRCs. Parent checks42actual status pairs (2positive/40negative),205byte-equal
+output pairs, four exact policy/script hashes and all42native exec traces:
+one Bash plus one current native comparator, zero Python children. Two new
+tests and strictClippy pass;72accepted comparison controls are reused. The
+runtime QA job remains unchanged outside this comparator build/caller.
+The Python oracle is still an executable test fixture, explicitly retained.
+Patchb0548d88 repairs only the disk-policy test's missing550th guard category:
+exact Carrot build step, immediate command and4096MiB reserve. All549previous
+ordered arguments and existing policy hashes are preserved. Hosted fast checks
+must still validate this test repair; no source-retirement credit is added.
+
+The next logging admission39833849895 uses source40eb0429013cd853c1e74dc9530cdb5f484aa32c,
+workflow564276896cd312749d99eeb4e3a6c152ccf16b89. Driver diagnostic R2
+39833861115 keeps source69bbee211/workflowa565c35049f8a9118082dbd1671387c8ef59070c:
+the previous observer compared core_id=None before worker substitution with
+the native[0]template at warp call1, before convolution3. R2 saves and strictly
+compares actual post-substitution machine arguments and source lineage; inferred
+worker[0]/[1]values are not relabeled prior raw observations. No numerical fix.
+JP2 native39834039262 uses source40eb04290/workflow107d485efd98389a41e19af869e915f8be6aac11.
+Provider supplement39833544500 reports success, awaiting full saved-data admission.
+Road five-case39833558563 fails; retain the actual failure before further changes.
