@@ -94,7 +94,8 @@ pub mod managed_entry_check;
 #[cfg(any(
     feature = "managed-entry-native",
     feature = "stats-daemon-native",
-    feature = "registration-tools-native"
+    feature = "registration-tools-native",
+    feature = "uploader-logging-native"
 ))]
 pub mod managed_entry_collector_source;
 #[cfg(feature = "managed-entry-native")]
@@ -447,3 +448,9 @@ pub mod ci_receipt_metadata;
 
 #[cfg(all(target_os = "linux", feature = "driver-daemon-native"))]
 pub mod model_family_prepare;
+
+#[cfg(all(target_os = "linux", feature = "uploader-reference-native"))]
+pub mod uploader_reference_check;
+
+#[cfg(all(target_os = "linux", feature = "uploader-logging-native"))]
+pub mod uploader_logging_check;
