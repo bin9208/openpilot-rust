@@ -5772,3 +5772,52 @@ original input bits, full key/function order and complete fresh C++ output bits;
 raw JSON equality is recorded separately and is not yet established. Both Python
 corpus commands and original C++ builders/model definitions remain present and
 pending. No inventory count changes for these candidates.
+
+### Current CI routing and full original corpus proof (2026-10-22)
+
+[39696562943](https://github.com/bin9208/openpilot-rust/actions/runs/39696562943)
+passes atdf374b0abde72e93759bc2a2168505b5615f4d7a, workflow
+18b45283fe0b57f788586691731629e8f54d1222: complete maintained Fast routing,
+77isolation checks including retained SoundD behavioral RED,3host-staging checks,
+13disk/6workflow policies, service tools, real workspace metadata binary and
+all67original metadata observations, plus the original Card dependency policy.
+Parent audits all70CRCs in artifact12391107557:35040B/77447B expanded,
+SHA2561f1b5b7496ab057a7aa5450f745618a5b7dbe905b1f22c73c9298a929de9421b,
+and independently recomputes34success/27error/6explicit schema cases and the
+single measured filesystem-order projection. This accepts the focused #478
+repair and affected #475 source-policy controls; final full checks remain required.
+
+[39696759740](https://github.com/bin9208/openpilot-rust/actions/runs/39696759740)
+passes at30f80e2f6d259e8773cd8e0212e3ed0269425f84, workflow
+c4029a1db2eff203ad3e7073fdb6deb5c9da4d6b. Both original source C++ generators,
+actual clang++ compilations, unchanged Python corpus commands, native CLIs,
+PCG64 input-bit controls and strict Clippy pass. Parent independently matches
+all4049 captured source bodies to that exact Git commit, all7retained command
+statuses0, source before/after equality and all oracle/Eigen/executable/loaded-
+dependency checks. Artifact12391626365:643008B/71CRCs/2250677B expanded,
+SHA256748930d04f4b24c30a5b88fe01d1dc840f38c88fc7d3d18f279ab898bb0652d3.
+Complete Pose16/144596B and Car24/90295B native JSON is byte-identical to fresh
+original output **and** the existing independent runtime test corpora. Reuse
+those original Git data instead of adding duplicate generated expectations.
+
+Parent review removes the candidate's unnecessary output-symlink restriction
+and atomic rename: successful writes now preserve Python's existing target inode,
+mode and symlink/hardlink behavior. Provider/serialization failures still precede
+any output write. Hosted controls additionally exercise both link kinds through
+the actual native CLI. The two Python corpus tools are now actually deleted,
+and the maintained estimation job requires both source-absent native CLIs in
+the actual checkout and a fresh empty cwd, fixed original hashes/complete byte
+equality and held C++ provider/header/ELF/dependency seals. Four new capacity
+markers raise the exact maintained count521→525, preserving all previous budgets.
+Postdelete/current-writer acceptance and inventory update remain pending.
+
+Diagnostic Panda39696533789 accidentally omitted the maintained workflow-level
+RUSTUP_TOOLCHAIN1.94.0; default1.99 Clippy fails before outer proof. No runtime
+source is changed for that diagnostic setup error. Corrected same-source run
+39697209006/workflow50a503a0fac1b11954717d9ff50a606f83fa604b restores1.94.0.
+Kalman39696496964 passes8native units/Clippy/all formatting and source policies,
+then its diagnostic accidentally invokes mandatory Panda integration tests
+without their environment. The one new pure Panda roster check passes. Do not
+weaken the mandatory tests: separate Panda's complete gate and resume only the
+pending same-source postdelete mathematical comparison in39697287904, workflow
+1e78c7beb0ee93fc067f85fa54f35084db3c773f. Successful unchanged checks are reused.

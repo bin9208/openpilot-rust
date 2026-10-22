@@ -15,7 +15,6 @@ use std::{
     ffi::OsString,
     fmt::Write as _,
     fs,
-    io::Write as _,
     os::unix::ffi::OsStrExt,
     path::{Path, PathBuf},
     sync::Mutex,
@@ -331,23 +330,9 @@ pub fn serialize(model: Model, rows: &[Row]) -> Result<String> {
 }
 
 /// Keep the final output untouched if provider evaluation or serialization
-/// fails. A completed generation replaces the selected output path.
+/// fails. On success, write through the selected path like Path.write_text:
+/// existing links, mode, and inode retain their original behavior.
 pub fn generate(model: Model, options: &Options) -> Result<()> {
-    // A successful Python Path.write_text follows an output symlink. This
-    // atomic writer cannot safely promise that behavior, so reject the path
-    // before loading an executable provider instead of silently replacing it.
-    match fs::symlink_metadata(&options.output) {
-        Ok(metadata) if metadata.file_type().is_symlink() => {
-            return Err(format!(
-                "output symlink is unsupported: {}",
-                options.output.display()
-            )
-            .into());
-        }
-        Ok(_) => {}
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-        Err(error) => return Err(error.into()),
-    }
     let rows = evaluate(model, &options.oracle)?;
     let bytes = serialize(model, &rows)?;
     let parent = options
@@ -356,11 +341,7 @@ pub fn generate(model: Model, options: &Options) -> Result<()> {
         .filter(|parent| !parent.as_os_str().is_empty())
         .unwrap_or_else(|| Path::new("."));
     fs::create_dir_all(parent)?;
-    let mut temporary = tempfile::NamedTempFile::new_in(parent)?;
-    temporary.write_all(bytes.as_bytes())?;
-    temporary.flush()?;
-    temporary.as_file().sync_all()?;
-    temporary.persist(&options.output)?;
+    fs::write(&options.output, bytes)?;
     Ok(())
 }
 
