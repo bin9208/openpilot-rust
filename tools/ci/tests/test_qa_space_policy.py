@@ -131,7 +131,7 @@ def run_block(policy, source, index, free, directory, *, reserve_mib=512):
   tree, blocks = capacity_blocks(source)
   arguments = SimpleNamespace(output=directory, reserve_mib=reserve_mib)
   namespace = {'shutil': shutil, 'json': json, 'free_for_growth': policy.free_for_growth,
-               'ROOT': directory, 'root': directory, 'path': directory, 'output': directory,
+               'ROOT': directory, 'root': directory, 'path': directory, 'output': directory, 'directory': directory,
                'destination': directory / 'assets', 'args': arguments, 'arguments': arguments,
                'growth': 37, 'files': {'owned': b'abcde'}, 'index': 0}
   # Preserve the real custom admission exception and its constructor.
