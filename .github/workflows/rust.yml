@@ -144,7 +144,7 @@ jobs:
       - &id001
         name: Common owned job temporary paths
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        uses: bin9208/openpilot-rust/.github/actions/job-temp@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
         env:
           CI296_HOST_CONTROL: '1'
       - &id002
@@ -228,7 +228,7 @@ jobs:
       - &id004
         name: Expose provisioned Rust shims
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        uses: bin9208/openpilot-rust/.github/actions/rust-path@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/rust-path@b2fc62472ce8183114d59dbeec4d1406df44e4c2
         env:
           CI296_HOST_CONTROL: '1'
       - name: Reclaim unused Xcode copies while retaining the selected macOS SDK
@@ -360,7 +360,7 @@ jobs:
       - &id008
         name: Clean common owned temporary paths after uploaded source
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' && steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_cleanup.outcome == 'success') }}
-        uses: bin9208/openpilot-rust/.github/actions/job-temp@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
         with:
           cleanup: 'true'
         env:
@@ -2052,7 +2052,7 @@ jobs:
           fi
       - name: Clean common owned temporary paths after uploaded source
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' && steps.local_evidence_1.outputs.artifact-digest != '' && steps.local_evidence_2.outcome == 'success' && steps.local_evidence_2.outputs.artifact-id != '' && steps.local_evidence_2.outputs.artifact-digest != '' && steps.local_evidence_3.outcome == 'success' && steps.local_evidence_3.outputs.artifact-id != '' && steps.local_evidence_3.outputs.artifact-digest != '' && steps.local_evidence_4.outcome == 'success' && steps.local_evidence_4.outputs.artifact-id != '' && steps.local_evidence_4.outputs.artifact-digest != '' && steps.local_evidence_5.outcome == 'success' && steps.local_evidence_5.outputs.artifact-id != '' && steps.local_evidence_5.outputs.artifact-digest != '' && steps.local_evidence_6.outcome == 'success' && steps.local_evidence_6.outputs.artifact-id != '' && steps.local_evidence_6.outputs.artifact-digest != '' && steps.local_evidence_7.outcome == 'success' && steps.local_evidence_7.outputs.artifact-id != '' && steps.local_evidence_7.outputs.artifact-digest != '' && steps.local_evidence_8.outcome == 'success' && steps.local_evidence_8.outputs.artifact-id != '' && steps.local_evidence_8.outputs.artifact-digest != '' && steps.local_evidence_9.outcome == 'success' && steps.local_evidence_9.outputs.artifact-id != '' && steps.local_evidence_9.outputs.artifact-digest != '' && steps.local_evidence_10.outcome == 'success' && steps.local_evidence_10.outputs.artifact-id != '' && steps.local_evidence_10.outputs.artifact-digest != '' && steps.local_evidence_11.outcome == 'success' && steps.local_evidence_11.outputs.artifact-id != '' && steps.local_evidence_11.outputs.artifact-digest != '' && steps.local_evidence_12.outcome == 'success' && steps.local_evidence_12.outputs.artifact-id != '' && steps.local_evidence_12.outputs.artifact-digest != '' && steps.local_evidence_13.outcome == 'success' && steps.local_evidence_13.outputs.artifact-id != '' && steps.local_evidence_13.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_eigen_provider.outcome == 'success' && steps.ci296_eigen_provider.outputs.artifact-id != '' && steps.ci296_eigen_provider.outputs.artifact-digest != '' && steps.ci296_source_cleanup.outcome == 'success') }}
-        uses: bin9208/openpilot-rust/.github/actions/job-temp@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
         with:
           cleanup: 'true'
         env:
@@ -7897,7 +7897,7 @@ jobs:
       - &id012
         name: Clean common owned temporary paths after uploaded source
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' && steps.local_evidence_1.outputs.artifact-digest != '' && steps.local_evidence_2.outcome == 'success' && steps.local_evidence_2.outputs.artifact-id != '' && steps.local_evidence_2.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_cleanup.outcome == 'success') }}
-        uses: bin9208/openpilot-rust/.github/actions/job-temp@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
         with:
           cleanup: 'true'
         env:
@@ -8536,7 +8536,7 @@ jobs:
           fi
       - name: Clean common owned temporary paths after uploaded source
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_cleanup.outcome == 'success') }}
-        uses: bin9208/openpilot-rust/.github/actions/job-temp@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
         with:
           cleanup: 'true'
         env:
@@ -8934,7 +8934,7 @@ jobs:
           fi
       - name: Clean common owned temporary paths after uploaded source
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' && steps.local_evidence_1.outputs.artifact-digest != '' && steps.local_evidence_2.outcome == 'success' && steps.local_evidence_2.outputs.artifact-id != '' && steps.local_evidence_2.outputs.artifact-digest != '' && steps.local_evidence_3.outcome == 'success' && steps.local_evidence_3.outputs.artifact-id != '' && steps.local_evidence_3.outputs.artifact-digest != '' && steps.local_evidence_4.outcome == 'success' && steps.local_evidence_4.outputs.artifact-id != '' && steps.local_evidence_4.outputs.artifact-digest != '' && steps.local_evidence_5.outcome == 'success' && steps.local_evidence_5.outputs.artifact-id != '' && steps.local_evidence_5.outputs.artifact-digest != '' && steps.local_evidence_6.outcome == 'success' && steps.local_evidence_6.outputs.artifact-id != '' && steps.local_evidence_6.outputs.artifact-digest != '' && steps.local_evidence_7.outcome == 'success' && steps.local_evidence_7.outputs.artifact-id != '' && steps.local_evidence_7.outputs.artifact-digest != '' && steps.local_evidence_8.outcome == 'success' && steps.local_evidence_8.outputs.artifact-id != '' && steps.local_evidence_8.outputs.artifact-digest != '' && steps.local_evidence_9.outcome == 'success' && steps.local_evidence_9.outputs.artifact-id != '' && steps.local_evidence_9.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_eigen_provider.outcome == 'success' && steps.ci296_eigen_provider.outputs.artifact-id != '' && steps.ci296_eigen_provider.outputs.artifact-digest != '' && steps.ci296_source_cleanup.outcome == 'success') }}
-        uses: bin9208/openpilot-rust/.github/actions/job-temp@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
         with:
           cleanup: 'true'
         env:

@@ -36,7 +36,7 @@ jobs:
           test "$RUNNER_ARCH" = X64
       - name: Common owned Fast job temporary paths
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        uses: bin9208/openpilot-rust/.github/actions/job-temp@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
       - name: Allocate private Fast source cache and target before checkout
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         working-directory: ${{ github.workspace }}
@@ -91,7 +91,7 @@ jobs:
           tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
       - name: Expose provisioned Rust shims
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        uses: bin9208/openpilot-rust/.github/actions/rust-path@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/rust-path@b2fc62472ce8183114d59dbeec4d1406df44e4c2
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -184,7 +184,7 @@ jobs:
           rm -rf --one-file-system -- "$p"
       - name: Clean common owned Fast job temporary paths
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome == 'success') }}
-        uses: bin9208/openpilot-rust/.github/actions/job-temp@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
         with:
           cleanup: 'true'
   native-corpus:
@@ -211,7 +211,7 @@ jobs:
           test "$RUNNER_ARCH" = X64
       - name: Common owned Fast job temporary paths
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        uses: bin9208/openpilot-rust/.github/actions/job-temp@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
       - name: Allocate private Fast source cache and target before checkout
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         working-directory: ${{ github.workspace }}
@@ -266,7 +266,7 @@ jobs:
           tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
       - name: Expose provisioned Rust shims
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        uses: bin9208/openpilot-rust/.github/actions/rust-path@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/rust-path@b2fc62472ce8183114d59dbeec4d1406df44e4c2
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -346,7 +346,7 @@ jobs:
           rm -rf --one-file-system -- "$p"
       - name: Clean common owned Fast job temporary paths
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome == 'success') }}
-        uses: bin9208/openpilot-rust/.github/actions/job-temp@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
         with:
           cleanup: 'true'
   native-alerts:
@@ -373,7 +373,7 @@ jobs:
           test "$RUNNER_ARCH" = X64
       - name: Common owned Fast job temporary paths
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        uses: bin9208/openpilot-rust/.github/actions/job-temp@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
       - name: Allocate private Fast source cache and target before checkout
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         working-directory: ${{ github.workspace }}
@@ -428,7 +428,7 @@ jobs:
           tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
       - name: Expose provisioned Rust shims
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        uses: bin9208/openpilot-rust/.github/actions/rust-path@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/rust-path@b2fc62472ce8183114d59dbeec4d1406df44e4c2
       - name: Prepare native alert validation
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
@@ -489,7 +489,7 @@ jobs:
           rm -rf --one-file-system -- "$p"
       - name: Clean common owned Fast job temporary paths
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome == 'success') }}
-        uses: bin9208/openpilot-rust/.github/actions/job-temp@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
         with:
           cleanup: 'true'
   native-alert-manager:
@@ -516,7 +516,7 @@ jobs:
           test "$RUNNER_ARCH" = X64
       - name: Common owned Fast job temporary paths
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        uses: bin9208/openpilot-rust/.github/actions/job-temp@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
       - name: Allocate private Fast source cache and target before checkout
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         working-directory: ${{ github.workspace }}
@@ -571,7 +571,7 @@ jobs:
           tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
       - name: Expose provisioned Rust shims
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        uses: bin9208/openpilot-rust/.github/actions/rust-path@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/rust-path@b2fc62472ce8183114d59dbeec4d1406df44e4c2
       - name: Prepare native alert manager validation
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
@@ -631,7 +631,7 @@ jobs:
           rm -rf --one-file-system -- "$p"
       - name: Clean common owned Fast job temporary paths
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome == 'success') }}
-        uses: bin9208/openpilot-rust/.github/actions/job-temp@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
         with:
           cleanup: 'true'
   native-timing:
@@ -658,7 +658,7 @@ jobs:
           test "$RUNNER_ARCH" = X64
       - name: Common owned Fast job temporary paths
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        uses: bin9208/openpilot-rust/.github/actions/job-temp@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
       - name: Allocate private Fast source cache and target before checkout
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         working-directory: ${{ github.workspace }}
@@ -713,7 +713,7 @@ jobs:
           tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
       - name: Expose provisioned Rust shims
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        uses: bin9208/openpilot-rust/.github/actions/rust-path@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/rust-path@b2fc62472ce8183114d59dbeec4d1406df44e4c2
       - name: Prepare native timing validation
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
@@ -773,7 +773,7 @@ jobs:
           rm -rf --one-file-system -- "$p"
       - name: Clean common owned Fast job temporary paths
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome == 'success') }}
-        uses: bin9208/openpilot-rust/.github/actions/job-temp@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
         with:
           cleanup: 'true'
   python-android:
@@ -800,7 +800,7 @@ jobs:
           test "$RUNNER_ARCH" = X64
       - name: Common owned Fast job temporary paths
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        uses: bin9208/openpilot-rust/.github/actions/job-temp@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
       - name: Allocate private Fast source cache and target before checkout
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         working-directory: ${{ github.workspace }}
@@ -855,7 +855,7 @@ jobs:
           tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
       - name: Expose provisioned Rust shims
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        uses: bin9208/openpilot-rust/.github/actions/rust-path@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/rust-path@b2fc62472ce8183114d59dbeec4d1406df44e4c2
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -953,7 +953,7 @@ jobs:
           rm -rf --one-file-system -- "$p"
       - name: Clean common owned Fast job temporary paths
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome == 'success') }}
-        uses: bin9208/openpilot-rust/.github/actions/job-temp@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
         with:
           cleanup: 'true'
   fast:

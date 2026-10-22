@@ -327,7 +327,7 @@
     "status": "source candidate only; no guest or policy execution claimed",
     "scope": "Declare file in the two existing guest APT lists; all original ELF checks and command routing unchanged",
     "source_file_sha256": {
-      ".github/workflows/rust.yml": "44837eebaa4b7a6fb9af17c5cbf48dac78816b0bf824b731e1bbceb63a7dac8e",
+      ".github/workflows/rust.yml": "e21c6adbe04d029389b9b24aa7354418def4b0e1907a90b8cf1f6c51b25af40b",
       "rust/crates/dev-tools/tests/ci_rust_isolation.rs": "1b31f8df4504283bdf69a7fad43bccc6c55de4d7d67a49e888c6f140be215316"
     },
     "jobs": [
@@ -353,5 +353,34 @@
       }
     ],
     "common_helper_changes": 0
+  },
+  "action_distribution": {
+    "repository": "bin9208/openpilot-rust",
+    "commit": "b2fc62472ce8183114d59dbeec4d1406df44e4c2",
+    "source_commit": "77663836a95a9e2aff9aa66592d8b06ed9c87cd9",
+    "layout": "four canonical implementation files plus source LICENSE, README.md and tools/ci/helper-provenance.json; no workflows/runtime/symlinks",
+    "implementation_bytes": "all four source hashes remain authoritative and unchanged",
+    "status": "published by parent; inert Git tree verified; actual x64 caller-loading qualification pending",
+    "consumer_change": "remote common uses ref only; no new embedded helper or cleanup machinery",
+    "caller_file_sha256": {
+      ".github/workflows/carrot-route-vault-publish.yaml": "b96a3d980a9516c36c25699baae730b780edffdea8b9af6272288de76de8208e",
+      ".github/workflows/fast-checks.yml": "bf6aeb0dfd4f0cdfb82a0c677766ff02b25f45905c5ec794dc5f8e843e7828a7",
+      ".github/workflows/jetlink.yml": "04e32ce41a9ba70d09717e247e305cc4e3f433fb6f3521a0c76699641f6bdddc",
+      ".github/workflows/naver-apk-tools.yml": "c3294dd8698b6ba1e5dcf862439519663bdbe0813a1d9bd6b8546b5380227b47",
+      ".github/workflows/naver-ci.yml": "28f1a2e4784d5f7877ab4117b56bf8f1a4a4a80a47b4176c9a00b1d7b0cf79d8",
+      ".github/workflows/naver-upstream-sync.yml": "ea507be1faca090f5e2ede0657f1190d571cd1f71a3150dd972b205522a63bc4",
+      ".github/workflows/rust.yml": "e21c6adbe04d029389b9b24aa7354418def4b0e1907a90b8cf1f6c51b25af40b",
+      ".github/workflows/sync.yml": "9fa4733662f6d3a649c57a02b669b6591e8303aec31fbc1624fc485bcd0d76a8",
+      ".github/workflows/tests.yaml": "df1a21084f2eba7883fb8bab78205eeba6eff2618bff86b8ec43170c0d8ff325",
+      ".github/workflows/user-docs.yaml": "bcc3b871e40ca973124b1de6ab57af944e8eb3efceb3962cec0a84d8384fb776",
+      ".github/workflows/wiki-settings-check.yaml": "76a8705725e0cab5d46f987de5d1a49809f7dedce42bf770f9e63cc480af18c5",
+      ".github/workflows/wiki-settings-publish.yaml": "6a4f15b8167999b7ff380a45374138b2791a6bc737a29f8d129d05c09675a704",
+      "rust/crates/dev-tools/tests/ci_workflow_policy.rs": "a0f5182f49e8194fa7938b25d9ec8ffec80aa56483f9e8321919a99886e1433e",
+      "tools/ci/diagnostic-296-contract.json": "abb451ac203a52c2fd98139c132ea57bc207a6dffa6c4c212b6cdf1b523982c7"
+    },
+    "tree": "ad19ac21f14835a7d9f066284f6eef5759b0d214",
+    "provenance_path": "tools/ci/helper-provenance.json",
+    "provenance_sha256": "17795c847534d81c7ba260d566d944e08c10ac624a0fde575d91f48f3f0d5039",
+    "regular_files": 7
   }
 }

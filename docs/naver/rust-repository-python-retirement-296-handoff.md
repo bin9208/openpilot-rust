@@ -52,8 +52,12 @@ source finding. All34 frozen postimages match; actual source-policy/negative
 controls and changed ARM consumer execution remain pending before feature push.
 Preserve the two dd439 output-pairs upload globs and all four common helper
 hashes. Never integrate the older r3 patch that removes them. Oldest local Fast
-39857487263 is only partly queued:5jobs have failed; Carver now diagnoses their
-actual first failure. Inspect job-level states even when a run says queued.
+39857487263 is only partly queued:5jobs fail during remote repository staging at
+a dangling agnos.json link, before helper/test execution. R7 pins remote calls
+to CI-only distributionb2fc6247:7regular files,0symlinks/workflows/runtime, four
+canonical7766helper bytes unchanged. Actual new loader/policy execution remains
+pending. Never merge the helper-only distribution tree into runtime branches.
+Inspect job-level states even when a run says queued.
 Socrates/Aristotle own private APT repair/review; Schrodinger owns AST activation;
 Descartes/Feynman own focused startup source/review; Maxwell owns whole-logger
 source completion; Bacon owns growth admission and fixture data-reuse recipe;

@@ -32,7 +32,7 @@ jobs:
         working-directory: ${{ github.workspace }}
       - name: Common owned job temporary paths
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        uses: bin9208/openpilot-rust/.github/actions/job-temp@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
         env:
           CI296_HOST_CONTROL: '1'
       - name: Allocate private source cache target and local action alias before checkout
@@ -105,7 +105,7 @@ jobs:
           tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
       - name: Expose provisioned Rust shims
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        uses: bin9208/openpilot-rust/.github/actions/rust-path@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/rust-path@b2fc62472ce8183114d59dbeec4d1406df44e4c2
         env:
           CI296_HOST_CONTROL: '1'
       - name: Set up Python
@@ -247,7 +247,7 @@ jobs:
           fi
       - name: Clean common owned temporary paths after uploaded source
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' && steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_cleanup.outcome == 'success') }}
-        uses: bin9208/openpilot-rust/.github/actions/job-temp@77663836a95a9e2aff9aa66592d8b06ed9c87cd9
+        uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
         with:
           cleanup: 'true'
         env:

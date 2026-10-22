@@ -9469,3 +9469,36 @@ under separate caller analysis. At22:52UTC the runner is online/busy with ARM
 job120120936438 from run39863489224;58other jobs are queued in the latest100run
 snapshot. This does not authorize cancelling/restarting that job or a hosted
 fallback. Counts and successful source review do not establish runtime acceptance.
+
+## Remote action archive failure and exact helper distribution (2026-10-23)
+
+All five completed Fast39857487263 jobs fail Set up job while downloading the
+whole77663836 action repository: its tracked120000agnos.json link resolves to
+an absent openpilot/common/hardware/comma/agnos.json. No refusal/helper/provider/
+test step executes. Changing the common implementation or restarting the runner
+would not repair that archive entry. The four canonical helpers remain unchanged.
+
+CI-only distribution b2fc62472ce8183114d59dbeec4d1406df44e4c2 has Git tree
+ad19ac21f14835a7d9f066284f6eef5759b0d214 and parenta37416418, without a dev-md
+runtime parent. Exactly7regular files package the four canonical7766helpers plus
+original LICENSE, README and provenance; no symlink, workflow, runtime or model
+asset is included. Remote6501byte tar SHA256
+6c214787a74a2998283f6dfbf22895b637c40ec128001d91ee8469a517c5c72b
+has15entries; all7file bytes match Git and all4helper hashes/modes match7766.
+Publishing that artifact branch triggers0Actions. Archive/source admission is
+not actual action-loader or transport acceptance.
+
+R7 delta5366936d734fee7c98ffd02538c4243d7eca10dfc23216cad3e6e67cec35c2c4
+changes only56textual remote refs in12workflows (200resolved steps),36lines of
+source/distribution policy assertions and two contracts. Reversing only the refs
+reconstructs every prior workflow byte exactly, including18Fast refs. Original
+source7766, four helper byte hashes, command bodies, conditions, queues and all
+runtime checks remain unchanged. No embedded helper or new cleanup machinery is
+added. The full feature ref stays held for new loader/policy/consumer results.
+
+The next source validation branch must use this current complete configuration;
+legacy diagnostic runs stay pinned and continue unchanged. A single sparse-source
+loader probe checks the new remote manifests and bundle-relative finish entry,
+without QEMU preparation, provider install, model/compiler or old runtime/foundation
+corpora. Exact source-policy qualification remains a separate required Actions
+job. Source/distribution/workflow identities and emulation limits remain distinct.

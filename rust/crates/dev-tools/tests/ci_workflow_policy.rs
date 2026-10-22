@@ -483,6 +483,34 @@ fn common_foundation_files_match_the_separate_pinned_source_contract() {
         "77663836a95a9e2aff9aa66592d8b06ed9c87cd9"
     );
     assert_eq!(contract["files"].as_object().unwrap().len(), 4);
+    assert_eq!(
+        contract["action_distribution"]["commit"],
+        "b2fc62472ce8183114d59dbeec4d1406df44e4c2"
+    );
+    assert_eq!(
+        contract["action_distribution"]["source_commit"],
+        contract["source_commit"]
+    );
+    for (name, source) in inputs() {
+        let workflow = parse(&source).unwrap();
+        for job in workflow["jobs"].as_object().unwrap().values() {
+            for step in job["steps"].as_array().into_iter().flatten() {
+                let Some(reference) = step["uses"].as_str() else {
+                    continue;
+                };
+                for action in ["job-temp", "rust-path", "local-arm"] {
+                    let prefix = format!("bin9208/openpilot-rust/.github/actions/{action}@");
+                    if reference.starts_with(&prefix) {
+                        assert_eq!(
+                            reference,
+                            format!("{prefix}b2fc62472ce8183114d59dbeec4d1406df44e4c2"),
+                            "common distribution pin drift: {name}"
+                        );
+                    }
+                }
+            }
+        }
+    }
     for (name, seal) in contract["files"].as_object().unwrap() {
         let bytes = fs::read(root().join(name)).unwrap();
         assert_eq!(
@@ -614,6 +642,14 @@ fn diagnostic_common_helpers_match_verified_7766383_bytes_without_reexecution() 
         "77663836a95a9e2aff9aa66592d8b06ed9c87cd9"
     );
     assert_eq!(contract["common_files"].as_object().unwrap().len(), 4);
+    assert_eq!(
+        contract["action_distribution"]["commit"],
+        "b2fc62472ce8183114d59dbeec4d1406df44e4c2"
+    );
+    assert_eq!(
+        contract["action_distribution"]["source_commit"],
+        contract["common_source"]
+    );
     for (name, seal) in contract["common_files"].as_object().unwrap() {
         assert_eq!(
             format!("{:x}", Sha256::digest(fs::read(root().join(name)).unwrap())),
