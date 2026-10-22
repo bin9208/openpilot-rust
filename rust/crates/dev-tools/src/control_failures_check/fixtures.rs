@@ -126,11 +126,14 @@ fn mutate_cp(case: &mut Value, name: &str) -> Result<()> {
             cp.set_car_fingerprint("PSA_PEUGEOT_208");
             cp.set_brand("psa");
         }
-        "zero-torque-factor" => cp
-            .reborrow()
-            .get_lateral_tuning()
-            .get_torque()?
-            .set_lat_accel_factor(0.),
+        "zero-torque-factor" => {
+            let car_params::lateral_tuning::Torque(torque) =
+                cp.reborrow().get_lateral_tuning().which()?
+            else {
+                return Err("zero-torque-factor requires torque tuning".into());
+            };
+            torque?.set_lat_accel_factor(0.);
+        }
         "angle-with-torque-live-update" => {
             cp.set_steer_control_type(car_params::SteerControlType::Angle)
         }

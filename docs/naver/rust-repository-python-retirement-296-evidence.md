@@ -9333,3 +9333,90 @@ required full PR run must validate natural retention if a mismatch recurs. Both
 raw_pair_complete and original_preservation_verified plus actual file hashes/
 lengths are required before classification. This cannot retroactively diagnose
 old missing bytes or establish byte identity with the unavailable6f25 checker.
+
+## Actual local retry results and original fixture reuse (2026-10-23)
+
+[Growth/Panda39859011226](https://github.com/bin9208/openpilot-rust/actions/runs/39859011226)
+and the [readonly IO observer39857487178](https://github.com/bin9208/openpilot-rust/actions/runs/39857487178)
+finish successfully on bin-actions. Growth artifact12462252057 is998062bytes,
+SHA3d50264a487a7763e73bc4b7c2e2dab233a37f8ef697c02fc6aaa29faa053ac8;
+all105CRCs pass. All9monitored operations exit0, including seven unreached
+growth scopes, a fresh checker build and the regular11-case Panda CLI test.
+Five selected tests each run exactly1passing test; OOM counters do not increase.
+The immutable original receipt retains historical27GiB required versus current
+native2GiB operation growth; camera's injected1GiB assertion passes. Camera raw
+generated report and fresh Panda ELF bytes are not separately retained: source,
+actual result and before/after hash receipts bound this scope. All33tool/6native
+provider identities remain stable. Historical14scopes and prior Panda two-root
+traffic are not rerun or transferred wholesale. This bounded admission remains
+separate from the unrun IO workload, full Panda retirement and whole runtime.
+
+[Fixture39859011541](https://github.com/bin9208/openpilot-rust/actions/runs/39859011541)
+and [normal/failures39859011231](https://github.com/bin9208/openpilot-rust/actions/runs/39859011231)
+both fail E0599 in the shared dev-tools build: lateral_tuning::Builder has no
+get_torque method at parameters.rs111 and rejection fixtures.rs132. Locked
+capnpc0.27.0 source, independently authenticated against the Cargo.lock package
+checksum, generates which() with Torque(Result<Builder>). The two-site source
+repair uses that existing union member, propagates invalid-member/pointer errors
+and retains every other tuning field. Scoped rustfmt and diff review are local
+source evidence; fresh Actions compilation/comparison is still required.
+
+Fixture artifact12462355309 is8211608bytes, SHA256
+8a3a8f5997825fdc637db941348a24087a0763382ee4471653257e22ccb4e558;
+all29 members pass CRC/content hashing. Unlike its earlier failed attempt, this
+run completes original capture109requests/30constructor cases/8605frames before
+native compilation. Parent verifies the three data file hashes/lengths/109lines,
+manifest f8fbe6bf1b4923c7a2b15f651afc5359c4bf5eb856a1db6e19f9077a782a0abe,
+unchanged source index, recorded source/DBC checks and all177loaded project module
+hashes against current Git. Provider receipts record38mapped providers and12
+direct extensions. Transitive mappings were bound at first observation, without
+an independent pre-load claim. Historical providers are not loaded or relabelled
+as current. Reuse these authenticated original data for the missing native gate;
+native comparison and functional credit remain0. Combined-controller artifact
+12463076804 is36947bytes, SHAc778556467f1b8deb2e06b4478569e0dadb208757af6832c371f9f1c18493c66;
+all3outer CRCs pass, and its16-member proof contains no original control capture.
+
+[Estimator39862897580](https://github.com/bin9208/openpilot-rust/actions/runs/39862897580)
+passes the repaired compile,10tests, strict Clippy and separate NumPy boundary.
+Its original comparison reports7cases/1196rows/148302numeric comparisons/max0.
+The run still fails: final original module admission encounters the interpreter's
+already-imported /etc/python3.12/sitecustomize.py outside the prebound pool. No
+complete original provider-after/native-controller/audit/signal admission follows.
+Continue only the missing closure at exactc5e; keep passed source-specific scopes
+as partial historical evidence. Holding the actual startup source before learner
+work does not claim a hold before interpreter startup imported it.
+Parent separately authenticates all745artifact CRCs, the five successful scope
+log/data hashes and ten exactc5e source pins before reviewing the observer repair.
+Necessary closure continuation38cbfc103b319e465f2c879d5ddf253d493df6d0 queues
+[39866247802](https://github.com/bin9208/openpilot-rust/actions/runs/39866247802).
+Its reuse guard checks source/index, compiler version/target text and NumPy wheel
+before omitting the passed tests/Clippy/NumPy controls. The compiler text is not
+an independently retained compiler ELF hash. No full closure is invented from
+the old1196rows; the missing provider-held observation/controller gates remain.
+
+Publisher39862895665 has0jobs: GitHub rejects string timeout60 and string
+concurrency.cancel-in-progress=false. No continue-on-error key exists in that
+actual workflow. Independent review of R4 confirms only integer60, booleanfalse
+and queue:max differ; seven payloads, nine source pins and exact9368 stay fixed.
+Published f555f938dab83b2d769f8474251bb8b4c860b180 creates actual queued job
+120124956678 in [39865031709](https://github.com/bin9208/openpilot-rust/actions/runs/39865031709),
+with the four local labels. Registration is observed; execution remains pending.
+
+Logging39857487070 passes fresh helper builds and the optional packed-refs check,
+then its observer strips literal apostrophes from a real tracked Prius JSON path.
+The repaired decoder disables shell quote handling while retaining escapes and
+strict source/path/provider holds. Parent verifies the exact-source file hash;
+only embedded observer bytes/hash and pending-preserving queue metadata change.
+New workflow7bd603bc8e1e2e0953a2c2251001e8d58e398b07, observer ab04b0b2886ffde1dafad16ab0f441e5345cb8ccecd456db43b50cabeff511b6,
+queues [39865824906](https://github.com/bin9208/openpilot-rust/actions/runs/39865824906)
+at source300f. No R4/lifecycle/provider-equivalence acceptance is granted.
+
+Full feature routing remains held for concrete source-review findings in60private
+jobs: final-seal success must precede deletion, eight finalizers must not load an
+old retained alias after fresh admission fails, and two Android setup actions must
+override inherited SDK roots with owned paths. Parent's output-pair retention and
+the four unchanged common helpers remain required. No dev-md runtime integration,
+local functional execution, unchanged-success rerun, cancellation, device action
+or inventory credit occurred. Sixteen Sol slots were accepted, three new workers
+failed with429 before starting and were closed/reassigned; this is not sixteen
+productive workers. Parent remains gpt-6.1-sol/ultra and no Astra is used.

@@ -108,7 +108,12 @@ pub(super) fn case(
     for (name, value) in entries(changes)? {
         let mut cp = message.get_root::<car_params::Builder<'_>>()?;
         if name == "useSteeringAngle" {
-            let mut torque = cp.reborrow().get_lateral_tuning().get_torque()?;
+            let car_params::lateral_tuning::Torque(torque) =
+                cp.reborrow().get_lateral_tuning().which()?
+            else {
+                return Err("useSteeringAngle requires torque tuning".into());
+            };
+            let mut torque = torque?;
             let capnp::dynamic_value::Builder::Struct(target) = torque.reborrow().into() else {
                 return Err("torque builder not struct".into());
             };

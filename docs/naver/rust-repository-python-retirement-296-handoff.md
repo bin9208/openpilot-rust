@@ -6,22 +6,56 @@ unchanged evidence. Read this handoff and the linked evidence ledger first.
 
 ## Active continuation, superseding the earlier migration snapshot
 
-Current post-switch parent is **gpt-6.1-sol / ultra**, verified from this turn's
-actual metadata. All eight continuing workers are Sol. Latest source commits
-include70049f6bd(exact common helper import),c5e37a69b(private Fast local slice)
-and5a929955b(preserve pending Fast queue). Read Git for later doc-only commits.
-Feature PR343 remote staysadff; its full PR push is held for broad routing.
-Diagnostic branch is4c35e0ebab5802027653518608260b7850c92a6f after atomic
-0488128 localFast+helpers application. Runs39857487263/39857487178/39857487070
-and39859011351/39859011541/39859011231/39859011226 are queued/pending, not passes.
-CP949native39843159421 raw admission now passes, including parent's exact
-261870dense/4517vector/880source byte comparisons. Schrodinger owns the new
-AST caller derivative; no originals deleted. Feynman reviewed growthr5 and
-fixture staging split; publisher activation is next independent code review.
-Bacon/Descartes coordinate publisher+cached startup1734source closure. Hilbert
-admits actual estimator failure/retry. Maxwell owns model output-only pair
-retention after missing raw data; Socrates owns the shared libzstd preflight
-repair. Existing accepted unchanged scopes stay reused. Inventory unchanged.
+Parent **gpt-6.1-sol / ultra** is verified from actual turn metadata; all continuing
+subagents use Sol. Sixteen agent slots were accepted, but three new workers hit
+service429 before starting and were closed. Their work was reassigned to existing
+Sol contexts and the parent; slot creation is not sixteen productive workers.
+No Astra fallback is permitted. Read Git for the latest source commit.
+
+Feature PR343 still targets **dev**, with remote source adff0392e. Its push remains
+held for the full local routing adapter. Diagnostic publication is unblocked and
+currently **38cbfc103b319e465f2c879d5ddf253d493df6d0**. Source commits since adff
+are reachable through diagnostic parents; do not call all their objects unpublished.
+All new jobs use bin-actions; original ARM checks must use the unchanged verified
+QEMU/PRoot helper and retain physical_arm_cpu:false. Dev-md remains separate.
+
+Actual growth/Panda CLI run39859011226 and readonly IO observer39857487178 succeed.
+Growth artifact12462252057 admits all9monitored operations and11Panda CLI cases;
+IO artifact admission and full runtime acceptance remain separate.
+Controls fixture39859011541 and normal/failures39859011231 fail the same two
+E0599 get_torque calls. The source repair matches the existing Torque union via
+which(), preserving tuning fields. Fixture original capture **109 requests /
+30 cases /8605 frames completed** before the native compile failure. Parent
+authenticates artifact12462355309, its three data seals and177 loaded source
+paths against current Git. Reuse that original data; do not recapture it.
+
+Estimator39862897580 compiles and passes10 tests, strict Clippy and the separate
+NumPy boundary; original1196-row numeric comparison reports max error0. Its
+observer subsequently rejects an unbound startup sitecustomize source. Full
+provider closure/native controller/audit/signals remain unaccepted. The narrow
+observer continuation39866247802 is queued at exactc5e, reusing10tests/Clippy/NumPy
+only after its source/version/wheel checks; this is unrelated to Controls E0599.
+
+Publisher39862895665 never starts a job: timeout60 and concurrency cancellation
+false were strings. R4 corrects only those structural types and adds queue:max,
+preserving exact source9368 and all payloads. New39865031709 has an actual queued
+bin-actions job; no runtime acceptance yet. The absent continue-on-error field
+was not an actual failure. Logging39857487070 fails dep-info parsing of literal
+apostrophes in a tracked Prius filename. Narrow repaired observer ab04b0b2 is
+published as39865824906 at source300f; all strict holds remain.
+
+Hegel's full routing r4 is held for three independently found P2 repairs: require
+successful final source seals before cleanup, successful fresh admission before
+loading retained aliases in eight finalizers, and private ANDROID_SDK_ROOT for two
+setup actions. Kepler owns closure; Carver reviews policy preservation and Huygens
+ARM/native semantics. Preserve the two dd439 output-pairs upload globs and all
+four common helper hashes. Never integrate the older r3 patch that removes them.
+Socrates/Aristotle own private APT repair/review; Schrodinger owns AST activation;
+Descartes/Feynman own focused startup source/review; Maxwell owns whole-logger
+source completion; Bacon owns growth admission and fixture data-reuse recipe;
+Cicero compares actual model-family drift with accepted R2 data. Inventory stays
+**288 replaced-local /3 partial /3289 pending of3580**. Older snapshots below are
+historical and do not override this section or fresh Git/Actions receipts.
 
 
 Latest local continuation supersedes the snapshots below: pushed source remains
