@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      SOURCE_SHA: 665ab15e29a8a640acf29480d472158f2d92810d
+      SOURCE_SHA: 915aad61ba86078085de1a6aeb323a4602b05128
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       GIT_LFS_SKIP_SMUDGE: '1'
