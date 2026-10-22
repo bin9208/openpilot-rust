@@ -7251,3 +7251,51 @@ replacements; unchanged-owned cleanup and successful-output retention pass.
 The workflow succeeds only by asserting those two failures/two controls.
 The held-file ownership and Rust guarded-add candidate is source-only reviewed;
 GREEN/provider/actual-model checks remain pending, and #485 remains open.
+
+### #485 GREEN and actual captured-target post-O2 correspondence
+
+GREEN39752278749 checks source06956b79d1d3ebacfa6e8a09616e9cdc1c358ed3 under
+workflowfd6eeb0f73e4ea22fcab45c930acfec7d90a0afc. Artifact12413863178:
+11191B/SHA642cc150f887c32a5d536d2fdd9778499ed81f92fda1e3e39b1b8a29a36fc833,
+all38CRCs. Parent and independent reviewer inspect actual four ownership
+regressions/controls,13guarded-add cases,4CLI cases,2bounds,3shared ownership
+cases and5unchanged pinned-provider compiler tests:31distinct passes. Both bins
+build, strictClippy and no-default library admission pass. LLVM18library SHA
+5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0 remains unchanged.
+This accepts #485's output-ownership fix, with the documented non-atomic
+pathname check/unlink limit. Model/exporter acceptance remains separate.
+
+Captured-target NONEXECUTING diagnostic39752466938 checks source
+67c21ea2bb2209b4b5ce7ec73fe409c4712abc8c under workflow
+32d14d3815d8f4b45d8b75eb6cf4937e03173315. Artifact12413558218:
+141875B/SHA7917b61aeb9ace46d2eb5b776b4259935fa25156da8727147dffc28138cf68c6,
+all39CRCs. All74held inputs and independent shell/provider seals agree. Actual
+host is EPYC7763/LLVMznver3; target is the separately recorded failing generic
+configuration with every captured positive/negative feature. Generated code is
+never executed. Entire emitted11640Bobject equals retained native object SHA
+324e24e6c0229c6afd3eeaf7dacf53a8f04abd1233af847ac4972d099fd8980e.
+Post-O2IR84489B/SHAe130c599e31e2a5aa0ba76468fa0dae5c105f458c563ba0d97e5aabec4f13bda
+contains no explicit FMA intrinsics. Source first divergence%v997 maps to
+post-O2%280lane0 separate contract fmul/fadd; actual FMA contraction occurs
+later in backend code generation. This does not identify a particular pass,
+recover original cached compiler provenance or accept a driver model fix.
+
+Source77bd306efb8131f32472a0cffe0fcb070515c725 connects the opt-in native
+canonicalizer to the actual Python exporter, retaining original/renamed/compiled
+IR, receipt and object hashes, full sidecars, held helper identity and owned
+process-group cleanup. Source192ff501f40116022419e470d14a3e732243960c adds
+registered native manager/runtime recording-upload QA candidates. Both Python
+upload controllers remain unchanged, as does their shared helper. Hosted bridge
+and full-model composition use77bd306e; first grouped actual upload comparison
+uses192ff501. Pending proof is not Python retirement or runtime/device acceptance.
+
+Lean source correspondence39753622267/source06956b79d/workflow859c546e7 fails
+its byte-exact IR guard. Failed artifact12414722136:136597B/SHA
+0387b815f1790317abc9c16b174554103122b89f53dd0e1eace4e2bcedf3c168/all18CRCs.
+Parent finds precisely one final newline: retained diagnostic IR after its
+explicit symbol rename is166406B, native output166405B, and accepted == native
+plus one newline. All four actual rewrite rows match the admitted pattern;
+Rust correctly preserves the original missing EOF newline. No production
+contract, golden, tolerance or ISA change is made to fit this diagnostic.
+A corrected diagnostic must expose both renderer boundaries and establish
+compiler-object identity before claiming numerical evidence reuse.

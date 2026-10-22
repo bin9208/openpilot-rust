@@ -21,8 +21,8 @@ Compiler rollback issue #485 is reproduced by hosted run
 at source `33c82b5ba91aee198c4c4657850abe2b397e6065`: two real foreign-output
 replacement tests fail, while two ownership controls pass. The successful
 workflow confirms the bug, not a passing compiler. A candidate holds output
-file descriptors and removes only unchanged owned files; its hosted GREEN
-verification remains pending. The same candidate adds a bounded Rust LLVM
+file descriptors and removes only unchanged owned files; hosted GREEN39752278749 passes31distinct tests, both builds, strictClippy
+and no-default admission; the affected pinned-provider tests remain unchanged. The same candidate adds a bounded Rust LLVM
 source canonicalizer for the general guarded-add transformation; numerical
 acceptance still requires the actual exporter and complete affected model gates.
 
@@ -32,15 +32,17 @@ outputs and eight-buffer poststates equal. The independent driver #476
 nine-term replay at 39741736692 identifies an actual separate-add/FMA
 contraction difference; no general driver compiler correction is accepted.
 Natural-host post-O2 attempts at 39745095474 both skip before compilation.
-A separate nonexecuting recompilation using the recorded target configuration
-is being prepared; no generated code may run in that diagnostic.
+Recorded-target nonexecuting39752466938 now reproduces the entire failing
+11640Bobject exactly and captures post-O2IR with74unchanged input seals.
+FMA contraction appears later in backend codegen; no driver fix is accepted.
 
 Active implementation groups are the Rust guarded-add/exporter bridge and the
 manager/runtime recording-upload controllers. Existing Python exporters and
 the two upload controllers remain pending until their complete native proof.
-Only the diagnostic branch has received recent source commits; issue branch
-and PR343 still publish `4d599dde6ec461cc43089d6f87381631aabdee6c` pending the
-coherent batch. Final exact-source integration/workspace/ARM checks remain.
+The current implementation checkpoint is192ff501f40116022419e470d14a3e732243960c.
+Bridge/full-model diagnostics pin77bd306e; grouped original/native upload proof
+pins192ff501. The current branch is published through PR343 as a draft; final
+exact-source integration/workspace/ARM checks and both group acceptances remain.
 The user has no device and owns boot, recording, upload and driving acceptance.
 No local builds, functional tests or model execution are authorized.
 
@@ -78,7 +80,7 @@ The older uninstrumented failed phase is unproved. Historical PTRACE_LISTEN/EIO
 #474 recurs in current full workspace119628631200 and remains open.
 Generic ARM/QEMU is not a sealed AGNOS/device candidate. Keep #296 open.
 
-Latest published PR checkpoint is4d599dde6ec461cc43089d6f87381631aabdee6c.
+Prior published PR checkpoint was4d599dde6ec461cc43089d6f87381631aabdee6c.
 Current full Fast PR39719156487, Fast push39719148455 and
 Integration39719156492 pass. Rust39719156536 has four failed functional jobs: driver-family numerics#476,
 original-pipeline raw prediction comparison#482 (one signed-zero bit), navigation
