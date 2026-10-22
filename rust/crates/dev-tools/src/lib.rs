@@ -267,6 +267,8 @@ pub mod hardwared_qa;
 #[cfg(feature = "image-array")]
 pub mod image_array;
 pub mod image_array_math;
+#[cfg(all(target_os = "linux", feature = "manager-cars-native"))]
+pub mod manager_cars_generate;
 #[cfg(all(target_os = "linux", feature = "manager-qa-native"))]
 pub mod manager_qa;
 #[cfg(all(target_os = "linux", feature = "modem-qa-native"))]

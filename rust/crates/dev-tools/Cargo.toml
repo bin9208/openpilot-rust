@@ -601,6 +601,7 @@ hardware-info-qa-native = []
 hardwared-qa-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-messaging", "openpilot-messaging/native", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq", "serde_json/float_roundtrip"]
 modem-qa-native = ["dep:openpilot-process-supervision", "rustix/termios"]
 manager-qa-native = ["dep:zmq"]
+manager-cars-native = []
 journal-runtime-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "dep:zmq"]
 camera-sensor-native = ["dep:openpilot-runtime-version", "dep:capnp"]
 camera-runtime-native = ["camera-sensor-native", "dep:openpilot-msgq", "dep:zmq"]
@@ -790,6 +791,15 @@ required-features = ["manager-qa-native"]
 [[test]]
 name = "manager_retirement"
 required-features = ["manager-qa-native"]
+
+[[bin]]
+name = "generate-manager-cars"
+path = "src/bin/generate_manager_cars.rs"
+required-features = ["manager-cars-native"]
+
+[[test]]
+name = "manager_cars_generate"
+required-features = ["manager-cars-native"]
 
 # Keep unsafe denied across tools; only the reviewed C++ oracle loader module
 # permits the explicit FFI calls needed by kalman-corpus-generator-native.

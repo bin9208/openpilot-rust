@@ -7008,3 +7008,25 @@ replacement-directory rejection is covered. Twelve manager units remain;
 readiness controls extend an existing test instead of adding a thirteenth.
 The next same-source gate additionally compiles/Clippy-checks recovery feature
 and selects both new PID-publication units for484. No removal is accepted.
+
+### Native car-document generator candidate: separate interface, no Python bootstrap
+
+New generate-manager-cars OUTPUT [--check] candidate parses the pinned nine
+opendbc declaration/definition files for seven documented-car lists. SHA pins
+match current source bytes; unfamiliar list expressions and source revisions
+fail until explicit review. Existing JSON arrays are comparison data, not
+implementation input. Ford hybrid expansion/Lightning suppression and Toyota
+SecOC suppression retain inspected source order/behavior.
+
+Native CLI intentionally omits --binding: that Python bootstrap exists only
+for the unchanged original oracle, which still loads its real Params provider
+in hosted comparison. Merely checking ELF headers is not claimed to reproduce
+Python module initialization. Other original-binding consumers remain live.
+The candidate requires exact seven output JSON files/current embedded data and
+seven stdout lines, check-mode mismatch behavior, source drift admission and
+output filesystem effects. Three source-focused units and an exact ignored
+fresh-original test are registered behind manager-cars-native; no new dependency.
+Parent checks scoped formatting/TOML/diff, nine source hashes and test roster.
+Hosted compilation/Clippy/original comparison and later source-absence/caller
+closure remain pending. generate_manager_cars.py is still present and inventory
+is unchanged.
