@@ -235,3 +235,8 @@ the verified Actions workflow. No local execution of these commands is permitted
 Runner cache behavior, actual source-policy admission and operation estimates
 remain CI risks until this new patch's exact revision is tested. The running
 checks are neither cancelled nor superseded by this uncommitted preparation.
+
+The next branch-focused job also fetches full source history and runs the actual
+package-BASE admission policy plus native host-growth and compatibility-wrapper
+tests before updater validation. This catches delivery/guard regressions without
+waiting for the deep serial gate; it does not replace that gate.

@@ -9,6 +9,12 @@ on:
       - rust/tools/updated_fixtures.py
       - rust/tools/tests/test_updated_comparison.py
       - rust/tools/tests/test_updated_remote_fixture.py
+      - rust/ci/runtime/package.py
+      - rust/ci/runtime/test_package_policy.py
+      - rust/crates/disk-space/**
+      - rust/crates/dev-tools/src/package.rs
+      - rust/crates/dev-tools/tests/disk_space.rs
+      - rust/tools/check-disk-space
 permissions:
   contents: read
 concurrency:
@@ -32,6 +38,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
@@ -54,6 +61,12 @@ jobs:
           python -m pip install numpy==2.5.3 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 pytest==9.0.2
       - name: Check affected Rust formatting
         run: cargo fmt -p openpilot-updated --check
+      - name: Check exact source admission and host growth accounting
+        run: |
+          python3 ci/runtime/test_package_policy.py
+          cargo test -p openpilot-disk-space --all-targets --locked
+          cargo test -p openpilot-dev-tools --lib package::tests::disk_growth_checks_u64_boundaries_without_a_fixed_reserve --locked
+          cargo test -p openpilot-dev-tools --test disk_space --locked
       - name: Strict affected lint
         id: lint
         run: |
