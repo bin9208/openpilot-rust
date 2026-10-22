@@ -461,7 +461,7 @@ impl Receipt {
           "artifact": 12389225409u64, "artifact_run": 39691148023u64,
           "source_commit": "d39b1b08c2079e9b3356be06ddddf9db49551be6",
           "source_bundle_sha256": "4285c91ffd0b45568d79472a782c8ca05a4cd475eca8cb7ce196af65d74f911b",
-          "source_files": self.held.iter().filter(|input| input.path.starts_with(&self.root.join("openpilot")) || input.path.starts_with(&self.root.join("rust/tools"))).map(Held::report).collect::<Vec<_>>(),
+          "source_files": self.held.iter().filter(|input| input.path.starts_with(self.root.join("openpilot")) || input.path.starts_with(self.root.join("rust/tools"))).map(Held::report).collect::<Vec<_>>(),
           "original_oracles": self.held.iter().filter(|input| input.path.starts_with(&self.fixture) && input.name != "capture-manifest.json").map(Held::report).collect::<Vec<_>>(),
           "helper_original_reference": self.held.iter().find(|input| input.path == self.root.join("rust/crates/modem/tests/fixtures/original-source-reference.json")).map(Held::report),
           "source_state": format!("{:?}", self.source_state),

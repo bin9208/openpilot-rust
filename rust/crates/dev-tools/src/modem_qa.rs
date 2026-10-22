@@ -1377,7 +1377,7 @@ fn trace_admitted(options: &TraceOptions, receipt: &Receipt) -> Result<Value> {
     let cases = scenarios();
     let plan_validation = validate_original_request_plans(&cases, receipt)?;
     for case in cases {
-        let expected = source_result(&case, &receipt)?;
+        let expected = source_result(&case, receipt)?;
         let actual = native_result(&case, &options.trace, &options.launcher, &options.helper)?;
         let pass = actual == expected;
         let artifact = options.output.join(format!("{}.json", case.name));
