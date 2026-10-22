@@ -98,6 +98,7 @@ fn execute(options: &Options, mut emit: impl FnMut(&Value) -> Result<()>) -> Res
     )?;
     let original = Original::open(
         &options.root,
+        &options.catalog,
         &options.original,
         &options.original_sha256,
         &RETIRED,
@@ -284,7 +285,7 @@ fn execute(options: &Options, mut emit: impl FnMut(&Value) -> Result<()>) -> Res
             }
         }
     }
-    let report = json!({"runs":reports,"device_validation":false,"original_manifest_sha256":options.original_sha256,"source_absence":options.expect_absent,"inputs":inputs.iter().map(Held::pin).collect::<Vec<_>>()});
+    let report = json!({"runs":reports,"device_validation":false,"original_manifest_sha256":options.original_sha256,"source_absence":options.expect_absent,"current_exporter_bindings":original.exporter_bindings(),"inputs":inputs.iter().map(Held::pin).collect::<Vec<_>>()});
     publish_report(&options.output.join("report.json"), &report, || {
         cancel.check()?;
         original.verify()?;

@@ -662,9 +662,21 @@ mod cached_binding_canonical_tests {
 
     #[test]
     fn nested_insertion_order_does_not_change_or_authorize_a_cached_binding() {
-        let first: Value = serde_json::from_str(r#"{"helper":{"path":"/native/worker","sha256":"abc","identity":[1,2,3]},"sources":[{"path":"a.rs","sha256":"123"}]}"#).unwrap();
-        let reordered: Value = serde_json::from_str(r#"{"sources":[{"sha256":"123","path":"a.rs"}],"helper":{"identity":[1,2,3],"sha256":"abc","path":"/native/worker"}}"#).unwrap();
-        let expected = cached_canonical_sha(&first).unwrap();
+        let first: Value = serde_json::from_str(r#"{"😀":"한글","helper":{"path":"/검증/😀/worker","sha256":"abc","identity":[1,2,3]},"가":"🌌","sources":[{"path":"원본/🚙.rs","sha256":"123"}]}"#).unwrap();
+        let reordered: Value = serde_json::from_str(r#"{"sources":[{"sha256":"123","path":"원본/🚙.rs"}],"가":"🌌","helper":{"identity":[1,2,3],"sha256":"abc","path":"/검증/😀/worker"},"😀":"한글"}"#).unwrap();
+        // Literal UTF8 bytes and independently pinned SHA define the shared
+        // Python/Rust contract, including non-ASCII keys and astral characters.
+        const EXPECTED_CANONICAL: &str = r#"{"helper":{"identity":[1,2,3],"path":"/검증/😀/worker","sha256":"abc"},"sources":[{"path":"원본/🚙.rs","sha256":"123"}],"가":"🌌","😀":"한글"}"#;
+        const EXPECTED_SHA256: &str =
+            "a20da5d9e880d168f27d7f9889b6b639b24caad3f1f86836cf57c6784e3e7ce8";
+        let mut canonical = first.clone();
+        canonical.sort_all_objects();
+        assert_eq!(
+            serde_json::to_vec(&canonical).unwrap(),
+            EXPECTED_CANONICAL.as_bytes()
+        );
+        assert_eq!(cached_canonical_sha(&first).unwrap(), EXPECTED_SHA256);
+        let expected = EXPECTED_SHA256;
         let before = serde_json::to_vec(&reordered).unwrap();
         assert_eq!(cached_canonical_sha(&reordered).unwrap(), expected);
         // Canonicalizing the digest must not mutate the issued receipt values.

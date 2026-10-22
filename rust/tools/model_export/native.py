@@ -261,7 +261,7 @@ def _guarded_add(body: str, fd: int) -> tuple[str, bytes]:
 
 
 def _canonical(value) -> bytes:
-    return json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
 
 def _run_cached_issuer(fd: int, request: dict, directory: Path, *, certificate: bool) -> dict:

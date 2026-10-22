@@ -16,11 +16,13 @@ pub(crate) struct Original {
     held: Vec<Held>,
     absent: Vec<PathBuf>,
     root: PathBuf,
+    exporter_bindings: BTreeMap<String, Value>,
     current: RefCell<Option<crate::driver_daemon_check::CurrentCatalogAdmission>>,
 }
 impl Original {
     pub fn open(
         root: &Path,
+        catalog: &Path,
         directory: &Path,
         manifest_sha: &str,
         retired: &[(&str, &str)],
@@ -55,6 +57,36 @@ impl Original {
                 "required original runtime source pin missing",
             )?;
         }
+        // Authenticate the frozen original first, then independently admit the
+        // CURRENT compiler closure before comparing any changed exporter file.
+        // Only the existing model_export/*.py scope can use these current pins.
+        let models = manifest["models"]
+            .as_object()
+            .ok_or("original model roster missing")?
+            .iter()
+            .map(|(name, seal)| {
+                Ok((
+                    name.clone(),
+                    seal["sha256"]
+                        .as_str()
+                        .ok_or("original model hash missing")?
+                        .to_owned(),
+                ))
+            })
+            .collect::<Result<BTreeMap<String, String>>>()?;
+        let receipt = std::env::var_os("MODEL_FAMILY_CURRENT_CATALOG_RECEIPT")
+            .ok_or("explicit model family current catalog receipt required")?;
+        let receipt_sha = std::env::var("MODEL_FAMILY_CURRENT_CATALOG_RECEIPT_SHA256")?;
+        let checkout = std::env::var("EXPECTED_SOURCE")?;
+        let admitted = crate::driver_daemon_check::CurrentCatalogAdmission::open(
+            root,
+            catalog,
+            Path::new(&receipt),
+            &receipt_sha,
+            &models,
+            &checkout,
+        )?;
+        let mut exporter_bindings = BTreeMap::new();
         let mut held = vec![manifest_pin];
         let mut absent = Vec::new();
         for (name, seal) in source_inputs {
@@ -64,7 +96,17 @@ impl Original {
                 continue;
             }
             let input = Held::open(&path, 16 * 1024 * 1024, false)?;
-            input.expect(seal)?;
+            if let Some(current) = admitted.exporter_source_seal(name)? {
+                input.expect(&current)?;
+                if current != *seal {
+                    exporter_bindings.insert(
+                        name.clone(),
+                        serde_json::json!({"historical":seal,"current":current}),
+                    );
+                }
+            } else {
+                input.expect(seal)?;
+            }
             held.push(input);
         }
         let files = manifest["files"]
@@ -96,7 +138,8 @@ impl Original {
             held,
             absent,
             root: root.to_owned(),
-            current: RefCell::new(None),
+            exporter_bindings,
+            current: RefCell::new(Some(admitted)),
         };
         result.verify()?;
         Ok(result)
@@ -119,6 +162,9 @@ impl Original {
             "model source root changed",
         )
     }
+    pub fn exporter_bindings(&self) -> &BTreeMap<String, Value> {
+        &self.exporter_bindings
+    }
     pub fn cached_admission(&self) -> Result<Option<(PathBuf, String)>> {
         self.current
             .borrow()
@@ -127,35 +173,6 @@ impl Original {
             .cached_admission()
     }
     pub fn catalog_sources(&self, catalog: &Path, kinds: &[&str]) -> Result<()> {
-        if self.current.borrow().is_none() {
-            let models = self.manifest["models"]
-                .as_object()
-                .ok_or("original model roster missing")?
-                .iter()
-                .map(|(name, seal)| {
-                    Ok((
-                        name.clone(),
-                        seal["sha256"]
-                            .as_str()
-                            .ok_or("original model hash missing")?
-                            .to_owned(),
-                    ))
-                })
-                .collect::<Result<BTreeMap<String, String>>>()?;
-            let receipt = std::env::var_os("MODEL_FAMILY_CURRENT_CATALOG_RECEIPT")
-                .ok_or("explicit model family current catalog receipt required")?;
-            let sha = std::env::var("MODEL_FAMILY_CURRENT_CATALOG_RECEIPT_SHA256")?;
-            let checkout = std::env::var("EXPECTED_SOURCE")?;
-            let admitted = crate::driver_daemon_check::CurrentCatalogAdmission::open(
-                &self.root,
-                catalog,
-                Path::new(&receipt),
-                &sha,
-                &models,
-                &checkout,
-            )?;
-            *self.current.borrow_mut() = Some(admitted);
-        }
         self.current
             .borrow()
             .as_ref()

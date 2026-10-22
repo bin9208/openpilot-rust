@@ -65,6 +65,12 @@ impl CurrentCatalogAdmission {
             CurrentCatalog::open(root, &catalog, receipt, receipt_sha256, models, checkout)?;
         Ok(Self { catalog, current })
     }
+    pub(crate) fn exporter_source_seal(&self, name: &str) -> Result<Option<Value>> {
+        self.current
+            .exporter_source(name)?
+            .map(|pin| Ok(json!({"bytes":pin.identity.2,"sha256":pin.digest})))
+            .transpose()
+    }
     pub(crate) fn cached_admission(&self) -> Result<Option<(PathBuf, String)>> {
         self.current.cached_admission()
     }
