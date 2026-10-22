@@ -5,7 +5,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: runner-comparison-496
+  group: runner-comparison-496-self-hosted-recovery
   cancel-in-progress: false
 jobs:
   compare:
@@ -44,8 +44,8 @@ jobs:
           } | tee -a "$GITHUB_STEP_SUMMARY"
           for location in "$RUNNER_TEMP" "$GITHUB_WORKSPACE" /tmp; do
             available=$(df --output=avail -B1 "$location" | tail -1)
-            if (( available < 35 * 1024 * 1024 * 1024 )); then
-              echo 'Need at least 35 GiB before this bounded 8 GiB experiment.' >&2
+            if (( available < (25 + 8) * 1024 * 1024 * 1024 )); then
+              echo "Need the retained 25 GiB reserve plus this experiment's estimated 8 GiB growth." >&2
               exit 1
             fi
           done
