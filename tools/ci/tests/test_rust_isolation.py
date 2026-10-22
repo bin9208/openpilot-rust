@@ -101,6 +101,7 @@ class RustIsolationTests(unittest.TestCase):
                         self.assertNotIn('rust/target', paths)
                         self.assertIn('${{ env.CI_JOB_TEMP }}/local-arm/execution.json', paths)
                         self.assertIn('${{ env.CI_JOB_TEMP }}/local-arm/qemu-version.txt', paths)
+                        self.assertIn('${{ env.CI_JOB_TEMP }}/local-arm/proot-version.txt', paths)
                         if name == 'radard-runtime':
                             self.assertIn('${{ env.CI_JOB_TEMP }}/radard-native/bin/', paths)
                         else:
@@ -168,7 +169,7 @@ class RustIsolationTests(unittest.TestCase):
         blobs = {
             '.github/actions/local-arm/action.yml': 'f51440bb48fd6c2d69b503eaf8601a36b103e062',
             '.github/actions/job-temp/action.yml': '154566f4016bc4a84a0650aacae93b847f694485',
-            'tools/ci/local-arm': 'c8ae0f44d6ff3430cddf757239e4208835e96be9',
+            'tools/ci/local-arm': 'd93c939703117c27f7320cc2182214dded09bcae',
         }
         for name, expected in blobs.items():
             path = ROOT / name
@@ -176,11 +177,11 @@ class RustIsolationTests(unittest.TestCase):
             source = path.read_bytes()
             if name == 'tools/ci/local-arm':
                 self.assertIn(b'"$source_dir/tools/ci/apt-native" update', source)
-                self.assertIn(b'"$source_dir/tools/ci/apt-native" install -y proot qemu-user-static', source)
+                self.assertIn(b'"$source_dir/tools/ci/apt-native" install -y qemu-user-static', source)
                 source = source.replace(b'"$source_dir/tools/ci/apt-native" update',
-                    b'sudo -n apt-get -o APT::Architectures::=amd64 update')
-                source = source.replace(b'"$source_dir/tools/ci/apt-native" install -y proot qemu-user-static',
-                    b'sudo -n apt-get install -y proot qemu-user-static')
+                    b'sudo -n apt-get -o APT::Architectures=amd64 update')
+                source = source.replace(b'"$source_dir/tools/ci/apt-native" install -y qemu-user-static',
+                    b'sudo -n apt-get -o APT::Architectures=amd64 install -y qemu-user-static')
             digest = hashlib.sha1(b'blob ' + str(len(source)).encode() + b'\0' + source).hexdigest()
             self.assertEqual(digest, expected, name)
 

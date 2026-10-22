@@ -185,6 +185,7 @@ jobs:
           path: |
             ${{ env.CI_JOB_TEMP }}/local-arm/execution.json
             ${{ env.CI_JOB_TEMP }}/local-arm/qemu-version.txt
+            ${{ env.CI_JOB_TEMP }}/local-arm/proot-version.txt
             ${{ env.CI_JOB_TEMP }}/webcam/**/result.json
             ${{ env.CI_JOB_TEMP }}/webcam/**/*invocation.json
             ${{ env.CI_JOB_TEMP }}/webcam/**/*.log
@@ -291,6 +292,7 @@ jobs:
           path: |
             ${{ env.CI_JOB_TEMP }}/local-arm/execution.json
             ${{ env.CI_JOB_TEMP }}/local-arm/qemu-version.txt
+            ${{ env.CI_JOB_TEMP }}/local-arm/proot-version.txt
             ${{ env.CI_JOB_TEMP }}/planner-comparison/
             ${{ env.CI_JOB_TEMP }}/planner-native-memory/
             ${{ env.CI_JOB_TEMP }}/planner-artifact/
@@ -492,6 +494,7 @@ jobs:
           path: |
             ${{ env.CI_JOB_TEMP }}/local-arm/execution.json
             ${{ env.CI_JOB_TEMP }}/local-arm/qemu-version.txt
+            ${{ env.CI_JOB_TEMP }}/local-arm/proot-version.txt
             ${{ env.CI_JOB_TEMP }}/carrot-man-policy/**
             ${{ env.CI_JOB_TEMP }}/carrot-man-owned/**
             ${{ env.CI_JOB_TEMP }}/carrot-man-input-tests/**
@@ -595,6 +598,7 @@ jobs:
           path: |
             ${{ env.CI_JOB_TEMP }}/local-arm/execution.json
             ${{ env.CI_JOB_TEMP }}/local-arm/qemu-version.txt
+            ${{ env.CI_JOB_TEMP }}/local-arm/proot-version.txt
             ${{ env.CI_JOB_TEMP }}/webrtc/
             ${{ env.LOCAL_CI_TARGET_DIR }}/debug/openpilot-webrtcd
             ${{ env.LOCAL_CI_TARGET_DIR }}/debug/openpilot-carrot-webrtcd
@@ -990,6 +994,7 @@ jobs:
           path: |
             ${{ env.CI_JOB_TEMP }}/local-arm/execution.json
             ${{ env.CI_JOB_TEMP }}/local-arm/qemu-version.txt
+            ${{ env.CI_JOB_TEMP }}/local-arm/proot-version.txt
             ${{ env.CI_JOB_TEMP }}/xiaoge-comparison/
             ${{ env.CI_JOB_TEMP }}/xiaoge-original/params/*.json
             ${{ env.CI_JOB_TEMP }}/xiaoge-opencv/*.json
@@ -1634,6 +1639,7 @@ jobs:
           path: |
             ${{ env.CI_JOB_TEMP }}/local-arm/execution.json
             ${{ env.CI_JOB_TEMP }}/local-arm/qemu-version.txt
+            ${{ env.CI_JOB_TEMP }}/local-arm/proot-version.txt
             ${{ env.CI_JOB_TEMP }}/radar-arm/
             ${{ env.CI_JOB_TEMP }}/radar-native/
             ${{ env.LOCAL_CI_TARGET_DIR }}/aarch64-unknown-linux-gnu/release/openpilot-radarcan
@@ -1923,6 +1929,7 @@ jobs:
           path: |
             ${{ env.CI_JOB_TEMP }}/local-arm/execution.json
             ${{ env.CI_JOB_TEMP }}/local-arm/qemu-version.txt
+            ${{ env.CI_JOB_TEMP }}/local-arm/proot-version.txt
             ${{ env.CI_JOB_TEMP }}/radard-native/logs/
             ${{ env.CI_JOB_TEMP }}/radard-native/source-*/
             ${{ env.CI_JOB_TEMP }}/radard-native/ipc/
@@ -2137,6 +2144,7 @@ jobs:
           path: |
             ${{ env.CI_JOB_TEMP }}/local-arm/execution.json
             ${{ env.CI_JOB_TEMP }}/local-arm/qemu-version.txt
+            ${{ env.CI_JOB_TEMP }}/local-arm/proot-version.txt
             ${{ env.CI_JOB_TEMP }}/carrot-navi-arm/
             ${{ env.LOCAL_CI_TARGET_DIR }}/aarch64-unknown-linux-gnu/release/openpilot-carrot-navi
           if-no-files-found: warn

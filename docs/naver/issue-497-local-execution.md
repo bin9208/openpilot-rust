@@ -8,7 +8,7 @@ are not cancelled or repeated solely to change routing. This record applies to
 the separate stable-dev backlog branch; it does not integrate dev-md runtime
 changes or authorize device deployment.
 
-## Exact neutral source
+## Exact neutral source (initial version 1)
 
 Only these three infrastructure files were selected from
 [PR #504](https://github.com/bin9208/openpilot-rust/pull/504), exact head
@@ -21,7 +21,7 @@ runtime, packaging code, or commit history was imported.
 | `.github/actions/local-arm/action.yml` | `f51440bb48fd6c2d69b503eaf8601a36b103e062` | None; copied verbatim |
 | `.github/actions/job-temp/action.yml` | `154566f4016bc4a84a0650aacae93b847f694485` | None; copied verbatim |
 
-The helper's host prerequisite fallback now invokes `apt-native update` and
+The initial helper's host prerequisite fallback invokes `apt-native update` and
 `apt-native install -y proot qemu-user-static`. Appending `amd64` to an existing
 APT architecture list did not remove persistent foreign `arm64`, the actual
 pre-test setup failure investigated in #503. The caller-owned `apt-native`
@@ -77,7 +77,8 @@ The guest preserves workspace and command-file paths while binding a private
 ARM target directory over `rust/target`. Artifact actions run on the real X64
 host, so ARM binary uploads use `LOCAL_CI_TARGET_DIR`, not the host checkout's
 `rust/target`. Radard continues uploading its existing bounded staged binaries.
-Each ARM artifact includes `local-arm/execution.json` and `qemu-version.txt`.
+Each ARM artifact includes `local-arm/execution.json`, `qemu-version.txt`, and
+the version 2 helper's `proot-version.txt`.
 The manifest records exact source, runner name/environment, X64 host, AArch64
 guest, `qemu-user`, pinned input hashes and `physical_arm_cpu: false`.
 
@@ -170,3 +171,48 @@ and [conditional job behavior](https://docs.github.com/en/actions/how-tos/write-
 ### Foundation proof is still incomplete
 
 The owner's later `d27cd41ee8082cd7feb76f8ec59c8d7a9701d37b` [policy job](https://github.com/bin9208/openpilot-rust/actions/runs/39850292573/job/120074319646) passed. Its [ARM transport job](https://github.com/bin9208/openpilot-rust/actions/runs/39850292573/job/120076394086) stopped in guest package preparation with `dpkg: error: required read/write access to the dpkg database directory /var/lib/dpkg`. No ARM lifecycle proof passed. The selected neutral helper requires the owning #502 track's repair and a successful execution proof before this full candidate is published. This is an execution-foundation failure, not an application runtime result. The host-only #503 proof above remains valid for its own exact source and scope.
+
+### Neutral helper update, version 2: prepared, ARM proof pending
+
+From clean local stable-dev head `b263f5e82a297bf28df8497ea22c14a1e48973a8`,
+the selected helper is updated to the exact #504 source
+`77663836a95a9e2aff9aa66592d8b06ed9c87cd9`, Git blob
+`d93c939703117c27f7320cc2182214dded09bcae`. Only `tools/ci/local-arm` is copied
+from that source; no branch history, dev-md runtime or other workflow is
+imported. Both neutral action files remain unchanged, with the same blobs
+`f51440bb48fd6c2d69b503eaf8601a36b103e062` (local-arm) and
+`154566f4016bc4a84a0650aacae93b847f694485` (job-temp).
+
+The owning foundation replaces Noble's PRoot 5.1 with a private downloaded
+PRoot 5.5.0, SHA256
+`db185300a9daabbce86aca7632d8c7fdc4249f6f153171954013b70c5f491ec0`.
+This addresses modern glibc `faccessat2` translation implicated in the guest
+dpkg database access failure; the new source also explicitly checks guest
+read/write access to `/var/lib/dpkg`. This is the foundation's proposed repair,
+not a claim that its ARM proof passed. The private binary is used directly,
+its hash is included in `execution.json`, and all eight ARM artifact uploads
+now include `local-arm/proot-version.txt`.
+
+The stable adapter differs from this new neutral helper by exactly two host
+APT substitutions:
+
+```text
+sudo -n apt-get -o APT::Architectures=amd64 update
+  -> "$source_dir/tools/ci/apt-native" update
+sudo -n apt-get -o APT::Architectures=amd64 install -y qemu-user-static
+  -> "$source_dir/tools/ci/apt-native" install -y qemu-user-static
+```
+
+The host no longer installs a distribution PRoot package. Guest APT commands
+remain byte-identical to the new neutral source. The provenance regression
+normalizes only these two host calls back to the new neutral blob and retains
+the unchanged action-blob checks. ARM upload assertions require PRoot version
+evidence. No other workflow command, check name, trust condition, architecture
+gate, fixture or deadline changes in this follow-up.
+
+At preparation, the owner's [probe 39853582741](https://github.com/bin9208/openpilot-rust/actions/runs/39853582741)
+is **in progress / PENDING**, not passed. Actual ARM transport/lifecycle proof
+remains a prerequisite for publishing the new PR #500 head. This preparation
+does not push the local candidate or change the remote `afed` source. Local
+review remains syntax/AST/YAML/Bash and diff only; no functional tests, builds,
+fixtures, transport execution or Actions dispatch run in this session.
