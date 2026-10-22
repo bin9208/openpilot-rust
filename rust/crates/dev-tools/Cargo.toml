@@ -599,6 +599,7 @@ timed-live-native = ["timed-tools-native", "dep:capnp", "dep:openpilot-cereal", 
 bootlog-artifact-native = ["dep:capnp", "dep:openpilot-cereal", "dep:zstd"]
 hardware-info-qa-native = []
 hardwared-qa-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-messaging", "openpilot-messaging/native", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq", "serde_json/float_roundtrip"]
+modem-qa-native = ["dep:openpilot-process-supervision", "rustix/termios"]
 journal-runtime-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "dep:zmq"]
 camera-sensor-native = ["dep:openpilot-runtime-version", "dep:capnp"]
 camera-runtime-native = ["camera-sensor-native", "dep:openpilot-msgq", "dep:zmq"]
@@ -752,6 +753,15 @@ required-features = ["hardwared-qa-native"]
 name = "check-hardwared-daemon"
 path = "src/bin/check_hardwared_daemon.rs"
 required-features = ["hardwared-qa-native"]
+
+[[test]]
+name = "modem_retirement"
+required-features = ["modem-qa-native"]
+
+[[bin]]
+name = "check-modem"
+path = "src/bin/check_modem.rs"
+required-features = ["modem-qa-native"]
 
 # Keep unsafe denied across tools; only the reviewed C++ oracle loader module
 # permits the explicit FFI calls needed by kalman-corpus-generator-native.

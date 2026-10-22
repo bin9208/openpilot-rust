@@ -267,6 +267,12 @@ pub mod hardwared_qa;
 #[cfg(feature = "image-array")]
 pub mod image_array;
 pub mod image_array_math;
+#[cfg(all(target_os = "linux", feature = "modem-qa-native"))]
+pub mod modem_capture;
+#[cfg(all(target_os = "linux", feature = "modem-qa-native"))]
+pub mod modem_qa;
+#[cfg(all(target_os = "linux", feature = "modem-qa-native"))]
+pub mod modem_qa_cli;
 pub mod qcom_compiler_stage;
 pub mod torque_stage;
 #[cfg(feature = "polygon-reference")]
