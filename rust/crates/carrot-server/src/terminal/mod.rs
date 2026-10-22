@@ -13,6 +13,7 @@ mod session;
 mod state;
 mod supervisor;
 mod supervisor_client;
+mod supervisor_status;
 mod tmux;
 use crate::{
     web_sound::{socket, Shutdown},

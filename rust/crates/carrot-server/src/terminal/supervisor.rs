@@ -2,8 +2,7 @@
 #![forbid(unsafe_code)]
 #[path = "supervisor_session.rs"]
 mod session;
-#[path = "supervisor_status.rs"]
-mod status;
+use super::supervisor_status as status;
 
 use openpilot_process_supervision::CapturedCommand;
 use rustix::process::{Pid, Signal, WaitId, WaitIdOptions};

@@ -1259,7 +1259,9 @@ jobs:
         working-directory: rust
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          export HYUNDAI_TORQUE_KEY_EVIDENCE="$RUNNER_TEMP/card-native/kia-key/native"
           cargo test -p openpilot-can -p openpilot-card --features openpilot-card/native --locked
+          python tools/check_hyundai_torque_key_497.py --native "$HYUNDAI_TORQUE_KEY_EVIDENCE" --output "$RUNNER_TEMP/card-native/kia-key/comparison"
           python tools/check_card_hyundai_params.py "$HYUNDAI_FIXTURE_DIR"
           python tools/check_card_hyundai_state.py "$HYUNDAI_FIXTURE_DIR"
           python tools/check_card_hyundai_controller.py "$HYUNDAI_FIXTURE_DIR"
@@ -1275,7 +1277,8 @@ jobs:
             --retained "rivian=$RUNNER_TEMP/card-native/reference/rivian/input.json" --retained "ford=$RUNNER_TEMP/card-native/reference/ford/input.json" \
             --retained "subaru=$RUNNER_TEMP/card-native/reference/subaru/input.json" --retained "toyota=$RUNNER_TEMP/card-native/reference/toyota/input.json" \
             --retained "gm=$RUNNER_TEMP/card-native/reference/gm/input.json" --retained "honda=$RUNNER_TEMP/card-native/reference/honda/input.json" \
-            --retained "volkswagen=$RUNNER_TEMP/card-native/reference/volkswagen/input.json"
+            --retained "volkswagen=$RUNNER_TEMP/card-native/reference/volkswagen/input.json" \
+            --retained "psa=$RUNNER_TEMP/card-native/reference/psa/input.json"
       - name: Require actual host Card IPC and shutdown
         run: |
           python rust/tools/check_card_ci.py --phase ipc --binaries "$GITHUB_WORKSPACE/rust/target/debug/examples" --daemon "$GITHUB_WORKSPACE/rust/target/debug/openpilot-card" --numerics "$RUNNER_TEMP/card-native/numerics" --binding "$CARD_PARAMS_BINDING" --dbc "$HYUNDAI_DBC_DIR" --corpus "$RUNNER_TEMP/card-native/corpus" --evidence "$RUNNER_TEMP/card-native/ipc"

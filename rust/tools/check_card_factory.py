@@ -70,6 +70,8 @@ def run(binary: Path, output: Path, binding: Path, numerics: Path, brand: str | 
   cases.extend({"candidate": "TESLA_MODEL_X", "fingerprints": fingerprints} for fingerprints in (
     [], [(1, [(0x3df, 8), (0x410, 8)])],
   ))
+  cases.extend({"candidate": "PSA_PEUGEOT_208", "fingerprints": fingerprints} for fingerprints in ([], [(1, [(0x410, 8)])]))
+  cases.extend({"candidate": "KIA_K5_DL3_24_HEV", "fingerprints": fingerprints} for fingerprints in ([], [(4, [(0x1cf, 8)])]))
   if brand is not None:
     cases = [case for case in cases if interfaces[case["candidate"]].__module__.split(".")[-2] == brand]
     assert cases, f"no factory cases for {brand}"

@@ -2403,7 +2403,11 @@
       "flags": 8192,
       "dbc_pt": "hyundai_canfd_generated",
       "dbc_radar": "hyundai_canfd_radar_generated",
-      "torque": null
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.5,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.1
+      }
     },
     {
       "candidate": "KIA_K8_HEV_1ST_GEN",
@@ -3672,7 +3676,11 @@
       "flags": 0,
       "dbc_pt": "psa_aee2010_r3",
       "dbc_radar": null,
-      "torque": null
+      "torque": {
+        "LAT_ACCEL_FACTOR": null,
+        "MAX_LAT_ACCEL_MEASURED": 2.0,
+        "FRICTION": null
+      }
     },
     {
       "candidate": "RIVIAN_R1_GEN1",

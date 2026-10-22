@@ -43,10 +43,7 @@ impl Generation {
     }
 }
 #[cfg(test)]
-#[path = "supervisor_status.rs"]
-mod status;
-#[cfg(test)]
-use status::exit_status;
+use super::supervisor_status::exit_status;
 pub(super) async fn read(fd: Arc<AsyncFd<File>>) -> Result<Vec<u8>, Error> {
     let mut bytes = [0; 4096];
     loop {

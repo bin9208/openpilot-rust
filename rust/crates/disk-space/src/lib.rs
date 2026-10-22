@@ -1,10 +1,11 @@
-//! Shared build-side reserve. Device installation has a separate space policy.
+//! Shared build-side operation-growth accounting. Device installation has a separate space policy.
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 pub mod cli;
 use serde::Serialize;
 use std::path::Path;
 
-pub const RESERVE_BYTES: u64 = 25 * 1024 * 1024 * 1024;
+/// Compatibility constant: the user retired the fixed reserve on 2026-10-23.
+pub const RESERVE_BYTES: u64 = 0;
 
 #[derive(Debug, Serialize)]
 pub struct Space {
@@ -17,16 +18,14 @@ impl Space {
     pub fn new(free_bytes: u64, growth_bytes: u64) -> Result<Self> {
         Ok(Self {
             free_bytes,
-            required_bytes: RESERVE_BYTES
-                .checked_add(growth_bytes)
-                .ok_or("disk reserve plus growth exceeds u64")?,
+            required_bytes: growth_bytes,
             growth_bytes,
         })
     }
 
     pub fn require(&self) -> Result<()> {
         if self.free_bytes < self.required_bytes {
-            return Err("insufficient disk: retain 25 GiB plus operation growth; recover at least 35 GiB before resuming".into());
+            return Err("insufficient disk for estimated operation growth".into());
         }
         Ok(())
     }
@@ -48,7 +47,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn exact_reserve_and_growth_are_required_without_overflow() {
+    fn estimated_growth_is_required_without_a_fixed_reserve() {
         let growth = 2 * 1024 * 1024 * 1024;
         assert!(Space::new(RESERVE_BYTES + growth, growth)
             .unwrap()
@@ -58,7 +57,8 @@ mod tests {
             .unwrap()
             .require()
             .is_err());
-        assert!(Space::new(u64::MAX, u64::MAX).is_err());
+        assert!(Space::new(u64::MAX, u64::MAX).unwrap().require().is_ok());
+        assert!(Space::new(0, 1).unwrap().require().is_err());
         assert!(Space::new(RESERVE_BYTES, 0).unwrap().require().is_ok());
     }
 

@@ -28,6 +28,7 @@ impl Vehicle for Interface {
             Self::Gm(vehicle) => vehicle.take_diagnostics(),
             Self::Honda(vehicle) => vehicle.take_diagnostics(),
             Self::Volkswagen(vehicle) => vehicle.take_diagnostics(),
+            Self::Psa(vehicle) => vehicle.take_diagnostics(),
             Self::Body(_) | Self::Mock(_) => Vec::new(),
         }
     }
@@ -46,7 +47,8 @@ impl Vehicle for Interface {
             | Self::Toyota(_)
             | Self::Gm(_)
             | Self::Honda(_)
-            | Self::Volkswagen(_) => Vec::new(),
+            | Self::Volkswagen(_)
+            | Self::Psa(_) => Vec::new(),
         }
     }
     fn take_logs(&mut self) -> Vec<crate::core::VehicleLog> {
@@ -62,6 +64,7 @@ impl Vehicle for Interface {
             Self::Gm(vehicle) => vehicle.take_logs(),
             Self::Honda(vehicle) => vehicle.take_logs(),
             Self::Volkswagen(vehicle) => vehicle.take_logs(),
+            Self::Psa(vehicle) => vehicle.take_logs(),
             Self::Body(_) | Self::Mock(_) | Self::Hyundai(_) => Vec::new(),
         }
     }
@@ -81,6 +84,7 @@ impl Vehicle for Interface {
             Self::Gm(vehicle) => Ok(vehicle.update(packets, now_ns)?),
             Self::Honda(vehicle) => Ok(vehicle.update(packets, now_ns)?),
             Self::Volkswagen(vehicle) => Ok(vehicle.update(packets, now_ns)?),
+            Self::Psa(vehicle) => Ok(vehicle.update(packets, now_ns)?),
         }
     }
     fn init(&mut self, io: &mut impl StartupIo) -> Result<(), Error> {
@@ -99,6 +103,7 @@ impl Vehicle for Interface {
             Self::Gm(vehicle) => Ok(vehicle.init(io)?),
             Self::Honda(vehicle) => Ok(vehicle.init(io)?),
             Self::Volkswagen(vehicle) => Ok(vehicle.init(io)?),
+            Self::Psa(vehicle) => Ok(vehicle.init(io)?),
         }
     }
     fn apply(&mut self, input: ApplyInput<'_>) -> Result<ApplyOutput, Error> {
@@ -117,6 +122,7 @@ impl Vehicle for Interface {
             Self::Gm(vehicle) => Ok(vehicle.apply(input)?),
             Self::Honda(vehicle) => Ok(vehicle.apply(input)?),
             Self::Volkswagen(vehicle) => Ok(vehicle.apply(input)?),
+            Self::Psa(vehicle) => Ok(vehicle.apply(input)?),
         }
     }
     fn commit_state(&mut self, state: car_state::Reader<'_>) -> Result<(), Error> {
@@ -135,6 +141,7 @@ impl Vehicle for Interface {
             Self::Gm(vehicle) => Ok(vehicle.commit_state(state)?),
             Self::Honda(vehicle) => Ok(vehicle.commit_state(state)?),
             Self::Volkswagen(vehicle) => Ok(vehicle.commit_state(state)?),
+            Self::Psa(vehicle) => Ok(vehicle.commit_state(state)?),
         }
     }
     fn set_soft_hold(&mut self, active: i16) {
@@ -153,6 +160,7 @@ impl Vehicle for Interface {
             Self::Gm(vehicle) => vehicle.set_soft_hold(active),
             Self::Honda(vehicle) => vehicle.set_soft_hold(active),
             Self::Volkswagen(vehicle) => vehicle.set_soft_hold(active),
+            Self::Psa(vehicle) => vehicle.set_soft_hold(active),
         }
     }
 }

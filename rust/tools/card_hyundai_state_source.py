@@ -65,7 +65,9 @@ def main()->None:
     dbcs=Path(sys.argv[2])
     rows=[]
     existing={case[0] for case in CASES}
-    cases=(*CASES,*((str(candidate),0,0,True) for candidate in CAR if str(candidate) not in existing and str(candidate)!="KIA_K5_DL3_24_HEV"))
+    # Append the repaired identity, preserving all prior scenario indices and their index-based controls.
+    cases=(*CASES,*((str(candidate),0,0,True) for candidate in CAR if str(candidate) not in existing and str(candidate)!="KIA_K5_DL3_24_HEV"),
+           ("KIA_K5_DL3_24_HEV",0,0,False),("KIA_K5_DL3_24_HEV",0,1,True))
     for index,(candidate,camera,hda,alpha) in enumerate(cases):
         settings=Settings(camera,hda)
         if index==13:settings.fingerprint[4][0x2ff]=8
@@ -82,6 +84,7 @@ def main()->None:
             "TPMS11","SCC11","SCC12","FCA11","SCC13","SCC14","LCA11","EMS21","Navi_HU","LKAS11")
         if fd:
             accelerator="ACCELERATOR" if CAR[candidate].config.flags & HyundaiFlags.EV else "ACCELERATOR_ALT" if CAR[candidate].config.flags & HyundaiFlags.HYBRID else "ACCELERATOR_BRAKE_ALT"
+            if candidate=="KIA_K5_DL3_24_HEV":accelerator="ACCELERATOR_ALT"
             names=(*names,accelerator)
             if accelerator!="ACCELERATOR":
                 names=(*names,"GEAR_SHIFTER")
@@ -93,7 +96,7 @@ def main()->None:
             if index==12:names=tuple(name for name in names if name!="CRUISE_BUTTONS")
             if index==14:names=tuple(name for name in names if name!="CAM_0x2a4")+("CAM_0x362",)
             if index in (15,16):names=tuple(name for name in names if name!="GEAR_SHIFTER")+("GEAR_ALT" if index==15 else "GEAR_ALT_2",)
-            if CAR[candidate].config.flags & HyundaiFlags.HYBRID:names=(*names,"HCU_STATUS_230")
+            if CAR[candidate].config.flags & HyundaiFlags.HYBRID or candidate=="KIA_K5_DL3_24_HEV":names=(*names,"HCU_STATUS_230")
         names=tuple(dict.fromkeys(name for name in names if name in definition.name_to_msg))
         can=hyundaicanfd.CanBus(None,settings.fingerprint,bool(hda))
         def bus_for(name):
@@ -157,6 +160,8 @@ def main()->None:
         rows.append(dict(candidate=candidate,camera=camera,hda2=hda,settings=settings.values,
             fingerprints=[(bus,list(values.items())) for bus,values in settings.fingerprint.items()],
             seed_now=seed_now,source_dir=str(source_dir),steps=steps,constructor=constructor.getvalue().splitlines()))
+    repaired=[row for row in rows if row["candidate"]=="KIA_K5_DL3_24_HEV"]
+    assert len(repaired)==2 and all(len(row["steps"])==320 for row in repaired)
     (root / "state.json").write_text(json.dumps(rows)+"\n")
     print(f"Generated {len(rows)*320} complete source CarState ticks")
 

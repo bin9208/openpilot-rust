@@ -122,6 +122,8 @@ def capture(arguments: RuntimeInvocation, scenario: Scenario, source: bool) -> C
     'GitBranch': 'fixture', 'GitCommitDate': 'owned-date'}
   if scenario.alpha_long is not None:
     values['AlphaLongitudinalEnabled'] = '1' if scenario.alpha_long else '0'
+  if scenario.nnff is not None:
+    values['NNFF'] = '1' if scenario.nnff else '0'
   for key, value in values.items():
     (params / key).write_text(value)
   command = [str(arguments.binary), '--root', str(arguments.runtime_root), '--numerics', str(arguments.numerics), '--max-steps', '2000']
@@ -169,8 +171,11 @@ def capture(arguments: RuntimeInvocation, scenario: Scenario, source: bool) -> C
           passive = cp.passive
           params_value = normalize(cp.to_dict())
         expected_passive = not scenario.enabled or scenario.candidate in (
-          'MOCK', 'RAM_HD_5TH_GEN', 'SUBARU_OUTBACK_2023', 'SUBARU_FORESTER_PREGLOBAL', 'VOLKSWAGEN_PASSAT_NMS')
+          'MOCK', 'RAM_HD_5TH_GEN', 'SUBARU_OUTBACK_2023', 'SUBARU_FORESTER_PREGLOBAL', 'VOLKSWAGEN_PASSAT_NMS',
+          'PSA_PEUGEOT_208', 'TESLA_MODEL_X')
         assert passive == expected_passive
+        if scenario.candidate in ('PSA_PEUGEOT_208', 'TESLA_MODEL_X'):
+          assert params_value['dashcamOnly'] and params_value['radarUnavailable']
         assert params_value['carFingerprint'] == scenario.candidate
         maps = Path(f'/proc/{process.pid}/maps').read_text()
         (output / 'maps.txt').write_text(maps)

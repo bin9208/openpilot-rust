@@ -129,12 +129,14 @@ def main() -> None:
         return
     if sys.argv[1] == "--baseline-defect":
         load()
-        from opendbc.car.interfaces import CarInterfaceBase
-        CarInterfaceBase.get_std_params("KIA_K5_DL3_24_HEV")
+        from check_hyundai_torque_key_497 import baseline_control
+        baseline_control()  # Immutable baseline public API must still raise the original KeyError.
         return
     target = Path(sys.argv[1])
     target.mkdir(parents=True, exist_ok=True)
     cases, missing_tunes = detection_cases(target)
+    assert missing_tunes == [], missing_tunes
+    assert any(case.candidate == "KIA_K5_DL3_24_HEV" for case in cases)
     (target / "detection.json").write_text(json.dumps([asdict(case) for case in cases]) + "\n")
     from opendbc.car.hyundai.stopping import CanfdStopping
     scenarios = []

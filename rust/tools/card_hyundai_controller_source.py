@@ -104,6 +104,8 @@ def main()->None:
                 diagnostics=printed.getvalue().splitlines(),warnings=list(warnings.lines)))
         outputs.append(dict(state_case=index,source_dir=str(output),settings=start_settings,steps=records,constructor=constructor.getvalue().splitlines()))
         for stream in streams.values():stream.close()
+    repaired=[case for case in outputs if rows[case["state_case"]]["candidate"]=="KIA_K5_DL3_24_HEV"]
+    assert len(repaired)==2 and all(len(case["steps"])==320 and any(step["can"] for step in case["steps"]) for case in repaired)
     (root / "controller.json").write_text(json.dumps(outputs)+"\n")
     print(f"Generated {sum(len(row['steps']) for row in outputs)} complete controller ticks")
 

@@ -9,6 +9,7 @@ EXTENDED_BRANDS: Final = {
   'CHEVROLET_VOLT': 'gm', 'CHEVROLET_BOLT_EUV': 'gm',
   'HONDA_CIVIC': 'honda', 'HONDA_ACCORD': 'honda', 'HONDA_CIVIC_2022': 'honda', 'HONDA_CRV_5G': 'honda',
   'VOLKSWAGEN_PASSAT_NMS': 'volkswagen', 'VOLKSWAGEN_ID4_MK1': 'volkswagen', 'VOLKSWAGEN_ID4_MK2': 'volkswagen',
+  'PSA_PEUGEOT_208': 'psa', 'TESLA_MODEL_X': 'tesla',
 }
 CORPUS_DIRECTORIES: Final = {
   'ford': 'sealed-green', 'subaru': 'sealed', 'toyota': 'runtime-green', 'gm': 'final', 'honda': 'runtime-green', 'volkswagen': 'verified-runtime',

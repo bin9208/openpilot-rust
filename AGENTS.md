@@ -25,18 +25,21 @@
   device comparison after the complete runtime candidate is ready. Keep unported
   components and native external dependencies explicit in the inventory.
 
-- The user required prevention of disk exhaustion on 2026-09-30. Check available
-  space before each local build, dependency install or large artifact copy. Keep
-  at least 25 GiB free plus the operation's estimated growth; when below that
-  floor, stop new build work and recover at least 35 GiB before resuming. Prefer
-  bounded package builds with incremental compilation disabled and reuse a
-  coordinated target cache. On 2026-10-09 the user explicitly authorized deleting
-  old Rust-port records, archived validation artifacts and all unused build
-  caches without another approval or preservation/compression step. This
-  supersedes earlier instructions to retain historical local evidence. Preserve
-  source changes and files needed by current implementation/validation; retain
-  concise results in the existing tracked records instead of old binary copies.
-  Prioritize the complete runtime candidate, then user testing and refinement.
+- On 2026-10-23 the user removed the fixed 25/35 GiB stop/resume rule.
+  Local work remains syntax, formatting and diff review only. Run functional
+  checks/builds in registered GitHub Actions jobs. Prefer the measured faster
+  trusted x64 `bin-actions` runner (`self-hosted`, `Linux`, `X64`,
+  `dev-md-local`) for the next necessary ordinary checks/builds and AGNOS cross
+  builds. Keep actual ARM CPU execution on GitHub ARM runners. Preserve running
+  CI and do not repeat unchanged successful checks solely to change runners.
+  Record runner identity and actual operation growth/resource observations;
+  check that the operation fits without reinstating the retired fixed reserve.
+  Native source, ABI, required PR gates, branch isolation and deployment
+  acceptance remain unchanged.
+- On 2026-10-09 the user explicitly authorized deleting old Rust-port records,
+  archived validation artifacts and unused build caches without another approval
+  or preservation/compression step. Preserve current source changes and files
+  needed for implementation/validation; retain concise results in tracked records.
 
 - This checkout belongs to bin9208/openpilot-rust. Never push to bin9208/openpilot or ajouatom/openpilot.
 - User explicitly authorized isolated Rust development here. Work from dev on issue branches; PRs target dev. Older carrot-wip synchronization instructions below are historical source context and do not authorize synchronization from this repository.

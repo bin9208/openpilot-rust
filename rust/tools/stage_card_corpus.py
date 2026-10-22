@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 from card_qa.ci import TOOLS, hashes, require_space, run, source_command
 
-BRANDS = ('tesla', 'mazda', 'nissan', 'chrysler', 'rivian', 'ford', 'subaru', 'toyota', 'gm', 'honda', 'volkswagen')
+BRANDS = ('tesla', 'mazda', 'nissan', 'chrysler', 'rivian', 'ford', 'subaru', 'toyota', 'gm', 'honda', 'volkswagen', 'psa')
 
 
 def generate(brand: str, output: Path, dbc: Path, retained: Path | None) -> None:
@@ -23,7 +23,7 @@ def generate(brand: str, output: Path, dbc: Path, retained: Path | None) -> None
     module = importlib.import_module(f'card_qa.{brand}.scenarios')
     cases = module.cases('runtime') if brand in ('gm', 'volkswagen') else module.cases()
   selected = []
-  candidates = ('TESLA_MODEL_3', 'TESLA_MODEL_Y') if brand == 'tesla' else tuple(
+  candidates = ('TESLA_MODEL_3', 'TESLA_MODEL_Y', 'TESLA_MODEL_X') if brand == 'tesla' else tuple(
     candidate for candidate, owner in EXTENDED_BRANDS.items() if owner == brand)
   for candidate in candidates:
     matching = [case for case in cases if case['candidate'] == candidate and case['op'] == 'runtime']

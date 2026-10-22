@@ -41,3 +41,5 @@ acceptance remain separate.
 These corrections do not establish CPU savings or normal operation on every
 vehicle. The lateral smoothing correction uses model uncertainty while retaining
 the existing interpolation range and cap; separate vehicle acceptance is required.
+
+The audit candidate restores the existing PSA dashcam parameter/state/controller path with its exact source wheel-speed helper and DBC. PSA remains `dashcamOnly` with angle control, three CAN buses and the existing 20 Hz steering/status cadence; physical CAN acceptance remains pending. The K5 Hybrid 2024 torque-key correction uses the unchanged existing fork row through an explicitly inferred exact-key alias. It does not establish independent calibration or vehicle acceptance.

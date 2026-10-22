@@ -9,11 +9,11 @@ import subprocess
 BASE = 'b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a'
 
 @contextlib.contextmanager
-def original(paths, hooks=None):
+def original(paths, hooks=None, ref=BASE):
   saved = {path: Path(path).read_bytes() for path in paths}
   try:
     for path in paths:
-      source = subprocess.check_output(['git', 'show', f'{BASE}:{path}'])
+      source = subprocess.check_output(['git', 'show', f'{ref}:{path}'])
       Path(path).write_bytes(source + (hooks or {}).get(path, '').encode())
     yield
   finally:
@@ -23,7 +23,7 @@ def original(paths, hooks=None):
 
 def main():
   parser = argparse.ArgumentParser()
-  parser.add_argument('scope', choices=['core', 'web', 'media', 'tools'])
+  parser.add_argument('scope', choices=['core', 'web', 'media', 'tools', 'vehicles'])
   parser.add_argument('--output', type=Path, required=True)
   options = parser.parse_args()
   options.output.mkdir(parents=True, exist_ok=False)
@@ -35,6 +35,10 @@ def main():
     invalid = ('could not compile', 'fixture PTY readiness deadline', 'shell exited during setup')
     if (result.returncode == 0 or marker not in result.stdout
         or any(failure in result.stdout for failure in invalid)
+        or (name == 'issue_185_kia_key' and 'MissingTorque' not in result.stdout)
+        or (name == 'issue_501_public_registry_admits_exact_psa_dashcam_parameters' and 'MissingTorque' not in result.stdout)
+        or (name == 'issue_501_public_registry_constructs_first_update_and_apply_from_known_angle_params'
+            and 'behavioral RED: existing PSA RuntimeUnported' not in result.stdout)
         or (name == 'issue_270_cleanup' and (
             'owned jobs remain:' not in result.stdout
             or result.stdout.count('"event":"issue270_fixture_setup_complete"') != 6))):
@@ -63,6 +67,17 @@ def main():
     path = 'rust/crates/carrot-server/src/terminal/pty.rs'
     with original([path], {path: '\n#[cfg(test)]\n#[path = "pty_cleanup_tests.rs"]\nmod cleanup_tests;\n'}):
       red('issue_270_cleanup', cargo + ['-p', 'openpilot-carrot-server', '--lib', 'terminal::pty::cleanup_tests::issue270_', '--', '--nocapture', '--test-threads=1'])
+  elif options.scope == 'vehicles':
+    psa_paths = ['rust/crates/card/data/vehicle.json', 'rust/crates/card/src/brands/psa.rs',
+                 'rust/crates/card/src/registry.rs', 'rust/crates/card/src/registry/diagnostics.rs',
+                 'rust/crates/card/src/registry/vehicle.rs']
+    with original(psa_paths, ref='b3705789764410d182e7bc9ac384634fa633e6cd'):
+      for case in ['public_registry_admits_exact_psa_dashcam_parameters',
+                   'public_registry_constructs_first_update_and_apply_from_known_angle_params']:
+        red('issue_501_' + case, cargo + ['-p', 'openpilot-card', '--features', 'native',
+            '--test', 'psa_admission_501', case, '--', '--exact'])
+    with original(['rust/crates/card/data/vehicle.json']):
+      red('issue_185_kia_key', cargo + ['-p', 'openpilot-card', '--features', 'native', '--test', 'hyundai_torque_key_497'])
   elif options.scope == 'media':
     with original(['rust/crates/loggerd/src/raw_file.rs', 'rust/crates/loggerd/src/media.rs']):
       red('issue_54_failed_video_completion', cargo + ['-p', 'openpilot-loggerd', '--test', 'media', 'marks_raw_video_failed_after_enospc'])

@@ -420,3 +420,38 @@ Full source/native parameter, state/controller and factory regressions are
 registered. Official source also supplies the missing PSA wheel-speed method;
 complete existing PSA dashcam state/controller work continues under
 [#501](https://github.com/bin9208/openpilot-rust/issues/501), without device access.
+
+### PSA completion candidate and current runner policy
+
+The next candidate completes the existing PSA dashcam source/native parameter,
+state, controller, common wrapper and registry path under #501, including three
+buses and the unchanged 20 Hz angle/status policy. The exact primary speed helper
+and official angle placeholder remove the inherited missing-method/data boundary.
+KIA's unique exact-token orphan is connected through the existing substitution
+resolver while preserving its original numeric row and identity. These are
+reviewed implementations with hosted results still pending; GMC's exact CC tune
+and the FCA EPS_3 conflict remain unresolved. No vehicle acceptance is inferred.
+
+The source/native PSA reference and immutable-primary controls remain separate.
+Existing Card IPC cases stay intact; PSA and Model X add actual pumped comparisons
+under both NNFF settings. Public-API RED tests run against the pre-PSA b370 tree,
+requiring actual MissingTorque and RuntimeUnported failures after loading the
+real DBC. The KIA public test additionally requires the old missing-torque failure
+before comparing 64 complete parameter/safety cases and continuous state/control.
+
+The user's 2026-10-23 runner instruction was verified directly in the comparison
+chat: next necessary trusted ordinary x64 and AGNOS cross jobs prefer the measured
+`bin-actions` runner. Actual ARM execution stays on GitHub ARM. Existing running
+checks are preserved. The next focused run uses the registered labels
+`self-hosted/Linux/X64/dev-md-local` and records runner/resources; hosted-image
+cleanup never removes system bundles on that runner. The retired 25/35 GiB rule
+is removed from this track's AGENTS and build-side native/Bash/Python accounting.
+Admission still checks each operation's stated growth, with CLI overflow/cache
+ownership and device-install policy preserved. Required exact-SHA gates are not
+waived. No successful check is rerun solely as a runner benchmark.
+
+Independent review of this PSA/KIA and resource-policy diff found no concrete
+P1/P2 issue by source inspection. Local validation is changed-source syntax,
+formatting and whitespace only; functional, original/native, IPC and ARM evidence
+must come from the following Actions run. The separate terminal lint correction
+loads its status conversion module once without a lint waiver.

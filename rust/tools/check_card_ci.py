@@ -38,8 +38,8 @@ def reference(arguments: argparse.Namespace) -> None:
       args += ['--dbc', str(dbc)]
     run(source_command(TOOLS / f'check_card_{brand}.py', args, dbc), commands, brand)
   require_space(output, 1024**3)
-  run(source_command(TOOLS / 'check_card_psa_source.py', ['--binary', str(binary / 'psa_boundary'),
-    '--evidence', str(output / 'psa')], dbc), commands, 'psa-boundaries')
+  run(source_command(TOOLS / 'check_card_psa_source.py', ['--binary', str(binary / 'psa_boundary'), '--numerics', str(numerics),
+    '--evidence', str(output / 'psa-controls')], dbc), commands, 'psa-boundaries')
   require_space(output, 1024**3)
   run([sys.executable, str(TOOLS / 'check_card_factory.py'), '--binary', str(binary / 'factory_trace'),
     '--binding', str(arguments.binding), '--numerics', str(numerics), '--output', str(output / 'factory')], commands, 'factory')
@@ -78,6 +78,15 @@ def ipc(arguments: argparse.Namespace) -> None:
   for candidate in IPC_CANDIDATES:
     args += ['--candidate', candidate]
   run([sys.executable, str(TOOLS / 'check_card_runtime_pumped.py'), *args], output / 'commands', 'pumped')
+  for nnff in ('0', '1'):
+    specific = ['--binary', str(arguments.daemon), '--numerics', str(arguments.numerics),
+      '--binding', str(arguments.binding), '--runtime-root', str(runtime_root),
+      '--corpus-root', str(arguments.corpus), '--candidate', 'PSA_PEUGEOT_208',
+      '--candidate', 'TESLA_MODEL_X', '--nnff', nnff,
+      '--evidence', str(output / f'psa-model-x-nnff-{nnff}')]
+    require_space(output, 1024**3)
+    run([sys.executable, str(TOOLS / 'check_card_runtime_pumped.py'), *specific],
+      output / 'commands', f'psa-model-x-nnff-{nnff}')
 
 
 def main() -> None:

@@ -143,7 +143,7 @@ def ford_controls() -> dict:
       rows.append({'candidate': candidate, 'nnff': nnff, 'steering': 'angle',
                    'tuning': cp.lateralTuning.which(), 'writes': settings.writes})
   return {'cases': rows, 'placeholders': 'NaN factors retained in table; none admitted to full active CarParams',
-          'remaining': ['PSA_PEUGEOT_208', 'GMC_YUKON_CC', 'KIA_K5_DL3_24_HEV'],
+          'remaining': ['GMC_YUKON_CC'],
           'source_sha256': {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in (
             'opendbc_repo/opendbc/car/torque_data/override.toml', 'opendbc_repo/opendbc/car/ford/interface.py',
             'opendbc_repo/opendbc/car/interfaces.py', 'rust/crates/card/data/vehicle.json',

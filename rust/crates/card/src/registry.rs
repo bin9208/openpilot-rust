@@ -29,6 +29,7 @@ pub enum Interface {
     Gm(Box<gm::Gm>),
     Honda(Box<honda::Honda>),
     Volkswagen(Box<volkswagen::Volkswagen>),
+    Psa(Box<psa::Psa>),
 }
 
 #[derive(serde::Serialize)]
@@ -75,7 +76,8 @@ impl Interface {
             | Self::Toyota(_)
             | Self::Gm(_)
             | Self::Honda(_)
-            | Self::Volkswagen(_) => None,
+            | Self::Volkswagen(_)
+            | Self::Psa(_) => None,
         }
     }
     pub fn has_controller(&self) -> bool {
@@ -92,7 +94,8 @@ impl Interface {
             | Self::Toyota(_)
             | Self::Gm(_)
             | Self::Honda(_)
-            | Self::Volkswagen(_) => true,
+            | Self::Volkswagen(_)
+            | Self::Psa(_) => true,
             Self::Mock(_) => false,
         }
     }
@@ -210,15 +213,13 @@ impl Interface {
                     now_ns,
                 },
             )?))),
-            "psa" => psa::Psa::new(psa::Setup {
+            "psa" => Ok(Self::Psa(Box::new(psa::Psa::new(psa::Setup {
                 params_bytes,
                 dbc_root,
                 settings,
                 fingerprints: &identification.observed,
                 now_ns,
-            })
-            .map(|uninhabited| match uninhabited {})
-            .map_err(Error::from),
+            })?))),
             _ => Err(Error::UnsupportedVehicle {
                 brand: platform.brand,
                 candidate: identification.candidate.clone(),

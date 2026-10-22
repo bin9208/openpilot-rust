@@ -143,7 +143,7 @@ Keep #178 open pending exact-head cloud evidence and any required independent
 vehicle/known-good capture acceptance. Synthetic source-backed vectors establish
 an algorithm regression boundary and do not supply physical acceptance.
 
-## #180: exact PSA asset, generic codec only
+## #180: exact PSA asset; runtime follows in #501
 
 Imported [primary PSA DBC](https://github.com/commaai/opendbc/blob/c3955753ae7258412814e2cdca3ee8af979e4679/opendbc/dbc/psa_aee2010_r3.dbc)
 blob `fb9a0c5159a7501a83a447234761ce58842f6eeb` byte-for-byte: 56,757 bytes,
@@ -159,25 +159,24 @@ source `create_lka_steering` caller with inactive/active signed angles.
 `psa_asset_497.rs` exercises native pack/parse with those signed angles. The full
 catalog gate automatically discovers the new DBC. All are cloud-only recipes.
 
-**This is not a PSA runtime port.** Normal source `get_params` still fails on
-missing torque; direct source State still calls missing `parse_wheel_speeds`.
-Candidate-only source construction can now load its DBC. Native construction
-validates that asset then explicitly returns `RuntimeUnported`, before Params
-effects. Missing-file rejection is retained in a separate absent-directory test.
-The source/native difference at candidate-only construction is documented in the
-boundary checker, rather than claiming a missing asset still exists. The complete
-state/controller port and full parameter admission remain outside this batch.
+At the b37057897 checkpoint this was asset/codec work only: normal source
+parameters lacked torque, source State lacked `parse_wheel_speeds`, and native
+construction loaded the real asset then returned `RuntimeUnported`. The separate
+#501 implementation below now addresses those runtime omissions. Asset acceptance,
+hosted functional gates and physical CAN acceptance remain separate requirements.
+Missing-file rejection is retained; no fabricated DBC or fallback was added.
 
-## #185: exact Ford and Model X admissions; three remaining failures
+## #185: exact angle admissions and inferred KIA key repair; GMC remains
 
 [Primary overrides](https://github.com/commaai/opendbc/blob/c3955753ae7258412814e2cdca3ee8af979e4679/opendbc/car/torque_data/override.toml),
 blob `f406ae64da4f2fa5a6b50e42b87feb2c7561d16b`, provide exact rows:
 `PSA_PEUGEOT_208 = [nan, 2.0, nan]`, `TESLA_MODEL_X = [nan, 2.5, nan]`,
 `FORD_ESCAPE_MK4_5 = [nan, 1.5, nan]`, `FORD_EXPEDITION_MK4 = [nan, 1.5, nan]`.
-The **two Ford rows and Model X row** are admitted to the source override and native catalog.
+The **two Ford rows, Model X row and PSA row** are admitted to the source override and native catalog.
 NaNs remain official placeholders (native JSON null), never measured friction or
 LAT_ACCEL_FACTOR. Existing Ford brand parameter logic selects angle control;
-source and native finish skip torque tuning even when NNFF is requested. Model X also retains its existing angle selection and dashcamOnly restriction.
+source and native finish skip torque tuning even when NNFF is requested. Model X
+and PSA retain their existing angle selection and dashcamOnly restrictions.
 
 `ford_override_497.rs` checks real full parameter construction, finite control
 scalars, Angle/PID selection and no NNFFModelName effects with NNFF off/on.
@@ -190,16 +189,14 @@ requires the **same SecOC dashcamOnly rejection**, not a missing-data error.
 No safety/firmware/size checks, steering limits or bus policy are weakened.
 `rust/crates/card/data/vehicle-497-provenance.json` records this scoped admission.
 
-Keep #185 open for the three remaining exact identities:
-
-- PSA: source `parse_wheel_speeds` and native state/controller are unimplemented.
-  Importing its placeholder now would require a larger runtime admission repair.
-- `GMC_YUKON_CC` and `KIA_K5_DL3_24_HEV`: no exact key in primary override,
+Keep #185 open for `GMC_YUKON_CC`, which has no exact key in primary override,
   [measured params](https://github.com/commaai/opendbc/blob/c3955753ae7258412814e2cdca3ee8af979e4679/opendbc/car/torque_data/params.toml)
   (blob `1fbabf6f76ba4bbc4717fb2e9797a4ef55616736`) or
   [substitutions](https://github.com/commaai/opendbc/blob/c3955753ae7258412814e2cdca3ee8af979e4679/opendbc/car/torque_data/substitute.toml)
-  (blob `161c3792c4d3829e3bf3a6c4fda8c5dfe61742bb`). The local near spelling
-  `KIA_K5_DL3_HEV_24` is not authority to alias another identity.
+  (blob `161c3792c4d3829e3bf3a6c4fda8c5dfe61742bb`). PSA admission is tracked in
+  #501. KIA now uses the explicitly inferred unique-orphan key repair below;
+  this is an inference from the existing fork row, not historical rename proof or
+  a new calibration claim.
 
 ## Model X follow-up: correction of the DBC claim and safe admission
 
@@ -269,11 +266,12 @@ Model X checkpoint paths: `opendbc_repo/opendbc/car/torque_data/override.toml`,
 `rust/tools/check_tesla_model_x_497.py`, and this document. No workflow,
 `check_card_ci.py`, daemon or common baseline-proof helper is changed here.
 
-## PSA #501 approved design, not implemented at this checkpoint
+## PSA #501 implementation handoff; hosted functional gates pending
 
 Dedicated follow-up: [#501](https://github.com/bin9208/openpilot-rust/issues/501),
-with existing asset #180 and placeholder #185 acceptance retained. After the
-parent's Model X selective-commit coordination signal, implement the exact
+with existing asset #180 and placeholder #185 acceptance retained. Parent committed
+the Model X/Ford checkpoint as `b3705789764410d182e7bc9ac384634fa633e6cd`.
+The follow-up now imports the exact
 [primary speed helper](https://github.com/commaai/opendbc/blob/c3955753ae7258412814e2cdca3ee8af979e4679/opendbc/car/interfaces.py#L287)
 (blob `34d557e5b535f3333ed1101a747c8d68f08a3ab1`): sum raw wheels, divide by four,
 multiply by unit then wheelSpeedFactor, store cereal vEgoRaw, then pass the stored
@@ -281,15 +279,73 @@ value to the existing Kalman filter. No wheelSpeeds field or rounding policy is
 invented. The actual helper has two body lines and is missing only from this
 vendored base.
 
-The bounded implementation covers the one declared PSA identity, exact official
+The implementation covers the one declared PSA identity, exact official
 `[nan, 2.0, nan]` angle placeholder, existing source 3-bus state, shared wrapper,
 20Hz steering controller/status 2→3→4 and full registry lifecycle/diagnostic
 ownership. It preserves dashcamOnly, PSA safety, radarUnavailable, no longitudinal
 CAN and all steering/rate/intervention limits. Source/native and actual IPC
 comparisons, negative baseline/missing-asset controls and full hosted rig gates
 are required before functional completion; physical CAN remains user-owned.
-No PSA catalog/override/base/registry implementation edit is part of this
-Model X checkpoint. Parent owns workflow/command registration and shared guides.
+`psa.rs` remains the module entry, with `psa/{parameters,state,controller,runtime}.rs`
+children and no `psa/mod.rs`. Registry dispatch covers parameters, construction,
+controller/readiness, constructor DBC diagnostics, update, init, apply, commit,
+soft-hold and log/Params ownership. The source's init/deinit are no-ops; the full
+trace calls both. The pre-existing `Vehicle` trait has no deinit method, so no
+unrelated global lifecycle API is introduced. `can_valid` diagnostics are drained
+in the update that emits them, with parser order and short-circuiting retained.
+
+Regression definitions use actual state/controller paths: ordinary empty first
+update, then continuous 3-bus wheel/steering/cruise/body CAN, driver override,
+2→3→4 activation, counter wrap, wrong-bus isolation and 20Hz signed-angle output.
+The source/native oracle compares complete CP/CS/actuators, three complete parser
+histories, speed-filter/owner state, packer counters, exact CAN, logs, constructor
+Params and lifecycle. It defines 32 full-parameter cases, four NNFF×alpha-long
+runs of 360 updates, inactive/active pre-update controls and a NaN-angle failure.
+The actual IPC comparison admits PSA and Model X as passive dashcams, with NNFF
+off and on and unchanged frequency/admission/shutdown gates. It does not expect
+sendcan from a passive Card; direct controller comparisons establish output cadence.
+
+`check_card_psa_source.py` authenticates primary Git blob
+`34d557e5b535f3333ed1101a747c8d68f08a3ab1` and compares the original helper AST.
+It loads immutable b370 interfaces/PSA state/torque tables to demonstrate the old
+full-parameter KeyError and missing-method AttributeError, rather than injecting
+a replacement helper into a control. Current controls use actual full parameters,
+constructor and repeated updates with NNFF off/on, plus actual missing-DBC rejection
+before constructor Params effects. Partial logs and pinned/baseline sources are
+retained by the hosted recipes. Parent owns workflow/command registration and guides.
+
+### Public registry behavioral RED/GREEN
+
+`rust/crates/card/tests/psa_admission_501.rs` imports only existing public
+registry/core/identification/cereal/Params APIs. Two tests require full exact PSA
+parameter admission and construction from independently prebuilt angle CarParams,
+then an actual first update/apply. No new PSA-specific API import can cause a
+compile-only RED. It also checks existing readiness, constructor diagnostics,
+commit, soft-hold and Params-drain APIs.
+
+For hosted RED, prefer a clean b370 checkout and copy **only this test file** from
+the proposed head. Run each exact filter separately with `--test psa_admission_501`:
+
+- `public_registry_admits_exact_psa_dashcam_parameters`: old MissingTorque.
+- `public_registry_constructs_first_update_and_apply_from_known_angle_params`:
+  old RuntimeUnported after real DBC loading; the test verifies that error before
+  deliberately failing. The proposed head must pass both unchanged tests.
+
+If the parent's baseline helper instead restores production paths at the proposed
+head, restore exactly these b370 paths:
+
+```text
+rust/crates/card/data/vehicle.json
+rust/crates/card/src/brands/psa.rs
+rust/crates/card/src/registry.rs
+rust/crates/card/src/registry/diagnostics.rs
+rust/crates/card/src/registry/vehicle.rs
+```
+
+The new child files become unreferenced by old `psa.rs`; there is no conflicting
+`psa/mod.rs`. Build/run only this integration-test target on RED; new PSA trace
+examples intentionally need the new runtime API. The isolated clean baseline is
+preferred. Never replace production files in this shared worktree.
 
 ## #181: authoritative conflict remains open
 
@@ -349,8 +405,17 @@ snapshots `carrot@62d004320d5a8683b919379f16811a832a894cf5` and
 `c3-wip@f2118063e379fa7f5e0d1c0364910b79864ca553` also have the mismatch;
 neither supplies a previously working old-key platform. The names and nearby
 non-hybrid row suggest a key typo, but that is an inference, not proof of an
-identical platform rename or of the tune's intended vehicle. **No alias, enum
-rename or tune transfer is made; retain MissingTorque for this exact identity.**
+identical platform rename or a verified calibration. An independent review later
+identified a unique orphan with exactly the same platform tokens in a different
+order. The audit selected this narrow inferred key repair under the user's request:
+`KIA_K5_DL3_24_HEV -> KIA_K5_DL3_HEV_24`, retaining the existing fork values
+`[2.5, 2.5, 0.1]` exactly. It is not a transfer from another model, proven rename
+history or measured-friction claim. Dewey owns the source substitution and Hyundai
+regressions/source controls. This worker owns native catalog/provenance, public
+registry admission and factory ordinary/second-Panda cases. KIA is removed from
+the remaining MissingTorque list; GMC remains. Parent owns the stale generic KIA
+negative assertion in `tests/vehicle_params.rs:14`; that file is untouched here.
+Its other generic negatives contain no stale Model X/PSA rejection.
 
 ### GMC: declared CC support, no exact CC tune
 
@@ -387,9 +452,11 @@ the parser-snapshot test structure does not independently prove this sample was
 accepted. No capture provenance or demonstrated algorithm correction was found.
 Keep #181 open with its existing strict rejection and literal conflict unchanged.
 
-Outcome: the two original-source-only tune unknowns remain unresolved after
-checking the actual fork and its available history. No additional runtime change,
-test/build execution, GitHub mutation or worktree/branch change occurred here.
+Outcome: the fork history does not prove a KIA rename; the selected inference
+and retained exact row are explicit. GMC still lacks an exact supported tune,
+and EPS_3 still lacks demonstrated algorithm/capture provenance. Those failures
+remain strict. No local functional execution or GitHub mutation supplies missing
+evidence.
 
 ## Additional cloud commands for the expanded scope
 
@@ -402,7 +469,7 @@ cargo test --manifest-path rust/Cargo.toml -p openpilot-card --features native -
 PYTHONPATH=.:opendbc_repo:rust/tools python rust/tools/check_mlb_primary_497.py --binary rust/target/debug/examples/checksum_trace --evidence "$RUNNER_TEMP/vehicle-497/mlb-primary"
 PYTHONPATH=.:opendbc_repo:rust/tools python rust/tools/check_psa_asset_497.py --binary rust/target/debug/examples/can_trace --evidence "$RUNNER_TEMP/vehicle-497/psa-asset"
 PYTHONPATH=.:opendbc_repo:rust/tools python rust/tools/check_card_ford.py --binary rust/target/debug/examples/ford_trace --numerics "$RUNNER_TEMP/card-native/numerics" --evidence "$RUNNER_TEMP/vehicle-497/ford"
-PYTHONPATH=.:opendbc_repo:rust/tools python rust/tools/check_card_psa_source.py --binary rust/target/debug/examples/psa_boundary --evidence "$RUNNER_TEMP/vehicle-497/psa-boundary"
+PYTHONPATH=.:opendbc_repo:rust/tools python rust/tools/check_card_psa_source.py --binary rust/target/debug/examples/psa_boundary --numerics "$RUNNER_TEMP/card-native/numerics" --evidence "$RUNNER_TEMP/vehicle-497/psa-controls"
 ```
 
 The complete Card reference phase already includes Ford, factory, PSA boundaries,
@@ -414,11 +481,60 @@ MLB primary comparison needs outbound access to the pinned raw.githubusercontent
 URLs and authenticates bytes before execution. All these checks are pending;
 no local test/fixture execution was used as a substitute.
 
+## PSA #501 exact parent registration
+
+These are registered Actions commands, never local execution. Next needed trusted
+x64/AGNOS jobs follow the user's online `bin-actions` preference
+`[self-hosted, Linux, X64, dev-md-local]`; actual ARM-CPU gates stay on GitHub ARM.
+Do not cancel or repeat an unchanged running gate for this runner transition.
+Parent owns workflow changes and resource-growth estimates.
+
+After the existing pinned bindings/numerics and fresh DBC staging:
+
+```sh
+cargo test --manifest-path rust/Cargo.toml -p openpilot-card --features native --locked --test psa_source --test psa_admission_501 --test registry
+cargo build --manifest-path rust/Cargo.toml -p openpilot-card --features native --locked --example psa_trace --example psa_boundary
+PYTHONPATH=.:opendbc_repo:rust/tools python rust/tools/check_card_psa.py --binary rust/target/debug/examples/psa_trace --numerics "$RUNNER_TEMP/card-native/numerics" --evidence "$RUNNER_TEMP/vehicle-501/psa"
+PYTHONPATH=.:opendbc_repo:rust/tools python rust/tools/check_card_psa_source.py --binary rust/target/debug/examples/psa_boundary --numerics "$RUNNER_TEMP/card-native/numerics" --evidence "$RUNNER_TEMP/vehicle-501/psa-controls"
+```
+
+Use the existing `card_qa.ci.source_command(script, args, HYUNDAI_DBC_DIR)`
+bootstrap for those Python calls to select the complete staged DBC root. The
+primary helper control additionally needs outbound pinned raw.githubusercontent
+access and the exact b370 Git object (fetch that SHA in the isolated job if needed).
+The controls output directory must be fresh. Its optional `--binary` now compares
+the complete runtime/Common path and therefore requires `--numerics`.
+
+Parent's `check_card_ci.py` integration changes needed:
+
+- `BRANDS` imported from `stage_card_corpus.py` now includes PSA, so the reference
+  loop invokes `check_card_psa.py`/`psa_trace` automatically. Build both PSA examples.
+- The later `check_card_psa_source.py` invocation must add `--numerics` and use
+  `output / 'psa-controls'`, **not** `output / 'psa'`: the latter now belongs to the
+  complete PSA reference loop. Preserve both invocations and partial artifacts.
+- Stage fresh PSA and Tesla corpora. The standard all-brand corpus command now
+  includes PSA and selects Model X in the Tesla corpus. Retained pre-Model-X
+  Tesla input cannot satisfy that selection.
+- Add actual IPC comparisons for PSA and Model X for **both NNFF settings**:
+
+```sh
+# Repeat for nnff=0 and nnff=1 with separate evidence roots, using the existing
+# staged runtime-root from check_card_ci.py's IPC phase and fresh corpus.
+python rust/tools/check_card_runtime_pumped.py --binary "$GITHUB_WORKSPACE/rust/target/debug/openpilot-card" --numerics "$RUNNER_TEMP/card-native/numerics" --binding "$CARD_PARAMS_BINDING" --runtime-root "$RUNNER_TEMP/card-native/ipc/runtime-root" --corpus-root "$RUNNER_TEMP/card-native/corpus" --candidate PSA_PEUGEOT_208 --candidate TESLA_MODEL_X --nnff 0 --evidence "$RUNNER_TEMP/vehicle-501/ipc-nnff-0"
+```
+
+The clean-baseline RED filters above must run separately from the complete new
+runtime examples. Full Card/CAN tests, strict Clippy, source references, factory,
+actual IPC and affected ARM gates remain required before completion. The current
+worker reports only syntax/format/diff evidence. No physical CAN, new active
+vehicle support, calibrated PSA friction or radar implementation is claimed.
+
 ## Owned changed paths (parent integrates CI and user docs)
 
 - Preserved source: `opendbc_repo/opendbc/car/hyundai/carcontroller.py`,
   `tesla/carstate.py`, `volkswagen/{carstate,mqbcan}.py`,
   `torque_data/override.toml` under that car directory.
+- PSA source base: `opendbc_repo/opendbc/car/interfaces.py`, exact primary helper only.
 - PSA asset: `opendbc_repo/opendbc/dbc/psa_aee2010_r3.{dbc,provenance.json}`.
 - CAN native: `rust/crates/can/src/{lib,volkswagen}.rs`,
   `tests/{native,mlb_497,psa_asset_497}.rs`, `tests/data/mlb_497.json`.
@@ -427,12 +543,19 @@ no local test/fixture execution was used as a substitute.
   `data/{vehicle,vehicle-497-provenance}.json`, `examples/psa_boundary.rs`,
   `examples/volkswagen_trace/steps.rs`, and
   `tests/{vehicle_backlog_497,ford_override_497,ford_parameters,tesla_params,registry,psa_source}.rs`.
+- PSA follow-up native: `rust/crates/card/src/brands/psa/{parameters,state,controller,runtime}.rs`,
+  `src/registry.rs`, `src/registry/{diagnostics,vehicle}.rs`,
+  `examples/{psa_trace,psa_boundary}.rs`, `tests/psa_admission_501.rs`.
 - Exclusive tools under `rust/tools/`: `card_hyundai_alt_buttons_defect.py`,
   `check_vehicle_source_fixes_497.py`, `check_tesla_model_x_497.py`,
   `check_card_{volkswagen,tesla,factory,psa_source}.py`,
   `check_{can,can_checksums,mlb_primary_497,psa_asset_497}.py`, `can_cases.py`,
   `card_qa/volkswagen/{frames,scenarios,source}.py`,
   `card_qa/ford/scenarios.py`, `card_qa/tesla/scenarios.py`, `card_qa/psa/source.py`.
+- PSA/IPC follow-up tools: `rust/tools/check_card_psa.py`, `card_qa/psa/scenarios.py`,
+  `stage_card_corpus.py`, `card_qa/runtime_{catalog,inputs,pumped_capture}.py`,
+  `check_card_runtime_pumped.py`; the shared factory/source-fix tools include the
+  PSA/KIA cases and updated remaining list.
 - This is the only vehicle evidence document added by this worker.
 
 No encoderd/loggerd/model/GPS/torque-uploader/dev-tools/JPEG/server, shared
@@ -445,3 +568,11 @@ JSON files and one TOML parsed; 16 scoped Rust files pass
 Scoped tracked diff and all 12 added-file whitespace checks pass. The owned set
 has 42 paths. These are syntax/format/diff results only; functional, source-oracle,
 native, ARM and vehicle results remain pending.
+
+PSA #501 follow-up static receipt (2026-10-23): 12 owned Python files parsed with
+`ast.parse`, two JSON files and one TOML parsed; 13 owned Rust files pass Rust
+1.94 formatting/parsing. Scoped whitespace review passes for 29 paths, including
+eight added files. No project import, fixture/oracle execution, test, build,
+commit, push or GitHub mutation was performed. `vehicle_params.rs` remains
+parent-owned and untouched; its KIA line14 must become positive before the full
+native suite. These results do not establish hosted functional or vehicle success.

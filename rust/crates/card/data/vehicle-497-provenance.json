@@ -18,9 +18,14 @@
       "nan",
       2.5,
       "nan"
+    ],
+    "PSA_PEUGEOT_208": [
+      "nan",
+      2.0,
+      "nan"
     ]
   },
-  "native_representation": "null LAT_ACCEL_FACTOR/FRICTION retains nonfinite placeholder; final Ford/Model X CarParams selects Angle, not Torque",
+  "native_representation": "Official angle placeholders retain null LAT_ACCEL_FACTOR/FRICTION; Ford, Model X and PSA select Angle, not Torque. KIA uses its existing complete fork row under an explicitly inferred key repair.",
   "model_x_boundary_correction": {
     "previous_claim": "missing party DBC mapping",
     "correction": "TeslaPlatformConfig default_factory supplies Bus.party: tesla_model3_party to the two-argument Model X configuration; generic dbc_pt null is shared by Model 3/Y and does not describe party",
@@ -33,9 +38,34 @@
     "validation": "actual hosted full Params/state/controller/factory comparisons and baseline failure controls required; no local project execution"
   },
   "deferred": {
-    "PSA_PEUGEOT_208": "source parse_wheel_speeds/native runtime unimplemented; asset import is not runtime admission",
-    "GMC_YUKON_CC": "no exact primary mapping",
-    "KIA_K5_DL3_24_HEV": "no exact primary mapping; no similar-name alias"
+    "GMC_YUKON_CC": "no exact primary mapping"
   },
-  "validation": "cloud full CarParams/angle/controller and nonfinite guards required; no local functional execution"
+  "validation": "cloud full CarParams/angle/controller and nonfinite guards required; no local functional execution",
+  "psa_501": {
+    "issue": "https://github.com/bin9208/openpilot-rust/issues/501",
+    "primary_interfaces_commit": "c3955753ae7258412814e2cdca3ee8af979e4679",
+    "primary_interfaces_blob": "34d557e5b535f3333ed1101a747c8d68f08a3ab1",
+    "primary_method": "CarStateBase.parse_wheel_speeds, exact original signature and two body lines; source/helper AST authenticated in hosted control",
+    "source_state_controller": "Preserved fork PSA carstate.py/carcontroller.py/psacan.py/values.py; no modified steering limits, bus assignments or status cadence",
+    "scope": "One PSA identity; dashcamOnly/Angle/PSA safety/radarUnavailable retained; 3 buses 0/1/2; 20Hz steering only, no longitudinal/radar additions",
+    "baseline": "b3705789764410d182e7bc9ac384634fa633e6cd",
+    "validation": "Public pre-existing registry API behavioral RED/GREEN, actual original/native state/controller and actual IPC required in hosted rig; no local functional execution or physical CAN claim"
+  },
+  "fork_key_repairs": {
+    "KIA_K5_DL3_24_HEV": {
+      "substitute": "KIA_K5_DL3_HEV_24",
+      "values": [
+        2.5,
+        2.5,
+        0.1
+      ],
+      "source_repository": "https://github.com/ajouatom/openpilot",
+      "source_commit": "7e371b92fd877c2cd160c92b4cf6fc62fe6d8805",
+      "source_path": "opendbc_repo/opendbc/car/torque_data/params.toml",
+      "source_blob": "0630db145f2c3db453ea8ed1431d6d0a060dffc7",
+      "basis": "Independent unique-orphan exact-token key repair inference under the issue-audit request; not a proven historical rename or transfer from another vehicle",
+      "calibration_claim": "Existing fork values retained exactly; no new measured/verified calibration claim",
+      "ownership": "Dewey owns source substitute/new Hyundai regressions/source controls; vehicle worker owns this catalog/provenance/factory/registry admission"
+    }
+  }
 }
