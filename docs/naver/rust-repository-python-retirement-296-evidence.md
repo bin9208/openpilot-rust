@@ -8174,3 +8174,52 @@ remain unaccepted pending those actual results.
 Startup foreign-output admission is tracked in #493. Candidate52310bf93 remains
 open until hosted preservation/early-failure regression and affected-family
 continuation complete. The strict model drift issues #476/#482 stay open.
+
+Session-migration checkpoint: the user requests a fresh session if the active
+collaboration limit cannot be increased. Codex user config now sets16spawned
+threads; a strict installed-app-server config/read confirms16 with other settings
+preserved. A fourth active subagent is nevertheless rejected by this existing
+Responses run. No16-worker claim follows; verify actual admission in the next
+session. All three workers freeze scratch checkpoints without tracked edits.
+Whole-project conversion remains unfinished at288/3/3289; physical acceptance
+remains user-owned, no deployment/merge/release is performed.
+
+Broader original AST codec/name capture39814172666 passes, artifact12441816204:
+6444563B/SHA277462af09a59d2439d7f3d81a972810a6592bf16823e53f0ec111445b7f28c4.
+Parent verifies20CRCs/nine observation seals:143041canonical names/477aliases/
+17controls,460registry inputs(380accepted),2560single-byte/131072two-byte rows,
+111escape/UTF7vectors/all1112064scalars. The native larger-domain candidate and
+registration are frozen but UNAPPLIED/UNEXECUTED; exact hashes and next gate are
+in the migration handoff. CLI lifecycle/callers/two-source absence stay pending.
+
+Logging R3's actual native runs both pass, historical raw replay passes and all
+998saved packet records equal their raw JSON(with no remaining oneULP loss).
+Parent verifies2185CRCs/2183seals/69held pairs and both2s limits. The workflow
+fails its external final85cwd-count assertion; strict saved perPID attribution
+proves112=27gitstatus*2+27gitrevparse+31producers, with exact86closedexec and no
+orphan cwd changes. Corrected inert re-audit passes; the original workflow stays
+failed. No unchanged native traffic is repeated merely to fix that auditor.
+R4 cancellation/preboundIPC/owned-output and real lifecycle tests are scratch-only,
+not compiled; source retirement/final absence payload remains unfinished. A
+3.7kRust-line loggerd group draft is also scratch-only with explicit blockers.
+
+Guarded-zero controls39814468144 atf755005e7/workflow883f802f0 fail before any
+numeric control. Shared Cargo target reuses the old helper df63dfab1f… as claimed
+current helper;11source units pass/2fail/1ignored, CLI/256controls never run.
+Parent verifies artifact12442240694:513104B/SHA256
+8cb7e9777647a91732e8ffc2c39b6b8feb4612f9f89b6b6d168e891c3455a12a/all7CRCs.
+Current source and provider before/after identities agree, but that alone does
+not authenticate the compiled source. Isolated fresh old/current targets and
+unequal helper hashes are now required. Frozen follow-up272a0dd3 is published as
+workflowa42d1aefb659d99b543cf31465900603bf9352d4, actual39817340019 pending at
+f755005e7726e9a90a07846e9eec65cc5b272abe. No numerical/source acceptance yet.
+
+Exact6e4f51 Fast/Integration/mapped-docs pass; Rust39809085536 latest snapshot
+has40success/2failure/2cancelled/4running. Model-family119931046645 fails actual
+faceOrientation[0]: expected-0.08113645017147064 vs observed-0.08065624535083771,
+absolute0.00048020482063293457 vs1e-6tolerance. Preserve this #476 evidence; it
+precedes startup and is distinct from #493's previously captured120s foreign-
+output stall. RadarCAN119931046796 fails radarcan_runtime_capture.py:232's
+unchanged100ms producer-stop bound; new #495 tracks raw timestamp/provider
+investigation without a guessed cause or threshold relaxation. Pending/cancelled
+jobs do not establish complete acceptance. A new source push needs its own gates.
