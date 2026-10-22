@@ -1,23 +1,30 @@
-name: Runner comparison disk diagnosis 496
+name: Runner comparison disk recovery 496
 on:
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  inspect:
+  recover:
     runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 5
     steps:
-      - name: Read disk usage and current prerequisites without building
+      - name: Remove diagnosed inactive ignored Rust target only
         shell: bash
         run: |
-          set -uo pipefail
-          export PATH="$HOME/.cargo/bin:$PATH"
-          echo "HOME=$HOME WORKSPACE=$GITHUB_WORKSPACE TEMP=$RUNNER_TEMP TOOL_CACHE=$RUNNER_TOOL_CACHE"
+          set -euo pipefail
+          cd "$GITHUB_WORKSPACE"
+          test "$GITHUB_WORKSPACE" = /home/actions/actions-runner/_work/openpilot-rust/openpilot-rust
+          test ! -L rust/target
+          test -z "$(git ls-files -- rust/target)"
+          git check-ignore -q rust/target/
+          if pgrep -u "$(id -u)" -x 'cargo|rustc|cc1|cc1plus'; then
+            echo 'Compiler is active; refusing to remove shared target.' >&2
+            exit 1
+          fi
+          git status --short
+          du -sh rust/target
+          rm -rf --one-file-system -- rust/target
+          git status --short
           df -h / "$RUNNER_TEMP"
-          sudo -n du -x -h --max-depth=4 /home/actions/actions-runner/_work 2>/dev/null | sort -h | tail -45
-          git -C "$GITHUB_WORKSPACE" status --short --untracked-files=normal
-          git -C "$GITHUB_WORKSPACE" status --short --ignored | tail -30
-          for tool in git curl tar xz unzip zstd python3 rustup cargo gcc g++ make pkg-config; do command -v "$tool" || true; done
-          rustup toolchain list
-          sudo -n true
+          available=$(df --output=avail -B1 "$RUNNER_TEMP" | tail -1)
+          test "$available" -ge $((35 * 1024 * 1024 * 1024))
