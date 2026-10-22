@@ -7051,3 +7051,21 @@ Artifact12407852675 is21851B/SHA
 e9424347ce4a6922c807aa25c0e8c9e4f5c2f08a0de6c9557e1abd0bda951bb9/all5CRCs.
 The call now passes the existing borrow directly. Functional original/native
 comparison remains pending; Python source and inventory remain unchanged.
+
+94758candidate predelete39738474417 passes the new empty-thread audit regression,
+then its main retirement test reaches logging result comparison and fails on a
+nonexistent duplicated fixture path. The independent logging lifecycle oracle
+already exists as original10fixture logging/source/result.json (manifest pinned
+and used by the native checker); the outer test now uses that same original
+source result rather than inventing retirement/manager-logging/source/result.
+No oracle bytes or comparisons change. Runtime source removal remains unaccepted.
+
+Generator39738484079 passes compilation, strictClippy and all3source units; its
+original Params build then fails because the generator correctly has no Rust
+ZMQ dependency and zmq.h was formerly obtained incidentally from another Rust
+build. Parent audits12408950140/24393B/SHA
+feed1db11aac14d323a65c0ceb9c4640a07c13c0c5de22cfe75204d992a2e406/all12CRCs,
+including the raw C++ fatal header error. The isolated original-oracle recipe
+now installs the explicit libzmq3-dev header provider, and coordinates its Rust
+host target with the existing host JSON11 action to reuse dependency builds.
+No production source, default build target or maintained gate is changed.

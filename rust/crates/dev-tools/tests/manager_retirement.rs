@@ -576,7 +576,7 @@ fn manager_original_observations_survive_three_controller_retirement() {
         let actual: Value =
             serde_json::from_slice(&fs::read(logs.join("native/result.json")).unwrap()).unwrap();
         let original: Value = serde_json::from_slice(
-            &fs::read(fixture.join("manager-logging/source/result.json")).unwrap(),
+            &fs::read(fixture.parent().unwrap().join("logging/source/result.json")).unwrap(),
         )
         .unwrap();
         assert_eq!(actual, original);
