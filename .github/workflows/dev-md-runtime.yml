@@ -99,7 +99,7 @@ jobs:
 
           class SourcePolicyTests(unittest.TestCase):
               def test_focused_sources_and_tests(self):
-                  for path in ('rust/crates/xiaoge/src/native/vision/road.rs', 'rust/crates/xiaoge/tests/cadence.rs', 'tools/ci/tests/test_lfs_endpoint.py'):
+                  for path in ('rust/crates/xiaoge/src/native/vision/road.rs', 'rust/crates/xiaoge/tests/cadence.rs', 'tools/ci/tests/test_lfs_endpoint.py', 'rust/crates/opencv-runtime/native/image.cc', 'rust/crates/loggerd/src/encoder.rs', 'rust/crates/signal-observer/src/process.rs'):
                       with self.subTest(path=path):
                           self.assertTrue(allowed(path))
 
@@ -109,7 +109,7 @@ jobs:
                           self.assertTrue(allowed(path))
 
               def test_provider_model_and_unrelated_sources_rejected(self):
-                  for path in ('rust/crates/opencv-runtime/native/image.cc', 'openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx', 'panda/board/main.c', '.github/workflows/unrelated.yml', 'tools/ci/tests/test_other.py'):
+                  for path in ('rust/crates/opencv-runtime/native/image.cc.extra', 'openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx', 'panda/board/main.c', '.github/workflows/unrelated.yml', 'tools/ci/tests/test_other.py'):
                       with self.subTest(path=path):
                           self.assertFalse(allowed(path))
 

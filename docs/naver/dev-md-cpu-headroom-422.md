@@ -64,6 +64,12 @@ No changes to radar detection, lead selection, dev/main or the #296 conversion.
   merged-source checks and genuine AGNOS build/seal/publication/public installer.
   Device installation, driving and actual CPU acceptance remain owner-owned.
 
+The release source policy admits the exact changed logger, signal and image
+adapter files and focused checks. Unknown siblings and model/provider changes
+remain rejected. All affected project packages already belong to the genuine
+AGNOS build list and are cleaned/recompiled from the delivery source; no old
+logger or OpenCV consumer binary is substituted.
+
 ## Predicted work reduction and limits
 
 BSD avoids two native-to-Rust copies totaling six bytes per ROI pixel. Lane

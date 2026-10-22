@@ -20,6 +20,24 @@ exec(compile(ast.Module(body=[node for node in tree.body if isinstance(node, ast
 
 
 class SourcePolicyTests(unittest.TestCase):
+    def test_cpu_copy_reduction_exceptions_are_exact_paths(self):
+        allowed = namespace["source_path_allowed"]
+        for path in (
+            "rust/crates/loggerd/src/daemon.rs",
+            "rust/crates/loggerd/src/encoder.rs",
+            "rust/crates/loggerd/src/encoder_tests.rs",
+            "rust/crates/signal-observer/src/process.rs",
+            "rust/crates/opencv-runtime/src/native/image.rs",
+            "rust/crates/opencv-runtime/native/image.cc",
+            "rust/crates/opencv-runtime/tests/preprocessing.rs",
+            "rust/tools/check_xiaoge_native_memory.py",
+            "docs/naver/dev-md-cpu-headroom-422.md",
+        ):
+            with self.subTest(path=path):
+                self.assertTrue(allowed(path))
+                self.assertFalse(allowed(path + ".extra"))
+                self.assertFalse(allowed(path + "/child"))
+
     def test_gpu_exceptions_are_exact_paths(self):
         allowed = namespace["source_path_allowed"]
         for path in (
@@ -54,7 +72,8 @@ class SourcePolicyTests(unittest.TestCase):
 
     def test_models_other_providers_and_directories_remain_rejected(self):
         for path in (
-            "rust/crates/opencv-runtime/", "rust/crates/opencv-runtime/native/image.cc",
+            "rust/crates/opencv-runtime/", "rust/crates/opencv-runtime/native/image.cc.extra",
+            "rust/crates/loggerd/src/other.rs", "rust/crates/signal-observer/src/neural.rs",
             "rust/crates/opencv-runtime/native/opencl_priority_other.h",
             "rust/crates/opencv-runtime/src/native/net/other.rs",
             "rust/crates/opencv-runtime/tests/fixtures/other.c",

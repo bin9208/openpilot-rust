@@ -79,7 +79,7 @@ class RuntimeDeliveryTests(unittest.TestCase):
     for changed in ('', entry.replace('original', 'changed'), entry.replace('100644', '100755'), entry.replace('blob', 'commit')):
       self.assertFalse(allowed(path, changed, entry))
     for unknown in ('.github/workflows/unrelated.yml', 'tools/ci/tests/test_other.py', '.lfsconfig.extra',
-                    '.github/workflows/ci.yml.extra', 'rust/crates/opencv-runtime/native/image.cc',
+                    '.github/workflows/ci.yml.extra', 'rust/crates/opencv-runtime/native/image.cc.extra',
                     'rust/ci/runtime/unrelated.py', 'rust/tools/tests/test_unreviewed.py'):
       self.assertFalse(allowed(unknown, 'same', 'same'), unknown)
     for reviewed in ('.github/workflows/ci.yml', '.github/workflows/rust.yml', '.lfsconfig',
