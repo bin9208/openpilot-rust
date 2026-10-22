@@ -110,6 +110,33 @@ jobs:
         if: always()
         with: {cleanup: 'true'}
 
+      - uses: actions/setup-node@v6
+        with: {node-version: '24'}
+      - name: Check direct Jetlink web source choices and USB diagnostics
+        run: node --test openpilot/selfdrive/carrot/web/tests/settings_jetlink.test.mjs openpilot/selfdrive/carrot/web/tests/egpu_model_status.test.mjs
+      - name: Rebuild canonical Jetlink web assets in Actions
+        env:
+          PREPARE_ONLY: ${{ github.event_name == 'push' && !contains(fromJSON('["dev","dev-md","main"]'), github.ref_name) }}
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          npm ci --prefix openpilot/selfdrive/carrot/web
+          npm run build --prefix openpilot/selfdrive/carrot/web
+          git diff --binary -- openpilot/selfdrive/carrot/web/js/generated/tools.js openpilot/selfdrive/carrot/web/generated/asset-manifest.json > "$RUNNER_TEMP/jetlink-web-assets.patch"
+          python3 - <<'PY'
+          import os, subprocess
+          allowed = {'openpilot/selfdrive/carrot/web/js/generated/tools.js', 'openpilot/selfdrive/carrot/web/generated/asset-manifest.json'}
+          changed = set(subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines())
+          assert changed <= allowed, f'unexpected generated changes: {changed - allowed}'
+          if os.environ['PREPARE_ONLY'] != 'true':
+              assert not changed, 'Commit the hosted generated-assets patch before integration'
+          PY
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: jetlink-web-assets-${{ github.sha }}
+          path: ${{ env.CI_JOB_TEMP }}/jetlink-web-assets.patch
+          if-no-files-found: warn
+
   check_user_docs:
     needs: [route, fast-checks]
     name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'check mapped user docs' || 'Not requested - check mapped user docs' }}
@@ -244,28 +271,6 @@ jobs:
         with:
           node-version: '24'
       - run: node --test openpilot/selfdrive/carrot/web/tests/bluetooth_mapping.test.mjs openpilot/selfdrive/carrot/web/tests/egpu_model.test.mjs openpilot/selfdrive/carrot/web/tests/egpu_model_status.test.mjs openpilot/selfdrive/carrot/web/tests/settings_jetlink.test.mjs openpilot/selfdrive/carrot/web/tests/viewport_keyboard.test.mjs openpilot/selfdrive/carrot/web/tests/settings_parent_navigation.test.mjs
-      - name: Rebuild canonical Jetlink web assets in Actions
-        env:
-          PREPARE_ONLY: ${{ github.event_name == 'push' && !contains(fromJSON('["dev","dev-md","main"]'), github.ref_name) }}
-        run: |
-          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          npm ci --prefix openpilot/selfdrive/carrot/web
-          npm run build --prefix openpilot/selfdrive/carrot/web
-          git diff --binary -- openpilot/selfdrive/carrot/web/js/generated/tools.js openpilot/selfdrive/carrot/web/generated/asset-manifest.json > "$RUNNER_TEMP/jetlink-web-assets.patch"
-          python3 - <<'PY'
-          import os, subprocess
-          allowed = {'openpilot/selfdrive/carrot/web/js/generated/tools.js', 'openpilot/selfdrive/carrot/web/generated/asset-manifest.json'}
-          changed = set(subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines())
-          assert changed <= allowed, f'unexpected generated changes: {changed - allowed}'
-          if os.environ['PREPARE_ONLY'] != 'true':
-              assert not changed, 'Commit the hosted generated-assets patch before integration'
-          PY
-      - uses: actions/upload-artifact@v6
-        if: always()
-        with:
-          name: jetlink-web-assets-${{ github.sha }}
-          path: ${{ env.CI_JOB_TEMP }}/jetlink-web-assets.patch
-          if-no-files-found: warn
       - uses: ./.github/actions/job-temp
         if: always()
         with: {cleanup: 'true'}
