@@ -7435,3 +7435,33 @@ explicit new pending edge:67observed/39pending; baseline274/3/3303 unchanged.
 Issue#491 tracks end-to-end route-controller signal cleanup, escaped-session
 descendants, partial readiness, PID lifetime and actual IPC ownership. Neither
 issue's implementation candidate counts as retirement or accepted fix yet.
+
+
+### #490 actual immutable publisher RED/GREEN accepted
+
+First39760699556/workflowc5bfb4858/sourcee0805edb passes new catalog strictClippy
+and compilation, then fails before publisher execution because depth1 omitted
+the prior6e54source tree. No RED/GREEN assertion executes in that attempt.
+R2 retains those unchanged exact-source Clippy results, fetches exactly three
+commits and runs the previously unexecuted actual publisher proof.
+[39761141735](https://github.com/bin9208/openpilot-rust/actions/runs/39761141735),
+workflow52677c7e88bb1e4f687b832115cbe0bf22f1cf98, source
+e0805edb9ebe306226b1a632a2188c655384ab40 succeeds with Rust1.94 explicitly
+selected. Recipe SHA8a49442bb9ddd63b9c87193fd80d67adf0a4bed70320a61e6399e52d46c13856.
+Evidence12418930119:476017B/SHA0ad014dbe8af978695ef3535442bf6a5d9f1fb3074189aff5ab0f1b1d9b4f1ce/13CRCs;
+tests12417334939:11261B/SHA014a8ca85c408f59faf7245d54cc7832c69ea8915231eed03c3177f833556a83/17CRCs.
+Parent checks both archive digests, all30CRCs, actual unchanged19bindings, phase
+source identities and real helper ELF526a524ce1d78ccebb74644ad25727ee00b5bb043798e91538d81d3ec10ea439.
+
+The same compiled regression and real zero-rewrite compiler first use original
+publisher SHA c400d7a55e3d95c2fd7737d30782b309dc9a7c0152854cce975ae0aba6433dcd:
+actual status101 at the expected enabled→disabled silent stale-evidence reuse.
+After explicit source restoration to fixed publisher SHA
+c142bc7459591d84d03404d38bc34f609ba728fec77f23436c37d43b51f012a6,
+the regression passes: both policy-change directions reject, exact same-policy
+generations remain reusable, extra file/empty directory/symlink reject and all
+preexisting file/directory/alias identities, bytes and current pointer survive
+rejection. No numerical/golden/ISA/schema change. This accepts the bounded
+immutable-roster defect fix; it is not atomic protection against an adversarial
+concurrent pathname replacement, full model acceptance or Python retirement.
+Issue closure follows publication of this committed candidate on PR343.

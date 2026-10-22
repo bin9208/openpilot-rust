@@ -1635,17 +1635,49 @@ pub fn run(options: &Options) -> Result<Value> {
         model_hashes.insert(name.to_owned(), hash.to_owned());
         model_pins.push(pin);
     }
+    // Keep the original manifest/model pins immutable. Changed compiler source
+    // is admitted only through its independently authenticated current closure.
+    let catalog = CatalogPin::open(&options.catalog)?;
+    verify_catalog_sources(&catalog, &model_hashes)?;
+    let current_catalog = options
+        .current_catalog_receipt
+        .as_ref()
+        .map(|(path, sha)| {
+            CurrentCatalog::open(&options.root, &catalog, path, sha, &model_hashes, &checkout)
+        })
+        .transpose()?;
+    let mut exporter_rebindings = BTreeMap::<String, Value>::new();
+    let mut admit_source = |name: &str, historical: &str| -> Result<InputPin> {
+        if let Some(pin) = current_catalog
+            .as_ref()
+            .map(|binding| binding.exporter_source(name))
+            .transpose()?
+            .flatten()
+        {
+            if pin.digest != historical {
+                let binding = json!({"historical_sha256":historical,"current_sha256":pin.digest});
+                if exporter_rebindings
+                    .insert(name.to_owned(), binding.clone())
+                    .is_some_and(|previous| previous != binding)
+                {
+                    return Err("driver historical exporter source records disagree".into());
+                }
+            }
+            return Ok(pin);
+        }
+        real_parent_chain(&options.root, name)?;
+        let pin = InputPin::open(&options.root.join(name), false)?;
+        if pin.digest != historical {
+            return Err(format!("driver source changed: {name}").into());
+        }
+        Ok(pin)
+    };
     let mut source_pins = Vec::new();
     for (name, hash) in original.source_inputs()? {
         if options.source_policy.skips(name) {
             continue;
         }
-        real_parent_chain(&options.root, name)?;
-        let pin = InputPin::open(&options.root.join(name), false)?;
-        if pin.digest != hash {
-            return Err(format!("driver source changed: {name}").into());
-        }
-        source_pins.push(pin);
+        source_pins.push(admit_source(name, hash)?);
     }
     let mut imported_pins = Vec::new();
     for (name, hash) in original.loaded_python_sources()? {
@@ -1657,22 +1689,11 @@ pub fn run(options: &Options) -> Result<Value> {
             }
             continue;
         }
-        real_parent_chain(&options.root, name)?;
-        let pin = InputPin::open(&options.root.join(name), false)?;
-        if pin.digest != hash {
-            return Err(format!("driver imported Python source changed: {name}").into());
-        }
-        imported_pins.push(pin);
+        imported_pins.push(admit_source(name, hash)?);
     }
-    let catalog = CatalogPin::open(&options.catalog)?;
-    verify_catalog_sources(&catalog, &model_hashes)?;
-    let current_catalog = options
-        .current_catalog_receipt
-        .as_ref()
-        .map(|(path, sha)| {
-            CurrentCatalog::open(&options.root, &catalog, path, sha, &model_hashes, &checkout)
-        })
-        .transpose()?;
+    if let Some(binding) = &current_catalog {
+        binding.verify()?;
+    }
     fs::create_dir(&options.output)?;
     let mut reports = Vec::with_capacity(CASES.len());
     for (width, height, raw, _) in CASES {
@@ -1732,13 +1753,16 @@ pub fn run(options: &Options) -> Result<Value> {
         catalog.verify()?;
         verify_catalog_sources(&catalog, &model_hashes)?;
     }
-    let output = json!({"runs":reports,"device_validation":false,
+    let mut output = json!({"runs":reports,"device_validation":false,
         "source_commit":options.source_commit,"checkout_commit":checkout,"source_policy":options.source_policy.as_str(),"current_catalog":current_catalog.as_ref().map(CurrentCatalog::report),"original_manifest_sha256":options.original_manifest_sha256,
         "inputs":{"binary":binary.receipt(),"peer":peer.receipt(),"collector":collector.as_ref().map(InputPin::receipt),
             "source_inputs":source_pins.iter().map(InputPin::receipt).collect::<Vec<_>>(),
             "imported_python_sources":imported_pins.iter().map(InputPin::receipt).collect::<Vec<_>>(),
             "original_models":model_pins.iter().map(InputPin::receipt).collect::<Vec<_>>(),
             "catalog":catalog.receipt()}});
+    if !exporter_rebindings.is_empty() {
+        output["inputs"]["current_exporter_source_bindings"] = json!(exporter_rebindings);
+    }
     let verify_inputs = || -> Result<()> {
         signals.check()?;
         original.verify()?;

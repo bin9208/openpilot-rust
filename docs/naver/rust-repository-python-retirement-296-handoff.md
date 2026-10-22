@@ -54,6 +54,10 @@ uploads checked against their own retained qlogs. The two original controllers
 remain present pending root-absence, CLI and cancellation/lifecycle validation.
 Ordinary uploader capture39758140178 succeeds; native ordinary/logging tools are
 being implemented against those original observations, with no deletion credit.
+Publisher roster#490 candidatee0805edb now passes actual RED/GREEN39761141735;
+parent audits both artifact SHA digests/all30CRCs and unchanged19bindings. Its
+source-present helper/policy behavior is accepted; issue-branch publication and
+complete model gates remain separate.
 The user has no device and owns boot, recording, upload and driving acceptance.
 No local builds, functional tests or model execution are authorized.
 

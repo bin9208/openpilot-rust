@@ -26,8 +26,8 @@ they are not completed functionality. All families below still contain work.
 Additional scope outside the baseline source inventory remains explicit:
 `selfdrived_helpers_source.py`, `tests/test_selfdrived_source.py`,
 `tests/test_params_native_stager.py` under `rust/tools`, six car-porting notebooks,
-and the 38 currently recorded pending entries in the [execution-edge inventory](rust-repository-python-retirement-296-execution-edges.tsv).
-The added hosted exporter bridge test remains an explicit pending Python edge.
+and the 39 currently recorded pending entries in the [execution-edge inventory](rust-repository-python-retirement-296-execution-edges.tsv).
+The added hosted exporter bridge and publisher tests remain explicit pending Python edges.
 Those include generated extensionless helpers, dynamic launch, embedded Python
 and vendor release/build paths. The22October follow-up adds34 explicit sites
 (30 missed paths, one generated-exporter subedge and three bootstrap retry sites).
@@ -67,8 +67,11 @@ three partial baseline entries.
    `desire_reference_cli` failed a source-output hash assertion. The serde feature
    ordering defect #463 is fixed and affected gate39639003843 is accepted. Preserve
    successful checks and retain required final integration.
-   The aggregate remains failed. Navigation #457 also remains open because its
-   earlier startup stall has not been explained by successful diagnostics.
+   The historical aggregate remains failed. Navigation #457 is now closed after
+   measured dev/test RSA optimization and published complete navigation119742946180
+   plus Integration39754486834 acceptance; older uninstrumented stalls are not
+   all attributed to that measured phase. Current full-model/workspace gates
+   remain separate.
 4. Recovery13 Python controllers/helpers are actually deleted and accepted by
    [39687004413](https://github.com/bin9208/openpilot-rust/actions/runs/39687004413),
    source57594f054, after all eight controllers in both absent roots, new ownership

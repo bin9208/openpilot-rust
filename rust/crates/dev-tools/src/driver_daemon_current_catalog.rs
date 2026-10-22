@@ -117,6 +117,26 @@ pub(super) struct CurrentCatalog {
     catalog_names: BTreeSet<PathBuf>,
 }
 impl CurrentCatalog {
+    /// Only exporter implementation files may use the separately authenticated
+    /// current compilation closure instead of a frozen oracle source digest.
+    pub(super) fn exporter_source(&self, name: &str) -> Result<Option<InputPin>> {
+        if !name.starts_with("rust/tools/model_export/") || !name.ends_with(".py") {
+            return Ok(None);
+        }
+        self.receipt.verify()?;
+        let path = self.source_root.join(super::relative(name)?);
+        real_parent_chain(&self.source_root, name)?;
+        let seal = self
+            .source_seals
+            .iter()
+            .find(|seal| seal.path == path)
+            .ok_or("driver exporter source missing from authenticated current closure")?;
+        let pin = InputPin::open(&path, false)?;
+        if pin.identity != seal.identity || pin.digest != seal.digest {
+            return Err("driver current exporter source binding changed".into());
+        }
+        Ok(Some(pin))
+    }
     pub(super) fn open(
         root: &Path,
         catalog: &CatalogPin,
@@ -355,6 +375,82 @@ impl CurrentCatalog {
 #[cfg(test)]
 mod tests {
     use super::*;
+    // Exercises source selection with real held files; this is not a fabricated
+    // successful provider/catalog admission or a model numerical proof.
+    fn exporter_binding(root: &Path) -> CurrentCatalog {
+        let source = root.join("rust/tools/model_export/schema.py");
+        fs::create_dir_all(source.parent().unwrap()).unwrap();
+        fs::write(&source, b"current exporter source").unwrap();
+        let pin = InputPin::open(&source, false).unwrap();
+        let mut source_seals = vec![SourceSeal {
+            path: source,
+            identity: pin.identity,
+            digest: pin.digest,
+        }];
+        let runtime = root.join("openpilot/selfdrive/modeld/dmonitoringmodeld.py");
+        fs::create_dir_all(runtime.parent().unwrap()).unwrap();
+        fs::write(&runtime, b"current runtime source").unwrap();
+        let pin = InputPin::open(&runtime, false).unwrap();
+        source_seals.push(SourceSeal {
+            path: runtime,
+            identity: pin.identity,
+            digest: pin.digest,
+        });
+        let receipt = root.join("current-catalog-receipt.json");
+        fs::write(&receipt, br#"{"guarded_add":"held binding"}"#).unwrap();
+        CurrentCatalog {
+            receipt: InputPin::open(&receipt, false).unwrap(),
+            value: Value::Null,
+            source_root: root.to_owned(),
+            catalog_root: root.to_owned(),
+            held: Vec::new(),
+            source_seals,
+            catalog_names: BTreeSet::new(),
+        }
+    }
+    #[test]
+    fn current_exporter_pin_rejects_mutation_alias_and_unsealed_source() {
+        let root = tempfile::tempdir().unwrap();
+        let binding = exporter_binding(root.path());
+        let name = "rust/tools/model_export/schema.py";
+        let original = binding.exporter_source(name).unwrap().unwrap();
+        assert_eq!(original.digest, sha(b"current exporter source"));
+        assert!(binding
+            .exporter_source("rust/tools/model_export/unsealed.py")
+            .is_err());
+        for name in [
+            "openpilot/selfdrive/modeld/dmonitoringmodeld.py",
+            "rust/tools/check_pipeline_reference.py",
+            "rust/tools/model_export/../model_output_reference.py",
+        ] {
+            assert!(!matches!(binding.exporter_source(name), Ok(Some(_))));
+        }
+        let path = root.path().join(name);
+        fs::write(&path, b"mutated exporter source").unwrap();
+        assert!(binding.exporter_source(name).is_err());
+        fs::write(&path, b"current exporter source").unwrap();
+        assert!(
+            binding.exporter_source(name).is_err(),
+            "stale identity admitted"
+        );
+        fs::remove_file(&path).unwrap();
+        std::os::unix::fs::symlink(&binding.receipt.path, &path).unwrap();
+        assert!(binding.exporter_source(name).is_err());
+    }
+    #[test]
+    fn exporter_pin_rejects_stale_current_bridge_receipt() {
+        let root = tempfile::tempdir().unwrap();
+        let binding = exporter_binding(root.path());
+        let name = "rust/tools/model_export/schema.py";
+        assert!(binding.exporter_source(name).unwrap().is_some());
+        let replacement = root.path().join("replaced-receipt.json");
+        fs::copy(&binding.receipt.path, &replacement).unwrap();
+        fs::rename(replacement, &binding.receipt.path).unwrap();
+        assert!(
+            binding.exporter_source(name).is_err(),
+            "identical foreign binding admitted"
+        );
+    }
     #[test]
     fn cpu_identity_excludes_volatile_fields_but_keeps_model_and_isa() {
         let original = "model name: CPU A\nflags: sse avx sse\ncpu MHz: 3000\n\n";
