@@ -367,72 +367,75 @@ pub(super) fn compare(
     }
     Ok(result)
 }
-pub(super) fn diagnostics(root: &Path, source: &Peer, native: &Peer) -> Result<Value> {
-    fn records(root: &Path, peer: &Peer, native: bool) -> Result<(Vec<Value>, Value)> {
-        let rows: Vec<Value> =
-            serde_json::from_slice(&fs::read(peer.root.join("diagnostics.json"))?)?;
-        require(!rows.is_empty(), "logger diagnostics absent")?;
-        let context = rows[0]["ctx"].clone();
-        let mut messages = Vec::new();
-        for row in rows {
-            let object = row
-                .as_object()
-                .ok_or("logger diagnostic is not an object")?;
-            require(
-                object.len() == 7
-                    && [
-                        "created", "ctx", "filename", "funcname", "levelnum", "lineno", "msg",
-                    ]
-                    .iter()
-                    .all(|key| object.contains_key(*key)),
-                "logger diagnostic fields differ",
-            )?;
-            require(
-                row["ctx"] == context && row["created"].as_f64().is_some_and(|v| v > 0.0),
-                "logger diagnostic context/time invalid",
-            )?;
-            require(
-                row["funcname"].as_str().is_some_and(|v| !v.is_empty()),
-                "logger diagnostic function absent",
-            )?;
-            let filename = Path::new(
-                row["filename"]
-                    .as_str()
-                    .ok_or("logger diagnostic source absent")?,
-            );
-            let filename = if filename.is_absolute() {
-                filename.into()
-            } else {
-                root.join("rust").join(filename)
-            };
-            let line = row["lineno"]
-                .as_u64()
-                .ok_or("logger diagnostic line absent")?;
-            require(
-                line > 0 && line <= fs::read_to_string(filename)?.lines().count() as u64,
-                "logger diagnostic line outside actual source",
-            )?;
-            let text = row["msg"]
+pub(super) fn diagnostic_records(
+    root: &Path,
+    peer: &Peer,
+    native: bool,
+) -> Result<(Vec<Value>, Value)> {
+    let rows: Vec<Value> = serde_json::from_slice(&fs::read(peer.root.join("diagnostics.json"))?)?;
+    require(!rows.is_empty(), "logger diagnostics absent")?;
+    let context = rows[0]["ctx"].clone();
+    let mut messages = Vec::new();
+    for row in rows {
+        let object = row
+            .as_object()
+            .ok_or("logger diagnostic is not an object")?;
+        require(
+            object.len() == 7
+                && [
+                    "created", "ctx", "filename", "funcname", "levelnum", "lineno", "msg",
+                ]
+                .iter()
+                .all(|key| object.contains_key(*key)),
+            "logger diagnostic fields differ",
+        )?;
+        require(
+            row["ctx"] == context && row["created"].as_f64().is_some_and(|v| v > 0.0),
+            "logger diagnostic context/time invalid",
+        )?;
+        require(
+            row["funcname"].as_str().is_some_and(|v| !v.is_empty()),
+            "logger diagnostic function absent",
+        )?;
+        let filename = Path::new(
+            row["filename"]
                 .as_str()
-                .ok_or("logger diagnostic message absent")?
-                .replace(peer.root.to_str().ok_or("logger root not UTF-8")?, "<root>")
-                .replace(&peer.route, "<route>");
-            messages.push(json!([row["levelnum"], text]));
-        }
-        if native {
-            require(
-                context["runtime_language"] == "rust"
-                    && context["source_commit"]
-                        .as_str()
-                        .is_some_and(|s| s.len() == 40 && s.bytes().all(|b| b.is_ascii_hexdigit()))
-                    && ["clean", "dirty"].contains(&context["source_tree"].as_str().unwrap_or("")),
-                "logger diagnostic native provenance differs",
-            )?;
-        }
-        Ok((messages, context))
+                .ok_or("logger diagnostic source absent")?,
+        );
+        let filename = if filename.is_absolute() {
+            filename.into()
+        } else {
+            root.join("rust").join(filename)
+        };
+        let line = row["lineno"]
+            .as_u64()
+            .ok_or("logger diagnostic line absent")?;
+        require(
+            line > 0 && line <= fs::read_to_string(filename)?.lines().count() as u64,
+            "logger diagnostic line outside actual source",
+        )?;
+        let text = row["msg"]
+            .as_str()
+            .ok_or("logger diagnostic message absent")?
+            .replace(peer.root.to_str().ok_or("logger root not UTF-8")?, "<root>")
+            .replace(&peer.route, "<route>");
+        messages.push(json!([row["levelnum"], text]));
     }
-    let original = records(root, source, false)?;
-    let mut actual = records(root, native, true)?;
+    if native {
+        require(
+            context["runtime_language"] == "rust"
+                && context["source_commit"]
+                    .as_str()
+                    .is_some_and(|s| s.len() == 40 && s.bytes().all(|b| b.is_ascii_hexdigit()))
+                && ["clean", "dirty"].contains(&context["source_tree"].as_str().unwrap_or("")),
+            "logger diagnostic native provenance differs",
+        )?;
+    }
+    Ok((messages, context))
+}
+pub(super) fn diagnostics(root: &Path, source: &Peer, native: &Peer) -> Result<Value> {
+    let original = diagnostic_records(root, source, false)?;
+    let mut actual = diagnostic_records(root, native, true)?;
     let context = actual
         .1
         .as_object_mut()

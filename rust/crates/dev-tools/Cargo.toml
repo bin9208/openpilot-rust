@@ -9,6 +9,15 @@ publish = false
 autobins = false
 
 [[bin]]
+name = "check-loggerd-io"
+path = "src/bin/check_loggerd_io.rs"
+required-features = ["loggerd-check-native"]
+
+[[test]]
+name = "loggerd_io_check"
+required-features = ["loggerd-check-native"]
+
+[[bin]]
 name = "check-carrot-navi-comparison"
 path = "src/bin/check_carrot_navi_comparison.rs"
 required-features = ["carrot-navi-compare-native"]
@@ -2372,3 +2381,17 @@ required-features = ["changed-files-native"]
 [[test]]
 name = "changed_files_jp2"
 required-features = ["changed-files-native"]
+
+[[bin]]
+name = "check-loggerd-diagnostics"
+path = "src/bin/check_loggerd_diagnostics.rs"
+required-features = ["loggerd-check-native"]
+
+[[bin]]
+name = "check-loggerd-log-pipeline"
+path = "src/bin/check_loggerd_log_pipeline.rs"
+required-features = ["loggerd-check-native"]
+
+[[test]]
+name = "loggerd_controllers"
+required-features = ["loggerd-check-native"]

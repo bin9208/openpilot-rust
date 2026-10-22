@@ -35,7 +35,7 @@ pub(super) fn capacity(service: &str) -> Result<usize> {
         .ok_or("unknown logger fixture service")?
         .queue_size)
 }
-struct Owned(Option<Child>);
+pub(super) struct Owned(pub(super) Option<Child>);
 impl Drop for Owned {
     fn drop(&mut self) {
         if let Some(mut child) = self.0.take() {
@@ -45,7 +45,7 @@ impl Drop for Owned {
     }
 }
 impl Owned {
-    fn status(&mut self) -> Result<Option<i32>> {
+    pub(super) fn status(&mut self) -> Result<Option<i32>> {
         let Some(child) = self.0.as_mut() else {
             return Err("logger was already reaped".into());
         };
@@ -60,18 +60,18 @@ impl Owned {
             Ok(None)
         }
     }
-    fn alive(&mut self) -> Result<()> {
+    pub(super) fn alive(&mut self) -> Result<()> {
         require(
             self.status()?.is_none(),
             "logger exited before input completion",
         )
     }
-    fn pid(&self) -> Result<rustix::process::Pid> {
+    pub(super) fn pid(&self) -> Result<rustix::process::Pid> {
         Ok(rustix::process::Pid::from_child(
             self.0.as_ref().ok_or("logger owner absent")?,
         ))
     }
-    fn wait(&mut self, timeout: Duration) -> Result<i32> {
+    pub(super) fn wait(&mut self, timeout: Duration) -> Result<i32> {
         let deadline = Instant::now() + timeout;
         loop {
             if let Some(code) = self.status()? {
@@ -300,7 +300,7 @@ impl Peer {
         for index in 0..logs.len() {
             for entry in fs::read_dir(self.segment(index))? {
                 require(
-                    !entry?.path().extension().is_some_and(|v| v == "lock"),
+                    entry?.path().extension().is_none_or(|v| v != "lock"),
                     "logger retained a lock after successful shutdown",
                 )?;
             }

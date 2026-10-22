@@ -202,6 +202,7 @@ pub(super) struct Owner {
     workers: Vec<Worker>,
     namespaces: Vec<Namespace>,
     receivers: Vec<Receiver>,
+    endpoints: Vec<(PathBuf, crate::qa_endpoint::EndpointOwner)>,
     pub cancelled: Arc<AtomicBool>,
     signal_number: Arc<AtomicUsize>,
     handlers: Vec<signal_hook::SigId>,
@@ -214,9 +215,22 @@ pub(super) struct Owner {
 }
 impl Owner {
     pub fn new(control: &Path) -> Result<Self> {
+        Self::new_for(control, "check-loggerd-native")
+    }
+    pub(super) fn new_for(control: &Path, name: &str) -> Result<Self> {
+        require(
+            [
+                "check-loggerd-native",
+                "check-loggerd-io",
+                "check-loggerd-diagnostics",
+                "check-loggerd-log-pipeline",
+            ]
+            .contains(&name),
+            "unknown logger supervisor CLI",
+        )?;
         let executable = std::env::current_exe()?;
         require(
-            executable.file_name() == Some(std::ffi::OsStr::new("check-loggerd-native")),
+            executable.file_name() == Some(std::ffi::OsStr::new(name)),
             "logger supervisor requires its dedicated CLI",
         )?;
         require(
@@ -229,6 +243,7 @@ impl Owner {
             workers: Vec::new(),
             namespaces: Vec::new(),
             receivers: Vec::new(),
+            endpoints: Vec::new(),
             cancelled: Arc::new(AtomicBool::new(false)),
             signal_number: Arc::new(AtomicUsize::new(0)),
             handlers: Vec::new(),
@@ -264,7 +279,7 @@ impl Owner {
             &self.control.join("cleanup.json"),
             &json!({
             "processes_confirmed":processes_confirmed,"error":error,"events":self.events,
-            "pending_namespaces":self.namespaces.len(),"pending_receivers":self.receivers.len()}),
+            "pending_namespaces":self.namespaces.len(),"pending_receivers":self.receivers.len(),"pending_endpoints":self.endpoints.len()}),
         )
     }
     fn resources(&mut self) -> Result<()> {
@@ -282,6 +297,21 @@ impl Owner {
                 Err(e) => {
                     failure.get_or_insert(e);
                 }
+            }
+        }
+        while let Some((path, owner)) = self.endpoints.pop() {
+            if let Err(e) = owner.verify() {
+                failure.get_or_insert(e);
+            }
+            drop(owner); // authenticated unlink only, after every process reaped
+            let absent = fs::symlink_metadata(&path)
+                .is_err_and(|e| e.kind() == std::io::ErrorKind::NotFound);
+            record(
+                &mut self.events,
+                json!({"phase":"collector-endpoint-cleanup","path":path,"absent":absent}),
+            );
+            if !absent {
+                failure.get_or_insert_with(|| "collector endpoint remains; preserved".into());
             }
         }
         while let Some(namespace) = self.namespaces.pop() {
@@ -311,7 +341,10 @@ impl Owner {
     }
     pub fn run(&mut self, requests: &[super::Request], timeout: Duration) -> Result<Vec<Value>> {
         require(
-            self.workers.is_empty() && self.namespaces.is_empty() && self.receivers.is_empty(),
+            self.workers.is_empty()
+                && self.namespaces.is_empty()
+                && self.receivers.is_empty()
+                && self.endpoints.is_empty(),
             "previous logger cohort still owned",
         )?;
         for request in requests {
@@ -323,18 +356,28 @@ impl Owner {
                 self.sequence
             );
             self.namespaces.push(Namespace::new(&prefix)?);
-            let diagnostic = if request.kind != "fixture" && request.kind != "input-completion" {
-                self.receivers
-                    .push(Receiver::bind(&prefix, &request.output)?);
-                Some(
-                    self.receivers
-                        .last()
-                        .ok_or("owned receiver missing")?
-                        .receipt()?,
-                )
+            let endpoint_channel = if request.kind == "pipeline" {
+                let path = PathBuf::from(format!("/tmp/logmessage{prefix}"));
+                let endpoint = crate::qa_endpoint::EndpointOwner::new(&path, &prefix)?;
+                let channel = endpoint.channel().to_owned();
+                self.endpoints.push((path, endpoint));
+                Some(channel)
             } else {
                 None
             };
+            let diagnostic =
+                if !["fixture", "input-completion", "pipeline"].contains(&request.kind.as_str()) {
+                    self.receivers
+                        .push(Receiver::bind(&prefix, &request.output)?);
+                    Some(
+                        self.receivers
+                            .last()
+                            .ok_or("owned receiver missing")?
+                            .receipt()?,
+                    )
+                } else {
+                    None
+                };
             let namespace = self
                 .namespaces
                 .last()
@@ -350,7 +393,11 @@ impl Owner {
             save(&bootstrap, &serde_json::to_value(request)?)?;
             let stdout = File::create(self.control.join(format!("{}.stdout", self.sequence)))?;
             let stderr = File::create(self.control.join(format!("{}.stderr", self.sequence)))?;
-            let child = Command::new(&self.executable)
+            let mut command = Command::new(&self.executable);
+            if let Some(channel) = endpoint_channel {
+                command.env("LOGGERD_PIPELINE_ENDPOINT_OWNER", channel);
+            }
+            let child = command
                 .arg(super::WORKER)
                 .arg(&bootstrap)
                 .env("OPENPILOT_PREFIX", &prefix)
@@ -463,6 +510,9 @@ impl Drop for Owner {
                     receiver.preserve();
                 }
                 self.namespaces.clear(); // No unlinking Drop.
+                for (_, endpoint) in self.endpoints.drain(..) {
+                    std::mem::forget(endpoint);
+                } // preserve when process cleanup is uncertain
             } else if let Err(e) = self.resources() {
                 eprintln!("logger QA resource cleanup failed: {e}");
             }

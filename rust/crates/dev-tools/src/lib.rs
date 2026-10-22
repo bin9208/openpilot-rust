@@ -99,7 +99,8 @@ pub mod managed_entry_check;
     feature = "managed-entry-native",
     feature = "stats-daemon-native",
     feature = "registration-tools-native",
-    feature = "uploader-logging-native"
+    feature = "uploader-logging-native",
+    feature = "loggerd-check-native"
 ))]
 pub mod managed_entry_collector_source;
 #[cfg(feature = "managed-entry-native")]
@@ -124,7 +125,8 @@ pub mod publish;
     feature = "managed-entry-native",
     feature = "version-tools-native",
     feature = "tombstone-live-native",
-    feature = "stats-daemon-native"
+    feature = "stats-daemon-native",
+    feature = "loggerd-check-native"
 ))]
 pub(crate) mod qa_endpoint;
 pub mod qa_process;

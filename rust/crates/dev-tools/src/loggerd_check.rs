@@ -13,10 +13,12 @@ use std::{
     path::{Path, PathBuf},
     time::Duration,
 };
+pub mod controllers;
 mod edges;
 mod fixtures;
 mod hevc;
 mod input_completion;
+pub mod io;
 mod owned;
 mod peer;
 mod process;
@@ -62,7 +64,17 @@ struct Request {
     runner: Vec<String>,
 }
 fn worker(request: &Request) -> Result<Value> {
+    if [
+        "diagnostic-throughput",
+        "diagnostic-suppression",
+        "pipeline",
+    ]
+    .contains(&request.kind.as_str())
+    {
+        return controllers::worker(request);
+    }
     match request.kind.as_str() {
+        "loggerd-io" => return io::worker(request),
         "fixture" => {
             let packets = fixtures::capture(&request.binary, &request.output, &request.name)?;
             return Ok(json!({"packets":packets.len()}));
