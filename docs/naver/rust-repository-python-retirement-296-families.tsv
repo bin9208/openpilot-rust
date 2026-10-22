@@ -2192,8 +2192,8 @@ F03-runtime-model-media-comparators	rust/tools/check_cweb_policy.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_deleter_daemon.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_deleter_reference.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_dmonitoring_daemon.py	pending
-F03-runtime-model-media-comparators	rust/tools/check_hardwared.py	pending
-F03-runtime-model-media-comparators	rust/tools/check_hardwared_daemon.py	pending
+F03-runtime-model-media-comparators	rust/tools/check_hardwared.py	replaced-local
+F03-runtime-model-media-comparators	rust/tools/check_hardwared_daemon.py	replaced-local
 F03-runtime-model-media-comparators	rust/tools/check_input_pipeline.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_interrupted_send.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_jetlink_raw.py	pending
@@ -2429,7 +2429,7 @@ F03-runtime-model-media-comparators	rust/tools/device_probe.py	pending
 F03-runtime-model-media-comparators	rust/tools/dmonitoring_daemon_reference.py	pending
 F03-runtime-model-media-comparators	rust/tools/extract_runtime_sdk.py	pending
 F03-runtime-model-media-comparators	rust/tools/hardware_control_source.py	pending
-F03-runtime-model-media-comparators	rust/tools/hardwared_source.py	pending
+F03-runtime-model-media-comparators	rust/tools/hardwared_source.py	replaced-local
 F03-runtime-model-media-comparators	rust/tools/interrupted_send_reference.py	pending
 F03-runtime-model-media-comparators	rust/tools/joystick_input_runtime_source.py	pending
 F03-runtime-model-media-comparators	rust/tools/joystickd_source.py	pending

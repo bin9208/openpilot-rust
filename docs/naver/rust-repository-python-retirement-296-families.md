@@ -121,6 +121,15 @@ three partial baseline entries.
    case; general keyfile priority/value/wire contracts remain exact. Original
    HardwareInfo runtime Python and Params/Cython consumers remain separate work.
 
+10. Hardwared3development tools are deletedfc0f017bd and accepted by complete
+    pinned platform39717847363 with policy39716711789. Both absent roots retain
+    12cases/891inputs/890observations and live IPC; all retained manager/modem/
+    #398original-reference/native cleanup checks pass. Parent independently
+    verifies full4165CRCs, source pins, held receipts and full CLI output pairs.
+    Original hardwared runtime Python/shared binding dependencies remain pending.
+    One previously missed embedded modem reference is explicitly recorded as
+    closed from independent original capture; existing37pending sites remain.
+
 ## Evidence reuse and delivery
 
 Key reuse to relevant source/fixture/ABI hashes, compiler/provider/target and

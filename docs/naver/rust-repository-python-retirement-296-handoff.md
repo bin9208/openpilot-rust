@@ -22,8 +22,10 @@ SHA/CRC audits; Git retains prior handoffs.
 
 ## Accepted inventory and global gates
 
-**262replaced-local /3partial /3315pending of3580 baseline entries.** Additional
+**265replaced-local /3partial /3312pending of3580 baseline entries.** Additional
 helpers/notebooks are separate;37observed embedded execution sites remain pending.
+One previously missed modem reference site is now explicitly recorded as closed;
+it increases recorded closed edges24→25 and does not reduce those37pending sites.
 The [functional closure ledger](rust-repository-python-retirement-296-families.md)
 and exact pending routing TSV retain ownership/dependencies. No source count is
 an all-module clearance or complete runtime/device acceptance.
@@ -272,3 +274,19 @@ numerical fix. USBtwo-root39713225978/faeef runs sixcases/root; finalproof pendi
   original-0.0/native+0.0. Both input-image hashes match frozen manifests. CPU is
   EPYC7763 with the recorded LLVM18 provider. This is distinct from the2212B
   driver/#476 observation; common causality is unproved. Preserve exact bytes.
+
+## Hardwared3 accepted after pinned maintained postdelete proof
+
+39717847363/job119624142986 atfc0f017bd96419c81af878ef211ed15152fc2eda,
+workflowc6929deae721b30e7eea0478dea78fc94b31685e, passes the complete platform job
+with global Rust/Cargo1.94.0. Both actual/private roots require3absent and retain
+12cases/891inputs/890observations plus live IPC,12CLI admissions, configured
+runner and6reappearance controls. Parent independently checks all4165CRCs in
+artifact12399722817/1280882B/SHA41fcea8bc33b6cc454b3926228ece51989c0b5baaf647c5cbf7ada03055020d4,
+16Git source pins, byte-identical held-before/after and all4full CLI result pairs,
+plus exact engaged/offroad kmsg bytes. Independent worker corroborates5ELF seals
+and64trace files/35successful execs/Python0. Original manager/modem14scenarios,
+#398old failing EOF and current15passing helpers remain intact. Reuse successful
+unchanged full533guard policy39716711789; accept precisely3baseline tools.
+Modem embedded reference was absent from the earlier execution-edge inventory;
+add one explicitly closed row rather than incorrectly decrementing37pending.

@@ -6489,3 +6489,26 @@ Environment-isolated hardware-watch39716179228 allocates no EPYC9V45: all4
 samples explicitly skip without debugger/numerical execution. Retry39718507661
 uses8natural samples/maxparallel4 with unchanged helper/provider/ISA/output guards.
 No wrong-host observation, CPU target substitution or success-from-skip is allowed.
+
+
+### Hardwared three-source actual retirement accepted
+
+Pinned full platform39717847363/job119624142986 atfc0f017bd96419c81af878ef211ed15152fc2eda,
+workflowc6929deae721b30e7eea0478dea78fc94b31685e, succeeds with recorded global
+rustc/cargo1.94.0. Parent independently recomputes ZIP SHA and all4165member CRCs
+for artifact12399722817/1280882B/SHA41fcea8bc33b6cc454b3926228ece51989c0b5baaf647c5cbf7ada03055020d4.
+All16unique retained source pins match Gitfc0, held-before/after are byte-identical,
+and actual/private trace+daemon CLI stdout exactly matches all4full reports.
+Both exact kmsg phase markers are retained. Both roots require all3tools absent,
+replay12cases/891inputs/890observations and live IPC.12CLI admissions, configured
+runner and6reappearance controls pass. Independent review checks5ELF seals and
+64trace files containing35successful execs/Python0. Full manager/modem14scenario
+checks, old #398EOF failure and current15/15helpers remain passing. Unchanged
+533guard/fullrouting policy39716711789 is reused. Accept3baseline tools:
+265replaced-local/3partial/3312pending of3580. This is no device acceptance.
+
+The removed helper_lifetime.rs Python-c reference was not present in the earlier
+execution-edge TSV. Its3independent original-only captures39715283281 and pinned
+maintained platform proof now justify one newly recorded closed edge. Correct
+accounting is25recorded replaced edges and37pending (previous24/37); do not claim
+37→36 or exhaustive detection. No hidden source relocation executes Python.
