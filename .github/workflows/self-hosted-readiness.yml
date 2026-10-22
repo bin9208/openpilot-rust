@@ -15,7 +15,9 @@ jobs:
           export PATH="$HOME/.cargo/bin:$PATH"
           echo "HOME=$HOME WORKSPACE=$GITHUB_WORKSPACE TEMP=$RUNNER_TEMP TOOL_CACHE=$RUNNER_TOOL_CACHE"
           df -h / "$RUNNER_TEMP"
-          sudo -n du -x -h --max-depth=3 /home /tmp /var/cache /opt 2>/dev/null | sort -h | tail -75
+          sudo -n du -x -h --max-depth=4 /home/actions/actions-runner/_work 2>/dev/null | sort -h | tail -45
+          git -C "$GITHUB_WORKSPACE" status --short --untracked-files=normal
+          git -C "$GITHUB_WORKSPACE" status --short --ignored | tail -30
           for tool in git curl tar xz unzip zstd python3 rustup cargo gcc g++ make pkg-config; do command -v "$tool" || true; done
           rustup toolchain list
           sudo -n true
