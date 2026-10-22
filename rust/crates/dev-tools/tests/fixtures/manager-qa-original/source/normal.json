@@ -1,0 +1,1300 @@
+{
+  "status": "ok",
+  "trace": [
+    [
+      "bootlog"
+    ],
+    [
+      "metadata"
+    ],
+    [
+      "checkout"
+    ],
+    [
+      "clear",
+      4
+    ],
+    [
+      "clear",
+      8
+    ],
+    [
+      "clear",
+      16
+    ],
+    [
+      "clear",
+      128
+    ],
+    [
+      "clear",
+      64
+    ],
+    [
+      "serial"
+    ],
+    [
+      "register"
+    ],
+    [
+      "logging"
+    ],
+    [
+      "prepare"
+    ],
+    [
+      "cars",
+      "hyundai"
+    ],
+    [
+      "cars",
+      "gm"
+    ],
+    [
+      "exception",
+      "failed to write SupportedCars_gm from opendbc.car.gm.values"
+    ],
+    [
+      "cars",
+      "toyota"
+    ],
+    [
+      "cars",
+      "mazda"
+    ],
+    [
+      "cars",
+      "ford"
+    ],
+    [
+      "cars",
+      "volkswagen"
+    ],
+    [
+      "cars",
+      "tesla"
+    ],
+    [
+      "unlock"
+    ],
+    [
+      "put",
+      "RecordAudio",
+      "0"
+    ],
+    [
+      "put",
+      "IsOnroad",
+      "0"
+    ],
+    [
+      "put",
+      "IsOffroad",
+      "1"
+    ],
+    [
+      "ensure",
+      false,
+      false,
+      [
+        "pandad",
+        "ui",
+        "custom",
+        "micd",
+        "soundd",
+        "loggerd"
+      ]
+    ],
+    [
+      "poll",
+      1000
+    ],
+    [
+      "clear",
+      8
+    ],
+    [
+      "clear",
+      128
+    ],
+    [
+      "put",
+      "IsOnroad",
+      "1"
+    ],
+    [
+      "put",
+      "IsOffroad",
+      "0"
+    ],
+    [
+      "ensure",
+      true,
+      false,
+      [
+        "pandad",
+        "ui",
+        "custom",
+        "micd",
+        "soundd",
+        "loggerd"
+      ]
+    ],
+    [
+      "publish",
+      false
+    ],
+    [
+      "watchdog"
+    ],
+    [
+      "poll",
+      1000
+    ],
+    [
+      "ensure",
+      true,
+      false,
+      [
+        "pandad",
+        "ui",
+        "custom",
+        "micd",
+        "soundd",
+        "loggerd"
+      ]
+    ],
+    [
+      "publish",
+      false
+    ],
+    [
+      "watchdog"
+    ],
+    [
+      "poll",
+      1000
+    ],
+    [
+      "clear",
+      16
+    ],
+    [
+      "clear",
+      128
+    ],
+    [
+      "put",
+      "IsOnroad",
+      "0"
+    ],
+    [
+      "put",
+      "IsOffroad",
+      "1"
+    ],
+    [
+      "ensure",
+      false,
+      false,
+      [
+        "pandad",
+        "ui",
+        "custom",
+        "micd",
+        "soundd",
+        "loggerd"
+      ]
+    ],
+    [
+      "publish",
+      false
+    ],
+    [
+      "watchdog"
+    ],
+    [
+      "put",
+      "LastManagerExitReason",
+      "DoUninstall 2026-10-01 12:00:00"
+    ],
+    [
+      "warning",
+      "Shutting down manager - DoUninstall set"
+    ],
+    [
+      "put",
+      "LastManagerExitReason",
+      "DoShutdown 2026-10-01 12:00:00"
+    ],
+    [
+      "warning",
+      "Shutting down manager - DoShutdown set"
+    ],
+    [
+      "put",
+      "LastManagerExitReason",
+      "DoReboot 2026-10-01 12:00:00"
+    ],
+    [
+      "warning",
+      "Shutting down manager - DoReboot set"
+    ],
+    [
+      "stop",
+      false
+    ],
+    [
+      "stop",
+      true
+    ],
+    [
+      "exit",
+      "uninstall"
+    ]
+  ],
+  "params": {
+    "Version": [
+      102,
+      105,
+      120,
+      116,
+      117,
+      114,
+      101
+    ],
+    "DisableDM": [
+      48
+    ],
+    "CruiseMaxVals4": [
+      49,
+      49,
+      48
+    ],
+    "ClusterHudOrientation": [
+      48
+    ],
+    "HardwareC3xLite": [
+      49
+    ],
+    "RecordRoadCam": [
+      48
+    ],
+    "MyDrivingModeAuto": [
+      48
+    ],
+    "AutoRoadSpeedAdjust": [
+      53,
+      48
+    ],
+    "IsReleaseBranch": [
+      49
+    ],
+    "CwebPushRecoveryBoot": [
+      48
+    ],
+    "LateralTorqueKd": [
+      48
+    ],
+    "SoftwareMenu": [
+      49
+    ],
+    "ShowRadarInfo": [
+      49
+    ],
+    "TFollowDecelBoost": [
+      48
+    ],
+    "JetlinkMode": [
+      48
+    ],
+    "VEgoStopping": [
+      53,
+      48
+    ],
+    "OnnxLaneThreshold": [
+      50,
+      53
+    ],
+    "EnableRadarTracks": [
+      48
+    ],
+    "GitRemote": [
+      104,
+      116,
+      116,
+      112,
+      115,
+      58,
+      47,
+      47,
+      103,
+      105,
+      116,
+      104,
+      117,
+      98,
+      46,
+      99,
+      111,
+      109,
+      47,
+      99,
+      111,
+      109,
+      109,
+      97,
+      97,
+      105,
+      47,
+      111,
+      112,
+      101,
+      110,
+      112,
+      105,
+      108,
+      111,
+      116,
+      46,
+      103,
+      105,
+      116
+    ],
+    "ActivateCruiseAfterBrake": [
+      48
+    ],
+    "MaxTimeOffroadMin": [
+      54,
+      48
+    ],
+    "RecordAudio": [
+      48
+    ],
+    "OnnxBsdThreshold": [
+      52,
+      53
+    ],
+    "ShowPlotMode": [
+      48
+    ],
+    "StoppingAccel": [
+      45,
+      53,
+      48
+    ],
+    "VehicleSpeedCameraControlMode": [
+      49
+    ],
+    "MyDrivingMode": [
+      51
+    ],
+    "LaneChangeDelay": [
+      48
+    ],
+    "CarrotYouTubeTimestamp": [
+      48
+    ],
+    "RecordAudioFeedback": [
+      48
+    ],
+    "TFollowGap1": [
+      49,
+      49,
+      48
+    ],
+    "ClusterHudScreenMode": [
+      48
+    ],
+    "LastUpdateUptimeOnroad": [
+      48,
+      46,
+      48
+    ],
+    "IsMetric": [
+      49
+    ],
+    "CruiseEcoControl": [
+      50
+    ],
+    "CustomSteerMax": [
+      48
+    ],
+    "TimezoneName": [],
+    "LateralTorqueKpV": [
+      49,
+      48,
+      48
+    ],
+    "DisengageOnAccelerator": [
+      48
+    ],
+    "CruiseMaxVals6": [
+      56,
+      48
+    ],
+    "ClusterHudMirror": [
+      48
+    ],
+    "GsmMetered": [
+      49
+    ],
+    "LeadAccelResponseTF4": [
+      45,
+      49
+    ],
+    "SteerActuatorDelay": [
+      48
+    ],
+    "LaneChangeNeedTorque": [
+      48
+    ],
+    "LatSmoothSec": [
+      49,
+      51
+    ],
+    "CruiseSpeedUnitBasic": [
+      49
+    ],
+    "GitCommitDate": [
+      100,
+      97,
+      116,
+      101
+    ],
+    "OpenpilotEnabledToggle": [
+      49
+    ],
+    "LongitudinalPersonalityMax": [
+      51
+    ],
+    "ClusterHudPanelLayout": [
+      48
+    ],
+    "IsOffroad": [
+      49
+    ],
+    "CruiseSpeedUnit": [
+      49,
+      48
+    ],
+    "DynamicTFollowLC": [
+      49,
+      48,
+      48
+    ],
+    "ClusterHudCameraViewMode": [
+      48
+    ],
+    "TFollowGap2": [
+      49,
+      50,
+      48
+    ],
+    "LatMpcSteeringRateCost": [
+      55
+    ],
+    "LatSuspendAngleDeg": [
+      51,
+      48,
+      48
+    ],
+    "HDPuse": [
+      48
+    ],
+    "RecordFrontLock": [
+      49
+    ],
+    "ShowPathModeLane": [
+      49,
+      52
+    ],
+    "DisableMinSteerSpeed": [
+      48
+    ],
+    "AutoGasSyncSpeed": [
+      49
+    ],
+    "CruiseOnDist": [
+      52,
+      48,
+      48
+    ],
+    "CruiseSpeed2": [
+      53,
+      48
+    ],
+    "DoShutdown": [
+      49
+    ],
+    "NNFFLite": [
+      48
+    ],
+    "AutoNaviRearCameraHoldDistance": [
+      49,
+      48,
+      48
+    ],
+    "AutoNaviCountDownMode": [
+      50
+    ],
+    "ClusterHudRadarSourceColor": [
+      48
+    ],
+    "LateralTorqueFriction": [
+      49,
+      48,
+      48
+    ],
+    "AutoTurnMapChange": [
+      48
+    ],
+    "DongleId": [
+      102,
+      105,
+      120,
+      116,
+      117,
+      114,
+      101,
+      45,
+      105,
+      100
+    ],
+    "ShowPathMode": [
+      57
+    ],
+    "LongTuningKiV": [
+      48
+    ],
+    "SupportedCars_vw": [
+      65,
+      32,
+      99,
+      97,
+      114,
+      10,
+      90,
+      32,
+      99,
+      97,
+      114,
+      10
+    ],
+    "AutoCruiseControl": [
+      48
+    ],
+    "ClusterHudBrightness": [
+      48
+    ],
+    "TurnSpeedControlMode": [
+      49
+    ],
+    "CanfdDebug": [
+      48
+    ],
+    "CarrotYouTubeQuality": [
+      48
+    ],
+    "CustomSteerDeltaDown": [
+      48
+    ],
+    "AutoNaviSpeedCtrlMode": [
+      50
+    ],
+    "SoundVolumeAdjust": [
+      49,
+      48,
+      48
+    ],
+    "LanguageSetting": [
+      101,
+      110
+    ],
+    "ApplyModelSpeed": [
+      48
+    ],
+    "TrafficStopDistanceAdjust": [
+      45,
+      49,
+      53,
+      48
+    ],
+    "PathOffset": [
+      48
+    ],
+    "LatMpcPathCost": [
+      50,
+      48,
+      48
+    ],
+    "CanfdHDA2": [
+      48
+    ],
+    "CarrotCruiseAtcDecel": [
+      45,
+      49
+    ],
+    "LongTuningKf": [
+      49,
+      48,
+      48
+    ],
+    "AutoSpeedUptoRoadSpeedLimit": [
+      48
+    ],
+    "PaddleMode": [
+      48
+    ],
+    "EVTable": [
+      48
+    ],
+    "ClusterHudDebug": [
+      48
+    ],
+    "CruiseMaxVals3": [
+      49,
+      51,
+      48
+    ],
+    "UptimeOffroad": [
+      48,
+      46,
+      48
+    ],
+    "SupportedCars_toyota": [
+      65,
+      32,
+      99,
+      97,
+      114,
+      10,
+      90,
+      32,
+      99,
+      97,
+      114,
+      10
+    ],
+    "StopDistanceCarrot": [
+      53,
+      53,
+      48
+    ],
+    "CustomSteerDeltaUpLC": [
+      48
+    ],
+    "ClusterHudRadarInfo": [
+      52
+    ],
+    "LateralTorqueKf": [
+      49,
+      48,
+      48
+    ],
+    "OnnxBsdSmoothingMs": [
+      50,
+      48,
+      48
+    ],
+    "CustomSteerDeltaDownLC": [
+      48
+    ],
+    "CruiseButtonMode": [
+      48
+    ],
+    "SpeedTFFactor": [
+      49,
+      48
+    ],
+    "LeadAccelResponseTF2": [
+      45,
+      49
+    ],
+    "LfaButtonMode": [
+      48
+    ],
+    "ClusterNaviMapFps": [
+      49
+    ],
+    "LaneChangeBsd": [
+      48
+    ],
+    "AdjustLaneOffset": [
+      48
+    ],
+    "VehicleNaviSchoolZoneControl": [
+      48
+    ],
+    "LastUpdateRouteCount": [
+      48
+    ],
+    "ClusterHudPriority": [
+      49,
+      48
+    ],
+    "OnnxLaneIntervalMs": [
+      52,
+      48,
+      48
+    ],
+    "CruiseMaxVals0": [
+      49,
+      54,
+      48
+    ],
+    "LongPitch": [
+      48
+    ],
+    "LatMpcAccelCost": [
+      49,
+      50,
+      48
+    ],
+    "SupportedCars_ford": [
+      65,
+      32,
+      99,
+      97,
+      114,
+      10,
+      90,
+      32,
+      99,
+      97,
+      114,
+      10
+    ],
+    "CruiseMaxVals5": [
+      57,
+      53
+    ],
+    "AutoNaviSpeedCtrlEnd": [
+      55
+    ],
+    "TFollowGap3": [
+      49,
+      52,
+      48
+    ],
+    "MuteSeatbelt": [
+      48
+    ],
+    "SteerRatioRate": [
+      49,
+      48,
+      48
+    ],
+    "CruiseSpeed4": [
+      49,
+      49,
+      48
+    ],
+    "AutoCurveSpeedFactor": [
+      49,
+      50,
+      48
+    ],
+    "ClusterHudEncoder": [
+      48
+    ],
+    "LongTuningKpV": [
+      49,
+      48,
+      48
+    ],
+    "HasAcceptedTerms": [
+      48
+    ],
+    "HyundaiCameraSCC": [
+      48
+    ],
+    "ShowPathColorLane": [
+      49,
+      51
+    ],
+    "CruiseSpeed5": [
+      49,
+      51,
+      48
+    ],
+    "AutoTurnControl": [
+      48
+    ],
+    "ShareData": [
+      48
+    ],
+    "LatMpcJerkCost": [
+      52
+    ],
+    "UseLaneLineSpeed": [
+      48
+    ],
+    "AutoGasTokSpeed": [
+      48
+    ],
+    "CruiseButtonLongDelay": [
+      52,
+      48
+    ],
+    "ClusterHudTheme": [
+      48
+    ],
+    "CustomSR": [
+      48
+    ],
+    "CruiseSpeed1": [
+      51,
+      48
+    ],
+    "ShowPathColorCruiseOff": [
+      49,
+      57
+    ],
+    "IsTestedBranch": [
+      49
+    ],
+    "TFollowGap4": [
+      49,
+      54,
+      48
+    ],
+    "HotspotOnBoot": [
+      48
+    ],
+    "ShowTpms": [
+      49
+    ],
+    "CruiseButtonTest1": [
+      56
+    ],
+    "UseLaneLineCurveSpeed": [
+      48
+    ],
+    "OnnxBsdIntervalMs": [
+      50,
+      53,
+      48
+    ],
+    "ShowModelView": [
+      48
+    ],
+    "DoUninstall": [
+      49
+    ],
+    "IsLdwsCar": [
+      48
+    ],
+    "RouteCount": [
+      48
+    ],
+    "DoReboot": [
+      49
+    ],
+    "UptimeOnroad": [
+      48,
+      46,
+      48
+    ],
+    "AlwaysLateral": [
+      49
+    ],
+    "LongActuatorDelay": [
+      50,
+      48
+    ],
+    "RadarTrackFlip": [
+      48
+    ],
+    "AutoNaviSpeedDecelRate": [
+      49,
+      50,
+      48
+    ],
+    "UseWideCamera": [
+      48
+    ],
+    "AutoRoadSpeedLimitOffset": [
+      45,
+      49
+    ],
+    "CruiseGapLevels": [
+      52
+    ],
+    "AutoTurnControlTurnEnd": [
+      54
+    ],
+    "GitCommit": [
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97,
+      97
+    ],
+    "SupportedCars_mazda": [
+      65,
+      32,
+      99,
+      97,
+      114,
+      10,
+      90,
+      32,
+      99,
+      97,
+      114,
+      10
+    ],
+    "CruiseButtonTest2": [
+      51,
+      48
+    ],
+    "LeadAccelResponseTF1": [
+      45,
+      49
+    ],
+    "LeadAccelResponse": [
+      48
+    ],
+    "TrafficLightDetectMode": [
+      50
+    ],
+    "LeadAccelResponseTF3": [
+      45,
+      49
+    ],
+    "CruiseSpeed3": [
+      56,
+      48
+    ],
+    "AutoNaviSpeedBumpSpeed": [
+      51,
+      53
+    ],
+    "VehicleNaviCanControl": [
+      48
+    ],
+    "MapTurnSpeedFactor": [
+      57,
+      48
+    ],
+    "ShowPathColor": [
+      49,
+      51
+    ],
+    "ClusterNaviMapType": [
+      48
+    ],
+    "AutoGasCancelSpeed": [
+      51,
+      48
+    ],
+    "EnableCornerRadar": [
+      48
+    ],
+    "LatMpcInputOffset": [
+      52
+    ],
+    "CruiseCoastingPercent": [
+      48
+    ],
+    "TimezoneSource": [],
+    "ShowDeviceState": [
+      49
+    ],
+    "IsOnroad": [
+      48
+    ],
+    "AutoTurnControlSpeedTurn": [
+      50,
+      48
+    ],
+    "CruiseMaxVals2": [
+      49,
+      54,
+      48
+    ],
+    "AutoEngage": [
+      48
+    ],
+    "SoundVolumeAdjustEngage": [
+      49,
+      48
+    ],
+    "CameraYawTrimDeg": [
+      48
+    ],
+    "ShowCustomBrightness": [
+      49,
+      48,
+      48
+    ],
+    "ShowLaneInfo": [
+      49
+    ],
+    "ShowDateTime": [
+      49
+    ],
+    "GitBranch": [
+      114,
+      101,
+      108,
+      101,
+      97,
+      115,
+      101,
+      45,
+      116,
+      105,
+      122,
+      105
+    ],
+    "CruiseMaxVals1": [
+      50,
+      48,
+      48
+    ],
+    "ShowDebugUI": [
+      48
+    ],
+    "CarrotTireTrajectory": [
+      48
+    ],
+    "AutoCurveSpeedLowerLimit": [
+      51,
+      48
+    ],
+    "LatMpcMotionCost": [
+      55
+    ],
+    "CruiseButtonTest3": [
+      49
+    ],
+    "SupportedCars": [
+      65,
+      32,
+      99,
+      97,
+      114,
+      10,
+      90,
+      32,
+      99,
+      97,
+      114,
+      10
+    ],
+    "ClusterHud": [
+      48
+    ],
+    "AChangeCostStarting": [
+      49,
+      48
+    ],
+    "AutoNaviSpeedSafetyFactor": [
+      49,
+      48,
+      53
+    ],
+    "SoftHoldOnCancel": [
+      48
+    ],
+    "MaxAngleFrames": [
+      56,
+      57
+    ],
+    "SoundLanguageSetting": [
+      97,
+      117,
+      116,
+      111
+    ],
+    "LateralTorqueAccelFactor": [
+      50,
+      53,
+      48,
+      48
+    ],
+    "CancelButtonMode": [
+      48
+    ],
+    "CustomSteerDeltaUp": [
+      48
+    ],
+    "LongitudinalPersonality": [
+      49
+    ],
+    "NNFF": [
+      48
+    ],
+    "ClusterHudRadarDisplay": [
+      48
+    ],
+    "ClusterNaviMapTheme": [
+      49
+    ],
+    "CarSelected3": [
+      77,
+      79,
+      67,
+      75
+    ],
+    "MuteDoor": [
+      48
+    ],
+    "HapticFeedbackWhenSpeedCamera": [
+      48
+    ],
+    "AutoNaviSpeedBumpTime": [
+      49
+    ],
+    "LateralTorqueKiV": [
+      49,
+      48
+    ],
+    "SpeedFromPCM": [
+      50
+    ],
+    "CarrotYouTubeLive": [
+      48
+    ],
+    "VehicleSpeedCameraDistanceTime": [
+      54,
+      48
+    ],
+    "LaneLineCheck": [
+      48
+    ],
+    "RecordFront": [
+      49
+    ],
+    "LateralTorqueCustom": [
+      48
+    ],
+    "HardwareSerial": [
+      102,
+      105,
+      120,
+      116,
+      117,
+      114,
+      101,
+      45,
+      115,
+      101,
+      114,
+      105,
+      97,
+      108
+    ],
+    "SupportedCars_tesla": [
+      65,
+      32,
+      99,
+      97,
+      114,
+      10,
+      90,
+      32,
+      99,
+      97,
+      114,
+      10
+    ],
+    "AutoNaviSpeedBumpEndDistance": [
+      50,
+      48,
+      48
+    ],
+    "RadarLatFactor": [
+      48
+    ],
+    "ShowCameraWithCluster": [
+      48
+    ],
+    "CarrotCruiseDecel": [
+      45,
+      49
+    ],
+    "LastManagerExitReason": [
+      68,
+      111,
+      82,
+      101,
+      98,
+      111,
+      111,
+      116,
+      32,
+      50,
+      48,
+      50,
+      54,
+      45,
+      49,
+      48,
+      45,
+      48,
+      49,
+      32,
+      49,
+      50,
+      58,
+      48,
+      48,
+      58,
+      48,
+      48
+    ],
+    "CompletedTrainingVersion": [
+      48,
+      46,
+      50,
+      46,
+      48
+    ]
+  },
+  "environment": {
+    "DISABLE_WIDE_ROAD": "1",
+    "DONGLE_ID": "fixture-id",
+    "GIT_ORIGIN": "github.com/commaai/openpilot",
+    "GIT_BRANCH": "release-tizi",
+    "GIT_COMMIT": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "CLEAN": "1"
+  }
+}
