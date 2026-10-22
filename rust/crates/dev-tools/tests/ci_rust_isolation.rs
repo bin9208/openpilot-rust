@@ -1186,6 +1186,16 @@ fn workspace_checks_run_without_waiting_for_runtime_jobs() {
 }
 #[test]
 fn hardware_runtime_requires_source_and_native_boundaries() {
+    let data = workflow();
+    let job = &data["jobs"]["hardware-runtime"];
+    assert!(!commands(job).contains("python "));
+    assert!(!job["steps"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|step| step["uses"]
+            .as_str()
+            .is_some_and(|name| name.starts_with("actions/setup-python@"))));
     job_check(
         "hardware-runtime",
         &[
@@ -1198,14 +1208,20 @@ fn hardware_runtime_requires_source_and_native_boundaries() {
             "--child rust/target/debug/bootlog-snapshot-child --launcher rust/target/debug/openpilot-process-child",
             "--test bootlog_snapshot_check",
             "rust/target/debug/check-logger-identifier rust/target/debug/examples/logger_identifier",
-            "check_hardware_info.py",
+            "openpilot-dev-tools/hardware-info-qa-native",
+            "--features hardware-info-qa-native",
+            "--bin check-hardware-info",
+            "--test hardware_info_qa --test hardware_info_capture --test hardware_info_retirement",
+            "same_elf_checks_all_original_cases_in_actual_and_private_roots -- --ignored --exact --nocapture",
+            "export HARDWARE_INFO_REQUIRE_RETIRED=1",
+            "for name in check_hardware_info.py hardware_info_cases.py hardware_info_reference.py; do",
             "rust/target/debug/check-hardware-control-policy rust/target/debug/examples/hardware_control_trace",
             "rust/target/debug/check-amplifier-policy rust/target/debug/examples/amplifier_trace",
             "rust/target/debug/check-amplifier-linux rust/target/debug/examples/amplifier_linux",
             "rust/target/debug/check-hardware-command --evidence \"$RUNNER_TEMP/hardware-runtime\"",
             "bootlog_raw_file_probe.rs",
         ],
-        &["python rust/tools/check_", "check-hardware-command", "check-bootlog-snapshot", "--test bootlog_snapshot_check", "check-bootlog-artifacts", "--test bootlog_artifact_check"],
+        &["same_elf_checks_all_original_cases_in_actual_and_private_roots", "--bin check-hardware-info", "--test hardware_info_qa", "check-hardware-command", "check-bootlog-snapshot", "--test bootlog_snapshot_check", "check-bootlog-artifacts", "--test bootlog_artifact_check"],
         false,
     );
 }

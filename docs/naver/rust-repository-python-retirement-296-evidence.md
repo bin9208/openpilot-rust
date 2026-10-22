@@ -6233,3 +6233,33 @@ remain live. Candidate needs hosted build/unit/lint/full actual/private proof,
 maintained CI migration, deletion and actual postdelete proof before acceptance.
 Five original runtime files, original bindings and broader module closure remain
 pending. Local checks are scoped rustfmt/diff and stored-data/Git inspection only.
+
+### HardwareInfo predelete proof; maintained caller retirement candidate (2026-10-22)
+
+39709448191/sourceb0e77aa0118d73aa599b31c5e710fc0591a04dfd,
+workflow7ecb4dc1f342339a2232dab6ef240f3f572627ae passes native builds,5inline,
+6capture,4QA controls, strict Clippy/formatting and actual native outer136.85s.
+Actual checkout and private3-source-absent root each pass136/3110/70; configured
+held /usr/bin/env runner passes3cases; six actual CLI status controls pass.
+Parent audits artifact12396424014:3255282B/all3852CRCs,
+SHA2564b36a6640c419f8621fa620fc526006d6334da6979f97158a5d88d0028eefb37,
+all974fixturepins and both complete before/after receipts, per-case exits and
+unchanged checker/example hashes.27private source files copy exactly.
+
+Delete the3original tools and replace hardware-runtime's sole maintained caller
+with the same native full outer, capture/QA/CLI units and strict Clippy. Remove
+that job's now-unused Params Python binding build, setup/pip and dependency-stager
+step; native bootlog source builders retain their own native JSON11 staging.
+Existing bootlog/control/amplifier/sanitizer boundaries remain. Four additional
+capacity markers raise525→529. CI policy requires native retirement/strict checks
+and rejects explicit Python commands/setup in this lane. Acceptance/count update
+requires full maintained hardware-runtime plus postdelete outer and policies on
+the actual deletion source;259/3/3318 remains the accepted inventory meanwhile.
+
+First Hardwared39710132018/sourcee302e13c04969cddd9a4d650de27000a36ab7508
+fails compile on unsupported Result::is_err_or, one stale extra state bool, and
+three Cap'n Proto Builder moves requiring reborrow. Parent audits artifact
+12396946711:22912B/all4CRCs,
+SHA256297c97f4f47973c7c2fe96f19887d89618b2a50953c006d6d32a0318acaddf07.
+No functional proof or tool deletion is inferred. Add the source-fixture README
+needed by the private outer copy along with compile repairs before retry.

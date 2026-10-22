@@ -4548,30 +4548,25 @@ jobs:
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
-      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
       - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libzmq5 strace
       - run: rustup toolchain install 1.94.0 --profile minimal
       - run: rustup toolchain install nightly-2026-09-29 --profile minimal
-      - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 PyJWT==2.14.0 cryptography==50.0.1
       - name: Build hardware libraries and boot executables
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools -p openpilot-bootlog -p openpilot-hardware-info -p openpilot-hardware-control -p openpilot-amplifier -p openpilot-process-supervision --features openpilot-dev-tools/bootlog-artifact-native --bins --examples --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools -p openpilot-bootlog -p openpilot-hardware-info -p openpilot-hardware-control -p openpilot-amplifier -p openpilot-process-supervision --features openpilot-dev-tools/bootlog-artifact-native,openpilot-dev-tools/hardware-info-qa-native --bins --examples --locked
           cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bootlog-artifact-native --test bootlog_snapshot_check --test bootlog_artifact_check --locked
           rustup component add clippy --toolchain 1.94.0
           cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bootlog-artifact-native --lib --bin check-bootlog-artifacts --bin check-bootlog-snapshot --bin bootlog-snapshot-reference --bin bootlog-snapshot-child --bin build-bootlog-snapshot-reference --test bootlog_snapshot_check --test bootlog_artifact_check --locked -- -D warnings
-      - name: Build current native dependency stager
-        uses: ./.github/actions/native-json11
-      - name: Build original Params and boot log comparisons
+      - name: Build original native boot log comparisons
         run: |
-          python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/hardware-params-binding"
           rust/target/debug/build-bootlog-source --root "$GITHUB_WORKSPACE" "$RUNNER_TEMP/hardware-runtime/original-bootlog"
           rust/target/debug/build-bootlog-source --root "$GITHUB_WORKSPACE" "$RUNNER_TEMP/hardware-runtime/original-identifier" --identifier
           rust/target/debug/build-bootlog-snapshot-reference --output "$RUNNER_TEMP/hardware-runtime/snapshot-reference"
@@ -4587,10 +4582,28 @@ jobs:
             rust/target/debug/bootlog-snapshot-reference "$RUNNER_TEMP/hardware-runtime/snapshots" \
             --params-reference "$RUNNER_TEMP/hardware-runtime/snapshot-reference/bootlog-params-path" \
             --child rust/target/debug/bootlog-snapshot-child --launcher rust/target/debug/openpilot-process-child
-      - name: Compare hardware observations and amplifier transactions
+      - name: Verify native HardwareInfo capture, CLI and source retirement
         run: |
-          python rust/tools/check_hardware_info.py rust/target/debug/examples/hardware_info \
-            "$RUNNER_TEMP"/hardware-params-binding/params_pyx*.so "$RUNNER_TEMP/hardware-runtime/information"
+          for name in check_hardware_info.py hardware_info_cases.py hardware_info_reference.py; do
+            test ! -e "rust/tools/$name" && test ! -L "rust/tools/$name"
+          done
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features hardware-info-qa-native --lib hardware_info_ -- --nocapture
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features hardware-info-qa-native --test hardware_info_qa --test hardware_info_capture --test hardware_info_retirement -- --nocapture
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo +1.94.0 clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features hardware-info-qa-native --lib --bin check-hardware-info --test hardware_info_qa --test hardware_info_capture --test hardware_info_retirement -- -D warnings
+      - name: Replay complete original HardwareInfo observations in both source-absent roots
+        run: |
+          export HARDWARE_INFO_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/hardware_info"
+          export HARDWARE_INFO_EVIDENCE="$GITHUB_WORKSPACE/rust/crates/dev-tools/tests/fixtures/hardware-info-original"
+          export HARDWARE_INFO_OUTPUT="$RUNNER_TEMP/hardware-runtime/information"
+          export HARDWARE_INFO_REQUIRE_RETIRED=1
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 2048
+          strace -ff -s 16384 -o "$RUNNER_TEMP/hardware-runtime/hardware-info.trace" -e trace=execve,execveat,clone,fork,vfork,exit,exit_group \
+            cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features hardware-info-qa-native --test hardware_info_retirement same_elf_checks_all_original_cases_in_actual_and_private_roots -- --ignored --exact --nocapture
+      - name: Compare hardware control and amplifier transactions
+        run: |
           rust/target/debug/check-amplifier-policy rust/target/debug/examples/amplifier_trace "$RUNNER_TEMP/hardware-runtime/amplifier-policy"
           rust/target/debug/check-amplifier-linux rust/target/debug/examples/amplifier_linux \
             "$RUNNER_TEMP/amplifier-i2c-fixture.so" "$RUNNER_TEMP/hardware-runtime/amplifier-io"
@@ -4609,8 +4622,6 @@ jobs:
           name: rust-hardware-runtime-evidence
           path: |
             ${{ runner.temp }}/hardware-runtime/
-            ${{ runner.temp }}/hardware-params-binding/commands.json
-            ${{ runner.temp }}/hardware-params-binding/provenance.json
   logger-runtime:
     name: rust original route logger
     runs-on: ubuntu-24.04

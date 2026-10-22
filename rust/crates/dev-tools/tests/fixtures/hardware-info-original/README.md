@@ -1,8 +1,9 @@
 # Independent HardwareInfo observations for #296
 
 These are data from the unchanged original Python HardwareInfo QA family. They
-are not candidate Rust results. The three Python tools remain live until the
-complete native and postdeletion gates pass.
+are not candidate Rust results. The three Python tools are deleted in the current candidate after the complete
+predelete native gate passes39709448191. Acceptance still requires actual
+postdelete and maintained caller/policy validation.
 
 The positive API capture is the successful hardware-runtime job119537355450 in
 [run39691148023](https://github.com/bin9208/openpilot-rust/actions/runs/39691148023)
@@ -26,7 +27,9 @@ are byte-preserving gzip(mtime0) of the actual source records. The manifest bind
 compressed and expanded bodies,30 source dependencies, original Params provider
 provenance and original command/status receipts. Native replay must compare
 canonical Python value/type/error categories, exact command order/arguments and
-request/reply bytes. Dynamic Unix abstract peer names retain their original raw
+request/reply bytes. The sole failed-read partial-order rule for
+keyfile-read-errors admits a/b or b/a only with both exact failure diagnostics
+and the same successful c fallback last; raw logs remain unchanged. Dynamic Unix abstract peer names retain their original raw
 bytes but are validated by the original naming rule on each current invocation.
 
 The earlier positive run did not directly record inherited environment values.
