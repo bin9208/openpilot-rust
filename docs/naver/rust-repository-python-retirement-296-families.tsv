@@ -2192,8 +2192,6 @@ F03-runtime-model-media-comparators	rust/tools/check_cweb_policy.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_deleter_daemon.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_deleter_reference.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_dmonitoring_daemon.py	pending
-F03-runtime-model-media-comparators	rust/tools/check_hardwared.py	replaced-local
-F03-runtime-model-media-comparators	rust/tools/check_hardwared_daemon.py	replaced-local
 F03-runtime-model-media-comparators	rust/tools/check_input_pipeline.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_interrupted_send.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_jetlink_raw.py	pending
@@ -2222,8 +2220,6 @@ F03-runtime-model-media-comparators	rust/tools/check_model_inputs.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_model_outputs.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_model_reference.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_model_startup.py	pending
-F03-runtime-model-media-comparators	rust/tools/check_modem.py	pending
-F03-runtime-model-media-comparators	rust/tools/check_modem_process_boundary.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_msgq_ion.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_native_logging.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_navd_destination.py	pending
@@ -2429,7 +2425,6 @@ F03-runtime-model-media-comparators	rust/tools/device_probe.py	pending
 F03-runtime-model-media-comparators	rust/tools/dmonitoring_daemon_reference.py	pending
 F03-runtime-model-media-comparators	rust/tools/extract_runtime_sdk.py	pending
 F03-runtime-model-media-comparators	rust/tools/hardware_control_source.py	pending
-F03-runtime-model-media-comparators	rust/tools/hardwared_source.py	replaced-local
 F03-runtime-model-media-comparators	rust/tools/interrupted_send_reference.py	pending
 F03-runtime-model-media-comparators	rust/tools/joystick_input_runtime_source.py	pending
 F03-runtime-model-media-comparators	rust/tools/joystickd_source.py	pending
@@ -2452,9 +2447,6 @@ F03-runtime-model-media-comparators	rust/tools/manager_reference.py	pending
 F03-runtime-model-media-comparators	rust/tools/model_output_fixtures.py	pending
 F03-runtime-model-media-comparators	rust/tools/model_output_reference.py	pending
 F03-runtime-model-media-comparators	rust/tools/model_startup_reference.py	pending
-F03-runtime-model-media-comparators	rust/tools/modem_fixture.py	pending
-F03-runtime-model-media-comparators	rust/tools/modem_fixture_command.py	pending
-F03-runtime-model-media-comparators	rust/tools/modem_source.py	pending
 F03-runtime-model-media-comparators	rust/tools/native_logging_transport.py	pending
 F03-runtime-model-media-comparators	rust/tools/navd_cases.py	pending
 F03-runtime-model-media-comparators	rust/tools/navd_destination_source.py	pending

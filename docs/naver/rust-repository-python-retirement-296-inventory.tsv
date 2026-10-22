@@ -1993,8 +1993,8 @@ rust/tools/check_model_outputs.py	99e4b6d59d1101b4877a24998ee80d304e628666	pendi
 rust/tools/check_model_reference.py	b4022153df39107308ecfbb91a6ca82a43a96bd0	pending	-
 rust/tools/check_model_startup.py	357b5bb00757fb859be33908b53c949d6a8fd2db	pending	-
 rust/tools/check_model_timing.py	2b4adb7f2f47fd9e3b9666fc238851976e4ddb07	replaced-local	rust/crates/dev-tools/src/diagnostic_check.rs
-rust/tools/check_modem.py	acf3550216f59b5e31724e1aa715aa497fc0ee06	pending	-
-rust/tools/check_modem_process_boundary.py	a3b7c5d0b886c5d1e2fa996ed0894c9dbbd10ff2	pending	-
+rust/tools/check_modem.py	acf3550216f59b5e31724e1aa715aa497fc0ee06	replaced-local	rust/crates/dev-tools/src/modem_qa.rs; modem_capture.rs; tests/modem_retirement.rs; postdelete39727029012/policy39727105631 (runtime modem.py remains pending)
+rust/tools/check_modem_process_boundary.py	a3b7c5d0b886c5d1e2fa996ed0894c9dbbd10ff2	replaced-local	rust/crates/dev-tools/src/modem_qa.rs; modem_capture.rs; tests/modem_retirement.rs; postdelete39727029012/policy39727105631 (runtime modem.py remains pending)
 rust/tools/check_monitoring_reference.py	d10d0decd660d1abb5e7df75354cf3f25b8bd239	pending	-
 rust/tools/check_msgq_ion.py	7008f9446509ef08e027560d547bf88d58256923	pending	-
 rust/tools/check_msgq_sanitizers.py	50efd27009fbf18125f9ce6c820a5f9f381ee607	replaced-local	rust/crates/dev-tools/src/msgq_sanitizers_check.rs
@@ -2423,9 +2423,9 @@ rust/tools/model_logging_reference.py	692cc4d4843281a4888c9c3a6bb0dab7577e0fbf	p
 rust/tools/model_output_fixtures.py	a710b6c9736675077ad6c097fa05127cf015f2a8	pending	-
 rust/tools/model_output_reference.py	8a1317b8597aeea8792d15762fc4828fad7f1ce9	pending	-
 rust/tools/model_startup_reference.py	0b21bf360e880d42ff8ba2ab7a0da49db5b7c1ff	pending	-
-rust/tools/modem_fixture.py	7ab07fe04a1392bcbdc9d3521d1dc4ce90d025f5	pending	-
-rust/tools/modem_fixture_command.py	a8d72644e3789dce6f179ebdabc7b6205941e2d9	pending	-
-rust/tools/modem_source.py	55457b5ed59cc279cab9796377caa9019997791a	pending	-
+rust/tools/modem_fixture.py	7ab07fe04a1392bcbdc9d3521d1dc4ce90d025f5	replaced-local	rust/crates/dev-tools/src/modem_qa.rs; modem_capture.rs; tests/modem_retirement.rs; postdelete39727029012/policy39727105631 (runtime modem.py remains pending)
+rust/tools/modem_fixture_command.py	a8d72644e3789dce6f179ebdabc7b6205941e2d9	replaced-local	rust/crates/dev-tools/src/modem_qa.rs; modem_capture.rs; tests/modem_retirement.rs; postdelete39727029012/policy39727105631 (runtime modem.py remains pending)
+rust/tools/modem_source.py	55457b5ed59cc279cab9796377caa9019997791a	replaced-local	rust/crates/dev-tools/src/modem_qa.rs; modem_capture.rs; tests/modem_retirement.rs; postdelete39727029012/policy39727105631 (runtime modem.py remains pending)
 rust/tools/monitoring_fixtures.py	7156388b9993050fdea870375604390b7f20620e	pending	-
 rust/tools/native_logging_build.py	87493de7acca1716721a4bc05b5b6fdb9b2aab1c	replaced-local	rust/crates/dev-tools/src/native_logging_build.rs;rust/crates/dev-tools/src/json11_stage.rs
 rust/tools/native_logging_transport.py	71a76f101aba183ac832debf5ae499cd2b1e25ea	pending	-

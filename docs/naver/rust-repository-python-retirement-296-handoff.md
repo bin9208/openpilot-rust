@@ -22,7 +22,7 @@ SHA/CRC audits; Git retains prior handoffs.
 
 ## Accepted inventory and global gates
 
-**265replaced-local /3partial /3312pending of3580 baseline entries.** Additional
+**270replaced-local /3partial /3307pending of3580 baseline entries.** Additional
 helpers/notebooks are separate;37observed embedded execution sites remain pending.
 One previously missed modem reference site is now explicitly recorded as closed;
 it increases recorded closed edges24→25 and does not reduce those37pending sites.
@@ -30,22 +30,25 @@ The [functional closure ledger](rust-repository-python-retirement-296-families.m
 and exact pending routing TSV retain ownership/dependencies. No source count is
 an all-module clearance or complete runtime/device acceptance.
 
-Navigation startup #457 remains open: eight phase-instrumented attempts pass,
-with RSA generation measured at2.04–7.77s under the unchanged10s barrier; the
-older failed attempt's precise phase is unproved. Historical PTRACE_LISTEN/EIO
-#474 remains unexplained.
+Navigation startup #457 remains open pending published full integration: the
+num-bigint-dig development/test opt-level3 candidate passes the complete focused
+navigation suite and eight fresh starts at39724315701. RSA generation is
+142.57–419.92ms; the unchanged10s barrier, RSA2048 and release profile remain.
+The older uninstrumented failed phase is unproved. Historical PTRACE_LISTEN/EIO
+#474 recurs in current full workspace119628631200 and remains open.
 Generic ARM/QEMU is not a sealed AGNOS/device candidate. Keep #296 open.
 
 Latest published PR checkpoint is4d599dde6ec461cc43089d6f87381631aabdee6c.
 Current full Fast PR39719156487, Fast push39719148455 and
-Integration39719156492 pass. Rust39719156536 has43successful jobs and three
-failures so far: driver-family numerics#476, original-pipeline raw prediction
-comparison#482 (full691CRC audit confirms one signed-zero bit), and navigation
-startup#457. Workspace and generic ARM remain running; UI/connectivity and
-LLVM20 now pass. These are not a complete
-workspace or AGNOS/device acceptance. #478 and the QA-only RadarCAN FD race#481
-are now closed with their focused/full evidence; #480 remains open despite its
-focused two-root USB pass. Six model-controller deletions remain unaccepted.
+Integration39719156492 pass. Rust39719156536 has four failed functional jobs: driver-family numerics#476,
+original-pipeline raw prediction comparison#482 (one signed-zero bit), navigation
+startup#457, and workspace recovery tracing#474 (PTRACE_LISTEN/EIO). Workspace
+Cargo tests and strict workspace Clippy passed before that later tracing failure;
+remaining steps were skipped. Generic ARM remains running. UI/connectivity and
+LLVM20 pass. This is not complete workspace or AGNOS/device acceptance. #478 and
+the QA-only RadarCAN FD race#481 are closed with focused/full evidence; #480
+remains open despite its focused two-root USB pass. Six model-controller
+deletions remain unaccepted.
 Prior faeef14da43d3a2c59ec71d7966e191828a748b3 was validated
 with tested synthetic merge939a190a11fc991a4eaff958d514dc2fca5c07e2 (baseb55552db).
 Rust39713242787 exposes four distinct current concerns: workspace stager policy
@@ -67,21 +70,22 @@ RUSTUP_TOOLCHAIN=1.94.0; parent full4165-member CRC/SHA/source/CLI audit is acce
 First39716711789 also
 passed the whole platform job but its diagnostic copy omitted that root env.
 
-Modem five-tool deletion is still pending, runtime1 remains pinned for the
-retained Python manager caller.39723865391 was false green:13units pass but
-the stale exact filter selected0retirement tests (#483). Corrected39724889094
-executes the real test: actual-root13cases/40rows/144ATcommands/93helpercalls,
-live5snapshots and3process boundaries pass; it fails the outer ELF report check
-because that report has no name field. Full2171CRC parent audit independently
-matches all4ELFs by path/hash/size/device/inode.93c803046 fixes the outer binding;
-c7b0c220b also preserves the original CLI's two-field14case/evidence summary,
-while keeping enhanced17check details in results.json. Current diagnostic retry
-uses exact success-line and1passed/0failed/0ignored assertions. The proposed
-maintained platform/policy edits now accompany the five-tool deletion candidate.
-39725797981 completes the real two-root predelete proof (full2479CRCs/28Gitpins,
-13cases per root/12CLI/6reappearance/4unchanged ELF receipts); the five tools are
-physically deleted, but inventory265 remains unchanged pending complete pinned
-postdelete platform and policy gates. Runtime modem.py remains live and pinned.
+Modem five-tool deletion is accepted by complete postdelete platform39727029012
+at da3483724 and policy39727105631. Full6623CRC artifact12404265956 SHA
+76da7b3b3a0fdaa614066b7f02bb4f1cee3096932631d5a212b3fff4e2dc5dad retains
+13cases per root,12CLI/6reappearance/4unchanged ELF receipts and all manager/
+#398/hardwared gates. Parent recomputes23Git pins and all original/native case
+results across both roots. Runtime modem.py remains live/pinned for its Python
+manager caller; runtime-wide retirement_acceptance remains false. #483's stale
+filter false green is repaired with exact success-line and1passed assertions.
+
+Native manager QA candidate83fb19a8c adds three CLIs, seven independent cases,
+four actual ZMQ log packets, held-file identity/content guards and positional
+compatibility. Hosted39728775823 passed compilation/strictClippy; functional
+comparison is pending. No manager Python source is deleted. Original capture
+39726612260 has full7331CRC/Git3271/source/provider3495 seals; the current native
+run expands selected scenarios to normal,normal,custom. Car-name generation
+and complete imported-source/private-root closure remain separate work.
 
 ## Accepted focused closures to reuse
 

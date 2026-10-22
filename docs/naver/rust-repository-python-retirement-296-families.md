@@ -130,6 +130,24 @@ three partial baseline entries.
     One previously missed embedded modem reference is explicitly recorded as
     closed from independent original capture; existing37pending sites remain.
 
+
+11. Modem5development tools are deletedda3483724 and accepted by complete
+    postdelete platform39727029012 plus policy39727105631. Actual root requires
+    all5absent with runtime pinned; private root requires all6absent. Both run
+    13cases/40rows/144ATcommands/93helpercalls per side, live reconnect/APN/SIM/
+    serial-loss/PPP cleanup and3process boundaries;12CLI/6reappearance controls
+    and4unchanged held ELFs pass. Full6623CRCs/23current Gitpins and cross-root
+    equality are independently verified. Runtime modem.py remains pending for
+    its live Python manager caller. Native summary's all-runtime retirement
+    flag stays false; acceptance here covers the five development tools only.
+
+12. Manager QA candidate83fb19a8c retains all Python originals. Seven full
+    original observations and4ZMQ packets seed three native CLIs with held-file
+    content/identity checks. Hosted compilation/Clippy pass39728775823; expanded
+    original/native CLI and traffic comparison is pending. Fresh original capture
+    39726612260 seals3271repo sources/257opendbc/3495external Python providers.
+    Car-name regeneration and full private-root/source absence remain pending.
+
 ## Evidence reuse and delivery
 
 Key reuse to relevant source/fixture/ABI hashes, compiler/provider/target and

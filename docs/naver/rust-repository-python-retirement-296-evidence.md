@@ -6703,3 +6703,92 @@ These are hosted observations with fresh random keys, not a paired benchmark
 or vehicle CPU claim. Release/RSA2048/error order/deadlines remain unchanged.
 Keep#457 open pending full published integration of this measured mitigation;
 the precise phase of the original uninstrumented failure remains unproved.
+
+### Modem five-tool postdelete closure accepted; runtime caller remains
+
+Complete maintained platform39727029012/job119653178027 checks source
+`da3483724ee46ff4b826c2945d731f470506693d` under workflow
+`2607897fb6fceef9775d28c482966c7e1a8e333a` and passes. Completeartifact12404265956
+is4189056B/SHA76da7b3b3a0fdaa614066b7f02bb4f1cee3096932631d5a212b3fff4e2dc5dad;
+all6623ZIP members pass CRC. Parent independently verifies23current Git
+input/source pins and all13complete original/native case bodies within/across
+both roots. Each side has40rows/144ATcommands/93helpercalls. Actual checkout
+requires5QA tools absent and runtime pinned; private root requires all6absent.
+Both retain live5snapshots/APN/SIM/reconnect/PPP cleanup and3process boundaries,
+12CLI admissions/6source reappearance controls and4identical held ELF receipts.
+Native CLI keeps original two-field passed14/evidence stdout; enhanced17checks
+stay in results.json. The observed trace has3134exec attempts/1368successes and
+zero successful Python executable launches; it is not a full-runtime claim.
+
+The full retained manager original7cases/native IPC/owned-child/boot checks,
+#398old-EOF RED/current15cleanup tests, and hardwared two-root12case/890observation
+checks pass. Same-source policy39727105631/job119653432115 under workflow
+69a32b352e442c27340f1471e3e4ccac9f5f66bf passes13disk/78isolation/6workflow tests
+and formatting, preserving177aggregate growth markers and five modem reserves.
+Exact retirement-test success-line and1passed/0failed/0ignored assertions
+prevent#483's zero-selection false green. Inventory265→270replaced-local,
+3partial/3307pending of3580. Pending routing also drops three already accepted
+hardwared rows that were stale in that secondary map. Runtime modem.py remains
+pending because the Python manager import/launcher still consumes it; overall
+retirement_acceptance=false/accepted_source_removals=0 in the native runtime
+summary remains intentional and is not changed by accepting five QA tools.
+Device boot/recording/upload acceptance remains user-owned.
+
+### Three guarded kernel92 replays identify the signed-zero instruction choice
+
+39726759336 sourceb1b9ee37ab8fa20b6dd598c9324a79e1f0f309f8, workflow
+624579781fc691821bbf39ea08ad15c587c84e95, has three valid isolated samples on
+2EPYC9V45/1EPYC9V74 and one explicit ISA skip. Complete artifacts:
+12403527463/4256797B/84CRCs/SHA8dfd4e8dd97e75cdb22861fa14f8c8931fac0daae9852a2011eb58f25a112d7b;
+12402529485/4256834B/84CRCs/SHA9f4b3d3ccd7ba5fb8ec1f5aa74e88938acc60876c573399d6b8981ae39215c9f;
+12404135207/4256848B/84CRCs/SHA411020e7fab2dad02a509953fc635bea31eec19817593af449f05eb0127cb273.
+The skipped artifact12403531992 is2541B/3CRCs/SHA
+9775052e20e73824b9ae1062074ce6d8cf9664a4af8082d7717744854a5124d1.
+All255CRCs pass; immutable eight-base inputs, aliases/alignment, FP controls,
+providers/source/ELF/code and full native graph poststates are guarded. Native
+CLI/wrapper/isolated10304B outputs all hash069099e1d4d8081ed9de155494cd18dd00cf2d8be3e12cfe04be08d2e6857f87;
+unchanged original kernel on the same prestates hashes
+9afb2defff4ff29e5bf70e54db32d0d531d5e2b44507c8de652ee2c0dfcb67fe.
+Exactly byte399/float99 differs. Input allocation16 byte9670 is half0080 (-0).
+
+Static identical IR e223a2c36c6bde7cf676bb92fd2529858a723f9ecfa91c811b2b941756a9bea0
+selects literal+0 under the runtime predicate then executes fadd nsz. Original
+retained kernel+2700 masked-restores the converted input after addition,
+preserving-0; native op_impl_92+2dd6 masks the addend then+2dda adds it, producing
++0 under unchanged round-to-nearest controls. Both choices are permitted by nsz;
+no particular historical LLVM pass/version is proved responsible. A general
+copy-arm diagnostic is prepared separately; no tolerance/index/CPU target/
+golden normalization or production compiler patch is accepted. Isolated final
+function evidence does not replace whole original pipeline acceptance#482.
+
+### Driver prehalf attempts retain failed synchronization as failed evidence
+
+39727708936/workflow8b9329bbb7b9a221445ac983152fab5a18d96872/source da3483724
+has3eligible failures and5explicit skips. Complete559CRC artifacts:
+12404150817/45732254B/SHAa6d908eb39f7783d1fa69925671ace36e1d8b0373c58eb12827e2abd7ff52463;
+12404086756/45732255B/SHA9fbd3f16641119e12ac3cbf313b5a1c4eefe2959ba9c68d25b73e5748cca4aa1;
+12403459181/45732281B/SHAe60a3db2a499797e64db84deb51c991ce6f79b220eed6094c689342735359838.
+Each captures original-only provisional F32 bitsbe07f000 at+bc4; row81 plus
+stack17640 gives17721, plus43200elements gives observed store60921. Complete
+original/native debug outputs and bases reproduce retained counterparts, and
+per-worker function code hashes remain identical. After the first hardware
+stop, the inferior continues through its native call and exits without a second
+authored SIGUSR1 stop. This repeats the prior SIGTRAP protocol failure; the
+underlying reason remains unknown. No native prehalf value or complete paired
+proof is claimed. A split design uses one authored stop in each newly owned
+inferior while retaining both complete baselines in each and all cross-inferior
+input/provider/full-output correspondence; it is diagnostic only.
+
+### Current published workspace trace regression remains open
+
+Full39719156536 workspace119628631200 passes workspace Cargo tests and strict
+Clippy, then stops at recovery tracing with PTRACE_LISTEN/EIO pid120087. Complete
+recovery artifact is not a new acceptance;
+the independently audited recovery ZIP is7927608B/695CRCs/SHA
+40be1fa23f74dabe7dd510333bd7c04e93dc79e2c1aca77e7550b996dbe05128.
+Actual tested synthetic merge is1c9e72be4b4a5f9593c804b2dc7cfc5b75ecd46d.
+The fixture shell execs interactive Bash and records stopped-by-SIGHUP before
+strace6.8-0ubuntu2 fails, matching historical#474. Lifecycle/actions/upload/final
+trace audit are not complete; later workspace steps skip. No native runtime
+cause is established. Hosted kernel/signal/tracer metadata and separate complete
+same-ELF untraced/traced lanes are being prepared; no tracing gate is waived.
