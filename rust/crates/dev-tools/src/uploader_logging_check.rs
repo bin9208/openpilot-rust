@@ -1,7 +1,7 @@
 //! Actual uploader/collector IPC checked against sealed original source observations.
 //! Both collector lanes are native processes; the reference lane uses the existing
 //! independent original-policy adapter, never the candidate daemon's formatter.
-mod ipc;
+pub(crate) mod ipc;
 use crate::{
     qa_process::{CommandSpec, NativeRunner, Runner},
     seal::Result,
@@ -68,6 +68,7 @@ struct Worker {
     collector: PathBuf,
     worker: PathBuf,
     work: PathBuf,
+    work_identity: (u64, u64),
     output: PathBuf,
     prefix: String,
     source_collector: bool,
@@ -315,17 +316,9 @@ fn fixture(root: &Path, settings: &Value) -> Result<()> {
     if settings["clear_error"] == true {
         fs::write(root.join("plain"), b"fixture")?;
     }
-    if settings["no_listing"] == true {
-        fs::set_permissions(root, fs::Permissions::from_mode(0o111))?;
-    }
     Ok(())
 }
-struct Permission(PathBuf);
-impl Drop for Permission {
-    fn drop(&mut self) {
-        let _ = fs::set_permissions(&self.0, fs::Permissions::from_mode(0o755));
-    }
-}
+use ipc::ownership::Permission;
 fn native_origin(
     root: &Path,
     records: &[Value],
@@ -448,8 +441,12 @@ fn native_origin(
 }
 fn worker(request: &Path) -> Result<Value> {
     let request: Worker = serde_json::from_slice(&bounded(request, LIMIT)?)?;
+    let permission = Permission::admitted(&request.work, request.work_identity)?;
     fixture(&request.work, &request.case.settings)?;
-    let _permission = Permission(request.work.clone());
+    if request.case.settings["no_listing"] == true {
+        permission.mode(0o111)?;
+    }
+    let _permission = permission;
     let peer_settings = Value::Object(
         request
             .case
@@ -500,6 +497,10 @@ fn worker(request: &Path) -> Result<Value> {
         Duration::from_secs(20),
     );
     command.cwd = Some(request.root.clone());
+    command.env.insert(
+        "ROUTE_UPLOAD_QA_IPC_ROOT".into(),
+        peer.ipc_root.to_string_lossy().into_owned(),
+    );
     for (key, value) in [
         ("HOME", home.as_os_str()),
         (
@@ -620,7 +621,12 @@ pub fn run(options: &Options) -> Result<Value> {
                 std::process::id(),
                 u8::from(source_collector)
             );
+            let namespace = ipc::ownership::Namespace::new(&prefix)?;
             let work = temp.path().join("logs");
+            fs::create_dir(&work)?;
+            let permission = Permission::created(&work)?;
+            let work_identity = permission.identity()?;
+            let _permission = permission;
             let request = Worker {
                 root: options.root.clone(),
                 binary: options.binary.clone(),
@@ -628,6 +634,7 @@ pub fn run(options: &Options) -> Result<Value> {
                 collector: options.collector.clone(),
                 worker: options.worker.clone(),
                 work,
+                work_identity,
                 output: output.clone(),
                 prefix: prefix.clone(),
                 source_collector,
@@ -643,6 +650,9 @@ pub fn run(options: &Options) -> Result<Value> {
                 ],
                 Duration::from_secs(90),
             );
+            for (key, value) in namespace.environment()? {
+                command.env.insert(key, value);
+            }
             command.env.insert("OPENPILOT_PREFIX".into(), prefix);
             command.cwd = Some(options.root.clone());
             let captured = NativeRunner.run(&command)?;

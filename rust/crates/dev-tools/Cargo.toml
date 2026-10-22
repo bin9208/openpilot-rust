@@ -599,6 +599,7 @@ timed-live-native = ["timed-tools-native", "dep:capnp", "dep:openpilot-cereal", 
 bootlog-artifact-native = ["dep:capnp", "dep:openpilot-cereal", "dep:zstd"]
 route-upload-native = ["bootlog-artifact-native", "dep:p256", "dep:url"]
 uploader-reference-native = ["dep:p256", "dep:zstd", "serde_json/float_roundtrip"]
+uploader-siblings-native = ["uploader-logging-native"]
 uploader-logging-native = ["uploader-reference-native", "dep:url", "dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq", "serde_json/preserve_order"]
 hardware-info-qa-native = []
 hardwared-qa-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-messaging", "openpilot-messaging/native", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq", "serde_json/float_roundtrip"]
@@ -2256,3 +2257,12 @@ required-features = ["uploader-reference-native"]
 [[test]]
 name = "uploader_logging_check"
 required-features = ["uploader-logging-native"]
+
+[[bin]]
+name = "check-uploader-siblings"
+path = "src/bin/check_uploader_siblings.rs"
+required-features = ["uploader-siblings-native"]
+
+[[test]]
+name = "uploader_lifecycle_check"
+required-features = ["uploader-siblings-native"]

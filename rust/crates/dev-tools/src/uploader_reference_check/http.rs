@@ -127,7 +127,12 @@ fn token(request: &Request) -> Result<&str> {
         .strip_prefix("JWT ")
         .ok_or_else(|| "uploader authorization scheme differs".into())
 }
-fn verify_jwt(request: &Request, public: &str, key_name: &str, fresh: bool) -> Result<()> {
+pub(crate) fn verify_jwt(
+    request: &Request,
+    public: &str,
+    key_name: &str,
+    fresh: bool,
+) -> Result<()> {
     let token = token(request)?;
     let parts = token.split('.').collect::<Vec<_>>();
     require(parts.len() == 3, "uploader JWT is not JOSE compact form")?;
@@ -230,7 +235,7 @@ pub(crate) struct Server {
     stop: Arc<AtomicBool>,
     worker: Option<JoinHandle<std::result::Result<Vec<Request>, String>>>,
 }
-fn receive(stream: &mut TcpStream) -> Result<Request> {
+pub(crate) fn receive(stream: &mut TcpStream) -> Result<Request> {
     stream.set_read_timeout(Some(Duration::from_millis(200)))?;
     stream.set_write_timeout(Some(Duration::from_secs(2)))?;
     let started = Instant::now();

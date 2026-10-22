@@ -1,6 +1,8 @@
 use super::{bounded, disk_projection, require, Result};
+pub(crate) mod ownership;
 use openpilot_cereal::log_capnp::event;
 use openpilot_msgq::{Publisher, Subscriber};
+use ownership::Namespace;
 use serde_json::{json, Value};
 use std::{
     fs::{self, File, OpenOptions},
@@ -64,17 +66,7 @@ impl Drop for OwnedChild {
         }
     }
 }
-struct Namespace {
-    shm: PathBuf,
-    endpoint: PathBuf,
-}
-impl Drop for Namespace {
-    fn drop(&mut self) {
-        let _ = fs::remove_dir_all(&self.shm);
-        let _ = fs::remove_file(&self.endpoint);
-    }
-}
-pub(super) struct Peer {
+pub(crate) struct Peer {
     child: OwnedChild,
     log: Subscriber,
     error: Subscriber,
@@ -84,6 +76,7 @@ pub(super) struct Peer {
     output: PathBuf,
     disk: PathBuf,
     pub endpoint: String,
+    pub(crate) ipc_root: PathBuf,
     records: Vec<Value>,
     errors: Vec<Value>,
     _namespace: Namespace,
@@ -106,7 +99,7 @@ fn decode(packet: &[u8], topic: &str) -> Result<(Value, String)> {
     Ok((serde_json::from_str(&raw)?, raw))
 }
 impl Peer {
-    pub(super) fn start(
+    pub(crate) fn start(
         collector: &Path,
         worker: &Path,
         output: &Path,
@@ -117,18 +110,13 @@ impl Peer {
             std::env::var("OPENPILOT_PREFIX").ok().as_deref() == Some(prefix),
             "logging worker IPC prefix differs",
         )?;
-        let shm = Path::new("/dev/shm").join(format!("msgq_{prefix}"));
-        let endpoint_path = PathBuf::from(format!("/tmp/logmessage{prefix}"));
+        let namespace = Namespace::worker(prefix)?;
+        let shm = namespace.shm.clone();
         require(
-            matches!(fs::symlink_metadata(&endpoint_path),Err(e) if e.kind()==std::io::ErrorKind::NotFound),
-            "owned logging endpoint already exists",
+            matches!(fs::symlink_metadata(&namespace.endpoint),Err(e) if e.kind()==std::io::ErrorKind::NotFound),
+            "private uploader log endpoint already exists",
         )?;
-        fs::create_dir(&shm)?;
-        let namespace = Namespace {
-            shm: shm.clone(),
-            endpoint: endpoint_path,
-        };
-        let endpoint = format!("ipc:///tmp/logmessage{prefix}");
+        let endpoint = format!("ipc://{}", namespace.endpoint.display());
         let disk = output.join("disk");
         let mut command = if source {
             let mut c = Command::new(worker);
@@ -187,12 +175,13 @@ impl Peer {
             output: output.into(),
             disk,
             endpoint,
+            ipc_root: namespace.ipc_root.clone(),
             records: Vec::new(),
             errors: Vec::new(),
             _namespace: namespace,
         })
     }
-    pub(super) fn synchronize(&mut self) -> Result<()> {
+    pub(crate) fn synchronize(&mut self) -> Result<()> {
         let start = Instant::now();
         let mut sequence = 0;
         while start.elapsed() < Duration::from_secs(20) {
@@ -257,7 +246,7 @@ impl Peer {
         }
         Ok(received)
     }
-    pub(super) fn finish(mut self) -> Result<(Vec<Value>, Vec<Value>, usize, i32)> {
+    pub(crate) fn finish(mut self) -> Result<(Vec<Value>, Vec<Value>, usize, i32)> {
         let mut last = Instant::now();
         while last.elapsed() < Duration::from_millis(250) {
             self.child.alive()?;
