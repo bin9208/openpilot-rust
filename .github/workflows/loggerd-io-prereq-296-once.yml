@@ -1,0 +1,55 @@
+{
+  "name": "loggerd IO prerequisite observation only",
+  "on": {
+    "push": {
+      "branches": [
+        "codex/feat-296-native-tools-candidate"
+      ],
+      "paths": [
+        ".github/workflows/loggerd-io-prereq-296-once.yml"
+      ]
+    },
+    "workflow_dispatch": {}
+  },
+  "permissions": {
+    "contents": "read"
+  },
+  "concurrency": {
+    "group": "loggerd-io-prereq-296-once",
+    "cancel-in-progress": false
+  },
+  "jobs": {
+    "read-only-prerequisites": {
+      "if": "github.repository == 'bin9208/openpilot-rust' && github.ref == 'refs/heads/codex/feat-296-native-tools-candidate'",
+      "runs-on": [
+        "self-hosted",
+        "Linux",
+        "X64",
+        "dev-md-local"
+      ],
+      "timeout-minutes": 15,
+      "env": {
+        "SOURCE_SHA": "77100d33ce4d1202853bd6bf3597a0fc2014c590"
+      },
+      "steps": [
+        {
+          "name": "Enumerate every provider and read-only audit prerequisite without builds",
+          "shell": "bash",
+          "run": "#!/usr/bin/env bash\n# Actions-only read-only provider inspection. NEVER run locally.\nset -euo pipefail\n[[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == bin9208/openpilot-rust ]]\n[[ ${RUNNER_NAME:-} == bin-actions && ${RUNNER_ENVIRONMENT:-} == self-hosted ]]\n[[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]]\n[[ ${SOURCE_SHA:-} == 77100d33ce4d1202853bd6bf3597a0fc2014c590 ]]\n[[ ${GITHUB_EVENT_NAME:-} == push || ${GITHUB_EVENT_NAME:-} == workflow_dispatch ]]\n[[ ${GITHUB_REF:-} == refs/heads/codex/feat-296-native-tools-candidate ]]\numask 077\npath_state() {\n  local path=$1 present=no readable=no executable=no link=no\n  [[ ! -e $path ]] || present=yes\n  [[ ! -r $path ]] || readable=yes\n  [[ ! -x $path ]] || executable=yes\n  [[ ! -L $path ]] || link=yes\n  printf 'path\\t%s\\texists=%s\\treadable=%s\\texecutable=%s\\tsymlink=%s\\n' \"$path\" \"$present\" \"$readable\" \"$executable\" \"$link\"\n  if [[ -L $path ]] && command -v readlink >/dev/null; then readlink -- \"$path\" || true; fi\n}\n\ninventory=$(\n# Same order and exact spellings as the failed loop; never short-circuit.\nfirst_failure=\nfor path in /usr/bin/python3 /usr/bin/strace /usr/bin/ldd /usr/bin/sudo /usr/sbin/auditctl /usr/sbin/ausearch /usr/bin/df; do\n  path_state \"$path\"\n  if [[ ! -x $path && -z $first_failure ]]; then first_failure=$path; fi\ndone\nprintf 'current_first_failed_original_loop_path\\t%s\\n' \"${first_failure:-NONE}\"\n# Other absolute executables used by the outer envelope, probe or shell path.\nfor path in /usr/bin/timeout /usr/bin/true /usr/bin/env /usr/bin/bash /bin/bash /bin/sh; do path_state \"$path\"; done\nfor tool in python3 strace ldd sudo auditctl ausearch df timeout g++ clang capnp capnpc-c++ pkg-config rustup cargo gh git curl \\\n  bash cc c++ gcc ld ar ranlib as make cmake tar unzip sha256sum base64 awk sed grep sort tee cat stat readlink \\\n  getconf uname id ps systemctl dpkg-query rpm gzip mktemp mkdir; do\n  if resolved=$(type -P -- \"$tool\"); then\n    printf 'tool\\t%s\\t%s\\n' \"$tool\" \"$resolved\"\n    while IFS= read -r path; do path_state \"$path\"; done < <(type -aP -- \"$tool\")\n  else\n    printf 'tool\\t%s\\tMISSING\\n' \"$tool\"\n  fi\ndone\n)\nprintf '%s\\n' \"$inventory\"\n# A named 16MiB maximum observation growth, no fixed free-space floor.\n# Compare block counts instead of multiplying potentially large u64 values.\nread -r free_blocks block_bytes < <(stat -f --format='%a %S' -- \"$RUNNER_TEMP\")\n[[ $free_blocks =~ ^[0-9]+$ && $block_bytes =~ ^[1-9][0-9]*$ ]]\nplanned_growth=16777216\nrequired_blocks=$((planned_growth / block_bytes + (planned_growth % block_bytes != 0)))\nprintf 'growth\\tread-only-prerequisite-observation\\tplanned_bytes=%s\\tavailable_blocks=%s\\tblock_bytes=%s\\n' \"$planned_growth\" \"$free_blocks\" \"$block_bytes\"\n[[ $free_blocks -ge $required_blocks ]]\nout=$(mktemp -d \"$RUNNER_TEMP/loggerd-io-prereq-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXXXX\")\nprintf 'LOGGERD_IO_PREREQ_OUT=%s\\n' \"$out\" >> \"$GITHUB_ENV\"\nmkdir \"$out/tmp\" \"$out/cache\"\nexport TMPDIR=\"$out/tmp\" XDG_CACHE_HOME=\"$out/cache\"\nexport PYTHONDONTWRITEBYTECODE=1 CARGO_NET_OFFLINE=true RUSTUP_AUTO_INSTALL=0\nexport RUSTUP_NO_UPDATE_CHECK=1\ncd \"$out\"\nexec > >(tee \"$out/observer.log\") 2>&1\nprintf '%s\\n' \"$inventory\"\nprintf 'observation_only=true\\nfunctional_acceptance=false\\nsource=%s\\nworkflow=%s\\nrun=%s\\nattempt=%s\\nrunner=%s\\nPATH=%s\\n' \\\n  \"$SOURCE_SHA\" \"$GITHUB_SHA\" \"$GITHUB_RUN_ID\" \"$GITHUB_RUN_ATTEMPT\" \"$RUNNER_NAME\" \"$PATH\"\nfor name in PKG_CONFIG_PATH PKG_CONFIG_LIBDIR PKG_CONFIG_SYSROOT_DIR CMAKE_PREFIX_PATH; do\n  printf 'environment\\t%s\\t%s\\n' \"$name\" \"${!name-}\"\ndone\n\n# Read-only probes only. A missing timeout skips execution, never enumeration.\n# Each query has an 8s TERM/2s KILL deadline and at most 64 shell file-size\n# blocks of retained combined output. Nonzero/over-cap results remain explicit.\nseq=0\nprobe() {\n  local label=$1 rc\n  shift\n  seq=$((seq + 1))\n  printf '\\nprobe\\t%s\\t' \"$label\"; printf '%q ' \"$@\"; printf '\\n'\n  if [[ ! -x /usr/bin/timeout ]]; then\n    printf 'probe_result\\t%s\\tSKIPPED_NO_ABSOLUTE_TIMEOUT\\n' \"$label\"\n    return 0\n  fi\n  if (ulimit -c 0; ulimit -f 64; exec /usr/bin/timeout --signal=TERM --kill-after=2s 8s \"$@\") > \"$out/probe-$seq.txt\" 2>&1; then\n    rc=0\n  else\n    rc=$?\n  fi\n  printf 'probe_result\\t%s\\texit=%s\\tfile=probe-%s.txt\\n' \"$label\" \"$rc\" \"$seq\"\n  cat \"$out/probe-$seq.txt\" || printf 'probe_output_unreadable\\t%s\\n' \"$label\"\n}\nprobe identity id\nprobe kernel uname -a\nprobe os-release cat /etc/os-release\nprobe free-bytes /usr/bin/df -B1 \"$out\" \"$GITHUB_WORKSPACE\"\nprobe python-version /usr/bin/python3 -I -B --version\nprobe strace-version /usr/bin/strace --version\nprobe ldd-version /usr/bin/ldd --version\nprobe sudo-version /usr/bin/sudo --version\nprobe auditctl-version /usr/sbin/auditctl -v\nprobe ausearch-help /usr/sbin/ausearch --help\nprobe timeout-version /usr/bin/timeout --version\nprobe compiler-g++ g++ --version\nprobe compiler-clang clang --version\nprobe capnp-version capnp --version\nprobe pkg-config-version pkg-config --version\nfor package in libavcodec libavformat libavutil libzstd capnp kj libzmq; do\n  probe \"pkg-$package-exists\" pkg-config --exists \"$package\"\n  probe \"pkg-$package-version\" pkg-config --modversion \"$package\"\n  probe \"pkg-$package-location\" pkg-config --variable=pcfiledir \"$package\"\n  probe \"pkg-$package-flags\" pkg-config --cflags --libs \"$package\"\ndone\n# Compiler queries report paths only: no translation, assembly, linking or ASan execution.\nprobe asan-library-path g++ -print-file-name=libasan.so\nprobe compiler-frontend-path g++ -print-prog-name=cc1plus\nprobe compiler-runtime-directory clang --print-runtime-dir\nfor path in /proc/self/status /proc/sys/kernel/cap_last_cap /proc/sys/kernel/yama/ptrace_scope \\\n  /proc/sys/kernel/unprivileged_userns_clone /sys/kernel/security/lsm /var/log/audit/audit.log; do path_state \"$path\"; done\nprobe capability-and-sandbox-status grep -E '^(Uid|Gid|NSpid|CapInh|CapPrm|CapEff|CapBnd|CapAmb|NoNewPrivs|Seccomp|Seccomp_filters):' /proc/self/status\nprobe capability-last cat /proc/sys/kernel/cap_last_cap\nkernel=$(uname -r)\nfor path in \"/boot/config-$kernel\" \"/lib/modules/$kernel/config\"; do\n  path_state \"$path\"\n  probe audit-kernel-config grep -E '^CONFIG_(AUDIT|AUDITSYSCALL|HAVE_ARCH_AUDITSYSCALL)(=|_)' \"$path\"\ndone\nprobe audit-daemon-state systemctl show auditd --no-pager --property=LoadState,ActiveState,SubState,MainPID\nprobe audit-daemon-pids ps -C auditd -o pid=,ppid=,comm=\nprobe audit-status-unprivileged /usr/sbin/auditctl -s\nprobe sudo-noninteractive-policy /usr/bin/sudo -n -l\nprobe sudo-direct-status-permission /usr/bin/sudo -n -l -- /usr/sbin/auditctl -s\nprobe sudo-direct-rules-permission /usr/bin/sudo -n -l -- /usr/sbin/auditctl -l\n# Root queries get a root-owned 4s timer; outer unprivileged timer is only secondary.\n# A policy denial is evidence, never permission to broaden sudo or change host rules.\nprobe audit-status-root-timed /usr/bin/sudo -n /usr/bin/timeout --signal=TERM --kill-after=1s 4s /usr/sbin/auditctl -s\nprobe audit-rules-root-timed /usr/bin/sudo -n /usr/bin/timeout --signal=TERM --kill-after=1s 4s /usr/sbin/auditctl -l\nprobe sudo-exact-ausearch-timer-permission /usr/bin/sudo -n -l -- /usr/bin/timeout --signal=TERM --kill-after=5s 45s \\\n  /usr/sbin/ausearch --input-logs -k \"lio${GITHUB_RUN_ID}p${GITHUB_RUN_ATTEMPT}\" --raw\nprobe installed-package-metadata dpkg-query -W '-f=${Package}\\t${Version}\\t${db:Status-Status}\\n' \\\n  auditd audispd-plugins libaudit1 libaudit-dev strace sudo capnproto libcapnp-dev pkg-config \\\n  libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libzmq3-dev g++ clang libasan8 libc6-dev linux-libc-dev\nprintf '\\nobservation_complete=true\\nfunctional_acceptance=false\\nprobes=%s\\n' \"$seq\"\nprintf '{\"observation_complete\":true,\"functional_acceptance\":false,\"io_rerun\":false,\"audit_rules_modified\":false,\"installs\":false}\\n' > \"$out/observation.json\"\n# Retain this small private root for the parent; no cleanup or shared writes.\n"
+        },
+        {
+          "name": "Preserve prerequisite observations even when a query fails",
+          "if": "${{ always() && env.LOGGERD_IO_PREREQ_OUT != '' }}",
+          "uses": "actions/upload-artifact@v6",
+          "with": {
+            "name": "loggerd-io-prereq-296-${{ github.run_id }}-${{ github.run_attempt }}",
+            "path": "${{ env.LOGGERD_IO_PREREQ_OUT }}/",
+            "if-no-files-found": "error",
+            "include-hidden-files": true,
+            "retention-days": 30
+          }
+        }
+      ]
+    }
+  }
+}

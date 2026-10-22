@@ -1,0 +1,53 @@
+{
+  "issue": 296,
+  "scope": "diagnostic-only automatic Fast workers; no feature source publication",
+  "diagnostic_base": "74fa569bb93a28e024a3a960eaf5bfe33df493c4",
+  "common_source": "77663836a95a9e2aff9aa66592d8b06ed9c87cd9",
+  "common_verified_run": 39853582741,
+  "common_acceptance": "user supplied verified successful foundation; no repeated transport execution",
+  "physical_arm_cpu": false,
+  "common_files": {
+    ".github/actions/local-arm/action.yml": {
+      "sha256": "70b18b56a4abe6c5dd0327edbf4c5409900e37c3840f67b5b9e763cbb20532a1",
+      "git_blob": "f51440bb48fd6c2d69b503eaf8601a36b103e062",
+      "mode": "100644",
+      "old_sha256": "70b18b56a4abe6c5dd0327edbf4c5409900e37c3840f67b5b9e763cbb20532a1",
+      "changed_from_6a8": false
+    },
+    "tools/ci/local-arm": {
+      "sha256": "1c69c096fa890b478a5b157aba021ba412ff0106e9e31b4b0b840f30f618c090",
+      "git_blob": "d93c939703117c27f7320cc2182214dded09bcae",
+      "mode": "100755",
+      "old_sha256": "d44d9b68a23901f7b3fb5b167d1df85be2116a45e529099af7afcc0d3f42a031",
+      "changed_from_6a8": true
+    },
+    ".github/actions/job-temp/action.yml": {
+      "sha256": "d03bca53cd15a4fa57bcff731798054ca4a92253c6ca0b94315bb8b6eb053a94",
+      "git_blob": "154566f4016bc4a84a0650aacae93b847f694485",
+      "mode": "100644",
+      "old_sha256": "d03bca53cd15a4fa57bcff731798054ca4a92253c6ca0b94315bb8b6eb053a94",
+      "changed_from_6a8": false
+    },
+    ".github/actions/rust-path/action.yml": {
+      "sha256": "cded6237e2f0a0bb4433d78b3c83918a42cc7319bc22e79350c1a1abb0a86fba",
+      "git_blob": "059664705275c9cef70f570801e5f940c2017f0b",
+      "mode": "100644",
+      "old_sha256": "cded6237e2f0a0bb4433d78b3c83918a42cc7319bc22e79350c1a1abb0a86fba",
+      "changed_from_6a8": false
+    }
+  },
+  "automatic_workflow_slice": [
+    ".github/workflows/fast-checks.yml"
+  ],
+  "excluded_not_triggered": [
+    "user-docs.yaml: push branches carrot-wip/dev/main and no open diagnostic PR",
+    "rust.yml and integration.yml: dev/main push/PR only",
+    "other old once workflows: unchanged exact path filters"
+  ],
+  "source_workflow_split": "private x64 diagnostic recipes keep source/workflow receipts distinct; no local-arm invocation here; its HEAD==GITHUB_SHA requirement is unchanged",
+  "Darwin_APFS": "not triggered by this diagnostic branch push; remains required and unresolved in held full adapter",
+  "native_apt": "no APT command in selected Fast slice; verified common helper preserved byte-for-byte; any new native APT uses scalar APT::Architectures=$(dpkg --print-architecture), invocation scoped",
+  "job_bootstrap": "common owned temp before unique precheckout source; shell-only GITHUB_WORKSPACE source mapping with original Actions workspace retained; unique HOME/Cargo/Rustup/target/cache/venv/Gradle; full Git history and original BASE_SHA preserved",
+  "runtime_oracle_checks_removed": false,
+  "functional_execution_here": false
+}

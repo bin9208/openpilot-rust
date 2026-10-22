@@ -223,10 +223,21 @@ pub fn run_shell(script: &str, environment: &BTreeMap<String, String>) -> io::Re
     }))
 }
 
+pub const DIAGNOSTIC_LOCAL_RUNNER: [&str; 4] = ["self-hosted", "Linux", "X64", "dev-md-local"];
+pub const DIAGNOSTIC_TRUSTED_SOURCE: &str = "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}";
+pub const DIAGNOSTIC_FORK_DENIAL: &str = "test \"${SOURCE_ALLOWED:-}\" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }\n";
+pub const DIAGNOSTIC_PROOF: &str = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}";
+pub const DIAGNOSTIC_CLEANUP: &str = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '') }}";
+pub const DIAGNOSTIC_COMMON_CLEANUP: &str = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome == 'success') }}";
+
 /// Preserve the required fast-check status while its six mandatory workers run
 /// independently. Execute the aggregate shell to reject accidental fail-open
 /// edits, including absent results that GitHub exposes as empty strings.
 pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
+    require(
+        workflow["concurrency"]["cancel-in-progress"] == "false",
+        "Fast must not cancel an existing run",
+    )?;
     let bindings = [
         ("NATIVE", "native"),
         ("NATIVE_CORPUS", "native-corpus"),
@@ -249,12 +260,42 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
             .as_array()
             .ok_or("missing fast worker steps")?;
         require(!steps.is_empty(), "fast worker has no checks")?;
-        for step in steps {
-            absent(step, &["if", "continue-on-error"])?;
+        require(
+            worker["runs-on"] == serde_json::json!(DIAGNOSTIC_LOCAL_RUNNER),
+            "Fast workers require fixed bin-actions labels",
+        )?;
+        let boundary = &steps[0];
+        absent(boundary, &["if", "continue-on-error"])?;
+        require(
+            boundary["env"]["SOURCE_ALLOWED"] == DIAGNOSTIC_TRUSTED_SOURCE,
+            "missing Fast fork source binding",
+        )?;
+        require(
+            boundary["run"]
+                .as_str()
+                .is_some_and(|s| s.starts_with(DIAGNOSTIC_FORK_DENIAL)),
+            "Fast fork refusal must precede source execution",
+        )?;
+        for step in &steps[1..] {
+            absent(step, &["continue-on-error"])?;
+            let condition = match step["name"].as_str().unwrap_or("") {
+                "Retain Fast job ownership evidence" => DIAGNOSTIC_PROOF,
+                "Clean only uploaded private Fast source" => DIAGNOSTIC_CLEANUP,
+                "Clean common owned Fast job temporary paths" => DIAGNOSTIC_COMMON_CLEANUP,
+                _ => DIAGNOSTIC_TRUSTED_SOURCE,
+            };
+            require(
+                step["if"] == condition,
+                "mandatory trusted Fast step condition changed",
+            )?;
         }
     }
     let gate = jobs.get("fast").ok_or("missing fast aggregate")?;
     absent(gate, &["continue-on-error"])?;
+    require(
+        gate["runs-on"] == serde_json::json!(DIAGNOSTIC_LOCAL_RUNNER),
+        "Fast aggregate requires bin-actions",
+    )?;
     require(
         gate["name"] == "fast checks",
         "required fast check name changed",
@@ -288,7 +329,7 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
         .as_object()
         .ok_or("missing fast result bindings")?;
     require(
-        environment.len() == bindings.len(),
+        environment.len() == bindings.len() + 1,
         "fast result binding count changed",
     )?;
     for (variable, job) in bindings {
@@ -301,10 +342,33 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
     let script = step["run"]
         .as_str()
         .ok_or("missing fast aggregate script")?;
-    let success = bindings
+    require(
+        step["env"]["SOURCE_ALLOWED"] == DIAGNOSTIC_TRUSTED_SOURCE,
+        "missing Fast aggregate source trust",
+    )?;
+    require(
+        script.starts_with(DIAGNOSTIC_FORK_DENIAL),
+        "Fast aggregate must explicitly refuse forks",
+    )?;
+    let mut success = bindings
         .iter()
         .map(|(name, _)| ((*name).into(), "success".into()))
         .collect::<BTreeMap<_, _>>();
+    success.insert("SOURCE_ALLOWED".into(), "true".into());
+    for state in [None, Some(""), Some("false"), Some("skipped")] {
+        let mut denied = success.clone();
+        if let Some(state) = state {
+            denied.insert("SOURCE_ALLOWED".into(), state.into());
+        } else {
+            denied.remove("SOURCE_ALLOWED");
+        }
+        require(
+            !run_shell(script, &denied)
+                .map_err(|e| e.to_string())?
+                .success(),
+            "Fast fork aggregate passed a skip",
+        )?;
+    }
     require(
         run_shell(script, &success)
             .map_err(|e| e.to_string())?
