@@ -538,6 +538,7 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
+native-logging-check-native = ["dep:zmq", "rustix/net"]
 deleter-check-native = []
 kalman-model-generator-native = []
 kalman-corpus-generator-native = ["dep:libloading", "dep:openpilot-runtime-core", "serde_json/float_roundtrip"]
@@ -1026,6 +1027,11 @@ path = "src/bin/updated_process_fixture.rs"
 [[bin]]
 name = "release-files"
 path = "src/bin/release_files.rs"
+
+[[bin]]
+name = "check-native-logging"
+path = "src/bin/check_native_logging.rs"
+required-features = ["native-logging-check-native"]
 
 [[bin]]
 name = "build-native-logging-reference"

@@ -61,3 +61,9 @@ Maintained CI supplies the immutable original fixture and native providers;
 the daemon check creates a private temporary mount through CI's passwordless
 sudo. The four Python development helpers are removed in this candidate;
 current source-absence acceptance remains tracked in #296.
+
+The Linux `check-native-logging` candidate compares the Rust logger with the
+original C++ producer, including packet bytes, console output and transport
+failures. Build it with `--features native-logging-check-native --bin check-native-logging`
+in `openpilot-dev-tools`. Its Python comparison helpers remain until native
+functionality and source-absence checks pass.

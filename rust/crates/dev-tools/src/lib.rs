@@ -304,6 +304,8 @@ pub mod logger_identifier_check;
 pub mod logging_oracle_build;
 pub mod msgq_sanitizers_check;
 pub mod native_logging_build;
+#[cfg(all(target_os = "linux", feature = "native-logging-check-native"))]
+pub mod native_logging_check;
 pub mod panda_oracle_build;
 pub mod panda_runtime_build;
 pub mod pandad_firmware_spi_build;

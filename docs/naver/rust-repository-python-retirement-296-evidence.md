@@ -8009,3 +8009,25 @@ Only check_deleter_reference.py,check_deleter_daemon.py,deleter_fixtures.py and
 tests/test_deleter_observer.py are removed; runtime deleter/uploader/xattr/config
 and their consumers remain mandatory. Final current-source absence/native/policy
 execution is pending, so no additional inventory credit is claimed yet.
+
+The native logging comparator candidate ports the closed check_native_logging.py/
+native_logging_transport.py pair without deleting either source yet. It retains
+the live original C++ builder/producer,168wire cases,7console modes,516rate inputs,
+16rate records,5000message backpressure,64threads,console failure,invalid endpoint
+asymmetry,INT/TERM and normal prefixed runtime IPC. Runtime source/probe behavior
+is unchanged. Optional feature native-logging-check-native activates existing
+zmq/rustix net dependencies; no package or lockfile addition occurs.
+Source records validate severity,realtime,callsite,field set and Rust provenance
+before the original narrow byte projections. Exact kernel listener/VFS ownership
+is reused for shared IPC cleanup; immediate child ownership covers partial startup.
+Parent source review precedes hosted compilation/strictClippy and fresh native
+traffic. Historical main-job artifact12432287942/17482746B/SHA3655dfbe provides
+independent original observations only:35329CRCs,499raw packets and1391command
+rows, with no continuous held-provider proof. The new gate must authenticate
+current held source/providers and reproduce its complete observations; no fresh
+project-Python comparator run, functional acceptance or retirement is claimed yet.
+
+Old logger119870184634 exceeded its existing20minute limit after apt retries
+consumed9m28s, then ASan build was interrupted. No timeout change is made. The
+current maintained103188 logger119899439610 succeeds through Miri and both ASan
+steps; this confirms that complete current job, not the earlier cancelled job.
