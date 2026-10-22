@@ -1,0 +1,87 @@
+name: 'Native cached-provider export #296 (no image execution)'
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/model-driver-cached-vendor-export-296-once.yml
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  actions: read
+jobs:
+  providers:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      RUSTUP_TOOLCHAIN: 1.94.0
+      CARGO_INCREMENTAL: '0'
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: 2ab2738335f2632e32aedef4a83ef272c475f1dd
+        persist-credentials: false
+    - name: Pinned Rust 1.94
+      uses: dtolnay/rust-toolchain@1.94.0
+    - name: Recover exact accepted isolated manifest and lock
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: "set -euo pipefail\nproof=\"$RUNNER_TEMP/cached-vendor-proof\"\nmkdir -p \"$proof\" \"$RUNNER_TEMP/cached-vendor-project\"\
+        \ntest \"$(git rev-parse HEAD)\" = \"2ab2738335f2632e32aedef4a83ef272c475f1dd\"\nfree=$(df --output=avail -B1 \"$RUNNER_TEMP\"\
+        \ | tail -1 | tr -d ' ')\nif (( free < 27917287424 )); then\n  sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet\n\
+        fi\nfree=$(df --output=avail -B1 \"$RUNNER_TEMP\" | tail -1 | tr -d ' ')\n(( free >= 27917287424 ))\ncurl --fail --location\
+        \ --retry 4 --connect-timeout 15 --max-time 180 -H \"Authorization: Bearer $GH_TOKEN\" -H 'Accept: application/vnd.github+json'\
+        \ https://api.github.com/repos/bin9208/openpilot-rust/actions/artifacts/12424538606/zip -o \"$proof/accepted-isa.zip\"\
+        \nprintf '%s  %s\\n' 3a3c108be273db979691a02ac4e599c6881b44c7f8d2c3bc556357773c01c12f \"$proof/accepted-isa.zip\"\
+        \ | sha256sum --check\nunzip -t \"$proof/accepted-isa.zip\" > \"$proof/accepted-zip-crc.log\"\nfor name in Cargo.toml\
+        \ Cargo.lock; do\n  unzip -p \"$proof/accepted-isa.zip\" \"$name\" > \"$RUNNER_TEMP/cached-vendor-project/$name\"\n\
+        done\nprintf 'fn main() {}\\n' > \"$RUNNER_TEMP/cached-vendor-project/cached_program_isa_main.rs\"\nsha256sum \"$RUNNER_TEMP/cached-vendor-project/\"\
+        {Cargo.toml,Cargo.lock} > \"$proof/input.before.sha256\"\nrustc --version --verbose > \"$proof/rustc.txt\"\ncargo\
+        \ --version --verbose > \"$proof/cargo.txt\"\nsha256sum \"$(rustup which rustc)\" \"$(rustup which cargo)\" > \"$proof/toolchain.before.sha256\"\
+        \ngit status --porcelain > \"$proof/source.before.txt\"\necho \"PROOF=$proof\" >> \"$GITHUB_ENV\""
+    - name: Export official pinned provider sources without compilation
+      run: "set -euo pipefail\ncd \"$RUNNER_TEMP/cached-vendor-project\"\ncargo vendor --locked --versioned-dirs vendor >\
+        \ \"$PROOF/vendor-config.toml\"\nfind vendor -mindepth 1 -maxdepth 1 -type d -printf '%f\\n' | LC_ALL=C sort > \"\
+        $PROOF/provider-roster.txt\"\nprintf 'iced-x86-1.21.0\\nlazy_static-1.5.0\\n' > \"$PROOF/expected-provider-roster.txt\"\
+        \ncmp \"$PROOF/provider-roster.txt\" \"$PROOF/expected-provider-roster.txt\"\ntest -f vendor/iced-x86-1.21.0/.cargo-checksum.json\n\
+        test -f vendor/lazy_static-1.5.0/.cargo-checksum.json\nfind vendor -type l -print -quit | (! read -r _)\nfind vendor\
+        \ -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > \"$PROOF/vendor-files.sha256\"\nfor entry in 'iced-x86-1.21.0:7c447cff8c7f384a7d4f741cfcff32f75f3ad02b406432e8d6c878d56b1edf6b'\
+        \ 'lazy_static-1.5.0:bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe'; do\n  name=${entry%%:*}\n\
+        \  expected=${entry#*:}\n  mapfile -t crates < <(find \"${CARGO_HOME:-$HOME/.cargo}/registry/cache\" -type f -name\
+        \ \"$name.crate\")\n  (( ${#crates[@]} == 1 ))\n  printf '%s  %s\\n' \"$expected\" \"${crates[0]}\" | sha256sum --check\n\
+        \  cp \"${crates[0]}\" \"$PROOF/$name.crate\"\ndone\n# Vendor contents include original source/license files and Cargo's\
+        \ generated\n# per-file manifests; preserve the entire roster, not an empty checksum glob.\ntar -czf \"$PROOF/providers.tar.gz\"\
+        \ vendor\ncp Cargo.toml Cargo.lock \"$PROOF/\"\nfind vendor -type f \\( -iname '*license*' -o -iname '*copyright*'\
+        \ -o -iname '*copying*' \\) -print > \"$PROOF/license-roster.txt\"\nsha256sum \"$PROOF/providers.tar.gz\" > \"$PROOF/providers.tar.gz.sha256\"\
+        \nsha256sum --check \"$PROOF/vendor-files.sha256\"\nsha256sum --check \"$PROOF/input.before.sha256\"\nprintf 'PROVIDERS_EXPORTED_WITHOUT_COMPILATION\\\
+        n' > \"$PROOF/result.txt\""
+    - name: Always source, provider and toolchain identity guards
+      if: always()
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/cached-vendor-proof"
+
+        test -d "$proof"
+
+        sha256sum --check "$proof/input.before.sha256"
+
+        sha256sum --check "$proof/toolchain.before.sha256"
+
+        git status --porcelain > "$proof/source.after.txt"
+
+        cmp "$proof/source.before.txt" "$proof/source.after.txt"
+
+        cd "$RUNNER_TEMP/cached-vendor-project"
+
+        sha256sum --check "$proof/vendor-files.sha256"
+
+        test "$(cat "$proof/result.txt")" = PROVIDERS_EXPORTED_WITHOUT_COMPILATION
+
+        printf ''ALL_GUARDS_PASS\n'' > "$proof/guards.txt"'
+    - uses: actions/upload-artifact@v6
+      if: always()
+      with:
+        name: cached-native-provider-export
+        path: ${{ runner.temp }}/cached-vendor-proof/
+        if-no-files-found: error
+        retention-days: 5
