@@ -659,8 +659,8 @@ impl PendingPublication {
         file.take(expected.len() as u64 + 1)
             .read_to_end(&mut contents)?;
         if contents != expected
-            || fs::symlink_metadata(&self.path)
-                .is_err_or(|m| (m.dev(), m.ino()) != (owned.dev(), owned.ino()))
+            || !fs::symlink_metadata(&self.path)
+                .is_ok_and(|m| (m.dev(), m.ino()) == (owned.dev(), owned.ino()))
         {
             return Err("HardwareInfo success manifest bytes changed".into());
         }

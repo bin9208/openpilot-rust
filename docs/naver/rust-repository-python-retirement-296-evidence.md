@@ -6174,3 +6174,10 @@ Follow-up allocates four natural hosts; only exact already-matching non-AVX512
 EPYC7763 hosts record explicit SKIP and avoid redundant heavy preparation.
 Other hosts retain identical probe/provider/actual-target behavior. No forced
 CPU, target substitution or numerical tolerance change is introduced.
+
+HardwareInfo39708996061/source212721e1b fails build: Result has no is_err_or
+method in pinnedRust1.94 (E0599 plus consequent E0282). Parent audits full4CRCs
+of17869B artifact12396142845,
+SHA2569d4186cff19d83bc565dc0f2239e67692fb9573cbe75be4386e023cc0b8156a0.
+Use negated is_ok_and with exact inode equality; preserve error-as-rejection.
+Neither unit nor full-case acceptance is inferred from this failed attempt.
