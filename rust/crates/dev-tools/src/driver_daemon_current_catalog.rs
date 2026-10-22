@@ -9,7 +9,18 @@ use std::{
     path::{Path, PathBuf},
 };
 const MAX_RECEIPT: u64 = 4_000_000;
-fn source_roster(root: &Path, guarded_add: bool) -> Result<BTreeSet<String>> {
+const CACHED_SOURCES: [&str; 9] = [
+    "rust/crates/model-runtime/src/cached_code.rs",
+    "rust/crates/model-runtime/src/bin/offline-cached-code.rs",
+    "rust/crates/model-runtime/src/cached_elf.rs",
+    "rust/crates/model-runtime/src/cpu.rs",
+    "rust/crates/model-runtime/src/graph.rs",
+    "rust/crates/model-runtime/src/error.rs",
+    "rust/crates/model-runtime/src/entrypoint.rs",
+    "rust/crates/model-runtime/src/assets.rs",
+    "rust/crates/model-runtime/src/buffer.rs",
+];
+fn source_roster(root: &Path, guarded_add: bool, cached: bool) -> Result<BTreeSet<String>> {
     fn visit(root: &Path, path: &Path, names: &mut BTreeSet<String>) -> Result<()> {
         let metadata = fs::symlink_metadata(path)?;
         if metadata.file_type().is_symlink() {
@@ -62,6 +73,11 @@ fn source_roster(root: &Path, guarded_add: bool) -> Result<BTreeSet<String>> {
             visit(root, &root.join(name), &mut names)?;
         }
     }
+    if cached {
+        for name in CACHED_SOURCES {
+            visit(root, &root.join(name), &mut names)?;
+        }
+    }
     Ok(names)
 }
 fn helper_matches(binding: &Value) -> Result<()> {
@@ -78,6 +94,42 @@ fn helper_matches(binding: &Value) -> Result<()> {
         || hash.as_deref().and_then(|p| p.to_str()) != binding["sha256"].as_str()
     {
         return Err("guarded add helper configuration differs from catalog".into());
+    }
+    Ok(())
+}
+fn cached_canonical_sha(value: &Value) -> Result<String> {
+    // Cached binding fields use the same recursive key ordering as Python's
+    // _canonical; serde_json/preserve_order can be enabled by another feature.
+    // Sort a clone only. Do not rewrite receipt values or legacy receipt hashes.
+    let mut canonical = value.clone();
+    canonical.sort_all_objects();
+    Ok(sha(&serde_json::to_vec(&canonical)?))
+}
+
+fn cached_matches(binding: &Value) -> Result<()> {
+    let names = [
+        "MODEL_CACHED_CODE_BINARY",
+        "MODEL_CACHED_CODE_SHA256",
+        "MODEL_CACHED_CODE_REQUEST",
+        "MODEL_CACHED_CODE_REQUEST_SHA256",
+    ];
+    let configured = names.map(std::env::var_os);
+    if binding.is_null() {
+        if configured.iter().any(Option::is_some) {
+            return Err("unrecorded cached issuer configured".into());
+        }
+        return Ok(());
+    }
+    if binding["enabled"] != true
+        || binding["complete_preflight"] != true
+        || binding["generated_code_executed"] != false
+        || configured[0].as_deref().and_then(|v| v.to_str()) != binding["helper"]["path"].as_str()
+        || configured[1].as_deref().and_then(|v| v.to_str()) != binding["helper"]["sha256"].as_str()
+        || configured[2].as_deref().and_then(|v| v.to_str()) != binding["request"]["path"].as_str()
+        || configured[3].as_deref().and_then(|v| v.to_str())
+            != binding["request"]["sha256"].as_str()
+    {
+        return Err("cached original/current native issuer configuration differs".into());
     }
     Ok(())
 }
@@ -159,6 +211,7 @@ impl CurrentCatalog {
             return Err("driver current catalog provider/source policy changed".into());
         }
         helper_matches(&value["guarded_add"])?;
+        cached_matches(&value["cached_code"])?;
         let mut held = Vec::new();
         let mut source_seals = Vec::new();
         let recorded_models = value["models"]
@@ -177,7 +230,11 @@ impl CurrentCatalog {
             .as_object()
             .ok_or("driver exporter dependencies missing")?;
         if sources.keys().cloned().collect::<BTreeSet<_>>()
-            != source_roster(root, !value["guarded_add"].is_null())?
+            != source_roster(
+                root,
+                !value["guarded_add"].is_null(),
+                !value["cached_code"].is_null(),
+            )?
         {
             return Err("driver current exporter whole source roster changed".into());
         }
@@ -293,6 +350,78 @@ impl CurrentCatalog {
             }
             held.push(helper);
         }
+        if !value["cached_code"].is_null() {
+            let binding = &value["cached_code"];
+            for (field, elf) in [("helper", true), ("request", false)] {
+                let path = Path::new(binding[field]["path"].as_str().ok_or("cached input path")?);
+                if !path.is_absolute() || fs::canonicalize(path)? != path {
+                    return Err("cached input alias".into());
+                }
+                let input = InputPin::open(path, elf)?;
+                if input.digest != binding[field]["sha256"]
+                    || Some(input.identity.2) != binding[field]["bytes"].as_u64()
+                {
+                    return Err("cached original/current native input changed".into());
+                }
+                if elf {
+                    let m = input.file.metadata()?;
+                    let identity = json!([
+                        m.dev(),
+                        m.ino(),
+                        m.len(),
+                        u64::from(m.mode()),
+                        i128::from(m.mtime()) * 1_000_000_000 + i128::from(m.mtime_nsec()),
+                        i128::from(m.ctime()) * 1_000_000_000 + i128::from(m.ctime_nsec())
+                    ]);
+                    if m.mode() & 0o111 == 0
+                        || m.len() > 128 * 1024 * 1024
+                        || identity != binding[field]["identity"]
+                    {
+                        return Err("cached native issuer identity differs".into());
+                    }
+                } else {
+                    let request: Value = serde_json::from_slice(&read_regular(path, MAX_RECEIPT)?)?;
+                    let current = &request["admission"]["current"];
+                    if current["exporter_roster_sha256"]
+                        != cached_canonical_sha(&value["exporter_dependency_files"])?
+                        || current["cached_helper_sha256"] != binding["helper"]["sha256"]
+                        || current["cached_helper_binding_sha256"]
+                            != cached_canonical_sha(&binding["helper"])?
+                        || current["helper_binding_sha256"]
+                            != cached_canonical_sha(&value["guarded_add"])?
+                        || request["admission"]["original_model_sha256"]
+                            != value["models"]["dmonitoring_model_tinygrad.pkl"]["sha256"]
+                    {
+                        return Err(
+                            "cached current exporter/helper/original admission differs".into()
+                        );
+                    }
+                    let mut found = 0;
+                    for name in files
+                        .keys()
+                        .filter(|name| name.ends_with("/cached-admission.json"))
+                    {
+                        let candidate =
+                            read_regular(&catalog.root.join(super::relative(name)?), MAX_RECEIPT)?;
+                        let actual: Value = serde_json::from_slice(&candidate)?;
+                        if actual != request["admission"]
+                            || sha(&candidate) != binding["admission_sha256"]
+                        {
+                            return Err(
+                                "cached sidecar differs from independent issuer admission".into()
+                            );
+                        }
+                        found += 1;
+                    }
+                    if found != 2 {
+                        return Err(
+                            "cached complete driver admission sidecar roster differs".into()
+                        );
+                    }
+                }
+                held.push(input);
+            }
+        }
         let library = value["host"]["llvm_path"]
             .as_str()
             .ok_or("driver current LLVM path missing")?;
@@ -323,13 +452,18 @@ impl CurrentCatalog {
     pub(super) fn verify(&self) -> Result<()> {
         self.receipt.verify()?;
         helper_matches(&self.value["guarded_add"])?;
+        cached_matches(&self.value["cached_code"])?;
         if self.value["exporter_dependency_files"]
             .as_object()
             .ok_or("driver source roster missing")?
             .keys()
             .cloned()
             .collect::<BTreeSet<_>>()
-            != source_roster(&self.source_root, !self.value["guarded_add"].is_null())?
+            != source_roster(
+                &self.source_root,
+                !self.value["guarded_add"].is_null(),
+                !self.value["cached_code"].is_null(),
+            )?
         {
             return Err("driver current exporter source reappearance or removal".into());
         }
@@ -366,6 +500,27 @@ impl CurrentCatalog {
             real_parent_chain(&self.source_root, name)?;
         }
         Ok(())
+    }
+    pub(super) fn cached_admission(&self) -> Result<Option<(PathBuf, String)>> {
+        self.verify()?;
+        if self.value["cached_code"].is_null() {
+            return Ok(None);
+        }
+        let generation = self.value["catalog_generation"]
+            .as_str()
+            .ok_or("cached generation absent")?;
+        let path = self
+            .catalog_root
+            .join(generation)
+            .join("driver-1344x760/cached-admission.json");
+        let expected = self.value["cached_code"]["admission_sha256"]
+            .as_str()
+            .ok_or("cached admission SHA absent")?;
+        let input = InputPin::open(&path, false)?;
+        if input.digest != expected {
+            return Err("cached expected admission changed".into());
+        }
+        Ok(Some((path, expected.to_owned())))
     }
     pub(super) fn report(&self) -> Value {
         json!({"receipt":self.receipt.receipt(),"catalog_generation":self.value["catalog_generation"],"host":self.value["host"],"source_commit":self.value["source_commit"],"stored_jit_executed":false,"metadata_excludes":["CPU frequency","uptime","process IDs"]})
@@ -481,22 +636,44 @@ mod tests {
             fs::create_dir_all(root.path().join(name)).unwrap();
         }
         fs::write(root.path().join("uv.lock"), b"locked").unwrap();
-        let first = source_roster(root.path(), false).unwrap();
-        assert!(source_roster(root.path(), true).is_err());
+        let first = source_roster(root.path(), false, false).unwrap();
+        assert!(source_roster(root.path(), true, false).is_err());
         let module = root.path().join("rust/tools/model_export/new.py");
         fs::write(&module, b"new exporter").unwrap();
-        assert_ne!(source_roster(root.path(), false).unwrap(), first);
+        assert_ne!(source_roster(root.path(), false, false).unwrap(), first);
         fs::remove_file(module).unwrap();
-        assert_eq!(source_roster(root.path(), false).unwrap(), first);
+        assert_eq!(source_roster(root.path(), false, false).unwrap(), first);
         let linked = root.path().join("rust/tools/model_export/linked.py");
         std::os::unix::fs::symlink(root.path().join("uv.lock"), &linked).unwrap();
-        assert!(source_roster(root.path(), false).is_err());
+        assert!(source_roster(root.path(), false, false).is_err());
         fs::remove_file(linked).unwrap();
         let linked = root.path().join("rust/tools/model_export/linked-directory");
         std::os::unix::fs::symlink(root.path().join("openpilot/common"), &linked).unwrap();
-        assert!(source_roster(root.path(), false).is_err());
+        assert!(source_roster(root.path(), false, false).is_err());
         fs::remove_file(linked).unwrap();
         fs::remove_file(root.path().join("uv.lock")).unwrap();
-        assert!(source_roster(root.path(), false).is_err());
+        assert!(source_roster(root.path(), false, false).is_err());
+    }
+}
+
+#[cfg(test)]
+mod cached_binding_canonical_tests {
+    use super::*;
+
+    #[test]
+    fn nested_insertion_order_does_not_change_or_authorize_a_cached_binding() {
+        let first: Value = serde_json::from_str(r#"{"helper":{"path":"/native/worker","sha256":"abc","identity":[1,2,3]},"sources":[{"path":"a.rs","sha256":"123"}]}"#).unwrap();
+        let reordered: Value = serde_json::from_str(r#"{"sources":[{"sha256":"123","path":"a.rs"}],"helper":{"identity":[1,2,3],"sha256":"abc","path":"/native/worker"}}"#).unwrap();
+        let expected = cached_canonical_sha(&first).unwrap();
+        let before = serde_json::to_vec(&reordered).unwrap();
+        assert_eq!(cached_canonical_sha(&reordered).unwrap(), expected);
+        // Canonicalizing the digest must not mutate the issued receipt values.
+        assert_eq!(serde_json::to_vec(&reordered).unwrap(), before);
+        let mut changed = reordered;
+        changed["helper"]["identity"][2] = json!(4);
+        assert_ne!(cached_canonical_sha(&changed).unwrap(), expected);
+        changed["helper"]["identity"][2] = json!(3);
+        changed["sources"][0]["sha256"] = json!("stale");
+        assert_ne!(cached_canonical_sha(&changed).unwrap(), expected);
     }
 }

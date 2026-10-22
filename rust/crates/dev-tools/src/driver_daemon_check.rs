@@ -65,6 +65,9 @@ impl CurrentCatalogAdmission {
             CurrentCatalog::open(root, &catalog, receipt, receipt_sha256, models, checkout)?;
         Ok(Self { catalog, current })
     }
+    pub(crate) fn cached_admission(&self) -> Result<Option<(PathBuf, String)>> {
+        self.current.cached_admission()
+    }
     pub(crate) fn verify(&self) -> Result<()> {
         self.catalog.verify()?;
         self.current.verify()
@@ -1257,6 +1260,7 @@ struct CaseContext<'a> {
     original: &'a OriginalCapture,
     signals: &'a Signals,
     checkout_commit: &'a str,
+    cached_admission: Option<&'a (PathBuf, String)>,
     width: u64,
     height: u64,
     raw: bool,
@@ -1268,6 +1272,7 @@ fn case(context: &CaseContext<'_>) -> Result<Value> {
         original,
         signals,
         checkout_commit,
+        cached_admission,
         width,
         height,
         raw,
@@ -1304,10 +1309,18 @@ fn case(context: &CaseContext<'_>) -> Result<Value> {
             )
         })
         .transpose()?;
-    let daemon_args = [
+    let mut daemon_args = vec![
         OsString::from("--trusted-catalog"),
         options.catalog.as_os_str().to_owned(),
     ];
+    if let Some((path, sha)) = cached_admission {
+        daemon_args.extend([
+            "--cached-admission".into(),
+            path.as_os_str().to_owned(),
+            "--cached-admission-sha256".into(),
+            sha.as_str().into(),
+        ]);
+    }
     let mut daemon = OwnedChild::spawn(
         &options.binary,
         &daemon_args,
@@ -1695,6 +1708,11 @@ pub fn run(options: &Options) -> Result<Value> {
         binding.verify()?;
     }
     fs::create_dir(&options.output)?;
+    let cached_admission = current_catalog
+        .as_ref()
+        .map(CurrentCatalog::cached_admission)
+        .transpose()?
+        .flatten();
     let mut reports = Vec::with_capacity(CASES.len());
     for (width, height, raw, _) in CASES {
         signals.check()?;
@@ -1703,6 +1721,7 @@ pub fn run(options: &Options) -> Result<Value> {
             original: &original,
             signals: &signals,
             checkout_commit: &checkout,
+            cached_admission: cached_admission.as_ref(),
             width,
             height,
             raw,

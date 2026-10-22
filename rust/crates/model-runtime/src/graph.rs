@@ -25,6 +25,15 @@ pub struct Graph {
     pub calls: Vec<Call>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub entrypoints: Vec<Entrypoint>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cached_code: Option<CachedCode>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct CachedCode {
+    pub certificate_sha256: String,
+    pub kernels: Vec<usize>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -96,10 +105,24 @@ impl Graph {
     }
 
     fn validate(&self) -> Result<u64, Error> {
-        entrypoint::validate(self.version, &self.entrypoints, self.calls.len())?;
-        if !matches!(self.backend.as_str(), "cpu-clang" | "cpu-llvm")
-            || self.arch != std::env::consts::ARCH
-        {
+        let entry_version = if self.version == 3 {
+            if self.entrypoints.is_empty() {
+                1
+            } else {
+                2
+            }
+        } else {
+            self.version
+        };
+        entrypoint::validate(entry_version, &self.entrypoints, self.calls.len())?;
+        let mode_valid = match self.backend.as_str() {
+            "cpu-clang" | "cpu-llvm" => self.version != 3 && self.cached_code.is_none(),
+            "cpu-cached-llvm" => {
+                self.version == 3 && self.arch == "x86_64" && self.cached_code.is_some()
+            }
+            _ => false,
+        };
+        if !mode_valid || self.arch != std::env::consts::ARCH {
             return Err(Error::Contract("version/backend/architecture"));
         }
         for digest in [&self.weights_sha256, &self.library_sha256] {
@@ -109,6 +132,23 @@ impl Graph {
                     .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
             {
                 return Err(Error::Contract("SHA-256 encoding"));
+            }
+        }
+        if let Some(cached) = &self.cached_code {
+            if cached.kernels.is_empty()
+                || cached.kernels.len() > 4096
+                || cached
+                    .kernels
+                    .iter()
+                    .any(|index| *index >= self.kernels.len())
+                || cached.kernels.iter().collect::<HashSet<_>>().len() != cached.kernels.len()
+                || cached.certificate_sha256.len() != 64
+                || !cached
+                    .certificate_sha256
+                    .bytes()
+                    .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+            {
+                return Err(Error::Contract("cached graph certificate/roster"));
             }
         }
         for count in [
@@ -206,5 +246,32 @@ impl Graph {
             }
         }
         Ok(total)
+    }
+}
+
+#[cfg(test)]
+mod cached_schema_tests {
+    use super::*;
+    use serde_json::json;
+    fn fresh() -> serde_json::Value {
+        json!({"version":1,"backend":"cpu-llvm","arch":std::env::consts::ARCH,
+            "weights_sha256":"0".repeat(64),"library_sha256":"0".repeat(64),
+            "allocations":[],"views":[],"inputs":[],"outputs":[],"kernels":[],"calls":[]})
+    }
+    #[test]
+    fn disabled_fresh_schema_serializes_without_cached_metadata() {
+        let validated = Graph::parse(&serde_json::to_vec(&fresh()).unwrap()).unwrap();
+        assert!(validated.graph.cached_code.is_none());
+        let value = serde_json::to_value(&validated.graph).unwrap();
+        assert!(value.get("cached_code").is_none());
+        assert_eq!(value, fresh());
+    }
+    #[test]
+    fn cached_metadata_cannot_be_added_to_a_fresh_backend_or_old_version() {
+        let mut value = fresh();
+        value["cached_code"] = json!({"certificate_sha256":"0".repeat(64),"kernels":[0]});
+        assert!(Graph::parse(&serde_json::to_vec(&value).unwrap()).is_err());
+        value["backend"] = json!("cpu-cached-llvm");
+        assert!(Graph::parse(&serde_json::to_vec(&value).unwrap()).is_err());
     }
 }

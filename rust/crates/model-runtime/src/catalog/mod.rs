@@ -120,7 +120,7 @@ impl Catalog {
             }
             let backend: Backend = serde_json::from_slice(&graph_bytes)?;
             match backend.backend.as_str() {
-                "cpu-clang" | "cpu-llvm" => {
+                "cpu-clang" | "cpu-llvm" | "cpu-cached-llvm" => {
                     let graph = Graph::parse(&graph_bytes)?.graph;
                     descriptor.validate(&Contract {
                         inputs: &graph.inputs,

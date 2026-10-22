@@ -62,16 +62,24 @@ fn comparison(left: &[u8], right: &[u8]) -> Value {
 }
 
 pub fn run_first_driver_frame_diagnostic() -> Result<()> {
+    let preparation = required("MODEL_FAMILY_GATE_PREPARATION");
+    run_driver_frame_diagnostic_from(
+        &preparation.join("grouped-native/root-0/driver-collector-ordinary-output/1344-raw-1"),
+        &preparation.join("driver-first-frame-diagnostic"),
+    )
+}
+
+pub fn run_driver_frame_diagnostic_from(
+    failed: &std::path::Path,
+    output: &std::path::Path,
+) -> Result<()> {
     let root = required("MODEL_FAMILY_GATE_ROOT");
     let preparation = required("MODEL_FAMILY_GATE_PREPARATION");
     let original_family = required("MODEL_FAMILY_GATE_ORIGINAL");
     if !original_family.is_dir() {
         return Err("original family fixture directory missing".into());
     }
-    let failed =
-        preparation.join("grouped-native/root-0/driver-collector-ordinary-output/1344-raw-1");
-    let output = preparation.join("driver-first-frame-diagnostic");
-    fs::create_dir(&output)?;
+    fs::create_dir(output)?;
     let original = OriginalCapture::open(
         &preparation.join("driver-fixture/collector-current/observations"),
         MANIFEST,
@@ -145,18 +153,27 @@ pub fn run_first_driver_frame_diagnostic() -> Result<()> {
     let sequence_path = output.join("sequence.json");
     write_json(&sequence_path, &json!(sequence));
     // Hold every actual input to model-run, including the authored sequence.
-    hold_tree(&output, &mut held)?;
-    let result = run(
-        &executable,
-        &[
-            OsString::from("--trusted-bundle"),
-            bundle.into_os_string(),
-            sequence_path.into_os_string(),
-        ],
-        &output.join("invocation"),
-        None,
-        true,
-    ); // diagnostic's bound is 120 seconds
+    hold_tree(output, &mut held)?;
+    let mut args = vec![
+        OsString::from("--trusted-bundle"),
+        bundle.clone().into_os_string(),
+        sequence_path.into_os_string(),
+    ];
+    let current_receipt = read_json(&receipt);
+    if !current_receipt["cached_code"].is_null() {
+        let admission = bundle.join("cached-admission.json");
+        held.push(Held::open(&admission));
+        args.extend([
+            "--cached-admission".into(),
+            admission.into_os_string(),
+            "--cached-admission-sha256".into(),
+            current_receipt["cached_code"]["admission_sha256"]
+                .as_str()
+                .ok_or("cached admission SHA missing")?
+                .into(),
+        ]);
+    }
+    let result = run(&executable, &args, &output.join("invocation"), None, true); // diagnostic's bound is 120 seconds
     let mut comparisons = Vec::new();
     if result.code == 0 {
         for (label, expected, daemon) in frames {

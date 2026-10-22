@@ -188,10 +188,20 @@ fn execute(options: &Options, mut emit: impl FnMut(&Value) -> Result<()>) -> Res
                 } else {
                     &options.driver
                 };
-                let args = [
+                let mut args = vec![
                     OsString::from("--trusted-catalog"),
                     options.catalog.as_os_str().to_owned(),
                 ];
+                if component == "dmonitoringmodeld" {
+                    if let Some((path, sha)) = original.cached_admission()? {
+                        args.extend([
+                            "--cached-admission".into(),
+                            path.into_os_string(),
+                            "--cached-admission-sha256".into(),
+                            sha.into(),
+                        ]);
+                    }
+                }
                 let remove = if raw {
                     Vec::new()
                 } else {

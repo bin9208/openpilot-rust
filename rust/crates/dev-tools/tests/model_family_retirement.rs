@@ -664,3 +664,62 @@ fn diagnose_first_driver_frame_on_same_host_and_catalog() {
     diagnostic::run_first_driver_frame_diagnostic()
         .expect("failure-only driver diagnostic did not complete; inspect retained receipts");
 }
+
+#[test]
+#[ignore = "source-pinned hosted cached catalog and genuine original driver observations required"]
+fn cached_driver_uses_actual_model_run_and_daemon_before_full_retirement() {
+    let root = required("MODEL_FAMILY_GATE_ROOT");
+    let preparation = required("MODEL_FAMILY_GATE_PREPARATION");
+    let inputs = Inputs {
+        binaries: root.join("rust/target/debug"),
+        root,
+        original: required("MODEL_FAMILY_GATE_ORIGINAL"),
+        driver_receipt: preparation.join("driver-catalog/current-catalog-receipt.json"),
+        family_receipt: preparation.join("family-catalog/current-catalog-receipt.json"),
+        preparation,
+        startup_manifest: text("MODEL_FAMILY_STARTUP_MANIFEST_SHA256"),
+        usb_manifest: text("MODEL_FAMILY_USBGPU_MANIFEST_SHA256"),
+    };
+    let receipt = read_json(&inputs.driver_receipt);
+    assert_eq!(receipt["cached_code"]["complete_preflight"], true);
+    assert_eq!(receipt["cached_code"]["generated_code_executed"], false);
+    let proof = inputs.preparation.join("cached-first-native");
+    fs::create_dir(&proof).unwrap();
+    let output = proof.join("driver-output");
+    let args = inputs.driver_args(&inputs.root, true, &output);
+    let result = run(
+        &inputs.binaries.join("check-driver-daemon"),
+        &args,
+        &proof.join("invocation"),
+        Some(&inputs.driver_receipt),
+        false,
+    );
+    let report = success(&result, &output, 4);
+    assert_eq!(
+        report["current_catalog"]["receipt"]["sha256"],
+        pin(&inputs.driver_receipt)["sha256"]
+    );
+    diagnostic::run_driver_frame_diagnostic_from(
+        &output.join("1344-raw-1"),
+        &proof.join("model-run"),
+    )
+    .unwrap();
+    let diagnostic = read_json(&proof.join("model-run/diagnostic.json"));
+    assert_eq!(diagnostic["model_run_exit"], 0);
+    let comparisons = diagnostic["comparisons"].as_array().unwrap();
+    assert_eq!(comparisons.len(), 2);
+    for row in comparisons {
+        for name in ["model_vs_original", "daemon_vs_original", "model_vs_daemon"] {
+            let pair = &row[name];
+            assert_eq!(pair["left_bytes"], 2212);
+            assert_eq!(pair["right_bytes"], 2212);
+            assert!(pair["max_finite_f32_absolute_difference"].as_f64().unwrap() <= 1e-6);
+            assert!(pair["nonfinite_pairs"] == 0 || pair["byte_equal"] == true);
+        }
+    }
+    write_json(
+        &proof.join("accepted.json"),
+        &json!({"actual_model_run_and_daemon":true,
+        "tolerance":1e-6,"full_retirement_acceptance":false,"full_family_gate_still_required":true}),
+    );
+}

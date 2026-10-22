@@ -1555,6 +1555,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "iced-x86"
+version = "1.21.0"
+dependencies = [
+ "lazy_static",
+]
+
+[[package]]
 name = "icu_collections"
 version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3315,6 +3322,7 @@ dependencies = [
 name = "openpilot-model-runtime"
 version = "0.1.0"
 dependencies = [
+ "iced-x86",
  "libc",
  "libloading",
  "serde",

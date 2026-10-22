@@ -29,12 +29,12 @@ class NativeKernel:
     evidence: CompilationEvidence | None = None
 
 
-def compile_kernel(operation: UOp, index: int, compiler: ClangCompiler | CPULLVMCompiler) -> NativeKernel:
+def compile_kernel(operation: UOp, index: int, compiler: ClangCompiler | CPULLVMCompiler, *, fresh_in_cached: bool = False) -> NativeKernel:
     info = operation.arg
     source = operation.src[3].arg
     if not isinstance(source, str):
         raise ExportError("compiled program has no source")
-    symbol = f"op_impl_{index}"
+    symbol = f"op_fresh_impl_{index}" if fresh_in_cached else f"op_impl_{index}"
     original = f"void {info.function_name}(" if isinstance(compiler, ClangCompiler) else f"@{info.function_name}("
     renamed = f"void {symbol}(" if isinstance(compiler, ClangCompiler) else f"@{symbol}("
     if source.count(original) != 1:
@@ -72,9 +72,7 @@ def _identity(value: os.stat_result) -> list[int]:
 
 
 @contextlib.contextmanager
-def _guarded_add_helper():
-    binary = os.environ.get("MODEL_LLVM_GUARDED_ADD_BINARY")
-    expected = os.environ.get("MODEL_LLVM_GUARDED_ADD_SHA256")
+def _admitted_helper(binary, expected):
     if binary is None and expected is None:
         yield None
         return
@@ -118,6 +116,10 @@ def _guarded_add_helper():
     finally:
         if fd is not None:
             os.close(fd)
+
+
+def _guarded_add_helper():
+    return _admitted_helper(os.environ.get("MODEL_LLVM_GUARDED_ADD_BINARY"), os.environ.get("MODEL_LLVM_GUARDED_ADD_SHA256"))
 
 
 def guarded_add_binding() -> dict:
@@ -256,3 +258,188 @@ def _guarded_add(body: str, fd: int) -> tuple[str, bytes]:
                 for stream in (child.stdin, child.stdout, child.stderr):
                     if stream is not None:
                         stream.close()
+
+
+def _canonical(value) -> bytes:
+    return json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
+
+
+def _run_cached_issuer(fd: int, request: dict, directory: Path, *, certificate: bool) -> dict:
+    """Only the admitted native issuer executes; complete input images stay inert."""
+    directory.mkdir()
+    request_path = directory / "request.json"
+    raw = _canonical(request)
+    if len(raw) > 4 * 1024 * 1024:
+        raise ExportError("cached issuer request exceeds bound")
+    request_path.write_bytes(raw)
+    outputs = {"object":directory / "container.o", "isa-receipt":directory / "isa.json", "admission":directory / "admission.json"}
+    if certificate:
+        outputs["certificate"] = directory / "certificate.json"
+    argv = [f"/proc/self/fd/{fd}", "--request", str(request_path), "--request-sha256", hashlib.sha256(raw).hexdigest()]
+    for name, path in outputs.items():
+        argv.extend(["--" + name, str(path)])
+    child = None
+    errors = bytearray()
+    code = None
+    try:
+        child = subprocess.Popen(argv, pass_fds=(fd,), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                                 stderr=subprocess.PIPE, start_new_session=True, bufsize=0)
+        deadline = time.monotonic() + 90
+        with selectors.DefaultSelector() as selector:
+            os.set_blocking(child.stderr.fileno(), False)
+            selector.register(child.stderr, selectors.EVENT_READ)
+            while selector.get_map():
+                if time.monotonic() >= deadline:
+                    raise ExportError("cached issuer deadline exceeded")
+                for key, _ in selector.select(0.1):
+                    chunk = os.read(key.fileobj.fileno(), 65536)
+                    if not chunk:
+                        selector.unregister(key.fileobj)
+                    else:
+                        errors.extend(chunk)
+                        if len(errors) > 65536:
+                            raise ExportError("cached issuer stderr exceeds bound")
+            while True:
+                # Keep the leader unreaped until owned process-group cleanup;
+                # Popen.poll/wait here would allow its numeric PID to be reused.
+                result = os.waitid(os.P_PID, child.pid, os.WEXITED | os.WNOWAIT | os.WNOHANG)
+                if result is not None:
+                    code = result.si_status if result.si_code == os.CLD_EXITED else 128 + result.si_status
+                    break
+                if time.monotonic() >= deadline:
+                    raise ExportError("cached issuer did not exit")
+                time.sleep(0.01)
+    finally:
+        if child is not None:
+            try:
+                os.killpg(child.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            child.wait(timeout=5)
+            child.stderr.close()
+    (directory / "stderr.txt").write_bytes(errors)
+    (directory / "status.json").write_bytes(_canonical({"exit":code, "request_sha256":hashlib.sha256(raw).hexdigest(),
+                                                      "generated_code_executed":False, "libraries_loaded":False}))
+    if code != 0:
+        raise ExportError("cached issuer rejected complete program roster: " + errors.decode(errors="replace"))
+    result = {"request":raw, "status":(directory / "status.json").read_bytes()}
+    for name, path in outputs.items():
+        if path.is_symlink() or not path.is_file() or path.stat().st_size > 64 * 1024 * 1024:
+            raise ExportError("cached issuer output regular-file/size guard")
+        result[name] = path.read_bytes()
+    if json.loads(result["admission"]) != request["admission"]:
+        raise ExportError("cached issuer changed independently authenticated admission")
+    return result
+
+
+class CachedExport:
+    """An explicit native preflight and per-original-program admission session."""
+    def __init__(self, fd: int, binding: dict, request: dict, digest: str, temporary: Path):
+        self.fd, self.binding, self.request, self.digest, self.temporary = fd, binding, request, digest, temporary
+        self.count = 0
+        if request.get("library") is not None or request.get("graph") is not None:
+            raise ExportError("cached initial request must be preflight-only")
+        current = request["admission"]["current"]
+        if (current["cached_helper_sha256"] != binding["sha256"]
+                or current["cached_helper_binding_sha256"] != hashlib.sha256(_canonical(binding)).hexdigest()
+                or current["helper_binding_sha256"] != hashlib.sha256(_canonical(guarded_add_binding())).hexdigest()):
+            raise ExportError("cached original/current helper binding differs")
+        self.preflight = _run_cached_issuer(fd, request, temporary / "preflight", certificate=False)
+
+    def for_model(self, jit):
+        from .pipeline import linear_calls
+        from tinygrad.uop.ops import Ops
+        if jit.captured is None:
+            raise ExportError("cached mode requires an original captured model")
+        expected = self.request["admission"]["programs"]
+        by_identity = {}
+        for index, row in enumerate(expected):
+            key = (row["source_sha256"], row["image_sha256"], tuple(row["global_slots"]), row["scalars"], row["workers"], row["core_id"])
+            if key in by_identity:
+                raise ExportError("ambiguous duplicate original PROGRAM identity")
+            by_identity[key] = index
+        operations = {}
+        for call in linear_calls(jit.captured.linear):
+            operation = call.src[0]
+            if operation.op is not Ops.PROGRAM or operation in operations:
+                continue
+            info = operation.arg
+            source, image = operation.src[3].arg, operation.src[4].arg
+            if not isinstance(source, str) or not isinstance(image, bytes) or len(image) > 16 * 1024 * 1024:
+                raise ExportError("cached original PROGRAM requires complete SOURCE/BINARY")
+            key = (hashlib.sha256(source.encode()).hexdigest(), hashlib.sha256(image).hexdigest(), tuple(info.globals),
+                   len(info.vars), info.global_size[0], info.runtimevars.get("core_id"))
+            if key not in by_identity:
+                raise ExportError("actual PROGRAM source/image/argument/launch ABI differs from independent admission")
+            operations[operation] = by_identity[key]
+        if len(operations) != len(expected) or set(operations.values()) != set(range(len(expected))):
+            raise ExportError("actual original PROGRAM roster incomplete or aliased")
+        return CachedModel(self, operations)
+
+    def receipt(self) -> dict:
+        return {"enabled":True, "helper":self.binding, "request_sha256":self.digest,
+                "admission_sha256":hashlib.sha256(self.preflight["admission"]).hexdigest(),
+                "complete_preflight":True, "generated_code_executed":False}
+
+
+@dataclass(frozen=True, slots=True)
+class CachedModel:
+    session: CachedExport
+    operations: dict
+
+    def package(self, captured, directory: Path, *, final: bool = False):
+        expected = self.session.request["admission"]["programs"]
+        records = {row.original_index:row for row in captured.cached_programs}
+        if set(records) != set(range(len(expected))):
+            raise ExportError("cached capture omitted an original PROGRAM")
+        source_files = {row["original_index"]:row for row in self.session.request["programs"]}
+        files = []
+        for original_index in range(len(expected)):
+            row = records[original_index]
+            source = directory / f"kernel-{row.kernel}.txt"
+            image = directory / f"kernel-{row.kernel}.cached.bin"
+            if not final:
+                image.write_bytes(row.image)
+            files.append({"original_index":original_index, "kernel":row.kernel, "source":str(source), "image":str(image),
+                          "reconstruction_object":source_files[original_index]["reconstruction_object"]})
+        request = self.session.request | {"programs":files, "library":str(directory / "kernels.so") if final else None,
+                                          "graph":str(directory / "graph.json") if final else None}
+        return _run_cached_issuer(self.session.fd, request, directory / ("cached-seal" if final else "cached-package"), certificate=final)
+
+
+@contextlib.contextmanager
+def cached_export_session():
+    names = ("MODEL_CACHED_CODE_BINARY", "MODEL_CACHED_CODE_SHA256", "MODEL_CACHED_CODE_REQUEST", "MODEL_CACHED_CODE_REQUEST_SHA256")
+    values = [os.environ.get(name) for name in names]
+    if all(value is None for value in values):
+        yield None
+        return
+    if not all(values):
+        raise ExportError("cached mode requires explicit native issuer path/SHA and request path/SHA")
+    binary, expected, name, digest = values
+    if len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest):
+        raise ExportError("invalid cached request SHA256")
+    path = Path(name)
+    if not path.is_absolute() or path.resolve(strict=True) != path:
+        raise ExportError("cached request must be an absolute alias-free path")
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+    try:
+        metadata = os.fstat(fd)
+        if not stat.S_ISREG(metadata.st_mode) or metadata.st_size > 4 * 1024 * 1024:
+            raise ExportError("cached request regular-file/size guard")
+        raw = os.pread(fd, metadata.st_size + 1, 0)
+        def verify():
+            if (_identity(os.fstat(fd)) != _identity(metadata) or _identity(path.lstat()) != _identity(metadata)
+                    or path.resolve(strict=True) != path or len(raw) != metadata.st_size
+                    or hashlib.sha256(os.pread(fd, metadata.st_size + 1, 0)).hexdigest() != digest):
+                raise ExportError("cached request bytes or identity changed")
+        verify()
+        request = json.loads(raw, object_pairs_hook=_receipt_object)
+        with _admitted_helper(binary, expected) as helper, tempfile.TemporaryDirectory(prefix="native-cached-preflight-") as temporary:
+            session = CachedExport(helper[0], helper[1], request, digest, Path(temporary))
+            try:
+                yield session
+            finally:
+                verify()
+    finally:
+        os.close(fd)

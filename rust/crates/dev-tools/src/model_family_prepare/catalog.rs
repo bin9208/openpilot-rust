@@ -6,6 +6,19 @@ use crate::{
     seal::Result,
 };
 use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
+fn super_hash(bytes: &[u8]) -> String {
+    format!("{:x}", Sha256::digest(bytes))
+}
+fn cached_canonical_sha(value: &Value) -> Result<String> {
+    // Cached binding fields use the same recursive key ordering as Python's
+    // _canonical; serde_json/preserve_order can be enabled by another feature.
+    // Sort a clone only. Do not rewrite receipt values or legacy receipt hashes.
+    let mut canonical = value.clone();
+    canonical.sort_all_objects();
+    Ok(super_hash(&serde_json::to_vec(&canonical)?))
+}
+
 use std::{
     collections::BTreeMap,
     ffi::OsString,
@@ -119,7 +132,18 @@ const HELPER_SOURCES: [&str; 8] = [
     "rust/Cargo.lock",
     "rust/rust-toolchain.toml",
 ];
-fn source_tree(root: &Path, guarded_add: bool) -> Result<BTreeMap<String, Snapshot>> {
+const CACHED_SOURCES: [&str; 9] = [
+    "rust/crates/model-runtime/src/cached_code.rs",
+    "rust/crates/model-runtime/src/bin/offline-cached-code.rs",
+    "rust/crates/model-runtime/src/cached_elf.rs",
+    "rust/crates/model-runtime/src/cpu.rs",
+    "rust/crates/model-runtime/src/graph.rs",
+    "rust/crates/model-runtime/src/error.rs",
+    "rust/crates/model-runtime/src/entrypoint.rs",
+    "rust/crates/model-runtime/src/assets.rs",
+    "rust/crates/model-runtime/src/buffer.rs",
+];
+fn source_tree(root: &Path, guarded_add: bool, cached: bool) -> Result<BTreeMap<String, Snapshot>> {
     let mut out = BTreeMap::new();
     for name in SOURCES {
         let base = root.join(name);
@@ -142,11 +166,22 @@ fn source_tree(root: &Path, guarded_add: bool) -> Result<BTreeMap<String, Snapsh
             require(out.len() <= 5000, "compiler source roster exceeds bound")?;
         }
     }
+    if cached {
+        for name in CACHED_SOURCES {
+            out.insert(
+                name.to_owned(),
+                Snapshot::open(&root.join(name), 16 * 1024 * 1024)?,
+            );
+        }
+    }
     Ok(out)
 }
 fn guarded_helper() -> Result<Option<Input>> {
-    let path = std::env::var_os("MODEL_LLVM_GUARDED_ADD_BINARY");
-    let hash = std::env::var("MODEL_LLVM_GUARDED_ADD_SHA256");
+    configured_helper("MODEL_LLVM_GUARDED_ADD")
+}
+fn configured_helper(prefix: &str) -> Result<Option<Input>> {
+    let path = std::env::var_os(format!("{prefix}_BINARY"));
+    let hash = std::env::var(format!("{prefix}_SHA256"));
     match (path, hash) {
         (None, Err(std::env::VarError::NotPresent)) => Ok(None),
         (Some(path), Ok(hash)) => {
@@ -322,7 +357,55 @@ pub fn prepare_catalog(options: &CatalogOptions) -> Result<Value> {
     )?;
     let helper = guarded_helper()?;
     let helper_before = helper.as_ref().map(helper_binding).transpose()?;
-    let sources = source_tree(&options.root, helper.is_some())?;
+    let cached_helper = configured_helper("MODEL_CACHED_CODE")?;
+    let cached_before = cached_helper.as_ref().map(helper_binding).transpose()?;
+    let sources = source_tree(&options.root, helper.is_some(), cached_helper.is_some())?;
+    let cached_request = match (
+        std::env::var_os("MODEL_CACHED_CODE_REQUEST"),
+        std::env::var("MODEL_CACHED_CODE_REQUEST_SHA256"),
+        &cached_before,
+    ) {
+        (None, Err(std::env::VarError::NotPresent), None) => None,
+        (Some(path), Ok(hash), Some(binding)) => {
+            let pin = Input::open(Path::new(&path), 4 * 1024 * 1024)?;
+            require(
+                pin.path == fs::canonicalize(&pin.path)? && pin.seal["sha256"] == hash,
+                "cached request path/SHA differs",
+            )?;
+            let request = json_file(&pin.path)?;
+            let current = &request["admission"]["current"];
+            require(
+                request["source_root"] == options.root.to_str().ok_or("source root UTF8")?
+                    && request["admission"]["original_model_sha256"]
+                        == models["dmonitoring_model_tinygrad.pkl"].seal["sha256"]
+                    && current["cached_helper_sha256"] == binding["sha256"]
+                    && current["cached_helper_binding_sha256"] == cached_canonical_sha(binding)?
+                    && current["helper_binding_sha256"]
+                        == cached_canonical_sha(
+                            &helper_before
+                                .clone()
+                                .ok_or("cached mode requires guarded helper")?,
+                        )?
+                    && current["exporter_roster_sha256"] == cached_canonical_sha(&seals(&sources))?,
+                "cached request authentic original/current source/helper binding differs",
+            )?;
+            for (field, names) in [
+                ("guarded_add_sources", &HELPER_SOURCES[..]),
+                ("cached_sources", &CACHED_SOURCES[..]),
+            ] {
+                let expected = names
+                    .iter()
+                    .map(|name| json!({"path":name,"sha256":sources[*name].seal["sha256"]}))
+                    .collect::<Vec<_>>();
+                require(
+                    current[field] == json!(expected),
+                    "cached issuer exact source roster differs",
+                )?;
+            }
+            Some((pin, request))
+        }
+        _ => return Err("cached mode requires paired native ELF and request path/SHA".into()),
+    };
     let compiler = Input::open(
         &options.root.join("rust/tools/build_model_pipelines.py"),
         1024 * 1024,
@@ -405,6 +488,38 @@ pub fn prepare_catalog(options: &CatalogOptions) -> Result<Value> {
                 .to_owned(),
         );
     }
+    if let (Some(input), Some((request, _))) = (&cached_helper, &cached_request) {
+        for (name, value) in [
+            (
+                "MODEL_CACHED_CODE_BINARY",
+                input.path.to_str().ok_or("cached helper UTF8")?.to_owned(),
+            ),
+            (
+                "MODEL_CACHED_CODE_SHA256",
+                input.seal["sha256"]
+                    .as_str()
+                    .ok_or("cached helper SHA")?
+                    .to_owned(),
+            ),
+            (
+                "MODEL_CACHED_CODE_REQUEST",
+                request
+                    .path
+                    .to_str()
+                    .ok_or("cached request UTF8")?
+                    .to_owned(),
+            ),
+            (
+                "MODEL_CACHED_CODE_REQUEST_SHA256",
+                request.seal["sha256"]
+                    .as_str()
+                    .ok_or("cached request SHA")?
+                    .to_owned(),
+            ),
+        ] {
+            spec.env.insert(name.into(), value);
+        }
+    }
     let result = execute(&spec, temp.path());
     if !matches!(&result, Ok(result) if result.code == 0) {
         let evidence = temp.keep();
@@ -420,7 +535,11 @@ pub fn prepare_catalog(options: &CatalogOptions) -> Result<Value> {
     verify_map(&models)?;
     verify_map(&sources)?;
     require(
-        seals(&source_tree(&options.root, helper.is_some())?) == seals(&sources)
+        seals(&source_tree(
+            &options.root,
+            helper.is_some(),
+            cached_helper.is_some(),
+        )?) == seals(&sources)
             && seals(&tree(&options.models, 5, 128 * 1024 * 1024)?) == seals(&models),
         "compiler source/model roster changed",
     )?;
@@ -452,6 +571,34 @@ pub fn prepare_catalog(options: &CatalogOptions) -> Result<Value> {
         helper.as_ref().map(helper_binding).transpose()? == helper_before,
         "guarded add helper changed during compilation",
     )?;
+    let cached_target = match (&cached_request, &cached_before) {
+        (Some((pin, _)), Some(binding)) => {
+            pin.verify()?;
+            require(
+                cached_helper.as_ref().map(helper_binding).transpose()? == cached_before,
+                "cached native issuer changed during compilation",
+            )?;
+            let before = &target["cached_code_before"];
+            require(
+                before == &target["cached_code_after"]
+                    && before["enabled"] == true
+                    && before["helper"] == *binding
+                    && before["request_sha256"] == pin.seal["sha256"]
+                    && before["complete_preflight"] == true
+                    && before["generated_code_executed"] == false,
+                "cached compiler native preflight binding differs",
+            )?;
+            Some(before.clone())
+        }
+        (None, None) => {
+            require(
+                target["cached_code_before"].is_null() && target["cached_code_after"].is_null(),
+                "unrecorded cached compiler mode",
+            )?;
+            None
+        }
+        _ => return Err("cached compiler configuration differs".into()),
+    };
     let target_host = &target["before"];
     require(
         target_host["llvm_path"] == before["llvm_path"]
@@ -525,6 +672,31 @@ pub fn prepare_catalog(options: &CatalogOptions) -> Result<Value> {
         } else {
             json!({"driving":models["driving_tinygrad.pkl"].seal["sha256"]})
         };
+        if kind == "driver" {
+            let graph = json_file(&catalog.join(generation).join(directory).join("graph.json"))?;
+            match &cached_request {
+                Some((_, request)) => {
+                    let admission_path = catalog
+                        .join(generation)
+                        .join(directory)
+                        .join("cached-admission.json");
+                    let admission = Input::open(&admission_path, 4 * 1024 * 1024)?;
+                    require(
+                        graph["backend"] == "cpu-cached-llvm"
+                            && graph["version"] == 3
+                            && json_file(&admission_path)? == request["admission"]
+                            && cached_target.as_ref().is_some_and(|target| {
+                                target["admission_sha256"] == admission.seal["sha256"]
+                            }),
+                        "cached catalog graph or independently expected admission differs",
+                    )?;
+                }
+                None => require(
+                    graph["backend"] != "cpu-cached-llvm" && graph["cached_code"].is_null(),
+                    "unadmitted cached graph",
+                )?,
+            }
+        }
         require(
             descriptor["sources"] == expected
                 && descriptor["kind"] == kind
@@ -554,6 +726,10 @@ pub fn prepare_catalog(options: &CatalogOptions) -> Result<Value> {
     let mut report = json!({"version":1,"provider":"CPU:LLVM","source_commit":checkout,"host":receipt_host,"models":seals(&models),"exporter_dependency_files":seals(&sources),"catalog_generation":generation,"catalog_files":seals(&files),"stored_jit_executed":false,"original_jit_execution_admitted":false,"compiler_entrypoint":compiler.seal,"compiler_interpreter":python.seal,"compiler_target_receipt":target_pin.seal,"original_model_manifest":manifest.seal,"scope":"native orchestration; existing Python compiler remains pending retirement"});
     if let Some(binding) = &helper_before {
         report["guarded_add"] = binding.clone();
+    }
+    if let (Some(target), Some((request, _))) = (&cached_target, &cached_request) {
+        report["cached_code"] = target.clone();
+        report["cached_code"]["request"] = json!({"path":request.path,"sha256":request.seal["sha256"],"bytes":request.seal["bytes"]});
     }
     let receipt = temp.path().join("current-catalog-receipt.json");
     write_json(&receipt, &report)?;
@@ -621,6 +797,13 @@ pub fn prepare_catalog(options: &CatalogOptions) -> Result<Value> {
     verify_map(&models)?;
     verify_map(&sources)?;
     require(before == host(&llvm)?, "final compiler host changed")?;
+    if let Some((request, _)) = &cached_request {
+        request.verify()?;
+    }
+    require(
+        cached_helper.as_ref().map(helper_binding).transpose()? == cached_before,
+        "final cached native issuer changed",
+    )?;
     require(
         Input::open(&options.output.join("compiler-target.json"), 1024 * 1024)?.seal
             == target_pin.seal,
@@ -780,5 +963,27 @@ mod tests {
         fs::remove_file(&file).unwrap();
         let _socket = std::os::unix::net::UnixListener::bind(&file).unwrap();
         assert!(tree(temp.path(), 1, 3).is_err());
+    }
+}
+
+#[cfg(test)]
+mod cached_binding_canonical_tests {
+    use super::*;
+
+    #[test]
+    fn nested_insertion_order_does_not_change_or_authorize_a_cached_binding() {
+        let first: Value = serde_json::from_str(r#"{"helper":{"path":"/native/worker","sha256":"abc","identity":[1,2,3]},"sources":[{"path":"a.rs","sha256":"123"}]}"#).unwrap();
+        let reordered: Value = serde_json::from_str(r#"{"sources":[{"sha256":"123","path":"a.rs"}],"helper":{"identity":[1,2,3],"sha256":"abc","path":"/native/worker"}}"#).unwrap();
+        let expected = cached_canonical_sha(&first).unwrap();
+        let before = serde_json::to_vec(&reordered).unwrap();
+        assert_eq!(cached_canonical_sha(&reordered).unwrap(), expected);
+        // Canonicalizing the digest must not mutate the issued receipt values.
+        assert_eq!(serde_json::to_vec(&reordered).unwrap(), before);
+        let mut changed = reordered;
+        changed["helper"]["identity"][2] = json!(4);
+        assert_ne!(cached_canonical_sha(&changed).unwrap(), expected);
+        changed["helper"]["identity"][2] = json!(3);
+        changed["sources"][0]["sha256"] = json!("stale");
+        assert_ne!(cached_canonical_sha(&changed).unwrap(), expected);
     }
 }

@@ -12,7 +12,7 @@ import json
 import os
 from pathlib import Path
 
-from model_export.native import guarded_add_binding
+from model_export.native import cached_export_session, guarded_add_binding
 from model_export.original import DriverArtifacts, driver, driving
 from model_export.publish import BundleSpec, publish
 from openpilot.common.file_chunker import open_file_chunked
@@ -67,14 +67,22 @@ def main() -> None:
     metadata = root / "dmonitoring_model_metadata.pkl"
     road_sources = {"driving":source_hash(road)} if args.kind == "both" else {}
     driver_sources = {"model":source_hash(model), "metadata":source_hash(metadata)}
-    specs = []
-    for resolution in ((1928,1208), (1344,760)):
-        warp = root / f"dm_warp_{resolution[0]}x{resolution[1]}_tinygrad.pkl"
-        if args.kind == "both":
-            specs.append(BundleSpec("driving", resolution, driving(road, resolution), road_sources))
-        specs.append(BundleSpec("driver", resolution, driver(DriverArtifacts(model, warp, metadata)),
-                                driver_sources | {"warp":source_hash(warp)}))
-    publish(args.output, specs, args.backend)
+    with cached_export_session() as cached:
+        if cached is not None and args.backend != "cpu":
+            parser.error("explicit cached mode requires --backend cpu")
+        cached_before = cached.receipt() if cached is not None else None
+        specs = []
+        for resolution in ((1928,1208), (1344,760)):
+            warp = root / f"dm_warp_{resolution[0]}x{resolution[1]}_tinygrad.pkl"
+            if args.kind == "both":
+                specs.append(BundleSpec("driving", resolution, driving(road, resolution), road_sources))
+            original = driver(DriverArtifacts(model, warp, metadata))
+            cached_model = None if cached is None else cached.for_model(next(stage.jit for stage in original.stages if stage.name == "model"))
+            specs.append(BundleSpec("driver", resolution, original, driver_sources | {"warp":source_hash(warp)}, cached_model))
+        publish(args.output, specs, args.backend)
+        cached_after = cached.receipt() if cached is not None else None
+        if cached_before != cached_after:
+            raise RuntimeError("cached native issuer binding changed during catalog compilation")
     helper_after = guarded_add_binding()
     if helper_before != helper_after:
         raise RuntimeError("guarded add helper changed during catalog compilation")
@@ -83,9 +91,12 @@ def main() -> None:
         if target_before != target_after:
             raise RuntimeError("LLVM target changed during catalog compilation")
         with args.target_receipt.open("x") as receipt:
-            json.dump({"version": 1, "stored_jit_executed": False,
-                       "before": target_before, "after": target_after,
-                       "guarded_add_before": helper_before, "guarded_add_after": helper_after}, receipt, indent=2, sort_keys=True)
+            evidence = {"version": 1, "stored_jit_executed": False,
+                        "before": target_before, "after": target_after,
+                        "guarded_add_before": helper_before, "guarded_add_after": helper_after}
+            if cached_before is not None:
+                evidence["cached_code_before"], evidence["cached_code_after"] = cached_before, cached_after
+            json.dump(evidence, receipt, indent=2, sort_keys=True)
             receipt.write("\n")
     print(f"Published native pipeline catalog: {args.output / 'current.json'}")
 

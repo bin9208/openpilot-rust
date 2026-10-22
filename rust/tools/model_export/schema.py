@@ -80,6 +80,13 @@ class CompilationEvidence:
 
 
 @dataclass(frozen=True, slots=True)
+class CachedProgram:
+    original_index: int
+    kernel: int
+    image: bytes
+
+
+@dataclass(frozen=True, slots=True)
 class CapturedModel:
     allocations: tuple[Allocation, ...]
     views: tuple[View, ...]
@@ -93,6 +100,7 @@ class CapturedModel:
     weights: bytes
     backend: str
     compilation: tuple[CompilationEvidence | None, ...] = ()
+    cached_programs: tuple[CachedProgram, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

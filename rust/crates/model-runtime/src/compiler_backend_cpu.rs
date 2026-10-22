@@ -781,6 +781,7 @@ pub fn compile_onnx(
     let (allocations, weights) = table.weights();
     let graph = Graph {
         version: 1,
+        cached_code: None,
         backend: if image_calls.is_empty() && llvm_calls.is_empty() {
             "cpu-clang"
         } else {

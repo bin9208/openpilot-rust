@@ -25,6 +25,7 @@ class BundleSpec:
     camera: tuple[int, int]
     original: OriginalPipeline
     sources: Mapping[str, str]
+    cached: object | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,7 +57,12 @@ def tensor_specs(tensors: Mapping[str, Tensor]) -> tuple[TensorSpec, ...]:
 def emit(spec: BundleSpec, destination: Path, backend: Literal["cpu", "qcom"]) -> BundleEntry:
     original = spec.original
     exporter = export_cpu if backend == "cpu" else export_qcom
-    exporter(original.pipeline.jit, original.bindings, destination, entrypoints=original.pipeline.entrypoints)
+    if spec.cached is not None:
+        if backend != "cpu":
+            raise ExportError("cached native mode requires the CPU backend")
+        export_cpu(original.pipeline.jit, original.bindings, destination, entrypoints=original.pipeline.entrypoints, cached=spec.cached)
+    else:
+        exporter(original.pipeline.jit, original.bindings, destination, entrypoints=original.pipeline.entrypoints)
     stride, y_height, uv_height, frame_bytes = get_nv12_info(*spec.camera)
     descriptor = {"version":1, "kind":spec.kind, "camera":spec.camera,
                   "nv12":{"stride":stride, "y_height":y_height, "uv_height":uv_height, "bytes":frame_bytes},

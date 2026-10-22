@@ -119,6 +119,13 @@ impl Original {
             "model source root changed",
         )
     }
+    pub fn cached_admission(&self) -> Result<Option<(PathBuf, String)>> {
+        self.current
+            .borrow()
+            .as_ref()
+            .ok_or("current family catalog admission missing")?
+            .cached_admission()
+    }
     pub fn catalog_sources(&self, catalog: &Path, kinds: &[&str]) -> Result<()> {
         if self.current.borrow().is_none() {
             let models = self.manifest["models"]
