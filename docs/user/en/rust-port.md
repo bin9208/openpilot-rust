@@ -51,3 +51,5 @@ Development upload checks use `check-uploader-reference`, `check-uploader-loggin
 The ten original Python controllers are removed; maintained CI builds the
 required Rust features and executables before use. The final source-absence
 acceptance for this transition is tracked in #296.
+Host recording, upload and shutdown checks pass with these sources absent;
+repository-wide conversion and device acceptance remain unfinished.

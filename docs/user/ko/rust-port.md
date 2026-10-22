@@ -49,3 +49,5 @@ receipt는 최대 4MiB이며, JSON11의 `prefix`는 문자열이어야 합니다
 `check-uploader-siblings`, `check-manager-log-upload`, `check-runtime-log-upload`을
 사용합니다. 기존 Python 제어기 10개는 제거했으며, 유지 중인 CI가 필요한 Rust 기능과
 실행 파일을 먼저 빌드합니다. 이 전환의 최종 소스 부재 검증은 #296에서 추적합니다.
+소스가 없는 상태의 호스트 녹화·업로드·종료 검증은 통과했으며, 전체 전환과 실기 확인은
+아직 남아 있습니다.

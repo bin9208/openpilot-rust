@@ -34,6 +34,13 @@ and vendor release/build paths. The22October follow-up adds34 explicit sites
 This remains an observed inventory, not an exhaustive interpreter-free proof. Relocation and missing files do not close the
 three partial baseline entries.
 
+The ten uploader/route controllers are accepted at source12af083b2 by
+[39796626003](https://github.com/bin9208/openpilot-rust/actions/runs/39796626003).
+The baseline is now284replaced-local/3partially-replaced/3293pending; the routing
+map retains10accepted rows and3296remaining pending/partial entries. This closes
+two F03 routes and eight F04 helper roles, leaving1120/F03 and416/F04 entries.
+Original runtime uploader/deleter/xattr/loggerd/Athena consumers remain live.
+
 ## Current batches and blockers
 
 1. Panda device/protocol/CAN-I/O source deletion and maintained fixtures are

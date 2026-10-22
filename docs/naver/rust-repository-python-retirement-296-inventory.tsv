@@ -1982,7 +1982,7 @@ rust/tools/check_managed_entry_readiness.py	bbb2fef7982eaee05b32754d2f2a41219fe9
 rust/tools/check_managed_runtime.py	367ddeb9448bb1a1d8f7a4480961ecf5b10509f2	replaced-local	rust/crates/dev-tools/src/managed_runtime_check.rs; actual seven-daemon/two-context original comparison and native CI; #296 evidence ledger
 rust/tools/check_manager.py	b380fe81d306c5a7bc15a88966281717558d7417	replaced-local	rust/crates/dev-tools/src/manager_qa.rs; native same-ELF manager lifecycle proof39742079076
 rust/tools/check_manager_catalog.py	24f327c8d76b409461fd0fdfc25b4df2e4404a68	replaced-local	rust/crates/dev-tools/src/manager_catalog_check.rs
-rust/tools/check_manager_log_upload.py	99ef640d320ac7b88459b02b9bbc18d8638fa793	pending	-
+rust/tools/check_manager_log_upload.py	99ef640d320ac7b88459b02b9bbc18d8638fa793	replaced-local	rust/crates/dev-tools/src/route_upload_check.rs; check-manager-log-upload
 rust/tools/check_manager_logging.py	4b311746c8b24c37be499a44fd4b34806b658e88	replaced-local	rust/crates/dev-tools/src/manager_qa.rs; native same-ELF manager lifecycle proof39742079076
 rust/tools/check_message_state.py	6f2a3f9b26ad8e529180b4234daf88437afd044d	pending	Partial: native check-message-state CLI; shared source()/compare() retained for 20 maintained importing files
 rust/tools/check_micd_analysis.py	08a6ccc4870a71e6a93448d669be8903b3b0112f	pending	-
@@ -2029,7 +2029,7 @@ rust/tools/check_pandad_usb_policy.py	3b3f2ceb255914f79b8577f2c5c42d7891edd3af	p
 rust/tools/check_pandad_usb_raw.py	fc35658376e4e537558292b46b17ef862f189151	pending	-
 rust/tools/check_params_reference.py	9391d1c7f1333e767eb5f5359121671addffaf19	replaced-local	openpilot-dev-tools check-params-reference; dynamic original C++ build, 367-key store interoperability, copy/cleanup/lock failure parity
 rust/tools/check_params_string.py	b4cbdadb45a5850c9d7ccbedcd08c964ccc1c040	pending	-
-rust/tools/check_params_string_uploader.py	b02b74f336e9562f7a97406a1fa82c280d14b58d	pending	-
+rust/tools/check_params_string_uploader.py	b02b74f336e9562f7a97406a1fa82c280d14b58d	replaced-local	rust/crates/dev-tools/src/uploader_lifecycle_check.rs; check-uploader-siblings --scope params
 rust/tools/check_paramsd.py	7ed9f2d6d026b225cee5fe84a9b62fbfc1af5dbc	pending	-
 rust/tools/check_paramsd_daemon.py	9cf7bbcb077ac813f1651c70cac207dfae19d4a2	pending	-
 rust/tools/check_paramsd_loop.py	9bcb3609c414fe7298993c29f7f6c2df767508ba	replaced-local	Native full39-case/2420-row loop controller and input generator; fresh original predelete5f6 run39535390950; actual deleted-checkout21a35b92 run39538488955 passed
@@ -2058,7 +2058,7 @@ rust/tools/check_registration_utf7.py	9bb1dd1f15e75efb58c78db603143cd17468be59	r
 rust/tools/check_registration_vendor.py	dc7278a116a16e63654efbd2ee40706499d4064e	replaced-local	rust/crates/dev-tools/src/registration_vendor_check.rs
 rust/tools/check_runtime_diagnostics.py	e1b0a2f950d51b368582319c27f999cb7d3d2b35	replaced-local	rust/crates/dev-tools/src/diagnostic_check.rs
 rust/tools/check_runtime_launcher.py	a18592a9b8a9846777e9cdfedad5b4d7f72dde15	pending	-
-rust/tools/check_runtime_log_upload.py	8a2fee473760b01021b74179e7647f21280616d3	pending	-
+rust/tools/check_runtime_log_upload.py	8a2fee473760b01021b74179e7647f21280616d3	replaced-local	rust/crates/dev-tools/src/route_upload_check/runtime.rs; check-runtime-log-upload
 rust/tools/check_sdk_receiver.py	92ed5a900919358781a92f66311a72a3fdc285ba	replaced-local	openpilot-dev-tools check-sdk-receiver; actual identity/gzip/br HTTP, accepted-event-before-ack, owned client shutdown and total I/O deadline
 rust/tools/check_selfdrive_events.py	dc75e1bb617c20649619964bfb4c793b7c7e5e61	replaced-local	openpilot-dev-tools check-selfdrive-events; independent complete 4872-case original and failure corpus
 rust/tools/check_selfdrive_helpers.py	012cd1500189c8d8bbd2622cf89d8f096c75045d	partially-replaced	fixed CLI replaced by check-selfdrive-helpers; generic live helper loader retained in rust/tools/selfdrived_helpers_source.py for controller oracle
@@ -2175,13 +2175,13 @@ rust/tools/check_updated.py	cd08ceec7fc71f91169bba73d7ee6237ea7a8d7d	replaced-lo
 rust/tools/check_updated_agnos.py	c594f4eaeb1abaa093274f284aeea260e5667580	pending	-
 rust/tools/check_updated_daemon.py	34854dbebdb832812654eb0d8dcb546bc6e468b4	replaced-local	rust/crates/dev-tools/src/updated_daemon_check.rs
 rust/tools/check_updated_process.py	6cbb5dd015f9d237991648368e9bd440df3bbc8f	replaced-local	rust/crates/dev-tools/src/updated_process_check.rs
-rust/tools/check_uploader.py	9acf0418078753a26c01320cdfd8d64e8e7db6bc	pending	-
-rust/tools/check_uploader_daemon.py	ff4dc9742b4654a0244a1ec272ffec0373c71ddb	pending	-
-rust/tools/check_uploader_http_interrupted.py	342bda636d66c5b87c68dfe00be61598e8a2374b	pending	-
-rust/tools/check_uploader_interrupted.py	3de3fe5b50918fab903587dc16eed68b6f08d5ae	pending	-
-rust/tools/check_uploader_log_fault.py	12a4b9602b6c3cb6eb17634a37d6c1c6cf9a32c8	pending	-
-rust/tools/check_uploader_logging.py	9c87e1540efd093291f1a1adb19e60012efd22a3	pending	-
-rust/tools/check_uploader_timeouts.py	9d195d604af6ae1fa2480693068305071b230c2f	pending	-
+rust/tools/check_uploader.py	9acf0418078753a26c01320cdfd8d64e8e7db6bc	replaced-local	rust/crates/dev-tools/src/uploader_reference_check.rs; check-uploader-reference
+rust/tools/check_uploader_daemon.py	ff4dc9742b4654a0244a1ec272ffec0373c71ddb	replaced-local	rust/crates/dev-tools/src/uploader_lifecycle_check.rs; check-uploader-siblings --scope daemon
+rust/tools/check_uploader_http_interrupted.py	342bda636d66c5b87c68dfe00be61598e8a2374b	replaced-local	rust/crates/dev-tools/src/uploader_lifecycle_check.rs; check-uploader-siblings --scope interrupted-http
+rust/tools/check_uploader_interrupted.py	3de3fe5b50918fab903587dc16eed68b6f08d5ae	replaced-local	rust/crates/dev-tools/src/uploader_lifecycle_check.rs; check-uploader-siblings --scope interrupted-send
+rust/tools/check_uploader_log_fault.py	12a4b9602b6c3cb6eb17634a37d6c1c6cf9a32c8	replaced-local	rust/crates/dev-tools/src/uploader_lifecycle_check.rs; check-uploader-siblings --scope fault
+rust/tools/check_uploader_logging.py	9c87e1540efd093291f1a1adb19e60012efd22a3	replaced-local	rust/crates/dev-tools/src/uploader_logging_check.rs; check-uploader-logging
+rust/tools/check_uploader_timeouts.py	9d195d604af6ae1fa2480693068305071b230c2f	replaced-local	rust/crates/dev-tools/src/uploader_lifecycle_check.rs; check-uploader-siblings --scope timeouts
 rust/tools/check_usbgpu_asm.py	f0a17250cfb5994a58f28d72a1305b42c5521ea3	pending	-
 rust/tools/check_usbgpu_daemon.py	0d68ce7a0c68097bd15ab0b4ce3ce51081ee2a1c	pending	-
 rust/tools/check_usbgpu_hardware.py	8ef3e71973018b586bac96d8638b333991aabfc1	pending	-

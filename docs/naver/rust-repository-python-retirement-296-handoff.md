@@ -12,8 +12,8 @@ records; Git retains earlier handoffs. Do not restart accepted unchanged groups.
   and untracked `.omo/`. Only remote bin9208/openpilot-rust is authorized.
 - Entire remaining Python development/build/test/vendor/notebook/embedded scope
   stays active. A Rust wrapper around Python does not retire its functionality.
-- Accepted baseline: **274 replaced-local / 3 partially-replaced / 3303 pending
-  of3580**. Routing TSV covers3306pending/partial entries. Additional observed
+- Accepted baseline: **284 replaced-local / 3 partially-replaced / 3293 pending
+  of3580**. Routing TSV retains10accepted rows and covers3296pending/partial entries. Additional observed
   embedded edges: **67total /39pending /25replaced-local /2non-executing-text /
   1native-existing**. The two hosted exporter tests are explicit temporary
   pending Python edges, without baseline credit.
@@ -27,12 +27,14 @@ records; Git retains earlier handoffs. Do not restart accepted unchanged groups.
 
 ## Source and full checks
 
-Latest implementation source:9bd81fcd7d3bb817243cc8616878eab1c1e9dfd7;
-model integration6c35679d6, Unicode/early-admission800e2c8f8 and native caller5fc4e8886
-are ancestors. Vendorbb08ad8ab and original routing9adb3fdf2 are preserved.
-Issue-branch remote/PR343:2ab2738335f2632e32aedef4a83ef272c475f1dd.
-Newest diagnostic branch:43beb8ad66b7146db9581df63ade1df24a25a211.
-Do not lose newer commits or mix unrelated route WIP into a source pin.
+Latest implementation includes7c8ee5396 (ten-source retirement), e50ab0730
+(native deleter candidate),12af083b2 (dangling-link/caller policy), andc7c3a9c8a
+(explicit cached-driver/fresh-family scoping), pluscbaed1bd0 (octal permission literal).
+Model/runtime implementation800e2c8f8
+is unchanged. Published checkpoint before this batch iscefa1dd9c; use fresh Git/API
+readback for current issue/PR/diagnostic heads before pinning a source. Final-ten
+accepted source is12af083b2e31bbb73cb8f73a9822e1c92d3ab8ea, workflowae18fe676.
+Do not lose newer commits or mix unrelated WIP into a source pin.
 
 Published PR synthetic merge48abb4d87797d84c03be1595e9122c4b1e023e2d:
 Integration39754486834 passes all16jobs; both Fast39754486617/39754477763
@@ -460,3 +462,35 @@ Exact upstream Cargo.toml.orig comment whitespace caused publishedcefa Fast
 with an exact-file whitespace attribute; base diff check now passes. Hold branch
 publication until the coherent native/source-closure batch; don't cancel expensive
 unchanged required CI merely to publish a documentation/status update.
+
+Final-ten39796626003 succeeds at12af083b2/workflowae18fe676d68533e5cd57eb16a1183f873143767.
+Parent independently checks artifact12433947513:6005948B/SHA
+b0f798e36acf5a5bb005ddeab970380b5afd8ead3ac9599fe50d07fabd674baf,
+all1063CRCs/1062content seals,77exact held input pairs(no projections), four fresh
+native lanes, six complete PUT/source byte equalities and20final absence rows.
+All10sources stay absent in both roots with no bytecode/exact aliases. Current
+strictClippy/95policy tests,2admission/1bootlog/10route integration/9default/
+4actual lifecycle tests pass.152exec=148success+4declared df ENOENT,70chdir,
+Python exec0. OriginalR9u/R3 and88CLI observations are reused without rerunning
+project Python. Credit exactly10baseline rows:284/3/3293; routing3296remaining.
+Only the uploader/route controller closure is accepted; other F03/F04 remain live.
+
+Cached driver39791171378/source800e passes genuine model-run/daemon prefix
+byte-exactly onznver3. All source/helper/provider/input guards pass; full marker
+is absent because independent familye4bc rejects standalone33a8 admission.
+Sourcec7c3a9c8a explicitly keeps family exports/callers fresh while preserving
+driver admission. Continuation39796728026/workflow9ea535c3c uses unchanged-source
+component/prefix evidence and must still complete full family/USB/source absence.
+RoadR1 observer cannot serialize symbolicUOp; R2 cannot JSON-roundtrip tuple
+identity. Neither reaches numerical comparison. R3 records identity as a list,
+adds hosted stale-seal preflight and keeps original strict2frame comparison.
+
+Deleter first native39794899172 fails before controller compilation because
+recipe lacks capnp. Artifact12432547975/35644B/SHAab985c9f/all9CRCs; original
+admission stays exact. Recipe-only R2 adds actual native prerequisites, sourcee50
+and all checks unchanged. Native4integration/5ownership acceptance and future
+four-source admission/caller/absence closure remain pending. Original AST checker
+capture is separately staged at workflow5928aaf24/source12af; no parser retirement.
+Deleter R2 builds both providers/controller but strictClippy rejects from_mode(0).
+cbaed1bd0 spells the same zero mode0o0; no functional tests have run yet.
+R3 must perform all pending native tests before its future four-source closure.

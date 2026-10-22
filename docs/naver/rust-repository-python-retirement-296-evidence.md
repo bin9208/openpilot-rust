@@ -7897,3 +7897,58 @@ Publishedcefa Fast119869424733 fails only on an unchanged crates.io manifest's
 trailing comment space. Commit8b5e4a161 adds an exact-file Git attribute to retain
 the authenticated upstream bytes and Cargo checksum; full base diff check passes.
 The remaining source/dependency syntax and final required CI are separate gates.
+
+### Ten uploader/route controllers actually retired
+
+[Final-ten39796626003](https://github.com/bin9208/openpilot-rust/actions/runs/39796626003)
+succeeds at12af083b2e31bbb73cb8f73a9822e1c92d3ab8ea,
+workflowae18fe676d68533e5cd57eb16a1183f873143767/job119885327817.
+Artifact12433947513:6005948B/SHA256
+b0f798e36acf5a5bb005ddeab970380b5afd8ead3ac9599fe50d07fabd674baf.
+Parent independently verifies all1063CRCs and1062content seals,77identical held
+input pairs without metadata projection, four current native lanes, all six full
+PUT bodies against retained source bytes and20final Git/filesystem absence rows.
+Current Clippy and13disk/79isolation/3timed policy tests pass;2closed admission,
+1bootlog retirement,10route integration,9default/4actual lifecycle tests pass.
+All six actual foreign INT/TERM replacement cases retain original15s/T barriers.
+152exec attempts=148success+4declared df ENOENT,70separate chdir, Pythonexec0.
+Raw argv is retained; no argv-parity or arbitrary-host acceptance is inferred.
+Accepted R9u original/88CLI observations and R3 functional evidence are separately
+reauthenticated, with zero fresh original/project-Python executions. Both roots
+retain all10absences, with no old bytecode or exact-source aliases. The supported
+host is6.17.0-1022-azure/x86_64,ext-familyef53,ptrace_scope1; unsupported VFS/socket
+identity profiles still preserve resources and fail closed.
+
+Credit exactly ten baseline rows:284replaced-local/3partially-replaced/3293pending
+of3580. F03 has1120remaining pending/partial routes; F04 has416. The routing TSV
+keeps the accepted ten rows as provenance and3296remaining pending/partial entries.
+Frozen corpus/historical baseline blobs are unchanged. Original runtime uploader,
+deleter/xattr/loggerd/Athena consumers and all other families remain pending.
+The separate diagnostic Fast aggregate is not this scoped gate or PR acceptance;
+required maintained logger/support/full PR checks remain separate.
+
+Cached driver39791171378 passes its genuine model-run/daemon strict prefix
+byte-exactly onznver3. Artifacts12430984772:58183791B/SHA
+6883c93761adaaba3984dd8e15fbd5de04c0be7ef7d7dc90d7a85b6a14885160/all529CRCs
+and12431593901:5621796B/SHAb005699502d9d6963212d12fa17971e79fe78e126aed644ca2cc5341a03cf1c8/all24CRCs
+are independently checked. Full retirement is still pending: the independent
+familye4bc model correctly rejects the request pinned to standalone33a8. All
+source/helper/provider/input guards pass; the failed final marker is not hidden.
+Sourcec7c3a9c8a explicitly scopes family CLI calls to their fresh catalog and keeps
+driver admission intact. Continuation39796728026/workflow9ea535c3c reuses only
+unchanged component/prefix evidence and retains full original numerical/USB/
+source-absence boundaries. Road provenance R1/R2 fail in diagnostic serialization
+before numeric comparison, respectively symbolicUOp and JSON tuple/list identity.
+R3 adds one-line roundtrip correction and stale-seal preflight without changing
+model inputs, host targeting, tolerances or original comparison.
+
+Native deleter39794899172/sourcee50 stops before controller compilation because
+the hosted recipe omitted capnp. Artifact12432547975:35644B/SHA
+ab985c9fdc7f2c31c744755cacb4ab930236317c676078b145f554caf80164e0/all9CRCs.
+Recipe546b3f3f adds capnproto/libcapnp/g++/libzmq prerequisites; original capture,
+candidate source and all functional checks stay unchanged. No native deleter
+acceptance or additional four-source credit follows before actual success.
+R2 builds native providers and the controller, then strictClippy requires the
+permission literal0o0 instead of0. Sourcecbaed1bd0 changes only that spelling;
+functional traffic has not run. Artifact12433584061 retains the failed13CRC
+evidence; native R3 and four-source caller/absence acceptance remain required.
