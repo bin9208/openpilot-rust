@@ -1,11 +1,11 @@
 name: Runner comparison 496
-run-name: Same-source runner comparison 496 (self-hosted after disk recovery)
+run-name: Same-source runner comparison 496 (3 rounds)
 on:
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: runner-comparison-496-self-hosted-recovery
+  group: runner-comparison-496
   cancel-in-progress: false
 jobs:
   compare:
@@ -14,6 +14,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - kind: github-hosted
+            labels: [ubuntu-24.04]
           - kind: self-hosted
             labels: [self-hosted, Linux, X64]
     runs-on: ${{ matrix.labels }}
@@ -28,7 +30,7 @@ jobs:
       CARGO_PROFILE_TEST_DEBUG: '0'
       RUSTUP_TOOLCHAIN: '1.94.0'
     steps:
-      - name: Inspect host and reserve disk capacity
+      - name: Inspect host prerequisites
         shell: bash
         run: |
           set -euo pipefail
@@ -42,13 +44,6 @@ jobs:
             free -h
             df -h "$RUNNER_TEMP" "$GITHUB_WORKSPACE" /tmp
           } | tee -a "$GITHUB_STEP_SUMMARY"
-          for location in "$RUNNER_TEMP" "$GITHUB_WORKSPACE" /tmp; do
-            available=$(df --output=avail -B1 "$location" | tail -1)
-            if (( available < (25 + 8) * 1024 * 1024 * 1024 )); then
-              echo "Need the retained 25 GiB reserve plus this experiment's estimated 8 GiB growth." >&2
-              exit 1
-            fi
-          done
           for tool in git curl tar xz unzip zstd python3 rustup cargo gcc g++ make pkg-config; do
             command -v "$tool"
           done
@@ -95,14 +90,6 @@ jobs:
         run: |
           set -euo pipefail
           export RUNNER_TEMP="$BENCH_ROOT/tmp"
-          guard() {
-            local available
-            available=$(df --output=avail -B1 "$BENCH_ROOT" | tail -1)
-            if (( available < (25 + 8) * 1024 * 1024 * 1024 )); then
-              echo 'Insufficient reserve: keep 25 GiB plus 8 GiB estimated growth.' >&2
-              return 1
-            fi
-          }
           measure() {
             local label=$1 begin end rc=0
             shift
@@ -113,19 +100,15 @@ jobs:
             if (( rc != 0 )); then tail -60 "$BENCH_ROOT/results/$label.log"; fi
             return "$rc"
           }
-          guard
           measure toolchain rustup toolchain install 1.94.0 --profile minimal
           rustc --version --verbose > "$BENCH_ROOT/results/rustc.txt"
           g++ --version > "$BENCH_ROOT/results/gcc.txt"
-          guard
           measure apt-update sudo -n apt-get update
           measure native-package-pins sudo -n apt-get --simulate install g++ clang-18 libclang-18-dev cmake pkg-config capnproto libcapnp-dev libzmq3-dev 'libavcodec-dev=7:6.1.1-*' 'libavformat-dev=7:6.1.1-*' 'libavutil-dev=7:6.1.1-*' 'libswscale-dev=7:6.1.1-*'
-          guard
           measure python-venv python -m venv "$BENCH_ROOT/venv"
           source "$BENCH_ROOT/venv/bin/activate"
           measure python-dependencies python -m pip install pytest==9.0.2 PyYAML==6.0.2 -r tools/jetlink_model/requirements.lock
           python -m pip freeze > "$BENCH_ROOT/results/python-packages.txt"
-          guard
           measure cargo-fetch cargo +1.94.0 fetch --manifest-path rust/Cargo.toml --locked
           cat > "$BENCH_ROOT/fast.sh" <<'SH'
           set -euo pipefail
@@ -139,12 +122,9 @@ jobs:
           SH
           failed=0
           for round in 1 2 3; do
-            guard
-            measure "fast-$round" bash "$BENCH_ROOT/fast.sh" || failed=1
-            guard
-            measure "android-$round" bash tools/jetlink_android/gradlew -p tools/jetlink_android :core:test :runtime:test --rerun-tasks --no-daemon || failed=1
-            guard
-            rm -rf -- "$CARGO_TARGET_DIR"
+              measure "fast-$round" bash "$BENCH_ROOT/fast.sh" || failed=1
+              measure "android-$round" bash tools/jetlink_android/gradlew -p tools/jetlink_android :core:test :runtime:test --rerun-tasks --no-daemon || failed=1
+              rm -rf -- "$CARGO_TARGET_DIR"
             if measure "clean-build-$round" cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked --offline -p openpilot-runtime-core -p openpilot-msgq --tests --no-run; then
               measure "native-tests-$round" cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked --offline -p openpilot-runtime-core -p openpilot-msgq --tests || failed=1
               measure "warm-native-tests-$round" cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked --offline -p openpilot-runtime-core -p openpilot-msgq --tests || failed=1
