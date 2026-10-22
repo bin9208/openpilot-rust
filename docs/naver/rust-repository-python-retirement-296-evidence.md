@@ -8246,3 +8246,14 @@ new codec/name domains plus72 affected source admissions. Existing accepted Git
 and Unicode lexer traffic is reused. IDNA ACE, remaining multibyte compatibility,
 Git cancellation, caller migration and source absence remain open; no new source
 retirement or inventory credit is granted by this implementation checkpoint.
+
+For #495 parent authenticates original artifact12441412076 from39809085536:
+38415893bytes/SHA2564e0552a7515d0a3c3bce9adf5b856df362ba223e7842504059f71d017c798a9b,
+all302 ZIP CRCs pass. Its first Chrysler lifecycle case records final input ack
+0.846ms after the last send began and producer evidence preparation4.933ms after
+it. Both loops publish another error after100ms (source105.111ms/native103.960ms),
+before being frozen; both subsequently exit without forced cleanup. The producer
+exit observation and stop request/confirmation timestamps were not retained, so
+these data cannot distinguish interpreter teardown, parent scheduling or stop
+latency. The capture now saves those phases before enforcing the unchanged100ms
+bound. This adds diagnostic evidence only; it is not a timing or runtime fix.
