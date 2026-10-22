@@ -1422,7 +1422,8 @@ fn interrupted_send_boundary_is_a_required_support_check() {
             "zmq_send_boundary.c",
             "--wrap=zmq_msg_send",
             "check_interrupted_send.py",
-            "check_uploader_interrupted.py",
+            "check-uploader-siblings",
+            "--scope interrupted-send",
         ],
     );
 }

@@ -57,6 +57,20 @@ const NATIVE_UPLOADER_LOGGING: [&str; 5] = [
     "--fixture rust/crates/dev-tools/tests/fixtures/uploader-original-group/logging-observations.json \\",
     "--fixture-sha256 cdf42bbfebd0613cfc4896c419d96927cf410301155d3ce6b2141cb10313abba",
 ];
+const SIBLING_ORIGINAL: &[(&str, &[&str])] = &[
+    ("timeouts", &["python rust/tools/check_uploader_timeouts.py --binary rust/target/debug/examples/uploader_trace --output \"$RUNNER_TEMP/support-runtime/uploader-timeouts\""]),
+    ("daemon", &["python rust/tools/check_uploader_daemon.py --binary rust/target/debug/openpilot-uploader --output \"$RUNNER_TEMP/support-runtime/uploader-native\""]),
+    ("interrupted-http", &["python rust/tools/check_uploader_http_interrupted.py --binary rust/target/debug/openpilot-uploader --output \"$RUNNER_TEMP/support-runtime/uploader-http-interrupted\""]),
+    ("params", &["python rust/tools/check_params_string_uploader.py --binding \"$RUNNER_TEMP\"/support-params-binding/params_pyx*.so \\", "--binary rust/target/debug/openpilot-uploader --collector rust/target/debug/openpilot-logmessaged --output \"$RUNNER_TEMP/support-runtime/params-uploader\""]),
+    ("fault", &["python rust/tools/check_uploader_log_fault.py --native rust/target/debug/examples/uploader_log_fault \\", "--binding \"$RUNNER_TEMP\"/support-params-binding/params_pyx*.so --collector rust/target/debug/openpilot-logmessaged --output \"$RUNNER_TEMP/support-runtime/uploader-log-fault\""]),
+    ("interrupted-send", &["python rust/tools/check_uploader_interrupted.py --binary \"$fault_root/bin/openpilot-uploader\" --output \"$fault_root/uploader\""]),
+];
+const UPLOADER_BUILD: &str = "cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features uploader-siblings-native --bin check-uploader-reference --bin check-uploader-logging --bin check-uploader-siblings --locked";
+const UPLOADER_HTTP_PROVIDER: [&str; 3] = [
+    "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 16",
+    "interposer=\"$RUNNER_TEMP/support-runtime/uploader-http-interrupted-provider.so\"",
+    "cc -std=c11 -shared -fPIC -Wall -Wextra -Werror rust/tools/fixtures/http/interrupted_read.c -o \"$interposer\" -ldl -pthread",
+];
 const NATIVE_LOG_STARTUP: &str = "env OPENPILOT_RUST_ROOT=\"$root\" PATH=\"$proof/native-path\" /usr/bin/timeout --kill-after=5s 180s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o \"$proof/$lane.exec\" \"$checker\" --collector \"$collector\" --output \"$proof/$lane\" > \"$proof/$lane.stdout\" 2> \"$proof/$lane.stderr\"";
 const LOG_LANES: &str = "for lane in current absent; do";
 const LOG_ABSENT_ROOT: &str = "if [ \"$lane\" = absent ]; then root=\"$roots/absent\"; fi";
@@ -105,6 +119,99 @@ fn mandatory(step: &Value) -> Result<(), String> {
         "conditional or optional timed gate",
     )
 }
+
+fn sibling_route(scope: &str) -> Vec<String> {
+    let provider = match scope {
+        "timeouts" => "--trace rust/target/debug/examples/uploader_trace --output \"$RUNNER_TEMP/support-runtime/uploader-timeouts\" \\",
+        "daemon" => "--binary rust/target/debug/openpilot-uploader --output \"$RUNNER_TEMP/support-runtime/uploader-native\" \\",
+        "interrupted-http" => "--binary rust/target/debug/openpilot-uploader --http-provider \"$interposer\" --output \"$RUNNER_TEMP/support-runtime/uploader-http-interrupted\" \\",
+        "params" => "--binary rust/target/debug/openpilot-uploader --collector rust/target/debug/openpilot-logmessaged --output \"$RUNNER_TEMP/support-runtime/params-uploader\" \\",
+        "fault" => "--fault rust/target/debug/examples/uploader_log_fault --collector rust/target/debug/openpilot-logmessaged --output \"$RUNNER_TEMP/support-runtime/uploader-log-fault\" \\",
+        "interrupted-send" => "--interrupted \"$fault_root/bin/openpilot-uploader\" --output \"$fault_root/uploader\" \\",
+        _ => panic!("closed uploader sibling scope"),
+    };
+    vec![
+        format!("rust/target/debug/check-uploader-siblings --root \"$GITHUB_WORKSPACE\" --scope {scope} \\"),
+        provider.into(),
+        "--fixture rust/crates/dev-tools/tests/fixtures/uploader-sibling-original-group/source-observations.json \\".into(),
+        "--fixture-sha256 30f9e1f21c47cd9bcefcc161456e1df9984338cc2a2e940eabb8dce0a97a6176".into(),
+    ]
+}
+fn uploader_route_step<'a>(
+    steps: &'a [Value],
+    native: &[String],
+) -> Result<(usize, &'a Value), String> {
+    let matching = steps
+        .iter()
+        .enumerate()
+        .filter_map(|(index, step)| {
+            let run = step["run"].as_str()?;
+            let lines = run.lines().map(str::trim).collect::<Vec<_>>();
+            let count = lines
+                .windows(native.len())
+                .filter(|lines| lines.iter().copied().eq(native.iter().map(String::as_str)))
+                .count();
+            (count > 0).then_some((index, step, count))
+        })
+        .collect::<Vec<_>>();
+    require(
+        matching.len() == 1 && matching[0].2 == 1,
+        "native uploader route missing or duplicated",
+    )?;
+    let (index, step, _) = matching[0];
+    mandatory(step)?;
+    let run = step["run"]
+        .as_str()
+        .ok_or("native uploader script missing")?;
+    require(
+        run.starts_with("set -euo pipefail\n")
+            && !run.contains("||")
+            && !run.contains("set +e")
+            && !run.contains("if "),
+        "softened native uploader comparison",
+    )?;
+    if native[0] == sibling_route("interrupted-http")[0] {
+        let required = UPLOADER_HTTP_PROVIDER
+            .iter()
+            .copied()
+            .chain(native.iter().map(String::as_str))
+            .collect::<Vec<_>>();
+        let lines = run.lines().map(str::trim).collect::<Vec<_>>();
+        require(
+            lines
+                .windows(required.len())
+                .filter(|lines| *lines == required.as_slice())
+                .count()
+                == 1,
+            "HTTP interposer source/flags/path/guard changed",
+        )?;
+    }
+    let builds = steps
+        .iter()
+        .enumerate()
+        .filter_map(|(index, step)| {
+            let count = step["run"]
+                .as_str()?
+                .lines()
+                .filter(|line| line.trim() == UPLOADER_BUILD)
+                .count();
+            (count > 0).then_some((index, step, count))
+        })
+        .collect::<Vec<_>>();
+    require(
+        builds.len() == 1 && builds[0].2 == 1,
+        "native uploader shared build missing or duplicated",
+    )?;
+    let (build_index, build, _) = builds[0];
+    mandatory(build)?;
+    require(
+        index >= build_index
+            && (index != build_index || run.find(UPLOADER_BUILD) < run.find(native[0].as_str())),
+        "native uploader comparison precedes current shared build",
+    )?;
+    Ok((index, step))
+}
+
 fn validate(workflow: &Value) -> Result<(), String> {
     let job = &workflow["jobs"]["support-runtime"];
     mandatory(job)?;
@@ -188,51 +295,43 @@ fn validate(workflow: &Value) -> Result<(), String> {
                     && !all.contains("python rust/tools/check_logmessaged_startup.py"),
                 "native logmessaged retirement lanes, collector or source absence changed",
             )?;
-            NATIVE_LOG_STARTUP
-        } else if line == ORIGINAL_UPLOADER || ORIGINAL_UPLOADER_LOGGING.contains(&line) {
-            // Captures remain immutable. Admit the exact native routes accepted
-            // by grouped source/HTTP and both-collector proofs, including their
-            // original fixture hashes, rather than requiring retired launchers.
+            NATIVE_LOG_STARTUP.to_owned()
+        } else if line == ORIGINAL_UPLOADER
+            || ORIGINAL_UPLOADER_LOGGING.contains(&line)
+            || SIBLING_ORIGINAL.iter().any(|(_, old)| old.contains(&line))
+        {
+            // Keep the captured baseline immutable. Each retired command maps
+            // only to its accepted complete native fixture/provider/argument route.
             let native = if line == ORIGINAL_UPLOADER {
-                &NATIVE_UPLOADER[..]
+                NATIVE_UPLOADER.map(str::to_owned).to_vec()
+            } else if ORIGINAL_UPLOADER_LOGGING.contains(&line) {
+                NATIVE_UPLOADER_LOGGING.map(str::to_owned).to_vec()
             } else {
-                &NATIVE_UPLOADER_LOGGING[..]
+                sibling_route(
+                    SIBLING_ORIGINAL
+                        .iter()
+                        .find(|(_, old)| old.contains(&line))
+                        .ok_or("missing original uploader scope")?
+                        .0,
+                )
             };
-            let matching = steps
-                .iter()
-                .filter(|step| {
-                    step["run"].as_str().is_some_and(|run| {
-                        run.lines()
-                            .map(str::trim)
-                            .collect::<Vec<_>>()
-                            .windows(native.len())
-                            .any(|lines| lines == native)
-                    })
-                })
-                .collect::<Vec<_>>();
+            uploader_route_step(steps, &native)?;
             require(
-                matching.len() == 1,
-                "native uploader route missing or duplicated",
+                if line.starts_with("python ") {
+                    !all.contains(line)
+                } else {
+                    !actual_lines.contains(&line)
+                },
+                "original uploader launcher remains",
             )?;
-            mandatory(matching[0])?;
-            let run = matching[0]["run"]
-                .as_str()
-                .ok_or("native uploader script missing")?;
-            require(
-                run.starts_with("set -euo pipefail\n")
-                    && !run.contains("||")
-                    && !run.contains("set +e"),
-                "softened native uploader comparison",
-            )?;
-            require(!all.contains(line), "original uploader launcher remains")?;
-            native[0]
+            native[0].clone()
         } else {
-            line
+            line.to_owned()
         };
         require(
             actual_lines
                 .iter()
-                .filter(|candidate| **candidate == line)
+                .filter(|candidate| **candidate == line.as_str())
                 .count()
                 >= count,
             &format!("unrelated support command lost: {line}"),
@@ -410,6 +509,13 @@ fn missing_softened_or_reordered_timed_routes_and_regressions_cannot_pass() {
         ])
         .chain(NATIVE_UPLOADER.map(str::to_owned))
         .chain(NATIVE_UPLOADER_LOGGING.map(str::to_owned))
+        .chain(
+            SIBLING_ORIGINAL
+                .iter()
+                .flat_map(|(scope, _)| sibling_route(scope)),
+        )
+        .chain([UPLOADER_BUILD.to_owned()])
+        .chain(UPLOADER_HTTP_PROVIDER.map(str::to_owned))
     {
         let mut mutation = baseline.clone();
         for step in mutation["jobs"]["support-runtime"]["steps"]
@@ -460,6 +566,7 @@ fn missing_softened_or_reordered_timed_routes_and_regressions_cannot_pass() {
                 run.contains("rust/target/debug/check-timed-")
                     || run.contains(NATIVE_UPLOADER[0])
                     || run.contains(NATIVE_UPLOADER_LOGGING[0])
+                    || run.contains("rust/target/debug/check-uploader-siblings --root")
             })
         {
             continue;
@@ -506,5 +613,119 @@ fn missing_softened_or_reordered_timed_routes_and_regressions_cannot_pass() {
     assert!(
         validate(&mutation).is_err(),
         "missing native lifecycle prerequisite admitted"
+    );
+}
+
+#[test]
+fn uploader_routes_reject_same_step_duplicates_and_provider_rebinding() {
+    let baseline = workflow();
+    validate(&baseline).expect("actual uploader migration must pass before mutations");
+    let routes = [
+        NATIVE_UPLOADER.map(str::to_owned).to_vec(),
+        NATIVE_UPLOADER_LOGGING.map(str::to_owned).to_vec(),
+    ]
+    .into_iter()
+    .chain(
+        SIBLING_ORIGINAL
+            .iter()
+            .map(|(scope, _)| sibling_route(scope)),
+    );
+    for native in routes {
+        let (index, _) = uploader_route_step(
+            baseline["jobs"]["support-runtime"]["steps"]
+                .as_array()
+                .unwrap(),
+            &native,
+        )
+        .unwrap();
+        let mut duplicate = baseline.clone();
+        let run = duplicate["jobs"]["support-runtime"]["steps"][index]["run"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        duplicate["jobs"]["support-runtime"]["steps"][index]["run"] =
+            Value::String(format!("{run}\n{}\n", native.join("\n")));
+        assert!(
+            validate(&duplicate).is_err(),
+            "duplicate native block in one step admitted"
+        );
+        for softened in ["set +e", "if false; then"] {
+            let mut changed = baseline.clone();
+            let run = changed["jobs"]["support-runtime"]["steps"][index]["run"]
+                .as_str()
+                .unwrap()
+                .to_owned();
+            let run = if softened == "set +e" {
+                run.replacen("set -euo pipefail", softened, 1)
+            } else {
+                format!(
+                    "{}\nfi\n",
+                    run.replacen(native[0].as_str(), &format!("{softened}\n{}", native[0]), 1)
+                )
+            };
+            changed["jobs"]["support-runtime"]["steps"][index]["run"] = Value::String(run);
+            assert!(
+                validate(&changed).is_err(),
+                "softened native uploader block admitted"
+            );
+        }
+        for replacement in [
+            "wrong-provider",
+            "changed-fixture-or-hash",
+            "changed-output-or-scope",
+        ] {
+            let mut changed = baseline.clone();
+            let run = changed["jobs"]["support-runtime"]["steps"][index]["run"]
+                .as_str()
+                .unwrap()
+                .to_owned();
+            let marker = if replacement == "wrong-provider" {
+                &native[1]
+            } else if replacement == "changed-fixture-or-hash" {
+                native.last().unwrap()
+            } else {
+                &native[0]
+            };
+            changed["jobs"]["support-runtime"]["steps"][index]["run"] =
+                Value::String(run.replace(marker, replacement));
+            assert!(
+                validate(&changed).is_err(),
+                "rebound native argument block admitted"
+            );
+        }
+    }
+    let mut late_build = baseline.clone();
+    let steps = late_build["jobs"]["support-runtime"]["steps"]
+        .as_array_mut()
+        .unwrap();
+    for step in steps.iter_mut() {
+        if let Some(run) = step["run"].as_str() {
+            step["run"] = Value::String(run.replace(UPLOADER_BUILD, ""));
+        }
+    }
+    steps.push(serde_json::json!({"name":"late uploader build", "run":UPLOADER_BUILD}));
+    assert!(
+        validate(&late_build).is_err(),
+        "late shared uploader build admitted"
+    );
+    let mut repeated_build = baseline.clone();
+    let steps = repeated_build["jobs"]["support-runtime"]["steps"]
+        .as_array_mut()
+        .unwrap();
+    let build = steps
+        .iter_mut()
+        .find(|step| {
+            step["run"]
+                .as_str()
+                .is_some_and(|run| run.lines().any(|line| line.trim() == UPLOADER_BUILD))
+        })
+        .unwrap();
+    build["run"] = Value::String(format!(
+        "{}\n{UPLOADER_BUILD}\n",
+        build["run"].as_str().unwrap()
+    ));
+    assert!(
+        validate(&repeated_build).is_err(),
+        "duplicate shared uploader build admitted"
     );
 }

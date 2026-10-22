@@ -352,6 +352,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut modem_native = vec![];
     let mut manager_qa_native = vec![];
     let mut uploader_native_builds = vec![];
+    let mut uploader_http_interposer = vec![];
     let mut guarded_add_archives = vec![];
     let model_family_start = lines
         .iter()
@@ -370,9 +371,14 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 .find(|line| line.starts_with("      - name:"));
             if i + 1 < lines.len()
                 && (lines[i + 1].contains("--features uploader-reference-native")
-                    || lines[i + 1].contains("--features uploader-logging-native"))
+                    || lines[i + 1].contains("--features uploader-logging-native")
+                    || lines[i + 1].contains("--features uploader-siblings-native"))
             {
                 uploader_native_builds.push(tail.to_owned());
+                continue;
+            }
+            if step == Some(&"      - name: Keep interrupted socket reads within one upload and its original deadline") {
+                uploader_http_interposer.push(tail.to_owned());
                 continue;
             }
             if step
@@ -962,7 +968,11 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     }
     assert_eq!(
         uploader_native_builds,
-        [" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024"; 3]
+        [" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024"; 2]
+    );
+    assert_eq!(
+        uploader_http_interposer,
+        [" --path \"$GITHUB_WORKSPACE\" --growth-mib 16"]
     );
     assert_eq!(
         guarded_add_archives,

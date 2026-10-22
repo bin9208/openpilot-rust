@@ -2535,24 +2535,43 @@ jobs:
         run: |
           set -euo pipefail
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features uploader-reference-native --bin check-uploader-reference --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features uploader-siblings-native --bin check-uploader-reference --bin check-uploader-logging --bin check-uploader-siblings --locked
           rust/target/debug/check-uploader-reference --root "$GITHUB_WORKSPACE" \
             --binary rust/target/debug/examples/uploader_trace --output "$RUNNER_TEMP/support-runtime/uploader-reference" \
             --fixture rust/crates/dev-tools/tests/fixtures/uploader-original-group/reference-observations.json \
             --fixture-sha256 b1ce58a70769ab48c7893f26da0f7186b2e7d378fd8a19fd5e495f88d68d4eb5
-          python rust/tools/check_uploader_timeouts.py --binary rust/target/debug/examples/uploader_trace --output "$RUNNER_TEMP/support-runtime/uploader-timeouts"
+          rust/target/debug/check-uploader-siblings --root "$GITHUB_WORKSPACE" --scope timeouts \
+            --trace rust/target/debug/examples/uploader_trace --output "$RUNNER_TEMP/support-runtime/uploader-timeouts" \
+            --fixture rust/crates/dev-tools/tests/fixtures/uploader-sibling-original-group/source-observations.json \
+            --fixture-sha256 30f9e1f21c47cd9bcefcc161456e1df9984338cc2a2e940eabb8dce0a97a6176
       - name: Compare active Carrot upload helpers and actual loopback request bytes
         run: python rust/tools/check_web_upload.py --binary rust/target/debug/examples/web_upload_trace --output "$RUNNER_TEMP/support-runtime/web-upload-reference"
       - name: Exercise uploader with original deviceState IPC, synthetic Params and loopback uploads
-        run: python rust/tools/check_uploader_daemon.py --binary rust/target/debug/openpilot-uploader --output "$RUNNER_TEMP/support-runtime/uploader-native"
+        run: |
+          set -euo pipefail
+          rust/target/debug/check-uploader-siblings --root "$GITHUB_WORKSPACE" --scope daemon \
+            --binary rust/target/debug/openpilot-uploader --output "$RUNNER_TEMP/support-runtime/uploader-native" \
+            --fixture rust/crates/dev-tools/tests/fixtures/uploader-sibling-original-group/source-observations.json \
+            --fixture-sha256 30f9e1f21c47cd9bcefcc161456e1df9984338cc2a2e940eabb8dce0a97a6176
       - name: Keep interrupted socket reads within one upload and its original deadline
-        run: python rust/tools/check_uploader_http_interrupted.py --binary rust/target/debug/openpilot-uploader --output "$RUNNER_TEMP/support-runtime/uploader-http-interrupted"
+        run: |
+          set -euo pipefail
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 16
+          interposer="$RUNNER_TEMP/support-runtime/uploader-http-interrupted-provider.so"
+          cc -std=c11 -shared -fPIC -Wall -Wextra -Werror rust/tools/fixtures/http/interrupted_read.c -o "$interposer" -ldl -pthread
+          rust/target/debug/check-uploader-siblings --root "$GITHUB_WORKSPACE" --scope interrupted-http \
+            --binary rust/target/debug/openpilot-uploader --http-provider "$interposer" --output "$RUNNER_TEMP/support-runtime/uploader-http-interrupted" \
+            --fixture rust/crates/dev-tools/tests/fixtures/uploader-sibling-original-group/source-observations.json \
+            --fixture-sha256 30f9e1f21c47cd9bcefcc161456e1df9984338cc2a2e940eabb8dce0a97a6176
       - name: Compare real Params getters and uploader behavior through both collectors
         run: |
+          set -euo pipefail
           python rust/tools/check_params_string.py --binding "$RUNNER_TEMP"/support-params-binding/params_pyx*.so \
             --native rust/target/debug/examples/params_string_probe --output "$RUNNER_TEMP/support-runtime/params-string"
-          python rust/tools/check_params_string_uploader.py --binding "$RUNNER_TEMP"/support-params-binding/params_pyx*.so \
-            --binary rust/target/debug/openpilot-uploader --collector rust/target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/support-runtime/params-uploader"
+          rust/target/debug/check-uploader-siblings --root "$GITHUB_WORKSPACE" --scope params \
+            --binary rust/target/debug/openpilot-uploader --collector rust/target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/support-runtime/params-uploader" \
+            --fixture rust/crates/dev-tools/tests/fixtures/uploader-sibling-original-group/source-observations.json \
+            --fixture-sha256 30f9e1f21c47cd9bcefcc161456e1df9984338cc2a2e940eabb8dce0a97a6176
       - name: Require same-ELF logmessaged startup with historical checker absent
         run: |
           set -euo pipefail
@@ -2636,15 +2655,15 @@ jobs:
       - name: Compare uploader logs and transport failures through both collectors
         run: |
           set -euo pipefail
-          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features uploader-logging-native --bin check-uploader-logging --locked
           rust/target/debug/check-uploader-logging --root "$GITHUB_WORKSPACE" \
             --binary rust/target/debug/openpilot-uploader --trace rust/target/debug/examples/uploader_trace \
             --collector rust/target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/support-runtime/uploader-logging" \
             --fixture rust/crates/dev-tools/tests/fixtures/uploader-original-group/logging-observations.json \
             --fixture-sha256 cdf42bbfebd0613cfc4896c419d96927cf410301155d3ce6b2141cb10313abba
-          python rust/tools/check_uploader_log_fault.py --native rust/target/debug/examples/uploader_log_fault \
-            --binding "$RUNNER_TEMP"/support-params-binding/params_pyx*.so --collector rust/target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/support-runtime/uploader-log-fault"
+          rust/target/debug/check-uploader-siblings --root "$GITHUB_WORKSPACE" --scope fault \
+            --fault rust/target/debug/examples/uploader_log_fault --collector rust/target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/support-runtime/uploader-log-fault" \
+            --fixture rust/crates/dev-tools/tests/fixtures/uploader-sibling-original-group/source-observations.json \
+            --fixture-sha256 30f9e1f21c47cd9bcefcc161456e1df9984338cc2a2e940eabb8dce0a97a6176
       - name: Require dashcam progress equivalence and allocation accounting
         run: |
           set -euo pipefail
@@ -2700,6 +2719,7 @@ jobs:
           rust/target/debug/check-timed-shutdown --binary rust/target/debug/openpilot-timed --output "$RUNNER_TEMP/support-runtime/timed-shutdown"
       - name: Compare interrupted diagnostic sends and actual upload completion
         run: |
+          set -euo pipefail
           fault_root="$RUNNER_TEMP/support-runtime/interrupted-send"
           mkdir -p "$fault_root/bin"
           gcc -Wall -Wextra -Werror -O2 -fPIC -DZMQ_LINK_WRAP -c rust/tools/zmq_send_boundary.c -o "$fault_root/send-wrap.o"
@@ -2712,7 +2732,10 @@ jobs:
           cp rust/target/debug/openpilot-uploader "$fault_root/bin/"
           python_zmq="$(python -c 'import pathlib, zmq; matches = list((pathlib.Path(zmq.__file__).parent.parent / "pyzmq.libs").glob("libzmq-*.so.*")); assert len(matches) == 1, matches; print(matches[0])')"
           python rust/tools/check_interrupted_send.py --logging "$fault_root/bin/logging_probe" --stats "$fault_root/bin/stats_producer" --preload "$fault_root/send-preload.so" --python-zmq "$python_zmq" --output "$fault_root/producers"
-          python rust/tools/check_uploader_interrupted.py --binary "$fault_root/bin/openpilot-uploader" --output "$fault_root/uploader"
+          rust/target/debug/check-uploader-siblings --root "$GITHUB_WORKSPACE" --scope interrupted-send \
+            --interrupted "$fault_root/bin/openpilot-uploader" --output "$fault_root/uploader" \
+            --fixture rust/crates/dev-tools/tests/fixtures/uploader-sibling-original-group/source-observations.json \
+            --fixture-sha256 30f9e1f21c47cd9bcefcc161456e1df9984338cc2a2e940eabb8dce0a97a6176
       - name: Retain synthetic startup disk records from all lanes
         if: always()
         run: |
