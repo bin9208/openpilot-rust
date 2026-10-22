@@ -1,6 +1,0 @@
-{
-  "scenarios": 2,
-  "steps": 160,
-  "exact_ordered_effects": true,
-  "native_own_process_policy": 0
-}

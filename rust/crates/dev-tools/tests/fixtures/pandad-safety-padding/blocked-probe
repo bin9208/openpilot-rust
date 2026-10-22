@@ -1,5 +1,0 @@
-#!/bin/sh
-# Acknowledged negative-control process, not a successful safety oracle.
-set -eu
-printf '%s\n' "$$" > "$PANDAD_PADDING_BLOCKED_PID"
-exec /bin/sleep 60

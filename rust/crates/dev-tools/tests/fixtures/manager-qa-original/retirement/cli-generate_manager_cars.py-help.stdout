@@ -1,9 +1,0 @@
-usage: generate_manager_cars.py [-h] [--binding BINDING] [--check] output
-
-positional arguments:
-  output
-
-options:
-  -h, --help         show this help message and exit
-  --binding BINDING
-  --check

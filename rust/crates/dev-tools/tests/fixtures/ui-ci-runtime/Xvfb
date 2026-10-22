@@ -1,3 +1,0 @@
-#!/bin/bash
-# Immutable exec target: the per-test body is data read by bash, not execve'd.
-source "${0%/*}/Xvfb.body"

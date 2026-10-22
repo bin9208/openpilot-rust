@@ -1,9 +1,0 @@
-check_manager.py help 0
-check_manager.py missing 2
-check_manager.py unknown 2
-check_manager_logging.py help 0
-check_manager_logging.py missing 2
-check_manager_logging.py unknown 2
-generate_manager_cars.py help 0
-generate_manager_cars.py missing 2
-generate_manager_cars.py unknown 2

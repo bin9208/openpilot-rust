@@ -1,4 +1,0 @@
-#!/bin/sh
-# Immutable cancellation fixture: acknowledged producer, deliberately idle.
-printf 'ready\n'
-exec /bin/sleep 60

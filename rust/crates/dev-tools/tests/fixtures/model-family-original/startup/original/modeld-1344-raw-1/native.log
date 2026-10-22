@@ -1,7 +1,0 @@
-modeld init
-vision stream set up, use_wide_camera: True, main_wide_camera: False, use_extra_client: True
-connected main cam with buffer size: 2428928 (1344 x 760)
-connected extra cam with buffer size: 2428928 (1344 x 760)
-loading model
-models loaded in 1.1s, modeld starting
-modeld got CarParams: 

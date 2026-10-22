@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "repository": "bin9208/openpilot-rust",
+  "source_commit": "77663836a95a9e2aff9aa66592d8b06ed9c87cd9",
+  "source_validation_run": 39853582741,
+  "source_validation_scope": "Existing bounded common-helper transport/policy evidence; physical_arm_cpu:false; no full runtime acceptance",
+  "purpose": "Exact-byte CI action distribution without unrelated runtime archive entries",
+  "files": [
+    {
+      "path": ".github/actions/job-temp/action.yml",
+      "mode": "100644",
+      "bytes": 2306,
+      "sha256": "d03bca53cd15a4fa57bcff731798054ca4a92253c6ca0b94315bb8b6eb053a94",
+      "source_blob": "154566f4016bc4a84a0650aacae93b847f694485"
+    },
+    {
+      "path": ".github/actions/rust-path/action.yml",
+      "mode": "100644",
+      "bytes": 2467,
+      "sha256": "cded6237e2f0a0bb4433d78b3c83918a42cc7319bc22e79350c1a1abb0a86fba",
+      "source_blob": "059664705275c9cef70f570801e5f940c2017f0b"
+    },
+    {
+      "path": ".github/actions/local-arm/action.yml",
+      "mode": "100644",
+      "bytes": 535,
+      "sha256": "70b18b56a4abe6c5dd0327edbf4c5409900e37c3840f67b5b9e763cbb20532a1",
+      "source_blob": "f51440bb48fd6c2d69b503eaf8601a36b103e062"
+    },
+    {
+      "path": "tools/ci/local-arm",
+      "mode": "100755",
+      "bytes": 6837,
+      "sha256": "1c69c096fa890b478a5b157aba021ba412ff0106e9e31b4b0b840f30f618c090",
+      "source_blob": "d93c939703117c27f7320cc2182214dded09bcae"
+    }
+  ],
+  "license_source": "77663836a95a9e2aff9aa66592d8b06ed9c87cd9:LICENSE",
+  "distribution_validation": "Source/tree/byte review only; new remote Actions loading remains pending",
+  "runtime_content": false,
+  "workflow_content": false,
+  "symbolic_links": 0
+}

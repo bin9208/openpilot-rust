@@ -1,7 +1,0 @@
-{"event": "log", "message": "vision stream set up, use_wide_camera: True, main_wide_camera: False, use_extra_client: True", "level": 30, "time": 636.991054455}
-{"event": "log", "message": "connected main cam with buffer size: 4804608 (1928 x 1208)", "level": 30, "time": 636.991232762}
-{"event": "log", "message": "connected extra cam with buffer size: 4804608 (1928 x 1208)", "level": 30, "time": 636.991261073}
-{"event": "log", "message": "loading model", "level": 30, "time": 636.991277502}
-{"event": "log", "message": "models loaded in 0.9s, modeld starting", "level": 30, "time": 637.918649688}
-{"event": "initialized", "component": "modeld", "time": 637.918693791, "width": 1928, "height": 1208, "buffer_len": 4804608, "source": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/selfdrive/modeld/modeld.py", "source_lines": [256, 339], "model_class": "ModelState", "frames_sent_before_initialization": 0, "scope": "original ModelState plus original connection/load statements; artifact directory redirected; internal model only"}
-{"event": "first_frame", "frame_id": 1, "time": 637.925339013}

@@ -1,7 +1,0 @@
-# Original logmessaged startup observations
-
-These 18 data files are copied byte-for-byte from the **original Python** lane of GitHub Actions artifact `12311923940`, `logmessaged-startup-absence-source-evidence` (run `39523666271`, job `118973216977`). The workflow head was `29a08fcf0cca90d0442f0e4037f36f248a57863c`; the checked-out source and `SOURCE_COMMIT` were `13d2065301fea64b1f0af0549ab69480a128234a`. The original checker at that source had SHA256 `46cae42fe4749a48bb9f0acc81b92db974288633d28100b0a023b3d002b9b022`.
-
-The downloaded artifact ZIP was 2,553,541 bytes, SHA256 `d2cd07c56ba9e74e066c45e38338d7905be2e8a3854e4ad2f302513cbb0ecdac`. Only `paired/original/report.json` and each case's `observed.json`, packet `.bin` files, collector disk row, `exit.json`, and empty collector `stdout.log` were retained. No Python source or executable is stored here. The artifact did not contain a separate top-level original stdout file. `SHA256SUMS` lists the retained raw files; its SHA256 is `cee8e19032542bc4851d0ce6bfebd9b71dde9184b19bdc5b0fb23e06e974d0dd`, pinned in the comparison tests.
-
-The startup comparison decodes the raw Cap'n Proto packets, compares observed JSON and disk rows after validating and removing only the generated UUID, and compares collector exit code/signal. Raw packet timestamps vary between executions. This fixture is historical original-only evidence; fresh native execution and sealed source/ELF checks remain mandatory in the cloud gate.

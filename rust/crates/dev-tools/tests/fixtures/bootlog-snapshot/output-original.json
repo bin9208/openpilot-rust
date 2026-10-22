@@ -1,8 +1,0 @@
-{
-  "source_sha256": "948b1855341a87cb218edd1a48fdaecaa9390f13e1078e4f55dfd44ccbbc8118",
-  "existing_empty_case_output": {
-    "type": "FileExistsError",
-    "errno": 17,
-    "retained": []
-  }
-}

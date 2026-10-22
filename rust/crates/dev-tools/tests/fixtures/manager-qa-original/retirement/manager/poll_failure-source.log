@@ -1,8 +1,0 @@
-Traceback (most recent call last):
-  File "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/manager/manager.py", line 261, in main
-    manager_thread(update_status)
-  File "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/manager/manager.py", line 191, in manager_thread
-    sm.update(1000)
-  File "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/manager_reference.py", line 95, in update
-    raise RuntimeError('fixture poll failure')
-RuntimeError: fixture poll failure

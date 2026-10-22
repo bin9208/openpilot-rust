@@ -1,3 +1,0 @@
-* -text
-conformance/* -text
-*.onnx -filter -diff -merge -text

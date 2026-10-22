@@ -1,9 +1,0 @@
-usage: check_manager_logging.py [-h] binary binding output
-
-positional arguments:
-  binary
-  binding
-  output
-
-options:
-  -h, --help  show this help message and exit

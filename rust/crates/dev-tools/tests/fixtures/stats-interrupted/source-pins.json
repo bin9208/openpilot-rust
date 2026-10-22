@@ -1,6 +1,0 @@
-{
-  "rust/tools/check_stats_interrupted.py": "746c2712b969e65cde8e867e16dedf75cb407d7e9565bf3d4a3ff0fd6f852d74",
-  "rust/tools/stats_source.py": "421663e9d4c5d9a5cba88e47fc1d4c6dcfe3dd983a4e5e6ab72fc19132bc8b91",
-  "rust/tools/zmq_receive_boundary.c": "6de2f412a9034b1908469a13547a1ca3509fd227851b6ea3953d213cc3dfa650",
-  "openpilot/system/statsd.py": "c0e52f371eb8e45e74c2f8acdaf2505784843d31d9b9c997a011f98bd3467d27"
-}

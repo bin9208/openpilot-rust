@@ -1,9 +1,0 @@
-{
-  "passed": [
-    "normal",
-    "normal",
-    "custom"
-  ],
-  "source": "openpilot/system/manager/manager.py",
-  "limitations": "isolated external boundaries; no device/production selection"
-}

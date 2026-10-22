@@ -1,5 +1,0 @@
---- upstream/Cargo.toml
-+++ candidate/Cargo.toml
-@@ -14 +14 @@
--rust-version = "1.98"
-+rust-version = "1.94"

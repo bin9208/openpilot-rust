@@ -1,9 +1,0 @@
-{
-  "corpora": {
-    "runner-inline-original.json": "e5acd1569ae96f44ae37d5fc35ee7db0f2c124c8b76c1ace0211c198243395f4",
-    "source-original.txt": "4641d2e73a12c476a67b418210148a54e178129b94abf65b968a107f302b1920",
-    "fifo-original.json": "dd50c7bdbf6fdddc3da4a412f146f9b164faa5016b7c48939897d3216b83f01a"
-  },
-  "old_frozen_checker_red_sha256": "7f2f69cc99bc537c59089d287d37f4b6470143b31e7af3b39516763ae7fae2fa",
-  "original_source_sha256": "4641d2e73a12c476a67b418210148a54e178129b94abf65b968a107f302b1920"
-}

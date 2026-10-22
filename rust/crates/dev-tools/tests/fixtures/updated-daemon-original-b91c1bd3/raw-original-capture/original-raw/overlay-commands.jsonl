@@ -1,6 +1,0 @@
-["mount", "-t", "overlay", "-o", "lowerdir=/tmp/updated-daemon-1dmq6u5m/runtime/base,upperdir=/tmp/updated-daemon-1dmq6u5m/runtime/data/stage/upper,workdir=/tmp/updated-daemon-1dmq6u5m/runtime/data/stage/metadata", "none", "/tmp/updated-daemon-1dmq6u5m/runtime/data/stage/merged"]
-["chmod", "755", "/tmp/updated-daemon-1dmq6u5m/runtime/data/stage/metadata/work"]
-["mount", "-t", "overlay", "-o", "lowerdir=/tmp/updated-daemon-1dmq6u5m/runtime/base,upperdir=/tmp/updated-daemon-1dmq6u5m/runtime/data/stage/upper,workdir=/tmp/updated-daemon-1dmq6u5m/runtime/data/stage/metadata", "none", "/tmp/updated-daemon-1dmq6u5m/runtime/data/stage/merged"]
-["chmod", "755", "/tmp/updated-daemon-1dmq6u5m/runtime/data/stage/metadata/work"]
-["mount", "-t", "overlay", "-o", "lowerdir=/tmp/updated-daemon-1dmq6u5m/runtime/base,upperdir=/tmp/updated-daemon-1dmq6u5m/runtime/data/stage/upper,workdir=/tmp/updated-daemon-1dmq6u5m/runtime/data/stage/metadata", "none", "/tmp/updated-daemon-1dmq6u5m/runtime/data/stage/merged"]
-["chmod", "755", "/tmp/updated-daemon-1dmq6u5m/runtime/data/stage/metadata/work"]

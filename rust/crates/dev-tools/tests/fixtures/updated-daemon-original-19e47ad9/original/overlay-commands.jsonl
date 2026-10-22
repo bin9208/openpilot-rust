@@ -1,6 +1,0 @@
-["mount", "-t", "overlay", "-o", "lowerdir=/tmp/updated-daemon-yu4a2ut8/runtime/base,upperdir=/tmp/updated-daemon-yu4a2ut8/runtime/data/stage/upper,workdir=/tmp/updated-daemon-yu4a2ut8/runtime/data/stage/metadata", "none", "/tmp/updated-daemon-yu4a2ut8/runtime/data/stage/merged"]
-["chmod", "755", "/tmp/updated-daemon-yu4a2ut8/runtime/data/stage/metadata/work"]
-["mount", "-t", "overlay", "-o", "lowerdir=/tmp/updated-daemon-yu4a2ut8/runtime/base,upperdir=/tmp/updated-daemon-yu4a2ut8/runtime/data/stage/upper,workdir=/tmp/updated-daemon-yu4a2ut8/runtime/data/stage/metadata", "none", "/tmp/updated-daemon-yu4a2ut8/runtime/data/stage/merged"]
-["chmod", "755", "/tmp/updated-daemon-yu4a2ut8/runtime/data/stage/metadata/work"]
-["mount", "-t", "overlay", "-o", "lowerdir=/tmp/updated-daemon-yu4a2ut8/runtime/base,upperdir=/tmp/updated-daemon-yu4a2ut8/runtime/data/stage/upper,workdir=/tmp/updated-daemon-yu4a2ut8/runtime/data/stage/metadata", "none", "/tmp/updated-daemon-yu4a2ut8/runtime/data/stage/merged"]
-["chmod", "755", "/tmp/updated-daemon-yu4a2ut8/runtime/data/stage/metadata/work"]

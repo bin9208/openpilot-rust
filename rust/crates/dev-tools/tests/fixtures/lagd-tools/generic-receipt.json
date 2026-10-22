@@ -1,9 +1,0 @@
-{
-  "cases": 121,
-  "successes": 59,
-  "errors": 62,
-  "gzip_sha256": "a186fff6a4d053516faa0f80434342e3bf93701c9abe53df76e6fd282e64d6a4",
-  "decoded_sha256": "5096800bc37fe80ae2620ff30c7575c80d99368e86d199f400e833ed68390f74",
-  "bytes": 53777,
-  "source_pins_sha256": "b8205f241d7147eeee534f4903ebbc39fefe5521d75ba0ccf8e5725275570fe1"
-}
