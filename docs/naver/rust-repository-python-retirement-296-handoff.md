@@ -20,16 +20,16 @@ records; Git retains earlier handoffs. Do not restart accepted unchanged groups.
 - Local syntax/scoped rustfmt/TOML/YAML/Bash/diff, Git/API and inert saved-data
   inspection only. No local Cargo/build/test/Clippy/project Python/model/provider
   execution or dependency installation. Hosted Actions performs functional work.
-  Rustfmt: edition2021, skip_children=true. Keep25GiB+growth; currently82GiB free.
+  Rustfmt: edition2021, skip_children=true. Keep25GiB+growth; currently80GiB free.
 - User has no comma device and owns final boot, recording, upload and driving.
   Do not request USB, deploy/reboot, claim device acceptance, merge protected
   branches or publish a release. Parent owns serial commits/publication/review.
 
 ## Source and full checks
 
-Implementation source: bb3b4fdd34498c253d030468832bebe3db09224e.
+Implementation source: c12f3d1191dbec9694478a3bed0b04bf2edf4e4e.
 Issue-branch remote/PR343: f09eee7b8d352cc3b4463acf5f467a786f0d310d.
-Newest diagnostic branch: 9eedccf30d67e9a5f6d39f6e95eab0a6ee580fe1.
+Newest diagnostic branch: 8bd27349a8955d95e83db4bda99060f65c785f72.
 Do not lose newer commits or mix unrelated route WIP into a source pin.
 
 Published PR synthetic merge48abb4d87797d84c03be1595e9122c4b1e023e2d:
@@ -38,7 +38,7 @@ and docs39754486636/39754745503 pass. Full Rust39754486991 currently has45
 successful jobs, two model failures and one running workspace119742946369.
 Generic ARM119742946791 succeeds. Workspace timeout210min
 is intentional, so avoid cancelling/repeating it merely for a small push.
-Successful LLVM20/UI gates are now included in44. Generic ARM is not AGNOS.
+Successful LLVM20/UI gates are included in45. Generic ARM is not AGNOS.
 
 The old full-model failures are distinct: original pipeline119742946401 reaches
 actual raw-road prediction drift without helper; family119742946604 stops
@@ -188,9 +188,22 @@ explicitly reused, without emitted-binary equality claims.
 Exact independent observations and original capture/report are committedffefb1539
 under tests/fixtures/uploader-original-group, with provenance manifest. All four
 Git blobs retain original bytes/SHA. This does not retire either Python helper.
-Sibling capture39770735490/workflow72bfd4d8b/source67f099 captures only new daemon,
-interruption,timeout/log-fault/typed-Params scopes. Native sibling controller WIP
-uploader_lifecycle_check.rs is unregistered/uncommitted; preserve it.
+Sibling capture39770735490/workflow72bfd4d8b/source67f099 succeeds for new daemon,
+interruption,timeout/log-fault/typed-Params scopes. Parent verifies artifact
+12422761878:543998B/SHA69f9c16983a0699d7478455016b94dade68374e346b72a12a1e669354ad8abee/
+all886CRCs and original-only observationSHA30f9e1f2,23pins,10timeout/30fault/14Params
+rows; worker checks866seals. Native sibling WIP is registered but uncommitted.
+Parent review finds unauthenticated same-name namespace removal and pathname
+permission restoration; #492 tracks correction/regressions before first commit.
+Preserve the model-runtime WIP and .omo when staging. Parent-owned Cargo/lib
+registration is applied, has no new dependency, and must accompany sibling code.
+
+Source7689484bb switches three accepted maintained uploader calls (support
+ordinary/logging and startup signing) to actual Rust CLIs with exact independent
+fixture SHA, explicit root and selected locked build plus capacity guard. Existing
+timeout/fault sibling calls remain Python. Existing isolation-policy tests now
+require native calls. Worker read-only review has no blocker; maintained hosted
+execution is still pending publication.
 Worker guarded_proof_r3 owns actual compile/Clippy/functional failure repair and
 then the remaining daemon/interrupted/timeouts/log_fault consumer closure.
 Do not repeat accepted ordinary source traffic merely to capture new siblings.
@@ -221,9 +234,19 @@ R5/39769134663 and R6/39770477410 pass ALL focused gates, including3actual-provi
 tests. R5 private checkout fails LFS smudge before traffic; R6 skip-smudge matches
 primary tracked pointers and full tracked-byte equality, then original help emits
 pycapnp's inherited-PWD mismatch warning. Strict help stderr checks stay intact.
-R7/39772010352/workflow9eedccf30/source3f60 uses actual-cwd PWD in both lanes and
-early CLI preflight before provider gates. Full positive/source-absence proof is
-still pending. Review repaired actual results, raw
+R7/39772010352/workflow9eedccf30/source3f60 passes all focused gates,44CLI cases
+and complete source-present manager/runtime parity plus exec audits in BOTH roots.
+First source-absent manager records/uploads, but collector socket ownership is
+not acknowledged. Accepted sockets inherit the listener pathname: the observer's
+all-row uniqueness is a concrete defect, not a recovered failing /proc snapshot.
+Sourcec12f3d119 selects a unique stream listening inode before descendant-FD
+authentication; a real connected-peer/ambiguous-replacement regression is added.
+Four QA validators also reject symlink roots with trailing / or /., retaining
+valid real-directory spellings/defaults/explicit collector override.
+R8/39775898808/workflowe515327503a2cd7c4bcf04d5931213003df4a713 is running five
+expected-assertion RED cases, focused GREEN and fresh complete two-root proof.
+Pinned recipeSHAdcab047f07ad1f468a4ce70d04f259e07069942f9b671abadf68035cef900983.
+Review repaired actual results, raw
 traces/bodies/seals before deleting originals or crediting them.
 
 ## Publication and next steps
@@ -235,7 +258,14 @@ artifacts through connector temporary links without printing signed URLs/data.
 All scratch recipes/evidence live under
 `.analysis/scratch/2026-10-22-family-execution-296/`.
 
-Continue model compiler diagnosis, native uploader consumers and route R7; repair actual failures without
+Native ISA run39775186997/workflow8ed5e42d3 stops at compile: forwarding literal
+macro tokens hides is_x86_feature_detected named-feature matches. No ISA gate ran.
+Worker replaces forwarding with explicit detector calls, preserving the mapping.
+Repaired recipeSHA7e4499317cdfe1053d7a7d6c9bc2440632e147f1334f6daba523670eec37aa7c
+is published at8bd27349a/sourcebb3b4fdd3. Runtime cached-image candidate remains
+uncommitted/default-disabled; no driver numerical acceptance or retirement.
+
+Continue model compiler diagnosis, native uploader consumers and route R8; repair actual failures without
 altering original evidence. Complete route ownership fix/proof, then grouped
 consumer conversion and native caller transitions. Push a coherent reviewed
 batch to the issue branch, refresh PR343/#296 and close only accepted defects.

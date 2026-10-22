@@ -7661,3 +7661,55 @@ R6 artifact12422761787:1890134B/SHAda84aafae331730aa5426e3456d043791524ebf65fc58
 482CRCs worker-audited. R7/39772010352/workflow9eedccf30/source3f60 sets actual-cwd
 PWD for both CLI lanes and runs CLI preflight early, leaving the strict checks
 and complete two-root proof intact. No source retirement/#491closure yet.
+
+### Maintained native uploader callers and complete sibling capture
+
+Source7689484bbdaa9e405d734b514f4c9a66f2be0b68 changes three maintained calls:
+support ordinary uploader/logging and startup signing now build/invoke native
+CLIs with explicit root and accepted original fixture SHA. Capacity guards and
+locked selected builds precede execution. Startup report moves to
+uploader-signing/report.json; artifact path follows it. Existing isolation-policy
+assertions require these native calls. Static YAML/all run-block Bash/scoped
+rustfmt/diff checks and independent worker review pass; maintained hosted checks
+are pending issue-branch publication. Remaining Python callers are explicit.
+
+Sibling original [39770735490](https://github.com/bin9208/openpilot-rust/actions/runs/39770735490)
+succeeds with23pinned sources. Artifact12422761878:543998B/SHA
+69f9c16983a0699d7478455016b94dade68374e346b72a12a1e669354ad8abee/all886CRCs
+parent+worker verified; worker verifies866seals. Original-only expectations
+SHA30f9e1f21c47cd9bcefcc161456e1df9984338cc2a2e940eabb8dce0a97a6176 contain
+10timeouts/30fault/14Params rows. Daemon/interruption traffic observes native
+providers through original controllers and is separate evidence, never expected
+goldens. New native sibling code is registered WIP, not yet functionally accepted.
+Parent review finds same-path foreign replacement cleanup/permission risk;
+[#492](https://github.com/bin9208/openpilot-rust/issues/492) requires correction
+and meaningful hosted regressions before acceptance.
+
+### Route R7 boundary and R8 ownership corrections
+
+[R7 39772010352](https://github.com/bin9208/openpilot-rust/actions/runs/39772010352)
+passes focused gates,44CLI cases and fresh source-present manager/runtime semantic
+parity and closed exec audits in both independent roots. First source-absent
+manager completes recording/upload but fails collector ownership acknowledgement.
+Artifact12424210425:3060467B/SHAb7412ce17945bb9d15a5a5f14781d6141713e56f6875fa13b324341e3969b2c4/
+all3239CRCs worker-audited. No failing /proc socket snapshot was retained.
+
+Sourcec12f3d1191dbec9694478a3bed0b04bf2edf4e4e fixes a concrete observer error:
+accepted Unix stream sockets share the listener pathname, so only the unique
+SO_ACCEPTCON stream inode is selected before existing descendant-FD authentication.
+Two simultaneous listeners remain rejected. A real connected-peer regression
+exercises both cases. Canonical-equality predicates also reject aliases spelled
+with trailing / or /. in all four QA root validators. Normal defaults, genuine
+directories and explicit collector endpoint precedence stay intact.
+[R8 39775898808](https://github.com/bin9208/openpilot-rust/actions/runs/39775898808),
+workflowe515327503a2cd7c4bcf04d5931213003df4a713, requires five actual assertion
+RED cases, focused GREEN and fresh full two-root proof. RecipeSHAdcab047f07ad1f468a4ce70d04f259e07069942f9b671abadf68035cef900983.
+No proof comparison was weakened and no original source is deleted.
+
+Native cached-image ISA [39775186997](https://github.com/bin9208/openpilot-rust/actions/runs/39775186997)
+fails compilation before admission because forwarded macro literals hide named
+CPU feature matches. Failed artifact12423489568/SHA569d50906f73d8afde0b41b05409f13068b2b55708cc1f191464e95b9881b919/
+all22CRCs worker-audited. Explicit literal calls repair compilation without changing
+feature mapping. RecipeSHA7e4499317cdfe1053d7a7d6c9bc2440632e147f1334f6daba523670eec37aa7c
+is published at8bd27349a8955d95e83db4bda99060f65c785f72/sourcebb3b4fdd3.
+No ISA/runtime ABI/numerical acceptance is claimed from the failed run.
