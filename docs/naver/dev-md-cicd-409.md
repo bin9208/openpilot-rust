@@ -318,3 +318,42 @@ Cancel only this task's superseded PR run; do not interfere with #459's
 separate marked runtime delivery. Complete latest-source PR and post-merge
 validation before merging/reporting acceptance. This task does not perform
 GPU/device tests, request runtime publication or claim new compute savings.
+
+## Completed CI/CD acceptance (2026-10-22, #409)
+
+PR [#410](https://github.com/bin9208/openpilot-rust/pull/410) was merged through
+the protected PR API after exact head
+`e1059dce685fe81cc05c87e45af8c82ee82e2ea1` passed the complete
+[PR CI](https://github.com/bin9208/openpilot-rust/actions/runs/39603474222).
+The merge is `dc95138076836ea3a5c1b6c27262be3f3b912f71`; its parents are the
+fixed base `1f00f0b7c4ccab4c23c5845aef490406058aec6c` and that verified head.
+Its tree is identical to the verified source. No later dev-md source was
+integrated, no protected branch was directly pushed, and dev was not merged.
+
+The exact merge's full
+[push CI](https://github.com/bin9208/openpilot-rust/actions/runs/39699486761)
+also succeeded. Both runs completed all 57 actual jobs, including the original
+38 Rust groups, serial architecture matrices and the real generic ARM build.
+All five required names succeeded in both runs. API step-to-completion interval
+audits found zero overlapping jobs in each run. Dedicated Naver jobs were absent;
+the shared policy/navigation/control checks remained in the successful chain.
+The unmarked merge's automatic delivery requester was skipped with zero steps.
+
+Protection API readback after post-merge success confirmed dev and dev-md both
+require PRs, all five strict checks, administrator enforcement, zero required
+approvals and resolved conversations, with no bypass allowances, force pushes
+or deletion. Existing dev source and protection were preserved. The earlier
+failure/cancellation evidence in this ledger and the successful cloud policy
+fixtures establish rejection of failed, skipped, cancelled and missing evidence.
+Local checks remained syntax, formatting and diff review only.
+
+The user subsequently explicitly requested an exact-source runtime release
+after git pull/reboot left the device unable to start. That additional delivery
+is tracked separately in [#486](https://github.com/bin9208/openpilot-rust/issues/486)
+and [the manual-delivery record](dev-md-runtime-manual-486.md). Its
+[AGNOS run](https://github.com/bin9208/openpilot-rust/actions/runs/39767306370)
+uses a separately pinned controller and the unchanged dc951380 source. This
+completion appendix is retained on the controller branch to preserve that
+immutable requested source; it does not change the protected merge or enable
+automatic unmarked delivery. Runtime publication and user device boot acceptance
+are separate from the completed CI/CD acceptance above.
