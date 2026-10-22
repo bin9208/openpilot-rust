@@ -1,0 +1,443 @@
+name: Chinese GB strict native differential 296
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/changed-files-gb-native-296-once.yml
+  workflow_dispatch: null
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: changed-files-gb-native-296
+  cancel-in-progress: false
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      EXPECTED_SOURCE: e8744f656444f1e8a5c49527ed15fb56e4406673
+      GB_ORIGINAL_SOURCE_SHA: bcf7b88ef40072adbaead10e980a84d018f00390
+      GB_ORIGINAL_WORKFLOW_SHA: c0b5406d32cff646ffec78c026a52a2c5d3c5448
+      GB_ORIGINAL_ZIP_BYTES: '2695146'
+      GB_ORIGINAL_ZIP_SHA256: 29e4b0c8235fae0ce7eadbc3b0cb5e4d232d3e4c121085ec0d67b765a52312b1
+      GB_ORIGINAL_ZIP_MEMBERS: '27'
+      GB_ORIGINAL_MANIFEST_SHA256: 5215b2f9b01a7975a471268d9679dfccc2fcfa414e5affe9cf60f50726ad8dd5
+      GB_ORIGINAL_SEAL_COUNT: '18'
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      RUST_BACKTRACE: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: e8744f656444f1e8a5c49527ed15fb56e4406673
+        persist-credentials: false
+    - name: Admit source and prepare hosted prerequisites
+      shell: bash
+      run: 'set -euo pipefail
+
+        export GB_BASE="$RUNNER_TEMP/changed-files-gb-native-296"
+
+        printf ''GB_BASE=%s\n'' "$GB_BASE" >> "$GITHUB_ENV"
+
+        printf ''GB_ORIGINAL_DIR=%s/original\n'' "$GB_BASE" >> "$GITHUB_ENV"
+
+        printf ''GB_NATIVE_OUTPUT=%s/actual\n'' "$GB_BASE" >> "$GITHUB_ENV"
+
+        mkdir "$GB_BASE"
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        printf ''workflow_head=%s\nsource_commit=%s\n'' "$GITHUB_SHA" "$EXPECTED_SOURCE" > "$GB_BASE/source.txt"
+
+        git status --porcelain=v1 > "$GB_BASE/source-status.before.txt"
+
+        test ! -s "$GB_BASE/source-status.before.txt"
+
+        sha256sum rust/Cargo.lock > "$GB_BASE/lock.input.sha256"
+
+        rust/tools/check-disk-space --path "$GITHUB_WORKSPACE" --growth-mib 8192
+
+        sudo apt-get update -qq
+
+        sudo apt-get install -y --no-install-recommends capnproto libcapnp-dev libzmq5 g++ strace
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+
+        rustc +1.94.0 -Vv > "$GB_BASE/rustc.txt"
+
+        dpkg-query -W libc6 libc-bin capnproto libcapnp-dev libzmq5 > "$GB_BASE/native-packages.txt"
+
+        '
+    - name: Bind sealed originals and fixed native gate
+      env:
+        GH_TOKEN: ${{ github.token }}
+      shell: bash
+      run: 'set -euo pipefail
+
+        base64 --decode > "$GB_BASE/hosted-gb-audit.py" <<''GB_PAYLOAD''
+
+        IiIiSE9TVEVEIE9OTFkuIFNlYWxlZCBaSVAgYWRtaXNzaW9uLCBmcmVzaCBuYXRpdmUgdGFyZ2V0IGRpc2NvdmVyeSBhbmQgZXZp
+
+        ZGVuY2UgYXVkaXQuIiIiCmZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aAppbXBvcnQgaGFzaGxpYgppbXBvcnQganNvbgppbXBvcnQg
+
+        b3MKaW1wb3J0IHJlCmltcG9ydCBzeXMKaW1wb3J0IHppcGZpbGUKCkIgPSBQYXRoKG9zLmVudmlyb25bJ0dCX0JBU0UnXSkKUiA9
+
+        IFBhdGgob3MuZW52aXJvblsnR0lUSFVCX1dPUktTUEFDRSddKQpTT1VSQ0VfUElOUyA9IHsKICAgICd0b29scy9jaS9jaGVja19j
+
+        aGFuZ2VkX2ZpbGVzLnB5JzogJzZiY2IxNGYzYTZkNWQ0ZTg4NWM2NTVlMjJmZWQyM2ExZWNmMjE5OWIwNDhjZDNkYTk1ZWY1OWIy
+
+        Nzk1ZmFkODcnLAogICAgJ3Rvb2xzL2NpL3Rlc3RzL3Rlc3RfY2hhbmdlZF9maWxlcy5weSc6ICdjZDlhMjExZDA3NmQ2OTM5Yjc2
+
+        NDk4NDkyMTJlYTIxYzUyZTdlMDg5N2ZhNmQyNTFlODJiMGIyODA1ZTA4MjQyJywKfQpDQVBUVVJFX1NIQTI1NiA9ICcwNzI4OTQ0
+
+        MzM4N2Q2NTk1YWRmNzkyY2Q0NTIxYTkyODZlOTExMzhlYzQ1Y2FlOGVhZGVlYjQzZTZiZmYwZDU2JwpST1NURVJfU0hBMjU2ID0g
+
+        JzNjMzY3ZTUxMjg4ZTdhN2NkMzFmN2UzYmM4YWQwZDc1YTU2MjBhZTZiZWRkYzkwZGJmOGYzZjk5NmNkN2MwYzcnCgpkZWYgc2hh
+
+        KHJhdyk6CiAgICByZXR1cm4gaGFzaGxpYi5zaGEyNTYocmF3KS5oZXhkaWdlc3QoKQoKZGVmIHNhdmUobmFtZSwgdmFsdWUpOgog
+
+        ICAgKEIgLyBuYW1lKS53cml0ZV90ZXh0KGpzb24uZHVtcHModmFsdWUsIGluZGVudD0yLCBzb3J0X2tleXM9VHJ1ZSkgKyAnXG4n
+
+        KQoKZGVmIHNvdXJjZXMoKToKICAgIGZvciBuYW1lLCBwaW4gaW4gU09VUkNFX1BJTlMuaXRlbXMoKToKICAgICAgICBhc3NlcnQg
+
+        c2hhKChSIC8gbmFtZSkucmVhZF9ieXRlcygpKSA9PSBwaW4sIG5hbWUKCmRlZiBzb3VyY2VfaW5wdXRzKCk6CiAgICBwYXRocyA9
+
+        IFtSIC8gJ3J1c3QvQ2FyZ28ubG9jaycsIFIgLyAncnVzdC9jcmF0ZXMvZGV2LXRvb2xzL0NhcmdvLnRvbWwnLAogICAgICAgICAg
+
+        ICAgUiAvICdydXN0L2NyYXRlcy9kZXYtdG9vbHMvc3JjL2NoYW5nZWRfZmlsZXNfY2hlY2sucnMnLAogICAgICAgICAgICAgUiAv
+
+        ICdydXN0L2NyYXRlcy9kZXYtdG9vbHMvdGVzdHMvY2hhbmdlZF9maWxlc19jaGluZXNlX2diLnJzJ10KICAgIHBhdGhzICs9IFtw
+
+        IGZvciBwIGluIChSIC8gJ3J1c3QvY3JhdGVzL2Rldi10b29scy9zcmMvY2hhbmdlZF9maWxlc19jaGVjaycpLnJnbG9iKCcqJykg
+
+        aWYgcC5pc19maWxlKCldCiAgICByZXR1cm4ge3N0cihwLnJlbGF0aXZlX3RvKFIpKTogc2hhKHAucmVhZF9ieXRlcygpKSBmb3Ig
+
+        cCBpbiBzb3J0ZWQocGF0aHMpfQoKZGVmIGFkbWl0KCk6CiAgICBzb3VyY2VzKCkKICAgIGFyY2hpdmUgPSBCIC8gJ2diLW9yaWdp
+
+        bmFsLnppcCcKICAgIGFzc2VydCBhcmNoaXZlLnN0YXQoKS5zdF9zaXplID09IGludChvcy5lbnZpcm9uWydHQl9PUklHSU5BTF9a
+
+        SVBfQllURVMnXSkKICAgIGFzc2VydCBzaGEoYXJjaGl2ZS5yZWFkX2J5dGVzKCkpID09IG9zLmVudmlyb25bJ0dCX09SSUdJTkFM
+
+        X1pJUF9TSEEyNTYnXQogICAgZGlyZWN0b3J5ID0gUGF0aChvcy5lbnZpcm9uWydHQl9PUklHSU5BTF9ESVInXSkKICAgIGRpcmVj
+
+        dG9yeS5ta2RpcigpCiAgICBiZWZvcmUgPSB7fQogICAgd2l0aCB6aXBmaWxlLlppcEZpbGUoYXJjaGl2ZSkgYXMgejoKICAgICAg
+
+        ICBuYW1lcyA9IHoubmFtZWxpc3QoKQogICAgICAgIGFzc2VydCBsZW4obmFtZXMpID09IGxlbihzZXQobmFtZXMpKSA9PSBpbnQo
+
+        b3MuZW52aXJvblsnR0JfT1JJR0lOQUxfWklQX01FTUJFUlMnXSkKICAgICAgICBhc3NlcnQgei50ZXN0emlwKCkgaXMgTm9uZQog
+
+        ICAgICAgIGFzc2VydCBzdW0ocC5maWxlX3NpemUgZm9yIHAgaW4gei5pbmZvbGlzdCgpKSA8IDY1IDw8IDIwCiAgICAgICAgYXNz
+
+        ZXJ0IHNoYSh6LnJlYWQoJ2NhcHR1cmUtZ2Itb3JpZ2luYWwucHknKSkgPT0gQ0FQVFVSRV9TSEEyNTYKICAgICAgICBhc3NlcnQg
+
+        ei5yZWFkKCdzb3VyY2Utc3RhdHVzLmJlZm9yZS50eHQnKSA9PSB6LnJlYWQoJ3NvdXJjZS1zdGF0dXMuYWZ0ZXIudHh0JykgPT0g
+
+        YicnCiAgICAgICAgYXNzZXJ0IHoucmVhZCgnc291cmNlLnR4dCcpLmRlY29kZSgpID09ICgnd29ya2Zsb3dfaGVhZD0nICsgb3Mu
+
+        ZW52aXJvblsnR0JfT1JJR0lOQUxfV09SS0ZMT1dfU0hBJ10KICAgICAgICAgICAgKyAnXG5zb3VyY2VfY29tbWl0PScgKyBvcy5l
+
+        bnZpcm9uWydHQl9PUklHSU5BTF9TT1VSQ0VfU0hBJ10gKyAnXG4nKQogICAgICAgIG1hbmlmZXN0ID0gei5yZWFkKCdvYnNlcnZh
+
+        dGlvbnMvbWFuaWZlc3QuanNvbicpCiAgICAgICAgYXNzZXJ0IHNoYShtYW5pZmVzdCkgPT0gb3MuZW52aXJvblsnR0JfT1JJR0lO
+
+        QUxfTUFOSUZFU1RfU0hBMjU2J10KICAgICAgICBmaWxlcyA9IGpzb24ubG9hZHMobWFuaWZlc3QpWydmaWxlcyddCiAgICAgICAg
+
+        YXNzZXJ0IGxlbihmaWxlcykgPT0gaW50KG9zLmVudmlyb25bJ0dCX09SSUdJTkFMX1NFQUxfQ09VTlQnXSkKICAgICAgICAoZGly
+
+        ZWN0b3J5IC8gJ21hbmlmZXN0Lmpzb24nKS53cml0ZV9ieXRlcyhtYW5pZmVzdCkKICAgICAgICBiZWZvcmVbc3RyKGRpcmVjdG9y
+
+        eSAvICdtYW5pZmVzdC5qc29uJyldID0gc2hhKG1hbmlmZXN0KQogICAgICAgIGZvciBuYW1lLCBzZWFsIGluIGZpbGVzLml0ZW1z
+
+        KCk6CiAgICAgICAgICAgIGFzc2VydCBQYXRoKG5hbWUpLm5hbWUgPT0gbmFtZSBhbmQgbmFtZSBub3QgaW4gKCcuJywgJy4uJykK
+
+        ICAgICAgICAgICAgcmF3ID0gei5yZWFkKCdvYnNlcnZhdGlvbnMvJyArIG5hbWUpCiAgICAgICAgICAgIGFzc2VydCBsZW4ocmF3
+
+        KSA9PSBzZWFsWydieXRlcyddIGFuZCBzaGEocmF3KSA9PSBzZWFsWydzaGEyNTYnXSwgbmFtZQogICAgICAgICAgICAoZGlyZWN0
+
+        b3J5IC8gbmFtZSkud3JpdGVfYnl0ZXMocmF3KQogICAgICAgICAgICBiZWZvcmVbc3RyKGRpcmVjdG9yeSAvIG5hbWUpXSA9IHNo
+
+        YShyYXcpCiAgICByZWNlaXB0ID0ganNvbi5sb2FkcygoZGlyZWN0b3J5IC8gJ3JlY2VpcHQuanNvbicpLnJlYWRfYnl0ZXMoKSkK
+
+        ICAgIGFzc2VydCByZWNlaXB0WydwYXNzZWQnXSBhbmQgcmVjZWlwdFsnc291cmNlJ10gPT0gb3MuZW52aXJvblsnR0JfT1JJR0lO
+
+        QUxfU09VUkNFX1NIQSddCiAgICBhc3NlcnQgbm90IHJlY2VpcHRbJ25hdGl2ZV9jYW5kaWRhdGVfZXhlY3V0aW9uJ10gYW5kIG5v
+
+        dCByZWNlaXB0WyduYXRpdmVfdGFibGVzX3VzZWRfYXNfZXhwZWN0ZWQnXQogICAgYXNzZXJ0IG5vdCByZWNlaXB0Wydwcmlvcl9p
+
+        bnB1dHNfcmVjYXB0dXJlZCddIGFuZCByZWNlaXB0Wydwcmlvcl9yb3dzJ10gPT0gMTM1CiAgICBhc3NlcnQgcmVjZWlwdFsnaGlz
+
+        dG9yaWNhbF9jbl9leHRlbnNpb25fc2VhbF9taXNzaW5nJ10gaXMgVHJ1ZQogICAgYXNzZXJ0IHJlY2VpcHRbJ2RvbWFpbl9jb3Vu
+
+        dCddID09IDExIGFuZCByZWNlaXB0Wydzb3VyY2Vfcm93cyddID09IDEyMjIKICAgIGFzc2VydCAoZGlyZWN0b3J5IC8gJ3Byb3Zp
+
+        ZGVycy5iZWZvcmUuanNvbicpLnJlYWRfYnl0ZXMoKSA9PSAoZGlyZWN0b3J5IC8gJ3Byb3ZpZGVycy5hZnRlci5qc29uJykucmVh
+
+        ZF9ieXRlcygpCiAgICBwcm92aWRlcnMgPSBqc29uLmxvYWRzKChkaXJlY3RvcnkgLyAncHJvdmlkZXJzLmJlZm9yZS5qc29uJyku
+
+        cmVhZF9ieXRlcygpKQogICAgZm9yIG5lZWRsZSBpbiAoJ19jb2RlY3NfY24uJywgJ19tdWx0aWJ5dGVjb2RlYy4nLCAnL2Jpbi9w
+
+        eXRob24zLjEyJyk6CiAgICAgICAgYXNzZXJ0IGFueShuZWVkbGUgaW4gcGF0aCBmb3IgcGF0aCBpbiBwcm92aWRlcnMpCiAgICBy
+
+        b3N0ZXJfcmF3ID0gKGRpcmVjdG9yeSAvICdyZXVzZWQtZ2ItaW5wdXRzLmpzb24nKS5yZWFkX2J5dGVzKCkKICAgIGFzc2VydCBz
+
+        aGEocm9zdGVyX3JhdykgPT0gUk9TVEVSX1NIQTI1NgogICAgcm9zdGVyID0ganNvbi5sb2Fkcyhyb3N0ZXJfcmF3KQogICAgYXNz
+
+        ZXJ0IHJvc3Rlclsnb3JpZ2luYWxfbWFuaWZlc3Rfc2hhMjU2J10gPT0gJzYxNWRkZjdiOGQ2OWViOGM4ZDA0ZjQ5ZGQyNzNhOTNi
+
+        ZWZmMTgxOTAwMjEyMGE0YTFlYmJhY2JmZTI1ZTNkMGMnCiAgICBmb3IgcGF0aCwgc2VhbCBpbiByb3N0ZXJbJ2V4cG9zZWRfcHJp
+
+        b3JfcHJvdmlkZXJzJ10uaXRlbXMoKToKICAgICAgICBhc3NlcnQgcHJvdmlkZXJzW3BhdGhdID09IHNlYWwKICAgIGZvciBjb2Rl
+
+        YyBpbiAoJ2diMjMxMicsICdnYmsnLCAnZ2IxODAzMCcpOgogICAgICAgIHJvd3MgPSBbciBmb3IgciBpbiByb3N0ZXJbJ3Jvd3Mn
+
+        XSBpZiByWydjb2RlYyddID09IGNvZGVjXQogICAgICAgIGFzc2VydCBsZW4ocm93cykgPT0gbGVuKHtyWydoZXgnXSBmb3IgciBp
+
+        biByb3dzfSkgPT0gNDUKICAgIHNhdmUoJ29yaWdpbmFsLmJlZm9yZS5qc29uJywgYmVmb3JlKQogICAgc2F2ZSgnc291cmNlLmJl
+
+        Zm9yZS5qc29uJywgc291cmNlX2lucHV0cygpKQoKZGVmIGRpc2NvdmVyKCk6CiAgICByb3dzID0gW2pzb24ubG9hZHMobGluZSkg
+
+        Zm9yIGxpbmUgaW4gKEIgLyAndGVzdHMtYnVpbGQuanNvbmwnKS5yZWFkX3RleHQoKS5zcGxpdGxpbmVzKCldCiAgICBmb3VuZCA9
+
+        IFtyWydleGVjdXRhYmxlJ10gZm9yIHIgaW4gcm93cyBpZiByLmdldCgncmVhc29uJykgPT0gJ2NvbXBpbGVyLWFydGlmYWN0Jwog
+
+        ICAgICAgICAgICAgYW5kIHIuZ2V0KCdleGVjdXRhYmxlJykgYW5kIHJbJ3RhcmdldCddWydraW5kJ10gPT0gWyd0ZXN0J10KICAg
+
+        ICAgICAgICAgIGFuZCByWyd0YXJnZXQnXVsnbmFtZSddID09ICdjaGFuZ2VkX2ZpbGVzX2NoaW5lc2VfZ2InIGFuZCByWydwcm9m
+
+        aWxlJ11bJ3Rlc3QnXV0KICAgIGFzc2VydCBsZW4oZm91bmQpID09IDEsIGZvdW5kCiAgICBleGUgPSBQYXRoKGZvdW5kWzBdKS5y
+
+        ZXNvbHZlKCkKICAgIGFzc2VydCBleGUuaXNfZmlsZSgpIGFuZCBzdHIoZXhlKS5zdGFydHN3aXRoKG9zLmVudmlyb25bJ0NBUkdP
+
+        X1RBUkdFVF9ESVInXSArICcvJykKICAgIHdpdGggUGF0aChvcy5lbnZpcm9uWydHSVRIVUJfRU5WJ10pLm9wZW4oJ2EnKSBhcyBm
+
+        OgogICAgICAgIGYud3JpdGUoJ0dCX05BVElWRV9FWEU9JyArIHN0cihleGUpICsgJ1xuJykKICAgIHNhdmUoJ2V4ZWN1dGFibGVz
+
+        Lmpzb24nLCB7J2NoYW5nZWRfZmlsZXNfY2hpbmVzZV9nYic6IHN0cihleGUpfSkKICAgIHByb3ZpZGVycyA9IHtleGV9CiAgICBm
+
+        b3IgZGlyZWN0b3J5IGluIChQYXRoKCcvbGliL3g4Nl82NC1saW51eC1nbnUnKSwgUGF0aCgnL3Vzci9saWIveDg2XzY0LWxpbnV4
+
+        LWdudScpKToKICAgICAgICBpZiAoZGlyZWN0b3J5IC8gJ2xpYmMuc28uNicpLmlzX2ZpbGUoKToKICAgICAgICAgICAgcHJvdmlk
+
+        ZXJzLmFkZCgoZGlyZWN0b3J5IC8gJ2xpYmMuc28uNicpLnJlc29sdmUoKSkKICAgIHNhdmUoJ25hdGl2ZS1wcm92aWRlcnMuYmVm
+
+        b3JlLmpzb24nLCB7c3RyKHApOiBzaGEocC5yZWFkX2J5dGVzKCkpIGZvciBwIGluIHNvcnRlZChwcm92aWRlcnMpfSkKCmRlZiBm
+
+        aW5pc2goKToKICAgIHNvdXJjZXMoKQogICAgaW5wdXRzID0ganNvbi5sb2FkcygoQiAvICdzb3VyY2UuYmVmb3JlLmpzb24nKS5y
+
+        ZWFkX2J5dGVzKCkpCiAgICBhc3NlcnQgaW5wdXRzID09IHNvdXJjZV9pbnB1dHMoKQogICAgc2F2ZSgnc291cmNlLmFmdGVyLmpz
+
+        b24nLCBpbnB1dHMpCiAgICBiZWZvcmUgPSBqc29uLmxvYWRzKChCIC8gJ29yaWdpbmFsLmJlZm9yZS5qc29uJykucmVhZF9ieXRl
+
+        cygpKQogICAgYXNzZXJ0IGFsbChzaGEoUGF0aChwKS5yZWFkX2J5dGVzKCkpID09IHBpbiBmb3IgcCwgcGluIGluIGJlZm9yZS5p
+
+        dGVtcygpKQogICAgc2F2ZSgnb3JpZ2luYWwuYWZ0ZXIuanNvbicsIGJlZm9yZSkKICAgIHByb3ZpZGVycyA9IGpzb24ubG9hZHMo
+
+        KEIgLyAnbmF0aXZlLXByb3ZpZGVycy5iZWZvcmUuanNvbicpLnJlYWRfYnl0ZXMoKSkKICAgIGFzc2VydCBhbGwoc2hhKFBhdGgo
+
+        cCkucmVhZF9ieXRlcygpKSA9PSBwaW4gZm9yIHAsIHBpbiBpbiBwcm92aWRlcnMuaXRlbXMoKSkKICAgIHNhdmUoJ25hdGl2ZS1w
+
+        cm92aWRlcnMuYWZ0ZXIuanNvbicsIHByb3ZpZGVycykKICAgIGFzc2VydCAoQiAvICdzb3VyY2Utc3RhdHVzLmJlZm9yZS50eHQn
+
+        KS5yZWFkX2J5dGVzKCkgPT0gKEIgLyAnc291cmNlLXN0YXR1cy5hZnRlci50eHQnKS5yZWFkX2J5dGVzKCkgPT0gYicnCiAgICBl
+
+        eGUgPSBqc29uLmxvYWRzKChCIC8gJ2V4ZWN1dGFibGVzLmpzb24nKS5yZWFkX2J5dGVzKCkpWydjaGFuZ2VkX2ZpbGVzX2NoaW5l
+
+        c2VfZ2InXQogICAgdHJhY2UgPSAoQiAvICdnYi5leGVjdmUnKS5yZWFkX3RleHQoKQogICAgYXNzZXJ0ICdleGVjdmVhdCgnIG5v
+
+        dCBpbiB0cmFjZQogICAgY2FsbHMgPSBbbGluZSBmb3IgbGluZSBpbiB0cmFjZS5zcGxpdGxpbmVzKCkgaWYgJ2V4ZWN2ZSgnIGlu
+
+        IGxpbmUgb3IgJzwuLi4gZXhlY3ZlIHJlc3VtZWQ+JyBpbiBsaW5lXQogICAgYXNzZXJ0IGxlbihjYWxscykgPT0gMSwgY2FsbHMK
+
+        ICAgIG1hdGNoID0gcmUuc2VhcmNoKHInXGJleGVjdmVcKCIoW14iXFxdKykiJywgY2FsbHNbMF0pCiAgICBhc3NlcnQgbWF0Y2gg
+
+        YW5kIG1hdGNoWzFdID09IGV4ZSBhbmQgY2FsbHNbMF0ucnN0cmlwKCkuZW5kc3dpdGgoJz0gMCcpLCBjYWxsc1swXQogICAgcGFz
+
+        c2VkID0gKEIgLyAnbmF0aXZlLnN0YXR1cycpLnJlYWRfdGV4dCgpLnN0cmlwKCkgPT0gJzAnCiAgICBhY3R1YWwgPSBQYXRoKG9z
+
+        LmVudmlyb25bJ0dCX05BVElWRV9PVVRQVVQnXSkKICAgIG9yaWdpbmFsID0gUGF0aChvcy5lbnZpcm9uWydHQl9PUklHSU5BTF9E
+
+        SVInXSkKICAgIGlmIHBhc3NlZDoKICAgICAgICBhc3NlcnQgJzMgcGFzc2VkOyAwIGZhaWxlZDsnIGluIChCIC8gJ25hdGl2ZS5z
+
+        dGRvdXQnKS5yZWFkX3RleHQoKQogICAgICAgIHN1bW1hcnkgPSBqc29uLmxvYWRzKChhY3R1YWwgLyAncGF5bG9hZC1zdW1tYXJ5
+
+        Lmpzb24nKS5yZWFkX2J5dGVzKCkpCiAgICAgICAgcmVjZWlwdCA9IGpzb24ubG9hZHMoKG9yaWdpbmFsIC8gJ3JlY2VpcHQuanNv
+
+        bicpLnJlYWRfYnl0ZXMoKSkKICAgICAgICBhc3NlcnQgc3VtbWFyeVsnZGlmZmVyZW5jZXMnXSA9PSBzdW1tYXJ5Wyd3cm9uZ19l
+
+        cnJvcl9waGFzZSddID09IDAKICAgICAgICBhc3NlcnQgc3VtbWFyeVsncmV1c2VkX29yaWdpbmFsX2lucHV0cyddID09IDEzNQog
+
+        ICAgICAgIGFzc2VydCBzdW1tYXJ5WydoaXN0b3JpY2FsX2NuX2V4dGVuc2lvbl9zZWFsX21pc3NpbmcnXSBpcyBUcnVlCiAgICAg
+
+        ICAgYXNzZXJ0IHN1bW1hcnlbJ2RlbnNlX3Jvd3MnXSA9PSByZWNlaXB0WydkZW5zZV9yb3dzJ10KICAgICAgICBhc3NlcnQgc3Vt
+
+        bWFyeVsnbmV3X3ZlY3RvcnMnXSA9PSByZWNlaXB0WydwYXlsb2FkX3ZlY3Rvcl9yb3dzJ10KICAgICAgICBmb3IgZG9tYWluIGlu
+
+        IGpzb24ubG9hZHMoKG9yaWdpbmFsIC8gJ2RvbWFpbnMuanNvbicpLnJlYWRfYnl0ZXMoKSlbJ3Jvd3MnXToKICAgICAgICAgICAg
+
+        YXNzZXJ0IChhY3R1YWwgLyBkb21haW5bJ25hbWUnXSkucmVhZF9ieXRlcygpID09IChvcmlnaW5hbCAvIGRvbWFpblsnbmFtZSdd
+
+        KS5yZWFkX2J5dGVzKCkKICAgICAgICBwcmlvciA9IGpzb24ubG9hZHMoKG9yaWdpbmFsIC8gJ3JldXNlZC1nYi1pbnB1dHMuanNv
+
+        bicpLnJlYWRfYnl0ZXMoKSlbJ3Jvd3MnXQogICAgICAgIHZlY3RvcnMgPSBqc29uLmxvYWRzKChvcmlnaW5hbCAvICd2ZWN0b3Jz
+
+        Lmpzb24nKS5yZWFkX2J5dGVzKCkpWydyb3dzJ10KICAgICAgICBmb3Igb3V0cHV0LCBleHBlY3RlZCBpbiBbKCdwcmlvci12ZWN0
+
+        b3JzLmFjdHVhbC5qc29uJywgcHJpb3IpLCAoJ3ZlY3RvcnMuYWN0dWFsLmpzb24nLCB2ZWN0b3JzKV06CiAgICAgICAgICAgIHJv
+
+        d3MgPSBqc29uLmxvYWRzKChhY3R1YWwgLyBvdXRwdXQpLnJlYWRfYnl0ZXMoKSlbJ3Jvd3MnXQogICAgICAgICAgICBhc3NlcnQg
+
+        bGVuKHJvd3MpID09IGxlbihleHBlY3RlZCkKICAgICAgICAgICAgZm9yIGUsIGEgaW4gemlwKGV4cGVjdGVkLCByb3dzKToKICAg
+
+        ICAgICAgICAgICAgIGFzc2VydCBhbGwoYVtrXSA9PSBlW2tdIGZvciBrIGluICgnY29kZWMnLCAnaGV4JywgJ2FjY2VwdGVkJywg
+
+        J3V0ZjhfaGV4JykpCiAgICAgICAgICAgICAgICBhc3NlcnQgYVsnbWF0Y2hlZCddIGFuZCBhWydzdHJpY3RfZGVjb2RlX3Jlc3Vs
+
+        dCddCiAgICAgICAgZXhwZWN0ZWQgPSBqc29uLmxvYWRzKChvcmlnaW5hbCAvICdzb3VyY2UtYWRtaXNzaW9uLmpzb24nKS5yZWFk
+
+        X2J5dGVzKCkpWydyb3dzJ10KICAgICAgICByb3dzID0ganNvbi5sb2FkcygoYWN0dWFsIC8gJ3NvdXJjZS1hZG1pc3Npb24uYWN0
+
+        dWFsLmpzb24nKS5yZWFkX2J5dGVzKCkpWydyb3dzJ10KICAgICAgICBhc3NlcnQgbGVuKHJvd3MpID09IGxlbihleHBlY3RlZCkg
+
+        PT0gMTIyMgogICAgICAgIGZvciBlLCBhIGluIHppcChleHBlY3RlZCwgcm93cyk6CiAgICAgICAgICAgIGFzc2VydCBhWydzb3Vy
+
+        Y2VfaGV4J10gPT0gZVsnc291cmNlX2hleCddIGFuZCBhWydhY2NlcHRlZCddID09IGVbJ2FjY2VwdGVkJ10KICAgICAgICAgICAg
+
+        YXNzZXJ0IGFbJ21hdGNoZWQnXSBhbmQgbm90IGFbJ2NhcGFiaWxpdHknXQogICAgZm9yIG5hbWUgaW4gKCdjbGlwcHkuc3RkZXJy
+
+        JywgJ3Rlc3RzLWJ1aWxkLnN0ZGVycicpOgogICAgICAgIHRleHQgPSAoQiAvIG5hbWUpLnJlYWRfdGV4dCgpCiAgICAgICAgYXNz
+
+        ZXJ0ICdGaW5pc2hlZCAnIGluIHRleHQgYW5kICdlcnJvcjonIG5vdCBpbiB0ZXh0CiAgICBzYXZlKCdmaW5hbC1yZWNlaXB0Lmpz
+
+        b24nLCBkaWN0KHBhc3NlZD1wYXNzZWQsIHNvdXJjZT1vcy5lbnZpcm9uWydFWFBFQ1RFRF9TT1VSQ0UnXSwKICAgICAgICBvcmln
+
+        aW5hbF9tYW5pZmVzdF9zaGEyNTY9b3MuZW52aXJvblsnR0JfT1JJR0lOQUxfTUFOSUZFU1RfU0hBMjU2J10sCiAgICAgICAgb3Jp
+
+        Z2luYWxfZmlsZXNfYmVmb3JlX2FmdGVyPWxlbihiZWZvcmUpLCBuYXRpdmVfcHJvdmlkZXJfcGFpcnM9bGVuKHByb3ZpZGVycyks
+
+        CiAgICAgICAgbmF0aXZlX2V4ZWNzPTEsIHB5dGhvbl9leGVjc19pbl9uYXRpdmVfdHJhY2U9MCwgdGVzdHM9Mywgc291cmNlX3Jv
+
+        d3M9MTIyMiwKICAgICAgICBwcmlvcl9vcmlnaW5hbF9pbnB1dHNfcmV1c2VkPTEzNSwgcHJpb3Jfb3JpZ2luYWxfaW5wdXRzX3Jl
+
+        Y2FwdHVyZWQ9RmFsc2UsCiAgICAgICAgaGlzdG9yaWNhbF9jbl9leHRlbnNpb25fc2VhbF9taXNzaW5nPVRydWUsIGV4Y2VwdGlv
+
+        bl9tZXNzYWdlX3Bhcml0eV9jbGFpbWVkPUZhbHNlLAogICAgICAgIGluY3JlbWVudGFsX2FwaV9wYXJpdHlfY2xhaW1lZD1GYWxz
+
+        ZSwgb3RoZXJfZG9tYWluc19jbG9zZWQ9RmFsc2UsIGludmVudG9yeV9jcmVkaXQ9MCkpCiAgICBhc3NlcnQgcGFzc2VkLCAnbmF0
+
+        aXZlIGFjdHVhbCBkaWZmZXJlbmNlcyByZXRhaW5lZDsgbm8gdG9sZXJhbmNlIG9yIHNvdXJjZS1hZG1pc3Npb24gd2Vha2VuaW5n
+
+        JwoKaWYgX19uYW1lX18gPT0gJ19fbWFpbl9fJzoKICAgIGdsb2JhbHMoKVtzeXMuYXJndlsxXV0oKQo=
+
+        GB_PAYLOAD
+
+        printf ''7706144b661588bfbe6e301f6738be5b8a961e73f8f36966bc0daf4771263935  %s/hosted-gb-audit.py\n'' "$GB_BASE" |
+        sha256sum --check --strict
+
+        base64 --decode > "$GB_BASE/hosted-native-build.sh" <<''GB_PAYLOAD''
+
+        IyBIT1NURUQgT05MWSwgb3JpZ2luYWwgYXJ0aWZhY3QgYWRtaXNzaW9uIG11c3QgYmUgZnJvemVuIGJ5IHBhcmVudCBmaXJzdC4K
+
+        c2V0IC1ldW8gcGlwZWZhaWwKOiAiJHtHQl9CQVNFOj9ldmlkZW5jZSBkaXJlY3Rvcnl9Igo6ICIke0VYUEVDVEVEX1NPVVJDRTo/
+
+        Y3VycmVudCBuYXRpdmUgc291cmNlfSIKOiAiJHtHQl9PUklHSU5BTF9ESVI6P29yaWdpbmFsIGV4dHJhY3Rpb24gZGlyZWN0b3J5
+
+        fSIKOiAiJHtHQl9PUklHSU5BTF9NQU5JRkVTVF9TSEEyNTY6P3BhcmVudCBhZG1pdHRlZCBvcmlnaW5hbCBtYW5pZmVzdCBoYXNo
+
+        fSIKOiAiJHtHQl9PUklHSU5BTF9TT1VSQ0VfU0hBOj9wYXJlbnQgYWRtaXR0ZWQgb3JpZ2luYWwgc291cmNlfSIKdGVzdCAiJChn
+
+        aXQgcmV2LXBhcnNlIEhFQUQpIiA9ICIkRVhQRUNURURfU09VUkNFIgpleHBvcnQgQ0FSR09fVEFSR0VUX0RJUj0iJFJVTk5FUl9U
+
+        RU1QL2diLW5hdGl2ZS10YXJnZXQtJEdJVEhVQl9SVU5fSUQtJEdJVEhVQl9SVU5fQVRURU1QVCIKZXhwb3J0IENBUkdPX0lOQ1JF
+
+        TUVOVEFMPTAKcHJpbnRmICdDQVJHT19UQVJHRVRfRElSPSVzXG4nICIkQ0FSR09fVEFSR0VUX0RJUiIgPj4gIiRHSVRIVUJfRU5W
+
+        Igp0ZXN0ICEgLWUgIiRDQVJHT19UQVJHRVRfRElSIgpydXN0L3Rvb2xzL2NoZWNrLWRpc2stc3BhY2UgLS1wYXRoICIkUlVOTkVS
+
+        X1RFTVAiIC0tZ3Jvd3RoLW1pYiA4MTkyCnB5dGhvbjMgLUkgLUIgIiRHQl9CQVNFL2hvc3RlZC1nYi1hdWRpdC5weSIgYWRtaXQK
+
+        Y2FyZ28gKzEuOTQuMCBjbGlwcHkgLS1tYW5pZmVzdC1wYXRoIHJ1c3QvQ2FyZ28udG9tbCAtLWxvY2tlZCAtcCBvcGVucGlsb3Qt
+
+        ZGV2LXRvb2xzIC0tbm8tZGVmYXVsdC1mZWF0dXJlcyAtLWZlYXR1cmVzIGNoYW5nZWQtZmlsZXMtbmF0aXZlIC0tbGliIC0tYmlu
+
+        IGNoZWNrLWNoYW5nZWQtZmlsZXMgLS10ZXN0IGNoYW5nZWRfZmlsZXNfY2hpbmVzZV9nYiAtLSAtRCB3YXJuaW5ncyA+ICIkR0Jf
+
+        QkFTRS9jbGlwcHkuc3Rkb3V0IiAyPiAiJEdCX0JBU0UvY2xpcHB5LnN0ZGVyciIKY2FyZ28gKzEuOTQuMCB0ZXN0IC0tbWFuaWZl
+
+        c3QtcGF0aCBydXN0L0NhcmdvLnRvbWwgLS1sb2NrZWQgLXAgb3BlbnBpbG90LWRldi10b29scyAtLW5vLWRlZmF1bHQtZmVhdHVy
+
+        ZXMgLS1mZWF0dXJlcyBjaGFuZ2VkLWZpbGVzLW5hdGl2ZSAtLXRlc3QgY2hhbmdlZF9maWxlc19jaGluZXNlX2diIC0tbm8tcnVu
+
+        IC0tbWVzc2FnZS1mb3JtYXQ9anNvbiA+ICIkR0JfQkFTRS90ZXN0cy1idWlsZC5qc29ubCIgMj4gIiRHQl9CQVNFL3Rlc3RzLWJ1
+
+        aWxkLnN0ZGVyciIKcHl0aG9uMyAtSSAtQiAiJEdCX0JBU0UvaG9zdGVkLWdiLWF1ZGl0LnB5IiBkaXNjb3Zlcgo=
+
+        GB_PAYLOAD
+
+        printf ''9cdc9793b4d8a43a23a87b5af66a279a008b18d2367b33b583054a6055f67b26  %s/hosted-native-build.sh\n'' "$GB_BASE"
+        | sha256sum --check --strict
+
+        base64 --decode > "$GB_BASE/hosted-native-run.sh" <<''GB_PAYLOAD''
+
+        IyBIT1NURUQgT05MWTsgZGlzY292ZXJlZCBmcmVzaCBjdXJyZW50IG5hdGl2ZSB0ZXN0IGV4ZWN1dGFibGUsIGVtcHR5IFBBVEgu
+
+        CnNldCAtZXVvIHBpcGVmYWlsCm1rZGlyICIkR0JfQkFTRS9uby1leGVjdXRhYmxlcyIKc2F2ZWRfcGF0aD0iJFBBVEgiCmV4cG9y
+
+        dCBQQVRIPSIkR0JfQkFTRS9uby1leGVjdXRhYmxlcyIKc2V0ICtlCi91c3IvYmluL3RpbWVvdXQgLS1zaWduYWw9VEVSTSAtLWtp
+
+        bGwtYWZ0ZXI9MTBzIDMwMHMgL3Vzci9iaW4vc3RyYWNlIC1mIC1xcSAtcyA4MTkyIC1lIHRyYWNlPWV4ZWN2ZSxleGVjdmVhdCAt
+
+        byAiJEdCX0JBU0UvZ2IuZXhlY3ZlIiAiJEdCX05BVElWRV9FWEUiIC0tdGVzdC10aHJlYWRzPTEgLS1ub2NhcHR1cmUgPiAiJEdC
+
+        X0JBU0UvbmF0aXZlLnN0ZG91dCIgMj4gIiRHQl9CQVNFL25hdGl2ZS5zdGRlcnIiCnN0YXR1cz0kPwpzZXQgLWUKZXhwb3J0IFBB
+
+        VEg9IiRzYXZlZF9wYXRoIgpwcmludGYgJyVzXG4nICIkc3RhdHVzIiA+ICIkR0JfQkFTRS9uYXRpdmUuc3RhdHVzIgpnaXQgc3Rh
+
+        dHVzIC0tcG9yY2VsYWluPXYxID4gIiRHQl9CQVNFL3NvdXJjZS1zdGF0dXMuYWZ0ZXIudHh0IgpweXRob24zIC1JIC1CICIkR0Jf
+
+        QkFTRS9ob3N0ZWQtZ2ItYXVkaXQucHkiIGZpbmlzaAo=
+
+        GB_PAYLOAD
+
+        printf ''d74bbfeb28cb75a3e1cfb13e42689ada7f420cc057827f24282e892407a9a4ac  %s/hosted-native-run.sh\n'' "$GB_BASE"
+        | sha256sum --check --strict
+
+        gh api -H ''Cache-Control: no-cache'' repos/bin9208/openpilot-rust/actions/artifacts/12448852242/zip > "$GB_BASE/gb-original.zip"
+
+        test "$(stat -c %s "$GB_BASE/gb-original.zip")" = "$GB_ORIGINAL_ZIP_BYTES"
+
+        printf ''%s  %s/gb-original.zip\n'' "$GB_ORIGINAL_ZIP_SHA256" "$GB_BASE" | sha256sum --check --strict
+
+        '
+    - name: Strict focused compile and current target discovery
+      shell: bash
+      run: 'set -euo pipefail
+
+        bash "$GB_BASE/hosted-native-build.sh"
+
+        '
+    - name: Compare strict GB domains and source admission
+      shell: bash
+      run: 'set -euo pipefail
+
+        bash "$GB_BASE/hosted-native-run.sh"
+
+        '
+    - name: Bound retained evidence
+      if: always()
+      shell: bash
+      run: "set -euo pipefail\nif test -d \"$GB_BASE\"; then\n  du -sm \"$GB_BASE\" > \"$GB_BASE/artifact-size-mib.txt\"\n\
+        \  test \"$(cut -f1 \"$GB_BASE/artifact-size-mib.txt\")\" -le 192\nfi\n"
+    - name: Preserve source/provider originals, actuals and failure evidence
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: changed-files-gb-native-296
+        path: ${{ runner.temp }}/changed-files-gb-native-296/
+        retention-days: 14
+        include-hidden-files: true
+        if-no-files-found: warn
