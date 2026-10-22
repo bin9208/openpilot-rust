@@ -13,14 +13,14 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
-      EXPECTED_SOURCE: f963b0812cab0039660dad038a3a9470f39c3772
+      EXPECTED_SOURCE: f2b7729ff372471a518f42a3bb5ab20396a2f9ee
       CARGO_INCREMENTAL: '0'
       RUST_BACKTRACE: '1'
       PYTHONDONTWRITEBYTECODE: '1'
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: f963b0812cab0039660dad038a3a9470f39c3772
+        ref: f2b7729ff372471a518f42a3bb5ab20396a2f9ee
         persist-credentials: false
     - name: Reserve capacity and authenticate source and native providers
       shell: bash
