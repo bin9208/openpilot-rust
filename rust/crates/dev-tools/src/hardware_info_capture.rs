@@ -5,9 +5,10 @@ use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::{
     collections::{BTreeMap, BTreeSet},
+    ffi::OsString,
     fs::{self, File},
     io::{BufReader, Read, Seek, SeekFrom},
-    os::unix::fs::MetadataExt,
+    os::unix::{ffi::OsStrExt, fs::MetadataExt},
     path::{Component, Path, PathBuf},
 };
 
@@ -242,6 +243,7 @@ pub struct Receipt {
     missing: Vec<String>,
     manifest: Value,
     files: BTreeMap<String, Snapshot>,
+    runner: Vec<Vec<u8>>,
 }
 impl Receipt {
     pub fn verify(&self) -> Result<()> {
@@ -275,6 +277,7 @@ impl Receipt {
     }
     pub fn report(&self) -> Value {
         json!({"manifest_sha256":MANIFEST_SHA,"require_retired":self.retired,
+            "runner_argv_bytes":self.runner,
             "held_inputs":self.held.iter().map(Held::report).collect::<Vec<_>>(),"absent_sources":self.missing,
             "fixture_files":self.files.iter().map(|(name,s)| (name,json!({"identity":s.id,
                 "bytes":s.compressed.0,"sha256":s.compressed.1,"uncompressed_bytes":s.expanded.0,
@@ -287,6 +290,19 @@ pub fn validate(
     plans: &Path,
     require_retired: bool,
     binary: &Path,
+) -> Result<Receipt> {
+    validate_for_runner(root, capture, plans, require_retired, binary, &[])
+}
+
+/// The caller must execute this exact absolute runner[0] and preserve all raw arguments.
+/// A runner permits supported foreign target ELF admission, not an interpreter claim.
+pub fn validate_for_runner(
+    root: &Path,
+    capture: &Path,
+    plans: &Path,
+    require_retired: bool,
+    binary: &Path,
+    runner: &[OsString],
 ) -> Result<Receipt> {
     safe(root)?;
     safe(capture)?;
@@ -317,28 +333,12 @@ pub fn validate(
     {
         return Err("original scenario completion receipt missing".into());
     }
-    let mut native = Held::open(binary, 512 * 1024 * 1024)?;
-    native.file.seek(SeekFrom::Start(0))?;
-    let mut elf = [0; 20];
-    native.file.read_exact(&mut elf)?;
-    let machine = if cfg!(target_arch = "x86_64") {
-        62
-    } else if cfg!(target_arch = "aarch64") {
-        183
-    } else {
-        return Err("unsupported native architecture".into());
-    };
-    if &elf[..4] != b"\x7fELF"
-        || elf[4] != 2
-        || elf[5] != 1
-        || elf[6] != 1
-        || !matches!(u16::from_le_bytes([elf[16], elf[17]]), 2 | 3)
-        || u16::from_le_bytes([elf[18], elf[19]]) != machine
-        || fs::metadata(binary)?.mode() & 0o111 == 0
-    {
-        return Err("binary is not an executable current-architecture ELF".into());
-    }
+    let native = executable_elf(binary, !runner.is_empty())?;
     let mut held = vec![manifest_pin, native];
+    if let Some(program) = runner.first() {
+        // executable_elf/safe requires an absolute, non-symlink path; no PATH lookup here.
+        held.push(executable_elf(Path::new(program), false)?);
+    }
     let sources = manifest["source_sha256"]
         .as_object()
         .ok_or("missing source pins")?;
@@ -388,7 +388,39 @@ pub fn validate(
         missing,
         manifest,
         files,
+        runner: runner.iter().map(|arg| arg.as_bytes().to_vec()).collect(),
     };
     receipt.verify()?;
     Ok(receipt)
+}
+
+fn executable_elf(path: &Path, allow_foreign: bool) -> Result<Held> {
+    let mut held = Held::open(path, 512 * 1024 * 1024)?;
+    held.file.seek(SeekFrom::Start(0))?;
+    let mut elf = [0; 20];
+    held.file.read_exact(&mut elf)?;
+    let host = if cfg!(target_arch = "x86_64") {
+        62
+    } else if cfg!(target_arch = "aarch64") {
+        183
+    } else {
+        return Err("unsupported native architecture".into());
+    };
+    let machine = u16::from_le_bytes([elf[18], elf[19]]);
+    if &elf[..4] != b"\x7fELF"
+        || elf[4] != 2
+        || elf[5] != 1
+        || elf[6] != 1
+        || !matches!(u16::from_le_bytes([elf[16], elf[17]]), 2 | 3)
+        || !(if allow_foreign {
+            matches!(machine, 62 | 183)
+        } else {
+            machine == host
+        })
+        || held.file.metadata()?.mode() & 0o111 == 0
+    {
+        return Err("binary is not an admitted executable ELF".into());
+    }
+    held.verify()?;
+    Ok(held)
 }

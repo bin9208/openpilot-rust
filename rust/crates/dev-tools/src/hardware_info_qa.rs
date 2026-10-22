@@ -529,6 +529,31 @@ fn canonical_future_path(path: &Path) -> Result<PathBuf> {
     Ok(canonical.join(tail))
 }
 
+fn resolve_runner(arguments: &[OsString], checkout: &Path) -> Result<Vec<OsString>> {
+    let Some(program) = arguments.first() else {
+        return Ok(Vec::new());
+    };
+    let executable = |path: &Path| {
+        fs::metadata(path)
+            .is_ok_and(|metadata| metadata.is_file() && metadata.permissions().mode() & 0o111 != 0)
+    };
+    let path = if program.as_encoded_bytes().contains(&b'/') {
+        let candidate = checkout.join(program);
+        if !executable(&candidate) {
+            return Err("HardwareInfo runner is not executable".into());
+        }
+        candidate
+    } else {
+        std::env::split_paths(&std::env::var_os("PATH").unwrap_or_default())
+            .map(|directory| checkout.join(directory).join(program))
+            .find(|candidate| executable(candidate))
+            .ok_or("HardwareInfo runner is not on PATH")?
+    };
+    let mut resolved = arguments.to_vec();
+    resolved[0] = path.canonicalize()?.into_os_string();
+    Ok(resolved)
+}
+
 /// Run selected captured plans against the actual native HardwareInfo example.
 /// The output directory may already exist, but each selected case directory must
 /// be new. `root` is the source checkout; each case gets its own fixture root.
@@ -543,6 +568,7 @@ pub fn run(options: &Options, runner: &mut dyn qa_process::Runner) -> Result<Val
         Ok(path.canonicalize()?)
     };
     let binary = resolve_existing(&options.binary)?;
+    let runner_arguments = resolve_runner(&options.runner, &checkout)?;
     let source_evidence = resolve_existing(&options.source_evidence)?;
     let plans_path = resolve_existing(&options.plans)?;
     let output_requested = if options.output.is_absolute() {
@@ -556,12 +582,13 @@ pub fn run(options: &Options, runner: &mut dyn qa_process::Runner) -> Result<Val
     {
         return Err("HardwareInfo output cannot overlap original evidence".into());
     }
-    let receipt = crate::hardware_info_capture::validate(
+    let receipt = crate::hardware_info_capture::validate_for_runner(
         &checkout,
         &source_evidence,
         &plans_path,
         options.require_retired,
         &binary,
+        &runner_arguments,
     )?;
     fs::create_dir_all(&output_requested)?;
     let output = output_requested.canonicalize()?;
@@ -633,7 +660,7 @@ pub fn run(options: &Options, runner: &mut dyn qa_process::Runner) -> Result<Val
         let request_path = folder.join("request.json");
         write_json(&request_path, &request)?;
         let command_log = folder.join("commands.bin");
-        let mut argv = options.runner.clone();
+        let mut argv = runner_arguments.clone();
         argv.push(binary.as_os_str().to_owned());
         argv.push(request_path.as_os_str().to_owned());
         argv.push(folder.as_os_str().to_owned());
@@ -652,7 +679,7 @@ pub fn run(options: &Options, runner: &mut dyn qa_process::Runner) -> Result<Val
             "PYTHONPATH",
             "PYTHONHOME",
         ] {
-            env.remove(OsString::from(key).as_ref());
+            env.remove(std::ffi::OsStr::new(key));
         }
         let mut path_bytes = shims.as_os_str().as_encoded_bytes().to_vec();
         path_bytes.push(b':');

@@ -1,8 +1,8 @@
 #![cfg(target_os = "linux")]
 
-use openpilot_dev_tools::hardware_info_capture::validate;
+use openpilot_dev_tools::hardware_info_capture::{validate, validate_for_runner};
 use serde_json::Value;
-use std::{fs, path::PathBuf};
+use std::{ffi::OsString, fs, os::unix::ffi::OsStringExt, path::PathBuf};
 
 const RETIRED: [&str; 3] = [
     "rust/tools/check_hardware_info.py",
@@ -125,4 +125,55 @@ fn alias_plan_cannot_replace_the_original_plan_identity() {
     let alternate = data.capture.join("alternate-plan.json.gz");
     fs::copy(data.capture.join("plans.json.gz"), &alternate).unwrap();
     assert!(validate(&data.root, &data.capture, &alternate, true, &data.binary).is_err());
+}
+
+#[test]
+fn foreign_target_requires_a_held_current_host_runner() {
+    let data = Admission::prepare();
+    let runner = data._temporary.path().join("runner-admission-only");
+    fs::copy(std::env::current_exe().unwrap(), &runner).unwrap();
+    let mut target = fs::read(&data.binary).unwrap();
+    let foreign: u16 = if cfg!(target_arch = "x86_64") {
+        183
+    } else {
+        62
+    };
+    target[18..20].copy_from_slice(&foreign.to_le_bytes());
+    fs::write(&data.binary, target).unwrap();
+    assert!(data.admit().is_err(), "foreign ELF without a runner");
+    let args = [
+        runner.clone().into_os_string(),
+        OsString::from("-L"),
+        OsString::from_vec(b"/sysroot-\xff".to_vec()),
+    ];
+    let receipt = validate_for_runner(
+        &data.root,
+        &data.capture,
+        &data.capture.join("plans.json.gz"),
+        true,
+        &data.binary,
+        &args,
+    )
+    .unwrap();
+    receipt.verify().unwrap();
+    assert_eq!(
+        receipt.report()["runner_argv_bytes"][2],
+        serde_json::json!(b"/sysroot-\xff".to_vec())
+    );
+    assert!(validate_for_runner(
+        &data.root,
+        &data.capture,
+        &data.capture.join("plans.json.gz"),
+        true,
+        &data.binary,
+        &[OsString::from("relative-runner")]
+    )
+    .is_err());
+    let original = fs::read(&runner).unwrap();
+    fs::write(&runner, original).unwrap();
+    assert!(
+        receipt.verify().is_err(),
+        "runner replacement or rewrite must invalidate receipt"
+    );
+    // Header admission only: neither the modified target nor the runner is executed.
 }

@@ -6018,3 +6018,37 @@ adds same-prestate original retained-code/native-object calls, complete alias an
 launch mapping, first-difference byte windows/prestate, IR/object/machine-code
 bodies and read-only original CPU-worker/main MXCSR/rounding observations. This
 is diagnostic-only; no numerical acceptance or production target change.
+
+### Native HardwareInfo compile admission and contract review (2026-10-22)
+
+Candidate39703972082/source148030ae65c6728155029f2ba2e17e4b3a5a99be fails the
+first native build on an ambiguous OsString BTreeMap::remove generic. Parent
+inspects original compiler-message JSON in artifact12393628485 (17742B/4CRCs,
+SHA2565736431705e43b0af604ecf35fbc5a347432e42e3fff278139e0a60499c8ed7c).
+Use explicit OsStr removal; no functional comparison ran or passed in that job.
+Review also preserves the old explicit runner route: native direct execution
+requires a host ELF, while a bound host runner permits supported foreign target
+ELF62/183. Runner raw arguments, actual selected executable and held hashes stay
+bound. Header-only unit controls do not claim actual QEMU/foreign execution.
+The ignored native Rust outer gate now owns private source copying, full
+actual/private replay, real configured-runner slice and six actual CLI controls;
+source/expected data are never produced by candidate runtime output. Parent fixes
+predelete/private presence handling, captures real redirected streams instead of
+empty NativeRunner buffers, and uses checkout then empty working directories.
+Original3source deletion and accepted count remain pending hosted validation.
+
+First-kernel39703190929 failed diagnostic admission before comparison: first
+composed COPY is NPY→CPU, but the diagnostic snapshot incorrectly requiredCPU
+for every argument. Preserve the exporter's CPU/NPY/PYTHON host COPY boundary;
+PROGRAM arguments remainCPU-only. No model mismatch or source-seal failure was
+measured in that attempt. Corrected same-source retry39704565700, workflow
+fdfcd3dd4e7b06997fcbbfcae5417218c389ec67, is running. Existing39699899580 full
+model-family positive/negative replay remains in progress with per-invocation
+1200s bounds; static review finds no concrete unbounded wait/deadlock and no
+reason to shorten or skip its60cases.
+
+Full Fast39703167593 atd610 passes all lanes and aggregate, including all3native
+staging and78isolation controls. Parent routing log confirms actual synthetic
+mergeb13a720713e25944d1c66336921e9f7b53f5725f; fetched Git tree
+7cf3f74bbdfb089e6b6307205f4bef910ceb3f11 equals the published head's tree.
+#478 closes with comment6330242277. This is not protected-branch integration.

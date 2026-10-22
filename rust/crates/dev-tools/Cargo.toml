@@ -726,6 +726,10 @@ required-features = ["hardware-info-qa-native"]
 name = "hardware_info_capture"
 required-features = ["hardware-info-qa-native"]
 
+[[test]]
+name = "hardware_info_retirement"
+required-features = ["hardware-info-qa-native"]
+
 # Keep unsafe denied across tools; only the reviewed C++ oracle loader module
 # permits the explicit FFI calls needed by kalman-corpus-generator-native.
 [lints.rust]
