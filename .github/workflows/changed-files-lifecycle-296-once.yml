@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
-      EXPECTED_SOURCE: 1d5570e158bb7a799c4a816f78bc7f63f201d2a4
+      EXPECTED_SOURCE: 8c965aa650af6b6df88c616ad8c24b231ba8d00d
       RUSTUP_TOOLCHAIN: 1.94.0
       CARGO_INCREMENTAL: '0'
       CARGO_BUILD_JOBS: '2'
@@ -23,7 +23,7 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 1d5570e158bb7a799c4a816f78bc7f63f201d2a4
+        ref: 8c965aa650af6b6df88c616ad8c24b231ba8d00d
         persist-credentials: false
     - name: Bind exact source and fresh target with reserved capacity
       shell: bash
