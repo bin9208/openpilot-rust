@@ -82,7 +82,7 @@ impl Receiver {
     }
     fn empty(&self) -> Result<()> {
         require(
-            !self.socket.poll(zmq::POLLIN, 50)?,
+            self.socket.poll(zmq::POLLIN, 50)? == 0,
             "unexpected native log packet",
         )
     }
@@ -254,7 +254,7 @@ impl Peer {
         }
     }
     fn receive(&mut self, pull: &zmq::Socket) -> Result<Vec<u8>> {
-        require(pull.poll(zmq::POLLIN, 3000)?, "no native packet")?;
+        require(pull.poll(zmq::POLLIN, 3000)? > 0, "no native packet")?;
         let packet = pull.recv_bytes(0)?;
         fs::write(
             self.output
