@@ -1,0 +1,414 @@
+name: 296 guarded-add actual R4 operands and prior12half eight-buffer gates
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/model-zero-r4-operands-296-once.yml
+permissions:
+  contents: read
+  actions: read
+env:
+  RUSTUP_TOOLCHAIN: 1.94.0
+jobs:
+  road-provenance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      BRIDGE_CATALOG_ROOTS: native-catalog:road-pipeline-1928:road-pipeline-1344:dm-pipeline-1928:dm-pipeline-1344:model-input-pipelines:driving-four-source
+      EXPECTED_SOURCE: 1d5570e158bb7a799c4a816f78bc7f63f201d2a4
+      CARGO_BUILD_JOBS: '2'
+      CPU_COUNT: '2'
+      DEV: CPU:LLVM
+      JIT: '1'
+      JIT_BATCH_SIZE: '0'
+      OPENPILOT_HACKS: '1'
+      LLVM_PATH: /usr/lib/x86_64-linux-gnu/libLLVM-18.so
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
+      PYTHONDONTWRITEBYTECODE: '1'
+      RUSTUP_TOOLCHAIN: 1.94.0
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: 1d5570e158bb7a799c4a816f78bc7f63f201d2a4
+        persist-credentials: false
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Reserve hosted capacity and separate fresh targets
+      id: setup
+      shell: bash
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
+
+        sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends clang libllvm18 liblzma-dev git-lfs capnproto libcapnp-dev jq
+
+        rustup toolchain install 1.94.0 --profile minimal
+
+        proof="$RUNNER_TEMP/road-runtime-provenance-296"
+
+        mkdir "$proof" "$RUNNER_TEMP/road-provenance-artifact"
+
+        printf ''ROAD_PROVENANCE_PROOF=%s\n'' "$proof" >> "$GITHUB_ENV"
+
+        test ! -e "$RUNNER_TEMP/model-zero-current-target-296"
+
+        test ! -e "$RUNNER_TEMP/model-zero-old-target-296"
+
+        printf ''CARGO_TARGET_DIR=%s\n'' "$RUNNER_TEMP/model-zero-current-target-296" >> "$GITHUB_ENV"
+
+        '
+    - name: Admit frozen diagnostic payloads
+      shell: bash
+      run: 'set -euo pipefail
+
+        base64 --decode <<''PAYLOAD_ADMIT_HISTORY'' | gzip --decompress > "$ROAD_PROVENANCE_PROOF/admit_history.py"
+
+        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
+
+        PAYLOAD_ADMIT_HISTORY
+
+        printf ''%s  %s\n'' aa50f9fb2e84044f413691a424efefcf76c42f25b420811431eaff914b58c554 "$ROAD_PROVENANCE_PROOF/admit_history.py"
+        | sha256sum --check --strict -
+
+        base64 --decode <<''PAYLOAD_REPLAY_OPERANDS'' | gzip --decompress > "$ROAD_PROVENANCE_PROOF/replay_operands.py"
+
+        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
+
+        PAYLOAD_REPLAY_OPERANDS
+
+        printf ''%s  %s\n'' fa90a6242b5dc0a98051002b09908406ab9bb7c3e2b5f18727f154162aef4b2d "$ROAD_PROVENANCE_PROOF/replay_operands.py"
+        | sha256sum --check --strict -
+
+        base64 --decode <<''PAYLOAD_TRACE_ROAD_RUNTIME_IMAGES'' | gzip --decompress > "$ROAD_PROVENANCE_PROOF/trace_road_runtime_images.py"
+
+        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
+
+        PAYLOAD_TRACE_ROAD_RUNTIME_IMAGES
+
+        printf ''%s  %s\n'' 5f4e380f0634e4eb719158a76ee1e6ae84cff56b5c486bec21012b0c8c72285d "$ROAD_PROVENANCE_PROOF/trace_road_runtime_images.py"
+        | sha256sum --check --strict -
+
+        '
+    - name: Validate held-seal data contract
+      shell: bash
+      run: "set -euo pipefail\npython - <<'SEAL_PREFLIGHT'\nimport ast,hashlib,json,os,stat,tempfile\nfrom pathlib import\
+        \ Path\nproof=Path(os.environ['ROAD_PROVENANCE_PROOF'])\nsource=(proof/'trace_road_runtime_images.py').read_text()\n\
+        tree=ast.parse(source)\nnodes=[node for node in tree.body if isinstance(node,ast.FunctionDef) and node.name in ('identity','held')]\n\
+        assert len(nodes)==2\nnamespace={'os':os,'stat':stat,'Path':Path,'sha':lambda raw:hashlib.sha256(raw).hexdigest()}\n\
+        exec(compile(ast.Module(body=nodes,type_ignores=[]),'<stdlib-only-identity-preflight>','exec'),namespace)\nwith tempfile.TemporaryDirectory(prefix='seal-preflight-',dir=proof)\
+        \ as directory:\n path=Path(directory)/'input';path.write_bytes(b'authentic bounded seal fixture')\n raw,seal=namespace['held'](path,4096)\n\
+        \ expected=json.loads(json.dumps(seal));assert seal==expected\n historical=dict(seal,identity=tuple(seal['identity']));assert\
+        \ historical!=json.loads(json.dumps(historical))\n rejected=[]\n for field in ('path','bytes','sha256'):\n  stale=json.loads(json.dumps(expected))\n\
+        \  stale[field]=stale[field]+1 if field=='bytes' else stale[field]+'-stale'\n  assert seal!=stale;rejected.append(field)\n\
+        \ for index in range(6):\n  stale=json.loads(json.dumps(expected));stale['identity'][index]+=1\n  assert seal!=stale;rejected.append('identity['+str(index)+']')\n\
+        \ path.write_bytes(b'changed!! bounded seal fixture')\n _,changed=namespace['held'](path,4096);assert changed!=expected\n\
+        \ rejected.append('actual-file-bytes')\n(proof/'seal-preflight.json').write_text(json.dumps({'R2_roundtrip_rejected':True,'R3_roundtrip_admitted':True,'stale_seals_rejected':rejected,'identity_fields_preserved':6,'provider_or_generated_code_executed':False},indent=2)+'\\\
+        n')\nSEAL_PREFLIGHT\n"
+    - name: Admit historical383CRC twelve-pattern eight-buffer evidence as data only
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: 'set -euo pipefail
+
+        proof="$ROAD_PROVENANCE_PROOF"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 256
+
+        gh api -H ''Cache-Control: no-cache'' repos/bin9208/openpilot-rust/actions/artifacts/12410064619/zip > "$proof/historical.zip"
+
+        python "$proof/admit_history.py"
+
+        '
+    - name: Build exact old helper in its separate fresh target
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$ROAD_PROVENANCE_PROOF"
+
+        git fetch --no-tags --depth=1 origin 1031884ccad7fa39957fb640aff70a03afade189
+
+        GIT_LFS_SKIP_SMUDGE=1 git worktree add --detach "$RUNNER_TEMP/old-guarded-source-296" 1031884ccad7fa39957fb640aff70a03afade189
+
+        test "$(git -C "$RUNNER_TEMP/old-guarded-source-296" rev-parse HEAD)" = "1031884ccad7fa39957fb640aff70a03afade189"
+
+        rust/tools/check-disk-space --path "$RUNNER_TEMP" --growth-mib 4096
+
+        CARGO_TARGET_DIR="$RUNNER_TEMP/model-zero-old-target-296" cargo build --manifest-path "$RUNNER_TEMP/old-guarded-source-296/rust/Cargo.toml"
+        --locked -p openpilot-model-runtime --bin offline-llvm-guarded-add > "$proof/old-helper-build.log" 2>&1 || { cat "$proof/old-helper-build.log";
+        exit 1; }
+
+        cp "$RUNNER_TEMP/model-zero-old-target-296/debug/offline-llvm-guarded-add" "$proof/old-guarded-add"
+
+        chmod 500 "$proof/old-guarded-add"
+
+        git -C "$RUNNER_TEMP/old-guarded-source-296" ls-files -z -- rust/crates/model-runtime rust/Cargo.toml rust/Cargo.lock
+        > "$proof/old-source-roster.nul"
+
+        (cd "$RUNNER_TEMP/old-guarded-source-296"; xargs -0 -r sha256sum < "$proof/old-source-roster.nul") > "$proof/old-source-files.sha256"
+
+        printf ''GUARDED_ADD_OLD_HELPER=%s\nGUARDED_ADD_OLD_SHA256=%s\n'' "$proof/old-guarded-add" "$(sha256sum "$proof/old-guarded-add"
+        | cut -d'' '' -f1)" >> "$GITHUB_ENV"
+
+        '
+    - name: Build current source and exact maintained model providers
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$ROAD_PROVENANCE_PROOF"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        python -m pip install numpy==2.5.3 zstandard==0.25.0 pycapnp==2.1.0 pyzmq==27.2.0 Cython==3.2.4 setuptools==82.0.1
+        pytest==9.0.2
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --bin model-run --bin offline-llvm-guarded-add
+        --bin offline-llvm-compile > "$proof/runtime-build.log" 2>&1 || { cat "$proof/runtime-build.log"; exit 1; }
+
+        git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx --exclude=''''
+
+        cat > "$proof/fp-observe.c" <<''FP_OBSERVER''
+
+        #include <stdint.h>
+
+        #include <fenv.h>
+
+        #include <xmmintrin.h>
+
+        uint32_t diagnostic_mxcsr(void) { return _mm_getcsr(); }
+
+        int diagnostic_round(void) { return fegetround(); }
+
+        FP_OBSERVER
+
+        clang -shared -fPIC -O2 -Wl,-z,defs "$proof/fp-observe.c" -lm -o "$proof/fp-observe.so"
+
+        '
+    - name: Record unmodified executing CPU with the exact R4 LLVM library
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$ROAD_PROVENANCE_PROOF"
+
+        llvm=$(readlink -f /usr/lib/x86_64-linux-gnu/libLLVM-18.so)
+
+        test -f "$llvm" && test ! -L "$llvm"
+
+        # Exact provider used in actual R4; a changed package rejects without a retry.
+
+        printf ''%s  %s\n'' 5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0 "$llvm" | sha256sum --check --strict
+        - > "$proof/LLVM-R4-provider.after.log"
+
+        printf ''LLVM_PATH=%s\nGUARDED_ADD_PROBE_CONFIG=%s\nGUARDED_ADD_PROBE_OUTPUT=%s\n'' "$llvm" "$proof/natural-host-config.json"
+        "$proof/controls" >> "$GITHUB_ENV"
+
+        export LLVM_PATH="$llvm"
+
+        python - <<''NATURAL_HOST_CONFIG''
+
+        import ctypes,hashlib,json,os,platform
+
+        from pathlib import Path
+
+        assert platform.machine()==''x86_64''
+
+        proof=Path(os.environ[''ROAD_PROVENANCE_PROOF'']);path=Path(os.environ[''LLVM_PATH'']);raw=path.read_bytes()
+
+        assert hashlib.sha256(raw).hexdigest()==''5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0''
+
+        lib=ctypes.CDLL(str(path))
+
+        for name in (''LLVMGetHostCPUName'',''LLVMGetHostCPUFeatures''):getattr(lib,name).restype=ctypes.c_char_p
+
+        cpu=lib.LLVMGetHostCPUName().decode();features=lib.LLVMGetHostCPUFeatures().decode();assert cpu and features
+
+        config=dict(library=str(path),library_sha256=hashlib.sha256(raw).hexdigest(),triple=''x86_64-none-unknown-elf'',cpu=cpu,features=features,passes=''default<O2>'',loop_unrolling=True,loop_vectorization=True,slp_vectorization=True,verify_each=True)
+
+        (proof/''natural-host-config.json'').write_text(json.dumps(config,indent=2)+''\n'')
+
+        (proof/''host-policy.json'').write_text(json.dumps(dict(actual_cpu=cpu,actual_features=features,requested_policy=''LLVM
+        actual executing host, unchanged'',historical_recorded_target_forcing=False,ISA_execution_admission=''only fresh model/kernel
+        code compiled for this actual host'',model_or_recorded_image_execution=True,archived_code_executed=False),indent=2)+''\n'')
+
+        NATURAL_HOST_CONFIG
+
+        printf ''%s\n'' ''Fresh model compile on this natural CPU; archived executable images never run. Recorded target strings
+        are provenance only.'' > "$proof/operand-execution-policy.txt"
+
+        '
+    - name: Hold entire source/provider/old-current helper closure
+      id: bind
+      shell: bash
+      run: "set -euo pipefail\nproof=\"$ROAD_PROVENANCE_PROOF\"\ntest \"$(git rev-parse HEAD)\" = \"$EXPECTED_SOURCE\"\nhelper=$(readlink\
+        \ -f \"$CARGO_TARGET_DIR/debug/offline-llvm-guarded-add\")\ntest -x \"$helper\" && test ! -L \"$helper\"\nprintf 'MODEL_LLVM_GUARDED_ADD_BINARY=%s\\\
+        nMODEL_LLVM_GUARDED_ADD_SHA256=%s\\n' \"$helper\" \"$(sha256sum \"$helper\" | cut -d' ' -f1)\" >> \"$GITHUB_ENV\"\n\
+        # This is a separate provenance probe, never a source-absence acceptance run.\n# Hold all tracked source users, compiler\
+        \ inputs, provider manifests and actual\n# ONNX bytes after LFS admission. No historical/source hash replacements.\n\
+        git ls-files -z -- tinygrad_repo openpilot/selfdrive/modeld openpilot/common openpilot/system/camerad rust/tools/model_export\
+        \ rust/tools/check_pipeline_reference.py rust/tools/build_model_pipelines.py rust/crates/model-runtime rust/Cargo.toml\
+        \ rust/Cargo.lock rust/rust-toolchain.toml uv.lock > \"$proof/tracked-candidates.nul\"\n: > \"$proof/source-paths.nul\"\
+        \nwhile IFS= read -r -d '' path; do\n case \"$path\" in *.py|*.rs|*.toml|*.lock|*.json|*.onnx) ;; *) continue ;; esac\n\
+        \ test -f \"$path\" && test ! -L \"$path\"\n printf '%s\\0' \"$path\" >> \"$proof/source-paths.nul\"\ndone < \"$proof/tracked-candidates.nul\"\
+        \nprintf '%s\\0' \"$helper\" \"$CARGO_TARGET_DIR/debug/model-run\" \"$(readlink -f \"$LLVM_PATH\")\" \"$(readlink\
+        \ -f \"$(command -v python)\")\" \"$proof/trace_road_runtime_images.py\" >> \"$proof/source-paths.nul\"\n# Reject\
+        \ stale helpers before original model/provider execution.\ncurrent_pin=$(sha256sum \"$helper\" | cut -d' ' -f1)\n\
+        test \"$current_pin\" != \"$GUARDED_ADD_OLD_SHA256\"\nprintf 'old=%s\\ncurrent=%s\\n' \"$GUARDED_ADD_OLD_SHA256\"\
+        \ \"$current_pin\" > \"$proof/distinct-source-helper-pins.txt\"\nprintf '%s\\0' \"$GUARDED_ADD_OLD_HELPER\" \"$CARGO_TARGET_DIR/debug/offline-llvm-compile\"\
+        \ \"$proof/fp-observe.c\" \"$proof/fp-observe.so\" \"$proof/replay_operands.py\" \"$proof/admit_history.py\" \"$proof/natural-host-config.json\"\
+        \ \"$(readlink -f \"$(command -v clang)\")\" >> \"$proof/source-paths.nul\"\nwhile IFS= read -r -d '' relative; do\
+        \ printf '%s\\0' \"$RUNNER_TEMP/old-guarded-source-296/$relative\"; done < \"$proof/old-source-roster.nul\" >> \"\
+        $proof/source-paths.nul\"\nxargs -0 -r sha256sum < \"$proof/source-paths.nul\" > \"$proof/sources.before.sha256\"\n\
+        while IFS= read -r -d '' path; do stat --printf '%n:%d:%i:%s:%f:%y:%z\\n' \"$path\"; done < \"$proof/source-paths.nul\"\
+        \ > \"$proof/sources.before.identities\"\npython -m pip freeze > \"$proof/providers.before.txt\"\nlscpu --json > \"\
+        $proof/lscpu.json\"\ncat /proc/cpuinfo > \"$proof/proc-cpuinfo.txt\"\nrustc -Vv > \"$proof/rustc.txt\"\nprintf '%s\\\
+        n' \"$EXPECTED_SOURCE\" \"$GITHUB_WORKFLOW_SHA\" > \"$proof/source-workflow.txt\"\n"
+    - name: Fresh original compile for the natural executing CPU
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$ROAD_PROVENANCE_PROOF"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 1024
+
+        timeout --signal=KILL 1800 python "$proof/trace_road_runtime_images.py" compile > "$proof/compile.stdout" 2> "$proof/compile.stderr"
+        || { tail -n 100 "$proof/compile.stdout" "$proof/compile.stderr"; exit 1; }
+
+        test -s "$proof/fresh-driving.pkl" && test -s "$proof/fresh-driving.seal.json"
+
+        '
+    - name: Capture actual final-kernel operands and require unchanged strict two-frame comparison
+      id: compare
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$ROAD_PROVENANCE_PROOF"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 1024
+
+        # Two-frame prefix reaches the observed model-1 failure boundary. Actual stock
+
+        # original/native comparison still requires byte equality; never a relaxed gate.
+
+        status=0
+
+        timeout --signal=KILL 600 python "$proof/trace_road_runtime_images.py" compare > "$proof/compare.stdout" 2> "$proof/compare.stderr"
+        || status=$?
+
+        printf ''%s\n'' "$status" > "$proof/strict-prefix.status"
+
+        tail -n 100 "$proof/compare.stdout" "$proof/compare.stderr"
+
+        exit "$status"
+
+        '
+    - name: Require actual operands and prior12half complete eight-buffer poststates
+      shell: bash
+      if: always() && steps.bind.outcome == 'success'
+      run: 'set -euo pipefail
+
+        proof="$ROAD_PROVENANCE_PROOF"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 1024
+
+        status=0
+
+        timeout --signal=KILL 600 python "$proof/replay_operands.py" > "$proof/operand-replay.stdout" 2> "$proof/operand-replay.stderr"
+        || status=$?
+
+        printf ''%s\n'' "$status" > "$proof/operand-replay.status"
+
+        tail -n 80 "$proof/operand-replay.stdout" "$proof/operand-replay.stderr"
+
+        exit "$status"
+
+        '
+    - name: Always hold provenance and require every new numerical gate
+      shell: bash
+      if: always() && steps.bind.outcome == 'success'
+      run: 'set -euo pipefail
+
+        proof="$ROAD_PROVENANCE_PROOF"
+
+        status=0
+
+        sha256sum --check --strict "$proof/sources.before.sha256" > "$proof/sources.after.log" 2>&1 || status=1
+
+        while IFS= read -r -d '''' path; do stat --printf ''%n:%d:%i:%s:%f:%y:%z\n'' "$path" || status=1; done < "$proof/source-paths.nul"
+        > "$proof/sources.after.identities"
+
+        cmp "$proof/sources.before.identities" "$proof/sources.after.identities" || status=1
+
+        python -m pip freeze > "$proof/providers.after.txt" || status=1
+
+        cmp "$proof/providers.before.txt" "$proof/providers.after.txt" || status=1
+
+        test -s "$proof/compile/status.json" && test -s "$proof/compare/status.json" || status=1
+
+        jq -e ''.exit==0 and .events>0 and .wrappers_delegated_unchanged==true'' "$proof/compile/status.json" > /dev/null
+        || status=1
+
+        jq -e ''.events>0 and .wrappers_delegated_unchanged==true'' "$proof/compare/status.json" > /dev/null || status=1
+
+        test -s "$proof/original-output/files.json" && test -s "$proof/strict-prefix.status" || status=1
+
+        jq -e ''length == 12 and has("model-0.bin") and has("model-1.bin")'' "$proof/original-output/files.json" > /dev/null
+        || status=1
+
+        # Archive only this bounded owned root, including real raw outputs on failure.
+
+        find "$proof" -type l -print -quit > "$proof/unexpected-symlinks.txt"
+
+        test ! -s "$proof/unexpected-symlinks.txt" || status=1
+
+        size=$(du --bytes --summarize "$proof" | cut -f1)
+
+        test "$size" -le 1073741824 || status=1
+
+        test "$(cat "$proof/strict-prefix.status")" = 0 || status=1
+
+        test "$(cat "$proof/operand-replay.status")" = 0 || status=1
+
+        jq -e ''.actual_R4_operands==2 and .historical_exceptional_half_patterns==12 and .historical_baseline==1 and .poststate_buffers_per_case==8
+        and .all_candidate_poststates_byte_exact==true and .provider_and_inputs_unchanged==true and .archived_code_executed==false
+        and .full_model_or_compiler_acceptance==false'' "$proof/operand-replay/complete.json" >/dev/null || status=1
+
+        printf ''%s\n'' "$status" > "$proof/final-guards.status"
+
+        exit "$status"
+
+        '
+    - name: Freeze bounded raw diagnostics even on numerical failure
+      shell: bash
+      if: always() && steps.setup.outcome == 'success'
+      run: "set -euo pipefail\nproof=\"$ROAD_PROVENANCE_PROOF\"\narchive=\"$RUNNER_TEMP/road-provenance-artifact\"\ntest -d\
+        \ \"$proof\" && test ! -L \"$proof\"\nfind \"$proof\" -type l -print -quit > \"$archive/unexpected-symlinks.txt\"\n\
+        test ! -s \"$archive/unexpected-symlinks.txt\"\nfind \"$proof\" -type f ! -name historical.zip -print0 > \"$archive/absolute-roster.nul\"\
+        \n: > \"$archive/relative-roster.nul\"\n: > \"$archive/source-files.sha256\"\nfiles=0; bytes=0\nwhile IFS= read -r\
+        \ -d '' file; do\n test -f \"$file\" && test ! -L \"$file\"\n size=$(stat -c '%s' \"$file\");test \"$size\" -le 134217728\n\
+        \ files=$((files+1));bytes=$((bytes+size))\n test \"$files\" -le 20000 && test \"$bytes\" -le 1073741824\n case \"\
+        $file\" in \"$proof\"/*) ;; *) exit 1 ;; esac\n printf '%s\\0' \"${file#\"$proof\"/}\" >> \"$archive/relative-roster.nul\"\
+        \n sha256sum \"$file\" >> \"$archive/source-files.sha256\"\ndone < \"$archive/absolute-roster.nul\"\ntest \"$files\"\
+        \ -gt 0\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$RUNNER_TEMP\" --growth-mib 1024\ntar --create\
+        \ --gzip --null --verbatim-files-from --no-recursion --directory=\"$proof\" --files-from=\"$archive/relative-roster.nul\"\
+        \ --file=\"$archive/provenance.tar.gz\"\nsha256sum --check --strict \"$archive/source-files.sha256\" > \"$archive/source-files.after.log\"\
+        \nsha256sum \"$archive/provenance.tar.gz\" > \"$archive/provenance.sha256\"\nprintf 'files=%s\\nbytes=%s\\n' \"$files\"\
+        \ \"$bytes\" > \"$archive/counts.txt\"\n"
+    - uses: actions/upload-artifact@v6
+      if: always()
+      with:
+        name: model-zero-r4-operands-3b997279f0a
+        path: ${{ runner.temp }}/road-provenance-artifact/
+        include-hidden-files: true
+        if-no-files-found: error
+        retention-days: 7
