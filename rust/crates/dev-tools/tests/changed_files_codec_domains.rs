@@ -258,7 +258,7 @@ fn decoded_payload_preserves_nul_line_endings_and_missing_eof() {
     let raw = b"x\0\r\ny\r";
     assert_eq!(decode_bytes(raw, "utf8").unwrap().as_bytes(), raw);
     assert_eq!(decode_bytes(b"x", "utf8").unwrap(), "x");
-    assert_eq!(decode_bytes(b"\xef\xbb\xbfx", "utf8-sig").unwrap(), "x");
+    assert_eq!(decode_bytes(b"\xef\xbb\xbfx", "utf-8-sig").unwrap(), "x");
     assert!(check_bytes(raw).is_err());
     assert!(check_bytes(b"x=1").is_ok());
 }

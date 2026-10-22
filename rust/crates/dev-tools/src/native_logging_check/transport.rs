@@ -1,4 +1,56 @@
 use super::*;
+struct RuntimeReceiver {
+    // Drop closes libzmq's transferred FD and joins its context before the
+    // retained listener and authenticated path owner are released.
+    pull: zmq::Socket,
+    _context: zmq::Context,
+    _listener: std::os::unix::net::UnixListener,
+    _leaf: lifecycle::Leaf,
+}
+fn bind_runtime(path: &Path) -> Result<RuntimeReceiver> {
+    // Atomic bind rejects an occupied shared leaf. ZMQ_USE_FD prevents libzmq
+    // from unlinking a foreign replacement between a precheck and its bind.
+    let listener = std::os::unix::net::UnixListener::bind(path)?;
+    let leaf = lifecycle::Leaf::from_listener(path, &listener)?;
+    listener.set_nonblocking(true)?;
+    let context = zmq::Context::new();
+    let mut pull = context.socket(zmq::PULL)?;
+    pull.set_linger(0)?;
+    attach_listener(&mut pull, &listener, &format!("ipc://{}", path.display()))?;
+    Ok(RuntimeReceiver {
+        pull,
+        _context: context,
+        _listener: listener,
+        _leaf: leaf,
+    })
+}
+fn attach_listener(
+    pull: &mut zmq::Socket,
+    listener: &std::os::unix::net::UnixListener,
+    endpoint: &str,
+) -> Result<()> {
+    use std::os::fd::{AsRawFd, IntoRawFd};
+    let fd = listener.try_clone()?;
+    let number = fd.as_raw_fd();
+    // SAFETY: pull is a live libzmq socket; option receives exactly one C int.
+    // The clone stays Rust-owned until bind succeeds. libzmq 4.3.4's
+    // ipc_listener::set_local_address has no failure after assigning use_fd;
+    // socket_base::bind returns success on that path. Failed binds therefore
+    // leave the clone here; successful binds transfer exactly this clone.
+    // This socket is never rebound or reused after an error (also in tests).
+    let status = unsafe {
+        zmq_sys::zmq_setsockopt(
+            pull.as_mut_ptr(),
+            zmq_sys::ZMQ_USE_FD as i32,
+            (&number as *const i32).cast(),
+            std::mem::size_of_val(&number),
+        )
+    };
+    require(status == 0, "runtime prebound FD option rejected")?;
+    pull.bind(endpoint)?;
+    let _transferred = fd.into_raw_fd();
+    Ok(())
+}
 fn invalid(
     binary: &Path,
     root: &Path,
@@ -26,16 +78,18 @@ fn invalid(
             .chain([b'\n'])
             .collect(),
     );
-    NativeRunner.run(&spec)
+    lifecycle::run(&spec)
 }
 pub(super) fn check(source: &Path, native: &Path, root: &Path, output: &Path) -> Result<Value> {
     let env = config();
     let mut report = json!({});
     for (original, binary) in [(true, source), (false, native)] {
         let name = if original { "source" } else { "rust" };
-        let absent = tempfile::Builder::new()
-            .prefix("native-log-absent-")
-            .tempdir_in("/tmp")?;
+        let absent = lifecycle::Directory::new(
+            tempfile::Builder::new()
+                .prefix("native-log-absent-")
+                .tempdir_in("/tmp")?,
+        );
         let endpoint = format!("ipc://{}", absent.path().join("missing").display());
         let start = Instant::now();
         let mut peer = Peer::start(
@@ -187,9 +241,11 @@ pub(super) fn check(source: &Path, native: &Path, root: &Path, output: &Path) ->
     }
     // Logger::for_runtime deliberately exercises its ordinary /tmp prefix. Bind
     // our leaf first and retain its private suffix through this sole child.
-    let root_temp = tempfile::Builder::new()
-        .prefix("native-runtime-log-")
-        .tempdir_in("/tmp")?;
+    let root_temp = lifecycle::Directory::new(
+        tempfile::Builder::new()
+            .prefix("native-runtime-log-")
+            .tempdir_in("/tmp")?,
+    );
     let suffix = root_temp
         .path()
         .file_name()
@@ -202,11 +258,13 @@ pub(super) fn check(source: &Path, native: &Path, root: &Path, output: &Path) ->
         fs::symlink_metadata(&path).is_err_and(|e| e.kind() == std::io::ErrorKind::NotFound),
         "runtime endpoint already exists",
     )?;
-    let context = zmq::Context::new();
-    let pull = context.socket(zmq::PULL)?;
-    pull.set_linger(0)?;
-    pull.bind(&format!("ipc://{}", path.display()))?;
-    let _leaf = super::socket::SocketLeaf::claim(&path)?;
+    let receiver = bind_runtime(&path)?;
+    fs::write(
+        output.join("runtime-endpoint.json"),
+        serde_json::to_vec_pretty(
+            &json!({"path":path,"private_marker":root_temp.path(),"ownership":"prebound FD + exact SO_COOKIE/UNIX_DIAG_VFS"}),
+        )?,
+    )?;
     let mut env = env;
     env.insert("OPENPILOT_PREFIX".into(), prefix.into());
     // Opt-in collector QA roots are unrelated to this normal-prefix contract.
@@ -224,7 +282,7 @@ pub(super) fn check(source: &Path, native: &Path, root: &Path, output: &Path) ->
         peer.command(json!({"op":"emit","level":20,"text":"runtime endpoint"}))?["sent"] == 1,
         "runtime-prefix delivery failed",
     )?;
-    let packet = peer.receive(&pull)?;
+    let packet = peer.receive(&receiver.pull)?;
     let record: Value = serde_json::from_slice(&packet[1..])?;
     require(
         record["msg"] == "runtime endpoint",
@@ -247,4 +305,133 @@ pub(super) fn check(source: &Path, native: &Path, root: &Path, output: &Path) ->
         serde_json::to_vec_pretty(&report)?,
     )?;
     Ok(report)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::os::unix::{
+        fs::{symlink, MetadataExt},
+        net::{UnixDatagram, UnixListener},
+    };
+    #[test]
+    fn prebound_zmq_rejects_occupied_nodes_without_unlinking() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("leaf");
+        fs::write(&path, b"foreign").unwrap();
+        assert!(bind_runtime(&path).is_err());
+        assert_eq!(fs::read(&path).unwrap(), b"foreign");
+        fs::remove_file(&path).unwrap();
+        symlink("missing", &path).unwrap();
+        assert!(bind_runtime(&path).is_err());
+        assert_eq!(fs::read_link(&path).unwrap(), Path::new("missing"));
+        fs::remove_file(&path).unwrap();
+        fs::create_dir(&path).unwrap();
+        let inode = fs::symlink_metadata(&path).unwrap().ino();
+        assert!(bind_runtime(&path).is_err());
+        assert_eq!(fs::symlink_metadata(&path).unwrap().ino(), inode);
+        fs::remove_dir(&path).unwrap();
+        for stream in [false, true] {
+            let listener = stream.then(|| UnixListener::bind(&path).unwrap());
+            let datagram = (!stream).then(|| UnixDatagram::bind(&path).unwrap());
+            let inode = fs::symlink_metadata(&path).unwrap().ino();
+            assert!(bind_runtime(&path).is_err());
+            assert_eq!(fs::symlink_metadata(&path).unwrap().ino(), inode);
+            drop((listener, datagram));
+            fs::remove_file(&path).unwrap();
+        }
+    }
+    #[test]
+    fn actual_zmq_listener_preserves_foreign_regular_datagram_and_closed_stream_replacements() {
+        for kind in [
+            "regular",
+            "datagram",
+            "closed-stream",
+            "symlink",
+            "directory",
+        ] {
+            let root = tempfile::tempdir().unwrap();
+            let path = root.path().join("leaf");
+            let receiver = bind_runtime(&path).unwrap();
+            fs::remove_file(&path).unwrap();
+            match kind {
+                "regular" => fs::write(&path, b"foreign").unwrap(),
+                "datagram" => drop(UnixDatagram::bind(&path).unwrap()),
+                "symlink" => symlink("missing", &path).unwrap(),
+                "directory" => fs::create_dir(&path).unwrap(),
+                _ => drop(UnixListener::bind(&path).unwrap()),
+            }
+            let inode = fs::symlink_metadata(&path).unwrap().ino();
+            drop(receiver);
+            assert_eq!(fs::symlink_metadata(&path).unwrap().ino(), inode);
+        }
+    }
+    #[test]
+    fn actual_zmq_listener_cleanup_removes_only_authenticated_original() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("leaf");
+        let receiver = bind_runtime(&path).unwrap();
+        drop(receiver);
+        assert!(!path.exists());
+    }
+    fn descriptor_count(inode: u64) -> usize {
+        let target = format!("socket:[{inode}]");
+        fs::read_dir("/proc/self/fd")
+            .unwrap()
+            .filter_map(|entry| fs::read_link(entry.ok()?.path()).ok())
+            .filter(|path| path.as_os_str() == std::ffi::OsStr::new(&target))
+            .count()
+    }
+    #[test]
+    fn prebound_fd_transfers_one_clone_and_closes_both_after_real_delivery() {
+        use std::os::fd::AsFd;
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("leaf");
+        let receiver = bind_runtime(&path).unwrap();
+        let inode = rustix::fs::fstat(receiver._listener.as_fd())
+            .unwrap()
+            .st_ino;
+        assert_eq!(descriptor_count(inode), 2);
+        let context = zmq::Context::new();
+        let push = context.socket(zmq::PUSH).unwrap();
+        push.set_linger(0).unwrap();
+        push.connect(&format!("ipc://{}", path.display())).unwrap();
+        assert!(push.poll(zmq::POLLOUT, 1000).unwrap() > 0);
+        push.send(&b"owned FD"[..], zmq::DONTWAIT).unwrap();
+        assert!(receiver.pull.poll(zmq::POLLIN, 1000).unwrap() > 0);
+        assert_eq!(
+            receiver.pull.recv_bytes(zmq::DONTWAIT).unwrap(),
+            b"owned FD"
+        );
+        drop(receiver);
+        assert_eq!(descriptor_count(inode), 0);
+        assert!(!path.exists());
+    }
+    #[test]
+    fn rejected_bind_closes_only_the_untransferred_clone() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("leaf");
+        let listener = UnixListener::bind(&path).unwrap();
+        let leaf = lifecycle::Leaf::from_listener(&path, &listener).unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let inode = rustix::fs::fstat(&listener).unwrap().st_ino;
+        // Reject before transport selection, and inside IPC address resolution.
+        for endpoint in [
+            "invalid://endpoint".to_owned(),
+            format!("ipc:///tmp/{}", "x".repeat(200)),
+        ] {
+            let context = zmq::Context::new();
+            let mut pull = context.socket(zmq::PULL).unwrap();
+            pull.set_linger(0).unwrap();
+            assert!(attach_listener(&mut pull, &listener, &endpoint).is_err());
+            assert_eq!(descriptor_count(inode), 1);
+            drop(pull);
+            drop(context);
+            assert_eq!(descriptor_count(inode), 1);
+        }
+        drop(listener);
+        drop(leaf);
+        assert_eq!(descriptor_count(inode), 0);
+        assert!(!path.exists());
+    }
 }

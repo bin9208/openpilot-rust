@@ -3049,6 +3049,7 @@ dependencies = [
  "yaml-rust2",
  "zip",
  "zmq",
+ "zmq-sys",
  "zstd",
 ]
 

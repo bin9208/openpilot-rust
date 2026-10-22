@@ -13,6 +13,30 @@ pub(super) struct SocketLeaf {
     held: File,
 }
 impl SocketLeaf {
+    pub(super) fn from_listener(
+        path: &Path,
+        listener: &std::os::unix::net::UnixListener,
+    ) -> Result<Self> {
+        let held = File::from(rustix::fs::open(
+            path,
+            rustix::fs::OFlags::PATH | rustix::fs::OFlags::NOFOLLOW | rustix::fs::OFlags::CLOEXEC,
+            rustix::fs::Mode::empty(),
+        )?);
+        require(
+            held.metadata()?.file_type().is_socket() && socket_identity::matches(listener, &held)?,
+            "prebound runtime listener/VFS identity changed; preserved",
+        )?;
+        let owner = Self {
+            path: path.into(),
+            held,
+        };
+        require(
+            owner.matches()?,
+            "prebound runtime path replaced during authentication; preserved",
+        )?;
+        Ok(owner)
+    }
+    #[cfg(test)]
     pub(super) fn claim(path: &Path) -> Result<Self> {
         let held = File::from(rustix::fs::open(
             path,

@@ -8306,3 +8306,26 @@ Relative to last-send start, final ack0.655ms, evidence preparation1.426ms,
 producer exit observed17.831ms, source stop request38.046ms/confirmed38.119ms,
 native request38.120ms/confirmed38.182ms. This successful new observation does
 not diagnose or fix the original intermittent >100ms result; #495 stays open.
+
+Parent integrates logging R4 candidate549dcc04 and its separate lock edge
+3b795570: one direct dev-tools dependency on already-locked zmq-sys0.12, with no
+package/version/checksum change. The CLI owns cancellation and producer cleanup,
+passes a prebound listener FD to libzmq, and rejects occupied evidence output
+before builder/report writes. New actual lifecycle coverage has27 CLI cases and
+14 affected unit tests, still awaiting hosted compile and execution. Supplying
+--reference now also requires the mandatory builder argument to identify a valid
+host ELF; maintained callers use the actual builder. The source/caller retirement
+patch is deliberately unapplied until the complete changed-protocol and cleanup
+admission gate passes. Local work remains formatting, syntax, data and diff only.
+
+The codec preservation-test input is corrected from unregistered utf8-sig to
+registered utf-8-sig; no new runtime alias is accepted. All three prior registry
+differences are ISO-2022-JP-1 spellings unsupported by hosted iconv, now routed
+to the integrated native Japanese implementation, pending hosted verification.
+Independent Japanese39821812748 original observations pass: artifact12443539687
+2963054bytes/SHA2560e0544bcfe5e7ee8eaa6bd9ec5905d6b437584f96bdb3fa4fb31e2d0b5958ea9,
+333CRCs/323seals/198domains/4473153rows/4090vectors. IDNA39822127102 original
+observations pass: artifact12445211799,6157234bytes/SHA256
+78d07491c268519c4e5c1835b570de9d68f8ef802060ad2150bc0db213b0c4a6,
+24CRCs/3seals/1112064scalars/1712vectors. Both source/provider guards agree.
+These authenticate expected data; native equivalence remains a separate gate.

@@ -3,7 +3,7 @@
 //! all other JSON bytes, their ordering and console bytes compare exactly.
 use crate::{
     argparse_scan::{scan_os_required_first, OptionSpec},
-    qa_process::{CommandSpec, NativeRunner, Runner},
+    qa_process::CommandSpec,
     seal::{digest, Result},
 };
 use base64::{engine::general_purpose::STANDARD, Engine};
@@ -14,11 +14,13 @@ use std::{
     ffi::OsString,
     fs::{self, File, OpenOptions},
     io::{Read, Write},
-    os::unix::process::ExitStatusExt,
+    os::unix::process::CommandExt,
     path::{Path, PathBuf},
     process::{Child, ChildStderr, ChildStdin, Command, Stdio},
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
+mod lifecycle;
+pub use lifecycle::Interrupted;
 mod socket;
 mod transport;
 const STRIPPED: [&str; 7] = [
@@ -53,14 +55,14 @@ fn git(root: &Path, args: &[&str]) -> Result<Vec<u8>> {
         Duration::from_secs(10),
     );
     spec.cwd = Some(root.into());
-    let captured = NativeRunner.run(&spec)?;
+    let captured = lifecycle::run(&spec)?;
     require(captured.code == 0, "native logging Git observation failed")?;
     Ok(captured.stdout)
 }
 struct Receiver {
     socket: zmq::Socket,
     _context: zmq::Context,
-    _root: tempfile::TempDir,
+    _root: lifecycle::Directory,
     endpoint: String,
 }
 impl Receiver {
@@ -76,7 +78,7 @@ impl Receiver {
         Ok(Self {
             socket,
             _context: context,
-            _root: root,
+            _root: lifecycle::Directory::new(root),
             endpoint,
         })
     }
@@ -91,8 +93,7 @@ struct Starting(Option<Child>);
 impl Drop for Starting {
     fn drop(&mut self) {
         if let Some(mut child) = self.0.take() {
-            let _ = child.kill();
-            let _ = child.wait();
+            let _ = lifecycle::cleanup(&mut child);
         }
     }
 }
@@ -113,8 +114,7 @@ struct Peer {
 impl Drop for Peer {
     fn drop(&mut self) {
         if let Some(mut child) = self.child.take() {
-            let _ = child.kill();
-            let _ = child.wait();
+            let _ = lifecycle::cleanup(&mut child);
         }
     }
 }
@@ -128,6 +128,7 @@ impl Peer {
         original: bool,
         full: bool,
     ) -> Result<Self> {
+        lifecycle::check()?;
         fs::create_dir_all(output)?;
         let commit = String::from_utf8(git(root, &["rev-parse", "HEAD"])?)?
             .trim()
@@ -151,6 +152,7 @@ impl Peer {
         let started = realtime()?;
         let child = command
             .current_dir(root)
+            .process_group(0)
             .env_clear()
             .envs(env)
             .env("NATIVE_LOG_ENDPOINT", endpoint)
@@ -181,12 +183,18 @@ impl Peer {
         fs::write(
             output.join("invocation.json"),
             serde_json::to_vec_pretty(
-                &json!({"binary":binary,"binary_sha256":digest(binary)?,"endpoint":endpoint,"original":original,"cwd":root,"source_commit":peer.commit,"source_tree":peer.tree,"started":started}),
+                &json!({"binary":binary,"binary_sha256":digest(binary)?,"endpoint":endpoint,"original":original,"cwd":root,"source_commit":peer.commit,"source_tree":peer.tree,"started":started,"pid":peer.child.as_ref().map(Child::id)}),
             )?,
+        )?;
+        lifecycle::hold(
+            endpoint,
+            peer.child.as_ref().ok_or("producer owner missing")?.id(),
+            output,
         )?;
         Ok(peer)
     }
     fn write(&mut self, value: &Value) -> Result<Value> {
+        lifecycle::check()?;
         let mut value = value.clone();
         if self.original && value["op"] == "rate" {
             value["timestamp"] = json!(value["timestamp"]
@@ -204,6 +212,7 @@ impl Peer {
         let command = self.write(&value)?;
         let started = Instant::now();
         loop {
+            lifecycle::check()?;
             if let Some(end) = self.pending.iter().position(|b| *b == b'\n') {
                 let line: Vec<_> = self.pending.drain(..=end).collect();
                 let response: Value = serde_json::from_slice(&line)?;
@@ -217,7 +226,10 @@ impl Peer {
                 self.responses.push(row);
                 return Ok(response);
             }
-            self.read_stderr()?;
+            require(
+                !self.read_stderr()?,
+                "producer closed stderr before command response",
+            )?;
             require(
                 started.elapsed() < Duration::from_secs(5),
                 "producer command timed out",
@@ -254,7 +266,14 @@ impl Peer {
         }
     }
     fn receive(&mut self, pull: &zmq::Socket) -> Result<Vec<u8>> {
-        require(pull.poll(zmq::POLLIN, 3000)? > 0, "no native packet")?;
+        let until = Instant::now() + Duration::from_secs(3);
+        loop {
+            lifecycle::check()?;
+            if pull.poll(zmq::POLLIN, 10)? > 0 {
+                break;
+            }
+            require(Instant::now() < until, "no native packet")?;
+        }
         let packet = pull.recv_bytes(0)?;
         fs::write(
             self.output
@@ -275,18 +294,11 @@ impl Peer {
         Ok(packet)
     }
     fn wait(&mut self, timeout: Duration) -> Result<i32> {
-        let start = Instant::now();
-        loop {
-            let child = self.child.as_mut().ok_or("producer already reaped")?;
-            if let Some(status) = child.try_wait()? {
-                self.child = None;
-                return Ok(status
-                    .code()
-                    .unwrap_or_else(|| -status.signal().unwrap_or(1)));
-            }
-            require(start.elapsed() < timeout, "producer shutdown timeout")?;
-            std::thread::sleep(Duration::from_millis(1));
-        }
+        let child = self.child.as_mut().ok_or("producer already reaped")?;
+        let code = lifecycle::wait(child, timeout)?;
+        self.child = None;
+        lifecycle::reaped()?;
+        Ok(code)
     }
     fn finish(&mut self) -> Result<()> {
         self.input.take();
@@ -296,6 +308,7 @@ impl Peer {
         )?;
         let start = Instant::now();
         while !self.read_stderr()? {
+            lifecycle::check()?;
             require(
                 start.elapsed() < Duration::from_secs(1),
                 "producer stderr failed to close",
@@ -583,7 +596,10 @@ impl HeldBinary {
     fn open(path: &Path) -> Result<Self> {
         let file = File::from(rustix::fs::open(
             path,
-            rustix::fs::OFlags::RDONLY | rustix::fs::OFlags::NOFOLLOW | rustix::fs::OFlags::CLOEXEC,
+            rustix::fs::OFlags::RDONLY
+                | rustix::fs::OFlags::NOFOLLOW
+                | rustix::fs::OFlags::CLOEXEC
+                | rustix::fs::OFlags::NONBLOCK,
             rustix::fs::Mode::empty(),
         )?);
         require(
@@ -637,6 +653,15 @@ pub fn cli() -> Result<()> {
         println!("usage: check-native-logging --binary BINARY --builder BUILDER --output OUTPUT [--root ROOT] [--reference PREBUILT_CPP]");
         return Ok(());
     }
+    let _cancel = lifecycle::Cancel::new()?;
+    // A signal may interrupt poll/read/Git/build before a loop next checks the
+    // latch. Normalize it only after all peers/receivers have unwound.
+    let result = run_cli(parsed);
+    lifecycle::reaped()?;
+    lifecycle::check()?;
+    result
+}
+fn run_cli(parsed: crate::argparse_scan::ParsedOs) -> Result<()> {
     let root = parsed
         .values
         .get("--root")
@@ -645,11 +670,34 @@ pub fn cli() -> Result<()> {
             PathBuf::from,
         )
         .canonicalize()?;
+    require(root.is_dir(), "logging source root is not a directory")?;
     let binary = PathBuf::from(&parsed.values["--binary"]).canonicalize()?;
     let builder = PathBuf::from(&parsed.values["--builder"]).canonicalize()?;
     let output = std::path::absolute(Path::new(&parsed.values["--output"]))?;
-    let source = if let Some(reference) = parsed.values.get("--reference") {
-        PathBuf::from(reference).canonicalize()?
+    // Reject all occupied leaves, including dangling aliases, before building
+    // or opening fixed report/provider names. create_dir below is the atomic
+    // admission check if a foreign node arrives after this early rejection.
+    match fs::symlink_metadata(&output) {
+        Ok(_) => return Err("logging evidence output already exists".into()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => return Err(error.into()),
+    }
+    let native_held = HeldBinary::open(&binary)?;
+    let _builder_held = HeldBinary::open(&builder)?;
+    let reference_held = parsed
+        .values
+        .get("--reference")
+        .map(|path| HeldBinary::open(&PathBuf::from(path).canonicalize()?))
+        .transpose()?;
+    fs::create_dir_all(
+        output
+            .parent()
+            .ok_or("logging evidence output has no parent")?,
+    )?;
+    use std::os::unix::fs::DirBuilderExt;
+    fs::DirBuilder::new().mode(0o700).create(&output)?;
+    let source_held = if let Some(reference) = reference_held {
+        reference
     } else {
         let mut spec = CommandSpec::new_os(
             vec![
@@ -662,17 +710,16 @@ pub fn cli() -> Result<()> {
             Duration::from_secs(300),
         );
         spec.cwd = Some(root.clone());
-        let built = NativeRunner.run(&spec)?;
-        fs::create_dir_all(&output)?;
+        let built = lifecycle::run(&spec)?;
         fs::write(output.join("reference-builder.stdout"), &built.stdout)?;
         fs::write(output.join("reference-builder.stderr"), &built.stderr)?;
         require(built.code == 0, "native logging original builder failed")?;
-        PathBuf::from(std::str::from_utf8(&built.stdout)?.trim())
+        HeldBinary::open(&PathBuf::from(std::str::from_utf8(&built.stdout)?.trim()))?
     };
-    fs::create_dir_all(&output)?;
+    let source = source_held.path.clone();
     // The C++ provider is created by the independently held native builder.
     // Hold both actual ELF inodes continuously through every live protocol case.
-    let held = [HeldBinary::open(&source)?, HeldBinary::open(&binary)?];
+    let held = [source_held, native_held];
     let before = held
         .iter()
         .map(HeldBinary::snapshot)

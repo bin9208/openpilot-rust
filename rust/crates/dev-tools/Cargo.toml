@@ -539,7 +539,7 @@ required-features = ["manager-catalog-tools-native"]
 
 [features]
 changed-files-native = ["dep:ruff_python_parser", "dep:ruff_python_ast", "dep:unicode_names2"]
-native-logging-check-native = ["dep:zmq", "rustix/net", "serde_json/float_roundtrip"]
+native-logging-check-native = ["dep:zmq", "dep:zmq-sys", "rustix/net", "serde_json/float_roundtrip"]
 deleter-check-native = []
 kalman-model-generator-native = []
 kalman-corpus-generator-native = ["dep:libloading", "dep:openpilot-runtime-core", "serde_json/float_roundtrip"]
@@ -839,6 +839,7 @@ capnp = { version = "=0.27.2", optional = true }
 openpilot-process-limits = { path = "../process-limits" }
 rustybuzz = { version = "=0.20.1", optional = true }
 zmq = { version = "=0.10.0", optional = true }
+zmq-sys = { version = "=0.12.0", optional = true }
 openpilot-msgq = { path = "../msgq", optional = true }
 png = { version = "=0.17.16", optional = true }
 gif = { version = "=0.14.2", default-features = false, features = ["std"], optional = true }
@@ -2307,3 +2308,7 @@ required-features = ["changed-files-native"]
 [[test]]
 name = "changed_files_japanese_variants"
 required-features = ["changed-files-native"]
+
+[[test]]
+name = "native_logging_lifecycle"
+required-features = ["native-logging-check-native"]
