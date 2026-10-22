@@ -69,28 +69,59 @@ jobs:
         :12404776700,\"accepted_zip_bytes\":4391525,\"accepted_zip_sha256\":\"ba28ae07b5becc3afe4346db3e86437f9a93aaaf02031c19f83e070ad9c7d93b\"\
         ,\"source_artifact_id\":12401158574,\"source_zip_bytes\":173295774,\"source_zip_sha256\":\"2ff2e33434f661e7d412751ea45be7d17bf683603cf566f5a48c319c16f6747d\"\
         ,\"source_commit\":\"defb9011df3fca924dca41a703b48ce5ff0c51e0\"}\nJSON\nmkdir -p \"$proof/accepted\" \"$proof/catalog/current-host-catalog\"\
-        \ \"$proof/fixture/models\"\npython - <<'EXTRACT'\nimport json, os, stat, zipfile\nfrom pathlib import Path\np=Path(os.environ['RUNNER_TEMP'])/'model-road-exceptional-296'\n\
-        def safe(name):\n  q=Path(name)\n  if q.is_absolute() or '..' in q.parts or '\\\\' in name: raise ValueError('unsafe\
-        \ archive member')\nwith zipfile.ZipFile(p/'accepted.zip') as z:\n  items=z.infolist()\n  if len(items)!=133 or z.testzip()\
-        \ is not None: raise ValueError('accepted capture CRC/roster')\n  total=0\n  for i in items:\n    safe(i.filename)\n\
-        \    if i.is_dir(): continue\n    if stat.S_IFMT(i.external_attr>>16) not in (0,stat.S_IFREG) or i.file_size>64*1024*1024:\
-        \ raise ValueError('accepted member type/size')\n    total+=i.file_size\n    if total>128*1024*1024: raise ValueError('accepted\
-        \ expanded size bound')\n    dest=p/'accepted'/i.filename\n    dest.parent.mkdir(parents=True,exist_ok=True)\n   \
-        \ with dest.open('xb') as f: f.write(z.read(i))\nwith zipfile.ZipFile(p/'source.zip') as z:\n  items=z.infolist()\n\
-        \  if len(items)!=691 or z.testzip() is not None: raise ValueError('source artifact CRC/roster')\n  receipts=[]; pkls=[];\
-        \ total=0\n  for i in items:\n    safe(i.filename)\n    if i.is_dir(): continue\n    if stat.S_IFMT(i.external_attr>>16)\
-        \ not in (0,stat.S_IFREG) or i.file_size>80*1024*1024: raise ValueError('source member type/size')\n    total+=i.file_size\n\
-        \    if total>300*1024*1024: raise ValueError('source expanded size bound')\n    if i.filename.endswith('current-host-catalog-receipt.json'):\
-        \ receipts.append(i)\n    if i.filename.endswith('/models/driving_tinygrad.pkl'): pkls.append(i)\n  if len(receipts)!=1\
-        \ or len(pkls)!=1 or pkls[0].file_size!=72045323: raise ValueError('source receipt/model roster')\n  receipt=json.loads(z.read(receipts[0]));\
-        \ generation=receipt['catalog_generation']\n  graphs=[i for i in items if i.filename.endswith(f'current-host-catalog/{generation}/driving-1344x760/graph.json')]\n\
-        \  if len(graphs)!=1: raise ValueError('catalog graph ambiguous/missing')\n  for item,rel in ((receipts[0],Path('catalog/current-host-catalog-receipt.json')),\n\
-        \                   (graphs[0],Path('catalog/current-host-catalog')/generation/'driving-1344x760/graph.json'),\n \
-        \                  (pkls[0],Path('fixture/models/driving_tinygrad.pkl'))):\n    dest=p/rel; dest.parent.mkdir(parents=True,exist_ok=True)\n\
-        \    with dest.open('xb') as f: f.write(z.read(item))\nprint(json.dumps({'accepted_members':133,'accepted_zip_sha256':'ba28ae07b5becc3afe4346db3e86437f9a93aaaf02031c19f83e070ad9c7d93b','source_members':691,'source_zip_sha256':'2ff2e33434f661e7d412751ea45be7d17bf683603cf566f5a48c319c16f6747d','source_commit':os.environ['EXPECTED_SOURCE'],'source_pkls':1}))\n\
-        EXTRACT\ncp \"$proof/accepted/road_guarded_copy.py\" \"$proof/road_guarded_copy.py\"\ncp \"$proof/accepted/fp-observe.c\"\
-        \ \"$proof/fp-observe.c\"\ncp \"$proof/accepted/fp-observe.so\" \"$proof/fp-observe.so\"\nsha256sum \"$proof/road_guarded_copy.py\"\
-        \ \"$proof/accepted/first-kernel/kernel92-original.ll\" \"$proof/accepted/first-kernel/original-kernel92-code.bin\"\
+        \ \"$proof/fixture/models\"\npython - <<'EXTRACT'\nimport hashlib, json, os, stat, tarfile, zipfile\nfrom pathlib\
+        \ import Path\np = Path(os.environ['RUNNER_TEMP']) / 'model-road-exceptional-296'\n\ndef safe(name):\n    q = Path(name)\n\
+        \    if q.is_absolute() or '..' in q.parts or '\\\\' in name:\n        raise ValueError('unsafe archive member')\n\
+        \ndef write_member(archive, item, dest):\n    dest.parent.mkdir(parents=True, exist_ok=True)\n    with dest.open('xb')\
+        \ as target, archive.open(item) as source:\n        remaining = item.file_size\n        while remaining:\n       \
+        \     data = source.read(min(1024 * 1024, remaining))\n            if not data:\n                raise ValueError('truncated\
+        \ ZIP member')\n            target.write(data)\n            remaining -= len(data)\n\nwith zipfile.ZipFile(p / 'accepted.zip')\
+        \ as z:\n    items = z.infolist()\n    if len(items) != 133 or z.testzip() is not None:\n        raise ValueError('accepted\
+        \ capture CRC/roster')\n    total = 0\n    for item in items:\n        safe(item.filename)\n        if item.is_dir():\n\
+        \            continue\n        if stat.S_IFMT(item.external_attr >> 16) not in (0, stat.S_IFREG) or item.file_size\
+        \ > 64 * 1024 * 1024:\n            raise ValueError('accepted member type/size')\n        total += item.file_size\n\
+        \        if total > 128 * 1024 * 1024:\n            raise ValueError('accepted expanded size bound')\n        write_member(z,\
+        \ item, p / 'accepted' / item.filename)\n\nwith zipfile.ZipFile(p / 'source.zip') as z:\n    items = z.infolist()\n\
+        \    if len(items) != 691 or z.testzip() is not None:\n        raise ValueError('source artifact CRC/roster')\n  \
+        \  total = 0\n    receipts = []\n    for item in items:\n        safe(item.filename)\n        if item.is_dir():\n\
+        \            continue\n        if stat.S_IFMT(item.external_attr >> 16) not in (0, stat.S_IFREG):\n            raise\
+        \ ValueError('source member type')\n        total += item.file_size\n        if total > 300 * 1024 * 1024:\n     \
+        \       raise ValueError('source expanded size bound')\n        if item.filename.endswith('current-host-catalog-receipt.json'):\n\
+        \            receipts.append(item)\n    if len(receipts) != 1 or receipts[0].file_size > 64 * 1024 * 1024:\n     \
+        \   raise ValueError('source catalog receipt roster/size')\n    receipt = json.loads(z.read(receipts[0]))\n    generation\
+        \ = receipt['catalog_generation']\n    graphs = [item for item in items if item.filename.endswith(\n        f'current-host-catalog/{generation}/driving-1344x760/graph.json')]\n\
+        \    if len(graphs) != 1 or graphs[0].file_size > 64 * 1024 * 1024:\n        raise ValueError('source catalog graph\
+        \ roster/size')\n    write_member(z, receipts[0], p / 'catalog' / 'current-host-catalog-receipt.json')\n    write_member(z,\
+        \ graphs[0], p / 'catalog' / 'current-host-catalog' / generation / 'driving-1344x760' / 'graph.json')\n\nfixture_archive\
+        \ = Path(os.environ['GITHUB_WORKSPACE']) / 'rust/crates/dev-tools/tests/fixtures/driving-daemon-original/observations.tar.xz'\n\
+        if fixture_archive.stat().st_size != 59663776:\n    raise ValueError('original fixture archive size')\nwith fixture_archive.open('rb')\
+        \ as source:\n    if hashlib.file_digest(source, 'sha256').hexdigest() != '3ddfb1213cccbbf0d4d0ef7854b79cef5637acdfd7b59d883b13063d6968b4fe':\n\
+        \        raise ValueError('original fixture archive SHA-256')\nneeded = {'fixture.json', 'models/driving_tinygrad.pkl'}\n\
+        selected_seen = set()\nwith tarfile.open(fixture_archive, mode='r|xz') as archive:\n    for item in archive:\n   \
+        \     name = Path(item.name)\n        if name.is_absolute() or '..' in name.parts:\n            raise ValueError('unsafe\
+        \ tar member')\n        if item.name not in needed:\n            continue\n        if item.name in selected_seen:\n\
+        \            raise ValueError('duplicate selected fixture member')\n        selected_seen.add(item.name)\n       \
+        \ if not item.isfile() or item.sparse or item.size > 80 * 1024 * 1024:\n            raise ValueError('selected fixture\
+        \ member type/size')\n        dest = p / 'fixture' / name\n        dest.parent.mkdir(parents=True, exist_ok=True)\n\
+        \        with archive.extractfile(item) as source, dest.open('xb') as target:\n            remaining = item.size\n\
+        \            while remaining:\n                data = source.read(min(1024 * 1024, remaining))\n                if\
+        \ not data:\n                    raise ValueError('truncated tar member')\n                target.write(data)\n  \
+        \              remaining -= len(data)\n        needed.remove(item.name)\nif needed:\n    raise ValueError(f'missing\
+        \ fixture members: {sorted(needed)}')\nfixture_json = p / 'fixture' / 'fixture.json'\nif hashlib.sha256(fixture_json.read_bytes()).hexdigest()\
+        \ != 'afe1c795d7f609801eb4cd5a5a7748c3c996929403a3c0fa102f232f2a8d248d':\n    raise ValueError('original fixture manifest\
+        \ SHA-256')\nmanifest = json.loads(fixture_json.read_bytes())\npkl = p / 'fixture' / 'models' / 'driving_tinygrad.pkl'\n\
+        pkl_pin = manifest['files']['models/driving_tinygrad.pkl']\nwith pkl.open('rb') as source:\n    pkl_sha = hashlib.file_digest(source,\
+        \ 'sha256').hexdigest()\nif pkl.stat().st_size != 72045323 or pkl_pin['bytes'] != 72045323 or pkl_sha != '487ef8698775a593726c79ef0651940480f755f5ded57f672d0ee3a4bd8a624f'\
+        \ or pkl_sha != pkl_pin['sha256']:\n    raise ValueError('independently captured original PKL pin')\nfixture_provenance\
+        \ = {'archive_path': 'rust/crates/dev-tools/tests/fixtures/driving-daemon-original/observations.tar.xz', 'archive_bytes':\
+        \ 59663776, 'archive_sha256': '3ddfb1213cccbbf0d4d0ef7854b79cef5637acdfd7b59d883b13063d6968b4fe', 'fixture_manifest_sha256':\
+        \ hashlib.sha256(fixture_json.read_bytes()).hexdigest(), 'original_pkl_bytes': pkl.stat().st_size, 'original_pkl_sha256':\
+        \ pkl_sha}\n(p / 'fixture-provenance.json').write_text(json.dumps(fixture_provenance, sort_keys=True, indent=2) +\
+        \ '\\n')\nprint(json.dumps({'accepted_members': 133, 'source_members': 691, 'source_zip_sha256': '2ff2e33434f661e7d412751ea45be7d17bf683603cf566f5a48c319c16f6747d',\
+        \ 'source_commit': os.environ['EXPECTED_SOURCE'], 'fixture_archive_sha256': '3ddfb1213cccbbf0d4d0ef7854b79cef5637acdfd7b59d883b13063d6968b4fe',\
+        \ 'original_pkl_sha256': pkl_sha}))\nEXTRACT\ncp \"$proof/accepted/road_guarded_copy.py\" \"$proof/road_guarded_copy.py\"\
+        \ncp \"$proof/accepted/fp-observe.c\" \"$proof/fp-observe.c\"\ncp \"$proof/accepted/fp-observe.so\" \"$proof/fp-observe.so\"\
+        \nsha256sum \"$proof/road_guarded_copy.py\" \"$proof/accepted/first-kernel/kernel92-original.ll\" \"$proof/accepted/first-kernel/original-kernel92-code.bin\"\
         \ \"$proof/fp-observe.so\" > \"$proof/accepted-pins.sha256\"\npython -m pip freeze > \"$proof/providers.after-fetch.txt\"\
         \ncmp \"$proof/providers.before.txt\" \"$proof/providers.after-fetch.txt\"\n"
     - name: Run bounded isolated original-versus-variant input mutations
