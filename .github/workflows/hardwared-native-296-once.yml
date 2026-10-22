@@ -1,0 +1,133 @@
+name: 296 native Hardwared original trace and live IPC candidate
+'on':
+  push:
+    branches:
+    - codex/feat-296-native-tools-candidate
+    paths:
+    - .github/workflows/hardwared-native-296-once.yml
+permissions:
+  contents: read
+jobs:
+  hardwared-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      EXPECTED_SOURCE: e302e13c04969cddd9a4d650de27000a36ab7508
+      RUSTUP_TOOLCHAIN: 1.94.0
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: e302e13c04969cddd9a4d650de27000a36ab7508
+        persist-credentials: false
+    - name: Reserve capacity and native prerequisites
+      shell: bash
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+
+        sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
+
+        sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends g++ capnproto libcapnp-dev libzmq3-dev strace
+
+        rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
+
+        mkdir "$RUNNER_TEMP/hardwared-native-296"
+
+        git rev-parse HEAD > "$RUNNER_TEMP/hardwared-native-296/SOURCE_COMMIT"
+
+        printf ''%s\n'' "$GITHUB_SHA" > "$RUNNER_TEMP/hardwared-native-296/WORKFLOW_COMMIT"
+
+        '
+    - name: Build actual native checkers, daemon, trace and launcher
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/hardwared-native-296"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features hardwared-qa-native --bin check-hardwared
+        --bin check-hardwared-daemon --message-format=json > "$proof/checker-build.jsonl" 2> "$proof/checker-build.stderr"
+        || { cat "$proof/checker-build.stderr"; exit 1; }
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+
+        cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-hardwared -p openpilot-process-supervision --bins
+        --examples --message-format=json > "$proof/runtime-build.jsonl" 2> "$proof/runtime-build.stderr" || { cat "$proof/runtime-build.stderr";
+        exit 1; }
+
+        sha256sum rust/target/debug/check-hardwared rust/target/debug/check-hardwared-daemon rust/target/debug/openpilot-hardwared
+        rust/target/debug/openpilot-process-child rust/target/debug/examples/hardwared_trace > "$proof/native.before.sha256"
+
+        '
+    - name: Admission, comparator, CLI and strict native lint checks
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/hardwared-native-296"
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features hardwared-qa-native --lib hardwared_
+        -- --nocapture > "$proof/unit-inline.log" 2>&1 || { cat "$proof/unit-inline.log"; exit 1; }
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features hardwared-qa-native --test hardwared_qa
+        --test hardwared_capture --test hardwared_retirement -- --nocapture > "$proof/unit-controls.log" 2>&1 || { cat "$proof/unit-controls.log";
+        exit 1; }
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+
+        cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features hardwared-qa-native --lib
+        --bin check-hardwared --bin check-hardwared-daemon --test hardwared_qa --test hardwared_capture --test hardwared_retirement
+        -- -D warnings > "$proof/clippy.log" 2>&1 || { cat "$proof/clippy.log"; exit 1; }
+
+        cargo fmt --manifest-path rust/Cargo.toml --all -- --check
+
+        '
+    - name: Full independent trace and live IPC through both actual native CLIs in two roots
+      shell: bash
+      run: 'set -euo pipefail
+
+        proof="$RUNNER_TEMP/hardwared-native-296"
+
+        export HARDWARED_TRACE_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/hardwared_trace"
+
+        export HARDWARED_DAEMON_BINARY="$GITHUB_WORKSPACE/rust/target/debug/openpilot-hardwared"
+
+        export HARDWARED_PROCESS_LAUNCHER="$GITHUB_WORKSPACE/rust/target/debug/openpilot-process-child"
+
+        export HARDWARED_RETIREMENT_OUTPUT="$proof/test-output"
+
+        export HARDWARED_REQUIRE_RETIRED=0
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 2048
+
+        strace -ff -s 16384 -o "$proof/retirement.trace" -e trace=execve,execveat,clone,fork,vfork,exit,exit_group cargo test
+        --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features hardwared-qa-native --test hardwared_retirement
+        same_native_clis_preserve_all_original_cases_and_live_ipc_in_both_roots -- --ignored --exact --nocapture > "$proof/retirement-test.log"
+        2>&1 || { tail -n 120 "$proof/retirement-test.log"; exit 1; }
+
+        sha256sum rust/target/debug/check-hardwared rust/target/debug/check-hardwared-daemon rust/target/debug/openpilot-hardwared
+        rust/target/debug/openpilot-process-child rust/target/debug/examples/hardwared_trace > "$proof/native.after.sha256"
+
+        cmp "$proof/native.before.sha256" "$proof/native.after.sha256"
+
+        '
+    - uses: actions/upload-artifact@v6
+      if: always()
+      with:
+        name: hardwared-native-296
+        path: ${{ runner.temp }}/hardwared-native-296/
+        include-hidden-files: true
+        if-no-files-found: error
+        retention-days: 14
