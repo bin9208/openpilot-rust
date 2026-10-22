@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      EXPECTED_SOURCE: 17c770c721f3af4787ccf72e549386b5dc749264
+      EXPECTED_SOURCE: 212721e1b9d47d51fc932ce52a69f04416eb3ae7
       RUSTUP_TOOLCHAIN: 1.94.0
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
@@ -21,7 +21,7 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 17c770c721f3af4787ccf72e549386b5dc749264
+        ref: 212721e1b9d47d51fc932ce52a69f04416eb3ae7
         persist-credentials: false
     - name: Reserve hosted capacity and native prerequisites
       shell: bash
