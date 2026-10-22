@@ -50,15 +50,31 @@ def parameters(root: Path, prefix: str, case: Case) -> bytes:
   return raw
 
 
+def fd_targets(fd_dir: Path) -> tuple[dict[str, str], list[str]]:
+  # A descriptor may close after /proc lists it but before readlink. Keep that
+  # loss explicit; a missing fd directory or any other read failure is fatal.
+  listed = list(fd_dir.iterdir())
+  targets = {}
+  closed = []
+  for fd in listed:
+    try:
+      targets[fd.name] = os.readlink(fd)
+    except FileNotFoundError:
+      closed.append(fd.name)
+  fd_dir.stat()
+  return targets, sorted(closed)
+
+
 def provenance(process: subprocess.Popen, output: Path) -> None:
   proc = Path('/proc') / str(process.pid)
   maps = (proc / 'maps').read_text()
   if output.name == 'native':
     assert 'libpython' not in maps
   (output / 'maps.txt').write_text(maps)
+  fds, closed = fd_targets(proc / 'fd')
   (output / 'process.json').write_text(json.dumps({'pid': process.pid, 'exe': str((proc / 'exe').resolve()),
     'exe_sha256': hashlib.sha256((proc / 'exe').read_bytes()).hexdigest(),
-    'fds': {fd.name: os.readlink(fd) for fd in (proc / 'fd').iterdir()}, 'captured_ns': time.monotonic_ns()}) + '\n')
+    'fds': fds, 'fds_closed_during_capture': closed, 'captured_ns': time.monotonic_ns()}) + '\n')
 
 
 def stop(process: subprocess.Popen) -> int:
