@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
-      EXPECTED_SOURCE: e0acfdbbf2cb0f41ce61453ea5a77227ba012f75
+      EXPECTED_SOURCE: 67f099bffbdda2396ea2f64e1f168a76ce19d560
       RUSTUP_TOOLCHAIN: 1.94.0
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
@@ -22,7 +22,7 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: e0acfdbbf2cb0f41ce61453ea5a77227ba012f75
+        ref: 67f099bffbdda2396ea2f64e1f168a76ce19d560
         persist-credentials: false
     - name: Reserve hosted capacity and record exact candidate source
       shell: bash
