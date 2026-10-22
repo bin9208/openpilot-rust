@@ -23,12 +23,12 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 8b6b6c896a02b7cd41e3745e64ecf3c6557337ba
+        ref: 345d4b6fb61f6523e92bf3019a7b95d9d87f9866
         persist-credentials: false
     - name: Admit exact checked source and disk
       run: 'set -euo pipefail
 
-        test "$(git rev-parse HEAD)" = 8b6b6c896a02b7cd41e3745e64ecf3c6557337ba
+        test "$(git rev-parse HEAD)" = 345d4b6fb61f6523e92bf3019a7b95d9d87f9866
 
         sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet /usr/local/.ghcup
 
@@ -146,7 +146,7 @@ jobs:
         \ || status=1\n    cmp \"$proof/opendbc-python-before.sha256\" \"$proof/opendbc-python-after.sha256\" || status=1\n\
         \    cmp \"$proof/providers-before.sha256\" \"$proof/providers-after.sha256\" || status=1\n    cmp \"$proof/python-providers-before.json\"\
         \ \"$proof/python-providers-after.json\" || status=1\n    printf '%s\\n' \"$status\" > \"$proof/final-status.txt\"\
-        \n  fi\n  exit \"$status\"\n}\ntrap finalize EXIT\ntest \"$(git rev-parse HEAD)\" = '8b6b6c896a02b7cd41e3745e64ecf3c6557337ba'\n\
+        \n  fi\n  exit \"$status\"\n}\ntrap finalize EXIT\ntest \"$(git rev-parse HEAD)\" = '345d4b6fb61f6523e92bf3019a7b95d9d87f9866'\n\
         test -f \"$MANAGER_PARAMS_BINDING\"\ntest -x \"$MANAGER_TRACE_BINARY\"\ntest -f \"$RUNNER_TEMP/platform-params-binding/provenance.json\"\
         \ntest -f \"$RUNNER_TEMP/platform-params-binding/commands.json\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"\
         \ --path \"$RUNNER_TEMP\" --growth-mib 1024\nprintf '%s\\n' \"$(git rev-parse HEAD)\" > \"$proof/source-commit.txt\"\
