@@ -22,6 +22,17 @@ fn inputs() -> Vec<(String, String)> {
         .collect()
 }
 #[test]
+fn maintained_workflow_files_fit_github_registration_byte_limit() {
+    for (name, source) in inputs() {
+        // String::len measures UTF-8 bytes, which GitHub admits before job creation.
+        let bytes = source.len();
+        assert!(
+            bytes <= 500_000,
+            "{name}: {bytes} bytes exceeds the 500000-byte workflow registration limit"
+        );
+    }
+}
+#[test]
 fn fast_checks_cover_all_branch_pushes_and_protected_prs() {
     let files = inputs();
     check_workflow_policy(&files).unwrap();

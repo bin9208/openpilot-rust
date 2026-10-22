@@ -4,6 +4,42 @@ Work is unfinished. The user requests moving to a fresh session to increase
 parallelism; this is a continuation of #296, never dev-md/#338. Reuse accepted
 unchanged evidence. Read this handoff and the linked evidence ledger first.
 
+## Latest registration repair: R8
+
+Full routing source003eed6c078139280ac703920335e8334057a1c6 was published only
+through validation branch codex/feat-296-local-validation, workflow8bd7575b9.
+Its Rust workflow run39871079714 failed registration with zero jobs because the
+workflow exceeded GitHub's500KB limit. This is not a compiler/runtime failure.
+The strictly representational repair reduces rust.yml from721935 to499875 bytes,
+SHA256 aa409b0ee507b8f7c017a799822df270d6e44d074e1901f58a2c07eba466361c.
+Independent type-sensitive review confirms all43jobs/1106steps/758run strings,
+conditions, inputs and ownership roles are preserved. Standard nonrecursive
+anchors/aliases share repeated values; no command, runtime or helper changes.
+Empty workflow_dispatch becomes explicit null, the sole scalar-text distinction;
+the complete native-typed YAML object remains equal. Rust parser execution and
+actual GitHub registration of this representation are still pending.
+
+The new maintained_workflow_files_fit_github_registration_byte_limit regression
+rejects maintained workflow sources over500000 bytes. Contract seals bind the
+compacted source and this policy test. Its focused Actions recipe uses the same
+existing policy invocation and requires the new case's successful receipt; no
+new foundation or runtime cohort is added. Preserve the queued loader39871081195,
+policy39871081170 and Fast39871081148, all old diagnostics and queue:max. Keep
+the feature PR343 remote at adff until the routing acceptance gates are met.
+Fixture original109-data reuse R2 additionally repairs cleanup authorization;
+fresh native constructors and the separate normal40/failure27 checks remain open.
+
+Actual routing-policy39871081170 reaches native tests on bin-actions at003eed6c:
+ci_rust_isolation has80passes/3failures. Two assertions omit the retained upload
+path's final newline; the third still forbids the now expressly required QEMU
+host executable. The narrow test repair requires the exact multiline paths,
+LOCAL_CI_ARCH=aarch64 and the executable preflight while retaining every original
+ARM build/execution assertion. Contract source seals are rebased. No workflow
+command changed. A new focused run must qualify the changed compacted YAML with
+the real Rust parser; no local native test has been run. Publisher39865031709
+fails during Set up job, Controls39867224185 and logging39865824906 fail their
+validation steps, and estimator39866247802 succeeds pending artifact admission.
+
 ## Active continuation, superseding the earlier migration snapshot
 
 Parent **gpt-6.1-sol / ultra** is verified from actual turn metadata; all continuing
