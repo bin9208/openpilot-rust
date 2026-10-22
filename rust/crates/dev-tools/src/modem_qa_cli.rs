@@ -5,7 +5,7 @@ use crate::{
     modem_qa::{self, TraceOptions},
     seal::Result,
 };
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::{
     ffi::OsString,
     io::{self, Write},
@@ -54,6 +54,16 @@ fn emit(value: &Value) -> Result<()> {
     Ok(())
 }
 
+fn success_summary(report: &Value, evidence: &Path) -> Result<Value> {
+    let scenarios = report["scenarios"]
+        .as_array()
+        .ok_or("modem report has no scenarios")?;
+    let evidence = serde_json::to_value(evidence)?;
+    // The original CLI counts the 13 trace cases and continuous lifecycle.
+    // Additional process-boundary checks remain in the full evidence report.
+    Ok(json!({"passed":scenarios.len() + 1,"evidence":evidence}))
+}
+
 /// Run the native original-source differential and continuous daemon fixture.
 pub fn cli() -> Result<()> {
     let raw = std::env::args_os().skip(1).collect::<Vec<_>>();
@@ -94,7 +104,10 @@ pub fn cli() -> Result<()> {
         output: PathBuf::from(&parsed.values["--evidence"]),
         source_state,
     };
-    modem_qa::run_with_emit(&options, emit).map(|_| ())
+    modem_qa::run_with_emit(&options, |report| {
+        emit(&success_summary(report, &options.output)?)
+    })
+    .map(|_| ())
 }
 
 #[cfg(test)]
@@ -106,6 +119,16 @@ mod tests {
         assert!(args(&["--help".into()]).unwrap().help);
         assert!(args(&[]).is_err());
         assert!(args(&["--binary".into(), "x".into()]).is_err());
+    }
+
+    #[test]
+    fn checker_stdout_preserves_original_two_field_summary() {
+        let report = json!({"scenarios":vec![json!({});13],"passed":17});
+        assert_eq!(
+            success_summary(&report, Path::new("relative evidence")).unwrap(),
+            json!({"passed":14,"evidence":"relative evidence"})
+        );
+        assert!(success_summary(&json!({}), Path::new("out")).is_err());
     }
 
     #[test]

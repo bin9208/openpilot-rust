@@ -6622,3 +6622,21 @@ bounded scratch audit retains all artifact IDs/SHA values and signal contexts.
 A narrower unchanged-kernel92 replay is being prepared as single-function
 evidence, with complete native graph/output guards; it cannot replace whole
 original-pipeline proof or authorize ISA forcing.
+
+### Modem false-green admission caught before source deletion
+
+39723865391 atbaf585d4e403a2b636d2356dc45b2b6ac849175d, workflow
+cba6c9b2479f8aec5e69f9c50ec32c97ead5e437, passes compilation, Clippy and13units.
+Independent completeartifact12402133502/2471458B/all1911CRCs/SHA
+cdf3bb94cbadac0d59361eac8ee8bf5782985caac6fc2eb0df62de30349acfcb reveals that
+the ignored retirement invocation selected zero tests: its stale exact filter
+does not name the actual same_held_native_elfs_replay_modem_originals_in_checkout_and_private_absent_root
+test. There are no JSON retirement receipts; traced Python0 only describes the
+filtered Cargo invocation, not functional modem traffic. No actual/private13case,
+lifecycle/process/CLI/ELF proof is accepted, and all five tools plus runtime source
+remain live. The earlier commentary success claim was explicitly corrected.
+
+The diagnostic retry and proposed maintained gate now select the actual function
+and require its exact success line plus1passed/0failed/0ignored. Parent must
+review actual JSON/source/ELF/case receipts before any deletion. Inventory265
+is unchanged; a green Cargo exit alone is insufficient.

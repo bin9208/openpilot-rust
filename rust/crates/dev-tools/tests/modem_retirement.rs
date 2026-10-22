@@ -450,18 +450,16 @@ fn same_held_native_elfs_replay_modem_originals_in_checkout_and_private_absent_r
     ] {
         let evidence = output.join(format!("{label}-run"));
         let args = checker_args(source, &evidence, source_state);
-        let report = invoke(
+        let summary = invoke(
             &checker,
             &args,
             cwd,
             &output.join(format!("{label}-invocation")),
             0,
         );
-        let stdout_report: Value = serde_json::from_slice(
-            &fs::read(output.join(format!("{label}-invocation/stdout.log"))).unwrap(),
-        )
-        .unwrap();
-        assert_eq!(stdout_report, report);
+        assert_eq!(summary, json!({"passed":14,"evidence":evidence}));
+        let report: Value =
+            serde_json::from_slice(&fs::read(evidence.join("results.json")).unwrap()).unwrap();
         let (counts, full_cases) = check_case_files(&evidence);
         full_cases_by_root.push(full_cases);
         totals.push(json!({"root":label,"cases":13,"full_rows":counts.0,
