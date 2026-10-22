@@ -53,3 +53,6 @@ rust/crates/dev-tools/tests/fixtures/model-family-original/startup/original/*/na
 rust/crates/carrot-recovery/tests/fixtures/recovery-webhook-original/message-*/source.txt -text whitespace=-blank-at-eol
 # Fresh original generator source is fixed oracle data, never reformatted input.
 rust/crates/dev-tools/tests/fixtures/kalman-generators-original/** -text
+
+# Keep the checksum-bound crates.io manifest verbatim, including its comment space.
+rust/vendor/iced-x86-1.21.0/Cargo.toml.orig -text whitespace=-blank-at-eol
