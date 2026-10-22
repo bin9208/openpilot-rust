@@ -6,6 +6,24 @@ unchanged evidence. Read this handoff and the linked evidence ledger first.
 
 ## Active continuation, superseding the earlier migration snapshot
 
+Current post-switch parent is **gpt-6.1-sol / ultra**, verified from this turn's
+actual metadata. All eight continuing workers are Sol. Latest source commits
+include70049f6bd(exact common helper import),c5e37a69b(private Fast local slice)
+and5a929955b(preserve pending Fast queue). Read Git for later doc-only commits.
+Feature PR343 remote staysadff; its full PR push is held for broad routing.
+Diagnostic branch is4c35e0ebab5802027653518608260b7850c92a6f after atomic
+0488128 localFast+helpers application. Runs39857487263/39857487178/39857487070
+and39859011351/39859011541/39859011231/39859011226 are queued/pending, not passes.
+CP949native39843159421 raw admission now passes, including parent's exact
+261870dense/4517vector/880source byte comparisons. Schrodinger owns the new
+AST caller derivative; no originals deleted. Feynman reviewed growthr5 and
+fixture staging split; publisher activation is next independent code review.
+Bacon/Descartes coordinate publisher+cached startup1734source closure. Hilbert
+admits actual estimator failure/retry. Maxwell owns model output-only pair
+retention after missing raw data; Socrates owns the shared libzstd preflight
+repair. Existing accepted unchanged scopes stay reused. Inventory unchanged.
+
+
 Latest local continuation supersedes the snapshots below: pushed source remains
 adff0392e61608c9a576550be78dd7eefb8b9065. Local e8bc208f0 adds the normal
 controlsd controller and fixture macro repair; 3e79829c4 repairs only camera

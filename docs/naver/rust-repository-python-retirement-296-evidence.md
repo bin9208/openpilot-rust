@@ -9230,7 +9230,58 @@ arrival replaces that pending run. The supported queue:max setting retains up
 to100pending runs and is compatible with cancel-in-progress:false. Fast now
 keeps its original concurrency group and adds queue:max, with a native policy
 assertion and a single-queue mutation counterexample. This prevents the next
-publication from replacing already queued work; no running/pending run was
-cancelled or restarted by this session. Common execution helper bytes and the
+publication from replacing already queued work; no cancellation or restart is requested by this change. Common execution helper bytes and the
 seven required Fast jobs/commands/timeouts are unchanged. Source/YAML/rustfmt
 checks only; actual GitHub validation remains pending next publication.
+
+## CP949 native admission and first locally routed diagnostics (2026-10-23)
+
+[CP949native39843159421](https://github.com/bin9208/openpilot-rust/actions/runs/39843159421)
+passes at source300f77e423750804b2a781d734128945a4b56765, workflow
+bf0d3b72511a046a0bc4fc851bf69e96babfb0af on runner22/bin-actions.
+Artifact12456143914 is3,364,473bytes, SHA256
+526d7d3b5e6bac3494bc510e9bc461e49cb1bce5660dd1cf569259918db3a58d.
+Independent Sol artifact admission covers539CRCs across four nested ZIPs,
+362unique sealed contents/422seal checks,58Git source bindings and10embedded
+payloads, one actual native test execution with no Python exec, strict Clippy,
+stable original122/supplement161/native7held-provider pairs and exact old45
+reuse with no new native calls. Parent separately verifies all108outer CRCs,
+byte equality for all261870dense ten-byte records, all4517vector field
+projections and880source accept/reject/input rows. Diagnostic wording is not
+claimed identical. The exact eight-path GNU runtime provider union has SHA256
+7517504dc104b0795062f0007b4579a3576b03525cb7e7e857d3608a4df99ed9.
+This admits the bounded codec domain; AST maintained-caller/private-absence/
+published-absence acceptance and source retirement remain pending. No baseline
+inventory count changes.
+
+The first diagnostic application is0488128ea05187c2acf3f4feaa7dadb05c018c38,
+atomically combining the private Fast slice, four exact common helpers and only
+two private x64 observations. Trigger/API review finds only those three
+workflows, all worker labels self-hosted/Linux/X64/dev-md-local. New runs:
+[Fast39857487263](https://github.com/bin9208/openpilot-rust/actions/runs/39857487263),
+[IOprerequisites39857487178](https://github.com/bin9208/openpilot-rust/actions/runs/39857487178),
+[R4freshCPP39857487070](https://github.com/bin9208/openpilot-rust/actions/runs/39857487070).
+The R4 observer's narrow packed-refs-absence repair preserves every strict
+source/header/compiler/protocol check; no R4 acceptance follows from queuing it.
+
+Next atomic diagnostic4c35e0ebab5802027653518608260b7850c92a6f binds source
+c5e37a69b34d66129ad0ce7c4d79c58a1921227e and adds only three focused recipes:
+[fixture109/30cases39859011541](https://github.com/bin9208/openpilot-rust/actions/runs/39859011541),
+[normal40/rejection27/health5 39859011231](https://github.com/bin9208/openpilot-rust/actions/runs/39859011231),
+[growth remaining7/PandaCLI11 39859011226](https://github.com/bin9208/openpilot-rust/actions/runs/39859011226).
+Every selected job stays on bin-actions. The required automatic Fast run is
+[39859011351](https://github.com/bin9208/openpilot-rust/actions/runs/39859011351).
+These executions are queued/pending at this checkpoint, not passes. Runner22
+is online/busy. Full feature/PR publication is still held for the remaining
+local routing/isolation work; PR343 targetdev and dev-md separation persist.
+
+Growth resume preserves14previously completed scopes as historical observations
+and runs only seven unreached scopes plus the failed eleven-case Panda CLI
+receipt test. That Panda function is a regular #[test], not ignored; selection
+uses --exact without --ignored. The actual current-source checker, immutable
+tracked original CLI fixture02aa67da5d511a312fe30b7ebc058da5a8ada66098e14aef7b05a8b63eef700b,
+all eleven output triples and before/after checker hash are required. Neither
+of the other two already passed Panda retirement tests/two-root phases reruns.
+Independent source review closes the exact API job-name and field-size blockers;
+complete frozen payloads are authenticated before any qualification. No local
+functional execution, source deletion, main/dev merge, release or device action.
