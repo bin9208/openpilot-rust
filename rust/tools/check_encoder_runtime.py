@@ -262,8 +262,8 @@ def main() -> None:
   arguments = parser.parse_args()
   output = arguments.output.resolve()
   output.mkdir(parents=True, exist_ok=False)
-  if shutil.disk_usage(output).free < 26 * 1024**3:
-    raise RuntimeError("runtime capture requires 25 GiB plus 1 GiB headroom")
+  if shutil.disk_usage(output).free < 1024**3:
+    raise RuntimeError("runtime capture requires 1 GiB estimated growth")
   cpus = set(sorted(os.sched_getaffinity(0))[:2])
   results: list[dict[str, object]] = []
   for index, case in enumerate(arguments.case or CASES):

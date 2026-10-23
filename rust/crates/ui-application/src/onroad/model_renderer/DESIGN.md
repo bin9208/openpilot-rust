@@ -89,7 +89,7 @@ Miri where supported. Record every invocation, observable, artifact and binary h
 
 Use isolated synthetic Params and rust-probe IPC namespaces, never production
 subscriptions, vehicles/C3X, real CAN, NAS or accounts. Check disk before each build,
-install or large copy: preserve25GiB plus growth; use coordinated cache75 with
+install or large copy: admit the estimated operation growth; use coordinated cache75 with
 incremental disabled and bounded jobs2. Do not mutate UIworker cache84. Keep #150
 worktree and retained proof binaries intact. This slice is intermediate #148 work;
 parent composition, complete runtime normal startup/log upload, AGNOS packaging,

@@ -235,7 +235,7 @@ async def success(fixture: Fixture) -> None:
 async def main() -> None:
     parser=argparse.ArgumentParser();parser.add_argument('--binary',type=Path,required=True);parser.add_argument('--worker',type=Path,required=True);parser.add_argument('--output',type=Path,required=True);parser.add_argument('--all-files',action='store_true');selection=parser.add_mutually_exclusive_group();selection.add_argument('--boundary-only',action='store_true');selection.add_argument('--lifecycle-only',action='store_true');selection.add_argument('--composed-only',action='store_true');selection.add_argument('--packaging-only',action='store_true');selection.add_argument('--success-only',action='store_true');args=parser.parse_args()
     output=args.output.resolve();output.mkdir(parents=True,exist_ok=False);binary=args.binary.resolve();worker=args.worker.resolve()
-    free=shutil.disk_usage(output).free;save(output/'diskguard.json',{'free_bytes':free,'reserve_bytes':25*1024**3,'estimated_growth_bytes':16*1024**2});assert free>=25*1024**3+16*1024**2
+    free=shutil.disk_usage(output).free;save(output/'diskguard.json',{'free_bytes':free,'estimated_growth_bytes':16*1024**2});assert free>=16*1024**2
     groups=([] if args.lifecycle_only else [('boundary','normal')])+([] if args.boundary_only else [('cancel','cancel'),('server-stop','stale')]);rows=[];failures=[]
     if args.composed_only:groups=[('application','cancel')]
     if args.packaging_only:groups=[('packaging','normal')]

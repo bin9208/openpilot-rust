@@ -51,8 +51,8 @@ def main() -> None:
   args = parser.parse_args()
   for name in ["opencv", "models", "target_dir", "output"]:
     setattr(args, name, getattr(args, name).resolve())
-  if shutil.disk_usage(args.output.parent).free < 25 * 1024**3 + 2 * 1024**3:
-    raise OSError("memory validation requires 25 GiB plus 2 GiB; recover 35 GiB before resuming")
+  if shutil.disk_usage(args.output.parent).free < 2 * 1024**3:
+    raise OSError("memory validation requires 2 GiB estimated growth")
   args.output.mkdir()
   library = Path(subprocess.check_output(["clang-18", "--print-file-name=libclang_rt.asan-x86_64.so"], text=True).strip()).resolve(strict=True)
   flags = "-fsanitize=address,undefined -fno-omit-frame-pointer"

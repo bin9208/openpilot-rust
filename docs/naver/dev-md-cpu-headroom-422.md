@@ -231,3 +231,37 @@ files and target upload mappings retain host-visible artifacts. No hosted runner
 fallback is used. These infrastructure results do not establish this merged CPU
 candidate's functional equivalence, performance gain, full AGNOS package, or
 vehicle acceptance; those gates remain part of #422's continuation.
+
+## Workspace capacity failure and shared build-policy correction
+
+Exact CPU source `d74ee3ab873976e31abcda4da66ac8f17cc5d9f9` passed fast
+checks, mapped docs and the integration gate in
+[CI 39856292777](https://github.com/bin9208/openpilot-rust/actions/runs/39856292777).
+The [workspace job 120231232641](https://github.com/bin9208/openpilot-rust/actions/runs/39856292777/job/120231232641)
+stopped before compilation on `bin-actions`: available space was
+10,206,261,248 bytes (about 9.5 GiB), below its unchanged 12,884,901,888-byte
+(12 GiB) estimated growth. This is an actual capacity shortfall, distinct from
+the removed fixed 25/35 GiB policy. The later CPU/source/memory and ARM jobs
+did not execute. A successful integration gate is not full runtime acceptance.
+
+The next source adopts common #502 correction
+`8afbdcf3598df7fe17f60acb2f1f0157e4d1addc`. Its
+[focused local Actions job](https://github.com/bin9208/openpilot-rust/actions/runs/39873578269/job/120153608354)
+passed in 126 seconds: CI policy 90, package policy 10, native guard 13,
+disk-space 4 unit / 5 CLI, Python growth/Card 17, dev-tools 61 unit / 2 CLI,
+model-runtime 20 and replay packaging 2. It removes remaining duplicate
+fixed reserves and stale packaging expectations while retaining growth
+shortfall rejection, maximum-byte handling, ownership and source/ABI checks.
+CPU-specific source exceptions and required preprocessing memory coverage
+are preserved when combining the branches. These shared-source results do not
+validate the combined CPU source or resolve its measured capacity shortfall.
+
+ARM transport, the shared disk-space crate and Cargo.lock are unchanged by
+this correction; the focused space-only run intentionally skipped ARM.
+The earlier transport evidence remains valid within its original scope.
+The existing readiness workflow gains a `storage-only` diagnostic option to
+report filesystem capacity, bounded directory sizes and job-temp owner records
+on the registered runner. It neither deletes files nor repeats policy/ARM tests.
+Use that evidence before selecting any obsolete cache for cleanup; preserve
+other tasks and retain the 12 GiB workspace growth check. Combined validation,
+AGNOS delivery and device acceptance remain pending.

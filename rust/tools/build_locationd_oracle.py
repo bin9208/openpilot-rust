@@ -57,8 +57,8 @@ def main():
   with (output / 'build.log').open('w') as log:
     for command in commands:
       free = shutil.disk_usage(output).free
-      if free < 26 * 1024**3:
-        raise RuntimeError('25 GiB floor plus 1 GiB build estimate unavailable')
+      if free < 1024**3:
+        raise RuntimeError('1 GiB estimated build growth unavailable')
       log.write(json.dumps({'command': command, 'free_bytes': free}) + '\n')
       log.flush()
       result = subprocess.run(command, cwd=root, env=environment, stdout=log, stderr=subprocess.STDOUT)

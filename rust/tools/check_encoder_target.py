@@ -91,10 +91,10 @@ def arm_elf(path: Path) -> None:
 
 def disk_guard(directory: Path, growth: int) -> None:
   free = shutil.disk_usage(directory).free
-  record = {"free_bytes": free, "growth_bytes": growth, "floor_bytes": 25 * 1024**3, "monotonic_ns": time.monotonic_ns()}
+  record = {"free_bytes": free, "growth_bytes": growth, "required_bytes": growth, "monotonic_ns": time.monotonic_ns()}
   with (directory / "disk-guards.jsonl").open("a") as stream:
     stream.write(json.dumps(record) + "\n")
-  require(free >= 25 * 1024**3 + growth, "insufficient disk space; recover at least 35 GiB before resuming")
+  require(free >= growth, f"insufficient disk space for estimated growth: required={growth}; free={free}")
 
 
 def no_core() -> None:

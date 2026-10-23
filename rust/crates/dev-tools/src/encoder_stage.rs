@@ -85,32 +85,11 @@ fn safe(name: &str) -> Result<()> {
         format!("unsafe native archive member: {name}"),
     )
 }
-fn ancestor(path: &Path) -> Result<PathBuf> {
-    let mut path = if path.is_absolute() {
-        path.to_owned()
-    } else {
-        std::env::current_dir()?.join(path)
-    };
-    while !path.exists() {
-        path = path
-            .parent()
-            .ok_or("missing filesystem ancestor")?
-            .to_owned();
-    }
-    Ok(path)
-}
 fn space(path: &Path, growth: u64) -> Result<Value> {
-    let stats = rustix::fs::statvfs(ancestor(path)?)?;
-    let free = stats.f_bavail.saturating_mul(stats.f_frsize);
-    let required = 25 * 1024 * 1024 * 1024 + growth;
-    let value = json!({"free_bytes":free,"required_bytes":required,"growth_bytes":growth});
+    let usage = crate::disk_space::inspect(path, growth)?;
+    let value = serde_json::to_value(&usage)?;
     println!("{value}");
-    require(
-        free >= required,
-        format!(
-            "require 25 GiB plus estimated growth; recover at least 35 GiB before retry: {value}"
-        ),
-    )?;
+    usage.require()?;
     Ok(value)
 }
 /// Verify the unique reviewed uv.lock source and version before staging a wheel.
@@ -774,6 +753,14 @@ pub fn stage(options: &Options, runner: &mut impl Runner) -> Result<Value> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn codec_space_reports_only_growth_and_rejects_insufficient_capacity() {
+        let temp = tempfile::tempdir().unwrap();
+        let usage = space(temp.path(), 0).unwrap();
+        assert_eq!(usage["required_bytes"], 0);
+        assert_eq!(usage["growth_bytes"], 0);
+        assert!(space(temp.path(), u64::MAX).is_err());
+    }
     fn archive(path: &Path, files: &[(&str, &[u8])]) {
         let compressed = xz2::write::XzEncoder::new(File::create(path).unwrap(), 1);
         let mut tar = tar::Builder::new(compressed);

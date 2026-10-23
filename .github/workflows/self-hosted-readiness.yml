@@ -1,13 +1,55 @@
 name: All-local Actions validation502
 on:
   workflow_dispatch:
+    inputs:
+      scope:
+        description: Select validation or read-only runner storage diagnostics
+        type: choice
+        options: [all, space-only, storage-only]
+        default: all
 permissions:
   contents: read
 jobs:
+  storage:
+    name: local runner storage diagnostics
+    if: inputs.scope == 'storage-only'
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    timeout-minutes: 5
+    steps:
+      - name: Report filesystem capacity and bounded cache sizes without changing files
+        shell: bash
+        run: |
+          printf 'runner=%s host=%s scope=read-only\n' "$RUNNER_NAME" "$(uname -m)"
+          df -B1 -- "$GITHUB_WORKSPACE" "$RUNNER_TEMP" /tmp
+          for path in "$GITHUB_WORKSPACE" "$HOME/.cache" "${CARGO_HOME:-$HOME/.cargo}" "${RUSTUP_HOME:-$HOME/.rustup}" /tmp; do
+            if [[ -d "$path" && ! -L "$path" ]]; then
+              printf '\nDirectory sizes: %s\n' "$path"
+              timeout 30s du -x -B1 --max-depth=2 -- "$path" 2>/dev/null | sort -n | tail -n 20 || true
+            fi
+          done
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          for directory in sorted(Path('/tmp').glob('openpilot-ci.*')):
+              owner = directory / 'owner'
+              if directory.is_symlink() or owner.is_symlink() or not owner.is_file():
+                  continue
+              value = owner.read_text().strip()
+              fields = value.split(':')
+              if len(fields) == 3 and fields[0].isdigit() and fields[1].isdigit():
+                  print(json.dumps({'directory': str(directory), 'run_id': fields[0],
+                                    'attempt': fields[1], 'job': fields[2]}))
+          PY
   policy:
     name: local Actions policy and regression checks
+    if: inputs.scope != 'storage-only'
     runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 15
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
     defaults:
       run:
         working-directory: all-local-502
@@ -62,6 +104,13 @@ jobs:
           "$CI_JOB_TEMP/venv/bin/python" rust/ci/runtime/test_package_policy.py
           "$CI_JOB_TEMP/venv/bin/python" -m pytest -c /dev/null --noconftest -q tools/ci/tests/test_native_disk_guard.py
           cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-disk-space --locked
+      - name: Require build-tool growth admission and retained native tool contracts
+        if: inputs.scope == 'space-only'
+        run: |
+          PYTHONPATH=rust/tools "$CI_JOB_TEMP/venv/bin/python" -m pytest -c /dev/null --noconftest -q rust/tools/tests/test_build_space_policy.py rust/tools/tests/test_card_ci.py::test_reference_phase_stops_before_brand_outputs_exceed_available_growth
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --lib --test disk_space --locked
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-model-runtime --lib --locked
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-radard --lib replay::package::tests --locked
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -74,6 +123,7 @@ jobs:
   arm:
     name: local QEMU ARM execution and command-file transport
     needs: policy
+    if: inputs.scope == 'all'
     runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 90
     env:

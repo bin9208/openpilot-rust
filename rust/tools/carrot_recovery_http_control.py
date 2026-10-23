@@ -63,7 +63,7 @@ async def run(args: argparse.Namespace) -> None:
     helper = native_binary.with_name('openpilot-process-child')
     growth = native_binary.stat().st_size + helper.stat().st_size + sum(path.stat().st_size for path in assets.rglob('*') if path.is_file())
     free = shutil.disk_usage(root).free
-    assert free >= 25 * 1024**3 + growth + 25 * 1024**2, (free, growth)
+    assert free >= growth + 25 * 1024**2, (free, growth)
     (package / 'bin').mkdir(parents=True)
     for binary in [native_binary, helper]:
       shutil.copy2(binary, package / 'bin' / binary.name)

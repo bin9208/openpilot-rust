@@ -23,7 +23,7 @@ def main() -> None:
   parser.add_argument('--reserve-mib', type=int, default=32)
   args = parser.parse_args()
   output = args.output.resolve()
-  assert shutil.disk_usage(output.parent).free >= 25 * 1024**3 + args.reserve_mib * 1024**2
+  assert shutil.disk_usage(output.parent).free >= args.reserve_mib * 1024**2
   output.mkdir(exist_ok=False)
   rows = []
   for name in ('get', 'closed', 'observer'):

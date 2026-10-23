@@ -13,7 +13,7 @@ class ResourceContext(Context):
     if 'build' in name:
       free = shutil.disk_usage(self.output).free
       (self.output / f'{name}-disk.json').write_text(json.dumps({'free_bytes': free, 'estimated_growth_bytes': 1024**3}))
-      assert free >= 26 * 1024**3, '25 GiB reserve plus 1 GiB build growth required'
+      assert free >= 1024**3, '1 GiB estimated build growth required'
     super().run(name, command, extra_env)
 
 
