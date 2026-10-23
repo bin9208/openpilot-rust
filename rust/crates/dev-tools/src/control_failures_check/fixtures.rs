@@ -101,13 +101,22 @@ fn basic() -> Result<Vec<Value>> {
     Ok(cases)
 }
 fn first(case: &Value, name: &str, count: usize) -> Value {
-    let mut case = case.clone();
-    case["name"] = json!(name);
-    case["frames"]
-        .as_array_mut()
-        .expect("native basic frames")
-        .truncate(count);
-    case
+    let frames = case["frames"].as_array().expect("native basic frames");
+    let mut selected = case
+        .as_object()
+        .expect("native basic case")
+        .iter()
+        .map(|(key, value)| {
+            let value = if key == "frames" {
+                Value::Array(frames.iter().take(count).cloned().collect())
+            } else {
+                value.clone()
+            };
+            (key.clone(), value)
+        })
+        .collect::<serde_json::Map<_, _>>();
+    selected.insert("name".into(), json!(name));
+    Value::Object(selected)
 }
 fn mutate_cp(case: &mut Value, name: &str) -> Result<()> {
     let bytes: Vec<u8> = serde_json::from_value(case["params"]["CarParams"].clone())?;
@@ -215,4 +224,139 @@ pub fn projection(case: &Value) -> Result<Value> {
         out["params"]["CarParams"] = json!({"$raw-invalid-CarParams":[0,1,2]});
     }
     Ok(out)
+}
+
+#[cfg(test)]
+mod prefix_tests {
+    use super::*;
+
+    // The prior algorithm is the independent oracle for this allocation change.
+    fn original_first(case: &Value, name: &str, count: usize) -> Value {
+        let mut case = case.clone();
+        case["name"] = json!(name);
+        case["frames"]
+            .as_array_mut()
+            .expect("native basic frames")
+            .truncate(count);
+        case
+    }
+
+    fn assert_exact(actual: &Value, expected: &Value) {
+        assert_eq!(
+            serde_json::to_vec(actual).unwrap(),
+            serde_json::to_vec(expected).unwrap()
+        );
+        match (actual, expected) {
+            (Value::Number(a), Value::Number(b)) => {
+                assert_eq!(a.as_f64().map(f64::to_bits), b.as_f64().map(f64::to_bits));
+            }
+            (Value::Array(a), Value::Array(b)) => {
+                assert_eq!(a.len(), b.len());
+                for (a, b) in a.iter().zip(b) {
+                    assert_exact(a, b);
+                }
+            }
+            (Value::Object(a), Value::Object(b)) => {
+                assert_eq!(a.len(), b.len());
+                for (key, a) in a {
+                    assert_exact(a, &b[key]);
+                }
+            }
+            _ => assert_eq!(actual, expected),
+        }
+    }
+
+    fn synthetic_case() -> Value {
+        let frames = (0..8)
+            .map(|index| {
+                json!({
+                    "time": index,
+                    "messages": [[0, 255, 127], [], [1, 2, 3, 4]],
+                    "unknown": {"nested": [null, false, "\u{0000}λ", {"keep": true}]},
+                    "floats": [
+                        -0.0_f64, 0.0_f64, f64::from_bits(1),
+                        f64::MIN_POSITIVE, f64::MAX, -f64::MAX,
+                        f64::from_bits(0x3ff0000000000001)
+                    ],
+                    "integers": [i64::MIN, i64::MAX],
+                    "unsigned": u64::MAX
+                })
+            })
+            .collect::<Vec<_>>();
+        json!({
+            "name": "source-case",
+            "params": {"CarParams": [0, 1, 2, 255], "setting": [48]},
+            "simulation": false,
+            "frames": frames,
+            "extra": {"frames": ["unrelated", "retained"], "signed_zero": -0.0_f64},
+            "nullable": null
+        })
+    }
+
+    #[test]
+    fn prefix_clone_matches_original_bytes_and_float_bits_at_all_boundaries() {
+        let source = synthetic_case();
+        let before = source.clone();
+        for count in [0, 1, 5, 8, 9, usize::MAX] {
+            for name in ["", "replacement", "health-HONDA_CIVIC-pid", "λ\0name"] {
+                let actual = first(&source, name, count);
+                let expected = original_first(&source, name, count);
+                assert_exact(&actual, &expected);
+                assert_eq!(actual["name"], name);
+                assert_eq!(actual["frames"].as_array().unwrap().len(), count.min(8));
+                assert_exact(&source, &before);
+            }
+        }
+    }
+
+    #[test]
+    fn prefix_clone_preserves_empty_frames_and_missing_name_insertion() {
+        let mut source = synthetic_case();
+        source.as_object_mut().unwrap().remove("name");
+        source["frames"] = json!([]);
+        for count in [0, 1, 5, usize::MAX] {
+            assert_exact(
+                &first(&source, "new-name", count),
+                &original_first(&source, "new-name", count),
+            );
+        }
+        assert!(source.get("name").is_none());
+    }
+
+    #[test]
+    fn prefix_clone_retains_rejection_of_missing_or_non_array_frames() {
+        for source in [json!({}), json!({"frames": null}), json!({"frames": {}})] {
+            for count in [0, 1, 5] {
+                assert!(
+                    std::panic::catch_unwind(|| original_first(&source, "name", count)).is_err()
+                );
+                assert!(std::panic::catch_unwind(|| first(&source, "name", count)).is_err());
+            }
+        }
+    }
+
+    #[test]
+    fn prefix_clones_own_every_retained_field_and_do_not_alias_each_other() {
+        let mut source = synthetic_case();
+        for count in [0, 1, 5, 9] {
+            let baseline = source.clone();
+            let mut changed = first(&source, "changed", count);
+            let independent = first(&source, "independent", count);
+            let expected = original_first(&baseline, "independent", count);
+            changed["name"] = json!("mutated");
+            changed["params"]["CarParams"][0] = json!(99);
+            changed["extra"]["frames"][0] = json!("mutated");
+            changed["simulation"] = json!(true);
+            if count != 0 {
+                changed["frames"][0]["messages"][0][0] = json!(99);
+                changed["frames"][0]["floats"][0] = json!(0.0_f64);
+            }
+            assert_exact(&source, &baseline);
+            assert_exact(&independent, &expected);
+            source["params"]["setting"] = json!([49]);
+            source["frames"][0]["unknown"] = json!("source-only-change");
+            assert_exact(&independent, &expected);
+            source = baseline;
+        }
+    }
 }
