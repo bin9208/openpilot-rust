@@ -1,5 +1,33 @@
 # Repository-wide Python retirement: current evidence (#296)
 
+## Actual policy negative-control defect and normal signal observation gap
+
+Policy39875010264/source20d reports83ci_rust_isolation passes and19policy passes;
+one integration aggregate negative-control assertion fails. Its mutation appends
+standalone true after a failing test under Bash-e; that still exits fail-closed.
+The checker correctly accepts it. Source repair58804b36 changes only the case
+name and mutation to test "$JETLINK" = success || true, which actually masks the
+failure and must be rejected. Production workflows/checker/ARM/ownership behavior
+stay exact. Current queued10ff still has the old assertion; it is not cancelled.
+The changed assertion and previously unreached downstream gates require Actions;
+102unchanged passing cases are not replayed solely for this two-line repair.
+Artifact12470986127 is161515bytes, SHA256
+d0f03b0fcbcdbadc5520d6be32087764b3cf9d85e4568140ed2a930ad8180879;
+all19CRCs/30source seals match. Post-failure final seals are absent, not inferred.
+
+Normal39878564969/source55084 reports7passes/1failure/1filtered. The first signal
+test times out waiting10s for peer.pids while the CLI is still alive, before INT
+or TERM delivery. The old fixture-integer error is absent. No normal40/rejection27/
+health5 capture or Clippy runs. Internal phase/cause is unproved: the test's
+TempDir teardown removed stderr/marker evidence. Workflow-level source cleanup
+is correctly skipped after failed validation. Artifact12470529134,38023bytes,
+SHA2560a8588172a04d3b1dd480af1141bdee70e8ad2fae09144c65c0bbd3629c342f6,
+has3CRCs/17regular-file seals checked. No peer closure or OOM cause is inferred.
+The next bounded observer must build a fresh exact55084 executable in Actions
+and trace only that one failed test, preserving phase/error/ownership evidence.
+No timeout widening, seven-pass replay, original109 recapture or source fix is
+justified yet. All normal comparison and public cancellation gates remain open.
+
 ## Maintained changed-files caller source rebase (2026-10-23)
 
 Independent R4 review admits maintained patch c5e0e5bf74438d891a7d4c17dac20d69ec16f2f223630583fd6788bca3b97120:

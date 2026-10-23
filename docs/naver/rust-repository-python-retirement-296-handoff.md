@@ -4,6 +4,22 @@ Work is unfinished. The user requests moving to a fresh session to increase
 parallelism; this is a continuation of #296, never dev-md/#338. Reuse accepted
 unchanged evidence. Read this handoff and the linked evidence ledger first.
 
+## Newly diagnosed actual policy/normal failures
+
+Policy39875010264 has102passes and one faulty negative-control mutation: trailing
+standalone true cannot mask a failed test under Bash-e. The two-line repair uses
+|| true; no production checker/workflow changes. Run only its changed case and
+unreached downstream gates, reusing the exact-source102case evidence. Queued10ff
+is unchanged and retains that defect. Keep f01ced15b as the separately fixed AST
+caller qualification source; its R5 binder must not silently move to later HEAD.
+
+Normal39878564969 has7passes/1failure/1filtered. Failure is a10s peer-marker wait,
+before any deliberate INT/TERM, with internal diagnostics lost to test TempDir
+teardown. No internal cause, normal40/rejection27/health5 or final closure is
+established. Bacon prepares only a fresh-source one-test phase observer; retain
+all deadlines and passing evidence. No broad rerun, original109 capture or
+production patch is supported. See the evidence ledger for artifact seals.
+
 ## AST caller source integrated; fresh acceptance still pending
 
 Reviewed R4patch c5e0e5bf changes only two Fast command bodies, the affected

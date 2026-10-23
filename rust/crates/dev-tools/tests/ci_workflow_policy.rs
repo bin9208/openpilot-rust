@@ -541,7 +541,7 @@ fn common_foundation_files_match_the_separate_pinned_source_contract() {
 }
 
 #[test]
-fn integration_aggregate_cannot_pass_failed_or_skipped_workers_with_a_trailing_true() {
+fn integration_aggregate_cannot_pass_failed_or_skipped_workers_with_or_true() {
     let mut files = inputs();
     let source = &mut files
         .iter_mut()
@@ -551,7 +551,7 @@ fn integration_aggregate_cannot_pass_failed_or_skipped_workers_with_a_trailing_t
     assert!(source.contains("test \"$JETLINK\" = success"));
     *source = source.replacen(
         "test \"$JETLINK\" = success",
-        "test \"$JETLINK\" = success\n          true",
+        "test \"$JETLINK\" = success || true",
         1,
     );
     assert!(check_workflow_policy(&files).is_err());

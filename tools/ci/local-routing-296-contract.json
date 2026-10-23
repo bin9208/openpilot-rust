@@ -428,5 +428,19 @@
     "historical_maps": "R6/R7 action distribution and cfd loggerd peer/current_parent_prerequisites remain historical exact snapshots; future source-policy must explicitly select this newer overlay",
     "accepted_reuse": "14 original/native codec/lifecycle proofs and eight GNU runtime provider seals unchanged; not new current-source acceptance",
     "native_acceptance": "four caller tests/one affected policy case/12 absence negatives/held sources and provider equality/strict owned exec accounting pending; no Python deletion or retirement credit"
+  },
+  "aggregate_negative_control_repair": {
+    "failed_source": "20d0beee413efc4db7dc0b0b0c57ca97c5a4ba24",
+    "run": 39875010264,
+    "job": 120158369441,
+    "actual_result": "83ci_rust_isolation+19ci_workflow_policy pass; one false negative-control assertion fails",
+    "cause": "standalone trailing true does not mask failed test under Bash -e; change mutation to || true so it actually masks JETLINK failure",
+    "patch_sha256": "58804b365e87834fbf535dfafea265f529a6c83af1d7184ddc8abd8e8b8aa8ac",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/tests/ci_workflow_policy.rs": "bc8f3329cce93967880a77d5089988fb89899a36b2971a7152069eeff683a804"
+    },
+    "production_commands_changed": false,
+    "status": "unrun two-line assertion repair; only changed negative case plus previously unreached downstream gates need new execution",
+    "historical_maps": "AST overlay retains exact f01 source bytes; cfd/R6/R7 maps remain historical, not current acceptance"
   }
 }
