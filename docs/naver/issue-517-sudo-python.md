@@ -35,7 +35,27 @@ all four modules. Legacy sudo removed the library path, reported3.12.3 and
 failed all four imports. Candidate sudo restored3.12.15, the exact normal module
 paths and successful imports while retaining UID0. There is no claim that the
 prefix itself changed or that a complete bridge/Athena comparison ran here.
-Full bridge/Athena comparisons, exact-source required gates, normal dev merge
+
+The same source's
+[Carrot Navi host job120220822706](https://github.com/bin9208/openpilot-rust/actions/runs/39893953434/job/120220822706)
+then passed native build/test/lint and earlier source/native socket/lifecycle
+lanes before failing in the owned discovery network namespace at
+`carrot_navi_qa.startup` importing `aiohttp`. Its console records action
+Python3.12.14 and the selected loader path before `sudo`/`runuser`; the latter
+privileged invocation loses the module. This is consistent with the measured
+loader-boundary mechanism, but the earlier four-module identity probe did not
+exercise this exact double boundary or establish a complete Navi comparison.
+
+The Navi candidate carries the inherited loader path through sudo under an
+explicit neutral variable, then restores `LD_LIBRARY_PATH` with `env` after
+each `runuser` boundary. Both source and native startup commands retain the
+selected interpreter, calling user, original arguments and network isolation.
+This prevents either privileged executable from being relied on to retain a
+dynamic-loader variable. The subsequent nonprivileged exhaust lanes and exact
+policy/process comparisons remain unchanged. No dependency is reinstalled or
+comparison result inferred from the earlier probe.
+
+Full bridge/Athena/Navi comparisons, exact-source required gates, normal dev merge
 and separate post-merge checks remain pending.
 Local checks are YAML/Bash syntax and diff review only, with no functional
 execution, project imports, dependency installation or device operation.

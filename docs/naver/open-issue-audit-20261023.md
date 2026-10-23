@@ -684,3 +684,11 @@ source/native batches180seconds, and preserves partial timeout captures plus
 invocation receipts before failing. All897rows/4499operations, durable writes,
 sanitizers and strict comparisons remain. Native equality and full acceptance
 are still pending; evidence collection is not a functional pass.
+
+The [Carrot Navi host job120220822706](https://github.com/bin9208/openpilot-rust/actions/runs/39893953434/job/120220822706)
+then failed importing aiohttp after its sudo/runuser network-namespace boundary,
+having passed the earlier native and socket/lifecycle lanes. The same
+[#517 correction](issue-517-sudo-python.md) explicitly carries the inherited
+loader path through sudo and restores it after both runuser calls, retaining
+the calling user, namespace and source/native commands. Complete Navi acceptance
+still requires the new candidate's actual result.
