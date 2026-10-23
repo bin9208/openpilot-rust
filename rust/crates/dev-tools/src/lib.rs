@@ -93,6 +93,8 @@ pub mod deleter_check;
 #[cfg(all(unix, feature = "developer-ssh-native"))]
 pub mod developer_ssh;
 pub mod filter_reference;
+#[cfg(feature = "github-utils-native")]
+pub mod github_utils;
 pub mod journald_check;
 pub mod journald_fixture;
 #[cfg(all(unix, feature = "kalman-corpus-generator-native"))]

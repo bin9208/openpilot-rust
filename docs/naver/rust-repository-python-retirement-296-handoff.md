@@ -8,8 +8,10 @@ primary dev-md checkout is untouched. Inventory stays288replaced-local/3partial/
 3289pending of3580; source additions and queued jobs grant no retirement credit.
 
 Current implementation12656fa38f4c9f105caafc52532b8cc947f75a17 contains the
-reviewed auth set/clear source. ValidationR15 is8302b08ab56a7f6a2bb36681f700f72e551f1d1f,
-with fullD876 source and nineteen preserved once leaves. R14 wrapper39895130353
+reviewed auth set/clear source. ValidationR16 isa6f55b59984cea54f73edb6a545e6729dafaa5c0,
+with full25aeb source and nineteen old once leaves byte-preserved. Only new peer
+cache cleanup39899250358 and policy read-only inventory39899250317 are triggered,
+plus Fast39899250243. The auth minimal1a1a source is now remotely reachable. R14 wrapper39895130353
 bindsDA1/recipe8a8b9f6ef5b0c1c9ea6928ab6a99c767a9acd39d969bc3d7ad31f8fbb41b47bd;
 R15 SSH39895770436 bindsC3f/recipe4654f02981e797f319086e91322ca45dc79fd41c60a181e02b758c9e22b40e1a.
 They remain queued at the latest API observation; no compile/test pass is inferred.
@@ -32,6 +34,15 @@ has run. Only the R3target and cargo-home/registry are proposed for later review
 cleanup:807460864allocated bytes, not promised free bytes. At the old inventory
 snapshot even full reclaim left332308480bytes below the unchanged bundle estimate.
 
+Additional read-only [policy inventory39899250317](https://github.com/bin9208/openpilot-rust/actions/runs/39899250317)
+is SUCCESS. Artifact12478505973/401108B/SHA256e6c088ec753d9892602ab8d21c2684dce0a9059b5c0db1bf159d10ad2cf50d04
+passes44CRCs/43seals; fresh exact root/marker and current same-UID process checks
+have no unknown/active references. Only target and registry exist, with unique
+inode allocation1265823744bytes; git is absent. Snapshot free10058493952bytes.
+No deletion/recovery or future quiescence is claimed; prepare a separate exact
+reviewed cleanup. Historical common-root inode and old source/index-after seals
+remain absent. The earlier15.5GB and later7GB snapshots are historical readings.
+
 New actual [logger main39894886518](https://github.com/bin9208/openpilot-rust/actions/runs/39894886518)
 stops before its first Rust build:7029460992available versus8589934592planned
 bytes. Its private signed-provider preparation completes, but source/compiler/
@@ -48,9 +59,12 @@ repair is required before the still-unreached native109/full-schema audit gate.
 
 Logging raw-proof recovery [39894886676](https://github.com/bin9208/openpilot-rust/actions/runs/39894886676)
 is SUCCESS; artifact12477566277/5896947B/SHA25605ff6420f05f8b51f457b85ecf34ad514bc75b6b6147e4abf5d8f78d7f85462f
-has two valid ZIP members. Its nested full proof is still under independent
-inert-data admission. The recovery executes no capture; it grants no R4/lifecycle
-or broader runtime parity acceptance.
+has two valid ZIP members. Parent admits788safe TAR files/787member hashes,
+778raw files with equal before/after seals and754old-partial byte matches.
+The19578precompile held records remain unchanged in19596after entries and both
+provider receipts match. Source-state receipts match; current source-tree
+revalidation and historical root inode are not invented. Recovery executes no
+capture and grants no R4/lifecycle or broader runtime parity acceptance.
 
 Original WebRTC x64 remains bounded accepted. The separate ARM-emulated job
 120189323000 ends at the Actions45minute maximum, not a parent cancellation;
@@ -65,6 +79,23 @@ exact complete recipe requires independent closure before publication. Prefix
 2e4b/f7ffd source-review passes but its new build gate waits for measured capacity.
 Auth18tests and injected-only GithubUtils source remain unvalidated. All originals
 and current credential/account/vehicle paths remain outside these new gates.
+
+## GithubUtils injected-only native source candidate
+
+Reviewed completeR2 patch8cb45a37b360a0318c1fc7e729eb9dd5f1a273e1fa43ae447ad787bc0bbae8f7
+adds github_utils.rs and23integration test sources. The minimal D876 child is
+d346764d6448ca15c1e4dc468f31b0751f021883. Parent registration adds one optional feature
+selecting the existing runtime-version dependency, one cfg module and one explicit
+test target; removing those entries restores the entire previous TOML object.
+No dependency/version/lock change, HTTP adapter, CLI or caller activation occurs.
+
+All original public methods have injected-transport source counterparts, retaining
+manual JSON body/HTML/argument-order quirks. Independent full R1 review identifies
+one comments-response P2; exactR2 delta review closes empty object/text zero-row
+iteration and strengthens the same-inode file-rewrite read-order test. Compilation,
+Clippy,23tests and private original/native transcript comparison remain UNRUN.
+Broad Requests/wire/codec/Unicode/arbitrary-Python-object behavior stays held.
+Original github_utils.py and inventory remain unchanged; zero retirement credit.
 
 ## Auth configuration native set/clear candidate
 

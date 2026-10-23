@@ -705,7 +705,7 @@
   },
   "actual_capacity_and_continuation_checkpoint": {
     "implementation_source": "12656fa38f4c9f105caafc52532b8cc947f75a17",
-    "validation_commit": "8302b08ab56a7f6a2bb36681f700f72e551f1d1f",
+    "validation_commit": "a6f55b59984cea54f73edb6a545e6729dafaa5c0",
     "model": "gpt-6.1-sol/ultra parent, gpt-6.1-sol only subagents",
     "inventory": "288/3/3289 of3580 unchanged",
     "publisher": {
@@ -744,7 +744,7 @@
     "logging_recovery": {
       "run": 39894886676,
       "artifact": 12477566277,
-      "result": "SUCCESS complete inert proof candidate; full nested admission pending",
+      "result": "SUCCESS boundedcompleteinertproof admitted788TAR/787memberhash/778rawseals/754oldcrossmatch; R4lifecycleacceptancefalse",
       "capture_reexecuted": false,
       "R4_acceptance": false
     },
@@ -755,6 +755,45 @@
       "parent_cancelled": false,
       "physical_arm_cpu": false
     },
-    "next": "metadata-only reviewed unused cache cleanup and policy readonly inventory before new build gates; no estimate cut/protected merge/dev-md/local functional execution"
+    "next": "metadata-only reviewed unused cache cleanup and policy readonly inventory before new build gates; no estimate cut/protected merge/dev-md/local functional execution",
+    "new_metadata_only_runs": {
+      "peer_cache_delete": 39899250358,
+      "policy_cache_inventory": 39899250317,
+      "Fast": 39899250243
+    },
+    "policy_cache_inventory": {
+      "run": 39899250317,
+      "artifact": 12478505973,
+      "CRC": 44,
+      "file_seals": 43,
+      "unique_inode_allocated_bytes": 1265823744,
+      "available_snapshot": 10058493952,
+      "deletion_executed": false
+    }
+  },
+  "github_utils_source_overlay": {
+    "source_child": "d346764d6448ca15c1e4dc468f31b0751f021883",
+    "base": "d8767070c578b74687ef9f7e499cbb6ad3a28862",
+    "exact_delta": [
+      "rust/crates/dev-tools/Cargo.toml",
+      "rust/crates/dev-tools/src/github_utils.rs",
+      "rust/crates/dev-tools/src/lib.rs",
+      "rust/crates/dev-tools/tests/github_utils.rs"
+    ],
+    "source_file_sha256": {
+      "rust/crates/dev-tools/src/github_utils.rs": "ff33a676d2664127adee17bb6c0334016d6ead51bca86a121ba2109a7846f93c",
+      "rust/crates/dev-tools/tests/github_utils.rs": "1a8b22bebc4bbb948a1f2efbea6abe35bc06f1d1fd8dac330767aec8a5537914",
+      "rust/crates/dev-tools/Cargo.toml": "4196e485f77da99a50aee055f35bd9c9f82a5e4a7ea4d776976f6f03513e8bd6",
+      "rust/crates/dev-tools/src/lib.rs": "b08a3c031bd0caae0a333b5872f116f87fbe15f1b884f3be4dca29bee7edc912",
+      "rust/Cargo.lock": "a82648159767a21268e61ed4f2aba64940b7458733333ece0fab653017929ea0"
+    },
+    "patch_sha256": "8cb45a37b360a0318c1fc7e729eb9dd5f1a273e1fa43ae447ad787bc0bbae8f7",
+    "reviews": [
+      "github-utils-native-review-sol/HANDOFF.md originalP2",
+      "github-utils-native-r2-review-sol/HANDOFF.md sourceP2closedPASS"
+    ],
+    "status": "source-only integrated;23tests/compile/Clippy/originalnativecomparisonUNRUN; noHTTPadapter/caller/CLI/lockchange",
+    "original_sha256": "05d53b2bfa9cf73b9165b534fc1c81fa88171f9f25f1a15fc9d9009d3ca51cbc",
+    "limits": "ordinaryUTF8JSON/injectedtransport+finiteprivatefiles only; Requests/wire/proxy/codec/Unicode/arbitraryPythonobjects held; original retained/inventory unchanged"
   }
 }

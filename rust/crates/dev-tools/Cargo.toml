@@ -556,6 +556,7 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
+github-utils-native = ["dep:openpilot-runtime-version"]
 developer-ssh-native = ["dep:openpilot-params", "dep:openpilot-runtime-version", "dep:openpilot-http-transport", "dep:openpilot-registration", "dep:ureq", "dep:cookie_store", "dep:url"]
 loggerd-check-native = ["rustix/pipe", "bootlog-artifact-native", "dep:openpilot-messaging", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq", "dep:zmq-sys", "rustix/net", "serde_json/float_roundtrip"]
 changed-files-native = ["dep:ruff_python_parser", "dep:ruff_python_ast", "dep:unicode_names2"]
@@ -2518,3 +2519,8 @@ required-features = ["developer-ssh-native"]
 [[test]]
 name = "developer_ssh"
 required-features = ["developer-ssh-native"]
+
+[[test]]
+name = "github_utils"
+path = "tests/github_utils.rs"
+required-features = ["github-utils-native"]
