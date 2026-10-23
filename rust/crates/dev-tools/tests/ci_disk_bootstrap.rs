@@ -189,12 +189,74 @@ fn cold_bootstrap_builds_only_host_guard_and_survives_target_cleanup() {
 fn hash(lines: &[String]) -> String {
     format!("{:x}", Sha256::digest(lines.join("\n").as_bytes()))
 }
+// Keep job/step order while resolving quoted scalars and aliases. Only live run
+// bodies belong to the growth roster; shared definitions and env values do not.
+fn workflow_run_lines(source: &str) -> Vec<String> {
+    let documents = yaml_rust2::YamlLoader::load_from_str(source).unwrap();
+    assert_eq!(documents.len(), 1);
+    let mut lines = Vec::new();
+    for (name, job) in documents[0]["jobs"].as_hash().unwrap() {
+        lines.push(format!("  {}:", name.as_str().unwrap()));
+        let Some(steps) = job["steps"].as_vec() else {
+            continue;
+        };
+        for step in steps {
+            if let Some(script) = step["run"].as_str() {
+                lines.push(format!(
+                    "      - name: {}",
+                    step["name"].as_str().unwrap_or("")
+                ));
+                lines.extend(script.lines().map(str::to_owned));
+            }
+        }
+    }
+    lines
+}
+#[test]
+fn workflow_growth_roster_decodes_quoted_runs_and_aliases_in_source_order() {
+    let block = r#"
+env:
+  unused: '"$GITHUB_WORKSPACE/rust/tools/check-disk-space" --growth-mib 999'
+jobs:
+  zeta:
+    steps:
+      - name: First
+        run: &guard |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --growth-mib 128
+          cargo build
+      - name: Reused
+        run: *guard
+      - name: External action
+        uses: example/action@fixed
+  alpha:
+    steps:
+      - name: Last
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --growth-mib 256
+          cargo test
+"#;
+    let compact = r#"{env: {unused: '\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --growth-mib 999'}, jobs: {zeta: {steps: [{name: First, run: &guard "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --growth-mib 128\ncargo build\n"}, {name: Reused, run: *guard}, {name: External action, uses: 'example/action@fixed'}]}, alpha: {steps: [{name: Last, run: "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --growth-mib 256\ncargo test\n"}]}}}"#;
+    let expected = vec![
+        "  zeta:",
+        "      - name: First",
+        "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --growth-mib 128",
+        "cargo build",
+        "      - name: Reused",
+        "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --growth-mib 128",
+        "cargo build",
+        "  alpha:",
+        "      - name: Last",
+        "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --growth-mib 256",
+        "cargo test",
+    ];
+    assert_eq!(workflow_run_lines(block), expected);
+    assert_eq!(workflow_run_lines(compact), expected);
+}
 #[test]
 fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 558);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -208,6 +270,13 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             })
             .unwrap_or_default()
     };
+    assert_eq!(
+        jobs.values()
+            .flat_map(scripts)
+            .map(|script| script.matches(marker).count())
+            .sum::<usize>(),
+        558
+    );
     assert_eq!(
         jobs.values()
             .filter(|job| scripts(job).iter().any(|s| s.contains("check-disk-space")))
@@ -227,7 +296,8 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             .count(),
         37
     );
-    let lines = text.lines().collect::<Vec<_>>();
+    let decoded_lines = workflow_run_lines(&text);
+    let lines = decoded_lines.iter().map(String::as_str).collect::<Vec<_>>();
     let llvm20_start = lines
         .iter()
         .position(|line| *line == "  model-llvm20:")
