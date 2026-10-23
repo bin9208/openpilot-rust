@@ -1,5 +1,47 @@
 # Repository-wide Python retirement: current evidence (#296)
 
+## R21 actual cleanup and retained lifecycle source — 2026-10-23 07:35 UTC
+
+Publisher cleanup [39912708274](https://github.com/bin9208/openpilot-rust/actions/runs/39912708274)/job120279131393,
+workflowe0a6f57929bf2c85573895d4295b53e49e850f01, actually succeeds on bin-actions22.
+Artifact12483588929/15629667B/SHA256
+54ddfb316ee2c209ec1e3cf3aac91eac00473e4c31c0bbaa897a4abb4f22a00a
+passes81safe regular ZIP CRCs/80content seals. Independent data-only admission
+matches30814journal events against all14191rows/14035unique inodes and old R19
+canonical tables:11767regular-name unlinks,2424directory removals, both exact
+nested publisher target/registry paths absent. Five same-UID-visible process
+phases/four identical mount observations pass; other UIDs are outside attestation.
+Source/proof/provider/Rustup/models/three missing-marker contexts are preserved.
+Current owner identities match admitted R19; unknown historical physical IDs
+remain unknown. The1449828352allocated bytes are not an exclusive reclaim promise.
+Observed available bytes12588310528→14028488704 yield1440178176net delta,
+including unrelated activity/audit growth. Original16642998272planned remaining
+growth exceeds that snapshot by2614509568. Build release/retry remains false.
+
+R20private-tool readonly39912708327/job120279131647 and R21R12cache readonly
+39914064327/job120283469522 report success; independent artifact admission is
+pending. No provider-unused or cleanup authority follows from job status. R21
+c919f5640d0997adc1498d779d5225d34049ebdc changes only the rejected runner.temp
+job-default directory to literal/tmp and preserves26other once leaves. Actual
+server annotation for the earlier zero-job registration failure is unavailable.
+Unpublished pristine-source assessment has a bounded-pipe source repair pending.
+
+Retained lifecycle implementation0414d5de2499745bb9babfca7301a608fb94e45e /
+minimal dbc529f359afb094f471d93191a0ff902cec8e6c follows independent R2source
+closure of premature PIDFD cleanup authority. Four paths/no dependency or lock
+change; fixed native QA child/leaf self-execs and runtime bounds are preserved.
+NEWprivate context77cb859a33148550f1ec56be5f6de6e8c04f722a3849309a1bebb132bf722ee2
+preserves108inert members/19roles and changes only the probe import pin. Full
+Cargo dep-info/build/source/provider/DSO/trace closure is still required. All21core
+units/new-mode lifecycle/CLI/adversarial controls and fresh native cohort remain
+UNRUN. Original27ledger17historical passes/10pending remains separate. No R4,
+global lifecycle reuse, Python deletion, runtime/device/performance credit follows.
+
+Parent actual model is GPT-6.1 Sol / Ultra; new agents are Sol only. dev-md/#338,
+protected integration and device/release work stay separate. Inventory remains
+288/3/3289of3580. Reviewed focused recipes remain capacity-held; no unchanged
+successful cohort/foundation/C++capture replay, estimate cut or active-run cancel.
+
 ## Latest observed R19 results and retained-native source — 2026-10-23 06:26 UTC
 
 Implementation a0dbfda750e0b40ad76dd1b347f86a4eb794011e adds the reviewed

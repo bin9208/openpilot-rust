@@ -1,5 +1,55 @@
 # #296 session migration checkpoint (23 October 2026)
 
+## R21 actual cleanup and retained lifecycle source — 2026-10-23 07:35 UTC
+
+Parent runtime is verified `gpt-6.1-sol` / `ultra`; all new delegates use that
+model/effort. Failed workers are closed without Astra fallback. Only the isolated
+#296 checkout changes; dev-md/#338 and PR343's held feature remote remain separate.
+Inventory remains288replaced-local/3partial/3289pending of3580.
+
+Publisher cleanup [39912708274](https://github.com/bin9208/openpilot-rust/actions/runs/39912708274)/job120279131393
+actually succeeded on bin-actions22. Artifact12483588929,15629667B,SHA256
+54ddfb316ee2c209ec1e3cf3aac91eac00473e4c31c0bbaa897a4abb4f22a00a
+passes81safe ZIP CRCs and80content seals. All30814journal events were admitted:
+11767regular-name unlinks and2424directory removals exactly cover14191admitted
+rows/14035unique inodes. Only the publisher's nested target and cargo/registry
+are absent afterward. Five same-UID-visible process phases and four unchanged
+mount observations are clear; other UIDs are not attested. Source, proof,
+providers, Rustup, models and three missing-marker controlsd contexts are untouched.
+The1285705728+164122624allocated bytes were not guaranteed reclaim. Actual
+available-space snapshots increased12588310528→14028488704; the1440178176net
+delta includes audit growth/other runner activity. The unchanged16642998272-byte
+planned bundle still has2614509568bytes shortfall. No build capacity is released.
+
+Five private RustupHome read-only assessment39912708327/job120279131647 and
+R12two-cache assessment39914064327/job120283469522 also report jobSUCCESS;
+their artifact admission is separate and pending. R21c919f5640d0997adc1498d779d5225d34049ebdc
+fixes only the R12leaf's unsupported runner.temp job-default context to literal
+/tmp; all payloads/guards remain exact and26other leaves are preserved. R20's
+zero-job registration failure is not functional execution. Pristine AE7-source
+assessment remains unpublished: review found uncapped Git metadata-pipe capture,
+and a bounded source derivative is being prepared. No source deletion follows.
+
+Source0414d5de2499745bb9babfca7301a608fb94e45e adds the independently reviewed
+retained lifecycle controls; minimal source dbc529f359afb094f471d93191a0ff902cec8e6c
+is not remotely published yet. Receipt-derived PIDFDs remain unarmed until UID,
+executable/hash, parent/start identity and complete lineage are proved; failure
+closes unvalidated handles without signalling. Actual spawned Child ownership
+remains distinct. Four source paths change with no dependency/lock/activation
+change. A NEW private108-member/19-import context77cb859a33148550f1ec56be5f6de6e8c04f722a3849309a1bebb132bf722ee2
+restamps only the native probe source pin. Those pins do not replace full build,
+dep-info/source/generated/provider/DSO closure. All21core tests,14new-mode
+selectors, separately bound adversarial controls, fresh native cohort and closed
+process traces are UNRUN. Original27-case ledger stays17historical passes and
+10pending; new-mode cases cannot complete that old ledger. No R4/retirement credit.
+
+Policy6d37, GitHubUtilsR3, authR2, KBHitR3, sanitizerR2 and #514focused recipes
+have scoped source reviews, not functional acceptance. #513R3 and controller
+recipe review continue. New builds/retries retain original growth requirements;
+successful cohorts/foundations/C++captures are not replayed. Local work remains
+source/format/diff/Git/API/own inert data inspection. No runtime/device/release or
+Python-removal completion is claimed.
+
 ## Latest observed R19 results and retained-native source — 2026-10-23 06:26 UTC
 
 Implementation a0dbfda750e0b40ad76dd1b347f86a4eb794011e adds the reviewed
