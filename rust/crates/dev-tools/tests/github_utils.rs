@@ -392,7 +392,7 @@ fn overwrite_no_match_posts_and_nonmatching_missing_id_is_not_read() {
 }
 
 #[test]
-fn bucket_link_and_images_keep_odd_row_and_swapped_branch_arguments() {
+fn images_513_upload_prefix_requested_branch_odd_rows_and_default_post() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("image");
     fs::write(&path, b"x").unwrap();
@@ -410,19 +410,27 @@ fn bucket_link_and_images_keep_odd_row_and_swapped_branch_arguments() {
             g.get_bucket_link("bucket"),
             "https://raw.githubusercontent.com/commaai/ci-artifacts/refs/heads/bucket"
         );
-        g.comment_images_on_pr(
-            "<title>",
-            "login-as-source-branch",
-            "real-pr-branch",
-            "bucket",
-            &images,
-        )
-        .unwrap();
+        g.comment_images_on_pr("<title>", "commenter-513", "branch-513", "bucket", &images)
+            .unwrap();
         let calls = &g.transport.calls;
         assert_eq!(calls.len(), 1 + 2 * n + 2);
+        assert_eq!(calls[0].method, "GET");
+        assert!(calls[0].url.ends_with("git/ref/heads/bucket"));
+        for i in 0..n {
+            assert_eq!(calls[1 + 2 * i].method, "GET");
+            assert!(calls[1 + 2 * i]
+                .url
+                .ends_with(&format!("contents/image{i}.png?ref=bucket")));
+            assert_eq!(calls[2 + 2 * i].method, "PUT");
+            assert!(calls[2 + 2 * i]
+                .url
+                .ends_with(&format!("contents/image{i}.png")));
+        }
+        assert_eq!(calls[calls.len() - 2].method, "GET");
         assert!(calls[calls.len() - 2]
             .url
-            .ends_with("commits/login-as-source-branch/pulls")); // Intentional source bug.
+            .ends_with("commits/branch-513/pulls"));
+        assert!(calls.last().unwrap().url.ends_with("issues/42/comments"));
         let mut table = String::from("<details><summary><title></summary><table>");
         for i in 0..n {
             if i % 2 == 0 {
@@ -443,19 +451,141 @@ fn bucket_link_and_images_keep_odd_row_and_swapped_branch_arguments() {
 }
 
 #[test]
-fn image_upload_failure_prevents_pr_lookup() {
+fn images_513_missing_private_file_stops_before_pr_lookup() {
     let dir = tempfile::tempdir().unwrap();
     let mut g = client(&[(200, r#"{"object":{"sha":"yes"}}"#)]);
     assert!(g
         .comment_images_on_pr(
             "t",
-            "c",
-            "p",
+            "commenter-513",
+            "branch-513",
             "b",
             &[("f".into(), dir.path().join("missing"))]
         )
         .is_err());
     assert_eq!(g.transport.calls.len(), 1);
+    assert_eq!(g.transport.calls[0].method, "GET");
+    assert!(g.transport.calls[0].url.ends_with("git/ref/heads/b"));
+}
+
+fn images_513_assert_upload_prefix(calls: &[Request]) {
+    assert!(calls.len() >= 3);
+    assert_eq!(calls[0].method, "GET");
+    assert!(calls[0].url.ends_with("git/ref/heads/bucket"));
+    assert_eq!(calls[1].method, "GET");
+    assert!(calls[1].url.ends_with("contents/image.png?ref=bucket"));
+    assert_eq!(calls[2].method, "PUT");
+    assert!(calls[2].url.ends_with("contents/image.png"));
+    assert_eq!(
+        calls[2].data,
+        upload_body("bucket", "image.png", "", "AP8B")
+    );
+}
+
+#[test]
+fn images_513_pr_lookup_failures_retain_complete_upload_prefix() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("private-image");
+    fs::write(&path, [0, 255, 1]).unwrap();
+    for (status, body) in [
+        (503, "not-json"),
+        (200, "not-json"),
+        (200, "[]"),
+        (200, "{}"),
+        (200, "\"\""),
+        (200, "null"),
+        (200, "[{}]"),
+        (200, "[null]"),
+    ] {
+        let mut g = client(&[
+            (200, r#"{"object":{"sha":"exists"}}"#),
+            (404, "not-json"),
+            (201, "not-json"),
+            (status, body),
+        ]);
+        assert!(
+            g.comment_images_on_pr(
+                "title",
+                "commenter-513",
+                "branch-513",
+                "bucket",
+                &[("image.png".into(), path.clone())]
+            )
+            .is_err(),
+            "{status}: {body}"
+        );
+        let calls = &g.transport.calls;
+        assert_eq!(calls.len(), 4);
+        images_513_assert_upload_prefix(calls);
+        assert_eq!(calls[3].method, "GET");
+        assert!(calls[3].url.ends_with("commits/branch-513/pulls"));
+    }
+}
+
+#[test]
+fn images_513_put_and_comment_failures_keep_existing_effect_order() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("private-image");
+    fs::write(&path, [0, 255, 1]).unwrap();
+    for fail_at_put in [true, false] {
+        let mut replies = vec![(200, r#"{"object":{"sha":"exists"}}"#), (404, "not-json")];
+        if fail_at_put {
+            replies.push((503, "not-json"));
+        } else {
+            replies.extend([
+                (201, "not-json"),
+                (200, r#"[{"number":42}]"#),
+                (503, "not-json"),
+            ]);
+        }
+        let mut g = client(&replies);
+        let error = g
+            .comment_images_on_pr(
+                "title",
+                "commenter-513",
+                "branch-513",
+                "bucket",
+                &[("image.png".into(), path.clone())],
+            )
+            .unwrap_err()
+            .to_string();
+        assert!(error.ends_with("failed with 503"));
+        let calls = &g.transport.calls;
+        images_513_assert_upload_prefix(calls);
+        assert_eq!(calls.len(), if fail_at_put { 3 } else { 5 });
+        if !fail_at_put {
+            assert_eq!(calls[3].method, "GET");
+            assert!(calls[3].url.ends_with("commits/branch-513/pulls"));
+            assert_eq!(calls[4].method, "POST");
+            assert!(calls[4].url.ends_with("issues/42/comments"));
+            assert_eq!(calls[4].data, "{\"body\": \"<details><summary>title</summary><table><tr><td><img src=\\\"https://raw.githubusercontent.com/commaai/ci-artifacts/bucket/image.png\\\"></td></table></details>\"}");
+        }
+    }
+}
+
+#[test]
+fn images_513_empty_commenter_or_branch_keep_false_overwrite_default() {
+    for (commenter, branch) in [("", "branch-513"), ("commenter-513", ""), ("", "")] {
+        let mut g = client(&[
+            (200, r#"{"object":{"sha":"exists"}}"#),
+            (200, r#"[{"number":42}]"#),
+            (201, "not-json"),
+        ]);
+        g.comment_images_on_pr("raw\"title\n", commenter, branch, "bucket", &[])
+            .unwrap();
+        let calls = &g.transport.calls;
+        assert_eq!(calls.len(), 3);
+        assert_eq!(calls[0].method, "GET");
+        assert!(calls[0].url.ends_with("git/ref/heads/bucket"));
+        assert_eq!(calls[1].method, "GET");
+        assert!(calls[1].url.ends_with(&format!("commits/{branch}/pulls")));
+        assert_eq!(calls[2].method, "POST");
+        assert!(calls[2].url.ends_with("issues/42/comments"));
+        assert_eq!(
+            calls[2].data,
+            "{\"body\": \"<details><summary>raw\"title\n</summary><table></table></details>\"}"
+        );
+    }
 }
 
 #[test]
