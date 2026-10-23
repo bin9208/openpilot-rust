@@ -615,3 +615,14 @@ The failed uploader artifact also exposed [#511](issue-511-uploader-child-eviden
 collector and uploader child stderr shared one pathname. Distinct child output
 files and a pre-assertion exit/platform receipt now preserve both observations.
 This is independent of #510's affinity defect; all runtime assertions stay strict.
+
+At `b1db2b0f839a3a2e5c2f8ba8317d97b4b03faccb`, the complete registered
+report, live navigation/browser and terminal/main lifecycle steps passed in
+[web job120189124011](https://github.com/bin9208/openpilot-rust/actions/runs/39884415762/job/120189124011).
+The job then failed only while uploading a root-owned Params file. No original
+artifact was published; the successful functional steps are retained in its
+console log. [#512](issue-512-web-evidence-archive.md) adds a runner-readable
+archive of the three owned case trees, preserving Params ownership/modes and
+excluding parent TLS files, links and special files. Actual archive tests and
+successful full-job upload still need Actions evidence. These changes do not
+replace the remaining required gates, normal merge or post-merge validation.

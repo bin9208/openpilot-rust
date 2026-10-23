@@ -260,6 +260,63 @@ jobs:
             chroot "$root" /usr/bin/env PATH=/usr/sbin:/usr/bin:/sbin:/bin LD_LIBRARY_PATH="$library_path" PYTHONPATH="$python_path" GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.directory GIT_CONFIG_VALUE_0=/data/openpilot "$python" -P "$repository/rust/tools/carrot_server_main_control.py" --binary "$repository/rust/target/debug/openpilot-carrot-server" --owner "$repository/rust/target/debug/examples/carrot_main_owner" --mode "$mode" --output "$temporary/web-main/$mode"
           done
           NAMESPACE
+      - name: Archive owned main web evidence for the runner
+        if: ${{ always() && matrix.scope == 'web' }}
+        run: |
+          set -euo pipefail
+          if [[ -z ${CI_JOB_TEMP:-} ]]; then exit 0; fi
+          case "$CI_JOB_TEMP" in
+            /tmp/openpilot-ci.*) ;;
+            *) echo 'Refusing unrelated evidence directory' >&2; exit 1 ;;
+          esac
+          if [[ ${CI_JOB_TEMP%/*} != /tmp || -L $CI_JOB_TEMP || ! -d $CI_JOB_TEMP ||
+                -L $CI_JOB_TEMP/owner || ! -f $CI_JOB_TEMP/owner ||
+                $(cat "$CI_JOB_TEMP/owner") != "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" ]]; then
+            echo 'Refusing evidence owned by another job' >&2
+            exit 1
+          fi
+          public_root="$CI_JOB_TEMP/web-main"
+          if [[ ! -e $public_root && ! -L $public_root ]]; then
+            echo 'No main web evidence was created'
+            exit 0
+          fi
+          if [[ -L $public_root || ! -d $public_root ]]; then
+            echo 'Refusing an indirect main evidence root' >&2
+            exit 1
+          fi
+          archive="$CI_JOB_TEMP/web-main-evidence.tar.gz"
+          manifest="$CI_JOB_TEMP/web-main-evidence.sha256"
+          if [[ -e $archive || -L $archive || -e $manifest || -L $manifest ]]; then
+            echo 'Refusing to replace existing evidence' >&2
+            exit 1
+          fi
+          # Root reads only owned case files. The existing temporary archive
+          # remains runner-owned; private Params modes and parent TLS keys stay intact.
+          temporary=$(mktemp "$CI_JOB_TEMP/.web-main-evidence.XXXXXX.tar.gz")
+          trap 'rm -f -- "$temporary"' EXIT
+          sudo -n /bin/bash -euo pipefail -s -- "$public_root" "$temporary" <<'ARCHIVE'
+          public_root=$1
+          archive=$2
+          cd "$public_root"
+          cases=()
+          for candidate in term supervisor force; do
+            if [[ -L $candidate || ( -e $candidate && ! -d $candidate ) ]]; then
+              echo 'Refusing an indirect or non-directory case' >&2
+              exit 1
+            fi
+            if [[ -d $candidate ]]; then cases+=("$candidate"); fi
+          done
+          printf 'main_evidence_cases=%s\n' "${#cases[@]}"
+          # No case must never turn into find's implicit '.' traversal.
+          if [[ ${#cases[@]} -gt 0 ]]; then
+            find -P "${cases[@]}" \( -type d -o -type f \) -print0
+          fi | tar --create --gzip --null --verbatim-files-from --no-recursion --file "$archive" --files-from=-
+          ARCHIVE
+          # Exclusive publication preserves any unexpected foreign destination.
+          ln -- "$temporary" "$archive"
+          rm -- "$temporary"
+          trap - EXIT
+          (set -o noclobber; sha256sum -- "$archive" > "$manifest")
       - uses: actions/upload-artifact@v6
         if: always()
         with:
@@ -277,9 +334,8 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/web-source/evidence/
             ${{ env.CI_JOB_TEMP }}/web-bindings/params/provenance.json
             ${{ env.CI_JOB_TEMP }}/web-bindings/params/commands.json
-            ${{ env.CI_JOB_TEMP }}/web-main/term/
-            ${{ env.CI_JOB_TEMP }}/web-main/supervisor/
-            ${{ env.CI_JOB_TEMP }}/web-main/force/
+            ${{ env.CI_JOB_TEMP }}/web-main-evidence.tar.gz
+            ${{ env.CI_JOB_TEMP }}/web-main-evidence.sha256
           if-no-files-found: ignore
       - uses: ./.github/actions/job-temp
         if: always()

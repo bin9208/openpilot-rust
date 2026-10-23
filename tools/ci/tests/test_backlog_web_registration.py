@@ -1,4 +1,4 @@
-"""Guard the #252/#254/#270 acceptance registrations; run in Actions only."""
+"""Guard the #252/#254/#270/#512 acceptance registrations; run in Actions only."""
 import ast
 import os
 from pathlib import Path
@@ -121,6 +121,20 @@ class BacklogWebRegistrationTests(unittest.TestCase):
         upload = self.steps[uploads[-1]]
         self.assertEqual(upload['if'], 'always()')
         self.assertIn('${{ env.CI_JOB_TEMP }}/web-source/evidence/', upload['with']['path'])
+        archive_steps = [step for step in self.steps if step.get('name') == 'Archive owned main web evidence for the runner']
+        self.assertEqual(len(archive_steps), 1)
+        archive = archive_steps[0]
+        self.assertEqual(archive['if'], "${{ always() && matrix.scope == 'web' }}")
+        archive_index = self.steps.index(archive)
+        self.assertLess(max(self.steps.index(step) for step in stages), archive_index)
+        self.assertLess(archive_index, uploads[-1])
+        paths = upload['with']['path'].splitlines()
+        main_paths = [path for path in paths if '/web-main' in path]
+        self.assertEqual(main_paths, ['${{ env.CI_JOB_TEMP }}/web-main-evidence.tar.gz',
+                                     '${{ env.CI_JOB_TEMP }}/web-main-evidence.sha256'])
+        for name in ('provenance.json', 'commands.json'):
+            self.assertIn('${{ env.CI_JOB_TEMP }}/web-bindings/params/' + name, paths)
+        self.assertFalse(any('owned-key' in path or 'owned-cert' in path for path in paths))
         self.assertEqual(self.steps[-1].get('uses'), './.github/actions/job-temp')
         self.assertEqual(self.steps[-1]['with']['cleanup'], 'true')
         self.assertLess(max(self.steps.index(step) for step in stages), uploads[-1])
