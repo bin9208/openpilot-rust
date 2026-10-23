@@ -411,7 +411,54 @@ pub fn validate_private_job_layout(job: &Value) -> Result<(), String> {
             }
         }
     }
+    // WebRTC failure evidence must survive successful always-run finalizers.
+    // All four native producers/checks are required even when receipts upload.
+    let mut native_success = Vec::new();
+    if alias == ".ci296-source-rust--webrtc-runtime" {
+        native_success.extend(["!cancelled()".into(), "success()".into()]);
+        let mut previous = admission;
+        for (name, id) in [
+            (
+                "Build current native dependency stager",
+                "webrtc_dependency_stager",
+            ),
+            (
+                "Build unchanged original Params and msgq bindings",
+                "webrtc_original_bindings",
+            ),
+            (
+                "Compile and check both native service entrypoints",
+                "webrtc_native_checks",
+            ),
+            (
+                "Compare real ownership, media, HTTP and failure boundaries",
+                "webrtc_real_comparisons",
+            ),
+        ] {
+            let index = position(name)?;
+            let stage = &steps[index];
+            require(
+                previous < index && index < seal,
+                "WebRTC required stage order changed",
+            )?;
+            require(
+                stage["id"] == id && steps.iter().filter(|s| s["id"] == id).count() == 1,
+                format!("WebRTC required outcome ID missing or duplicated: {id}"),
+            )?;
+            require(
+                stage.get("continue-on-error").is_none(),
+                "WebRTC required stage cannot continue on error",
+            )?;
+            require(
+                stage["if"] == TRUSTED_SOURCE,
+                "WebRTC required stage lost normal trusted success gate",
+            )?;
+            native_success.push(format!("steps.{id}.outcome == 'success'"));
+            previous = index;
+        }
+    }
     let mut expected = private_upload_conditions(steps)?;
+    expected.splice(1..1, native_success.iter().cloned());
     expected.extend([
         "steps.ci296_source_seal.outcome == 'success'".into(),
         "env.CI296_SOURCE_OWNER != ''".into(),
@@ -422,6 +469,7 @@ pub fn validate_private_job_layout(job: &Value) -> Result<(), String> {
     )?;
     let common = &steps[position("Clean common owned temporary paths after uploaded source")?];
     let mut expected = private_upload_conditions(steps)?;
+    expected.splice(1..1, native_success.iter().cloned());
     expected.push("steps.ci296_source_cleanup.outcome == 'success'".into());
     require(
         common["if"] == private_source_condition(&expected.join(" && ")),
