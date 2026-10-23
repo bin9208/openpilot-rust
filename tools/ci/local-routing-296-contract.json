@@ -327,7 +327,7 @@
     "status": "source candidate only; no guest or policy execution claimed",
     "scope": "Declare file in the two existing guest APT lists; all original ELF checks and command routing unchanged",
     "source_file_sha256": {
-      ".github/workflows/rust.yml": "aa409b0ee507b8f7c017a799822df270d6e44d074e1901f58a2c07eba466361c",
+      ".github/workflows/rust.yml": "a8c7d7d5a0605452762d55bc04c787199650ee9c4f1b7884ca46d7dc83f570b4",
       "rust/crates/dev-tools/tests/ci_rust_isolation.rs": "35fc5086f1521c94f61a129a9e5124924e1b5ec5357ed336b612c92b19ab1aa0"
     },
     "jobs": [
@@ -369,7 +369,7 @@
       ".github/workflows/naver-apk-tools.yml": "c3294dd8698b6ba1e5dcf862439519663bdbe0813a1d9bd6b8546b5380227b47",
       ".github/workflows/naver-ci.yml": "28f1a2e4784d5f7877ab4117b56bf8f1a4a4a80a47b4176c9a00b1d7b0cf79d8",
       ".github/workflows/naver-upstream-sync.yml": "ea507be1faca090f5e2ede0657f1190d571cd1f71a3150dd972b205522a63bc4",
-      ".github/workflows/rust.yml": "aa409b0ee507b8f7c017a799822df270d6e44d074e1901f58a2c07eba466361c",
+      ".github/workflows/rust.yml": "a8c7d7d5a0605452762d55bc04c787199650ee9c4f1b7884ca46d7dc83f570b4",
       ".github/workflows/sync.yml": "9fa4733662f6d3a649c57a02b669b6591e8303aec31fbc1624fc485bcd0d76a8",
       ".github/workflows/tests.yaml": "df1a21084f2eba7883fb8bab78205eeba6eff2618bff86b8ec43170c0d8ff325",
       ".github/workflows/user-docs.yaml": "bcc3b871e40ca973124b1de6ab57af944e8eb3efceb3962cec0a84d8384fb776",

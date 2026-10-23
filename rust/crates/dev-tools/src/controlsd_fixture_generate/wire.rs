@@ -25,7 +25,17 @@ fn scalar<'a>(value: &J, ty: Type) -> Result<D<'a>> {
         }),
         TypeVariant::Int8 => D::Int8(integer(value)?.try_into()?),
         TypeVariant::Int16 => D::Int16(integer(value)?.try_into()?),
-        TypeVariant::Int32 => D::Int32(integer(value)?.try_into()?),
+        TypeVariant::Int32 => D::Int32(match value.view() {
+            // Original Carrot fixtures assign whole-valued floats to Int32 fields.
+            V::Float(n)
+                if n.is_finite()
+                    && n.fract() == 0.
+                    && (f64::from(i32::MIN)..=f64::from(i32::MAX)).contains(&n) =>
+            {
+                n as i32
+            }
+            _ => integer(value)?.try_into()?,
+        }),
         TypeVariant::Int64 => D::Int64(integer(value)?.try_into()?),
         TypeVariant::UInt8 => D::UInt8(integer(value)?.try_into()?),
         TypeVariant::UInt16 => D::UInt16(integer(value)?.try_into()?),

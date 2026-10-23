@@ -1,6 +1,63 @@
 # Repository-wide Python retirement: current evidence (#296)
 
+## New Controls fixture wire failure and estimator admission (2026-10-23)
+
+[39867224185](https://github.com/bin9208/openpilot-rust/actions/runs/39867224185)
+at source241c/job120132343237 compiles past the union API repair, then reports
+1pass/8failures in control_failures_check. Common setup rejects Float70.0 for
+carrotMan.desiredSpeed:Int32, followed by vTurnSpeed130.0. The independent saved
+original109 projection has integers70/130. No fresh normal40 capture, rejection
+or health execution, signals, Clippy or final provider/source closure is reached.
+Artifact12466462892 is38191bytes, SHA256
+9f52ada50fe5405e3de5e6adbd1a269e794a2bbec7426e4c9c0a96d321095d1c.
+The source candidate127fa4e86929fc679eddf4c08f50047cb5dab5b00686febdc8c49bdf93f0d82c
+changes only the Int32 scalar arm and existing schema regression: finite whole
+f64 values inside i32 bounds are admitted, preserving the existing rejection
+of fractional/nonfinite/out-of-range values and other scalar behavior. This is
+the observed constructor gap; unrestricted pycapnp coercion parity is unproved.
+Local formatting/diff checks pass; fresh native checks/109auditor remain required.
+
+[39866247802](https://github.com/bin9208/openpilot-rust/actions/runs/39866247802)
+succeeds at exactc5e37a69b34d66129ad0ce7c4d79c58a1921227e, workflow38cbfc103,
+bin-actions job120129048262. Artifact12466165545 is9792446bytes, SHA256
+889828e04ceba8c19d88a4d7e1e3399ac0e8f8df6d4d2a95c72a0329ed252f29.
+Parent verifies all787CRCs, source/index before/after equality and the identical
+3240505-byte original/native raw pair, SHA256
+7e2ff835cf17259d7a2fe44e9ba998bbf8ee4bfc3389e8c9845caab3e9f27ffc.
+Independent inert JSON comparison preserves every key, list order/shape and
+typed value:148302finite floats,2paired nonfinites,1196integers,10764booleans.
+JSON mapping serialization key order differs; no source/decoded JSON byte-identity
+claim is made. Native results report7cases/1196rows,148302comparisons, max error0;
+unchanged float64 1e-9/Event float32 2e-6 windows. Independent audit passes.
+Two separate INT/TERM controls return1, reap their direct child and leave no
+pass receipt. Only the main native trace has2successful execs/Python0; this is
+not a trace claim about separate oracle/audit/signal processes.
+
+sitecustomize is held after interpreter startup and before learner work, with
+unchanged155-byte/SHA43d81125 binding through final native receipts. Ten tests,
+Clippy and NumPy reuse39862897580 behind recorded source/index/version/wheel
+checks; they are not fresh reruns and rustc metadata is not compiler ELF identity.
+External live files without retained bytes remain receipt evidence. Independent
+native PID maps and ld.so.cache are absent. This accepts only this focused c5e
+leaf, with no current HEAD/caller activation, retirement, ARM or device credit.
+
 ## R8 workflow registration size repair (2026-10-23)
+
+The499875-byte version is actually rejected by
+[39875009192](https://github.com/bin9208/openpilot-rust/actions/runs/39875009192)
+at workflow6e900af8c with zero jobs: generic YAML syntax at line1, rather than
+the earlier size annotation. Available libyaml C Safe/Base loaders reproduce
+the unseparated branches:[...] flow-value colon; pure Python loaders accept it.
+Restoring all240 flow-value separators makes both parser families accept the
+same object but initially yields500115bytes. Sharing the repeated scalar mapping
+key working-directory via one anchor/476aliases, plus278safe comma line breaks,
+produces493733bytes/SHAa8c7d7d5a0605452762d55bc04c787199650ee9c4f1b7884ca46d7dc83f570b4.
+All four available Safe/Base loader variants pass recursive type-sensitive or
+scalar-text equality against the prior candidate. Original758run strings and
+all job/step/condition/input values are unchanged. No helper or command changes.
+Current Rust parse source resolves scalar-key aliases using the same node walker
+as values; actual Rust/GitHub admission remains pending. The original R8 review
+was limited to pure-loader/source equivalence and did not prove GitHub syntax.
 
 Actual [39871079714](https://github.com/bin9208/openpilot-rust/actions/runs/39871079714)
 at workflow8bd7575b9d418678166363eb74b41b6dbede7e7e registers zero jobs and

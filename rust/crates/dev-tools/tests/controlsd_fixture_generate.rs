@@ -104,6 +104,53 @@ fn event_is_full_schema_but_service_api_is_bounded() {
             .unwrap(),
         "left"
     );
+    // Original pycapnp accepts these whole-valued floats for Int32 fields.
+    let packet = bytes(&request(
+        r#"{"op":"event","service":"carrotMan","time":1.25,"data":{"desiredSpeed":70.0,"vTurnSpeed":130.0}}"#,
+    ));
+    let carrot = fixture::project_event(&packet)
+        .unwrap()
+        .get("carrotMan")
+        .unwrap();
+    assert_eq!(carrot.get("desiredSpeed").unwrap().to_json().unwrap(), "70");
+    assert_eq!(carrot.get("vTurnSpeed").unwrap().to_json().unwrap(), "130");
+    for (value, expected) in [
+        ("-20.0", "-20"),
+        ("0.0", "0"),
+        ("2147483647.0", "2147483647"),
+        ("-2147483648.0", "-2147483648"),
+    ] {
+        let input = format!(
+            r#"{{"op":"event","service":"carrotMan","time":1,"data":{{"desiredSpeed":{value}}}}}"#
+        );
+        let packet = bytes(&request(&input));
+        assert_eq!(
+            fixture::project_event(&packet)
+                .unwrap()
+                .get("carrotMan")
+                .unwrap()
+                .get("desiredSpeed")
+                .unwrap()
+                .to_json()
+                .unwrap(),
+            expected
+        );
+    }
+    for value in [
+        "70.5",
+        "NaN",
+        "Infinity",
+        "-Infinity",
+        "2147483648.0",
+        "-2147483649.0",
+        "1e100",
+        "1e-100",
+    ] {
+        let input = format!(
+            r#"{{"op":"event","service":"carrotMan","time":1,"data":{{"desiredSpeed":{value}}}}}"#
+        );
+        assert!(fixture::generate(&JsonValue::parse(&input).unwrap()).is_err());
+    }
     for input in [
         r#"{"op":"event","service":"unimplementedService","time":1,"data":{}}"#,
         r#"{"op":"event","service":"carState","time":1,"data":{"noSuchField":1}}"#,
