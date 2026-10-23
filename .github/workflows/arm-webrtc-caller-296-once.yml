@@ -1,0 +1,269 @@
+{
+  "name": "#296 original WebRTC local caller qualification",
+  "on": {
+    "push": {
+      "branches": [
+        "codex/feat-296-local-validation"
+      ],
+      "paths": [
+        ".github/workflows/arm-webrtc-caller-296-once.yml"
+      ]
+    }
+  },
+  "permissions": {
+    "contents": "read"
+  },
+  "env": {
+    "RUSTUP_TOOLCHAIN": "1.94.0"
+  },
+  "concurrency": {
+    "group": "rust-${{ github.event_name }}-${{ github.ref }}",
+    "cancel-in-progress": false,
+    "queue": "max"
+  },
+  "jobs": {
+    "webrtc-runtime": {
+      "name": "rust WebRTC source runtime (${{ matrix.runner }})",
+      "runs-on": [
+        "self-hosted",
+        "Linux",
+        "X64",
+        "dev-md-local"
+      ],
+      "timeout-minutes": 45,
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "runner": [
+            "local-x64",
+            "local-arm64-qemu"
+          ]
+        }
+      },
+      "env": {
+        "CARGO_BUILD_JOBS": "2",
+        "CARGO_INCREMENTAL": "0",
+        "CARGO_PROFILE_DEV_DEBUG": "0",
+        "CARGO_PROFILE_TEST_DEBUG": "0",
+        "LIBCLANG_PATH": "/usr/lib/llvm-18/lib",
+        "CARROT_EXCEPTION_DISCORD_WEBHOOK_DISABLE": "1",
+        "LOCAL_CI_ARCH": "${{ matrix.runner == 'local-arm64-qemu' && 'aarch64' || 'x86_64' }}",
+        "CI296_ALIAS_BASENAME": ".ci296-source-rust--webrtc-runtime"
+      },
+      "steps": [
+        {
+          "name": "Deny fork source and require registered local runner",
+          "shell": "bash",
+          "env": {
+            "SOURCE_ALLOWED": "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}",
+            "CI296_HOST_CONTROL": "1"
+          },
+          "run": "test \"${SOURCE_ALLOWED:-}\" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }\ntest \"$RUNNER_NAME\" = bin-actions\ntest \"$RUNNER_ENVIRONMENT\" = self-hosted\ntest \"$RUNNER_OS\" = Linux\ntest \"$RUNNER_ARCH\" = X64\n",
+          "working-directory": "${{ github.workspace }}"
+        },
+        {
+          "name": "Common owned job temporary paths",
+          "if": "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}",
+          "uses": "bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2",
+          "env": {
+            "CI296_HOST_CONTROL": "1"
+          }
+        },
+        {
+          "name": "Allocate private source cache target and local action alias before checkout",
+          "if": "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}",
+          "shell": "bash",
+          "working-directory": "${{ github.workspace }}",
+          "env": {
+            "CI296_HOST_CONTROL": "1"
+          },
+          "run": "set -euo pipefail\nworkspace=$(realpath -e -- \"$GITHUB_WORKSPACE\")\njob=$CI_JOB_TEMP\nowner=\"$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB\"\ntest \"$(cat \"$job/owner\")\" = \"$owner\"\numask 077\nmkdir \"$job/proof\" \"$job/home\" \"$job/cache\"\n# Source capacity is checked on the actual source filesystem BEFORE checkout.\navailable=$(df -PB1 \"$workspace\" | awk 'NR == 2 {print $4}')\n[[ $available =~ ^[0-9]+$ ]]\nrequired=$((2 * 1024 * 1024 * 1024))\nprintf '{\"available_bytes\":%s,\"planned_source_growth_bytes\":%s}\\n' \"$available\" \"$required\" > \"$job/proof/source-growth-before-checkout.json\"\n((available >= required))\nsource_owner=$(mktemp -d \"$workspace/.ci296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX\")\nprintf '%s\\n' \"$owner\" > \"$source_owner/.ci296-owner\"\nmkdir \"$source_owner/source\"\nsource=\"$source_owner/source\"\n# Preserve Actions' real workspace separately. Only Bash consumers see the\n# unique source as GITHUB_WORKSPACE; GitHub/node action provenance is untouched.\nprintf 'source %q\\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\\n  export GITHUB_WORKSPACE=%q\\nfi\\n' \"$BASH_ENV\" \"$workspace\" \"$source\" > \"$job/ci296-shell-env\"\nprintf '%s\\n' \"CI296_ACTIONS_WORKSPACE=$workspace\" \"CI296_SOURCE_OWNER=$source_owner\" \"CI296_SOURCE_IDENTITY=$(stat -c '%d:%i' -- \"$source_owner\")\" \"CI296_SOURCE=$source\" \"CI296_CHECKOUT_PATH=${source#\"$workspace/\"}\" \"HOME=$job/home\" \"CARGO_HOME=$job/cargo-home\" \"RUSTUP_HOME=$job/rustup-home\" \"CARGO_TARGET_DIR=$source/rust/target\" \"XDG_CACHE_HOME=$job/cache\" \"PIP_CACHE_DIR=$job/cache/pip\" \"GRADLE_USER_HOME=$job/cache/gradle\" \"npm_config_cache=$job/cache/npm\" \"BASH_ENV=$job/ci296-shell-env\" >> \"$GITHUB_ENV\"\nprintf 'owner=%s\\njob=%s\\nactions_workspace=%s\\nsource_owner=%s\\nsource_identity=%s\\nsource=%s\\nworkflow_sha=%s\\n' \"$owner\" \"$job\" \"$workspace\" \"$source_owner\" \"$(stat -c '%d:%i' -- \"$source_owner\")\" \"$source\" \"$GITHUB_SHA\" > \"$job/proof/ownership.txt\"\ndf -PB1 \"$workspace\" \"$job\" > \"$job/proof/disk-before.txt\"\ncat /proc/meminfo > \"$job/proof/memory-before.txt\"\nif test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > \"$job/proof/cgroup-memory-before.txt\"; fi\nprintf '%s\\n' \"$RUNNER_NAME\" \"$RUNNER_ENVIRONMENT\" \"$RUNNER_OS\" \"$RUNNER_ARCH\" > \"$job/proof/runner.txt\"\n\nalias_path=\"$workspace/$CI296_ALIAS_BASENAME\"\ncase \"$CI296_ALIAS_BASENAME\" in .ci296-source-*) ;; *) exit 1 ;; esac\n[[ $CI296_ALIAS_BASENAME != */* ]]\n# -T makes this an exclusive atomic link, never traversal into a stale directory.\nln -sT -- \"$source_owner\" \"$alias_path\"\nprintf '%s\\n' \"CI296_SOURCE_ALIAS=$alias_path\" \"CI296_ALIAS_IDENTITY=$(stat -c '%d:%i' -- \"$alias_path\")\" \"LOCAL_CI_SOURCE_ROOT=$source\" >> \"$GITHUB_ENV\"\nprintf 'source_alias=%s\\nalias_identity=%s\\n' \"$alias_path\" \"$(stat -c '%d:%i' -- \"$alias_path\")\" >> \"$job/proof/ownership.txt\"\n"
+        },
+        {
+          "uses": "actions/checkout@v7",
+          "with": {
+            "persist-credentials": false,
+            "set-safe-directory": false,
+            "clean": false,
+            "lfs": false,
+            "path": "${{ env.CI296_CHECKOUT_PATH }}"
+          },
+          "if": "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}"
+        },
+        {
+          "name": "Admit exact private source and index",
+          "id": "ci296_source_admission",
+          "if": "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}",
+          "shell": "bash",
+          "working-directory": "${{ env.CI296_SOURCE }}",
+          "env": {
+            "CI296_HOST_CONTROL": "1"
+          },
+          "run": "set -euo pipefail\ntest \"$PWD\" = \"$CI296_SOURCE\"\ntest \"$GITHUB_WORKSPACE\" = \"$CI296_SOURCE\"\ntest \"$(git rev-parse HEAD)\" = \"$GITHUB_SHA\"\ngit diff --exit-code\ngit diff --cached --exit-code\nprintf '%s\\n' \"$GITHUB_SHA\" > \"$CI_JOB_TEMP/proof/SOURCE_COMMIT\"\ngit ls-files -z > \"$CI_JOB_TEMP/proof/index-before.bin\"\ntar --null --no-recursion --verbatim-files-from -T \"$CI_JOB_TEMP/proof/index-before.bin\" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > \"$CI_JOB_TEMP/proof/source-before.sha256\"\n"
+        },
+        {
+          "name": "Configure source-dependent job environment on private paths",
+          "if": "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}",
+          "shell": "bash",
+          "working-directory": "${{ env.CI296_SOURCE }}",
+          "env": {
+            "CI296_LATE_PYTHONPATH": "${{ env.CI296_SOURCE }}/rust/tools:${{ env.CI296_SOURCE }}:${{ env.CI296_SOURCE }}/teleoprtc_repo:${{ env.CI296_SOURCE }}/opendbc_repo",
+            "CI296_HOST_CONTROL": "1"
+          },
+          "run": "set -euo pipefail\nprintf '%s\\n' \"PYTHONPATH=$CI296_LATE_PYTHONPATH\" >> \"$GITHUB_ENV\"\n"
+        },
+        {
+          "name": "Expose provisioned Rust shims",
+          "if": "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}",
+          "uses": "bin9208/openpilot-rust/.github/actions/rust-path@b2fc62472ce8183114d59dbeec4d1406df44e4c2",
+          "env": {
+            "CI296_HOST_CONTROL": "1"
+          }
+        },
+        {
+          "name": "Require preprovisioned QEMU host executable",
+          "if": "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}",
+          "shell": "bash",
+          "run": "if [[ $LOCAL_CI_ARCH == aarch64 ]]; then\n  test -x /usr/bin/qemu-aarch64-static\nfi\n",
+          "working-directory": "${{ env.CI296_SOURCE }}",
+          "env": {
+            "CI296_HOST_CONTROL": "1"
+          }
+        },
+        {
+          "name": "Common explicit x64 or QEMU ARM transport",
+          "if": "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}",
+          "uses": "./.ci296-source-rust--webrtc-runtime/source/.github/actions/local-arm",
+          "env": {
+            "CI296_HOST_CONTROL": "1"
+          }
+        },
+        {
+          "uses": "actions/setup-python@v6",
+          "with": {
+            "python-version": "3.12.14"
+          },
+          "if": "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && ((true) && env.LOCAL_CI_ARCH == 'x86_64') }}"
+        },
+        {
+          "name": "Keep original Python installations private",
+          "if": "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && ((true) && env.LOCAL_CI_ARCH == 'x86_64') }}",
+          "shell": "bash",
+          "working-directory": "${{ env.CI296_SOURCE }}",
+          "env": {
+            "CI296_HOST_CONTROL": "1"
+          },
+          "run": "set -euo pipefail\navailable=$(df -PB1 \"$CI_JOB_TEMP\" | awk 'NR == 2 {print $4}')\n[[ $available =~ ^[0-9]+$ ]]\n((available >= 512 * 1024 * 1024))\npython -m venv \"$CI_JOB_TEMP/venv\"\nprintf '%s\\n' \"$CI_JOB_TEMP/venv/bin\" >> \"$GITHUB_PATH\"\n"
+        },
+        {
+          "name": "Reserve capacity and install pinned source and native providers",
+          "run": "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 8192\nsudo apt-get -o \"APT::Architectures=$(dpkg --print-architecture)\" update\nsudo apt-get -o \"APT::Architectures=$(dpkg --print-architecture)\" install -y g++ clang-18 libclang-18-dev cmake pkg-config file capnproto libcapnp-dev libzmq3-dev ffmpeg 'libavcodec-dev=7:6.1.1-*' 'libavformat-dev=7:6.1.1-*' 'libavutil-dev=7:6.1.1-*'\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024\npython -m pip install -r rust/tools/webrtc_source_requirements.txt\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024\nrustup toolchain install 1.94.0 --profile minimal --component clippy\nmkdir -p \"$RUNNER_TEMP/webrtc\"\ngit rev-parse HEAD > \"$RUNNER_TEMP/webrtc/SOURCE_COMMIT\"\nuname -m > \"$RUNNER_TEMP/webrtc/machine.txt\"\npython -m pip freeze > \"$RUNNER_TEMP/webrtc/python-packages.txt\"\ndpkg-query -W libavcodec-dev libavformat-dev libavutil-dev libvpx9 libx264-164 > \"$RUNNER_TEMP/webrtc/native-packages.txt\"\ntest \"$(pkg-config --modversion libavcodec)\" = 60.31.102\nffmpeg -hide_banner -encoders > \"$RUNNER_TEMP/webrtc/encoders.txt\" 2>&1\ngrep -q 'libvpx ' \"$RUNNER_TEMP/webrtc/encoders.txt\"\ngrep -q 'libx264 ' \"$RUNNER_TEMP/webrtc/encoders.txt\"\n",
+          "if": "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}",
+          "working-directory": "${{ env.CI296_SOURCE }}",
+          "shell": "openpilot-local-shell {0}"
+        },
+        {
+          "name": "Build current native dependency stager",
+          "uses": "./.ci296-source-rust--webrtc-runtime/source/.github/actions/native-json11",
+          "if": "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}",
+          "with": {
+            "run-shell": "openpilot-local-shell {0}"
+          }
+        },
+        {
+          "name": "Build unchanged original Params and msgq bindings",
+          "run": "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024\npython rust/tools/build_params_python.py --json11-stager \"$JSON11_STAGER\" --output \"$RUNNER_TEMP/webrtc/params\"\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024\npython rust/tools/build_msgq_python.py --output \"$RUNNER_TEMP/webrtc/msgq\"\n\"$CI_RECEIPT_METADATA\" module WEBRTC_PARAMS_BINDING \"$RUNNER_TEMP/webrtc/params/provenance.json\" >> \"$GITHUB_ENV\"\nprintf 'PYTHONPATH=%s/webrtc/msgq:%s\\n' \"$RUNNER_TEMP\" \"$PYTHONPATH\" >> \"$GITHUB_ENV\"\n",
+          "if": "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}",
+          "working-directory": "${{ env.CI296_SOURCE }}",
+          "shell": "openpilot-local-shell {0}"
+        },
+        {
+          "name": "Compile and check both native service entrypoints",
+          "run": "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 4096\ncargo build --manifest-path rust/Cargo.toml -p openpilot-webrtc --features native --bins --example webrtc_owned_http --example webrtc_stun_checks --locked\ncargo test --manifest-path rust/Cargo.toml -p openpilot-webrtc --features native --lib --locked\ncargo clippy --manifest-path rust/Cargo.toml -p openpilot-webrtc --features native --all-targets --locked -- -D warnings\nfile rust/target/debug/openpilot-webrtcd rust/target/debug/openpilot-carrot-webrtcd > \"$RUNNER_TEMP/webrtc/elf.txt\"\nsha256sum rust/target/debug/openpilot-webrtcd rust/target/debug/openpilot-carrot-webrtcd rust/target/debug/examples/webrtc_owned_http rust/target/debug/examples/webrtc_stun_checks > \"$RUNNER_TEMP/webrtc/SHA256SUMS\"\n",
+          "if": "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}",
+          "working-directory": "${{ env.CI296_SOURCE }}",
+          "shell": "openpilot-local-shell {0}"
+        },
+        {
+          "name": "Compare real ownership, media, HTTP and failure boundaries",
+          "run": "rust/target/debug/examples/webrtc_stun_checks > \"$RUNNER_TEMP/webrtc/stun-checks.json\"\npython -P rust/tools/webrtc_identifiers_compare.py \"$PWD/rust/target/debug/examples/webrtc_owned_http\" \"$RUNNER_TEMP/webrtc/identifiers\"\npython -P rust/tools/webrtc_multicamera_compare.py \"$PWD/rust/target/debug/examples/webrtc_owned_http\" \"$RUNNER_TEMP/webrtc/multicamera\"\npython -P rust/tools/webrtc_fir_compare.py \"$PWD/rust/target/debug/examples/webrtc_owned_http\" \"$RUNNER_TEMP/webrtc/fir\"\npython -P rust/tools/webrtc_debug_compare.py \"$PWD/rust/target/debug/examples/webrtc_owned_http\" \"$RUNNER_TEMP/webrtc/debug-h264\" source-standard-h264 native-standard-h264\npython -P rust/tools/webrtc_body_compare.py \"$PWD/rust/target/debug/examples/webrtc_owned_http\" \"$RUNNER_TEMP/webrtc/body\"\npython -P rust/tools/webrtc_params_compare.py \"$PWD/rust/target/debug/examples/webrtc_owned_http\" \"$RUNNER_TEMP/webrtc/params-ownership\" \"$WEBRTC_PARAMS_BINDING\"\npython -P rust/tools/webrtc_cli_compare.py \"$PWD/rust/target/debug\" \"$RUNNER_TEMP/webrtc/cli\"\npython -P rust/tools/webrtc_srflx_compare.py \"$PWD/rust/target/debug/examples/webrtc_owned_http\" \"$RUNNER_TEMP/webrtc/srflx\"\n",
+          "if": "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}",
+          "working-directory": "${{ env.CI296_SOURCE }}",
+          "shell": "openpilot-local-shell {0}"
+        },
+        {
+          "uses": "actions/upload-artifact@v6",
+          "if": "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()) }}",
+          "with": {
+            "name": "rust-webrtc-${{ matrix.runner }}-evidence",
+            "path": "${{ env.CI_JOB_TEMP }}/webrtc/\n${{ env.LOCAL_CI_TARGET_DIR }}/debug/openpilot-webrtcd\n${{ env.LOCAL_CI_TARGET_DIR }}/debug/openpilot-carrot-webrtcd\n${{ env.LOCAL_CI_TARGET_DIR }}/debug/examples/webrtc_owned_http\n${{ env.LOCAL_CI_TARGET_DIR }}/debug/examples/webrtc_stun_checks\n\n${{ env.CI_JOB_TEMP }}/local-arm/execution.json\n${{ env.CI_JOB_TEMP }}/local-arm/qemu-version.txt\n${{ env.CI_JOB_TEMP }}/local-arm/proot-version.txt\n"
+          },
+          "id": "local_evidence_1"
+        },
+        {
+          "name": "Finish emulated architecture evidence",
+          "if": "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.ci296_source_admission.outcome == 'success') }}",
+          "uses": "./.ci296-source-rust--webrtc-runtime/source/.github/actions/local-arm",
+          "with": {
+            "cleanup": "true"
+          },
+          "env": {
+            "CI296_HOST_CONTROL": "1"
+          }
+        },
+        {
+          "name": "Seal private source and index after maintained checks",
+          "id": "ci296_source_seal",
+          "if": "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI296_SOURCE != '') }}",
+          "shell": "bash",
+          "working-directory": "${{ env.CI296_SOURCE }}",
+          "env": {
+            "CI296_HOST_CONTROL": "1"
+          },
+          "run": "set -euo pipefail\ntest \"$(git rev-parse HEAD)\" = \"$GITHUB_SHA\"\ngit ls-files -z > \"$CI_JOB_TEMP/proof/index-after.bin\"\ncmp \"$CI_JOB_TEMP/proof/index-before.bin\" \"$CI_JOB_TEMP/proof/index-after.bin\"\ntar --null --no-recursion --verbatim-files-from -T \"$CI_JOB_TEMP/proof/index-before.bin\" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > \"$CI_JOB_TEMP/proof/source-after.sha256\"\ncmp \"$CI_JOB_TEMP/proof/source-before.sha256\" \"$CI_JOB_TEMP/proof/source-after.sha256\"\ngit diff --exit-code\ngit diff --cached --exit-code\ndf -PB1 \"$CI296_SOURCE\" \"$CI_JOB_TEMP\" > \"$CI_JOB_TEMP/proof/disk-after.txt\"\ncat /proc/meminfo > \"$CI_JOB_TEMP/proof/memory-after.txt\"\n"
+        },
+        {
+          "name": "Retain private job ownership and source evidence",
+          "id": "ci296_private_evidence",
+          "if": "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}",
+          "uses": "actions/upload-artifact@v6",
+          "with": {
+            "name": "private-rust-${{ github.job }}-${{ strategy.job-index }}-${{ github.run_id }}-${{ github.run_attempt }}",
+            "path": "${{ env.CI_JOB_TEMP }}/proof",
+            "retention-days": 14,
+            "if-no-files-found": "error"
+          }
+        },
+        {
+          "name": "Clean only uploaded owned source alias and target",
+          "id": "ci296_source_cleanup",
+          "if": "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' && steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_seal.outcome == 'success' && env.CI296_SOURCE_OWNER != '') }}",
+          "shell": "bash",
+          "working-directory": "${{ github.workspace }}",
+          "env": {
+            "CI296_HOST_CONTROL": "1",
+            "UPLOAD_ID": "${{ steps.ci296_private_evidence.outputs.artifact-id }}",
+            "UPLOAD_DIGEST": "${{ steps.ci296_private_evidence.outputs.artifact-digest }}"
+          },
+          "run": "set -euo pipefail\n[[ $UPLOAD_ID =~ ^[0-9]+$ ]]\n[[ $UPLOAD_DIGEST =~ ^[a-fA-F0-9]{64}$ ]]\nworkspace=$CI296_ACTIONS_WORKSPACE\np=$CI296_SOURCE_OWNER\ncase \"$p\" in \"$workspace/.ci296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.\"??????) ;; *) exit 1 ;; esac\ntest -d \"$p\" && test ! -L \"$p\"\ntest \"$(realpath -e -- \"$p\")\" = \"$p\"\ntest \"$(stat -c '%u' -- \"$p\")\" = \"$(id -u)\"\ntest \"$(stat -c '%d:%i' -- \"$p\")\" = \"$CI296_SOURCE_IDENTITY\"\ntest -f \"$p/.ci296-owner\" && test ! -L \"$p/.ci296-owner\"\ntest \"$(cat \"$p/.ci296-owner\")\" = \"$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB\"\ntest \"$CI296_SOURCE\" = \"$p/source\"\ntest -d \"$p/source\" && test ! -L \"$p/source\"\ntest \"$(realpath -e -- \"$p/source\")\" = \"$p/source\"\nalias_path=\"$CI296_ACTIONS_WORKSPACE/$CI296_ALIAS_BASENAME\"\ntest \"$CI296_SOURCE_ALIAS\" = \"$alias_path\"\ntest -L \"$alias_path\"\ntest \"$(readlink -- \"$alias_path\")\" = \"$p\"\ntest \"$(stat -c '%d:%i' -- \"$alias_path\")\" = \"$CI296_ALIAS_IDENTITY\"\nrm -- \"$alias_path\"\nif ! rm -rf --one-file-system -- \"$p\"; then\n  sudo -n rm -rf --one-file-system -- \"$p\"\nfi\n"
+        },
+        {
+          "name": "Clean common owned temporary paths after uploaded source",
+          "if": "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' && steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_cleanup.outcome == 'success') }}",
+          "uses": "bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2",
+          "with": {
+            "cleanup": "true"
+          },
+          "env": {
+            "CI296_HOST_CONTROL": "1"
+          }
+        }
+      ],
+      "defaults": {
+        "run": {
+          "shell": "openpilot-local-shell {0}"
+        }
+      }
+    }
+  }
+}
