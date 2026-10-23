@@ -831,5 +831,32 @@
     "acceptance": "sourceonly;15syntheticunknownwire/lazy/error/VIN tests+compile/Clippy/independentoriginalcomparisonUNRUN",
     "limits": "ordinaryCerealreaders/validUTF8; unknownreachablegraphcopyusescapnp set_root; no Pythonducktyping/surrogates/exceptionobjectparity; originalsourceandinventoryretained",
     "data_scope": "no routes/realVIN/logs/vehicles/NAS data/caller/radar/runtimeactivation"
+  },
+  "github_images_513_fix": {
+    "issue": 513,
+    "source_child": "9e483329b671e908e9a686c54d23407bfb7ac8f1",
+    "base": "d346764d6448ca15c1e4dc468f31b0751f021883",
+    "source_file_sha256": {
+      "openpilot/tools/lib/github_utils.py": {
+        "before": "05d53b2bfa9cf73b9165b534fc1c81fa88171f9f25f1a15fc9d9009d3ca51cbc",
+        "after": "f642a6652ab7238fc2b613ca2f7722b2a4756ef0363169210564d42290aeb063"
+      },
+      "rust/crates/dev-tools/src/github_utils.rs": {
+        "before": "ff33a676d2664127adee17bb6c0334016d6ead51bca86a121ba2109a7846f93c",
+        "after": "9cf1224a6f81b6ff10a7e92abc646362724dfdbcfdd405f61cc8f81832b4169b"
+      },
+      "rust/crates/dev-tools/tests/github_utils.rs": {
+        "before": "1a8b22bebc4bbb948a1f2efbea6abe35bc06f1d1fd8dac330767aec8a5537914",
+        "after": "80e0c07885d517cccca0a1c103bad4deded532c921df972be535da22c1a9e492"
+      }
+    },
+    "patch_sha256": "ded641d64a464ca99db9f43665e9836f9ff1ef537515a38402574b297fbb79fa",
+    "review": "github-images-513-fix-review-sol/HANDOFF.md scopedsourcePASS",
+    "scope": "onlybranch/commenterargfix; original+native; falseoverwrite/rawHTML/body/ups/errorprefixunchanged",
+    "test_scope": "5selectednew/affectednativegroups+5originalgroupsUNRUN;21othertestfunctionssourceexact; total26native",
+    "shared_Cargo_lib_lock_unchanged": true,
+    "state": "sourceimplemented_only; issueOPEN andallfunctional/source-linkedActions acceptancepending",
+    "original_port_gate": "immutableD34623testbaseline; no sourcepointerrebind/no oldpassedresultinvented",
+    "baseline_inventory": "historicalbaseline_git_blob columnunchanged; neworiginalpostimageexplicitlyrecordedhere"
   }
 }

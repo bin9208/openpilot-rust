@@ -80,6 +80,24 @@ exact complete recipe requires independent closure before publication. Prefix
 Auth18tests and injected-only GithubUtils source remain unvalidated. All originals
 and current credential/account/vehicle paths remain outside these new gates.
 
+## Independent #513 image-comment argument correction
+
+Reviewed patchded641d64a464ca99db9f43665e9836f9ff1ef537515a38402574b297fbb79fa
+corrects only image-helper branch/commenter forwarding in the retained Python
+and native source. It keeps false overwrite, existing raw HTML/JSON, upload order
+and failure prefixes. Minimal pure-portD346 child is
+9e483329b671e908e9a686c54d23407bfb7ac8f1; exactly3paths, no Cargo/lib/lock changes.
+Independent github-images-513-fix-review-sol source PASS; issue513 remains OPEN.
+
+Pure-portD346/its23-test source gate is preserved unchanged as a historical
+baseline, not rebound to this corrected behavior. The corrected source has26tests:
+5new/affected image groups and21byte-identical other test functions. Five original
+fake-request case groups also exist as unrun candidates. All compilation/Clippy/
+selected tests/original comparison remain required Actions work. Original SHA
+05d53 changes intentionally tof642a6652ab7238fc2b613ca2f7722b2a4756ef0363169210564d42290aeb063;
+the baseline inventory Git blob remains historical. No real account/API/token/
+comment/credential action, caller activation or source retirement occurred.
+
 ## Route sanitizer tag-only native source candidate
 
 FinalR2 patch08236c7118d33a673f375057c6c3a9ca9394f6331d189bff799b9b24afb14d77
