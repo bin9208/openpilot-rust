@@ -80,6 +80,28 @@ exact complete recipe requires independent closure before publication. Prefix
 Auth18tests and injected-only GithubUtils source remain unvalidated. All originals
 and current credential/account/vehicle paths remain outside these new gates.
 
+## Route sanitizer tag-only native source candidate
+
+FinalR2 patch08236c7118d33a673f375057c6c3a9ca9394f6331d189bff799b9b24afb14d77
+adds route_sanitizer.rs/tests.rs and one optional existing capnp/Cereal feature
+plus module export. MinimalC676 child is
+80dde9ad911860631e3e883911e11aedc1f51a50. No dependency/lock/CLI/caller/logger/radar selection change.
+Independent route-sanitizer-native-review-sol R2source PASS;15synthetic tests,
+compile/Clippy and independent original/native Cereal comparison remain UNRUN.
+
+All3 original sanitizer functions and4 exact preserve-services names are mapped.
+VIN masking counts Unicode scalars; carParams deep-copies the complete Event,
+then edits only VIN, retaining ordinary unknown graph fields/metadata. Non-car
+messages preserve reader/arena identity. Lazy filter/map order and typed errors
+are explicit. R1 generated Which selection fetched payloads and spent reader
+traversal budget; R2 uses existing dynamic tag-only selection, closing that P2.
+The superseded089044 R1 is archived inertly and must not be integrated.
+
+No route, log, VIN, vehicle or NAS data was read. Lone-surrogate Python strings,
+duck typing, exact exception identity and unsupported graph/capability error
+surfaces remain held; malformed/copied pointers are errors rather than dropped.
+No full Python-object emulation, original deletion or inventory credit follows.
+
 ## KBHit explicit-input native source candidate
 
 Reviewed64de9b64daf262817973bb1aa2f9d72669258ec5910ea12ed9a19e32e9463124

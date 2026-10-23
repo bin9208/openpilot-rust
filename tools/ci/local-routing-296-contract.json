@@ -813,5 +813,23 @@
     "acceptance": "sourceonly;18unrunlibtests/privatePTY/actualCexit/originalcomparisonrequired; nooriginalCLIactivation/retirement",
     "limits": "explicitOwnedFd/suppliedstrictUTF8Read/readonlysnapshots; nofullTextIO/locale/newline/shutdown/exception/objectparity; demonstrationmainstillPythonandretained",
     "historical_maps": "oldGithubD346/auth1a1a/SSH-C3f/855sourcegatesremainimmutable; onlyexplicitKBhitchildselectsnewfeature/postimages"
+  },
+  "route_sanitizer_source_overlay": {
+    "source_child": "80dde9ad911860631e3e883911e11aedc1f51a50",
+    "base": "c676b4191c3e37a9afe926c4724774e1fe76b11d",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/src/route_sanitizer.rs": "581d67d7657d248c6142d510f3bb5b996a8056d970060a217c129a06c23a9e26",
+      "rust/crates/dev-tools/src/route_sanitizer_tests.rs": "9e70a194d873183df46a48d9912fe5734f7beca1689a3916d01d69d33b185040",
+      "rust/crates/dev-tools/Cargo.toml": "7ec69d069ec6a2b6c05ba1c73442fb4ca122b90a05877c29496fc4dc8dbf6834",
+      "rust/crates/dev-tools/src/lib.rs": "b817e5ccecebacdf904632a5d8705b266c6e00998516e5b13092c9c8c9be9412"
+    },
+    "lock_sha256_unchanged": "a82648159767a21268e61ed4f2aba64940b7458733333ece0fab653017929ea0",
+    "patch_sha256": "08236c7118d33a673f375057c6c3a9ca9394f6331d189bff799b9b24afb14d77",
+    "review": "route-sanitizer-native-review-sol/HANDOFF.md R2sourcePASS generatedwhichpayloaddebitP2closedtagonly",
+    "superseded_R1": "0890444fda1e2977bcc35b22949b07ece01414b6e58d8a0d4519dfdfd49d7190",
+    "registration": "oneoptionalexistingcapnp+cerealfeature/module; no deps/lock/CLI/caller/defaultactivation",
+    "acceptance": "sourceonly;15syntheticunknownwire/lazy/error/VIN tests+compile/Clippy/independentoriginalcomparisonUNRUN",
+    "limits": "ordinaryCerealreaders/validUTF8; unknownreachablegraphcopyusescapnp set_root; no Pythonducktyping/surrogates/exceptionobjectparity; originalsourceandinventoryretained",
+    "data_scope": "no routes/realVIN/logs/vehicles/NAS data/caller/radar/runtimeactivation"
   }
 }
