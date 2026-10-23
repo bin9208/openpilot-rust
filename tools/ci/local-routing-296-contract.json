@@ -1048,5 +1048,55 @@
       "r4_and_retirement_credit": false,
       "private_context_notGit": true
     }
+  },
+  "oct23_r21_actual_and_retained_lifecycle_checkpoint": {
+    "source_commit": "0414d5de2499745bb9babfca7301a608fb94e45e",
+    "validation_commit": "c919f5640d0997adc1498d779d5225d34049ebdc",
+    "publisher_cleanup": {
+      "run": 39912708274,
+      "job": 120279131393,
+      "artifact": 12483588929,
+      "artifact_bytes": 15629667,
+      "artifact_sha256": "54ddfb316ee2c209ec1e3cf3aac91eac00473e4c31c0bbaa897a4abb4f22a00a",
+      "safe_zip_crc": 81,
+      "content_seals": 80,
+      "journal_events": 30814,
+      "regular_names_unlinked": 11767,
+      "directories_removed": 2424,
+      "exact_two_nested_caches_after": "absent",
+      "snapshot_available_bytes": 14028488704,
+      "snapshot_net_delta": 1440178176,
+      "planned_bundle_growth_unchanged": 16642998272,
+      "snapshot_shortfall": 2614509568,
+      "build_capacity_released": false,
+      "limits": "sameUID-visible,notprivilegedattestation; currentownerID nothistoricalsourceproof; source/proof/provider/Rustup/models/3missingmarkerrootsuntouched; netdeltaalsoincludesotheractivity"
+    },
+    "readonly_jobs": {
+      "private_tool_homes": {
+        "run": 39912708327,
+        "job": 120279131647,
+        "status": "jobSUCCESS actualartifactadmissionpending,noDelete"
+      },
+      "r12_caches": {
+        "run": 39914064327,
+        "job": 120283469522,
+        "status": "jobSUCCESS actualartifactadmissionpending,noDelete"
+      }
+    },
+    "retained_lifecycle_source": {
+      "main": "0414d5de2499745bb9babfca7301a608fb94e45e",
+      "minimal": "dbc529f359afb094f471d93191a0ff902cec8e6c",
+      "remote": false,
+      "reviewed_patch_sha256": "c5c8e3b5a8f59bb281d90a5d019f1c5ef4afc0f7636b5e5d562358d416366b60",
+      "private_context_sha256": "77cb859a33148550f1ec56be5f6de6e8c04f722a3849309a1bebb132bf722ee2",
+      "members": 108,
+      "source_import_roles": 19,
+      "runtime": "UNRUN;21coreunits/newmode14selectors/separateP2controls/freshnativecohort/build-depinfo-source-provider-DSO-tracesrequired",
+      "original27ledger": "17historicalpassed/10pending; newmodecannotcompleteoldledger",
+      "R4_or_retirement_credit": false
+    },
+    "pristine_source_inventory": "unpublishedR2oneP2uncappedGitpipe; boundedR3repairpending; noDelete/reclaim0",
+    "parent_model": "gpt-6.1-sol/ultra actualruntimeverified",
+    "inventory": "288/3/3289 of3580 unchanged"
   }
 }
