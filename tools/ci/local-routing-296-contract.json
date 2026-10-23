@@ -668,5 +668,22 @@
     "tests": "9newadversarialselectors UNRUN; missingstartup8/driver4/finalconsolidation remainrequired; prior6USB/16controls explicit9deboundedreuseonly",
     "external_pack": "c957c00d4147196a64528d54dfd7acd6cbcc36cc7830f5c591ca4ee6c91ac69b source-onlyPASS, notGittracked/notexecuted,13actualmodelcopiesneedstreamauthentication; oldomissionsnotaccepted",
     "acceptance": "sourceonly; no testcase/provider/model/full-family/retirement/device/release credit; allhistoricalsource/Cargo/lockmapsretained"
+  },
+  "control_rejection_prefix_clone_repair": {
+    "source": "2e4b41cc28a900b1f54810a1a3cd8392f3892613",
+    "base": "150bd42771ee45046f0c51343bedeef62646c516",
+    "tree": "4f9b6476db0b33bfc3e018d588c1cdf16974c6e5",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/src/control_failures_check/fixtures.rs": "f227ed8bc24b25ec6cd86922eb0237277f6d7dedd466cdcfb8b804a20d5e0deb"
+    },
+    "patch_sha256": "0a3fa269a06344230d033eb59203ff2681b1b9c5b4538430eea508719652af51",
+    "review": "control-fixture-prefix-review-sol/HANDOFF.md scopedPASS",
+    "scope": "ONEfile onlyprefixclone production +4synthetictests; allother150files/Cargo/855lock unchanged; deadline/roster/numeric/projection untouched",
+    "acceptance": "uncompiled/unrun; sourceclonecountnotmeasuredspeedup/10sreadinessfix; newfocusedgate required",
+    "test_scope": "4newlibsyntheticoldalgorithmbyte/finiteF64bit/prefix/ownership/rejectiontests UNRUN; oneexistingselectedreadinesscaseonly withunchanged10/5/30/180bounds",
+    "timing_limit": "actualR11prehealthreadinessfailurebracketdoesNOTproveCPUcause; source5400->70clonesnotmeasurement; noverifiedlatencyfix",
+    "shared_generation": "NOTchanged; keepsecond6ParamsTempDirwrite/failureorder, allbasic/cases/health/projection/referencesoutsidefirstbyteexact",
+    "replay_limits": "R13fixture150andold7passingcases remainimmutable; no109/normal40/rejection27/health5/goldenrecapture, noearlymarkerhook",
+    "historical_maps": "allold855/Cargo/fixturesmapsremainhistorical; nextprefixchildgate adds explicitpostimagepin/newSOURCEconstant before/after"
   }
 }

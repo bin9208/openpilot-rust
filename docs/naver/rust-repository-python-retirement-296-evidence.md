@@ -1,5 +1,28 @@
 # Repository-wide Python retirement: current evidence (#296)
 
+## Controls prefix-only allocation change, still unvalidated
+
+Reviewed0a3fa269a06344230d033eb59203ff2681b1b9c5b4538430eea508719652af51
+changes only first() in control_failures_check/fixtures.rs plus four synthetic
+old-algorithm byte/finite-F64-bit/prefix/error/ownership tests. Main contains the
+exact reviewed postimagef227ed. Minimal150 child is2e4b41cc28a900b1f54810a1a3cd8392f3892613.
+No Cargo/lock/registration/API/caller/roster/schema/projection/reference/deadline
+changes. Independent control-fixture-prefix-review-sol source PASS.
+
+Rather than clone200frames then truncate to0/1/5, first clones only the retained
+prefix and every other field unchanged. Source-derived27-case counts are5400
+formerly cloned versus70retained; this is not measured CPU/time/speedup or a
+proved10s readiness fix. Shared basic generation is intentionally unchanged
+because removing its second six Params temp-store writes would change fallible
+effect order. No marker/signal/timeout change or bypass is introduced.
+
+Next exact-child Actions scope: four new tests, strict scoped Clippy and only
+the existing selected readiness INT/TERM case under unchanged10/5/30/180bounds,
+with fresh phases/peer-marker/signal/reaping/final source/provider evidence.
+No old7pass/109/normal40/rejection27/health5 replay or source-retirement claim.
+All four tests, compilation, Clippy and any actual timing benefit remain unrun.
+
+
 ## Active R13: unreached corpus and existing proof recovery
 
 Validation7e3a40f8e60e6b7d9d5785772328cc6bdd90a566 contains full673a source,
