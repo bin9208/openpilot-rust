@@ -1,5 +1,32 @@
 # Repository-wide Python retirement: current evidence (#296)
 
+## R11 native parser recovery and downstream policy continuation
+
+Run39888221718/job120201371325 at2a proves81parser-dependent ci_rust_isolation
+passes (two older passes filtered), all3changed ci_workflow_policy cases, and
+beep_integer_ci2, ci_model_catalog_publisher2, encoder_runtime_ci3 passes.
+Artifact12473419525/171515B/SHA2ae4b4b113d69d831827306ef8c31ed20cbaf37732ffef040047ae4aeb8bd575
+has27valid CRCs; all46selected Git source hashes and19295index entries match2a.
+The final source/index/tool-after seals are absent. This is bounded progress,
+not whole-policy or AST caller acceptance.
+
+Both lagd_ci cases then fail because their frozen unrelated-command accounting
+still demands the replaced paramsd-startup Python invocation. The only unmatched
+old command is that exact line. Reviewed repair permits its removal only after
+exactly one mandatory native startup step matches the full4039B run hash; native
+build, two-root absence, traced execution, held providers, seven cases and strict
+Clippy stay unchanged. Four source-policy negative assertions cover changes.
+The frozen original JSON, workflow and runtime bytes do not change.
+
+Independent source closure is policy-lagd-startup-review-sol/HANDOFF.md. Minimal
+sourceae7bc0c6ca12d4b5d7fb10e7fe2f1a50ff816f14 is2a plus onlylagd_ci.rs,
+SHA511872e89e447d7cd22a0e85fbfc3853d9fb38217f1636a1fef700561e60ad25.
+The next gate must reuse the91fresh passes explicitly and execute only the two
+failed cases and still-unreached downstream work, adding lagd to strict Clippy
+and retaining complete final holds. Historical18contexts and separate ASTf01
+acceptance retain their limits. No local functional execution occurred.
+
+
 ## Actual compiler repairs and original x64 consumer (23 October 2026)
 
 Source review closes exactly three expressions: logger diagnostics guard clones

@@ -580,5 +580,21 @@
     "source_delta": "exactly three expression replacements; BTreeMap key order, integer truth table and false-valid/text/error barrier behavior retained",
     "historical_maps": "cfd/55084 registration/prerequisite maps remain immutable historical snapshots; explicitly select these scoped repair pins in new recipes",
     "acceptance": "uncompiled new postimages; exact source children need new Actions build/Clippy/unreached functional gates; no Python retirement"
+  },
+  "lagd_native_startup_policy_repair": {
+    "failed_run": 39888221718,
+    "job": 120201371325,
+    "artifact": 12473419525,
+    "artifact_sha256": "2ae4b4b113d69d831827306ef8c31ed20cbaf37732ffef040047ae4aeb8bd575",
+    "actual": "81parser+3changedpolicy+7downstream pass;2lagd cases fail stale historical startup-Python command expectation",
+    "review": "policy-lagd-startup-review-sol/HANDOFF.md source-only noP1P2",
+    "source_child": "ae7bc0c6ca12d4b5d7fb10e7fe2f1a50ff816f14",
+    "child_base": "2a372557d8958cb38127959a583fa7522b9ed991",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/tests/lagd_ci.rs": "511872e89e447d7cd22a0e85fbfc3853d9fb38217f1636a1fef700561e60ad25"
+    },
+    "scope": "exclude only OLD_STARTUP after exactly-one mandatory native step and full4039B script SHA256 d9be3269d7997a36ee218fa075613870cabab0234e81131b844bc83a385bc777; four new negative assertions; no workflow/runtime/fixture/dependency change",
+    "reuse_limits": "91new passes reused explicitly at2a; after-source/index/tool seals absent;18older unchanged contexts retained; changed AST case separately pending",
+    "next": "new sourceae7 child gate: two failed lagd cases and all genuinely unreached downstream checks, strict Clippy including changed test, final source/tool/index holds; no91pass replay"
   }
 }
