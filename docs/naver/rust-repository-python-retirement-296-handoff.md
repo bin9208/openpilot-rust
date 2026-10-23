@@ -1,5 +1,58 @@
 # #296 session migration checkpoint (23 October 2026)
 
+## Latest observed R19 results and retained-native source — 2026-10-23 06:26 UTC
+
+Implementation a0dbfda750e0b40ad76dd1b347f86a4eb794011e adds the reviewed
+`check-native-logging retained` mode; paired Korean/English documentation is in
+4bb6879a3d60b381aae35ef9110df3b8095add7f. Minimal source0971ba4b01ac53fc00b0381a2e9a9ff4983a39f0 changes only
+four source files from5a26. Existing Peer/normalization/legacy CLI remain; new
+mode compares a fresh native cohort with the admitted inert249-packet/694-response
+C++ captures. No C++ capture is rerun by this mode. The108-member private context
+is excluded from Git;19 source pins were restamped after two cosmetic edition2021
+format changes. Those19pins are not complete build/dependency closure. All21new
+tests, fresh cohort, retained-mode lifecycle controls, trace/build/provider seals
+and R4/retirement acceptance remain UNRUN. Full port inventory stays288/3/3289of3580.
+
+Fresh direct job APIs supersede earlier queued labels. R19inventory
+[39907352595](https://github.com/bin9208/openpilot-rust/actions/runs/39907352595)/job120262239564
+is terminal failure because three legacy controlsd roots lack their actual owner
+markers. Their historical workflows wrote the same correct marker names; no
+replacement/waiver/deletion is authorized by that observation. The independently
+COMPLETE publisher context has1449828352allocated bytes,14035unique inodes and
+14191metadata rows, equal before/final canonical tables and clear same-UID-visible
+process/mount checks. Artifact12481835937/12080956B/SHA256
+2ab961b97512ab2fc64a50708a64a7e62681cdd7ca8c99c7048f929b7a8ac1bb
+passes73ZIP CRCs/72content seals. It authorizes no deletion or reclaimed-byte
+credit; a separate exact two-cache cleanup is under independent source review.
+
+PrefixR18[39906391694](https://github.com/bin9208/openpilot-rust/actions/runs/39906391694)/job120259233730
+fails before first Cargo:5098356736available<8589934592planned bytes.
+Artifact12480813929/1403434B/SHA256
+c1b1bb098715d5386de98c424b6e876e43d1797d841cf3c5cd8668973bbac710
+passes3ZIP CRCs/220regular TAR content seals. All4new prefix tests, selected
+signal case and strict Clippy remain UNRUN; original10/5/30/180bounds stay exact.
+
+FixtureR19[39907352530](https://github.com/bin9208/openpilot-rust/actions/runs/39907352530)/job120262239212
+gets past the fixed canonical-relative61-member historical-ZIP boundary and
+reauthenticates the five old passes with zero fresh regular-test invocations.
+It then stops before first Cargo:3670335488available<8589934592planned bytes.
+Artifact12482001045/9287869B/SHA256
+e1a0be475e07b2958c7e9dcb9aee20646b23ed2b66f231e4d88ccc3a5224536c
+passes70ZIP CRCs/69raw file seals. Fresh109/native full-schema/F64 auditor and
+Clippy remain UNRUN. This latest3.670GB is an observation at that operation,
+not a current-machine guarantee; the older12.270GB snapshot is superseded.
+
+No additional build publication or blind retry follows. Metadata-only R12 cache,
+five old private RustupHome and one old pristine source-cache assessments are
+being prepared/reviewed with no deletion authority. Provider/current-validation
+need and any source changes must be preserved before later cleanup decisions.
+Existing successful cohorts/foundation are not replayed, estimates are not cut,
+and active jobs are not cancelled. GitHubR3/KBHitR2/sanitizerR2/#514focused gates
+remain source-only under review/capacity HOLD; authR2partial worker failed429 and
+was closed/reassigned to Sol. dev-md/#338, protected branches and device/release
+integration remain separate; no overall completion or performance claim.
+
+
 ## Latest R19 checkpoint — 23 October, 05:54 UTC
 
 Parent remains GPT-6.1 Sol / Ultra and every delegated agent is GPT-6.1 Sol.

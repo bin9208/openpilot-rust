@@ -985,5 +985,68 @@
         "functional": "UNRUN;558guards/37jobs/allrosterhashes unchanged; live decodedrun sourceorder; no unusedenv credit"
       }
     }
+  },
+  "oct23_r19_actual_and_retained_logging_checkpoint": {
+    "latest_actual_r18_r19": {
+      "inventory": {
+        "run": 39907352595,
+        "job": 120262239564,
+        "artifact": 12481835937,
+        "zip_sha256": "2ab961b97512ab2fc64a50708a64a7e62681cdd7ca8c99c7048f929b7a8ac1bb",
+        "crc": 73,
+        "seals": 72,
+        "publisher_context_allocated_not_free": 1449828352,
+        "publisher_free_final_snapshot": 6898884608,
+        "publisher_current_ids": {
+          "root": 2799789,
+          "marker": 2799790,
+          "container": 2799792,
+          "target": 2807622,
+          "registry": 2807160,
+          "dev": 64525,
+          "uid": 1000
+        },
+        "3controlsd": "HOLDactualmarkerfilesENOENTcorrecthistoricalname,noinventorrecreate/waive",
+        "admission": ".analysis/scratch/2026-10-23-resume-296/parent/new-actual-r18-r19/39907352595/ADMISSION.json"
+      },
+      "prefix": {
+        "run": 39906391694,
+        "job": 120259233730,
+        "artifact": 12480813929,
+        "zip_sha256": "c1b1bb098715d5386de98c424b6e876e43d1797d841cf3c5cd8668973bbac710",
+        "zip_crc": 3,
+        "tar_seals": 220,
+        "available": 5098356736,
+        "required": 8589934592,
+        "credit": "4newunit+signal+Clippy UNRUNbeforeCargo",
+        "admission": ".analysis/scratch/2026-10-23-resume-296/parent/new-actual-r18-r19/39906391694/ADMISSION.json"
+      },
+      "fixture": {
+        "run": 39907352530,
+        "job": 120262239212,
+        "artifact": 12482001045,
+        "zip_sha256": "e1a0be475e07b2958c7e9dcb9aee20646b23ed2b66f231e4d88ccc3a5224536c",
+        "zip_crc": 70,
+        "available": 3670335488,
+        "required": 8589934592,
+        "credit": "historicalZIPrepairboundaryandold5passreuseauthentication reached;109freshnative+auditor+Clippy UNRUN",
+        "inner_admission": "70CRC/69rawseals ADMITTEDin parent/new-actual-r18-r19/39907352530/ADMISSION.json; qualificationfalse"
+      },
+      "scope": "no newfunctionalbuildpublication untilfreshplannedremaininggrowth fits; no estimatecut/inflightcancel/unchangedsuccessreplay"
+    },
+    "logging_retained_source": {
+      "main": "a0dbfda750e0b40ad76dd1b347f86a4eb794011e",
+      "minimal": "0971ba4b01ac53fc00b0381a2e9a9ff4983a39f0",
+      "parent": "5a26b3ffda5062039f15c9cc2f649dc33b98a81d",
+      "paths": 4,
+      "review": "Noether scopedPASS bee3patch; parentonly2newfilesedition2021cosmeticformat",
+      "tests": 21,
+      "context_index": "2a73317474a029d1e6c3b3124dacb8cf6d8e2ea6efde0de2dfdafe0f634f56ea",
+      "context_members": 108,
+      "source_roles": 19,
+      "runtime": "UNRUN build/cohort/lifecycle/trace/DSO/sourceclosure;19rolesnotcompleteclosure",
+      "r4_and_retirement_credit": false,
+      "private_context_notGit": true
+    }
   }
 }
