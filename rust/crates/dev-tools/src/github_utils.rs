@@ -3,7 +3,7 @@
 //!
 //! No HTTP adapter, token discovery, environment access, CLI or external action.
 //! Caller-supplied transport owns all effects. JSON interpolation is deliberately
-//! literal, including malformed-body quirks and image-comment argument order.
+//! literal, including malformed-body quirks. Image PR routing is corrected by #513.
 use base64::{engine::general_purpose::STANDARD, Engine};
 use openpilot_log_format::{JsonValue, JsonView};
 use std::{
@@ -304,8 +304,8 @@ impl<T: Transport> GithubUtils<T> {
             }
         }
         table.push_str("</table></details>");
-        // This is the ORIGINAL positional call, including its swapped branch.
-        self.comment_on_pr(&table, commenter, pr_branch, false)
+        // #513: route the requested branch/commenter; retain overwrite=false.
+        self.comment_on_pr(&table, pr_branch, commenter, false)
     }
 }
 

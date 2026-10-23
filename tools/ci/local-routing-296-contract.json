@@ -795,5 +795,131 @@
     "status": "source-only integrated;23tests/compile/Clippy/originalnativecomparisonUNRUN; noHTTPadapter/caller/CLI/lockchange",
     "original_sha256": "05d53b2bfa9cf73b9165b534fc1c81fa88171f9f25f1a15fc9d9009d3ca51cbc",
     "limits": "ordinaryUTF8JSON/injectedtransport+finiteprivatefiles only; Requests/wire/proxy/codec/Unicode/arbitraryPythonobjects held; original retained/inventory unchanged"
+  },
+  "kbhit_source_overlay": {
+    "source_child": "dd87b584ac74853cdd28c585f9086d98e534cfc4",
+    "base": "c34692334897856296692e2eb3ee1378d7118879",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/src/kbhit.rs": "4393977c8695d719b8f838faf0237e360c70fc9bf10e6aa02951098c522f5148",
+      "rust/crates/dev-tools/src/kbhit/system.rs": "83006b04552c5b082c7c1cc00cdbf1bed5576bb29aa7b4db4633314e7965e2da",
+      "rust/crates/dev-tools/src/kbhit/tests.rs": "d7a2d37ef302b16374591a3fb11322925814467b498785f901541363850ff6d4",
+      "rust/crates/dev-tools/Cargo.toml": "5cb095aefecdc4cc97fb147b30ee96c3fd59b24569551f72fd0e7528f3e6c247",
+      "rust/crates/dev-tools/src/lib.rs": "99f1c7cb200cbe6d02fd0b24a695f6d0d2dd99e5a53f3a114cd683a4f229273a"
+    },
+    "lock_sha256_unchanged": "a82648159767a21268e61ed4f2aba64940b7458733333ece0fab653017929ea0",
+    "patch_sha256": "64de9b64daf262817973bb1aa2f9d72669258ec5910ea12ed9a19e32e9463124",
+    "review": "kbhit-native-review-sol/HANDOFF.md scopedsourcePASS",
+    "registration": "oneoptinfeature existingnix+rustixtermios,moduleonlyLinux,noCLI/testtarget/dependency/lockchange",
+    "acceptance": "sourceonly;18unrunlibtests/privatePTY/actualCexit/originalcomparisonrequired; nooriginalCLIactivation/retirement",
+    "limits": "explicitOwnedFd/suppliedstrictUTF8Read/readonlysnapshots; nofullTextIO/locale/newline/shutdown/exception/objectparity; demonstrationmainstillPythonandretained",
+    "historical_maps": "oldGithubD346/auth1a1a/SSH-C3f/855sourcegatesremainimmutable; onlyexplicitKBhitchildselectsnewfeature/postimages"
+  },
+  "route_sanitizer_source_overlay": {
+    "source_child": "80dde9ad911860631e3e883911e11aedc1f51a50",
+    "base": "c676b4191c3e37a9afe926c4724774e1fe76b11d",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/src/route_sanitizer.rs": "581d67d7657d248c6142d510f3bb5b996a8056d970060a217c129a06c23a9e26",
+      "rust/crates/dev-tools/src/route_sanitizer_tests.rs": "9e70a194d873183df46a48d9912fe5734f7beca1689a3916d01d69d33b185040",
+      "rust/crates/dev-tools/Cargo.toml": "7ec69d069ec6a2b6c05ba1c73442fb4ca122b90a05877c29496fc4dc8dbf6834",
+      "rust/crates/dev-tools/src/lib.rs": "b817e5ccecebacdf904632a5d8705b266c6e00998516e5b13092c9c8c9be9412"
+    },
+    "lock_sha256_unchanged": "a82648159767a21268e61ed4f2aba64940b7458733333ece0fab653017929ea0",
+    "patch_sha256": "08236c7118d33a673f375057c6c3a9ca9394f6331d189bff799b9b24afb14d77",
+    "review": "route-sanitizer-native-review-sol/HANDOFF.md R2sourcePASS generatedwhichpayloaddebitP2closedtagonly",
+    "superseded_R1": "0890444fda1e2977bcc35b22949b07ece01414b6e58d8a0d4519dfdfd49d7190",
+    "registration": "oneoptionalexistingcapnp+cerealfeature/module; no deps/lock/CLI/caller/defaultactivation",
+    "acceptance": "sourceonly;15syntheticunknownwire/lazy/error/VIN tests+compile/Clippy/independentoriginalcomparisonUNRUN",
+    "limits": "ordinaryCerealreaders/validUTF8; unknownreachablegraphcopyusescapnp set_root; no Pythonducktyping/surrogates/exceptionobjectparity; originalsourceandinventoryretained",
+    "data_scope": "no routes/realVIN/logs/vehicles/NAS data/caller/radar/runtimeactivation"
+  },
+  "github_images_513_fix": {
+    "issue": 513,
+    "source_child": "9e483329b671e908e9a686c54d23407bfb7ac8f1",
+    "base": "d346764d6448ca15c1e4dc468f31b0751f021883",
+    "source_file_sha256": {
+      "openpilot/tools/lib/github_utils.py": {
+        "before": "05d53b2bfa9cf73b9165b534fc1c81fa88171f9f25f1a15fc9d9009d3ca51cbc",
+        "after": "f642a6652ab7238fc2b613ca2f7722b2a4756ef0363169210564d42290aeb063"
+      },
+      "rust/crates/dev-tools/src/github_utils.rs": {
+        "before": "ff33a676d2664127adee17bb6c0334016d6ead51bca86a121ba2109a7846f93c",
+        "after": "9cf1224a6f81b6ff10a7e92abc646362724dfdbcfdd405f61cc8f81832b4169b"
+      },
+      "rust/crates/dev-tools/tests/github_utils.rs": {
+        "before": "1a8b22bebc4bbb948a1f2efbea6abe35bc06f1d1fd8dac330767aec8a5537914",
+        "after": "80e0c07885d517cccca0a1c103bad4deded532c921df972be535da22c1a9e492"
+      }
+    },
+    "patch_sha256": "ded641d64a464ca99db9f43665e9836f9ff1ef537515a38402574b297fbb79fa",
+    "review": "github-images-513-fix-review-sol/HANDOFF.md scopedsourcePASS",
+    "scope": "onlybranch/commenterargfix; original+native; falseoverwrite/rawHTML/body/ups/errorprefixunchanged",
+    "test_scope": "5selectednew/affectednativegroups+5originalgroupsUNRUN;21othertestfunctionssourceexact; total26native",
+    "shared_Cargo_lib_lock_unchanged": true,
+    "state": "sourceimplemented_only; issueOPEN andallfunctional/source-linkedActions acceptancepending",
+    "original_port_gate": "immutableD34623testbaseline; no sourcepointerrebind/no oldpassedresultinvented",
+    "baseline_inventory": "historicalbaseline_git_blob columnunchanged; neworiginalpostimageexplicitlyrecordedhere"
+  },
+  "actual_cache_cleanup_admission": {
+    "peer": {
+      "run": 39899250358,
+      "job": 120236736430,
+      "workflow": "a6f55b59984cea54f73edb6a545e6729dafaa5c0",
+      "artifact": 12479247331,
+      "zip_bytes": 7507955,
+      "zip_sha256": "24fc87bd2c627cb16980c9dbdf927e1cc9f55f2a81775e1caa1127eef48a096c",
+      "CRC": 57,
+      "member_seals": 56,
+      "completed": true,
+      "exact_paths_absent": [
+        "/tmp/openpilot-ci.4o8uWv/cargo-home/registry",
+        "/tmp/openpilot-ci.4o8uWv/target"
+      ],
+      "unlinked_names": 12680,
+      "removed_directories": 2510,
+      "all_events_sequenced_and_intents_paired": 32896,
+      "available_bytes_before": 11471728640,
+      "available_bytes_after": 12270104576,
+      "net_available_delta": 798375936,
+      "remaining_bundle_shortfall_bytes": 4372893696,
+      "limits": "netspaceincludesotheractivity/audit; no guaranteedreclaim/rawsource/proof/providerdeletion; bundleestimate16642998272 unchanged",
+      "functional_tests_replayed": false
+    },
+    "policy": {
+      "run": 39900916038,
+      "job": 120242040697,
+      "workflow": "541f59523fb4ac766d325c69f7df41aa8aae9632",
+      "artifact": 12479235851,
+      "zip_bytes": 1615161,
+      "zip_sha256": "e386705c4fd16a9a8eed9f7e1f8b7bf4c45fb57eed9e422dfcfefc2959efab16",
+      "CRC": 55,
+      "member_seals": 54,
+      "completed": true,
+      "exact_paths_absent": [
+        "/tmp/openpilot-ci.pMuJhG/cargo-home/registry",
+        "/tmp/openpilot-ci.pMuJhG/target"
+      ],
+      "unlinked_names": 10564,
+      "removed_directories": 2210,
+      "all_events_sequenced_and_intents_paired": 27764,
+      "available_bytes_before": 10233270272,
+      "available_bytes_after": 11491475456,
+      "net_available_delta": 1258205184,
+      "remaining_bundle_shortfall_bytes": 5151522816,
+      "limits": "netspaceincludesotheractivity/audit; no guaranteedreclaim/rawsource/proof/providerdeletion; bundleestimate16642998272 unchanged",
+      "functional_tests_replayed": false
+    },
+    "latest_observed_available_bytes": 12270104576,
+    "bundle_growth_bytes_unchanged": 16642998272,
+    "remaining_shortfall_bytes": 4372893696,
+    "newbuildscope": "onlyoriginalfreshper-operationadmission; no inheritedestimatecut/globalscope/oldsuccessfulcohortreplay"
+  },
+  "fixture150_historical_zip_layout_repair": {
+    "source": "150bd42771ee45046f0c51343bedeef62646c516",
+    "workflow_sha256": "72c5cf60aeeb361b04f38f32ee9efacd2e31d09daf14e25a098ca25567d69918",
+    "old_artifact": 12472101435,
+    "old_artifact_sha256": "d81c515c092450c8694e4ab5382577429bfa2ad59344ff4b0417e02d65bc62dc",
+    "normal_nested_members": 25,
+    "delta": "canonicalrelative namesonly;2selectedrootfiles unchanged/other10payloadsbyteexact",
+    "status": "independentreviewpending/notrun; original0221freezeimmutable"
   }
 }

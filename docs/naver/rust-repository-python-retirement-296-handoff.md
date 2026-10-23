@@ -80,6 +80,101 @@ exact complete recipe requires independent closure before publication. Prefix
 Auth18tests and injected-only GithubUtils source remain unvalidated. All originals
 and current credential/account/vehicle paths remain outside these new gates.
 
+## Actual cache cleanup and resumed focused validation
+
+Both exact cache cleanups are now SUCCESS, confirmed through fresh job APIs
+rather than the older run-list snapshot. Peer39899250358/job120236736430:
+artifact12479247331/7507955B/SHA25624fc87bd2c627cb16980c9dbdf927e1cc9f55f2a81775e1caa1127eef48a096c,
+57CRCs/56member seals. Policy39900916038/job120242040697:
+artifact12479235851/1615161B/SHA256e386705c4fd16a9a8eed9f7e1f8b7bf4c45fb57eed9e422dfcfefc2959efab16,
+55CRCs/54member seals. All recorded intents/completions pair in sequence; all four
+exact target/registry paths are absent. Source, proof, provider/rustup and original
+model directories were excluded. No functional cohort was replayed by cleanup.
+
+The last peer-after observation is12270104576available bytes. Observed deltas
+include concurrent runner activity/audit growth, not guaranteed attribution.
+Bundle estimate16642998272 remains4372893696bytes short; SSH's aggregate14.5GiB
+admission also remains held. Smaller8GiB affected operations may proceed only
+under their original fresh per-operation checks. Additional literal old-cache
+contexts need separate read-only admission; no arbitrary scope/estimate reduction.
+
+Current-catalog wrapper39895130353/job120223683169 is SUCCESS, with full actual
+artifact/source/provider admission still pending. This is not whole exporter/
+model compiler or retirement acceptance. Fresh job APIs show R12policy39892674289,
+AST39892674217, R15SSH39895770436, R11call339888221640 and controllers39888221653
+have failed; exact diagnostics/partial scopes remain under admission. Older run
+list labels alone must not be used as current execution evidence.
+
+Fixture150's R13failure is specifically the61-member historical EVIDENCE ZIP
+flat-name check, not a job-log ZIP. Its25normal historical-original/* members
+must be admitted as canonical relative paths while only exact root SOURCE_COMMIT
+and focused-tests.log are read. Parent72c5cf60aeeb361b04f38f32ee9efacd2e31d09daf14e25a098ca25567d69918
+repair keeps all other10payloads and five-pass/109/F64/final-hold gates unchanged;
+independent delta review and capacity remain required before its new execution.
+
+Hilbert and Pascal hit service429 and were closed, preserving their completed
+source freezes. Parent owns the fixture repair; a healthy Sol worker continues
+the additional read-only cache inventory. All active delegation remains6.1Sol.
+
+## Independent #513 image-comment argument correction
+
+Reviewed patchded641d64a464ca99db9f43665e9836f9ff1ef537515a38402574b297fbb79fa
+corrects only image-helper branch/commenter forwarding in the retained Python
+and native source. It keeps false overwrite, existing raw HTML/JSON, upload order
+and failure prefixes. Minimal pure-portD346 child is
+9e483329b671e908e9a686c54d23407bfb7ac8f1; exactly3paths, no Cargo/lib/lock changes.
+Independent github-images-513-fix-review-sol source PASS; issue513 remains OPEN.
+
+Pure-portD346/its23-test source gate is preserved unchanged as a historical
+baseline, not rebound to this corrected behavior. The corrected source has26tests:
+5new/affected image groups and21byte-identical other test functions. Five original
+fake-request case groups also exist as unrun candidates. All compilation/Clippy/
+selected tests/original comparison remain required Actions work. Original SHA
+05d53 changes intentionally tof642a6652ab7238fc2b613ca2f7722b2a4756ef0363169210564d42290aeb063;
+the baseline inventory Git blob remains historical. No real account/API/token/
+comment/credential action, caller activation or source retirement occurred.
+
+## Route sanitizer tag-only native source candidate
+
+FinalR2 patch08236c7118d33a673f375057c6c3a9ca9394f6331d189bff799b9b24afb14d77
+adds route_sanitizer.rs/tests.rs and one optional existing capnp/Cereal feature
+plus module export. MinimalC676 child is
+80dde9ad911860631e3e883911e11aedc1f51a50. No dependency/lock/CLI/caller/logger/radar selection change.
+Independent route-sanitizer-native-review-sol R2source PASS;15synthetic tests,
+compile/Clippy and independent original/native Cereal comparison remain UNRUN.
+
+All3 original sanitizer functions and4 exact preserve-services names are mapped.
+VIN masking counts Unicode scalars; carParams deep-copies the complete Event,
+then edits only VIN, retaining ordinary unknown graph fields/metadata. Non-car
+messages preserve reader/arena identity. Lazy filter/map order and typed errors
+are explicit. R1 generated Which selection fetched payloads and spent reader
+traversal budget; R2 uses existing dynamic tag-only selection, closing that P2.
+The superseded089044 R1 is archived inertly and must not be integrated.
+
+No route, log, VIN, vehicle or NAS data was read. Lone-surrogate Python strings,
+duck typing, exact exception identity and unsupported graph/capability error
+surfaces remain held; malformed/copied pointers are errors rather than dropped.
+No full Python-object emulation, original deletion or inventory credit follows.
+
+## KBHit explicit-input native source candidate
+
+Reviewed64de9b64daf262817973bb1aa2f9d72669258ec5910ea12ed9a19e32e9463124
+adds kbhit.rs/system.rs/tests.rs. MinimalC346 child is
+dd87b584ac74853cdd28c585f9086d98e534cfc4; its only5paths are the three new files,
+one optional existing nix/rustix-termios feature and one Linux-only module export.
+No dependency/version/lock, bin/CLI, default feature or caller selection changes.
+Independent kbhit-native-review-sol source PASS;18tests/compile/link/Clippy,
+private PTY effects, actual C atexit and original comparison remain UNRUN.
+
+All six methods have typed source counterparts: supplied owned fd/strict UTF8
+reader, tcgetattr→clear only ICANON/ECHO→TCSAFLUSH→one exit registration, explicit
+latest-snapshot restore, three-character arrow mapping and zero-timeout select.
+Repeated setup/LIFO exit callbacks retain the latest object snapshot; Drop does
+not restore modes. No real stdin/terminal/environment or device was accessed.
+The typed fd ownership/read-only snapshots, TextIO/codec/read-ahead/newline and
+Python-vs-C shutdown/error contracts remain explicit limits. The original demo
+main loop remains unported and inactive; kbhit.py/inventory are retained.
+
 ## GithubUtils injected-only native source candidate
 
 Reviewed completeR2 patch8cb45a37b360a0318c1fc7e729eb9dd5f1a273e1fa43ae447ad787bc0bbae8f7
