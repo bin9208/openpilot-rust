@@ -1,0 +1,57 @@
+name: Panda safety source diagnostic 518
+on:
+  push:
+    branches: [codex/fix-518-panda-safety-probe]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: panda-safety-518-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  diagnostic:
+    if: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    name: Observe original Panda safety deadline without changing acceptance
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          clean: false
+      - uses: ./.github/actions/job-temp
+      - name: Authenticate bounded original source artifact and dependencies
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$RUNNER_NAME" = bin-actions
+          timeout --signal=TERM --kill-after=2s 120s /usr/bin/python3 -I tools/ci/panda_safety_518_probe.py prepare
+      - name: Capture the unchanged 90-second source observation
+        run: /usr/bin/python3 -I tools/ci/panda_safety_518_probe.py normal
+      - name: Supply a tracer only when the timed-out observation needs profiling
+        timeout-minutes: 3
+        run: |
+          set -euo pipefail
+          needed=$(/usr/bin/python3 -I tools/ci/panda_safety_518_probe.py needs-profile)
+          if [[ $needed == true ]] && ! command -v strace >/dev/null; then
+            /usr/bin/python3 rust/tools/card_ci_space.py --path "$CI_JOB_TEMP" --growth-mib 256
+            "$GITHUB_WORKSPACE/tools/ci/apt-native" install -y --no-install-recommends strace
+          fi
+      - name: Capture bounded syscall profile only if normal timed out
+        run: /usr/bin/python3 -I tools/ci/panda_safety_518_probe.py profile
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: panda-safety-518-diagnostic
+          path: |
+            ${{ env.CI_JOB_TEMP }}/panda-safety-518/*.json
+            ${{ env.CI_JOB_TEMP }}/panda-safety-518/*.jsonl
+            ${{ env.CI_JOB_TEMP }}/panda-safety-518/*.stdout
+            ${{ env.CI_JOB_TEMP }}/panda-safety-518/*.stderr
+            ${{ env.CI_JOB_TEMP }}/panda-safety-518/*.txt
+          if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
