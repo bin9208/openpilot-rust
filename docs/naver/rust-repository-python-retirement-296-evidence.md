@@ -1,5 +1,32 @@
 # Repository-wide Python retirement: current evidence (#296)
 
+## Common loader admission and #502 capacity reuse (2026-10-23)
+
+[Loader39871081195](https://github.com/bin9208/openpilot-rust/actions/runs/39871081195)
+succeeds on bin-actions/job120145390655 at workflow/source8bd7575b. Parent admits
+artifact12470998483,3867bytes, SHA256
+65b3e29e62e1a4cfd212cc5fafb3be174419f642b8112272839f4664e589b827,
+all12CRCs/11member seals. Scope is remote job-temp, provisioned-shim rust-path
+and local-arm finish-entry loading only. No guest/foundation/runtime replay.
+This releases the original WebRTC two-leg caller publication; actual source
+HEAD must equal its workflow SHA, not historical donor8e39.
+
+The #502 owner's exact8afbdcf3598df7fe17f60acb2f1f0157e4d1addc
+[39873578269/job120153608354](https://github.com/bin9208/openpilot-rust/actions/runs/39873578269/job/120153608354)
+success is API verified: runner22/bin-actions,126seconds. Four present requested
+native files already equal acceptedc5e/6fea bytes with equivalent growth-only
+policy; no duplicate native patch or test replay. Foreign7766to8af leaves the
+four common helpers/lock unchanged; our different lock855f00e is retained.
+ARM foundation39853582741 is reused; foreign PR/module-ARM remain pending.
+
+Patch305a51cf changes only five fixed-floor guards in four active build helpers:
+locationd1GiB, paramsd1GiB twice, planner128MiB, GEOS exact bytes plus1MiB.
+All operation estimates/compiler/provider/ELF/ABI/owner behavior remain. Three
+full postimages equal8af; planner's guard matches while its #296 differences
+remain. AST/hash/diff checks pass, with no helper execution or successful suite
+replay. Other54retained floor/expectation paths stay catalogued, not fixed.
+Old queued source pins/data are unchanged; no dev-md merge or retirement credit.
+
 ## Committed bundle builder Rust source candidate (2026-10-23)
 
 Final patch82d4f4bb52a0abcd741d90de954c1692742c81a0b3bd9f1bbe0b8862c180ff93

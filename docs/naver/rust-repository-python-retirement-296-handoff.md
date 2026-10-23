@@ -4,6 +4,29 @@ Work is unfinished. The user requests moving to a fresh session to increase
 parallelism; this is a continuation of #296, never dev-md/#338. Reuse accepted
 unchanged evidence. Read this handoff and the linked evidence ledger first.
 
+## Current loader, AST and ARM continuation
+
+Loader39871081195 is bounded admitted:12CRCs/11seals, remote distribution loading
+only, guest=false. AST R5 cleanup P2/two parent branch-literal changes are closed.
+Strict binder admits fixedf01, not later HEAD. Combined validation workflow
+027819e4f60d5fb507132a2d1529c822ae8be02b adds only ASTaf2358ff and original
+WebRTC5935a00c; other tree bytes stay exactb22. AST checks out fixedf01; the
+two original WebRTC legs use actual027819e4 with HEAD==GITHUB_SHA. No original
+command/matrix/condition changes or consumer/guest execution success is inferred.
+
+Latest actual snapshot: fixture39876347504 runs; policy39876347459,
+logging39875010155, controllers39880729716, peer39882875060 and call339882972100
+fail. Family owners have fresh exact-job diagnosis lanes. Preserve queues,
+timing/provider checks and prior successful evidence. Startup/publisher/private
+main remain queued. Publication is not acceptance; no original109 recapture.
+
+#5028af success is API verified. Native policy already equals acceptedc5e/6fea;
+only patch305a51cf changes five guards in four active Python build helpers,
+retaining1GiB/128MiB/exact-bytes-plus1MiB growth and compiler/ABI checks. Three
+postimages equal8af; planner keeps #296 differences. Helpers/our lock unchanged.
+Other54retained floor/expectation paths stay catalogued; no wholesale8af merge,
+successful rerun, foreign PR/ARM completion or reply to the other chat.
+
 ## Committed-source bundle builder native candidate
 
 Final three-source patch82d4f4bb is integrated after independent review of those

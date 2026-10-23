@@ -365,7 +365,7 @@
     "source_commit": "77663836a95a9e2aff9aa66592d8b06ed9c87cd9",
     "layout": "four canonical implementation files plus source LICENSE, README.md and tools/ci/helper-provenance.json; no workflows/runtime/symlinks",
     "implementation_bytes": "all four source hashes remain authoritative and unchanged",
-    "status": "published by parent; inert Git tree verified; actual x64 caller-loading qualification pending",
+    "status": "bounded remote caller loading admitted39871081195; ARM guest/original consumer still requires new actual evidence",
     "consumer_change": "remote common uses ref only; no new embedded helper or cleanup machinery",
     "caller_file_sha256": {
       ".github/workflows/carrot-route-vault-publish.yaml": "b96a3d980a9516c36c25699baae730b780edffdea8b9af6272288de76de8208e",
@@ -386,7 +386,17 @@
     "tree": "ad19ac21f14835a7d9f066284f6eef5759b0d214",
     "provenance_path": "tools/ci/helper-provenance.json",
     "provenance_sha256": "17795c847534d81c7ba260d566d944e08c10ac624a0fde575d91f48f3f0d5039",
-    "regular_files": 7
+    "regular_files": 7,
+    "loading_admission": {
+      "run": 39871081195,
+      "job": 120145390655,
+      "artifact": 12470998483,
+      "archive_bytes": 3867,
+      "archive_sha256": "65b3e29e62e1a4cfd212cc5fafb3be174419f642b8112272839f4664e589b827",
+      "CRC_members": 12,
+      "verified_member_seals": 11,
+      "scope": "job-temp + provisioned-shim rust-path + local-arm finish entry only; guest=false; no foundation/runtime replay"
+    }
   },
   "loggerd_peer_registration_overlay": {
     "status": "reviewed additive source; uncompiled/unrun; no caller activation or Python retirement",
@@ -460,5 +470,42 @@
     "required_acceptance": "18 authored tests, original/native committed context/partial failures/CLI grammar/lifecycle, scopedClippy, latercaller/absence gates",
     "limits": "compile-time source-root and UTF8 text host boundary; packages unchanged Python replay/viewer/runtime sources; no Docker/NAS/radar behavior changes",
     "historical_maps": "ASTf01/cfd/R6/R7 source/prerequisite maps remain immutable historical snapshots"
+  },
+  "common502_8af_capacity_reuse": {
+    "source": "8afbdcf3598df7fe17f60acb2f1f0157e4d1addc",
+    "run": 39873578269,
+    "job": 120153608354,
+    "actual_API": "success on bin-actions22, 2026-10-23T01:08:50Zto01:10:56Z",
+    "native_policy": "four present requested Rust files equal acceptedc5e/6fea bytes; growth-only equivalent; absent radard package not imported",
+    "common_preserved": "four helpers and foreign Cargo.lock unchanged7766to8af; our different855f00e lock unchanged; ARM foundation39853582741 reused",
+    "minimal_patch_sha256": "305a51cf42531ce63b456a40ea6a99b860af48c22165f2b6dced01b37f96cc02",
+    "active_build_side_changes": [
+      {
+        "path": "rust/tools/build_locationd_oracle.py",
+        "before_sha256": "8dcabc38a7eda80d7b9701fb4eab96c9ed38555a8acb27782b2a37613e7a934e",
+        "after_sha256": "77319bc723a55a584cf21b3fdc7732c3c7d47f95a011d447dda0f233d17b6544",
+        "whole_file_equal8af": true
+      },
+      {
+        "path": "rust/tools/build_paramsd_oracle.py",
+        "before_sha256": "5ab14838746c809378d7e943e221a9b0aa86d97cd4145e2700442f91d40100a9",
+        "after_sha256": "12ffa68a79b0ccd84a143c4e46b91a5eef1745b531212311912b728b71132112",
+        "whole_file_equal8af": true
+      },
+      {
+        "path": "rust/tools/build_plannerd_acados.py",
+        "before_sha256": "9f18eda8bb1764f77227c5a4cbaf12258add346c7833abfcf545761ce71e8199",
+        "after_sha256": "cfeb3eb11974c4627964091595186e6fca86ae928a932aed0d71ec3a6bcc29af",
+        "whole_file_equal8af": false
+      },
+      {
+        "path": "rust/tools/carrot_man_stage_geos.py",
+        "before_sha256": "0733cad69693fc9e36df61ceb813947426fc1a05828c5edff831fef265ad4e34",
+        "after_sha256": "a6612e16f17e197db6d8419cd44dd706bdfeb361e37c232b9f4eadd90c6a5e64",
+        "whole_file_equal8af": true
+      }
+    ],
+    "scope": "five guards in four active original build helpers; original operation estimates retained; no compiler command/provider/ELF/ABI/ownership changes",
+    "limits": "54other retained Python floor/expectation paths remain catalogued, not blanket-fixed; old queued source pins unchanged; foreign exactPR/ARM still pending; no wholedevmd merge or source-retirement credit"
   }
 }
