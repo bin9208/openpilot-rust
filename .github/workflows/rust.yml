@@ -2491,7 +2491,7 @@ jobs:
       - name: Compare LPA serial, TLS, profile and notification lifecycle
         run: python rust/tools/check_lpa.py --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/startup-services/lpa"
       - name: Compare source and native bridge packets and connection lifecycle
-        run: sudo -E env "PYTHONPATH=$PYTHONPATH" "$(command -v python)" rust/tools/check_bridge.py --original "$RUNNER_TEMP/services-bridge-source/bridge-original" --binary "$PWD/rust/target/debug/bridge" --output "$RUNNER_TEMP/startup-services/bridge"
+        run: sudo -E env "LD_LIBRARY_PATH=${LD_LIBRARY_PATH-}" "PYTHONPATH=$PYTHONPATH" "$(command -v python)" rust/tools/check_bridge.py --original "$RUNNER_TEMP/services-bridge-source/bridge-original" --binary "$PWD/rust/target/debug/bridge" --output "$RUNNER_TEMP/startup-services/bridge"
       - name: Compare AGNOS images, retry policy, casync and actual CLI
         run: python rust/tools/check_agnos.py --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/startup-services/agnos"
       - name: Compare updater Git lifecycle, native signals and background AGNOS adapter
@@ -3674,7 +3674,7 @@ jobs:
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-athena --lib --locked -- -D warnings
           python -m unittest discover -s rust/tools/tests -p test_athena_upload_attribution.py -v
       - name: Compare all source RPC, upload, IPC, camera and connection scenarios
-        run: sudo -E env "PYTHONPATH=$PYTHONPATH" "$(command -v python)" rust/tools/check_athena_runtime.py --bin-dir "$PWD/rust/target/debug" --output "$RUNNER_TEMP/athena-runtime"
+        run: sudo -E env "LD_LIBRARY_PATH=${LD_LIBRARY_PATH-}" "PYTHONPATH=$PYTHONPATH" "$(command -v python)" rust/tools/check_athena_runtime.py --bin-dir "$PWD/rust/target/debug" --output "$RUNNER_TEMP/athena-runtime"
       - name: Instrument complete JPEG codec and ownership boundary
         run: python rust/tools/check_jpeg_sanitizers.py --target-dir "$RUNNER_TEMP/jpeg-sanitizer-target" --output "$RUNNER_TEMP/athena-jpeg-sanitizers"
       - uses: actions/upload-artifact@v6

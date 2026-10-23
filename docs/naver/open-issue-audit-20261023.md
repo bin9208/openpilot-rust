@@ -626,3 +626,20 @@ archive of the three owned case trees, preserving Params ownership/modes and
 excluding parent TLS files, links and special files. Actual archive tests and
 successful full-job upload still need Actions evidence. These changes do not
 replace the remaining required gates, normal merge or post-merge validation.
+
+At exact source `10919538d31b04d28d9a23b383d925441434d579`, all six focused
+lanes and all sixteen Integration jobs passed, including the full web archive
+upload and payload variants94/162/96. Required Fast and mapped docs passed.
+Three ARM jobs then rejected genuinely insufficient growth capacity; the
+isolated read-only [#516 investigation](https://github.com/bin9208/openpilot-rust/issues/516)
+preserves other tasks' interrupted continuation state and the8/12GiB estimates.
+It has not yet recovered space or retried those jobs.
+The independent [#517 sudo/Python boundary](issue-517-sudo-python.md) stopped
+startup services after its native build/LPA success. Its candidate retains the
+selected interpreter's library path explicitly after sudo for bridge and Athena.
+The registered identity probe39910424061 passed: unchanged legacy sudo lost the
+loader path, reported3.12.3 instead of3.12.15 and failed all four installed-module
+imports; explicit forwarding retained the normal3.12.15/module paths with UID0.
+Executable and prefix did not change. Complete affected jobs still need to pass.
+Remaining Rust/ARM work, normal integration and post-merge acceptance remain
+strict. Other #296 conversion and #502/504 common migration stay excluded.
