@@ -148,6 +148,8 @@ pub mod registration_check;
 #[cfg(feature = "registration-clock-native")]
 pub mod registration_clock_check;
 pub mod registration_utf7_check;
+#[cfg(feature = "route-sanitizer-native")]
+pub mod route_sanitizer;
 #[cfg(all(target_os = "linux", feature = "route-upload-native"))]
 pub mod route_upload_check;
 #[cfg(feature = "route-vault-bundle-native")]
