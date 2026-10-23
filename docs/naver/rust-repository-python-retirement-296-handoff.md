@@ -4,6 +4,25 @@ Work is unfinished. The user requests moving to a fresh session to increase
 parallelism; this is a continuation of #296, never dev-md/#338. Reuse accepted
 unchanged evidence. Read this handoff and the linked evidence ledger first.
 
+## Logger peer source completion candidate
+
+The eight-file whole-logger delta30e00a3a04438f97c2a50cd7b2262155966fe4d4eee121fe994635b3e544ab9e
+is integrated after independent Feynman source review with no P1/P2 finding.
+It adds check-loggerd-peer, three native integration tests/11cases and a barrier
+regression. Existing peer/receiver/R4 code and old lifecycle modes are preserved.
+Cargo adds only the dedicated bin/test and rustix/pipe for loggerd-check-native;
+lockfile/dependency versions and model feature semantics stay unchanged. The
+routing contract retains the historical9368 prerequisite snapshot and adds
+current_parent_prerequisites plus eight source seals for this additive overlay.
+Future policy recipes checking this newer source must use that current map;
+already queued exact10ff/20d recipes remain unchanged at their original sources.
+
+This is uncompiled source. New peer/kernel/barrier tests, scoped Clippy, actual
+CLI INT/TERM/post-write cancellation and interpreter-free owned execution remain
+required before caller activation. All14Python sources remain; no inventory or
+retirement credit follows. Maxwell's Actions plan gives the bounded new checks;
+existing successful original replay/protocol/provider cohorts are reused.
+
 ## Latest actual results after the R8 batch
 
 The next syntax-only representation is493733bytes, SHA256

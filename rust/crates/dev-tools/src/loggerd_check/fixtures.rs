@@ -209,6 +209,31 @@ pub(super) fn barrier() -> Vec<u8> {
 mod tests {
     use super::*;
     #[test]
+    fn barrier_explicitly_keeps_the_original_false_validity() {
+        let before = rustix::time::clock_gettime(rustix::time::ClockId::Boottime);
+        let bytes = barrier();
+        let after = rustix::time::clock_gettime(rustix::time::ClockId::Boottime);
+        let mut input = bytes.as_slice();
+        let message = capnp::serialize::read_message(&mut input, Default::default()).unwrap();
+        assert!(input.is_empty());
+        let root = message.get_root::<event::Reader<'_>>().unwrap();
+        let mut defaults = capnp::message::Builder::new_default();
+        assert!(defaults.init_root::<event::Builder<'_>>().get_valid());
+        assert!(
+            !root.get_valid(),
+            "new_message(None) sets valid=false, unlike the schema default"
+        );
+        match root.which().unwrap() {
+            event::LogMessage(text) => {
+                assert_eq!(text.unwrap().to_str().unwrap(), "logger-qa-barrier")
+            }
+            _ => panic!("barrier union changed"),
+        }
+        let ns =
+            |time: rustix::time::Timespec| time.tv_sec as u64 * 1_000_000_000 + time.tv_nsec as u64;
+        assert!((ns(before)..=ns(after)).contains(&root.get_log_mono_time()));
+    }
+    #[test]
     fn ordinary_can_bytes_equal_independent_original_controller_capture() {
         // Synthetic packet, sealed original run39791779545 artifact12432287942:
         // logger-native/burst-original/inputs/0123-can.capnp (sequence122;

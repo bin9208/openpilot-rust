@@ -42,6 +42,14 @@ pub(super) fn check(output: &Path) -> Result<Value> {
     let mut publisher = Publisher::for_runtime("can", capacity("can")?)?;
     let mut command = Command::new(std::env::current_exe()?);
     command.arg(super::IDLE).arg(output);
+    let argv = std::iter::once(command.get_program())
+        .chain(command.get_args())
+        .map(|arg| {
+            arg.to_str()
+                .map(str::to_owned)
+                .ok_or("peer argv is not UTF-8")
+        })
+        .collect::<std::result::Result<Vec<_>, _>>()?;
     let mut process = Process::start(&mut command, output, Duration::from_secs(10))?;
     require(
         process.line()? == b"ready",
@@ -69,7 +77,7 @@ pub(super) fn check(output: &Path) -> Result<Value> {
     let completed = processed["completed"]
         .as_u64()
         .ok_or("input-completion finished time missing")?;
-    let result = json!({"started":started,"send_returned":returned,"received":processed["received"],"completed":completed,"sha256":processed["sha256"],"processing_finished_before_send_return":completed<=returned,"packet_exact":exact});
+    let result = json!({"argv":argv,"started":started,"send_returned":returned,"received":processed["received"],"completed":completed,"sha256":processed["sha256"],"processing_finished_before_send_return":completed<=returned,"packet_exact":exact});
     save(&output.join("result.json"), &result)?;
     require(
         exact && completed <= returned,

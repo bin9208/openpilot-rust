@@ -247,7 +247,12 @@
       "rust/crates/dev-tools/tests/ci_model_catalog_publisher.rs": "36c443db4b78f18df3fdf0fe757814043501eaa33ffcd9da828f39a15f05197d",
       "rust/crates/model-runtime/tests/catalog.rs": "f31059ddffc8007c513f230919e671d3c87b8f441be3deac29338969ca6db22a"
     },
-    "later_Maxwell_retention": "dd4390ec0 two reviewed output-pairs upload globs now retained; see parent_retention_rebase"
+    "later_Maxwell_retention": "dd4390ec0 two reviewed output-pairs upload globs now retained; see parent_retention_rebase",
+    "current_parent_prerequisites": {
+      "rust/crates/dev-tools/Cargo.toml": "5422b9ff6fa8f4b3c285f1927195b432ad88206edd27f44096430dab7b0e193a",
+      "rust/crates/dev-tools/tests/ci_model_catalog_publisher.rs": "36c443db4b78f18df3fdf0fe757814043501eaa33ffcd9da828f39a15f05197d",
+      "rust/crates/model-runtime/tests/catalog.rs": "f31059ddffc8007c513f230919e671d3c87b8f441be3deac29338969ca6db22a"
+    }
   },
   "composite_action_sha256": {
     ".github/actions/native-json11/action.yml": "91ac2497ca427ff2a375e7e1e50e6f05f3ce1ebd337e96ea81df598444fd7687",
@@ -382,5 +387,23 @@
     "provenance_path": "tools/ci/helper-provenance.json",
     "provenance_sha256": "17795c847534d81c7ba260d566d944e08c10ac624a0fde575d91f48f3f0d5039",
     "regular_files": 7
+  },
+  "loggerd_peer_registration_overlay": {
+    "status": "reviewed additive source; uncompiled/unrun; no caller activation or Python retirement",
+    "patch_sha256": "30e00a3a04438f97c2a50cd7b2262155966fe4d4eee121fe994635b3e544ab9e",
+    "review": "loggerd-whole-consumers-review-sol/HANDOFF.md noP1/P2 source-only",
+    "cargo_delta": "only check-loggerd-peer bin, loggerd_peer_check test and rustix/pipe in loggerd-check-native; all previous Cargo semantics restored by removing exactly these additions",
+    "historical_prerequisites": "unchanged_parent_prerequisites remains the original9368/R6 snapshot; current_parent_prerequisites seals the reviewed additive Cargo overlay for future source-policy qualification",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/Cargo.toml": "5422b9ff6fa8f4b3c285f1927195b432ad88206edd27f44096430dab7b0e193a",
+      "rust/crates/dev-tools/src/bin/check_loggerd_peer.rs": "d5665f8798ef6d3447677573a2c3e2dfcb941577b73d2108a8a4d5c3c1956b86",
+      "rust/crates/dev-tools/src/bin/loggerd_lifecycle_fixture.rs": "e5aa02df4ccc8e21ca3ae7b4e557954cbbe79cdbe4a56a57e69967fa78054a0e",
+      "rust/crates/dev-tools/src/loggerd_check.rs": "5cbf57768738388266671646cd328d1239498e0f10b4be1d00db53a91bb4b8b6",
+      "rust/crates/dev-tools/src/loggerd_check/fixtures.rs": "8bc3c3a7ba6dedf3596d72c9edbc03deec0f092fedc05b90806977ed76edfd0d",
+      "rust/crates/dev-tools/src/loggerd_check/input_completion.rs": "87b6ba5007ae132eaa4e104c4632918982029c212e7898afacc8d75c2ca16505",
+      "rust/crates/dev-tools/src/loggerd_check/owned.rs": "9e13cbaa4bb5613e555b135a2ba9ff78e4431e3dd49a4f2a702bd1ca2b5e5c0b",
+      "rust/crates/dev-tools/tests/loggerd_peer_check.rs": "b15537883be9c608e23e0d0c34e7534074775c90149838cfa09fd262dbd9609d"
+    },
+    "native_acceptance": "new3functions/11cases+barrier, scopedClippy, newCLI signal/postwrite/provenance gates pending; all14Python retained"
   }
 }

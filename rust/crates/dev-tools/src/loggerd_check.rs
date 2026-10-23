@@ -513,3 +513,71 @@ impl std::fmt::Display for Interrupted {
     }
 }
 impl std::error::Error for Interrupted {}
+
+/// Standalone replacement for check_loggerd_peer.py; runs no logger daemon.
+pub fn peer_cli() -> Result<()> {
+    let args = std::env::args_os().skip(1).collect::<Vec<_>>();
+    if args.len() == 2 && args[0] == IDLE {
+        return input_completion::fixture(Path::new(&args[1]));
+    }
+    if args.len() == 2 && args[0] == WORKER {
+        let request: Request = serde_json::from_slice(&fs::read(&args[1])?)?;
+        require(
+            request.kind == "input-completion",
+            "unknown peer worker kind",
+        )?;
+        let result = input_completion::check(&request.output)?;
+        return save(&request.output.join("worker-result.json"), &result);
+    }
+    let parsed = scan_os_required_first(&args, &[OptionSpec::value("--output", true)])?;
+    if parsed.help {
+        println!("usage: check-loggerd-peer --output OUTPUT");
+        return Ok(());
+    }
+    let output = std::path::absolute(Path::new(&parsed.values["--output"]))?;
+    fs::create_dir_all(output.parent().ok_or("peer output parent absent")?)?;
+    use std::os::unix::fs::DirBuilderExt;
+    fs::DirBuilder::new().mode(0o700).create(&output)?;
+    let executable = std::env::current_exe()?;
+    let mut providers = providers::Providers::new(&[&executable], &output)?;
+    let mut owner = owned::Owner::new_for(&output.join("control"), "check-loggerd-peer")?;
+    let mut rows = owner.run(
+        &[request(
+            "input-completion",
+            "input-completion",
+            &executable,
+            &output.join("busy-recipient"),
+            Path::new(""),
+            &[],
+        )],
+        Duration::from_secs(30),
+    )?;
+    let result = rows.pop().ok_or("peer result absent")?;
+    owner.finish()?;
+    providers.verify()?;
+    owner.check_cancelled()?;
+    let receipt = output.join("result.json");
+    save(&receipt, &result)?;
+    if let Err(error) = owner.check_cancelled() {
+        fs::remove_file(receipt)?;
+        return Err(error);
+    }
+    println!("{}", serde_json::to_string(&result)?);
+    Ok(())
+}
+
+/// Test/QA adapter to the exact observer used by the live logger peer.
+/// The caller owns and reaps this direct child; this function never signals it.
+pub fn observe_logger_idle(child: &mut std::process::Child, timeout: Duration) -> Result<()> {
+    let pid = rustix::process::Pid::from_child(child);
+    peer::await_idle_pid(
+        pid,
+        || {
+            require(
+                child.try_wait()?.is_none(),
+                "logger exited before input completion",
+            )
+        },
+        timeout,
+    )
+}

@@ -1,5 +1,29 @@
 # Repository-wide Python retirement: current evidence (#296)
 
+## Logger peer and idle-observer native source completion (2026-10-23)
+
+Reviewed eight-target patch30e00a3a04438f97c2a50cd7b2262155966fe4d4eee121fe994635b3e544ab9e
+adds the dedicated check-loggerd-peer CLI, the remaining native idle-observer
+consumer tests (3functions/11cases), and an explicit false-validity barrier
+regression. Independent source review finds no concrete P1/P2. Current R4
+prebound receiver, peer idle observer, worker owner/cleanup bodies,100ms busy
+work, packet/time thresholds and all old lifecycle modes are preserved.
+New CLI results carry actual native worker argv and publish after owned closure.
+The new kernel cases use real sleep/zero-fd/live-fd poll, pipe read, futex and
+exited-child observations; their behavioral results remain unrun.
+
+Cargo TOML comparison removes exactly the new bin, test and rustix/pipe feature
+and restores the complete previous semantic object. New Cargo SHA256 is
+5422b9ff6fa8f4b3c285f1927195b432ad88206edd27f44096430dab7b0e193a;
+old9368 hash52c4a2d8 remains the historical prerequisite snapshot. The contract's
+current_parent_prerequisites and loggerd_peer_registration_overlay record the
+new current Cargo/eight source seals without relabelling historical evidence.
+Local direct rustfmt/TOML/diff checks pass; no Cargo/type/link/test was run.
+New compilation/scoped Clippy/kernel+CLI+barrier and actual signal/post-write
+cancellation/source/provider/owned-exec gates remain pending. All14Python sources
+and maintained caller selection remain. This gives no retirement, full logger
+family, ARM/QEMU kernel behavior or device acceptance.
+
 ## New Controls fixture wire failure and estimator admission (2026-10-23)
 
 [39867224185](https://github.com/bin9208/openpilot-rust/actions/runs/39867224185)

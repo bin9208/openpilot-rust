@@ -556,7 +556,7 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
-loggerd-check-native = ["bootlog-artifact-native", "dep:openpilot-messaging", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq", "dep:zmq-sys", "rustix/net", "serde_json/float_roundtrip"]
+loggerd-check-native = ["rustix/pipe", "bootlog-artifact-native", "dep:openpilot-messaging", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq", "dep:zmq-sys", "rustix/net", "serde_json/float_roundtrip"]
 changed-files-native = ["dep:ruff_python_parser", "dep:ruff_python_ast", "dep:unicode_names2"]
 native-logging-check-native = ["dep:zmq", "dep:zmq-sys", "rustix/net", "serde_json/float_roundtrip"]
 deleter-check-native = []
@@ -2463,3 +2463,12 @@ required-features = ["controlsd-daemon-native"]
 
 [[test]]
 name = "ci_model_catalog_publisher"
+
+[[bin]]
+name = "check-loggerd-peer"
+path = "src/bin/check_loggerd_peer.rs"
+required-features = ["loggerd-check-native"]
+
+[[test]]
+name = "loggerd_peer_check"
+required-features = ["loggerd-check-native"]
