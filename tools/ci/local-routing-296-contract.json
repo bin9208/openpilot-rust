@@ -685,5 +685,22 @@
     "shared_generation": "NOTchanged; keepsecond6ParamsTempDirwrite/failureorder, allbasic/cases/health/projection/referencesoutsidefirstbyteexact",
     "replay_limits": "R13fixture150andold7passingcases remainimmutable; no109/normal40/rejection27/health5/goldenrecapture, noearlymarkerhook",
     "historical_maps": "allold855/Cargo/fixturesmapsremainhistorical; nextprefixchildgate adds explicitpostimagepin/newSOURCEconstant before/after"
+  },
+  "auth_config_set_clear_source_overlay": {
+    "source": "1a1a222ebadbbfe4b62a61ca6be4b66fac3adc04",
+    "base": "c3f97466161dd62b45a2f7f9086bed3ccaaaf695",
+    "tree": "e1769e3230854d41cf066eb390acf5e47a9cdc94",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/src/developer_ssh/auth.rs": "af77a22fafdc2700bf98c0cfcdfdf81edd36dbe890ccacd939c5782b3ea8a8b6",
+      "rust/crates/dev-tools/src/developer_ssh.rs": "fa2d424438af1aeb1604469b669bc6f452a050c35eb2d22d87ff0b39e2b41cba"
+    },
+    "patch_sha256": "5d4a5e12dada75cc950e7b8f0c568b9119a322b0698d65a4fae597c555d252ec",
+    "review": "auth-config-native-review-sol/HANDOFF.md scopedPASS",
+    "source_scope": "twofilesonly methods+18ownerlibtests/publicreexport; getter/configRoot/CLI/Cargo/lib/locka826/allotherC3f unchanged",
+    "acceptance": "newcompile18tests/privateoriginalcomparisonUNRUN; arbitraryPythonvalues/latechunkcloseerrorparityheld; no caller/credential/device/network effect/retirement",
+    "original_module_sha256": "072cdebd0d49a2c4482d2e829b07568b54fe7c9994984145723f77629412fb50",
+    "native_semantics": "mkdir/openw/truncate/prefix/sharedJsonValueASCIIdefaultwrite/clear-onlyNotFound, normalUnixleafsymlink/hardlink behavior retained; suppliedrootonly",
+    "historical_maps": "SSHC3f28casegate/pins remainhistoricalimmutable; futureauthchild selectsnew2pathpins, samea826lock/Cargo/lib, no old28rerun",
+    "tests": "18syntheticprivate-rootownerlibcasesUNRUN; noauthJSON/HOME/key/account/Params/device/networkaccessoutsidefutureprivateTempDir"
   }
 }

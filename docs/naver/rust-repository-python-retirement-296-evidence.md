@@ -1,5 +1,28 @@
 # Repository-wide Python retirement: current evidence (#296)
 
+## Auth configuration native set/clear candidate
+
+Reviewed5d4a5e12dada75cc950e7b8f0c568b9119a322b0698d65a4fae597c555d252ec
+adds supplied-root set_token_at/clear_token_at,18synthetic private-root libtests
+and one public re-export. Main contains exact two reviewed postimages. Minimal
+C3f childis1a1a222ebadbbfe4b62a61ca6be4b66fac3adc04. Existing get/configRoot bodies, CLI, Cargo, lib
+registration and currenta826lock remain unchanged. Independent
+auth-config-native-review-sol source PASS; compilation/tests/IO effects unrun.
+
+Uses existing native JsonValue writer, preserving ordinary JSON/Unix mkdir/openw/
+truncation/normal link semantics and clear-only-NotFound suppression. Neither
+method is invoked by a caller. No actual auth.json/HOME/account/key/Params/device
+or network data was accessed. Arbitrary Python values, dynamic integer limits,
+streaming late chunk/close-error partial effects and full JSON parity remain held.
+Original auth_config.py remains; no retirement credit.
+
+Future focused exact-child Actions must build the library harness, scope strict
+Clippy and run only18new owner cases plus bounded original/native temporary-root
+comparison with hardware Paths stubbed before original import. Do not rebind or
+replay the separate historical C3f SSH28gate. All sensitive paths stay outside
+that synthetic scope; no current account/credential/device effect is authorized.
+
+
 ## Controls prefix-only allocation change, still unvalidated
 
 Reviewed0a3fa269a06344230d033eb59203ff2681b1b9c5b4538430eea508719652af51
