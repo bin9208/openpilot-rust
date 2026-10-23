@@ -1,0 +1,9 @@
+{
+  "source": "481ae6fec39ecc68786c4c2813b1205fb4567141",
+  "original_manifest_sha256": "1b8e6cea511e9f212cd7737688b3e2ec0a165b9ff985b492f0e98c4639f18380",
+  "origin": "Unmodified no-collector/observations/reference-manifest.json from the existing independently original-only captured observations.tar.xz at exact9de source. The frozen source commit is manifest.source_commit, not a new oracle.",
+  "policy": "Data-only provenance fixture; no packet outputs generated or changed; production still opens actual capture and verifies its complete roster before this attestation.",
+  "first_actual_rejection_run": 39875010351,
+  "historical_helper_sha256": "63e8d880b79603215d7319011809dd3b5ec6699dae1e10c79c105b7dc5cc258b",
+  "current_helper_sha256": "10dfebf12b3d8fa5abdaff7764e80c11468043349ce44f3cc4e57a59b30312e5"
+}
