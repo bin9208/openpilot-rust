@@ -31,7 +31,14 @@ fn emit(
 ) -> Result<Delivery, openpilot_logging::Error> {
     logger.emit(log_site!(), severity, text)
 }
+#[path = "native_logging_probe/lifecycle.rs"]
+mod lifecycle;
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let (fixture_only, _fixture_children) = lifecycle::run()?;
+    if fixture_only {
+        return Ok(());
+    }
     let endpoint = std::env::args().nth(1).ok_or("missing endpoint")?;
     let logger = if endpoint == "runtime" {
         Logger::for_runtime("test-version", "pc")?
