@@ -157,7 +157,7 @@ pub(super) fn truthy(value: &J) -> bool {
     match value.view() {
         V::Null => false,
         V::Bool(v) => v,
-        V::Integer(v) => v.parse::<i128>().map_or(true, |v| v != 0),
+        V::Integer(v) => v.parse::<i128>() != Ok(0),
         V::Float(v) => v != 0.,
         V::Text(v) => !v.is_empty(),
         V::Array(v) => !v.is_empty(),
