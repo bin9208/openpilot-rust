@@ -1,5 +1,114 @@
 # #296 session migration checkpoint (23 October 2026)
 
+## Latest observed R19 results and retained-native source — 2026-10-23 06:26 UTC
+
+Implementation a0dbfda750e0b40ad76dd1b347f86a4eb794011e adds the reviewed
+`check-native-logging retained` mode; paired Korean/English documentation is in
+4bb6879a3d60b381aae35ef9110df3b8095add7f. Minimal source0971ba4b01ac53fc00b0381a2e9a9ff4983a39f0 changes only
+four source files from5a26. Existing Peer/normalization/legacy CLI remain; new
+mode compares a fresh native cohort with the admitted inert249-packet/694-response
+C++ captures. No C++ capture is rerun by this mode. The108-member private context
+is excluded from Git;19 source pins were restamped after two cosmetic edition2021
+format changes. Those19pins are not complete build/dependency closure. All21new
+tests, fresh cohort, retained-mode lifecycle controls, trace/build/provider seals
+and R4/retirement acceptance remain UNRUN. Full port inventory stays288/3/3289of3580.
+
+Fresh direct job APIs supersede earlier queued labels. R19inventory
+[39907352595](https://github.com/bin9208/openpilot-rust/actions/runs/39907352595)/job120262239564
+is terminal failure because three legacy controlsd roots lack their actual owner
+markers. Their historical workflows wrote the same correct marker names; no
+replacement/waiver/deletion is authorized by that observation. The independently
+COMPLETE publisher context has1449828352allocated bytes,14035unique inodes and
+14191metadata rows, equal before/final canonical tables and clear same-UID-visible
+process/mount checks. Artifact12481835937/12080956B/SHA256
+2ab961b97512ab2fc64a50708a64a7e62681cdd7ca8c99c7048f929b7a8ac1bb
+passes73ZIP CRCs/72content seals. It authorizes no deletion or reclaimed-byte
+credit; a separate exact two-cache cleanup is under independent source review.
+
+PrefixR18[39906391694](https://github.com/bin9208/openpilot-rust/actions/runs/39906391694)/job120259233730
+fails before first Cargo:5098356736available<8589934592planned bytes.
+Artifact12480813929/1403434B/SHA256
+c1b1bb098715d5386de98c424b6e876e43d1797d841cf3c5cd8668973bbac710
+passes3ZIP CRCs/220regular TAR content seals. All4new prefix tests, selected
+signal case and strict Clippy remain UNRUN; original10/5/30/180bounds stay exact.
+
+FixtureR19[39907352530](https://github.com/bin9208/openpilot-rust/actions/runs/39907352530)/job120262239212
+gets past the fixed canonical-relative61-member historical-ZIP boundary and
+reauthenticates the five old passes with zero fresh regular-test invocations.
+It then stops before first Cargo:3670335488available<8589934592planned bytes.
+Artifact12482001045/9287869B/SHA256
+e1a0be475e07b2958c7e9dcb9aee20646b23ed2b66f231e4d88ccc3a5224536c
+passes70ZIP CRCs/69raw file seals. Fresh109/native full-schema/F64 auditor and
+Clippy remain UNRUN. This latest3.670GB is an observation at that operation,
+not a current-machine guarantee; the older12.270GB snapshot is superseded.
+
+No additional build publication or blind retry follows. Metadata-only R12 cache,
+five old private RustupHome and one old pristine source-cache assessments are
+being prepared/reviewed with no deletion authority. Provider/current-validation
+need and any source changes must be preserved before later cleanup decisions.
+Existing successful cohorts/foundation are not replayed, estimates are not cut,
+and active jobs are not cancelled. GitHubR3/KBHitR2/sanitizerR2/#514focused gates
+remain source-only under review/capacity HOLD; authR2partial worker failed429 and
+was closed/reassigned to Sol. dev-md/#338, protected branches and device/release
+integration remain separate; no overall completion or performance claim.
+
+
+## Latest R19 checkpoint — 23 October, 05:54 UTC
+
+Parent remains GPT-6.1 Sol / Ultra and every delegated agent is GPT-6.1 Sol.
+The latest implementation is 47498503458d8ad7d02ebd491befac5deae3b656.
+This checkpoint supersedes older current/queued/capacity labels below.
+No change touches the dirty primary dev-md checkout; PR343 still targets dev
+and its feature remote stays at adff pending full routing/consumer acceptance.
+Inventory remains 288 replaced-local / 3 partial / 3289 pending of 3580.
+
+Reviewed #514 fix 454fc945e adds four required-stage outcome IDs and stronger
+success/cancellation guards to both WebRTC cleanups, with two focused native
+policy regressions. Other decoded commands/jobs/helpers remain unchanged;
+functional qualification is UNRUN. Common rootfs issue#515 is untouched.
+The R12policy failure0-versus558 was raw compact-YAML inspection. Reviewed
+source fix474985034 / minimal 6d37b6affb15287a0d5d2c73d7e51aebf5a33c04
+reads only active decoded scripts in original job/step order; 558 guards, 37 jobs
+and every old growth roster/hash remain required. One quoted/alias/order/dead-env
+regression is authored, not run. The failed monolith and unreached Clippy/final
+closure still require focused Actions qualification; old passed cohorts stay reused.
+
+Validation R19 [9ac451a4b](https://github.com/bin9208/openpilot-rust/commit/9ac451a4bdf5696ccb69ac6d21fb7018396a7a90)
+binds full 454fc945e plus minimal 6d37 availability. Twenty-two unaffected once
+leaves remain byte-identical. Read-only eight-cache inventory
+[39907352595](https://github.com/bin9208/openpilot-rust/actions/runs/39907352595)/job120262239564
+and fixture150 canonical-relative evidence-name repair
+[39907352530](https://github.com/bin9208/openpilot-rust/actions/runs/39907352530)/job120262239212
+are queued by fresh job APIs. Prefix R18 [39906391694](https://github.com/bin9208/openpilot-rust/actions/runs/39906391694)/job120259233730
+is also queued. No functional success follows from publication/queueing.
+
+Logger main's separately requested terminal-failure retry now has actual attempt2
+[39894886518](https://github.com/bin9208/openpilot-rust/actions/runs/39894886518)/job120257989862
+failure BEFORE source checkout, providers or Cargo: 6,382,727,168 available bytes
+versus the unchanged 8,589,934,592 required. The earlier 12.270 GB cleanup reading is historical,
+not current admission. Artifact 12480952000/47113B/SHA256
+4063e6a36b740950592ea25c2631370e9f34c1462432d0658c1e890e2a90d5e8
+passes 16 safe ZIP CRCs and 12 content seals. Incomplete source-after proof is
+correctly held; raw upload is not qualification. No stale-root collision or
+recipe defect is supported. Do not retry blindly or lower any operation estimate.
+
+GitHubUtils/auth gate reviews found failure-after-file-effect evidence gaps;
+new source-only derivatives preserve initial/raw/after receipts and separate
+unavailable failure state from later owned recovery. Auth repair remains active,
+GitHubR2 is under independent review. KBHit, sanitizer, #513 changed-behavior and
+retained-native logging now have complete source candidates under independent
+review, all functionally UNRUN. Additional Sol workers rejected with 429 are
+closed without Astra fallback. Existing successful captures/foundations are
+not replayed; device/runtime/promotion and retirement credit remain held.
+
+
+AST R12 also stopped before checkout at its original same-filesystem 14 GiB
+growth guard; the bootstrap snapshot is 7,039,250,432 bytes, while the exact
+comparison scalar was not persisted. Its two-member partial artifact passes CRC;
+cleanup reports success because its qualification/pack guards skip deletion.
+SSH R15 records 7,248,297,984 available versus 15,569,256,448 aggregate planned
+bytes before source/Cargo. Both remain capacity-held with zero new test credit.
+
 ## 23 October actual-result and capacity checkpoint
 
 Parent model is verified GPT-6.1 Sol / Ultra; all delegated agents use GPT-6.1

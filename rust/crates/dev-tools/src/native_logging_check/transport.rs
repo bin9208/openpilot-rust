@@ -82,9 +82,20 @@ fn invalid(
     lifecycle::run(&spec)
 }
 pub(super) fn check(source: &Path, native: &Path, root: &Path, output: &Path) -> Result<Value> {
+    check_roles(&[(true, source), (false, native)], native, root, output)
+}
+pub(super) fn check_native(native: &Path, root: &Path, output: &Path) -> Result<Value> {
+    check_roles(&[(false, native)], native, root, output)
+}
+fn check_roles(
+    roles: &[(bool, &Path)],
+    native: &Path,
+    root: &Path,
+    output: &Path,
+) -> Result<Value> {
     let env = config();
     let mut report = json!({});
-    for (original, binary) in [(true, source), (false, native)] {
+    for &(original, binary) in roles {
         let name = if original { "source" } else { "rust" };
         let absent = lifecycle::Directory::new(
             tempfile::Builder::new()
@@ -301,6 +312,14 @@ pub(super) fn check(source: &Path, native: &Path, root: &Path, output: &Path) ->
     report["transport_error"]=json!("source ignores invalid connect then drops; Rust returns a typed transport error (caller must handle best effort)");
     report["signals"] =
         json!("source/native default SIGINT and SIGTERM terminate during backpressure");
+    // Preserve legacy report bytes/semantics; the one-role mode must not claim
+    // that an original producer ran in this new execution.
+    if roles.len() == 1 && !roles[0].0 {
+        report["executed_roles"] = json!(["native"]);
+        report["console_failure"] = json!("native IPC delivered and native producer returned successfully");
+        report["signals"] = json!("native default SIGINT and SIGTERM terminate during backpressure");
+        report["transport_error"] = json!("native returns a typed transport error; original invalid-connect drop is retained historical evidence");
+    }
     fs::write(
         output.join("report.json"),
         serde_json::to_vec_pretty(&report)?,
@@ -312,7 +331,7 @@ pub(super) fn check(source: &Path, native: &Path, root: &Path, output: &Path) ->
 mod tests {
     use super::*;
     use std::os::unix::{
-        fs::{symlink, MetadataExt},
+        fs::{MetadataExt, symlink},
         net::{UnixDatagram, UnixListener},
     };
     #[test]

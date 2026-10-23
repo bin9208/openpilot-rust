@@ -921,5 +921,132 @@
     "normal_nested_members": 25,
     "delta": "canonicalrelative namesonly;2selectedrootfiles unchanged/other10payloadsbyteexact",
     "status": "independentreviewpending/notrun; original0221freezeimmutable"
+  },
+  "oct23_r19_source_and_capacity_checkpoint": {
+    "current_implementation_head": "47498503458d8ad7d02ebd491befac5deae3b656",
+    "current_validation": {
+      "revision": "R19",
+      "workflow_commit": "9ac451a4bdf5696ccb69ac6d21fb7018396a7a90",
+      "full_source": "454fc945e5431ac54a381ae799b4b90c33b52a2b",
+      "extra_source_parent": "6d37b6affb15287a0d5d2c73d7e51aebf5a33c04",
+      "preserved_once_leaves": 22,
+      "new_inventory": {
+        "run": 39907352595,
+        "job": 120262239564,
+        "status": "queued",
+        "recipe_sha256": "73fb5a5306c7edac3c2c75b312317c2d4435e6c82d4e856eeb75de443b6a1f28"
+      },
+      "fixture_metadata_repair": {
+        "run": 39907352530,
+        "job": 120262239212,
+        "status": "queued",
+        "source": "150bd42771ee45046f0c51343bedeef62646c516",
+        "recipe_sha256": "72c5cf60aeeb361b04f38f32ee9efacd2e31d09daf14e25a098ca25567d69918"
+      },
+      "prefix_r18": {
+        "run": 39906391694,
+        "job": 120259233730,
+        "status": "queued",
+        "source": "2e4b41cc28a900b1f54810a1a3cd8392f3892613"
+      },
+      "fast": 39907352633,
+      "observation_only": "Fresh job APIs authoritative; no pass inferred from queue or run list"
+    },
+    "latest_capacity_actual": {
+      "run": 39894886518,
+      "attempt": 2,
+      "job": 120257989862,
+      "available_bytes": 6382727168,
+      "required_bytes": 8589934592,
+      "status": "terminalfailure before source checkout/Cargo; no recipebug or stale root collision; do not retryblindly or lowergrowth",
+      "artifact": 12480952000,
+      "artifact_sha256": "4063e6a36b740950592ea25c2631370e9f34c1462432d0658c1e890e2a90d5e8",
+      "admission": ".analysis/scratch/2026-10-23-resume-296/loggerd-main-r13-attempt2-admission-sol/ADMISSION.json",
+      "crc": 16,
+      "content_seals": 12,
+      "complete_source_proof": false,
+      "functional_credit": false,
+      "earlier_cleanup_free_12270104576": "historical not current capacity"
+    },
+    "new_reviewed_source_fixes": {
+      "webrtc514": {
+        "main": "454fc945e5431ac54a381ae799b4b90c33b52a2b",
+        "paths": 3,
+        "patch_sha256": "b5c3bf53d847aa4be175c0902a83daf166ff8595424ef6ec1248e456785787fe",
+        "functional": "UNRUN two newpolicy cases; pending narrowonce recipe",
+        "common515": "untouched"
+      },
+      "growth_roster": {
+        "main": "47498503458d8ad7d02ebd491befac5deae3b656",
+        "minimal": "6d37b6affb15287a0d5d2c73d7e51aebf5a33c04",
+        "parent": "ae7bc0c6ca12d4b5d7fb10e7fe2f1a50ff816f14",
+        "patch_sha256": "e774846ab1d057043d6651aee8dd9d64033c94558e0db61b38a4a73c6f6825df",
+        "source_review": "PASS",
+        "functional": "UNRUN;558guards/37jobs/allrosterhashes unchanged; live decodedrun sourceorder; no unusedenv credit"
+      }
+    }
+  },
+  "oct23_r19_actual_and_retained_logging_checkpoint": {
+    "latest_actual_r18_r19": {
+      "inventory": {
+        "run": 39907352595,
+        "job": 120262239564,
+        "artifact": 12481835937,
+        "zip_sha256": "2ab961b97512ab2fc64a50708a64a7e62681cdd7ca8c99c7048f929b7a8ac1bb",
+        "crc": 73,
+        "seals": 72,
+        "publisher_context_allocated_not_free": 1449828352,
+        "publisher_free_final_snapshot": 6898884608,
+        "publisher_current_ids": {
+          "root": 2799789,
+          "marker": 2799790,
+          "container": 2799792,
+          "target": 2807622,
+          "registry": 2807160,
+          "dev": 64525,
+          "uid": 1000
+        },
+        "3controlsd": "HOLDactualmarkerfilesENOENTcorrecthistoricalname,noinventorrecreate/waive",
+        "admission": ".analysis/scratch/2026-10-23-resume-296/parent/new-actual-r18-r19/39907352595/ADMISSION.json"
+      },
+      "prefix": {
+        "run": 39906391694,
+        "job": 120259233730,
+        "artifact": 12480813929,
+        "zip_sha256": "c1b1bb098715d5386de98c424b6e876e43d1797d841cf3c5cd8668973bbac710",
+        "zip_crc": 3,
+        "tar_seals": 220,
+        "available": 5098356736,
+        "required": 8589934592,
+        "credit": "4newunit+signal+Clippy UNRUNbeforeCargo",
+        "admission": ".analysis/scratch/2026-10-23-resume-296/parent/new-actual-r18-r19/39906391694/ADMISSION.json"
+      },
+      "fixture": {
+        "run": 39907352530,
+        "job": 120262239212,
+        "artifact": 12482001045,
+        "zip_sha256": "e1a0be475e07b2958c7e9dcb9aee20646b23ed2b66f231e4d88ccc3a5224536c",
+        "zip_crc": 70,
+        "available": 3670335488,
+        "required": 8589934592,
+        "credit": "historicalZIPrepairboundaryandold5passreuseauthentication reached;109freshnative+auditor+Clippy UNRUN",
+        "inner_admission": "70CRC/69rawseals ADMITTEDin parent/new-actual-r18-r19/39907352530/ADMISSION.json; qualificationfalse"
+      },
+      "scope": "no newfunctionalbuildpublication untilfreshplannedremaininggrowth fits; no estimatecut/inflightcancel/unchangedsuccessreplay"
+    },
+    "logging_retained_source": {
+      "main": "a0dbfda750e0b40ad76dd1b347f86a4eb794011e",
+      "minimal": "0971ba4b01ac53fc00b0381a2e9a9ff4983a39f0",
+      "parent": "5a26b3ffda5062039f15c9cc2f649dc33b98a81d",
+      "paths": 4,
+      "review": "Noether scopedPASS bee3patch; parentonly2newfilesedition2021cosmeticformat",
+      "tests": 21,
+      "context_index": "2a73317474a029d1e6c3b3124dacb8cf6d8e2ea6efde0de2dfdafe0f634f56ea",
+      "context_members": 108,
+      "source_roles": 19,
+      "runtime": "UNRUN build/cohort/lifecycle/trace/DSO/sourceclosure;19rolesnotcompleteclosure",
+      "r4_and_retirement_credit": false,
+      "private_context_notGit": true
+    }
   }
 }
