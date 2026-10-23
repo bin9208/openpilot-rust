@@ -1,5 +1,42 @@
 # #296 session migration checkpoint (23 October 2026)
 
+## Active R13: unreached corpus and existing proof recovery
+
+Validation7e3a40f8e60e6b7d9d5785772328cc6bdd90a566 contains full673a source,
+17once leaves with13older leaves byte-preserved, two existing gate repairs and
+two new metadata-only leaves. Actual registered runs: fixture39894886546,
+logger-main39894886518, logging-existing-proof39894886676, cache-current-inventory
+39894886684, Fast39894886541. All queued/pending at publication. Earlier R12 and
+original ARM027 remain uncancelled/unrebound. FeaturePR staysadff held.
+
+Final fixture recipe0221dcdafe3371236eb264a810b666ff8c976aa21ef9bb341b9f387d30bafca5
+uses source150 and explicit5regular historical passes. No-run auditor compilation
+precedes native ELF holds; fresh work is Clippy/native109/one exact ignored
+full-schema Float64-bit audit/finalclosure only. Review resolves stale37dmetadata;
+only the final0221bytes were reviewed/published. Main recipeeb6 usesd77source
+with the one shared guard repair, same45pins/providerd71/original-replay contract.
+Both full recipes have independent scoped PASS, no functional success claim.
+
+Logging recoverye36 is metadata-only at the fixed R11 raw root, no capture/code/
+provider replay or deletion. Full source review closes; one bootstrap event P2
+is fixed by workflow_dispatch->push, and private preflight now rejects a stale
+event literal. It must establish live owner/anchor/754partial-file continuity
+and quiescence, fully stream/seal the entire raw proof and verify archive members.
+Any missing root/receipt/visibility/resource leaves HOLD; never synthesize proof.
+
+Cache inventory1a1f has independent source PASS and no deletion code. Sixliteral
+oldtarget/Cargo-registry/Git paths are examined with current owner/proc/allocated
+size and old held-toolchain-file bridge; neither old source/proof/log nor rustup/
+provider binaries are touched. Even a complete inventory has deletion_allowed=false
+and approvedtargetsempty; parent must admit actual data before any separate
+identity-bound cache-only deletion. Bundle16.643GBestimate stays unchanged.
+
+Minimald77/C3f/EBC2sources are now remotely reachable as extraGitparents. This is
+not execution of SSH28tests or missingstartup9+8+4/final gates: their reviewed
+recipes are still under preparation. All old fixed855/DA1/AE7source bindings stay
+immutable despite current main'sa826four-edge lock and strict driverbridge.
+
+
 ## Missing startup/driver source repair, not a completed family gate
 
 Seven reviewed source paths combine R2b84e8747 exact helper-dependency
