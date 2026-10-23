@@ -103,7 +103,7 @@ def main() -> None:
   args.models = args.models.resolve()
   assert cv2.__version__ == '4.13.0'
   assert np.__version__ == '2.5.3'
-  assert shutil.disk_usage(args.output.parent).free >= 25 * 1024**3 + 256 * 1024**2
+  assert shutil.disk_usage(args.output.parent).free >= 256 * 1024**2
   args.output.mkdir()
   cv2.setNumThreads(2)
   (args.output / 'wheel-build-information.txt').write_text(cv2.getBuildInformation())

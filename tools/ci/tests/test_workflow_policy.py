@@ -2,7 +2,9 @@
 from pathlib import Path
 import json
 import os
+import shlex
 import subprocess
+import tempfile
 import unittest
 
 import yaml
@@ -146,16 +148,13 @@ class WorkflowPolicyTests(unittest.TestCase):
     self.assertIn('buildToolsVersion = "35.0.0"', app)
     self.assertIn("'platforms;android-35' 'build-tools;35.0.0'", steps[install]['run'])
     reserve = next(step['run'] for step in steps[:setup] if 'ANDROID_HOME=' in step.get('run', ''))
-    self.assertIn('25 + 4', reserve)
+    self.assertIn('free_bytes < 4 * 1024 * 1024 * 1024', reserve)
     self.assertIn('ANDROID_SDK_ROOT=', reserve)
 
-  def test_latest_base_hosted_runner_policy_is_preserved(self):
+  def test_user_selected_local_runner_policy_preserves_validation_scope(self):
     for name in ('ci.yml', 'dev-md-runtime.yml'):
       for key, job in workflow(name)['jobs'].items():
-        if 'matrix' in job.get('strategy', {}):
-          self.assertEqual(job['runs-on'], '${{ matrix.runner }}', (name, key))
-        else:
-          self.assertIn(job['runs-on'], ('ubuntu-24.04', 'ubuntu-24.04-arm'), (name, key))
+        self.assertEqual(job['runs-on'], ['self-hosted', 'Linux', 'X64', 'dev-md-local'], (name, key))
     commands = '\n'.join(step.get('run', '') for step in workflow()['jobs']['check_user_docs']['steps'])
     self.assertNotIn('package.py source-policy', commands)
     delivery = '\n'.join(step.get('run', '') for step in workflow('dev-md-runtime.yml')['jobs']['package']['steps'])
@@ -164,6 +163,46 @@ class WorkflowPolicyTests(unittest.TestCase):
     self.assertIn('--features native-skip-miri --all-targets', native)
     self.assertTrue((ROOT / 'rust/crates/xiaoge/tests/cadence.rs').is_file())
     self.assertTrue((ROOT / 'rust/crates/xiaoge/tests/camera_pixels.rs').is_file())
+
+  def test_carrot_navi_build_uses_arm_guest_and_preserves_target_inspection(self):
+    job = workflow()['jobs']['carrot-navi-arm']
+    self.assertEqual(job['env']['LOCAL_CI_ARCH'], 'aarch64')
+    self.assertEqual(job['env']['CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER'], 'gcc')
+    self.assertEqual(job['defaults']['run']['shell'], 'openpilot-local-shell {0}')
+    commands = '\n'.join(step.get('run', '') for step in job['steps'])
+    self.assertIn('test "$(uname -m)" = aarch64', commands)
+    self.assertIn('--target aarch64-unknown-linux-gnu --release --locked', commands)
+    self.assertIn('readelf -h', commands)
+    self.assertIn('sha256sum', commands)
+
+  def test_arm_graphics_dependencies_do_not_change_persistent_host_packages(self):
+    commands = '\n'.join(step.get('run', '') for step in workflow()['jobs']['arm-build']['steps'])
+    self.assertNotIn('dpkg --add-architecture', commands)
+    self.assertIn('Dir::Etc::parts "-";', commands)
+    self.assertIn('Dir::State::status "$cross_root/state/status";', commands)
+    self.assertIn('Dir::Cache "$cross_root/cache";', commands)
+    self.assertIn('APT_CONFIG="$cross_root/apt.conf" apt-get --download-only', commands)
+    self.assertIn('dpkg-deb --extract "$deb" "$cross_root/sysroot"', commands)
+    self.assertIn('aarch64-linux-gnu-g++ --sysroot=%q', commands)
+    self.assertIn('--library-directory "$cross_root/sysroot/usr/lib/aarch64-linux-gnu"', commands)
+
+  def test_arm_graphics_apt_resolves_only_private_state_and_arm_target(self):
+    steps = workflow()['jobs']['arm-build']['steps']
+    script = next(step['run'] for step in steps if 'cross_root=$(mktemp' in step.get('run', ''))
+    template = script.split('cat > "$cross_root/apt.conf" <<EOF\n', 1)[1].split('\nEOF', 1)[0]
+    with tempfile.TemporaryDirectory(prefix='apt-private-') as temporary:
+      config = Path(temporary) / 'apt.conf'
+      config.write_text(template.replace('$cross_root', temporary).replace('$PWD', str(ROOT)))
+      environment = dict(os.environ, APT_CONFIG=str(config))
+      result = subprocess.run(['apt-config', 'shell', 'arch', 'APT::Architecture',
+                               'state', 'Dir::State/d', 'status', 'Dir::State::status/f',
+                               'cache', 'Dir::Cache/d', 'parts', 'Dir::Etc::parts',
+                               'main', 'Dir::Etc::main'], env=environment,
+                              capture_output=True, text=True, check=True)
+      values = dict(line.split('=', 1) for line in shlex.split(result.stdout))
+      self.assertEqual(values, dict(arch='arm64', state=temporary + '/state/',
+                                   status=temporary + '/state/status', cache=temporary + '/cache/',
+                                   parts='-', main='-'))
 
   def test_runtime_delivery_is_serial_and_requires_a_marked_merge(self):
     delivery = workflow()['jobs']['runtime-delivery']

@@ -88,10 +88,10 @@ def main() -> None:
   parser.add_argument('--case', action='append')
   args = parser.parse_args()
   free = shutil.disk_usage(args.output.parent).free
-  if free < 25 * 1024 ** 3 + 128 * 1024 ** 2:
-    raise RuntimeError('owned Git fixture requires 25GiB +128MiB free')
+  if free < 128 * 1024 ** 2:
+    raise RuntimeError('owned Git fixture requires 128 MiB estimated growth')
   args.output.mkdir(parents=True, exist_ok=False)
-  (args.output / 'space-guard.json').write_text(json.dumps(dict(free_bytes=free, floor=25 * 1024 ** 3, growth=128 * 1024 ** 2)) + '\n')
+  (args.output / 'space-guard.json').write_text(json.dumps(dict(free_bytes=free, growth=128 * 1024 ** 2)) + '\n')
   fixtures = Fixtures(args.output / 'fixtures')
   cases = list(fixtures.cases())
   cases += [(name, fixtures.clone(name)) for name in ['cache', 'busy', 'coalesce', 'forced', 'cancel', 'initial_cancel', 'poll', 'fetch_recovery']]

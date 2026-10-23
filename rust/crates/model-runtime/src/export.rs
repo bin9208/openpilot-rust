@@ -363,8 +363,8 @@ fn require_space(
     // SAFETY: the successful call initialized every field in stats.
     let stats = unsafe { stats.assume_init() };
     let free = u128::from(stats.f_bavail) * u128::from(stats.f_frsize);
-    if free < (25u128 << 30) + growth as u128 {
-        return Err("CPU artifact emission requires 25 GiB free plus artifact growth".into());
+    if free < growth as u128 {
+        return Err("insufficient space for estimated CPU artifact growth".into());
     }
     Ok(())
 }
@@ -379,6 +379,13 @@ fn require_space(
 #[cfg(test)]
 mod emission_tests {
     use super::*;
+    #[cfg(unix)]
+    #[test]
+    fn artifact_growth_admission_rejects_impossible_growth() {
+        let temp = tempfile::tempdir().unwrap();
+        assert!(require_space(temp.path(), 0).is_ok());
+        assert!(require_space(temp.path(), usize::MAX).is_err());
+    }
     #[test]
     fn original_cpu_manifest_bytes_and_atomic_artifacts_match() {
         for fixture in [

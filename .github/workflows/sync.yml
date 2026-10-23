@@ -19,7 +19,7 @@ permissions:
 jobs:
   sync:
     if: github.repository == 'bin9208/openpilot'
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     steps:
       - name: Validate explicit synchronization target
         env:

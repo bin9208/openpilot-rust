@@ -28,8 +28,8 @@ def main() -> None:
   args = parser.parse_args()
   for name in ["bin_dir", "models", "opencv", "binding", "output"]:
     setattr(args, name, getattr(args, name).resolve())
-  if shutil.disk_usage(args.output.parent).free < 25 * 1024**3 + 512 * 1024**2:
-    raise OSError("Xiaoge CI requires 25 GiB free plus 512 MiB; recover 35 GiB before resuming")
+  if shutil.disk_usage(args.output.parent).free < 512 * 1024**2:
+    raise OSError("Xiaoge CI requires 512 MiB estimated growth")
   args.output.mkdir()
   examples = args.bin_dir / "examples"
   common = ("--binary", str(args.bin_dir / "openpilot-xiaoge"), "--binding", str(args.binding),

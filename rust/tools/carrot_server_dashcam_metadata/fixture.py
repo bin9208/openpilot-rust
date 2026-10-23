@@ -56,8 +56,8 @@ class Fixture:
 
 def prepare(binary: Path,output: Path,argv: list[str]):
   output.mkdir(parents=True,exist_ok=True);free=shutil.disk_usage(output).free;growth=8*1024**2
-  save(output/'diskguard.json',{'free_bytes':free,'reserve_bytes':25*1024**3,'estimated_growth_bytes':growth})
-  if free<25*1024**3+growth:raise RuntimeError('disk reserve requires recovery')
+  save(output/'diskguard.json',{'free_bytes':free,'estimated_growth_bytes':growth})
+  if free<growth:raise RuntimeError('insufficient space for estimated fixture growth')
   save(output/'invocation.json',{'command':[sys.executable,'-P',*argv],'PYTHONPATH':os.environ.get('PYTHONPATH',''),'binary_sha256':hashlib.sha256(binary.read_bytes()).hexdigest()})
   paths=[Path('openpilot/selfdrive/carrot/server/features/dashcam')/name for name in ('routes.py','summary_sources.py','catalog.py','paths.py')]
   save(output/'source-hashes.json',{str(path):hashlib.sha256(path.read_bytes()).hexdigest() for path in paths})

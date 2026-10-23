@@ -12,7 +12,7 @@ import unittest
 
 
 SOURCE = Path(__file__).with_name("package.py")
-FUNCTIONS = {"source_path_allowed", "rebuild_opencv_artifact", "require_fresh_opencv", "require_delivery_ref", "stage_opencv_libraries", "digest"}
+FUNCTIONS = {"runner_environment_allowed", "source_path_allowed", "rebuild_opencv_artifact", "require_fresh_opencv", "require_delivery_ref", "stage_opencv_libraries", "digest"}
 tree = ast.parse(SOURCE.read_text())
 namespace = dict(Path=Path, hashlib=hashlib, json=json, os=os, shutil=shutil, SHA="exact-source", BASE="baseline")
 exec(compile(ast.Module(body=[node for node in tree.body if isinstance(node, ast.FunctionDef)
@@ -20,6 +20,100 @@ exec(compile(ast.Module(body=[node for node in tree.body if isinstance(node, ast
 
 
 class SourcePolicyTests(unittest.TestCase):
+    def test_growth_only_build_consumers_are_exact_paths(self):
+        allowed = namespace["source_path_allowed"]
+        for path in (
+            "rust/crates/dev-tools/src/encoder_stage.rs",
+            "rust/crates/dev-tools/src/package.rs",
+            "rust/crates/model-runtime/src/export.rs",
+            "rust/crates/radard/src/replay/package.rs",
+            "rust/tools/card_ci_space.py",
+            "rust/tools/tests/test_build_space_policy.py",
+        ):
+            with self.subTest(path=path):
+                self.assertTrue(allowed(path))
+                self.assertFalse(allowed(path + ".extra"))
+        self.assertFalse(allowed("rust/tools/unreviewed_space_tool.py"))
+        self.assertFalse(allowed("rust/crates/model-runtime/src/cpu.rs"))
+
+    def test_only_named_self_hosted_runner_is_admitted(self):
+        allowed = namespace["runner_environment_allowed"]
+        for environment, name, expected in (
+            ("github-hosted", "GitHub Actions", False),
+            ("github-hosted", "bin-actions", False),
+            ("self-hosted", "bin-actions", True),
+            ("self-hosted", "other-runner", False),
+            ("self-hosted", "bin-actions-extra", False),
+            ("self-hosted", None, False),
+            ("self-hosted", "", False),
+            (None, "bin-actions", False),
+            ("", "", False),
+        ):
+            with self.subTest(environment=environment, name=name):
+                self.assertEqual(allowed(environment, name), expected)
+
+    def test_cpu_copy_reduction_exceptions_are_exact_paths(self):
+        allowed = namespace["source_path_allowed"]
+        for path in (
+            "rust/crates/loggerd/src/daemon.rs",
+            "rust/crates/loggerd/src/encoder.rs",
+            "rust/crates/loggerd/src/encoder_tests.rs",
+            "rust/crates/signal-observer/src/process.rs",
+            "rust/crates/opencv-runtime/src/native/image.rs",
+            "rust/crates/opencv-runtime/native/image.cc",
+            "rust/crates/opencv-runtime/tests/preprocessing.rs",
+            "rust/tools/check_xiaoge_native_memory.py",
+            "docs/naver/dev-md-cpu-headroom-422.md",
+        ):
+            with self.subTest(path=path):
+                self.assertTrue(allowed(path))
+                self.assertFalse(allowed(path + ".extra"))
+                self.assertFalse(allowed(path + "/child"))
+
+    def test_host_setup_repair_exceptions_are_exact_paths(self):
+        allowed = namespace["source_path_allowed"]
+        for path in ("tools/setup_dependencies.sh", "tools/ci/tests/test_setup_dependencies.py"):
+            with self.subTest(path=path):
+                self.assertTrue(allowed(path))
+                self.assertFalse(allowed(path + ".extra"))
+                self.assertFalse(allowed(path + "/child"))
+        self.assertFalse(allowed("tools/setup_dependencies_other.sh"))
+        self.assertFalse(allowed("tools/ci/tests/test_setup_dependencies_other.py"))
+        self.assertFalse(allowed("tools/ci/tests/test_setup_apt.py"))
+
+    def test_ffmpeg_fixture_isolation_exception_is_one_file(self):
+        allowed = namespace["source_path_allowed"]
+        path = "rust/crates/dev-tools/src/ffmpeg_build.rs"
+        self.assertTrue(allowed(path))
+        for rejected in (path + ".extra", path + "/child",
+                         "rust/crates/dev-tools/src/ffmpeg_build_other.rs"):
+            with self.subTest(path=rejected):
+                self.assertFalse(allowed(rejected))
+
+    def test_common_local_runner_exceptions_are_scoped_paths(self):
+        allowed = namespace["source_path_allowed"]
+        for path in (
+            "rust/crates/carrot-man/ci-jobs.yml",
+            "rust/tools/check-disk-space",
+            "tools/ci/local-arm",
+            "tools/ci/tests/test_local_runners.py",
+            "docs/naver/all-local-actions-502.md",
+            "rust/crates/disk-space/src/lib.rs",
+            "rust/crates/disk-space/tests/cli.rs",
+            ".github/workflows/self-hosted-readiness.yml",
+            ".github/workflows/wiki-settings-check.yaml",
+            ".github/workflows/wiki-settings-publish.yaml",
+            ".github/workflows/carrot-route-vault-publish.yaml",
+            ".github/workflows/naver-upstream-sync.yml",
+            ".github/workflows/sync.yml",
+        ):
+            with self.subTest(path=path):
+                self.assertTrue(allowed(path))
+                self.assertFalse(allowed(path + ".extra"))
+                self.assertFalse(allowed(path + "/child"))
+        self.assertTrue(allowed(".github/actions/local-arm/action.yml"))
+        self.assertFalse(allowed(".github/actions/local-arm-other/action.yml"))
+
     def test_gpu_exceptions_are_exact_paths(self):
         allowed = namespace["source_path_allowed"]
         for path in (
@@ -54,12 +148,13 @@ class SourcePolicyTests(unittest.TestCase):
 
     def test_models_other_providers_and_directories_remain_rejected(self):
         for path in (
-            "rust/crates/opencv-runtime/", "rust/crates/opencv-runtime/native/image.cc",
+            "rust/crates/opencv-runtime/", "rust/crates/opencv-runtime/native/image.cc.extra",
+            "rust/crates/loggerd/src/other.rs", "rust/crates/signal-observer/src/neural.rs",
             "rust/crates/opencv-runtime/native/opencl_priority_other.h",
             "rust/crates/opencv-runtime/src/native/net/other.rs",
             "rust/crates/opencv-runtime/tests/fixtures/other.c",
             "rust/crates/opencv-runtime/native/opencv-defined-access.patch",
-            "rust/crates/dev-tools/src/ffmpeg_build.rs", "rust/crates/webcam/build.rs",
+            "rust/crates/dev-tools/src/ffmpeg_build_other.rs", "rust/crates/webcam/build.rs",
             "rust/crates/signal-observer/src/lib.rs", "rust/ci/runtime/unrelated.py",
             "openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx",
             "openpilot/selfdrive/carrot/xiaoge/other.html", "openpilot/common/params_keys.h/child",

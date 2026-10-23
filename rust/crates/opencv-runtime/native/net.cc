@@ -112,10 +112,12 @@ rust::Vec<Tensor> forward(Net& net, rust::Slice<const float> input, rust::Slice<
       (!cv::ocl::useOpenCL() || cv::ocl::Device::getDefault().ptr() != net.gpu_context.getDevice().ptr() ||
        cv::ocl::Device::getDefault().type() != cv::ocl::Device::TYPE_GPU))
     throw std::runtime_error("DNN GPU context lost or changed");
-  // setInput may retain a Mat; clone first so no borrowed Rust pointer survives this call.
-  const auto owned_input = cv::Mat(static_cast<int>(shape.size()), shape.data(), CV_32F,
-    const_cast<float*>(input.data())).clone();
-  net.value.setInput(owned_input);
+  // Pinned OpenCV fe38fc60 Net::Impl::setInput synchronously copyTo's its own
+  // inputsData (modules/dnn/src/net_impl.cpp). Only that owned storage survives;
+  // cloning this borrowed header first would copy the full tensor twice.
+  const cv::Mat borrowed_input(static_cast<int>(shape.size()), shape.data(), CV_32F,
+    const_cast<float*>(input.data()));
+  net.value.setInput(borrowed_input);
   std::vector<cv::Mat> outputs;
   if (names.empty()) outputs.push_back(net.value.forward());
   else {
@@ -130,8 +132,7 @@ rust::Vec<Tensor> forward(Net& net, rust::Slice<const float> input, rust::Slice<
     for (int i = 0; i < output.dims; ++i) tensor.shape.push_back(output.size[i]);
     const auto contiguous = output.isContinuous() ? output : output.clone();
     const auto* values = contiguous.ptr<float>();
-    tensor.values.reserve(contiguous.total());
-    for (std::size_t i = 0; i < contiguous.total(); ++i) tensor.values.push_back(values[i]);
+    tensor.values = copy_scores(rust::Slice<const float>(values, contiguous.total()));
     result.push_back(std::move(tensor));
   }
   scope.finish();

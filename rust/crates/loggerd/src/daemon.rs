@@ -25,6 +25,16 @@ struct ServiceState {
     encoder: Option<Encoder>,
 }
 
+const MAX_RETAINED_ENCODER_BYTES: usize = 1024 * 1024;
+
+fn finish_encoder_drain(bytes: &mut Vec<u8>) {
+    bytes.clear();
+    // This limits idle scratch capacity, never the accepted packet size.
+    if bytes.capacity() > MAX_RETAINED_ENCODER_BYTES {
+        *bytes = Vec::new();
+    }
+}
+
 pub fn run(environment: Environment) -> Result<(), Error> {
     diagnostics::initialize(environment.device_name()?);
     let signal = Arc::new(AtomicUsize::new(0));
@@ -88,6 +98,7 @@ pub fn run(environment: Environment) -> Result<(), Error> {
     let mut message_count = 0_u64;
     let mut byte_count = 0_u64;
     let mut receive_buffer = Vec::new();
+    let mut encoder_bytes = Vec::new();
     let started = clock::now()?;
     while signal.load(Ordering::Relaxed) == 0 {
         for index in subscribers.poll_ready(Duration::from_millis(1000))? {
@@ -106,9 +117,8 @@ pub fn run(environment: Environment) -> Result<(), Error> {
                 if signal.load(Ordering::Relaxed) != 0 {
                     break;
                 }
-                // Encoder packets can be retained across rotation; give those
-                // their own allocation. Ordinary log packets are consumed here.
-                let mut encoder_bytes = Vec::new();
+                // Encoder handling transfers storage only when retaining a
+                // packet for rotation or audio initialization.
                 let bytes = if states[index].encoder.is_some() {
                     &mut encoder_bytes
                 } else {
@@ -148,8 +158,7 @@ pub fn run(environment: Environment) -> Result<(), Error> {
                 match &mut state.encoder {
                     Some(encoder) => {
                         rotation.last_camera_ns = clock::now()?;
-                        let outcome =
-                            encoder.handle(&mut logger, std::mem::take(bytes), rotation.ready)?;
+                        let outcome = encoder.handle(&mut logger, bytes, rotation.ready)?;
                         byte_count = byte_count.wrapping_add(u64::try_from(outcome.bytes)?);
                         if outcome.ready_part.is_some() {
                             rotation.ready += 1;
@@ -191,6 +200,9 @@ pub fn run(environment: Environment) -> Result<(), Error> {
                         format!("large volume of '{name}' messages"),
                     );
                 }
+            }
+            if states[index].encoder.is_some() {
+                finish_encoder_drain(&mut encoder_bytes);
             }
         }
     }
@@ -241,6 +253,26 @@ fn rotate_with_clock(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn drain_end_keeps_storage_through_one_mib_and_releases_larger_capacity() {
+        for size in [1024, 1024 * 1024] {
+            let mut bytes = vec![0x5a; size];
+            let allocation = bytes.as_ptr();
+            let capacity = bytes.capacity();
+            finish_encoder_drain(&mut bytes);
+            assert!(bytes.is_empty());
+            assert_eq!(bytes.as_ptr(), allocation);
+            assert_eq!(bytes.capacity(), capacity);
+        }
+        // A large packet may have been followed by a much smaller final packet
+        // or an empty receive. The budget applies to capacity, not length.
+        let mut bytes = Vec::with_capacity(1024 * 1024 + 1);
+        bytes.extend_from_slice(b"small final packet");
+        finish_encoder_drain(&mut bytes);
+        assert!(bytes.is_empty());
+        assert_eq!(bytes.capacity(), 0);
+    }
 
     #[test]
     fn starts_rotation_timeout_after_opening_and_writing_the_new_segment() {

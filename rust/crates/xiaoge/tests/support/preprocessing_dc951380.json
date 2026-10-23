@@ -1,0 +1,25 @@
+{
+  "source_commit": "dc95138076836ea3a5c1b6c27262be3f3b912f71",
+  "references": [
+    {
+      "path": "rust/crates/xiaoge/tests/support/geometry_dc951380.rs",
+      "sha256": "b39c445cfd8d2aecdca054708d364a1c48cba989ab6afada2b5511e2f145f17e",
+      "source_path": "rust/crates/xiaoge/src/inference/geometry.rs",
+      "source_sha256": "b39c445cfd8d2aecdca054708d364a1c48cba989ab6afada2b5511e2f145f17e",
+      "extraction": "Entire Git blob, byte-for-byte; no edits."
+    },
+    {
+      "path": "rust/crates/xiaoge/tests/support/preprocessing_dc951380.rs",
+      "sha256": "95580fca0d25909f959945afad014876768dc5f170b56c60a696c0cc88605669",
+      "source_path": "rust/crates/xiaoge/src/inference/lane.rs",
+      "source_sha256": "3069986d7e6f8893ab2399fdbdfb37e57e8e720a541a139c0ce847940c85f610",
+      "source_lines_inclusive": [
+        13,
+        25
+      ],
+      "extracted_sha256": "7d98f717c112cbc790eb1633b2fba68b0798c069fad756abaf0561dfc23fc6af",
+      "extraction": "lane_image function (lines 13-25), byte-for-byte. Only imports, comments and module declaration preceding that function are harness adapters."
+    }
+  ],
+  "verification": "Read source blobs with git show <source_commit>:<source_path>; check source_sha256, then compare the whole geometry snapshot or lane_image extracted line span byte-for-byte and check reference sha256. This receipt records source extraction only, not execution or correctness evidence."
+}

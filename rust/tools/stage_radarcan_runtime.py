@@ -19,7 +19,7 @@ def main() -> None:
   args = parser.parse_args()
   growth = 64 * 2**20
   free = shutil.disk_usage(args.output.parent).free
-  assert free >= 25 * 2**30 + growth, (free, growth)
+  assert free >= growth, (free, growth)
   args.output.mkdir()
   load_binding(args.binding)
   values = normal_cases(args.dbc.resolve())

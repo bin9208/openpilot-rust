@@ -18,9 +18,9 @@ only that patch artifact is exempted from Git whitespace diagnostics.
 
 `cargo run --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --bin build-xiaoge-opencv -- --output PROVIDER` builds only core/imgproc/dnn, without Python, IPP, OpenCL, LAPACK, GUI, codecs, or CUDA. OpenCV retains its Apache2.0 license; bundled protobuf retains BSD3-Clause, flatbuffers Apache2.0 and zlib1.3.1 its Zlib license. Builder copies complete upstream licenses into its output and freezes library/header/license SHA256 identities in `native-libraries.sha256` and `receipt.json`. Cargo requires `OPENPILOT_OPENCV_ROOT` and verifies that manifest before compiling CXX. No cv2.so or Python runtime is linked.
 
-The CXX declarations accept borrowed slices, validate all extent/product/format contracts twice, clone the DNN input before OpenCV may retain it, and return owned Rust vectors. Exceptions are caught by CXX and returned as typed Rust errors. DnnNet has no Send/Sync implementation and contains an Rc marker. Once-only thread initialization completes before any native operation, avoiding concurrent changes to OpenCV's global thread configuration.
+The CXX declarations accept borrowed slices, validate all extent/product/format contracts twice, and return owned Rust vectors. The pinned `Net::Impl::setInput` synchronously copies the borrowed FP32 input into its own `inputsData` before returning; the adapter does not make an additional clone or retain the Rust pointer. Reassess that provider contract when updating OpenCV. Exceptions are caught by CXX and returned as typed Rust errors. DnnNet has no Send/Sync implementation and contains an Rc marker. Once-only thread initialization completes before any native operation, avoiding concurrent changes to OpenCV's global thread configuration.
 
-Cropping, stride removal, polygon scaling, normalization, channel ordering, confidence interpretation, scheduling and control remain in Rust callers. The adapters perform external OpenCV calls plus representation/ownership conversion only. JPEG remains a separate external dependency.
+Crop selection, polygon scaling, normalization, channel ordering, confidence interpretation, scheduling and control remain in Rust callers. The adapters perform external OpenCV calls plus representation/ownership conversion only. The checked strided grayscale ROI resize and NV12 conversion/mask/resize composition avoid intermediate owned copies while retaining the same operation order and output pixels. JPEG remains a separate external dependency.
 
 Pure contract tests run with `--no-default-features` under Miri. They verify checked dimensions, lengths, shape products and owned/borrowed views; Miri cannot execute the native library. Native exception/ownership checks, exact pixel differentials and real pinned-model comparisons require actual CXX execution with ASAN/UBSAN coverage. Host and aarch64 GNU/QEMU evidence must remain separate; GNU symbol/version and AGNOS sysroot compatibility require explicit checks, and none establishes camera/device acceptance.
 
@@ -79,8 +79,9 @@ restore any prior binding/enable state, and explicitly clear an initially empty
 binding; stock `OpenCLExecutionContextScope` does not restore that empty case.
 GPU net destruction also releases graph allocations under its own context,
 then restores the caller. The adapter creates no worker threads or global GPU lock. The parent serializes
-GPU loads/forwards across nets; CPU nets remain parallel. Input cloning, owned
-output copies, and the Rust Rc ownership marker retain their prior contracts.
+GPU loads/forwards across nets; CPU nets remain parallel. OpenCV's synchronous
+input copy, owned output copies, and the Rust Rc ownership marker retain the
+ownership boundary.
 There are no FP16 targets, model rewrites, or process scheduling changes.
 
 GPU selection enumerates public OpenCV platform/device APIs, requires exact

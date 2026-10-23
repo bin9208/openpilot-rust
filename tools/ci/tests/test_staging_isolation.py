@@ -43,10 +43,11 @@ with open(os.environ['STAGED_PATHS'],'a') as file:file.write(str(output)+'\\n')
                                    RUNNER_TEMP=str(root), GITHUB_WORKSPACE=str(root / 'workspace'),
                                    GITHUB_RUN_ID='42', GITHUB_RUN_ATTEMPT='1',
                                    GITHUB_ENV=str(root / 'environment'), STAGED_PATHS=str(root / 'paths'))
-                # Run the actual preparation/invocation/export statements with owned
-                # tool substitutes; package installs and real builds stay in Actions.
+                # Include the job's private dependency-root allocation before its
+                # linker path is expanded. Downloads are outside this output test.
+                # Run actual preparation/invocation/export with owned substitutes.
                 selected = '\n'.join(line for line in script.splitlines()
-                                     if ('raylib_root=' in line or 'check-disk-space' in line
+                                     if ('raylib_root=' in line or 'cross_root=' in line or 'check-disk-space' in line
                                          or '--bin stage-startup-ui-raylib --' in line
                                          or line.lstrip().startswith("printf 'STARTUP_UI_RAYLIB_ROOT=")))
                 for _ in range(2):

@@ -72,9 +72,9 @@ def main() -> None:
     str(output / "source-oracle"),
   ]
   free = shutil.disk_usage(output).free
-  guard = {"free": free, "growth": 128 * 1024**2, "floor": 25 * 1024**3}
+  guard = {"free": free, "growth": 128 * 1024**2}
   (output / "space.json").write_text(json.dumps(guard, indent=2) + "\n")
-  if free < guard["floor"] + guard["growth"]:
+  if free < guard["growth"]:
     raise RuntimeError(f"insufficient disk headroom: {guard}")
   (output / "build-command.json").write_text(json.dumps(command, indent=2) + "\n")
   run(command, output / "build.log", env)

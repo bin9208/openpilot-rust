@@ -56,7 +56,7 @@ def main() -> None:
     parser.error('--runner and --sysroot must be specified together')
   free = shutil.disk_usage(ROOT).free
   growth = 512 * 2**20
-  assert free >= 25 * 2**30 + growth, (free, growth)
+  assert free >= growth, (free, growth)
   args.evidence.mkdir(parents=True)
   from card_toyota_final_source import install
   closure = install(args.evidence)

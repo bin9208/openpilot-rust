@@ -1,0 +1,215 @@
+name: All-local Actions validation502
+on:
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: Select validation or read-only runner storage diagnostics
+        type: choice
+        options: [all, space-only, storage-only]
+        default: all
+permissions:
+  contents: read
+jobs:
+  storage:
+    name: local runner storage diagnostics
+    if: inputs.scope == 'storage-only'
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    timeout-minutes: 5
+    steps:
+      - name: Report filesystem capacity and bounded cache sizes without changing files
+        shell: bash
+        run: |
+          printf 'runner=%s host=%s scope=read-only\n' "$RUNNER_NAME" "$(uname -m)"
+          df -B1 -- "$GITHUB_WORKSPACE" "$RUNNER_TEMP" /tmp
+          for path in "$GITHUB_WORKSPACE" "$HOME/.cache" "${CARGO_HOME:-$HOME/.cargo}" "${RUSTUP_HOME:-$HOME/.rustup}" /tmp; do
+            if [[ -d "$path" && ! -L "$path" ]]; then
+              printf '\nDirectory sizes: %s\n' "$path"
+              timeout 30s du -x -B1 --max-depth=2 -- "$path" 2>/dev/null | sort -n | tail -n 20 || true
+            fi
+          done
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          for directory in sorted(Path('/tmp').glob('openpilot-ci.*')):
+              owner = directory / 'owner'
+              if directory.is_symlink() or owner.is_symlink() or not owner.is_file():
+                  continue
+              value = owner.read_text().strip()
+              fields = value.split(':')
+              if len(fields) == 3 and fields[0].isdigit() and fields[1].isdigit():
+                  print(json.dumps({'directory': str(directory), 'run_id': fields[0],
+                                    'attempt': fields[1], 'job': fields[2]}))
+          PY
+  policy:
+    name: local Actions policy and regression checks
+    if: inputs.scope != 'storage-only'
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    timeout-minutes: 15
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+    defaults:
+      run:
+        working-directory: all-local-502
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: all-local-502
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: ./all-local-502/.github/actions/job-temp
+      - uses: ./all-local-502/.github/actions/rust-path
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12.14'
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - name: Prepare isolated policy dependencies
+        run: |
+          python -m venv "$CI_JOB_TEMP/venv"
+          "$CI_JOB_TEMP/venv/bin/python" -m pip install PyYAML==6.0.3 pytest==9.0.2
+      - name: Prove the new routing regression rejects the unchanged hosted baseline
+        run: |
+          git fetch --no-tags --depth=1 origin dc95138076836ea3a5c1b6c27262be3f3b912f71
+          mkdir -p "$CI_JOB_TEMP/baseline"
+          git archive dc95138076836ea3a5c1b6c27262be3f3b912f71 .github/workflows tools/setup_dependencies.sh > "$CI_JOB_TEMP/baseline.tar"
+          tar -xf "$CI_JOB_TEMP/baseline.tar" -C "$CI_JOB_TEMP/baseline"
+          "$CI_JOB_TEMP/venv/bin/python" - <<'PY'
+          import importlib.util,json,os,unittest
+          from pathlib import Path
+          spec=importlib.util.spec_from_file_location('local_runner_policy','tools/ci/tests/test_local_runners.py')
+          module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+          module.ROOT=Path(os.environ['CI_JOB_TEMP'])/'baseline'
+          result=unittest.TestResult()
+          module.LocalRunnerPolicyTests('test_all_jobs_in_all_workflows_use_the_local_runner').run(result)
+          assert result.failures and not result.errors, (result.failures,result.errors)
+          record=dict(source_commit=os.environ['GITHUB_SHA'],baseline='dc95138076836ea3a5c1b6c27262be3f3b912f71',phase='baseline-red',tests=result.testsRun,expected_failures=len(result.failures),errors=len(result.errors))
+          spec=importlib.util.spec_from_file_location('native_apt_policy','tools/ci/tests/test_setup_dependencies.py')
+          module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+          baseline_setup=(Path(os.environ['CI_JOB_TEMP'])/'baseline/tools/setup_dependencies.sh').read_text()
+          module.FUNCTIONS=baseline_setup[baseline_setup.index('function retry()'):].split('# --- Main ---',1)[0]
+          result=unittest.TestResult()
+          unittest.defaultTestLoader.loadTestsFromTestCase(module.SetupDependenciesTests).run(result)
+          assert result.failures and not result.errors, (result.failures,result.errors)
+          record['native_apt_baseline']=dict(tests=result.testsRun,expected_failures=len(result.failures),errors=len(result.errors))
+          (Path(os.environ['CI_JOB_TEMP'])/'baseline-red.json').write_text(json.dumps(record,indent=2)+'\n')
+          print(json.dumps(record))
+          PY
+      - name: Require the complete current policy and retained CI regression suite
+        run: |
+          "$CI_JOB_TEMP/venv/bin/python" -m unittest discover -s tools/ci/tests -v
+          "$CI_JOB_TEMP/venv/bin/python" rust/ci/runtime/test_package_policy.py
+          "$CI_JOB_TEMP/venv/bin/python" -m pytest -c /dev/null --noconftest -q tools/ci/tests/test_native_disk_guard.py
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-disk-space --locked
+      - name: Require build-tool growth admission and retained native tool contracts
+        if: inputs.scope == 'space-only'
+        run: |
+          PYTHONPATH=rust/tools "$CI_JOB_TEMP/venv/bin/python" -m pytest -c /dev/null --noconftest -q rust/tools/tests/test_build_space_policy.py rust/tools/tests/test_card_ci.py::test_reference_phase_stops_before_brand_outputs_exceed_available_growth
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --lib --test disk_space --locked
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-model-runtime --lib --locked
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-radard --lib replay::package::tests --locked
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: all-local-502-policy
+          path: ${{ env.CI_JOB_TEMP }}/baseline-red.json
+      - uses: ./all-local-502/.github/actions/job-temp
+        if: always()
+        with:
+          cleanup: 'true'
+  arm:
+    name: local QEMU ARM execution and command-file transport
+    needs: policy
+    if: inputs.scope == 'all'
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    timeout-minutes: 90
+    env:
+      LOCAL_CI_ARCH: aarch64
+      LOCAL_CI_SOURCE_ROOT: ${{ github.workspace }}/all-local-502
+      RUSTUP_TOOLCHAIN: 1.94.0
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+    defaults:
+      run:
+        working-directory: all-local-502
+        shell: openpilot-local-shell {0}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: all-local-502
+          persist-credentials: false
+      - uses: ./all-local-502/.github/actions/job-temp
+      - uses: ./all-local-502/.github/actions/local-arm
+      - name: Build and load real ARM ELF and Python bindings
+        run: |
+          test "$(uname -m)" = aarch64
+          test "$RUNNER_ENVIRONMENT" = self-hosted
+          test "$RUNNER_ARCH" = X64
+          cat > "$RUNNER_TEMP/arm-binding.c" <<'C'
+          int arm_answer(void) { return 502; }
+          C
+          gcc -shared -fPIC "$RUNNER_TEMP/arm-binding.c" -o "$RUNNER_TEMP/arm-binding.so"
+          mkdir -p "$CARGO_TARGET_DIR"
+          cp "$RUNNER_TEMP/arm-binding.so" "$CARGO_TARGET_DIR/bridge-binding.so"
+          readelf -h "$RUNNER_TEMP/arm-binding.so" | tee "$RUNNER_TEMP/arm-elf.txt"
+          grep -q AArch64 "$RUNNER_TEMP/arm-elf.txt"
+          python - <<'PY'
+          import ctypes,os,platform,sys
+          assert platform.machine()=='aarch64' and sys.version_info[:3]==(3,12,14)
+          assert ctypes.CDLL(os.environ['RUNNER_TEMP']+'/arm-binding.so').arm_answer()==502
+          PY
+          printf 'LOCAL_ARM_ENV_PROOF=retained\n' >> "$GITHUB_ENV"
+      - name: Require ARM command exit status and host artifact visibility
+        shell: bash
+        run: |
+          test "$LOCAL_CI_TARGET_DIR" != "$LOCAL_CI_SOURCE_ROOT/rust/target"
+          readelf -h "$LOCAL_CI_TARGET_DIR/bridge-binding.so" | grep AArch64
+          printf 'exit 37\n' > "$CI_JOB_TEMP/exit-proof.sh"
+          set +e
+          "$LOCAL_CI_SOURCE_ROOT/tools/ci/local-arm" "$CI_JOB_TEMP/exit-proof.sh"
+          actual=$?
+          set -e
+          test "$actual" = 37
+          printf '{"expected":37,"actual":%s}\n' "$actual" > "$CI_JOB_TEMP/arm-exit.json"
+      - name: Require environment propagation and ARM subprocess IPC and signal handling
+        run: |
+          test "$LOCAL_ARM_ENV_PROOF" = retained
+          python - <<'PY'
+          import os,signal,socket,subprocess,sys,tempfile
+          parent,child=socket.socketpair()
+          code='import os,signal,socket,sys; s=socket.socket(fileno=int(sys.argv[1])); signal.signal(signal.SIGTERM,lambda *_:sys.exit(23)); s.sendall(b"arm-ready"); s.recv(1)'
+          process=subprocess.Popen([sys.executable,'-c',code,str(child.fileno())],pass_fds=(child.fileno(),))
+          child.close(); parent.settimeout(30)
+          try:
+              assert parent.recv(32)==b'arm-ready'
+              process.send_signal(signal.SIGTERM)
+              assert process.wait(timeout=30)==23
+          finally:
+              if process.poll() is None: process.kill(); process.wait()
+              parent.close()
+          PY
+          rustup toolchain install 1.94.0 --profile minimal
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-runtime-core --lib --locked
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: all-local-502-arm-qemu
+          path: |
+            ${{ env.CI_JOB_TEMP }}/local-arm/execution.json
+            ${{ env.CI_JOB_TEMP }}/local-arm/qemu-version.txt
+            ${{ env.CI_JOB_TEMP }}/local-arm/proot-version.txt
+            ${{ env.CI_JOB_TEMP }}/arm-elf.txt
+            ${{ env.CI_JOB_TEMP }}/arm-exit.json
+            ${{ env.LOCAL_CI_TARGET_DIR }}/bridge-binding.so
+      - uses: ./all-local-502/.github/actions/local-arm
+        if: always()
+        with:
+          cleanup: 'true'
+      - uses: ./all-local-502/.github/actions/job-temp
+        if: always()
+        with:
+          cleanup: 'true'

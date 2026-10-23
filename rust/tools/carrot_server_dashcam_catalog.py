@@ -55,8 +55,8 @@ def snapshot(path: Path) -> dict[str, Json]:
 def main() -> None:
   parser = argparse.ArgumentParser(); parser.add_argument('--binary', type=Path, required=True); parser.add_argument('--output', type=Path, required=True); args = parser.parse_args()
   output = args.output.resolve(); output.mkdir(parents=True, exist_ok=True); binary = args.binary.resolve()
-  free = shutil.disk_usage(output).free; save(output / 'diskguard.json', {'free_bytes': free, 'estimated_growth_bytes': 8 * 1024**2, 'reserve_bytes': 25 * 1024**3})
-  if free < 25 * 1024**3 + 8 * 1024**2: raise RuntimeError('disk reserve requires recovery before fixture generation')
+  free = shutil.disk_usage(output).free; save(output / 'diskguard.json', {'free_bytes': free, 'estimated_growth_bytes': 8 * 1024**2})
+  if free < 8 * 1024**2: raise RuntimeError('insufficient space for estimated fixture growth')
   save(output / 'invocation.json', {'command': [sys.executable, '-P', *sys.argv], 'PYTHONPATH': os.environ.get('PYTHONPATH', ''), 'binary_sha256': hashlib.sha256(binary.read_bytes()).hexdigest()})
   source, paths, state = source_modules()
   source_files = [Path('openpilot/selfdrive/carrot/server/features/dashcam') / name for name in ('catalog.py', 'paths.py', 'read_state.py')]

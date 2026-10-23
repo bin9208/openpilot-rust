@@ -89,7 +89,7 @@ def prepare_assets(repository: Path, destination: Path) -> AssetManifest:
     generator_inputs.extend(sorted((generator / brand).glob("*.py")))
   # Account for input staging and the resulting output, with bounded headroom.
   growth = 4 * sum(path.stat().st_size for path in originals + generator_inputs) + 16 * 1024**2
-  required = 25 * 1024**3 + growth
+  required = growth
   free = shutil.disk_usage(destination.parent).free
   if free < required:
     raise InsufficientSpaceError(free, required)

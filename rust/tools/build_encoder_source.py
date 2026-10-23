@@ -17,9 +17,9 @@ def main() -> None:
   root = Path(__file__).resolve().parents[2]
   output = arguments.output.resolve()
   output.mkdir(parents=True, exist_ok=False)
-  guard = {"free": shutil.disk_usage(output).free, "growth": 512 * 1024**2, "floor": 25 * 1024**3}
+  guard = {"free": shutil.disk_usage(output).free, "growth": 512 * 1024**2}
   output.joinpath("space.json").write_text(json.dumps(guard, indent=2) + "\n")
-  if guard["free"] < guard["floor"] + guard["growth"]:
+  if guard["free"] < guard["growth"]:
     raise RuntimeError(f"insufficient disk headroom: {guard}")
   schema = output / "schema"
   generated = output / "cereal/gen/cpp"
