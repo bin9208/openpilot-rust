@@ -1,0 +1,148 @@
+name: Runner capacity inventory 516
+on:
+  push:
+    branches: [codex/fix-516-runner-capacity]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: runner-capacity-516-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  inventory:
+    if: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    name: Read-only registered runner capacity
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          # Preserve build/cache evidence until its ownership and use are known.
+          clean: false
+      - uses: ./.github/actions/job-temp
+      - name: Inventory fixed cache roots without deleting data
+        run: |
+          set -euo pipefail
+          test "$RUNNER_NAME" = bin-actions
+          /usr/bin/python3 -I - <<'PYTHON'
+          import json, os, platform, pwd, re, shutil, stat, subprocess, time
+          from pathlib import Path
+
+          workspace = Path(os.environ['GITHUB_WORKSPACE'])
+          runner_user_dir = Path(pwd.getpwuid(os.getuid()).pw_dir)
+          output = Path(os.environ['CI_JOB_TEMP']) / 'runner-capacity.json'
+          growth = 12 * 1024**3
+          initial = shutil.disk_usage(workspace)
+          if initial.free < 128 * 1024:
+              raise RuntimeError('Insufficient space for the small inventory receipt')
+          report = {
+              'schema': 1, 'source_commit': os.environ['GITHUB_SHA'],
+              'failed_source_commit': '10919538d31b04d28d9a23b383d925441434d579',
+              'failed_job': 120220822740, 'runner': os.environ['RUNNER_NAME'],
+              'architecture': platform.machine(), 'uid': os.getuid(),
+              'diagnostic_only': True, 'recovery_performed': False,
+              'free_before_bytes': initial.free, 'required_growth_bytes': growth,
+              'admitted_before': initial.free >= growth,
+              'measurements_overlap': True, 'metadata_budget_seconds': 180, 'roots': [],
+          }
+          roots = [
+              ('workspace', workspace), ('cargo-target', workspace / 'rust/target'),
+              ('cargo-cache', runner_user_dir / '.cargo'),
+              ('user-cache', runner_user_dir / '.cache'),
+              ('retained-rust-toolchains', runner_user_dir / '.rustup'),
+              ('retained-action-toolchains', Path(os.environ['RUNNER_TOOL_CACHE'])),
+              ('package-download-cache', Path('/var/cache/apt')),
+              ('retained-android-sdk', Path('/usr/local/lib/android')),
+          ]
+          # Project job-temp metadata only: no general /tmp or user-file scan.
+          project_temps = sorted(Path('/tmp').glob('openpilot-ci.*'))
+          report['project_temp_count'] = len(project_temps)
+          report['project_temps_omitted'] = max(0, len(project_temps) - 128)
+          roots.extend(('project-job-temp', path) for path in project_temps[:128])
+          deadline = time.monotonic() + report['metadata_budget_seconds']
+          for kind, path in roots:
+              item = {'kind': kind, 'path': str(path)}
+              report['roots'].append(item)
+              try:
+                  info = path.lstat()
+              except FileNotFoundError:
+                  item['exists'] = False
+                  continue
+              item.update(exists=True, uid=info.st_uid, gid=info.st_gid,
+                          mode=oct(stat.S_IMODE(info.st_mode)),
+                          device=info.st_dev, inode=info.st_ino)
+              if not stat.S_ISDIR(info.st_mode):
+                  item['skipped_non_directory_or_link'] = True
+                  continue
+              if kind == 'project-job-temp':
+                  try:
+                      marker = path / 'owner'
+                      marker_info = marker.lstat()
+                      if stat.S_ISREG(marker_info.st_mode):
+                          value = marker.read_text().strip()
+                          if re.fullmatch(r'[0-9]+:[0-9]+:[A-Za-z0-9_-]+', value):
+                              item['job_owner'] = value
+                  except (OSError, UnicodeError):
+                      item['owner_marker_unreadable'] = True
+              began = time.monotonic()
+              remaining = deadline - began
+              if remaining <= 5:
+                  item['metadata_budget_exhausted'] = True
+                  continue
+              reader_limit = min(20, remaining - 5)
+              # The watchdog runs with the reader's privileges and owns its
+              # process group; killing only the outer sudo would strand du.
+              command = ['sudo', '-n', '/usr/bin/timeout', '--signal=TERM',
+                         '--kill-after=2s', f'{reader_limit:.3f}s', '/usr/bin/du',
+                         '--one-file-system', '--block-size=1', '--max-depth=2',
+                         '--null', '--', str(path)]
+              item['privileged_reader_limit_seconds'] = reader_limit
+              try:
+                  completed = subprocess.run(command, capture_output=True, text=True,
+                                             errors='replace', timeout=reader_limit + 5, check=False)
+              except subprocess.TimeoutExpired:
+                  item['outer_watchdog_timeout_seconds'] = reader_limit + 5
+                  continue
+              item['metadata_seconds'] = time.monotonic() - began
+              item['metadata_exit'] = completed.returncode
+              item['metadata_stderr_present'] = bool(completed.stderr.strip())
+              if completed.returncode in (124, 137):
+                  item['metadata_timeout_seconds'] = reader_limit
+              entries = []
+              records = completed.stdout.split('\0')
+              tail = records.pop()
+              item['metadata_truncated_tail'] = bool(tail)
+              item['metadata_malformed_records'] = 0
+              # A terminated writer may leave its last record incomplete.
+              # Keep only NUL-terminated records and publish partial status.
+              for row in records:
+                  if not row:
+                      continue
+                  count, separator, name = row.partition('\t')
+                  if not separator or not re.fullmatch(r'[0-9]+', count):
+                      item['metadata_malformed_records'] += 1
+                      continue
+                  entries.append({'bytes': int(count), 'path': name})
+              item['metadata_incomplete'] = (completed.returncode != 0 or bool(tail)
+                                             or item['metadata_malformed_records'] != 0)
+              item['largest_directories'] = sorted(entries, key=lambda row: row['bytes'], reverse=True)[:20]
+              item['root_bytes'] = next((row['bytes'] for row in entries if row['path'] == str(path)), None)
+          report['free_after_inventory_bytes'] = shutil.disk_usage(workspace).free
+          report['admitted_after_inventory'] = report['free_after_inventory_bytes'] >= growth
+          with os.fdopen(os.open(output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), 'w') as stream:
+              json.dump(report, stream, indent=2)
+              stream.write('\n')
+          print(json.dumps({key: value for key, value in report.items() if key != 'roots'}))
+          for item in report['roots']:
+              print(json.dumps({key: value for key, value in item.items() if key != 'largest_directories'}))
+          PYTHON
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: runner-capacity-516-inventory
+          path: ${{ env.CI_JOB_TEMP }}/runner-capacity.json
+          if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}

@@ -1,7 +1,9 @@
 name: Fast checks
 on:
   push:
-    branches: ['**']
+    # This unmerged inventory branch must observe existing caches before any
+    # normal checkout cleanup or replay of unchanged functional tests.
+    branches: ['**', '!codex/fix-516-runner-capacity']
   pull_request:
     branches: [dev, main]
   workflow_dispatch:
