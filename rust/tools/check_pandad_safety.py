@@ -5,14 +5,32 @@ import json
 from pathlib import Path
 import random
 import subprocess
+import time
 
 
-def invoke(command, rows, output, label):
+def invoke(command, rows, output, label, timeout_seconds=90):
   payload = ''.join(json.dumps(row) + '\n' for row in rows)
   (output / f'{label}.input.jsonl').write_text(payload)
-  process = subprocess.run(command, input=payload, text=True, capture_output=True, timeout=90)
-  (output / f'{label}.stdout').write_text(process.stdout)
-  (output / f'{label}.stderr').write_text(process.stderr)
+  started = time.monotonic()
+
+  def save_invocation(stdout, stderr, timed_out, returncode):
+    # TimeoutExpired retains bytes even when subprocess.run uses text=True.
+    captures = [value if isinstance(value, bytes) else (value or '').encode() for value in (stdout, stderr)]
+    for suffix, value in zip(('stdout', 'stderr'), captures, strict=True):
+      (output / f'{label}.{suffix}').write_bytes(value)
+    receipt = {'command': list(map(str, command)), 'input_rows': len(rows),
+               'timeout_seconds': timeout_seconds, 'elapsed_seconds': time.monotonic() - started,
+               'timed_out': timed_out, 'returncode': returncode,
+               'stdout_bytes': len(captures[0]), 'stderr_bytes': len(captures[1]),
+               'scope': 'invocation only; complete output and source/native equality are checked separately'}
+    (output / f'{label}.invocation.json').write_text(json.dumps(receipt, indent=2) + '\n')
+
+  try:
+    process = subprocess.run(command, input=payload, text=True, capture_output=True, timeout=timeout_seconds)
+  except subprocess.TimeoutExpired as error:
+    save_invocation(error.stdout, error.stderr, True, None)
+    raise
+  save_invocation(process.stdout, process.stderr, False, process.returncode)
   assert process.returncode == 0, (label, process.returncode, process.stderr[-2000:])
   result = [json.loads(line) for line in process.stdout.splitlines()]
   assert len(result) == len(rows), (label, len(result), len(rows))
@@ -87,8 +105,10 @@ def main():
   native_command = ([args.qemu.resolve(), '-L', args.sysroot.resolve()] if args.qemu is not None else []) + [args.binary.resolve()]
   encoded = invoke(source_command, configurations(), args.output, 'car-params')
   rows = cases(encoded)
-  expected = invoke(source_command, [row | {'params_root': str(args.output.resolve() / 'source-params')} for row in rows], args.output, 'source')
-  actual = invoke(native_command, [row | {'params_root': str(args.output.resolve() / 'native-params')} for row in rows], args.output, 'native')
+  # Measured ext4 journal waits exceed 90s for this whole durable-I/O workload;
+  # this is a batch-check allowance, independent of Panda runtime deadlines.
+  expected = invoke(source_command, [row | {'params_root': str(args.output.resolve() / 'source-params')} for row in rows], args.output, 'source', timeout_seconds=180)
+  actual = invoke(native_command, [row | {'params_root': str(args.output.resolve() / 'native-params')} for row in rows], args.output, 'native', timeout_seconds=180)
   guard_labels = {f'truncated-{length}' for length in range(len(encoded[14]) - 8, len(encoded[14]))}
   recovery = expected[next(index for index, row in enumerate(rows) if row['label'] == 'complete-after-empty')]['results'][1]
   guards = []

@@ -673,3 +673,14 @@ were still compiling; the full consumers and provider-Python receipt had not
 run. [#520](issue-520-xiaoge-emulation-budget.md) gives only this emulated ARM
 matrix row a bounded150-minute build budget, retaining the x64 budget and all
 original commands and runtime limits. The new budget's full result is pending.
+
+The registered [#518 observation39924193562](https://github.com/bin9208/openpilot-rust/actions/runs/39924193562)
+then reproduced the original90-second boundary on physical ext4. The untraced
+source used0.735CPU seconds, completing862rows/3624operations; a separate
+bounded profile produced byte-identical partial stdout and recorded14197fsync
+calls taking88.350seconds. [The focused checker correction](issue-518-panda-safety-budget.md)
+retains the90-second default for CarParams/padding, gives only the full
+source/native batches180seconds, and preserves partial timeout captures plus
+invocation receipts before failing. All897rows/4499operations, durable writes,
+sanitizers and strict comparisons remain. Native equality and full acceptance
+are still pending; evidence collection is not a functional pass.
