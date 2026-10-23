@@ -81,6 +81,8 @@ pub mod carrot_navi_compare;
 pub mod control_failures_check;
 #[cfg(feature = "controlsd-fixture-native")]
 pub mod controlsd_fixture_generate;
+#[cfg(all(target_os = "linux", feature = "current-catalog-export-native"))]
+pub mod current_catalog_export;
 pub mod cutin_alert_check;
 #[cfg(feature = "dbc-generator-native")]
 pub mod dbc_assets;

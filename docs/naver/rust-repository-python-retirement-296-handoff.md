@@ -1,8 +1,127 @@
 # #296 session migration checkpoint (23 October 2026)
 
+## Native current-catalog wrapper source candidate
+
+Reviewed patch3b684ae91832acd0717701d322f7f72bb80b6f0add81e94aa860ea8f6e1f8317
+adds three Rust sources and11unrun tests for the actual6047B embedded Python
+current-host export wrapper, plus its original2015B path controls. Independent
+source review is native-current-catalog-wrapper-review-sol/HANDOFF.md. Parent
+registers one empty current-catalog-export-native feature, CLI/test/module only;
+removing those additions restores all prior Cargo semantics, lock855f00unchanged.
+
+Candidate checks output path containment/aliasing, input/model/source/LLVM pins,
+CPU profile, existing exporter argv/cwd, generated index and exclusive receipt
+creation while retaining partial output on failure. build_model_pipelines.py
+is still an explicit external Python dependency; no25producer/model-compiler
+or source-retirement credit. Required interpreter spelling preserves the caller
+venv. New30/900s deadlines, null stdin, UTF8 and formatting boundaries remain
+explicit; full Python/subprocess parity is not claimed. Source review does not
+prove typechecking, CLI,11tests, strict Clippy or original/native main effects.
+
+Maintained caller and both embedded Python bodies remain untouched. The source
+candidate is inactive. Its next necessary gate is only scoped compile/tests/CLI
+and original/native path controls on bin-actions, without model traffic or old
+corpus replay. All historical Cargo/source maps are preserved; future current
+source checks must explicitly select the new additive registration overlay.
+
+
+## R11 native parser recovery and downstream policy continuation
+
+Run39888221718/job120201371325 at2a proves81parser-dependent ci_rust_isolation
+passes (two older passes filtered), all3changed ci_workflow_policy cases, and
+beep_integer_ci2, ci_model_catalog_publisher2, encoder_runtime_ci3 passes.
+Artifact12473419525/171515B/SHA2ae4b4b113d69d831827306ef8c31ed20cbaf37732ffef040047ae4aeb8bd575
+has27valid CRCs; all46selected Git source hashes and19295index entries match2a.
+The final source/index/tool-after seals are absent. This is bounded progress,
+not whole-policy or AST caller acceptance.
+
+Both lagd_ci cases then fail because their frozen unrelated-command accounting
+still demands the replaced paramsd-startup Python invocation. The only unmatched
+old command is that exact line. Reviewed repair permits its removal only after
+exactly one mandatory native startup step matches the full4039B run hash; native
+build, two-root absence, traced execution, held providers, seven cases and strict
+Clippy stay unchanged. Four source-policy negative assertions cover changes.
+The frozen original JSON, workflow and runtime bytes do not change.
+
+Independent source closure is policy-lagd-startup-review-sol/HANDOFF.md. Minimal
+sourceae7bc0c6ca12d4b5d7fb10e7fe2f1a50ff816f14 is2a plus onlylagd_ci.rs,
+SHA511872e89e447d7cd22a0e85fbfc3853d9fb38217f1636a1fef700561e60ad25.
+The next gate must reuse the91fresh passes explicitly and execute only the two
+failed cases and still-unreached downstream work, adding lagd to strict Clippy
+and retaining complete final holds. Historical18contexts and separate ASTf01
+acceptance retain their limits. No local functional execution occurred.
+
+
+## Actual compiler repairs and original x64 consumer (23 October 2026)
+
+Source review closes exactly three expressions: logger diagnostics guard clones
+its Result before text extraction, Controls held-tree traversal uses keys(), and
+fixture integer truth uses parse::<i128>() != Ok(0). No lint suppression, numeric
+tolerance, wire, barrier, deadline or dependency change. Independent review is
+three-expression-source-review-sol/HANDOFF.md; all new postimages are uncompiled.
+
+Minimal immutable qualification sources are987ac79eae17805a528f8c19231c6fc2cec55a7a
+(cfd plus one diagnostics line) and150bd42771ee45046f0c51343bedeef62646c516
+(55084 plus two Clippy expressions). Each keeps its old Cargo, lock and contract
+bytes. New recipes must explicitly seal the changed paths, without rebasing old
+Cargo overlays or pretending the failed immutable source passed. Main feature
+contains the same reviewed expression fixes; no dev-md change follows.
+
+Peer39888221680 reached real Rust compilation after the R3 file-cap repair;
+its E0507 is the guard binding move. No OOM or SIGXFSZ was observed. Fixture
+39876347504 built and passed five regular tests, then failed two strict Clippy
+lints. Reuse those five pass records explicitly; native109 generation, the one
+ignored full-schema/Float64-bit audit and current ELF/provider/final holds remain
+unreached. Original109 is data reuse only and must not be recaptured.
+
+Original WebRTC39884478138/job120189322749 is bounded admitted: all22original
+steps and26actual steps succeed, with native5tests/build/Clippy and nine functional
+roots. Two artifacts have167valid CRCs, source027 and sealed private ownership.
+Relevant739source entries retain bounded implementation equivalence to2a; this
+is not a new whole-crate/current-source build. ARM job120189323000 stays queued.
+No physical ARM, full-runtime or source-retirement acceptance follows.
+
+Publisher39882326549 failed before compilation because real Cargo received the
+Rustup +1.94.0 selector. Reviewed recipe-only repair uses five explicit rustup
+run1.94.0 cargo invocations at unchanged9368; six other payloads are exact.
+No policy/emitter/tiny-caller success is inferred.
+
+
 Work is unfinished. The user requests moving to a fresh session to increase
 parallelism; this is a continuation of #296, never dev-md/#338. Reuse accepted
 unchanged evidence. Read this handoff and the linked evidence ledger first.
+
+## Active publication R11, superseding earlier queued snapshots
+
+Implementation source2a372557d8958cb38127959a583fa7522b9ed991 is now remotely
+reachable through validation workflowbb6425454476abe106e247dfebc51795ed3da561.
+This batch uses the complete latest #296 source tree and preserves existing
+once leaves, replacing eight reviewed recipes. PR343's feature ref stays adff;
+no dev-md source/branch, protected merge, device or release action follows.
+
+New actual run IDs: policy39888221718, selected-signal observer39888221726,
+call339888221640, logger-main39888221700, controllers39888221653,
+peer39888221680, logging39888221765, bundle39888221708, Fast39888221694.
+The policy's exact2a scope is81latest parser-failed cases with2unchanged passes
+skipped,3changed policy cases and all previously unreached downstream checks.
+Eighteen unchanged case contexts are explicit reuse; the changed AST roster
+case still needs separate acceptance. All46current selected source hashes are
+checked through named overlays, without rewriting historical maps. Eight-field
+preflight, Bash-n and independent reviews pass; actual recovery remains unrun.
+
+Latest subsequent snapshot: original WebRTC x64/job120189322749 succeeds at027;
+Huygens owns artifact admission. ARM/job120189323000 stays queued, with no ARM
+or whole-runtime acceptance inferred. Fixture39876347504, AST39884478095,
+startup39875010351, publisher39882326549 and new peer39888221680 fail; owners
+have fresh exact-job diagnosis tasks. Do not assume earlier causes or recapture
+original109/old successful cohorts. Current source objects remain immutable.
+
+Carver's429 context is closed. Socrates later returns tool-not-found; its APT
+R3freeze/review is preserved and published. Hilbert takes publisher diagnosis;
+all continuing agents remain Sol. SSH R2/R3 source candidates stay scratch-only,
+with known compatibility gaps and no caller/deletion credit. A separate native
+port of the actual6047-byte embedded current-catalog export wrapper is being
+prepared; this gives no25-producer/model-compiler retirement credit.
 
 ## Actual native YAML scanner failure and alias-delimiter repair
 

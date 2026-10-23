@@ -167,6 +167,6 @@ impl Inputs {
                 )
             })
             .collect::<BTreeMap<_, _>>();
-        json!({"files":files,"trees":self.trees.iter().map(|(root,_)|(root.to_string_lossy().into_owned(),Self::members(root).map(|rows|json!(rows)).unwrap_or_else(|e|json!({"error":e.to_string()})))).collect::<BTreeMap<_,_>>()})
+        json!({"files":files,"trees":self.trees.keys().map(|root|(root.to_string_lossy().into_owned(),Self::members(root).map(|rows|json!(rows)).unwrap_or_else(|e|json!({"error":e.to_string()})))).collect::<BTreeMap<_,_>>()})
     }
 }
