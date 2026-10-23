@@ -73,6 +73,13 @@ Linux용 `check-native-logging` 후보는 Rust 로거와 원본 C++ 생산자의
 `--features native-logging-check-native --bin check-native-logging`으로 빌드합니다.
 네이티브 기능과 소스 부재 검증을 통과할 때까지 기존 Python 비교 도구는 유지합니다.
 
+GitHub Actions용 새 `check-native-logging retained` 후보는 고정된 비공개 캡처
+자료와 새 Rust 생산자의 결과를 비교합니다. 기존 `--root`, `--binary`, `--output`에
+`--context`, `--source-commit`, `--binary-sha256`을 전달하며 새 출력 디렉터리가
+필요합니다. 이 모드는 원본 생산자를 실행하지 않으며 `--builder`와 `--reference`를
+받지 않습니다. 새 테스트 21개와 실제 실행·종료 검증은 대기 중입니다. 저장된 자료의
+읽기 검증이나 소스 리뷰만으로 전체 로깅 검증과 Python 제거를 완료한 것은 아닙니다.
+
 Linux용 `check-loggerd-native` 후보는 원본과 Rust 로거의 전체 기록 메시지,
 미디어, 오류 처리, 세그먼트 전환 시간을 비교합니다. `openpilot-dev-tools`에서
 `--features loggerd-check-native --bin check-loggerd-native`로 빌드합니다.

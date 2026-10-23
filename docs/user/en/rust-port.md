@@ -77,6 +77,14 @@ failures. Build it with `--features native-logging-check-native --bin check-nati
 in `openpilot-dev-tools`. Its Python comparison helpers remain until native
 functionality and source-absence checks pass.
 
+The new GitHub Actions candidate `check-native-logging retained` compares sealed
+private captures with a fresh Rust producer. It takes `--context`, `--source-commit`
+and `--binary-sha256` alongside `--root`, `--binary` and a new `--output` directory.
+This mode does not run the original producer and accepts neither `--builder` nor
+`--reference`. Its 21 new tests, execution and shutdown checks remain pending.
+Reading retained data or reviewing source does not complete whole logging
+qualification or Python retirement.
+
 The Linux `check-loggerd-native` candidate compares the original and Rust logger
 with complete recorded messages, media, error paths and rotation timing. Build
 it in `openpilot-dev-tools` with `--features loggerd-check-native --bin check-loggerd-native`.
