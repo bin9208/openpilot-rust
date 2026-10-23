@@ -556,6 +556,7 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
+kbhit-native = ["dep:nix", "rustix/termios"]
 github-utils-native = ["dep:openpilot-runtime-version"]
 developer-ssh-native = ["dep:openpilot-params", "dep:openpilot-runtime-version", "dep:openpilot-http-transport", "dep:openpilot-registration", "dep:ureq", "dep:cookie_store", "dep:url"]
 loggerd-check-native = ["rustix/pipe", "bootlog-artifact-native", "dep:openpilot-messaging", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq", "dep:zmq-sys", "rustix/net", "serde_json/float_roundtrip"]
