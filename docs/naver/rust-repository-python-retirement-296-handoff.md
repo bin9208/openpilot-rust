@@ -1,5 +1,31 @@
 # #296 session migration checkpoint (23 October 2026)
 
+## Native developer SSH source and optional registration
+
+Eight exact R3 source files are integrated from reviewed source candidate
+c3f97466161dd62b45a2f7f9086bed3ccaaaf695 / patch626eb0987a3cfb8e0f8b40f1b132a8aca173b63d610a29ed9be5c1558791ce63.
+Independent R2core/R3digitguard/registration reviews close their narrow source
+scopes. Two optional binaries and one test use developer-ssh-native. All28test
+sources remain unrun; no CLI/runtime/caller/network/SSH/Params/key activation.
+
+The four required packages already exist at the locked versions and identical
+features in registration/UI/http-transport. Cargo.lock changes only four package
+edges in openpilot-dev-tools; all622package versions/checksums/otherdependency
+arrays remain unchanged. Current lock isa82648159767a21268e61ed4f2aba64940b7458733333ece0fab653017929ea0;
+historical855f00 proof maps remain intact and must not be silently rebound.
+No local Cargo/resolution/install occurred. --locked compilation is still a
+required Actions gate. The new11path source overlay makes current selection
+explicit, without changing old fixed-source gates.
+
+R3adds the4300digit default/minimum640/zero-disable string guard and startup-env
+ordering, retaining earlier lazy-response-decoding/Params-side-effect ordering.
+Broader Requests/proxy/CA/netrc/codec/JSON/argparse/nonUTF8/Unicode/nativeexec and
+buffering boundaries remain held. Original ssh.py/setup_ssh_keys.py/auth helper
+remain. No Python-retirement or full-functionality credit is awarded. A focused
+exact-c3f Actions gate must compile and exercise the28synthetic tests/CLI without
+real account, credential, SSH, network or device effects before any activation.
+
+
 ## Active R12 continuation: exact repairs and uncompleted gates
 
 Validation refab9fef829e8131c6d960ebf46e63c4ab538dbf23 now contains full

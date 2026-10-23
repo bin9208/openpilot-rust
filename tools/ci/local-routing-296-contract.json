@@ -615,5 +615,31 @@
     "limits": "explicit30s metadata/900s exporter deadlines versus original unbounded; stdin null versus inherited; UTF8/JSON diagnostic formatting; no full subprocess/Unicode parity",
     "acceptance": "no compile/functional/type/Clippy or original-native main-effect acceptance; no inventory change",
     "historical_maps": "bundle/AST/cfd/source-repair prerequisite maps retain historical exact bytes; future current-source gates select this Cargo/lib overlay explicitly"
+  },
+  "developer_ssh_registration_overlay": {
+    "reviewed_candidate_source": "c3f97466161dd62b45a2f7f9086bed3ccaaaf695",
+    "reviewed_base": "da1a4490844fffc9a3800a44ccd86b76da858ed8",
+    "patch_sha256": "626eb0987a3cfb8e0f8b40f1b132a8aca173b63d610a29ed9be5c1558791ce63",
+    "review": "ssh-r3-registration-review-sol/HANDOFF.md noP1P2; native-developer-ssh-r3-review-sol digitguard scopedPASS; native-developer-ssh-r2-review-sol coreeffects scopedPASS",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/src/bin/developer_ssh.rs": "60121f0f7bcd86bd1457f8379495995dc02c2b3a87a5d9c16b0ef7d50714ffec",
+      "rust/crates/dev-tools/src/bin/setup_ssh_keys.rs": "a531754dca494014de6427d19290d7ee6e49217bd716022c4c7960dcf6fc6fbd",
+      "rust/crates/dev-tools/src/developer_ssh.rs": "0154b2a2ccc8d944736f97466a0c6f6cab19d2ee1cdc4f67326d95d75bb6caf8",
+      "rust/crates/dev-tools/src/developer_ssh/auth.rs": "1056f649b9062202ed0d5c9e8cc15f063999b4d78d6f9901a78eca41ebbee1d8",
+      "rust/crates/dev-tools/src/developer_ssh/cli.rs": "ea6337aaed1b770352c152f7e252b52a47e1e17700359bc5aedf9a14007349fc",
+      "rust/crates/dev-tools/src/developer_ssh/http.rs": "56b249137db34757cc2ea228fe5a78af66a2da03629a01f2354cdf76a72b2934",
+      "rust/crates/dev-tools/src/developer_ssh/integer.rs": "062170d49dcd3d782535b4882c07fc8578686473e1a94a5c0873c92fdd460109",
+      "rust/crates/dev-tools/tests/developer_ssh.rs": "e724f1bb96a7401e5d32cc07b0b0d5c7df8a678630e9f6345bce9d1df8fa7722",
+      "rust/crates/dev-tools/Cargo.toml": "9bd99b48597981c5e7727cd6a2f6435535bafb869326f12df2b5166933385e77",
+      "rust/crates/dev-tools/src/lib.rs": "7ad33da5083e68a3351257272473949d74d37cc2fd22f433c7f1fe7664e703c6",
+      "rust/Cargo.lock": "a82648159767a21268e61ed4f2aba64940b7458733333ece0fab653017929ea0"
+    },
+    "lock_delta": "only4 existing-package edges added to openpilot-dev-tools dependency list; no package/version/checksum/otherdependency changes",
+    "historical_lock_sha256": "855f00e2e7751b242e5599d30708d1db8340a85675b522c7e83dac00bb24a667",
+    "current_lock_sha256": "a82648159767a21268e61ed4f2aba64940b7458733333ece0fab653017929ea0",
+    "scope": "8new optional tool sources,2bins,1test; no caller/SSH/network/Params/key/auth/device activation; all original Python retained",
+    "source_tests": "27integration+1URLunit unrun; explicit4300/min640/env0 digitguard uses shared Unicode15 decimal table",
+    "holds": "no Cargo resolver/typecheck/build/test/Clippy/functional acceptance; HTTP/proxy/CA/netrc/codec/JSON/argparse/nonUTF8/Unicode/provider and actualexec/buffering remain held",
+    "historical_maps": "old855/Cargo52/542/AST/bundle/currentwrapper source maps remain exact historical scopes; current-source checks must explicitly select this newer11path overlay"
   }
 }
