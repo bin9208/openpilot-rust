@@ -1,5 +1,71 @@
 # Repository-wide Python retirement: current evidence (#296)
 
+## 23 October actual-result and capacity checkpoint
+
+Parent model is verified GPT-6.1 Sol / Ultra; all delegated agents use GPT-6.1
+Sol. This remains the isolated #296 issue branch/PR343 targeting dev. The dirty
+primary dev-md checkout is untouched. Inventory stays288replaced-local/3partial/
+3289pending of3580; source additions and queued jobs grant no retirement credit.
+
+Current implementation12656fa38f4c9f105caafc52532b8cc947f75a17 contains the
+reviewed auth set/clear source. ValidationR15 is8302b08ab56a7f6a2bb36681f700f72e551f1d1f,
+with fullD876 source and nineteen preserved once leaves. R14 wrapper39895130353
+bindsDA1/recipe8a8b9f6ef5b0c1c9ea6928ab6a99c767a9acd39d969bc3d7ad31f8fbb41b47bd;
+R15 SSH39895770436 bindsC3f/recipe4654f02981e797f319086e91322ca45dc79fd41c60a181e02b758c9e22b40e1a.
+They remain queued at the latest API observation; no compile/test pass is inferred.
+The separate feature PR remains atadff; no protected merge or device/release action.
+
+PublisherR12 [39892674176](https://github.com/bin9208/openpilot-rust/actions/runs/39892674176)
+passes its two policy tests, both scoped strict Clippy commands, catalog no-run
+link and helper build, then fails at missing jq before ELF holds/tiny caller.
+Artifact12477136405:2075053B/SHA256d57cd92968a4621caea28bcefc79f16b3f5151365c6b91ae2b57fb63921cb6ff;
+all5ZIP CRCs/60nested file seals and19287source-before Git bindings pass
+(19274ordinary files,6materialized-LFS bindings,7raw symlinks). Historical after
+source/provider/ELF seals remain absent. A fixed9368 follow-up reuses the two
+policy/Clippy successes and still requires fresh materialization, one tiny caller
+and final closure. Resource-monitor JSONL is not itself a command-exit receipt.
+
+Read-only cache inventory [39894886684](https://github.com/bin9208/openpilot-rust/actions/runs/39894886684)
+is SUCCESS; artifact12477200561/4283182B/SHA256f61874bb46a59be14199e30c0c8abac1ce788849b1cadfe31ef6f21dca74d9ed
+passes49CRCs/48content seals and owner/provider/process admission. No deletion
+has run. Only the R3target and cargo-home/registry are proposed for later reviewed
+cleanup:807460864allocated bytes, not promised free bytes. At the old inventory
+snapshot even full reclaim left332308480bytes below the unchanged bundle estimate.
+
+New actual [logger main39894886518](https://github.com/bin9208/openpilot-rust/actions/runs/39894886518)
+stops before its first Rust build:7029460992available versus8589934592planned
+bytes. Its private signed-provider preparation completes, but source/compiler/
+functional acceptance is not inferred. [Peer39892674190](https://github.com/bin9208/openpilot-rust/actions/runs/39892674190)
+also stops before compilation:7959007232available versus8589934592planned bytes.
+Their original growth estimates remain unchanged. Publish only metadata inventory/
+reviewed cache cleanup until fresh available capacity admits new builds; no hosted
+fallback, global cache deletion or inflight cancellation.
+
+Fixture150 [39894886546](https://github.com/bin9208/openpilot-rust/actions/runs/39894886546)
+stops before Cargo at the historical-log ZIP flat-name assertion. Its33CRC raw
+proof is retained; exact old five passes remain historical. A safe log-layout
+repair is required before the still-unreached native109/full-schema audit gate.
+
+Logging raw-proof recovery [39894886676](https://github.com/bin9208/openpilot-rust/actions/runs/39894886676)
+is SUCCESS; artifact12477566277/5896947B/SHA25605ff6420f05f8b51f457b85ecf34ad514bc75b6b6147e4abf5d8f78d7f85462f
+has two valid ZIP members. Its nested full proof is still under independent
+inert-data admission. The recovery executes no capture; it grants no R4/lifecycle
+or broader runtime parity acceptance.
+
+Original WebRTC x64 remains bounded accepted. The separate ARM-emulated job
+120189323000 ends at the Actions45minute maximum, not a parent cancellation;
+QEMU-user/PRoot physical_arm_cpu=false. Preparation/Params/msgq finish, compilation
+is interrupted, and ARM functional/media/Clippy acceptance remains open. Partial
+artifacts12476821666/12475759502 are under source/provider/timeout admission.
+Successful x64 and unchanged foundation checks must not be replayed.
+
+StartupR6 remains unpublished for the adapter-timeout descendant ownership P2.
+R7 adds reviewed ownership/recovery-before-pack and qualified quiet cleanup; its
+exact complete recipe requires independent closure before publication. Prefix
+2e4b/f7ffd source-review passes but its new build gate waits for measured capacity.
+Auth18tests and injected-only GithubUtils source remain unvalidated. All originals
+and current credential/account/vehicle paths remain outside these new gates.
+
 ## Auth configuration native set/clear candidate
 
 Reviewed5d4a5e12dada75cc950e7b8f0c568b9119a322b0698d65a4fae597c555d252ec

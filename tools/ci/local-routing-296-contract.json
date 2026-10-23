@@ -702,5 +702,59 @@
     "native_semantics": "mkdir/openw/truncate/prefix/sharedJsonValueASCIIdefaultwrite/clear-onlyNotFound, normalUnixleafsymlink/hardlink behavior retained; suppliedrootonly",
     "historical_maps": "SSHC3f28casegate/pins remainhistoricalimmutable; futureauthchild selectsnew2pathpins, samea826lock/Cargo/lib, no old28rerun",
     "tests": "18syntheticprivate-rootownerlibcasesUNRUN; noauthJSON/HOME/key/account/Params/device/networkaccessoutsidefutureprivateTempDir"
+  },
+  "actual_capacity_and_continuation_checkpoint": {
+    "implementation_source": "12656fa38f4c9f105caafc52532b8cc947f75a17",
+    "validation_commit": "8302b08ab56a7f6a2bb36681f700f72e551f1d1f",
+    "model": "gpt-6.1-sol/ultra parent, gpt-6.1-sol only subagents",
+    "inventory": "288/3/3289 of3580 unchanged",
+    "publisher": {
+      "run": 39892674176,
+      "artifact": 12477136405,
+      "source": "9368bbf328cfd49aea0d7c888153511355592d4f",
+      "bound_before_entries": 19287,
+      "first_failure": "missing jq afterpolicy2/twoClippy/link/helpers",
+      "final_closure": false
+    },
+    "cache_inventory": {
+      "run": 39894886684,
+      "artifact": 12477200561,
+      "CRC": 49,
+      "content_seals": 48,
+      "result": "SUCCESS readonly; no actual deletion",
+      "proposed_allocated_bytes": 807460864
+    },
+    "main_capacity": {
+      "run": 39894886518,
+      "available_bytes": 7029460992,
+      "planned_growth_bytes": 8589934592,
+      "Rust_build_started": false
+    },
+    "peer_capacity": {
+      "run": 39892674190,
+      "available_bytes": 7959007232,
+      "planned_growth_bytes": 8589934592,
+      "Rust_build_started": false
+    },
+    "fixture": {
+      "run": 39894886546,
+      "first_failure": "historical log ZIP flat-name assertion",
+      "Cargo_started": false
+    },
+    "logging_recovery": {
+      "run": 39894886676,
+      "artifact": 12477566277,
+      "result": "SUCCESS complete inert proof candidate; full nested admission pending",
+      "capture_reexecuted": false,
+      "R4_acceptance": false
+    },
+    "ARM": {
+      "run": 39884478138,
+      "job": 120189323000,
+      "result": "Actions maximum45minute timeout; interruptedcompile, functional/Clippy/media unaccepted",
+      "parent_cancelled": false,
+      "physical_arm_cpu": false
+    },
+    "next": "metadata-only reviewed unused cache cleanup and policy readonly inventory before new build gates; no estimate cut/protected merge/dev-md/local functional execution"
   }
 }
