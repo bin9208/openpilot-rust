@@ -1452,7 +1452,7 @@ jobs:
           python tools/check_card_hyundai_params.py "$HYUNDAI_FIXTURE_DIR"
           python tools/check_card_hyundai_state.py "$HYUNDAI_FIXTURE_DIR"
           python tools/check_card_hyundai_controller.py "$HYUNDAI_FIXTURE_DIR"
-          python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=tools/tests tools/tests/test_card_ci.py tools/tests/test_card_phase_fence.py tools/tests/test_card_admission.py -q
+          python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=tools/tests tools/tests/test_card_ci.py tools/tests/test_card_phase_fence.py tools/tests/test_card_admission.py tools/tests/test_card_hyundai_provenance.py -q
       - name: Verify bounded Card failure attribution against original and current shutdown
         run: |
           python rust/tools/issue_497_baseline.py card-attribution --output "$RUNNER_TEMP/card-native/card-attribution-baseline"

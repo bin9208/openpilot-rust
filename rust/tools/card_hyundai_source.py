@@ -159,7 +159,7 @@ def main() -> None:
     files = [ROOT / f"opendbc_repo/opendbc/car/hyundai/{name}.py" for name in (
         "values", "interface", "carstate", "carcontroller", "hyundaican", "hyundaicanfd", "stopping")]
     files.extend((ROOT / "opendbc_repo/opendbc/car/interfaces.py", ROOT / "opendbc_repo/opendbc/car/__init__.py"))
-    (target / "provenance.json").write_text(json.dumps({
+    (target / "hyundai-source-provenance.json").write_text(json.dumps({
         "runtime_python": False, "source_sha256": {
             str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest() for path in files},
         "detection_cases": len(cases), "source_parameter_errors": missing_tunes}, indent=2) + "\n")

@@ -643,3 +643,25 @@ imports; explicit forwarding retained the normal3.12.15/module paths with UID0.
 Executable and prefix did not change. Complete affected jobs still need to pass.
 Remaining Rust/ARM work, normal integration and post-merge acceptance remain
 strict. Other #296 conversion and #502/504 common migration stay excluded.
+
+The actual [Card job120220823008](https://github.com/bin9208/openpilot-rust/actions/runs/39893953434/job/120220823008)
+then completed its 1,284-case Hyundai CarParams comparison loop but failed when
+staging had overwritten the source-error provenance. The separate KIA-key
+comparison contains64 cases. [#519](issue-519-hyundai-provenance.md) separates
+the source record from generic staging provenance and registers eight controls
+against real full inputs. Complete state/controller/family/Card IPC acceptance
+remains pending; no missing evidence is converted to an empty error list.
+
+Storage recovery is recorded separately in
+[#516](https://github.com/bin9208/openpilot-rust/issues/516): source-preserving
+Git consolidation retained all71,884 objects and refs/index/reflog/shallow
+metadata with successful full integrity checks, reclaiming3,922,190,336 bytes.
+The subsequent APT-download cleanup reclaimed747,130,880 bytes with identical
+installed package/source/architecture state. Its maintenance snapshot remained
+below12GiB, while the next actual Panda/Card build checkouts measured13.33GB.
+The8/12GiB growth guards and other sessions' continuation state are retained.
+The [Panda job120220822773](https://github.com/bin9208/openpilot-rust/actions/runs/39893953434/job/120220822773)
+failed separately at the original safety oracle's90-second batch limit, after
+late seeded-case progress. [#518](https://github.com/bin9208/openpilot-rust/issues/518)
+tracks the focused diagnosis; no safety policy, durability operation or scenario
+is weakened, and native safety comparison has not yet run.
