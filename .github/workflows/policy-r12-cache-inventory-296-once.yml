@@ -33,7 +33,7 @@
       "defaults": {
         "run": {
           "shell": "bash --noprofile --norc -euo pipefail {0}",
-          "working-directory": "${{ runner.temp }}"
+          "working-directory": "/tmp"
         }
       },
       "env": {
