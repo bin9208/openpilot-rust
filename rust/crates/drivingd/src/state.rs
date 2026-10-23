@@ -1,4 +1,4 @@
-use openpilot_modeld::action::{dynamic_lat_smooth_seconds, Action};
+use openpilot_modeld::action::Action;
 
 pub struct Settings {
     pub custom_lateral_delay: f64,
@@ -51,12 +51,17 @@ impl State {
         )
     }
 
-    pub fn complete_action(&mut self, action: Action, live_lateral_delay: f64) {
+    pub fn complete_action(
+        &mut self,
+        action: Action,
+        live_lateral_delay: f64,
+        lat_smooth_seconds: f64,
+    ) {
         self.lateral_delay = if self.settings.custom_lateral_delay > 0.0 {
             self.settings.custom_lateral_delay
         } else {
             live_lateral_delay
-        } + dynamic_lat_smooth_seconds(self.settings.lateral_smooth);
+        } + lat_smooth_seconds;
         // The source feeds back a cereal Action builder, whose numeric fields are Float32.
         self.previous_action = Action {
             desired_curvature: f64::from(action.desired_curvature as f32),

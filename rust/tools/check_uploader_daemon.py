@@ -51,11 +51,16 @@ def scenario(binary, output, name, config):
       root = temporary / 'logs'
       root.mkdir()
       make_files(root, [('route--0/qlog.lock', 0, False)])
+      if 'mark_failure_size' in config:
+        assert os.geteuid() != 0, 'real permission-failure regression requires an unprivileged hosted runner'
+        # Present before startup so the ordinary idle backoff cannot become 60 seconds first.
+        make_files(root, [('route--0/qlog', config['mark_failure_size'], False)])
+        (root / 'route--0/qlog').chmod(0o444)
       signing_key(home / ('.comma' + prefix) / 'persist', 'id_ecdsa')
       captures = []
       with endpoint(config, captures) as host, (destination / 'daemon.log').open('w') as output_log:
         environment = dict(
-          os.environ, HOME=str(home), LOG_ROOT=str(root), PARAMS_ROOT=str(params.parent), API_HOST=host, UPLOADER_SLEEP='1' if config.get('sleep') else '0'
+          os.environ, HOME=str(home), LOG_ROOT=str(root), PARAMS_ROOT=str(params.parent), API_HOST=host, UPLOADER_SLEEP='1' if config.get('sleep') or 'mark_failure_size' in config else '0'
         )
         for key in ['FORCEWIFI', 'FAKEUPLOAD']:
           environment.pop(key, None)
@@ -80,6 +85,27 @@ def scenario(binary, output, name, config):
           publisher.send(raw)
           time.sleep(0.15)
           assert not captures and not marked(root / 'route--0/qlog')
+        elif 'mark_failure_size' in config:
+          path = root / 'route--0/qlog'
+          publisher.send(raw)
+          deadline = time.monotonic() + 5
+          while True:
+            assert process.poll() is None, (name, (destination / 'daemon.log').read_text())
+            if collector.poll(20):
+              message = collector.recv()
+              (destination / f'log-{len(messages):03d}.packet').write_bytes(message)
+              messages.append(json.loads(message[1:]))
+            failures = [row for row in messages if isinstance(row['msg'], dict) and row['msg'].get('event') == 'uploader_setxattr_failed']
+            if len(failures) >= 2:
+              break
+            assert time.monotonic() < deadline, (name, messages)
+          assert not marked(path) and not captures
+          for failure in failures:
+            assert 'PermissionDenied' in failure['msg']['exc'][0], failure
+            assert failure['msg']['sz'] == config['mark_failure_size']
+          # Both failures used the ordinary backoff path; SIGINT/SIGTERM below must interrupt its sleep.
+          backoffs = [row['msg'] for row in messages if isinstance(row['msg'], str) and row['msg'].startswith('upload backoff ')]
+          assert backoffs, messages
         else:
           publisher.send(raw)
           publisher.wait_for_readers(timeout=3)
@@ -111,7 +137,10 @@ def scenario(binary, output, name, config):
         signal_latency = time.monotonic() - start
         assert signal_latency < 1
         uploads = [item for item in captures if item[0] == 'PUT']
-        if not config.get('sleep'):
+        if 'mark_failure_size' in config:
+          assert not uploads and not captures and not marked(path)
+          assert not any(isinstance(row['msg'], dict) and row['msg'].get('event') == 'upload_success' for row in messages)
+        elif not config.get('sleep'):
           assert len(uploads) == (0 if config.get('fake') else 2), [(item[0], item[1]) for item in captures]
           successful = [row for row in messages if isinstance(row['msg'], dict) and row['msg'].get('event') == 'upload_success']
           assert len(successful) == 2, messages
@@ -174,6 +203,8 @@ def main():
   args.output.mkdir(parents=True, exist_ok=True)
   rows = []
   for name, config in [
+    ('empty-mark-failure-sigterm', {'mark_failure_size': 0, 'sleep': False, 'force': True}),
+    ('oversized-mark-failure-sigint', {'mark_failure_size': 25_000_001, 'sleep': False, 'force': True, 'sigint': True}),
     ('wifi', {}),
     ('metered-requested', {'metered': True}),
     ('force-none-metered', {'force': True, 'network': 'none', 'metered': True}),

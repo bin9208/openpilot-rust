@@ -37,6 +37,18 @@ def source_blocks():
     result = next(node for node in loop.body if isinstance(node, ast.If) and ast.unparse(node.test) == "model_output is not None")
     final = next(i for i, node in enumerate(result.body) if ast.unparse(node).startswith("pm.send(")) - 1
     dynamic = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "get_lat_smooth_seconds_dynamic")
+    # Issue #17's source-compatibility exception: repair the lookup, retaining the
+    # prior zero-uncertainty fallback for nonfinite values before action feedback.
+    # Keep every other original action, timing, recurrent-state and publication statement.
+    lookups = [node for node in ast.walk(dynamic) if isinstance(node, ast.Subscript)
+               and ast.unparse(node) == "model_output['plan_stds'][0, 10, Plan.POSITION, 1]"]
+    assert len(lookups) == 1, "review #17 exception if the original model contract changes"
+    lookups[0].slice = ast.Tuple(elts=[ast.Constant(0), ast.Constant(10), ast.Constant(1)], ctx=ast.Load())
+    interpolation = "extra_smooth_seconds = float(np.interp(y_std_1s, [0.15, 0.25], [0.0, base_lat_smooth_seconds * 2]))"
+    positions = [i for i, node in enumerate(dynamic.body) if ast.unparse(node) == interpolation]
+    assert len(positions) == 1, "review #17 fallback if the original interpolation changes"
+    dynamic.body.insert(positions[0], ast.parse("if not np.isfinite(y_std_1s):\n  y_std_1s = 0.0").body[0])
+    ast.fix_missing_locations(dynamic)
     blocks = ([dynamic], loop.body[start:end + 1], result.body[:final + 1])
     return tuple(compile(ast.Module(body=nodes, type_ignores=[]), str(path), "exec") for nodes in blocks)
 

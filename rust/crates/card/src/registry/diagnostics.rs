@@ -21,6 +21,7 @@ pub(super) fn constructor(interface: &Interface) -> Result<Vec<String>, Error> {
             .collect(),
         Interface::Mazda(vehicle) => vec![vehicle.state.pt.dbc.name.as_str()],
         Interface::Volkswagen(vehicle) => vec![vehicle.state.pt.dbc.name.as_str()],
+        Interface::Psa(vehicle) => vec![vehicle.state.main.dbc.name.as_str()],
         Interface::Nissan(vehicle) => vec![vehicle.state.pt.dbc.name.as_str()],
         Interface::Chrysler(vehicle) => vec![vehicle.state.pt.dbc.name.as_str()],
         Interface::Rivian(vehicle) => vec![vehicle.state.pt.dbc.name.as_str()],

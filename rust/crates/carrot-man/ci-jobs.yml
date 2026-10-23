@@ -1,7 +1,8 @@
 carrot-man-runtime:
+  if: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
   name: rust CarrotMan owner (${{ matrix.arch }})
-  runs-on: ${{ matrix.runner }}
-  timeout-minutes: 25
+  runs-on: [self-hosted, Linux, X64, dev-md-local]
+  timeout-minutes: ${{ matrix.arch == 'aarch64' && 150 || 25 }}
   strategy:
     fail-fast: false
     matrix:
@@ -9,21 +10,30 @@ carrot-man-runtime:
         - { arch: x86_64, runner: ubuntu-24.04 }
         - { arch: aarch64, runner: ubuntu-24.04-arm }
   env:
+    LOCAL_CI_ARCH: ${{ matrix.arch }}
     CARGO_INCREMENTAL: '0'
     CARGO_BUILD_JOBS: '2'
     CARGO_PROFILE_DEV_DEBUG: '0'
     CARROT_EXCEPTION_DISCORD_WEBHOOK_DISABLE: '1'
     PYTHONPATH: ${{ github.workspace }}
+  defaults:
+    run:
+      shell: openpilot-local-shell {0}
   steps:
     - uses: actions/checkout@v7
+    - uses: ./.github/actions/job-temp
+    - uses: ./.github/actions/local-arm
     - uses: actions/setup-python@v6
+      if: env.LOCAL_CI_ARCH == 'x86_64'
       with:
         python-version: '3.12'
     - name: Reserve runner capacity and install pinned dependencies
       run: |
-        sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+        if [ "${{ runner.environment }}" = github-hosted ]; then
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+        fi
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-        sudo apt-get update && sudo apt-get install -y g++ clang cmake pkg-config libzmq3-dev capnproto libcapnp-dev
+        "$GITHUB_WORKSPACE/tools/ci/apt-native" update && "$GITHUB_WORKSPACE/tools/ci/apt-native" install -y g++ clang cmake pkg-config libzmq3-dev capnproto libcapnp-dev
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
         python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 aiohttp==3.13.3 psutil==7.2.2
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -62,7 +72,16 @@ carrot-man-runtime:
       with:
         name: carrot-man-owner-${{ matrix.arch }}-evidence
         path: |
-          ${{ runner.temp }}/carrot-man-policy/**
-          ${{ runner.temp }}/carrot-man-owned/**
-          ${{ runner.temp }}/carrot-man-geos/**
-          rust/target/debug/openpilot-carrot-man
+          ${{ env.CI_JOB_TEMP }}/local-arm/execution.json
+          ${{ env.CI_JOB_TEMP }}/local-arm/qemu-version.txt
+          ${{ env.CI_JOB_TEMP }}/local-arm/proot-version.txt
+          ${{ env.CI_JOB_TEMP }}/carrot-man-policy/**
+          ${{ env.CI_JOB_TEMP }}/carrot-man-owned/**
+          ${{ env.CI_JOB_TEMP }}/carrot-man-geos/**
+          ${{ env.LOCAL_CI_TARGET_DIR }}/debug/openpilot-carrot-man
+    - uses: ./.github/actions/local-arm
+      if: always()
+      with: {cleanup: 'true'}
+    - uses: ./.github/actions/job-temp
+      if: always()
+      with: {cleanup: 'true'}

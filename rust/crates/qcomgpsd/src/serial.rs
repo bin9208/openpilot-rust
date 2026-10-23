@@ -98,9 +98,9 @@ impl Diagnostic {
             pending: Frames::default(),
         })
     }
-    pub fn recv(&mut self, stop: &AtomicBool) -> Result<(u8, Vec<u8>), Error> {
+    fn recv_message(&mut self, stop: &AtomicBool) -> Result<framing::Message, Error> {
         loop {
-            if let Some(packet) = self.pending.next_frame()? {
+            if let Some(packet) = self.pending.next_message()? {
                 return Ok(packet);
             }
             ready(&self.file, PollFlags::IN, stop)?;
@@ -122,6 +122,15 @@ impl Diagnostic {
                 Err(error) => return Err(error.into()),
             }
         }
+    }
+    /// Exact full-payload reception; a body beyond retained capacity is an error.
+    pub fn recv(&mut self, stop: &AtomicBool) -> Result<(u8, Vec<u8>), Error> {
+        self.recv_message(stop)?.full()
+    }
+    /// Steady-state reception: preserve complete logs; consume other opcodes
+    /// after validating their entire frame, returning no unused body.
+    pub fn recv_log(&mut self, stop: &AtomicBool) -> Result<(u8, Vec<u8>), Error> {
+        self.recv_message(stop)?.log()
     }
     pub fn send(&mut self, opcode: u8, payload: &[u8], stop: &AtomicBool) -> Result<(), Error> {
         let mut message = Vec::with_capacity(payload.len() + 1);
@@ -147,6 +156,22 @@ impl Diagnostic {
             }
         }
         Ok(())
+    }
+    /// Setup exchanges need only a non-log reply prefix (at most 75 bytes).
+    /// Skip logs without imposing steady-state extent checks. Every frame CRC,
+    /// including skipped logs and ignored tails, is validated before selection.
+    pub fn exchange_prefix(
+        &mut self,
+        opcode: u8,
+        payload: &[u8],
+        stop: &AtomicBool,
+    ) -> Result<(u8, Vec<u8>), Error> {
+        self.send(opcode, payload, stop)?;
+        loop {
+            if let Some(packet) = self.recv_message(stop)?.reply() {
+                return Ok(packet);
+            }
+        }
     }
     pub fn exchange(
         &mut self,

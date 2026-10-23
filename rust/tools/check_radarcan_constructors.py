@@ -4,13 +4,14 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
-import shutil
 import subprocess
 
 from card_runtime_source import load_binding
 from radarcan_constructor_source import cases
 from radarcan_exact import assert_exact
 from radarcan_source import normalized, trace
+
+from qa_space_policy import free_for_growth
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -54,9 +55,9 @@ def main() -> None:
   args = parser.parse_args()
   if (args.runner is None) != (args.sysroot is None):
     parser.error('--runner and --sysroot must be specified together')
-  free = shutil.disk_usage(ROOT).free
+  free = free_for_growth(ROOT, 512 * 2**20)
   growth = 512 * 2**20
-  assert free >= 25 * 2**30 + growth, (free, growth)
+  assert free >= growth, (free, growth)
   args.evidence.mkdir(parents=True)
   load_binding(args.binding)
   if args.reuse_source is None:

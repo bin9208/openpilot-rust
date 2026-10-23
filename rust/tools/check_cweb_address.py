@@ -2,11 +2,12 @@
 import argparse
 import json
 from pathlib import Path
-import shutil
 import socket
 import subprocess
 
 from check_cweb_policy import module
+
+from qa_space_policy import free_for_growth
 
 ROOT = Path(__file__).resolve().parents[2]
 CRATE = ROOT / 'rust/crates/cweb-push'
@@ -19,7 +20,7 @@ def main():
   args = parser.parse_args()
   args.output = args.output.resolve()
   args.output.mkdir(parents=True, exist_ok=False)
-  assert shutil.disk_usage(args.output).free >= 26 * 1024**3
+  assert free_for_growth(args.output, 1024**3) >= 1024**3
   flags = ['clang++', '-std=c++17', '-fsanitize=address,undefined', '-fno-omit-frame-pointer', '-g', '-I' + str(CRATE)]
   object_file = args.output / 'address.o'
   build = [*flags, '-Dsocket=fixture_socket', '-Dioctl=fixture_ioctl', '-Dclose=fixture_close',

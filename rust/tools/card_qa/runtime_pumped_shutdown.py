@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import signal
+import subprocess
 import time
 from typing import TypedDict
 
@@ -45,7 +46,21 @@ def finish(peer: RuntimePeer, stream: Publications, source: bool) -> Shutdown:
   radar = empty['carState']['radarInput']
   assert radar['firstCanMonoTime'] == radar['lastCanMonoTime'] == radar['canPacketCount'] == 0
   peer.process.send_signal(signal.SIGINT)
-  runtime_exit = peer.process.wait(timeout=5)
+  try:
+    runtime_exit = peer.process.wait(timeout=5)
+  except subprocess.TimeoutExpired as error:
+    try:
+      from card_qa.runtime_attribution import record_shutdown_timeout
+      record_shutdown_timeout(peer, source, error, final_can, empty, captured)
+    except BaseException as diagnostic_error:  # noqa: B036 - enclosing handler re-raises the original TimeoutExpired
+      # Evidence is best effort: even collector interruption must preserve this exact timeout.
+      try:
+        (peer.output / 'shutdown-diagnostic-error.json').write_text(json.dumps({
+          'event': 'runtime_shutdown_timeout', 'pid': peer.process.pid, 'timeout_seconds': error.timeout,
+          'diagnostic_error': type(diagnostic_error).__name__, 'reason': str(diagnostic_error)[:240]}) + '\n')
+      except BaseException:  # noqa: B036 - failed receipt writes cannot replace the original TimeoutExpired
+        pass
+    raise
   assert runtime_exit == (-signal.SIGINT if source else 130), runtime_exit
   set_phase(peer.output, 'stop')
   pump_exit = peer.pump.wait(timeout=5)

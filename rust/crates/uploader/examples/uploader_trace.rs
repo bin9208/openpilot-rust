@@ -123,7 +123,6 @@ fn result(result: Result<Outcome, Error>) -> Value {
         Ok(Outcome::Idle) => Value::Null,
         Ok(Outcome::Success) => json!(true),
         Ok(Outcome::Failure) => json!(false),
-        Err(Error::UninitializedLastException(_)) => json!({"error":"UnboundLocalError"}),
         Err(Error::ContentLength(_)) => json!({"error":"ValueError"}),
         Err(error) => json!({"error":error.to_string()}),
     }

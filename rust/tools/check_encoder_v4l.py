@@ -14,6 +14,8 @@ import signal
 
 from encoder_outcomes import check_outcome
 
+from qa_space_policy import free_for_growth
+
 
 def digest(path: Path) -> str:
   return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -99,7 +101,7 @@ def main() -> None:
     ["g++", "-std=c++20", "-O1", "-g0", "-pthread", "-shared", "-fPIC", *includes, str(fixture / "fake_v4l.cc"), "-ldl", "-o", str(output / "fake-v4l.so")],
   ]
   for index, command in enumerate(builds):
-    guard = {"free": shutil.disk_usage(output).free, "growth": 128 * 1024**2, "floor": 25 * 1024**3}
+    guard = {"free": free_for_growth(output, 128 * 1024**2), "growth": 128 * 1024**2, "floor": 0}
     output.joinpath(f"build-{index}-space.json").write_text(json.dumps(guard, indent=2) + "\n")
     if guard["free"] < guard["floor"] + guard["growth"]:
       raise RuntimeError(f"insufficient disk headroom: {guard}")

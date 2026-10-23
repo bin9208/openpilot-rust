@@ -7,9 +7,10 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import shutil
 import subprocess
 import sys
+
+from qa_space_policy import free_for_growth
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -28,8 +29,8 @@ def main() -> None:
   args = parser.parse_args()
   for name in ["bin_dir", "models", "opencv", "binding", "output"]:
     setattr(args, name, getattr(args, name).resolve())
-  if shutil.disk_usage(args.output.parent).free < 25 * 1024**3 + 512 * 1024**2:
-    raise OSError("Xiaoge CI requires 25 GiB free plus 512 MiB; recover 35 GiB before resuming")
+  if free_for_growth(args.output.parent, 512 * 1024**2) < 512 * 1024**2:
+    raise OSError("Xiaoge CI requires 512 MiB estimated growth")
   args.output.mkdir()
   examples = args.bin_dir / "examples"
   common = ("--binary", str(args.bin_dir / "openpilot-xiaoge"), "--binding", str(args.binding),

@@ -58,19 +58,28 @@ fn complete_schema_parameters_when_source_matrix() {
         )
         .unwrap();
     }
-    assert!(matches!(
-        Hyundai::parameters(ParamsInput {
-            candidate: "KIA_K5_DL3_24_HEV",
-            fingerprints: &[],
-            firmware: &[],
-            alpha_long: false,
-            is_release: false,
-            settings: &settings
-        }),
-        Err(openpilot_card::brands::hyundai::Error::Baseline(
-            openpilot_card::vehicle_params::Error::MissingTorque(_)
-        ))
-    ));
+    assert!(
+        cases
+            .iter()
+            .any(|case| case.candidate == "KIA_K5_DL3_24_HEV"),
+        "fresh source matrix must include the repaired exact identity"
+    );
+    let repaired = Hyundai::parameters(ParamsInput {
+        candidate: "KIA_K5_DL3_24_HEV",
+        fingerprints: &[],
+        firmware: &[],
+        alpha_long: false,
+        is_release: false,
+        settings: &settings,
+    })
+    .expect("exact key alias must admit the existing source tune");
+    assert_eq!(
+        repaired
+            .get_root_as_reader::<openpilot_cereal::car_capnp::car_params::Reader>()
+            .unwrap()
+            .get_max_lateral_accel(),
+        2.5
+    );
     std::fs::write(
         fixture.join("native-params-path.txt"),
         output.to_string_lossy().as_bytes(),

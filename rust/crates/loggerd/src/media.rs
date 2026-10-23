@@ -39,6 +39,7 @@ enum Destination {
 pub struct VideoWriter {
     destination: Destination,
     lock: PathBuf,
+    raw_write_error: Option<std::io::Error>,
 }
 
 impl VideoWriter {
@@ -107,13 +108,21 @@ impl VideoWriter {
                 })
             }
         };
-        Ok(Self { destination, lock })
+        Ok(Self {
+            destination,
+            lock,
+            raw_write_error: None,
+        })
     }
 
     pub fn write(&mut self, packet: Packet<'_>) -> Result<(), Error> {
         match &mut self.destination {
             Destination::Raw(file) => {
-                if let Err(error) = file.write(packet.data) {
+                if let Err(error) = file.write_video(packet.data) {
+                    // Keep writes nonfatal so indices and route logs can finish.
+                    // Keep the first failure/errno: ferror remains sticky even
+                    // when later writes succeed and leave an unrelated errno.
+                    let error = self.raw_write_error.get_or_insert(error);
                     diagnostics::emit(
                         log_site!(),
                         Level::Error,
@@ -196,7 +205,26 @@ impl VideoWriter {
     pub fn close(self) -> Result<(), Error> {
         match self.destination {
             Destination::Raw(file) => {
-                file.finish();
+                let finished = file.finish();
+                if let Err(error) = self.raw_write_error.map_or(finished, Err) {
+                    // Reuse the existing lock inode even when the disk is full.
+                    // A closed failed video must not lock the entire segment out
+                    // of upload or space reclamation; scanners skip just this file.
+                    let failed = self.lock.with_extension("failed");
+                    fs::rename(&self.lock, &failed)?;
+                    diagnostics::emit(
+                        log_site!(),
+                        Level::Error,
+                        format!(
+                            "raw video incomplete; marked {} errno={}",
+                            failed.display(),
+                            error.raw_os_error().unwrap_or(0)
+                        ),
+                    );
+                    // A per-video failure must not abort segment rotation or
+                    // prevent the remaining writers from closing on shutdown.
+                    return Ok(());
+                }
             }
             Destination::Mux(mut muxer) => {
                 if !muxer.header_written {

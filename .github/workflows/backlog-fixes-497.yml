@@ -1,0 +1,411 @@
+name: Backlog fixes 497 focused checks
+on:
+  push:
+    branches: [codex/fix-497-stale-runtime-defects]
+permissions:
+  contents: read
+concurrency:
+  group: backlog-497-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  focused:
+    if: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    name: Focused ${{ matrix.scope }}
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        scope: [core, web, media, tools, vehicles]
+    env:
+      RUSTUP_TOOLCHAIN: '1.94.0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      ENCODER_LIBYUV_LIB: /usr/lib/x86_64-linux-gnu
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - name: Use the hosted Rust toolchain path
+        run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v6
+        if: matrix.scope == 'web'
+        with:
+          node-version: '24'
+      - name: Reserve capacity and install affected native prerequisites
+        run: |
+          if [ "${{ runner.environment }}" = github-hosted ]; then
+            sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          fi
+          printf 'runner=%s environment=%s arch=%s\n' "${{ runner.name }}" "${{ runner.environment }}" "${{ runner.arch }}"
+          free -h
+          df -h "$GITHUB_WORKSPACE"
+          python3 rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          "$GITHUB_WORKSPACE/tools/ci/apt-native" update
+          "$GITHUB_WORKSPACE/tools/ci/apt-native" install -y g++ clang libclang-dev cmake pkg-config capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libyuv-dev libzmq3-dev ffmpeg e2fsprogs
+          rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
+      - name: Prepare original web source closure and real native Python bindings
+        if: matrix.scope == 'web'
+        run: |
+          set -euo pipefail
+          python3 rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          "$GITHUB_WORKSPACE/tools/ci/apt-native" install -y iproute2 util-linux openssl
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0 requests==2.34.2 aiohttp==3.13.3 anyio==4.12.1 psutil==7.2.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3 msgpack==1.2.1
+          mkdir "$RUNNER_TEMP/web-source"
+          mkdir "$RUNNER_TEMP/web-source/evidence"
+          # The PTY peers require outputs beneath cwd and use relative source paths.
+          # Keep that cwd short for Unix sockets; expose the exact checked-out source.
+          ln -s "$GITHUB_WORKSPACE/openpilot" "$RUNNER_TEMP/web-source/openpilot"
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/web-bindings/params"
+          python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/web-bindings/ipc"
+          export ORIGINAL_PARAMS_BINDING="$(python -P -c 'import json,os; from pathlib import Path; print(json.loads((Path(os.environ["RUNNER_TEMP"])/"web-bindings/params/provenance.json").read_text())["module"])')"
+          export PYTHONPATH="$RUNNER_TEMP/web-bindings/ipc:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/opendbc_repo:$GITHUB_WORKSPACE/rust/tools"
+          printf 'ORIGINAL_PARAMS_BINDING=%s\nPYTHONPATH=%s\n' "$ORIGINAL_PARAMS_BINDING" "$PYTHONPATH" >> "$GITHUB_ENV"
+          python -P - <<'PY'
+          import importlib, json, os, sys
+          from pathlib import Path
+          from original_params_binding import load
+          root = Path(os.environ['RUNNER_TEMP']) / 'web-source/evidence'
+          binding, _ = load(os.environ['ORIGINAL_PARAMS_BINDING'], f'ipc://{root}/closure-log', root / 'closure-logs')
+          names = ['anyio', 'aiohttp', 'capnp', 'numpy', 'zstandard', 'msgpack', 'msgq.ipc_pyx', 'msgq.visionipc.visionipc_pyx']
+          modules = {name: importlib.import_module(name).__file__ for name in names}
+          (root / 'python-imports.json').write_text(json.dumps({'executable': sys.executable, 'version': sys.version, 'prefix': sys.prefix, 'base_prefix': sys.base_prefix, 'modules': modules, 'params_binding': binding.__file__}, indent=2) + '\n')
+          PY
+          python -m pip freeze > "$RUNNER_TEMP/web-source/evidence/python-packages.txt"
+          git rev-parse HEAD > "$RUNNER_TEMP/web-source/evidence/SOURCE_COMMIT"
+      - name: Build actual terminal executables for ownership regressions
+        if: matrix.scope == 'web'
+        run: |
+          python3 rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-carrot-server -p openpilot-process-supervision --bins
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-carrot-server --example dashcam_report --example carrot_live --example carrot_terminal --example carrot_terminal_command --example carrot_main_owner
+          cc -std=c11 -Wall -Wextra -Werror rust/tools/carrot_terminal_pty_filter.c -o "$RUNNER_TEMP/web-source/evidence/pty-filter"
+          sha256sum rust/target/debug/openpilot-carrot-server rust/target/debug/openpilot-carrot-command rust/target/debug/openpilot-process-child rust/target/debug/examples/{dashcam_report,carrot_live,carrot_terminal,carrot_terminal_command,carrot_main_owner} > "$RUNNER_TEMP/web-source/evidence/SHA256SUMS"
+      - name: Prove behavioral regressions against original production code
+        if: matrix.scope == 'core' || matrix.scope == 'web' || matrix.scope == 'media' || matrix.scope == 'tools' || matrix.scope == 'vehicles'
+        env:
+          CHECK_SCOPE: ${{ matrix.scope }}
+        run: |
+          python3 rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          python3 rust/tools/issue_497_baseline.py "$CHECK_SCOPE" --output "$RUNNER_TEMP/baseline-$CHECK_SCOPE"
+      - name: Run affected functional regressions and strict lint
+        env:
+          CHECK_SCOPE: ${{ matrix.scope }}
+        run: |
+          set -euo pipefail
+          python3 rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          case "$CHECK_SCOPE" in
+            core)
+              packages=(-p openpilot-torqued -p openpilot-uploader -p openpilot-qcomgpsd -p openpilot-modeld -p openpilot-driving-modeld)
+              cargo test --manifest-path rust/Cargo.toml --locked "${packages[@]}" --all-targets
+              cargo clippy --manifest-path rust/Cargo.toml --locked "${packages[@]}" --all-targets -- -D warnings
+              cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-qcomgpsd --example framing_trace
+              python3 rust/tools/check_qcomgps_framing.py rust/target/debug/examples/framing_trace "$RUNNER_TEMP/qcom-framing-source.json"
+              ;;
+            web)
+              cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-carrot-server --lib -- --nocapture --test-threads=1 2>&1 | tee "$RUNNER_TEMP/web-source/evidence/library-tests.log"
+              cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-carrot-server --all-targets -- -D warnings
+              ;;
+            media)
+              packages=(-p openpilot-loggerd -p openpilot-encoderd -p openpilot-uploader -p openpilot-deleter)
+              cargo test --manifest-path rust/Cargo.toml --locked "${packages[@]}" --features openpilot-encoderd/native --all-targets
+              cargo clippy --manifest-path rust/Cargo.toml --locked "${packages[@]}" --features openpilot-encoderd/native --all-targets -- -D warnings
+              ;;
+            vehicles)
+              python3 rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+              python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3
+              PYTHONPATH="$GITHUB_WORKSPACE/rust/tools" python rust/tools/issue_497_baseline.py card-attribution --output "$RUNNER_TEMP/baseline-card-attribution"
+              PYTHONPATH="$GITHUB_WORKSPACE/rust/tools" python -m pytest -c /dev/null --rootdir=. --confcutdir=rust/tools/tests -q rust/tools/tests/test_card_attribution.py
+              PYTHONPATH="$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/opendbc_repo:$GITHUB_WORKSPACE/rust/tools" python rust/tools/stage_card_fixtures.py --fixtures "$RUNNER_TEMP/card-497/fixtures" --dbc "$RUNNER_TEMP/card-497/dbc"
+              export HYUNDAI_FIXTURE_DIR="$RUNNER_TEMP/card-497/fixtures"
+              export HYUNDAI_DBC_DIR="$RUNNER_TEMP/card-497/dbc"
+              export HYUNDAI_TORQUE_KEY_EVIDENCE="$RUNNER_TEMP/card-497/kia-key/native"
+              cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-card -p openpilot-can --features openpilot-card/native --all-targets
+              cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-card -p openpilot-can --features openpilot-card/native --all-targets -- -D warnings
+              python3 rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+              cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-can --examples
+              cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-card --features native --example tesla_trace --example psa_trace --example psa_boundary
+              python -m pip download --only-binary=:all: --no-deps numpy==2.5.3 --dest "$RUNNER_TEMP/card-497/wheels"
+              cargo run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin stage-torque-numerics -- --wheel "$RUNNER_TEMP"/card-497/wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/card-497/numerics"
+              export PYTHONPATH="$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/opendbc_repo:$GITHUB_WORKSPACE/rust/tools"
+              python rust/tools/check_mlb_primary_497.py --binary rust/target/debug/examples/checksum_trace --evidence "$RUNNER_TEMP/card-497/mlb-primary"
+              python rust/tools/check_psa_asset_497.py --binary rust/target/debug/examples/can_trace --evidence "$RUNNER_TEMP/card-497/psa-asset"
+              python rust/tools/check_hyundai_torque_key_497.py --native "$HYUNDAI_TORQUE_KEY_EVIDENCE" --output "$RUNNER_TEMP/card-497/kia-key/comparison"
+              python rust/tools/check_tesla_model_x_497.py --output "$RUNNER_TEMP/card-497/model-x-controls"
+              python rust/tools/check_card_tesla.py --binary rust/target/debug/examples/tesla_trace --numerics "$RUNNER_TEMP/card-497/numerics" --evidence "$RUNNER_TEMP/card-497/tesla"
+              python rust/tools/check_card_psa.py --binary rust/target/debug/examples/psa_trace --numerics "$RUNNER_TEMP/card-497/numerics" --evidence "$RUNNER_TEMP/card-497/psa"
+              python rust/tools/check_card_psa_source.py --binary rust/target/debug/examples/psa_boundary --numerics "$RUNNER_TEMP/card-497/numerics" --evidence "$RUNNER_TEMP/card-497/psa-controls"
+              ;;
+            tools)
+              python -m pip install pytest==9.0.2 PyYAML==6.0.3
+              cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-disk-space --all-targets
+              cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test disk_space --test encoder_stage
+              cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib package::tests::disk_growth_checks_u64_boundaries_without_a_fixed_reserve
+              python -m unittest discover -s tools/ci/tests -p test_native_apt.py -v
+              python -m pytest -c /dev/null --rootdir=. --confcutdir=tools/ci/tests -q tools/ci/tests/test_native_disk_guard.py
+              cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test torque_stage
+              python3 -m unittest discover -s rust/tools/tests -p test_extract_runtime_sdk.py -v
+              PYTHONPATH="$PWD/rust/tools" python -m unittest discover -s rust/tools/tests -p test_joystick_publications_505.py -v
+              cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-jpeg
+              mapfile -t scripts < <(find rust/target/debug/build -path '*/openpilot-jpeg-*/build-script-build' -type f)
+              test "${#scripts[@]}" -eq 1
+              python3 rust/crates/jpeg/tests/build_cache.py --build-script "${scripts[0]}"
+              python3 rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+              export NUMPY_ARM_WHEEL="$RUNNER_TEMP/numpy-2.5.3-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl"
+              curl --fail --location --retry 5 --retry-all-errors --output "$NUMPY_ARM_WHEEL" https://files.pythonhosted.org/packages/f1/32/84146fc020ad3c25f805f70ab60da46fe3c540a21369754a7e4369754b6f/numpy-2.5.3-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl
+              cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test torque_stage pinned_arm_wheel_retains_exactly_two_native_libraries_and_all_license_bytes -- --ignored --exact
+              python3 rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+              "$GITHUB_WORKSPACE/tools/ci/apt-native" install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+              rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
+              export CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc
+              export CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++
+              export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+              cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-jpeg --target aarch64-unknown-linux-gnu --target-dir "$RUNNER_TEMP/jpeg-345-arm"
+              mapfile -t arm_scripts < <(find "$RUNNER_TEMP/jpeg-345-arm/debug/build" -path '*/openpilot-jpeg-*/build-script-build' -type f)
+              test "${#arm_scripts[@]}" -eq 1
+              python3 rust/crates/jpeg/tests/build_cache.py --target aarch64-unknown-linux-gnu --build-script "${arm_scripts[0]}"
+              ;;
+          esac
+      - name: Compare complete original and native report controls for issue 252
+        if: matrix.scope == 'web'
+        working-directory: ${{ env.CI_JOB_TEMP }}/web-source
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/web-source/evidence"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_dashcam_report_source_controls.py" --output "$evidence/report/source" 2>&1 | tee "$evidence/report-source.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_dashcam_report_state_controls.py" --output "$evidence/report/state" 2>&1 | tee "$evidence/report-state.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_dashcam_report_open_stream.py" --output "$evidence/report/open-stream" 2>&1 | tee "$evidence/report-open-stream.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_dashcam_report.py" --binary "$GITHUB_WORKSPACE/rust/target/debug/examples/dashcam_report" --source-captures "$evidence/report/source" --state-captures "$evidence/report/state" --open-stream-captures "$evidence/report/open-stream" --output "$evidence/report/compare" 2>&1 | tee "$evidence/report-compare.log"
+      - name: Compare populated msgq HTTP WebSocket and browser navigation for issue 254
+        if: matrix.scope == 'web'
+        working-directory: ${{ env.CI_JOB_TEMP }}/web-source
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/web-source/evidence"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_live.py" --binary "$GITHUB_WORKSPACE/rust/target/debug/examples/carrot_live" --output "$evidence/live" 2>&1 | tee "$evidence/live.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_live_app.py" --binary "$GITHUB_WORKSPACE/rust/target/debug/examples/carrot_live" --output "$evidence/live-app" 2>&1 | tee "$evidence/live-app.log"
+      - name: Observe original and native PTY edges and complete terminal application lifecycle for issue 270
+        if: matrix.scope == 'web'
+        working-directory: ${{ env.CI_JOB_TEMP }}/web-source
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/web-source/evidence"
+          native="$GITHUB_WORKSPACE/rust/target/debug/examples/carrot_terminal"
+          launcher="$GITHUB_WORKSPACE/rust/target/debug/openpilot-process-child"
+          terminal_args=(--server "$native" --native "$GITHUB_WORKSPACE/rust/target/debug/examples/carrot_terminal_command" --launcher "$launcher" --binding "$ORIGINAL_PARAMS_BINDING" --vision-root "$RUNNER_TEMP/web-bindings/ipc/msgq")
+          cli_args=(--native "$GITHUB_WORKSPACE/rust/target/debug/examples/carrot_terminal_command" --launcher "$launcher" --binding "$ORIGINAL_PARAMS_BINDING" --vision-root "$RUNNER_TEMP/web-bindings/ipc/msgq")
+          for mode in reset eof; do
+            python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_edges.py" --output "$evidence/terminal/$mode-source" --mode "$mode" 2>&1 | tee "$evidence/terminal-$mode-source.log"
+            python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_edges.py" --native "$native" --launcher "$launcher" --output "$evidence/terminal/$mode-native" --mode "$mode" 2>&1 | tee "$evidence/terminal-$mode-native.log"
+          done
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_pty.py" --output "$evidence/terminal/pty-source" 2>&1 | tee "$evidence/terminal-pty-source.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_pty.py" --native "$native" --launcher "$launcher" --output "$evidence/terminal/pty-native" 2>&1 | tee "$evidence/terminal-pty-native.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_pty.py" --native "$native" --launcher "$launcher" --filter "$evidence/pty-filter" --output "$evidence/terminal/pty-fallback" 2>&1 | tee "$evidence/terminal-pty-fallback.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_cli.py" "${cli_args[@]}" --output "$evidence/terminal/cli" 2>&1 | tee "$evidence/terminal-cli.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_cli_errors.py" "${cli_args[@]}" --output "$evidence/terminal/cli-errors" 2>&1 | tee "$evidence/terminal-cli-errors.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_http.py" "${terminal_args[@]}" --output "$evidence/terminal/http" 2>&1 | tee "$evidence/terminal-http.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_http.py" "${terminal_args[@]}" --application --output "$evidence/terminal/application" 2>&1 | tee "$evidence/terminal-application.log"
+          for mode in history shutdown missing params; do
+            python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_limits.py" "${terminal_args[@]}" --mode "$mode" --output "$evidence/terminal/$mode" 2>&1 | tee "$evidence/terminal-$mode.log"
+          done
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_capture.py" "${terminal_args[@]}" --immediate --output "$evidence/terminal/capture-immediate" 2>&1 | tee "$evidence/terminal-capture-immediate.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_capture.py" "${terminal_args[@]}" --output "$evidence/terminal/capture-disconnect" 2>&1 | tee "$evidence/terminal-capture-disconnect.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_capture.py" "${terminal_args[@]}" --timeout --output "$evidence/terminal/capture-timeout" 2>&1 | tee "$evidence/terminal-capture-timeout.log"
+          python -P "$GITHUB_WORKSPACE/rust/tools/carrot_server_terminal_capture.py" "${terminal_args[@]}" --force --output "$evidence/terminal/capture-force" 2>&1 | tee "$evidence/terminal-capture-force.log"
+      - name: Exercise actual main HTTP WebSocket PTY and managed stop without host data or network access
+        if: matrix.scope == 'web'
+        working-directory: ${{ env.CI_JOB_TEMP }}/web-source
+        run: |
+          set -euo pipefail
+          # Normal startup precompresses assets. Archive as the checkout owner,
+          # keeping the exact committed tree writable only for private sidecars.
+          mkdir "$RUNNER_TEMP/web-main-assets"
+          git -C "$GITHUB_WORKSPACE" rev-parse HEAD:openpilot/selfdrive/carrot/web > "$RUNNER_TEMP/web-source/evidence/main-web-tree.txt"
+          git -C "$GITHUB_WORKSPACE" archive HEAD:openpilot/selfdrive/carrot/web | tar -x -C "$RUNNER_TEMP/web-main-assets"
+          # Only the namespace child mounts these views. No host /data, hosts,
+          # routes, certificates or tools are created, replaced or removed.
+          sudo -n unshare --mount --net bash -euo pipefail -s -- "$GITHUB_WORKSPACE" "$RUNNER_TEMP" "$(command -v python)" "${LD_LIBRARY_PATH:-}" "$PYTHONPATH" <<'NAMESPACE' 2>&1 | tee "$RUNNER_TEMP/web-source/evidence/main.log"
+          repository=$1
+          temporary=$2
+          python=$3
+          library_path=$4
+          python_path=$5
+          mount --make-rprivate /
+          root="$temporary/web-main-root"
+          mkdir "$root"
+          for name in usr bin sbin lib lib64 etc home opt dev proc sys; do
+            if [ -e "/$name" ]; then
+              mkdir "$root/$name"
+              mount --rbind "/$name" "$root/$name"
+              case "$name" in dev|proc|sys) ;; *) mount -o remount,bind,ro "$root/$name" ;; esac
+            fi
+          done
+          mkdir -p "$root/data/openpilot" "$root/tmp" "$root$temporary"
+          mount --bind "$repository" "$root/data/openpilot"
+          mount -o remount,bind,ro "$root/data/openpilot"
+          mount --bind "$temporary/web-main-assets" "$root/data/openpilot/openpilot/selfdrive/carrot/web"
+          mount --bind "$temporary" "$root$temporary"
+          printf '127.0.0.1 localhost shind0.synology.me\n' > "$temporary/web-main-hosts"
+          mount --bind "$temporary/web-main-hosts" "$root/etc/hosts"
+          mkdir "$temporary/web-main"
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=shind0.synology.me -addext subjectAltName=DNS:shind0.synology.me -keyout "$temporary/web-main/owned-key.pem" -out "$temporary/web-main/owned-cert.pem"
+          for mode in term supervisor force; do
+            chroot "$root" /usr/bin/env PATH=/usr/sbin:/usr/bin:/sbin:/bin LD_LIBRARY_PATH="$library_path" PYTHONPATH="$python_path" GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.directory GIT_CONFIG_VALUE_0=/data/openpilot "$python" -P "$repository/rust/tools/carrot_server_main_control.py" --binary "$repository/rust/target/debug/openpilot-carrot-server" --owner "$repository/rust/target/debug/examples/carrot_main_owner" --mode "$mode" --output "$temporary/web-main/$mode"
+          done
+          NAMESPACE
+      - name: Archive owned main web evidence for the runner
+        if: ${{ always() && matrix.scope == 'web' }}
+        run: |
+          set -euo pipefail
+          if [[ -z ${CI_JOB_TEMP:-} ]]; then exit 0; fi
+          case "$CI_JOB_TEMP" in
+            /tmp/openpilot-ci.*) ;;
+            *) echo 'Refusing unrelated evidence directory' >&2; exit 1 ;;
+          esac
+          if [[ ${CI_JOB_TEMP%/*} != /tmp || -L $CI_JOB_TEMP || ! -d $CI_JOB_TEMP ||
+                -L $CI_JOB_TEMP/owner || ! -f $CI_JOB_TEMP/owner ||
+                $(cat "$CI_JOB_TEMP/owner") != "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" ]]; then
+            echo 'Refusing evidence owned by another job' >&2
+            exit 1
+          fi
+          public_root="$CI_JOB_TEMP/web-main"
+          if [[ ! -e $public_root && ! -L $public_root ]]; then
+            echo 'No main web evidence was created'
+            exit 0
+          fi
+          if [[ -L $public_root || ! -d $public_root ]]; then
+            echo 'Refusing an indirect main evidence root' >&2
+            exit 1
+          fi
+          archive="$CI_JOB_TEMP/web-main-evidence.tar.gz"
+          manifest="$CI_JOB_TEMP/web-main-evidence.sha256"
+          if [[ -e $archive || -L $archive || -e $manifest || -L $manifest ]]; then
+            echo 'Refusing to replace existing evidence' >&2
+            exit 1
+          fi
+          # Root reads only owned case files. The existing temporary archive
+          # remains runner-owned; private Params modes and parent TLS keys stay intact.
+          temporary=$(mktemp "$CI_JOB_TEMP/.web-main-evidence.XXXXXX.tar.gz")
+          trap 'rm -f -- "$temporary"' EXIT
+          sudo -n /bin/bash -euo pipefail -s -- "$public_root" "$temporary" <<'ARCHIVE'
+          public_root=$1
+          archive=$2
+          cd "$public_root"
+          cases=()
+          for candidate in term supervisor force; do
+            if [[ -L $candidate || ( -e $candidate && ! -d $candidate ) ]]; then
+              echo 'Refusing an indirect or non-directory case' >&2
+              exit 1
+            fi
+            if [[ -d $candidate ]]; then cases+=("$candidate"); fi
+          done
+          printf 'main_evidence_cases=%s\n' "${#cases[@]}"
+          # No case must never turn into find's implicit '.' traversal.
+          if [[ ${#cases[@]} -gt 0 ]]; then
+            find -P "${cases[@]}" \( -type d -o -type f \) -print0
+          fi | tar --create --gzip --null --verbatim-files-from --no-recursion --file "$archive" --files-from=-
+          ARCHIVE
+          # Exclusive publication preserves any unexpected foreign destination.
+          ln -- "$temporary" "$archive"
+          rm -- "$temporary"
+          trap - EXIT
+          (set -o noclobber; sha256sum -- "$archive" > "$manifest")
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: backlog-497-${{ matrix.scope }}-evidence
+          path: |
+            ${{ env.CI_JOB_TEMP }}/baseline-*
+            ${{ env.CI_JOB_TEMP }}/qcom-framing-source.json
+            ${{ env.CI_JOB_TEMP }}/card-497/mlb-primary
+            ${{ env.CI_JOB_TEMP }}/card-497/psa-asset
+            ${{ env.CI_JOB_TEMP }}/card-497/psa
+            ${{ env.CI_JOB_TEMP }}/card-497/psa-controls
+            ${{ env.CI_JOB_TEMP }}/card-497/model-x-controls
+            ${{ env.CI_JOB_TEMP }}/card-497/kia-key
+            ${{ env.CI_JOB_TEMP }}/card-497/tesla
+            ${{ env.CI_JOB_TEMP }}/web-source/evidence/
+            ${{ env.CI_JOB_TEMP }}/web-bindings/params/provenance.json
+            ${{ env.CI_JOB_TEMP }}/web-bindings/params/commands.json
+            ${{ env.CI_JOB_TEMP }}/web-main-evidence.tar.gz
+            ${{ env.CI_JOB_TEMP }}/web-main-evidence.sha256
+          if-no-files-found: ignore
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
+  diagnostic-close:
+    if: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    name: Diagnostic acceptance and close ordering
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with: {persist-credentials: false}
+      - uses: ./.github/actions/job-temp
+      - uses: actions/setup-java@v5
+        with: {distribution: temurin, java-version: '21'}
+      - uses: gradle/actions/setup-gradle@4c125117fe7c5aed11272ec4213f602f012f89f2
+        with: {gradle-version: '9.0.0'}
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
+        with:
+          packages: 'platform-tools'
+          log-accepted-android-sdk-licenses: false
+      - name: Record the registered runner and available resources
+        run: |
+          printf 'runner=%s environment=%s arch=%s\n' "${{ runner.name }}" "${{ runner.environment }}" "${{ runner.arch }}"
+          free -h
+          df -h "$GITHUB_WORKSPACE"
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - name: Prove accepted frames may be cancelled after the unchanged close budget
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os, subprocess, xml.etree.ElementTree as ET
+          path = Path('tools/naver_map_patch/dexpatch/src/test/java/ai/comma/naver/payload/AsyncDiagnosticSinkTest.java')
+          source = path.read_bytes()
+          before = b'assertEquals(0, consumer.batches.stream().mapToInt(List::size).sum());'
+          after = b'assertEquals(1, consumer.batches.stream().mapToInt(List::size).sum());'
+          assert source.count(before) == 1
+          evidence = Path(os.environ['RUNNER_TEMP']) / 'diagnostic-close-red'
+          evidence.mkdir()
+          try:
+            path.write_bytes(source.replace(before, after))
+            result = subprocess.run(['gradle', '-p', 'tools/naver_map_patch/dexpatch', 'clean', 'test', '--no-daemon', '--dependency-verification=strict', '-PpayloadMode=diagnostic', '--tests', 'ai.comma.naver.payload.AsyncDiagnosticSinkTest.acceptedFramePastCloseBudgetIsCancelledBeforeConsumerReservation'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            (evidence / 'gradle.log').write_bytes(result.stdout)
+            assert result.returncode != 0, 'old unconditional delivery expectation unexpectedly passed'
+            reports = list(Path('tools/naver_map_patch/dexpatch/build/test-results/test').glob('TEST-*.xml'))
+            failures = []
+            for report in reports:
+              (evidence / report.name).write_bytes(report.read_bytes())
+              failures += list(ET.parse(report).getroot().iter('failure'))
+            assert len(failures) == 1, 'expected exactly one actual JUnit assertion failure'
+            message = failures[0].attrib.get('message', '')
+            assert 'expected: <1> but was: <0>' in message, message
+          finally:
+            path.write_bytes(source)
+          PY
+      - name: Verify both diagnostic variants with deterministic ordering
+        run: |
+          gradle -p tools/naver_map_patch/dexpatch clean test --no-daemon --dependency-verification=strict -PpayloadMode=diagnostic --tests 'ai.comma.naver.payload.AsyncDiagnosticSinkTest'
+          mkdir -p "$RUNNER_TEMP/diagnostic-close-green/diagnostic"
+          cp tools/naver_map_patch/dexpatch/build/test-results/test/*.xml "$RUNNER_TEMP/diagnostic-close-green/diagnostic/"
+          gradle -p tools/naver_map_patch/dexpatch clean test --no-daemon --dependency-verification=strict -PpayloadMode=diagnostic -PfieldAcceptance=true --tests 'ai.comma.naver.payload.AsyncDiagnosticSinkTest'
+          mkdir -p "$RUNNER_TEMP/diagnostic-close-green/field"
+          cp tools/naver_map_patch/dexpatch/build/test-results/test/*.xml "$RUNNER_TEMP/diagnostic-close-green/field/"
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: backlog-497-diagnostic-close-evidence
+          path: ${{ env.CI_JOB_TEMP }}/diagnostic-close-*
+          if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}

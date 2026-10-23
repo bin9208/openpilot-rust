@@ -17,6 +17,10 @@ import sys
 from typing import Final
 import uuid
 
+from tools.ci.provider_python_env import provider_library_path
+
+from qa_space_policy import free_for_growth
+
 ROOT: Final = Path(__file__).resolve().parents[2]
 
 
@@ -39,6 +43,9 @@ def peer(arguments: argparse.Namespace):
                "--binding", str(arguments.binding), "--log-root", str(output / "logs"), *common]
   else:
     command = [str(arguments.binary), "--root", str(ROOT), "--device-ip", "127.0.0.9", *common]
+  environment = dict(os.environ)
+  if arguments.peer == "native":
+    environment["LD_LIBRARY_PATH"] = str(arguments.opencv / "install/lib")
   (output / "invocation.json").write_text(json.dumps({"argv": command, "prefix": os.environ["OPENPILOT_PREFIX"]}, indent=2) + "\n")
   inputs = Inputs(output)
   try:
@@ -47,7 +54,7 @@ def peer(arguments: argparse.Namespace):
     car_params.unlink()
     car_params.mkdir()
     with (output / "stdout.log").open("wb") as stdout, (output / "stderr.log").open("wb") as stderr:
-      process = subprocess.Popen(command, cwd=output, stdout=stdout, stderr=stderr)
+      process = subprocess.Popen(command, cwd=output, env=environment, stdout=stdout, stderr=stderr)
       try:
         with client(http_port) as connection:
           probe = Probe(output, connection, process, inputs)
@@ -81,7 +88,7 @@ def main() -> None:
   if args.peer:
     peer(args)
     return
-  assert shutil.disk_usage(args.output.parent).free > 25 * 2**30 + 128 * 2**20
+  assert free_for_growth(args.output.parent, 128 * 2**20) >= 128 * 2**20
   args.output.mkdir(parents=True, exist_ok=False)
   for kind in ["source", "native"]:
     output = args.output / kind
@@ -90,7 +97,7 @@ def main() -> None:
     queue = Path("/dev/shm") / ("msgq_" + prefix)
     queue.mkdir()
     environment = dict(os.environ, OPENPILOT_PREFIX=prefix, PARAMS_ROOT=str(output / "params"),
-                       LD_LIBRARY_PATH=str(args.opencv / "install/lib"), PWD=str(output))
+                       LD_LIBRARY_PATH=provider_library_path(str(args.opencv / "install/lib")), PWD=str(output))
     command = [sys.executable, "-u", "-P", str(Path(__file__).resolve()), "--peer", kind]
     for name in ["binary", "binding", "assets", "opencv"]:
       command.extend(["--" + name, str(getattr(args, name))])

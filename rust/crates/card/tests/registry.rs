@@ -24,21 +24,18 @@ fn identification(candidate: &str) -> Identification {
 }
 
 #[test]
-fn psa_registry_preserves_source_fatal_boundaries() {
-    // Given the pinned PSA identity, without invented torque values or a DBC.
+fn psa_registry_admits_existing_angle_dashcam_parameters() {
     let root = tempfile::tempdir().unwrap();
     let settings = Params::open(root.path(), "d").unwrap();
-    let identification = identification("PSA_PEUGEOT_208");
-
-    // When normal parameter construction goes through the shared registry.
-    let result = registry::parameters(&identification, &settings, false);
-
-    // Then the original missing torque boundary is retained as a typed failure.
-    assert!(matches!(result, Err(Error::Psa(
-        openpilot_card::brands::psa::Error::Baseline(
-            openpilot_card::vehicle_params::Error::MissingTorque(candidate)
-        )
-    )) if candidate == "PSA_PEUGEOT_208"));
+    let message =
+        registry::parameters(&identification("PSA_PEUGEOT_208"), &settings, true).unwrap();
+    let cp = message.get_root_as_reader::<car_params::Reader>().unwrap();
+    assert!(cp.get_dashcam_only() && cp.get_radar_unavailable());
+    assert!(!cp.get_openpilot_longitudinal_control());
+    assert_eq!(
+        cp.get_steer_control_type().unwrap(),
+        car_params::SteerControlType::Angle
+    );
     assert!(settings.get("NNFFModelName").unwrap().is_none());
 }
 
@@ -79,6 +76,9 @@ fn native_registry_preserves_brand_parameters_and_rejects_unknown_models() {
         ("MOCK", "mock"),
         ("HYUNDAI_IONIQ_5", "hyundai"),
         ("TESLA_MODEL_3", "tesla"),
+        ("TESLA_MODEL_X", "tesla"),
+        ("PSA_PEUGEOT_208", "psa"),
+        ("KIA_K5_DL3_24_HEV", "hyundai"),
         ("MAZDA_CX5_2022", "mazda"),
         ("NISSAN_XTRAIL", "nissan"),
         ("CHRYSLER_PACIFICA_2018", "chrysler"),
@@ -106,14 +106,10 @@ fn native_registry_preserves_brand_parameters_and_rejects_unknown_models() {
             identification.vin
         );
         assert!(!settings.get_bool("FirmwareQueryDone").unwrap());
+        if candidate == "TESLA_MODEL_X" {
+            assert!(cp.get_dashcam_only());
+            assert!(cp.get_radar_unavailable());
+        }
     }
     assert!(registry::parameters(&identification("invented-car"), &settings, false).is_err());
-    assert!(matches!(
-        registry::parameters(&identification("TESLA_MODEL_X"), &settings, false),
-        Err(Error::Tesla(
-            openpilot_card::brands::tesla::Error::Baseline(
-                openpilot_card::vehicle_params::Error::MissingTorque(_)
-            )
-        ))
-    ));
 }

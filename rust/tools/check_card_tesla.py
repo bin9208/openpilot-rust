@@ -63,11 +63,34 @@ def main()->None:
         if 'steps' in case:case['prints']=[next(common_prints),*case['prints']]
     assert list(common_prints)==[], 'unexpected native constructor prints'
     left=[decoded(v) for v in expected];right=[decoded(v) for v in actual]
+    model_x=[(case,one,two) for case,one,two in zip(request,left,right,strict=True) if case['candidate']=='TESLA_MODEL_X']
+    assert model_x
+    for case,one,two in model_x:
+        for value in (one,two):
+            assert 'error' not in value
+            cp=value['params']
+            assert cp['dashcamOnly'] and cp['radarUnavailable']
+            assert cp['steerControlType']=='angle' and 'torque' not in cp.get('lateralTuning',{})
+            assert cp['maxLateralAccel']==2.5 and cp['flags']&2==0
+            assert cp['safetyConfigs'][0]['safetyModel']=='tesla'
+            assert cp['safetyConfigs'][0]['safetyParam']&2==0
+            assert not any(write[0]=='NNFFModelName' for write in value['writes'])
+            if case['op']=='runtime':
+                assert len(value['steps'])==len(case['steps'])==620
+                assert value['steps'][-1]['controller']['frame']==620
+                assert any(step['state']['vEgoRaw']>0 for step in value['steps'])
+    model_x_runtime=[case for case,_,_ in model_x if case['op']=='runtime']
+    if args.op!='params':
+        assert len(model_x_runtime)==8
+        assert {case['settings']['NNFF'] for case in model_x_runtime}=={'0','1'}
+        assert len({(case['settings']['NNFF'],case['alpha_long'],bool(dict(case['fingerprints'])[1])) for case in model_x_runtime})==8
+    if args.op!='runtime':assert sum(case['op']=='params' for case,_,_ in model_x)==64
     (args.evidence/'source-fields.json').write_text(json.dumps(left)+'\n');(args.evidence/'native-fields.json').write_text(json.dumps(right)+'\n')
     try:compare(left,right)
     except AssertionError as error:(args.evidence/'failure.txt').write_text(str(error)+'\n');raise
-    files=list((ROOT/'opendbc_repo/opendbc/car/tesla').glob('*.py'))+[ROOT/'opendbc_repo/opendbc/car/interfaces.py',ROOT/'opendbc_repo/opendbc/car/vehicle_model.py',ROOT/'opendbc_repo/opendbc/car/__init__.py',ROOT/'opendbc_repo/opendbc/dbc/tesla_model3_party.dbc',ROOT/'opendbc_repo/opendbc/dbc/tesla_model3_vehicle.dbc']
+    files=list((ROOT/'opendbc_repo/opendbc/car/tesla').glob('*.py'))+[ROOT/'opendbc_repo/opendbc/car/interfaces.py',ROOT/'opendbc_repo/opendbc/car/vehicle_model.py',ROOT/'opendbc_repo/opendbc/car/__init__.py',ROOT/'opendbc_repo/opendbc/dbc/tesla_model3_party.dbc',ROOT/'opendbc_repo/opendbc/dbc/tesla_model3_vehicle.dbc',ROOT/'opendbc_repo/opendbc/car/torque_data/override.toml',ROOT/'rust/crates/card/data/vehicle-497-provenance.json']
     report=dict(status='pass',cases=len(request),frames=sum(len(c['steps']) for c in request),observable='full CarParams/CarState/Actuator wire fields; exact CAN frames and cadence; temporal Tesla/cooperative/speed-wheel state; severity/order of logs; lifecycle/constructor Params effects',runtime_python=False,binary_sha256=hashlib.sha256(args.binary.read_bytes()).hexdigest(),source_sha256={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in files})
+    report.update(model_x_cases=len(model_x),model_x_runtime_cases=len(model_x_runtime),model_x_dashcam_only_preserved=True)
     (args.evidence/'result.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report))
 
 

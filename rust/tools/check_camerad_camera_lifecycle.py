@@ -5,7 +5,6 @@ from copy import deepcopy
 import json
 import os
 from pathlib import Path
-import shutil
 import struct
 import subprocess
 import tempfile
@@ -14,6 +13,8 @@ from urllib.parse import quote
 from check_camerad_kernel import digest, disable_core
 from check_camerad_isp_lifecycle import normalize
 from camerad_camera_lifecycle_cleanup import audit, normalize_disabled
+
+from qa_space_policy import free_for_growth
 
 
 def images(records: list[dict]) -> tuple[list[dict], dict[int, int]]:
@@ -85,8 +86,8 @@ def main() -> None:
   parser.add_argument('--cleanup-only', action='store_true')
   args = parser.parse_args()
   args.output.mkdir(parents=True)
-  free = shutil.disk_usage(args.output).free
-  assert free >= 25*1024**3 + 1024**3
+  free = free_for_growth(args.output, 1024**3)
+  assert free >= 1024**3
   sensors = [('ar', 0x354), ('ox', 0x5803), ('os', 0x5304)]
   cases = [(f'{sensor}-mode-{mode}-depth-{depth}', [str(mode), str(depth), '3'], {'CK_SENSOR': str(sensor_id)})
            for sensor, sensor_id in sensors for mode in range(3) for depth in (1, 18)]

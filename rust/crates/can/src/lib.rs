@@ -42,8 +42,6 @@ pub enum Error {
     Numeric,
     #[error("invalid checksum payload")]
     Checksum,
-    #[error("inherited Volkswagen MLB checksum failure: xor_checksum() takes 3 positional arguments but 4 were given")]
-    InheritedMlbChecksum,
     #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error(transparent)]

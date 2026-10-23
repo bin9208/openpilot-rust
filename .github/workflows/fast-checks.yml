@@ -12,14 +12,21 @@ concurrency:
   cancel-in-progress: true
 jobs:
   fast:
-    name: fast checks
-    runs-on: ubuntu-24.04
+    if: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    name: ${{ (github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && 'fast checks' || 'Blocked source - fast checks awaits trusted validation' }}
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 7
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - name: Record runner resources
+        run: |
+          printf 'runner=%s environment=%s arch=%s\n' "${{ runner.name }}" "${{ runner.environment }}" "${{ runner.arch }}"
+          free -h
+          df -h "$GITHUB_WORKSPACE"
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -49,3 +56,6 @@ jobs:
         with: {distribution: temurin, java-version: '17'}
       - name: Android Jetlink core regressions
         run: bash tools/jetlink_android/gradlew -p tools/jetlink_android :core:test :runtime:test
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}

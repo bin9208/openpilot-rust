@@ -363,8 +363,20 @@ fn require_space(
     // SAFETY: the successful call initialized every field in stats.
     let stats = unsafe { stats.assume_init() };
     let free = u128::from(stats.f_bavail) * u128::from(stats.f_frsize);
-    if free < (25u128 << 30) + growth as u128 {
-        return Err("CPU artifact emission requires 25 GiB free plus artifact growth".into());
+    require_available(free, growth)
+}
+
+#[cfg(unix)]
+fn require_available(
+    free: u128,
+    growth: usize,
+) -> std::result::Result<(), Box<dyn std::error::Error>> {
+    // The user retired the fixed runner reserve; retain the checked artifact estimate.
+    if free < growth as u128 {
+        return Err(format!(
+            "CPU artifact emission requires estimated artifact growth: free={free}, growth={growth}"
+        )
+        .into());
     }
     Ok(())
 }
@@ -379,6 +391,24 @@ fn require_space(
 #[cfg(test)]
 mod emission_tests {
     use super::*;
+
+    #[cfg(unix)]
+    #[test]
+    fn artifact_capacity_uses_growth_without_the_retired_fixed_reserve() {
+        for growth in [0, 1, 16 * 1024 * 1024, 256 * 1024 * 1024, usize::MAX] {
+            assert!(require_available(growth as u128, growth).is_ok());
+            assert!(require_available(u128::MAX, growth).is_ok());
+            if growth > 0 {
+                let free = growth as u128 - 1;
+                let message = require_available(free, growth).unwrap_err().to_string();
+                assert!(message.contains(&format!("free={free}, growth={growth}")));
+            }
+        }
+        let temp = tempfile::tempdir().unwrap();
+        assert!(require_space(temp.path(), 0).is_ok());
+        assert!(require_space(&temp.path().join("missing"), 0).is_err());
+        assert!(!temp.path().join("missing").exists());
+    }
     #[test]
     fn original_cpu_manifest_bytes_and_atomic_artifacts_match() {
         for fixture in [

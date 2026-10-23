@@ -2,9 +2,10 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
-import shutil
 import struct
 import zipfile
+
+from qa_space_policy import free_for_growth
 
 ROOT = Path(__file__).resolve().parents[2]
 WHEELS = {
@@ -33,8 +34,8 @@ def main():
     for name in ("LICENSE_GEOS", "LICENSE.txt"):
       files[name] = wheel.read("shapely-2.1.2.dist-info/licenses/" + name)
   args.output.parent.mkdir(parents=True, exist_ok=True)
-  free = shutil.disk_usage(args.output.parent).free
-  assert free >= 25 * 1024**3 + sum(map(len, files.values())) + 1024**2, "25 GiB plus artifact growth floor"
+  free = free_for_growth(args.output.parent, sum(map(len, files.values())) + 1024**2)
+  assert free >= sum(map(len, files.values())) + 1024**2, "artifact growth unavailable"
   args.output.mkdir(exist_ok=False)
   for name, content in files.items():
     (args.output / name).write_bytes(content)

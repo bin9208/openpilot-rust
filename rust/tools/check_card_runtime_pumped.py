@@ -178,6 +178,7 @@ def main() -> None:
   parser.add_argument('--candidate', action='append')
   parser.add_argument('--can-interval', type=float, default=.01)
   parser.add_argument('--cc-every', type=int)
+  parser.add_argument('--nnff', choices=('0', '1'))
   parser.add_argument('--runtime-root', type=Path, default=ROOT)
   parser.add_argument('--corpus-root', type=Path)
   arguments = parser.parse_args()
@@ -200,10 +201,11 @@ def main() -> None:
     if arguments.candidate and candidate not in arguments.candidate:
       continue
     scenario = Scenario(candidate, enabled,
-      alpha_long=True if candidate in FIXTURE_NAMES or candidate == 'FORD_MAVERICK_MK1' else None)
+      alpha_long=True if candidate in FIXTURE_NAMES or candidate == 'FORD_MAVERICK_MK1' else None,
+      nnff=None if arguments.nnff is None else arguments.nnff == '1')
     input_bytes = (json.dumps(fixture(candidate, arguments.corpus_root)) + '\n').encode()
     rows.append(compare_case(invocation, scenario, input_bytes))
-  result = {'status': 'pass', 'scenarios': rows, 'simulation': arguments.simulation, 'runtime_python': False,
+  result = {'status': 'pass', 'scenarios': rows, 'simulation': arguments.simulation, 'runtime_python': False, 'nnff': arguments.nnff,
     'nominal_can_hz': 1. / arguments.can_interval, 'nominal_controls_hz': 1. / (arguments.can_interval * controls_every),
     'executed_elf_sha256': hashlib.sha256((arguments.elf or arguments.binary).read_bytes()).hexdigest(),
     'observable': ('full CP/CS/prior actuator output/CAN wire bytes and validity; actual constructor, interface, cruise, ' +

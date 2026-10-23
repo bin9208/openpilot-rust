@@ -7,7 +7,6 @@ import io
 import json
 import os
 from pathlib import Path
-import shutil
 import subprocess
 import tempfile
 import uuid
@@ -16,6 +15,8 @@ from typing import TypedDict
 from card_runtime_source import load_binding
 from card_prepare_assets import prepare_assets
 
+from qa_space_policy import free_for_growth
+
 
 class FactoryInput(TypedDict):
   candidate: str
@@ -23,8 +24,8 @@ class FactoryInput(TypedDict):
 
 
 def run(binary: Path, output: Path, binding: Path, numerics: Path, brand: str | None = None) -> None:
-  free = shutil.disk_usage(output.parent).free
-  assert free >= 25 * 1024**3 + 16 * 1024**2, free
+  free = free_for_growth(output.parent, 16 * 1024**2)
+  assert free >= 16 * 1024**2, free
   output.mkdir(parents=True, exist_ok=True)
   load_binding(binding)
   from openpilot.common.params import Params
@@ -65,6 +66,13 @@ def run(binary: Path, output: Path, binding: Path, numerics: Path, brand: str | 
   cases.extend({"candidate": str(candidate), "fingerprints": []} for candidate in VOLKSWAGEN)
   cases.extend({"candidate": candidate, "fingerprints": []}
                for candidate in ("VOLKSWAGEN_GOLF_MK7", "VOLKSWAGEN_PASSAT_NMS", "VOLKSWAGEN_ID4_MK1", "VOLKSWAGEN_ID4_MK2"))
+  # Append exact new admissions without changing established factory case identities.
+  cases.extend({"candidate": candidate, "fingerprints": []} for candidate in ("FORD_ESCAPE_MK4_5", "FORD_EXPEDITION_MK4"))
+  cases.extend({"candidate": "TESLA_MODEL_X", "fingerprints": fingerprints} for fingerprints in (
+    [], [(1, [(0x3df, 8), (0x410, 8)])],
+  ))
+  cases.extend({"candidate": "PSA_PEUGEOT_208", "fingerprints": fingerprints} for fingerprints in ([], [(1, [(0x410, 8)])]))
+  cases.extend({"candidate": "KIA_K5_DL3_24_HEV", "fingerprints": fingerprints} for fingerprints in ([], [(4, [(0x1cf, 8)])]))
   if brand is not None:
     cases = [case for case in cases if interfaces[case["candidate"]].__module__.split(".")[-2] == brand]
     assert cases, f"no factory cases for {brand}"

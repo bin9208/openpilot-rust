@@ -1,6 +1,6 @@
 import math
 
-from openpilot.cereal import car, log
+from openpilot.cereal import log
 from controlsd_parameters import Store
 from controlsd_source import load
 from paramsd_fixture import event, pose
@@ -29,14 +29,7 @@ SETTINGS = {
 
 def parameters(fingerprint, mode, settings):
   source, _, _, _ = load(Store({key: value.encode() for key, value in settings.items()}))
-  if fingerprint == 'PSA_PEUGEOT_208':
-    from paramsd_fixture import car_params
-
-    with car.CarParams.from_bytes(bytes(car_params(fingerprint=fingerprint))) as reader:
-      cp = reader.as_builder()
-    cp.brand = 'psa'
-  else:
-    cp = source['interfaces'][fingerprint].get_non_essential_params(fingerprint)
+  cp = source['interfaces'][fingerprint].get_non_essential_params(fingerprint)
   cp.openpilotLongitudinalControl = True
   cp.minSteerSpeed = 0.0
   if mode == 'pid':

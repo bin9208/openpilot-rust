@@ -164,3 +164,36 @@ pub fn encode(packet: &Packet, timestamp: u64, valid: bool) -> Result<Vec<u8>, E
     }
     Ok(serialize::write_message_to_words(&builder))
 }
+
+/// Metadata for daemon-local reporting; encoding itself has no diagnostic side effects.
+pub struct DebugOmission {
+    pub points: usize,
+    pub payload_bytes: usize,
+    pub payload_limit: usize,
+}
+
+/// Bound only diagnostic IPC output; Params persistence must keep using `encode`.
+pub fn encode_publication(
+    mut packet: Packet,
+    timestamp: u64,
+    valid: bool,
+) -> Result<(Vec<u8>, Option<DebugOmission>), Error> {
+    let bytes = encode(&packet, timestamp, valid)?;
+    // Match the msgq publisher's conservative payload bound, including framing/alignment.
+    let service = openpilot_messaging::services::lookup("liveTorqueParameters")
+        .ok_or(Error::Contract("missing liveTorqueParameters service"))?;
+    let limit = service.queue_size / 3 - 16;
+    if bytes.len() <= limit || packet.points.is_none() {
+        return Ok((bytes, None));
+    }
+    let omission = DebugOmission {
+        points: packet
+            .points
+            .take()
+            .expect("checked diagnostic points")
+            .len(),
+        payload_bytes: bytes.len(),
+        payload_limit: limit,
+    };
+    Ok((encode(&packet, timestamp, valid)?, Some(omission)))
+}

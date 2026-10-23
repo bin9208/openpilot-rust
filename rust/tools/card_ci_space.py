@@ -10,11 +10,13 @@ def require_space(path: Path, growth: int) -> dict[str, int]:
   while not path.exists():
     path = path.parent
   free = shutil.disk_usage(path).free
-  required = 25 * 1024**3 + growth
+  if growth < 0:
+    raise ValueError('estimated growth must be nonnegative')
+  required = growth
   result = {'free_bytes': free, 'required_bytes': required, 'growth_bytes': growth}
   print(json.dumps(result), flush=True)
   if free < required:
-    raise OSError(f'require 25 GiB plus estimated growth; recover at least 35 GiB before retry: {result}')
+    raise OSError(f'insufficient space for estimated growth: {result}')
   return result
 
 

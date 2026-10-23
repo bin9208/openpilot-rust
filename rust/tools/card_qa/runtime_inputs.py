@@ -13,6 +13,7 @@ class Scenario:
   candidate: str
   enabled: bool
   alpha_long: bool | None = None
+  nnff: bool | None = None
 
 
 @cache

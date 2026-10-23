@@ -125,7 +125,8 @@ async def main() -> None:
   options = parser.parse_args()
   output = options.output.resolve()
   free = await anyio.to_thread.run_sync(lambda: shutil.disk_usage('.').free)
-  assert free >= 25 * 1024**3 + 4608 * 1024**2
+  growth = 4608 * 1024**2
+  assert free >= growth, {'free_bytes': free, 'growth_bytes': growth}
   await anyio.Path(output).mkdir(parents=True)
   began = time.monotonic()
   await run(output, Inputs(options.native.resolve(), options.launcher.resolve(), options.binding.resolve(), options.vision_root.resolve()), options.start_case)

@@ -17,12 +17,13 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
-import shutil
 import numpy as np
 from PIL import Image
 from check_ui_augmented import messages
 from ui_application_qa.camera_lane import capture
 from typing import TypedDict
+
+from qa_space_policy import free_for_growth
 
 
 class Position(TypedDict):
@@ -63,7 +64,7 @@ def main() -> None:
   parser.add_argument('--filter', default='')
   args = parser.parse_args()
   root = Path(__file__).resolve().parents[2]
-  assert shutil.disk_usage(root).free > (25 + 0.5) * 1024**3
+  assert free_for_growth(root, 512 * 1024**2) >= 512 * 1024**2
   args.output.mkdir(parents=True, exist_ok=True)
   results = []
   for big in [False, True]:

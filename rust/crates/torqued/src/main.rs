@@ -28,6 +28,22 @@ struct Arguments {
     numerics: PathBuf,
     frames: Option<NonZeroU64>,
 }
+#[derive(Default)]
+struct DebugOmissionState {
+    omitted: bool,
+}
+impl DebugOmissionState {
+    fn update(&mut self, omission: Option<wire::DebugOmission>) -> Option<wire::DebugOmission> {
+        let warn = omission.is_some() && !self.omitted;
+        self.omitted = omission.is_some();
+        omission.filter(|_| warn)
+    }
+}
+
+#[cfg(test)]
+#[path = "publication_tests.rs"]
+mod publication_tests;
+
 fn arguments() -> Result<Option<Arguments>, Error> {
     let mut result = Arguments {
         numerics: env::var_os("TORQUED_NUMERICS")
@@ -108,6 +124,7 @@ fn run(args: Arguments) -> Result<(), Error> {
     }
     let writer = PendingWrites::new(Params::for_runtime()?)?;
     let mut remaining = args.frames.map(NonZeroU64::get);
+    let mut debug_omission = DebugOmissionState::default();
     while !stop.load(Ordering::Relaxed) {
         subscriber.update(Duration::from_millis(100))?;
         if stop.load(Ordering::Relaxed) {
@@ -115,14 +132,18 @@ fn run(args: Arguments) -> Result<(), Error> {
         }
         let actions = loop_state::step(&mut estimator, &subscriber.state)?;
         if actions.publish {
-            publisher.send(
-                "liveTorqueParameters",
-                &wire::encode(
-                    &estimator.message(&mut fit, debug)?,
-                    platform::timestamp()?,
-                    actions.valid,
-                )?,
+            let (bytes, omission) = wire::encode_publication(
+                estimator.message(&mut fit, debug)?,
+                platform::timestamp()?,
+                actions.valid,
             )?;
+            publisher.send("liveTorqueParameters", &bytes)?;
+            if let Some(omission) = debug_omission.update(omission) {
+                eprintln!(
+                    "torqued: omitting {} DEBUG points from publication: {} bytes exceeds msgq payload limit {}; full points retained in learning and Params",
+                    omission.points, omission.payload_bytes, omission.payload_limit,
+                );
+            }
             if let Some(count) = &mut remaining {
                 *count -= 1;
             }

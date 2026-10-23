@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 from dataclasses import dataclass
 import hashlib
 import json
@@ -69,8 +70,14 @@ def pairs(captures: Path, state: Path, open_stream: Path) -> list[Pair]:
     for name in ('state-carry', 'excursion-gap', 'excursion-cap'):
         row = json.loads((state/name/'result.json').read_text())
         for item in row['inputs']: assert hashlib.sha256(Path(item['file']).read_bytes()).hexdigest() == item['sha256']
+        expected = copy.deepcopy(row['report'])
+        if name == 'state-carry':
+            # #252: tooDistracted -> driverDistracted1 -> tooDistracted is one
+            # continuous category episode. Keep every other source output exact.
+            assert expected['extras']['warnCounts']['driverDistracted'] == 2
+            expected['extras']['warnCounts']['driverDistracted'] = 1
         result.append(Pair(name, {'operation': 'report', 'root': str(state/name), 'route': route,
-            'prefer_rlog': True}, row['report']))
+            'prefer_rlog': True}, expected))
     row = json.loads((open_stream/'result.json').read_text())
     file = Path(row['file']); assert hashlib.sha256(file.read_bytes()).hexdigest() == row['input_sha256']
     result.append(Pair('open-stream/codec', {'operation': 'codec', 'file': str(file)}, row['decompress'], ('ok', 'bytes', 'sha256')))
@@ -94,7 +101,8 @@ def main() -> None:
     command = [str(args.binary.resolve())]
     invocation = {'command': [sys.executable, '-P', *sys.argv], 'native_command': command,
         'binary_sha256': hashlib.sha256(args.binary.read_bytes()).hexdigest(), 'TZ': os.environ.get('TZ'),
-        'codec_error_comparison': 'success/bytes/digest or failed; internal decoder message not HTTP-visible'}
+        'codec_error_comparison': 'success/bytes/digest or failed; internal decoder message not HTTP-visible',
+        'intentional_difference_252': 'state-carry.extras.warnCounts.driverDistracted: source 2, native 1; continuous numbered-warning episode'}
     result = subprocess.run(command, input=data, text=True, capture_output=True, timeout=20)
     (output/'native-input.jsonl').write_text(data); (output/'native-output.jsonl').write_text(result.stdout)
     (output/'native-stderr.log').write_text(result.stderr); invocation['exit'] = result.returncode

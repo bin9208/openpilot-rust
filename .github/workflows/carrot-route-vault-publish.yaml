@@ -28,11 +28,12 @@ concurrency:
 
 jobs:
   publish:
-    if: github.repository == 'bin9208/openpilot' && github.ref == 'refs/heads/carrot-wip'
-    runs-on: ubuntu-24.04
+    if: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (github.repository == 'bin9208/openpilot' && github.ref == 'refs/heads/carrot-wip') }}
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
+      - uses: ./.github/actions/job-temp
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -96,3 +97,6 @@ jobs:
             docker tag "$IMAGE:sha-$GITHUB_SHA" "$IMAGE:carrot-wip"
             docker push "$IMAGE:carrot-wip"
           fi
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}

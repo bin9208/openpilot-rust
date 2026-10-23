@@ -25,18 +25,25 @@
   device comparison after the complete runtime candidate is ready. Keep unported
   components and native external dependencies explicit in the inventory.
 
-- The user required prevention of disk exhaustion on 2026-09-30. Check available
-  space before each local build, dependency install or large artifact copy. Keep
-  at least 25 GiB free plus the operation's estimated growth; when below that
-  floor, stop new build work and recover at least 35 GiB before resuming. Prefer
-  bounded package builds with incremental compilation disabled and reuse a
-  coordinated target cache. On 2026-10-09 the user explicitly authorized deleting
-  old Rust-port records, archived validation artifacts and all unused build
-  caches without another approval or preservation/compression step. This
-  supersedes earlier instructions to retain historical local evidence. Preserve
-  source changes and files needed by current implementation/validation; retain
-  concise results in the existing tracked records instead of old binary copies.
-  Prioritize the complete runtime candidate, then user testing and refinement.
+- On 2026-10-23 the user removed the fixed 25/35 GiB stop/resume rule.
+  Local work remains syntax, formatting and diff review only. Run functional
+  checks/builds in registered GitHub Actions jobs. The latest instruction fixes
+  trusted x64 checks, generic ARM cross-builds and AGNOS cross-builds to
+  `bin-actions` (`self-hosted`, `Linux`, `X64`, `dev-md-local`), with no
+  GitHub-hosted x64/ARM fallback or further runner comparison. Run the existing ARM checks in local ARM QEMU under the separately owned
+  #502 foundation; label this as emulation, never native ARM hardware acceptance. Preserve running
+  CI and do not repeat unchanged successful checks solely to change runners.
+  Record runner identity and actual operation growth/resource observations;
+  check that the operation fits without reinstating the retired fixed reserve.
+  Native source, ABI, required PR gates, branch isolation and deployment
+  acceptance remain unchanged. The full generic local build succeeded in
+  55m41s at source 2ff834da04e2acaad3d63211c2b76e287679eeaa, Actions
+  39832976197/job/120013728323. QEMU checks do not establish native ARM CPU
+  execution. Apply routing changes at the next otherwise necessary workflow edit.
+- On 2026-10-09 the user explicitly authorized deleting old Rust-port records,
+  archived validation artifacts and unused build caches without another approval
+  or preservation/compression step. Preserve current source changes and files
+  needed for implementation/validation; retain concise results in tracked records.
 
 - This checkout belongs to bin9208/openpilot-rust. Never push to bin9208/openpilot or ajouatom/openpilot.
 - User explicitly authorized isolated Rust development here. Work from dev on issue branches; PRs target dev. Older carrot-wip synchronization instructions below are historical source context and do not authorize synchronization from this repository.

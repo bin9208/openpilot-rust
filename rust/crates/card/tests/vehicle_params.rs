@@ -11,7 +11,13 @@ fn baseline_reads_platform_and_torque_catalog_without_defaults_for_missing_entri
     );
     assert_eq!(cp.get_wheelbase(), 2.97);
     assert_eq!(cp.get_mass(), 1948.);
-    assert!(vehicle_params::baseline("KIA_K5_DL3_24_HEV").is_err());
+    let kia = vehicle_params::baseline("KIA_K5_DL3_24_HEV").unwrap();
+    assert_eq!(
+        kia.get_root_as_reader::<car_params::Reader>()
+            .unwrap()
+            .get_max_lateral_accel(),
+        2.5
+    );
     assert!(vehicle_params::baseline("unknown").is_err());
 }
 

@@ -44,7 +44,7 @@ pub fn run(config: &Config, stop: &AtomicBool) -> Result<(), Error> {
                 setup::quectel(&mut diag, config, stop)?;
                 want_assistance = false;
             }
-            let (opcode, payload) = diag.recv(stop)?;
+            let (opcode, payload) = diag.recv_log(stop)?;
             if opcode != framing::DIAG_LOG {
                 logger.emit(
                     openpilot_logging::log_site!(),

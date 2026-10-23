@@ -14,7 +14,6 @@ pub fn logs(vehicle: &mut Volkswagen) -> Value {
 }
 fn failure(error: Error) -> Result<Value, Box<dyn std::error::Error>> {
     Ok(match error {
-        Error::InheritedMqbNumpy => json!({"kind":"InheritedMqbNumpy","message":error.to_string()}),
         Error::Stock(name) => json!({"kind":"Stock","attribute":name}),
         Error::SourceFunction { module, function } => {
             json!({"kind":"SourceFunction","module":module,"function":function})
@@ -43,14 +42,7 @@ pub fn run(
             )?;
             out
         } else {
-            match vehicle.update(&step.packets, step.now) {
-                Ok(out) => out,
-                Err(e) if case.op == "mqb_failure" => {
-                    error = Some(failure(e)?);
-                    break;
-                }
-                Err(e) => return Err(e.into()),
-            }
+            vehicle.update(&step.packets, step.now)?
         };
         vehicle.set_soft_hold(step.soft_hold);
         let mut cs = state.get_root::<car_state::Builder>()?;
@@ -78,11 +70,7 @@ pub fn run(
         };
         rows.push(json!({"state":capnp::serialize::write_message_to_words(&state),"actuators":capnp::serialize::write_message_to_words(&output.actuators),"can":output.can,"extra":vehicle.state.extras,"state_snapshot":vehicle.state.snapshot(),"controller":vehicle.controller.snapshot(),"packer_counters":vehicle.controller.packer_counters(),"logs":logs(vehicle),"soft_hold":vehicle.state.soft_hold,"is_metric":vehicle.state.is_metric}));
     }
-    if matches!(
-        case.op.as_str(),
-        "mqb_failure" | "before_update" | "numeric_error"
-    ) && error.is_none()
-    {
+    if matches!(case.op.as_str(), "before_update" | "numeric_error") && error.is_none() {
         return Err(format!("error fixture unexpectedly succeeded: {}", case.name).into());
     }
     Ok((rows, error))

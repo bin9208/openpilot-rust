@@ -5,12 +5,13 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import shutil
 import time
 
 from card_runtime_source import load_binding
 from radarcan_runtime_capture import Arguments, ROOT, capture, recorded_environment
 from radarcan_runtime_types import Case
+
+from qa_space_policy import free_for_growth
 
 
 def main() -> None:
@@ -20,9 +21,9 @@ def main() -> None:
   parser.add_argument('--name', action='append')
   parser.add_argument('--lifecycle', action='store_true')
   args = parser.parse_args()
-  free = shutil.disk_usage(ROOT).free
+  free = free_for_growth(ROOT, 256 * 2**20)
   growth = 256 * 2**20
-  assert free >= 25 * 2**30 + growth, (free, growth)
+  assert free >= growth, (free, growth)
   cases: list[Case] = json.loads(args.cases.read_text())
   if args.name and not args.lifecycle:
     cases = [case for case in cases if case['name'] in args.name]

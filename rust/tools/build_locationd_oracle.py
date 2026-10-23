@@ -3,12 +3,13 @@ import argparse
 import json
 import os
 from pathlib import Path
-import shutil
 import subprocess
 import sys
 import sysconfig
 
 import numpy as np
+
+from qa_space_policy import free_for_growth
 
 
 def main():
@@ -56,9 +57,9 @@ def main():
   ]
   with (output / 'build.log').open('w') as log:
     for command in commands:
-      free = shutil.disk_usage(output).free
-      if free < 26 * 1024**3:
-        raise RuntimeError('25 GiB floor plus 1 GiB build estimate unavailable')
+      free = free_for_growth(output, 1024**3)
+      if free < 1024**3:
+        raise RuntimeError('1 GiB build estimate unavailable')
       log.write(json.dumps({'command': command, 'free_bytes': free}) + '\n')
       log.flush()
       result = subprocess.run(command, cwd=root, env=environment, stdout=log, stderr=subprocess.STDOUT)

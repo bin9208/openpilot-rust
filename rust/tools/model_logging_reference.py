@@ -77,6 +77,10 @@ def driving(records: list[dict], scenario: DrivingScenario) -> dict:
   duration = re.fullmatch(r'models loaded in ([0-9]+\.[0-9])s, modeld starting', loaded[0])
   assert duration is not None
   expected.append(source.expected('models loaded in ', {'st': 0.0, 'time': SimpleNamespace(monotonic=lambda: float(duration[1]))}))
+  if scenario.mode == 'dual':
+    # #49: this raw-enabled scenario must report the unsupported Jetlink diagnostic exactly once.
+    # Counter equality below still checks every record, including duplicate/extra warnings.
+    expected.append((30, 'SEND_RAW_PRED is unsupported for Jetlink frames: rawPredictions will be empty; native frames retain their raw tensor'))
   loading_record = next(record for record in records if record['process'] == scenario.pid and record['msg'] == 'loading model')
   loaded_record = next(record for record in records if record['process'] == scenario.pid and record['msg'] == loaded[0])
   assert abs(float(duration[1]) - (loaded_record['created'] - loading_record['created'])) <= .2

@@ -65,9 +65,9 @@ def cases(op=None, candidate_filter=None):
           case = profile(candidate, alpha, gateway, detected)
           case.update(op='before_update', name=f"before-update-{case['name']}", steps=runtime_steps(case, 1))
           result.append(case)
-      for alpha, gateway, detected in itertools.product((False, True), (False, True), range(3) if op in (None, 'mqb_failure') else []):
+      for alpha, gateway, detected in itertools.product((False, True), (False, True), range(3) if op in (None, 'runtime', 'mqb_runtime') else []):
         case = profile(candidate, alpha, gateway, detected)
-        case.update(op='mqb_failure', name=f"mqb-failure-{case['name']}", steps=runtime_steps(case, 1))
+        case.update(op='mqb_runtime', name=f"mqb-runtime-{case['name']}", steps=runtime_steps(case, 96))
         result.append(case)
       for alpha, gateway in itertools.product((False, True), (False, True) if op in (None, 'seeded_controller') else []):
         result.append(seeded(profile(candidate, alpha, gateway, 1)))

@@ -51,6 +51,10 @@ impl Publication {
         command: impl FnMut(bool) -> Option<String>,
     ) -> Result<Messages, Error> {
         let (lat_action_t, long_action_t) = state.action_times();
+        let lat_smooth_seconds = action::dynamic_lat_smooth_seconds(
+            state.settings.lateral_smooth,
+            &output.prediction.plan_std,
+        );
         let velocity = f64::from(sources.car.get_v_ego());
         let action = action::from_plan(
             PlanActionInput {
@@ -62,13 +66,11 @@ impl Publication {
                 lat_action_t,
                 long_action_t,
                 v_ego: if velocity < 0.0 { 0.0 } else { velocity },
-                lat_smooth_seconds: action::dynamic_lat_smooth_seconds(
-                    state.settings.lateral_smooth,
-                ),
+                lat_smooth_seconds,
                 v_ego_stopping: state.settings.v_ego_stopping,
             },
         );
-        state.complete_action(action, sources.live_lateral_delay);
+        state.complete_action(action, sources.live_lateral_delay, lat_smooth_seconds);
         let mut model = model_wire::build(
             ModelFrame {
                 prediction: output.prediction,

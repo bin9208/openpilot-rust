@@ -10,6 +10,8 @@ import subprocess
 import time
 import zipfile
 
+from qa_space_policy import free_for_growth
+
 ROOT = Path(__file__).resolve().parents[2]
 WHEELS = {
   'x86_64': '3b451852e83d62815cead999ab31073db9be60307f772650336cdd4534f12b9e',
@@ -23,9 +25,9 @@ def digest(path: Path) -> str:
 
 
 def disk_guard(path: Path) -> int:
-  available = shutil.disk_usage(path).free
-  if available < 25 * 1024**3 + 128 * 1024**2:
-    raise RuntimeError(f'planner build requires 25 GiB free plus 128 MiB growth; available={available}')
+  available = free_for_growth(path, 128 * 1024**2)
+  if available < 128 * 1024**2:
+    raise RuntimeError(f'planner build requires 128 MiB estimated growth; available={available}')
   return available
 
 

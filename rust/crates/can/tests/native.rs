@@ -121,11 +121,15 @@ fn registered_frequency_preserves_source_threshold_rounding() {
 }
 
 #[test]
-fn inherited_mlb_checksum_signature_failure_is_preserved() {
+fn repaired_mlb_checksum_is_used_by_the_actual_packer() {
     let source = "BO_ 265 ACC_01: 8 XXX\n SG_ CHECKSUM : 0|8@1+ (1,0) [0|255] \"\" XXX\n";
     let dbc = Arc::new(Dbc::parse("vw_mlb", source).unwrap());
     let mut packer = Packer::new(dbc);
-    assert!(packer.pack("ACC_01", &[], None).is_err());
+    // Independent synthetic zero payload: seed 0x08 XOR seven zero bytes.
+    assert_eq!(
+        packer.pack("ACC_01", &[], None).unwrap(),
+        [0x08, 0, 0, 0, 0, 0, 0, 0]
+    );
 }
 
 #[test]

@@ -19,6 +19,7 @@ pub struct Buttons {
     count: i32,
     previous_speed: f64,
     alternate_count: u32,
+    alternate_values: Option<Values>,
     pub main_trigger: i32,
     pub lfa_trigger: i32,
 }
@@ -33,6 +34,7 @@ impl Default for Buttons {
             count: 0,
             previous_speed: 0.,
             alternate_count: 0,
+            alternate_values: None,
             main_trigger: 0,
             lfa_trigger: 0,
         }
@@ -171,14 +173,30 @@ impl Buttons {
             }
         } else {
             let alternate = state.config.flags & f::ALT_BUTTONS != 0;
-            if alternate && captures.contains_key("cruise_buttons_msg") {
-                self.alternate_count += 1;
+            if alternate {
+                if let Some(values) = captures.get("cruise_buttons_msg") {
+                    self.alternate_values = Some(values.clone());
+                    self.alternate_count = 0;
+                }
             }
             if (f64::from(frame) - self.last_frame.to_f64().ok_or(Error::Numeric)?) * 0.01 > 0.25
                 && cc.get_cruise_control()?.get_cancel()
             {
                 self.diagnostics.push("cruiseControl.cancel222222".into());
-                if !alternate {
+                if alternate {
+                    if let Some(values) = &mut self.alternate_values {
+                        result.push(canfd_buttons::alt_buttons(
+                            writer,
+                            (
+                                state.config.bus,
+                                state.config.flags,
+                                4.,
+                                f64::from(self.alternate_count),
+                            ),
+                            values,
+                        )?);
+                    }
+                } else {
                     for _ in 0..20 {
                         result.push(canfd_buttons::buttons(
                             writer,
@@ -190,15 +208,32 @@ impl Buttons {
                 }
                 self.last_frame = i64::from(frame);
             }
-            if self.last_frame != i64::from(frame) && !alternate {
+            if self.last_frame != i64::from(frame)
+                && (!alternate || self.alternate_values.is_some())
+            {
                 let button = self.spam(input, settings, frame)?;
                 if button > 0 {
-                    let frame = canfd_buttons::buttons(
-                        writer,
-                        state.config.bus,
-                        state.buttons_counter + 1.,
-                        f64::from(button),
-                    )?;
+                    let frame = if alternate {
+                        canfd_buttons::alt_buttons(
+                            writer,
+                            (
+                                state.config.bus,
+                                state.config.flags,
+                                f64::from(button),
+                                f64::from(self.alternate_count),
+                            ),
+                            self.alternate_values
+                                .as_mut()
+                                .ok_or(Error::Signal("cruise_buttons_msg".into()))?,
+                        )?
+                    } else {
+                        canfd_buttons::buttons(
+                            writer,
+                            state.config.bus,
+                            state.buttons_counter + 1.,
+                            f64::from(button),
+                        )?
+                    };
                     for _ in 0..settings.spam[2] {
                         result.push(frame.clone());
                     }

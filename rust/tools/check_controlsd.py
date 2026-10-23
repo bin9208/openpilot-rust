@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import subprocess
 
+from openpilot.cereal import car
 from controlsd_compare import compare_traces
 from controlsd_fixture import cases
 from controlsd_scenarios import cases as scenarios
@@ -20,6 +21,17 @@ def main():
   args = parser.parse_args()
   args.evidence.mkdir(parents=True, exist_ok=True)
   request = {'cases': cases() + scenarios()}
+  # Keep the former missing-DBC rejection counterexample as a full positive
+  # comparison now that the exact PSA asset and runtime are admitted (#501).
+  case = copy.deepcopy(request['cases'][0])
+  case['name'] = 'psa-valid-tuning'
+  case['frames'] = case['frames'][:5]
+  with car.CarParams.from_bytes(bytes(case['params']['CarParams'])) as original:
+    cp = original.as_builder()
+    cp.carFingerprint = 'PSA_PEUGEOT_208'
+    cp.brand = 'psa'
+    case['params']['CarParams'] = list(cp.to_bytes())
+  request['cases'].append(case)
   for token in ['1_0', '0x_A', '0Xf_f', '0b_10', '0o_10', '0_0', '00', '- 1', '+ 1', '-2147483648']:
     case = copy.deepcopy(request['cases'][3])
     case['name'] = 'fingerprints-valid-' + token

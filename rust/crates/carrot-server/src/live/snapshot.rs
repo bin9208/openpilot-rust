@@ -1,6 +1,10 @@
 use super::value;
 use crate::Value;
 use capnp::dynamic_value::Reader;
+
+#[cfg(test)]
+#[path = "snapshot_tests.rs"]
+mod snapshot_tests;
 pub(super) fn snapshot(name: &str, data: Reader<'_>) -> Value {
     match name {
         "selfdriveState" => Value::object([
@@ -33,14 +37,37 @@ pub(super) fn snapshot(name: &str, data: Reader<'_>) -> Value {
                 Value::integer(value::integer(value::field(data, "alertSize"))),
             ),
         ]),
-        "navInstructionCarrot" => Value::object([
-            ("mainText", optional_text(value::field(data, "mainText"))),
-            (
-                "distanceText",
-                optional_text(value::field(data, "distanceText")),
-            ),
-            ("turnType", optional_text(value::field(data, "turnType"))),
-        ]),
+        "navInstructionCarrot" => {
+            // Cereal distances and the browser's distanceM contract both use meters.
+            let meters = value::number(value::field(data, "maneuverDistance"), f64::NAN);
+            let valid_distance = meters.is_finite() && meters >= 0.;
+            Value::object([
+                (
+                    "mainText",
+                    optional_text(value::field(data, "maneuverPrimaryText")),
+                ),
+                (
+                    "distanceText",
+                    if valid_distance {
+                        Value::text(&distance_text(meters))
+                    } else {
+                        Value::Null
+                    },
+                ),
+                (
+                    "distanceM",
+                    if valid_distance {
+                        Value::Float(meters)
+                    } else {
+                        Value::Null
+                    },
+                ),
+                (
+                    "turnType",
+                    optional_text(value::field(data, "maneuverType")),
+                ),
+            ])
+        }
         "navRoute" => {
             let mut coordinates = Vec::new();
             if let Reader::List(items) = value::field(data, "coordinates") {
@@ -66,6 +93,16 @@ pub(super) fn snapshot(name: &str, data: Reader<'_>) -> Value {
             ])
         }
         _ => Value::object([]),
+    }
+}
+
+fn distance_text(meters: f64) -> String {
+    if meters >= 10_000. {
+        format!("{:.0}km", meters / 1000.)
+    } else if meters >= 1000. {
+        format!("{:.1}km", meters / 1000.)
+    } else {
+        format!("{:.0}m", meters.round())
     }
 }
 

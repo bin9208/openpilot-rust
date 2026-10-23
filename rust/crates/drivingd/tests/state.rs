@@ -25,6 +25,7 @@ fn loop_refresh_counts_camera_timeouts_and_action_feedback_is_float32() {
             ..Action::default()
         },
         0.15,
+        0.6,
     );
     assert_eq!(
         state.previous_action.desired_curvature,
@@ -37,6 +38,6 @@ fn loop_refresh_counts_camera_timeouts_and_action_feedback_is_float32() {
     );
     state.settings.custom_lateral_delay = 0.0;
     state.settings.lateral_smooth = -1.0;
-    state.complete_action(Action::default(), 0.15);
+    state.complete_action(Action::default(), 0.15, 0.0);
     assert_eq!(state.lateral_delay, 0.15);
 }

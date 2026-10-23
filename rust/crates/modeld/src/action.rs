@@ -28,14 +28,26 @@ pub struct PlanActionInput<'a> {
     pub direct_action: Option<[f32; 2]>,
 }
 
-/// Preserves the source's failed four-dimensional plan_stds lookup (y_std = 0).
+/// Uses selected-plan position-y uncertainty (metres) at sample 10 (0.9765625 s).
+/// Retains the source's interpolation range, disabled setting, and 0.60 s cap.
+/// Nonfinite uncertainty keeps the prior base-only fallback before action feedback.
 #[must_use]
-pub fn dynamic_lat_smooth_seconds(base: f64) -> f64 {
+pub fn dynamic_lat_smooth_seconds(base: f64, plan_std: &[[f32; 15]; 33]) -> f64 {
     if base <= 0.0 {
-        0.0
-    } else {
-        base.clamp(0.0, 0.60)
+        return 0.0;
     }
+    let y_std = f64::from(plan_std[10][1]);
+    if !y_std.is_finite() {
+        return base.clamp(0.0, 0.60);
+    }
+    let extra = if y_std <= 0.15 {
+        0.0
+    } else if y_std >= 0.25 {
+        base * 2.0
+    } else {
+        (y_std - 0.15) * (base * 2.0 / (0.25 - 0.15))
+    };
+    (base + extra).clamp(0.0, 0.60)
 }
 
 /// Calculates an action without changing the source's smoothing or stop policy.

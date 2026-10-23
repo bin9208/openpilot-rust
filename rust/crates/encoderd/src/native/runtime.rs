@@ -89,16 +89,25 @@ fn camera(
     let params = Params::for_runtime()?;
     let mut jpeg = None;
     let mut mappings = HashMap::new();
+    let mut connected_layout = None;
     let mut lifecycle = Lifecycle::new(on_demand, segment_length);
     while !exit.load(Ordering::Relaxed) {
         if !client.connect()? {
             std::thread::sleep(Duration::from_millis(5));
             continue;
         }
+        let layout = client
+            .layout()
+            .ok_or(Error::Contract("connected stream has no first buffer"))?;
+        if connected_layout.is_some_and(|previous| previous != layout) {
+            // Compare stride, UV offset and allocation length as well as image
+            // dimensions, before any new frame reaches an existing codec.
+            return Err(Error::Contract(
+                "encoder stream layout changed after reconnect; supervisor restart required",
+            ));
+        }
+        connected_layout = Some(layout);
         if encoders.is_empty() {
-            let layout = client
-                .layout()
-                .ok_or(Error::Contract("connected stream has no first buffer"))?;
             platform::emit(
                 log_site!(),
                 Level::Warning,
@@ -126,6 +135,12 @@ fn camera(
         lifecycle.lagging = false;
         while !exit.load(Ordering::Relaxed) {
             let Some(frame) = client.receive_retained(Duration::from_millis(100))? else {
+                if !client.is_connected() {
+                    // Queued codecs retain their own Arc mappings until dequeue.
+                    // New frames must import the replacement server's buffers.
+                    mappings.clear();
+                    break;
+                }
                 continue;
             };
             let extra = *frame.metadata();

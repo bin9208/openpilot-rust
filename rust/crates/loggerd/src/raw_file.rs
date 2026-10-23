@@ -20,11 +20,20 @@ impl RawFile {
         }
     }
 
+    pub fn write(&mut self, bytes: &[u8]) -> io::Result<()> {
+        // Bootlog shares this boundary and retains its source write policy.
+        self.write_inner(bytes, false)
+    }
+
+    pub(crate) fn write_video(&mut self, bytes: &[u8]) -> io::Result<()> {
+        self.write_inner(bytes, true)
+    }
+
     #[expect(
         unsafe_code,
-        reason = "retain source safe_fwrite buffering and EINTR behavior"
+        reason = "retain legacy stdio policy and observe ambiguous raw-video writes"
     )]
-    pub fn write(&mut self, bytes: &[u8]) -> io::Result<()> {
+    fn write_inner(&mut self, bytes: &[u8], check_stream_error: bool) -> io::Result<()> {
         let mut written = 0;
         while written < bytes.len() {
             let remaining = &bytes[written..];
@@ -38,9 +47,17 @@ impl RawFile {
                     self.0.as_ptr(),
                 )
             };
-            if count == 0 {
+            // fwrite may report the requested count even after a buffered write
+            // failed. Its sticky stream error is authoritative for completion.
+            // SAFETY: the exclusive live FILE remains owned after fwrite.
+            if count == 0
+                || (check_stream_error
+                    && (count != remaining.len() || unsafe { libc::ferror(self.0.as_ptr()) } != 0))
+            {
                 let error = io::Error::last_os_error();
-                if error.kind() != io::ErrorKind::Interrupted {
+                // A positive/full count plus EINTR/ferror can follow lost buffered
+                // bytes. Retrying or clearing ferror cannot prove video recovery.
+                if check_stream_error || error.kind() != io::ErrorKind::Interrupted {
                     return Err(error);
                 }
             }
@@ -74,17 +91,25 @@ impl RawFile {
 
     #[expect(
         unsafe_code,
-        reason = "source raw VideoWriter ignores flush/close errors"
+        reason = "observe raw-video flush/close errors and consume FILE exactly once"
     )]
-    pub fn finish(self) {
-        loop {
-            // SAFETY: self still exclusively owns the live FILE; fflush retains ownership.
-            if unsafe { libc::fflush(self.0.as_ptr()) } == 0
-                || io::Error::last_os_error().kind() != io::ErrorKind::Interrupted
-            {
-                break;
-            }
-        }
+    pub fn finish(self) -> io::Result<()> {
+        let this = std::mem::ManuallyDrop::new(self);
+        // SAFETY: this uniquely owns the live FILE. Do not retry an interrupted
+        // flush: stdio may already have discarded unwritten buffered bytes.
+        let flushed = if unsafe { libc::fflush(this.0.as_ptr()) } == 0 {
+            Ok(())
+        } else {
+            Err(io::Error::last_os_error())
+        };
+        // SAFETY: suppress Drop and close exactly once, even if fflush failed.
+        // fclose consumes FILE even on error; never retry it or read it afterward.
+        let closed = if unsafe { libc::fclose(this.0.as_ptr()) } == 0 {
+            Ok(())
+        } else {
+            Err(io::Error::last_os_error())
+        };
+        flushed.and(closed)
     }
 }
 

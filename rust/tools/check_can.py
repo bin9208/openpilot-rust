@@ -1,4 +1,4 @@
-"""Compare every native CAN trace against the unchanged source implementation."""
+"""Compare every native CAN trace against the maintained source implementation."""
 
 import argparse
 from contextlib import redirect_stderr, redirect_stdout
@@ -18,9 +18,7 @@ def compare(expected, actual, location='root'):
       if 'error' in left:
         if 'error' not in right:
           raise AssertionError(f'{location}: source failure became native success: {left}')
-        if left['error'] == 'TypeError' and 'xor_checksum() takes 3 positional' in left['detail']:
-          assert 'inherited Volkswagen MLB' in right['error'], (location, left, right)
-        elif left['error'] == 'IndexError':
+        if left['error'] == 'IndexError':
           assert right['error'] == 'invalid checksum payload', (location, left, right)
         elif left['error'] == 'AssertionError':
           assert right['error'].startswith('duplicate CAN message'), (location, left, right)

@@ -3,8 +3,9 @@ import argparse
 import json
 import os
 from pathlib import Path
-import shutil
 import subprocess
+
+from qa_space_policy import free_for_growth
 
 
 def run(command, environment, path):
@@ -15,9 +16,9 @@ def run(command, environment, path):
 
 
 def disk(path):
-  free = shutil.disk_usage(path).free
-  if free < 27 * 1024**3:
-    raise RuntimeError('25 GiB floor plus 2 GiB native build growth unavailable')
+  free = free_for_growth(path, 2 * 1024**3)
+  if free < 2 * 1024**3:
+    raise RuntimeError('2 GiB native build growth unavailable')
   return free
 
 

@@ -319,7 +319,18 @@ def main():
           validate_origin(expected, False)
           validate_error_meaning(name, expected, original, False)
           validate_error_meaning(name, records, directory, True)
-          assert normalized(expected, original) == normalized(records, directory), 'source/native record fields or levels differ'
+          expected_fields, actual_fields = normalized(expected, original), normalized(records, directory)
+          if name == 'mark-error':
+            # #51 changes only the marking diagnostic's exc: source incorrectly logged None.
+            source_marks = [row['msg'] for row in expected_fields if isinstance(row['msg'], dict) and row['msg'].get('event') == 'uploader_setxattr_failed']
+            native_marks = [row['msg'] for row in actual_fields if isinstance(row['msg'], dict) and row['msg'].get('event') == 'uploader_setxattr_failed']
+            assert len(source_marks) == len(native_marks) == 1
+            assert source_marks[0]['exc'] is None
+            raw_messages = [json.loads(raw[1:])['msg'] for raw in records]
+            raw_mark = next(message for message in raw_messages if isinstance(message, dict) and message.get('event') == 'uploader_setxattr_failed')
+            assert 'PermissionDenied' in raw_mark['exc'][0]
+            source_marks[0]['exc'] = ['<native or Python error representation>', '<native or Python trace>']
+          assert expected_fields == actual_fields, 'source/native record fields or levels differ'
           result['callsites'] = validate_origin(records, True)
           assert 'uploader: ready' not in result['stderr'], 'invented readiness diagnostic'
           if result['exit_code'] == 0 and not any(raw[0] >= logging.ERROR for raw in records):

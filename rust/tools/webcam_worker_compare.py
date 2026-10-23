@@ -16,6 +16,8 @@ import time
 import av
 import numpy as np
 
+from qa_space_policy import free_for_growth
+
 
 def fixture(path: Path, width: int, height: int, count: int) -> None:
   with av.open(str(path), 'w', format='matroska') as container:
@@ -133,8 +135,8 @@ def main() -> None:
   parser.add_argument('--cases', nargs='+', default=['unequal-eof', 'odd-worker', 'unavailable-worker'])
   args = parser.parse_args()
   output = args.output.resolve()
-  if shutil.disk_usage(output.parent).free < 25 * 1024**3 + args.reserve_mib * 1024**2:
-    raise OSError('owned webcam worker fixtures require disk reserve')
+  if free_for_growth(output.parent, args.reserve_mib * 1024**2) < args.reserve_mib * 1024**2:
+    raise OSError('owned webcam worker fixtures require their estimated growth')
   output.mkdir(exist_ok=False)
   assert (args.native is None) == (args.source is None)
   rows = [source_case(output / name, name, args.native, args.source / name if args.source else None) for name in args.cases]

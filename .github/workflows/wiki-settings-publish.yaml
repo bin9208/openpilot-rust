@@ -20,9 +20,9 @@ concurrency:
 
 jobs:
   synchronize:
-    if: github.repository == 'bin9208/openpilot'
+    if: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (github.repository == 'bin9208/openpilot') }}
     name: validate and synchronize Wiki
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 15
     steps:
       - name: Check out trusted carrot-wip code
@@ -31,6 +31,7 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event_name == 'push' && github.sha || 'carrot-wip' }}
 
+      - uses: ./.github/actions/job-temp
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
@@ -96,6 +97,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: wiki-settings-sync-${{ github.run_number }}
-          path: ${{ runner.temp }}/wiki-settings-report
+          path: ${{ env.CI_JOB_TEMP }}/wiki-settings-report
           if-no-files-found: warn
           retention-days: 30
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}

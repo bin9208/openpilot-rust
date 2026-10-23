@@ -119,6 +119,16 @@ pub fn run(
         process::monotonic(),
     );
     let raw = env::var_os("SEND_RAW_PRED").is_some_and(|value| !value.is_empty());
+    if raw {
+        // Report once outside the frame budget; a diagnostic sink failure must not stop inference.
+        let _ = logger.emit(
+            log_site!(),
+            Record::text(
+                Level::Warning,
+                "SEND_RAW_PRED is unsupported for Jetlink frames: rawPredictions will be empty; native frames retain their raw tensor".into(),
+            ),
+        );
+    }
     let simulation = env::var("SIMULATION")
         .unwrap_or_else(|_| "0".to_owned())
         .trim()

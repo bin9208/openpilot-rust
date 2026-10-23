@@ -5,10 +5,11 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
-import shutil
 import signal
 
 from plannerd_lifecycle_peer import Case, run
+
+from qa_space_policy import free_for_growth
 
 
 def main() -> None:
@@ -18,7 +19,7 @@ def main() -> None:
   args = parser.parse_args()
   for name in ["python", "binary", "artifact", "binding", "source_native", "output"]:
     setattr(args, name, getattr(args, name).resolve())
-  assert shutil.disk_usage(args.output.parent).free >= 25 * 1024**3 + 128 * 1024**2
+  assert free_for_growth(args.output.parent, 128 * 1024**2) >= 128 * 1024**2
   args.output.mkdir(parents=True, exist_ok=False)
   cases = [Case(f"wait-{state}-{name}", "wait", value, state) for state in ["missing", "directory", "empty"]
            for name, value in [("sigint", signal.SIGINT), ("sigterm", signal.SIGTERM)]]

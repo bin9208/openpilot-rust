@@ -20,8 +20,9 @@ import anyio
 from aiohttp import ClientSession, ClientWebSocketResponse
 from carrot_server_dashcam_sync_probe import Peer, startup
 from carrot_server_dashcam_upload import save
-from carrot_server_live_wire import body, binary_packet, fetch, normalize
+from carrot_server_live_wire import body, binary_packet, fetch
 from carrot_server_live_cases import event
+from carrot_server_live_navigation import assert_navigation_response
 
 
 async def run(binary: Path, output: Path) -> None:
@@ -59,7 +60,9 @@ async def run(binary: Path, output: Path) -> None:
     await publisher.control({'frames': [enabled, nav]})
     responses = [await fetch(peer, '/api/live_runtime') for peer in peers[:2]]
     assert [row['status'] for row in responses] == [200, 200]
-    assert normalize(body(responses[0])) == normalize(body(responses[1]))
+    assert_navigation_response(body(responses[0]), body(responses[1]), {
+      'mainText': 'owned App navigation', 'distanceText': '0m', 'distanceM': 0.0, 'turnType': '',
+    })
     second = await fetch(peers[1], '/api/params_bulk?names=OwnedLiveProbe')
     assert second['status'] == 200
     engaged = await fetch(peers[0], '/owned/engaged')

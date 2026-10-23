@@ -83,12 +83,27 @@ The native numerical test deliberately requires `CONTROLS_NUMERICS`; it does not
 
 ## Source defect and remaining integration
 
-[Issue #156](https://github.com/bin9208/openpilot-rust/issues/156) records two pre-existing PSA gaps: `get_non_essential_params('PSA_PEUGEOT_208')` raises on a missing torque-data key, and the actual PSA constructor additionally requires absent `psa_aee2010_r3.dbc`. Native startup explicitly rejects the PSA identity before publishing, including CarParams carrying otherwise usable tuning. No source policy or DBC is fabricated here. All 15 families' consumed policies are compared directly; full unchanged-source loop coverage spans the other 14 families. The PSA source startup limitation remains open.
+[Issue #156](https://github.com/bin9208/openpilot-rust/issues/156) records two pre-existing PSA gaps: `get_non_essential_params('PSA_PEUGEOT_208')` raises on a missing torque-data key, and the actual PSA constructor additionally requires absent `psa_aee2010_r3.dbc`. At that original revision, native startup explicitly rejected the PSA identity before publishing, including CarParams carrying otherwise usable tuning. No source policy or DBC is fabricated here. All 15 families' consumed policies are compared directly; full unchanged-source loop coverage spans the other 14 families. The later #497/#501 candidate below supersedes that original source boundary; exact-head verification is pending.
 
 The candidate catalog and `rust/port-status.json` expose the native component while preserving original production descriptors. Exact-SHA CI, integration with selfdrived/card/planners and the rest of the project-owned runtime, normal startup/log upload, AGNOS packaging and first user device comparison remain separate gates under #1. No C3X, NAS, real CAN, account service or physical device was accessed. This work establishes neither CPU savings nor vehicle behavior.
 
 ## Review revision
 
-The independent review counterexamples were reproduced before repair. PSA with usable Honda-derived tuning now preserves the original missing-DBC startup rejection. FingerPrints retains the persisted nested integer-dictionary contract: signed 32-bit bus/address/length values, decimal and Python radix literals, valid numeric underscores, and optional unary-sign whitespace. Invalid trailing/repeated underscores, invalid radix digits and nonzero decimal leading-zero forms reject instead of being normalized. Ten accepted lexical forms and eleven additional rejected forms are checked against unchanged source; arbitrary Python literals outside the persisted integer-dictionary shape are not implemented. Host and ARM reproduce both reviewer rejection cases.
+The independent review counterexamples were reproduced before repair. That revision preserved the original missing-DBC startup rejection for PSA with usable Honda-derived tuning; the #501 candidate below retains this exact counterexample as a positive comparison after admitting the real asset and runtime. FingerPrints retains the persisted nested integer-dictionary contract: signed 32-bit bus/address/length values, decimal and Python radix literals, valid numeric underscores, and optional unary-sign whitespace. Invalid trailing/repeated underscores, invalid radix digits and nonzero decimal leading-zero forms reject instead of being normalized. Ten accepted lexical forms and eleven additional rejected forms are checked against unchanged source; arbitrary Python literals outside the persisted integer-dictionary shape are not implemented. Host and ARM reproduce both reviewer rejection cases.
 
 Nano layers are validated and flattened during deserialization, retaining both final distribution outputs while prediction consumes the first as source does. Repeated inference reuses immutable contiguous weights; the ASan test exercises repeated predictions and rejection of empty/mismatched layers. Pose calibration and safety feedback moved to feedback.rs without changing call order or controller state. Revision artifacts use the revision-* prefix; INDEX.json binds their invocations and hashes to the revision SHA.
+
+## PSA admission follow-up (#501)
+
+The exact official DBC, angle-only placeholder and existing PSA Card runtime are now
+implemented in the audit candidate. The inherited controlsd blanket rejection is
+removed consistently with that source constructor. The former five-frame
+`psa-valid-tuning` counterexample remains in the full source/native comparison,
+and real source-created PSA angle CarParams add both family startup and 620-frame
+transition coverage. Other malformed-input rejection cases and numerical, IPC,
+ASan/Miri and ARM gates remain unchanged. The first expanded run at
+`7acb65c12af5194e741dd1a1ea47769c0d31404d` exposed the stale negative expectation
+after the existing 40-case/8,655-frame loop comparison passed with zero maximum
+absolute error ([job](https://github.com/bin9208/openpilot-rust/actions/runs/39836433939/job/120027300576)).
+The follow-up admission and positive comparisons still require Actions results.
+This changes neither PSA dashcam-only admission nor physical vehicle acceptance.

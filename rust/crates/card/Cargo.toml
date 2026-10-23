@@ -88,6 +88,14 @@ name = "tesla_trace"
 required-features = ["native"]
 
 [[example]]
+name = "psa_trace"
+required-features = ["native"]
+
+[[example]]
+name = "psa_boundary"
+required-features = ["native"]
+
+[[example]]
 name = "mazda_trace"
 required-features = ["native"]
 

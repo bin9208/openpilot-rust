@@ -16,6 +16,8 @@ import shutil
 import sys
 from typing import Final, Literal, TypeAlias, TypedDict, assert_never
 
+from qa_space_policy import free_for_growth
+
 ROOT: Final = Path(__file__).resolve().parents[2]
 Json: TypeAlias = None | bool | int | float | str | list['Json'] | dict[str, 'Json']
 FIRMWARE: Final = (
@@ -88,9 +90,9 @@ def write_json(path: Path, value: Json) -> None:
 
 def hardware(directory: Path, *, fresh: bool) -> list[HardwareReceipt]:
   """Reuse SHA-verified firmware or fetch only the canonical source's eight blobs."""
-  free = shutil.disk_usage(directory.parent).free
-  if free < (25 << 30) + (128 << 20):
-    message = f'firmware fixture needs 25 GiB free plus 128 MiB growth; available={free}'
+  free = free_for_growth(directory.parent, 128 << 20)
+  if free < (128 << 20):
+    message = f'firmware fixture needs 128 MiB estimated growth; available={free}'
     raise RuntimeError(message)
   directory.mkdir()
   hashes = json.loads((ROOT / 'rust/crates/usbgpu/assets/amd-metadata.json').read_text())['firmware_hashes']

@@ -5,10 +5,11 @@ import copy
 import hashlib
 import json
 from pathlib import Path
-import shutil
 
 from card_runtime_source import load_binding
 from radarcan_runtime_cases import joined_cases, normal_cases
+
+from qa_space_policy import free_for_growth
 
 
 def main() -> None:
@@ -18,8 +19,8 @@ def main() -> None:
   parser.add_argument('--output', type=Path, required=True)
   args = parser.parse_args()
   growth = 64 * 2**20
-  free = shutil.disk_usage(args.output.parent).free
-  assert free >= 25 * 2**30 + growth, (free, growth)
+  free = free_for_growth(args.output.parent, growth)
+  assert free >= growth, (free, growth)
   args.output.mkdir()
   load_binding(args.binding)
   values = normal_cases(args.dbc.resolve())

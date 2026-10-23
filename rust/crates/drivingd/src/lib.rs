@@ -19,10 +19,6 @@ pub enum Error {
     Json(#[from] serde_json::Error),
     #[error(transparent)]
     Logging(#[from] openpilot_logging::Error),
-    #[error(
-        "active Jetlink output has no raw_pred for SEND_RAW_PRED (inherited original boundary)"
-    )]
-    JetlinkRawPredictionsUnavailable,
     #[error(transparent)]
     Jetlink(#[from] openpilot_jetlink::Error),
     #[error(transparent)]

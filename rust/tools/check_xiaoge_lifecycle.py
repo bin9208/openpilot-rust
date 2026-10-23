@@ -23,7 +23,10 @@ import uuid
 
 import httpx2
 
+from tools.ci.provider_python_env import provider_library_path
 from xiaoge_qa.sockets import available_port, client, telemetry
+
+from qa_space_policy import free_for_growth
 
 ROOT: Final = Path(__file__).resolve().parents[2]
 
@@ -72,6 +75,8 @@ def run_peer(kind: str, case: Case, arguments: argparse.Namespace):
     http_port = available_port()
   environment = dict(os.environ, OPENPILOT_PREFIX=prefix, PARAMS_ROOT=str(params),
                      LD_LIBRARY_PATH=str(arguments.opencv / "install/lib"), PWD=str(output))
+  if kind == "source":
+    environment["LD_LIBRARY_PATH"] = provider_library_path(environment["LD_LIBRARY_PATH"])
   try:
     with ExitStack() as stack:
       match case:
@@ -177,7 +182,7 @@ def main() -> None:
   args = parser.parse_args()
   for name in ["binary", "binding", "assets", "opencv", "output"]:
     setattr(args, name, getattr(args, name).resolve())
-  assert shutil.disk_usage(args.output.parent).free > 25 * 2**30 + 128 * 2**20
+  assert free_for_growth(args.output.parent, 128 * 2**20) >= 128 * 2**20
   args.output.mkdir(parents=True, exist_ok=False)
   rows = []
   for case in Case:

@@ -22,6 +22,7 @@ from carrot_server_dashcam_sync_probe import Peer, startup
 from carrot_server_dashcam_upload import save
 from carrot_server_live_cases import Frame, event
 from carrot_server_live_wire import body, binary_packet, codec, fetch, normalize
+from carrot_server_live_navigation import assert_navigation_response
 
 
 def wait_camera_readers(peers: list[Peer], namespace: str) -> None:
@@ -136,9 +137,14 @@ async def scenario(binary: Path, output: Path, selected: list[Frame], unavailabl
         await publisher.control({'frames': [nav, route, enabled]})
         responses = [await fetch(peer, '/api/live_runtime') for peer in peers[:2]]
         assert all(row['status'] == 200 for row in responses)
-        assert normalize(body(responses[0])) == normalize(body(responses[1]))
+        navigation = {'mainText': 'owned populated navigation', 'distanceText': '36m', 'distanceM': 35.5, 'turnType': 'turn'}
+        assert_navigation_response(body(responses[0]), body(responses[1]), navigation)
         observations.append({'path': '/api/live_runtime', 'responses': responses})
-        assert body(responses[0])['services']['navInstructionCarrot'] == {'mainText': None, 'distanceText': None, 'turnType': None}
+        browser = await anyio.run_process(
+          ['node', str(Path(__file__).with_name('carrot_server_navigation_ui.mjs'))],
+          input=json.dumps(body(responses[1])).encode(),
+        )
+        save(output / 'navigation-browser.json', {'stdout': browser.stdout.decode(), 'exit': browser.returncode})
         for peer in peers[:2]:
           cached = await fetch(peer, '/api/live_runtime?force=1')
           assert body(cached)['meta']['generatedAtMs'] == body(responses[peers.index(peer)])['meta']['generatedAtMs']
@@ -148,7 +154,7 @@ async def scenario(binary: Path, output: Path, selected: list[Frame], unavailabl
           await publisher.control({'frames': [nav, route, enabled]})
           permission = [await fetch(peer, '/api/live_runtime?force=1') for peer in peers[:2]]
           save(output / 'params-error-observation.json', {'responses': permission})
-          assert normalize(body(permission[0])) == normalize(body(permission[1]))
+          assert_navigation_response(body(permission[0]), body(permission[1]), navigation)
           assert body(permission[0])['runtime']['params']['IsMetric'] == '0'
         finally:
           (params / 'IsMetric').chmod(0o600)
@@ -255,6 +261,7 @@ async def main() -> None:
     {
       'compact_comparisons': len(selected),
       'whole_family_equal': True,
+      'intentional_difference_254': 'only services.navInstructionCarrot; original null fields and exact native mapping asserted; all other fields compared',
       'unavailable_pairs': 5,
       'cleanup': 'all owned peers exited0; lazy IPC readers released after5s',
     },

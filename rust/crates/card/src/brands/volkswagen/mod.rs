@@ -60,6 +60,4 @@ pub enum Error {
     },
     #[error("missing Volkswagen copied signal or definition: {0}")]
     Signal(String),
-    #[error("inherited Volkswagen MQB first-update failure: name 'np' is not defined")]
-    InheritedMqbNumpy,
 }

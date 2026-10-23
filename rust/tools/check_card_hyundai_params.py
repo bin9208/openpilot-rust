@@ -24,9 +24,12 @@ def main() -> None:
                 assert actual == expected, (case["candidate"], index, {
                     name:(expected.get(name), actual.get(name)) for name in expected.keys() | actual.keys()
                     if expected.get(name) != actual.get(name)})
+    assert any(case["candidate"] == "KIA_K5_DL3_24_HEV" for case in cases)
+    errors = json.loads((fixture / "hyundai-source-provenance.json").read_text())["source_parameter_errors"]
+    assert errors == [], errors
     (fixture / "parameters-result.json").write_text(json.dumps({"matched_complete_schema":len(cases),
         "source_root":str(fixture / "source-params"),"native_root":str(actual_root),
-        "source_error_identity":"KIA_K5_DL3_24_HEV"}) + "\n")
+        "source_parameter_errors":errors}) + "\n")
     print(f"Matched complete CarParams schemas for {len(cases)} Hyundai scenarios")
 
 
