@@ -21,21 +21,88 @@ jobs:
           # Preserve build/cache evidence until its ownership and use are known.
           clean: false
       - uses: ./.github/actions/job-temp
-      - name: Inventory fixed cache roots without deleting data
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Capture privileged Python identity and imports for issue 517
+        run: |
+          set -euo pipefail
+          test "$RUNNER_NAME" = bin-actions
+          python - <<'PYTHON'
+          import json, os, subprocess, sys
+          from pathlib import Path
+
+          probe = '''import importlib, json, os, sys
+          result = {'executable': sys.executable, 'version': sys.version,
+                    'prefix': sys.prefix, 'base_prefix': sys.base_prefix,
+                    'uid': os.geteuid(), 'LD_LIBRARY_PATH': os.environ.get('LD_LIBRARY_PATH'),
+                    'modules': {}, 'import_errors': {}}
+          for name in ('zmq', 'capnp', 'requests', 'cryptography'):
+              try:
+                  module = importlib.import_module(name)
+                  result['modules'][name] = module.__file__
+              except Exception as error:
+                  result['import_errors'][name] = type(error).__name__ + ': ' + str(error)
+          print(json.dumps(result))
+          '''
+          commands = {
+              'before': [sys.executable, '-c', probe],
+              'legacy': ['sudo', '-n', '-E', 'env',
+                         'PYTHONPATH=' + os.environ.get('PYTHONPATH', ''),
+                         sys.executable, '-c', probe],
+              'candidate': ['sudo', '-n', '-E', 'env',
+                            'LD_LIBRARY_PATH=' + os.environ.get('LD_LIBRARY_PATH', ''),
+                            'PYTHONPATH=' + os.environ.get('PYTHONPATH', ''),
+                            sys.executable, '-c', probe],
+          }
+          report = {'source_commit': os.environ['GITHUB_SHA'],
+                    'failed_source_commit': '10919538d31b04d28d9a23b383d925441434d579',
+                    'failed_job': 120220822631, 'runner': os.environ['RUNNER_NAME'],
+                    'production_change': False, 'receipts': {}}
+          for name, command in commands.items():
+              completed = subprocess.run(command, capture_output=True, text=True,
+                                         timeout=30, check=False)
+              item = {'exit': completed.returncode, 'stderr': completed.stderr}
+              if completed.returncode == 0:
+                  item.update(json.loads(completed.stdout))
+              else:
+                  item['stdout'] = completed.stdout
+              report['receipts'][name] = item
+          before, legacy, candidate = (report['receipts'][name]
+                                       for name in ('before', 'legacy', 'candidate'))
+          identity = ('executable', 'version', 'prefix', 'base_prefix', 'modules')
+          report['candidate_matches_before'] = all(candidate.get(key) == before.get(key)
+                                                    for key in identity)
+          report['legacy_matches_before'] = all(legacy.get(key) == before.get(key)
+                                                 for key in identity)
+          report['passed'] = (before['exit'] == candidate['exit'] == 0
+              and before.get('uid') == os.geteuid() != 0 and candidate.get('uid') == 0
+              and not before.get('import_errors') and not candidate.get('import_errors')
+              and report['candidate_matches_before']
+              and candidate.get('LD_LIBRARY_PATH') == before.get('LD_LIBRARY_PATH'))
+          output = Path(os.environ['CI_JOB_TEMP']) / 'sudo-python-517.json'
+          with os.fdopen(os.open(output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), 'w') as stream:
+              json.dump(report, stream, indent=2)
+              stream.write('\n')
+          print(json.dumps(report))
+          if not report['passed']:
+              raise SystemExit('Candidate privileged Python identity/import check failed')
+          PYTHON
+      - name: Inventory Git object storage without changing objects or refs
+        if: ${{ !cancelled() }}
         run: |
           set -euo pipefail
           test "$RUNNER_NAME" = bin-actions
           /usr/bin/python3 -I - <<'PYTHON'
-          import json, os, platform, pwd, re, shutil, stat, subprocess, time
+          import hashlib, json, os, platform, re, resource, shutil, stat, subprocess
           from pathlib import Path
 
           workspace = Path(os.environ['GITHUB_WORKSPACE'])
-          runner_user_dir = Path(pwd.getpwuid(os.getuid()).pw_dir)
-          output = Path(os.environ['CI_JOB_TEMP']) / 'runner-capacity.json'
+          output = Path(os.environ['CI_JOB_TEMP']) / 'runner-git-storage.json'
           growth = 12 * 1024**3
           initial = shutil.disk_usage(workspace)
-          if initial.free < 128 * 1024:
-              raise RuntimeError('Insufficient space for the small inventory receipt')
+          if initial.free < 65 * 1024**2:
+              raise RuntimeError('Insufficient space for bounded Git metadata')
           report = {
               'schema': 1, 'source_commit': os.environ['GITHUB_SHA'],
               'failed_source_commit': '10919538d31b04d28d9a23b383d925441434d579',
@@ -44,104 +111,90 @@ jobs:
               'diagnostic_only': True, 'recovery_performed': False,
               'free_before_bytes': initial.free, 'required_growth_bytes': growth,
               'admitted_before': initial.free >= growth,
-              'measurements_overlap': True, 'metadata_budget_seconds': 180, 'roots': [],
+              'metadata_limit_bytes': 64 * 1024**2, 'packs': [],
           }
-          roots = [
-              ('workspace', workspace), ('cargo-target', workspace / 'rust/target'),
-              ('cargo-cache', runner_user_dir / '.cargo'),
-              ('user-cache', runner_user_dir / '.cache'),
-              ('retained-rust-toolchains', runner_user_dir / '.rustup'),
-              ('retained-action-toolchains', Path(os.environ['RUNNER_TOOL_CACHE'])),
-              ('package-download-cache', Path('/var/cache/apt')),
-              ('retained-android-sdk', Path('/usr/local/lib/android')),
-          ]
-          # Project job-temp metadata only: no general /tmp or user-file scan.
-          project_temps = sorted(Path('/tmp').glob('openpilot-ci.*'))
-          report['project_temp_count'] = len(project_temps)
-          report['project_temps_omitted'] = max(0, len(project_temps) - 128)
-          roots.extend(('project-job-temp', path) for path in project_temps[:128])
-          deadline = time.monotonic() + report['metadata_budget_seconds']
-          for kind, path in roots:
-              item = {'kind': kind, 'path': str(path)}
-              report['roots'].append(item)
-              try:
-                  info = path.lstat()
-              except FileNotFoundError:
-                  item['exists'] = False
-                  continue
-              item.update(exists=True, uid=info.st_uid, gid=info.st_gid,
-                          mode=oct(stat.S_IMODE(info.st_mode)),
-                          device=info.st_dev, inode=info.st_ino)
-              if not stat.S_ISDIR(info.st_mode):
-                  item['skipped_non_directory_or_link'] = True
-                  continue
-              if kind == 'project-job-temp':
-                  try:
-                      marker = path / 'owner'
-                      marker_info = marker.lstat()
-                      if stat.S_ISREG(marker_info.st_mode):
-                          value = marker.read_text().strip()
-                          if re.fullmatch(r'[0-9]+:[0-9]+:[A-Za-z0-9_-]+', value):
-                              item['job_owner'] = value
-                  except (OSError, UnicodeError):
-                      item['owner_marker_unreadable'] = True
-              began = time.monotonic()
-              remaining = deadline - began
-              if remaining <= 5:
-                  item['metadata_budget_exhausted'] = True
-                  continue
-              reader_limit = min(20, remaining - 5)
-              # The watchdog runs with the reader's privileges and owns its
-              # process group; killing only the outer sudo would strand du.
-              command = ['sudo', '-n', '/usr/bin/timeout', '--signal=TERM',
-                         '--kill-after=2s', f'{reader_limit:.3f}s', '/usr/bin/du',
-                         '--one-file-system', '--block-size=1', '--max-depth=2',
-                         '--null', '--', str(path)]
-              item['privileged_reader_limit_seconds'] = reader_limit
-              try:
-                  completed = subprocess.run(command, capture_output=True, text=True,
-                                             errors='replace', timeout=reader_limit + 5, check=False)
-              except subprocess.TimeoutExpired:
-                  item['outer_watchdog_timeout_seconds'] = reader_limit + 5
-                  continue
-              item['metadata_seconds'] = time.monotonic() - began
-              item['metadata_exit'] = completed.returncode
-              item['metadata_stderr_present'] = bool(completed.stderr.strip())
-              if completed.returncode in (124, 137):
-                  item['metadata_timeout_seconds'] = reader_limit
-              entries = []
-              records = completed.stdout.split('\0')
-              tail = records.pop()
-              item['metadata_truncated_tail'] = bool(tail)
-              item['metadata_malformed_records'] = 0
-              # A terminated writer may leave its last record incomplete.
-              # Keep only NUL-terminated records and publish partial status.
-              for row in records:
-                  if not row:
+          env = dict(os.environ, GIT_OPTIONAL_LOCKS='0', GIT_NO_LAZY_FETCH='1',
+                     GIT_TERMINAL_PROMPT='0')
+          def read_git(*args):
+              return subprocess.check_output(['git', *args], cwd=workspace,
+                                             env=env, timeout=30)
+
+          report['git_version'] = read_git('--version').decode().strip()
+          common = Path(read_git('rev-parse', '--git-common-dir').decode().strip())
+          if not common.is_absolute():
+              common = workspace / common
+          if common.resolve() != workspace / '.git' or common.is_symlink():
+              raise RuntimeError('Unexpected Git common directory')
+          report['count_objects'] = read_git('count-objects', '-v').decode()
+          refs_before = read_git('show-ref', '--head')
+          report['refs_sha256_before'] = hashlib.sha256(refs_before).hexdigest()
+          report['refs_count'] = len(refs_before.splitlines())
+          report['alternate_file_exists'] = (common / 'objects/info/alternates').exists()
+          report['shallow_file_exists'] = (common / 'shallow').exists()
+          for path in sorted((common / 'objects/pack').iterdir()):
+              info = path.lstat()
+              report['packs'].append({'name': path.name, 'bytes': info.st_size,
+                  'allocated_bytes': info.st_blocks * 512, 'device': info.st_dev,
+                  'inode': info.st_ino, 'links': info.st_nlink,
+                  'regular': stat.S_ISREG(info.st_mode), 'mtime_ns': info.st_mtime_ns})
+
+          def metadata_size_limit():
+              resource.setrlimit(resource.RLIMIT_FSIZE, (report['metadata_limit_bytes'],) * 2)
+
+          # This enumerates metadata for every unique object, including unreachable
+          # objects; it reads no blob contents and performs no repack or pruning.
+          metadata = Path(os.environ['CI_JOB_TEMP']) / 'git-object-metadata.txt'
+          with metadata.open('xb') as stream:
+              completed = subprocess.run(['/usr/bin/timeout', '--signal=TERM',
+                  '--kill-after=2s', '120s', 'git', 'cat-file', '--batch-all-objects',
+                  '--batch-check=%(objectname) %(objecttype) %(objectsize) %(objectsize:disk)',
+                  '--buffer'], cwd=workspace, env=env, stdin=subprocess.DEVNULL,
+                  stdout=stream, stderr=subprocess.DEVNULL, timeout=125,
+                  preexec_fn=metadata_size_limit, check=False)
+          report['objects_command_exit'] = completed.returncode
+          digest = hashlib.sha256()
+          counts, sizes = {}, {}
+          disk_sum, malformed = 0, 0
+          with metadata.open('rb') as stream:
+              for row in stream:
+                  fields = row.split()
+                  if (not row.endswith(b'\n') or len(fields) != 4
+                      or not re.fullmatch(rb'[0-9a-f]{40,64}', fields[0])
+                      or fields[1] not in (b'blob', b'tree', b'commit', b'tag')
+                      or not fields[2].isdigit() or not fields[3].isdigit()):
+                      malformed += 1
                       continue
-                  count, separator, name = row.partition('\t')
-                  if not separator or not re.fullmatch(r'[0-9]+', count):
-                      item['metadata_malformed_records'] += 1
-                      continue
-                  entries.append({'bytes': int(count), 'path': name})
-              item['metadata_incomplete'] = (completed.returncode != 0 or bool(tail)
-                                             or item['metadata_malformed_records'] != 0)
-              item['largest_directories'] = sorted(entries, key=lambda row: row['bytes'], reverse=True)[:20]
-              item['root_bytes'] = next((row['bytes'] for row in entries if row['path'] == str(path)), None)
+                  digest.update(fields[0] + b'\n')
+                  kind = fields[1].decode()
+                  counts[kind] = counts.get(kind, 0) + 1
+                  sizes[kind] = sizes.get(kind, 0) + int(fields[2])
+                  disk_sum += int(fields[3])
+          report.update(unique_object_counts=counts, unique_object_raw_bytes=sizes,
+                        unique_object_ids_sha256=digest.hexdigest(),
+                        unique_object_disk_bytes_sum=disk_sum,
+                        malformed_object_records=malformed,
+                        object_metadata_bytes=metadata.stat().st_size,
+                        objects_incomplete=completed.returncode != 0 or malformed != 0)
+          report['refs_sha256_after'] = hashlib.sha256(read_git('show-ref', '--head')).hexdigest()
+          report['refs_stable'] = report['refs_sha256_before'] == report['refs_sha256_after']
           report['free_after_inventory_bytes'] = shutil.disk_usage(workspace).free
           report['admitted_after_inventory'] = report['free_after_inventory_bytes'] >= growth
           with os.fdopen(os.open(output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), 'w') as stream:
               json.dump(report, stream, indent=2)
               stream.write('\n')
-          print(json.dumps({key: value for key, value in report.items() if key != 'roots'}))
-          for item in report['roots']:
-              print(json.dumps({key: value for key, value in item.items() if key != 'largest_directories'}))
+          print(json.dumps({key: value for key, value in report.items() if key != 'packs'}))
           PYTHON
       - uses: actions/upload-artifact@v6
         if: always()
         with:
-          name: runner-capacity-516-inventory
-          path: ${{ env.CI_JOB_TEMP }}/runner-capacity.json
+          name: runner-capacity-516-git-storage
+          path: ${{ env.CI_JOB_TEMP }}/runner-git-storage.json
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: sudo-python-517-identities
+          path: ${{ env.CI_JOB_TEMP }}/sudo-python-517.json
           if-no-files-found: warn
       - uses: ./.github/actions/job-temp
         if: always()

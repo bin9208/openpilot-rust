@@ -43,4 +43,34 @@ are retained. Normal PR500/dev integration and post-merge acceptance still apply
 
 Preparation checks are YAML/Bash/Python syntax and diff review only. No local
 functional test, fixture, build, dependency installation or cache deletion ran.
-Actual inventory, recovery and ARM retry results remain pending.
+The first registered inventory completed at source
+`d2d2918c29284e02a7b0047c3c75a74db818b589`,
+[run39907008163](https://github.com/bin9208/openpilot-rust/actions/runs/39907008163),
+with artifact12481269976 SHA-256
+`6f6ba8b620a676120aee8c0188af126d56d986528ace8f7076c17bdcb5776ae3`.
+It measured 4,582,891,520 free bytes, 5,643,464,704 allocated bytes under the
+shared checkout's Git object directory and 2,685,640,704 bytes of user caches.
+These are overlapping metadata, not a recovery result. All large project
+job-temp owners inspected were other #296 work and remain preserved.
+
+The next revision replaces the filesystem survey with a focused read-only Git
+metadata probe. It records pack identities/sizes/link counts, `count-objects`,
+ref digests before/after and the unique object-ID digest and size totals,
+including unreachable objects. It does not assume the packs are redundant.
+The object metadata file has a 64 MiB file-size ceiling and the Git reader has
+a 120-second timeout plus a two-second escalation; only its compact receipt
+is uploaded. No object contents, repack, prune, ref edits or cache deletion
+are performed. Installed tools and interrupted project state remain intact.
+See the primary [Git object metadata documentation](https://git-scm.com/docs/git-cat-file)
+and [Git storage counts](https://git-scm.com/docs/git-count-objects).
+Actual Git probe, reviewed recovery and selective ARM retries remain pending.
+
+The same diagnostic job also records the independent
+[issue #517](https://github.com/bin9208/openpilot-rust/issues/517) startup bridge
+failure at the sudo boundary. It uses the installed action Python to capture
+normal, unchanged legacy-sudo and explicit-loader-path candidate-sudo version,
+prefix, executable, UID and four installed module identities/import errors.
+The candidate must match normal Python and run as root; the legacy result is
+recorded as observed without requiring a fabricated failure. This invokes no
+project code, installs no dependencies and changes no runtime behavior.
+Actual bridge/Athena acceptance still requires their complete existing jobs.
