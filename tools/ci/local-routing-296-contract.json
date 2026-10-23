@@ -858,5 +858,68 @@
     "state": "sourceimplemented_only; issueOPEN andallfunctional/source-linkedActions acceptancepending",
     "original_port_gate": "immutableD34623testbaseline; no sourcepointerrebind/no oldpassedresultinvented",
     "baseline_inventory": "historicalbaseline_git_blob columnunchanged; neworiginalpostimageexplicitlyrecordedhere"
+  },
+  "actual_cache_cleanup_admission": {
+    "peer": {
+      "run": 39899250358,
+      "job": 120236736430,
+      "workflow": "a6f55b59984cea54f73edb6a545e6729dafaa5c0",
+      "artifact": 12479247331,
+      "zip_bytes": 7507955,
+      "zip_sha256": "24fc87bd2c627cb16980c9dbdf927e1cc9f55f2a81775e1caa1127eef48a096c",
+      "CRC": 57,
+      "member_seals": 56,
+      "completed": true,
+      "exact_paths_absent": [
+        "/tmp/openpilot-ci.4o8uWv/cargo-home/registry",
+        "/tmp/openpilot-ci.4o8uWv/target"
+      ],
+      "unlinked_names": 12680,
+      "removed_directories": 2510,
+      "all_events_sequenced_and_intents_paired": 32896,
+      "available_bytes_before": 11471728640,
+      "available_bytes_after": 12270104576,
+      "net_available_delta": 798375936,
+      "remaining_bundle_shortfall_bytes": 4372893696,
+      "limits": "netspaceincludesotheractivity/audit; no guaranteedreclaim/rawsource/proof/providerdeletion; bundleestimate16642998272 unchanged",
+      "functional_tests_replayed": false
+    },
+    "policy": {
+      "run": 39900916038,
+      "job": 120242040697,
+      "workflow": "541f59523fb4ac766d325c69f7df41aa8aae9632",
+      "artifact": 12479235851,
+      "zip_bytes": 1615161,
+      "zip_sha256": "e386705c4fd16a9a8eed9f7e1f8b7bf4c45fb57eed9e422dfcfefc2959efab16",
+      "CRC": 55,
+      "member_seals": 54,
+      "completed": true,
+      "exact_paths_absent": [
+        "/tmp/openpilot-ci.pMuJhG/cargo-home/registry",
+        "/tmp/openpilot-ci.pMuJhG/target"
+      ],
+      "unlinked_names": 10564,
+      "removed_directories": 2210,
+      "all_events_sequenced_and_intents_paired": 27764,
+      "available_bytes_before": 10233270272,
+      "available_bytes_after": 11491475456,
+      "net_available_delta": 1258205184,
+      "remaining_bundle_shortfall_bytes": 5151522816,
+      "limits": "netspaceincludesotheractivity/audit; no guaranteedreclaim/rawsource/proof/providerdeletion; bundleestimate16642998272 unchanged",
+      "functional_tests_replayed": false
+    },
+    "latest_observed_available_bytes": 12270104576,
+    "bundle_growth_bytes_unchanged": 16642998272,
+    "remaining_shortfall_bytes": 4372893696,
+    "newbuildscope": "onlyoriginalfreshper-operationadmission; no inheritedestimatecut/globalscope/oldsuccessfulcohortreplay"
+  },
+  "fixture150_historical_zip_layout_repair": {
+    "source": "150bd42771ee45046f0c51343bedeef62646c516",
+    "workflow_sha256": "72c5cf60aeeb361b04f38f32ee9efacd2e31d09daf14e25a098ca25567d69918",
+    "old_artifact": 12472101435,
+    "old_artifact_sha256": "d81c515c092450c8694e4ab5382577429bfa2ad59344ff4b0417e02d65bc62dc",
+    "normal_nested_members": 25,
+    "delta": "canonicalrelative namesonly;2selectedrootfiles unchanged/other10payloadsbyteexact",
+    "status": "independentreviewpending/notrun; original0221freezeimmutable"
   }
 }

@@ -80,6 +80,42 @@ exact complete recipe requires independent closure before publication. Prefix
 Auth18tests and injected-only GithubUtils source remain unvalidated. All originals
 and current credential/account/vehicle paths remain outside these new gates.
 
+## Actual cache cleanup and resumed focused validation
+
+Both exact cache cleanups are now SUCCESS, confirmed through fresh job APIs
+rather than the older run-list snapshot. Peer39899250358/job120236736430:
+artifact12479247331/7507955B/SHA25624fc87bd2c627cb16980c9dbdf927e1cc9f55f2a81775e1caa1127eef48a096c,
+57CRCs/56member seals. Policy39900916038/job120242040697:
+artifact12479235851/1615161B/SHA256e386705c4fd16a9a8eed9f7e1f8b7bf4c45fb57eed9e422dfcfefc2959efab16,
+55CRCs/54member seals. All recorded intents/completions pair in sequence; all four
+exact target/registry paths are absent. Source, proof, provider/rustup and original
+model directories were excluded. No functional cohort was replayed by cleanup.
+
+The last peer-after observation is12270104576available bytes. Observed deltas
+include concurrent runner activity/audit growth, not guaranteed attribution.
+Bundle estimate16642998272 remains4372893696bytes short; SSH's aggregate14.5GiB
+admission also remains held. Smaller8GiB affected operations may proceed only
+under their original fresh per-operation checks. Additional literal old-cache
+contexts need separate read-only admission; no arbitrary scope/estimate reduction.
+
+Current-catalog wrapper39895130353/job120223683169 is SUCCESS, with full actual
+artifact/source/provider admission still pending. This is not whole exporter/
+model compiler or retirement acceptance. Fresh job APIs show R12policy39892674289,
+AST39892674217, R15SSH39895770436, R11call339888221640 and controllers39888221653
+have failed; exact diagnostics/partial scopes remain under admission. Older run
+list labels alone must not be used as current execution evidence.
+
+Fixture150's R13failure is specifically the61-member historical EVIDENCE ZIP
+flat-name check, not a job-log ZIP. Its25normal historical-original/* members
+must be admitted as canonical relative paths while only exact root SOURCE_COMMIT
+and focused-tests.log are read. Parent72c5cf60aeeb361b04f38f32ee9efacd2e31d09daf14e25a098ca25567d69918
+repair keeps all other10payloads and five-pass/109/F64/final-hold gates unchanged;
+independent delta review and capacity remain required before its new execution.
+
+Hilbert and Pascal hit service429 and were closed, preserving their completed
+source freezes. Parent owns the fixture repair; a healthy Sol worker continues
+the additional read-only cache inventory. All active delegation remains6.1Sol.
+
 ## Independent #513 image-comment argument correction
 
 Reviewed patchded641d64a464ca99db9f43665e9836f9ff1ef537515a38402574b297fbb79fa
