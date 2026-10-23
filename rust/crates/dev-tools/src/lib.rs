@@ -90,6 +90,8 @@ pub mod dbc_assets;
 pub mod dbc_generator;
 #[cfg(all(target_os = "linux", feature = "deleter-check-native"))]
 pub mod deleter_check;
+#[cfg(all(unix, feature = "developer-ssh-native"))]
+pub mod developer_ssh;
 pub mod filter_reference;
 pub mod journald_check;
 pub mod journald_fixture;
