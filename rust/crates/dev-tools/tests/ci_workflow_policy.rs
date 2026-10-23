@@ -1172,3 +1172,135 @@ fn private_android_sdk_root_rejects_inherited_or_shared_storage() {
     }
     assert_eq!(covered, 2);
 }
+// #514: always-run uploads/seals do not establish native WebRTC success.
+const WEBRTC_REQUIRED_OUTCOMES: [&str; 4] = [
+    "webrtc_dependency_stager",
+    "webrtc_original_bindings",
+    "webrtc_native_checks",
+    "webrtc_real_comparisons",
+];
+
+fn webrtc_retention_job() -> serde_json::Value {
+    parse(&fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap()).unwrap()["jobs"]
+        ["webrtc-runtime"]
+        .clone()
+}
+
+fn webrtc_cleanup_condition_passes(
+    condition: &str,
+    outcomes: &BTreeMap<String, String>,
+    cancelled: bool,
+    successful: bool,
+) -> bool {
+    let condition = condition
+        .replace("!cancelled()", if cancelled { "1 == 0" } else { "1 == 1" })
+        .replace("success()", if successful { "1 == 1" } else { "1 == 0" });
+    let actual = ownership_condition_as_bash(&condition, outcomes);
+    run_shell(
+        &format!("if [[ {actual} ]]; then exit 0; else exit 17; fi"),
+        &BTreeMap::new(),
+    )
+    .unwrap()
+    .success()
+}
+
+#[test]
+fn webrtc_required_native_failures_and_cancellation_retain_both_cleanup_roots() {
+    let job = webrtc_retention_job();
+    let steps = job["steps"].as_array().unwrap();
+    let success: BTreeMap<String, String> = WEBRTC_REQUIRED_OUTCOMES
+        .iter()
+        .map(|id| ((*id).into(), "success".into()))
+        .collect();
+    for cleanup in [
+        "Clean only uploaded owned source alias and target",
+        "Clean common owned temporary paths after uploaded source",
+    ] {
+        let condition = steps.iter().find(|s| s["name"] == cleanup).unwrap()["if"]
+            .as_str()
+            .unwrap();
+        assert!(webrtc_cleanup_condition_passes(
+            condition, &success, false, true
+        ));
+        // Keep receipts and native outcomes successful to isolate each status
+        // guard, including cancellation after the native stages have completed.
+        assert!(!webrtc_cleanup_condition_passes(
+            condition, &success, true, true
+        ));
+        assert!(!webrtc_cleanup_condition_passes(
+            condition, &success, false, false
+        ));
+        for id in WEBRTC_REQUIRED_OUTCOMES {
+            for outcome in ["failure", "cancelled", "skipped", ""] {
+                let mut outcomes = success.clone();
+                outcomes.insert(id.into(), outcome.into());
+                // Also hold success() true to prove the explicit outcome guard
+                // independently rejects a failed/skipped producer or comparison.
+                for successful in [false, true] {
+                    assert!(
+                        !webrtc_cleanup_condition_passes(condition, &outcomes, false, successful),
+                        "{cleanup}: {id}={outcome:?} deleted failed evidence"
+                    );
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn webrtc_retention_policy_rejects_guard_removal_and_unbound_required_stages() {
+    use openpilot_dev_tools::ci_policy::validate_private_job_layout;
+    let job = webrtc_retention_job();
+    validate_private_job_layout(&job).unwrap();
+    let steps = job["steps"].as_array().unwrap();
+    for cleanup in [
+        "Clean only uploaded owned source alias and target",
+        "Clean common owned temporary paths after uploaded source",
+    ] {
+        let index = steps.iter().position(|s| s["name"] == cleanup).unwrap();
+        let original = steps[index]["if"].as_str().unwrap();
+        for clause in ["!cancelled()".to_owned(), "success()".to_owned()]
+            .into_iter()
+            .chain(WEBRTC_REQUIRED_OUTCOMES.map(|id| format!("steps.{id}.outcome == 'success'")))
+        {
+            let mut changed = job.clone();
+            let condition = original.replacen(&format!(" && {clause}"), "", 1);
+            assert_ne!(condition, original, "missing mutation anchor: {clause}");
+            changed["steps"][index]["if"] = condition.into();
+            assert!(
+                validate_private_job_layout(&changed).is_err(),
+                "{cleanup}: guard removed: {clause}"
+            );
+        }
+        let mut changed = job.clone();
+        changed["steps"][index]["if"] = original.replace(".outcome", ".conclusion").into();
+        assert!(validate_private_job_layout(&changed).is_err());
+    }
+    for id in WEBRTC_REQUIRED_OUTCOMES {
+        let index = steps.iter().position(|s| s["id"] == id).unwrap();
+        let mut changed = job.clone();
+        changed["steps"][index]
+            .as_object_mut()
+            .unwrap()
+            .remove("id");
+        assert!(
+            validate_private_job_layout(&changed).is_err(),
+            "missing {id}"
+        );
+        let mut changed = job.clone();
+        changed["steps"][index]["continue-on-error"] = "true".into();
+        assert!(validate_private_job_layout(&changed).is_err(), "COE {id}");
+        let mut changed = job.clone();
+        changed["steps"][index]["if"] = "${{ always() }}".into();
+        assert!(
+            validate_private_job_layout(&changed).is_err(),
+            "not normal {id}"
+        );
+        let mut changed = job.clone();
+        changed["steps"][0]["id"] = id.into();
+        assert!(
+            validate_private_job_layout(&changed).is_err(),
+            "duplicate {id}"
+        );
+    }
+}
