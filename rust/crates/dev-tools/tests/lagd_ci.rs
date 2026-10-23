@@ -32,6 +32,9 @@ const NATIVE_ATOMIC_CLIPPY: &str = "cargo clippy --manifest-path rust/Cargo.toml
 const OLD_ESTIMATOR_DEPS: &str = "sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev";
 const NATIVE_ESTIMATOR_DEPS: &str = "sudo apt-get -o \"APT::Architectures=$(dpkg --print-architecture)\" update && sudo apt-get -o \"APT::Architectures=$(dpkg --print-architecture)\" install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev bzip2 strace";
 const OLD_LOOP: &str = "python rust/tools/check_paramsd_loop.py --oracle \"$RUNNER_TEMP/paramsd-oracle\" --trace \"$PWD/rust/target/debug/examples/paramsd_loop\" --evidence \"$RUNNER_TEMP/estimation/paramsd/loop\"";
+const OLD_STARTUP: &str = "python rust/tools/check_paramsd_startup.py --binary \"$PWD/rust/target/debug/openpilot-paramsd\" --evidence \"$RUNNER_TEMP/estimation/paramsd/startup\"";
+const NATIVE_STARTUP_STEP: &str =
+    "Require native paramsd startup caller and private source absence";
 const NATIVE_LOOP_STEP: &str =
     "Compare native paramsd loop checker against complete original observations";
 const NATIVE_LOOP_BUILD: &str = "cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features paramsd-loop-native --bin check-paramsd-loop-native --locked";
@@ -463,6 +466,28 @@ fn validate(workflow: &Value) -> Result<(), String> {
     }
     let current = lines(steps);
     let original = lines(old["steps"].as_array().unwrap());
+    // The historical startup caller has its own native two-root replacement.
+    // Pin its complete script, including build, absence, exec/provider audit,
+    // seven-case caller test and strict Clippy, before excluding the old line.
+    let startup = steps
+        .iter()
+        .filter(|step| step["name"] == NATIVE_STARTUP_STEP)
+        .collect::<Vec<_>>();
+    require(
+        startup.len() == 1,
+        "native paramsd startup step missing or duplicated",
+    )?;
+    mandatory(startup[0])?;
+    let startup_script = startup[0]["run"]
+        .as_str()
+        .ok_or("native startup script missing")?;
+    require(
+        format!("{:x}", Sha256::digest(startup_script.as_bytes()))
+            == "d9be3269d7997a36ee218fa075613870cabab0234e81131b844bc83a385bc777"
+            && original.get(OLD_STARTUP) == Some(&1)
+            && !current.contains_key(OLD_STARTUP),
+        "native startup replacement changed or retired caller returned",
+    )?;
     require(
         original.get(OLD_ATOMIC) == Some(&1),
         "frozen baseline paramsd atomic command changed",
@@ -483,6 +508,7 @@ fn validate(workflow: &Value) -> Result<(), String> {
             && line != OLD_EIGEN_IMPORT
             && line != OLD_ATOMIC
             && line != OLD_LOOP
+            && line != OLD_STARTUP
             && line != OLD_ESTIMATOR_DEPS
         {
             require(
@@ -568,6 +594,37 @@ fn missing_native_tools_tests_guards_or_unrelated_gates_cannot_pass() {
         .iter()
         .position(|step| step["name"] == NATIVE_LOOP_STEP)
         .unwrap();
+    let startup = steps
+        .iter()
+        .position(|step| step["name"] == NATIVE_STARTUP_STEP)
+        .unwrap();
+    for script in [
+        "removed-by-regression".to_owned(),
+        format!("{}\ntrue\n", steps[startup]["run"].as_str().unwrap()),
+    ] {
+        let mut changed = current.clone();
+        changed["jobs"]["estimation-runtime"]["steps"][startup]["run"] = script.into();
+        assert!(
+            validate(&changed).is_err(),
+            "accepted changed native startup script"
+        );
+    }
+    let mut changed = current.clone();
+    changed["jobs"]["estimation-runtime"]["steps"][startup]["if"] = "always()".into();
+    assert!(
+        validate(&changed).is_err(),
+        "accepted optional native startup replacement"
+    );
+    let mut changed = current.clone();
+    changed["jobs"]["estimation-runtime"]["steps"][startup]["run"] = format!(
+        "{}\n{OLD_STARTUP}\n",
+        steps[startup]["run"].as_str().unwrap()
+    )
+    .into();
+    assert!(
+        validate(&changed).is_err(),
+        "accepted restored startup Python caller"
+    );
     let mut changed = current.clone();
     let script = changed["jobs"]["estimation-runtime"]["steps"][atomic]["run"]
         .as_str()
