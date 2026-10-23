@@ -81,6 +81,15 @@ class SourcePolicyTests(unittest.TestCase):
         self.assertFalse(allowed("tools/ci/tests/test_setup_dependencies_other.py"))
         self.assertFalse(allowed("tools/ci/tests/test_setup_apt.py"))
 
+    def test_ffmpeg_fixture_isolation_exception_is_one_file(self):
+        allowed = namespace["source_path_allowed"]
+        path = "rust/crates/dev-tools/src/ffmpeg_build.rs"
+        self.assertTrue(allowed(path))
+        for rejected in (path + ".extra", path + "/child",
+                         "rust/crates/dev-tools/src/ffmpeg_build_other.rs"):
+            with self.subTest(path=rejected):
+                self.assertFalse(allowed(rejected))
+
     def test_common_local_runner_exceptions_are_scoped_paths(self):
         allowed = namespace["source_path_allowed"]
         for path in (
@@ -145,7 +154,7 @@ class SourcePolicyTests(unittest.TestCase):
             "rust/crates/opencv-runtime/src/native/net/other.rs",
             "rust/crates/opencv-runtime/tests/fixtures/other.c",
             "rust/crates/opencv-runtime/native/opencv-defined-access.patch",
-            "rust/crates/dev-tools/src/ffmpeg_build.rs", "rust/crates/webcam/build.rs",
+            "rust/crates/dev-tools/src/ffmpeg_build_other.rs", "rust/crates/webcam/build.rs",
             "rust/crates/signal-observer/src/lib.rs", "rust/ci/runtime/unrelated.py",
             "openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx",
             "openpilot/selfdrive/carrot/xiaoge/other.html", "openpilot/common/params_keys.h/child",

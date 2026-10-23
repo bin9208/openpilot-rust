@@ -92,6 +92,9 @@ def source_path_allowed(path, source_entry="", inherited_entry=""):
         'docs/naver/all-local-actions-502.md',
         # Reviewed build/reference admission changes; no broad tools exemption.
         'rust/crates/dev-tools/src/encoder_stage.rs',
+        # #521: private space-observation seam; public FFmpeg build still uses
+        # the actual filesystem and unchanged source/configuration/growth.
+        'rust/crates/dev-tools/src/ffmpeg_build.rs',
         'rust/crates/dev-tools/src/package.rs',
         'rust/crates/dev-tools/tests/disk_space.rs',
         'rust/crates/model-runtime/src/export.rs',

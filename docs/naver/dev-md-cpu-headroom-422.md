@@ -265,3 +265,31 @@ on the registered runner. It neither deletes files nor repeats policy/ARM tests.
 Use that evidence before selecting any obsolete cache for cleanup; preserve
 other tasks and retain the 12 GiB workspace growth check. Combined validation,
 AGNOS delivery and device acceptance remain pending.
+
+## FFmpeg fixture isolation after workspace execution (#521)
+
+Exact source `c00306a399968c33f6f5477b35ceaf28a1b5caf4` passed the first
+three required checks. Its [workspace job 120324058579](https://github.com/bin9208/openpilot-rust/actions/runs/39903661105/job/120324058579)
+ran on `bin-actions` and passed the 12 GiB admission check with
+13,228,285,952 bytes available. Formatting, Clippy, package checks and many
+workspace tests executed. The dev-tools library then reported 57 passed and
+four failed FFmpeg fixture tests; later CPU comparisons, memory checks and ARM
+jobs were skipped. This differs from the earlier pre-compilation capacity failure.
+
+[Issue #521](https://github.com/bin9208/openpilot-rust/issues/521) tracks the
+failure: tiny synthetic archives and a fake process runner still used the real
+filesystem's 3 GiB provider-build admission, which failed after compilation.
+The candidate repair injects only that filesystem observation through private
+helpers. The public build entry always supplies `disk_space::inspect`; the
+3 GiB budget and admission predicate remain unchanged at entry, extraction,
+download and each command. No CLI/environment override is introduced.
+
+Fixture tests use a deterministic space observation and continue exercising
+source checksums, cached-source identity, target configuration, installed headers,
+licenses and failure records. New cases reject insufficient space at entry,
+extraction and every command, reject a download before execution, and propagate
+disk-query failure before output creation. The exact-source packaging exception
+admits only this reviewed helper file, not sibling providers or directories;
+FFmpeg source pins, compiler arguments and provider reuse policy are unchanged.
+Syntax/format/diff checks run locally. Functional validation of the repaired
+source remains in the registered Actions pipeline; no full success is claimed.

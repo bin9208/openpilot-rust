@@ -178,8 +178,9 @@ fn phase(
     name: &str,
     mut command: CommandSpec,
     runner: &mut impl Runner,
+    inspect: &mut impl FnMut(&Path, u64) -> Result<disk_space::Space>,
 ) -> Result<Value> {
-    let space = disk_space::inspect(root, GROWTH)?;
+    let space = inspect(root, GROWTH)?;
     space.require()?;
     let argv = command.argv.clone();
     command.cwd = Some(work.into());
@@ -221,13 +222,18 @@ fn phase(
         }
     }
 }
-fn prepare(root: &Path, archive: &Path, expected: &str) -> Result<PathBuf> {
+fn prepare(
+    root: &Path,
+    archive: &Path,
+    expected: &str,
+    inspect: &mut impl FnMut(&Path, u64) -> Result<disk_space::Space>,
+) -> Result<PathBuf> {
     let metadata = fs::metadata(archive)?;
     check(
         metadata.is_file() && metadata.len() <= 32 * 1024 * 1024,
         "FFmpeg source archive exceeds limit or is not a regular file",
     )?;
-    disk_space::inspect(root, GROWTH)?.require()?;
+    inspect(root, GROWTH)?.require()?;
     let temporary = tempfile::tempdir_in(root)?;
     let mut frozen = tempfile::NamedTempFile::new_in(root)?;
     let copied = io::copy(
@@ -259,14 +265,19 @@ fn prepare(root: &Path, archive: &Path, expected: &str) -> Result<PathBuf> {
     Ok(source)
 }
 pub fn build(options: &Options, runner: &mut impl Runner) -> Result<Value> {
-    build_with_pin(options, runner, SOURCE_SHA256)
+    build_with_pin(options, runner, SOURCE_SHA256, &mut disk_space::inspect)
 }
-fn build_with_pin(options: &Options, runner: &mut impl Runner, expected: &str) -> Result<Value> {
+fn build_with_pin(
+    options: &Options,
+    runner: &mut impl Runner,
+    expected: &str,
+    inspect: &mut impl FnMut(&Path, u64) -> Result<disk_space::Space>,
+) -> Result<Value> {
     check(
         (1..=2).contains(&options.jobs),
         "FFmpeg jobs must be 1 or 2",
     )?;
-    disk_space::inspect(&options.root, GROWTH)?.require()?;
+    inspect(&options.root, GROWTH)?.require()?;
     fs::create_dir_all(&options.root)?;
     let root = options.root.canonicalize()?;
     let archive = match &options.archive {
@@ -299,6 +310,7 @@ fn build_with_pin(options: &Options, runner: &mut impl Runner, expected: &str) -
                         Duration::from_secs(600),
                     ),
                     runner,
+                    inspect,
                 )?;
                 check(
                     digest(download.path())? == expected,
@@ -309,7 +321,7 @@ fn build_with_pin(options: &Options, runner: &mut impl Runner, expected: &str) -
             archive
         }
     };
-    let source = prepare(&root, &archive, expected)?;
+    let source = prepare(&root, &archive, expected, inspect)?;
     let before = crate::opencv_build::source_hashes(&source)?;
     let prefix = root.join("install");
     let work = root.join("build");
@@ -384,7 +396,7 @@ fn build_with_pin(options: &Options, runner: &mut impl Runner, expected: &str) -
     for (name, argv, timeout) in steps {
         let mut command = CommandSpec::new(argv, timeout);
         command.env = env.clone();
-        let step = phase(&root, &work, name, command, runner);
+        let step = phase(&root, &work, name, command, runner, inspect);
         match step {
             Ok(step) => record["commands"]
                 .as_array_mut()
@@ -567,6 +579,11 @@ pub fn cli(runtime: bool) -> Result<()> {
 mod tests {
     use super::*;
     use crate::qa_process::Captured;
+    // The fake runner creates only tiny fixtures. Observe deterministic space
+    // while exercising the real admission predicate and unchanged growth budget.
+    fn fixture_space(_: &Path, growth: u64) -> Result<disk_space::Space> {
+        disk_space::Space::new(3 * 1024 * 1024 * 1024, growth)
+    }
     fn options(root: &Path) -> Options {
         Options {
             root: root.into(),
@@ -723,7 +740,7 @@ mod tests {
             fail: None,
             bad_header: false,
         };
-        let result = build_with_pin(&settings, &mut runner, &sha).unwrap();
+        let result = build_with_pin(&settings, &mut runner, &sha, &mut fixture_space).unwrap();
         assert_eq!(runner.calls.len(), 3);
         assert_eq!(runner.calls[2].argv, ["make", "install-headers"]);
         assert_eq!(result["record"]["headers_only"], true);
@@ -737,7 +754,7 @@ mod tests {
             .calls
             .iter()
             .all(|spec| spec.stdout_limit == 64 * 1024 * 1024));
-        build_with_pin(&settings, &mut runner, &sha).unwrap();
+        build_with_pin(&settings, &mut runner, &sha, &mut fixture_space).unwrap();
     }
     #[test]
     fn build_failure_and_wrong_installed_headers_never_claim_success() {
@@ -749,7 +766,7 @@ mod tests {
                 fail: failure,
                 bad_header,
             };
-            assert!(build_with_pin(&settings, &mut runner, &sha).is_err());
+            assert!(build_with_pin(&settings, &mut runner, &sha, &mut fixture_space).is_err());
             if failure.is_some() {
                 assert_eq!(runner.calls.len(), 3);
                 assert!(settings.root.join("make.result.json").is_file());
@@ -765,16 +782,26 @@ mod tests {
             fail: None,
             bad_header: false,
         };
-        assert!(build(&settings, &mut runner).is_err());
+        assert!(
+            build_with_pin(&settings, &mut runner, SOURCE_SHA256, &mut fixture_space)
+                .unwrap_err()
+                .to_string()
+                .contains("checksum mismatch")
+        );
         assert!(runner.calls.is_empty());
-        build_with_pin(&settings, &mut runner, &sha).unwrap();
+        build_with_pin(&settings, &mut runner, &sha, &mut fixture_space).unwrap();
         fs::write(
             settings.root.join(format!("ffmpeg-{VERSION}/configure")),
             "changed",
         )
         .unwrap();
         runner.calls.clear();
-        assert!(build_with_pin(&settings, &mut runner, &sha).is_err());
+        assert!(
+            build_with_pin(&settings, &mut runner, &sha, &mut fixture_space)
+                .unwrap_err()
+                .to_string()
+                .contains("cached source differs")
+        );
         assert!(runner.calls.is_empty());
     }
 
@@ -799,7 +826,7 @@ mod tests {
             fail: None,
             bad_header: false,
         };
-        let result = build_with_pin(&settings, &mut runner, &sha).unwrap();
+        let result = build_with_pin(&settings, &mut runner, &sha, &mut fixture_space).unwrap();
         assert_eq!(runner.calls.len(), 4);
         assert_eq!(runner.calls[2].argv, ["make", "-j2"]);
         assert_eq!(runner.calls[3].argv, ["make", "install"]);
@@ -833,6 +860,97 @@ mod tests {
         )
         .is_err());
     }
+    #[test]
+    fn insufficient_space_stops_entry_preparation_and_each_build_phase() {
+        // Entry, extraction, configure, target probe, compile, install.
+        for (reject_at, completed_commands) in [(0, 0), (1, 0), (2, 0), (3, 1), (4, 2), (5, 3)] {
+            let temp = tempfile::tempdir().unwrap();
+            let (settings, sha) = fixture(temp.path());
+            let mut runner = BuildRunner {
+                calls: vec![],
+                fail: None,
+                bad_header: false,
+            };
+            let mut observations = 0;
+            let mut space = |path: &Path, growth| {
+                assert_eq!(path, settings.root);
+                let available = if observations == reject_at {
+                    3 * 1024 * 1024 * 1024 - 1
+                } else {
+                    3 * 1024 * 1024 * 1024
+                };
+                observations += 1;
+                disk_space::Space::new(available, growth)
+            };
+            let error = build_with_pin(&settings, &mut runner, &sha, &mut space).unwrap_err();
+            assert!(error.to_string().contains("insufficient disk"));
+            assert_eq!(observations, reject_at + 1);
+            assert_eq!(runner.calls.len(), completed_commands);
+            assert!(!settings.root.join("install").exists());
+            if reject_at == 0 {
+                assert!(!settings.root.exists());
+            } else if reject_at == 1 {
+                assert!(!settings.root.join(format!("ffmpeg-{VERSION}")).exists());
+            } else {
+                let record: Value = serde_json::from_slice(
+                    &fs::read(settings.root.join("build-record.json")).unwrap(),
+                )
+                .unwrap();
+                assert_eq!(record["completed"], false);
+                assert!(record["error"]
+                    .as_str()
+                    .unwrap()
+                    .contains("insufficient disk"));
+            }
+        }
+    }
+
+    #[test]
+    fn insufficient_space_stops_download_before_any_command() {
+        let temp = tempfile::tempdir().unwrap();
+        let settings = options(&temp.path().join("build-root"));
+        let mut runner = BuildRunner {
+            calls: vec![],
+            fail: None,
+            bad_header: false,
+        };
+        let mut observations = 0;
+        let mut space = |_: &Path, growth| {
+            observations += 1;
+            disk_space::Space::new(
+                if observations == 1 {
+                    3 * 1024 * 1024 * 1024
+                } else {
+                    0
+                },
+                growth,
+            )
+        };
+        let error = build_with_pin(&settings, &mut runner, SOURCE_SHA256, &mut space).unwrap_err();
+        assert!(error.to_string().contains("insufficient disk"));
+        assert_eq!(observations, 2);
+        assert!(runner.calls.is_empty());
+        assert_eq!(fs::read_dir(&settings.root).unwrap().count(), 0);
+    }
+
+    #[test]
+    fn disk_observation_error_stops_before_creating_output() {
+        let temp = tempfile::tempdir().unwrap();
+        let (settings, sha) = fixture(temp.path());
+        let mut runner = BuildRunner {
+            calls: vec![],
+            fail: None,
+            bad_header: false,
+        };
+        let error = build_with_pin(&settings, &mut runner, &sha, &mut |_, _| {
+            Err("disk observation failed".into())
+        })
+        .unwrap_err();
+        assert_eq!(error.to_string(), "disk observation failed");
+        assert!(runner.calls.is_empty());
+        assert!(!settings.root.exists());
+    }
+
     #[test]
     fn host_and_big_endian_compiler_macros_fail_closed() {
         for macros in ["#define __x86_64__ 1\n#define __BYTE_ORDER__ __ORDER_LITTLE_ENDIAN__\n", "#define __aarch64__ 1\n#define __BYTE_ORDER__ __ORDER_BIG_ENDIAN__\n#define __ORDER_LITTLE_ENDIAN__ 1234\n"] {
