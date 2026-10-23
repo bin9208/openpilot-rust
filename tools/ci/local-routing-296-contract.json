@@ -921,5 +921,69 @@
     "normal_nested_members": 25,
     "delta": "canonicalrelative namesonly;2selectedrootfiles unchanged/other10payloadsbyteexact",
     "status": "independentreviewpending/notrun; original0221freezeimmutable"
+  },
+  "oct23_r19_source_and_capacity_checkpoint": {
+    "current_implementation_head": "47498503458d8ad7d02ebd491befac5deae3b656",
+    "current_validation": {
+      "revision": "R19",
+      "workflow_commit": "9ac451a4bdf5696ccb69ac6d21fb7018396a7a90",
+      "full_source": "454fc945e5431ac54a381ae799b4b90c33b52a2b",
+      "extra_source_parent": "6d37b6affb15287a0d5d2c73d7e51aebf5a33c04",
+      "preserved_once_leaves": 22,
+      "new_inventory": {
+        "run": 39907352595,
+        "job": 120262239564,
+        "status": "queued",
+        "recipe_sha256": "73fb5a5306c7edac3c2c75b312317c2d4435e6c82d4e856eeb75de443b6a1f28"
+      },
+      "fixture_metadata_repair": {
+        "run": 39907352530,
+        "job": 120262239212,
+        "status": "queued",
+        "source": "150bd42771ee45046f0c51343bedeef62646c516",
+        "recipe_sha256": "72c5cf60aeeb361b04f38f32ee9efacd2e31d09daf14e25a098ca25567d69918"
+      },
+      "prefix_r18": {
+        "run": 39906391694,
+        "job": 120259233730,
+        "status": "queued",
+        "source": "2e4b41cc28a900b1f54810a1a3cd8392f3892613"
+      },
+      "fast": 39907352633,
+      "observation_only": "Fresh job APIs authoritative; no pass inferred from queue or run list"
+    },
+    "latest_capacity_actual": {
+      "run": 39894886518,
+      "attempt": 2,
+      "job": 120257989862,
+      "available_bytes": 6382727168,
+      "required_bytes": 8589934592,
+      "status": "terminalfailure before source checkout/Cargo; no recipebug or stale root collision; do not retryblindly or lowergrowth",
+      "artifact": 12480952000,
+      "artifact_sha256": "4063e6a36b740950592ea25c2631370e9f34c1462432d0658c1e890e2a90d5e8",
+      "admission": ".analysis/scratch/2026-10-23-resume-296/loggerd-main-r13-attempt2-admission-sol/ADMISSION.json",
+      "crc": 16,
+      "content_seals": 12,
+      "complete_source_proof": false,
+      "functional_credit": false,
+      "earlier_cleanup_free_12270104576": "historical not current capacity"
+    },
+    "new_reviewed_source_fixes": {
+      "webrtc514": {
+        "main": "454fc945e5431ac54a381ae799b4b90c33b52a2b",
+        "paths": 3,
+        "patch_sha256": "b5c3bf53d847aa4be175c0902a83daf166ff8595424ef6ec1248e456785787fe",
+        "functional": "UNRUN two newpolicy cases; pending narrowonce recipe",
+        "common515": "untouched"
+      },
+      "growth_roster": {
+        "main": "47498503458d8ad7d02ebd491befac5deae3b656",
+        "minimal": "6d37b6affb15287a0d5d2c73d7e51aebf5a33c04",
+        "parent": "ae7bc0c6ca12d4b5d7fb10e7fe2f1a50ff816f14",
+        "patch_sha256": "e774846ab1d057043d6651aee8dd9d64033c94558e0db61b38a4a73c6f6825df",
+        "source_review": "PASS",
+        "functional": "UNRUN;558guards/37jobs/allrosterhashes unchanged; live decodedrun sourceorder; no unusedenv credit"
+      }
+    }
   }
 }
