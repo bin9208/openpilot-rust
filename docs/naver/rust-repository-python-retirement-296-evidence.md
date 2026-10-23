@@ -1,5 +1,40 @@
 # Repository-wide Python retirement: current evidence (#296)
 
+## Actual compiler repairs and original x64 consumer (23 October 2026)
+
+Source review closes exactly three expressions: logger diagnostics guard clones
+its Result before text extraction, Controls held-tree traversal uses keys(), and
+fixture integer truth uses parse::<i128>() != Ok(0). No lint suppression, numeric
+tolerance, wire, barrier, deadline or dependency change. Independent review is
+three-expression-source-review-sol/HANDOFF.md; all new postimages are uncompiled.
+
+Minimal immutable qualification sources are987ac79eae17805a528f8c19231c6fc2cec55a7a
+(cfd plus one diagnostics line) and150bd42771ee45046f0c51343bedeef62646c516
+(55084 plus two Clippy expressions). Each keeps its old Cargo, lock and contract
+bytes. New recipes must explicitly seal the changed paths, without rebasing old
+Cargo overlays or pretending the failed immutable source passed. Main feature
+contains the same reviewed expression fixes; no dev-md change follows.
+
+Peer39888221680 reached real Rust compilation after the R3 file-cap repair;
+its E0507 is the guard binding move. No OOM or SIGXFSZ was observed. Fixture
+39876347504 built and passed five regular tests, then failed two strict Clippy
+lints. Reuse those five pass records explicitly; native109 generation, the one
+ignored full-schema/Float64-bit audit and current ELF/provider/final holds remain
+unreached. Original109 is data reuse only and must not be recaptured.
+
+Original WebRTC39884478138/job120189322749 is bounded admitted: all22original
+steps and26actual steps succeed, with native5tests/build/Clippy and nine functional
+roots. Two artifacts have167valid CRCs, source027 and sealed private ownership.
+Relevant739source entries retain bounded implementation equivalence to2a; this
+is not a new whole-crate/current-source build. ARM job120189323000 stays queued.
+No physical ARM, full-runtime or source-retirement acceptance follows.
+
+Publisher39882326549 failed before compilation because real Cargo received the
+Rustup +1.94.0 selector. Reviewed recipe-only repair uses five explicit rustup
+run1.94.0 cargo invocations at unchanged9368; six other payloads are exact.
+No policy/emitter/tiny-caller success is inferred.
+
+
 ## Reviewed recovery batch R11 is published (2026-10-23)
 
 Validation workflowbb6425454476abe106e247dfebc51795ed3da561 contains full source

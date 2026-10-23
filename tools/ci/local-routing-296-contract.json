@@ -527,5 +527,58 @@
     "local_checks": "four Pure/C Base/Safe objects equal; scoped rustfmt; no native parser/Cargo execution",
     "historical_maps": "earlier493733/f01/cfd/R6/R7 seals remain historical; next source policy must explicitly select this new representation/CI test map",
     "acceptance": "actual Rust parse and failed-case recovery remain required; R3 is NOT the same old negative-control failure"
+  },
+  "actual_compiler_lint_repairs": {
+    "review": "three-expression-source-review-sol/HANDOFF.md noP1/P2 source-only",
+    "source_children": [
+      {
+        "scope": "peer",
+        "base": "cfd7583ab1aab6cece048f9c1d64a144956ec906",
+        "source": "987ac79eae17805a528f8c19231c6fc2cec55a7a",
+        "tree": "77ec6c2c02e975d33a84561cca0cc8272dd60331",
+        "paths": {
+          "rust/crates/dev-tools/src/loggerd_check/controllers/diagnostics.rs": {
+            "before_sha256": "e0b11cdebc44858f7645ebd23a35f031e05b650936aeed4d4be2ab9026418bd4",
+            "after_sha256": "7e9727cb2bef6c42397548c324ef48a9cdbb2ee39be786a6cb7dd0f0b4427ddb"
+          }
+        },
+        "diff_sha256": "c02291ffc99d0e59f7859a913256d79bd14163918fd2fe4cac1f7ae9f2fb55d0",
+        "status": "source-only child, not published/executed; old Cargo/lock/contract unchanged"
+      },
+      {
+        "scope": "fixture",
+        "base": "55084e65ab94b71ba884ec11e2ce91eb8127bd71",
+        "source": "150bd42771ee45046f0c51343bedeef62646c516",
+        "tree": "c2d27dffb233e90ef68300d3f048798a67651830",
+        "paths": {
+          "rust/crates/dev-tools/src/control_failures_check/inputs.rs": {
+            "before_sha256": "797ca3f1c3be3cd80c418a5b4f3450b6e154b998deb3a58c1d4d83c19df4184b",
+            "after_sha256": "7d2526da0c40b64ff6becf7cec5232c2a128b59e521f134e72256dc4a595987b"
+          },
+          "rust/crates/dev-tools/src/controlsd_fixture_generate.rs": {
+            "before_sha256": "f5e1b29a64bce5a0637335e349ab5622a3b1efa60ee1ec5dd66625b39e62f783",
+            "after_sha256": "bd43c2fe8db4243888395d035145ab574bd1a2f52f72aaeee6ac26220684c8ef"
+          }
+        },
+        "diff_sha256": "a5f9e07b818505c5585ad4ad5bbf6b1fd59da495dec5ee079df2ac351f164275",
+        "status": "source-only child, not published/executed; old Cargo/lock/contract unchanged"
+      }
+    ],
+    "failed_runs": {
+      "peer": 39888221680,
+      "fixture": 39876347504
+    },
+    "accepted_prior_fixture_tests": {
+      "run": 39876347504,
+      "job": 120162770498,
+      "artifact": 12472101435,
+      "passed": 5,
+      "failed": 0,
+      "ignored": 1,
+      "limits": "no native109 generation, ignored full-schema/Float64-bit audit, fresh provider closure or final source seals; explicit source-delta reuse required"
+    },
+    "source_delta": "exactly three expression replacements; BTreeMap key order, integer truth table and false-valid/text/error barrier behavior retained",
+    "historical_maps": "cfd/55084 registration/prerequisite maps remain immutable historical snapshots; explicitly select these scoped repair pins in new recipes",
+    "acceptance": "uncompiled new postimages; exact source children need new Actions build/Clippy/unreached functional gates; no Python retirement"
   }
 }
