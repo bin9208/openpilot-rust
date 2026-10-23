@@ -43,6 +43,22 @@ leaf, with no current HEAD/caller activation, retirement, ARM or device credit.
 
 ## R8 workflow registration size repair (2026-10-23)
 
+The499875-byte version is actually rejected by
+[39875009192](https://github.com/bin9208/openpilot-rust/actions/runs/39875009192)
+at workflow6e900af8c with zero jobs: generic YAML syntax at line1, rather than
+the earlier size annotation. Available libyaml C Safe/Base loaders reproduce
+the unseparated branches:[...] flow-value colon; pure Python loaders accept it.
+Restoring all240 flow-value separators makes both parser families accept the
+same object but initially yields500115bytes. Sharing the repeated scalar mapping
+key working-directory via one anchor/476aliases, plus278safe comma line breaks,
+produces493733bytes/SHAa8c7d7d5a0605452762d55bc04c787199650ee9c4f1b7884ca46d7dc83f570b4.
+All four available Safe/Base loader variants pass recursive type-sensitive or
+scalar-text equality against the prior candidate. Original758run strings and
+all job/step/condition/input values are unchanged. No helper or command changes.
+Current Rust parse source resolves scalar-key aliases using the same node walker
+as values; actual Rust/GitHub admission remains pending. The original R8 review
+was limited to pure-loader/source equivalence and did not prove GitHub syntax.
+
 Actual [39871079714](https://github.com/bin9208/openpilot-rust/actions/runs/39871079714)
 at workflow8bd7575b9d418678166363eb74b41b6dbede7e7e registers zero jobs and
 reports the500KB workflow limit. Full source003eed6c078139280ac703920335e8334057a1c6

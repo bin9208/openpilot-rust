@@ -6,6 +6,16 @@ unchanged evidence. Read this handoff and the linked evidence ledger first.
 
 ## Latest actual results after the R8 batch
 
+The next syntax-only representation is493733bytes, SHA256
+a8c7d7d5a0605452762d55bc04c787199650ee9c4f1b7884ca46d7dc83f570b4.
+It restores240 flow-value separators, shares only the repeated working-directory
+key using one additional anchor, and adds278 safe flow-comma line breaks. Pure
+and C Safe/Base YAML loaders all preserve the complete prior typed/scalar-text
+objects; every run string, step, condition and input stays unchanged. The Rust
+parser's existing recursive key/value node walker supports scalar key aliases
+by source inspection. Independent review and actual GitHub/Rust parsing remain
+required; no functional check has run locally.
+
 Validation workflow6e900af8cd8938429e2c4c4cf2a3595361a7f5ba registers new policy
 39875010264, startup18+16 39875010351, publisher39875010300 and logging39875010155;
 Fast39875010421 is pending. All use bin-actions. The unchanged loader39871081195
