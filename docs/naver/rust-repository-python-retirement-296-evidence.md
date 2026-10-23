@@ -1,5 +1,33 @@
 # Repository-wide Python retirement: current evidence (#296)
 
+## Native parser recovery: separate R3 failure (2026-10-23)
+
+[39876347459](https://github.com/bin9208/openpilot-rust/actions/runs/39876347459),
+source10ff/job120162770156, fails differently from20d: ci_rust_isolation has
+2passes/81failures at its shared YAML parse, before policy assertions; subsequent
+ci_workflow_policy/downstream/Clippy/final seals are unreached. Artifact12471223219
+is162309bytes, SHA1f780f6d65a0b9848e100814b67425ffa9a98efacbfed32970a20100d1b152e2,
+all19CRCs verified. Actual log SHA18504a0046c5c2c2dc13af1fdaef70c2677aaab664c8eef873e769d6f7c95493.
+The two passes are inherited_side_effects_are_source_repository_only and
+retired_bluetooth_helpers_are_absent_at_checkout; they are not silently rerun.
+
+First error: unknown anchor at byte5523/line5/column945, pointing to the first
+*zz: key. Source inspection of locked yaml-rust2 0.13.0 shows scan_anchor accepts
+colon as an anchor character; it therefore looks up zz: rather than declared zz.
+The earlier event-walker review did not qualify this scanner boundary. No Rust
+parser bugfix or dependency update is needed for the source representation.
+
+Adding one space before each of476alias-key colons gives494209bytes, SHA256
+5974e9f3de6e7e154440de63856816f2d84e2c8e1812ae5bcabe7e1bce60096b.
+Parent verifies exact replacement and four Pure/C Base/Safe complete-object
+equalities. All43jobs/1106steps/758run strings and guards remain unchanged. The
+existing raw-scalar/anchor regression adds the corresponding nested key/value
+case. Direct scoped rustfmt/diff pass; native parsing/testing remains unrun.
+The next policy leaf must qualify failed-parser recovery, new raw-alias case,
+positive policy and corrected negative control plus unreached downstream checks;
+actual source/prerequisite hashes must select the new overlay. Historical102
+passes at20d do not erase this newer failure. No functional/ARM/retirement credit.
+
 ## Common loader admission and #502 capacity reuse (2026-10-23)
 
 [Loader39871081195](https://github.com/bin9208/openpilot-rust/actions/runs/39871081195)

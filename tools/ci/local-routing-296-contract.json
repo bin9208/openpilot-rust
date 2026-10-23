@@ -507,5 +507,25 @@
     ],
     "scope": "five guards in four active original build helpers; original operation estimates retained; no compiler command/provider/ELF/ABI/ownership changes",
     "limits": "54other retained Python floor/expectation paths remain catalogued, not blanket-fixed; old queued source pins unchanged; foreign exactPR/ARM still pending; no wholedevmd merge or source-retirement credit"
+  },
+  "yaml_key_alias_token_repair": {
+    "failed_source": "10ff9c626210e1de73a1c204084daee70e9b9965",
+    "run": 39876347459,
+    "job": 120162770156,
+    "artifact": 12471223219,
+    "artifact_bytes": 162309,
+    "artifact_sha256": "1f780f6d65a0b9848e100814b67425ffa9a98efacbfed32970a20100d1b152e2",
+    "actual_result": "ci_rust_isolation2pass81fail at common YAML parse before assertions; ci_workflow_policy unreached",
+    "first_error": "unknown anchor at byte5523 line5 column945, first *zz: key",
+    "source_diagnosis": "yaml-rust2 0.13 scanner includes colon in anchor names; *zz: is read as zz: while definition is zz; event walker alias support was not the failing layer",
+    "scope": "add476 spaces before alias-key delimiters; add matching key/value alias coverage in existing YAML regression; no parser library/runtime/workflow command changes",
+    "workflow_bytes": 494209,
+    "source_file_sha256": {
+      ".github/workflows/rust.yml": "5974e9f3de6e7e154440de63856816f2d84e2c8e1812ae5bcabe7e1bce60096b",
+      "rust/crates/dev-tools/tests/ci_workflow_policy.rs": "15b5086c7389a870a43abd712ac6323b45a0db98c156b89eec5bbf086d10ba68"
+    },
+    "local_checks": "four Pure/C Base/Safe objects equal; scoped rustfmt; no native parser/Cargo execution",
+    "historical_maps": "earlier493733/f01/cfd/R6/R7 seals remain historical; next source policy must explicitly select this new representation/CI test map",
+    "acceptance": "actual Rust parse and failed-case recovery remain required; R3 is NOT the same old negative-control failure"
   }
 }

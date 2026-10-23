@@ -104,6 +104,13 @@ fn yaml_raw_scalars_anchors_and_multiline_match_base_loader() {
         value["alias"],
         serde_json::json!({"channel":"001", "flag":"true"})
     );
+    // Separate an alias key from ':' so the scanner does not consume the
+    // delimiter as part of the anchor name (the maintained flow-YAML case).
+    let keys =
+        parse("{first: {&field working-directory: &folder source}, second: {*field : *folder}}")
+            .unwrap();
+    assert_eq!(keys["first"]["working-directory"], "source");
+    assert_eq!(keys["second"], keys["first"]);
 }
 
 #[test]

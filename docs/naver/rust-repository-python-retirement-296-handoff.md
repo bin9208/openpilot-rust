@@ -4,6 +4,29 @@ Work is unfinished. The user requests moving to a fresh session to increase
 parallelism; this is a continuation of #296, never dev-md/#338. Reuse accepted
 unchanged evidence. Read this handoff and the linked evidence ledger first.
 
+## Actual native YAML scanner failure and alias-delimiter repair
+
+R3policy39876347459 is NOT the old aggregate-negative failure: at exact10ff,
+ci_rust_isolation reports2passes/81failures before assertions. The first error
+is unknown anchor at byte5523, the first *zz: mapping key. ci_workflow_policy
+never runs. Parent admits artifact12471223219/162309bytes/all19CRCs; full failed
+log and exact source/workflow IDs are under parent/policy-7bb-targeted-r4.
+
+Locked yaml-rust2 0.13's scanner includes ':' in an anchor name. Its node walker
+can resolve key aliases, but the unseparated *zz: token never reaches that layer
+as the intended zz alias. Minimal source repair writes *zz : at all476sites;
+new Rust YAML is494209bytes/SHA5974e9f3de6e7e154440de63856816f2d84e2c8e1812ae5bcabe7e1bce60096b.
+Four Pure/C Base/Safe objects remain identical; no command/job/input changes.
+The existing raw-YAML regression adds a nested scalar key/value alias example.
+No local native parser/Cargo execution occurred. Actual parser recovery remains
+required before any source-policy/feature-push acceptance. Historical493733/f01
+seals remain historical; the new map must be selected explicitly in the next
+policy recipe. Current AST f01 and original ARM027 jobs are not cancelled.
+
+Carver hit service429 and was closed; the Sol/Ultra parent owns the policy
+continuation. No Astra fallback. Peer/call3/logging recipe-only repairs are ready
+for the next serialized batch; separate APT/normal-observer/bundle reviews run.
+
 ## Current loader, AST and ARM continuation
 
 Loader39871081195 is bounded admitted:12CRCs/11seals, remote distribution loading
