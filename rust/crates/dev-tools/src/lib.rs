@@ -101,6 +101,8 @@ pub mod journald_fixture;
 pub mod kalman_corpus_generator;
 #[cfg(feature = "kalman-model-generator-native")]
 pub mod kalman_model_generator;
+#[cfg(all(target_os = "linux", feature = "kbhit-native"))]
+pub mod kbhit;
 #[cfg(feature = "logmessaged-startup-native")]
 pub mod logmessaged_startup_check;
 #[cfg(feature = "managed-entry-native")]

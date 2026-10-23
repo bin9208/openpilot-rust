@@ -80,6 +80,25 @@ exact complete recipe requires independent closure before publication. Prefix
 Auth18tests and injected-only GithubUtils source remain unvalidated. All originals
 and current credential/account/vehicle paths remain outside these new gates.
 
+## KBHit explicit-input native source candidate
+
+Reviewed64de9b64daf262817973bb1aa2f9d72669258ec5910ea12ed9a19e32e9463124
+adds kbhit.rs/system.rs/tests.rs. MinimalC346 child is
+dd87b584ac74853cdd28c585f9086d98e534cfc4; its only5paths are the three new files,
+one optional existing nix/rustix-termios feature and one Linux-only module export.
+No dependency/version/lock, bin/CLI, default feature or caller selection changes.
+Independent kbhit-native-review-sol source PASS;18tests/compile/link/Clippy,
+private PTY effects, actual C atexit and original comparison remain UNRUN.
+
+All six methods have typed source counterparts: supplied owned fd/strict UTF8
+reader, tcgetattr→clear only ICANON/ECHO→TCSAFLUSH→one exit registration, explicit
+latest-snapshot restore, three-character arrow mapping and zero-timeout select.
+Repeated setup/LIFO exit callbacks retain the latest object snapshot; Drop does
+not restore modes. No real stdin/terminal/environment or device was accessed.
+The typed fd ownership/read-only snapshots, TextIO/codec/read-ahead/newline and
+Python-vs-C shutdown/error contracts remain explicit limits. The original demo
+main loop remains unported and inactive; kbhit.py/inventory are retained.
+
 ## GithubUtils injected-only native source candidate
 
 Reviewed completeR2 patch8cb45a37b360a0318c1fc7e729eb9dd5f1a273e1fa43ae447ad787bc0bbae8f7

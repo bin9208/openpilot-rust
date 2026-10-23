@@ -795,5 +795,23 @@
     "status": "source-only integrated;23tests/compile/Clippy/originalnativecomparisonUNRUN; noHTTPadapter/caller/CLI/lockchange",
     "original_sha256": "05d53b2bfa9cf73b9165b534fc1c81fa88171f9f25f1a15fc9d9009d3ca51cbc",
     "limits": "ordinaryUTF8JSON/injectedtransport+finiteprivatefiles only; Requests/wire/proxy/codec/Unicode/arbitraryPythonobjects held; original retained/inventory unchanged"
+  },
+  "kbhit_source_overlay": {
+    "source_child": "dd87b584ac74853cdd28c585f9086d98e534cfc4",
+    "base": "c34692334897856296692e2eb3ee1378d7118879",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/src/kbhit.rs": "4393977c8695d719b8f838faf0237e360c70fc9bf10e6aa02951098c522f5148",
+      "rust/crates/dev-tools/src/kbhit/system.rs": "83006b04552c5b082c7c1cc00cdbf1bed5576bb29aa7b4db4633314e7965e2da",
+      "rust/crates/dev-tools/src/kbhit/tests.rs": "d7a2d37ef302b16374591a3fb11322925814467b498785f901541363850ff6d4",
+      "rust/crates/dev-tools/Cargo.toml": "5cb095aefecdc4cc97fb147b30ee96c3fd59b24569551f72fd0e7528f3e6c247",
+      "rust/crates/dev-tools/src/lib.rs": "99f1c7cb200cbe6d02fd0b24a695f6d0d2dd99e5a53f3a114cd683a4f229273a"
+    },
+    "lock_sha256_unchanged": "a82648159767a21268e61ed4f2aba64940b7458733333ece0fab653017929ea0",
+    "patch_sha256": "64de9b64daf262817973bb1aa2f9d72669258ec5910ea12ed9a19e32e9463124",
+    "review": "kbhit-native-review-sol/HANDOFF.md scopedsourcePASS",
+    "registration": "oneoptinfeature existingnix+rustixtermios,moduleonlyLinux,noCLI/testtarget/dependency/lockchange",
+    "acceptance": "sourceonly;18unrunlibtests/privatePTY/actualCexit/originalcomparisonrequired; nooriginalCLIactivation/retirement",
+    "limits": "explicitOwnedFd/suppliedstrictUTF8Read/readonlysnapshots; nofullTextIO/locale/newline/shutdown/exception/objectparity; demonstrationmainstillPythonandretained",
+    "historical_maps": "oldGithubD346/auth1a1a/SSH-C3f/855sourcegatesremainimmutable; onlyexplicitKBhitchildselectsnewfeature/postimages"
   }
 }
