@@ -74,3 +74,44 @@ The candidate must match normal Python and run as root; the legacy result is
 recorded as observed without requiring a fabricated failure. This invokes no
 project code, installs no dependencies and changes no runtime behavior.
 Actual bridge/Athena acceptance still requires their complete existing jobs.
+
+## Observed duplicate packs and bounded preservation candidate
+
+The second [registered diagnostic39910424061](https://github.com/bin9208/openpilot-rust/actions/runs/39910424061)
+completed successfully at `7debe6f1c1eec2dcccb9daa6645277aae2fff13d`.
+Artifact12483300610 has SHA-256
+`d4b0c917890efda4bab09013e9928f9e81e1d4b7f380341fd81febb9d1b200d0`.
+Git2.43.0 reported43 packs containing387,878 entries, but enumeration including
+unreachable objects found71,873 unique objects totaling2,272,238,413 raw bytes.
+The43 packfiles occupied4,863,917,056 apparent bytes with no external hardlinks.
+The unique representations summed953,270,351 bytes. Refs remained unchanged.
+Free capacity was7,555,842,048 bytes before the metadata read, still below12GiB.
+Two old temporary pack files remain preserved; they are not recovery targets.
+
+The next workflow replaces both completed diagnostic probes with one bounded
+Git consolidation and preservation check. The standard
+[`git repack -a -d --keep-unreachable`](https://git-scm.com/docs/git-repack/2.43.0)
+keeps unreachable packed and loose objects while removing redundant
+representations. It runs without sudo, one pack thread and new delta searching
+disabled. Before mutation it rejects alternate/partial-clone stores, Git locks
+and concurrent Git processes, verifies the object store and admits temporary
+growth from the actual complete raw-object size plus compression/index overhead.
+The prior metadata implies an approximately2.64GB temporary upper bound; the
+job recomputes and checks this from its current checkout rather than trusting
+that old measurement.
+
+Before and after, compare all unique object IDs/types/sizes, refs, index,
+reflog identities, shallow boundaries, tracked status and untouched temporary
+pack metadata. Both complete object-store integrity checks must pass. Object
+metadata and logs have separate output limits and process-group timeouts.
+The owned receipt records actual free capacity separately from preservation
+success: a correct consolidation does not prove that12GiB is available.
+Object metadata readers inherit a64MiB file limit; the parent separately caps
+each fsck/repack log at8MiB without limiting the pack files themselves. Output
+beyond that log bound is drained and causes a strict failure. A256MiB bookkeeping
+allowance covers remaining bounded metadata/logs. Repack and integrity readers
+have GNU timeouts plus an outer watchdog owning only their new process group;
+the25-minute job leaves verification, receipt and upload headroom.
+No project job-temp, source, toolchain, SDK or shared download-cache deletion is
+performed, and the successful Python diagnostic is not replayed. This reviewed
+candidate has not yet run or recovered space; full ARM acceptance remains open.
