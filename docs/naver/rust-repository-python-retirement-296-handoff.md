@@ -1,5 +1,30 @@
 # #296 session migration checkpoint (23 October 2026)
 
+## Native current-catalog wrapper source candidate
+
+Reviewed patch3b684ae91832acd0717701d322f7f72bb80b6f0add81e94aa860ea8f6e1f8317
+adds three Rust sources and11unrun tests for the actual6047B embedded Python
+current-host export wrapper, plus its original2015B path controls. Independent
+source review is native-current-catalog-wrapper-review-sol/HANDOFF.md. Parent
+registers one empty current-catalog-export-native feature, CLI/test/module only;
+removing those additions restores all prior Cargo semantics, lock855f00unchanged.
+
+Candidate checks output path containment/aliasing, input/model/source/LLVM pins,
+CPU profile, existing exporter argv/cwd, generated index and exclusive receipt
+creation while retaining partial output on failure. build_model_pipelines.py
+is still an explicit external Python dependency; no25producer/model-compiler
+or source-retirement credit. Required interpreter spelling preserves the caller
+venv. New30/900s deadlines, null stdin, UTF8 and formatting boundaries remain
+explicit; full Python/subprocess parity is not claimed. Source review does not
+prove typechecking, CLI,11tests, strict Clippy or original/native main effects.
+
+Maintained caller and both embedded Python bodies remain untouched. The source
+candidate is inactive. Its next necessary gate is only scoped compile/tests/CLI
+and original/native path controls on bin-actions, without model traffic or old
+corpus replay. All historical Cargo/source maps are preserved; future current
+source checks must explicitly select the new additive registration overlay.
+
+
 ## R11 native parser recovery and downstream policy continuation
 
 Run39888221718/job120201371325 at2a proves81parser-dependent ci_rust_isolation

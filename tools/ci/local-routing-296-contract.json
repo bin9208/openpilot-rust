@@ -596,5 +596,24 @@
     "scope": "exclude only OLD_STARTUP after exactly-one mandatory native step and full4039B script SHA256 d9be3269d7997a36ee218fa075613870cabab0234e81131b844bc83a385bc777; four new negative assertions; no workflow/runtime/fixture/dependency change",
     "reuse_limits": "91new passes reused explicitly at2a; after-source/index/tool seals absent;18older unchanged contexts retained; changed AST case separately pending",
     "next": "new sourceae7 child gate: two failed lagd cases and all genuinely unreached downstream checks, strict Clippy including changed test, final source/tool/index holds; no91pass replay"
+  },
+  "current_catalog_wrapper_registration_overlay": {
+    "patch_sha256": "3b684ae91832acd0717701d322f7f72bb80b6f0add81e94aa860ea8f6e1f8317",
+    "original_embedded_python_sha256": "94a5f103c3831a7bbdf7f6733c5576230539ccb906f1ad3368e587ea16c4a49c",
+    "original_path_tests_sha256": "0810f0cedc18ea3de07227924326b447fa5f01c766ff9aa64ab94c0fe0262366",
+    "review": "native-current-catalog-wrapper-review-sol/HANDOFF.md scoped source PASS,11tests unrun",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/src/current_catalog_export.rs": "bc2f9305664cb9147a5c4b8375b64935fa6ec8ca3c3f0bb5129a5c2e5f42b819",
+      "rust/crates/dev-tools/src/bin/export_current_driving_catalog.rs": "01e63515b09eb595569252bdb31784df6ad8e008c4d4cae1874e2be786ba98b1",
+      "rust/crates/dev-tools/tests/current_catalog_export.rs": "6f3f0d9fbb55e151e629c1ae5956bad5a488356cb650b616dc3b58c8575d3107",
+      "rust/crates/dev-tools/Cargo.toml": "b9fb056d848eca54d7004ca67cef4e2f2dda02a1bfdaaaf06a62bf21fc78cfdc",
+      "rust/crates/dev-tools/src/lib.rs": "5f69188cd39e279aadada1ece1a5d683daaf2c5b2dcf045fd15ac972bc231b05"
+    },
+    "registration": "empty current-catalog-export-native feature plus one bin/test and cfg module; no dependencies/lock changes; avoids unrelated driving feature providers",
+    "scope": "UTF8 Linux current-host wrapper orchestration only; path/pins/CPU/receipt/existing exporter argv; no caller activation or embedded Python deletion",
+    "external_dependency": "existing build_model_pipelines.py exporter remains Python, explicit original interpreter/argv/cwd; zero25producer/modelcompiler retirement credit",
+    "limits": "explicit30s metadata/900s exporter deadlines versus original unbounded; stdin null versus inherited; UTF8/JSON diagnostic formatting; no full subprocess/Unicode parity",
+    "acceptance": "no compile/functional/type/Clippy or original-native main-effect acceptance; no inventory change",
+    "historical_maps": "bundle/AST/cfd/source-repair prerequisite maps retain historical exact bytes; future current-source gates select this Cargo/lib overlay explicitly"
   }
 }
