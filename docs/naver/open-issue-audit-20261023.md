@@ -665,3 +665,11 @@ failed separately at the original safety oracle's90-second batch limit, after
 late seeded-case progress. [#518](https://github.com/bin9208/openpilot-rust/issues/518)
 tracks the focused diagnosis; no safety policy, durability operation or scenario
 is weakened, and native safety comparison has not yet run.
+
+The [Xiaoge ARM job120220822647](https://github.com/bin9208/openpilot-rust/actions/runs/39893953434/job/120220822647)
+was automatically cancelled at its75-minute job limit after the pinned OpenCV
+provider had completed56 minutes of compilation. The original Python bindings
+were still compiling; the full consumers and provider-Python receipt had not
+run. [#520](issue-520-xiaoge-emulation-budget.md) gives only this emulated ARM
+matrix row a bounded150-minute build budget, retaining the x64 budget and all
+original commands and runtime limits. The new budget's full result is pending.

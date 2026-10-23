@@ -932,7 +932,9 @@ jobs:
       fail-fast: false
       matrix:
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
-    timeout-minutes: 75
+    # The pinned provider alone took 56 minutes under QEMU before the original
+    # bindings and all consumer checks. Keep a bounded emulation build budget.
+    timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 150 || 75 }}
     env:
       LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
       CARGO_BUILD_JOBS: '2'
