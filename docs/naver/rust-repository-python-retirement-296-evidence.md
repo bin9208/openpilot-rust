@@ -1,5 +1,29 @@
 # Repository-wide Python retirement: current evidence (#296)
 
+## Missing startup/driver source repair, not a completed family gate
+
+Seven reviewed source paths combine R2b84e8747 exact helper-dependency
+attestation and R1 1f04359f fresh startup command-proof sibling. Independent
+reviews close both exact postimages. Minimal9de childis ebc2c724610b75b7298fa827a5e5d3b28a170666;
+main contains the same code. The child retains old Cargo/lock/all other9de bytes,
+while main retains the separately reviewed optional SSH/current-wrapper layers.
+
+The driver bridge admits only the exact full helper63e8 ->10df pair, original
+manifest1b8e/source481ae, current catalog1734roster and retired-driver/no-collector
+mode. Imported execute/write_tensor source/AST remains identical; other mismatches
+still reject. Held helper/manifest pins span every case/final write. Nine new
+adversarial tests are unrun. This is neither a path skip nor an exporter exception.
+Startup command proof uses a fresh sibling; CLI/input/evidence and USB paths do
+not change. No math, tolerance, CPU, model, scheduling or original oracle changes.
+
+Next Actions ownership is nine selectors plus missingstartup8/driver4/final
+source-provider consolidation. Preserve prior9de USB6/control16 as explicitly
+bounded old evidence; do not relabel it as current ELF execution or replay it.
+External pack referencec957 has separate source review only and must stream/
+authenticate all13actual model copies; old missing bytes remain unadmitted.
+No complete-family/Python-retirement/device/release credit follows.
+
+
 ## Native developer SSH source and optional registration
 
 Eight exact R3 source files are integrated from reviewed source candidate

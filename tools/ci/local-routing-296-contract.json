@@ -641,5 +641,32 @@
     "source_tests": "27integration+1URLunit unrun; explicit4300/min640/env0 digitguard uses shared Unicode15 decimal table",
     "holds": "no Cargo resolver/typecheck/build/test/Clippy/functional acceptance; HTTP/proxy/CA/netrc/codec/JSON/argparse/nonUTF8/Unicode/provider and actualexec/buffering remain held",
     "historical_maps": "old855/Cargo52/542/AST/bundle/currentwrapper source maps remain exact historical scopes; current-source checks must explicitly select this newer11path overlay"
+  },
+  "startup_missing_dependency_repair": {
+    "source_child": "ebc2c724610b75b7298fa827a5e5d3b28a170666",
+    "source_base": "9de275e61c04cce1d8b587d45ec0b5ac6cc9c9e4",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/src/driver_daemon_check.rs": "14ed67ad7317998759aeb23db7c7afcbaa9dd0acea281624895182acfd3ba478",
+      "rust/crates/dev-tools/src/driver_pipeline_dependency.rs": "300fb681cf462efa524c822517ff6a8911f613e76921c972687cf32cb303657a",
+      "rust/crates/dev-tools/src/driver_pipeline_dependency_attestation.json": "08644fe93141f4655437dd4008c96d95fdcf46ecfd5ce0b5a7371e84b200959f",
+      "rust/crates/dev-tools/src/driver_pipeline_dependency_tests.rs": "4065360ca1ceacddbba9ce72e526d3aa0ea54a5d3c98c5ec6c3ff0f6e759fc55",
+      "rust/crates/dev-tools/tests/fixtures/driver-pipeline-dependency/PROVENANCE.json": "7afd61764b825ee343d7fbcfd20e580dc8b12b36f613f81a971df041371f5ff3",
+      "rust/crates/dev-tools/tests/fixtures/driver-pipeline-dependency/reference-manifest.json": "1b8e6cea511e9f212cd7737688b3e2ec0a165b9ff985b492f0e98c4639f18380",
+      "rust/crates/dev-tools/tests/model_family_missing_current_diagnostic.rs": "68bca665a6e96378d3c7b8b3015e4424abc425c9c6e69d7a3deae943f468ffbc"
+    },
+    "review": [
+      "startup-dependency-attestation-r2-review-sol/HANDOFF.md scopedPASS",
+      "startup-proofdir-r1-review-sol/HANDOFF.md scopedPASS"
+    ],
+    "patches": {
+      "dependency": "b84e8747a99dbfd14282693c606f490dc0774b65e00e896e4a13272beac26877",
+      "adapter": "1f04359fb35074ccecd8526df98270fb0dddce20164f58e5b40a96a51eaa3fd5"
+    },
+    "original_helper_pair": "63e8d880b79603215d7319011809dd3b5ec6699dae1e10c79c105b7dc5cc258b ->10dfebf12b3d8fa5abdaff7764e80c11468043349ce44f3cc4e57a59b30312e5",
+    "source_scope": "exactexecute/write_tensorunchangedfunctions+fullhelper/source/manifestpins;retireddriver+currentcatalog+no-collectoronly;heldhelper/manifestbefore/aftereachcaseandfinal; genericmismatchstillrejects",
+    "adapter_scope": "onlystartupcommandproof freshsibling, allCLI/data/USB pathsunchanged",
+    "tests": "9newadversarialselectors UNRUN; missingstartup8/driver4/finalconsolidation remainrequired; prior6USB/16controls explicit9deboundedreuseonly",
+    "external_pack": "c957c00d4147196a64528d54dfd7acd6cbcc36cc7830f5c591ca4ee6c91ac69b source-onlyPASS, notGittracked/notexecuted,13actualmodelcopiesneedstreamauthentication; oldomissionsnotaccepted",
+    "acceptance": "sourceonly; no testcase/provider/model/full-family/retirement/device/release credit; allhistoricalsource/Cargo/lockmapsretained"
   }
 }
