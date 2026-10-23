@@ -4,6 +4,49 @@ Work is unfinished. The user requests moving to a fresh session to increase
 parallelism; this is a continuation of #296, never dev-md/#338. Reuse accepted
 unchanged evidence. Read this handoff and the linked evidence ledger first.
 
+## Current continuation: 23 October, 01:09 UTC
+
+Parent gpt-6.1-sol/ultra and Sol-only delegation remain in effect. Current source
+is cfd7583ab1aab6cece048f9c1d64a144956ec906; PR343 still targets dev and its
+feature ref remains adff0392e. Primary dev-md and .omo are untouched. The actual
+runner API shows one online, busy bin-actions runner; accepted agent slots do
+not establish CI execution capacity. No existing run is cancelled or restarted.
+
+Validation now reaches workflow0afcd10ea5772471345448dfbecd257a074c96f2.
+R3c3d7d46 contains compatible493733-byte Rust YAML and native109-fixture reuse;
+R4fd6af61 adds only the exact55084 normal/failure leaf; R5f231c50 adds two private
+APT leaves bound to77100. R6changes only the focused publisher leaf. Other source
+and once-workflow bytes are preserved; cfd is not an added parent yet. Compatible
+Rust YAML produces no invalid-file run here; branch filtering excludes its full
+43-job execution, which is not claimed passed.
+
+New actual failures: policy39875010264/source20d and normal39878564969/source55084
+fail their focused validation steps. Separate Sol workers own exact-log/artifact
+diagnosis. Policy39876347459 and109reuse39876347504 remain queued; do not replay
+original109 data. Startup39875010351, loggingR4 39875010155, private main39880729667
+and controllers39880729716 remain queued. Loader39871081195 is still queued;
+the original two-leg WebRTC consumer stays held for its result.
+
+Publisher39875010300 gets through common-action loading, private dependencies,
+copied venv and source/provider pins, then fails its first all-source hash before
+Cargo: Git link entries were followed as ordinary files. Reviewed repair0c0dd659
+seals all19287entries, including7raw link objects, without omissions. Complete
+before/after equality and original functional commands remain mandatory; cleanup
+additionally requires validation success. It is published as39882326549, queued.
+
+Logger-peer R2 and conditional call3-observer recipes remain under independent
+review; the latter needs b2fc helper distribution refs before publication. AST
+caller R4 is rebased to cfd/current routing and under review. Both original
+changed-files Python sources remain. A proposed native CI source guard is unused:
+its actual roles are already Bash. A build_bundle.py Rust candidate is being
+prepared instead, with no caller/deletion/NAS deployment yet.
+
+Readonly IO observer39857487178 is admitted only as prerequisite observation:
+auditctl/ausearch/auditd and its log are absent; real event delivery is unmeasured.
+No unchanged IO workload rerun or host audit-policy change follows. Inventory
+stays288replaced-local/3partial/3289pending of3580. Family, source-retirement,
+device, protected merge and release completion remain unclaimed.
+
 ## Logger peer source completion candidate
 
 The eight-file whole-logger delta30e00a3a04438f97c2a50cd7b2262155966fe4d4eee121fe994635b3e544ab9e

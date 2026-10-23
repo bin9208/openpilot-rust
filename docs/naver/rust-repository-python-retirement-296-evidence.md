@@ -1,5 +1,50 @@
 # Repository-wide Python retirement: current evidence (#296)
 
+## Latest actual source gates and publisher repair (2026-10-23)
+
+At01:09UTC the actual job API reports policy39875010264/job120158369441 and
+Controls39878564969/job120170113681 failed at their focused steps on bin-actions,
+bound to20d0beee and55084e65. New failure analysis is separate from the earlier
+assertion/wire failures. Policy39876347459 and109reuse39876347504 remain queued;
+normal40/rejection27/health5 acceptance is still open.
+
+[Publisher39875010300](https://github.com/bin9208/openpilot-rust/actions/runs/39875010300)
+at9368/job120158370253 passes common job-temp/private dependencies/copied venv
+and9source/5provider checks. Its first all-source sha256sum follows link objects,
+fails on five directory aliases and dangling agnos, and follows docs/safety's
+target. No Cargo/policy/Clippy/emitter command is reached. Artifact12468261999,
+1104040bytes, SHA2564f842f24f574098873f87e3bacefeaa40485595cd57d88576b92086877ef014a,
+has all5ZIP CRCs/32proof seals checked; those are not functional test counts.
+
+Independent review of leaf d66bb394/recipe0c0dd659 finds no P1/P2. Complete
+19287-entry before/after manifests retain19280regular files using no-follow FD
+content/identity checks and7raw readlink objects with Git-blob/SHA256 bindings.
+No entry is excluded or link target traversed. Six other payloads, exact9368
+source and all original functional commands remain identical. Two metadata
+fields additionally require validation success before source/common cleanup.
+
+Workflow-only0afcd10ea5772471345448dfbecd257a074c96f2 publishes
+[39882326549](https://github.com/bin9208/openpilot-rust/actions/runs/39882326549),
+queued. Only the publisher once leaf changes:26082bytes, SHA256
+0c0dd659ba66fe22537fa39ee09329f867025ba0d9b840fa8cf22d2672a4e92f.
+C-YAML/500000-byte/native-type/run21000-unit/env-string/fixed-label/queue:max
+preflight passes;7run fields, maximum9087UTF16 units. Source and all other leaves
+remain exact f231c50; cfd is not added as a parent. Full source manifests and the
+previously unreached one guarded publisher caller still require actual evidence.
+
+R5f231c50 registers private main39880729667/controllers39880729716 at77100;
+both are queued. Source reviews close private-APT first-read/index authentication
+and cleanup findings, not actual provider/native equivalence. Normal R4fd6af61
+uses exact55084 recipe421e2698/canonicaldbb2f91, without original109 recapture.
+
+Readonly [39857487178](https://github.com/bin9208/openpilot-rust/actions/runs/39857487178)
+is admitted as observation only: artifact12461276589,15772bytes, SHA256
+d2fdcdfc789300f6fd4e105bcec2672675b222a2ccdcc83c489029e7aee3b65e,
+all62CRCs. All60queries complete:49exit0/5exit127/2exit2/4exit1. auditctl,
+ausearch, auditd and audit.log are absent. Current pkg-config queries succeed;
+actual audit event delivery and IO/ASan remain unrun. No kernel audit support,
+permission denial, historical provider equivalence or host repair is inferred.
+
 ## Logger peer and idle-observer native source completion (2026-10-23)
 
 Reviewed eight-target patch30e00a3a04438f97c2a50cd7b2262155966fe4d4eee121fe994635b3e544ab9e
