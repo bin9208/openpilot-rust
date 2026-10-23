@@ -4,6 +4,36 @@ Work is unfinished. The user requests moving to a fresh session to increase
 parallelism; this is a continuation of #296, never dev-md/#338. Reuse accepted
 unchanged evidence. Read this handoff and the linked evidence ledger first.
 
+## Latest actual results after the R8 batch
+
+Validation workflow6e900af8cd8938429e2c4c4cf2a3595361a7f5ba registers new policy
+39875010264, startup18+16 39875010351, publisher39875010300 and logging39875010155;
+Fast39875010421 is pending. All use bin-actions. The unchanged loader39871081195
+and all older jobs remain preserved. No queued result is acceptance. Rust
+registration39875009192 still creates zero jobs: generic YAML syntax at line1,
+replacing the earlier size error. Available libyaml C loaders reproduce an
+unexpected-colon failure at the compacted branches:[...] spelling, although
+pure Python YAML loaders accept it. Restoring the240 flow-value separators
+parses with both loader families; final compatible compaction is being reviewed.
+Do not publish the feature ref or call Rust registration complete.
+
+Controls39867224185 compiles past E0599 but8of9 rejection-controller tests fail
+while constructing their common fixture, before any signal, normal40 or
+rejection27/health5 execution. Original fixture data shows whole-valued70.0/130.0
+inputs become Int32 values70/130. The narrow wire repair accepts finite exact
+whole-valued f64 only for Int32 within i32 bounds; integer/boolean handling and
+all other scalar arms stay unchanged. The existing schema regression covers
+that observed gap and bounds. It is uncompiled/unrun; fixture109 and normal
+retry leaves stay held until reviewed fresh source/pin binding. No original109
+recapture is needed and no general pycapnp coercion equivalence is claimed.
+
+Estimator39866247802 is admitted within exact-c5e scope after parent review of
+all787ZIP CRCs, raw-pair byte identity and1196-row typed numeric data. It passes
+148302finite float comparisons with max error0, the independent audit and two
+direct-child signal controls. Historical10tests/Clippy/NumPy are reused. No
+current-parent, pre-import startup, compiler-ELF, ld.so.cache/native-mmap, full
+retirement or device acceptance is inferred; see the evidence ledger.
+
 ## Latest registration repair: R8
 
 Full routing source003eed6c078139280ac703920335e8334057a1c6 was published only
