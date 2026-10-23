@@ -1,5 +1,40 @@
 # Repository-wide Python retirement: current evidence (#296)
 
+## Reviewed recovery batch R11 is published (2026-10-23)
+
+Validation workflowbb6425454476abe106e247dfebc51795ed3da561 contains full source
+2a372557d8958cb38127959a583fa7522b9ed991 plus preserved diagnostic leaves.
+Eight reviewed changes register the expected nine workflows including Fast:
+policy39888221718; signal observer39888221726; call339888221640;
+main39888221700; controllers39888221653; peer39888221680;
+logging39888221765; bundle39888221708; Fast39888221694. Initial CLI workflow
+names briefly lagged; direct run APIs confirm the actual new names/jobs, not
+zero-job registration failures. No unchanged AST/ARM/publisher/startup/fixture
+leaf is altered or rerun by this publication. Feature PR343 remains held at adff.
+
+Policy recipee3370609 at fixed2a requires81previously failed parser-dependent
+cases, skips the two unchanged R3passes, runs three changed policy cases and
+preserves every previously unreached downstream command/Clippy/final source,
+tool and index comparison. Explicit reuse covers18unchanged contexts, with
+source-function/hash records; AST's native roster remains separately unadmitted.
+The result never declares complete policy acceptance in its scope receipt.
+All46selected current source paths match named overlay hashes; canonical common
+files cannot be overridden. No historical snapshot is silently rewritten.
+
+Other exact recipes are peer798117fe (runtime cap after compilation),
+call319325539 (same presence denial without rg), loggingdd440238 (one matched
+branch literal), nativeAPT1a7f92a2/46c72351 (one normalized native-list condition),
+signal3c5f12bf (one fresh no-run build/one failed test), bundle1e4697ae (18new
+tests/one committed context pair). Independent source reviews and publication
+field/syntax checks pass; no functional or retirement success is inferred.
+
+Subsequent actual snapshot shows original WebRTC x64/job120189322749 success;
+artifact admission is pending and ARM/job120189323000 stays queued. New peer
+39888221680 fails qualification/finalizer again; the new first cause is unknown.
+Fixture39876347504, AST39884478095, startup39875010351 and publisher39882326549
+also fail. Each has a fresh diagnosis owner; no old cause, timing workaround or
+whole-family/device success is assumed. Inventory remains288/3/3289 of3580.
+
 ## Native parser recovery: separate R3 failure (2026-10-23)
 
 [39876347459](https://github.com/bin9208/openpilot-rust/actions/runs/39876347459),

@@ -4,6 +4,38 @@ Work is unfinished. The user requests moving to a fresh session to increase
 parallelism; this is a continuation of #296, never dev-md/#338. Reuse accepted
 unchanged evidence. Read this handoff and the linked evidence ledger first.
 
+## Active publication R11, superseding earlier queued snapshots
+
+Implementation source2a372557d8958cb38127959a583fa7522b9ed991 is now remotely
+reachable through validation workflowbb6425454476abe106e247dfebc51795ed3da561.
+This batch uses the complete latest #296 source tree and preserves existing
+once leaves, replacing eight reviewed recipes. PR343's feature ref stays adff;
+no dev-md source/branch, protected merge, device or release action follows.
+
+New actual run IDs: policy39888221718, selected-signal observer39888221726,
+call339888221640, logger-main39888221700, controllers39888221653,
+peer39888221680, logging39888221765, bundle39888221708, Fast39888221694.
+The policy's exact2a scope is81latest parser-failed cases with2unchanged passes
+skipped,3changed policy cases and all previously unreached downstream checks.
+Eighteen unchanged case contexts are explicit reuse; the changed AST roster
+case still needs separate acceptance. All46current selected source hashes are
+checked through named overlays, without rewriting historical maps. Eight-field
+preflight, Bash-n and independent reviews pass; actual recovery remains unrun.
+
+Latest subsequent snapshot: original WebRTC x64/job120189322749 succeeds at027;
+Huygens owns artifact admission. ARM/job120189323000 stays queued, with no ARM
+or whole-runtime acceptance inferred. Fixture39876347504, AST39884478095,
+startup39875010351, publisher39882326549 and new peer39888221680 fail; owners
+have fresh exact-job diagnosis tasks. Do not assume earlier causes or recapture
+original109/old successful cohorts. Current source objects remain immutable.
+
+Carver's429 context is closed. Socrates later returns tool-not-found; its APT
+R3freeze/review is preserved and published. Hilbert takes publisher diagnosis;
+all continuing agents remain Sol. SSH R2/R3 source candidates stay scratch-only,
+with known compatibility gaps and no caller/deletion credit. A separate native
+port of the actual6047-byte embedded current-catalog export wrapper is being
+prepared; this gives no25-producer/model-compiler retirement credit.
+
 ## Actual native YAML scanner failure and alias-delimiter repair
 
 R3policy39876347459 is NOT the old aggregate-negative failure: at exact10ff,
