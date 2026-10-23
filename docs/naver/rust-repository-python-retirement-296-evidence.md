@@ -1,5 +1,73 @@
 # Repository-wide Python retirement: current evidence (#296)
 
+## Active R12 continuation: exact repairs and uncompleted gates
+
+Validation refab9fef829e8131c6d960ebf46e63c4ab538dbf23 now contains full
+implementationsourceda1a4490844fffc9a3800a44ccd86b76da858ed8. All15once
+leaves are preserved except four reviewed repairs; their actual new runs are
+policy39892674289, publisher39892674176, AST39892674217, peer39892674190, plus
+Fast39892674180. All are queued/pending at publication snapshot. FeaturePR343
+stays atadff targetingdev; no dev-md/protected merge/device/release action.
+
+Policy checks minimal2a childae7, exactlyone lagd test-source repair, while
+reusing91fresh passes plus18historical contexts explicitly. R6 review catches
+shallow-history P2; fixed recipe0b0e7f0311d34ed2ce1d5b33a3ff28620f6cd1b41255166177b6c8ef8c80100d
+adds only checkoutdepth2 so its fixed2a..ae7 one-path guard has both objects.
+All still-unreached downstream checks, strict Clippy plus lagd and final source/
+index/tool holds remain. Separate AST case is still pending.
+
+Peer checks minimalcfd child987 with explicit diagnostics postimage pin. R4
+b5c97a7c6ff542474d3390b708133eebb922167e35a7c9611c73d0d7efedf6ae
+reseals the observer and both SOURCE bindings; owner/finalizer/memory/file-cap/
+new11cases/barrier/INT/TERM/postwriteUNREACHED_HOLD stay exact. Independent
+peer-987-r4-review-sol closes the source-binding delta, not functional execution.
+Fixture minimal55084 child150 is also now reachable, but its explicit five-pass
+reuse-aware/native109/full-schema audit recipe is still being prepared.
+
+AST6cd5 remains fixedf01, with only metadata unicodedata preload and reject/record
+provider-delta handling. Publisher e6d7 remains fixed9368, with only five explicit
+Rustup Cargo dispatches. Their scoped reviews close; all unrun functional and
+final closure gates remain. None of the queued old jobs was cancelled/rebound.
+
+Additional actual R11 evidence: logging39888221765 builds both Rust helpers and
+completes its new C++ context, recording249C++packets/694responses (499/1391all).
+Then complete diagnostics sealing exceeds30MiB. Artifact12474585495/5109880B/
+SHAedf84c9e49ee8f2abf5a878f90da73a6be3a1b08621c850769ebcbcf726025f4
+has754valid CRCs but is a partial public copy without final content seals. The
+cleanup step succeeds as a no-op because CAPTURE_SEAL=failure; deletion is not
+inferred. Recover and fully seal the existing owned raw capture; no successful
+context replay, R4/lifecycle reuse or whole-source/provider acceptance.
+
+Selected-signal39888221726 proves the no-run build and63stable held inputs, but
+its single test again hits10s readiness before health-peer exec or any deliberate
+INT/TERM. Trace confirms native fixture file close9.750850s after CLI exec, then
+assertion10.009496s after exec; exact userspace cause/performance is unproved.
+No timeout, signal policy, projection bypass or speculative runtime fix follows.
+
+Bundle39888221708 reaches no source/build/test:15.517GB available is1.126GB
+short of its unchanged16.643GB operation estimate. Its partial failure envelope
+is authenticated. Cache recovery starts with read-only metadata for literal old
+#296peer target/Cargo registry/Git caches, current ownership/proc/allocated bytes;
+no global, source, proof, log or provider deletion and no permission pause. An
+empty old deletion manifest reflects unavailable historical directory identities,
+not missing user authorization; bridge current ownership before any cache-only
+cleanup. Bundle stays held until actual capacity is sufficient.
+
+Logger MAIN's stale script-pin repair independently closes, but its77100shared
+diagnostics preimage exactly equals the observed peer E0507 source. Minimal
+77100 childd77efbc9f878b2046f7234e907bece4708ebc956 carries only that reviewed
+clone; a fully rebound main recipe is being prepared rather than rediscovering
+the known shared compile failure. Queued controller77100 remains unchanged.
+
+Maxwell and Bacon subsequently hit service429 and are closed; parent owns peer
+R4, Feynman takes fixture150 continuation. Jason429 is closed and its SSH review
+was handed to Schrodinger. All remain Sol; no Astra fallback. SSH R3 digit guard
+review passes its narrow source scope, with broader compatibility holds and no
+tracked integration. Current-catalog wrapper source is committed atda1 with
+11unrun tests and an empty optional feature; its focused Actions gate is under
+preparation. All originals/embedded Python remain and288/3/3289 inventory stays.
+
+
 ## Native current-catalog wrapper source candidate
 
 Reviewed patch3b684ae91832acd0717701d322f7f72bb80b6f0add81e94aa860ea8f6e1f8317
