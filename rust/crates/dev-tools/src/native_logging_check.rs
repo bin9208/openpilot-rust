@@ -2,13 +2,13 @@
 //! Only validated callsite, realtime and Rust provenance fields are projected;
 //! all other JSON bytes, their ordering and console bytes compare exactly.
 use crate::{
-    argparse_scan::{scan_os_required_first, OptionSpec},
+    argparse_scan::{OptionSpec, scan_os_required_first},
     qa_process::CommandSpec,
-    seal::{digest, Result},
+    seal::{Result, digest},
 };
-use base64::{engine::general_purpose::STANDARD, Engine};
+use base64::{Engine, engine::general_purpose::STANDARD};
 use regex::Regex;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::{
     collections::BTreeMap,
     ffi::OsString,
@@ -21,6 +21,7 @@ use std::{
 };
 mod lifecycle;
 pub use lifecycle::Interrupted;
+mod retained;
 mod socket;
 mod transport;
 const STRIPPED: [&str; 7] = [
@@ -33,11 +34,7 @@ const STRIPPED: [&str; 7] = [
     "LOGPRINT",
 ];
 fn require(ok: bool, message: &str) -> Result<()> {
-    if ok {
-        Ok(())
-    } else {
-        Err(message.into())
-    }
+    if ok { Ok(()) } else { Err(message.into()) }
 }
 fn realtime() -> Result<f64> {
     Ok(SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs_f64())
@@ -453,9 +450,8 @@ fn check_response(response: &Value, original: bool) -> Result<()> {
     }
     Ok(())
 }
-fn compare(source: &Path, native: &Path, root: &Path, output: &Path) -> Result<Value> {
-    let env = config();
-    let modes = [
+fn console_modes() -> [Option<&'static str>; 7] {
+    [
         None,
         Some(""),
         Some("debug"),
@@ -463,75 +459,75 @@ fn compare(source: &Path, native: &Path, root: &Path, output: &Path) -> Result<V
         Some("warning"),
         Some("error"),
         Some("DEBUG"),
-    ];
-    let mut total = 0;
-    for (i, mode) in modes.iter().enumerate() {
-        let mut env = env.clone();
-        if let Some(mode) = mode {
-            env.insert("LOGPRINT".into(), (*mode).into());
-        }
-        if i % 2 == 1 {
-            for (key, value) in [
-                ("DONGLE_ID", ""),
-                ("GIT_ORIGIN", "fixture-origin"),
-                ("GIT_BRANCH", "한글/branch"),
-                ("GIT_COMMIT", "fixture-commit"),
-                ("MANAGER_DAEMON", "fixture-daemon"),
-                ("CLEAN", ""),
-            ] {
-                env.insert(key.into(), value.into());
-            }
-        }
-        if i == 2 {
-            env.insert("CLEAN".into(), "0".into());
-        }
-        let mut records = Vec::new();
-        let mut consoles = Vec::new();
-        for (original, binary) in [(true, source), (false, native)] {
-            let receiver = Receiver::new()?;
-            let mut peer = Peer::start(
-                binary,
-                root,
-                &output.join(format!(
-                    "console-{i}/{}",
-                    if original { "source" } else { "rust" }
-                )),
-                &receiver.endpoint,
-                &env,
-                original,
-                false,
-            )?;
-            let mut packets = Vec::new();
-            for level in [0, 10, 20, 30, 40, 50] {
-                for text in [
-                    "plain",
-                    "한글😀é\u{2028}\u{2029}\"\\\u{8}\u{c}\n\r\t\u{1}",
-                    "\0tail",
-                    "prefix\0tail",
-                ] {
-                    check_response(
-                        &peer.command(json!({"op":"emit","level":level,"text":text}))?,
-                        original,
-                    )?;
-                    packets.push(normalize(&peer.receive(&receiver.socket)?)?);
-                }
-            }
-            require(
-                peer.command(json!({"op":"emit","level":40,"text":""}))?["sent"] == 0,
-                "empty message emitted",
-            )?;
-            receiver.empty()?;
-            peer.finish()?;
-            consoles.push(console(&peer)?);
-            records.push(packets);
-        }
-        require(records[0] == records[1], "native logging wire bytes differ")?;
-        require(
-            consoles[0] == consoles[1],
-            "native logging console bytes differ",
-        )?;
-        total += records[0].len();
+    ]
+}
+fn console_environment(
+    env: &BTreeMap<OsString, OsString>,
+    i: usize,
+    mode: Option<&str>,
+) -> BTreeMap<OsString, OsString> {
+    let mut env = env.clone();
+    if let Some(mode) = mode {
+        env.insert("LOGPRINT".into(), mode.into());
     }
+    if i % 2 == 1 {
+        for (key, value) in [
+            ("DONGLE_ID", ""),
+            ("GIT_ORIGIN", "fixture-origin"),
+            ("GIT_BRANCH", "한글/branch"),
+            ("GIT_COMMIT", "fixture-commit"),
+            ("MANAGER_DAEMON", "fixture-daemon"),
+            ("CLEAN", ""),
+        ] {
+            env.insert(key.into(), value.into());
+        }
+    }
+    if i == 2 {
+        env.insert("CLEAN".into(), "0".into());
+    }
+    env
+}
+fn console_case(
+    binary: &Path,
+    root: &Path,
+    output: &Path,
+    env: &BTreeMap<OsString, OsString>,
+    original: bool,
+) -> Result<(Peer, Vec<Vec<u8>>)> {
+    let receiver = Receiver::new()?;
+    let mut peer = Peer::start(
+        binary,
+        root,
+        output,
+        &receiver.endpoint,
+        env,
+        original,
+        false,
+    )?;
+    let mut packets = Vec::new();
+    for level in [0, 10, 20, 30, 40, 50] {
+        for text in [
+            "plain",
+            "한글😀é\u{2028}\u{2029}\"\\\u{8}\u{c}\n\r\t\u{1}",
+            "\0tail",
+            "prefix\0tail",
+        ] {
+            check_response(
+                &peer.command(json!({"op":"emit","level":level,"text":text}))?,
+                original,
+            )?;
+            packets.push(normalize(&peer.receive(&receiver.socket)?)?);
+        }
+    }
+    require(
+        peer.command(json!({"op":"emit","level":40,"text":""}))?["sent"] == 0,
+        "empty message emitted",
+    )?;
+    receiver.empty()?;
+    peer.finish()?;
+    Ok((peer, packets))
+}
+fn rate_timestamps() -> Vec<u64> {
     let mut timestamps: Vec<u64> = vec![
         0,
         0,
@@ -553,39 +549,86 @@ fn compare(source: &Path, native: &Path, root: &Path, output: &Path) -> Result<V
         0,
         1,
     ]);
+    timestamps
+}
+fn rate_case(
+    binary: &Path,
+    root: &Path,
+    output: &Path,
+    env: &BTreeMap<OsString, OsString>,
+    original: bool,
+) -> Result<(Peer, Vec<Vec<u8>>)> {
+    let receiver = Receiver::new()?;
+    let mut peer = Peer::start(
+        binary,
+        root,
+        output,
+        &receiver.endpoint,
+        env,
+        original,
+        false,
+    )?;
+    let mut packets = Vec::new();
+    for timestamp in &rate_timestamps() {
+        let response = peer.command(
+            json!({"op":"rate","timestamp":timestamp,"text":format!("rate-{timestamp}")}),
+        )?;
+        require(response["dropped"] == 0, "rate message dropped")?;
+        let count = response["sent"]
+            .as_u64()
+            .ok_or("rate delivery count missing")?;
+        require(count <= 2, "rate emitted unexpected packet count")?;
+        for _ in 0..count {
+            packets.push(normalize(&peer.receive(&receiver.socket)?)?);
+        }
+    }
+    receiver.empty()?;
+    peer.finish()?;
+    Ok((peer, packets))
+}
+fn compare(source: &Path, native: &Path, root: &Path, output: &Path) -> Result<Value> {
+    let env = config();
+    let modes = console_modes();
+    let mut total = 0;
+    for (i, mode) in modes.iter().enumerate() {
+        let env = console_environment(&env, i, *mode);
+        let mut records = Vec::new();
+        let mut consoles = Vec::new();
+        for (original, binary) in [(true, source), (false, native)] {
+            let (peer, packets) = console_case(
+                binary,
+                root,
+                &output.join(format!(
+                    "console-{i}/{}",
+                    if original { "source" } else { "rust" }
+                )),
+                &env,
+                original,
+            )?;
+            consoles.push(console(&peer)?);
+            records.push(packets);
+        }
+        require(records[0] == records[1], "native logging wire bytes differ")?;
+        require(
+            consoles[0] == consoles[1],
+            "native logging console bytes differ",
+        )?;
+        total += records[0].len();
+    }
     let mut rates = Vec::new();
     for (original, binary) in [(true, source), (false, native)] {
-        let receiver = Receiver::new()?;
-        let mut peer = Peer::start(
+        let (_, packets) = rate_case(
             binary,
             root,
             &output.join(format!("rate/{}", if original { "source" } else { "rust" })),
-            &receiver.endpoint,
             &env,
             original,
-            false,
         )?;
-        let mut packets = Vec::new();
-        for timestamp in &timestamps {
-            let response = peer.command(
-                json!({"op":"rate","timestamp":timestamp,"text":format!("rate-{timestamp}")}),
-            )?;
-            require(response["dropped"] == 0, "rate message dropped")?;
-            let count = response["sent"]
-                .as_u64()
-                .ok_or("rate delivery count missing")?;
-            require(count <= 2, "rate emitted unexpected packet count")?;
-            for _ in 0..count {
-                packets.push(normalize(&peer.receive(&receiver.socket)?)?);
-            }
-        }
-        receiver.empty()?;
-        peer.finish()?;
         rates.push(packets);
     }
     require(rates[0] == rates[1], "rate-limit wire bytes differ")?;
     Ok(
-        json!({"wire_records":total,"logprint_cases":modes.len(),"rate_inputs":timestamps.len(),"rate_records":rates[0].len()}),
+        json!({"wire_records":total,"logprint_cases":modes.len(),"rate_inputs":rate_timestamps().len(),"rate_records":rates[0].len()}),
     )
 }
 struct HeldBinary {
@@ -639,8 +682,12 @@ impl HeldBinary {
     }
 }
 pub fn cli() -> Result<()> {
+    let args = std::env::args_os().skip(1).collect::<Vec<_>>();
+    if retained::selected(&args) {
+        return retained::cli(&args[1..]);
+    }
     let parsed = scan_os_required_first(
-        &std::env::args_os().skip(1).collect::<Vec<_>>(),
+        &args,
         &[
             OptionSpec::value("--binary", true),
             OptionSpec::value("--builder", true),
@@ -650,7 +697,9 @@ pub fn cli() -> Result<()> {
         ],
     )?;
     if parsed.help {
-        println!("usage: check-native-logging --binary BINARY --builder BUILDER --output OUTPUT [--root ROOT] [--reference PREBUILT_CPP]");
+        println!(
+            "usage: check-native-logging --binary BINARY --builder BUILDER --output OUTPUT [--root ROOT] [--reference PREBUILT_CPP]"
+        );
         return Ok(());
     }
     let _cancel = lifecycle::Cancel::new()?;
