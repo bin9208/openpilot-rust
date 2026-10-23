@@ -116,7 +116,8 @@ jobs:
         working-directory: ${{ env.DIAG_SOURCE }}
       - name: Check CI routing and upstream synchronization guards
         run: |
-          python -m unittest discover -s tools/ci/tests -v
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 6144
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --no-default-features --features changed-files-native --test changed_files_caller
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --lib \
             --test ci_workflow_policy --test ci_rust_isolation --test ci_disk_bootstrap --test ci_process_probe \
             --test panda_oracle_build --test upstream_sync --test native_build_closure --test updated_process_check \
@@ -876,7 +877,10 @@ jobs:
       - name: Check changed Python syntax and whitespace
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
-        run: python tools/ci/check_changed_files.py
+        run: |
+          set -euo pipefail
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 6144
+          cargo run --quiet --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --no-default-features --features changed-files-native --bin check-changed-files --
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         working-directory: ${{ env.DIAG_SOURCE }}
       - name: Fast navigation regressions

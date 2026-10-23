@@ -1,5 +1,201 @@
 # Repository-wide Python retirement: current evidence (#296)
 
+## Native parser recovery: separate R3 failure (2026-10-23)
+
+[39876347459](https://github.com/bin9208/openpilot-rust/actions/runs/39876347459),
+source10ff/job120162770156, fails differently from20d: ci_rust_isolation has
+2passes/81failures at its shared YAML parse, before policy assertions; subsequent
+ci_workflow_policy/downstream/Clippy/final seals are unreached. Artifact12471223219
+is162309bytes, SHA1f780f6d65a0b9848e100814b67425ffa9a98efacbfed32970a20100d1b152e2,
+all19CRCs verified. Actual log SHA18504a0046c5c2c2dc13af1fdaef70c2677aaab664c8eef873e769d6f7c95493.
+The two passes are inherited_side_effects_are_source_repository_only and
+retired_bluetooth_helpers_are_absent_at_checkout; they are not silently rerun.
+
+First error: unknown anchor at byte5523/line5/column945, pointing to the first
+*zz: key. Source inspection of locked yaml-rust2 0.13.0 shows scan_anchor accepts
+colon as an anchor character; it therefore looks up zz: rather than declared zz.
+The earlier event-walker review did not qualify this scanner boundary. No Rust
+parser bugfix or dependency update is needed for the source representation.
+
+Adding one space before each of476alias-key colons gives494209bytes, SHA256
+5974e9f3de6e7e154440de63856816f2d84e2c8e1812ae5bcabe7e1bce60096b.
+Parent verifies exact replacement and four Pure/C Base/Safe complete-object
+equalities. All43jobs/1106steps/758run strings and guards remain unchanged. The
+existing raw-scalar/anchor regression adds the corresponding nested key/value
+case. Direct scoped rustfmt/diff pass; native parsing/testing remains unrun.
+The next policy leaf must qualify failed-parser recovery, new raw-alias case,
+positive policy and corrected negative control plus unreached downstream checks;
+actual source/prerequisite hashes must select the new overlay. Historical102
+passes at20d do not erase this newer failure. No functional/ARM/retirement credit.
+
+## Common loader admission and #502 capacity reuse (2026-10-23)
+
+[Loader39871081195](https://github.com/bin9208/openpilot-rust/actions/runs/39871081195)
+succeeds on bin-actions/job120145390655 at workflow/source8bd7575b. Parent admits
+artifact12470998483,3867bytes, SHA256
+65b3e29e62e1a4cfd212cc5fafb3be174419f642b8112272839f4664e589b827,
+all12CRCs/11member seals. Scope is remote job-temp, provisioned-shim rust-path
+and local-arm finish-entry loading only. No guest/foundation/runtime replay.
+This releases the original WebRTC two-leg caller publication; actual source
+HEAD must equal its workflow SHA, not historical donor8e39.
+
+The #502 owner's exact8afbdcf3598df7fe17f60acb2f1f0157e4d1addc
+[39873578269/job120153608354](https://github.com/bin9208/openpilot-rust/actions/runs/39873578269/job/120153608354)
+success is API verified: runner22/bin-actions,126seconds. Four present requested
+native files already equal acceptedc5e/6fea bytes with equivalent growth-only
+policy; no duplicate native patch or test replay. Foreign7766to8af leaves the
+four common helpers/lock unchanged; our different lock855f00e is retained.
+ARM foundation39853582741 is reused; foreign PR/module-ARM remain pending.
+
+Patch305a51cf changes only five fixed-floor guards in four active build helpers:
+locationd1GiB, paramsd1GiB twice, planner128MiB, GEOS exact bytes plus1MiB.
+All operation estimates/compiler/provider/ELF/ABI/owner behavior remain. Three
+full postimages equal8af; planner's guard matches while its #296 differences
+remain. AST/hash/diff checks pass, with no helper execution or successful suite
+replay. Other54retained floor/expectation paths stay catalogued, not fixed.
+Old queued source pins/data are unchanged; no dev-md merge or retirement credit.
+
+## Committed bundle builder Rust source candidate (2026-10-23)
+
+Final patch82d4f4bb52a0abcd741d90de954c1692742c81a0b3bd9f1bbe0b8862c180ff93
+adds a native library, build-route-vault-bundle CLI and17integration tests plus
+1library test. Independent review admits exactly this patch, rather than earlier
+09f42 bytes. Parent verifies all three exact postimages, direct rustfmt/diff and
+additive Cargo/lib semantics. One empty optional feature/bin/test/module only;
+dependencies and lock855f00e stay unchanged. A separate contract overlay seals
+current files without rewriting historical AST/cfd prerequisite maps.
+
+Original51-line builder SHA05551fc470864a4c70758a66b1a156c2b6d9e95e8deeb1f2a74ac13fb5259aa9
+supplies13ordered selectors/7fixed files. Source preserves mkdir before ref
+validation, original ls-tree text/suffix filtering, raw committed blobs including
+link bodies, parent creation before show and capture before output truncation.
+Failure retains prior files/parents without marker; marker/stdout follow all
+copies. No local type/build/test/Clippy/original run. Compiled checkout-root and
+UTF8 text boundaries are explicit. Functional CLI, committed/dirty/partial-error/
+lifecycle and same-ELF absence acceptance remain required. Current Python
+workflow/source stays; no retirement credit, radar/DBC behavior, Docker/image
+publication or NAS deployment changes follow.
+
+## Actual policy negative-control defect and normal signal observation gap
+
+Policy39875010264/source20d reports83ci_rust_isolation passes and19policy passes;
+one integration aggregate negative-control assertion fails. Its mutation appends
+standalone true after a failing test under Bash-e; that still exits fail-closed.
+The checker correctly accepts it. Source repair58804b36 changes only the case
+name and mutation to test "$JETLINK" = success || true, which actually masks the
+failure and must be rejected. Production workflows/checker/ARM/ownership behavior
+stay exact. Current queued10ff still has the old assertion; it is not cancelled.
+The changed assertion and previously unreached downstream gates require Actions;
+102unchanged passing cases are not replayed solely for this two-line repair.
+Artifact12470986127 is161515bytes, SHA256
+d0f03b0fcbcdbadc5520d6be32087764b3cf9d85e4568140ed2a930ad8180879;
+all19CRCs/30source seals match. Post-failure final seals are absent, not inferred.
+
+Normal39878564969/source55084 reports7passes/1failure/1filtered. The first signal
+test times out waiting10s for peer.pids while the CLI is still alive, before INT
+or TERM delivery. The old fixture-integer error is absent. No normal40/rejection27/
+health5 capture or Clippy runs. Internal phase/cause is unproved: the test's
+TempDir teardown removed stderr/marker evidence. Workflow-level source cleanup
+is correctly skipped after failed validation. Artifact12470529134,38023bytes,
+SHA2560a8588172a04d3b1dd480af1141bdee70e8ad2fae09144c65c0bbd3629c342f6,
+has3CRCs/17regular-file seals checked. No peer closure or OOM cause is inferred.
+The next bounded observer must build a fresh exact55084 executable in Actions
+and trace only that one failed test, preserving phase/error/ownership evidence.
+No timeout widening, seven-pass replay, original109 recapture or source fix is
+justified yet. All normal comparison and public cancellation gates remain open.
+
+## Maintained changed-files caller source rebase (2026-10-23)
+
+Independent R4 review admits maintained patch c5e0e5bf74438d891a7d4c17dac20d69ec16f2f223630583fd6788bca3b97120:
+two Fast command bodies replace the original changed-files CLI and its sole
+initial-push unittest; the native suite remains independently counted. Four
+caller tests preserve multi-commit initial-push checking and add current-worktree,
+whitespace-first and mandatory caller-policy regressions. One explicit
+changed-files-native test registration is added; previous complete Cargo
+semantics, loggerd overlay, lock855f00e and Rust workflowa8c7d7d5 stay unchanged.
+Current Cargo is05f64cc9c39972e58d2ddec4add18947d1320fc2522710d8ca5a146e3e86d77d.
+Direct scoped rustfmt, Bash-n for Fast commands, YAML/TOML/diff and frozen five
+postimages pass. No Cargo/type/test/Clippy or helper execution occurs locally.
+
+The new AST overlay preserves all historical routing/peer/model prerequisite
+maps and binds six changed files/current prerequisite hashes separately. Both
+original Python sources are retained, with no retirement credit. Independent
+recipe review finds one cleanup P2 in both R4 leaves: upload/quiescence alone
+can delete failed source. R5 must require qualification success without weakening
+the exact global trust guards. Actual four tests/one affected policy case/twelve
+absence negatives/held inputs/providers/owned exec evidence and subsequent exact
+two-deletion verification remain open. Historical14proof/eight provider reuse
+does not itself admit this new caller source.
+
+## Latest actual source gates and publisher repair (2026-10-23)
+
+At01:09UTC the actual job API reports policy39875010264/job120158369441 and
+Controls39878564969/job120170113681 failed at their focused steps on bin-actions,
+bound to20d0beee and55084e65. New failure analysis is separate from the earlier
+assertion/wire failures. Policy39876347459 and109reuse39876347504 remain queued;
+normal40/rejection27/health5 acceptance is still open.
+
+[Publisher39875010300](https://github.com/bin9208/openpilot-rust/actions/runs/39875010300)
+at9368/job120158370253 passes common job-temp/private dependencies/copied venv
+and9source/5provider checks. Its first all-source sha256sum follows link objects,
+fails on five directory aliases and dangling agnos, and follows docs/safety's
+target. No Cargo/policy/Clippy/emitter command is reached. Artifact12468261999,
+1104040bytes, SHA2564f842f24f574098873f87e3bacefeaa40485595cd57d88576b92086877ef014a,
+has all5ZIP CRCs/32proof seals checked; those are not functional test counts.
+
+Independent review of leaf d66bb394/recipe0c0dd659 finds no P1/P2. Complete
+19287-entry before/after manifests retain19280regular files using no-follow FD
+content/identity checks and7raw readlink objects with Git-blob/SHA256 bindings.
+No entry is excluded or link target traversed. Six other payloads, exact9368
+source and all original functional commands remain identical. Two metadata
+fields additionally require validation success before source/common cleanup.
+
+Workflow-only0afcd10ea5772471345448dfbecd257a074c96f2 publishes
+[39882326549](https://github.com/bin9208/openpilot-rust/actions/runs/39882326549),
+queued. Only the publisher once leaf changes:26082bytes, SHA256
+0c0dd659ba66fe22537fa39ee09329f867025ba0d9b840fa8cf22d2672a4e92f.
+C-YAML/500000-byte/native-type/run21000-unit/env-string/fixed-label/queue:max
+preflight passes;7run fields, maximum9087UTF16 units. Source and all other leaves
+remain exact f231c50; cfd is not added as a parent. Full source manifests and the
+previously unreached one guarded publisher caller still require actual evidence.
+
+R5f231c50 registers private main39880729667/controllers39880729716 at77100;
+both are queued. Source reviews close private-APT first-read/index authentication
+and cleanup findings, not actual provider/native equivalence. Normal R4fd6af61
+uses exact55084 recipe421e2698/canonicaldbb2f91, without original109 recapture.
+
+Readonly [39857487178](https://github.com/bin9208/openpilot-rust/actions/runs/39857487178)
+is admitted as observation only: artifact12461276589,15772bytes, SHA256
+d2fdcdfc789300f6fd4e105bcec2672675b222a2ccdcc83c489029e7aee3b65e,
+all62CRCs. All60queries complete:49exit0/5exit127/2exit2/4exit1. auditctl,
+ausearch, auditd and audit.log are absent. Current pkg-config queries succeed;
+actual audit event delivery and IO/ASan remain unrun. No kernel audit support,
+permission denial, historical provider equivalence or host repair is inferred.
+
+## Logger peer and idle-observer native source completion (2026-10-23)
+
+Reviewed eight-target patch30e00a3a04438f97c2a50cd7b2262155966fe4d4eee121fe994635b3e544ab9e
+adds the dedicated check-loggerd-peer CLI, the remaining native idle-observer
+consumer tests (3functions/11cases), and an explicit false-validity barrier
+regression. Independent source review finds no concrete P1/P2. Current R4
+prebound receiver, peer idle observer, worker owner/cleanup bodies,100ms busy
+work, packet/time thresholds and all old lifecycle modes are preserved.
+New CLI results carry actual native worker argv and publish after owned closure.
+The new kernel cases use real sleep/zero-fd/live-fd poll, pipe read, futex and
+exited-child observations; their behavioral results remain unrun.
+
+Cargo TOML comparison removes exactly the new bin, test and rustix/pipe feature
+and restores the complete previous semantic object. New Cargo SHA256 is
+5422b9ff6fa8f4b3c285f1927195b432ad88206edd27f44096430dab7b0e193a;
+old9368 hash52c4a2d8 remains the historical prerequisite snapshot. The contract's
+current_parent_prerequisites and loggerd_peer_registration_overlay record the
+new current Cargo/eight source seals without relabelling historical evidence.
+Local direct rustfmt/TOML/diff checks pass; no Cargo/type/link/test was run.
+New compilation/scoped Clippy/kernel+CLI+barrier and actual signal/post-write
+cancellation/source/provider/owned-exec gates remain pending. All14Python sources
+and maintained caller selection remain. This gives no retirement, full logger
+family, ARM/QEMU kernel behavior or device acceptance.
+
 ## New Controls fixture wire failure and estimator admission (2026-10-23)
 
 [39867224185](https://github.com/bin9208/openpilot-rust/actions/runs/39867224185)

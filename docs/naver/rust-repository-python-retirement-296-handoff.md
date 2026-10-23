@@ -4,6 +4,171 @@ Work is unfinished. The user requests moving to a fresh session to increase
 parallelism; this is a continuation of #296, never dev-md/#338. Reuse accepted
 unchanged evidence. Read this handoff and the linked evidence ledger first.
 
+## Actual native YAML scanner failure and alias-delimiter repair
+
+R3policy39876347459 is NOT the old aggregate-negative failure: at exact10ff,
+ci_rust_isolation reports2passes/81failures before assertions. The first error
+is unknown anchor at byte5523, the first *zz: mapping key. ci_workflow_policy
+never runs. Parent admits artifact12471223219/162309bytes/all19CRCs; full failed
+log and exact source/workflow IDs are under parent/policy-7bb-targeted-r4.
+
+Locked yaml-rust2 0.13's scanner includes ':' in an anchor name. Its node walker
+can resolve key aliases, but the unseparated *zz: token never reaches that layer
+as the intended zz alias. Minimal source repair writes *zz : at all476sites;
+new Rust YAML is494209bytes/SHA5974e9f3de6e7e154440de63856816f2d84e2c8e1812ae5bcabe7e1bce60096b.
+Four Pure/C Base/Safe objects remain identical; no command/job/input changes.
+The existing raw-YAML regression adds a nested scalar key/value alias example.
+No local native parser/Cargo execution occurred. Actual parser recovery remains
+required before any source-policy/feature-push acceptance. Historical493733/f01
+seals remain historical; the new map must be selected explicitly in the next
+policy recipe. Current AST f01 and original ARM027 jobs are not cancelled.
+
+Carver hit service429 and was closed; the Sol/Ultra parent owns the policy
+continuation. No Astra fallback. Peer/call3/logging recipe-only repairs are ready
+for the next serialized batch; separate APT/normal-observer/bundle reviews run.
+
+## Current loader, AST and ARM continuation
+
+Loader39871081195 is bounded admitted:12CRCs/11seals, remote distribution loading
+only, guest=false. AST R5 cleanup P2/two parent branch-literal changes are closed.
+Strict binder admits fixedf01, not later HEAD. Combined validation workflow
+027819e4f60d5fb507132a2d1529c822ae8be02b adds only ASTaf2358ff and original
+WebRTC5935a00c; other tree bytes stay exactb22. AST checks out fixedf01; the
+two original WebRTC legs use actual027819e4 with HEAD==GITHUB_SHA. No original
+command/matrix/condition changes or consumer/guest execution success is inferred.
+
+Latest actual snapshot: fixture39876347504 runs; policy39876347459,
+logging39875010155, controllers39880729716, peer39882875060 and call339882972100
+fail. Family owners have fresh exact-job diagnosis lanes. Preserve queues,
+timing/provider checks and prior successful evidence. Startup/publisher/private
+main remain queued. Publication is not acceptance; no original109 recapture.
+
+#5028af success is API verified. Native policy already equals acceptedc5e/6fea;
+only patch305a51cf changes five guards in four active Python build helpers,
+retaining1GiB/128MiB/exact-bytes-plus1MiB growth and compiler/ABI checks. Three
+postimages equal8af; planner keeps #296 differences. Helpers/our lock unchanged.
+Other54retained floor/expectation paths stay catalogued; no wholesale8af merge,
+successful rerun, foreign PR/ARM completion or reply to the other chat.
+
+## Committed-source bundle builder native candidate
+
+Final three-source patch82d4f4bb is integrated after independent review of those
+exact bytes, superseding the earlier09f42 delivery. New build-route-vault-bundle
+retains13selectors/7fixed-file order, committed Git bytes, destination-before-ref
+effects and partial failure behavior. One empty opt-in feature/bin/test/module
+is additive; no dependency/lock changes. Eighteen authored tests remain unrun.
+Compiled source-root/UTF8 host boundaries are explicit, not full CLI parity claims.
+Python caller/source, radar/replay/runtime, Docker image and NAS stay untouched.
+Wegener prepares only the needed fresh Actions qualification, not publication.
+
+The new #502 handoff8af is verified successful by job120153608354/bin-actions;
+Socrates compares only remaining fixed-floor contracts against this #296 tree.
+No dev-md commit merge, changed ARM transport, successful-check replay or reply
+to the other chat is inferred from receiving that evidence.
+
+## Newly diagnosed actual policy/normal failures
+
+Policy39875010264 has102passes and one faulty negative-control mutation: trailing
+standalone true cannot mask a failed test under Bash-e. The two-line repair uses
+|| true; no production checker/workflow changes. Run its changed case, a positive
+check for changed workflow inputs and unreached downstream gates, reusing
+unchanged cases from the102case evidence. The AST roster is separate atf01. Queued10ff
+is unchanged and retains that defect. Keep f01ced15b as the separately fixed AST
+caller qualification source; its R5 binder must not silently move to later HEAD.
+
+Normal39878564969 has7passes/1failure/1filtered. Failure is a10s peer-marker wait,
+before any deliberate INT/TERM, with internal diagnostics lost to test TempDir
+teardown. No internal cause, normal40/rejection27/health5 or final closure is
+established. Bacon prepares only a fresh-source one-test phase observer; retain
+all deadlines and passing evidence. No broad rerun, original109 capture or
+production patch is supported. See the evidence ledger for artifact seals.
+
+## AST caller source integrated; fresh acceptance still pending
+
+Reviewed R4patch c5e0e5bf changes only two Fast command bodies, the affected
+policy roster function/constant, four new caller tests and paired user docs.
+One Cargo test registration is added; complete previous Cargo semantics,
+loggerd rustix/pipe, all18b2fc action refs, unchanged lock and493733-byte Rust YAML
+are preserved. Historical contract maps stay intact; ast_caller_registration_overlay
+seals the separate current source/prerequisites. Both Python originals remain.
+
+Independent review finds one recipe-only P2: successful packaging/upload may
+clean source after failed qualification. New R5 is being prepared with stable
+qualification IDs/outcome guards while retaining the exact trust/ownership rules.
+Do not publish R4 recipes. Fresh caller/private-absence checks, actual14-proof
+data reuse and later exact-two-deletion/source-only acceptance remain required.
+No local Cargo or functional execution and no inventory increment occurred.
+
+Logger-peer recipe5fec2fbb passes independent R2 run-size/resource-plan closure
+and universal preflight. Workflowa452cd6cc2467f9ece4738ff36af870e7d36cb32 adds only
+this leaf and cfd as an additional source parent; other tree bytes stay exact.
+The conditional call3 leaf bc182c4d is then published in workflowb22dcb468:
+exactadff source, unchanged six numerical members, b2fc helper refs and only a
+push-path trigger derivative. These are publication/source gates, not runtime
+passes. Original post-write cancellation and model-family drift remain open.
+
+## Current continuation: 23 October, 01:09 UTC
+
+Parent gpt-6.1-sol/ultra and Sol-only delegation remain in effect. Current source
+is cfd7583ab1aab6cece048f9c1d64a144956ec906; PR343 still targets dev and its
+feature ref remains adff0392e. Primary dev-md and .omo are untouched. The actual
+runner API shows one online, busy bin-actions runner; accepted agent slots do
+not establish CI execution capacity. No existing run is cancelled or restarted.
+
+Validation now reaches workflow0afcd10ea5772471345448dfbecd257a074c96f2.
+R3c3d7d46 contains compatible493733-byte Rust YAML and native109-fixture reuse;
+R4fd6af61 adds only the exact55084 normal/failure leaf; R5f231c50 adds two private
+APT leaves bound to77100. R6changes only the focused publisher leaf. Other source
+and once-workflow bytes are preserved; cfd is not an added parent yet. Compatible
+Rust YAML produces no invalid-file run here; branch filtering excludes its full
+43-job execution, which is not claimed passed.
+
+New actual failures: policy39875010264/source20d and normal39878564969/source55084
+fail their focused validation steps. Separate Sol workers own exact-log/artifact
+diagnosis. Policy39876347459 and109reuse39876347504 remain queued; do not replay
+original109 data. Startup39875010351, loggingR4 39875010155, private main39880729667
+and controllers39880729716 remain queued. Loader39871081195 is still queued;
+the original two-leg WebRTC consumer stays held for its result.
+
+Publisher39875010300 gets through common-action loading, private dependencies,
+copied venv and source/provider pins, then fails its first all-source hash before
+Cargo: Git link entries were followed as ordinary files. Reviewed repair0c0dd659
+seals all19287entries, including7raw link objects, without omissions. Complete
+before/after equality and original functional commands remain mandatory; cleanup
+additionally requires validation success. It is published as39882326549, queued.
+
+Logger-peer R2 and conditional call3-observer recipes remain under independent
+review; the latter needs b2fc helper distribution refs before publication. AST
+caller R4 is rebased to cfd/current routing and under review. Both original
+changed-files Python sources remain. A proposed native CI source guard is unused:
+its actual roles are already Bash. A build_bundle.py Rust candidate is being
+prepared instead, with no caller/deletion/NAS deployment yet.
+
+Readonly IO observer39857487178 is admitted only as prerequisite observation:
+auditctl/ausearch/auditd and its log are absent; real event delivery is unmeasured.
+No unchanged IO workload rerun or host audit-policy change follows. Inventory
+stays288replaced-local/3partial/3289pending of3580. Family, source-retirement,
+device, protected merge and release completion remain unclaimed.
+
+## Logger peer source completion candidate
+
+The eight-file whole-logger delta30e00a3a04438f97c2a50cd7b2262155966fe4d4eee121fe994635b3e544ab9e
+is integrated after independent Feynman source review with no P1/P2 finding.
+It adds check-loggerd-peer, three native integration tests/11cases and a barrier
+regression. Existing peer/receiver/R4 code and old lifecycle modes are preserved.
+Cargo adds only the dedicated bin/test and rustix/pipe for loggerd-check-native;
+lockfile/dependency versions and model feature semantics stay unchanged. The
+routing contract retains the historical9368 prerequisite snapshot and adds
+current_parent_prerequisites plus eight source seals for this additive overlay.
+Future policy recipes checking this newer source must use that current map;
+already queued exact10ff/20d recipes remain unchanged at their original sources.
+
+This is uncompiled source. New peer/kernel/barrier tests, scoped Clippy, actual
+CLI INT/TERM/post-write cancellation and interpreter-free owned execution remain
+required before caller activation. All14Python sources remain; no inventory or
+retirement credit follows. Maxwell's Actions plan gives the bounded new checks;
+existing successful original replay/protocol/provider cohorts are reused.
+
 ## Latest actual results after the R8 batch
 
 The next syntax-only representation is493733bytes, SHA256

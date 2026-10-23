@@ -142,6 +142,8 @@ pub mod registration_clock_check;
 pub mod registration_utf7_check;
 #[cfg(all(target_os = "linux", feature = "route-upload-native"))]
 pub mod route_upload_check;
+#[cfg(feature = "route-vault-bundle-native")]
+pub mod route_vault_bundle;
 #[cfg(feature = "sdk-receiver-native")]
 pub mod sdk_receiver;
 #[cfg(feature = "sdk-receiver-native")]

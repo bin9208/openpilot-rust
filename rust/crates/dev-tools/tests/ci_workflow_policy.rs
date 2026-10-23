@@ -5,6 +5,8 @@ use openpilot_dev_tools::ci_policy::{
 };
 use std::{collections::BTreeMap, fs, path::PathBuf};
 
+const CHANGED_FILES_REGRESSION: &str = "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --no-default-features --features changed-files-native --test changed_files_caller";
+
 fn root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..")
 }
@@ -102,6 +104,13 @@ fn yaml_raw_scalars_anchors_and_multiline_match_base_loader() {
         value["alias"],
         serde_json::json!({"channel":"001", "flag":"true"})
     );
+    // Separate an alias key from ':' so the scanner does not consume the
+    // delimiter as part of the anchor name (the maintained flow-YAML case).
+    let keys =
+        parse("{first: {&field working-directory: &folder source}, second: {*field : *folder}}")
+            .unwrap();
+    assert_eq!(keys["first"]["working-directory"], "source");
+    assert_eq!(keys["second"], keys["first"]);
 }
 
 #[test]
@@ -360,17 +369,19 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         assert_eq!(
             commands
                 .iter()
-                .filter(|line| line.starts_with(
-                    "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked"
-                ))
+                .filter(|line| {
+                    line.as_str() != CHANGED_FILES_REGRESSION && line.starts_with(
+                        "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked"
+                    )
+                })
                 .count(),
             1,
-            "{worker} must execute one native suite command"
+            "{worker} must execute one baseline native suite command"
         );
         let command = commands
             .iter()
             .find(|line| {
-                line.starts_with(
+                line.as_str() != CHANGED_FILES_REGRESSION && line.starts_with(
                     "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked",
                 )
             })
@@ -410,7 +421,7 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
     assert_eq!(seen.len(), expected.len());
     assert!(seen.values().all(|count| *count == 1));
     for command in [
-        "python -m unittest discover -s tools/ci/tests -v",
+        CHANGED_FILES_REGRESSION,
         "cargo test --manifest-path rust/Cargo.toml -p openpilot-service-tools --locked",
     ] {
         assert_eq!(
@@ -537,7 +548,7 @@ fn common_foundation_files_match_the_separate_pinned_source_contract() {
 }
 
 #[test]
-fn integration_aggregate_cannot_pass_failed_or_skipped_workers_with_a_trailing_true() {
+fn integration_aggregate_cannot_pass_failed_or_skipped_workers_with_or_true() {
     let mut files = inputs();
     let source = &mut files
         .iter_mut()
@@ -547,7 +558,7 @@ fn integration_aggregate_cannot_pass_failed_or_skipped_workers_with_a_trailing_t
     assert!(source.contains("test \"$JETLINK\" = success"));
     *source = source.replacen(
         "test \"$JETLINK\" = success",
-        "test \"$JETLINK\" = success\n          true",
+        "test \"$JETLINK\" = success || true",
         1,
     );
     assert!(check_workflow_policy(&files).is_err());

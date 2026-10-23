@@ -247,7 +247,12 @@
       "rust/crates/dev-tools/tests/ci_model_catalog_publisher.rs": "36c443db4b78f18df3fdf0fe757814043501eaa33ffcd9da828f39a15f05197d",
       "rust/crates/model-runtime/tests/catalog.rs": "f31059ddffc8007c513f230919e671d3c87b8f441be3deac29338969ca6db22a"
     },
-    "later_Maxwell_retention": "dd4390ec0 two reviewed output-pairs upload globs now retained; see parent_retention_rebase"
+    "later_Maxwell_retention": "dd4390ec0 two reviewed output-pairs upload globs now retained; see parent_retention_rebase",
+    "current_parent_prerequisites": {
+      "rust/crates/dev-tools/Cargo.toml": "5422b9ff6fa8f4b3c285f1927195b432ad88206edd27f44096430dab7b0e193a",
+      "rust/crates/dev-tools/tests/ci_model_catalog_publisher.rs": "36c443db4b78f18df3fdf0fe757814043501eaa33ffcd9da828f39a15f05197d",
+      "rust/crates/model-runtime/tests/catalog.rs": "f31059ddffc8007c513f230919e671d3c87b8f441be3deac29338969ca6db22a"
+    }
   },
   "composite_action_sha256": {
     ".github/actions/native-json11/action.yml": "91ac2497ca427ff2a375e7e1e50e6f05f3ce1ebd337e96ea81df598444fd7687",
@@ -360,7 +365,7 @@
     "source_commit": "77663836a95a9e2aff9aa66592d8b06ed9c87cd9",
     "layout": "four canonical implementation files plus source LICENSE, README.md and tools/ci/helper-provenance.json; no workflows/runtime/symlinks",
     "implementation_bytes": "all four source hashes remain authoritative and unchanged",
-    "status": "published by parent; inert Git tree verified; actual x64 caller-loading qualification pending",
+    "status": "bounded remote caller loading admitted39871081195; ARM guest/original consumer still requires new actual evidence",
     "consumer_change": "remote common uses ref only; no new embedded helper or cleanup machinery",
     "caller_file_sha256": {
       ".github/workflows/carrot-route-vault-publish.yaml": "b96a3d980a9516c36c25699baae730b780edffdea8b9af6272288de76de8208e",
@@ -381,6 +386,146 @@
     "tree": "ad19ac21f14835a7d9f066284f6eef5759b0d214",
     "provenance_path": "tools/ci/helper-provenance.json",
     "provenance_sha256": "17795c847534d81c7ba260d566d944e08c10ac624a0fde575d91f48f3f0d5039",
-    "regular_files": 7
+    "regular_files": 7,
+    "loading_admission": {
+      "run": 39871081195,
+      "job": 120145390655,
+      "artifact": 12470998483,
+      "archive_bytes": 3867,
+      "archive_sha256": "65b3e29e62e1a4cfd212cc5fafb3be174419f642b8112272839f4664e589b827",
+      "CRC_members": 12,
+      "verified_member_seals": 11,
+      "scope": "job-temp + provisioned-shim rust-path + local-arm finish entry only; guest=false; no foundation/runtime replay"
+    }
+  },
+  "loggerd_peer_registration_overlay": {
+    "status": "reviewed additive source; uncompiled/unrun; no caller activation or Python retirement",
+    "patch_sha256": "30e00a3a04438f97c2a50cd7b2262155966fe4d4eee121fe994635b3e544ab9e",
+    "review": "loggerd-whole-consumers-review-sol/HANDOFF.md noP1/P2 source-only",
+    "cargo_delta": "only check-loggerd-peer bin, loggerd_peer_check test and rustix/pipe in loggerd-check-native; all previous Cargo semantics restored by removing exactly these additions",
+    "historical_prerequisites": "unchanged_parent_prerequisites remains the original9368/R6 snapshot; current_parent_prerequisites seals the reviewed additive Cargo overlay for future source-policy qualification",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/Cargo.toml": "5422b9ff6fa8f4b3c285f1927195b432ad88206edd27f44096430dab7b0e193a",
+      "rust/crates/dev-tools/src/bin/check_loggerd_peer.rs": "d5665f8798ef6d3447677573a2c3e2dfcb941577b73d2108a8a4d5c3c1956b86",
+      "rust/crates/dev-tools/src/bin/loggerd_lifecycle_fixture.rs": "e5aa02df4ccc8e21ca3ae7b4e557954cbbe79cdbe4a56a57e69967fa78054a0e",
+      "rust/crates/dev-tools/src/loggerd_check.rs": "5cbf57768738388266671646cd328d1239498e0f10b4be1d00db53a91bb4b8b6",
+      "rust/crates/dev-tools/src/loggerd_check/fixtures.rs": "8bc3c3a7ba6dedf3596d72c9edbc03deec0f092fedc05b90806977ed76edfd0d",
+      "rust/crates/dev-tools/src/loggerd_check/input_completion.rs": "87b6ba5007ae132eaa4e104c4632918982029c212e7898afacc8d75c2ca16505",
+      "rust/crates/dev-tools/src/loggerd_check/owned.rs": "9e13cbaa4bb5613e555b135a2ba9ff78e4431e3dd49a4f2a702bd1ca2b5e5c0b",
+      "rust/crates/dev-tools/tests/loggerd_peer_check.rs": "b15537883be9c608e23e0d0c34e7534074775c90149838cfa09fd262dbd9609d"
+    },
+    "native_acceptance": "new3functions/11cases+barrier, scopedClippy, newCLI signal/postwrite/provenance gates pending; all14Python retained"
+  },
+  "ast_caller_registration_overlay": {
+    "reviewed_base": "cfd7583ab1aab6cece048f9c1d64a144956ec906",
+    "patch_sha256": "c5e0e5bf74438d891a7d4c17dac20d69ec16f2f223630583fd6788bca3b97120",
+    "review": "ast-caller-r4-review-sol/HANDOFF.md maintained source/registration noP1P2; separate recipe cleanup P2 pending",
+    "status": "source integrated; fresh caller/private absence and published two-deletion verification pending; originals retained",
+    "cargo_delta": "ONE changed_files_caller test registration only; all cfd Cargo semantic fields including loggerd rustix/pipe preserved",
+    "source_file_sha256": {
+      ".github/workflows/fast-checks.yml": "31646b3d7fa07f4df6d38d1fe03361718b3a4d1921acb3f5e69597e14eef4689",
+      "rust/crates/dev-tools/tests/ci_workflow_policy.rs": "c19bae45f1376f7c9db5c756aea9ab78ee80846598cf384b097be162e05395d8",
+      "docs/user/en/rust-port.md": "fb93b3ca20b21bae2a30b4754c88bc1ed269ea03fbb1b6826a28185e67555747",
+      "docs/user/ko/rust-port.md": "73474ba2eea0434ff355e3f281878555a7f81cb2d95727f3987043f94c624b08",
+      "rust/crates/dev-tools/tests/changed_files_caller.rs": "085487b0867f0012ef4f2edc000b6f43cc7d506d4f0a1189e1324eb2fbccb172",
+      "rust/crates/dev-tools/Cargo.toml": "05f64cc9c39972e58d2ddec4add18947d1320fc2522710d8ca5a146e3e86d77d"
+    },
+    "current_parent_prerequisites": {
+      "rust/crates/dev-tools/Cargo.toml": "05f64cc9c39972e58d2ddec4add18947d1320fc2522710d8ca5a146e3e86d77d",
+      "rust/crates/dev-tools/tests/ci_model_catalog_publisher.rs": "36c443db4b78f18df3fdf0fe757814043501eaa33ffcd9da828f39a15f05197d",
+      "rust/crates/model-runtime/tests/catalog.rs": "f31059ddffc8007c513f230919e671d3c87b8f441be3deac29338969ca6db22a"
+    },
+    "historical_maps": "R6/R7 action distribution and cfd loggerd peer/current_parent_prerequisites remain historical exact snapshots; future source-policy must explicitly select this newer overlay",
+    "accepted_reuse": "14 original/native codec/lifecycle proofs and eight GNU runtime provider seals unchanged; not new current-source acceptance",
+    "native_acceptance": "four caller tests/one affected policy case/12 absence negatives/held sources and provider equality/strict owned exec accounting pending; no Python deletion or retirement credit"
+  },
+  "aggregate_negative_control_repair": {
+    "failed_source": "20d0beee413efc4db7dc0b0b0c57ca97c5a4ba24",
+    "run": 39875010264,
+    "job": 120158369441,
+    "actual_result": "83ci_rust_isolation+19ci_workflow_policy pass; one false negative-control assertion fails",
+    "cause": "standalone trailing true does not mask failed test under Bash -e; change mutation to || true so it actually masks JETLINK failure",
+    "patch_sha256": "58804b365e87834fbf535dfafea265f529a6c83af1d7184ddc8abd8e8b8aa8ac",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/tests/ci_workflow_policy.rs": "bc8f3329cce93967880a77d5089988fb89899a36b2971a7152069eeff683a804"
+    },
+    "production_commands_changed": false,
+    "status": "unrun two-line assertion repair; only changed negative case plus previously unreached downstream gates need new execution",
+    "historical_maps": "AST overlay retains exact f01 source bytes; cfd/R6/R7 maps remain historical, not current acceptance"
+  },
+  "route_vault_bundle_registration_overlay": {
+    "reviewed_base": "cfd7583ab1aab6cece048f9c1d64a144956ec906",
+    "integration_base": "7bb17057cacdecb78e7b2fbfa2040fb1ebc3c775",
+    "patch_sha256": "82d4f4bb52a0abcd741d90de954c1692742c81a0b3bd9f1bbe0b8862c180ff93",
+    "review": "native-route-vault-bundle-review-sol/HANDOFF.md noP1P2 source-only; reviewed final82d4 patch supersedes earlier09f42 delivery",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/Cargo.toml": "0a2f3b64c8e49177e3a744713b924123fdd60d1a7e7858a718a49a579e3944f9",
+      "rust/crates/dev-tools/src/lib.rs": "97283013165afd0f64ba9ce2c985b9011db1084e80a7062b2c0e68d02bed4702",
+      "rust/crates/dev-tools/src/route_vault_bundle.rs": "8c21b56bd4846e6cfcee4a7c432cd64512d09fbf3fa2c6de39a796cead755fe2",
+      "rust/crates/dev-tools/src/bin/build_route_vault_bundle.rs": "f06bb9002bf3bd5f7bba0c459c36c7021ccf553179ebaade0b71ab4f26e25017",
+      "rust/crates/dev-tools/tests/route_vault_bundle.rs": "6847da3953cdf98ae1a222459ff39f8817d5ce784eb1361eb28b661f9b1dae5b"
+    },
+    "cargo_delta": "ONE empty opt-in feature, dedicated bin/test; exactly removing them restores all previous TOML semantics; no dependency or lockfile changes",
+    "status": "uncompiled/unrun native source; current Python caller and source retained; zero retirement credit",
+    "required_acceptance": "18 authored tests, original/native committed context/partial failures/CLI grammar/lifecycle, scopedClippy, latercaller/absence gates",
+    "limits": "compile-time source-root and UTF8 text host boundary; packages unchanged Python replay/viewer/runtime sources; no Docker/NAS/radar behavior changes",
+    "historical_maps": "ASTf01/cfd/R6/R7 source/prerequisite maps remain immutable historical snapshots"
+  },
+  "common502_8af_capacity_reuse": {
+    "source": "8afbdcf3598df7fe17f60acb2f1f0157e4d1addc",
+    "run": 39873578269,
+    "job": 120153608354,
+    "actual_API": "success on bin-actions22, 2026-10-23T01:08:50Zto01:10:56Z",
+    "native_policy": "four present requested Rust files equal acceptedc5e/6fea bytes; growth-only equivalent; absent radard package not imported",
+    "common_preserved": "four helpers and foreign Cargo.lock unchanged7766to8af; our different855f00e lock unchanged; ARM foundation39853582741 reused",
+    "minimal_patch_sha256": "305a51cf42531ce63b456a40ea6a99b860af48c22165f2b6dced01b37f96cc02",
+    "active_build_side_changes": [
+      {
+        "path": "rust/tools/build_locationd_oracle.py",
+        "before_sha256": "8dcabc38a7eda80d7b9701fb4eab96c9ed38555a8acb27782b2a37613e7a934e",
+        "after_sha256": "77319bc723a55a584cf21b3fdc7732c3c7d47f95a011d447dda0f233d17b6544",
+        "whole_file_equal8af": true
+      },
+      {
+        "path": "rust/tools/build_paramsd_oracle.py",
+        "before_sha256": "5ab14838746c809378d7e943e221a9b0aa86d97cd4145e2700442f91d40100a9",
+        "after_sha256": "12ffa68a79b0ccd84a143c4e46b91a5eef1745b531212311912b728b71132112",
+        "whole_file_equal8af": true
+      },
+      {
+        "path": "rust/tools/build_plannerd_acados.py",
+        "before_sha256": "9f18eda8bb1764f77227c5a4cbaf12258add346c7833abfcf545761ce71e8199",
+        "after_sha256": "cfeb3eb11974c4627964091595186e6fca86ae928a932aed0d71ec3a6bcc29af",
+        "whole_file_equal8af": false
+      },
+      {
+        "path": "rust/tools/carrot_man_stage_geos.py",
+        "before_sha256": "0733cad69693fc9e36df61ceb813947426fc1a05828c5edff831fef265ad4e34",
+        "after_sha256": "a6612e16f17e197db6d8419cd44dd706bdfeb361e37c232b9f4eadd90c6a5e64",
+        "whole_file_equal8af": true
+      }
+    ],
+    "scope": "five guards in four active original build helpers; original operation estimates retained; no compiler command/provider/ELF/ABI/ownership changes",
+    "limits": "54other retained Python floor/expectation paths remain catalogued, not blanket-fixed; old queued source pins unchanged; foreign exactPR/ARM still pending; no wholedevmd merge or source-retirement credit"
+  },
+  "yaml_key_alias_token_repair": {
+    "failed_source": "10ff9c626210e1de73a1c204084daee70e9b9965",
+    "run": 39876347459,
+    "job": 120162770156,
+    "artifact": 12471223219,
+    "artifact_bytes": 162309,
+    "artifact_sha256": "1f780f6d65a0b9848e100814b67425ffa9a98efacbfed32970a20100d1b152e2",
+    "actual_result": "ci_rust_isolation2pass81fail at common YAML parse before assertions; ci_workflow_policy unreached",
+    "first_error": "unknown anchor at byte5523 line5 column945, first *zz: key",
+    "source_diagnosis": "yaml-rust2 0.13 scanner includes colon in anchor names; *zz: is read as zz: while definition is zz; event walker alias support was not the failing layer",
+    "scope": "add476 spaces before alias-key delimiters; add matching key/value alias coverage in existing YAML regression; no parser library/runtime/workflow command changes",
+    "workflow_bytes": 494209,
+    "source_file_sha256": {
+      ".github/workflows/rust.yml": "5974e9f3de6e7e154440de63856816f2d84e2c8e1812ae5bcabe7e1bce60096b",
+      "rust/crates/dev-tools/tests/ci_workflow_policy.rs": "15b5086c7389a870a43abd712ac6323b45a0db98c156b89eec5bbf086d10ba68"
+    },
+    "local_checks": "four Pure/C Base/Safe objects equal; scoped rustfmt; no native parser/Cargo execution",
+    "historical_maps": "earlier493733/f01/cfd/R6/R7 seals remain historical; next source policy must explicitly select this new representation/CI test map",
+    "acceptance": "actual Rust parse and failed-case recovery remain required; R3 is NOT the same old negative-control failure"
   }
 }

@@ -17,6 +17,16 @@ execution scope, names blockers and completion gates, and reuses successful
 unchanged evidence. Historical per-file checkpoints below do not override that
 family execution policy or relax safety/final integration requirements.
 
+Current continuation (2026-10-23): keep Sol/Ultra parent and Sol-only independent
+workers. Admit the actual publisher all-source-link repair39882326549, diagnose
+new policy39875010264 and normal39878564969 failures, and reuse original109data.
+Review current-cfd AST caller and bounded logger-peer/call3 recipes independently
+before serialized publication. Private provider/startup/R4/loader jobs remain
+pending. The readonly IO observation does not authorize an unchanged workload
+rerun on missing audit prerequisites. Port the actual Python bundle builder;
+do not count a native replacement of already-Bash CI guards as Python progress.
+Keep all originals and the288/3/3289 inventory until actual caller/absence gates.
+
 
 Historical shared-oracle correction: full PR39552825804/job119065662638 found that
 `driving_daemon_reference.py` still imports `Commands` and `original_class` from

@@ -85,9 +85,13 @@ Linux용 `check-loggerd-native` 후보는 원본과 Rust 로거의 전체 기록
 파일시스템 비교 10개를 통과했습니다. 컴파일러·모델 실행과 생성기 호출 전환은
 별도의 검증 대상입니다.
 
-실험용 `check-changed-files`는 변경된 Python 소스 바이트를 Python 3.12 문법으로
-검사합니다. `openpilot-dev-tools`에서 `--features changed-files-native --bin check-changed-files`로
-빌드하고 저장소에서 실행하며, `--base SHA` 또는 `BASE_SHA`를 지정할 수 있습니다.
-레거시 인코딩 4개는 GNU libc iconv를 사용하고, 미지원 인코딩은 기능 미지원 오류로
-구분합니다. 인코딩·문법 동등성 검증 중이므로 유지 중인 문법 검사는 기존 Python 도구를
-계속 사용하며, 이 후보는 아직 소스 제거 수에 포함하지 않습니다.
+유지 중인 빠른 검사는 네이티브 `check-changed-files`로 Python 3.12 소스 문법과
+Git 공백 오류를 검사합니다. `openpilot-dev-tools`에서
+`--no-default-features --features changed-files-native --bin check-changed-files`로
+빌드합니다. 저장소에서 실행하며 `--base SHA` 또는 `BASE_SHA`를 지정할 수 있습니다.
+기준값이 없거나 빈 값 또는 모두 0이면 `origin/dev`를 기준으로 이슈 브랜치 전체를
+검사합니다. 공백 검사를 먼저 수행한 뒤 변경된 일반 `.py` 파일의 현재 작업 트리
+바이트를 파싱하며 심볼릭 링크와 삭제된 파일은 건너뜁니다. 취소 시 소유한 Git
+프로세스 그룹을 정리하고, 미지원 소스 기능은 명시적 실패로 처리합니다. 소스 제거는
+승인된 인코딩·수명주기 증거와 별도 삭제 검증을 요구합니다. 이 CI 전환은 기기 검증이나
+저장소 전체의 Python 제거 완료를 뜻하지 않습니다.

@@ -221,6 +221,7 @@ impl Owner {
         require(
             [
                 "check-loggerd-native",
+                "check-loggerd-peer",
                 "check-loggerd-io",
                 "check-loggerd-diagnostics",
                 "check-loggerd-log-pipeline",
@@ -267,7 +268,7 @@ impl Owner {
         }
         Ok(owner)
     }
-    fn check_cancelled(&self) -> Result<()> {
+    pub(super) fn check_cancelled(&self) -> Result<()> {
         if self.cancelled.load(Ordering::Relaxed) {
             Err(super::Interrupted(self.signal_number.load(Ordering::Relaxed) as i32).into())
         } else {
