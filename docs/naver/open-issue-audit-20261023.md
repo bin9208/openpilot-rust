@@ -567,3 +567,45 @@ Actions execution and normal dev integration still need to pass. #419 remains
 on its independent dev-md track and requires the common migration's checked
 integration, its own exact-source validation and sealed/public installer
 candidate delivery. No dev-md runtime source or history was imported into dev.
+
+
+## Later exact-head evidence and uploader PC follow-up
+
+At PR head `804730ab5a57b9c222a27f5e64cf9731803a852d`,
+[required generic aarch64 job120141047850](https://github.com/bin9208/openpilot-rust/actions/runs/39869685862/job/120141047850)
+passed on bin-actions. GNU/MUSL workspace and native Card, selfdrived, navigation,
+Panda, camera, encoder/codecs and UI/ION boundaries compiled. The static proclog
+QEMU self-test and three synthetic procLog frames passed. This is generic ARM
+software evidence; no AGNOS/device installation is claimed.
+Fast policy68/Wiki8 and mapped docs passed, as did focused diagnostic/core/tools,
+Maven75/strict Java-to-Python transport, Android SDK35/build-tools35 app tests,
+assemble/lint/strict APK inspection, Field162 and Production96 payload tests,
+and navigation-input403 tests. Full Rust/Integration and other focused/ARM
+consumer checks were still incomplete at this checkpoint.
+
+Independent build-side follow-ups retain their specific records:
+[#506 Python provider environment](issue-506-python-provider-path.md),
+[#508 Java tooling](issue-508-local-java-tooling.md), and
+[#509 growth admission](issue-509-space-policy.md).
+The original model-emission25GiB failure requires actual native workspace
+verification after the growth-only correction. Fast boundary tests and successful
+ARM consumers below25GiB do not substitute for that model test. Common #502's
+8af capacity probe is separately owned; its success is not a completed common
+PR merge or this candidate's full gate.
+
+The same head's [support job120141047822](https://github.com/bin9208/openpilot-rust/actions/runs/39869685862/job/120141047822)
+then passed834 Params-string cases and failed on a real unexpected uploader
+errorLogMessage. [#510](issue-510-uploader-pc-affinity.md) records the native
+unconditional affinity request on PC, the original Linux/not-PC guard and the
+scoped correction. The actual tested PR merge51dc30fc and branch804730ab share
+the same tree; merge provenance is correct. Full support acceptance remains
+strict and needs to pass after this real source correction.
+
+Earlier #404 cancellation and #408 rollback conclusions describe the old policy
+and exact source at that audit time. Later direct user instructions require all
+Actions on the registered local runner, including QEMU/PRoot ARM. The replacement
+#502 track owns this common migration; #404 remains superseded and #408 retains
+its completed historical rollback. Their issue headers now distinguish those
+phases. No unchanged successful check or other job is cancelled solely for that
+policy handoff. #419 still requires checked common integration, its own normal
+dev-md validation and actual sealed six-asset/public online-installer delivery.

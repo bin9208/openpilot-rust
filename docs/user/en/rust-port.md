@@ -30,6 +30,7 @@ acceptance remain separate.
 
 - Oversized torque DEBUG point lists are omitted with a diagnostic.
 - Failed completion markers for skipped upload files are reported and retried.
+- On a PC, the uploader leaves CPU placement unchanged, matching the original. Devices retain the existing cores 0..3 policy.
 - Raw-video write, flush and close failures retain the incomplete marker and report the error.
 - Encoders reconnect after a camera server replacement. A changed buffer layout requires a safe restart.
 - External Jetlink frames have no raw prediction tensor. With `SEND_RAW_PRED`,
