@@ -442,5 +442,23 @@
     "production_commands_changed": false,
     "status": "unrun two-line assertion repair; only changed negative case plus previously unreached downstream gates need new execution",
     "historical_maps": "AST overlay retains exact f01 source bytes; cfd/R6/R7 maps remain historical, not current acceptance"
+  },
+  "route_vault_bundle_registration_overlay": {
+    "reviewed_base": "cfd7583ab1aab6cece048f9c1d64a144956ec906",
+    "integration_base": "7bb17057cacdecb78e7b2fbfa2040fb1ebc3c775",
+    "patch_sha256": "82d4f4bb52a0abcd741d90de954c1692742c81a0b3bd9f1bbe0b8862c180ff93",
+    "review": "native-route-vault-bundle-review-sol/HANDOFF.md noP1P2 source-only; reviewed final82d4 patch supersedes earlier09f42 delivery",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/Cargo.toml": "0a2f3b64c8e49177e3a744713b924123fdd60d1a7e7858a718a49a579e3944f9",
+      "rust/crates/dev-tools/src/lib.rs": "97283013165afd0f64ba9ce2c985b9011db1084e80a7062b2c0e68d02bed4702",
+      "rust/crates/dev-tools/src/route_vault_bundle.rs": "8c21b56bd4846e6cfcee4a7c432cd64512d09fbf3fa2c6de39a796cead755fe2",
+      "rust/crates/dev-tools/src/bin/build_route_vault_bundle.rs": "f06bb9002bf3bd5f7bba0c459c36c7021ccf553179ebaade0b71ab4f26e25017",
+      "rust/crates/dev-tools/tests/route_vault_bundle.rs": "6847da3953cdf98ae1a222459ff39f8817d5ce784eb1361eb28b661f9b1dae5b"
+    },
+    "cargo_delta": "ONE empty opt-in feature, dedicated bin/test; exactly removing them restores all previous TOML semantics; no dependency or lockfile changes",
+    "status": "uncompiled/unrun native source; current Python caller and source retained; zero retirement credit",
+    "required_acceptance": "18 authored tests, original/native committed context/partial failures/CLI grammar/lifecycle, scopedClippy, latercaller/absence gates",
+    "limits": "compile-time source-root and UTF8 text host boundary; packages unchanged Python replay/viewer/runtime sources; no Docker/NAS/radar behavior changes",
+    "historical_maps": "ASTf01/cfd/R6/R7 source/prerequisite maps remain immutable historical snapshots"
   }
 }

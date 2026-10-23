@@ -1,5 +1,26 @@
 # Repository-wide Python retirement: current evidence (#296)
 
+## Committed bundle builder Rust source candidate (2026-10-23)
+
+Final patch82d4f4bb52a0abcd741d90de954c1692742c81a0b3bd9f1bbe0b8862c180ff93
+adds a native library, build-route-vault-bundle CLI and17integration tests plus
+1library test. Independent review admits exactly this patch, rather than earlier
+09f42 bytes. Parent verifies all three exact postimages, direct rustfmt/diff and
+additive Cargo/lib semantics. One empty optional feature/bin/test/module only;
+dependencies and lock855f00e stay unchanged. A separate contract overlay seals
+current files without rewriting historical AST/cfd prerequisite maps.
+
+Original51-line builder SHA05551fc470864a4c70758a66b1a156c2b6d9e95e8deeb1f2a74ac13fb5259aa9
+supplies13ordered selectors/7fixed files. Source preserves mkdir before ref
+validation, original ls-tree text/suffix filtering, raw committed blobs including
+link bodies, parent creation before show and capture before output truncation.
+Failure retains prior files/parents without marker; marker/stdout follow all
+copies. No local type/build/test/Clippy/original run. Compiled checkout-root and
+UTF8 text boundaries are explicit. Functional CLI, committed/dirty/partial-error/
+lifecycle and same-ELF absence acceptance remain required. Current Python
+workflow/source stays; no retirement credit, radar/DBC behavior, Docker/image
+publication or NAS deployment changes follow.
+
 ## Actual policy negative-control defect and normal signal observation gap
 
 Policy39875010264/source20d reports83ci_rust_isolation passes and19policy passes;

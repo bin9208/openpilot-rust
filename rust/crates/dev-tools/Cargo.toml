@@ -558,6 +558,7 @@ required-features = ["manager-catalog-tools-native"]
 [features]
 loggerd-check-native = ["rustix/pipe", "bootlog-artifact-native", "dep:openpilot-messaging", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq", "dep:zmq-sys", "rustix/net", "serde_json/float_roundtrip"]
 changed-files-native = ["dep:ruff_python_parser", "dep:ruff_python_ast", "dep:unicode_names2"]
+route-vault-bundle-native = []
 native-logging-check-native = ["dep:zmq", "dep:zmq-sys", "rustix/net", "serde_json/float_roundtrip"]
 deleter-check-native = []
 kalman-model-generator-native = []
@@ -2477,3 +2478,13 @@ required-features = ["loggerd-check-native"]
 name = "changed_files_caller"
 path = "tests/changed_files_caller.rs"
 required-features = ["changed-files-native"]
+
+[[bin]]
+name = "build-route-vault-bundle"
+path = "src/bin/build_route_vault_bundle.rs"
+required-features = ["route-vault-bundle-native"]
+
+[[test]]
+name = "route_vault_bundle"
+path = "tests/route_vault_bundle.rs"
+required-features = ["route-vault-bundle-native"]

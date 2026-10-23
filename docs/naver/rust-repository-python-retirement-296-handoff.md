@@ -4,12 +4,29 @@ Work is unfinished. The user requests moving to a fresh session to increase
 parallelism; this is a continuation of #296, never dev-md/#338. Reuse accepted
 unchanged evidence. Read this handoff and the linked evidence ledger first.
 
+## Committed-source bundle builder native candidate
+
+Final three-source patch82d4f4bb is integrated after independent review of those
+exact bytes, superseding the earlier09f42 delivery. New build-route-vault-bundle
+retains13selectors/7fixed-file order, committed Git bytes, destination-before-ref
+effects and partial failure behavior. One empty opt-in feature/bin/test/module
+is additive; no dependency/lock changes. Eighteen authored tests remain unrun.
+Compiled source-root/UTF8 host boundaries are explicit, not full CLI parity claims.
+Python caller/source, radar/replay/runtime, Docker image and NAS stay untouched.
+Wegener prepares only the needed fresh Actions qualification, not publication.
+
+The new #502 handoff8af is verified successful by job120153608354/bin-actions;
+Socrates compares only remaining fixed-floor contracts against this #296 tree.
+No dev-md commit merge, changed ARM transport, successful-check replay or reply
+to the other chat is inferred from receiving that evidence.
+
 ## Newly diagnosed actual policy/normal failures
 
 Policy39875010264 has102passes and one faulty negative-control mutation: trailing
 standalone true cannot mask a failed test under Bash-e. The two-line repair uses
-|| true; no production checker/workflow changes. Run only its changed case and
-unreached downstream gates, reusing the exact-source102case evidence. Queued10ff
+|| true; no production checker/workflow changes. Run its changed case, a positive
+check for changed workflow inputs and unreached downstream gates, reusing
+unchanged cases from the102case evidence. The AST roster is separate atf01. Queued10ff
 is unchanged and retains that defect. Keep f01ced15b as the separately fixed AST
 caller qualification source; its R5 binder must not silently move to later HEAD.
 
