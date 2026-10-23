@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "method": "reviewed exact full-helper pair; unchanged imported function source and Python3.12 AST checked independently, not parsed at native runtime",
+  "scope": "no-collector driver original dependency only; no numerical/provider equivalence claim",
+  "helper": "rust/tools/check_pipeline_reference.py",
+  "original_source_commit": "481ae6fec39ecc68786c4c2813b1205fb4567141",
+  "original_manifest_sha256": "1b8e6cea511e9f212cd7737688b3e2ec0a165b9ff985b492f0e98c4639f18380",
+  "historical_helper_sha256": "63e8d880b79603215d7319011809dd3b5ec6699dae1e10c79c105b7dc5cc258b",
+  "current_helper_sha256": "10dfebf12b3d8fa5abdaff7764e80c11468043349ce44f3cc4e57a59b30312e5",
+  "imported_functions": {
+    "execute": {
+      "source_sha256": "9155a41704768c70956ec18e8025e4383bea2599fa18d0420f2e086dde9dc389",
+      "ast_sha256": "b7e1b72786b58abacaa0bd988340d9d6c32b36e0ad4192d7033d8ba9f5e82866"
+    },
+    "write_tensor": {
+      "source_sha256": "353bc1d7933842aff3ec405f8ad1516c645ba73791bff9b00d9f4174222dc3d4",
+      "ast_sha256": "669a0c15180e30a1a91018c022cd7c8d1d24b10aa164e984adef6138c0b79986"
+    }
+  },
+  "original_checker_sha256": "ea1266dc395dab662319bd3637ad90440989db3d2937756dbf07fbb993520f5b",
+  "source_retirement_credit": 0,
+  "original_packet_bytes_modified": false,
+  "exporter_roster_modified": false
+}

@@ -46,6 +46,8 @@ pub use source_policy::{SourcePolicy, RETIRED};
 #[path = "driver_daemon_current_catalog.rs"]
 mod current_catalog;
 use current_catalog::CurrentCatalog;
+#[path = "driver_pipeline_dependency.rs"]
+mod pipeline_dependency;
 
 pub(crate) struct CurrentCatalogAdmission {
     catalog: CatalogPin,
@@ -1666,6 +1668,14 @@ pub fn run(options: &Options) -> Result<Value> {
         })
         .transpose()?;
     let mut exporter_rebindings = BTreeMap::<String, Value>::new();
+    let dependency_context = pipeline_dependency::Context {
+        root: &options.root,
+        original: &original,
+        checkout: &checkout,
+        retired_current_catalog: options.source_policy == SourcePolicy::RetiredDriver
+            && current_catalog.is_some(),
+    };
+    let mut dependencies = BTreeMap::<String, pipeline_dependency::Attestation>::new();
     let mut admit_source = |name: &str, historical: &str| -> Result<InputPin> {
         if let Some(pin) = current_catalog
             .as_ref()
@@ -1687,7 +1697,17 @@ pub fn run(options: &Options) -> Result<Value> {
         real_parent_chain(&options.root, name)?;
         let pin = InputPin::open(&options.root.join(name), false)?;
         if pin.digest != historical {
-            return Err(format!("driver source changed: {name}").into());
+            if name != pipeline_dependency::HELPER {
+                return Err(format!("driver source changed: {name}").into());
+            }
+            let attestation =
+                pipeline_dependency::attest(&dependency_context, name, historical, &pin)?;
+            if let Some(previous) = dependencies.insert(name.to_owned(), attestation) {
+                previous.verify()?;
+                if previous.receipt() != dependencies[name].receipt() {
+                    return Err("driver original-helper dependency records disagree".into());
+                }
+            }
         }
         Ok(pin)
     };
@@ -1775,6 +1795,9 @@ pub fn run(options: &Options) -> Result<Value> {
         for pin in &model_pins {
             pin.verify()?;
         }
+        for dependency in dependencies.values() {
+            dependency.verify()?;
+        }
         catalog.verify()?;
         verify_catalog_sources(&catalog, &model_hashes)?;
     }
@@ -1787,6 +1810,13 @@ pub fn run(options: &Options) -> Result<Value> {
             "catalog":catalog.receipt()}});
     if !exporter_rebindings.is_empty() {
         output["inputs"]["current_exporter_source_bindings"] = json!(exporter_rebindings);
+    }
+    if !dependencies.is_empty() {
+        output["inputs"]["reviewed_original_dependencies"] = dependencies
+            .iter()
+            .map(|(name, attestation)| (name.clone(), attestation.receipt()))
+            .collect::<serde_json::Map<String, Value>>()
+            .into();
     }
     let verify_inputs = || -> Result<()> {
         signals.check()?;
@@ -1819,6 +1849,9 @@ pub fn run(options: &Options) -> Result<Value> {
         }
         for pin in &model_pins {
             pin.verify()?;
+        }
+        for dependency in dependencies.values() {
+            dependency.verify()?;
         }
         catalog.verify()?;
         verify_catalog_sources(&catalog, &model_hashes)?;

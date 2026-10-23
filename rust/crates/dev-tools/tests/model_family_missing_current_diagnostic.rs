@@ -451,7 +451,11 @@ fn observe_missing_behavior_on_current_source() {
                 let result = run_fresh_family(
                     &cli,
                     &args,
-                    &proof.join(&label),
+                    &proof.join(if startup {
+                        format!("{label}-command")
+                    } else {
+                        label.clone()
+                    }),
                     Some(&inputs.family_receipt),
                     false,
                 );
