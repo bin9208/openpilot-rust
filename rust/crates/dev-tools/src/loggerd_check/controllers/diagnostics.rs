@@ -133,7 +133,7 @@ pub(super) fn drive(request: &Request) -> Result<Value> {
     let barrier = barrier.get_root::<event::Reader<'_>>()?;
     require(
         !barrier.get_valid()
-            && matches!(barrier.which()?, event::LogMessage(v) if v?.to_str()? == "logger-qa-barrier"),
+            && matches!(barrier.which()?, event::LogMessage(v) if v.clone()?.to_str()? == "logger-qa-barrier"),
         "final source stop barrier differs",
     )?;
     Ok(json!({"segments":logs.len(),"inputs":peer.inputs.len()}))
