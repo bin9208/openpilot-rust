@@ -8,7 +8,7 @@ mod auth;
 mod cli;
 pub mod http;
 mod integer;
-pub use auth::{config_root, get_token_at};
+pub use auth::{clear_token_at, config_root, get_token_at, set_token_at};
 pub use cli::{parse_options, parse_options_with_limit, setup_cli, ssh_cli};
 pub use integer::{
     parse_decimal, DecimalError, IntStringLimit, StartupLimitError, DEFAULT_MAX_STR_DIGITS,
