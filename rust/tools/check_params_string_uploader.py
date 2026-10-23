@@ -126,9 +126,15 @@ def main():
             command = (
               [sys.executable, str(Path(__file__).resolve()), '--source', str(config_path)] if original else [str(args.binary.resolve()), '--cycles', '1']
             )
+            host = {'platform': sys.platform, 'tici_marker_is_file': Path('/TICI').is_file(),
+                    'inherited_cpu_affinity': sorted(os.sched_getaffinity(0))}
             result = subprocess.run(command, env=environment, capture_output=True, timeout=30)
-            (destination / 'stdout.log').write_bytes(result.stdout)
-            (destination / 'stderr.log').write_bytes(result.stderr)
+            (destination / 'uploader-stdout.log').write_bytes(result.stdout)
+            (destination / 'uploader-stderr.log').write_bytes(result.stderr)
+            (destination / 'uploader-exit.json').write_text(json.dumps({
+              'argv': command, 'code': result.returncode, 'source': original,
+              'stdout': 'uploader-stdout.log', 'stderr': 'uploader-stderr.log', 'host': host,
+            }, indent=2) + '\n')
             expected_code = 1 if name.endswith('-id') and name != 'valid-id' else 0
             assert result.returncode == expected_code, (name, command, result.stderr)
             records = drain(peer, destination)

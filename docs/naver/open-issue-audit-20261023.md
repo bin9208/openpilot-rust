@@ -609,3 +609,9 @@ its completed historical rollback. Their issue headers now distinguish those
 phases. No unchanged successful check or other job is cancelled solely for that
 policy handoff. #419 still requires checked common integration, its own normal
 dev-md validation and actual sealed six-asset/public online-installer delivery.
+
+
+The failed uploader artifact also exposed [#511](issue-511-uploader-child-evidence.md):
+collector and uploader child stderr shared one pathname. Distinct child output
+files and a pre-assertion exit/platform receipt now preserve both observations.
+This is independent of #510's affinity defect; all runtime assertions stay strict.
