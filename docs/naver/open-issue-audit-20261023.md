@@ -692,3 +692,16 @@ having passed the earlier native and socket/lifecycle lanes. The same
 loader path through sudo and restores it after both runuser calls, retaining
 the calling user, namespace and source/native commands. Complete Navi acceptance
 still requires the new candidate's actual result.
+
+The next [planner ARM job120333191116](https://github.com/bin9208/openpilot-rust/actions/runs/39928861901/job/120333191116)
+confirmed the shared QEMU budget issue: environment/solvers/bindings took about
+31minutes, native29tests and binaries completed, and the inherited45-minute
+job expired during strict Clippy before source comparison or sanitizer checks.
+The authenticated artifact12493424820 and its partial results establish
+progress, not full acceptance. [#520](issue-520-xiaoge-emulation-budget.md)
+therefore gives all eight canonical QEMU ARM jobs the same provisional finite
+150-minute allowance while retaining every native-host budget, original
+command, subprocess/runtime limit, source pin and growth admission. The saved
+CarrotMan template and existing policy assertion follow the same ARM150/x6425
+contract. Further expiry requires phase-specific diagnosis, not automatic
+increases. All eight complete results and final gates remain pending.

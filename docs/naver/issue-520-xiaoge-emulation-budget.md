@@ -1,6 +1,6 @@
-# Xiaoge ARM emulation CI build budget (#520)
+# Canonical ARM emulation CI build budgets (#520)
 
-## Observed failure
+## Observed Xiaoge failure
 
 PR #500 source `10919538d31b04d28d9a23b383d925441434d579` ran the
 unchanged ARM commands on registered `bin-actions` using pinned QEMU/PRoot.
@@ -35,13 +35,55 @@ receipt explicitly reports `physical_arm_cpu:false`. No complete provider
 Python or native-consumer result is present. The separate common-helper
 rootfs receipt typo tracked in #515 is not silently corrected here.
 
-## Focused correction and limits
+## Observed planner failure
 
-Give only the emulated ARM matrix row a finite 150-minute job budget, retaining
-75 minutes for x64. The measured provider compilation alone used 56 minutes,
-on top of setup and tool compilation, so the shared 75-minute budget left no
-room for the original bindings and required consumer checks. The new budget
-provides that room; a completed ARM run must still demonstrate sufficiency.
+The first correction gave only Xiaoge ARM 150 minutes. The subsequent source
+`36b3c1b28b26242f65c39bd29beb413a859b74bd` exposed the same execution-platform
+problem in
+[planner ARM job 120333191116](https://github.com/bin9208/openpilot-rust/actions/runs/39928861901/job/120333191116).
+It started at 09:32:58 UTC; its annotation reports
+`The job has exceeded the maximum execution time of 45m0s`, with automatic
+cancellation completed at 10:18:39 UTC.
+
+Environment setup, pinned solvers and original bindings consumed about
+31 minutes before native checks began at 10:03:40. Cargo tests finished at
+10:14:54, with 29 tests passed and zero failures/ignored across all targets;
+binaries finished at 10:15:56. Strict Clippy was still checking dependencies
+when cancellation interrupted it at 10:18:27. No compiler error or failed test
+preceded the cancellation. Source comparisons and sanitizer checks had not
+started; neither partial compilation nor the passing units establish them.
+
+Artifact `12493424820` is a 21,496,531-byte ZIP authenticated against the API
+SHA-256 `d5174f45edbd650af0287d2bf53acd45fff2139421f6aa657aa30805cc15cf86`.
+Execution and Params receipts identify PR merge
+`3b72621de9c0e2bce6cf1b5ff15cf37a973f6e98` (36b into dev), an aarch64 QEMU
+guest on x64, and `physical_arm_cpu:false`. All observed growth admissions
+passed; this failure is separate from the earlier capacity incident.
+
+## Shared execution-platform correction and limits
+
+Use a consistent finite 150-minute job allowance for the eight canonical
+QEMU/PRoot ARM jobs. The two measured workloads show why inheriting the native
+CPU job budgets leaves required work unexecuted. They do not establish a
+specific slowdown multiplier or the final completion time of every job.
+
+| Job | Retained x64 allowance | QEMU ARM allowance |
+| --- | ---: | ---: |
+| `webcam-runtime` | 35 minutes | 150 minutes |
+| `planner-runtime` | 45 minutes | 150 minutes |
+| `carrot-man-runtime` | 25 minutes | 150 minutes |
+| `webrtc-runtime` | 45 minutes | 150 minutes |
+| `xiaoge-runtime` | 75 minutes | 150 minutes |
+| `radar-arm` | Separate ARM-only job | 150 minutes |
+| `radard-runtime` | 45 minutes | 150 minutes |
+| `carrot-navi-arm` | Separate ARM-only job | 150 minutes |
+
+Xiaoge already had the ARM allowance, so this follow-up changes seven job
+fields and keeps the saved CarrotMan template and its existing policy
+assertion consistent. Generic host cross-build `arm64` remains at 120 minutes,
+workspace at 120, and pure planner Miri at 45. Focused host jobs are unchanged.
+This is a provisional upper bound; any further expiry requires examination of
+its actual phase rather than an automatic increase.
 
 All original commands, matrix rows, required aggregate dependencies, source and
 model pins, growth admission, strict lint, failure propagation, source/native
@@ -51,6 +93,6 @@ hosted fallback, or a physical ARM/device acceptance claim. Other sessions'
 common helper and interrupted build state are outside this correction.
 
 Local validation is limited to YAML parsing, embedded-shell syntax and diff
-review. The new job budget and full consumers must run in registered Actions
+review. The new job allowances and full consumers must run in registered Actions
 on the final candidate. Issue #520 remains open pending that result, all
 required checks, normal integration and separate post-merge verification.

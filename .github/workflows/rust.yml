@@ -103,7 +103,7 @@ jobs:
     if: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     name: rust webcam source runtime (${{ matrix.runner }})
     runs-on: [self-hosted, Linux, X64, dev-md-local]
-    timeout-minutes: 35
+    timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 150 || 35 }}
     strategy:
       fail-fast: false
       matrix:
@@ -222,7 +222,7 @@ jobs:
       fail-fast: false
       matrix:
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
-    timeout-minutes: 45
+    timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 150 || 45 }}
     env:
       LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
       CARGO_BUILD_JOBS: '2'
@@ -423,7 +423,7 @@ jobs:
     if: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     name: rust CarrotMan owner (${{ matrix.arch }})
     runs-on: [self-hosted, Linux, X64, dev-md-local]
-    timeout-minutes: 25
+    timeout-minutes: ${{ matrix.arch == 'aarch64' && 150 || 25 }}
     strategy:
       fail-fast: false
       matrix:
@@ -514,7 +514,7 @@ jobs:
     if: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     name: rust WebRTC source runtime (${{ matrix.runner }})
     runs-on: [self-hosted, Linux, X64, dev-md-local]
-    timeout-minutes: 45
+    timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 150 || 45 }}
     strategy:
       fail-fast: false
       matrix:
@@ -1561,7 +1561,7 @@ jobs:
     if: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     name: rust RadarCAN native ARM functional validation
     runs-on: [self-hosted, Linux, X64, dev-md-local]
-    timeout-minutes: 45
+    timeout-minutes: 150
     env:
       LOCAL_CI_ARCH: aarch64
       CARGO_BUILD_JOBS: '2'
@@ -1805,7 +1805,7 @@ jobs:
             machine: x86_64
           - runner: ubuntu-24.04-arm
             machine: aarch64
-    timeout-minutes: 45
+    timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 150 || 45 }}
     env:
       LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
       CARGO_BUILD_JOBS: '2'
@@ -2103,7 +2103,7 @@ jobs:
     if: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     name: rust Carrot Navi native ARM build
     runs-on: [self-hosted, Linux, X64, dev-md-local]
-    timeout-minutes: 25
+    timeout-minutes: 150
     env:
       LOCAL_CI_ARCH: aarch64
       RUSTUP_TOOLCHAIN: '1.94.0'

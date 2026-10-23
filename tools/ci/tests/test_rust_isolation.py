@@ -130,7 +130,7 @@ class RustIsolationTests(unittest.TestCase):
         self.assertEqual(job['if'], TRUST_IF)
         self.assertEqual(job['runs-on'], LOCAL)
         self.assertEqual(job['name'], 'rust CarrotMan owner (${{ matrix.arch }})')
-        self.assertEqual(job['timeout-minutes'], '25')
+        self.assertEqual(job['timeout-minutes'], "${{ matrix.arch == 'aarch64' && 150 || 25 }}")
         self.assertEqual(job['strategy'], {'fail-fast': 'false', 'matrix': {'include': [
             {'arch': 'x86_64', 'runner': 'ubuntu-24.04'},
             {'arch': 'aarch64', 'runner': 'ubuntu-24.04-arm'},

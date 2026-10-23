@@ -2,7 +2,7 @@ carrot-man-runtime:
   if: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
   name: rust CarrotMan owner (${{ matrix.arch }})
   runs-on: [self-hosted, Linux, X64, dev-md-local]
-  timeout-minutes: 25
+  timeout-minutes: ${{ matrix.arch == 'aarch64' && 150 || 25 }}
   strategy:
     fail-fast: false
     matrix:
