@@ -2472,3 +2472,8 @@ required-features = ["loggerd-check-native"]
 [[test]]
 name = "loggerd_peer_check"
 required-features = ["loggerd-check-native"]
+
+[[test]]
+name = "changed_files_caller"
+path = "tests/changed_files_caller.rs"
+required-features = ["changed-files-native"]

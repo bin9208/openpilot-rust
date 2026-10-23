@@ -1,5 +1,28 @@
 # Repository-wide Python retirement: current evidence (#296)
 
+## Maintained changed-files caller source rebase (2026-10-23)
+
+Independent R4 review admits maintained patch c5e0e5bf74438d891a7d4c17dac20d69ec16f2f223630583fd6788bca3b97120:
+two Fast command bodies replace the original changed-files CLI and its sole
+initial-push unittest; the native suite remains independently counted. Four
+caller tests preserve multi-commit initial-push checking and add current-worktree,
+whitespace-first and mandatory caller-policy regressions. One explicit
+changed-files-native test registration is added; previous complete Cargo
+semantics, loggerd overlay, lock855f00e and Rust workflowa8c7d7d5 stay unchanged.
+Current Cargo is05f64cc9c39972e58d2ddec4add18947d1320fc2522710d8ca5a146e3e86d77d.
+Direct scoped rustfmt, Bash-n for Fast commands, YAML/TOML/diff and frozen five
+postimages pass. No Cargo/type/test/Clippy or helper execution occurs locally.
+
+The new AST overlay preserves all historical routing/peer/model prerequisite
+maps and binds six changed files/current prerequisite hashes separately. Both
+original Python sources are retained, with no retirement credit. Independent
+recipe review finds one cleanup P2 in both R4 leaves: upload/quiescence alone
+can delete failed source. R5 must require qualification success without weakening
+the exact global trust guards. Actual four tests/one affected policy case/twelve
+absence negatives/held inputs/providers/owned exec evidence and subsequent exact
+two-deletion verification remain open. Historical14proof/eight provider reuse
+does not itself admit this new caller source.
+
 ## Latest actual source gates and publisher repair (2026-10-23)
 
 At01:09UTC the actual job API reports policy39875010264/job120158369441 and

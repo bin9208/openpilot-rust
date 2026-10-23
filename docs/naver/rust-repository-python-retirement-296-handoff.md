@@ -4,6 +4,30 @@ Work is unfinished. The user requests moving to a fresh session to increase
 parallelism; this is a continuation of #296, never dev-md/#338. Reuse accepted
 unchanged evidence. Read this handoff and the linked evidence ledger first.
 
+## AST caller source integrated; fresh acceptance still pending
+
+Reviewed R4patch c5e0e5bf changes only two Fast command bodies, the affected
+policy roster function/constant, four new caller tests and paired user docs.
+One Cargo test registration is added; complete previous Cargo semantics,
+loggerd rustix/pipe, all18b2fc action refs, unchanged lock and493733-byte Rust YAML
+are preserved. Historical contract maps stay intact; ast_caller_registration_overlay
+seals the separate current source/prerequisites. Both Python originals remain.
+
+Independent review finds one recipe-only P2: successful packaging/upload may
+clean source after failed qualification. New R5 is being prepared with stable
+qualification IDs/outcome guards while retaining the exact trust/ownership rules.
+Do not publish R4 recipes. Fresh caller/private-absence checks, actual14-proof
+data reuse and later exact-two-deletion/source-only acceptance remain required.
+No local Cargo or functional execution and no inventory increment occurred.
+
+Logger-peer recipe5fec2fbb passes independent R2 run-size/resource-plan closure
+and universal preflight. Workflowa452cd6cc2467f9ece4738ff36af870e7d36cb32 adds only
+this leaf and cfd as an additional source parent; other tree bytes stay exact.
+The conditional call3 leaf bc182c4d is then published in workflowb22dcb468:
+exactadff source, unchanged six numerical members, b2fc helper refs and only a
+push-path trigger derivative. These are publication/source gates, not runtime
+passes. Original post-write cancellation and model-family drift remain open.
+
 ## Current continuation: 23 October, 01:09 UTC
 
 Parent gpt-6.1-sol/ultra and Sol-only delegation remain in effect. Current source

@@ -89,10 +89,13 @@ before reuse and atomically replaces the catalog pointer. Eight focused tests
 and ten original/native filesystem comparisons pass in hosted CI. Compiler,
 model execution and emitter caller migration remain separate validation gates.
 
-The experimental `check-changed-files` checks changed Python source bytes with
-an explicit Python 3.12 grammar. Build it in `openpilot-dev-tools` with
-`--features changed-files-native --bin check-changed-files`; run from the checkout
-with optional `--base SHA` or `BASE_SHA`. It uses GNU libc iconv for four legacy
-encodings and reports unsupported codecs as capability errors. Codec and grammar
-parity are still being validated; maintained syntax checks continue to use the
-original Python tool. This candidate receives no source-retirement credit yet.
+Maintained fast checks use the native `check-changed-files` command for Python
+3.12 source syntax and Git whitespace checks. Build it in `openpilot-dev-tools`
+with `--no-default-features --features changed-files-native --bin check-changed-files`.
+Run from the checkout with optional `--base SHA` or `BASE_SHA`; missing, empty or
+all-zero bases cover the complete issue branch against `origin/dev`. Whitespace
+is checked first, then changed regular `.py` files are parsed from current worktree
+bytes. Symlinks and deleted files are skipped. Cancellation stops owned Git
+process groups; unsupported source capabilities fail explicitly. Source retirement
+requires the accepted codec/lifecycle evidence and a separate deletion verification.
+This CI migration does not establish device acceptance or repository-wide retirement.

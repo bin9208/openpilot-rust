@@ -405,5 +405,28 @@
       "rust/crates/dev-tools/tests/loggerd_peer_check.rs": "b15537883be9c608e23e0d0c34e7534074775c90149838cfa09fd262dbd9609d"
     },
     "native_acceptance": "new3functions/11cases+barrier, scopedClippy, newCLI signal/postwrite/provenance gates pending; all14Python retained"
+  },
+  "ast_caller_registration_overlay": {
+    "reviewed_base": "cfd7583ab1aab6cece048f9c1d64a144956ec906",
+    "patch_sha256": "c5e0e5bf74438d891a7d4c17dac20d69ec16f2f223630583fd6788bca3b97120",
+    "review": "ast-caller-r4-review-sol/HANDOFF.md maintained source/registration noP1P2; separate recipe cleanup P2 pending",
+    "status": "source integrated; fresh caller/private absence and published two-deletion verification pending; originals retained",
+    "cargo_delta": "ONE changed_files_caller test registration only; all cfd Cargo semantic fields including loggerd rustix/pipe preserved",
+    "source_file_sha256": {
+      ".github/workflows/fast-checks.yml": "31646b3d7fa07f4df6d38d1fe03361718b3a4d1921acb3f5e69597e14eef4689",
+      "rust/crates/dev-tools/tests/ci_workflow_policy.rs": "c19bae45f1376f7c9db5c756aea9ab78ee80846598cf384b097be162e05395d8",
+      "docs/user/en/rust-port.md": "fb93b3ca20b21bae2a30b4754c88bc1ed269ea03fbb1b6826a28185e67555747",
+      "docs/user/ko/rust-port.md": "73474ba2eea0434ff355e3f281878555a7f81cb2d95727f3987043f94c624b08",
+      "rust/crates/dev-tools/tests/changed_files_caller.rs": "085487b0867f0012ef4f2edc000b6f43cc7d506d4f0a1189e1324eb2fbccb172",
+      "rust/crates/dev-tools/Cargo.toml": "05f64cc9c39972e58d2ddec4add18947d1320fc2522710d8ca5a146e3e86d77d"
+    },
+    "current_parent_prerequisites": {
+      "rust/crates/dev-tools/Cargo.toml": "05f64cc9c39972e58d2ddec4add18947d1320fc2522710d8ca5a146e3e86d77d",
+      "rust/crates/dev-tools/tests/ci_model_catalog_publisher.rs": "36c443db4b78f18df3fdf0fe757814043501eaa33ffcd9da828f39a15f05197d",
+      "rust/crates/model-runtime/tests/catalog.rs": "f31059ddffc8007c513f230919e671d3c87b8f441be3deac29338969ca6db22a"
+    },
+    "historical_maps": "R6/R7 action distribution and cfd loggerd peer/current_parent_prerequisites remain historical exact snapshots; future source-policy must explicitly select this newer overlay",
+    "accepted_reuse": "14 original/native codec/lifecycle proofs and eight GNU runtime provider seals unchanged; not new current-source acceptance",
+    "native_acceptance": "four caller tests/one affected policy case/12 absence negatives/held sources and provider equality/strict owned exec accounting pending; no Python deletion or retirement credit"
   }
 }

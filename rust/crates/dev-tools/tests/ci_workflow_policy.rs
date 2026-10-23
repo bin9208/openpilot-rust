@@ -5,6 +5,8 @@ use openpilot_dev_tools::ci_policy::{
 };
 use std::{collections::BTreeMap, fs, path::PathBuf};
 
+const CHANGED_FILES_REGRESSION: &str = "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --no-default-features --features changed-files-native --test changed_files_caller";
+
 fn root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..")
 }
@@ -360,17 +362,19 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         assert_eq!(
             commands
                 .iter()
-                .filter(|line| line.starts_with(
-                    "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked"
-                ))
+                .filter(|line| {
+                    line.as_str() != CHANGED_FILES_REGRESSION && line.starts_with(
+                        "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked"
+                    )
+                })
                 .count(),
             1,
-            "{worker} must execute one native suite command"
+            "{worker} must execute one baseline native suite command"
         );
         let command = commands
             .iter()
             .find(|line| {
-                line.starts_with(
+                line.as_str() != CHANGED_FILES_REGRESSION && line.starts_with(
                     "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked",
                 )
             })
@@ -410,7 +414,7 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
     assert_eq!(seen.len(), expected.len());
     assert!(seen.values().all(|count| *count == 1));
     for command in [
-        "python -m unittest discover -s tools/ci/tests -v",
+        CHANGED_FILES_REGRESSION,
         "cargo test --manifest-path rust/Cargo.toml -p openpilot-service-tools --locked",
     ] {
         assert_eq!(
