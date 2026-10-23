@@ -1,4 +1,4 @@
-name: Runner capacity recovery 516
+name: Runner download cache cleanup 516
 on:
   push:
     branches: [codex/fix-516-runner-capacity]
@@ -9,18 +9,18 @@ concurrency:
   group: runner-capacity-516-${{ github.ref }}
   cancel-in-progress: false
 jobs:
-  recovery:
+  download-cleanup:
     if: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    name: Preserve all Git objects while consolidating duplicate packs
+    name: Clear only unused APT downloads if ARM capacity still falls short
     runs-on: [self-hosted, Linux, X64, dev-md-local]
-    timeout-minutes: 25
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
           clean: false
       - uses: ./.github/actions/job-temp
-      - name: Repack with unreachable objects retained and verify preservation
+      - name: Retain installed state and clear package download cache only
         run: |
           set -euo pipefail
           test "$RUNNER_NAME" = bin-actions
@@ -28,10 +28,10 @@ jobs:
       - uses: actions/upload-artifact@v6
         if: always()
         with:
-          name: runner-capacity-516-recovery
+          name: runner-capacity-516-download-cleanup
           path: |
-            ${{ env.CI_JOB_TEMP }}/runner-git-recovery.json
-            ${{ env.CI_JOB_TEMP }}/git-recovery-*.log
+            ${{ env.CI_JOB_TEMP }}/runner-download-cleanup.json
+            ${{ env.CI_JOB_TEMP }}/apt-download-clean.log
           if-no-files-found: warn
       - uses: ./.github/actions/job-temp
         if: always()

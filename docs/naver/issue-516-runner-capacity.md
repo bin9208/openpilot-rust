@@ -115,3 +115,34 @@ the25-minute job leaves verification, receipt and upload headroom.
 No project job-temp, source, toolchain, SDK or shared download-cache deletion is
 performed, and the successful Python diagnostic is not replayed. This reviewed
 candidate has not yet run or recovered space; full ARM acceptance remains open.
+
+## Actual source-preserving recovery and remaining download cleanup
+
+[Run39912854077/job120279598323](https://github.com/bin9208/openpilot-rust/actions/runs/39912854077/job/120279598323)
+passed at source `c5d29c9eeec359081971dc515c7ac0e72c250b4a`.
+Artifact12483528685 SHA-256
+`52f35964c3f80e097d8e9cfa044fffb56286e8743e058accd05005890bfdd2ea`
+retains both complete object inventories and empty successful pre/post fsck and
+repack logs. All71,884 objects, refs, index, reflogs, shallow boundaries, tracked
+state and both old temporary pack files were preserved. The43 packs became one,
+reducing pack bytes from4,863,785,576 to951,277,468. Actual free bytes increased
+from8,680,783,872 to12,602,974,208:3,922,190,336 bytes recovered. No project
+continuation state, installed toolchain or temporary pack file was deleted.
+
+The12GiB operation still lacked281,927,680 bytes at that observation. The next
+workflow replaces the completed Git operation with an APT download-cache-only
+cleanup. It skips cleanup if actual capacity has already recovered. Otherwise,
+it verifies the root-owned fixed archive directory on the workspace filesystem,
+records download-cache bytes and installed package/source/architecture hashes,
+then invokes standard
+[`apt-get clean`](https://manpages.debian.org/bookworm/apt/apt-get.8.en.html)
+with the archive lock enabled. Its ancillary partial-index and binary-cache
+targets are redirected to fresh owned job-temp paths, with persistent list
+cleanup disabled. It does not run update/install/remove, broaden apt-native's
+API, modify installed packages or remove other sessions' build state.
+
+The receipt must confirm identical dpkg status, APT sources and native/foreign
+architecture state and actual free capacity of at least12GiB. Both archive use
+and free bytes are measured again. The successful Git and Python probes are
+not replayed. Actual download cleanup, affected ARM retries and final normal
+integration remain pending; a prior storage improvement alone is not closure.
