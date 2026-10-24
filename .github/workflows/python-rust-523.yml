@@ -26,7 +26,6 @@ jobs:
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       NO_PROXY: 127.0.0.1,localhost
-      no_proxy: 127.0.0.1,localhost
     steps:
     - name: Deny fork source and require registered local runner
       shell: bash
@@ -253,6 +252,8 @@ jobs:
       shell: bash
       if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
       run: 'set -euo pipefail
+
+        export no_proxy="$NO_PROXY"
 
         features=developer-ssh-native,kbhit-native,github-utils-native,camera-runtime-native,paramsd-fixture-native
 
