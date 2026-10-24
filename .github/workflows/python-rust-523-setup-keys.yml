@@ -93,43 +93,6 @@ jobs:
         set-safe-directory: false
         clean: false
         lfs: false
-    - name: Prepare private Git packed refs while preserving exact source inputs
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-      shell: bash
-      working-directory: ${{ env.DIAG_SOURCE }}
-      run: |
-        set -euo pipefail
-        set -o noclobber
-        umask 077
-        test "$PWD" = "$DIAG_SOURCE"
-        test "$GITHUB_WORKSPACE" = "$DIAG_SOURCE"
-        proof=$CI_JOB_TEMP/proof
-        git_dir=$(git rev-parse --absolute-git-dir)
-        [[ $git_dir == "$DIAG_SOURCE/.git" && -d $git_dir && ! -L $git_dir ]]
-        metadata_snapshot() {
-          local moment=$1 path
-          git rev-parse --verify HEAD > "$proof/git-metadata-$moment.head"
-          test "$(cat "$proof/git-metadata-$moment.head")" = "$GITHUB_SHA"
-          git symbolic-ref -q HEAD > "$proof/git-metadata-$moment.symbolic-head" || test "$?" = 1
-          git for-each-ref --sort=refname --format='%(refname)%09%(objectname)%09%(symref)' > "$proof/git-metadata-$moment.refs.tsv"
-          for path in "$git_dir/HEAD" "$git_dir/index"; do
-            [[ -f $path && ! -L $path ]]
-            stat -c '%n type=%F identity=%d:%i:%f:%u:%g:%s:%h:%y:%z' -- "$path"
-          done > "$proof/git-metadata-$moment.identity.txt"
-          sha256sum -- "$git_dir/HEAD" "$git_dir/index" > "$proof/git-metadata-$moment.files.sha256"
-        }
-        metadata_snapshot before
-        # #540 run40126286865는 missing .git/packed-refs를 Cargo 재빌드 원인으로 확정했다.
-        # 정상 Git metadata를 준비하되 logging이 함께 추적하는 loose branch ref도 보존한다.
-        git pack-refs --all --no-prune > "$proof/git-pack-refs.stdout" 2> "$proof/git-pack-refs.stderr"
-        metadata_snapshot after
-        for suffix in head symbolic-head refs.tsv identity.txt files.sha256; do
-          cmp "$proof/git-metadata-before.$suffix" "$proof/git-metadata-after.$suffix"
-        done
-        packed_refs=$git_dir/packed-refs
-        [[ -f $packed_refs && ! -L $packed_refs && $(stat -c %u -- "$packed_refs") == "$(id -u)" ]]
-        stat -c '%n type=%F identity=%d:%i:%f:%u:%g:%s:%h:%y:%z' -- "$packed_refs" > "$proof/git-packed-refs.metadata.txt"
-        sha256sum -- "$packed_refs" > "$proof/git-packed-refs.sha256"
     - name: Seal exact source HEAD and tracked index before checks
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       id: source_before
@@ -723,7 +686,7 @@ jobs:
           [[ $provider == /* ]] || provider=$(command -v "$provider")
           bind_native "$provider"
         done
-        for relative in rust/tools/run-developer-tool rust/tools/prepare-readonly-ci-rust rust/tools/check-disk-space rust/Cargo.toml rust/Cargo.lock rust/rust-toolchain.toml rust/crates/dev-tools/Cargo.toml rust/crates/dev-tools/src/lib.rs rust/crates/dev-tools/tests/developer_cli_original.rs rust/crates/dev-tools/tests/developer_cli_original/setup_frozen.rs rust/crates/dev-tools/tests/fixtures/setup-ssh-original/setup-effects-original.json rust/crates/dev-tools/tests/fixtures/setup-ssh-original/README.md .github/workflows/python-rust-523-setup-keys.yml; do bind_file "$source/$relative"; done
+        for relative in rust/tools/run-developer-tool rust/tools/prepare-readonly-ci-rust rust/tools/check-disk-space rust/Cargo.toml rust/Cargo.lock rust/rust-toolchain.toml rust/crates/dev-tools/Cargo.toml rust/crates/dev-tools/src/lib.rs rust/crates/dev-tools/tests/developer_cli_original.rs rust/crates/dev-tools/tests/developer_cli_original/setup_frozen.rs rust/crates/dev-tools/tests/fixtures/setup-ssh-original/setup-effects-original.json rust/crates/dev-tools/tests/fixtures/setup-ssh-original/README.md rust/crates/logging/build.rs rust/crates/logging/tests/build_watch.rs .github/workflows/python-rust-523-setup-keys.yml; do bind_file "$source/$relative"; done
         for relative in rust/crates/disk-space/Cargo.toml rust/crates/disk-space/src/*.rs; do bind_file "$source/$relative"; done
         printf '%s  %s\n' 86884528b67fab80757b46b8b0bdca6b9b593c6446933adc3ec628d7cff12c58 "$source/rust/crates/dev-tools/tests/developer_cli_original.rs" \
           11fae1ee5c7a17594c023f5adc114dc6236e1bd078749366d0fa2f0bf3958c62 "$source/rust/crates/dev-tools/tests/developer_cli_original/setup_frozen.rs" | sha256sum --check --strict --quiet -
@@ -780,6 +743,12 @@ jobs:
         phase=test-build
         growth native-cold 8192
         run_bounded test-build 1800s "$proof/build/tests.jsonl" 0 "$sdk/bin/cargo" test --manifest-path "$source/rust/Cargo.toml" --locked -p openpilot-dev-tools --features developer-ssh-native --test developer_cli_original --no-run --message-format=json --target x86_64-unknown-linux-gnu
+        phase=logging-build-watch-regressions
+        growth logging-watch 512
+        run_bounded logging-watch 1800s "$proof/build/logging-watch.log" 0 "$sdk/bin/cargo" test --manifest-path "$source/rust/Cargo.toml" --locked -p openpilot-logging --test build_watch --target x86_64-unknown-linux-gnu -- --test-threads=1 --color=never
+        test "$(grep -Ec '^test result: ok\. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in [0-9]+\.[0-9]+s$' "$proof/build/logging-watch.log")" -eq 1
+        growth logging-watch-clippy 512
+        run_bounded logging-watch-clippy 1800s "$proof/build/logging-watch-clippy.log" 0 "$sdk/bin/cargo" clippy --manifest-path "$source/rust/Cargo.toml" --locked -p openpilot-logging --test build_watch --target x86_64-unknown-linux-gnu -- -D warnings
         phase=strict-clippy
         growth clippy 512
         run_bounded clippy 1800s "$proof/build/clippy.log" 0 "$sdk/bin/cargo" clippy --manifest-path "$source/rust/Cargo.toml" --locked -p openpilot-dev-tools --features developer-ssh-native --bin setup-ssh-keys --test developer_cli_original --target x86_64-unknown-linux-gnu -- -D warnings

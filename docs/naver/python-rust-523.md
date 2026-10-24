@@ -1062,3 +1062,9 @@ source19e180650bae8b46f9d04056b796ba68666b364e의 Focus40122888950와 changed-fi
 source bdb819e59534ffba7c61751653ddaf360e8e324a를 dev 대상 draft PR343에 fast-forward했다. 실제 PR merge source는ba1b07c38702bac3bb49614d14b54adaacaa95df다. Focus40126286930과 docs40126295962가 성공했고 각각81CRC/54CRC 및 source·SDK 전후를 확인했다. Fast는5leaf 성공 뒤 공통 YAML alias key 구분자 문제(#541)로 routing·aggregate 실패다. Integration40126295997은14성공/2실패이며 빌드·pytest570 뒤 source 봉인 실패를 #546으로 추적한다. setup은 실제21+3/Clippy/public stdout·exit 일치와 CPU 주석 문법 통과까지 확인했으나 missing packed-refs의 Cargo 재link(#540)를 거부했다. normal은 기존 stager의 빈 marker를 임시 helper가 빠뜨린 #543에서 중단돼 수치40회 비교는 아직 미도달이다.
 
 실제 Mac Rustup 배치 가정(#544), logical matrix와 보호된 upload assertion(#542), Panda venv 경로(#545), updater private TMPDIR trace(#547)도 원인별로 보완 중이다. 정확한 source/run/artifact·수용 한계와 후보 변경은 `python-rust-523-hosted-535.md`에 남긴다. 새 후보는 Actions 검증 전 UNRUN이며 baseline292/3/3285, 이번 원본 제거 credit0과 전체 미완료 상태를 유지한다.
+
+### ded6051b3 실제 결과와 일반 소스 감시 수정
+
+ded6051b33f51ffa3aa4b23e76e51c2eb4804d4b의 Focus40129042247은 alias26·Unicode7·SSH27·Clippy와 source/SDK 봉인까지 성공했고 artifact81CRC를 감사했다. Fast40129042267은 이전 YAML parse를 통과했으나 첫 unconditional fork guard를 잘못 분류한 정책 검사2개가 실패해 수정했다(#542). setup40129042246은21+3/Clippy/public 출력 비교 뒤 held CLI 교체를 거부했다. 실제 dangling source symlink의 Cargo 감시가 재빌드를 유발한 #540으로, 일반 missing/symlink 감시와 read-only Git 조회를 수정하고 회귀9개·Clippy를 setup Actions의 최종 CLI hold 앞에 연결했다. 새 소스의 기능 수용은 아직 미실행이다.
+
+normal40129042248과 이전 필수 ARM 일부는 진행 중이며 완료로 세지 않는다. 실제로 job 시간 한도를 초과한 ARM5개만 추가 보완했다(#548). 별도 #549에서는 기존 shared logging 도구2개의 남은 원문/lifecycle/caller/absence 검증을 진행하며 원본을 보존한다. 정확한 source와 artifact·검토 범위는 `python-rust-523-hosted-535.md`에 기록했다. PR343은 bdb819e59/dev draft, baseline292/3/3285와 새 원본 credit0, 전체 #523 미완료 상태를 유지한다.

@@ -1,7 +1,7 @@
 //! Assertion-for-assertion native migration of test_rust_isolation.py.
 use openpilot_dev_tools::ci_policy::{
-    parse, run_shell, validate_rust_gate, DARWIN_RUNNER, HOSTED_RUNNER, TRUSTED_ALWAYS,
-    TRUSTED_SOURCE,
+    parse, run_shell, validate_local_routing, validate_rust_gate, DARWIN_RUNNER, HOSTED_RUNNER,
+    TRUSTED_ALWAYS, TRUSTED_SOURCE,
 };
 use serde_json::Value;
 use std::{collections::BTreeMap, fs, path::PathBuf};
@@ -541,9 +541,10 @@ fn trusted_step(step: &Value) {
 }
 fn mandatory(job: &Value, selectors: &[&str]) {
     absent(job, &["if"]);
-    for step in job["steps"].as_array().unwrap() {
+    // 첫 단계는 조건 없이 fork를 거부한다. 실제 경계를 검증한 뒤 도메인 조건과 구분한다.
+    validate_local_routing(&serde_json::json!({"jobs":{"runtime":job}})).unwrap();
+    for step in job["steps"].as_array().unwrap().iter().skip(1) {
         if !private_infrastructure(step)
-            && step["name"] != "Deny fork source and require registered local runner"
             && step.get("run").is_some()
             && selectors
                 .iter()
@@ -552,6 +553,52 @@ fn mandatory(job: &Value, selectors: &[&str]) {
             assert_eq!(step["if"], TRUSTED_SOURCE);
             absent(step, &["continue-on-error"]);
         }
+    }
+}
+#[test]
+fn mandatory_domain_steps_preserve_the_unconditional_fork_boundary() {
+    let data = workflow();
+    let original = &data["jobs"]["webrtc-runtime"];
+    mandatory(original, &[""]);
+    for mutation in [
+        "skipped-boundary",
+        "missing-trust",
+        "commented-refusal",
+        "unguarded-domain",
+    ] {
+        let mut job = original.clone();
+        match mutation {
+            "skipped-boundary" => job["steps"][0]["if"] = TRUSTED_SOURCE.into(),
+            "missing-trust" => {
+                job["steps"][0]["env"]
+                    .as_object_mut()
+                    .unwrap()
+                    .remove("SOURCE_ALLOWED");
+            }
+            "commented-refusal" => {
+                job["steps"][0]["run"] =
+                    format!("# {}", job["steps"][0]["run"].as_str().unwrap()).into();
+            }
+            "unguarded-domain" => {
+                let step = job["steps"]
+                    .as_array_mut()
+                    .unwrap()
+                    .iter_mut()
+                    .find(|step| {
+                        !private_infrastructure(step)
+                            && step["run"]
+                                .as_str()
+                                .is_some_and(|run| run.contains("cargo test"))
+                    })
+                    .unwrap();
+                step.as_object_mut().unwrap().remove("if");
+            }
+            _ => unreachable!(),
+        }
+        assert!(
+            std::panic::catch_unwind(|| mandatory(&job, &[""])).is_err(),
+            "accepted {mutation}"
+        );
     }
 }
 fn artifacts(job: &Value) {

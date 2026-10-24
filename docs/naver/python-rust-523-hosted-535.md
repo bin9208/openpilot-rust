@@ -113,3 +113,41 @@ CarrotMan ARM120968344415와 Carrot Navi ARM120968344549의 cancelled는 부모 
 최종 source 후보에서 Rust main은497,973B다. source baseline 앞 LFS 준비5개 단계와 ARM job 한도2개를 제외하면 이전 전체 job model/748개 기존run bytes가 동일하다. CarrotMan은 matrix.arch==aarch64에만60분을 적용하고 x86_64의25분은 유지한다. Carrot Navi ARM은60분이다. source-only helper `tools/ci/prepare-lfs-source-535`는exact3model 중 필요한1/2개만 선택하며, 실제 Git/LFS FD·identity·SHA/전용cache/source-index·나머지tracked파일 전후·원래2GiB source cap과bounded hydration을 요구한다. main의 same-source literal SHA 검증 뒤 실행되며 기존 Git LFS 및 기능 명령은 유지한다. 새 compiler·Python loader·모델 expected 생성은 없다.
 
 Focus의 최종등록은exact144경로/125literalpin이며 실행영역SHA는불변이다. registration UTF7의같은text-split을파싱한startupjob으로교정해기존assert3개를보존했다. 이추가후보도Actions 실제수용전UNRUN이며앞선성공에소급하지않는다.
+
+## ded6051b3 실제 결과와 소스 감시 보정
+
+push source는 `ded6051b33f51ffa3aa4b23e76e51c2eb4804d4b`다. PR343은 아직
+`bdb819e59534ffba7c61751653ddaf360e8e324a` head의 dev 대상 draft이며, 두 source의
+검사 결과를 구분한다.
+
+- [Focus40129042247/job120976604102](https://github.com/bin9208/openpilot-rust/actions/runs/40129042247/job/120976604102)는 성공했다. alias26·Unicode7의 전체 scalar/Σ 비교·SSH27·strict Clippy·125개 literal pin·source/index/SDK 봉인과 업로드/소유 정리를 확인했다. artifact12574067660은15,867,566B/SHA256 `083ed74ca0886aed27e9a8daa57323ca3d8d100977f126e76252bb359cb4414c`이며81개 CRC와 전후4쌍을 감사했다.
+- [Fast40129042267](https://github.com/bin9208/openpilot-rust/actions/runs/40129042267)은5개 leaf 성공, native routing과 aggregate 실패다. 실제 cold1·caller5·lib83·beep2·disk bootstrap31은 성공했고 disk의 기존 ignored1은 별도다. YAML anchor 오류는 통과했으나 `ci_rust_isolation`이81성공/2실패였다. 정책 검사 `mandatory(job, &[""])`가 조건 없이 fork를 거부해야 하는 첫 단계에도 도메인 조건을 요구했다(#542). 정상 첫 경계는 기존 `validate_local_routing`으로 검증하고 이후 도메인 단계에는 종전 조건을 유지하도록 수정한다. 첫 단계 건너뛰기·신뢰 변수 제거·주석 대체·도메인 조건 제거를 거부하는 회귀1개를 추가했다. 이 수정의 기능 검증은 아직 미실행이다.
+- [setup40129042246/job120976604614](https://github.com/bin9208/openpilot-rust/actions/runs/40129042246/job/120976604614)은 packed-refs 준비·frozen21·음성3·strict Clippy·public stdout/exit1 비교를 통과했으나 public 호출의 CLI 교체를 올바르게 거부했다(#540). 직접 원인은 `logging/build.rs`가 실제로 대상이 없는 tracked symlink `openpilot/system/hardware/comma/agnos.json`을 `rerun-if-changed`에 등록한 것이다. Cargo는 missing 입력을 매번 dirty로 판단해 logging과 의존 CLI를 다시 빌드했다. artifact12574897637은10,566,663B/SHA256 `94b884bfbc0981bd81fe74a9e39af20b8387acca979b4f37b497ca89c9778083`이며166개 CRC와 전후14쌍을 감사했다. 전체 trace/held identity 수용과 원본 삭제는 아니다.
+- normal40129042248은 이 기록 시점에 진행 중이다. 앞선 빈 marker 수정 이후의 수치40회/8,655frames/705,948comparisons 수용을 미리 주장하지 않는다.
+
+빌드 메타데이터 보정은 missing 파일 자체 대신 존재하는 부모를 감시하고, file symlink의
+부모와 target도 감시한다. 존재하는 directory symlink는 원래 경로를 유지한다. 실제 root
+directory symlink5개와 in-tree Cargo output 조합을 포함한 회귀9개를 추가했다. 감시 대상이
+Cargo OUT_DIR를 포함하면 실패하며, 순환/과도한 chain도 제한한다. Git 조회에는
+`--no-optional-locks`를 적용해 읽기 전용 관측의 optional index refresh를 피한다.
+commit/tree 계산과 source identity 정책은 유지한다. Cargo0.95.0의
+[missing 입력 검사](https://github.com/rust-lang/cargo/blob/0.95.0/src/cargo/core/compiler/fingerprint/mod.rs)와
+[directory/symlink mtime 처리](https://github.com/rust-lang/cargo/blob/0.95.0/crates/cargo-util/src/paths.rs)를
+대조했으며, 실제 두 번째 Cargo 호출의 fresh 여부는 Actions에서 확인할 대상이다.
+
+setup의 임시 pack-refs 준비 단계는 제거한다. 새 감시 소스2개를 FD로 묶고, 최종 CLI를
+hold하기 전에 회귀9개/ignored0의 정확한 summary1개와 strict Clippy를 기존 bounded
+build 단계 안에서 요구한다. 원래 frozen21/음성3/public1·ELF/DSO/SDK 봉인과 미등록
+linker 거부는 유지한다. 가짜 agnos 파일 생성이나 교체된 CLI 재수용은 없다.
+
+이전 bdb ARM job7개의 cancelled는 Actions annotation에 기록된 전체 job 시간 초과다.
+사용자/부모 취소가 아니다. CarrotMan/CarrotNavi의 ARM60분 후보에 이어 실제로 초과한
+planner/WebRTC/radard/webcam/RadarCAN의 ARM job 한도만90분으로 조정한다(#548).
+x86_64 한도와753개 run 본문·기능별 deadline·QEMU/ABI/메모리/수치 기준은 유지한다.
+
+후속 소스의 Focus는 exact146경로/127literal pin이며 별도 실행 영역 SHA
+`4ee29d23ba43e6824f19a550898b5678db549a0d283bace60f177f9713a9ef89`를 유지한다.
+실행 경계 원장은92행의 현재 blob만 갱신해25교체/63대기/1native-existing/
+2non-executing-text/1removed를 유지했다. 독립 소스 검토에서 P1/P2는 추가 발견되지
+않았으나 새 회귀/Clippy/현재 setup의 기능 수용은 Actions 전까지 UNRUN이다.
+baseline3580의292교체/3부분/3285대기와 이번 원본 제거 credit0을 유지한다.
