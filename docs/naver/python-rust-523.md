@@ -672,3 +672,32 @@ unknown·active compiler가 모두0이고 current SDK321하위항목/regular294 
 전체 SDK/source/proof/shared ELF·DSO를 retained 전후에 대조한다. 원본compiler를 보유한4o8uWv와
 다른3SDK·current source/SDK/입력/증거는 정리 대상이 아니다. 새metadata 성장128MiB admission을
 유지한다. 현재는 준비 후보이고 실제 삭제·새 free·controls native109 수용은 아직0이다.
+
+### e719c4 실제 SDK4 회수 수용
+
+[40101334963/job120893926067](https://github.com/bin9208/openpilot-rust/actions/runs/40101334963/job/120893926067)는
+source `e719c4d39f14b3317493e09c1a5815ab808e3ae0`에서 성공했다. artifact12563256407
+(5,792,008B,SHA256 `bf03510a71d356191bc8527c56be8d6747bc6640db2793139baf45044355ce1a`)의
+18CRC를 부모가 감사했다. 실제4SDK 제거/8journal과6회 참조 검사, 보호28,844항목의 전후 JSON
+전체byte 동일성을 확인했다. current SDK root 자체도 보존했다. free는9,387,831,296→
+11,853,766,656B다. 차이는 작업 중 증거 증가도 포함한 관측이며 전부 순수 회수량으로 계산하지 않는다.
+원본compiler4o8uWv·다른3SDK·소스/입력/증거/shared ELF·DSO는 정리하지 않았다.
+
+### controls 원본109의 다음 집중 검증 후보
+
+새 `python-rust-523-controls.yml`과 `tools/ci/controlsd_fixture_523.py`는 원본 capture를
+다시 실행하지 않고 기존 artifact12462355309의 요청109/원본 wire/독립 pycapnp projection 및
+177 source·provider 기록을 연결한다. 현재 핵심7개 source는 원래 fixture150과 동일하며,
+공유 Cargo/lib/dependency는 현재 전체source/SDK/실제 CLI·auditor ELF·DSO와 별도로 봉인한다.
+현재 compiler-artifact JSONL 전체를 읽어 정확한 CLI/test 하나씩 선택하고 같은 ELF를 실행한다.
+
+새 범위는 native109 생성1회, 기존 exact ignored full-schema/F64-bit auditor1회와 Clippy다.
+기존 regular5/원본109/normal40·rejection27·health5/continuous controller를 재실행하거나 새 수용으로
+바꾸지 않는다. source2GiB, build8GiB/추가512MiB, proof2GiB 및 raw1GiB/512MiB-file 상한을 유지한다.
+immutable seal과 비교 완료를 각각 필수 확인하며, 실패 job의 소스 정리는 업로드 및 전후 immutable
+봉인이 성공한 소유 checkout에만 허용한다. 기능 실패는 계속 job 실패다.
+
+로컬 AST/YAML/Bash·diff와 독립 source 검토만 통과했다. 현재 raw109의177 mapping·actual native
+생성/ignored1/Clippy/공간 적합성은 미실행이다. 새 diagnostic interpreter2경로는 별도 pending으로
+등록하며 기준3580의 추가 교체로 세지 않는다. controls runtime·wire 전체byte 일치·물리 수용을
+미리 주장하지 않는다.

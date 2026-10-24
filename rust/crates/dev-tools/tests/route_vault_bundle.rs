@@ -13,7 +13,7 @@ use std::{
     io::{self, Read},
     os::unix::{
         ffi::{OsStrExt, OsStringExt},
-        fs::{symlink, MetadataExt, OpenOptionsExt},
+        fs::{symlink, MetadataExt, OpenOptionsExt, PermissionsExt},
     },
     path::{Path, PathBuf},
     time::Duration,
@@ -329,6 +329,8 @@ struct Repo {
 impl Repo {
     fn new() -> Self {
         let temp = tempfile::tempdir().unwrap();
+        // tempdir 기본 mode를 가정하지 않고 이 fixture의 재현 경계를 직접 보호한다.
+        fs::set_permissions(temp.path(), fs::Permissions::from_mode(0o700)).unwrap();
         let root = temp.path().join("repo");
         fs::create_dir(&root).unwrap();
         git(

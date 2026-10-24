@@ -249,18 +249,69 @@ jobs:
             tools/carrot_route_vault/README.md) ;;
             tools/ci/model-cache-482-natural-config.json) ;;
             tools/ci/model_cache_probe_482.sh) ;;
+            .github/workflows/python-rust-523-changed-files.yml) ;;
+            .github/workflows/python-rust-523-history-image.yml) ;;
+            docs/naver/python-rust-523-changed-files.md) ;;
+            docs/naver/rust-repository-python-retirement-296-execution-edges.tsv) ;;
+            docs/naver/rust-repository-python-retirement-296-families.md) ;;
+            docs/naver/rust-repository-python-retirement-296-families.tsv) ;;
+            docs/naver/rust-repository-python-retirement-296-inventory.tsv) ;;
+            rust/crates/dev-tools/src/bin/prepare_changed_files_context.rs) ;;
+            rust/crates/dev-tools/src/driver_daemon_current_catalog.rs) ;;
+            rust/crates/dev-tools/src/model_family_prepare/catalog.rs) ;;
+            rust/crates/dev-tools/tests/changed_files_caller.rs) ;;
+            rust/crates/dev-tools/tests/changed_files_caller/absence.rs) ;;
+            rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/README.md) ;;
+            rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/manifest.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000000.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000001.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000002.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000003.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000004.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000005.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000006.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000007.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000008.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000009.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000010.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000011.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000012.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000013.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000014.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000015.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000016.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000017.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000018.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000019.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000020.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000021.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000022.json) ;;
+            rust/crates/dev-tools/tests/route_vault_bundle/frozen.rs) ;;
+            rust/crates/model-runtime/src/bin/offline-cached-code.rs) ;;
+            rust/crates/model-runtime/src/cached_code.rs) ;;
+            rust/crates/model-runtime/src/cached_isa.rs) ;;
+            rust/crates/model-runtime/src/lib.rs) ;;
+            rust/crates/model-runtime/tests/historical_cached_image.rs) ;;
+            rust/tools/prepare-changed-files-caller) ;;
+            tools/carrot_route_vault/build_bundle.py) ;;
+            tools/ci/changed_files_reuse_523.sh) ;;
+            tools/ci/check_changed_files.py) ;;
+            tools/ci/model_history_image_482.sh) ;;
+            tools/ci/tests/test_changed_files.py) ;;
+            .github/workflows/python-rust-523-controls.yml) ;;
+            tools/ci/controlsd_fixture_523.py) ;;
             *) printf 'Changed dependency invalidates reuse: %s\n' "$changed" >&2; exit 1 ;;
           esac
         done < "$CI_JOB_TEMP/proof/changed-paths.bin"
         printf '%s  %s\n' 68f0f800ef5fbb456a06986a8695a5c3aaa2cbdf86160b47826e913edd792f85 .github/workflows/carrot-route-vault-publish.yaml | sha256sum --check -
-        printf '%s  %s\n' 666970494a10d89bafbbc0738fc9d642bb53dc94953d4abfada55fc91ae4ba99 .github/workflows/fast-checks.yml | sha256sum --check -
-        printf '%s  %s\n' f3442edf075219bfb2b0c13c9522f4cf4e5928a2ee7547aa11f07d1a73bb5a92 .github/workflows/python-rust-523-bundle.yml | sha256sum --check -
-        printf '%s  %s\n' 6cbc112a29fc6e806265d803b07351357ac7e383cc16f0cc30a607e519bb4a69 .github/workflows/python-rust-523-capacity.yml | sha256sum --check -
-        printf '%s  %s\n' c5a1e39a6d90d76fac5620f74f9f1505a5379d4dd2a93636ea43c042477c762b .github/workflows/python-rust-523-model.yml | sha256sum --check -
-        printf '%s  %s\n' 1d5d90dd2d5498ee4773b6bd26a4276d6e7a242bebe80c0e709e931705827ee4 .github/workflows/python-rust-523-reclaim.yml | sha256sum --check -
-        printf '%s  %s\n' 64d8f6b19494b957723ee487512483222cd15b2fa90f9598395e428548b07278 .github/workflows/python-rust-523-sanitizer.yml | sha256sum --check -
+        printf '%s  %s\n' 22719e25574725f4fe7a95a3486741fd7eb9dded6e7f39c9fbeb8d44054d6f03 .github/workflows/fast-checks.yml | sha256sum --check -
+        printf '%s  %s\n' ada137e1a1bbe957903a930c49dc5496f5d685193b8d09970accd90f632c2a0c .github/workflows/python-rust-523-bundle.yml | sha256sum --check -
+        printf '%s  %s\n' e7718884de7e2b3f25a31d7c1fdf23f11f1a1ece82c4f86d1e84e6a9673d6388 .github/workflows/python-rust-523-capacity.yml | sha256sum --check -
+        printf '%s  %s\n' 634559405e03be79cf66dfcf888bfc28a0b27a51e92b5335013dfe1b16836f59 .github/workflows/python-rust-523-model.yml | sha256sum --check -
+        printf '%s  %s\n' 9f0ccbfee171ae626f8a87ae0c32eeb79ecc6b1ce8933da78528b7b3cb9a10a7 .github/workflows/python-rust-523-reclaim.yml | sha256sum --check -
+        printf '%s  %s\n' b2b6c63dab892b9a2c0358daf5dd07771515781737c369e5407926e7df90b188 .github/workflows/python-rust-523-sanitizer.yml | sha256sum --check -
         test ! -e openpilot/tools/lib/sanitizer.py && test ! -L openpilot/tools/lib/sanitizer.py
-        printf '%s  %s\n' 5423bf5ab464bce3342e6eee6fc07ab64a6ecca4c4756e35a19cc54520ba0af2 rust/crates/dev-tools/Cargo.toml | sha256sum --check -
+        printf '%s  %s\n' a1db3f1726cba01dfcb50efd8d13536de6ff9c47d5244346019010bf7be243a8 rust/crates/dev-tools/Cargo.toml | sha256sum --check -
         printf '%s  %s\n' a2e53b5164624f1946ca40fe188915493329dd25fe7abe37a9f7958dcf56adaa rust/crates/dev-tools/src/argparse_scan.rs | sha256sum --check -
         printf '%s  %s\n' dceaf77a84c9994ffdd2f3bd1da471823059e3b443d508eff8316642046ecb60 rust/crates/dev-tools/src/ci_policy.rs | sha256sum --check -
         printf '%s  %s\n' 45f5c9880964d2ce954f02997cf0b85c8b429051aa6900daaa822258f07546ee rust/crates/dev-tools/src/developer_ssh.rs | sha256sum --check -
@@ -284,20 +335,128 @@ jobs:
         printf '%s  %s\n' 8f10d1794cb35f382b807fc2f779d2eae181d7ec0966730852647d9ac1b449ac rust/crates/dev-tools/tests/fixtures/route-sanitizer-original/non-car-identity.original.json | sha256sum --check -
         printf '%s  %s\n' f4762d30d706a0956ab44b16c6b537cdd50092083ab6a8911e40c88b07ceba67 rust/crates/dev-tools/tests/fixtures/route-sanitizer-original/vin-codepoints.original.json | sha256sum --check -
         printf '%s  %s\n' e3cb05764be9dc80b1e6b9fc680e9d95d4504e8c5f8a22d7eb20d72c67372b91 rust/crates/dev-tools/tests/route_sanitizer_original.rs | sha256sum --check -
-        printf '%s  %s\n' 5d888f50c5e57483d55b5ab87fe3f8678406cb8bc875651d765573d225390f4f rust/crates/dev-tools/tests/route_vault_bundle.rs | sha256sum --check -
+        # 642d 대비 PermissionsExt import와 Repo::new의 tempdir chmod(0700)만 추가했다.
+        # 기존17 본문/원문 fixture/runtime pin은 그대로이며 Bundle 재검증은 별도 pending이다.
+        printf '%s  %s\n' 22d20af3565b313c4fe68a24a34b64b944c8650c40a92608a977387ba2ab252a rust/crates/dev-tools/tests/route_vault_bundle.rs | sha256sum --check -
         printf '%s  %s\n' 2066721af9f04888d00cc8572c5374ed142bf6d5d658cbf12b97a02c5452ca39 rust/tools/run-developer-tool | sha256sum --check -
         printf '%s  %s\n' 2a0dd4ada19ac68afd55a141961d7b1cd5afa3e0dfec8f230ca424e793ea2bbd tools/carrot_route_vault/README.md | sha256sum --check -
         printf '%s  %s\n' 2d769aa04fecbf2175532d5ebca995eaaece64adb1200d81bcddebabd1ff7a0d tools/ci/model-cache-482-natural-config.json | sha256sum --check -
         printf '%s  %s\n' 837946b71e9a99b0bc061a3a7ef5c7cd384a6e6ee11dc3d4c0ea03ea229cdd90 tools/ci/model_cache_probe_482.sh | sha256sum --check -
+        # 642d 검토 overlay: CFI/SAN/Bundle 삭제 후 수용과 history/ISA 진단은 각각 별도 gate다.
+        # 아래 핀은 기존 123+callback3의 source 범위를 확장하거나 새 기능 PASS를 만들지 않는다.
+        # 추가 batch는 e719의 reclaim 원문과 아래 두 controls diagnostic의 exact SHA만 허용한다.
+        # controls는 기존 cohort 실행에 연결하지 않는 별도 opt-in workflow이며 기능 수용 pending이다.
+        printf '%s  %s\n' 9bae7fff616a683c7a8c9070a860f8ce7f0ae05e92a8c43d0a599fa53943512a .github/workflows/python-rust-523-controls.yml | sha256sum --check -
+        printf '%s  %s\n' f3f67a52cab9cfb5190235120fc0ca7fec913509472157cb8a508d1955ad1870 tools/ci/controlsd_fixture_523.py | sha256sum --check -
+        printf '%s  %s\n' 6b0781cdd61e1bbdd4fd9e12573d3dde50ff64a1b0ed210eecce1a351ed3acb0 .github/workflows/python-rust-523-changed-files.yml | sha256sum --check -
+        printf '%s  %s\n' 158afd2994f455c7a2a1b55f996ba3e43dfa4c725952496f723f91c87358bacd .github/workflows/python-rust-523-history-image.yml | sha256sum --check -
+        printf '%s  %s\n' b47da7e2bda55afe1c6229f8b55ab539bdb72a87490a169049c77fc2b9c94ff2 rust/crates/dev-tools/src/bin/prepare_changed_files_context.rs | sha256sum --check -
+        printf '%s  %s\n' f6e9bdba494dba9307a34269c0ac199e855e52b8c3d307e69e2d68d61270f7c9 rust/crates/dev-tools/src/driver_daemon_current_catalog.rs | sha256sum --check -
+        printf '%s  %s\n' c81b1a2718b2770e196d40ef87c51daf3b67250ef10b9e6fa877c78cb2153418 rust/crates/dev-tools/src/model_family_prepare/catalog.rs | sha256sum --check -
+        printf '%s  %s\n' bd5bb60b5a73da1c4a2b3fbf5db277aab242dfda663ace57210038bab8c7a35b rust/crates/dev-tools/tests/changed_files_caller.rs | sha256sum --check -
+        printf '%s  %s\n' d497fbd9fd16f0840cb391d7fc0aa76f2982fdee6a0c2dccaa65e4233bcfeabe rust/crates/dev-tools/tests/changed_files_caller/absence.rs | sha256sum --check -
+        printf '%s  %s\n' 5e545050129b2ba24499d8cbed1b04db2f7d980dda94774ef008615a21acfa44 rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/README.md | sha256sum --check -
+        printf '%s  %s\n' 76240cd14a66a55b7ef91459b49919cdbd582d19161437221a6f65f7d22a362b rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/manifest.json | sha256sum --check -
+        printf '%s  %s\n' 096207b805d24df61425dfb70c83221c9d200c20f287137c07abcdd4f2b9108e rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000000.json | sha256sum --check -
+        printf '%s  %s\n' 7065a603f6342f453c6344877740fd429293efb96e2a373156b02f0420547223 rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000001.json | sha256sum --check -
+        printf '%s  %s\n' db77acf80ceb82562f33ddbd25b6f0efafbd65bffbc70e536f51bdeb1a1c02b1 rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000002.json | sha256sum --check -
+        printf '%s  %s\n' a72c0c6e977399970a2444cf0e618b96b894c305a35483c60c63d4398b00d61c rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000003.json | sha256sum --check -
+        printf '%s  %s\n' 44cffd0a9e044fdb63f3fc88c426d50de6226ad857ea95edf5acd54ba51e1bf5 rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000004.json | sha256sum --check -
+        printf '%s  %s\n' a6905c42d0740c6e9968099388eb3c0c3185a0bc6ef182d906b16eedad05fa05 rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000005.json | sha256sum --check -
+        printf '%s  %s\n' e26fc58e5eefb999547bde76bfad43ef68da195c7193529edc0a75804969c0eb rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000006.json | sha256sum --check -
+        printf '%s  %s\n' 890a77b7112a74e124f9a65043fa3f31df602cbbdeb7358b329292bb96c3aee8 rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000007.json | sha256sum --check -
+        printf '%s  %s\n' 6a80438696aaab6f82b25bbdb8d8219c8e74d7ad48fc975fddfc12b8df6c2367 rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000008.json | sha256sum --check -
+        printf '%s  %s\n' fd83ded01fc34cba518e5f5ccbe5f6adbedf3793b201800305c1284f99a839f0 rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000009.json | sha256sum --check -
+        printf '%s  %s\n' 1523b2fca3fc087a70e1c3a28cbc8788d5e933a70f40d8635841f7662433f993 rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000010.json | sha256sum --check -
+        printf '%s  %s\n' 72148ad8f88b8c98c403b0873ee080ebf4115f1d438ebf5d50b777dfd953e771 rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000011.json | sha256sum --check -
+        printf '%s  %s\n' 584cb878e6b8204007896808934a2dd910236dafa53d58171b1527e19e8c31f0 rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000012.json | sha256sum --check -
+        printf '%s  %s\n' a5c47e72a20cd8660e4428a2f166bcded94d49772fbbba5dcb695eb690feac3b rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000013.json | sha256sum --check -
+        printf '%s  %s\n' 19464d4a9d47c18129c369da0ddfe8519b62699ad5bbb2737a1f43d7cf058d2a rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000014.json | sha256sum --check -
+        printf '%s  %s\n' 2570afe63d10c2ac6b0c8b7851f0f76f1b0ac52f9552504ec1a232c5762d3a76 rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000015.json | sha256sum --check -
+        printf '%s  %s\n' 890a0e7eeb55b9fc73d06fd8c9915053609274ac702dbde373fd856f833cd222 rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000016.json | sha256sum --check -
+        printf '%s  %s\n' 1fa9a65d1c9d5e5ac85ecbd48bf4abf2086aa1ebd6c23339f9585c2cc5ddf342 rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000017.json | sha256sum --check -
+        printf '%s  %s\n' 5a66517359b7a1b6d7feeeceb1f575e511e15bf83736cc86060ced72ac9d5f0f rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000018.json | sha256sum --check -
+        printf '%s  %s\n' dca592e1c11ca59997d44c938282d091da13d8750967cec8825055dbf701245b rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000019.json | sha256sum --check -
+        printf '%s  %s\n' e5e6a9ba9e85d716e979d4659ebb94d04814f743d0fe576d2d5a230739c342ad rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000020.json | sha256sum --check -
+        printf '%s  %s\n' 4d096b2967fc9401bbb7e28e0ac0f014265b122cb74e72e535f23e715ba95c1d rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000021.json | sha256sum --check -
+        printf '%s  %s\n' b59604fb24c5e05fe704c5d99b9d3ea6a48bcfd3a2afe38066475f7e2b7a2e86 rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000022.json | sha256sum --check -
+        printf '%s  %s\n' 8a93af22bb4f7dce48003a015d6f5df41e7a2a808ecb6d1f852975fc123366d5 rust/crates/dev-tools/tests/route_vault_bundle/frozen.rs | sha256sum --check -
+        printf '%s  %s\n' 90125185dfc46c67f048fc7fbf46aa59ea7afd30887e547aeb7dbab5f3b0ed14 rust/crates/model-runtime/src/bin/offline-cached-code.rs | sha256sum --check -
+        printf '%s  %s\n' 674f695242ce77752ae0a581105a2bff9c1fdbc9bb5dcc7746f44384b33b841e rust/crates/model-runtime/src/cached_code.rs | sha256sum --check -
+        printf '%s  %s\n' 015e710c54ef879927443d3014bddcdb9fc27c2d5539b3ed500b16f05643cf55 rust/crates/model-runtime/src/cached_isa.rs | sha256sum --check -
+        printf '%s  %s\n' 3e88a87de7afbe8319c75a130afc4e6942f60f66ed577fbcc5c7ee759be95031 rust/crates/model-runtime/src/lib.rs | sha256sum --check -
+        printf '%s  %s\n' 203cec3da143a5cea6d9015c527e93e0496e0da6bba20ade83ad4fab8b6e72f8 rust/crates/model-runtime/tests/historical_cached_image.rs | sha256sum --check -
+        printf '%s  %s\n' e8d1afc32ba41eb2c327b8f9d797beee70883f00df0d43130e0bdf040c41aed3 rust/tools/prepare-changed-files-caller | sha256sum --check -
+        printf '%s  %s\n' 996d3c1a2d128a16967d83ad4527f0a1fd48fdd9ea0db6ddb971d5e169e18439 tools/ci/changed_files_reuse_523.sh | sha256sum --check -
+        printf '%s  %s\n' a20688786622f9cb4600d46e9ee2adc57a03950fc5fe4a1d7b0318558631f814 tools/ci/model_history_image_482.sh | sha256sum --check -
+        printf '%s  %s\n' 7372b8240f7998d6a78f6ef95b574cf64523b913282240d918ef5697a7d8507d rust/Cargo.toml | sha256sum --check -
+        printf '%s  %s\n' a82648159767a21268e61ed4f2aba64940b7458733333ece0fab653017929ea0 rust/Cargo.lock | sha256sum --check -
+        printf '%s  %s\n' 474342a18df37f923f59df43b1b90e6c0b0d6758612462bbc0dadbe37fe2cadf rust/rust-toolchain.toml | sha256sum --check -
+        printf '%s  %s\n' b817e5ccecebacdf904632a5d8705b266c6e00998516e5b13092c9c8c9be9412 rust/crates/dev-tools/src/lib.rs | sha256sum --check -
+        printf '%s  %s\n' b7fae464db25af5b1c13b64ce0e1556d3c4e6f88553641c927ff6f9d8f294980 rust/crates/model-runtime/Cargo.toml | sha256sum --check -
+        test ! -e tools/ci/check_changed_files.py && test ! -L tools/ci/check_changed_files.py
+        test ! -e tools/ci/tests/test_changed_files.py && test ! -L tools/ci/tests/test_changed_files.py
+        test ! -e tools/carrot_route_vault/build_bundle.py && test ! -L tools/carrot_route_vault/build_bundle.py
         python - <<'MANIFEST'
-        import subprocess,tomllib
+        import hashlib,subprocess,tomllib
+        from collections import Counter
         from pathlib import Path
-        old=tomllib.loads(subprocess.check_output(['git','show','97f7ad36dfa0919b4e5c216fb16f44ed29161663:rust/crates/dev-tools/Cargo.toml'],text=True))
-        new=tomllib.loads(Path('rust/crates/dev-tools/Cargo.toml').read_text())
-        entry={'name':'route_sanitizer_original','required-features':['route-sanitizer-native']}
-        assert new['test'].count(entry)==1
-        new['test'].remove(entry)
-        assert old==new, 'Only the reviewed test registration may change.'
+        base='97f7ad36dfa0919b4e5c216fb16f44ed29161663'
+        def before(path):
+            return subprocess.check_output(['git','show',base+':'+path])
+        def now(path):
+            return Path(path).read_bytes()
+        path='rust/crates/dev-tools/Cargo.toml'
+        old=tomllib.loads(before(path).decode())
+        new=tomllib.loads(now(path).decode())
+        # 기존 feature/dependency/bin/test는 이 두 등록 외에 의미가 같아야 한다.
+        for kind,entry in [
+            ('test',{'name':'route_sanitizer_original','required-features':['route-sanitizer-native']}),
+            ('bin',{'name':'prepare-changed-files-context','path':'src/bin/prepare_changed_files_context.rs','required-features':['changed-files-native']}),
+        ]:
+            assert new[kind].count(entry)==1
+            new[kind].remove(entry)
+        assert old==new, 'Only the reviewed SAN test and CFI metadata bin registrations may change.'
+        # 공유 lib 추가는 Linux/x86_64 + optional ISA feature로 제한한다.
+        path='rust/crates/model-runtime/src/lib.rs'
+        addition=b'#[cfg(all(\n    feature = "cached-program-isa",\n    target_arch = "x86_64",\n    target_os = "linux"\n))]\npub mod cached_isa;\n'
+        assert now(path)==before(path)+addition, 'Model lib changed outside the reviewed ISA module registration.'
+        # cached consumer 둘은 source roster 한 항 추가만 허용한다. 기존 driver 실행 증거로 삼지 않는다.
+        for path in ['rust/crates/dev-tools/src/driver_daemon_current_catalog.rs','rust/crates/dev-tools/src/model_family_prepare/catalog.rs']:
+            old=before(path)
+            roster=b'const CACHED_SOURCES: [&str; 9] = ['
+            anchor=b'    "rust/crates/model-runtime/src/cached_elf.rs",\n'
+            assert old.count(roster)==old.count(anchor)==1
+            expected=old.replace(roster,b'const CACHED_SOURCES: [&str; 10] = [').replace(anchor,anchor+b'    "rust/crates/model-runtime/src/cached_isa.rs",\n')
+            assert now(path)==expected, 'Cached consumer changed outside the reviewed source roster.'
+        # publish 변경은 native Bundle public entrypoint 한 줄뿐이다.
+        path='.github/workflows/carrot-route-vault-publish.yaml'
+        old=before(path)
+        command=b'python tools/carrot_route_vault/build_bundle.py "$RUNNER_TEMP/vault-bundle" --ref "$GITHUB_SHA"'
+        replacement=b'rust/tools/run-developer-tool build-route-vault-bundle "$RUNNER_TEMP/vault-bundle" --ref "$GITHUB_SHA"'
+        assert old.count(command)==1 and now(path)==old.replace(command,replacement)
+        # 기존 Fast의 cargo test 명령 본문은 유지한다. 새 준비/SDK/삭제 gate의 합격과는 별개다.
+        path='.github/workflows/fast-checks.yml'
+        commands=Counter(line for line in before(path).splitlines() if line.lstrip().startswith(b'cargo test '))
+        for line,count in commands.items():
+            assert now(path).splitlines().count(line)==count, 'Legacy Fast test selection changed.'
+        # auth wrapper 기존 세 명령의 feature는 같다. Bundle 선택지만 추가한다.
+        path='rust/tools/run-developer-tool'
+        old=before(path)
+        old_case=b'  developer-auth|developer-ssh|setup-ssh-keys) ;;'
+        new_case=b'  developer-auth|developer-ssh|setup-ssh-keys) features=developer-ssh-native ;;\n  build-route-vault-bundle) features=route-vault-bundle-native ;;'
+        old_feature=b'--features developer-ssh-native --bin "$tool"'
+        assert old.count(old_case)==old.count(old_feature)==1
+        assert now(path)==old.replace(old_case,new_case).replace(old_feature,b'--features "$features" --bin "$tool"')
+        # 이 admission block 외의 focused workflow는 642d 원문으로 고정한다.
+        path='.github/workflows/python-rust-523.yml'
+        raw=now(path)
+        start=b'    - name: Admit exact unchanged successful source cohorts\n'
+        end=b'    - name: Admit unchanged a134 runtime-qualified auth and setup cohorts\n'
+        assert raw.count(start)==raw.count(end)==1
+        prefix,tail=raw.split(start)
+        _,suffix=tail.split(end)
+        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='4decb9df2d5961ca67dc8e63f0a6d99234c7ec2a7eabc386020c0673837e88cb', 'Focused workflow changed outside the reviewed reuse block.'
         MANIFEST
         python - "$prior" <<'COHORTS'
         import hashlib,io,json,sys,zipfile
@@ -323,7 +482,13 @@ jobs:
            assert before.read('SOURCE_COMMIT').decode().strip()=='40efe7ef964c0b08f9ba867edd9c863fc545bc0a'
            assert before.read('source-before.sha256')==before.read('source-after.sha256')
         COHORTS
-        printf '%s\n' 'Reused unchanged 41cf Paramsd boundaries/op help/callback/API units; 40efe and earlier terminal/HTTP/Github/camera/controller/catalog ARM cohorts. a134 runtime-qualified cohorts are admitted separately; fresh alias26/Unicode15/SSH27 and strict Clippy. Legacy scanner entrypoint policy remains eager.' > "$CI_JOB_TEMP/proof/reused-scopes.txt"
+        printf '%s\n' \
+          '41cf Paramsd boundaries/op help/callback/API와 40efe 및 이전 terminal/HTTP/Github/camera/controller/catalog 발행 ARM 결과를 원래 source/artifact 그대로 재사용한다.' \
+          'auth parser/SSH lower 변경은 이 불변 범위 밖이다. a134 runtime-qualified auth/setup 및 fb1228 parser는 별도 admission, alias26/Unicode15/SSH27/Clippy는 fresh 단계다.' \
+          '642d exact overlay는 CFI/SAN/Bundle 원본 삭제나 cached/history/ISA 기능 성공을 수용하지 않는다. CFI d2c18(40097058000), SAN fb1228(40092771424), Bundle frozen/current CLI 및 history/ISA는 각 별도 gate다.' \
+          '추가 batch의 reclaim은 e719 원문 SHA, controls 두 파일은 지정 SHA, Bundle harness는 tempdir chmod0700 수정 SHA에만 묶는다. controls와 수정 후 Bundle은 pending이며 새 Bundle/모델 PASS를 주장하지 않는다.' \
+          '과거 ARM ELF를 current binary로 재표기하지 않는다. 현재 driver cached-source10 또는 모델/기기 전체 수용 증거가 아니며 cached native 기본 disabled 정책과 guarded-add8은 불변이다.' \
+          > "$CI_JOB_TEMP/proof/reused-scopes.txt"
     - name: Admit unchanged a134 runtime-qualified auth and setup cohorts
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash

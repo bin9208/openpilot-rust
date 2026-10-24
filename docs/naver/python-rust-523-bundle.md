@@ -147,3 +147,12 @@ helper는 `tests/route_vault_bundle/frozen.rs`에 두어 독립 integration targ
 
 새18기능/Clippy/실제삭제caller는 미실행이다. 로컬은 edition2021 rustfmt/YAML·Bash·embedded
 Python 문법/diff 및 원문23·기존17 동일성만 확인했다. Docker/NAS 발행·활성화는 수행하지 않았다.
+
+### 642d01 실제 frozen 검증 실패와 fixture 권한 보완
+
+[40100476480/job120891425944](https://github.com/bin9208/openpilot-rust/actions/runs/40100476480/job/120891425944)의
+native18은14성공/4실패였다. 모두 materialize의 authored parent0700 검사에서 실제0755를 관측했다.
+기존17본문·원문23을 바꾸지 않고 Repo helper가 TempDir 생성 직후0700을 직접 설정하도록 보완했다.
+umask/출력mode/기존guard700/Git fixture commit과 기대값은 유지한다. 독립 source 검토에는 finding이
+없었으며 수정 후 fresh18은 다음 CI 경계다. 다른 단계의 Clippy·실제 공개caller는 성공했지만
+전체 source 삭제 수용과 inventory credit은 계속0이다.
