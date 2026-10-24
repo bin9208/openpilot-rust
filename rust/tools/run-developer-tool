@@ -6,7 +6,8 @@ root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 tool=$1
 shift
 case "$tool" in
-  developer-auth|developer-ssh|setup-ssh-keys) ;;
+  developer-auth|developer-ssh|setup-ssh-keys) features=developer-ssh-native ;;
+  build-route-vault-bundle) features=route-vault-bundle-native ;;
   *) printf 'native developer tool: unsupported command: %s\n' "$tool" >&2; exit 1 ;;
 esac
 target=${CARGO_TARGET_DIR:-rust/target}
@@ -38,7 +39,7 @@ env -u RUSTFLAGS -u CARGO_ENCODED_RUSTFLAGS -u CARGO_BUILD_TARGET -u RUSTC_WRAPP
   -u CC -u CXX -u CFLAGS -u CXXFLAGS -u CPPFLAGS -u LDFLAGS \
   CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 CARGO_PROFILE_DEV_DEBUG=0 \
   rustup run 1.94.0 cargo build --manifest-path "$root/rust/Cargo.toml" \
-    -p openpilot-dev-tools --features developer-ssh-native --bin "$tool" --locked \
+    -p openpilot-dev-tools --features "$features" --bin "$tool" --locked \
     --target "$native_host" --target-dir "$target" >&2
 binary=$target/$native_host/debug/$tool
 [[ -x $binary ]] || { printf 'native developer tool: expected host executable missing: %s\n' "$binary" >&2; exit 1; }

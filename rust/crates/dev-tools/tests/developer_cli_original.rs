@@ -222,6 +222,13 @@ source_bytes = {tool: open(os.path.join(root, path), 'rb').read() for tool, path
 sources = {tool: data.decode('utf-8') for tool, data in source_bytes.items()}
 metadata = {'python':sys.version, 'requests':real_requests.__version__,
             'sources':{paths[k]:hashlib.sha256(v).hexdigest() for k,v in source_bytes.items()}}
+native_paths = ['rust/crates/dev-tools/src/developer_ssh.rs',
+                'rust/crates/dev-tools/src/developer_ssh/unicode_lower15.rs',
+                'rust/crates/dev-tools/src/developer_ssh/unicode_lower15.provenance.json',
+                'rust/crates/dev-tools/src/developer_ssh/unicode_lower15.LICENSE-UNICODE-V3.txt',
+                'rust/crates/dev-tools/src/developer_ssh/unicode_lower15_original.rs']
+metadata['native_sources'] = {path:hashlib.sha256(open(os.path.join(root,path),'rb').read()).hexdigest()
+                              for path in native_paths}
 class ExecIntercept(BaseException): pass
 rows = []
 for case in cases:
@@ -366,7 +373,7 @@ fn compare(group: &str, cases: &[Case]) {
 fn verify_envelope(envelope: &Value) {
     assert_eq!(envelope["schema"], "openpilot.developer-cli-original.v1");
     let (expected_count, tool) = match envelope["group"].as_str().unwrap() {
-        "ssh-plan" => (22, "ssh"),
+        "ssh-plan" => (26, "ssh"),
         "ssh-parser" => (13, "ssh"),
         "setup-effects" => (21, "setup"),
         group => panic!("unknown original expectation group: {group}"),
@@ -538,6 +545,26 @@ fn ssh_cli_original_aliases_prefix_unicode_duplicate_order_and_exec() {
             "unicode16-tje-alias-false-match",
             &["\u{1c8a}"],
             json!([{"dongle_id":"0000000000000002","alias":"\u{1c89}"}]),
+        ),
+        ssh(
+            "unicode15-cased-property-sigma-left",
+            &["\u{295}\u{3c3}"],
+            json!([{"dongle_id":"sigma-left","alias":"\u{295}\u{3a3}"}]),
+        ),
+        ssh(
+            "unicode15-ignorable-property-sigma-left",
+            &["a\u{1171e}\u{3c3}"],
+            json!([{"dongle_id":"sigma-ignore","alias":"A\u{1171e}\u{3a3}"}]),
+        ),
+        ssh(
+            "unicode15-cased-property-sigma-right",
+            &["a\u{3c2}\u{295}"],
+            json!([{"dongle_id":"sigma-right","alias":"A\u{3a3}\u{295}"}]),
+        ),
+        ssh(
+            "ascii-space-removed-before-sigma-context",
+            &["a\u{3c2}"],
+            json!([{"dongle_id":"sigma-space","alias":"A \u{3a3}"}]),
         ),
         ssh(
             "debug-literal-quoting",

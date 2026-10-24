@@ -4,18 +4,38 @@ use openpilot_dev_tools::{
     route_vault_bundle::{build, parse, GitFailure, SOURCES},
     seal::Result,
 };
+use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
 use std::{
     collections::{BTreeMap, VecDeque},
     ffi::OsString,
-    fs, io,
+    fs,
+    io::{self, Read, Write},
     os::unix::{
         ffi::{OsStrExt, OsStringExt},
-        fs::symlink,
+        fs::{symlink, MetadataExt, OpenOptionsExt},
     },
     path::{Path, PathBuf},
+    sync::atomic::{AtomicU64, Ordering},
     time::Duration,
 };
 const COMMIT: &str = "0123456789abcdef0123456789abcdef01234567";
+const ORIGINAL: &str = "tools/carrot_route_vault/build_bundle.py";
+const ORIGINAL_SHA: &str = "05551fc470864a4c70758a66b1a156c2b6d9e95e8deeb1f2a74ac13fb5259aa9";
+const FIXTURE_GIT_ENV: [(&str, &str); 12] = [
+    ("GIT_AUTHOR_NAME", "Fixture"),
+    ("GIT_AUTHOR_EMAIL", "fixture@example.invalid"),
+    ("GIT_COMMITTER_NAME", "Fixture"),
+    ("GIT_COMMITTER_EMAIL", "fixture@example.invalid"),
+    ("GIT_AUTHOR_DATE", "2000-01-01T00:00:00+0000"),
+    ("GIT_COMMITTER_DATE", "2000-01-01T00:00:00+0000"),
+    ("GIT_CONFIG_NOSYSTEM", "1"),
+    ("GIT_CONFIG_GLOBAL", "/dev/null"),
+    ("GIT_CONFIG_SYSTEM", "/dev/null"),
+    ("GIT_CONFIG_COUNT", "0"),
+    ("LC_ALL", "C.UTF-8"),
+    ("TZ", "UTC"),
+];
 const FIXED: [&str; 7] = [
     "server.py",
     "viewer.py",
@@ -286,7 +306,19 @@ fn command(root: &Path, args: Vec<OsString>) -> Captured {
 fn git(root: &Path, args: &[&str]) -> Vec<u8> {
     let mut a = argv(&["git"]);
     a.extend(argv(args));
-    let o = command(root, a);
+    let mut spec = CommandSpec::new_os(a, Duration::from_secs(20));
+    spec.cwd = Some(root.into());
+    spec.env
+        .extend(FIXTURE_GIT_ENV.map(|(name, value)| (name.to_owned(), value.to_owned())));
+    // fixture 구성만 고정한다. PATH 등 나머지 환경과 원본/네이티브의 Git 실행은 유지한다.
+    spec.env_remove = std::env::vars_os()
+        .map(|(key, _)| key)
+        .filter(|key| {
+            key.as_bytes().starts_with(b"GIT_")
+                && !key.to_str().is_some_and(|name| spec.env.contains_key(name))
+        })
+        .collect();
+    let o = NativeRunner.run(&spec).unwrap();
     assert_eq!(o.code, 0, "{}", String::from_utf8_lossy(&o.stderr));
     o.stdout
 }
@@ -294,17 +326,32 @@ struct Repo {
     _temp: tempfile::TempDir,
     root: PathBuf,
     commit: String,
+    source_root: PathBuf,
+    source_commit: String,
 }
 impl Repo {
     fn new() -> Self {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().join("repo");
         fs::create_dir(&root).unwrap();
-        git(&root, &["init", "-q"]);
+        git(
+            &root,
+            &[
+                "init",
+                "-q",
+                "--initial-branch=fixture",
+                "--object-format=sha1",
+                "--template=",
+            ],
+        );
         git(&root, &["config", "user.name", "Fixture"]);
         git(&root, &["config", "user.email", "fixture@example.invalid"]);
         git(&root, &["config", "core.autocrlf", "false"]);
         git(&root, &["config", "core.quotePath", "true"]);
+        git(&root, &["config", "core.hooksPath", "/dev/null"]);
+        git(&root, &["config", "commit.gpgSign", "false"]);
+        git(&root, &["config", "commit.cleanup", "verbatim"]);
+        git(&root, &["config", "core.attributesFile", "/dev/null"]);
         let files = [
             (
                 "openpilot/common/filter_simple.py",
@@ -331,24 +378,32 @@ impl Repo {
             fs::write(p, format!("fixed {name}\0\n")).unwrap();
         }
         symlink("nonexistent-target", root.join("openpilot/cereal/link.py")).unwrap();
-        // Execute the unchanged original only in future Actions, at its real __file__ root.
-        let original = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../../tools/carrot_route_vault/build_bundle.py");
-        fs::copy(
-            original,
-            root.join("tools/carrot_route_vault/build_bundle.py"),
-        )
-        .unwrap();
         git(&root, &["add", "."]);
         git(&root, &["commit", "-qm", "fixture"]);
         let commit = String::from_utf8(git(&root, &["rev-parse", "HEAD"]))
             .unwrap()
             .trim()
             .into();
+        // 원본은 fixture commit 뒤에 복사한다. SOURCES/FIXED에 없는 untracked 실행 도구다.
+        // 향후 원본 삭제 여부가 같은 합성 Git tree/commit을 바꾸지 않는다.
+        let source_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../..")
+            .canonicalize()
+            .unwrap();
+        let source_commit = String::from_utf8(git(&source_root, &["rev-parse", "HEAD"]))
+            .unwrap()
+            .trim()
+            .to_owned();
+        let original = fs::read(source_root.join(ORIGINAL)).unwrap();
+        assert_eq!(digest(&original), ORIGINAL_SHA);
+        fs::write(root.join(ORIGINAL), original).unwrap();
+        assert!(git(&root, &["ls-files", "--", ORIGINAL]).is_empty());
         Self {
             _temp: temp,
             root,
             commit,
+            source_root,
+            source_commit,
         }
     }
     fn native(&self, dest: &Path, reference: &str) -> (bool, Vec<u8>) {
@@ -364,22 +419,211 @@ impl Repo {
         (success, out)
     }
     fn original(&self, dest: &Path, reference: &str) -> Captured {
-        let mut spec = CommandSpec::new_os(
-            vec![
-                "python3".into(),
-                self.root
-                    .join("tools/carrot_route_vault/build_bundle.py")
-                    .into_os_string(),
-                dest.as_os_str().into(),
-                "--ref".into(),
-                reference.into(),
-            ],
-            Duration::from_secs(20),
-        );
-        spec.cwd = Some(self.root.clone());
-        spec.env.insert("LC_ALL".into(), "C.UTF-8".into());
-        NativeRunner.run(&spec).unwrap()
+        self.original_args(
+            &self.root,
+            vec![dest.as_os_str().into(), "--ref".into(), reference.into()],
+            dest,
+            Some(reference),
+        )
     }
+    fn original_args(
+        &self,
+        cwd: &Path,
+        args: Vec<OsString>,
+        dest_scope: &Path,
+        reference: Option<&str>,
+    ) -> Captured {
+        // 기존 parser 비교도 같은 capture 경로를 쓴다. 빈 전용 cwd가 그 출력 경계다.
+        assert!(cwd.starts_with(self._temp.path()) && dest_scope.starts_with(self._temp.path()));
+        assert!(
+            !self.root.starts_with(dest_scope) && !dest_scope.starts_with(&self.root),
+            "input repo and output capture scope must be disjoint"
+        );
+        let capture = PathBuf::from(
+            std::env::var_os("BUNDLE_ORIGINAL_CAPTURE_DIR")
+                .expect("private absolute BUNDLE_ORIGINAL_CAPTURE_DIR required"),
+        );
+        let metadata = fs::symlink_metadata(&capture).unwrap();
+        assert!(capture.is_absolute() && capture.canonicalize().unwrap() == capture);
+        assert!(metadata.is_dir() && !metadata.file_type().is_symlink());
+        assert_eq!(metadata.uid(), rustix::process::geteuid().as_raw());
+        assert_eq!(
+            metadata.mode() & 0o077,
+            0,
+            "capture directory must be private"
+        );
+        let python = PathBuf::from(
+            std::env::var_os("BUNDLE_ORACLE_PYTHON")
+                .expect("absolute BUNDLE_ORACLE_PYTHON required"),
+        );
+        assert!(python.is_absolute() && python.is_file());
+        let library = std::env::var_os("OPENPILOT_ORACLE_PYTHON_LIBRARY_PATH")
+            .expect("explicit prepared Python runtime library directory required");
+        assert!(!library.is_empty());
+        static NEXT_ROW: AtomicU64 = AtomicU64::new(0);
+        let row = NEXT_ROW.fetch_add(1, Ordering::Relaxed);
+        let fresh_prefix = self._temp.path().join(format!("unused-pycache-{row}"));
+        assert!(!fresh_prefix.exists());
+        let script = self.root.join(ORIGINAL);
+        let script_before = digest(&fs::read(&script).unwrap());
+        assert_eq!(script_before, ORIGINAL_SHA);
+        let mut prefix = OsString::from("pycache_prefix=");
+        prefix.push(&fresh_prefix);
+        let mut command = vec![
+            python.as_os_str().into(),
+            "-I".into(),
+            "-B".into(),
+            "-S".into(),
+            "-X".into(),
+            prefix,
+            script.as_os_str().into(),
+        ];
+        command.extend(args.iter().cloned());
+        let mut spec = CommandSpec::new_os(command, Duration::from_secs(20));
+        spec.cwd = Some(cwd.into());
+        spec.set_os_env(BTreeMap::from([
+            ("LC_ALL".into(), "C.UTF-8".into()),
+            ("LD_LIBRARY_PATH".into(), library.clone()),
+        ]));
+        let fixture_head = String::from_utf8(git(&self.root, &["rev-parse", "HEAD"]))
+            .unwrap()
+            .trim()
+            .to_owned();
+        let before = output_snapshot(dest_scope);
+        let result = NativeRunner.run(&spec);
+        let after = output_snapshot(dest_scope);
+        let script_after = fs::read(&script).ok().map(|bytes| digest(&bytes));
+        let thread = std::thread::current();
+        let outcome = match &result {
+            Ok(output) => json!({"kind":"captured", "code":output.code,
+                "stdout_hex":hex(&output.stdout), "stderr_hex":hex(&output.stderr)}),
+            Err(error) => json!({"kind":"runner_error", "error":error.to_string(),
+                "code":null, "stdout_hex":null, "stderr_hex":null}),
+        };
+        let record = json!({
+            "schema":"openpilot.route-vault-bundle.original-capture.v1",
+            "test_name":thread.name().expect("named Rust test thread required"), "row":row,
+            "source_root":raw_path(&self.source_root), "source_commit":self.source_commit,
+            "source_script_path":ORIGINAL, "source_script_sha256":ORIGINAL_SHA,
+            "copied_script":raw_path(&script), "script_sha256_before":script_before,
+            "script_sha256_after":script_after,
+            "fixture_root":raw_path(&self.root), "fixture_initial_head":self.commit,
+            "fixture_head":fixture_head, "input_reference":reference,
+            "input_argv_hex":args.iter().map(|arg| hex(arg.as_bytes())).collect::<Vec<_>>(),
+            "destination_scope":raw_path(dest_scope),
+            "destination_scope_kind":if reference.is_some() {"destination"} else {"parser-empty-cwd"},
+            "destination_before":before, "destination_after":after,
+            "provider_command_argv_hex":spec.effective_argv().iter().map(|arg| hex(arg.as_bytes())).collect::<Vec<_>>(),
+            "provider_cwd":raw_path(cwd), "provider_python_resolved":raw_path(&python.canonicalize().unwrap()),
+            "provider_library_path_hex":hex(library.as_bytes()),
+            "inherited_path_hex":std::env::var_os("PATH").map(|value| hex(value.as_bytes())),
+            "environment_overlay":{"LC_ALL":"C.UTF-8", "LD_LIBRARY_PATH_hex":hex(library.as_bytes())},
+            "remaining_environment":"inherited", "timeout_seconds":20,
+            "stdout_limit":spec.stdout_limit, "stderr_limit":spec.stderr_limit,
+            "outcome":outcome,
+        });
+        let output = capture.join(format!("original-{}-{row:06}.json", std::process::id()));
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .custom_flags(
+                (rustix::fs::OFlags::NOFOLLOW | rustix::fs::OFlags::NONBLOCK).bits() as i32,
+            )
+            .open(output)
+            .unwrap();
+        serde_json::to_writer_pretty(&mut file, &record).unwrap();
+        file.write_all(b"\n").unwrap();
+        assert_eq!(
+            script_after.as_deref(),
+            Some(ORIGINAL_SHA),
+            "copied original changed"
+        );
+        result.unwrap()
+    }
+}
+fn digest(bytes: &[u8]) -> String {
+    format!("{:x}", Sha256::digest(bytes))
+}
+fn hex(bytes: &[u8]) -> String {
+    const DIGITS: &[u8; 16] = b"0123456789abcdef";
+    let mut output = String::with_capacity(bytes.len() * 2);
+    for &byte in bytes {
+        output.push(char::from(DIGITS[usize::from(byte >> 4)]));
+        output.push(char::from(DIGITS[usize::from(byte & 15)]));
+    }
+    output
+}
+fn raw_path(path: &Path) -> Value {
+    json!({"bytes_hex":hex(path.as_os_str().as_bytes()), "utf8":path.to_str()})
+}
+fn output_snapshot(root: &Path) -> Value {
+    fn visit(root: &Path, at: &Path, rows: &mut Vec<Value>, total: &mut usize) {
+        assert!(rows.len() < 128, "synthetic output entry limit");
+        let metadata = match fs::symlink_metadata(at) {
+            Ok(value) => value,
+            Err(error) if error.kind() == io::ErrorKind::NotFound && at == root => {
+                rows.push(json!({"relative_path":raw_path(Path::new("")), "kind":"missing"}));
+                return;
+            }
+            Err(error) => panic!("cannot snapshot synthetic output: {error}"),
+        };
+        let mut row = json!({"relative_path":raw_path(at.strip_prefix(root).unwrap()), "mode":metadata.mode()});
+        if metadata.is_dir() {
+            row["kind"] = json!("directory");
+            rows.push(row);
+            let mut children = fs::read_dir(at)
+                .unwrap()
+                .take(129)
+                .map(|entry| entry.unwrap().path())
+                .collect::<Vec<_>>();
+            assert!(
+                children.len() <= 128 - rows.len(),
+                "synthetic output entry limit"
+            );
+            children.sort();
+            for child in children {
+                visit(root, &child, rows, total);
+            }
+        } else if metadata.is_file() {
+            let file = fs::OpenOptions::new()
+                .read(true)
+                .custom_flags(
+                    (rustix::fs::OFlags::NOFOLLOW | rustix::fs::OFlags::NONBLOCK).bits() as i32,
+                )
+                .open(at)
+                .unwrap();
+            let opened = file.metadata().unwrap();
+            assert!(opened.is_file());
+            assert_eq!(
+                (opened.dev(), opened.ino()),
+                (metadata.dev(), metadata.ino())
+            );
+            assert!(opened.len() <= 1024 * 1024, "synthetic output file limit");
+            let mut bytes = Vec::new();
+            file.take(1024 * 1024 + 1).read_to_end(&mut bytes).unwrap();
+            assert!(
+                bytes.len() <= 1024 * 1024,
+                "synthetic output file grew beyond limit"
+            );
+            *total += bytes.len();
+            assert!(*total <= 2 * 1024 * 1024, "synthetic output total limit");
+            row["kind"] = json!("file");
+            row["bytes_hex"] = json!(hex(&bytes));
+            row["sha256"] = json!(digest(&bytes));
+            rows.push(row);
+        } else if metadata.file_type().is_symlink() {
+            row["kind"] = json!("symlink");
+            row["target"] = raw_path(&fs::read_link(at).unwrap());
+            rows.push(row);
+        } else {
+            panic!("nonregular synthetic output");
+        }
+    }
+    let mut rows = Vec::new();
+    let mut total = 0;
+    visit(root, root, &mut rows, &mut total);
+    json!({"entries":rows, "file_bytes":total})
 }
 fn snapshot(root: &Path) -> BTreeMap<Vec<u8>, (bool, Vec<u8>)> {
     fn visit(root: &Path, at: &Path, out: &mut BTreeMap<Vec<u8>, (bool, Vec<u8>)>) {
@@ -638,14 +882,7 @@ fn actual_original_and_native_argparse_exit_and_creation_effects_match() {
         let new_cwd = r._temp.path().join(format!("parser-{i}-new"));
         fs::create_dir(&old_cwd).unwrap();
         fs::create_dir(&new_cwd).unwrap();
-        let mut old = vec![
-            OsString::from("python3"),
-            r.root
-                .join("tools/carrot_route_vault/build_bundle.py")
-                .into_os_string(),
-        ];
-        old.extend(argv(args));
-        let o = command(&old_cwd, old);
+        let o = r.original_args(&old_cwd, argv(args), &old_cwd, None);
         let mut new = vec![OsString::from(env!(
             "CARGO_BIN_EXE_build-route-vault-bundle"
         ))];

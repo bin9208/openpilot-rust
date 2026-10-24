@@ -11,6 +11,7 @@ permissions:
 concurrency:
   group: python-rust-523-bundle-${{ github.ref }}
   cancel-in-progress: false
+  queue: max
 jobs:
   bundle:
     name: Native committed bundle source and CLI acceptance
@@ -116,9 +117,27 @@ jobs:
         available=$(df -PB1 "$CI_JOB_TEMP" | awk 'NR == 2 {print $4}')
         [[ $available =~ ^[0-9]+$ ]]
         ((available >= 512 * 1024 * 1024))
-        python -m venv "$CI_JOB_TEMP/venv"
+        "$pythonLocation/bin/python" -I -B -m venv "$CI_JOB_TEMP/venv"
         printf '%s\n' "$CI_JOB_TEMP/venv/bin" >> "$GITHUB_PATH"
-    - name: Prepare native bundle toolchain and fresh CLI
+        library=$(readlink -e "$pythonLocation/lib")
+        test "$library" = "$pythonLocation/lib"
+        test -f "$library/libpython3.12.so.1.0"
+        printf '%s\n' "OPENPILOT_ORACLE_PYTHON_LIBRARY_PATH=$library" >> "$GITHUB_ENV"
+        sha256sum "$library/libpython3.12.so.1.0" "$library/python3.12/argparse.py" "$(readlink -e "$CI_JOB_TEMP/venv/bin/python")" > "$CI_JOB_TEMP/proof/oracle-runtime.sha256"
+        /usr/bin/env -i HOME="$CI_JOB_TEMP/home" LD_LIBRARY_PATH="$library" "$CI_JOB_TEMP/venv/bin/python" -I -B -X "pycache_prefix=$CI_JOB_TEMP/unused-oracle-pycache" - <<'RUNTIME' > "$CI_JOB_TEMP/proof/oracle-runtime.json"
+        import argparse, hashlib, json, os, pathlib, sys
+        assert sys.version_info[:3] == (3,12,15), sys.version
+        base = pathlib.Path(sys.base_prefix).resolve()
+        provider = (base/'lib/libpython3.12.so.1.0').resolve(strict=True)
+        assert pathlib.Path(argparse.__file__).resolve() == base/'lib/python3.12/argparse.py'
+        info = provider.stat()
+        mappings = [line.split(maxsplit=5) for line in pathlib.Path('/proc/self/maps').read_text().splitlines() if 'libpython' in line]
+        device = f'{os.major(info.st_dev):02x}:{os.minor(info.st_dev):02x}'
+        assert mappings and all(len(r)==6 and r[3]==device and int(r[4])==info.st_ino and pathlib.Path(r[5]).resolve()==provider for r in mappings)
+        print(json.dumps({'version':sys.version,'executable':str(pathlib.Path(sys.executable).resolve()),'base_prefix':str(base),'library':str(provider),'library_sha256':hashlib.sha256(provider.read_bytes()).hexdigest(),'argparse':str(pathlib.Path(argparse.__file__).resolve()),'argparse_sha256':hashlib.sha256(pathlib.Path(argparse.__file__).read_bytes()).hexdigest(),'cleared_environment':True},indent=2))
+        RUNTIME
+        printf '%s\n' "BUNDLE_ORACLE_PYTHON=$CI_JOB_TEMP/venv/bin/python" >> "$GITHUB_ENV"
+    - name: Prepare native bundle toolchain and original comparison providers
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
@@ -126,7 +145,7 @@ jobs:
       run: |
         set -euo pipefail
         available=$(df -PB1 "$DIAG_SOURCE" | awk 'NR == 2 {print $4}')
-        # Private registry/target plus 128 MiB committed-source contexts/proofs.
+        # Initial library/contracts only; the public host bootstrap is admitted separately below.
         (( available >= 2 * 1024 * 1024 * 1024 ))
         printf '{"available_bytes":%s,"planned_preparation_and_diagnostic_growth_bytes":2147483648}\n' "$available" > "$CI_JOB_TEMP/proof/build-growth.json"
         sudo -n apt-get -o APT::Architectures=amd64 update
@@ -138,56 +157,30 @@ jobs:
         rustc -vV > "$CI_JOB_TEMP/proof/rustc.txt"
         cargo -V > "$CI_JOB_TEMP/proof/cargo.txt"
         unset RUSTFLAGS CARGO_ENCODED_RUSTFLAGS CARGO_BUILD_TARGET
-        cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features route-vault-bundle-native --bin build-route-vault-bundle 2>&1 | tee "$CI_JOB_TEMP/proof/bundle-cli-build.log"
-        df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after-build.txt"
-        du -sx --block-size=1 "$CARGO_HOME" "$CARGO_TARGET_DIR" "$CI_JOB_TEMP/venv" > "$CI_JOB_TEMP/proof/allocated-after-build.tsv"
+        find "$CI_JOB_TEMP/venv" -type f -print0 | sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/oracle-venv-files.before.sha256"
+        find "$CI_JOB_TEMP/venv" -type l -printf '%p\t%l\n' | sort > "$CI_JOB_TEMP/proof/oracle-venv-links.before.txt"
       id: toolchain
-    - name: Admit unchanged successful bundle contract cases
+    - name: Validate native bundle library contracts
       if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
-      env:
-        GH_TOKEN: ${{ github.token }}
       run: |
         set -euo pipefail
-        prior="$CI_JOB_TEMP/proof/prior-bundle-40084922406.zip"
-        gh api repos/bin9208/openpilot-rust/actions/artifacts/12557345320/zip > "$prior"
-        printf 'b42c5f157976dc8dd421ce571833b31377a5a8b4799c9854473a0089fd8233c0  %s\n' "$prior" | sha256sum --check -
-        unzip -t "$prior" > "$CI_JOB_TEMP/proof/prior-bundle-crc.txt"
-        test "$(unzip -p "$prior" SOURCE_COMMIT)" = 97f7ad36dfa0919b4e5c216fb16f44ed29161663
-        unzip -p "$prior" source-before.sha256 > "$CI_JOB_TEMP/proof/prior-bundle-source-before.sha256"
-        unzip -p "$prior" source-after.sha256 > "$CI_JOB_TEMP/proof/prior-bundle-source-after.sha256"
-        cmp "$CI_JOB_TEMP/proof/prior-bundle-source-before.sha256" "$CI_JOB_TEMP/proof/prior-bundle-source-after.sha256"
-        unzip -p "$prior" rust-tools.sha256 > "$CI_JOB_TEMP/proof/prior-bundle-tools.sha256"
-        sha256sum --check "$CI_JOB_TEMP/proof/prior-bundle-tools.sha256"
-        unzip -p "$prior" bundle-lib.log | grep -F 'test result: ok. 1 passed;'
-        unzip -p "$prior" bundle-integration.log | grep -F 'test result: ok. 17 passed;'
-        git fetch --no-tags --depth=1 origin 97f7ad36dfa0919b4e5c216fb16f44ed29161663
-        git diff --no-renames --name-only -z 97f7ad36dfa0919b4e5c216fb16f44ed29161663 HEAD > "$CI_JOB_TEMP/proof/bundle-changed-paths.bin"
-        while IFS= read -r -d '' changed; do
-          case "$changed" in
-            .github/workflows/python-rust-523*.yml|docs/naver/python-rust-523*.md) ;;
-            rust/crates/dev-tools/Cargo.toml|rust/crates/dev-tools/src/developer_ssh/login/cli.rs|rust/crates/dev-tools/tests/route_vault_bundle.rs|rust/crates/dev-tools/tests/developer_auth.rs|rust/crates/dev-tools/tests/route_sanitizer_original.rs|tools/ci/model_cache_probe_482.sh|tools/ci/model-cache-482-natural-config.json) ;;
-            *) printf 'Changed dependency invalidates bundle reuse: %s\n' "$changed" >&2; exit 1 ;;
-          esac
-        done < "$CI_JOB_TEMP/proof/bundle-changed-paths.bin"
-        printf '%s  %s\n' 5423bf5ab464bce3342e6eee6fc07ab64a6ecca4c4756e35a19cc54520ba0af2 rust/crates/dev-tools/Cargo.toml | sha256sum --check -
-        printf '%s  %s\n' 4ec4ac3923e32ed834dffee608080b31c5806205823ede2221b057020b172496 rust/crates/dev-tools/src/developer_ssh/login/cli.rs | sha256sum --check -
-        printf '%s  %s\n' e96c8774ae224da098c2fc96c010d9036ecbd4b2b52a793e4e952c5ed30b6959 rust/crates/dev-tools/tests/route_vault_bundle.rs | sha256sum --check -
-        printf '%s  %s\n' 0680c5ff748a107e660731bf171c992d81102ff4b83eecf67c777bbf2a8301d9 rust/crates/dev-tools/tests/developer_auth.rs | sha256sum --check -
-        printf '%s  %s\n' 45300e9148e620047b2c3901e8cf4365e51c30b8f7676ecd56010f0513b4f5c9 rust/crates/dev-tools/tests/route_sanitizer_original.rs | sha256sum --check -
-        python - <<'MANIFEST'
-        import subprocess,tomllib
-        from pathlib import Path
-        old=tomllib.loads(subprocess.check_output(['git','show','97f7ad36dfa0919b4e5c216fb16f44ed29161663:rust/crates/dev-tools/Cargo.toml'],text=True))
-        new=tomllib.loads(Path('rust/crates/dev-tools/Cargo.toml').read_text())
-        entry={'name':'route_sanitizer_original','required-features':['route-sanitizer-native']}
-        assert new['test'].count(entry)==1
-        new['test'].remove(entry)
-        assert old==new, 'Only the reviewed test registration may change.'
-        MANIFEST
-        printf '%s\n' 'Reuse 97f7 bundle lib1/integration17 with reviewed style-only test changes; fresh strict Clippy/build and actual committed-context CLI comparison.' > "$CI_JOB_TEMP/proof/bundle-reused-scopes.txt"
-    - name: Validate remaining strict bundle Clippy
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features route-vault-bundle-native --lib route_vault_bundle::tests:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/bundle-lib.log"
+        grep -F 'test result: ok. 1 passed;' "$CI_JOB_TEMP/proof/bundle-lib.log"
+    - name: Capture original committed bundle and error-boundary contracts
+      if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        mkdir -m 700 "$CI_JOB_TEMP/proof/bundle-original"
+        export BUNDLE_ORIGINAL_CAPTURE_DIR="$CI_JOB_TEMP/proof/bundle-original"
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features route-vault-bundle-native --test route_vault_bundle -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/bundle-integration.log"
+        grep -F 'test result: ok. 17 passed;' "$CI_JOB_TEMP/proof/bundle-integration.log"
+        df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after-contracts.txt"
+        du -sx --block-size=1 "$CARGO_HOME" "$CARGO_TARGET_DIR" "$CI_JOB_TEMP/venv" > "$CI_JOB_TEMP/proof/allocated-after-contracts.tsv"
+    - name: Validate strict bundle Clippy after caller and capture changes
       if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
@@ -196,27 +189,71 @@ jobs:
         cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features route-vault-bundle-native --lib --bin build-route-vault-bundle --test route_vault_bundle -- -D warnings 2>&1 | tee "$CI_JOB_TEMP/proof/bundle-clippy.log"
         df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after-clippy.txt"
         du -sx --block-size=1 "$CARGO_HOME" "$CARGO_TARGET_DIR" "$CI_JOB_TEMP/venv" > "$CI_JOB_TEMP/proof/allocated-after-clippy.tsv"
-    - name: Compare actual original and native CLI committed contexts
+    - name: Compare original CLI and public native bootstrap committed contexts
       if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       run: |
         set -euo pipefail
-        available=$(df -PB1 "$CI_JOB_TEMP" | awk 'NR == 2 {print $4}')
-        ((available >= 128 * 1024 * 1024))
         proof="$CI_JOB_TEMP/proof/committed-contexts"
-        mkdir "$proof" "$proof/bin" "$proof/empty-cwd"
-        printf '{"available_bytes":%s,"planned_context_growth_bytes":134217728}\n' "$available" > "$proof/growth.json"
+        mkdir "$proof" "$proof/empty-cwd"
+        LD_LIBRARY_PATH="$OPENPILOT_ORACLE_PYTHON_LIBRARY_PATH" "$BUNDLE_ORACLE_PYTHON" -I -B -S -X "pycache_prefix=$proof/unused-growth-pycache" - <<'GROWTH'
+        import json,os
+        from pathlib import Path
+        source=Path(os.environ['DIAG_SOURCE'])
+        job=Path(os.environ['CI_JOB_TEMP'])
+        target=Path(os.environ['CARGO_TARGET_DIR'])
+        cargo=Path(os.environ['CARGO_HOME'])
+        proof=job/'proof/committed-contexts'
+        assert target==source/'rust/target' and cargo==job/'cargo-home', 'Unexpected private build paths'
+        for path in (source,job,target,cargo,proof):
+         assert path.is_absolute() and path.resolve(strict=True)==path and path.is_dir(), path
+        host_growth=3*1024**3
+        context_growth=128*1024**2
+        filesystems={}
+        # 같은 device의 target/cache는 helper의 합산 3 GiB 추정을 공유하고 context를 더한다.
+        # 다른 device라면 target과 cache 양쪽에서 기존 helper 3072 MiB gate를 충족한다.
+        for role,path in (('target',target),('cargo_home',cargo),('contexts',proof)):
+         device=path.stat().st_dev
+         space=os.statvfs(path)
+         available=space.f_bavail*space.f_frsize
+         row=filesystems.setdefault(device,{'device':device,'available_bytes':available,'host_build_growth_bytes':0,'context_growth_bytes':0,'paths':{}})
+         row['available_bytes']=min(row['available_bytes'],available)
+         row['paths'][role]=str(path)
+         if role=='contexts': row['context_growth_bytes']=context_growth
+         else: row['host_build_growth_bytes']=host_growth
+        for row in filesystems.values():
+         row['required_bytes']=row['host_build_growth_bytes']+row['context_growth_bytes']
+        record={'source':str(source),'source_device':source.stat().st_dev,'target':str(target),'target_device':target.stat().st_dev,'host_build_growth_bytes':host_growth,'context_growth_bytes':context_growth,'filesystems':list(filesystems.values())}
+        (proof/'growth.json').write_text(json.dumps(record,indent=2)+'\n')
+        assert all(row['available_bytes']>=row['required_bytes'] for row in filesystems.values()), record
+        GROWTH
+        providers="$CI_JOB_TEMP/bundle-programs"
+        mkdir -m 700 "$providers"
         printf '%s  %s\n' 05551fc470864a4c70758a66b1a156c2b6d9e95e8deeb1f2a74ac13fb5259aa9 tools/carrot_route_vault/build_bundle.py | sha256sum --check -
-        binary="$CARGO_TARGET_DIR/debug/build-route-vault-bundle"
-        test -x "$binary"
-        sha256sum "$binary" > "$proof/native-elf.sha256"
-        readelf -h "$binary" > "$proof/native-elf.txt"
-        ln -s "$(command -v git)" "$proof/bin/git"
-        # Both lanes read this exact committed checkout. Generated Python files are inert output data.
-        (cd "$proof/empty-cwd" && PATH="$proof/bin" /usr/bin/timeout --kill-after=5s 180s "$CI_JOB_TEMP/venv/bin/python" -I -S "$DIAG_SOURCE/tools/carrot_route_vault/build_bundle.py" "$proof/original" --ref "$GITHUB_SHA") > "$proof/original.stdout" 2> "$proof/original.stderr"
-        (cd "$proof/empty-cwd" && PATH="$proof/bin" /usr/bin/timeout --kill-after=5s 180s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "$proof/native.exec" "$binary" "$proof/native" --ref "$GITHUB_SHA") > "$proof/native.stdout" 2> "$proof/native.stderr"
-        python - <<'CONTEXTS'
+        printf '%s  %s\n' 2066721af9f04888d00cc8572c5374ed142bf6d5d658cbf12b97a02c5452ca39 "$DIAG_SOURCE/rust/tools/run-developer-tool" | tee "$proof/public-entry.sha256" | sha256sum --check -
+        # Only explicit native build/Git providers are available to the public helper.
+        # These links stay outside the artifact; their target hashes remain in proof.
+        for name in bash sh env dirname df awk sed rustup rustc cargo git cc c++ gcc g++ as ld ar ranlib pkg-config uname make cmake; do
+          if program=$(command -v "$name"); then
+            target=$(readlink -e "$program")
+            test -f "$target" && test -x "$target"
+            ln -s "$target" "$providers/$name"
+            sha256sum "$target" >> "$proof/native-programs.sha256"
+            printf '%s\t%s\n' "$name" "$target" >> "$proof/native-programs.tsv"
+          fi
+        done
+        for required in bash env dirname df awk sed rustup rustc cargo git cc ar; do test -x "$providers/$required"; done
+        # Both lanes read this exact committed checkout. Python files are inert output data.
+        (cd "$proof/empty-cwd" && PATH="$providers" /usr/bin/timeout --kill-after=5s 180s "$BUNDLE_ORACLE_PYTHON" -I -B -S -X "pycache_prefix=$proof/unused-original-pycache" "$DIAG_SOURCE/tools/carrot_route_vault/build_bundle.py" "$proof/original" --ref "$GITHUB_SHA") > "$proof/original.stdout" 2> "$proof/original.stderr"
+        (cd "$proof/empty-cwd" && /usr/bin/env -u BASH_ENV PATH="$providers" /usr/bin/timeout --kill-after=5s 300s /usr/bin/strace -f -qq -xx -s 65535 -e trace=execve,execveat -o "$proof/native.exec" "$DIAG_SOURCE/rust/tools/run-developer-tool" build-route-vault-bundle "$proof/native" --ref "$GITHUB_SHA") > "$proof/native.stdout" 2> "$proof/native-bootstrap.stderr"
+        host=$(sed -n 's/^host: //p' "$CI_JOB_TEMP/proof/rustc.txt")
+        test "$host" = x86_64-unknown-linux-gnu
+        export BUNDLE_NATIVE_ELF="$CARGO_TARGET_DIR/$host/debug/build-route-vault-bundle"
+        test -x "$BUNDLE_NATIVE_ELF"
+        sha256sum "$BUNDLE_NATIVE_ELF" > "$proof/native-elf.sha256"
+        readelf -h "$BUNDLE_NATIVE_ELF" > "$proof/native-elf.txt"
+        LD_LIBRARY_PATH="$OPENPILOT_ORACLE_PYTHON_LIBRARY_PATH" "$BUNDLE_ORACLE_PYTHON" -I -B -S -X "pycache_prefix=$proof/unused-audit-pycache" - <<'CONTEXTS'
         import hashlib,json,os,re,stat
         from pathlib import Path
         proof=Path(os.environ['CI_JOB_TEMP'])/'proof/committed-contexts'
@@ -232,19 +269,152 @@ jobs:
         assert (proof/'original/SOURCE_COMMIT').read_text()==os.environ['GITHUB_SHA']+'\n'
         for lane in ['original','native']:
          assert (proof/f'{lane}.stdout').read_text()==f"Built {proof/lane} from {os.environ['GITHUB_SHA']}\n"
-         assert (proof/f'{lane}.stderr').read_bytes()==b''
-        trace=(proof/'native.exec').read_text()
-        assert 'execveat(' not in trace, 'Unreviewed FD exec form'
-        programs=[]
-        for m in re.finditer(r'\bexecve\(("(?:[^"\\]|\\.)*"),',trace):
-         path=json.loads(m[1]);programs.append(path)
-         assert 'python' not in Path(path).name.lower() and not path.endswith('.py'), path
-        assert programs and Path(programs[0]).name=='build-route-vault-bundle'
-        assert any(Path(p).name=='git' for p in programs)
+        assert (proof/'original.stderr').read_bytes()==b''
+        # Native stderr is the public helper's retained Cargo/build output.
+        binary=os.environ['BUNDLE_NATIVE_ELF']
+        entry=os.fsencode(str(Path(os.environ['DIAG_SOURCE'])/'rust/tools/run-developer-tool'))
+        final=os.fsencode(binary)
+        expected_argv=[final,os.fsencode(str(proof/'native')),b'--ref',os.fsencode(os.environ['GITHUB_SHA'])]
+        entry_argv=[entry,b'build-route-vault-bundle',*expected_argv[1:]]
+        entry_sha='2066721af9f04888d00cc8572c5374ed142bf6d5d658cbf12b97a02c5452ca39'
+        def require(condition,message):
+         if not condition: raise ValueError(message)
+        def check_image(magic,first_line,sha,script):
+         if script:
+          require(first_line==b'#!/usr/bin/env bash\n' and sha==entry_sha,'Public Bash helper kind/pin changed')
+         else: require(magic==b'\x7fELF','Unknown successful script/non-ELF executable')
+        # -xx C strings only. Plain/unknown escapes, NUL and abbreviations are unsupported.
+        cstring=r'"(?:\\x[0-9a-fA-F]{2})*"'
+        vector=rf'\[(?:{cstring}(?:, {cstring})*)?\]'
+        environment=rf'(?:{vector}|NULL|0x[0-9a-fA-F]+(?: /\* [0-9]+ vars? \*/)?)'
+        complete=re.compile(rf'execve\((?P<program>{cstring}), (?P<argv>{vector}|NULL), (?P<environment>{environment})[ \t]*\) += (?P<result>0|-1 E[A-Z0-9_]+ \([A-Za-z0-9 ,./:_+-]+\))')
+        cpu=r'[0-9]+(?: /\* [0-9]+(?:\.[0-9]+)? s \*/)?'
+        sigchld=re.compile(rf'--- SIGCHLD \{{si_signo=SIGCHLD, si_code=CLD_(?:EXITED|KILLED|DUMPED|TRAPPED|STOPPED|CONTINUED), si_pid=[1-9][0-9]*, si_uid=[0-9]+, si_status=(?:[0-9]+|SIG[A-Z0-9]+)(?:, si_utime={cpu}, si_stime={cpu})?\}} ---')
+        def cbytes(text):
+         data=bytes.fromhex(text[1:-1].replace('\\x',''))
+         require(len(data)<=65535 and b'\0' not in data,'Unsupported/truncated C string')
+         return data
+        def parse_exec(body,pid):
+         match=complete.fullmatch(body)
+         require(match is not None,'Malformed, abbreviated or unsupported execve')
+         program=cbytes(match['program'])
+         require(bool(program),'Empty executable path')
+         args=None if match['argv']=='NULL' else [cbytes(token) for token in re.findall(cstring,match['argv'])]
+         if match['environment'].startswith('['):
+          for token in re.findall(cstring,match['environment']): cbytes(token)
+         basename=program.rsplit(b'/',1)[-1].lower()
+         require(b'python' not in basename and not basename.endswith(b'.py'),'Forbidden Python attempt, including failed PATH lookup')
+         return {'pid':pid,'program':program,'argv':args,'success':match['result']=='0'}
+        def audit(text):
+         require(bool(text) and text.endswith('\n') and all(c in '\n\t' or 32<=ord(c)<=126 for c in text),'Empty, non-ASCII/control-byte or truncated trace')
+         calls=[]; pending={}; exited=set()
+         for line in text.split('\n')[:-1]:
+          match=re.fullmatch(r' *(?:([1-9][0-9]*) +|\[pid +([1-9][0-9]*)\] +)(.+)',line)
+          require(match is not None,'Missing PID or unsupported trace record')
+          pid=int(match[1] or match[2]); body=match[3]
+          require(pid not in exited,'Reused exited PID')
+          require(not body.startswith(('execveat(','<... execveat resumed>')),'execveat is unsupported')
+          if body.startswith('<... execve resumed>'):
+           require(pid in pending,'Orphan or wrong-PID execve resume')
+           head,index=pending.pop(pid)
+           calls[index]=parse_exec(head+body[len('<... execve resumed>'):],pid)
+          elif body.startswith('execve('):
+           require(pid not in pending,'Second exec before same PID resumed')
+           if body.endswith('<unfinished ...>'):
+            pending[pid]=(body[:-len('<unfinished ...>')],len(calls))
+            calls.append(None)
+           else: calls.append(parse_exec(body,pid))
+          elif sigchld.fullmatch(body): pass
+          else:
+           ended=re.fullmatch(r'\+\+\+ exited with ([0-9]+) \+\+\+',body)
+           require(ended is not None and int(ended[1])<=255,'Unknown, malformed or unsupported trace metadata')
+           require(pid not in pending,'PID exited with unresolved execve')
+           exited.add(pid)
+         require(not pending and calls and all(call is not None for call in calls),'Unresolved unfinished execve at EOF')
+         require(calls[0]['program']==entry and calls[0]['success'] and calls[0]['argv']==entry_argv,'First public helper exec/argv did not succeed')
+         require(sum(call['program']==entry for call in calls)==1,'Repeated public helper exec')
+         final_calls=[call for call in calls if call['program']==final]
+         require(len(final_calls)==1 and final_calls[0]['success'] and final_calls[0]['argv']==expected_argv,'Final ELF must have one successful exec with exact argv')
+         require(any(call['success'] and call['program'].rsplit(b'/',1)[-1]==b'git' for call in calls),'Missing successful Git exec')
+         return calls
+        # 순수 문자열 controls다. 실제 SDK/helper 실행 성공이나 source retirement 증거가 아니다.
+        def quote(data): return '"'+''.join(f'\\x{byte:02x}' for byte in data)+'"'
+        def synthetic(pid,program,args,result='0'):
+         return f"{pid} execve({quote(program)}, [{', '.join(quote(arg) for arg in args)}], 0x123 /* 1 var */) = {result}\n"
+        first=synthetic(10,entry,entry_argv)
+        git=synthetic(11,b'/controlled/git',[b'git',b'rev-parse',b'HEAD'])
+        last=synthetic(10,final,expected_argv)
+        good=first+git+last
+        unfinished=last.rsplit(') = ',1)[0]+' <unfinished ...>\n'
+        resumed=first+git+unfinished+'10 <... execve resumed>) = 0\n'
+        failed_cc=synthetic(12,b'/missing/cc',[b'cc'],'-1 ENOENT (No such file or directory)')
+        require(len(audit(good))==3,'Complete synthetic control failed')
+        paired=audit(first+failed_cc+git+unfinished+'10 <... execve resumed>) = 0\n11 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=12, si_uid=1000, si_status=0, si_utime=36 /* 0.36 s */, si_stime=0} ---\n')
+        require(len(paired)==4 and sum(not call['success'] for call in paired)==1,'Resumed/failed-attempt synthetic control failed')
+        negative={
+         'truncated_eof':good[:-1],
+         'failed_final':first+git+synthetic(10,final,expected_argv,'-1 EACCES (Permission denied)'),
+         'wrong_pid_resume':resumed.replace('10 <... execve resumed>','99 <... execve resumed>'),
+         'orphan_resume':good+'99 <... execve resumed>) = 0\n',
+         'failed_python_attempt':first+synthetic(12,b'/missing/python3.12',[b'python3.12'],'-1 ENOENT (No such file or directory)')+git+last,
+         'unfinished_eof':first+git+unfinished,
+         'execveat':good+'99 execveat(AT_FDCWD, "", [], NULL, 0) = 0\n',
+         'abbreviated_argv':first+git+last.replace('], 0x123',', ...], 0x123'),
+         'unknown_record':good+'99 read(0, "", 0) = 0\n',
+         'failed_helper':synthetic(10,entry,entry_argv,'-1 EACCES (Permission denied)')+git+last,
+         'failed_git':first+synthetic(11,b'/controlled/git',[b'git'],'-1 ENOENT (No such file or directory)')+last,
+         'wrong_final_argv':first+git+synthetic(10,final,[final,b'wrong']),
+         'unknown_string_escape':good.replace('\\x2f','\\q',1),
+        }
+        rejected=[]
+        for name,text in negative.items():
+         try: audit(text)
+         except ValueError: rejected.append(name)
+         else: raise ValueError(f'Negative control was accepted: {name}')
+        rejected_images=[]
+        for name,magic,line,sha,script in (
+         ('unknown_python_shebang',b'#!/u',b'#!/usr/bin/python3\n','0'*64,False),
+         ('unknown_bash_script',b'#!/u',b'#!/usr/bin/env bash\n',entry_sha,False),
+         ('changed_public_entry_pin',b'#!/u',b'#!/usr/bin/env bash\n','0'*64,True),
+        ):
+         try: check_image(magic,line,sha,script)
+         except ValueError: rejected_images.append(name)
+         else: raise ValueError(f'Negative image control was accepted: {name}')
+        controls={'scope':'합성 trace parser/수용 조건 및 실행 파일 형식·pin 거부만 검증','actual_execution_qualification':False,'positive_controls':['complete','pid_resume_with_failed_nonpython_attempt'],'negative_controls_rejected':rejected,'negative_image_controls_rejected':rejected_images}
+        (proof/'trace-controls.json').write_text(json.dumps(controls,indent=2)+'\n')
+        # 이 아래에서만 실제 trace를 판정한다. 합성 controls의 결과를 실제 실행 수에 더하지 않는다.
+        trace_bytes=(proof/'native.exec').read_bytes()
+        calls=audit(trace_bytes.decode('ascii'))
+        def identity(info):
+         return (info.st_dev,info.st_ino,info.st_mode,info.st_uid,info.st_gid,info.st_size,info.st_mtime_ns,info.st_ctime_ns)
+        def successful_file(program,script=False):
+         path=Path(os.fsdecode(program))
+         require(path.is_absolute(),'Successful relative exec path is unsupported without cwd tracing')
+         resolved=path.resolve(strict=True)
+         fd=os.open(resolved,os.O_RDONLY|os.O_CLOEXEC|os.O_NOFOLLOW|os.O_NONBLOCK)
+         with os.fdopen(fd,'rb') as stream:
+          before=os.fstat(stream.fileno())
+          require(stat.S_ISREG(before.st_mode),'Successful executable is not regular')
+          magic=stream.read(4); stream.seek(0)
+          first_line=stream.readline() if script else b''
+          stream.seek(0)
+          sha=hashlib.file_digest(stream,'sha256').hexdigest()
+          check_image(magic,first_line,sha,script)
+          require(identity(before)==identity(os.fstat(stream.fileno()))==identity(resolved.stat()),'Executable changed while hashing')
+         require(path.resolve(strict=True)==resolved,'Executable symlink target changed')
+         return {'exec_path_hex':program.hex(),'resolved_path':str(resolved),'sha256':sha,'device':before.st_dev,'inode':before.st_ino,'bytes':before.st_size,'kind':'pinned-bash-entry' if script else 'ELF'}
+        executables=[]
+        for program in sorted({call['program'] for call in calls if call['success']}):
+         row=successful_file(program,program==entry)
+         executables.append(row)
+        actual={'trace_sha256':hashlib.sha256(trace_bytes).hexdigest(),'strace_flags':'-f -qq -xx -s 65535 -e trace=execve,execveat','exec_attempts':len(calls),'failed_exec_attempts':sum(not call['success'] for call in calls),'successful_git_execs':sum(call['success'] and call['program'].rsplit(b'/',1)[-1]==b'git' for call in calls),'successful_final_elf_execs':1,'forwarded_argv_hex':[arg.hex() for arg in expected_argv],'observed_python_exec_attempts':0,'success_executable_evidence':executables,'python_absence_scope':'완전 판독한 execve target의 basename/suffix를 실패 시도까지 검사한다. 성공 파일은 pin 고정 Bash entry 하나 외에는 ELF magic/hash를 확인한다. 이름을 바꾼 interpreter·ELF 내부 동작 및 무제한 전체 Python 부재는 수용하지 않는다.','whole_python_absence_accepted':False,'inventory_credit':False,'controls':'trace-controls.json'}
+        (proof/'trace-audit.json').write_text(json.dumps(actual,indent=2)+'\n')
         (proof/'roster.json').write_text(json.dumps(old,indent=2)+'\n')
-        (proof/'comparison.json').write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],'equal':True,'files':sum(not r.get('directory',False) for r in old.values()),'bytes':sum(r.get('bytes',0) for r in old.values()),'observed_python_exec_attempts':0,'native_elf_sha256':hashlib.sha256((Path(os.environ['CARGO_TARGET_DIR'])/'debug/build-route-vault-bundle').read_bytes()).hexdigest(),'original_retired':False,'image_published':False,'nas_deployed':False},indent=2)+'\n')
+        (proof/'comparison.json').write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],'equal':True,'files':sum(not r.get('directory',False) for r in old.values()),'bytes':sum(r.get('bytes',0) for r in old.values()),'observed_python_exec_attempts':actual['observed_python_exec_attempts'],'native_elf_sha256':hashlib.sha256(Path(binary).read_bytes()).hexdigest(),'entrypoint':'rust/tools/run-developer-tool','forwarded_argv_verified':True,'trace_audit':'trace-audit.json','whole_python_absence_accepted':False,'inventory_credit':False,'bootstrap_stderr':'native-bootstrap.stderr','original_retired':False,'image_published':False,'nas_deployed':False},indent=2)+'\n')
         CONTEXTS
         sha256sum --check "$proof/native-elf.sha256"
+        sha256sum --check "$proof/native-programs.sha256"
+        sha256sum --check "$proof/public-entry.sha256"
     - name: Seal Fast source and index after all maintained checks
       if: ${{ always() && env.DIAG_SOURCE != '' }}
       working-directory: ${{ env.DIAG_SOURCE }}
@@ -270,6 +440,13 @@ jobs:
         fi
 
         if test -f "$CI_JOB_TEMP/proof/rust-tools.sha256"; then sha256sum --check "$CI_JOB_TEMP/proof/rust-tools.sha256"; fi
+        if test -f "$CI_JOB_TEMP/proof/oracle-runtime.sha256"; then sha256sum --check "$CI_JOB_TEMP/proof/oracle-runtime.sha256"; fi
+        if test -f "$CI_JOB_TEMP/proof/oracle-venv-files.before.sha256"; then
+          find "$CI_JOB_TEMP/venv" -type f -print0 | sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/oracle-venv-files.after.sha256"
+          cmp "$CI_JOB_TEMP/proof/oracle-venv-files.before.sha256" "$CI_JOB_TEMP/proof/oracle-venv-files.after.sha256"
+          find "$CI_JOB_TEMP/venv" -type l -printf '%p\t%l\n' | sort > "$CI_JOB_TEMP/proof/oracle-venv-links.after.txt"
+          cmp "$CI_JOB_TEMP/proof/oracle-venv-links.before.txt" "$CI_JOB_TEMP/proof/oracle-venv-links.after.txt"
+        fi
 
         if test -f "$CI_JOB_TEMP/proof/oracle-environment.sha256"; then sha256sum --check "$CI_JOB_TEMP/proof/oracle-environment.sha256"; fi
       id: source_final
@@ -281,6 +458,7 @@ jobs:
       with:
         name: diagnostic-fast-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
         path: ${{ env.CI_JOB_TEMP }}/proof
+        include-hidden-files: true
         if-no-files-found: error
         retention-days: 14
     - name: Clean only uploaded private Fast source

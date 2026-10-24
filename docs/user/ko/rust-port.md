@@ -113,3 +113,16 @@ Git 공백 오류를 검사합니다. `openpilot-dev-tools`에서
 이 호출부 전환은 검증 중입니다. Actions는 실제 계정 인증·SSH 연결 없이 합성 입력과
 격리된 loopback을 검사합니다. 원본 Python 도구와 다른 라이브러리 소비자는 제거 수용
 전까지 유지하며, 이 변경만으로 인증 도구 전체 전환이나 실기 수용을 인정하지 않습니다.
+
+커밋된 Carrot Routes Docker build context는 저장소 루트에서 다음 명령으로 생성합니다.
+
+```sh
+rust/tools/run-developer-tool build-route-vault-bundle /tmp/route-vault-bundle --ref HEAD
+```
+
+출력 디렉터리는 새 경로여야 합니다. 같은 helper가 Rustup과 Rust 1.94.0을 사용해
+예상 빌드 증가량을 확인한 뒤 `route-vault-bundle-native`로 호스트용 CLI를 빌드합니다.
+지정한 커밋의 replay 소스·전체 Cereal schema·DBC·viewer 파일만 포함하며,
+미커밋 변경과 모델 파일은 제외합니다. 실제 CLI의 원본 대조는 Actions에서 통과했지만
+이 helper 호출 경로의 검증은 대기 중입니다. 원본 `build_bundle.py`는 유지하며,
+이 독립 저장소의 비활성 image publish workflow나 NAS 배포를 활성화하지 않습니다.

@@ -9,6 +9,7 @@ mod cli;
 pub mod http;
 mod integer;
 pub mod login;
+mod unicode_lower15;
 pub use auth::{clear_token_at, config_root, get_token_at, set_token_at};
 pub use cli::{parse_options, parse_options_with_limit, setup_cli, ssh_cli};
 pub use integer::{
@@ -152,7 +153,7 @@ pub fn prepare(
 
 fn normalized(value: &str) -> String {
     // Python replaces U+0020 only, then lower() (not strip/casefold).
-    value.replace(' ', "").to_lowercase()
+    unicode_lower15::lower15(&value.replace(' ', ""))
 }
 pub fn plan(
     response: &JsonValue,

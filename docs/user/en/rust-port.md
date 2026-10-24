@@ -121,3 +121,18 @@ private loopback without authenticating a real account or connecting over SSH.
 Original Python tools and other library consumers remain until retirement is
 accepted. This change alone does not complete the auth tool family or establish
 device acceptance.
+
+From the repository root, create a committed Carrot Routes Docker build context with:
+
+```sh
+rust/tools/run-developer-tool build-route-vault-bundle /tmp/route-vault-bundle --ref HEAD
+```
+
+Choose an output directory that does not already exist. The same helper uses
+Rustup and Rust 1.94.0, checks estimated build growth, and builds the host CLI with
+`route-vault-bundle-native`. The context contains the selected commit's replay
+sources, full Cereal schemas, DBC data and viewer files; uncommitted edits and
+model files are excluded. The actual CLI comparison with the original passed in
+Actions; validation of this helper caller is pending. The original `build_bundle.py`
+remains. This change does not activate this independent repository's disabled
+image publishing workflow or deploy anything to the NAS.

@@ -510,3 +510,35 @@ policy 수정 후보는 실제 native after/cleanup 조건과 참조 ID를 정�
 음성 회귀를 추가했다. #523 workflow6개에 `queue: max`를 보완했다.
 model workflow의 queue 정책 수정으로 이전 성공 cache probe도 다시 트리거된다.
 새 전체 Fast/정책 검사는 UNRUN이다.
+
+
+## fb1228 집중 결과와 #532
+
+`fb1228f02e0546b6fe7a9d8d0eec098e650a86bd`의
+[40092771379/job120868686487](https://github.com/bin9208/openpilot-rust/actions/runs/40092771379/job/120868686487)는
+새 Unicode alias 회귀의 실제 차이로 실패했다. backend alias U+A7CB/query U+0264에서
+원본은 exit1/no exec, native는 다른 합성ID로 SSH exec를 준비했다. 실제 기기에 접속한 것이 아니다.
+[#532](https://github.com/bin9208/openpilot-rust/issues/532)로 분리해 고정 UCD15 lower와
+원본 문맥 속성 적용을 준비한다. 기존 ASCII공백 제거 순서·substring/API/exec는 보존한다.
+
+별도의 parser13 selector와 strict Clippy는 성공했다. 원본은 U+1C89/U+1C8A 두 번째 사례도
+exit1/no exec로 관측했으나 native comparator는 첫 차이에서 중단됐다.
+artifact12560030996,7775163B,SHA256
+`21c33f18576748c77664d0267b4c51edca8aedf0f8b3c345e8e91d477d739878`의47CRC 및
+source/index/venv 전후4쌍을 부모가 확인했다. 전체 job 성공으로 기록하지 않는다.
+후속 private helper의 scalar1112064개 및 Σ문맥154개 원본 비교와 CLI26/영향 있는SSH 회귀는 UNRUN이다.
+
+
+### #532 및 Bundle 다음 source 후보
+
+#532는 고정 UCD15 mapping1432개/확장1개/Cased157range/Case_Ignorable437range로
+Rust SDK의 Unicode 의미를 분리했다. 전체scalar1112064개 length-prefixed UTF8 SHA와 Σ154개
+문맥을 준비한 독립 CPython3.12.15에 대조하는 gate, alias26개 및 영향SSH27개를 fresh로 실행한다.
+변경되지 않은 auth3/login8/setup21/scanner2는 a134, parser13은 fb1228 성공 artifact/source/provider
+핀으로 재사용한다. 새 source/runtime/Binary 봉인과 strict Clippy를 포함하며 정상 수용은 UNRUN이다.
+
+Bundle은 fixture/capture23행의 생성 방식이 바뀌어17개를 fresh로 실행한다. 공개 helper의
+추가 host build3GiB와 context128MiB를 device별 합산 승인하고, 기존 guard를 유지한다.
+strict trace의 positive2/negative16 controls와 실제 helper/Git/final ELF 성공·argv를 구분한다.
+숨김 vendor파일도 artifact에 포함하며 전체411개로 고정하지 않고 현재 source의 실제 whole roster를 비교한다.
+원본 builder는 보존한다. nativecaller/context 수용은 아직 UNRUN이다.
