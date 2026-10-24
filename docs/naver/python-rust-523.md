@@ -132,3 +132,32 @@ ARM은 rustc의 target 정보 조회에서 `gnu-lld` flavor가 unstable이라고
 operand 5건은 미해결이다. fresh `original` label도 같은 Rust worker를 썼으므로 독립 Python
 compiler 대조로 확대하지 않는다. 추측 산술 수정은 하지 않았으며 다음 제한된 독립 compiler
 대조는 `python-rust-523-model-482.md`에 기록했다.
+
+## 두 번째 집중 검사와 다음 보완
+
+소스 `9e7a3b39ebaa2d215e2cadbae0618cc8720f3649`의
+[40080413343/job120832600964](https://github.com/bin9208/openpilot-rust/actions/runs/40080413343/job/120832600964)은
+새 callback socket 3개와 영향 있는 HTTP 1개·Github 26개를 통과했다.
+카탈로그의 새 ARM CLI test 소스에 대한 Clippy도 성공했다. 성공한 불변 범위는
+앞선 artifact·source·tool hash와 변경 경로 제한을 확인해 재사용했다.
+
+artifact `12554902305`의 32개 ZIP 멤버 CRC와 SHA256
+`5e79482c0f26815da14a9d649fe1b467fd245143edefc2843ffde2aae013ab9a`,
+source/index 전후 봉인이 일치한다. 최종 상태는 실패이며 아래 미완료를 구분한다.
+
+- Clippy가 다음 SSH 테스트 지적까지 진행했다: `err_expect`, `redundant_closure`,
+  사용하지 않은 내부 `Result`. 앞의 두 표현을 단순화하고, 마지막은 무시하지 않고
+  성공 결과를 명시적으로 assert하도록 보강했다. 수정한 SSH 27개는 새로 실행한다.
+- 안정판 `ld.lld` 인자는 수용됐으나 bare linker가 musl의 `-ldl`을 찾지 못했다.
+  실행 파일은 아직 생성되지 않아 ARM 기능 성공을 주장하지 않는다. production
+  dependency를 제거하거나 가짜 archive를 만들지 않고 저장소 기존 SDK인
+  `cargo-zigbuild==0.23.4`·`ziglang==0.16.0`의 musl 링크 경로를 사용한다.
+- 0.23.4의 [실제 CLI](https://github.com/rust-cross/cargo-zigbuild/blob/v0.23.4/src/bin/cargo-zigbuild.rs)와
+  [test 구현](https://github.com/rust-cross/cargo-zigbuild/blob/v0.23.4/src/test.rs)을 읽었다.
+  직접 `cargo-zigbuild test`가 Cargo test 옵션과 Zig linker 환경을 전달하므로
+  명시적 QEMU runner를 통해 두 ARM unit을 선택 실행한다.
+
+다음 배치는 두 선행 artifact에 묶인 불변 성공을 재사용하고, 보강한 SSH·미도달
+엄격 Clippy·실제 SDK ARM build/QEMU/CLI를 실행한다. 재사용 allowlist와 코드
+postimage에는 수정한 SSH 테스트도 포함한다. 단일 source commit의 전체 gate가
+통과했다는 뜻으로 여러 단계의 성공을 합치지 않는다.

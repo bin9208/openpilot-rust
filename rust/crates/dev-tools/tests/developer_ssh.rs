@@ -248,13 +248,14 @@ fn comma_api_checks_json_error_truthiness_instead_of_status_alone() {
         assert!(fake.calls.borrow()[0].authorization.is_none());
     }
     let mut fake = Fake::new(200, "[]");
-    prepare(
+    assert!(prepare(
         &mut fake,
         "https://example.invalid",
         &json(r#""synthetic-token""#),
         &options("0123456789ABCDEF"),
     )
-    .unwrap();
+    .unwrap()
+    .is_ok());
     assert_eq!(
         fake.calls.borrow()[0].authorization.as_deref(),
         Some("JWT synthetic-token")
@@ -581,8 +582,7 @@ fn port_type_actions_before_help_still_fail_and_after_help_do_not_run() {
     ] {
         let arguments = arguments.into_iter().map(String::from).collect::<Vec<_>>();
         let error = parse_options(&arguments, Path::new("/source"))
-            .err()
-            .expect("port conversion must run before help");
+            .expect_err("port conversion must run before help");
         assert!(error.to_string().contains("invalid int value"));
     }
     for arguments in [
@@ -808,7 +808,7 @@ fn oversized_port_conversion_keeps_help_and_bootstrap_before_api_order() {
     );
     // Exactly the CLI bootstrap sequencing, without reading/mutating the real environment.
     let result = IntStringLimit::from_startup_env(Some(OsStr::new("bad")))
-        .map_err(|error| Box::<dyn std::error::Error>::from(error))
+        .map_err(Box::<dyn std::error::Error>::from)
         .and_then(|limit| parse_options_with_limit(&help_first, Path::new("/source"), limit));
     assert!(result
         .unwrap_err()

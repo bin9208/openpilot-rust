@@ -214,7 +214,7 @@ jobs:
 
         rustup target add --toolchain 1.94.0 aarch64-unknown-linux-musl
 
-        python -m pip install numpy==2.5.3 pycapnp==2.1.0 requests==2.34.2
+        python -m pip install numpy==2.5.3 pycapnp==2.1.0 requests==2.34.2 cargo-zigbuild==0.23.4 ziglang==0.16.0
 
         rustc -vV > "$CI_JOB_TEMP/proof/rustc.txt"
 
@@ -223,6 +223,13 @@ jobs:
         command -v capnp
 
         command -v qemu-aarch64-static
+
+
+        cargo-zigbuild --version > "$CI_JOB_TEMP/proof/zigbuild-version.txt"
+
+        python-zig version > "$CI_JOB_TEMP/proof/zig-version.txt"
+
+        python -m pip freeze > "$CI_JOB_TEMP/proof/python-provider-versions.txt"
 
         '
       id: toolchain
@@ -235,7 +242,7 @@ jobs:
         cargo fmt --manifest-path rust/Cargo.toml --all --check 2>&1 | tee "$CI_JOB_TEMP/proof/format.log"
 
         '
-    - name: Admit unchanged successful cohort and lint the new ARM CLI test
+    - name: Admit exact unchanged successful source cohorts
       if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
       shell: bash
       working-directory: ${{ env.DIAG_SOURCE }}
@@ -250,19 +257,26 @@ jobs:
         \nunzip -p \"$prior\" rust-tools.sha256 > \"$CI_JOB_TEMP/proof/prior-rust-tools.sha256\"\nsha256sum --check\
         \ \"$CI_JOB_TEMP/proof/prior-rust-tools.sha256\"\ngit fetch --no-tags --depth=1 origin d0f53d15a96ef474ff48810b156437a6a6923c58\n\
         git diff --no-renames --name-only -z d0f53d15a96ef474ff48810b156437a6a6923c58 HEAD > \"$CI_JOB_TEMP/proof/changed-paths.bin\"\
-        \nwhile IFS= read -r -d '' changed; do\n  case \"$changed\" in\n    .github/workflows/python-rust-523.yml|docs/naver/python-rust-523*.md|rust/crates/dev-tools/src/developer_ssh/http.rs|rust/crates/dev-tools/src/github_utils.rs|rust/crates/dev-tools/src/developer_ssh/login/native.rs|rust/crates/model-runtime/tests/catalog_publish.rs)\
+        \nwhile IFS= read -r -d '' changed; do\n  case \"$changed\" in\n    .github/workflows/python-rust-523.yml|docs/naver/python-rust-523*.md|rust/crates/dev-tools/src/developer_ssh/http.rs|rust/crates/dev-tools/src/github_utils.rs|rust/crates/dev-tools/src/developer_ssh/login/native.rs|rust/crates/model-runtime/tests/catalog_publish.rs|rust/crates/dev-tools/tests/developer_ssh.rs)\
         \ ;;\n    *) printf 'Changed dependency invalidates scoped reuse: %s\\n' \"$changed\" >&2; exit 1 ;;\n \
-        \ esac\ndone < \"$CI_JOB_TEMP/proof/changed-paths.bin\"\n# Freeze the exact reviewed postimages of the four\
-        \ allowed code changes.\nprintf '%s  %s\\n' 6beaccdad7cc50ec7fa4d32e61191af20d8e8e75a52e37c9d603c6cee609816f\
-        \ rust/crates/dev-tools/src/developer_ssh/http.rs | sha256sum --check -\nprintf '%s  %s\\n' 6010fb32078700cdb054303b8b5bdcbbc9c70eaf74487c6325940ec8bd6db37c\
+        \ esac\ndone < \"$CI_JOB_TEMP/proof/changed-paths.bin\"\n# Freeze the exact reviewed postimages of the allowed\
+        \ code changes.\nprintf '%s  %s\\n' 6beaccdad7cc50ec7fa4d32e61191af20d8e8e75a52e37c9d603c6cee609816f rust/crates/dev-tools/src/developer_ssh/http.rs\
+        \ | sha256sum --check -\nprintf '%s  %s\\n' 6010fb32078700cdb054303b8b5bdcbbc9c70eaf74487c6325940ec8bd6db37c\
         \ rust/crates/dev-tools/src/github_utils.rs | sha256sum --check -\nprintf '%s  %s\\n' 17acabad25b59636e212e9d4bacd671361fba4daa6093e343ad4b3537d964bb0\
         \ rust/crates/dev-tools/src/developer_ssh/login/native.rs | sha256sum --check -\nprintf '%s  %s\\n' 9bdbd0902538b965cf97a68f4cff63efd9d1e16f1770ce283053749d704247b7\
-        \ rust/crates/model-runtime/tests/catalog_publish.rs | sha256sum --check -\nprintf '%s\\n' 'Reused: catalog\
-        \ x64 10 + its completed Clippy; terminal 20; auth/HTTP library 19; SSH 27; Paramsd 11; camera 1. Changed\
-        \ HTTP/Github behavior, new callback cases and previously unreached Clippy/ARM remain fresh gates.' > \"\
-        $CI_JOB_TEMP/proof/reused-scopes.txt\"\ncargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime\
-        \ --test catalog_publish -- -D warnings 2>&1 | tee \"$CI_JOB_TEMP/proof/catalog-new-test-clippy.log\"\n"
-    - name: Run new callback cases, affected HTTP/Github comparisons and remaining strict lint
+        \ rust/crates/model-runtime/tests/catalog_publish.rs | sha256sum --check -\nprintf '%s  %s\\n' 7e3eec4c64fc86449871184ffd880ecc67f40c609c458b1e8c6ac9b5e6e7d3a4\
+        \ rust/crates/dev-tools/tests/developer_ssh.rs | sha256sum --check -\nprior2=\"$CI_JOB_TEMP/proof/prior-40080413343.zip\"\
+        \ngh api repos/bin9208/openpilot-rust/actions/artifacts/12554902305/zip > \"$prior2\"\nprintf '5e79482c0f26815da14a9d649fe1b467fd245143edefc2843ffde2aae013ab9a\
+        \  %s\\n' \"$prior2\" | sha256sum --check -\nunzip -t \"$prior2\" > \"$CI_JOB_TEMP/proof/prior2-crc.txt\"\
+        \ntest \"$(unzip -p \"$prior2\" SOURCE_COMMIT)\" = 9e7a3b39ebaa2d215e2cadbae0618cc8720f3649\nunzip -p \"\
+        $prior2\" source-before.sha256 > \"$CI_JOB_TEMP/proof/prior2-source-before.sha256\"\nunzip -p \"$prior2\"\
+        \ source-after.sha256 > \"$CI_JOB_TEMP/proof/prior2-source-after.sha256\"\ncmp \"$CI_JOB_TEMP/proof/prior2-source-before.sha256\"\
+        \ \"$CI_JOB_TEMP/proof/prior2-source-after.sha256\"\nunzip -p \"$prior2\" rust-tools.sha256 > \"$CI_JOB_TEMP/proof/prior2-rust-tools.sha256\"\
+        \nsha256sum --check \"$CI_JOB_TEMP/proof/prior2-rust-tools.sha256\"\nprintf '%s\\n' 'Reused d0: catalog\
+        \ x64 10 + its Clippy; terminal 20; auth/HTTP library 19; auth original 8; Paramsd 11; camera 1. Reused\
+        \ 9e7: callback sockets 3; HTTP 1; Github 26; model test Clippy. Fresh: strengthened SSH 27, remaining strict\
+        \ Clippy, genuine Zig musl build/QEMU.' > \"$CI_JOB_TEMP/proof/reused-scopes.txt\"\n"
+    - name: Run strengthened SSH regressions and remaining strict lint
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
@@ -272,13 +286,10 @@ jobs:
 
         features=developer-ssh-native,kbhit-native,github-utils-native,camera-runtime-native,paramsd-fixture-native
 
-        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --lib
-        developer_ssh::login::native::tests:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/new-callback-sockets.log"
-
-        grep -F ''test result: ok. 3 passed;'' "$CI_JOB_TEMP/proof/new-callback-sockets.log"
-
         cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --test
-        developer_http --test github_utils -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/affected-http-github.log"
+        developer_ssh -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/strengthened-ssh.log"
+
+        grep -F ''test result: ok. 27 passed;'' "$CI_JOB_TEMP/proof/strengthened-ssh.log"
 
         cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --lib
         --test developer_ssh --test developer_auth --test developer_http --test github_utils --test paramsd_car_params_cli
@@ -291,17 +302,14 @@ jobs:
       if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
       run: 'set -euo pipefail
 
-        toolchain=$(rustc --print sysroot)
+        unset RUSTFLAGS CARGO_ENCODED_RUSTFLAGS CARGO_BUILD_TARGET CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS
+        CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER
 
-        host=$(rustc -vV | sed -n ''s/^host: //p'')
+        # Use the repository''s existing pinned musl SDK, including its genuine libdl archive.
 
-        linker="$toolchain/lib/rustlib/$host/bin/rust-lld"
+        # A bare rust-lld invocation does not provide the complete musl link search path.
 
-        test -x "$linker"
-
-        export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS="-C linker=$linker -C linker-flavor=ld.lld"
-
-        cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --bin publish-model-catalog
+        cargo zigbuild --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --bin publish-model-catalog
         --target aarch64-unknown-linux-musl 2>&1 | tee "$CI_JOB_TEMP/proof/catalog-musl-build.log"
 
         readelf -h -l -d "$CARGO_TARGET_DIR/aarch64-unknown-linux-musl/debug/publish-model-catalog" > "$CI_JOB_TEMP/proof/catalog-musl-elf.txt"
@@ -311,23 +319,22 @@ jobs:
         if readelf -l "$CARGO_TARGET_DIR/aarch64-unknown-linux-musl/debug/publish-model-catalog" | grep -q INTERP;
         then exit 1; fi
 
-        # Run the actual ARM test code through the existing QEMU provider; no guest
-
-        # compilation or physical ARM execution is claimed by this focused gate.
-
         export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUNNER=/usr/bin/qemu-aarch64-static
 
-        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --test catalog_publish --target
-        aarch64-unknown-linux-musl no_replace_tests:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/catalog-musl-qemu.log"
+        cargo-zigbuild test --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --test catalog_publish
+        --target aarch64-unknown-linux-musl no_replace_tests:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/catalog-musl-qemu.log"
+
+        mapfile -d '''' arm_tests < <(find "$CARGO_TARGET_DIR/aarch64-unknown-linux-musl/debug/deps" -maxdepth 1
+        -type f -name ''catalog_publish-*'' -executable -print0)
+
+        ((${#arm_tests[@]} == 1))
+
+        grep -F ''test result: ok. 2 passed;'' "$CI_JOB_TEMP/proof/catalog-musl-qemu.log"
 
         sha256sum /usr/bin/qemu-aarch64-static "$CARGO_TARGET_DIR/aarch64-unknown-linux-musl/debug/publish-model-catalog"
-        > "$CI_JOB_TEMP/proof/arm-sha256.txt"
+        "${arm_tests[0]}" > "$CI_JOB_TEMP/proof/arm-sha256.txt"
 
         printf ''{"host":"X64","target":"AArch64 musl","execution":"qemu-user","physical_arm_cpu":false}\n'' > "$CI_JOB_TEMP/proof/arm-execution.json"
-
-
-        grep -F "test result: ok. 2 passed;" "$CI_JOB_TEMP/proof/catalog-musl-qemu.log"
-
 
         export MODEL_CATALOG_ARM_RUNNER=/usr/bin/qemu-aarch64-static
 
@@ -338,39 +345,22 @@ jobs:
 
         grep -F ''test result: ok. 1 passed;'' "$CI_JOB_TEMP/proof/catalog-musl-cli.log"
 
+        sha256sum --check "$CI_JOB_TEMP/proof/arm-sha256.txt"
+
         '
     - name: Seal Fast source and index after all maintained checks
       if: ${{ always() && env.DIAG_SOURCE != '' }}
       working-directory: ${{ env.DIAG_SOURCE }}
-      run: 'set -euo pipefail
-
-        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-
-        git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"
-
-        cmp "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/index-after.bin"
-
-        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime=''UTC
-        1970-01-01'' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
-
-        cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
-
-        git diff --exit-code
-
-        git diff --cached --exit-code
-
-        df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
-
-        cat /proc/meminfo > "$CI_JOB_TEMP/proof/memory-after.txt"
-
-
-        find "$CARGO_TARGET_DIR" -name "*.d" -type f -exec sha256sum {} + > "$CI_JOB_TEMP/proof/build-dep-info.sha256"
-
-
-        if test -f "$CI_JOB_TEMP/proof/rust-tools.sha256"; then sha256sum --check "$CI_JOB_TEMP/proof/rust-tools.sha256";
-        fi
-
-        '
+      run: "set -euo pipefail\ntest \"$(git rev-parse HEAD)\" = \"$GITHUB_SHA\"\ngit ls-files -z > \"$CI_JOB_TEMP/proof/index-after.bin\"\
+        \ncmp \"$CI_JOB_TEMP/proof/index-before.bin\" \"$CI_JOB_TEMP/proof/index-after.bin\"\ntar --null --no-recursion\
+        \ --verbatim-files-from -T \"$CI_JOB_TEMP/proof/index-before.bin\" -cf - --mtime='UTC 1970-01-01' --owner=0\
+        \ --group=0 --numeric-owner | sha256sum > \"$CI_JOB_TEMP/proof/source-after.sha256\"\ncmp \"$CI_JOB_TEMP/proof/source-before.sha256\"\
+        \ \"$CI_JOB_TEMP/proof/source-after.sha256\"\ngit diff --exit-code\ngit diff --cached --exit-code\ndf -PB1\
+        \ \"$DIAG_SOURCE\" \"$CI_JOB_TEMP\" > \"$CI_JOB_TEMP/proof/disk-after.txt\"\ncat /proc/meminfo > \"$CI_JOB_TEMP/proof/memory-after.txt\"\
+        \n\nif test -d \"$CARGO_TARGET_DIR\"; then\n  find \"$CARGO_TARGET_DIR\" -name \"*.d\" -type f -exec sha256sum\
+        \ {} + > \"$CI_JOB_TEMP/proof/build-dep-info.sha256\"\nelse\n  : > \"$CI_JOB_TEMP/proof/build-dep-info.sha256\"\
+        \nfi\n\nif test -f \"$CI_JOB_TEMP/proof/rust-tools.sha256\"; then sha256sum --check \"$CI_JOB_TEMP/proof/rust-tools.sha256\"\
+        ; fi\n"
       id: source_final
     - name: Retain Fast job ownership evidence
       id: fast_evidence
