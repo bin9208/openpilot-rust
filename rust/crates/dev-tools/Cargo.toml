@@ -2522,6 +2522,15 @@ required-features = ["developer-ssh-native"]
 name = "developer_ssh"
 required-features = ["developer-ssh-native"]
 
+[[bin]]
+name = "developer-auth-json"
+path = "src/developer_ssh/auth_json_main.rs"
+required-features = ["developer-ssh-native"]
+
+[[test]]
+name = "developer_auth"
+required-features = ["developer-ssh-native"]
+
 [[test]]
 name = "github_utils"
 path = "tests/github_utils.rs"

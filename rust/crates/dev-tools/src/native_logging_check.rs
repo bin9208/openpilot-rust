@@ -2,13 +2,13 @@
 //! Only validated callsite, realtime and Rust provenance fields are projected;
 //! all other JSON bytes, their ordering and console bytes compare exactly.
 use crate::{
-    argparse_scan::{OptionSpec, scan_os_required_first},
+    argparse_scan::{scan_os_required_first, OptionSpec},
     qa_process::CommandSpec,
-    seal::{Result, digest},
+    seal::{digest, Result},
 };
-use base64::{Engine, engine::general_purpose::STANDARD};
+use base64::{engine::general_purpose::STANDARD, Engine};
 use regex::Regex;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::{
     collections::BTreeMap,
     ffi::OsString,
@@ -34,7 +34,11 @@ const STRIPPED: [&str; 7] = [
     "LOGPRINT",
 ];
 fn require(ok: bool, message: &str) -> Result<()> {
-    if ok { Ok(()) } else { Err(message.into()) }
+    if ok {
+        Ok(())
+    } else {
+        Err(message.into())
+    }
 }
 fn realtime() -> Result<f64> {
     Ok(SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs_f64())

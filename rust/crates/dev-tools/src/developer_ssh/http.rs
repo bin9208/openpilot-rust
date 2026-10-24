@@ -8,6 +8,18 @@ use std::io::Read;
 pub struct NativeTransport;
 impl Transport for NativeTransport {
     fn get(&mut self, request: &Get) -> Result<Response> {
+        self.send(request, "GET", None)
+    }
+}
+impl NativeTransport {
+    pub fn post_form(&mut self, request: &Get, fields: &[(&str, &str)]) -> Result<Response> {
+        let body = url::form_urlencoded::Serializer::new(String::new())
+            .extend_pairs(fields.iter().copied())
+            .finish();
+        self.send(request, "POST", Some(body))
+    }
+    fn send(&mut self, request: &Get, method: &str, mut body: Option<String>) -> Result<Response> {
+        let mut method = method.to_string();
         let config = ureq::Agent::config_builder()
             .http_status_as_error(false)
             .max_redirects(0)
@@ -25,7 +37,7 @@ impl Transport for NativeTransport {
         let mut authorization = request.authorization.clone();
         for redirects in 0..=30 {
             let mut outgoing = ureq::http::Request::builder()
-                .method(ureq::http::Method::GET)
+                .method(method.as_str())
                 .uri(url.as_str())
                 .header("accept", "*/*")
                 .header("accept-encoding", "gzip, deflate, br")
@@ -44,9 +56,13 @@ impl Transport for NativeTransport {
             if !cookie_header.is_empty() {
                 outgoing = outgoing.header("cookie", cookie_header);
             }
+            if body.is_some() {
+                outgoing = outgoing.header("content-type", "application/x-www-form-urlencoded");
+            }
             // Existing ureq cookie formatting includes attributes: keep its jar empty.
             agent.cookie_jar_lock().clear();
-            let mut response = agent.run(outgoing.body(())?)?;
+            let mut response =
+                agent.run(outgoing.body(body.as_deref().unwrap_or("").as_bytes())?)?;
             for cookie in response.headers().get_all("set-cookie") {
                 if let Ok(cookie) = cookie.to_str() {
                     let _ = cookies.parse(cookie, &url);
@@ -91,6 +107,13 @@ impl Transport for NativeTransport {
                 let next = url.join(&location)?;
                 if strip_auth(&url, &next) {
                     authorization = None;
+                }
+                // Requests rewrites POST for 301/302/303; 307/308 retain its form body.
+                if matches!(status, 301 | 302 | 303) {
+                    if status != 301 || method == "POST" {
+                        method = "GET".into();
+                    }
+                    body = None;
                 }
                 url = next;
             } else {

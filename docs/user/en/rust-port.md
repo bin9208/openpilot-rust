@@ -107,3 +107,11 @@ bytes. Symlinks and deleted files are skipped. Cancellation stops owned Git
 process groups; unsupported source capabilities fail explicitly. Source retirement
 requires the accepted codec/lifecycle evidence and a separate deletion verification.
 This CI migration does not establish device acceptance or repository-wide retirement.
+
+The `developer-auth-json` candidate in `openpilot-dev-tools` builds with
+`--features developer-ssh-native --bin developer-auth-json` and accepts
+`google|apple|github --json`. Running it opens a browser and saves a token to the
+existing auth configuration after successful sign-in. Synthetic regression tests
+run in Actions without authenticating. The original `auth.py` plain/JWT modes and
+existing callers remain until their conversion is verified; this candidate does
+not complete the authentication tool family.

@@ -1,0 +1,165 @@
+# #523 camera·paramsd generator 실패 조사
+
+작성: 2026-10-24. 상위 작업: [#523](https://github.com/bin9208/openpilot-rust/issues/523),
+기존 [#296](https://github.com/bin9208/openpilot-rust/issues/296)·[PR #343](https://github.com/bin9208/openpilot-rust/pull/343).
+
+## 기준과 판정
+
+- 작업 트리: `/home/fma1/.codex/worktrees/python-rust-523/openpilot-rust`
+- 브랜치: `codex/feat-523-python-rust`
+- 조사 기준 HEAD: `7a3727e445575a8142ed2e92880368256f79dc4c`
+- 실패 실행: [39844308544](https://github.com/bin9208/openpilot-rust/actions/runs/39844308544).
+  실행 메타데이터의 head는 `adff0392e61608c9a576550be78dd7eefb8b9065`이며,
+  PR job의 실제 checkout은 merge SHA `6f25f161aae5eb3f887df6d0147172e4f85d935c`이다.
+- 두 실패의 원인을 처리하는 기존 수정이 현재 HEAD의 조상으로 포함되어 있다.
+  해당 두 파일은 각 수정 커밋 이후 현재 HEAD까지 추가 diff가 없다.
+  generator 코드나 테스트를 중복 수정하지 않고 이 조사 기록만 추가한다.
+- 이 판정은 로그·코드·이력의 대조 결과다. 현재 HEAD의 기능/빌드/clippy 통과나
+  원본 동등성 재검증 완료를 뜻하지 않는다. 부모 작업의 `bin-actions` 검증이 남아 있다.
+
+## camera: 단계 이름과 실제 실패 구분
+
+[job 120055270729](https://github.com/bin9208/openpilot-rust/actions/runs/39844308544/job/120055270729)의
+실패 단계는 `Build and validate native camera source generators`다.
+실제로 실패한 항목은 다음 lifecycle 비교 테스트다.
+
+```text
+2026-10-22T20:12:27.5423658Z
+crates/dev-tools/tests/camera_lifecycle_check.rs:325:9
+original_process_environment_sanitizer_failure_and_artifact_order
+assertion `left == right` failed: disk-boundary
+```
+
+로그의 `left: Object`와 `right: Object`를 각각 해석해 비교했다.
+양쪽 모두 257개 산출물이 있고, 다른 파일은 `report.json` 하나뿐이다.
+그 JSON의 유일한 필드 차이는 `free_bytes`이며 실제값은 `1073741824`(1 GiB),
+기대값은 `27917287424`(26 GiB)다.
+
+원인은 기존 growth-only 정책 전환 때 테스트의 주입값은 `26 GiB - 25 GiB = 1 GiB`로
+바뀌었지만, 원본 캡처의 보고서 기대값에는 여전히 26 GiB가 남았기 때문이다.
+실제 디스크 부족이나 camera source 추출 오류가 아니다.
+이 실행은 lifecycle 테스트에서 종료되어 `camera_source_generate` 테스트 실행까지
+도달하지 않았으므로, 해당 run을 source generator 통과 증거로 사용할 수 없다.
+
+기존 수정 [3e79829c4d851b3bf1c435f7b168eacbc6b457f9](https://github.com/bin9208/openpilot-rust/commit/3e79829c4d851b3bf1c435f7b168eacbc6b457f9)는
+`disk-boundary`의 기대 보고서를 복제한 뒤 `free_bytes` 한 필드만 실제 주입값으로
+변환한다. 기존 필드가 정확히 한 번 존재하는지 확인하며, 나머지 산출물의 전체 바이트
+비교를 유지한다. 원본 fixture를 수정하거나 비교 범위를 줄이지 않는다.
+현재 controller의 1 GiB 작업별 growth admission도 이번 작업에서 변경하지 않았다.
+
+## paramsd: CarParams 빌드 이후 함께 빌드된 estimator의 모듈 오류
+
+[job 120055270784](https://github.com/bin9208/openpilot-rust/actions/runs/39844308544/job/120055270784)의
+실패 단계는 `Build native paramsd atomic-gate CarParams generator`다.
+로그상 `generate-paramsd-car-params`의 명시적 `cargo build`는
+`2026-10-22T20:17:34.5126510Z`에 성공했다.
+이후 `cargo test --test paramsd_car_params_cli`가 함께 빌드한
+`check-paramsd-estimator-native`에서 다음 오류가 발생했다.
+
+```text
+error[E0583]: file not found for module `identity`
+error[E0583]: file not found for module `numeric`
+error[E0583]: file not found for module `reference`
+  --> crates/dev-tools/src/bin/../paramsd_estimator_check.rs:22..24
+error[E0282]: type annotations needed
+  --> crates/dev-tools/src/bin/../paramsd_estimator_check.rs:120:9
+error: could not compile `openpilot-dev-tools` (bin "check-paramsd-estimator-native")
+```
+
+binary는 `#[path = "../paramsd_estimator_check.rs"] mod controller;`로 controller를
+불러온다. 당시 controller 내부의 세 `mod` 선언에는 명시적 경로가 없어 실제 파일이 있는
+`src/paramsd_estimator_check/` 대신 `src/identity.rs`, `src/numeric.rs`,
+`src/reference.rs`를 찾았다. `bound.verify()`의 E0282도 함께 보고되었지만,
+이 로그는 CarParams 생성값이나 모델 수치가 잘못되었다는 증거가 아니다.
+
+기존 수정 [606b1419618092c18c25a079e925935a70f1da20](https://github.com/bin9208/openpilot-rust/commit/606b1419618092c18c25a079e925935a70f1da20)는
+각 모듈에 `#[path = "paramsd_estimator_check/<module>.rs"]`를 추가했다.
+현재 세 경로가 모두 존재하며 binary와 integration test 양쪽의 controller 포함 경로에서
+동일한 하위 파일을 가리킨다. 별도 타입 주석이나 generator 동작 변경은 추가하지 않는다.
+
+## 수행한 확인과 남은 focused CI
+
+실제 job 로그는 다음 API로 읽었다. `gh run --log-failed`의 빈 출력을 근거로 추정하지 않았다.
+
+```bash
+gh api repos/bin9208/openpilot-rust/actions/jobs/120055270729/logs
+gh api repos/bin9208/openpilot-rust/actions/jobs/120055270784/logs
+```
+
+로컬에서는 수정 커밋의 조상 관계, 현재 파일과 수정 커밋 사이의 diff,
+모듈 파일 존재, 로그 산출물 차이, Rust 1.94.0의 아래 syntax/fmt 확인을 수행했다.
+`rustfmt --check`는 진단 없이 끝났다. 코드 실행·타입 검사·기능 테스트는 수행하지 않았다.
+
+```bash
+rustfmt +1.94.0 --check --edition 2021 --config skip_children=true \
+  rust/crates/dev-tools/src/camera_source_generate.rs \
+  rust/crates/dev-tools/tests/camera_source_generate.rs \
+  rust/crates/dev-tools/tests/camera_lifecycle_check.rs \
+  rust/crates/dev-tools/src/paramsd_estimator_check.rs \
+  rust/crates/dev-tools/src/bin/check_paramsd_estimator_native.rs \
+  rust/crates/dev-tools/src/bin/generate_paramsd_car_params.rs \
+  rust/crates/dev-tools/tests/paramsd_car_params_cli.rs
+git diff --check
+```
+
+부모 작업이 `bin-actions`에서 실행할 최소 기능·빌드 selector는 다음과 같다.
+기존 작업별 growth admission(camera 1024 MiB, paramsd 512 MiB), 원본 비교 단계와
+모든 필수 gate를 유지해야 한다. 아래 명령은 이 작업에서 실행하지 않았다.
+
+```bash
+# 실제 camera 실패 항목
+cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features camera-runtime-native --test camera_lifecycle_check original_process_environment_sanitizer_failure_and_artifact_order -- --exact --nocapture
+# 아직 이 실패 run에서 실행되지 않은 source/lifecycle generator 비교
+cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features camera-runtime-native --test camera_source_generate --test camera_lifecycle_generate
+# paramsd의 실제 실패 binary와 원래 단계의 generator를 명시적으로 포함
+cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features paramsd-fixture-native --bin generate-paramsd-car-params --bin check-paramsd-estimator-native
+cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features paramsd-fixture-native --test paramsd_car_params_cli --test paramsd_estimator_check
+```
+
+`paramsd_car_params_cli`의 ignored 원본 wire 비교와 exec 감사 테스트는 기존 hosted
+proof 준비 단계 이후에만 실행한다. 빈 proof나 `--ignored` 없는 통과로 대체하지 않는다.
+원래 camera/estimation 전체 job과 clippy도 부모의 exact-SHA 검증에서 별도로 확인해야 한다.
+
+이번 작업은 Cargo/lib registry, workflow, 원본 소스·fixture, 모델 수치·안전 기준·gate를
+변경하지 않았다. push, Actions 실행, 원격 이슈·PR 변경도 수행하지 않았다.
+
+## 추가 독립 source review: focused workflow·musl publisher
+
+2026-10-24 부모 요청으로 `.github/workflows/python-rust-523.yml`과
+`rust/crates/model-runtime/src/catalog_publish.rs`의 미커밋 변경을 읽었다.
+검토 스냅샷 SHA-256은 각각
+`3cc51e6386c24d61a3618559db9b8486b5083a300f1fd57e0bbf3ce9271fc0e5`,
+`b9bcbe9f5d43f40af37915988b224266cbbe3a40c0018d64a8de96b63f3ddeec`다.
+공유 코드/workflow는 수정하지 않았고 기능·빌드·clippy도 실행하지 않았다.
+
+소스 기준으로 실행을 막는 결함이나 필수 코드 수정은 발견하지 못했다.
+
+- `syscall(SYS_renameat2, AT_FDCWD, from, AT_FDCWD, to, RENAME_NOREPLACE)`는
+  libc의 `renameat2` wrapper 심볼 의존만 제거하고 원자적 비덮어쓰기·errno 전달을 유지한다.
+  실패 시 덮어쓰기 rename으로 우회하는 경로도 추가하지 않았다.
+- 새 테스트는 성공 이동 1개와 기존 directory/file/symlink 충돌 보존 1개다.
+  integration test `tests/catalog_publish.rs`가 수정 파일을 직접 포함하므로
+  x64의 `--test catalog_publish`가 두 테스트를 포함한다.
+  ARM의 `no_replace_tests::`는 현재 두 테스트 이름에 일치한다.
+- target별 `RUSTFLAGS`의 `linker=<sysroot>/lib/rustlib/<host>/bin/rust-lld`와
+  `linker-flavor=gnu-lld`는 C linker driver 없이 링크하는 조합이다.
+  Rust 1.94.0의 [AArch64 musl target](https://github.com/rust-lang/rust/blob/1.94.0/compiler/rustc_target/src/spec/targets/aarch64_unknown_linux_musl.rs)은
+  `crt_static_default=true`이고, [link.rs](https://github.com/rust-lang/rust/blob/1.94.0/compiler/rustc_codegen_ssa/src/back/link.rs)의
+  `InferredForMusl`은 `crt_static`에 따라 self-contained CRT를 선택한다.
+  따라서 현재 기본 target 설정에서 linker 변경만으로 musl CRT가 해제되는 문제는 없다.
+  실제 publisher binary도 별도로 cross-build하고 ELF AArch64·INTERP 부재를 확인하도록 되어 있다.
+- `kbhit::`는 feature가 활성화된 library unit을 선택하며,
+  `developer_ssh`, `developer_auth`, `github_utils`, `paramsd_car_params_cli`,
+  `paramsd_estimator_check`와 camera의 exact 실패 selector는 현재 소스에 존재한다.
+  원래 paramsd 실패 binary도 test binary 의존 빌드에 포함된다.
+- 기존 private Fast source의 checkout·HEAD/index/내용 봉인과 업로드 후
+  경로·소유자·inode·marker 확인을 거친 삭제 구조를 유지한다.
+  새 workflow는 추가로 source 봉인 성공 후에만 cleanup을 허용한다.
+
+이 focused job의 범위는 회귀·컴파일 확인이다. ARM에서는 helper 두 테스트만 QEMU로
+실행하며 publisher CLI의 ARM 실행까지 증명하지 않는다. paramsd의 ignored 원본 wire/exec
+비교와 NumPy 비교, camera source generator 테스트도 이 workflow에서는 실행하지 않는다.
+이들을 전체 전환·원본 동등성 완료 근거로 확대하지 않는 한 focused 실행의 blocker는 아니다.
+또한 현재 trigger는 workflow 파일 변경에만 반응하므로 Rust 코드만 후속 push하면 재실행되지
+않는다. 후속 코드 push도 이 job으로 검사하려면 부모가 `paths`에 대상 Rust 경로를 추가하거나
+branch 내 path 필터를 제거해야 한다.

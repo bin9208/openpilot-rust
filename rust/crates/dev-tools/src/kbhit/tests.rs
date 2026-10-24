@@ -317,3 +317,18 @@ fn private_exit_queue_error_does_not_discard_later_registered_reset() {
     restore_next(&stack).unwrap();
     same(&mode(kb.stdin_fd()), &original);
 }
+
+#[test]
+fn bound_reader_consumes_the_same_pty_checked_for_readiness() {
+    let (mut master, slave, original) = fixture();
+    let stack = Mutex::new(ExitStack::default());
+    let kb = KBHit::create(slave, |s| saved(&stack, s)).unwrap();
+    master.write_all("é\x1b[C".as_bytes()).unwrap();
+    system::wait_readable(kb.stdin_fd()).unwrap();
+    assert!(kb.has_input().unwrap());
+    assert_eq!(kb.read_char().unwrap(), Some('é'));
+    assert_eq!(kb.read_arrow().unwrap(), 1);
+    assert!(!kb.has_input().unwrap());
+    kb.set_normal_term().unwrap();
+    same(&mode(kb.stdin_fd()), &original);
+}

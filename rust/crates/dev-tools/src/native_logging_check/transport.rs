@@ -316,8 +316,10 @@ fn check_roles(
     // that an original producer ran in this new execution.
     if roles.len() == 1 && !roles[0].0 {
         report["executed_roles"] = json!(["native"]);
-        report["console_failure"] = json!("native IPC delivered and native producer returned successfully");
-        report["signals"] = json!("native default SIGINT and SIGTERM terminate during backpressure");
+        report["console_failure"] =
+            json!("native IPC delivered and native producer returned successfully");
+        report["signals"] =
+            json!("native default SIGINT and SIGTERM terminate during backpressure");
         report["transport_error"] = json!("native returns a typed transport error; original invalid-connect drop is retained historical evidence");
     }
     fs::write(
@@ -331,7 +333,7 @@ fn check_roles(
 mod tests {
     use super::*;
     use std::os::unix::{
-        fs::{MetadataExt, symlink},
+        fs::{symlink, MetadataExt},
         net::{UnixDatagram, UnixListener},
     };
     #[test]

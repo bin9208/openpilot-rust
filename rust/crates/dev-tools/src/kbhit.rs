@@ -1,4 +1,5 @@
-//! Explicit-input Linux KBHit port; no stdin discovery or restoration on Drop.
+//! Linux KBHit port with explicit descriptors and an opt-in stdin adapter.
+//! No terminal mode restoration on Drop; explicit reset/atexit retain source order.
 //! Copyright (c) 2018, Comma.ai, Inc.; repository MIT license applies.
 //! Adapted from openpilot/tools/lib/kbhit.py. Python TextIOWrapper/exit limits
 //! are documented in the source candidate's HANDOFF, not full Python parity.
@@ -90,6 +91,24 @@ pub struct KBHit {
     state: Arc<State>,
 }
 impl KBHit {
+    /// Native callers explicitly opt into the process stdin. Duplicate the descriptor,
+    /// never open /dev/tty or change nonblocking flags; retained exit state owns it.
+    pub fn from_stdin() -> io::Result<Self> {
+        Self::new(rustix::io::dup(rustix::stdio::stdin()).map_err(io::Error::from)?)
+    }
+    /// Descriptor-bound methods let migrated callers use the same descriptor for
+    /// readiness and character reads, with no TextIOWrapper read-ahead discrepancy.
+    pub fn has_input(&self) -> io::Result<bool> {
+        Self::kbhit(self.stdin_fd())
+    }
+    pub fn read_char(&self) -> io::Result<Option<char>> {
+        let mut reader = self;
+        Self::getch(&mut reader)
+    }
+    pub fn read_arrow(&self) -> Result<u8, ArrowError> {
+        let mut reader = self;
+        Self::getarrow(&mut reader)
+    }
     pub fn new(fd: OwnedFd) -> io::Result<Self> {
         Self::create(fd, register_exit)
     }
@@ -169,7 +188,7 @@ impl KBHit {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
                     "invalid UTF8 leading byte",
-                ))
+                ));
             }
         };
         let mut bytes = [0; 4];
@@ -206,6 +225,11 @@ impl KBHit {
         system::readable(fd)
     }
 }
+impl Read for &KBHit {
+    fn read(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
+        rustix::io::read(self.stdin_fd(), buffer).map_err(io::Error::from)
+    }
+}
 fn read_byte(reader: &mut impl Read) -> io::Result<Option<u8>> {
     let mut byte = [0];
     loop {
@@ -216,7 +240,7 @@ fn read_byte(reader: &mut impl Read) -> io::Result<Option<u8>> {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
                     "reader exceeded byte buffer",
-                ))
+                ));
             }
             Err(error) if error.kind() == io::ErrorKind::Interrupted => continue,
             Err(error) => return Err(error),

@@ -102,3 +102,9 @@ Git 공백 오류를 검사합니다. `openpilot-dev-tools`에서
 프로세스 그룹을 정리하고, 미지원 소스 기능은 명시적 실패로 처리합니다. 소스 제거는
 승인된 인코딩·수명주기 증거와 별도 삭제 검증을 요구합니다. 이 CI 전환은 기기 검증이나
 저장소 전체의 Python 제거 완료를 뜻하지 않습니다.
+
+`openpilot-dev-tools`의 `--features developer-ssh-native --bin developer-auth-json`
+후보는 `google|apple|github --json` 브라우저 로그인 상태를 처리합니다. 실행하면
+브라우저를 열고 성공 시 기존 인증 설정에 토큰을 저장합니다. 실제 인증을 수행하지
+않는 합성 회귀 검증은 Actions에서 진행하며, 원본 `auth.py`의 일반/JWT 출력 모드와
+기존 호출부는 아직 유지합니다. 이 후보 추가만으로 인증 도구 전체 전환을 인정하지 않습니다.

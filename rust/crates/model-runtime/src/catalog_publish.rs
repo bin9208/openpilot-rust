@@ -202,7 +202,8 @@ fn no_replace(from: &Path, to: &Path) -> Result<()> {
         // SAFETY: both paths are live NUL-terminated byte strings. The syscall
         // retains neither pointer; NOREPLACE protects a concurrently-created path.
         let status = unsafe {
-            libc::renameat2(
+            libc::syscall(
+                libc::SYS_renameat2,
                 libc::AT_FDCWD,
                 from.as_ptr(),
                 libc::AT_FDCWD,
@@ -219,6 +220,67 @@ fn no_replace(from: &Path, to: &Path) -> Result<()> {
     {
         let _ = (from, to);
         Err("native catalog finalization currently requires Linux renameat2".into())
+    }
+}
+
+#[cfg(all(test, target_os = "linux"))]
+mod no_replace_tests {
+    use super::*;
+    use std::os::unix::fs::symlink;
+
+    #[test]
+    fn moves_a_directory_without_a_libc_renameat2_wrapper() {
+        let root = tempfile::tempdir().unwrap();
+        let source = root.path().join("staged");
+        let destination = root.path().join("published");
+        fs::create_dir(&source).unwrap();
+        fs::write(source.join("payload"), b"exact model bytes").unwrap();
+        no_replace(&source, &destination).unwrap();
+        assert!(!source.exists());
+        assert_eq!(
+            fs::read(destination.join("payload")).unwrap(),
+            b"exact model bytes"
+        );
+    }
+
+    #[test]
+    fn occupied_destinations_preserve_both_generations() {
+        let root = tempfile::tempdir().unwrap();
+        for kind in ["directory", "file", "symlink"] {
+            let source = root.path().join(format!("source-{kind}"));
+            let destination = root.path().join(format!("destination-{kind}"));
+            fs::create_dir(&source).unwrap();
+            fs::write(source.join("payload"), b"new").unwrap();
+            match kind {
+                "directory" => {
+                    fs::create_dir(&destination).unwrap();
+                    fs::write(destination.join("payload"), b"existing").unwrap();
+                }
+                "file" => fs::write(&destination, b"existing").unwrap(),
+                _ => symlink(&source, &destination).unwrap(),
+            }
+            let before = fs::symlink_metadata(&destination).unwrap();
+            let error = no_replace(&source, &destination).unwrap_err();
+            assert_eq!(
+                error
+                    .downcast_ref::<std::io::Error>()
+                    .unwrap()
+                    .raw_os_error(),
+                Some(libc::EEXIST)
+            );
+            assert_eq!(fs::read(source.join("payload")).unwrap(), b"new");
+            assert_eq!(
+                fs::symlink_metadata(&destination).unwrap().ino(),
+                before.ino()
+            );
+            match kind {
+                "directory" => {
+                    assert_eq!(fs::read(destination.join("payload")).unwrap(), b"existing")
+                }
+                "file" => assert_eq!(fs::read(&destination).unwrap(), b"existing"),
+                _ => assert_eq!(fs::read_link(&destination).unwrap(), source),
+            }
+        }
     }
 }
 /// Finalize a caller-owned staging directory at ROOT/.build-*/generation.
