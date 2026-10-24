@@ -42,6 +42,18 @@ fn same(actual: &Termios, expected: &Termios) {
 }
 
 #[test]
+fn input_copy_is_close_on_exec_without_changing_the_supplied_descriptor() {
+    let (_master, slave, original) = fixture();
+    let before = rustix::io::fcntl_getfd(&slave).unwrap();
+    let copied = duplicate_input(slave.as_fd()).unwrap();
+    assert!(rustix::io::fcntl_getfd(&copied)
+        .unwrap()
+        .contains(rustix::io::FdFlags::CLOEXEC));
+    assert_eq!(rustix::io::fcntl_getfd(&slave).unwrap(), before);
+    same(&mode(copied.as_fd()), &original);
+}
+
+#[test]
 fn constructor_saves_and_changes_only_canonical_echo_without_nonblock() {
     let (_master, slave, original) = fixture();
     let flags = rustix::fs::fcntl_getfl(&slave).unwrap();

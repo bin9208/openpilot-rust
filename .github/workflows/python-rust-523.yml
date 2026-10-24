@@ -25,6 +25,8 @@ jobs:
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
+      NO_PROXY: 127.0.0.1,localhost
+      no_proxy: 127.0.0.1,localhost
     steps:
     - name: Deny fork source and require registered local runner
       shell: bash
@@ -115,7 +117,7 @@ jobs:
         '
     - uses: actions/checkout@v7
       with:
-        fetch-depth: 0
+        fetch-depth: 1
         persist-credentials: false
         path: ${{ env.DIAG_CHECKOUT_PATH }}
         set-safe-directory: false
@@ -123,7 +125,7 @@ jobs:
         lfs: false
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         }}
-    - name: Admit exact private Fast source and Git history
+    - name: Admit exact focused source HEAD and tracked index
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         }}
       working-directory: ${{ env.DIAG_SOURCE }}
@@ -182,18 +184,33 @@ jobs:
 
         available=$(df -PB1 "$DIAG_SOURCE" | awk ''NR == 2 {print $4}'')
 
-        # The estimate covers this private toolchain, Cargo registry and focused target.
+        # This operation reuses the installed pinned toolchain instead of installing a duplicate.
 
-        (( available >= 8 * 1024 * 1024 * 1024 ))
+        # Growth covers the private Cargo registry, focused targets and a missing musl std component.
 
-        printf ''{"available_bytes":%s,"planned_focused_growth_bytes":8589934592}\n'' "$available" > "$CI_JOB_TEMP/proof/build-growth.json"
+        (( available >= 6 * 1024 * 1024 * 1024 ))
+
+        printf ''{"available_bytes":%s,"planned_focused_growth_bytes":6442450944}\n'' "$available" > "$CI_JOB_TEMP/proof/build-growth.json"
 
         sudo -n apt-get -o APT::Architectures=amd64 update
 
         sudo -n apt-get -o APT::Architectures=amd64 install -y g++ pkg-config capnproto libcapnp-dev libzmq3-dev
         qemu-user-static
 
-        rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
+        export RUSTUP_HOME=/home/actions/.rustup
+
+        printf ''RUSTUP_HOME=%s\n'' "$RUSTUP_HOME" >> "$GITHUB_ENV"
+
+        test -x "$RUSTUP_HOME/toolchains/1.94.0-x86_64-unknown-linux-gnu/bin/rustc"
+
+        rustup component list --installed > "$CI_JOB_TEMP/proof/rust-components.txt"
+
+        grep -q ''^rustfmt-'' "$CI_JOB_TEMP/proof/rust-components.txt"
+
+        grep -q ''^clippy-'' "$CI_JOB_TEMP/proof/rust-components.txt"
+
+        sha256sum "$(rustup which rustc)" "$(rustup which cargo)" "$(rustup which rustfmt)" "$(rustup which clippy-driver)"
+        > "$CI_JOB_TEMP/proof/rust-tools.sha256"
 
         rustup target add --toolchain 1.94.0 aarch64-unknown-linux-musl
 
@@ -246,16 +263,16 @@ jobs:
         developer_ssh:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/auth-library.log"
 
         cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --test
-        developer_ssh --test developer_auth --test github_utils --test paramsd_car_params_cli --test paramsd_estimator_check
-        -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/tools-generators.log"
+        developer_ssh --test developer_auth --test developer_http --test github_utils --test paramsd_car_params_cli
+        --test paramsd_estimator_check -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/tools-generators.log"
 
         cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --test
         camera_lifecycle_check original_process_environment_sanitizer_failure_and_artifact_order -- --exact --nocapture
         2>&1 | tee "$CI_JOB_TEMP/proof/camera-lifecycle.log"
 
         cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --lib
-        --test developer_ssh --test developer_auth --test github_utils --test paramsd_car_params_cli --test paramsd_estimator_check
-        --test camera_lifecycle_check -- -D warnings 2>&1 | tee "$CI_JOB_TEMP/proof/tools-clippy.log"
+        --test developer_ssh --test developer_auth --test developer_http --test github_utils --test paramsd_car_params_cli
+        --test paramsd_estimator_check --test camera_lifecycle_check -- -D warnings 2>&1 | tee "$CI_JOB_TEMP/proof/tools-clippy.log"
 
         '
     - name: Build the actual catalog publisher for AArch64 musl
@@ -328,6 +345,10 @@ jobs:
 
 
         find "$CARGO_TARGET_DIR" -name "*.d" -type f -exec sha256sum {} + > "$CI_JOB_TEMP/proof/build-dep-info.sha256"
+
+
+        if test -f "$CI_JOB_TEMP/proof/rust-tools.sha256"; then sha256sum --check "$CI_JOB_TEMP/proof/rust-tools.sha256";
+        fi
 
         '
       id: source_final

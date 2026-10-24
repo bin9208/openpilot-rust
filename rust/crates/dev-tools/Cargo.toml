@@ -2532,6 +2532,10 @@ name = "developer_auth"
 required-features = ["developer-ssh-native"]
 
 [[test]]
+name = "developer_http"
+required-features = ["developer-ssh-native"]
+
+[[test]]
 name = "github_utils"
 path = "tests/github_utils.rs"
 required-features = ["github-utils-native"]

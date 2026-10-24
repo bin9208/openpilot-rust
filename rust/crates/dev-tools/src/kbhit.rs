@@ -90,11 +90,14 @@ fn register_exit(state: Arc<State>) -> io::Result<()> {
 pub struct KBHit {
     state: Arc<State>,
 }
+fn duplicate_input(fd: BorrowedFd<'_>) -> io::Result<OwnedFd> {
+    rustix::io::fcntl_dupfd_cloexec(fd, 0).map_err(io::Error::from)
+}
 impl KBHit {
     /// Native callers explicitly opt into the process stdin. Duplicate the descriptor,
     /// never open /dev/tty or change nonblocking flags; retained exit state owns it.
     pub fn from_stdin() -> io::Result<Self> {
-        Self::new(rustix::io::dup(rustix::stdio::stdin()).map_err(io::Error::from)?)
+        Self::new(duplicate_input(rustix::stdio::stdin())?)
     }
     /// Descriptor-bound methods let migrated callers use the same descriptor for
     /// readiness and character reads, with no TextIOWrapper read-ahead discrepancy.

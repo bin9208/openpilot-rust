@@ -32,3 +32,60 @@
 - 생성기·카메라 비교와 인증/터미널 도구는 분리된 GPT-6.1 Sol 작업자가 처리한다.
 
 현재 상태는 실행 재개이며 전체 전환·필수 게이트·기기 수용 완료가 아니다.
+
+## 첫 실제 Actions 결과와 용량 복구
+
+소스 `fede87a91993bfe52e6959c6e3366d5b78884213`의
+[집중 검사 40078269062](https://github.com/bin9208/openpilot-rust/actions/runs/40078269062)는
+`bin-actions`에서 체크아웃 전에 중단됐다. 실제 가용 공간 1,512,144,896 bytes가
+소스 증가량 2,147,483,648 bytes보다 작았다. 컴파일·기능·ARM 검사는 모두 미실행이다.
+artifact `12554063245`의 ZIP CRC와 단일 용량 보고서를 직접 확인했다.
+
+[첫 읽기 전용 조사 40078386189](https://github.com/bin9208/openpilot-rust/actions/runs/40078386189)의
+artifact `12554341630`은 11개 멤버 CRC와 SHA256
+`2bb63774928a15400fed95118f95a93be0ca94543f453e5468156214fe60193d`가 일치한다.
+60GB 볼륨이 98% 사용 중이었다.
+후속 YAML 재직렬화에서 `on`이 boolean 키로 변한 등록 실패는 바로 수정했다.
+그 실패 실행은 job이 없으며 캐시 조사나 검증 실행으로 계산하지 않는다.
+
+[세부 조사 40078603173](https://github.com/bin9208/openpilot-rust/actions/runs/40078603173)의
+artifact `12554825279`는 13개 멤버 CRC와 SHA256
+`23e5f5349b22c2263eb645e0966edbafa3e85d932a15113273524745d212b2a8`가 일치한다.
+공유 `rust/target`은 11,529,187,328 bytes이고 과거 정책 검사 전용 target 네 개는
+각각 약 1.07/1.07/1.07/1.72GB다. 소유자 marker와 실제 inode, 프로세스 목록을 확보했다.
+공유 체크아웃은 `e0ef927ebb4010996feaf52137611cdf2e2c3b86`이며 tracked diff가 없다.
+
+현재 #523 검사는 새로운 소스와 전용 target을 사용한다. 과거 정책 검사 target·registry는
+새 구현의 입력이나 모델·미디어 캡처가 아니며, 이후 실행에서 해당 이전 실행 파일을
+재사용하지 않는다. 과거 결과는 보존된 Actions 자료로 추적한다. 이 네 캐시와 공유 target의
+Rust `rlib/rmeta`, pip HTTP 다운로드 캐시만 복구 후보로 삼는다. source/proof, 설치된
+Rustup, 모델·provider, 공유 실행 파일·DSO와 진행 중 작업의 입력은 보존한다.
+정리는 실행 직전 소유권·참조 확인과 보존 파일 전후 검증, 실제 free 측정을 요구한다.
+
+검토 후 터미널 fd 복제는 원자적 `CLOEXEC`로 보완했다. 새 private-PTY 회귀와 실제
+loopback POST/redirect의 Requests 대조 테스트도 추가했으며 아직 실행 전이다.
+
+집중 검사는 과거 Git 객체 전체를 요구하지 않아 정확 HEAD의 shallow checkout을 사용한다.
+이미 설치된 Rust 1.94.0을 재사용하고 rustc/cargo/rustfmt/Clippy 실행 파일을 전후 고정한다.
+중복 toolchain 설치를 제거한 새 작업의 증가량 예상치는 6 GiB이며, 전용 registry·target과
+필요한 musl 표준 라이브러리 추가분을 포함한다. 실제 공간이 이 예상치보다 작으면 중단한다.
+기존 원본·ARM·전체 PR 게이트의 증가량이나 완료 조건을 낮추는 변경은 아니다.
+
+독립 검토의 터미널 `CLOEXEC`, HTTP 비교의 proxy 환경 및 명시적 selector 누락은
+소스에서 보완했다. 정리 후보에는 모든 UID의 `/proc` 참조를 root 읽기 전용 검사로
+확인하고, 읽을 수 없는 프로세스가 있으면 정리를 거절하도록 반영했다. 보존 manifest는
+디렉터리 symlink도 대상 내용을 따라가지 않고 링크 자체를 기록한다.
+
+## 실제 정리 결과
+
+[정리 40079156262/job120828879976](https://github.com/bin9208/openpilot-rust/actions/runs/40079156262/job/120828879976)은
+소스 `2ab224c8907ea0fba596dca5fd279c939cbf50ae`에서 성공했다.
+artifact `12554042677`의 8개 ZIP 멤버 CRC와 SHA256
+`10216438944e08ec7de5752389ab988ac727d22330cd43638323f6df366a3c58`를 확인했다.
+2,282개 계획 항목에 대한 4,564개 intent/removed 기록이 순서대로 완전히 대응하고,
+보존 manifest의 29,269개 항목은 전후 동일하다. 일반 source/proof와 설치된 Rustup,
+공유 실행 파일·DSO를 포함한 보존 자료의 내용이 유지됐다.
+
+같은 볼륨의 실제 가용 공간은 1,509,208,064 → 9,439,432,704 bytes다.
+이 순증가는 실행 중 다른 활동·증거 파일 증가도 포함하므로 영구 용량 보장이나
+각 파일의 정확 회수량으로 해석하지 않는다. 다음 검사는 실제 시점별 admission을 유지한다.

@@ -163,3 +163,44 @@ proof 준비 단계 이후에만 실행한다. 빈 proof나 `--ignored` 없는 �
 또한 현재 trigger는 workflow 파일 변경에만 반응하므로 Rust 코드만 후속 push하면 재실행되지
 않는다. 후속 코드 push도 이 job으로 검사하려면 부모가 `paths`에 대상 Rust 경로를 추가하거나
 branch 내 path 필터를 제거해야 한다.
+
+## 추가 독립 source review: browser auth·KBHit adapter
+
+2026-10-24 `developer_ssh/login.rs`, `login/native.rs`, `http.rs`, `kbhit.rs`,
+`tests/developer_auth.rs`와 원본 `openpilot/tools/lib/auth.py`, `api.py`,
+`auth_config.py`, `kbhit.py`를 읽어 대조했다. 공유 파일 수정이나 기능 실행은 하지 않았다.
+일반/JWT CLI·caller 미완료와 원본 21개 synthetic 입력 비교의 명시된 범위는 결함으로
+계산하지 않았다. P1은 발견하지 못했으며, 구체적인 P2 지적은 다음 1건이다.
+
+- `rust/crates/dev-tools/src/kbhit.rs:97`: `from_stdin()`의 `rustix::io::dup()`는
+  CLOEXEC를 설정하지 않는다. atexit 상태가 복제 FD를 계속 보유하므로 이후 Rust
+  `Command`가 자식을 실행할 때 stdin을 null로 지정해도 원래 터미널의 추가 FD가
+  상속된다. 원본 Python은 fd 0을 참조할 뿐 이 추가 inheritable FD를 만들지 않는다.
+  수정안은 `rustix::io::fcntl_dupfd_cloexec(rustix::stdio::stdin(), 0)`로 원자적으로
+  복제하는 것이다. 실제 stdin을 건드리지 않는 private PTY 기반 복제 경계 테스트에서
+  `fcntl_getfd()`의 `FdFlags::CLOEXEC`를 확인하도록 제안한다. 현재 bound-reader 테스트는
+  `from_stdin()`을 통과하지 않으므로 이 누락을 검출하지 못한다.
+
+로그인 검증 후 저장 순서, callback의 첫 결과 보존, provider/code 검증, HTTP POST의
+301/302/303 GET 전환 및 307/308 body 보존에서 추가 P1/P2는 발견하지 못했다.
+이는 정적 검토 결과이며 네트워크/브라우저/터미널 및 CI 통과 증거는 아니다.
+
+## 추가 독립 source review: 실제 HTTP redirect 비교
+
+2026-10-24 미커밋 `tests/developer_http.rs`(SHA-256
+`cd3bf67f3648cf58c38ee003e0134b8ebb68658e2992410f9720f0bf42d2bea8`)와 Cargo 등록을
+읽었다. 등록의 feature 조건과 POST form bytes·301/302/303 GET 전환·307/308 body 보존,
+cookie/auth/user-agent 비교에서 P1은 발견하지 못했다. 기능 실행이나 공유 파일 수정은 없다.
+
+- P2: Python peer만 `Session.trust_env=False`다. native는 ureq 기본
+  `Proxy::try_from_env()`를 사용하므로 proxy 환경이 있는 runner에서 loopback까지 proxy로
+  우회해 비교가 실패할 수 있다. focused 실행의 환경에 `NO_PROXY`와 `no_proxy`를 모두
+  `127.0.0.1,localhost`로 설정하거나, native client를 별도 자식 프로세스에서 proxy 환경을
+  제거하고 실행하도록 제안한다. 병렬 Rust 테스트 프로세스 내부의 전역 환경 변경은 피한다.
+- P2: 검토 시점 focused workflow의 명시적 test/clippy 목록에 `--test developer_http`가
+  없다. Cargo 등록만으로 이 목록에 포함되지 않으므로 후속 커밋에 두 selector를 추가해야 한다.
+- 앞선 `KBHit::from_stdin()`의 CLOEXEC 지적도 검토 시점에는 아직 수정되지 않았다.
+
+첫 focused run `40078269062`의 checkout 전 실패는 부모가 전달한
+`1512144896 < 2147483648` 용량 사전검사 결과로 기록한다. 이 검토에서 run을 재실행하거나
+진행 중 metadata run `40078386189`의 결과를 추정하지 않았다.
