@@ -1,8 +1,10 @@
 name: Python Rust 523 runner capacity inventory
-on:
+true:
   push:
-    branches: [codex/feat-523-python-rust]
-    paths: [.github/workflows/python-rust-523-capacity.yml]
+    branches:
+    - codex/feat-523-python-rust
+    paths:
+    - .github/workflows/python-rust-523-capacity.yml
 permissions:
   contents: read
 concurrency:
@@ -10,50 +12,52 @@ concurrency:
   cancel-in-progress: false
 jobs:
   inventory:
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on:
+    - self-hosted
+    - Linux
+    - X64
+    - dev-md-local
     timeout-minutes: 10
     steps:
-      - name: Require registered runner and allocate small owned report
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$RUNNER_NAME" = bin-actions
-          test "$RUNNER_ENVIRONMENT" = self-hosted
-          test "$RUNNER_ARCH" = X64
-          report=$(mktemp -d "$RUNNER_TEMP/python-rust-523-capacity.XXXXXX")
-          printf '%s:%s:%s\n' "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$GITHUB_JOB" > "$report/owner"
-          printf 'CAPACITY_REPORT=%s\n' "$report" >> "$GITHUB_ENV"
-      - name: Inventory known Actions storage without checkout or deletion
-        shell: bash
-        run: |
-          set -euo pipefail
-          report=$CAPACITY_REPORT
-          df -PB1 / /tmp "$GITHUB_WORKSPACE" > "$report/filesystems.txt"
-          findmnt -rn -o TARGET,SOURCE,FSTYPE > "$report/mounts.txt"
-          ps -eo pid,ppid,uid,stat,comm > "$report/processes.txt"
-          printf '%s\n' "$RUNNER_NAME" "$RUNNER_OS" "$RUNNER_ARCH" "$GITHUB_SHA" > "$report/provenance.txt"
-          # Known Actions/cache directories only; never read credential or source contents.
-          for root in /home/actions/actions-runner/_work /home/actions/.cache /home/actions/.cargo /home/actions/.rustup; do
-            test -d "$root" || continue
-            printf '\nROOT %s\n' "$root" >> "$report/usage.txt"
-            timeout 90 du -x -B1 --max-depth=3 -- "$root" >> "$report/usage.txt" 2>> "$report/usage-errors.txt" || printf 'INCOMPLETE %s\n' "$root" >> "$report/usage-errors.txt"
-          done
-          for root in /tmp/openpilot-ci.*; do
-            test -d "$root" && test ! -L "$root" || continue
-            stat -c '%d:%i %u %s %n' -- "$root" >> "$report/temporary-roots.txt"
-            if test -f "$root/owner" && test ! -L "$root/owner"; then
-              printf '%s ' "$root" >> "$report/temporary-owners.txt"
-              head -c 160 -- "$root/owner" >> "$report/temporary-owners.txt"
-              printf '\n' >> "$report/temporary-owners.txt"
-            fi
-            timeout 30 du -x -B1 --max-depth=2 -- "$root" >> "$report/temporary-usage.txt" 2>> "$report/usage-errors.txt" || printf 'INCOMPLETE %s\n' "$root" >> "$report/usage-errors.txt"
-          done
-          df -PB1 / /tmp "$GITHUB_WORKSPACE" > "$report/filesystems-after.txt"
-      - name: Preserve read-only inventory
-        if: always() && env.CAPACITY_REPORT != ''
-        uses: actions/upload-artifact@v6
-        with:
-          name: python-rust-523-capacity-${{ github.run_id }}
-          path: ${{ env.CAPACITY_REPORT }}
-          if-no-files-found: error
-          retention-days: 14
+    - name: Require registered runner and allocate small owned report
+      shell: bash
+      run: 'set -euo pipefail
+
+        test "$RUNNER_NAME" = bin-actions
+
+        test "$RUNNER_ENVIRONMENT" = self-hosted
+
+        test "$RUNNER_ARCH" = X64
+
+        report=$(mktemp -d "$RUNNER_TEMP/python-rust-523-capacity.XXXXXX")
+
+        printf ''%s:%s:%s\n'' "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$GITHUB_JOB" > "$report/owner"
+
+        printf ''CAPACITY_REPORT=%s\n'' "$report" >> "$GITHUB_ENV"
+
+        '
+    - name: Inspect shared compiler caches and historical policy cache ownership
+      shell: bash
+      run: "set -euo pipefail\nreport=$CAPACITY_REPORT\nshared=/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust\n\
+        df -PB1 \"$shared\" /tmp > \"$report/filesystems.txt\"\nps -eo pid,ppid,uid,stat,comm > \"$report/processes.txt\"\
+        \ngit -C \"$shared\" rev-parse HEAD > \"$report/shared-source-commit.txt\"\ngit -C \"$shared\" status --porcelain=v1\
+        \ -uno > \"$report/shared-source-status.txt\"\nfor root in \"$shared/rust/target\" /tmp/openpilot-ci.hRmquO\
+        \ /tmp/openpilot-ci.s9WqUE /tmp/openpilot-ci.Rt5Jlt /tmp/openpilot-ci.eQd1Pi; do\n  test -d \"$root\" &&\
+        \ test ! -L \"$root\" || continue\n  stat -c '%d:%i %u %s %n' -- \"$root\" >> \"$report/root-identities.txt\"\
+        \n  if test -f \"$root/owner\" && test ! -L \"$root/owner\"; then\n    printf '%s ' \"$root\" >> \"$report/owners.txt\"\
+        \n    head -c 160 \"$root/owner\" >> \"$report/owners.txt\"\n    printf '\\n' >> \"$report/owners.txt\"\n\
+        \  fi\n  du -x -B1 --max-depth=3 -- \"$root\" >> \"$report/usage.txt\"\ndone\n# Cache metadata only, no\
+        \ file contents or arbitrary process arguments.\nfind \"$shared/rust/target\" -xdev -type f -printf '%s\
+        \ %b %T@ %p\\n' > \"$report/target-file-sizes.txt\"\nfind \"$shared/rust/target\" -xdev -maxdepth 3 -type\
+        \ d -printf '%D:%i %u %T@ %p\\n' > \"$report/target-directories.txt\"\nfor root in /tmp/openpilot-ci.hRmquO\
+        \ /tmp/openpilot-ci.s9WqUE /tmp/openpilot-ci.Rt5Jlt /tmp/openpilot-ci.eQd1Pi; do\n  test -d \"$root\" &&\
+        \ test ! -L \"$root\" || continue\n  find \"$root\" -maxdepth 2 -type f \\( -name '*owner*' -o -name '*receipt*'\
+        \ -o -name '*manifest*' \\) -printf '%p\\n' >> \"$report/known-marker-paths.txt\"\ndone\n"
+    - name: Preserve read-only inventory
+      if: always() && env.CAPACITY_REPORT != ''
+      uses: actions/upload-artifact@v6
+      with:
+        name: python-rust-523-capacity-${{ github.run_id }}
+        path: ${{ env.CAPACITY_REPORT }}
+        if-no-files-found: error
+        retention-days: 14
