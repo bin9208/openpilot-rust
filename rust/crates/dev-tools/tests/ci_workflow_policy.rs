@@ -6,6 +6,10 @@ use openpilot_dev_tools::ci_policy::{
 use std::{collections::BTreeMap, fs, path::PathBuf};
 
 const CHANGED_FILES_REGRESSION: &str = "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --no-default-features --features changed-files-native --test changed_files_caller";
+const NAVI_POLICY: [&str; 2] = [
+    "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features carrot-navi-compare-native --test carrot_navi_compare maintained_policy_rejects_embedded_oracle_and_changed_traffic -- --exact",
+    "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features carrot-navi-compare-native --test carrot_navi_compare maintained_policy_accepts_yaml_aliases_and_rejects_unreviewed_overlays -- --exact",
+];
 
 fn root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..")
@@ -124,6 +128,7 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
     let success = BTreeMap::from([
         ("SOURCE_ALLOWED".into(), "true".into()),
         ("NATIVE".into(), "success".into()),
+        ("NATIVE_TOOLS".into(), "success".into()),
         ("NATIVE_CORPUS".into(), "success".into()),
         ("NATIVE_TIMING".into(), "success".into()),
         ("NATIVE_ALERTS".into(), "success".into()),
@@ -133,6 +138,7 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
     assert!(run_shell(script, &success).unwrap().success());
     for name in [
         "NATIVE",
+        "NATIVE_TOOLS",
         "NATIVE_CORPUS",
         "NATIVE_TIMING",
         "NATIVE_ALERTS",
@@ -161,6 +167,7 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
     }
     for dependency in [
         "native",
+        "native-tools",
         "native-corpus",
         "native-timing",
         "native-alerts",
@@ -191,6 +198,7 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
     }
     for name in [
         "NATIVE",
+        "NATIVE_TOOLS",
         "NATIVE_CORPUS",
         "NATIVE_TIMING",
         "NATIVE_ALERTS",
@@ -206,6 +214,15 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
         let mut wrong = original.clone();
         wrong["jobs"]["fast"]["steps"][0]["env"][name] = "success".into();
         assert!(validate_fast_gate(&wrong).is_err());
+        let mut crossed = original.clone();
+        let other = if name == "NATIVE" {
+            "native-tools"
+        } else {
+            "native"
+        };
+        crossed["jobs"]["fast"]["steps"][0]["env"][name] =
+            format!("${{{{ needs.{other}.result }}}}").into();
+        assert!(validate_fast_gate(&crossed).is_err());
         let mut bypass = original.clone();
         bypass["jobs"]["fast"]["steps"][0]["run"] = script
             .replace(&format!("test \"${name}\" = success"), "true")
@@ -213,6 +230,14 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
         assert!(validate_fast_gate(&bypass).is_err());
     }
     for needs in [
+        serde_json::json!([
+            "native",
+            "native-corpus",
+            "native-timing",
+            "native-alerts",
+            "native-alert-manager",
+            "python-android"
+        ]),
         serde_json::json!(["native", "native-corpus", "native-alerts", "python-android"]),
         serde_json::json!(["native"]),
         serde_json::json!(["python-android"]),
@@ -333,10 +358,35 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         "alert_callbacks_check",
         "selfdrive_helpers_check",
     ];
+    let policy = [
+        "ci_workflow_policy",
+        "ci_rust_isolation",
+        "ci_disk_bootstrap",
+        "ci_process_probe",
+    ];
+    let cold_audit = "CI_PREPARED_RUST_PROOF=\"$CI_JOB_TEMP/proof\" cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --test ci_disk_bootstrap prepared_audit::prepared_audit_actual_cold_bootstrap_receipt -- --ignored --exact --nocapture 2>&1 | tee \"$CI_JOB_TEMP/proof/prepared-cold-native-audit.log\"";
+    let caller_prepare = "\"$GITHUB_WORKSPACE/rust/tools/prepare-changed-files-caller\" \"$CI_JOB_TEMP/proof/changed-files-caller\" \"$CI_JOB_TEMP/changed-files-caller.env\"";
+    let caller_context = "source \"$CI_JOB_TEMP/changed-files-caller.env\"";
+    let service = "cargo test --manifest-path rust/Cargo.toml -p openpilot-service-tools --locked";
+    let owned_commands = [
+        (cold_audit, "native"),
+        (
+            "grep -F 'test result: ok. 1 passed;' \"$CI_JOB_TEMP/proof/prepared-cold-native-audit.log\"",
+            "native",
+        ),
+        (caller_prepare, "native"),
+        (caller_context, "native"),
+        (CHANGED_FILES_REGRESSION, "native"),
+        (NAVI_POLICY[0], "native"),
+        (NAVI_POLICY[1], "native"),
+        (service, "native-tools"),
+    ];
     let mut seen = BTreeMap::<String, usize>::new();
     let mut all_commands = Vec::new();
+    let mut native_split = Vec::new();
     for worker in [
         "native",
+        "native-tools",
         "native-corpus",
         "native-timing",
         "native-alerts",
@@ -370,7 +420,8 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
             commands
                 .iter()
                 .filter(|line| {
-                    line.as_str() != CHANGED_FILES_REGRESSION && line.starts_with(
+                    line.as_str() != CHANGED_FILES_REGRESSION
+                    && !NAVI_POLICY.contains(&line.as_str()) && line.starts_with(
                         "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked"
                     )
                 })
@@ -381,7 +432,8 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         let command = commands
             .iter()
             .find(|line| {
-                line.as_str() != CHANGED_FILES_REGRESSION && line.starts_with(
+                line.as_str() != CHANGED_FILES_REGRESSION
+                && !NAVI_POLICY.contains(&line.as_str()) && line.starts_with(
                     "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked",
                 )
             })
@@ -401,15 +453,35 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
                 "native-alerts" => alerts.contains(name),
                 "native-corpus" => corpus.contains(name),
                 "native-timing" => timing.contains(name),
-                _ => {
+                "native" => policy.contains(name),
+                "native-tools" => {
                     !corpus.contains(name)
                         && !timing.contains(name)
                         && !alerts.contains(name)
                         && *name != "alert_manager_check"
+                        && !policy.contains(name)
                 }
+                _ => unreachable!(),
             })
             .collect::<Vec<_>>();
         assert_eq!(selected, assigned, "{worker} suite selection changed");
+        let mut exact =
+            "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked".to_owned();
+        if worker == "native" {
+            exact.push_str(" --lib");
+        }
+        for suite in &assigned {
+            exact.push_str(" --test ");
+            exact.push_str(suite);
+        }
+        assert_eq!(
+            command, &exact,
+            "{worker} baseline command signature changed"
+        );
+        if matches!(worker, "native" | "native-tools") {
+            assert_eq!(selected.len(), if worker == "native" { 4 } else { 53 });
+            native_split.extend(selected.iter().map(|suite| (*suite).to_owned()));
+        }
         for suite in selected {
             *seen.entry(suite.to_owned()).or_default() += 1;
         }
@@ -424,10 +496,65 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
             1,
             "{worker} disk guard changed"
         );
+        let operation_guard = "OPENPILOT_CI_PREPARED_RUST_ROOT=\"$CI_PREPARED_RUST_ROOT\" OPENPILOT_CI_PREPARED_RUST_MANIFEST=\"$CI_PREPARED_RUST_MANIFEST\" \"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 6144";
+        let split_worker = matches!(worker, "native" | "native-tools");
+        assert_eq!(
+            commands
+                .iter()
+                .filter(|line| line.as_str() == operation_guard)
+                .count(),
+            usize::from(split_worker),
+            "{worker} operation admission changed"
+        );
+        for (owned, owner) in owned_commands {
+            assert_eq!(
+                commands
+                    .iter()
+                    .filter(|line| line.as_str() == owned)
+                    .count(),
+                usize::from(worker == owner),
+                "{worker}: dropped, duplicated or misplaced {owned}"
+            );
+        }
+        let at = |expected: &str| {
+            commands
+                .iter()
+                .position(|line| line.as_str() == expected)
+                .unwrap()
+        };
+        if split_worker {
+            assert!(at(&disk_guard) < at(operation_guard));
+            assert!(at(operation_guard) < at(command));
+        }
+        if worker == "native" {
+            assert!(at(operation_guard) < at(cold_audit));
+            assert!(at(cold_audit) < at(caller_prepare));
+            assert!(at(caller_prepare) < at(caller_context));
+            assert!(at(caller_context) < at(CHANGED_FILES_REGRESSION));
+            assert!(at(CHANGED_FILES_REGRESSION) < at(command));
+            assert!(at(command) < at(NAVI_POLICY[0]));
+            assert!(at(NAVI_POLICY[0]) < at(NAVI_POLICY[1]));
+        } else if worker == "native-tools" {
+            assert!(at(command) < at(service));
+        }
         all_commands.extend(commands);
     }
+    assert_eq!(expected.len(), 72);
     assert_eq!(seen.len(), expected.len());
     assert!(seen.values().all(|count| *count == 1));
+    let original_native = expected
+        .iter()
+        .copied()
+        .filter(|name| {
+            !corpus.contains(name)
+                && !timing.contains(name)
+                && !alerts.contains(name)
+                && *name != "alert_manager_check"
+        })
+        .map(str::to_owned)
+        .collect::<Vec<_>>();
+    assert_eq!(native_split.len(), 57);
+    assert_eq!(native_split, original_native);
     for command in [
         CHANGED_FILES_REGRESSION,
         "cargo test --manifest-path rust/Cargo.toml -p openpilot-service-tools --locked",
@@ -495,6 +622,7 @@ fn future_diagnostic_runner_and_fork_refusal_require_static_approved_routing() {
     for state in [None, Some(""), Some("false"), Some("skipped")] {
         let mut values = BTreeMap::from([
             ("NATIVE".into(), "success".into()),
+            ("NATIVE_TOOLS".into(), "success".into()),
             ("NATIVE_CORPUS".into(), "success".into()),
             ("NATIVE_TIMING".into(), "success".into()),
             ("NATIVE_ALERTS".into(), "success".into()),
@@ -851,6 +979,7 @@ fn all_fast_workers_require_bound_sdk_seals_and_sealed_cleanup() {
     validate_fast_gate(&workflow).unwrap();
     for worker in [
         "native",
+        "native-tools",
         "native-corpus",
         "native-alerts",
         "native-alert-manager",

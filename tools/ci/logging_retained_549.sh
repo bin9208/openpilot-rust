@@ -170,6 +170,32 @@ native_logging_check::retained::prepare::tests::zip_rejects_extra_truncated_crc_
 NAMES
 sed -nE 's/^test (native_logging_check::retained::prepare::tests::[a-z0-9_]+) \.\.\. ok$/\1/p' "$proof/build/prepare-controls.stdout" | LC_ALL=C sort > "$proof/prepare-controls.actual.txt"
 cmp "$proof/prepare-controls.expected.txt" "$proof/prepare-controls.actual.txt"
+run trace-controls 180 "${runtime[@]}" "$unit" native_logging_check::trace::tests:: --test-threads=1 --color=never
+test "$(grep -Ec '^test result: ok\. 20 passed; 0 failed; 0 ignored;' "$proof/build/trace-controls.stdout")" -eq 1
+cat > "$proof/trace-controls.expected.txt" <<'NAMES'
+native_logging_check::trace::tests::ancestor_symlink_and_existing_output_cannot_redirect_or_overwrite
+native_logging_check::trace::tests::dispatch_and_help_require_only_the_first_literal_and_no_files
+native_logging_check::trace::tests::duplicate_pid_spelling_and_unsafe_prefix_are_rejected
+native_logging_check::trace::tests::held_inputs_detect_same_length_rewrite_replacement_and_added_roster
+native_logging_check::trace::tests::hex_exec_failed_attempt_and_execveat_are_data_without_policy_acceptance
+native_logging_check::trace::tests::line_and_sparse_file_bounds_fail_before_unbounded_reads
+native_logging_check::trace::tests::malformed_cstrings_unknown_escapes_and_exec_ellipsis_are_rejected
+native_logging_check::trace::tests::malformed_delimiters_nested_pending_and_post_terminal_calls_are_rejected
+native_logging_check::trace::tests::malformed_timestamp_or_clock_reversal_is_rejected
+native_logging_check::trace::tests::memory_network_session_calls_and_opaque_payload_are_lexical_events
+native_logging_check::trace::tests::missing_newline_terminal_or_unresolved_pending_is_rejected
+native_logging_check::trace::tests::model_and_report_byte_limits_reject_further_data
+native_logging_check::trace::tests::orphan_wrong_operation_and_cross_pid_resumes_are_rejected
+native_logging_check::trace::tests::output_seal_rejects_same_inode_rewrite_replacement_and_added_alias
+native_logging_check::trace::tests::plain_exec_bytes_environment_and_raw_spans_remain_inspection_only
+native_logging_check::trace::tests::raw_read_hex_arguments_and_returns_keep_source_ranges_and_opaque_body
+native_logging_check::trace::tests::same_pid_resume_preserves_both_physical_fragments
+native_logging_check::trace::tests::signal_cpu_comments_and_no_return_exit_are_not_successful_syscalls
+native_logging_check::trace::tests::symlink_hardlink_fifo_and_public_directory_are_rejected
+native_logging_check::trace::tests::terminal_signal_keeps_interrupted_call_aborted_and_never_successful
+NAMES
+sed -nE 's/^test (native_logging_check::trace::tests::[a-z0-9_]+) \.\.\. ok$/\1/p' "$proof/build/trace-controls.stdout" | LC_ALL=C sort > "$proof/trace-controls.actual.txt"
+cmp "$proof/trace-controls.expected.txt" "$proof/trace-controls.actual.txt"
 export NATIVE_LOGGING_RETAINED_BINARY=$probe NATIVE_LOGGING_RETAINED_CONTEXT=$context
 export NATIVE_LOGGING_RETAINED_SOURCE_COMMIT=$GITHUB_SHA
 export NATIVE_LOGGING_RETAINED_BINARY_SHA256 NATIVE_LOGGING_RETAINED_CONTEXT_SHA256
@@ -184,20 +210,28 @@ monotonic_cs() {
   whole=${stamp%.*}; fraction=${stamp#*.}
   printf '%s\n' "$((10#$whole * 100 + 10#$fraction))"
 }
+# read/pread64는 FD/주소/길이/결과를 raw hex로 유지한다. 반복 해시의 대형 버퍼 사본만 펼치지 않는다.
+# 입력·packet 원문은 별도 context/실제 결과에서 봉인한다. exec/argv/path 및 mapping은 계속 해석 출력한다.
 started=$(monotonic_cs)
 for name in first_int first_term first_eof runtime_directory_int runtime_directory_term escaped_descendant_int escaped_descendant_term escaped_descendant_eof output_file output_directory output_live_directory output_symlink output_dangling_symlink forbidden_executable_options; do
   remaining=$((60000 - ($(monotonic_cs) - started)))
   ((remaining > 0))
   bound_cs=$remaining; ((bound_cs <= 9500)) || bound_cs=9500
   printf -v bound '%s.%02d' "$((bound_cs / 100))" "$((bound_cs % 100))"
-  run "lifecycle-$name" "$bound" "${runtime[@]}" "${lifecycle_env[@]}" /usr/bin/strace --kill-on-exit -ff -ttt -yy -v -s 65536 -e trace=process,%file,%desc,%signal -o "$proof/trace/$name" "$fixture" --ignored --exact "retained::$name" --test-threads=1 --color=never
+  run "lifecycle-$name" "$bound" "${runtime[@]}" "${lifecycle_env[@]}" /usr/bin/strace --kill-on-exit -ff -ttt -yy -xx -v -s 65536 -e trace=process,%file,%desc,%signal,%network,%memory,setsid,setpgid,prctl,unshare,setns -e raw=read,pread64 -o "$proof/trace/$name" "$fixture" --ignored --exact "retained::$name" --test-threads=1 --color=never
   test "$(grep -Ec '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$proof/build/lifecycle-$name.stdout")" -eq 1
   verify_held
 done
 (( $(monotonic_cs) - started <= 60000 ))
-run retained-once 360 "${runtime[@]}" /usr/bin/strace --kill-on-exit -ff -ttt -yy -v -s 65536 -e trace=process,%file,%desc,%signal -o "$proof/trace/retained-once" "$checker" retained --root "$source" --binary "$probe" --context "$context" --output "$proof/native" --source-commit "$GITHUB_SHA" --binary-sha256 "$NATIVE_LOGGING_RETAINED_BINARY_SHA256"
+run retained-once 360 "${runtime[@]}" /usr/bin/strace --kill-on-exit -ff -ttt -yy -xx -v -s 65536 -e trace=process,%file,%desc,%signal,%network,%memory,setsid,setpgid,prctl,unshare,setns -e raw=read,pread64 -o "$proof/trace/retained-once" "$checker" retained --root "$source" --binary "$probe" --context "$context" --output "$proof/native" --source-commit "$GITHUB_SHA" --binary-sha256 "$NATIVE_LOGGING_RETAINED_BINARY_SHA256"
 jq -e --arg source "$GITHUB_SHA" '.fresh_native_packets==250 and .fresh_native_responses==697 and .retained_cpp_packets==249 and .retained_cpp_responses==694 and .cpp_executions==0 and .source_commit==$source and .R4_acceptance==false and .lifecycle_reuse_granted==false and (.historical_to_recovered_console|length)==7 and (.recovered_to_fresh_console|length)==7 and all(.historical_to_recovered_console[]; .projected_equal==true) and all(.recovered_to_fresh_console[]; .projected_equal==true)' "$proof/native/report.json" > "$proof/raw-comparison.txt"
 for stem in providers context-inputs source-state; do cmp "$proof/native/$stem.before.json" "$proof/native/$stem.after.json"; done
+# 기능 cohort 뒤의 별도 lexical inspection이다. PID/cwd/FD/DSO 정책 수용으로 올리지 않는다.
+mkdir "$proof/inspect"
+for name in first_int first_term first_eof runtime_directory_int runtime_directory_term escaped_descendant_int escaped_descendant_term escaped_descendant_eof output_file output_directory output_live_directory output_symlink output_dangling_symlink forbidden_executable_options retained-once; do
+  run "inspect-$name" 180 "${runtime[@]}" "$checker" inspect-trace --directory "$proof/trace" --prefix "$name" --output "$proof/inspect/$name.json"
+  jq -e '.schema==1 and .raw_immutable==true and .requires_exit_status_zero==true and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and .full_acceptance==false and .retirement_credit==false' "$proof/inspect/$name.json" > "$proof/inspect/$name.scope.txt"
+done
 verify_held
 printf '%s\n' 'current held files and bytes unchanged' > "$proof/held-after.txt"
 admit final 0

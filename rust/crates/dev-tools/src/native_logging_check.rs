@@ -23,6 +23,7 @@ mod lifecycle;
 pub use lifecycle::Interrupted;
 mod retained;
 mod socket;
+mod trace;
 mod transport;
 const STRIPPED: [&str; 7] = [
     "DONGLE_ID",
@@ -687,6 +688,9 @@ impl HeldBinary {
 }
 pub fn cli() -> Result<()> {
     let args = std::env::args_os().skip(1).collect::<Vec<_>>();
+    if trace::selected(&args) {
+        return trace::cli(&args[1..]);
+    }
     if retained::prepare::selected(&args) {
         return retained::prepare::cli(&args[1..]);
     }

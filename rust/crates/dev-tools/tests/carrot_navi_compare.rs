@@ -1,7 +1,12 @@
 //! Hosted-only differential gate. Never execute archived programs: read the
 //! sealed JSON members, run the current comparator and frozen independent oracle.
 use openpilot_dev_tools::carrot_navi_compare::{assert_exact, normalize};
+use openpilot_dev_tools::ci_policy::{
+    parse as parse_workflow, uses_native_action, validate_local_routing, TRUSTED_ALWAYS,
+    TRUSTED_SOURCE,
+};
 use openpilot_log_format::JsonValue;
+use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::{
     fs,
@@ -460,48 +465,214 @@ const CALLER_SHA: &str = "0e1d027a4ca577b885be3551757efe560ecfb31e2f559eb886ca07
 const ACCEPTED_CONTROLS_SHA: &str =
     "815af34faaf6cf9f2cd02a8934d7c328f8fe7ee16716ed8bea16c7378abdc180";
 
-// Preserve every byte of the existing runtime QA job outside these two steps.
-// This intentionally fails if another Carrot traffic step changes: review its
-// independent evidence before updating this bound, never merely refresh a hash.
+// 역사 원문 pin은 유지한다. 직렬화 형식과 검토된 private infrastructure만 구분한다.
+const RETAINED_JOB: &str = include_str!("fixtures/carrot-navi-comparator/retained-runtime-job.yml");
+// a4b1db51c의 추가 11단계 전체 metadata/run. 도메인 단계의 hash를 대신하지 않는다.
+const PRIVATE_OVERLAY_SHA: &str =
+    "80845db9512f58300af32f597109177631b208cad7384c4628c647ae69668534";
+const PRIVATE_STAGES: &[(usize, &str)] = &[
+    (0, "Deny fork source and require GitHub-hosted Linux X64"),
+    (1, "Common owned job temporary paths"),
+    (
+        2,
+        "Allocate private source cache target and local action alias before checkout",
+    ),
+    (4, "Admit exact private source and index"),
+    (
+        5,
+        "Configure source-dependent job environment on private paths",
+    ),
+    (6, "Expose provisioned Rust shims"),
+    (8, "Keep original Python installations private"),
+    (21, "Seal private source and index after maintained checks"),
+    (22, "Retain private job ownership and source evidence"),
+    (23, "Clean only uploaded owned source alias and target"),
+    (
+        24,
+        "Clean common owned temporary paths after uploaded source",
+    ),
+];
+fn ordered_model(value: &Value) -> Value {
+    match value {
+        Value::Object(fields) => {
+            let mut entries = fields.iter().collect::<Vec<_>>();
+            entries.sort_unstable_by(|(a, _), (b, _)| a.cmp(b));
+            Value::Object(
+                entries
+                    .into_iter()
+                    .map(|(k, v)| (k.clone(), ordered_model(v)))
+                    .collect(),
+            )
+        }
+        Value::Array(values) => Value::Array(values.iter().map(ordered_model).collect()),
+        _ => value.clone(),
+    }
+}
 fn maintained_steps(workflow: &str) -> Result<(String, String), String> {
-    let (_, tail) = workflow
-        .split_once("  carrot-navi-runtime:\n")
-        .ok_or("Carrot job missing")?;
-    let (body, _) = tail
-        .split_once("  carrot-navi-arm:\n")
-        .ok_or("Carrot job end missing")?;
-    let mut retained = format!("  carrot-navi-runtime:\n{body}");
+    if RETAINED_JOB.len() != 7333 || hash(RETAINED_JOB.as_bytes()) != RETAINED_JOB_SHA {
+        return Err("historical retained job fixture changed".into());
+    }
+    let historical = parse_workflow(RETAINED_JOB)?;
+    let expected = &historical["carrot-navi-runtime"];
+    let parsed = parse_workflow(workflow)?;
+    let job = &parsed["jobs"]["carrot-navi-runtime"];
+    validate_local_routing(&json!({"jobs":{"carrot-navi-runtime":job}}))?;
+    let steps = job["steps"].as_array().ok_or("Carrot steps missing")?;
+    if steps.len() != 25 {
+        return Err("Carrot step roster changed".into());
+    }
+    let mut overlay = Vec::new();
+    for &(index, name) in PRIVATE_STAGES {
+        if steps[index]["name"] != name {
+            return Err(format!("private Carrot stage missing or reordered: {name}"));
+        }
+        overlay.push(steps[index].clone());
+    }
+    let overlay = serde_json::to_vec(&ordered_model(&Value::Array(overlay)))
+        .map_err(|error| error.to_string())?;
+    if hash(&overlay) != PRIVATE_OVERLAY_SHA {
+        return Err("unreviewed Carrot private infrastructure change".into());
+    }
     let mut scripts = Vec::new();
-    for (name, expected_hash) in [
-        ("Build current native Carrot Navi comparator", BUILD_SHA),
+    for (index, name, expected_hash) in [
+        (18, "Build current native Carrot Navi comparator", BUILD_SHA),
         (
+            19,
             "Require exact existing policy and normalized process comparisons",
             CALLER_SHA,
         ),
     ] {
-        let header = format!("      - name: {name}\n        run: |\n");
-        if retained.matches(&header).count() != 1 {
+        if steps.iter().filter(|s| s["name"] == name).count() != 1 {
             return Err(format!("expected one exact {name} step"));
         }
-        let start = retained.find(&header).unwrap();
-        let rest = &retained[start + header.len()..];
-        let end = rest.find("      - ").ok_or("next step absent")?;
-        let script = rest[..end]
-            .lines()
-            .map(|line| {
-                line.strip_prefix("          ")
-                    .ok_or("nonliteral step body")
-            })
-            .collect::<Result<Vec<_>, _>>()?
-            .join("\n")
-            + "\n";
-        if hash(script.as_bytes()) != expected_hash {
+        let step = &steps[index];
+        let script = step["run"].as_str().ok_or("comparator run missing")?;
+        if hash(script.as_bytes()) != expected_hash
+            || *step
+                != json!({"name":name,"run":script,"if":TRUSTED_SOURCE,"working-directory":"${{ env.CI296_SOURCE }}"})
+        {
             return Err(format!("{name} command changed"));
         }
-        retained.replace_range(start..start + header.len() + end, "");
-        scripts.push(script);
+        scripts.push(script.to_owned());
     }
-    if hash(retained.as_bytes()) != RETAINED_JOB_SHA {
+    let mut retained = job.clone();
+    let environment = retained["env"]
+        .as_object_mut()
+        .ok_or("Carrot env missing")?;
+    if environment.remove("CI296_ALIAS_BASENAME")
+        != Some(json!(".ci296-source-rust--carrot-navi-runtime"))
+    {
+        return Err("Carrot source alias changed".into());
+    }
+    for key in ["PYTHONPATH", "CARROT_NAVI_BIN"] {
+        if environment
+            .insert(key.into(), expected["env"][key].clone())
+            .is_some()
+        {
+            return Err(format!("Carrot private environment shadowed: {key}"));
+        }
+    }
+    let mut retained_steps = steps
+        .iter()
+        .enumerate()
+        .filter(|(index, _)| {
+            !matches!(*index, 18..=19)
+                && !PRIVATE_STAGES.iter().any(|(position, _)| position == index)
+        })
+        .map(|(_, step)| step.clone())
+        .collect::<Vec<_>>();
+    let originals = expected["steps"]
+        .as_array()
+        .ok_or("historical steps missing")?;
+    if retained_steps.len() != originals.len() {
+        return Err("retained Carrot traffic roster changed".into());
+    }
+    for (step, original) in retained_steps.iter_mut().zip(originals) {
+        let upload = original["uses"] == "actions/upload-artifact@v6";
+        if step["if"]
+            != if upload {
+                TRUSTED_ALWAYS
+            } else {
+                TRUSTED_SOURCE
+            }
+        {
+            return Err("retained Carrot trust condition changed".into());
+        }
+        if upload {
+            step["if"] = "always()".into();
+        } else {
+            step.as_object_mut()
+                .ok_or("Carrot step is not a map")?
+                .remove("if");
+        }
+        if original.get("run").is_some() {
+            if step["working-directory"] != "${{ env.CI296_SOURCE }}" {
+                return Err("retained Carrot run escaped private source".into());
+            }
+            step.as_object_mut()
+                .ok_or("Carrot step is not a map")?
+                .remove("working-directory");
+        }
+        match original["uses"].as_str() {
+            Some("actions/checkout@v7") => {
+                let with = step["with"]
+                    .as_object_mut()
+                    .ok_or("Carrot checkout options missing")?;
+                for (key, value) in [
+                    ("set-safe-directory", "false"),
+                    ("clean", "false"),
+                    ("lfs", "false"),
+                    ("path", "${{ env.CI296_CHECKOUT_PATH }}"),
+                ] {
+                    if with.remove(key) != Some(json!(value)) {
+                        return Err(format!("Carrot private checkout option changed: {key}"));
+                    }
+                }
+            }
+            Some("./.github/actions/native-json11") => {
+                if !uses_native_action(job, step, "native-json11") {
+                    return Err("Carrot dependency action escaped current source".into());
+                }
+                step["uses"] = original["uses"].clone();
+            }
+            Some("actions/upload-artifact@v6") => {
+                let path = concat!(
+                    "${{ env.CI_JOB_TEMP }}/carrot-navi/\n",
+                    "${{ env.CI296_SOURCE }}/rust/target/debug/openpilot-carrot-navi\n",
+                    "${{ env.CI296_SOURCE }}/rust/target/debug/examples/carrot-navi-policy\n",
+                    "${{ env.CI296_SOURCE }}/rust/target/debug/examples/carrot-navi-wire\n"
+                );
+                if step["with"]["path"] != path || step["id"] != "local_evidence_1" {
+                    return Err("Carrot capture paths or upload receipt changed".into());
+                }
+                step["with"]["path"] = original["with"]["path"].clone();
+                step.as_object_mut()
+                    .ok_or("Carrot step is not a map")?
+                    .remove("id");
+            }
+            _ => {}
+        }
+        if original["name"] == "Reserve runner capacity and install confirmed binding dependencies"
+        {
+            let before = original["run"]
+                .as_str()
+                .ok_or("historical dependency run missing")?;
+            let body = before
+                .strip_prefix("sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet\n")
+                .ok_or("historical dependency prelude changed")?;
+            let apt = "sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev iproute2 util-linux\n";
+            if body.matches(apt).count() != 1 {
+                return Err("historical dependency command changed".into());
+            }
+            let reviewed = body.replacen(apt, "sudo apt-get -o \"APT::Architectures=$(dpkg --print-architecture)\" update && sudo apt-get -o \"APT::Architectures=$(dpkg --print-architecture)\" install -y capnproto libcapnp-dev g++ libzmq3-dev iproute2 util-linux\n", 1);
+            if step["run"] != reviewed {
+                return Err("Carrot dependency preparation exceeded reviewed overlay".into());
+            }
+            step["run"] = before.into();
+        }
+    }
+    retained["steps"] = Value::Array(retained_steps);
+    if retained != *expected {
         return Err("retained original runtime/QA traffic changed".into());
     }
     Ok((scripts.remove(0), scripts.remove(0)))
@@ -514,13 +685,43 @@ fn maintained_policy_rejects_embedded_oracle_and_changed_traffic() {
     maintained_steps(&workflow).unwrap();
     // Mutation checks prove the policy is sensitive to reintroduction, a caller
     // bypass and removal of original QA traffic. These do not rerun that traffic.
-    for changed in [
-        workflow.replace("\"$CARROT_NAVI_COMPARISON\" \"$RUNNER_TEMP/carrot-navi\"", "true"),
-        workflow.replace("python -P rust/tools/carrot_navi_cases.py", "echo"),
-        workflow.replace("      - name: Preserve original and native raw captures and failures", &format!("          python -P - <<'PY'\n{}          PY\n      - name: Preserve original and native raw captures and failures", oracle(&repo))),
-    ] {
-        assert_ne!(changed, workflow);
-        assert!(maintained_steps(&changed).is_err());
+    let model = parse_workflow(&workflow).unwrap();
+    for mutation in ["caller-bypass", "original-traffic", "embedded-oracle"] {
+        let mut changed = model.clone();
+        let steps = changed["jobs"]["carrot-navi-runtime"]["steps"]
+            .as_array_mut()
+            .unwrap();
+        let name = if mutation == "original-traffic" {
+            "Run existing source policy and state comparison inputs"
+        } else {
+            "Require exact existing policy and normalized process comparisons"
+        };
+        assert_eq!(steps.iter().filter(|s| s["name"] == name).count(), 1);
+        let step = steps.iter_mut().find(|s| s["name"] == name).unwrap();
+        let before = step["run"].as_str().unwrap().to_owned();
+        let after = match mutation {
+            "caller-bypass" => {
+                let command = "\"$CARROT_NAVI_COMPARISON\" \"$RUNNER_TEMP/carrot-navi\"";
+                assert_eq!(before.matches(command).count(), 1);
+                before.replace(command, "true")
+            }
+            "original-traffic" => {
+                let command = "python -P rust/tools/carrot_navi_cases.py";
+                assert_eq!(before.matches(command).count(), 1);
+                before.replace(command, "echo")
+            }
+            "embedded-oracle" => {
+                format!("{before}python -P - <<'PY'\n{}PY\n", oracle(&repo))
+            }
+            _ => unreachable!(),
+        };
+        assert_ne!(after, before);
+        step["run"] = after.into();
+        assert_ne!(changed, model);
+        assert!(
+            maintained_steps(&changed.to_string()).is_err(),
+            "{mutation}"
+        );
     }
     for entry in fs::read_dir(repo.join(".github/workflows")).unwrap() {
         let path = entry.unwrap().path();
@@ -540,6 +741,70 @@ fn maintained_policy_rejects_embedded_oracle_and_changed_traffic() {
     }
     // Its independent helper remains shared by the unchanged runtime QA family.
     oracle(&repo);
+}
+
+#[test]
+fn maintained_policy_accepts_yaml_aliases_and_rejects_unreviewed_overlays() {
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let workflow = fs::read_to_string(repo.join(".github/workflows/rust.yml")).unwrap();
+    let expected = maintained_steps(&workflow).unwrap();
+    let model = parse_workflow(&workflow).unwrap();
+    let job = &model["jobs"]["carrot-navi-runtime"];
+    for representation in [
+        serde_json::to_string_pretty(&model).unwrap(),
+        format!("runtime: &runtime {job}\njobs:\n  carrot-navi-runtime: *runtime\n"),
+    ] {
+        assert_eq!(maintained_steps(&representation).unwrap(), expected);
+    }
+    for mutation in [
+        "retained-byte",
+        "adjacent-traffic",
+        "reordered-traffic",
+        "duplicate-comparator",
+        "unknown-run",
+        "private-run",
+        "private-env",
+        "wrong-host",
+        "wrong-upload",
+        "growth",
+        "missing-trust",
+        "optional-job",
+        "action-shell",
+    ] {
+        let mut changed = model.clone();
+        let job = &mut changed["jobs"]["carrot-navi-runtime"];
+        match mutation {
+            "wrong-host" => job["runs-on"] = "ubuntu-latest".into(),
+            "optional-job" => job["continue-on-error"] = "true".into(),
+            _ => {
+                let steps = job["steps"].as_array_mut().unwrap();
+                match mutation {
+                    "retained-byte" => steps[10]["run"] = format!("{}\n", steps[10]["run"].as_str().unwrap()).into(),
+                    "adjacent-traffic" => { steps.remove(16); }
+                    "reordered-traffic" => steps.swap(15, 16),
+                    "duplicate-comparator" => { let copy=steps[18].clone(); steps.insert(18, copy); }
+                    "unknown-run" => steps.insert(18, json!({"name":"Unreviewed traffic","run":"true\n","if":TRUSTED_SOURCE,"working-directory":"${{ env.CI296_SOURCE }}"})),
+                    "private-run" => steps[2]["run"] = format!("{}true\n", steps[2]["run"].as_str().unwrap()).into(),
+                    "private-env" => steps[5]["env"]["CI296_LATE_CARROT_NAVI_BIN"] = "/tmp/unrelated".into(),
+                    "wrong-upload" => steps[20]["with"]["path"] = "${{ runner.temp }}/unrelated\n".into(),
+                    "growth" => {
+                        let before = steps[9]["run"].as_str().unwrap();
+                        let after = before.replace("--growth-mib 8192", "--growth-mib 8191");
+                        assert_ne!(before, after);
+                        steps[9]["run"] = after.into();
+                    }
+                    "missing-trust" => { steps[15].as_object_mut().unwrap().remove("if"); }
+                    "action-shell" => steps[11]["with"]["run-shell"] = "bash -x".into(),
+                    _ => unreachable!(),
+                }
+            }
+        }
+        assert_ne!(changed, model);
+        assert!(
+            maintained_steps(&changed.to_string()).is_err(),
+            "{mutation}"
+        );
+    }
 }
 
 fn saved_seals(saved: &Path) {

@@ -1074,3 +1074,21 @@ normal40129042248과 이전 필수 ARM 일부는 진행 중이며 완료로 세�
 96a904e6da44151785eb1206963fa6ecea019e31의 Focus40131329248과 setup40131329251은 성공했다. 각각81CRC/167CRC와 전후 봉인을 감사했고, setup은 watcher9/Clippy·원문21/음성3/public1 및 CLI inode·SHA 불변·upload/정리를 확인했다. #536/#539/#540의 개별 해결 근거와 별도 trace 성공 집계 공백 #551을 구분한다. Fast40131329250은 isolation84/policy29 성공 뒤 cutin의 예전 runner 비교에서 실패했고 alert-manager는 checkout 지연을 포함한7분 제한에 걸렸다. 같은 runner 비교3개를 한정 보완하고7분 한도는 유지한다.
 
 normal40129042248은 이제 실제700초 timeout으로 실패했다(#550). raw40/8,655rows는 있으나 정식705,948비교/최종 native 수용은 아직 없다. 기존600/700초·수치·source/SDK 기준을 유지해 조사한다. shared logging2의 #549에서는 고정108개 inert 자료를 직접 읽는 native prepare-context와 core21/importer9/retained14/한 번의 raw 비교를 실행할 원본 보존 후보를 준비했다. 기존 old27·P2·전체 trace/FD·caller/absence gate와 구분하며 새 기능은 Actions 검증 전 UNRUN이다. 상세 exact source/run/artifact·리뷰·한계는 `python-rust-523-hosted-535.md`에 남긴다. baseline292/3/3285와 전체 미완료 상태를 유지한다.
+
+### a4 수용·38ec 후속 검사와 다음 배치
+
+a4b1db51c의 Fast40132971071과 Focus40132971275, setup40132971114는 성공했고 실제 산출물과
+전후 봉인을 감사했다. setup은 public exec20/20성공·15signal까지 확인해 #551을 종료했다.
+logging40132971238은 raw108/core21/importer9 및4 lifecycle body 성공 뒤 proof1GiB 상한을
+넘어 실패했다. 반복 read 버퍼를 펼치지 않는 collector와 읽기 전용 native trace inspector를
+준비하며, 새20검사와14 lifecycle/최종 raw 비교는 다음 Actions에 남는다. 원본2개는 유지한다.
+
+38ec20936의 Focus40133699721은 성공했지만 Fast native는7분 한도에서 취소돼 #552로
+추적한다. 기존72target을 정책4/도구53 등으로 빠짐없이 분할하고7분·격리/봉인·aggregate의
+전원 성공 조건을 유지한다. Navi source 정책도 고정 원문 job과 같은 BUILD/CALLER bytes로
+compact YAML을 비교하도록 보완하며 exact2selector만 Fast에 추가한다. 실제 새 분할의
+성공은 아직 수용하지 않는다. normal40133699790의 SHA2 패키지 전용 opt3 후보도 진행 중이다.
+
+정확 source/run/artifact·후속 후보와 한계는 `python-rust-523-hosted-535.md`에 기록한다.
+PR343은 bdb819e59/dev draft이며 최신 배치의 필수 deep 결과는 아직 없다. baseline3580의
+292교체/3부분/3285대기, 이번 retirement credit0과 전체 #523 미완료 상태를 유지한다.

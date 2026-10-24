@@ -947,6 +947,7 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
     )?;
     let bindings = [
         ("NATIVE", "native"),
+        ("NATIVE_TOOLS", "native-tools"),
         ("NATIVE_CORPUS", "native-corpus"),
         ("NATIVE_TIMING", "native-timing"),
         ("NATIVE_ALERTS", "native-alerts"),
@@ -1143,6 +1144,7 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
         strings(&gate["needs"])?
             == expected_strings(&[
                 "native",
+                "native-tools",
                 "native-corpus",
                 "native-timing",
                 "native-alerts",

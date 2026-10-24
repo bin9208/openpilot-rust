@@ -241,3 +241,78 @@ native trace CPU와 다르다. fixture가 CLI를700초에 종료한 뒤 별도 P
 600/700/1,200초·52분 및 디스크 예산은 바꾸지 않는다. 최종 ELF hold 순서도 유지한다.
 로컬 AST/diff와 독립 소스 검토만 끝났으며, 실제 sha2 opt3와 이 변경만으로 normal40가
 완료되는지는 다음 Actions에서 확인한다. 다른 성공을 이 새 빌드 후보에 소급하지 않는다.
+
+## a4 실제 수용과 logging 증거 용량 — #549/#551
+
+source `a4b1db51cdf0d10a55f647c184dc2b639a726657`의
+[Fast40132971071](https://github.com/bin9208/openpilot-rust/actions/runs/40132971071)은6leaf와
+aggregate 모두 성공했다. native418초와 기존7분 한도를 구분하며,6artifact231CRC 및
+source/index/SDK 전후·upload/정리를 감사했다. Focus40132971275도 성공했고 artifact12575699052
+15,867,399B/SHA256 `e4f16813b11aec4dec9daae349c47d6adf52f26a99c0c9f0c4d2f8073694645c`의
+81CRC와 전후 봉인을 확인했다.
+
+[setup40132971114/job120988452950](https://github.com/bin9208/openpilot-rust/actions/runs/40132971114/job/120988452950)은
+watch9/Clippy·frozen21/음성3/public1·최종 봉인·upload·두 정리까지 성공했다.
+artifact12576141678은10,513,855B/SHA256
+`d6cb2963e41be2dd4d3b7f9513ad067f09e9e7a8ba7664fcfee284c156e8905f`이며167CRC와
+20개 immutable data쌍,122held행의 두 번 동일성을 확인했다. public exec는20시도/20성공,
+signal15건이다. 이전14건을 새 실행에 강제하지 않는다. 마지막 상태 구분자만 고친 parser가
+빠뜨렸던4성공 분기를 수용해 #551을 종료했다. setup 원본 삭제 credit은 아직0이다.
+
+같은 source의
+[logging40132971238/job120988453169](https://github.com/bin9208/openpilot-rust/actions/runs/40132971238/job/120988453169)은
+실패했다. artifact12576275047은162,614,632B/SHA256
+`5344db8c580fbe312d81e125942f5163b2772b000b8f950553de625a4e84b7e8`,1,203CRC·해제1,267,392,170B다.
+현재4개 build/Clippy2·raw108·core21·importer9가 통과했고, 첫4 lifecycle body도 성공했다.
+네 번째 `runtime_directory_int` 직후 proof1,269,481,472B가1GiB를 초과해 사후 admission이
+거부했다. 나머지10 lifecycle과 retained-once는 미실행이다. source/index·SDK 내용은 전후
+동일하고 held-final0·upload 성공을 확인했다. 기능 assert·ENOSPC·source 변조 실패로
+분류하지 않는다. 관측된 exec를 새로운 실행 allowlist로 만들지 않는다.
+
+후속 collector는 `read/pread64`의 FD·주소·길이·결과를 raw hex로 남겨 반복 SHA 버퍼만
+펼치지 않는다. exec/argv/path와 memory/network/session 호출을 보존하며 packet/context
+원문은 별도 봉인한다. strace6.8의 [공식 raw 옵션](https://github.com/strace/strace/blob/v6.8/doc/strace.1.in)을
+확인했다.1GiB proof/512MiB file/600초 shared lifecycle/95초 case 한도는 유지한다.
+
+새 `inspect-trace`는 raw 불변·엄격 lexical 해석·byte exec/span 관측만 제공한다.
+출력의 동일 inode 재작성/교체/alias를 거부하는 saved identity·SHA 검증을 보완했고,
+독립 소스 검토에서 추가 P1/P2는 없었다.20default/ignored0 및 기능 cohort 뒤15prefix
+검사를 연결한다. PID/cwd/FD/DSO 폐쇄·full acceptance·retirement는 모두 false다.
+실제 컴파일·20개 검사·14 lifecycle·raw 비교·inspection은 다음 Actions에서 확인한다.
+old27 현재 source bridge·전체 closure·P2·caller/absence gate와 Python 원본2개는 보존한다.
+
+## Fast 7분 한도 유지 분할 후보 — #552
+
+source `38ec20936fa775d15902976baab4b66ce23d624c`의
+[Fast40133699716/native120990634001](https://github.com/bin9208/openpilot-rust/actions/runs/40133699716/job/120990634001)은
+7분 전체 한도로 취소됐고 aggregate는 실패했다. 수동 취소는0이다. 다른5leaf는 성공했다.
+cold1/caller5/lib83/isolation84/policy29/cutin3 뒤 diagnostic4개 중3개만 완료했고, communication
+snapshot의 최종 assert 결과는 없다. 이전 a4의418초 성공을 이번 성공으로 대신하지 않는다.
+
+기존72target을 빠짐없이 한 번씩 유지하면서 native의57개를 정책4개와 도구53개로 나눈다.
+새 `native-tools`가53개와 service-tools를 맡고, native는 cold/caller/lib/정책4개를 유지한다.
+나머지5leaf·7분·격리 SDK/source·작업별 증가량·실패 뒤 봉인/upload/소유 정리를 유지하고,
+aggregate는7leaf의 실제 success를 모두 요구한다. 새 leaf의7분 내 완료는 아직 미측정이다.
+
+Navi compact YAML 경계는 원래 retained job7333B와 기존 BUILD/CALLER hash를 유지하는
+parsed-model 정책 비교로 보완한다. 명시된11개 private infrastructure overlay만 검토했고
+원래 traffic·caller bytes와 변경 거부 의미를 보존했다. alias 양성/미검토 overlay 음성과 기존
+정책 검사, exact2selector를 native에 추가한다. 전체 Navi traffic 재실행이나 새 expected 생성은
+하지 않는다. 이 배치의 Actions 전 기능/Clippy는 UNRUN이다.
+독립 검토에서 Navi test target의 required feature 누락을 찾아 두 명령과 고정 정책·문서에
+`--features carrot-navi-compare-native`를 추가했다. 검사를 생략하는 우회는 넣지 않았다.
+
+38ec Focus40133699721은 성공했다. artifact12576905538은15,867,583B/SHA256
+`61709ee27a09448789a0b85e7aa2956b7e1272881baa3e4047cab21f20040e26`,81CRC이며 현재
+source/index/SDK4쌍과 내부 과거 봉인쌍도 동일했다. 별도 normal40133699790은 진행 중이며
+아직40case/705,948 비교를 수용하지 않는다. baseline292/3/3285와 이번 retirement credit0,
+PR343 dev draft 및 전체 #523 미완료 상태를 유지한다.
+
+이 배치의 재사용 허용 경로는 exact161개, literal pin은142개다. 새 Navi3파일/trace2파일과
+변경된 Fast/정책/logging helper의 현재 SHA를 고정했고 별도 execution SHA
+`4ee29d23ba43e6824f19a550898b5678db549a0d283bace60f177f9713a9ef89`는 불변이다.
+로컬에서 YAML2·Bash block92·embedded AST6·단독 Bash1 및 Rust 서식/diff만 확인했다.
+실제 컴파일·기능·Clippy는 Actions에서 수행한다. execution-edge92행과 인벤토리 credit은
+이번 소스 추가로 변경하지 않는다.
+고정7333B Navi 정책 fixture는 원문 끝 빈 줄까지 hash 보존하며, 해당 파일의
+`blank-at-eof`만 diff 공백 검사에서 제외했다. 나머지 staged diff 검사는 통과했다.
