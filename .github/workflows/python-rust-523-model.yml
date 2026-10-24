@@ -13,6 +13,7 @@ permissions:
 concurrency:
   group: python-rust-523-model-${{ github.ref }}
   cancel-in-progress: false
+  queue: max
 jobs:
   cache_probe:
     name: Original LLVM cache miss hit and runtime image linkage

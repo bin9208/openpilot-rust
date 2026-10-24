@@ -11,6 +11,7 @@ permissions:
 concurrency:
   group: python-rust-523-${{ github.ref }}
   cancel-in-progress: false
+  queue: max
 jobs:
   focused:
     name: Native conversion focused acceptance
@@ -201,27 +202,72 @@ jobs:
         git diff --no-renames --name-only -z 97f7ad36dfa0919b4e5c216fb16f44ed29161663 HEAD > "$CI_JOB_TEMP/proof/changed-paths.bin"
         while IFS= read -r -d '' changed; do
           case "$changed" in
-            .github/workflows/python-rust-523*.yml|docs/naver/python-rust-523*.md) ;;
-            rust/crates/dev-tools/Cargo.toml|rust/crates/dev-tools/src/developer_ssh/login/cli.rs|rust/crates/dev-tools/src/developer_ssh/login/cli/tests.rs|rust/crates/dev-tools/src/developer_ssh/cli.rs|rust/crates/dev-tools/src/argparse_scan.rs|rust/crates/dev-tools/tests/argparse_scan.rs|rust/crates/dev-tools/tests/developer_cli_original.rs|rust/crates/dev-tools/src/route_sanitizer_tests.rs|rust/crates/dev-tools/tests/ci_disk_bootstrap.rs|rust/crates/dev-tools/tests/ci_disk_bootstrap/prepared_audit.rs|.github/workflows/fast-checks.yml|rust/crates/dev-tools/tests/route_vault_bundle.rs|rust/crates/dev-tools/tests/developer_auth.rs|rust/crates/dev-tools/tests/route_sanitizer_original.rs|tools/ci/model_cache_probe_482.sh|tools/ci/model-cache-482-natural-config.json) ;;
+            .github/workflows/fast-checks.yml) ;;
+            .github/workflows/python-rust-523-bundle.yml) ;;
+            .github/workflows/python-rust-523-capacity.yml) ;;
+            .github/workflows/python-rust-523-model.yml) ;;
+            .github/workflows/python-rust-523-reclaim.yml) ;;
+            .github/workflows/python-rust-523-sanitizer.yml) ;;
+            .github/workflows/python-rust-523.yml) ;;
+            docs/naver/python-rust-523-auth-terminal.md) ;;
+            docs/naver/python-rust-523-model-482.md) ;;
+            docs/naver/python-rust-523-route-sanitizer.md) ;;
+            docs/naver/python-rust-523.md) ;;
+            openpilot/tools/lib/sanitizer.py) ;;
+            rust/crates/dev-tools/Cargo.toml) ;;
+            rust/crates/dev-tools/src/argparse_scan.rs) ;;
+            rust/crates/dev-tools/src/ci_policy.rs) ;;
+            rust/crates/dev-tools/src/developer_ssh/cli.rs) ;;
+            rust/crates/dev-tools/src/developer_ssh/login/cli.rs) ;;
+            rust/crates/dev-tools/src/developer_ssh/login/cli/tests.rs) ;;
+            rust/crates/dev-tools/src/route_sanitizer_tests.rs) ;;
+            rust/crates/dev-tools/tests/argparse_scan.rs) ;;
+            rust/crates/dev-tools/tests/ci_disk_bootstrap.rs) ;;
+            rust/crates/dev-tools/tests/ci_disk_bootstrap/prepared_audit.rs) ;;
+            rust/crates/dev-tools/tests/ci_workflow_policy.rs) ;;
+            rust/crates/dev-tools/tests/developer_auth.rs) ;;
+            rust/crates/dev-tools/tests/developer_cli_original.rs) ;;
+            rust/crates/dev-tools/tests/fixtures/route-sanitizer-original/car-copy-float-bits.original.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-sanitizer-original/filter-order-laziness.original.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-sanitizer-original/malformed-boundaries.original.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-sanitizer-original/non-car-identity.original.json) ;;
+            rust/crates/dev-tools/tests/fixtures/route-sanitizer-original/vin-codepoints.original.json) ;;
+            rust/crates/dev-tools/tests/route_sanitizer_original.rs) ;;
+            rust/crates/dev-tools/tests/route_vault_bundle.rs) ;;
+            tools/ci/model-cache-482-natural-config.json) ;;
+            tools/ci/model_cache_probe_482.sh) ;;
             *) printf 'Changed dependency invalidates reuse: %s\n' "$changed" >&2; exit 1 ;;
           esac
         done < "$CI_JOB_TEMP/proof/changed-paths.bin"
-        printf '%s  %s\n' 5477ab6cd7e7b4aa83d55c2b6f047f54dedfe434d23585ccf0ed9d19d9f8f023 .github/workflows/fast-checks.yml | sha256sum --check -
+        printf '%s  %s\n' 666970494a10d89bafbbc0738fc9d642bb53dc94953d4abfada55fc91ae4ba99 .github/workflows/fast-checks.yml | sha256sum --check -
+        printf '%s  %s\n' 199cc2fe9aa2b5e06782dfb20bc8390e7fc37226638e8459ca994bc78ac361ec .github/workflows/python-rust-523-bundle.yml | sha256sum --check -
+        printf '%s  %s\n' 6cbc112a29fc6e806265d803b07351357ac7e383cc16f0cc30a607e519bb4a69 .github/workflows/python-rust-523-capacity.yml | sha256sum --check -
+        printf '%s  %s\n' c5a1e39a6d90d76fac5620f74f9f1505a5379d4dd2a93636ea43c042477c762b .github/workflows/python-rust-523-model.yml | sha256sum --check -
+        printf '%s  %s\n' 1d5d90dd2d5498ee4773b6bd26a4276d6e7a242bebe80c0e709e931705827ee4 .github/workflows/python-rust-523-reclaim.yml | sha256sum --check -
+        printf '%s  %s\n' 64d8f6b19494b957723ee487512483222cd15b2fa90f9598395e428548b07278 .github/workflows/python-rust-523-sanitizer.yml | sha256sum --check -
+        test ! -e openpilot/tools/lib/sanitizer.py && test ! -L openpilot/tools/lib/sanitizer.py
         printf '%s  %s\n' 5423bf5ab464bce3342e6eee6fc07ab64a6ecca4c4756e35a19cc54520ba0af2 rust/crates/dev-tools/Cargo.toml | sha256sum --check -
+        printf '%s  %s\n' a2e53b5164624f1946ca40fe188915493329dd25fe7abe37a9f7958dcf56adaa rust/crates/dev-tools/src/argparse_scan.rs | sha256sum --check -
+        printf '%s  %s\n' dceaf77a84c9994ffdd2f3bd1da471823059e3b443d508eff8316642046ecb60 rust/crates/dev-tools/src/ci_policy.rs | sha256sum --check -
+        printf '%s  %s\n' 390141ed26fb0afbaffed631bfbc61462044b033e2afea14e0eeecaf86c5aef6 rust/crates/dev-tools/src/developer_ssh/cli.rs | sha256sum --check -
         printf '%s  %s\n' 4ec4ac3923e32ed834dffee608080b31c5806205823ede2221b057020b172496 rust/crates/dev-tools/src/developer_ssh/login/cli.rs | sha256sum --check -
         printf '%s  %s\n' bcf6cd781fd6c2d1e0738c8b96213bca284e935cb68e9219a224e9fb98d2331b rust/crates/dev-tools/src/developer_ssh/login/cli/tests.rs | sha256sum --check -
-        printf '%s  %s\n' 390141ed26fb0afbaffed631bfbc61462044b033e2afea14e0eeecaf86c5aef6 rust/crates/dev-tools/src/developer_ssh/cli.rs | sha256sum --check -
-        printf '%s  %s\n' a2e53b5164624f1946ca40fe188915493329dd25fe7abe37a9f7958dcf56adaa rust/crates/dev-tools/src/argparse_scan.rs | sha256sum --check -
-        printf '%s  %s\n' 1227b87bdfba7e0ea03d2542766133f75925200bfd0fb7f1eea7f121738294f7 rust/crates/dev-tools/tests/argparse_scan.rs | sha256sum --check -
-        printf '%s  %s\n' bc8402cbcfda4a086891e9f52b1209059c8ae9bcf0d865f554b7391354f87fd2 rust/crates/dev-tools/tests/developer_cli_original.rs | sha256sum --check -
         printf '%s  %s\n' 1dd943c418bee41bc2a7d4b850a6d0cf9dfce885fb1182fb437f59a0747ae03f rust/crates/dev-tools/src/route_sanitizer_tests.rs | sha256sum --check -
-        printf '%s  %s\n' 06c3b91c2f51a84a9934270260386b5b4f76f798fbebaaaa40f3235c0d93c6ef rust/crates/dev-tools/tests/route_sanitizer_original.rs | sha256sum --check -
-        printf '%s  %s\n' 9e621eff405a28331789a89ef00b6bb66449a6a6a73fe3b0cabce920777d5e6e rust/crates/dev-tools/tests/developer_auth.rs | sha256sum --check -
-        printf '%s  %s\n' e96c8774ae224da098c2fc96c010d9036ecbd4b2b52a793e4e952c5ed30b6959 rust/crates/dev-tools/tests/route_vault_bundle.rs | sha256sum --check -
+        printf '%s  %s\n' 1227b87bdfba7e0ea03d2542766133f75925200bfd0fb7f1eea7f121738294f7 rust/crates/dev-tools/tests/argparse_scan.rs | sha256sum --check -
         printf '%s  %s\n' a3c592dc7af2e78964bb4c0475dc201d93171ac2d035bf684db2d2b6f1521fb2 rust/crates/dev-tools/tests/ci_disk_bootstrap.rs | sha256sum --check -
         printf '%s  %s\n' f1fb63059d2fbcdcd039c5c47fe7f784bf17601a4476aef60a4a0053b0f8477c rust/crates/dev-tools/tests/ci_disk_bootstrap/prepared_audit.rs | sha256sum --check -
-        printf '%s  %s\n' 837946b71e9a99b0bc061a3a7ef5c7cd384a6e6ee11dc3d4c0ea03ea229cdd90 tools/ci/model_cache_probe_482.sh | sha256sum --check -
+        printf '%s  %s\n' 67427eb22a426e13403908626d05dbf58c2a489bd552d56413eb478468d957ed rust/crates/dev-tools/tests/ci_workflow_policy.rs | sha256sum --check -
+        printf '%s  %s\n' 9e621eff405a28331789a89ef00b6bb66449a6a6a73fe3b0cabce920777d5e6e rust/crates/dev-tools/tests/developer_auth.rs | sha256sum --check -
+        printf '%s  %s\n' 11a181f4047c6402a3af78c0c375fcc83ee552a38923dac36cd86431cb56cc33 rust/crates/dev-tools/tests/developer_cli_original.rs | sha256sum --check -
+        printf '%s  %s\n' 7ff3b5e2ca762aa2c10f0fcf6c0e915f286143e51cde7ce2e1898ec1a1cb8958 rust/crates/dev-tools/tests/fixtures/route-sanitizer-original/car-copy-float-bits.original.json | sha256sum --check -
+        printf '%s  %s\n' 8914183a7d663e5d3dd066c15450e041623d2f0e8cb5dfa70111f34c50a1eda7 rust/crates/dev-tools/tests/fixtures/route-sanitizer-original/filter-order-laziness.original.json | sha256sum --check -
+        printf '%s  %s\n' 1553bbccfaf9d20074eac1948a1f4038c31277534bdace844a77e6269d9d2924 rust/crates/dev-tools/tests/fixtures/route-sanitizer-original/malformed-boundaries.original.json | sha256sum --check -
+        printf '%s  %s\n' 8f10d1794cb35f382b807fc2f779d2eae181d7ec0966730852647d9ac1b449ac rust/crates/dev-tools/tests/fixtures/route-sanitizer-original/non-car-identity.original.json | sha256sum --check -
+        printf '%s  %s\n' f4762d30d706a0956ab44b16c6b537cdd50092083ab6a8911e40c88b07ceba67 rust/crates/dev-tools/tests/fixtures/route-sanitizer-original/vin-codepoints.original.json | sha256sum --check -
+        printf '%s  %s\n' e3cb05764be9dc80b1e6b9fc680e9d95d4504e8c5f8a22d7eb20d72c67372b91 rust/crates/dev-tools/tests/route_sanitizer_original.rs | sha256sum --check -
+        printf '%s  %s\n' e96c8774ae224da098c2fc96c010d9036ecbd4b2b52a793e4e952c5ed30b6959 rust/crates/dev-tools/tests/route_vault_bundle.rs | sha256sum --check -
         printf '%s  %s\n' 2d769aa04fecbf2175532d5ebca995eaaece64adb1200d81bcddebabd1ff7a0d tools/ci/model-cache-482-natural-config.json | sha256sum --check -
+        printf '%s  %s\n' 837946b71e9a99b0bc061a3a7ef5c7cd384a6e6ee11dc3d4c0ea03ea229cdd90 tools/ci/model_cache_probe_482.sh | sha256sum --check -
         python - <<'MANIFEST'
         import subprocess,tomllib
         from pathlib import Path
@@ -256,44 +302,52 @@ jobs:
            assert before.read('SOURCE_COMMIT').decode().strip()=='40efe7ef964c0b08f9ba867edd9c863fc545bc0a'
            assert before.read('source-before.sha256')==before.read('source-after.sha256')
         COHORTS
-        printf '%s\n' 'Reused unchanged 41cf Paramsd boundaries/op help/callback/API units; 40efe and earlier terminal/HTTP/Github/camera/controller/catalog ARM cohorts. Fresh prepared-runtime auth3/login8/SSH CLI54/3, affected SSH27/scanner2 and strict Clippy. Legacy scanner entrypoint policy remains eager.' > "$CI_JOB_TEMP/proof/reused-scopes.txt"
-    - name: Validate auth CLI against the exact prepared Python runtime
+        printf '%s\n' 'Reused unchanged 41cf Paramsd boundaries/op help/callback/API units; 40efe and earlier terminal/HTTP/Github/camera/controller/catalog ARM cohorts. a134 runtime-qualified cohorts are admitted separately; fresh alias22/parser13 and strict Clippy. Legacy scanner entrypoint policy remains eager.' > "$CI_JOB_TEMP/proof/reused-scopes.txt"
+    - name: Admit unchanged a134 runtime-qualified auth and setup cohorts
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+      env:
+        GH_TOKEN: ${{ github.token }}
       run: |
         set -euo pipefail
-        export no_proxy="$NO_PROXY" AUTH_CLI_ORACLE_PYTHON="$CI_JOB_TEMP/venv/bin/python"
-        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features developer-ssh-native --lib developer_ssh::login::cli::tests:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/auth-cli-exact-runtime.log"
-        grep -F 'test result: ok. 3 passed;' "$CI_JOB_TEMP/proof/auth-cli-exact-runtime.log"
-    - name: Validate previously unreached original login API cases
-      working-directory: ${{ env.DIAG_SOURCE }}
-      shell: bash
-      if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
-      run: |
-        set -euo pipefail
-        export no_proxy="$NO_PROXY" AUTH_CLI_ORACLE_PYTHON="$CI_JOB_TEMP/venv/bin/python"
-        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features developer-ssh-native --test developer_auth -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/auth-original.log"
-        grep -F 'test result: ok. 8 passed;' "$CI_JOB_TEMP/proof/auth-original.log"
-    - name: Validate original SSH and setup CLI cases
+        prior="$CI_JOB_TEMP/proof/prior-a134-focused.zip"
+        gh api repos/bin9208/openpilot-rust/actions/artifacts/12558498891/zip > "$prior"
+        printf '5090a51e593cd6220307593041552ff1ccb96019df6a2ea5ad5b6d5ca6bf3605  %s\n' "$prior" | sha256sum --check -
+        unzip -t "$prior" > "$CI_JOB_TEMP/proof/a134-crc.txt"
+        test "$(unzip -p "$prior" SOURCE_COMMIT)" = a134b32c5d50d346994d671c0882b147175021dc
+        for item in source index; do
+          if test "$item" = source; then suffix=sha256; else suffix=bin; fi
+          unzip -p "$prior" "$item-before.$suffix" > "$CI_JOB_TEMP/proof/a134-$item-before.$suffix"
+          unzip -p "$prior" "$item-after.$suffix" > "$CI_JOB_TEMP/proof/a134-$item-after.$suffix"
+          cmp "$CI_JOB_TEMP/proof/a134-$item-before.$suffix" "$CI_JOB_TEMP/proof/a134-$item-after.$suffix"
+        done
+        for item in 'auth-cli-exact-runtime.log:3' 'auth-original.log:8' 'ssh-regression.log:27' 'scanner-regression.log:2'; do
+          name=${item%:*}; count=${item#*:}
+          unzip -p "$prior" "$name" | grep -F "test result: ok. $count passed;"
+        done
+        unzip -p "$prior" developer-cli-original.log | grep -F 'test setup_cli_original_status_default_decode_and_write_failure_order ... ok'
+        unzip -p "$prior" oracle-runtime.json > "$CI_JOB_TEMP/proof/a134-oracle-runtime.json"
+        cmp "$CI_JOB_TEMP/proof/a134-oracle-runtime.json" "$CI_JOB_TEMP/proof/oracle-runtime.json"
+        printf '%s\n' 'a134 auth3/login8/setup21/SSH27/scanner2 accepted; parser13 remained unreached. Fresh: parser13 plus alias22 (including two Unicode version regressions). Strict Clippy includes changed harness.' > "$CI_JOB_TEMP/proof/runtime-qualified-reuse.txt"
+    - name: Validate original SSH aliases including Unicode version regressions
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
       run: |
         set -euo pipefail
         export no_proxy="$NO_PROXY" DEVELOPER_CLI_ORACLE_PYTHON="$CI_JOB_TEMP/venv/bin/python"
-        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features developer-ssh-native --test developer_cli_original -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/developer-cli-original.log"
-        grep -F 'test result: ok. 3 passed;' "$CI_JOB_TEMP/proof/developer-cli-original.log"
-    - name: Validate affected SSH parser and existing scanner policies
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features developer-ssh-native --test developer_cli_original ssh_cli_original_aliases_prefix_unicode_duplicate_order_and_exec -- --exact --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/ssh-alias-original.log"
+        grep -F 'test result: ok. 1 passed;' "$CI_JOB_TEMP/proof/ssh-alias-original.log"
+    - name: Validate corrected thirteen-case SSH parser envelope
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
       run: |
         set -euo pipefail
-        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features developer-ssh-native --test developer_ssh -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/ssh-regression.log"
-        grep -F 'test result: ok. 27 passed;' "$CI_JOB_TEMP/proof/ssh-regression.log"
-        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test argparse_scan -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/scanner-regression.log"
-        grep -F 'test result: ok. 2 passed;' "$CI_JOB_TEMP/proof/scanner-regression.log"
+        export no_proxy="$NO_PROXY" DEVELOPER_CLI_ORACLE_PYTHON="$CI_JOB_TEMP/venv/bin/python"
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features developer-ssh-native --test developer_cli_original ssh_cli_original_port_argparse_help_and_no_auth_effects -- --exact --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/ssh-parser-original.log"
+        grep -F 'test result: ok. 1 passed;' "$CI_JOB_TEMP/proof/ssh-parser-original.log"
     - name: Validate strict auth and SSH Clippy
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash

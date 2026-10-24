@@ -10,6 +10,7 @@ permissions:
 concurrency:
   group: python-rust-523-cache-recovery
   cancel-in-progress: false
+  queue: max
 jobs:
   reclaim:
     runs-on:

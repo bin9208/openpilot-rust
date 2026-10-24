@@ -164,7 +164,7 @@ jobs:
           HARDEN
       - name: Verify SDK contents after permission preparation even on failure
         id: sdk_permissions_final
-        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && always() && steps.sdk_permissions.outcome != 'skipped' && env.DIAG_SOURCE != '' }}
+        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.sdk_permissions.outcome != 'skipped' && env.DIAG_SOURCE != '') }}
         working-directory: ${{ env.DIAG_SOURCE }}
         shell: bash
         run: |
@@ -252,7 +252,7 @@ jobs:
         working-directory: ${{ env.DIAG_SOURCE }}
       - name: Verify provisioned Rust SDK contents and identities after routing
         id: prepared_rust_final
-        if: ${{ always() && steps.prepared_rust.outcome == 'success' }}
+        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.prepared_rust.outcome == 'success') }}
         working-directory: ${{ env.DIAG_SOURCE }}
         shell: bash
         run: |
@@ -265,7 +265,7 @@ jobs:
           sha256sum --check --quiet "$CI_JOB_TEMP/proof/prepared-rust-programs.sha256"
       - name: Seal Fast source and index after all maintained checks
         id: source_final
-        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && always() && env.DIAG_SOURCE != '' }}
+        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DIAG_SOURCE != '') }}
         working-directory: ${{ env.DIAG_SOURCE }}
         run: |
           set -euo pipefail

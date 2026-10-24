@@ -1,4 +1,5 @@
-//! 실제 원본 sanitizer와 full Cereal을 쓰는 합성 입력 비교. 기능 실행은 Actions 전용.
+//! a134b32c5의 실제 원본 capture를 사용하는 native source-absence 검증.
+//! 원본 실행 없이 원문 bytes·source/fixture 전후 불변성을 확인한다.
 #![cfg(all(target_os = "linux", feature = "route-sanitizer-native"))]
 
 use capnp::{
@@ -7,15 +8,56 @@ use capnp::{
     serialize::{read_message, write_message_to_words},
 };
 use openpilot_cereal::log_capnp::event;
-use openpilot_dev_tools::{
-    qa_process::{CommandSpec, NativeRunner, Runner},
-    route_sanitizer::{sanitize, sanitize_msg, sanitize_vin, LogMessage, PRESERVE_SERVICES},
+use openpilot_dev_tools::route_sanitizer::{
+    sanitize, sanitize_msg, sanitize_vin, LogMessage, PRESERVE_SERVICES,
 };
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
-use std::{cell::Cell, fs, path::PathBuf, time::Duration};
+use std::{
+    cell::Cell,
+    collections::BTreeMap,
+    fs::{self, OpenOptions},
+    io::{ErrorKind, Read},
+    ops::Deref,
+    os::unix::fs::{MetadataExt, OpenOptionsExt},
+    path::{Path, PathBuf},
+};
 
-const SOURCES: &[&str] = &[
+const RETIRED_SOURCE: &str = "openpilot/tools/lib/sanitizer.py";
+const RETIRED_SOURCE_SHA256: &str =
+    "a931ad064af85e51567a909294738754a863bf31cbec4e7290fb5b0a383822d0";
+const CAPTURE_HARNESS: &str = "rust/crates/dev-tools/tests/route_sanitizer_original.rs";
+const CAPTURE_HARNESS_SHA256: &str =
+    "06c3b91c2f51a84a9934270260386b5b4f76f798fbebaaaa40f3235c0d93c6ef";
+const FIXTURE_DIR: &str = "rust/crates/dev-tools/tests/fixtures/route-sanitizer-original";
+const MAX_FILE_BYTES: u64 = 8 * 1024 * 1024;
+
+// 실제 CI의 원문 JSON bytes를 고정한다. 누락·변조·재직렬화는 거부한다.
+const FROZEN_GROUPS: &[(&str, &str)] = &[
+    (
+        "vin-codepoints",
+        "f4762d30d706a0956ab44b16c6b537cdd50092083ab6a8911e40c88b07ceba67",
+    ),
+    (
+        "car-copy-float-bits",
+        "7ff3b5e2ca762aa2c10f0fcf6c0e915f286143e51cde7ce2e1898ec1a1cb8958",
+    ),
+    (
+        "non-car-identity",
+        "8f10d1794cb35f382b807fc2f779d2eae181d7ec0966730852647d9ac1b449ac",
+    ),
+    (
+        "filter-order-laziness",
+        "8914183a7d663e5d3dd066c15450e041623d2f0e8cb5dfa70111f34c50a1eda7",
+    ),
+    (
+        "malformed-boundaries",
+        "1553bbccfaf9d20074eac1948a1f4038c31277534bdace844a77e6269d9d2924",
+    ),
+];
+
+// 현재 capture의 input.source_paths 원문 순서. 비교할 authored payload와 명시 분리한다.
+const CAPTURE_SOURCE_PATHS: &[&str] = &[
     "openpilot/__init__.py",
     "openpilot/tools/__init__.py",
     "openpilot/tools/lib/__init__.py",
@@ -31,138 +73,320 @@ const SOURCES: &[&str] = &[
     "rust/crates/dev-tools/src/route_sanitizer_tests.rs",
     "rust/crates/dev-tools/tests/route_sanitizer_original.rs",
 ];
+const CURRENT_SOURCE_PATHS: &[&str] = &[
+    "openpilot/cereal/log.capnp",
+    "openpilot/cereal/custom.capnp",
+    "openpilot/cereal/deprecated.capnp",
+    "openpilot/cereal/include/c++.capnp",
+    "opendbc_repo/opendbc/car/car.capnp",
+    "opendbc_repo/opendbc/car/include/c++.capnp",
+    "rust/crates/dev-tools/src/route_sanitizer.rs",
+    "rust/crates/dev-tools/src/route_sanitizer_tests.rs",
+];
+// 현재 실행 dependency로 재사용하지 않는 역사 source 기록. 삭제 대상은 RETIRED_SOURCE 하나다.
+const HISTORICAL_SOURCE_PATHS: &[&str] = &[
+    "openpilot/__init__.py",
+    "openpilot/tools/__init__.py",
+    "openpilot/tools/lib/__init__.py",
+    "openpilot/tools/lib/sanitizer.py",
+    "openpilot/cereal/__init__.py",
+    "rust/crates/dev-tools/tests/route_sanitizer_original.rs",
+];
 
-const ORIGINAL: &str = r#"
-import contextlib, hashlib, json, pathlib, struct, sys, types
-root = pathlib.Path(sys.argv[1]).resolve()
-request = json.load(sys.stdin)
-paths = request['source_paths']
-def hashes():
-    return {p: hashlib.sha256((root / p).read_bytes()).hexdigest() for p in paths}
-before = hashes()
-assert sys.version_info[:3] == (3, 12, 15), 'prepared Python runtime mismatch'
-# -B는 쓰기만 막는다. 기존 checkout의 stale .pyc도 읽지 않도록 새 private prefix를 쓴다.
-sys.pycache_prefix = str(pathlib.Path.cwd() / 'fresh-pycache')
-sys.path.insert(0, str(root))
-sys.path.insert(1, str(root / 'opendbc_repo'))
-import capnp
-import capnp.lib.capnp as capnp_native
-assert capnp.__version__ == '2.1.0', 'use the repository-pinned pycapnp provider'
-from openpilot import cereal
-assert pathlib.Path(cereal.__file__).resolve() == root / 'openpilot/cereal/__init__.py'
-# 원본의 유일한 외부 의존은 타입 주석이다. 실제 LogReader는 불러오지 않는다.
-annotations = types.ModuleType('openpilot.tools.lib.logreader')
-annotations.LogIterable = object
-annotations.LogMessage = object
-sys.modules[annotations.__name__] = annotations
-from openpilot.tools.lib import sanitizer
-assert pathlib.Path(sanitizer.__file__).resolve() == root / 'openpilot/tools/lib/sanitizer.py'
-def wire(msg):
-    return msg.as_builder().to_bytes().hex()
-def bits(value):
-    return struct.unpack('<I', struct.pack('<f', value))[0]
-def fields(msg):
-    service = msg.which()
-    result = dict(service=service, time=msg.logMonoTime, valid=msg.valid)
-    if service == 'carParams':
-        cp = msg.carParams
-        result.update(vin=cp.carVin, brand=cp.brand, fingerprint=cp.carFingerprint,
-                      flags=cp.flags, mass_bits=bits(cp.mass), wheelbase_bits=bits(cp.wheelbase),
-                      kp_bits=[bits(v) for v in cp.longitudinalTuning.kpBP],
-                      fw=[dict(address=f.address, data=f.fwVersion.hex()) for f in cp.carFw])
-    elif service == 'can':
-        result['can'] = [dict(address=c.address, src=c.src, data=c.dat.hex()) for c in msg.can]
-    elif service in ('pandaStates', 'pandaStateDEPRECATED'):
-        states = msg.pandaStates if service == 'pandaStates' else [msg.pandaStateDEPRECATED]
-        result['pandas'] = [dict(uptime=p.uptime, voltage=p.voltage, ignition=p.ignitionLine,
-                                 load_bits=bits(p.interruptLoad)) for p in states]
-    elif service == 'logMessage':
-        result['text'] = msg.logMessage
-    return result
-def message(msg):
-    before_wire, before_fields = wire(msg), fields(msg)
-    output = sanitizer.sanitize_msg(msg)
-    return dict(before_wire=before_wire, after_wire=wire(msg), output_wire=wire(output),
-                before=before_fields, after=fields(msg), output=fields(output), same=output is msg)
-class Observed:
-    def __init__(self, messages):
-        self.source = iter(messages)
-        self.iterated = self.pulls = 0
-    def __iter__(self):
-        self.iterated += 1
-        return self
-    def __next__(self):
-        self.pulls += 1
-        return next(self.source)
-def stream(messages):
-    source = Observed(messages)
-    output = sanitizer.sanitize(source)
-    iterated_at_construction = source.iterated
-    trace, rows = [source.pulls], []
-    for _ in range(len(messages) + 1):
-        try:
-            out = next(output)
-            original = next(m for m in messages if m.logMonoTime == out.logMonoTime)
-            rows.append(dict(wire=wire(out), fields=fields(out), same=out is original))
-        except StopIteration:
-            trace.append(source.pulls)
-            break
-        trace.append(source.pulls)
-    else:
-        raise AssertionError('unbounded sanitizer iterator')
-    return dict(trace=trace, iterated=iterated_at_construction, final_iterated=source.iterated, rows=rows,
-                inputs_after=[wire(m) for m in messages])
-def boundary(raw, good):
-    try:
-        with cereal.log.Event.from_bytes(raw) as msg:
-            before_wire = wire(msg)
-            source = Observed([msg, good])
-            output = sanitizer.sanitize(source)
-            iterated_at_construction = source.iterated
-            trace, steps = [source.pulls], []
-            for _ in range(3):
-                try:
-                    out = next(output)
-                except StopIteration:
-                    steps.append(dict(kind='end'))
-                except Exception as error:
-                    steps.append(dict(kind='error', type=type(error).__name__, message=str(error)))
-                else:
-                    # CAN의 잘못된 payload도 filter/map 자체는 만지지 않아야 한다.
-                    try:
-                        if out.which() == 'can':
-                            list(out.can)
-                        payload_error = False
-                    except Exception:
-                        payload_error = True
-                    steps.append(dict(kind='message', time=out.logMonoTime,
-                                      same=out is msg or out is good, payload_error=payload_error))
-                trace.append(source.pulls)
-                if steps[-1]['kind'] == 'end':
-                    break
-            return dict(decode_error=False, iterated=iterated_at_construction, final_iterated=source.iterated, trace=trace, steps=steps,
-                        before_wire=before_wire, after_wire=wire(msg))
-    except Exception as error:
-        # 생성/복사 실패를 iterator 오류로 오인하지 않도록 별도 경계로 보존한다.
-        return dict(decode_error=True, type=type(error).__name__, message=str(error))
-with contextlib.ExitStack() as stack:
-    mode = request['mode']
-    if mode == 'boundaries':
-        good = stack.enter_context(cereal.log.Event.from_bytes(bytes.fromhex(request['good'])))
-        observations = [boundary(bytes.fromhex(raw), good) for raw in request['wires']]
-    else:
-        messages = [stack.enter_context(cereal.log.Event.from_bytes(bytes.fromhex(raw)))
-                    for raw in request['wires']]
-        observations = ([message(m) for m in messages] if mode == 'messages' else stream(messages))
-after = hashes()
-assert before == after, 'source changed during original capture'
-providers = [pathlib.Path(p).resolve() for p in (sys.executable, capnp.__file__, capnp_native.__file__)]
-print(json.dumps(dict(metadata=dict(python=sys.version, pycapnp=capnp.__version__, sources=before,
-                                   providers={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in providers}),
-                      roster=sanitizer.PRESERVE_SERVICES,
-                      vins=[sanitizer.sanitize_vin(v) for v in request.get('vins', [])],
-                      observations=observations), ensure_ascii=True, allow_nan=False))
-"#;
+type Identity = (u64, u64, u32, u32, u32, u64, i64, i64, i64, i64);
+#[derive(Debug, PartialEq, Eq)]
+struct Seal {
+    identity: Identity,
+    sha256: String,
+}
+fn identity(m: &fs::Metadata) -> Identity {
+    (
+        m.dev(),
+        m.ino(),
+        m.mode(),
+        m.uid(),
+        m.gid(),
+        m.len(),
+        m.mtime(),
+        m.mtime_nsec(),
+        m.ctime(),
+        m.ctime_nsec(),
+    )
+}
+fn is_sha256(text: &str) -> bool {
+    text.len() == 64
+        && text
+            .bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+}
+fn read_sealed(path: &Path) -> Result<(Vec<u8>, Seal), String> {
+    let error = |e| format!("{}: {e}", path.display());
+    let named = fs::symlink_metadata(path).map_err(error)?;
+    if !named.is_file() || named.file_type().is_symlink() || named.len() > MAX_FILE_BYTES {
+        return Err(format!("bounded regular file required: {}", path.display()));
+    }
+    let mut file = OpenOptions::new()
+        .read(true)
+        .custom_flags((rustix::fs::OFlags::NOFOLLOW | rustix::fs::OFlags::NONBLOCK).bits() as i32)
+        .open(path)
+        .map_err(error)?;
+    let before = file.metadata().map_err(error)?;
+    if identity(&before) != identity(&named) {
+        return Err(format!("file changed before read: {}", path.display()));
+    }
+    let mut bytes = Vec::new();
+    file.by_ref()
+        .take(MAX_FILE_BYTES + 1)
+        .read_to_end(&mut bytes)
+        .map_err(error)?;
+    let after = file.metadata().map_err(error)?;
+    let named_after = fs::symlink_metadata(path).map_err(error)?;
+    if bytes.len() as u64 != before.len()
+        || bytes.len() as u64 > MAX_FILE_BYTES
+        || identity(&before) != identity(&after)
+        || identity(&before) != identity(&named_after)
+    {
+        return Err(format!("file changed during read: {}", path.display()));
+    }
+    let sha256 = format!("{:x}", Sha256::digest(&bytes));
+    Ok((
+        bytes,
+        Seal {
+            identity: identity(&before),
+            sha256,
+        },
+    ))
+}
+fn require_absent(root: &Path) -> Result<(), String> {
+    let path = root.join(RETIRED_SOURCE);
+    // broken symlink도 부재로 인정하지 않는다.
+    if path.exists() || path.is_symlink() {
+        return Err(format!(
+            "retired source still exists or is a symlink: {}",
+            path.display()
+        ));
+    }
+    match fs::symlink_metadata(&path) {
+        Err(e) if e.kind() == ErrorKind::NotFound => Ok(()),
+        Err(e) => Err(format!(
+            "cannot establish source absence: {}: {e}",
+            path.display()
+        )),
+        Ok(_) => Err(format!("retired source appeared: {}", path.display())),
+    }
+}
+fn object_keys(value: &Value, keys: &[&str]) {
+    let object = value.as_object().expect("capture object required");
+    assert_eq!(object.len(), keys.len(), "capture object key count changed");
+    assert!(
+        keys.iter().all(|key| object.contains_key(*key)),
+        "capture keys changed"
+    );
+}
+fn validate_capture(group: &str, capture: &Value) {
+    object_keys(
+        capture,
+        &[
+            "schema",
+            "group",
+            "input",
+            "expected_original",
+            "unknown_fields",
+        ],
+    );
+    assert_eq!(capture["schema"], "openpilot.route-sanitizer-original.v1");
+    assert_eq!(capture["group"], group);
+    assert_eq!(capture["unknown_fields"], "기존 native unit의 raw assertion으로 별도 검증; 공통 canonical 비교의 증거에 포함하지 않음");
+    let input = &capture["input"];
+    assert_eq!(input["source_paths"], json!(CAPTURE_SOURCE_PATHS));
+    let (mode, wires, rows) = match group {
+        "vin-codepoints" => ("messages", 14, 14),
+        "car-copy-float-bits" => ("messages", 8, 8),
+        "non-car-identity" => ("messages", 4, 4),
+        "filter-order-laziness" => ("stream", 9, 6),
+        "malformed-boundaries" => ("boundaries", 5, 5),
+        _ => panic!("unknown frozen group"),
+    };
+    object_keys(
+        input,
+        match mode {
+            "messages" => &["mode", "wires", "vins", "source_paths"],
+            "stream" => &["mode", "wires", "source_paths"],
+            "boundaries" => &["mode", "wires", "good", "source_paths"],
+            _ => unreachable!(),
+        },
+    );
+    assert_eq!(input["mode"], mode);
+    assert_eq!(input["wires"].as_array().unwrap().len(), wires);
+    let result = &capture["expected_original"];
+    object_keys(result, &["metadata", "roster", "vins", "observations"]);
+    assert_eq!(result["roster"], json!(PRESERVE_SERVICES));
+    assert_eq!(
+        result["vins"].as_array().unwrap().len(),
+        if group == "vin-codepoints" { 14 } else { 0 }
+    );
+    let observations = &result["observations"];
+    if mode == "stream" {
+        assert_eq!(observations["trace"], json!([0, 2, 3, 4, 6, 7, 8, 10]));
+        assert_eq!(observations["rows"].as_array().unwrap().len(), rows);
+    } else {
+        assert_eq!(observations.as_array().unwrap().len(), rows);
+    }
+    let metadata = &result["metadata"];
+    object_keys(metadata, &["python", "pycapnp", "sources", "providers"]);
+    assert!(!metadata["python"].as_str().unwrap().is_empty());
+    assert_eq!(metadata["pycapnp"], "2.1.0");
+    let sources = metadata["sources"].as_object().unwrap();
+    assert_eq!(sources.len(), CAPTURE_SOURCE_PATHS.len());
+    for path in CAPTURE_SOURCE_PATHS {
+        assert!(
+            is_sha256(sources[*path].as_str().unwrap()),
+            "invalid source hash: {path}"
+        );
+        assert!(
+            CURRENT_SOURCE_PATHS.contains(path) ^ HISTORICAL_SOURCE_PATHS.contains(path),
+            "unclassified source: {path}"
+        );
+    }
+    assert_eq!(sources[RETIRED_SOURCE], RETIRED_SOURCE_SHA256);
+    assert_eq!(sources[CAPTURE_HARNESS], CAPTURE_HARNESS_SHA256);
+    // 역사 provider 경로/hash만 검증한다. 현재 파일을 열거나 실행하지 않는다.
+    let providers = metadata["providers"].as_object().unwrap();
+    assert_eq!(providers.len(), 3);
+    for (path, digest) in providers {
+        assert!(Path::new(path).is_absolute() && is_sha256(digest.as_str().unwrap()));
+    }
+}
+
+struct FrozenObservation {
+    result: Value,
+    root: PathBuf,
+    group: String,
+    fixture_sha256: String,
+    seals: BTreeMap<String, Seal>,
+}
+impl Deref for FrozenObservation {
+    type Target = Value;
+    fn deref(&self) -> &Self::Target {
+        &self.result
+    }
+}
+impl FrozenObservation {
+    fn verify_after(&self) -> Result<(), String> {
+        require_absent(&self.root)?;
+        for (path, before) in &self.seals {
+            let (_, after) = read_sealed(&self.root.join(path))?;
+            if *before != after {
+                return Err(format!(
+                    "source or fixture changed during native assertions: {path}"
+                ));
+            }
+        }
+        require_absent(&self.root)
+    }
+}
+impl Drop for FrozenObservation {
+    fn drop(&mut self) {
+        let result = self.verify_after();
+        if std::thread::panicking() {
+            if let Err(error) = result {
+                eprintln!("frozen reference after guard also failed: {error}");
+            }
+            return;
+        }
+        result.expect("frozen reference after guard failed");
+        // 원본 capture 접두사를 재사용하지 않는다. 본문과 after guard를 통과한 뒤만 출력한다.
+        println!(
+            "ROUTE_SANITIZER_FROZEN_CHECK {}",
+            json!({
+                "group": &self.group,
+                "fixture_sha256": &self.fixture_sha256,
+                "source_absent_before_and_after": true,
+                "source_and_fixture_seals_unchanged": true,
+                "providers_are_historical_metadata": true,
+                "fresh_original_executions": 0,
+            })
+        );
+    }
+}
+
+fn oracle(group: &str, request: Value) -> FrozenObservation {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../..")
+        .canonicalize()
+        .unwrap();
+    require_absent(&root).expect("original source must be absent before native comparison");
+    assert!(
+        FROZEN_GROUPS.iter().any(|(name, _)| *name == group),
+        "unknown authored group"
+    );
+    assert_eq!(FROZEN_GROUPS.len(), 5);
+    for &(name, pin) in FROZEN_GROUPS {
+        assert!(
+            is_sha256(pin),
+            "successful CI capture/full fixture SHA missing for {name}"
+        );
+    }
+    let mut seals = BTreeMap::new();
+    let mut selected = None;
+    let mut shared_metadata: Option<Value> = None;
+    for &(name, pin) in FROZEN_GROUPS {
+        let path = format!("{FIXTURE_DIR}/{name}.original.json");
+        let (bytes, seal) = read_sealed(&root.join(&path)).expect("frozen capture missing/invalid");
+        assert_eq!(
+            seal.sha256.as_str(),
+            pin,
+            "full fixture SHA differs: {name}"
+        );
+        let capture: Value = serde_json::from_slice(&bytes).expect("invalid frozen capture JSON");
+        validate_capture(name, &capture);
+        let metadata = &capture["expected_original"]["metadata"];
+        if let Some(shared) = &shared_metadata {
+            assert_eq!(
+                metadata, shared,
+                "five captures must share exact source/provider metadata"
+            );
+        } else {
+            shared_metadata = Some(metadata.clone());
+        }
+        if name == group {
+            selected = Some((capture, seal.sha256.clone()));
+        }
+        assert!(seals.insert(path, seal).is_none());
+    }
+    let (capture, fixture_sha256) = selected.unwrap();
+    let mut authored = capture["input"].as_object().unwrap().clone();
+    let source_paths = authored
+        .remove("source_paths")
+        .expect("capture source_paths required");
+    assert_eq!(source_paths, json!(CAPTURE_SOURCE_PATHS));
+    // mode/wires/vins/good의 문자열 byte와 전체 배열/객체를 그대로 비교한다.
+    // 이 한 metadata 필드 외에 제거·재구성·정규화하는 입력은 없다.
+    assert_eq!(
+        Value::Object(authored),
+        request,
+        "authored request differs from frozen input"
+    );
+    let result = capture["expected_original"].clone();
+    for path in CURRENT_SOURCE_PATHS {
+        let (_, seal) =
+            read_sealed(&root.join(path)).expect("current native/schema source missing");
+        assert_eq!(
+            json!(&seal.sha256),
+            result["metadata"]["sources"][*path],
+            "current native/schema source differs: {path}"
+        );
+        assert!(seals.insert((*path).to_owned(), seal).is_none());
+    }
+    require_absent(&root).expect("original source appeared during frozen admission");
+    FrozenObservation {
+        result,
+        root,
+        group: group.to_owned(),
+        fixture_sha256,
+        seals,
+    }
+}
 
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
@@ -175,86 +399,6 @@ fn unhex(value: &Value) -> Vec<u8> {
         .map(|i| u8::from_str_radix(&text[i..i + 2], 16).unwrap())
         .collect()
 }
-fn oracle(group: &str, mut request: Value) -> Value {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../..")
-        .canonicalize()
-        .unwrap();
-    let sources = Value::Object(
-        SOURCES
-            .iter()
-            .map(|path| {
-                let bytes = fs::read(root.join(path)).unwrap();
-                (
-                    (*path).to_owned(),
-                    json!(format!("{:x}", Sha256::digest(bytes))),
-                )
-            })
-            .collect(),
-    );
-    request["source_paths"] = json!(SOURCES);
-    let python = PathBuf::from(
-        std::env::var_os("ROUTE_SANITIZER_ORACLE_PYTHON")
-            .expect("prepared Python + pycapnp required"),
-    );
-    assert!(python.is_absolute() && python.is_file());
-    let temp = tempfile::tempdir().unwrap();
-    let mut spec = CommandSpec::new(
-        vec![
-            "/usr/bin/env".into(),
-            "-i".into(),
-            format!("HOME={}", temp.path().display()),
-            format!("TMPDIR={}", temp.path().display()),
-            format!("XDG_CACHE_HOME={}", temp.path().display()),
-            "LC_ALL=C.UTF-8".into(),
-            format!(
-                "LD_LIBRARY_PATH={}",
-                std::env::var("OPENPILOT_ORACLE_PYTHON_LIBRARY_PATH")
-                    .expect("prepared Python runtime library directory required")
-            ),
-            python.display().to_string(),
-            "-I".into(),
-            "-B".into(),
-            "-X".into(),
-            format!("pycache_prefix={}/fresh-pycache", temp.path().display()),
-            "-c".into(),
-            ORIGINAL.into(),
-            root.display().to_string(),
-        ],
-        Duration::from_secs(60),
-    );
-    spec.cwd = Some(temp.path().to_owned());
-    spec.input = Some(serde_json::to_vec(&request).unwrap());
-    let captured = NativeRunner.run(&spec).unwrap();
-    assert_eq!(
-        captured.code,
-        0,
-        "{}",
-        String::from_utf8_lossy(&captured.stderr)
-    );
-    let result: Value = serde_json::from_slice(&captured.stdout).unwrap();
-    assert_eq!(result["metadata"]["sources"], sources);
-    for path in SOURCES {
-        assert_eq!(
-            sources[*path],
-            json!(format!(
-                "{:x}",
-                Sha256::digest(fs::read(root.join(path)).unwrap())
-            ))
-        );
-    }
-    assert_eq!(result["roster"], json!(PRESERVE_SERVICES));
-    println!(
-        "ROUTE_SANITIZER_ORIGINAL_JSON {}",
-        json!({
-            "schema":"openpilot.route-sanitizer-original.v1", "group":group,
-            "input":request, "expected_original":result,
-        "unknown_fields":"기존 native unit의 raw assertion으로 별도 검증; 공통 canonical 비교의 증거에 포함하지 않음"
-        })
-    );
-    result
-}
-
 fn fixture(service: &str, vin: &str, bits: u32, time: u64) -> Builder<HeapAllocator> {
     let mut message = Builder::new_default();
     let mut root = message.init_root::<event::Builder<'_>>();
@@ -354,7 +498,11 @@ fn fields(reader: event::Reader<'_>) -> Value {
 fn panda_fields(p: openpilot_cereal::log_capnp::panda_state::Reader<'_>) -> Value {
     json!({"uptime":p.get_uptime(), "voltage":p.get_voltage(), "ignition":p.get_ignition_line(), "load_bits":p.get_interrupt_load().to_bits()})
 }
-fn compare_messages(group: &str, inputs: &[Builder<HeapAllocator>], vins: &[&str]) -> Value {
+fn compare_messages(
+    group: &str,
+    inputs: &[Builder<HeapAllocator>],
+    vins: &[&str],
+) -> FrozenObservation {
     let wires = inputs
         .iter()
         .map(write_message_to_words)
@@ -744,4 +892,25 @@ fn original_malformed_boundaries_are_lazy_and_leave_inputs_unchanged() {
         );
         assert_eq!(canonical(raw), canonical(&wire(input.get_root().unwrap())));
     }
+}
+
+#[test]
+fn retired_source_reappearance_files_directories_and_broken_links_are_rejected() {
+    use std::os::unix::fs::symlink;
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path();
+    let retired = root.join(RETIRED_SOURCE);
+    fs::create_dir_all(retired.parent().unwrap()).unwrap();
+    assert!(require_absent(root).is_ok());
+    fs::write(&retired, b"synthetic reappearance control\n").unwrap();
+    assert!(require_absent(root).is_err());
+    fs::remove_file(&retired).unwrap();
+    symlink("missing-synthetic-target", &retired).unwrap();
+    assert!(!retired.exists());
+    assert!(require_absent(root).is_err());
+    fs::remove_file(&retired).unwrap();
+    fs::create_dir(&retired).unwrap();
+    assert!(require_absent(root).is_err());
+    fs::remove_dir(&retired).unwrap();
+    assert!(require_absent(root).is_ok());
 }

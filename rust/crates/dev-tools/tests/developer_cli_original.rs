@@ -366,8 +366,8 @@ fn compare(group: &str, cases: &[Case]) {
 fn verify_envelope(envelope: &Value) {
     assert_eq!(envelope["schema"], "openpilot.developer-cli-original.v1");
     let (expected_count, tool) = match envelope["group"].as_str().unwrap() {
-        "ssh-plan" => (20, "ssh"),
-        "ssh-parser" => (11, "ssh"),
+        "ssh-plan" => (22, "ssh"),
+        "ssh-parser" => (13, "ssh"),
         "setup-effects" => (21, "setup"),
         group => panic!("unknown original expectation group: {group}"),
     };
@@ -528,6 +528,16 @@ fn ssh_cli_original_aliases_prefix_unicode_duplicate_order_and_exec() {
             "nbsp-not-ascii-space",
             &["testcar"],
             json!([{"dongle_id":"unicode","alias":"Test\u{a0}Car"}]),
+        ),
+        ssh(
+            "unicode16-rams-horn-alias-false-match",
+            &["\u{264}"],
+            json!([{"dongle_id":"0000000000000001","alias":"\u{a7cb}"}]),
+        ),
+        ssh(
+            "unicode16-tje-alias-false-match",
+            &["\u{1c8a}"],
+            json!([{"dongle_id":"0000000000000002","alias":"\u{1c89}"}]),
         ),
         ssh(
             "debug-literal-quoting",

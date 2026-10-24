@@ -466,3 +466,47 @@ SDK cold 감사는 Python에서 Rust로 옮긴다. 신규6개 parser/무결성 n
 같은 target을 재사용한다. strict Clippy도 새 target을 포함한다. 아직 **UNRUN**이다.
 원본 focus venv 전체 파일/링크도 전후 봉인한다. 독립 review의 차단 지적은 반영했고,
 다음 게시 전 마지막 source pin 갱신과 문법/diff 확인을 진행한다.
+
+
+## 2026-10-24 a134 결과 및 다음 집중 검증
+
+- 사용자 답변: 60GB runner 볼륨 확장은 어렵다. 작업별 증가량 승인과 소유 output 정리를 유지하며,
+  기존 16.64GB deep 예상량을 자의적으로 낮추지 않는다.
+- SAN [40089943421](https://github.com/bin9208/openpilot-rust/actions/runs/40089943421):
+  원본5/native15/strict Clippy 및 provider/source seal 성공. 원문5JSON과 source 부재 native checker로
+  삭제 후보를 준비했으며 삭제 후 검사는 UNRUN, inventory credit은 보류한다.
+- 집중 [40089943318](https://github.com/bin9208/openpilot-rust/actions/runs/40089943318):
+  auth3/login8/alias20/setup21/SSH27/scanner2 및 strict Clippy 성공.
+  parser13 envelope의 과거 count11 때문에 per-case assertion 전에 중단됐다. count13으로 수정했다.
+  실제 Python runtime3.12.15와 loaded libpython/argparse identity를 확인했다.
+- Rust1.94 Unicode17과 원본 Python3.12 Unicode15 alias 소문자화의 차이를 지지하는 primary source를
+  찾아 U+A7CB/U+1C89 두 exact CLI 회귀를 추가했다. 구현은 변경하지 않았으며 fresh 원본 비교로
+  실제 실패 여부를 먼저 확인한다. 이번 alias22와 parser13만 fresh 실행하며 unchanged 수용 cohort는
+  exact artifact/source/provider pin으로 재사용한다. 새 두 사례는 UNRUN이다.
+- Fast [40089943270](https://github.com/bin9208/openpilot-rust/actions/runs/40089943270):
+  다른5worker 성공. routing에서 실제 prepared cold 감사1과 디스크30 검사는 성공했으나
+  workflow policy6개 실패로 aggregate가 실패했다. 강해진 always/seal/cleanup 및 분리 guard의
+  실제 조건을 검사하도록 진단 중이다. #530 전체 성공으로 기록하지 않는다.
+- Bundle public helper feature mapping, 기존 비활성 publish caller 한 줄, deterministic fixture Git 및
+  실제 original23회 출력 capture를 준비했다. 기존17개 assertion을 유지했다. 새 workflow는
+  fresh17+library1, strict Clippy, public helper를 통한 실제 committed context 전체 비교와 hidden file
+  artifact 보존을 실행한다. 기존 repository/ref 조건을 유지하며 Docker/NAS publish는 활성화하지 않는다.
+
+현재 전체 inventory는 3580 = replaced-local288 / partial3 / pending3289이며 변경하지 않았다.
+본 기록의 다음 후보들은 로컬 syntax/fmt/diff만 확인한다. 기능·컴파일은 등록 Actions에서 수행한다.
+
+
+### a134 routing 실제 증거 보충
+
+artifact12559545652(419610B)의 SHA256은
+`88755f3b00729fb0647bd151ffcf7afdf7138c2bd5da61fa2a63bf888f80782f`다.
+부모의 36CRC 감사 및 source/index/SDK/permission 전후7쌍 비교가 일치했다.
+권한 변경은39entry/journal78행, 실제 SDK regular294개 내용 불변이다.
+실제 cold receipt는 exec289(실패139 포함), absolute cargo 성공1/rustc 성공37,
+Python0/rustup0을 기록했다. 이후 policy6개 실패와 분리한다.
+
+policy 수정 후보는 실제 native after/cleanup 조건과 참조 ID를 정확히 검증하고,
+실제 strace로 감싼2GiB guard의 전체 명령을 검사한다. 조건 약화·ID 삭제/중복·fork 우회를 거부하는
+음성 회귀를 추가했다. #523 workflow6개에 `queue: max`를 보완했다.
+model workflow의 queue 정책 수정으로 이전 성공 cache probe도 다시 트리거된다.
+새 전체 Fast/정책 검사는 UNRUN이다.

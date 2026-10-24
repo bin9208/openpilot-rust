@@ -799,13 +799,65 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
                 .is_some_and(|s| s.starts_with(DIAGNOSTIC_FORK_DENIAL)),
             "Fast fork refusal must precede source execution",
         )?;
+        if name == "native" {
+            // 더 강한 after/cleanup 조건이 실제 생산 단계의 결과를 참조해야 한다.
+            for (stage, id) in [
+                (
+                    "Remove shared write permission from the owned provisioned SDK",
+                    "sdk_permissions",
+                ),
+                (
+                    "Verify SDK contents after permission preparation even on failure",
+                    "sdk_permissions_final",
+                ),
+                (
+                    "Admit provisioned Rust without installing a second toolchain",
+                    "prepared_rust",
+                ),
+                (
+                    "Verify provisioned Rust SDK contents and identities after routing",
+                    "prepared_rust_final",
+                ),
+                (
+                    "Seal Fast source and index after all maintained checks",
+                    "source_final",
+                ),
+                ("Retain Fast job ownership evidence", "fast_evidence"),
+                (
+                    "Clean only uploaded private Fast source",
+                    "fast_source_cleanup",
+                ),
+            ] {
+                require(
+                    steps
+                        .iter()
+                        .filter(|step| step["name"] == stage && step["id"] == id)
+                        .count()
+                        == 1
+                        && steps.iter().filter(|step| step["id"] == id).count() == 1,
+                    format!("native Fast outcome ID missing or duplicated: {id}"),
+                )?;
+            }
+        }
         for step in &steps[1..] {
             absent(step, &["continue-on-error"])?;
-            let condition = match step["name"].as_str().unwrap_or("") {
-                "Retain Fast job ownership evidence" => DIAGNOSTIC_PROOF,
-                "Clean only uploaded private Fast source" => DIAGNOSTIC_CLEANUP,
-                "Clean common owned Fast job temporary paths" => DIAGNOSTIC_COMMON_CLEANUP,
-                _ => DIAGNOSTIC_TRUSTED_SOURCE,
+            let condition = match (name, step["name"].as_str().unwrap_or("")) {
+                ("native", "Verify SDK contents after permission preparation even on failure") => private_source_condition(
+                    "always() && steps.sdk_permissions.outcome != 'skipped' && env.DIAG_SOURCE != ''",
+                ),
+                ("native", "Verify provisioned Rust SDK contents and identities after routing") => private_source_condition(
+                    "always() && steps.prepared_rust.outcome == 'success'",
+                ),
+                ("native", "Seal Fast source and index after all maintained checks") => private_source_condition(
+                    "always() && env.DIAG_SOURCE != ''",
+                ),
+                ("native", "Clean only uploaded private Fast source") => private_source_condition(
+                    "always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome == 'success' && steps.sdk_permissions_final.outcome == 'success'",
+                ),
+                (_, "Retain Fast job ownership evidence") => DIAGNOSTIC_PROOF.to_owned(),
+                (_, "Clean only uploaded private Fast source") => DIAGNOSTIC_CLEANUP.to_owned(),
+                (_, "Clean common owned Fast job temporary paths") => DIAGNOSTIC_COMMON_CLEANUP.to_owned(),
+                _ => DIAGNOSTIC_TRUSTED_SOURCE.to_owned(),
             };
             require(
                 step["if"] == condition,

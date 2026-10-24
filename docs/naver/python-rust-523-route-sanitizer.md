@@ -202,3 +202,31 @@ artifact12557518748/493,413B/SHA256
 SDK/venv 내용·identity 전후 일치를 확인했다. 부모3.12.15 확인만으로 env-i 자식의 동일 runtime을
 보증하지 않고, #531 수정처럼 명시된 단일 library directory를 전달해 실제 자식3.12.15 및
 provider mapping·전후 hash를 확인한다. 원본 source 삭제와 inventory credit은 아직 없다.
+
+
+## 2026-10-24 a134 원본 수용과 소스 삭제 후보
+
+`a134b32c5d50d346994d671c0882b147175021dc`의
+[Actions 40089943421/job120860396114](https://github.com/bin9208/openpilot-rust/actions/runs/40089943421/job/120860396114)에서
+실제 CPython3.12.15/pycapnp2.1.0 원본5, native15 및 strict Clippy가 통과했다.
+source/index, 전체 Rust SDK 및 private venv/interpreter의 전후 내용·identity seal도 일치했다.
+artifact12558278976, 517926B, SHA256
+`1595e9bb5886c925c1ab6016f936fa1d3df670374e9921d6113d56f162e7c9e5`의
+52개 member CRC와 seal을 부모가 별도로 확인했다.
+
+5개 원본 JSON을 재직렬화하지 않고 `tests/fixtures/route-sanitizer-original/`에 보존한다.
+모든 파일의 전체 SHA256을 native checker에 고정한다. 현재 native 구현과 unit 및 full IDL8개는
+실제 capture의 source SHA와 일치해야 하며, 원본 Python/provider 경로는 역사 metadata로만 읽는다.
+기존5개 비교 본문을 유지하고 삭제 source의 파일·디렉터리·broken symlink 재출현을 거부하는
+음성 통제1개를 추가했다. 비교와 전후 seal을 모두 통과한 뒤 별도 frozen-check 접두사를 출력한다.
+
+`openpilot/tools/lib/sanitizer.py` 하나를 삭제한 후보이며 inventory는 아직 pending이다.
+tracked source에서 이 모듈의 실제 import/caller가 없는지 재검색하고 있다. 다음 CI는 Python 준비·원본 실행 단계를 제거하고 source 부재·frozen5+음성통제1·strict Clippy·SDK/source 전후 seal을 확인한다.
+이미 성공한 unchanged native15는 위 artifact와 source pin으로 재사용한다.
+삭제 후 CI는 **UNRUN**이다. #523 전체 또는 사용자 기기 수용 완료를 의미하지 않는다.
+
+
+삭제 후 gate의 raw strace는 frozen-test Cargo 자식 트리만 기록한다. 미해석 경로를 누락하는
+부분 정규식에 의존한 Python0 receipt를 만들지 않으며 Clippy까지 포함한 전체 실행체의
+non-Python 수용을 주장하지 않는다. 수용 대상은 원본 모듈 부재, 원문 JSON에 대한 native API
+비교 및 source/fixture 전후 seal이다. execveat는 명시적 실패 분기로 거부한다.

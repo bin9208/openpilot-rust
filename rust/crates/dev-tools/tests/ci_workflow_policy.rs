@@ -413,9 +413,17 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         for suite in selected {
             *seen.entry(suite.to_owned()).or_default() += 1;
         }
-        assert_eq!(commands.iter().filter(|line| line.as_str() ==
-            "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 2048"
-        ).count(), 1, "{worker} disk guard changed");
+        let disk_guard = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 2048";
+        let disk_guard = if worker == "native" {
+            format!("OPENPILOT_CI_PREPARED_RUST_ROOT=\"$CI_PREPARED_RUST_ROOT\" OPENPILOT_CI_PREPARED_RUST_MANIFEST=\"$CI_PREPARED_RUST_MANIFEST\" /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o \"$CI_JOB_TEMP/proof/prepared-cold-bootstrap.exec\" {disk_guard}")
+        } else {
+            disk_guard.to_owned()
+        };
+        assert_eq!(
+            commands.iter().filter(|line| *line == &disk_guard).count(),
+            1,
+            "{worker} disk guard changed"
+        );
         all_commands.extend(commands);
     }
     assert_eq!(seen.len(), expected.len());
@@ -650,6 +658,110 @@ fn diagnostic_fast_slice_keeps_private_paths_and_explicit_fork_failure() {
     let mut fork_pass = workflow.clone();
     fork_pass["jobs"]["fast"]["steps"][0]["env"]["SOURCE_ALLOWED"] = "true".into();
     assert!(validate_fast_gate(&fork_pass).is_err());
+}
+
+#[test]
+fn native_fast_after_guards_reject_skipped_audits_and_unsealed_cleanup() {
+    let workflow =
+        parse(&fs::read_to_string(root().join(".github/workflows/fast-checks.yml")).unwrap())
+            .unwrap();
+    validate_local_routing(&workflow).unwrap();
+    validate_fast_gate(&workflow).unwrap();
+    let steps = workflow["jobs"]["native"]["steps"].as_array().unwrap();
+    let at = |id: &str| steps.iter().position(|step| step["id"] == id).unwrap();
+
+    // after 검사는 실패 때도 실행해야 하며 fork/source 경계 밖으로 빠져나갈 수 없다.
+    for id in [
+        "sdk_permissions_final",
+        "prepared_rust_final",
+        "source_final",
+    ] {
+        let index = at(id);
+        let condition = steps[index]["if"].as_str().unwrap();
+        for changed_condition in [
+            TRUSTED_SOURCE.to_owned(),
+            "${{ always() }}".to_owned(),
+            condition.replace("always()", "success()"),
+            condition.replace(" }}", " || true }}"),
+            condition.replace(" }}", " && false }}"),
+        ] {
+            let mut changed = workflow.clone();
+            changed["jobs"]["native"]["steps"][index]["if"] = changed_condition.into();
+            assert!(
+                validate_fast_gate(&changed).is_err(),
+                "accepted {id} guard mutation"
+            );
+        }
+        let mut changed = workflow.clone();
+        changed["jobs"]["native"]["steps"][index]["if"] = "${{ always() }}".into();
+        assert!(validate_local_routing(&changed).is_err());
+    }
+    for (id, clause) in [
+        (
+            "sdk_permissions_final",
+            " && steps.sdk_permissions.outcome != 'skipped'",
+        ),
+        ("sdk_permissions_final", " && env.DIAG_SOURCE != ''"),
+        (
+            "prepared_rust_final",
+            " && steps.prepared_rust.outcome == 'success'",
+        ),
+        ("source_final", " && env.DIAG_SOURCE != ''"),
+    ] {
+        let index = at(id);
+        let condition = steps[index]["if"].as_str().unwrap();
+        assert!(condition.contains(clause));
+        let mut changed = workflow.clone();
+        changed["jobs"]["native"]["steps"][index]["if"] = condition.replace(clause, "").into();
+        assert!(
+            validate_fast_gate(&changed).is_err(),
+            "accepted missing {clause}"
+        );
+    }
+    let cleanup = at("fast_source_cleanup");
+    let condition = steps[cleanup]["if"].as_str().unwrap();
+    for clause in [
+        " && steps.fast_evidence.outcome == 'success'",
+        " && steps.fast_evidence.outputs.artifact-id != ''",
+        " && steps.fast_evidence.outputs.artifact-digest != ''",
+        " && env.DIAG_SOURCE_OWNER != ''",
+        " && steps.source_final.outcome == 'success'",
+        " && steps.prepared_rust_final.outcome == 'success'",
+        " && steps.sdk_permissions_final.outcome == 'success'",
+    ] {
+        assert!(condition.contains(clause));
+        let mut changed = workflow.clone();
+        changed["jobs"]["native"]["steps"][cleanup]["if"] = condition.replace(clause, "").into();
+        assert!(
+            validate_fast_gate(&changed).is_err(),
+            "accepted unsealed cleanup: {clause}"
+        );
+    }
+    for id in [
+        "sdk_permissions",
+        "sdk_permissions_final",
+        "prepared_rust",
+        "prepared_rust_final",
+        "source_final",
+        "fast_evidence",
+        "fast_source_cleanup",
+    ] {
+        let mut changed = workflow.clone();
+        changed["jobs"]["native"]["steps"][at(id)]["id"] = "unbound_outcome".into();
+        assert!(
+            validate_fast_gate(&changed).is_err(),
+            "accepted unbound {id}"
+        );
+        let mut changed = workflow.clone();
+        changed["jobs"]["native"]["steps"]
+            .as_array_mut()
+            .unwrap()
+            .push(steps[at(id)].clone());
+        assert!(
+            validate_fast_gate(&changed).is_err(),
+            "accepted duplicated {id}"
+        );
+    }
 }
 
 #[test]
