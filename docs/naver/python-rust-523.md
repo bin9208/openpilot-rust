@@ -627,3 +627,16 @@ artifact12561756241의144CRC/fullSHA를 부모가 감사해 정확한 원본2파
 8개 workflow의 첫 Deny 단계는 무조건 실행하고 뒤 단계에 explicit source조건을 AND로 추가한다.
 실패 뒤 seal/upload/cleanup 조건은 그대로 보존하고 Rust policy는 완화하지 않는다.
 60GB runner 확장 없이 작업별 growth guard를 유지한다. 전체PR/통합/전달·실기 수용은 계속 미완료다.
+
+### 확장 없는 runner의 다음 읽기 조사
+
+새 capacity 후보는 옛 Rustup home8개, shared `rust/target`, 현재 준비 SDK의 정확한 root만
+읽는다. mode/UID/device/inode/nlink/blocks/mtime/ctime·regular 전체SHA·symlink target과
+owner를 기록하고, 전 UID의 cwd/exe/fd/maps에서 해당 옛 캐시 참조를 전후 관측한다.
+argv/env/credential 내용은 수집하지 않고 파일 삭제·SDK 실행·빌드·입력 실행은0이다.
+
+`/tmp/openpilot-ci.4o8uWv/rustup-home`의 compiler 원본과 현재 준비 SDK는 보호 대상으로
+명시한다. 이 조사는 과거 크기를 새 free 또는 회수량으로 계산하지 않는다. 실제 결과 뒤
+현재·예정 caller 및 proof/provider 의존성이 없는 정확한 캐시만 별도 정리 후보로 판단한다.
+controls의 원본109요청은 재캡처 없이 재사용하되8GiB build/추가512MiB 및 proof 성장 검사를
+완화하지 않는다. 로컬은 이 새 reader와 workflow의 문법·diff만 확인했고 실제 관측은 미실행이다.

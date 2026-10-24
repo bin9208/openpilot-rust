@@ -367,6 +367,10 @@ fn validate(
     Ok(())
 }
 
+// The catalog admits at most 128 MiB across its original model roster, so no
+// individual original can exceed this bound. Source/IR/output limits are separate.
+const MAX_ORIGINAL_MODEL_BYTES: u64 = 128 * 1024 * 1024;
+
 pub(crate) struct HeldLibrary {
     file: File,
     path: PathBuf,
@@ -405,12 +409,32 @@ fn read(path: &Path, maximum: usize) -> Result<(File, Vec<u8>), String> {
     }
     Ok((file, bytes))
 }
+fn streamed_digest(file: &File, length: u64) -> Result<String, String> {
+    use std::os::unix::fs::FileExt;
+    let mut hash = Sha256::new();
+    let mut chunk = [0; 65536];
+    let mut offset = 0;
+    while offset < length {
+        let count = (length - offset).min(chunk.len() as u64) as usize;
+        file.read_exact_at(&mut chunk[..count], offset)
+            .map_err(|error| error.to_string())?;
+        hash.update(&chunk[..count]);
+        offset += count as u64;
+    }
+    if file
+        .read_at(&mut [0; 1], length)
+        .map_err(|error| error.to_string())?
+        != 0
+    {
+        return Err("cached asset changed length".into());
+    }
+    Ok(format!("{:x}", hash.finalize()))
+}
 impl HeldLibrary {
     pub(crate) fn descriptor_path(&self) -> String {
         format!("/proc/self/fd/{}", self.file.as_raw_fd())
     }
-    pub(crate) fn verify(&self) -> Result<(), String> {
-        use std::os::unix::fs::FileExt;
+    fn verify_identity(&self) -> Result<(), String> {
         let current = std::fs::symlink_metadata(&self.path).map_err(|error| error.to_string())?;
         let held = self.file.metadata().map_err(|error| error.to_string())?;
         if !current.is_file()
@@ -419,14 +443,14 @@ impl HeldLibrary {
         {
             return Err("cached library identity changed".into());
         }
-        let mut bytes = vec![0; self.identity.2 as usize];
-        self.file
-            .read_exact_at(&mut bytes, 0)
-            .map_err(|error| error.to_string())?;
-        if digest(&bytes) != self.digest {
+        Ok(())
+    }
+    pub(crate) fn verify(&self) -> Result<(), String> {
+        self.verify_identity()?;
+        if streamed_digest(&self.file, self.identity.2)? != self.digest {
             return Err("cached library bytes changed".into());
         }
-        Ok(())
+        self.verify_identity()
     }
 }
 /// Read and verify all evidence before dlopen; retain the native library FD for
@@ -915,6 +939,117 @@ mod tests {
         );
         assert_eq!(cached_elf::functions(&built.object, 1).unwrap().len(), 2);
     }
+
+    #[test]
+    fn streamed_original_model_exceeds_source_limit_without_moving_fd_offset() {
+        use std::io::{Seek, SeekFrom, Write};
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("original-model.pkl");
+        let mut file = File::create(&path).unwrap();
+        let mut expected = Sha256::new();
+        // 513 distinct 64 KiB chunks exceed the source limit; the final write
+        // also exercises a partial chunk. These are inert synthetic bytes.
+        for index in 0_u64..513 {
+            let mut chunk = [0xa5; 65536];
+            chunk[..8].copy_from_slice(&index.to_le_bytes());
+            file.write_all(&chunk).unwrap();
+            expected.update(chunk);
+        }
+        file.write_all(b"distinct model tail").unwrap();
+        expected.update(b"distinct model tail");
+        drop(file);
+        assert!(hold(&path, 32 * 1024 * 1024).is_err());
+        let mut held = hold_original_model(&path).unwrap();
+        assert_eq!(held.digest, format!("{:x}", expected.finalize()));
+        assert_eq!(held.file.stream_position().unwrap(), 0);
+        held.file.seek(SeekFrom::Start(19)).unwrap();
+        held.verify().unwrap();
+        assert_eq!(held.file.stream_position().unwrap(), 19);
+    }
+
+    #[test]
+    fn streamed_original_model_rejects_cap_overflow_and_symlink() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("oversized-model.pkl");
+        File::create(&path)
+            .unwrap()
+            .set_len(MAX_ORIGINAL_MODEL_BYTES + 1)
+            .unwrap();
+        assert!(hold_original_model(&path).is_err());
+        let target = directory.path().join("model.pkl");
+        std::fs::write(&target, b"inert model").unwrap();
+        let alias = directory.path().join("alias.pkl");
+        std::os::unix::fs::symlink(&target, &alias).unwrap();
+        assert!(hold_original_model(&alias).is_err());
+    }
+
+    #[test]
+    fn streamed_digest_requires_exact_length_and_eof() {
+        use std::io::{Seek, SeekFrom};
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("data");
+        let mut data = vec![0x3c; 65539];
+        data[0] = 0x81;
+        data[65536] = 0x62;
+        data[65538] = 0xff;
+        std::fs::write(&path, &data).unwrap();
+        let mut file = File::open(&path).unwrap();
+        file.seek(SeekFrom::Start(23)).unwrap();
+        assert_eq!(
+            streamed_digest(&file, data.len() as u64).unwrap(),
+            format!("{:x}", Sha256::digest(&data))
+        );
+        assert!(streamed_digest(&file, data.len() as u64 - 1).is_err());
+        assert!(streamed_digest(&file, data.len() as u64 + 1).is_err());
+        assert_eq!(file.stream_position().unwrap(), 23);
+    }
+
+    #[test]
+    fn streamed_guard_rejects_same_size_mutation_and_truncation() {
+        use std::os::unix::fs::FileExt;
+        let directory = tempfile::tempdir().unwrap();
+        for truncate in [false, true] {
+            let path = directory.path().join(format!("model-{truncate}"));
+            std::fs::write(&path, b"original model bytes").unwrap();
+            let mut held = hold_original_model(&path).unwrap();
+            let file = OpenOptions::new().write(true).open(&path).unwrap();
+            if truncate {
+                file.set_len(held.identity.2 - 1).unwrap();
+            } else {
+                file.write_all_at(b"X", 9).unwrap();
+                assert_eq!(file.metadata().unwrap().len(), held.identity.2);
+            }
+            assert!(held.verify().is_err());
+            if !truncate {
+                // Rebase only this test's metadata to isolate the independent
+                // content seal: unchanged length/identity cannot replace SHA.
+                held.identity = identity(&file.metadata().unwrap());
+                assert_eq!(held.verify().unwrap_err(), "cached library bytes changed");
+            }
+        }
+    }
+
+    #[test]
+    fn streamed_guard_rejects_replacement_even_with_identical_bytes() {
+        let directory = tempfile::tempdir().unwrap();
+        for symlink in [false, true] {
+            let path = directory.path().join(format!("model-{symlink}"));
+            std::fs::write(&path, b"identical model bytes").unwrap();
+            let held = hold_original_model(&path).unwrap();
+            let retained = directory.path().join(format!("retained-{symlink}"));
+            std::fs::rename(&path, &retained).unwrap();
+            if symlink {
+                std::os::unix::fs::symlink(&retained, &path).unwrap();
+            } else {
+                std::fs::write(&path, b"identical model bytes").unwrap();
+            }
+            assert!(held.verify().is_err());
+            assert_eq!(
+                streamed_digest(&held.file, held.identity.2).unwrap(),
+                held.digest
+            );
+        }
+    }
 }
 
 /// Authenticate the exact SOURCE/BINARY/object triplet and the ordinary LLVM C
@@ -1076,6 +1211,33 @@ fn hold(path: &Path, limit: usize) -> Result<(HeldLibrary, Vec<u8>), String> {
     Ok((guard, bytes))
 }
 
+fn hold_original_model(path: &Path) -> Result<HeldLibrary, String> {
+    if !path.is_absolute()
+        || std::fs::canonicalize(path).map_err(|error| error.to_string())? != path
+    {
+        return Err("cached issuer input path must be absolute and alias-free".into());
+    }
+    let file = OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK | libc::O_CLOEXEC)
+        .open(path)
+        .map_err(|error| error.to_string())?;
+    let metadata = file.metadata().map_err(|error| error.to_string())?;
+    if !metadata.is_file() || metadata.len() > MAX_ORIGINAL_MODEL_BYTES {
+        return Err("cached asset regular-file/size guard".into());
+    }
+    let mut guard = HeldLibrary {
+        identity: identity(&metadata),
+        file,
+        path: path.to_owned(),
+        digest: String::new(),
+    };
+    guard.verify_identity()?;
+    guard.digest = streamed_digest(&guard.file, guard.identity.2)?;
+    guard.verify_identity()?;
+    Ok(guard)
+}
+
 /// Native packing/sealing interface for the separately pending exporter bridge.
 /// The launcher MUST authenticate the complete request hash and the issuer ELF
 /// before calling this function. Each original identity is supplied independently
@@ -1101,13 +1263,13 @@ pub fn issue(
     let mut held = Vec::new();
     let (guard, manifest) = hold(&request.original_manifest, 4 * 1024 * 1024)?;
     held.push(guard);
-    let (guard, model) = hold(&request.original_model, 32 * 1024 * 1024)?;
-    held.push(guard);
+    let model = hold_original_model(&request.original_model)?;
     if digest(&manifest) != expected.original_manifest_sha256
-        || digest(&model) != expected.original_model_sha256
+        || model.digest != expected.original_model_sha256
     {
         return Err("cached issuer authentic original manifest/model differs".into());
     }
+    held.push(model);
     for seal in expected
         .current
         .guarded_add_sources

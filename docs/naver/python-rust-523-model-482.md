@@ -459,3 +459,17 @@ generated code/model/원본 compiler 실행은0이며 수치5건/전체program r
 
 다음 진단은 거부 instruction의 IP/Code/encoded bytes/CPUID 목록과 현재 자연 CPU/OS feature를
 기록한다. decoder allowlist/host admission/수치 기준을 바꾸거나 CPU·ISA·target을 강제하지 않는다.
+
+### 실제 PKL 크기의 별도 issuer 제약 보완 후보
+
+원본 driving PKL72,045,323B는 기존 issuer의32MiB materialized read에서 거부된다.
+원본 모델에만 기존 catalog의 모델 합계128MiB 정책에 맞춘 cap을 두고,64KiB `read_at` SHA와
+정확 길이/EOF·FD offset 불변 및 전후 FD/path identity 검사를 추가했다. source32MiB와
+manifest/ISA/image/출력 상한, 원본SHA, schema와10source roster는 유지한다.
+`HeldLibrary::verify`의 전체 파일 크기 Vec 복사도 동일 streaming 검증으로 바꿨다.
+
+synthetic 큰 입력/offset/EOF/동일 크기 변조·truncate/동일 bytes 교체·symlink 거부5개를
+작성했다. 다음 Actions는 cached-code 기존8+새5=13, ISA기존5, Clippy `--lib`와 실제 catalog
+consumer compile을 확인한다. 로컬은 repository edition2021 rustfmt·diff만 성공했다.
+실제72MB 원본의 새 issuer 통과와 ISA/수치·전체 모델 수용은 아직 미실행이다. current source/ELF
+binding은 새 소스로 발급해야 하며 옛 receipt의 current 자격을 자동 상속하지 않는다.
