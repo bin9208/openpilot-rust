@@ -944,7 +944,8 @@ mod tests {
     fn streamed_original_model_exceeds_source_limit_without_moving_fd_offset() {
         use std::io::{Seek, SeekFrom, Write};
         let directory = tempfile::tempdir().unwrap();
-        let path = directory.path().join("original-model.pkl");
+        let root = directory.path().canonicalize().unwrap();
+        let path = root.join("original-model.pkl");
         let mut file = File::create(&path).unwrap();
         let mut expected = Sha256::new();
         // 513 distinct 64 KiB chunks exceed the source limit; the final write
@@ -970,15 +971,16 @@ mod tests {
     #[test]
     fn streamed_original_model_rejects_cap_overflow_and_symlink() {
         let directory = tempfile::tempdir().unwrap();
-        let path = directory.path().join("oversized-model.pkl");
+        let root = directory.path().canonicalize().unwrap();
+        let path = root.join("oversized-model.pkl");
         File::create(&path)
             .unwrap()
             .set_len(MAX_ORIGINAL_MODEL_BYTES + 1)
             .unwrap();
         assert!(hold_original_model(&path).is_err());
-        let target = directory.path().join("model.pkl");
+        let target = root.join("model.pkl");
         std::fs::write(&target, b"inert model").unwrap();
-        let alias = directory.path().join("alias.pkl");
+        let alias = root.join("alias.pkl");
         std::os::unix::fs::symlink(&target, &alias).unwrap();
         assert!(hold_original_model(&alias).is_err());
     }
@@ -987,7 +989,8 @@ mod tests {
     fn streamed_digest_requires_exact_length_and_eof() {
         use std::io::{Seek, SeekFrom};
         let directory = tempfile::tempdir().unwrap();
-        let path = directory.path().join("data");
+        let root = directory.path().canonicalize().unwrap();
+        let path = root.join("data");
         let mut data = vec![0x3c; 65539];
         data[0] = 0x81;
         data[65536] = 0x62;
@@ -1008,8 +1011,9 @@ mod tests {
     fn streamed_guard_rejects_same_size_mutation_and_truncation() {
         use std::os::unix::fs::FileExt;
         let directory = tempfile::tempdir().unwrap();
+        let root = directory.path().canonicalize().unwrap();
         for truncate in [false, true] {
-            let path = directory.path().join(format!("model-{truncate}"));
+            let path = root.join(format!("model-{truncate}"));
             std::fs::write(&path, b"original model bytes").unwrap();
             let mut held = hold_original_model(&path).unwrap();
             let file = OpenOptions::new().write(true).open(&path).unwrap();
@@ -1032,11 +1036,12 @@ mod tests {
     #[test]
     fn streamed_guard_rejects_replacement_even_with_identical_bytes() {
         let directory = tempfile::tempdir().unwrap();
+        let root = directory.path().canonicalize().unwrap();
         for symlink in [false, true] {
-            let path = directory.path().join(format!("model-{symlink}"));
+            let path = root.join(format!("model-{symlink}"));
             std::fs::write(&path, b"identical model bytes").unwrap();
             let held = hold_original_model(&path).unwrap();
-            let retained = directory.path().join(format!("retained-{symlink}"));
+            let retained = root.join(format!("retained-{symlink}"));
             std::fs::rename(&path, &retained).unwrap();
             if symlink {
                 std::os::unix::fs::symlink(&retained, &path).unwrap();

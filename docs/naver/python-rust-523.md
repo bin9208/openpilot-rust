@@ -640,3 +640,16 @@ argv/env/credential 내용은 수집하지 않고 파일 삭제·SDK 실행·빌
 현재·예정 caller 및 proof/provider 의존성이 없는 정확한 캐시만 별도 정리 후보로 판단한다.
 controls의 원본109요청은 재캡처 없이 재사용하되8GiB build/추가512MiB 및 proof 성장 검사를
 완화하지 않는다. 로컬은 이 새 reader와 workflow의 문법·diff만 확인했고 실제 관측은 미실행이다.
+
+### bc8e26 자원 조사 중단과 범위 조정
+
+[40099354066/job120888474922](https://github.com/bin9208/openpilot-rust/actions/runs/40099354066/job/120888474922)는
+기존 기본 조사 뒤 새 전체 metadata 사전 순회의65,000개 상한에서 중단됐다. 새 root별 전체
+inventory·process 참조 수용은 성립하지 않았고 실제 삭제는0이다. source 동작 실패나 공간 수용으로
+해석하지 않는다. artifact12562631130은 기본 관측12개만 보존한다.
+
+다음 조사는 회수 후보인 정확한4policy SDK와 shared target/현재 SDK의6root로 좁혔다.
+1V9i3J·4o8uWv·pMuJhG·W1gAdy의 다른4SDK는 uninspected protected path로 기록하고 삭제에서
+제외한다.65,000항목/32MiB metadata 상한은 올리지 않는다. root별 사전 순회 event와 상한 초과
+경로를 남겨 실패 시에도 어느 경계에서 중단됐는지 확인한다. 실제 삭제 후보는 regular nlink1 및
+전 UID inode/path 참조 없음 등 새 최신 관측을 충족해야 하며 현재는 미수용이다.

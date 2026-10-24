@@ -5,6 +5,10 @@ name: Python Rust 523 committed bundle acceptance
     - codex/feat-523-python-rust
     paths:
     - .github/workflows/python-rust-523-bundle.yml
+    - rust/crates/dev-tools/tests/route_vault_bundle.rs
+    - rust/crates/dev-tools/tests/route_vault_bundle/frozen.rs
+    - rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/**
+    - tools/carrot_route_vault/build_bundle.py
 permissions:
   contents: read
   actions: read
@@ -32,8 +36,7 @@ jobs:
       shell: bash
       working-directory: ${{ github.workspace }}
       env:
-        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name
-          == github.repository }}
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       run: |
         test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
         test "$RUNNER_NAME" = bin-actions
@@ -41,12 +44,10 @@ jobs:
         test "$RUNNER_OS" = Linux
         test "$RUNNER_ARCH" = X64
     - name: Common owned Fast job temporary paths
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
     - name: Allocate private Fast source cache and target before checkout
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       working-directory: ${{ github.workspace }}
       run: |
         set -euo pipefail
@@ -83,11 +84,9 @@ jobs:
         set-safe-directory: false
         clean: false
         lfs: false
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     - name: Admit exact focused source HEAD and tracked index
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       working-directory: ${{ env.DIAG_SOURCE }}
       run: |
         set -euo pipefail
@@ -100,17 +99,14 @@ jobs:
         git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
         tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
     - name: Expose provisioned Rust shims
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       uses: bin9208/openpilot-rust/.github/actions/rust-path@b2fc62472ce8183114d59dbeec4d1406df44e4c2
     - uses: actions/setup-python@v6
       with:
         python-version: 3.12.15
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     - name: Isolate original Python package installation
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       working-directory: ${{ env.DIAG_SOURCE }}
       run: |
         set -euo pipefail
@@ -140,8 +136,7 @@ jobs:
     - name: Prepare native bundle toolchain and original comparison providers
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       run: |
         set -euo pipefail
         available=$(df -PB1 "$DIAG_SOURCE" | awk 'NR == 2 {print $4}')
@@ -160,8 +155,9 @@ jobs:
         find "$CI_JOB_TEMP/venv" -type f -print0 | sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/oracle-venv-files.before.sha256"
         find "$CI_JOB_TEMP/venv" -type l -printf '%p\t%l\n' | sort > "$CI_JOB_TEMP/proof/oracle-venv-links.before.txt"
       id: toolchain
-    - name: Admit successful 121aa5 library and seventeen original contracts
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.toolchain.outcome == 'success') }}
+    - name: Admit unchanged library and twenty-three frozen original observations
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() &&
+        steps.toolchain.outcome == 'success') }}
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       env:
@@ -184,7 +180,7 @@ jobs:
         unzip -p "$prior" rust-tools.sha256 > "$CI_JOB_TEMP/proof/prior-rust-tools.sha256"
         sha256sum --check "$CI_JOB_TEMP/proof/prior-rust-tools.sha256"
         git fetch --no-tags --depth=1 origin 121aa5b86ddf427697a8cabb25d2ed337d80f429
-        git diff --exit-code 121aa5b86ddf427697a8cabb25d2ed337d80f429 HEAD -- rust/Cargo.toml rust/Cargo.lock rust/rust-toolchain.toml rust/crates/dev-tools/src/lib.rs rust/crates/dev-tools/src/route_vault_bundle.rs rust/crates/dev-tools/src/bin/build_route_vault_bundle.rs rust/crates/dev-tools/tests/route_vault_bundle.rs rust/crates/dev-tools/src/argparse_scan.rs rust/crates/dev-tools/src/qa_process.rs rust/crates/dev-tools/src/python_fs.rs rust/tools/run-developer-tool tools/carrot_route_vault/build_bundle.py
+        git diff --exit-code 121aa5b86ddf427697a8cabb25d2ed337d80f429 HEAD -- rust/Cargo.toml rust/Cargo.lock rust/rust-toolchain.toml rust/crates/dev-tools/src/lib.rs rust/crates/dev-tools/src/route_vault_bundle.rs rust/crates/dev-tools/src/bin/build_route_vault_bundle.rs rust/crates/dev-tools/src/argparse_scan.rs rust/crates/dev-tools/src/qa_process.rs rust/crates/dev-tools/src/python_fs.rs rust/tools/run-developer-tool
         printf '%s  %s\n' a1db3f1726cba01dfcb50efd8d13536de6ff9c47d5244346019010bf7be243a8 rust/crates/dev-tools/Cargo.toml | sha256sum --check -
         "$BUNDLE_ORACLE_PYTHON" -I -B -S - <<'CARGO'
         import pathlib, subprocess, tomllib
@@ -192,23 +188,81 @@ jobs:
         old=tomllib.loads(subprocess.check_output(['/usr/bin/git','show','121aa5b86ddf427697a8cabb25d2ed337d80f429:'+path],text=True))
         new=tomllib.loads(pathlib.Path(path).read_text())
         entry={'name':'prepare-changed-files-context','path':'src/bin/prepare_changed_files_context.rs','required-features':['changed-files-native']}
-        assert new['bin'].count(entry)==1, 'Only the reviewed metadata collector registration is admitted'
+        assert new['bin'].count(entry)==1
         new['bin'].remove(entry)
         assert new==old, 'Bundle feature/bin/test/dependency semantics changed'
         CARGO
         "$BUNDLE_ORACLE_PYTHON" -I -B -S - "$prior" <<'CAPTURES'
-        import collections,json,sys,zipfile
+        import collections,hashlib,json,pathlib,sys,zipfile
+        base=pathlib.Path('rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original')
+        manifest=json.loads((base/'manifest.json').read_bytes())
         with zipfile.ZipFile(sys.argv[1]) as archive:
-         rows=[json.loads(archive.read(name)) for name in archive.namelist() if name.startswith('bundle-original/') and name.endswith('.json')]
-         assert len(rows)==23
-         assert sorted(collections.Counter(row['test_name'] for row in rows).values())==[1,3,7,12]
-         for row in rows:
+         names=archive.namelist(); assert len(names)==len(set(names))
+         rows={hashlib.sha256(archive.read(name)).hexdigest():archive.read(name) for name in names if name.startswith('bundle-original/') and name.endswith('.json')}
+         assert len(rows)==23 and len(manifest['rows'])==23
+         assert sorted(collections.Counter(json.loads(data)['test_name'] for data in rows.values()).values())==[1,3,7,12]
+         consumed=set()
+         for entry in manifest['rows']:
+          name=entry['file']; assert pathlib.PurePosixPath(name).parts==(name,), 'Fixture filename must be one normal component'
+          data=(base/name).read_bytes(); sha=hashlib.sha256(data).hexdigest()
+          assert sha==entry['sha256'] and rows[sha]==data and sha not in consumed
+          consumed.add(sha)
+          row=json.loads(data)
           assert row['source_commit']=='121aa5b86ddf427697a8cabb25d2ed337d80f429'
           assert row['script_sha256_before']==row['script_sha256_after']=='05551fc470864a4c70758a66b1a156c2b6d9e95e8deeb1f2a74ac13fb5259aa9'
+         assert consumed==set(rows)
+        print('Unmodified 23 original captures bound to current frozen fixtures')
         CAPTURES
-        printf '%s\n' 'Reused exact unchanged library1/integration17 and actual23 captures. Fresh: current Clippy after Cargo/caller-source binding and public helper trace controls/actual exec/context comparison. Prior whole job failed only SIGUSR1 metadata parsing.' > "$CI_JOB_TEMP/proof/reused-contracts.txt"
+        prior_context="$CI_JOB_TEMP/proof/prior-context-d2c18.zip"
+        gh api repos/bin9208/openpilot-rust/actions/artifacts/12561452899/zip > "$prior_context"
+        printf '8903a728e2fe37bd807dabdb471deb8273893b3b8b4573d9e626b8322ad6fd2d  %s\n' "$prior_context" | sha256sum --check -
+        unzip -t "$prior_context" > "$CI_JOB_TEMP/proof/prior-context-crc.txt"
+        test "$(unzip -p "$prior_context" SOURCE_COMMIT)" = d2c18c37eb502f3d8e5a6d0314c709804df92f38
+        for item in source index; do
+          if test "$item" = source; then suffix=sha256; else suffix=bin; fi
+          unzip -p "$prior_context" "$item-before.$suffix" > "$CI_JOB_TEMP/proof/context-$item-before.$suffix"
+          unzip -p "$prior_context" "$item-after.$suffix" > "$CI_JOB_TEMP/proof/context-$item-after.$suffix"
+          cmp "$CI_JOB_TEMP/proof/context-$item-before.$suffix" "$CI_JOB_TEMP/proof/context-$item-after.$suffix"
+        done
+        git fetch --no-tags --depth=1 origin d2c18c37eb502f3d8e5a6d0314c709804df92f38
+        # Exact thirteen source roots plus seven fixed files: the bundle producer is outside this selection.
+        git diff --exit-code d2c18c37eb502f3d8e5a6d0314c709804df92f38 HEAD -- openpilot/common/filter_simple.py openpilot/selfdrive/carrot/radar/lateral.py openpilot/selfdrive/carrot/radar/tools/radar_group3_replay.py openpilot/selfdrive/carrot/radar_motion openpilot/selfdrive/carrot/radar/tools/radar_validation_replay.py openpilot/selfdrive/carrot/radar/tools/radar_web_export.py openpilot/selfdrive/carrot/cluster openpilot/selfdrive/controls/lib/cutin_alert.py openpilot/selfdrive/controls/lib/cutin_helpers.py openpilot/cereal opendbc_repo/opendbc/__init__.py opendbc_repo/opendbc/car opendbc_repo/opendbc/dbc tools/carrot_route_vault/server.py tools/carrot_route_vault/viewer.py tools/carrot_route_vault/radar.py tools/carrot_route_vault/radar_view.js tools/carrot_route_vault/requirements.txt tools/carrot_route_vault/Dockerfile.vault tools/carrot_route_vault/deploy_probe.py
+        test ! -e tools/carrot_route_vault/build_bundle.py && test ! -L tools/carrot_route_vault/build_bundle.py
+        printf '%s\n' 'Reused unchanged library1 and the original23 raw observations; fresh native18 preserve all seventeen test bodies/assertions plus absence controls. d2 actual411 raw outputs are the unchanged selected-blob reference; SOURCE_COMMIT is verified separately for the new exact source. No original Python producer execution.' > "$CI_JOB_TEMP/proof/reused-contracts.txt"
+    - name: Verify all seventeen preserved contracts and source absence without the original producer
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() &&
+        steps.toolchain.outcome == 'success') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        export EXPECTED_SOURCE="$GITHUB_SHA"
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features route-vault-bundle-native --test route_vault_bundle -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/bundle-frozen.log"
+        grep -F 'test result: ok. 18 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/bundle-frozen.log"
+        "$BUNDLE_ORACLE_PYTHON" -I -B -S - <<'CONSUMPTION'
+        import hashlib,json,os,pathlib
+        proof=pathlib.Path(os.environ['CI_JOB_TEMP'])/'proof'
+        base=pathlib.Path('rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original')
+        manifest=json.loads((base/'manifest.json').read_bytes())
+        expected={entry['sha256']:json.loads((base/entry['file']).read_bytes())['test_name'] for entry in manifest['rows']}
+        log=(proof/'bundle-frozen.log').read_bytes();assert len(log)<=8*1024**2
+        rows=[]
+        for line in log.decode('utf-8').splitlines():
+         marker='BUNDLE_FROZEN_ROW '
+         if marker in line:
+          # libtest의 progress 접두사가 붙어도 JSON 전체를 그대로 읽는다.
+          row=json.loads(line.split(marker,1)[1]);assert set(row)=={'test_name','raw_sha256','historical_source','fresh_original_executions'}
+          assert row['historical_source']=='121aa5b86ddf427697a8cabb25d2ed337d80f429' and row['fresh_original_executions']==0
+          assert expected[row['raw_sha256']]==row['test_name'];rows.append(row)
+        assert len(rows)==len({row['raw_sha256'] for row in rows})==23
+        assert {row['raw_sha256'] for row in rows}==set(expected)
+        (proof/'frozen-consumption.json').write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],'native_tests':18,'unique_original_rows':23,'log_sha256':hashlib.sha256(log).hexdigest(),'fresh_original_executions':0,'rows':rows},indent=2)+'\n')
+        CONSUMPTION
+        sha256sum rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/*.json > "$CI_JOB_TEMP/proof/frozen-fixtures.sha256"
+        test ! -e tools/carrot_route_vault/build_bundle.py && test ! -L tools/carrot_route_vault/build_bundle.py
     - name: Validate strict bundle Clippy after caller and capture changes
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.toolchain.outcome == 'success') }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() &&
+        steps.toolchain.outcome == 'success') }}
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       run: |
@@ -216,8 +270,9 @@ jobs:
         cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features route-vault-bundle-native --lib --bin build-route-vault-bundle --test route_vault_bundle -- -D warnings 2>&1 | tee "$CI_JOB_TEMP/proof/bundle-clippy.log"
         df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after-clippy.txt"
         du -sx --block-size=1 "$CARGO_HOME" "$CARGO_TARGET_DIR" "$CI_JOB_TEMP/venv" > "$CI_JOB_TEMP/proof/allocated-after-clippy.tsv"
-    - name: Compare original CLI and public native bootstrap committed contexts
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.toolchain.outcome == 'success') }}
+    - name: Compare public native bootstrap with accepted unchanged committed output data
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() &&
+        steps.toolchain.outcome == 'success') }}
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       run: |
@@ -257,7 +312,7 @@ jobs:
         GROWTH
         providers="$CI_JOB_TEMP/bundle-programs"
         mkdir -m 700 "$providers"
-        printf '%s  %s\n' 05551fc470864a4c70758a66b1a156c2b6d9e95e8deeb1f2a74ac13fb5259aa9 tools/carrot_route_vault/build_bundle.py | sha256sum --check -
+        test ! -e tools/carrot_route_vault/build_bundle.py && test ! -L tools/carrot_route_vault/build_bundle.py
         printf '%s  %s\n' 2066721af9f04888d00cc8572c5374ed142bf6d5d658cbf12b97a02c5452ca39 "$DIAG_SOURCE/rust/tools/run-developer-tool" | tee "$proof/public-entry.sha256" | sha256sum --check -
         # Only explicit native build/Git providers are available to the public helper.
         # These links stay outside the artifact; their target hashes remain in proof.
@@ -271,8 +326,7 @@ jobs:
           fi
         done
         for required in bash env dirname df awk sed rustup rustc cargo git cc ar; do test -x "$providers/$required"; done
-        # Both lanes read this exact committed checkout. Python files are inert output data.
-        (cd "$proof/empty-cwd" && PATH="$providers" /usr/bin/timeout --kill-after=5s 180s "$BUNDLE_ORACLE_PYTHON" -I -B -S -X "pycache_prefix=$proof/unused-original-pycache" "$DIAG_SOURCE/tools/carrot_route_vault/build_bundle.py" "$proof/original" --ref "$GITHUB_SHA") > "$proof/original.stdout" 2> "$proof/original.stderr"
+        # The current native producer reads the exact checkout. Python output files remain inert data.
         (cd "$proof/empty-cwd" && /usr/bin/env -u BASH_ENV PATH="$providers" /usr/bin/timeout --kill-after=5s 300s /usr/bin/strace -f -qq -xx -s 65535 -e trace=execve,execveat -o "$proof/native.exec" "$DIAG_SOURCE/rust/tools/run-developer-tool" build-route-vault-bundle "$proof/native" --ref "$GITHUB_SHA") > "$proof/native.stdout" 2> "$proof/native-bootstrap.stderr"
         host=$(sed -n 's/^host: //p' "$CI_JOB_TEMP/proof/rustc.txt")
         test "$host" = x86_64-unknown-linux-gnu
@@ -291,12 +345,27 @@ jobs:
           assert stat.S_ISDIR(mode) or stat.S_ISREG(mode), ('unexpected output kind',p)
           rows[str(p.relative_to(root))]={'directory':stat.S_ISDIR(mode)} if stat.S_ISDIR(mode) else {'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()}
          return rows
-        old=tree(proof/'original');new=tree(proof/'native')
-        assert old and old==new, 'Original/native context roster, kinds or file bytes differ'
-        assert (proof/'original/SOURCE_COMMIT').read_text()==os.environ['GITHUB_SHA']+'\n'
-        for lane in ['original','native']:
-         assert (proof/f'{lane}.stdout').read_text()==f"Built {proof/lane} from {os.environ['GITHUB_SHA']}\n"
-        assert (proof/'original.stderr').read_bytes()==b''
+        import zipfile
+        with zipfile.ZipFile(proof.parent/'prior-context-d2c18.zip') as archive:
+         names=archive.namelist()
+         assert len(names)==len(set(names))
+         captured={name[len('committed-contexts/original/'):]:archive.read(name) for name in names if name.startswith('committed-contexts/original/') and not name.endswith('/')}
+         assert len(captured)==411 and sum(map(len,captured.values()))==8621062
+         assert captured['SOURCE_COMMIT']==b'd2c18c37eb502f3d8e5a6d0314c709804df92f38\n'
+         prior=json.loads(archive.read('committed-contexts/comparison.json'))
+         assert prior['equal'] and prior['files']==411 and prior['source_commit']=='d2c18c37eb502f3d8e5a6d0314c709804df92f38'
+         # Raw prior output remains in its authenticated ZIP, without rewriting it.
+         old=json.loads(archive.read('committed-contexts/roster.json'))
+         prior_files={name:row for name,row in old.items() if not row.get('directory',False)}
+         assert set(prior_files)==set(captured)
+         for name,data in captured.items():assert prior_files[name]=={'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()}
+        new=tree(proof/'native')
+        assert set(old)==set(new), 'Frozen/current complete file and directory roster differs'
+        for name in old:
+         if name!='SOURCE_COMMIT':assert old[name]==new[name], ('Unchanged selected output differs',name)
+        assert (proof/'native/SOURCE_COMMIT').read_bytes()==(os.environ['GITHUB_SHA']+'\n').encode('ascii')
+        assert (proof/'native.stdout').read_text()==f"Built {proof/'native'} from {os.environ['GITHUB_SHA']}\n"
+        (proof/'historical-original-roster.json').write_text(json.dumps(old,indent=2)+'\n')
         # Native stderr is the public helper's retained Cargo/build output.
         binary=os.environ['BUNDLE_NATIVE_ELF']
         entry=os.fsencode(str(Path(os.environ['DIAG_SOURCE'])/'rust/tools/run-developer-tool'))
@@ -464,13 +533,14 @@ jobs:
         actual={'trace_sha256':hashlib.sha256(trace_bytes).hexdigest(),'strace_flags':'-f -qq -xx -s 65535 -e trace=execve,execveat','exec_attempts':len(calls),'failed_exec_attempts':sum(not call['success'] for call in calls),'received_sigusr1_si_tkill_records':len(signal_records),'received_sigusr1_si_tkill_metadata':signal_records,'successful_git_execs':sum(call['success'] and call['program'].rsplit(b'/',1)[-1]==b'git' for call in calls),'successful_final_elf_execs':1,'forwarded_argv_hex':[arg.hex() for arg in expected_argv],'observed_python_exec_attempts':0,'success_executable_evidence':executables,'python_absence_scope':'완전 판독한 execve target의 basename/suffix를 실패 시도까지 검사한다. 성공 파일은 pin 고정 Bash entry 하나 외에는 ELF magic/hash를 확인한다. 이름을 바꾼 interpreter·ELF 내부 동작 및 무제한 전체 Python 부재는 수용하지 않는다.','whole_python_absence_accepted':False,'inventory_credit':False,'controls':'trace-controls.json'}
         (proof/'trace-audit.json').write_text(json.dumps(actual,indent=2)+'\n')
         (proof/'roster.json').write_text(json.dumps(old,indent=2)+'\n')
-        (proof/'comparison.json').write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],'equal':True,'files':sum(not r.get('directory',False) for r in old.values()),'bytes':sum(r.get('bytes',0) for r in old.values()),'observed_python_exec_attempts':actual['observed_python_exec_attempts'],'native_elf_sha256':hashlib.sha256(Path(binary).read_bytes()).hexdigest(),'entrypoint':'rust/tools/run-developer-tool','forwarded_argv_verified':True,'trace_audit':'trace-audit.json','whole_python_absence_accepted':False,'inventory_credit':False,'bootstrap_stderr':'native-bootstrap.stderr','original_retired':False,'image_published':False,'nas_deployed':False},indent=2)+'\n')
+        (proof/'comparison.json').write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],'equal':True,'files':sum(not r.get('directory',False) for r in old.values()),'bytes':sum(r.get('bytes',0) for r in old.values()),'observed_python_exec_attempts':actual['observed_python_exec_attempts'],'native_elf_sha256':hashlib.sha256(Path(binary).read_bytes()).hexdigest(),'entrypoint':'rust/tools/run-developer-tool','forwarded_argv_verified':True,'trace_audit':'trace-audit.json','whole_python_absence_accepted':False,'inventory_credit':False,'bootstrap_stderr':'native-bootstrap.stderr','original_retired':True,'unchanged_selected_outputs':410,'source_commit_metadata_verified_separately':True,'original_python_producer_executions':0,'image_published':False,'nas_deployed':False},indent=2)+'\n')
         CONTEXTS
         sha256sum --check "$proof/native-elf.sha256"
         sha256sum --check "$proof/native-programs.sha256"
         sha256sum --check "$proof/public-entry.sha256"
     - name: Seal Fast source and index after all maintained checks
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DIAG_SOURCE != '') }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DIAG_SOURCE
+        != '') }}
       working-directory: ${{ env.DIAG_SOURCE }}
       run: |
         set -euo pipefail
@@ -503,11 +573,13 @@ jobs:
         fi
 
         if test -f "$CI_JOB_TEMP/proof/oracle-environment.sha256"; then sha256sum --check "$CI_JOB_TEMP/proof/oracle-environment.sha256"; fi
+
+        test ! -e tools/carrot_route_vault/build_bundle.py && test ! -L tools/carrot_route_vault/build_bundle.py
       id: source_final
     - name: Retain Fast job ownership evidence
       id: fast_evidence
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-        && (always() && env.CI_JOB_TEMP != '') }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP
+        != '') }}
       uses: actions/upload-artifact@v6
       with:
         name: diagnostic-fast-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
@@ -517,7 +589,9 @@ jobs:
         retention-days: 14
     - name: Clean only uploaded private Fast source
       id: fast_source_cleanup
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success') }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome
+        == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER
+        != '' && steps.source_final.outcome == 'success') }}
       working-directory: ${{ github.workspace }}
       env:
         UPLOAD_ID: ${{ steps.fast_evidence.outputs.artifact-id }}
@@ -540,10 +614,9 @@ jobs:
         test "$(realpath -e -- "$p/source")" = "$p/source"
         rm -rf --one-file-system -- "$p"
     - name: Clean common owned Fast job temporary paths
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-        && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != ''
-        && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome == 'success')
-        }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome
+        == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome
+        == 'success') }}
       uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
       with:
         cleanup: 'true'

@@ -74,10 +74,6 @@ jobs:
          ('old-policy',Path('/tmp/openpilot-ci.s9WqUE/rustup-home')),
          ('old-policy',Path('/tmp/openpilot-ci.Rt5Jlt/rustup-home')),
          ('old-policy',Path('/tmp/openpilot-ci.eQd1Pi/rustup-home')),
-         ('old-logger',Path('/tmp/openpilot-ci.1V9i3J/rustup-home')),
-         ('protected-original-compiler',Path('/tmp/openpilot-ci.4o8uWv/rustup-home')),
-         ('old-policy',Path('/tmp/openpilot-ci.pMuJhG/rustup-home')),
-         ('old-publisher',Path('/tmp/openpilot-ci.W1gAdy/296-model-publisher-39892674176-1-YoMXP1eG/rustup')),
          ('protected-current-sdk',Path('/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu')),
         ]
         def identity(s):return [s.st_dev,s.st_ino,s.st_mode,s.st_uid,s.st_gid,s.st_size,s.st_blocks,s.st_nlink,s.st_mtime_ns,s.st_ctime_ns]
@@ -105,13 +101,14 @@ jobs:
          result={};count=0
          for _,root in roots:
           rows={}
+          with (proof/'scan-events.jsonl').open('a') as events:events.write(json.dumps({'phase':'metadata-scan','root':str(root),'entries_before':count})+'\n')
           if not os.path.lexists(root):result[str(root)]=rows;continue
           assert root.resolve(strict=True)==root and root.is_dir() and not root.is_symlink()
           rows['.']=identity(root.lstat())
           for base,dirs,files in os.walk(root,followlinks=False,onerror=walk_error):
            assert len(Path(base).relative_to(root).parts)<=64
            for name in dirs+files:
-            path=Path(base)/name;rows[str(path.relative_to(root))]=identity(path.lstat());count+=1;assert count<=65000
+            path=Path(base)/name;rows[str(path.relative_to(root))]=identity(path.lstat());count+=1;assert count<=65000, f'65000-entry bound exceeded at {root}'
            dirs[:]=[name for name in dirs if not (Path(base)/name).is_symlink()]
           result[str(root)]=rows
          return result
@@ -122,7 +119,7 @@ jobs:
           values=inode_roots.setdefault(f'{item[0]}:{item[1]}',[])
           if root not in values:values.append(root)
         processes('before')
-        result={'schema':'openpilot.runner-cache-readonly.v1','source_commit':os.environ['GITHUB_SHA'],'roots':[],'physical_deletions':0}
+        result={'schema':'openpilot.runner-cache-readonly.v1','source_commit':os.environ['GITHUB_SHA'],'roots':[],'physical_deletions':0,'uninspected_protected_paths':['/tmp/openpilot-ci.1V9i3J/rustup-home','/tmp/openpilot-ci.4o8uWv/rustup-home','/tmp/openpilot-ci.pMuJhG/rustup-home','/tmp/openpilot-ci.W1gAdy/296-model-publisher-39892674176-1-YoMXP1eG/rustup']}
         count=0
         for role,root in roots:
          entry={'role':role,'path':str(root),'entries':{}}
@@ -137,7 +134,7 @@ jobs:
          for base,dirs,files in os.walk(root,followlinks=False,onerror=walk_error):
           assert len(Path(base).relative_to(root).parts)<=64
           for name in dirs+files:
-           path=Path(base)/name;entry['entries'][str(path.relative_to(root))]=item=row(path);count+=1;assert count<=65000
+           path=Path(base)/name;entry['entries'][str(path.relative_to(root))]=item=row(path);count+=1;assert count<=65000, f'65000-entry bound exceeded at {root}'
            info=item['identity'];unique[(info[0],info[1])]=info[6]*512
           dirs[:]=[name for name in dirs if not (Path(base)/name).is_symlink()]
          assert identity(root.lstat())==initial,('root changed',str(root))

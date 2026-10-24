@@ -124,3 +124,26 @@ source/index/venv files·links 전후4쌍을 부모가 감사했다. 완전 판�
 원본 `build_bundle.py`는 아직 남아 있다. 다음은 기존17본문/assertion과 raw23을 그대로 고정한
 원본 없는 replay·재출현 거부 및 삭제 후 실제 caller 연결이다. 현재 inventory credit은0이며
 Docker/NAS workflow 활성화·이미지 발행·배포는 수행하지 않았다.
+
+### frozen 원본 부재 후보
+
+실제121aa5 캡처23개184,435B를 원문 그대로 `tests/fixtures/route-vault-bundle-original/`에
+고정했다. manifest SHA는 `76240cd14a66a55b7ef91459b49919cdbd582d19161437221a6f65f7d22a362b`다.
+기존17개 test 본문/assertion은 부모도 byte 동일성을 확인했다. 새 helper는 ROOT/DEST/CWD의
+검토된 byte span만 바꾸며 argv/ref/두 GitHEAD/destination 전후 kind·mode·rawdata를 대조한다.
+원본 source를 복사/실행하거나 expected를 새 candidate 출력으로 만들지 않는다.
+
+실제 source/data/manifest와 컴파일된 test2 source, 현재 test ELF 및 compile-bound integration
+CLI ELF를 NOFOLLOW 경로/FD·identity·전체SHA로 정상 assertion 뒤까지 보존한다. 원본의 file/
+dir/broken symlink 재출현, 잘못된 span·변조·탈출 및 held파일 교체를 새 negative1에서 거부한다.
+helper는 `tests/route_vault_bundle/frozen.rs`에 두어 독립 integration target 자동 발견을 피했다.
+
+현재 정확한 원본 `tools/carrot_route_vault/build_bundle.py` 하나를 삭제한 후보이며 credit은0이다.
+다음 CI는 native18/고유raw23/Clippy와 삭제 후 실제 public helper를 실행한다. d2의 원본411개 raw
+출력 및 전체 directory roster를 읽어13source roots/고정7개 Gitblob 불변을 먼저 요구하고,
+410파일은 전체 byte/hash를, `SOURCE_COMMIT`1파일은 새 정확 HEAD를 별도로 검증한다.
+과거 원문은 고치지 않는다. 기존 strict exec parser/negative controls 및 growth·source/provider
+전후 봉인은 보존한다. 진단 metadata의 Python 의존성은 execution-edge pending으로 계속 남는다.
+
+새18기능/Clippy/실제삭제caller는 미실행이다. 로컬은 edition2021 rustfmt/YAML·Bash·embedded
+Python 문법/diff 및 원문23·기존17 동일성만 확인했다. Docker/NAS 발행·활성화는 수행하지 않았다.
