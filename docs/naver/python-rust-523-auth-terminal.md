@@ -104,3 +104,48 @@ read-ahead·newline 동등성은 완료되지 않았다. 이 한계를 성공으
 
 **원본 Python 파일 삭제·호출부 활성화·전체 전환 완료 선언은 보류한다.**
 실제 credential 읽기, 브라우저 로그인, SSH, 기기 접근은 수행하지 않았다.
+
+## 2026-10-24 후속 배치: 실제 callback socket 단위 후보
+
+부모가 전달한 상태는 초기 CI 용량 실패 뒤 캐시 회수로 free 9.44 GB를 확보했고,
+`d0f53d15a`의 focused [40079353750](https://github.com/bin9208/openpilot-rust/actions/runs/40079353750)가
+queued라는 것이다. 이는 전달받은 당시 상태이며 이번 추가 소스의 실행 증거는 아니다.
+기존 CLOEXEC 보완과 HTTP redirect/Requests 대조는 부모 소관으로 그대로 유지한다.
+
+이번 직접 수정은 `rust/crates/dev-tools/src/developer_ssh/login/native.rs`의
+새 `#[cfg(test)] mod tests`와 이 기록뿐이다. production 함수·timeout·호출부,
+공유 Cargo·workflow는 변경하지 않았다. 다음 **3개 단위 테스트는 UNRUN**이다.
+
+| 테스트 | 실제 socket에서 확인하도록 작성한 범위 |
+| --- | --- |
+| `socket_routes_return_status_and_preserve_first_auth_result` | private ephemeral loopback의 실제 HTTP 요청/응답으로 무관 경로 204와 빈 결과, `/auth` 및 `/auth/` 각각의 정상 200·응답 본문·code decoding, 뒤의 error callback에도 최초 결과 유지 |
+| `incomplete_preconnection_does_not_block_second_callback` | browser 없는 `NativeLogin`에 private listener만 주입하고 `poll_callback`으로 정확히 두 연결만 수락. 첫 요청의 미완성 header를 유지한 채 두 번째 정상 응답을 받은 다음 첫 요청을 완성하고 그 응답까지 확인. 첫 연결이 timeout된 뒤 두 번째만 성공하는 직렬 처리 회귀는 통과하지 못하도록 구성 |
+| `closed_client_does_not_discard_received_callback` | 완전한 요청을 전송한 client를 shutdown/drop한 뒤 직접 `handle_callback` 호출. 응답 write 성공/실패와 무관하게 수신한 결과를 유지하고 새 callback도 덮어쓰지 못하도록 확인 |
+
+앞뒤 경로·닫힌 client 테스트는 handler를 직접 호출하므로 추가 thread/process가
+없다. preconnection 테스트는 production `poll_callback`이 생성하는 최대 두
+handler만 사용하며 기존 accepted stream의 read/write 1초 timeout을 유지한다.
+성공 경로에서 두 응답을 EOF까지 읽어 양쪽 worker의 연결 종료를 확인한다.
+client connect/read/write는 각각 2초로 제한하며 무제한 재시도 루프는 없다.
+
+닫힌 client 테스트는 커널마다 마지막 write가 성공하거나 연결 종료 오류가
+발생할 수 있다는 조건을 허용한다. 강제 RST나 특정 write 오류를 입증했다고
+주장하지 않는다. 보존 대상은 메모리의 수신 callback이며 실제 token 파일 저장이나
+실계정 인증의 증거로 확장하지 않는다.
+
+실계정·browser·API·credential·현재 stdin을 접근하지 않으며 `start`, `exchange`,
+`verify`, `auth_json_cli`를 호출하지 않는다. production 보완 필요를 입증하는
+실행 결과는 아직 없다. 원본 Python과 callers는 유지한다.
+
+로컬 확인은 Rust 2021 `rustfmt --check`, `git diff --check` 및 변경 diff 검토에
+한정했다. `#[cfg(test)]` 앞 production prefix의 SHA256
+`9555b7d2ac46f94815fc697d28516e75abe77b5abc85fb37ffe0863ed46946e4`가
+추가 전후 동일한지 별도로 확인했다. 빌드·기능·Clippy·socket 테스트 실행은
+하지 않았으며 다음 부모 bin-actions 배치의 검증을 기다린다.
+
+공유 등록이나 feature 추가는 필요 없다. 부모 Actions에서의 단위 필터 예시는
+다음과 같으며 **로컬 실행 명령이 아니다**.
+
+```sh
+cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features developer-ssh-native --lib developer_ssh::login::native::tests::
+```

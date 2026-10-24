@@ -228,3 +228,140 @@ pub fn auth_json_cli() -> Result<i32> {
     // Source --json exits zero for both success/error status; parse errors exit two.
     Ok(0)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::net::Shutdown;
+
+    // Every client and accepted stream belongs to a fresh private loopback listener.
+    // No browser/start/API/token/config/stdin entrypoint is called by these tests.
+    fn listener() -> TcpListener {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        listener.set_nonblocking(true).unwrap();
+        listener
+    }
+
+    fn client(listener: &TcpListener) -> TcpStream {
+        let stream =
+            TcpStream::connect_timeout(&listener.local_addr().unwrap(), Duration::from_secs(2))
+                .unwrap();
+        stream
+            .set_read_timeout(Some(Duration::from_secs(2)))
+            .unwrap();
+        stream
+            .set_write_timeout(Some(Duration::from_secs(2)))
+            .unwrap();
+        stream
+    }
+
+    fn response(client: &mut TcpStream) -> String {
+        let mut bytes = Vec::new();
+        client.read_to_end(&mut bytes).unwrap();
+        String::from_utf8(bytes).unwrap()
+    }
+
+    fn request(listener: &TcpListener, callback: &Arc<Mutex<Callback>>, target: &str) -> String {
+        let mut client = client(listener);
+        write!(client, "GET {target} HTTP/1.1\r\nHost: localhost\r\n\r\n").unwrap();
+        // connect_timeout completed the handshake; the one private connection is queued.
+        let (stream, _) = listener.accept().unwrap();
+        handle_callback(stream, Arc::clone(callback)).unwrap();
+        response(&mut client)
+    }
+
+    fn saved(callback: &Arc<Mutex<Callback>>, code: &str, provider: &str) {
+        let callback = callback.lock().unwrap();
+        assert_eq!(callback.query.len(), 2);
+        assert_eq!(callback.query["code"], [code]);
+        assert_eq!(callback.query["provider"], [provider]);
+    }
+
+    #[test]
+    fn socket_routes_return_status_and_preserve_first_auth_result() {
+        let listener = listener();
+        // Each path must independently admit a first result, then resist replacement.
+        for first_path in ["/auth", "/auth/"] {
+            let callback = Arc::new(Mutex::new(Callback::default()));
+            let noise = request(&listener, &callback, "/favicon.ico?error=ignored");
+            assert!(noise.starts_with("HTTP/1.0 204 No Content\r\n"));
+            assert!(noise.ends_with("\r\n\r\n"));
+            assert!(callback.lock().unwrap().is_empty());
+
+            let accepted = request(
+                &listener,
+                &callback,
+                &format!("{first_path}?code=first%2Bcode&provider=g"),
+            );
+            assert!(accepted.starts_with("HTTP/1.0 200 OK\r\n"));
+            assert!(accepted.ends_with(
+                "Sign-in received. You can close this tab and return to Cabana or your terminal."
+            ));
+            saved(&callback, "first+code", "g");
+
+            let later = request(&listener, &callback, "/auth/?error=declined");
+            assert!(later.starts_with("HTTP/1.0 200 OK\r\n"));
+            saved(&callback, "first+code", "g");
+        }
+    }
+
+    #[test]
+    fn incomplete_preconnection_does_not_block_second_callback() {
+        let listener = listener();
+        let mut incomplete = client(&listener);
+        incomplete
+            .write_all(b"GET /auth?code=late&provider=h HTTP/1.1\r\nHost: localhost")
+            .unwrap();
+        let mut login = NativeLogin {
+            listener: Some(listener),
+            callback: Arc::new(Mutex::new(Callback::default())),
+            browser: None,
+            clock: Instant::now(),
+            api_host: String::new(),
+        };
+        // Only poll is used: at most two production handler threads, each retaining
+        // its existing one-second accepted-stream timeout. No test thread/process.
+        assert!(login
+            .poll_callback(Duration::from_millis(100))
+            .unwrap()
+            .is_empty());
+        let mut valid = client(login.listener.as_ref().unwrap());
+        valid
+            .write_all(b"GET /auth/?code=ready&provider=g HTTP/1.1\r\nHost: localhost\r\n\r\n")
+            .unwrap();
+        login.poll_callback(Duration::from_millis(100)).unwrap();
+        assert!(response(&mut valid).starts_with("HTTP/1.0 200 OK\r\n"));
+        saved(&login.callback, "ready", "g");
+
+        // Complete the first request only AFTER the second response. A synchronous
+        // poll/handler regression would time out/close it, so eventual success alone
+        // cannot make this test pass. Read both responses to EOF to finish both workers.
+        incomplete.write_all(b"\r\n\r\n").unwrap();
+        assert!(response(&mut incomplete).starts_with("HTTP/1.0 200 OK\r\n"));
+        saved(&login.callback, "ready", "g");
+        assert!(login.browser.is_none());
+    }
+
+    #[test]
+    fn closed_client_does_not_discard_received_callback() {
+        let listener = listener();
+        let callback = Arc::new(Mutex::new(Callback::default()));
+        let mut closed = client(&listener);
+        closed
+            .write_all(b"GET /auth?code=retained&provider=a HTTP/1.1\r\nHost: localhost\r\n\r\n")
+            .unwrap();
+        let (stream, _) = listener.accept().unwrap();
+        closed.shutdown(Shutdown::Both).unwrap();
+        drop(closed);
+
+        // Kernels may accept the final write or report a disconnected peer. Both
+        // outcomes must leave the already parsed result intact; no forced RST claim.
+        let _ = handle_callback(stream, Arc::clone(&callback));
+        saved(&callback, "retained", "a");
+        assert!(
+            request(&listener, &callback, "/auth/?code=replacement&provider=g")
+                .starts_with("HTTP/1.0 200 OK\r\n")
+        );
+        saved(&callback, "retained", "a");
+    }
+}
