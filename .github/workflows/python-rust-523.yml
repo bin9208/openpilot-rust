@@ -390,7 +390,7 @@ jobs:
         printf '%s  %s\n' b47da7e2bda55afe1c6229f8b55ab539bdb72a87490a169049c77fc2b9c94ff2 rust/crates/dev-tools/src/bin/prepare_changed_files_context.rs | sha256sum --check -
         printf '%s  %s\n' f6e9bdba494dba9307a34269c0ac199e855e52b8c3d307e69e2d68d61270f7c9 rust/crates/dev-tools/src/driver_daemon_current_catalog.rs | sha256sum --check -
         printf '%s  %s\n' c81b1a2718b2770e196d40ef87c51daf3b67250ef10b9e6fa877c78cb2153418 rust/crates/dev-tools/src/model_family_prepare/catalog.rs | sha256sum --check -
-        printf '%s  %s\n' bd5bb60b5a73da1c4a2b3fbf5db277aab242dfda663ace57210038bab8c7a35b rust/crates/dev-tools/tests/changed_files_caller.rs | sha256sum --check -
+        printf '%s  %s\n' 702c583da057bd9f8f664129a68879b6f5000e8079e5b85819d4fa6c3aafc859 rust/crates/dev-tools/tests/changed_files_caller.rs | sha256sum --check -
         printf '%s  %s\n' d497fbd9fd16f0840cb391d7fc0aa76f2982fdee6a0c2dccaa65e4233bcfeabe rust/crates/dev-tools/tests/changed_files_caller/absence.rs | sha256sum --check -
         printf '%s  %s\n' 5e545050129b2ba24499d8cbed1b04db2f7d980dda94774ef008615a21acfa44 rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/README.md | sha256sum --check -
         printf '%s  %s\n' 76240cd14a66a55b7ef91459b49919cdbd582d19161437221a6f65f7d22a362b rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/manifest.json | sha256sum --check -
@@ -445,11 +445,11 @@ jobs:
         printf '%s  %s\n' 8009a7377c553b8923640ce8c7b6232e0229978266f112c405f0d759bbf54620 tools/ci/paramsd_gate_523.py | sha256sum --check -
         printf '%s  %s\n' 9c455a724c5f4fcee7616197fbb057e2eda737c4810be0f758cf0a881538f58c rust/crates/dev-tools/src/controlsd_fixture_generate/audit.rs | sha256sum --check -
         printf '%s  %s\n' ab44187ec95f16015df78588696047b277201efc42a3d7e14ae1a710773bee73 .github/workflows/python-rust-523-controls-normal.yml | sha256sum --check -
-        printf '%s  %s\n' e9046f556221aa2c10cc548901aa5a40dc9cd4571177e281c5acff6789035909 .github/workflows/python-rust-523-setup-keys.yml | sha256sum --check -
+        printf '%s  %s\n' 56fc38664476db0d0e753201ee19faaa9626f8875fcdb10c1339854bd8f664b7 .github/workflows/python-rust-523-setup-keys.yml | sha256sum --check -
         printf '%s  %s\n' 11fae1ee5c7a17594c023f5adc114dc6236e1bd078749366d0fa2f0bf3958c62 rust/crates/dev-tools/tests/developer_cli_original/setup_frozen.rs | sha256sum --check -
         printf '%s  %s\n' fc9bb32973a65af4a05c183d8378645eedae373767b3ea4eee028e815a0e3b2e rust/crates/dev-tools/tests/fixtures/setup-ssh-original/README.md | sha256sum --check -
         printf '%s  %s\n' 444a47ecba9579d4042f26dd89f8438908b56d244a0f2c98c8b0dd3e1ef3a6ef rust/crates/dev-tools/tests/fixtures/setup-ssh-original/setup-effects-original.json | sha256sum --check -
-        printf '%s  %s\n' ecf82bd1fb23092174b3cd5385651a6a877e303015835be71f85e3df6cddf91d tools/ci/controlsd_normal_523.py | sha256sum --check -
+        printf '%s  %s\n' 8bb4ea1c904462473f7dbb4e13f124fa834581968c55d3e3e9191aef228e7a49 tools/ci/controlsd_normal_523.py | sha256sum --check -
         printf '%s  %s\n' dd361def66040a1abfcce0634366ecdfa92db6e9cfb062adf231c1640d6695e1 .github/workflows/user-docs.yaml | sha256sum --check -
         printf '%s  %s\n' a1648334531f775ff450f6a71bd82172bd6975cae0898fa3f5c48d9b8604ec3a tools/ci/run-docs-with-growth-guard | sha256sum --check -
         printf '%s  %s\n' b68a027730fff017e6e86fbcd4d72a4ce8b660ccc9ff1297f19add54200f0e38 rust/tools/check-disk-space | sha256sum --check -
@@ -513,7 +513,7 @@ jobs:
         assert raw.count(start)==raw.count(end)==1
         prefix,tail=raw.split(start)
         _,suffix=tail.split(end)
-        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='9bcc710eaf01a0d4146337e1c6a3795f194757d2da32511e32ddcec147b3fb8c', 'Focused workflow changed outside the reviewed reuse block.'
+        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='4ee29d23ba43e6824f19a550898b5678db549a0d283bace60f177f9713a9ef89', 'Focused workflow changed outside the reviewed reuse block.'
         MANIFEST
         python - "$prior" <<'COHORTS'
         import hashlib,io,json,sys,zipfile
@@ -571,7 +571,31 @@ jobs:
         done
         unzip -p "$prior" developer-cli-original.log | grep -F 'test setup_cli_original_status_default_decode_and_write_failure_order ... ok'
         unzip -p "$prior" oracle-runtime.json > "$CI_JOB_TEMP/proof/a134-oracle-runtime.json"
-        cmp "$CI_JOB_TEMP/proof/a134-oracle-runtime.json" "$CI_JOB_TEMP/proof/oracle-runtime.json"
+        python - "$CI_JOB_TEMP/proof/a134-oracle-runtime.json" "$CI_JOB_TEMP/proof/a134-oracle-path-mapping.json" <<'ORACLE_ORIGIN'
+        import json,os,sys
+        from pathlib import Path
+        proof=Path(os.environ['CI_JOB_TEMP'])/'proof'
+        historical=json.loads(Path(sys.argv[1]).read_bytes())
+        current=json.loads((proof/'oracle-runtime.json').read_bytes())
+        keys={'version','executable','base_prefix','library','library_sha256','argparse','argparse_sha256','cleared_environment'}
+        assert set(historical)==set(current)==keys
+        old=Path('/home/actions/actions-toolcache/Python/3.12.15/x64')
+        new=Path(os.environ['RUNNER_TOOL_CACHE'])/'Python/3.12.15/x64'
+        assert new==Path(os.environ['pythonLocation']) and new.resolve(strict=True)==new
+        paths={'base_prefix':'','executable':'bin/python3.12','library':'lib/libpython3.12.so.1.0','argparse':'lib/python3.12/argparse.py'}
+        translated=dict(historical)
+        mapping=[]
+        for key,relative in paths.items():
+            before=old/relative;after=new/relative
+            assert historical[key]==str(before) and current[key]==str(after)
+            assert after.resolve(strict=True)==after
+            translated[key]=str(after)
+            mapping.append({'field':key,'historical_path':str(before),'current_path':str(after)})
+        assert historical['cleared_environment'] is True and current['cleared_environment'] is True
+        assert current==translated, 'Oracle version/provider/stdlib bytes or non-path metadata changed.'
+        with Path(sys.argv[2]).open('x') as out:
+            json.dump({'historical':historical,'current':current,'path_mapping':mapping},out,indent=2);out.write('\n')
+        ORACLE_ORIGIN
         printf '%s\n' 'a134 unchanged auth3/login8/setup21/scanner2 accepted; SSH27 is fresh after lower behavior changes; parser13 remained unreached. Fresh: alias26 plus full scalar/context Unicode15 comparisons and affected SSH27; parser13 reuse is admitted separately. Strict Clippy includes changed harness.' > "$CI_JOB_TEMP/proof/runtime-qualified-reuse.txt"
     - name: Validate original SSH aliases and Unicode15 context regressions
       working-directory: ${{ env.DIAG_SOURCE }}
@@ -602,7 +626,32 @@ jobs:
           cmp "$CI_JOB_TEMP/proof/fb1228-$item-before.$suffix" "$CI_JOB_TEMP/proof/fb1228-$item-after.$suffix"
         done
         unzip -p "$prior" ssh-parser-original.log | grep -F 'test result: ok. 1 passed;'
-        unzip -p "$prior" oracle-runtime.json | cmp - "$CI_JOB_TEMP/proof/oracle-runtime.json"
+        unzip -p "$prior" oracle-runtime.json > "$CI_JOB_TEMP/proof/fb1228-oracle-runtime.json"
+        python - "$CI_JOB_TEMP/proof/fb1228-oracle-runtime.json" "$CI_JOB_TEMP/proof/fb1228-oracle-path-mapping.json" <<'ORACLE_ORIGIN'
+        import json,os,sys
+        from pathlib import Path
+        proof=Path(os.environ['CI_JOB_TEMP'])/'proof'
+        historical=json.loads(Path(sys.argv[1]).read_bytes())
+        current=json.loads((proof/'oracle-runtime.json').read_bytes())
+        keys={'version','executable','base_prefix','library','library_sha256','argparse','argparse_sha256','cleared_environment'}
+        assert set(historical)==set(current)==keys
+        old=Path('/home/actions/actions-toolcache/Python/3.12.15/x64')
+        new=Path(os.environ['RUNNER_TOOL_CACHE'])/'Python/3.12.15/x64'
+        assert new==Path(os.environ['pythonLocation']) and new.resolve(strict=True)==new
+        paths={'base_prefix':'','executable':'bin/python3.12','library':'lib/libpython3.12.so.1.0','argparse':'lib/python3.12/argparse.py'}
+        translated=dict(historical)
+        mapping=[]
+        for key,relative in paths.items():
+            before=old/relative;after=new/relative
+            assert historical[key]==str(before) and current[key]==str(after)
+            assert after.resolve(strict=True)==after
+            translated[key]=str(after)
+            mapping.append({'field':key,'historical_path':str(before),'current_path':str(after)})
+        assert historical['cleared_environment'] is True and current['cleared_environment'] is True
+        assert current==translated, 'Oracle version/provider/stdlib bytes or non-path metadata changed.'
+        with Path(sys.argv[2]).open('x') as out:
+            json.dump({'historical':historical,'current':current,'path_mapping':mapping},out,indent=2);out.write('\n')
+        ORACLE_ORIGIN
         printf '%s\n' 'parser13 accepted on fb1228; parser/scanner production unchanged. Fresh: Unicode15 full scalar/context lower, alias26 and affected SSH27.' > "$CI_JOB_TEMP/proof/parser-reuse.txt"
     - name: Compare fixed Unicode15 scalar mappings and sigma contexts to the original
       working-directory: ${{ env.DIAG_SOURCE }}

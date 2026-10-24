@@ -16,6 +16,7 @@ import resource
 import shutil
 import signal
 import stat
+import struct
 import subprocess
 import sys
 import time
@@ -537,6 +538,34 @@ class Probe:
 
 
     def dso(self, program, label):
+        # ldd의 실패 문구를 예외 처리하지 않는다. hold한 ELF의 실제 program header로만
+        # interpreter/dynamic table이 없는 static 실행 파일의 empty closure를 인정한다.
+        program = Path(program).resolve(strict=True)
+        held = self.holds.files[program]
+        header = os.pread(held["fd"], 64, 0)
+        need(len(header) == 64 and header[:7] == b"\x7fELF\x02\x01\x01", "provider ELF64 little-endian header differs")
+        fields = struct.unpack("<16sHHIQQQIHHHHHH", header)
+        _, kind, machine, version, entry, phoff, _, _, ehsize, phsize, phcount, _, _, _ = fields
+        size = os.fstat(held["fd"]).st_size
+        need(kind in (2, 3) and machine == 62 and version == 1 and ehsize == 64
+             and phsize == 56 and 0 < phcount <= 128 and phoff >= 64
+             and phoff + phsize * phcount <= size, "provider ELF program table differs")
+        table = os.pread(held["fd"], phsize * phcount, phoff)
+        need(len(table) == phsize * phcount, "provider ELF program table truncated")
+        segments = [struct.unpack_from("<IIQQQQQQ", table, index * phsize) for index in range(phcount)]
+        need(all(offset <= size and length <= size - offset for _, _, offset, _, _, length, _, _ in segments),
+             "provider ELF segment outside held file")
+        executable_loads = [segment for segment in segments if segment[0] == 1 and segment[1] & 1]
+        need(executable_loads and all(segment[5] <= segment[6] for segment in segments if segment[0] == 1),
+             "provider ELF executable LOAD missing or malformed")
+        types = {segment[0] for segment in segments}
+        if 2 not in types and 3 not in types:
+            need(entry != 0 and any(segment[3] <= entry < segment[3] + segment[6] for segment in executable_loads),
+                 "static provider ELF entry outside executable LOAD")
+            save(self.out / f"{label}.static-elf.json", {"program": str(program), "elf_type": kind,
+                 "machine": machine, "program_header_count": phcount, "has_pt_interp": False,
+                 "has_pt_dynamic": False, "dso_paths": [], "closure_kind": "held-static-elf"})
+            return set()
         raw = self.command([self.tools["ldd"], program], label, limit=MIB).decode()
         paths = set()
         for line in raw.splitlines():

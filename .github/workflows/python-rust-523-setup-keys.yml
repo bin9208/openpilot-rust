@@ -357,15 +357,15 @@ jobs:
           esac
         }
         growth() {
-          local label=$1 mib=$2
+          local label=$1 growth_mib=$2
           [[ $guard_ready == true && -x $disk_guard && $(identity "$disk_guard") == "${held_identity[$disk_guard]}" &&
              $(identity "/proc/$$/fd/${held_fd[$disk_guard]}") == "${held_identity[$disk_guard]}" ]] || return 1
           # 같은 source-derived cache와 prepared SDK 검사를 재사용한다. run_bounded는 growth를 호출하지 않는다.
           CARGO_TARGET_DIR="$guard_target" run_bounded "growth-$label-build" 60s "$proof/growth-$label-build.json" 0 \
-            "${guard_environment[@]}" "$source/rust/tools/check-disk-space" --path "$build" --growth-mib "$mib" || return 1
+            "${guard_environment[@]}" "$source/rust/tools/check-disk-space" --path "$build" --growth-mib "$growth_mib" || return 1
           if [[ $(stat -c %d "$source") != "$(stat -c %d "$build")" ]]; then
             CARGO_TARGET_DIR="$guard_target" run_bounded "growth-$label-source" 60s "$proof/growth-$label-source.json" 0 \
-              "${guard_environment[@]}" "$source/rust/tools/check-disk-space" --path "$source" --growth-mib "$mib" || return 1
+              "${guard_environment[@]}" "$source/rust/tools/check-disk-space" --path "$source" --growth-mib "$growth_mib" || return 1
           fi
         }
         budgets() {

@@ -23,6 +23,33 @@ source ba9528d05의 미시작 rescue40118006504/job120943271254는 queued/steps0
 
 소스 동결 뒤 YAML6개·내부 Bash128개·단독 Bash5개·embedded Python AST8개와 helper Python AST1개, Rust workspace 서식과 diff를 확인했다. Focus의 literal pin104개와 검토한 실행 영역의 별도 SHA가 현재 bytes와 일치한다. 이번 push로 실행되는 모든 job은 명시 ubuntu-24.04로 확인했다. 이는 로컬 소스/문법 검사이며 기능 검증은 아니다.
 
-현재는 전환 소스 작성/검토 단계다. GitHub-hosted 실행·새 기능/빌드·Clippy·전후 봉인·자원 회수는 아직 미수용이다. 앞의 bin-actions 성공 또는 실패를 새 GitHub VM 결과로 재표기하지 않는다. whole3580 baseline은292교체/3부분/3285대기 그대로다. 임시 rescue의 폐기만으로 baseline credit을 늘리지 않는다.
+위 소스 동결 시점에는 GitHub-hosted 실행이 미실행이었다. 아래 첫 실행의 범위와 실패를 별도로 기록한다. 앞의 bin-actions 성공 또는 실패를 새 GitHub VM 결과로 재표기하지 않는다. whole3580 baseline은292교체/3부분/3285대기 그대로다. 임시 rescue의 폐기만으로 baseline credit을 늘리지 않는다.
 
 GitHub 문서는 표준 Linux label과 job 전용 VM, 환경 변수에 따른 실제 경로 사용을 설명한다. 이 문서의 일반 사양을 실제 job 여유 공간이나 CPU 기능의 실측으로 사용하지 않는다: https://docs.github.com/en/actions/reference/runners/github-hosted-runners
+
+
+## f8e9d62 기본 러너 첫 실행
+
+source `f8e9d62b073d2c8a66c68f728247b9424df72ce8`을 push했고 실제 jobs API의 ubuntu-24.04/GitHub Actions 이름과 작업 단계를 확인했다. PR343은 head0538007/dev 대상 draft 그대로다.
+
+| 실행 | 실제 범위와 결과 |
+| --- | --- |
+| [Fast40121818157](https://github.com/bin9208/openpilot-rust/actions/runs/40121818157) | 5 leaf 성공, routing/aggregate 실패. routing은 actual cold bootstrap1 성공 뒤 changed-files5개 중4성공/maintained caller policy1실패다. 준비된 SDK env prefix를 추가한 현재 caller와 고정 RUN fixture가 불일치했다. |
+| [docs40121817587](https://github.com/bin9208/openpilot-rust/actions/runs/40121817587) | workflow 성공. 13tests와 guard의 정상 경로2개, source/SDK 전후 봉인 및 소유 정리 성공을 확인했다. negative growth/failure injection을 수용한 것은 아니다. |
+| [Focus40121818148/job120954834780](https://github.com/bin9208/openpilot-rust/actions/runs/40121818148/job/120954834780) | 104pin/current source admission, alias26·전체 Unicode scalar/Σ context·영향 SSH27·strict Clippy 및 source/SDK/venv 봉인은 성공. 과거 a134/fb1228 oracle JSON이 새 실제 cache 절대 경로와 달라 두 raw cmp만 실패했다. 버전·libpython SHA·argparse SHA·환경 flag는 실제 artifact에서 동일했다. |
+| [setup40121818144/job120954834766](https://github.com/bin9208/openpilot-rust/actions/runs/40121818144/job/120954834766) | private SDK before/after와 source 봉인 성공. growth 지역변수 mib가 단위 상수를 가려 source2GiB를16MiB로 잘못 계산했다(#536). test-build 전 중단이며 setup21/음성3/public1는 미수용이다. |
+| [changed-files40121818156/job120954834869](https://github.com/bin9208/openpilot-rust/actions/runs/40121818156/job/120954834869) | 현재 caller5개 중 고정 RUN policy1실패. 이 결과를 원본 부재·현재 caller 전체 수용으로 새로 세지 않는다. |
+| [normal40121818149/job120954834759](https://github.com/bin9208/openpilot-rust/actions/runs/40121818149/job/120954834759) | SDK 준비/outer source 봉인 성공, provider admission에서 ldd /usr/bin/gh exit1/not a dynamic executable로 중단(#537). normal40 수치 비교·내부 immutable acceptance는 미실행이다. |
+
+Focus artifact12570879713은15,865,178B/SHA256 `8ff861a569e791f73d0943958a6232267f66efa991c41edbbf7772d0e8a5b880`, 76member CRC 전수 및 source/index·SDK file/roster 전후 일치를 확인했다. setup artifact12570894369는3,588,022B/SHA256 `48535d8ab50728d39f862448783f5ceec2dbb851d017938715c5859d75dd5c24`, normal12570954727은1,717,993B/SHA256 `7a5ebebbba6bec4e4668c439d4ea80780a8e3c05fe2a088d511ce8f5e8ea5e4f`, 각각96member CRC를 확인했다. 실패 artifact를 전체 수용 결과로 바꾸지 않는다.
+
+setup의 실제 image는20261023.334.3, Focus는20261012.334.1이다. setup의 df는 준비 시90,502,328,320B, 명시 unused Android SDK 회수 후102,340,493,312B 여유였다. 일반 runner 사양을 이 실측과 혼동하지 않는다. 타관리 bin-actions 복구 증거도 아니다.
+
+## 첫 실패 보정 후보 — 기능 미실행
+
+- Focus의 역사 JSON8필드 중 정확한4개 cache 경로만 고정 과거 base에서 실제 RUNNER_TOOL_CACHE/Python3.12.15로 대응시키고, 나머지 필드 전체 동일성을 요구한다. raw ZIP/JSON은 그대로 두며 별도 대응표를 기록한다.
+- Fast/changed-files 고정 RUN fixture는 승인된 prepared SDK prefix와 정확히 일치시키고 기존8개 음성 변형과 실행 selector를 보존한다.
+- #536은 growth 인자 이름만 growth_mib로 바꾼다. source2GiB/proof1GiB/raw16MiB/build8GiB 원래 예산을 복원하며 증가시키지 않는다.
+- #537은 held FD의 bounded ELF64/x64 program header로 valid static 실행 파일만 구분한다. executable LOAD/entry/segment 범위와 PT_INTERP/PT_DYNAMIC 부재를 확인해 empty DSO closure를 별도 기록하며, dynamic ELF의 ldd 성공·resolved DSO·전후 hold 검증은 유지한다. ldd 실패 문구를 포괄 허용하지 않는다.
+
+이 후보는 소스/문법 검토 단계이며 새 기능/Clippy/빌드 성공은 아직 없다. Integration5개 workflow 전환은 별도 동결 WIP로 준비했으나 이 첫 실패 보정과 분리한다. required Rust/ARM/Darwin·PR통합·병합 후·전달·전체 인벤토리는 미완료다. baseline292/3/3285, 원본 credit0을 유지한다.

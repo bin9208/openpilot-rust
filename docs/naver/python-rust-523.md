@@ -1041,3 +1041,10 @@ rescue40118006504는 실제 completed/cancelled를 확인했고 현재 복구 WF
 `python-rust-523-hosted-535.md`에 기록한다. 전환 후보의 현재 기능/빌드/Clippy/용량 실측은
 미실행이며, baseline292/3/3285와 원본 제거 credit0을 유지한다. 임시 rescue edge의 삭제는
 25교체/63대기/1native-existing/2non-executing-text/1removed로 구분한다.
+
+
+### 2026-10-25 기본 러너 첫 실제 실행과 실패 보정
+
+source f8e9d62b073d2c8a66c68f728247b9424df72ce8에서 docs40121817587과 Fast5leaf는 성공했다. Fast routing은 actual cold bootstrap1 성공 후 changed-files의 고정 caller RUN fixture가 새 prepared SDK prefix와 달라 실패했다. Focus40121818148은 현재 alias/Unicode/SSH27/Clippy·봉인이 성공했으나 과거 oracle JSON의 절대 cache 경로2비교가 실패했다. setup40121818144는 Bash local mib가 단위 상수를 가려 admission을 잘못 계산한 #536, normal40121818149는 static 여부를 구분하지 않은 gh ldd provider admission #537에서 중단됐다. 원본 비교가 실행되지 않은 경계를 PASS로 세지 않는다.
+
+정확 job/artifact SHA·CRC·전후 봉인, source-only 보정 후보와 현재 실측은 `python-rust-523-hosted-535.md`에 기록한다. 실제 기본 러너 실행으로 전환했으며 bin-actions 복구를 기다리지 않는다. 보정의 기능/빌드 검증은 다음 Actions에 남아 있고 PR343 head053/dev draft 및 baseline292/3/3285를 유지한다. 원본 제거 credit0이다.

@@ -8,7 +8,7 @@ use std::{fs, path::Path, process::Command};
 mod absence;
 
 const REGRESSION: &str = "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --no-default-features --features changed-files-native --test changed_files_caller";
-const RUN: &str = "set -euo pipefail\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 6144\ncargo run --quiet --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --no-default-features --features changed-files-native --bin check-changed-files --\n";
+const RUN: &str = "set -euo pipefail\nOPENPILOT_CI_PREPARED_RUST_ROOT=\"$CI_PREPARED_RUST_ROOT\" OPENPILOT_CI_PREPARED_RUST_MANIFEST=\"$CI_PREPARED_RUST_MANIFEST\" \\\n  \"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 6144\ncargo run --quiet --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --no-default-features --features changed-files-native --bin check-changed-files --\n";
 fn caller_policy(workflow: &Value) -> bool {
     let Some(steps) = workflow["jobs"]["python-android"]["steps"].as_array() else {
         return false;
