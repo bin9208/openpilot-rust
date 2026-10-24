@@ -1055,3 +1055,10 @@ source f8e9d62b073d2c8a66c68f728247b9424df72ce8에서 docs40121817587과 Fast5le
 source19e180650bae8b46f9d04056b796ba68666b364e의 Focus40122888950와 changed-files40122889010은 성공했다. 둘의 source/index/whole SDK 봉인·업로드/소유 정리와 실제 원문 artifact CRC를 확인했다. Fast는 caller5와 cold bootstrap1을 통과한 뒤 docs cleanup의 추가 SDK/recovery 조건 미등록으로 실패해 validator를 보정 중이다. setup은 frozen21/음성3/Clippy/public1의 기대 출력까지 도달했으나 SIGCHLD trace 문법 #539 및 재빌드 CLI identity #540 수용이 남는다. normal은 static gh를 수용한 뒤 고정 로그 API의 escape 출력 정책 #538에서 중단됐다. 아직 normal40 수치 비교·setup 완전 봉인은 수용하지 않는다.
 
 상세 exact job·artifact SHA와 source-only 후속 후보는 `python-rust-523-hosted-535.md`에 기록한다. Integration/Rust/ARM/Mac 기본 러너 전환도 이어가며 PR343 head053/dev draft, baseline292/3/3285와 원본 제거 credit0을 유지한다.
+
+
+### bdb819e59 기본 러너 실제 검사와 후속 원인 분리
+
+source bdb819e59534ffba7c61751653ddaf360e8e324a를 dev 대상 draft PR343에 fast-forward했다. 실제 PR merge source는ba1b07c38702bac3bb49614d14b54adaacaa95df다. Focus40126286930과 docs40126295962가 성공했고 각각81CRC/54CRC 및 source·SDK 전후를 확인했다. Fast는5leaf 성공 뒤 공통 YAML alias key 구분자 문제(#541)로 routing·aggregate 실패다. Integration40126295997은14성공/2실패이며 빌드·pytest570 뒤 source 봉인 실패를 #546으로 추적한다. setup은 실제21+3/Clippy/public stdout·exit 일치와 CPU 주석 문법 통과까지 확인했으나 missing packed-refs의 Cargo 재link(#540)를 거부했다. normal은 기존 stager의 빈 marker를 임시 helper가 빠뜨린 #543에서 중단돼 수치40회 비교는 아직 미도달이다.
+
+실제 Mac Rustup 배치 가정(#544), logical matrix와 보호된 upload assertion(#542), Panda venv 경로(#545), updater private TMPDIR trace(#547)도 원인별로 보완 중이다. 정확한 source/run/artifact·수용 한계와 후보 변경은 `python-rust-523-hosted-535.md`에 남긴다. 새 후보는 Actions 검증 전 UNRUN이며 baseline292/3/3285, 이번 원본 제거 credit0과 전체 미완료 상태를 유지한다.

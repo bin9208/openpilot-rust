@@ -485,6 +485,44 @@ impl HeldElf {
         );
     }
 }
+fn python_bindings(path: &Path) -> Vec<(PathBuf, String, Option<PathBuf>)> {
+    let mut current = path.to_path_buf();
+    let mut bindings = Vec::new();
+    for _ in 0..40 {
+        let parent = current.parent().unwrap().canonicalize().unwrap();
+        current = parent.join(current.file_name().unwrap());
+        let metadata = fs::symlink_metadata(&current).unwrap();
+        assert!(metadata.is_file() || metadata.file_type().is_symlink());
+        let target = metadata
+            .file_type()
+            .is_symlink()
+            .then(|| fs::read_link(&current).unwrap());
+        let identity = format!(
+            "{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}",
+            metadata.dev(),
+            metadata.ino(),
+            metadata.mode(),
+            metadata.uid(),
+            metadata.gid(),
+            metadata.len(),
+            metadata.nlink(),
+            metadata.mtime(),
+            metadata.mtime_nsec(),
+            metadata.ctime(),
+            metadata.ctime_nsec(),
+        );
+        bindings.push((current.clone(), identity, target.clone()));
+        match target {
+            Some(target) if target.is_absolute() => current = target,
+            Some(target) => current = parent.join(target),
+            None => {
+                assert_ne!(metadata.mode() & 0o111, 0);
+                return bindings;
+            }
+        }
+    }
+    panic!("Python provider symlink chain exceeds 40 entries");
+}
 fn absent(path: &Path) {
     match fs::symlink_metadata(path) {
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
@@ -700,7 +738,26 @@ fn same_elf_checkout_and_private_checker_absent_roots_complete_all_original_phas
     let checker = required("PANDA_CI_CHECKER_BINARY").canonicalize().unwrap();
     let binaries = required("PANDA_CI_BINARIES").canonicalize().unwrap();
     let messages = required("PANDA_CI_BUILD_MESSAGES").canonicalize().unwrap();
-    let python = required("PANDA_CI_PYTHON").canonicalize().unwrap();
+    // #545: venv 실행 경로를 유지하고, 실제 provider ELF는 별도로 hold한다.
+    let python = required("PANDA_CI_PYTHON");
+    let job = required("CI_JOB_TEMP");
+    assert!(job.is_absolute());
+    assert_eq!(job.canonicalize().unwrap(), job);
+    let python_bin = job.join("venv/bin");
+    assert!(python.is_absolute());
+    assert_eq!(python.parent(), Some(python_bin.as_path()));
+    assert_eq!(python_bin.canonicalize().unwrap(), python_bin);
+    let python_paths = python_bindings(&python);
+    let python_provider = python.canonicalize().unwrap();
+    let mut python_seal = HeldElf::open(&python_provider);
+    let python_provider_sha = python_seal.digest.clone();
+    let mut verify_python = || {
+        assert_eq!(python.parent().unwrap().canonicalize().unwrap(), python_bin);
+        assert_eq!(python_bindings(&python), python_paths);
+        assert_eq!(python.canonicalize().unwrap(), python_provider);
+        python_seal.verify(&python_provider);
+    };
+    verify_python();
     let evidence = required("PANDA_CI_RETIREMENT_EVIDENCE");
     fs::create_dir(&evidence).unwrap();
     let expect_absent = match env::var("PANDA_CI_EXPECT_ABSENT").unwrap().as_str() {
@@ -712,6 +769,12 @@ fn same_elf_checkout_and_private_checker_absent_roots_complete_all_original_phas
     let mut seals = elf_seals(&checker, &binaries);
     let messages_sha = sha(&messages);
     let mut manifest = prepare_private_root(&repo, &private, expect_absent);
+    manifest["python_provider"] = serde_json::json!({
+        "invocation": python.display().to_string(),
+        "elf": python_provider.display().to_string(),
+        "elf_sha256": python_provider_sha,
+        "bindings": &python_paths,
+    });
     manifest["current_elf_sha256"] = serde_json::json!(seals
         .iter()
         .map(|(path, seal)| (path.display().to_string(), seal.digest.clone()))
@@ -748,7 +811,9 @@ fn same_elf_checkout_and_private_checker_absent_roots_complete_all_original_phas
         python: &python,
         evidence: &evidence,
     };
+    verify_python();
     let (checkout, checkout_commands, checkout_result) = run_lane("checkout", shared);
+    verify_python();
     source_state(&repo, expect_absent);
     source_state(&private, true);
     assert_eq!(sha(&metadata_path), metadata_sha);
@@ -760,6 +825,7 @@ fn same_elf_checkout_and_private_checker_absent_roots_complete_all_original_phas
         )
         .unwrap()
     );
+    verify_python();
     let (absent_lane, absent_commands, private_result) = run_lane(
         "private",
         LaneInputs {
@@ -767,6 +833,7 @@ fn same_elf_checkout_and_private_checker_absent_roots_complete_all_original_phas
             ..shared
         },
     );
+    verify_python();
     source_state(&repo, expect_absent);
     source_state(&private, true);
     assert_eq!(sha(&metadata_path), metadata_sha);
@@ -827,6 +894,7 @@ fn same_elf_checkout_and_private_checker_absent_roots_complete_all_original_phas
     for (path, seal) in &mut seals {
         seal.verify(path);
     }
+    verify_python();
     let digests = seals
         .into_iter()
         .map(|(path, seal)| (path.display().to_string(), seal.digest))

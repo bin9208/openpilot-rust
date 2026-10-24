@@ -13,13 +13,17 @@ use std::{
 #[test]
 fn mandatory_ci_uses_native_controller_and_real_receive_fault_wrapper() {
     let workflow = include_str!("../../../../.github/workflows/rust.yml");
-    let step = workflow
-        .split("      - name: Compare interrupted metric receives with the original daemon\n")
-        .nth(1)
+    let workflow = openpilot_dev_tools::ci_policy::parse(workflow).unwrap();
+    let steps: Vec<_> = workflow["jobs"]["telemetry-runtime"]["steps"]
+        .as_array()
         .unwrap()
-        .split("      - name:")
-        .next()
-        .unwrap();
+        .iter()
+        .filter(|step| {
+            step["name"] == "Compare interrupted metric receives with the original daemon"
+        })
+        .collect();
+    assert_eq!(steps.len(), 1, "mandatory receive gate must be unique");
+    let step = steps[0]["run"].as_str().unwrap();
     for required in [
         "--features stats-daemon-native --bin check-stats-interrupted --locked",
         "-DZMQ_LINK_WRAP -c rust/tools/zmq_receive_boundary.c",

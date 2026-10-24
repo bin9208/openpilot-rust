@@ -91,6 +91,21 @@ fn exec_trace_parser_requires_complete_successful_calls() {
     }
 }
 
+fn private_fixture_relative(path: &str) -> Option<&str> {
+    let temporary = env::temp_dir();
+    if !temporary.is_absolute() {
+        return None;
+    }
+    let relative = path
+        .strip_prefix(temporary.to_str()?.trim_end_matches('/'))?
+        .strip_prefix('/')?;
+    let (leaf, relative) = relative.split_once('/')?;
+    // updated_check::run은 tempfile 3.27의 기본 영숫자 6자리 suffix를 사용한다.
+    let random = leaf.strip_prefix("updated-source-")?;
+    (random.len() == 6 && random.bytes().all(|byte| byte.is_ascii_alphanumeric()))
+        .then_some(relative)
+}
+
 fn exec_kind(
     program: &str,
     argv: &[String],
@@ -115,7 +130,7 @@ fn exec_kind(
         assert!(argv[1].starts_with("/tmp/op-exec-"));
         return "launcher";
     }
-    if program.starts_with("/tmp/updated-source-") {
+    if let Some(relative) = private_fixture_relative(program) {
         let (case, tool) = [
             "check-fetch-metered",
             "missing-branch-failure",
@@ -126,9 +141,7 @@ fn exec_kind(
         .into_iter()
         .find_map(|name| {
             ["git", "sudo", "bash"].into_iter().find_map(|tool| {
-                program
-                    .ends_with(&format!("/{name}-native/bin/{tool}"))
-                    .then_some((name, tool))
+                (relative == format!("{name}-native/bin/{tool}")).then_some((name, tool))
             })
         })
         .unwrap_or_else(|| panic!("unrecognized private fixture executable: {program}"));
@@ -207,8 +220,10 @@ fn exec_kind(
         "/usr/lib/git-core/git-upload-pack" => {
             assert_eq!(first, Some("git-upload-pack"));
             assert_eq!(argv.len(), 2);
-            assert!(argv[1].starts_with("/tmp/updated-source-"));
-            assert!(argv[1].ends_with("/remote") || argv[1].ends_with("/remote/.git"));
+            assert!(matches!(
+                private_fixture_relative(&argv[1]),
+                Some("remote" | "remote/.git")
+            ));
             "git-upload-pack"
         }
         "/usr/lib/git-core/git-submodule" => {
@@ -228,11 +243,17 @@ fn exec_kind(
         "/bin/sh" => {
             assert_eq!(first, Some(program));
             assert_eq!(argv.get(1).map(String::as_str), Some("-c"));
-            assert!(argv
-                .get(2)
-                .is_some_and(|arg| arg.starts_with("git-upload-pack '/tmp/updated-source-")));
             assert_eq!(argv.len(), 4);
             assert_eq!(argv[2], argv[3]);
+            let remote = argv[2]
+                .strip_prefix("git-upload-pack '")
+                .and_then(|command| command.strip_suffix('\''))
+                .expect("exact quoted git-upload-pack command required");
+            assert!(!remote.contains('\''), "embedded shell quote rejected");
+            assert!(matches!(
+                private_fixture_relative(remote),
+                Some("remote" | "remote/.git")
+            ));
             "shell-upload-pack"
         }
         "/usr/bin/basename" => {
@@ -267,6 +288,106 @@ fn exec_kind(
             "uname"
         }
         _ => panic!("unrecognized executable: {program} {argv:?}"),
+    }
+}
+
+#[test]
+fn exec_kind_binds_private_paths_to_the_current_temp_root() {
+    let temporary = env::temp_dir();
+    let root = temporary.join("updated-source-Ab12Cd");
+    let other_root =
+        PathBuf::from(format!("{}-other", temporary.display())).join("updated-source-Ab12Cd");
+    let classify = |program: &str, arguments: &[&str]| {
+        let argv = arguments
+            .iter()
+            .map(|arg| (*arg).to_owned())
+            .collect::<Vec<_>>();
+        exec_kind(
+            program,
+            &argv,
+            Path::new("/bound/checker"),
+            Path::new("/bound/candidate"),
+            Path::new("/bound/launcher"),
+        )
+    };
+    for (tool, arguments, expected) in [
+        ("git", vec!["git", "rev-parse"], "fixture-git"),
+        ("sudo", vec!["sudo", "mount"], "fixture-sudo"),
+        (
+            "bash",
+            vec!["bash", "-c", "unset AGNOS_VERSION && source launch_env.sh"],
+            "fixture-bash",
+        ),
+    ] {
+        let path = root.join(format!("check-fetch-metered-native/bin/{tool}"));
+        assert_eq!(classify(path.to_str().unwrap(), &arguments), expected);
+    }
+    for path in [
+        other_root.join("check-fetch-metered-native/bin/git"),
+        root.join("nested/check-fetch-metered-native/bin/git"),
+        root.join("unknown-native/bin/git"),
+        root.join("check-fetch-metered-native/bin/git/extra"),
+    ] {
+        assert!(
+            std::panic::catch_unwind(|| {
+                classify(path.to_str().unwrap(), &["git", "rev-parse"])
+            })
+            .is_err(),
+            "unbound fixture accepted: {}",
+            path.display()
+        );
+    }
+    let upload = "/usr/lib/git-core/git-upload-pack";
+    for suffix in ["remote", "remote/.git"] {
+        let remote = root.join(suffix);
+        let remote = remote.to_str().unwrap();
+        assert_eq!(
+            classify(upload, &["git-upload-pack", remote]),
+            "git-upload-pack"
+        );
+        let command = format!("git-upload-pack '{remote}'");
+        assert_eq!(
+            classify("/bin/sh", &["/bin/sh", "-c", &command, &command]),
+            "shell-upload-pack"
+        );
+    }
+    for remote in [
+        other_root.join("remote"),
+        temporary.join("nested/updated-source-Ab12Cd/remote"),
+        temporary.join("updated-source-Ab12C_/remote"),
+        root.join("wrong/remote"),
+        root.join("remote/.git/extra"),
+        root.join("remote/../remote"),
+    ] {
+        let remote = remote.to_str().unwrap();
+        assert!(
+            std::panic::catch_unwind(|| classify(upload, &["git-upload-pack", remote])).is_err(),
+            "unbound remote accepted: {remote}"
+        );
+        let command = format!("git-upload-pack '{remote}'");
+        assert!(
+            std::panic::catch_unwind(|| classify(
+                "/bin/sh",
+                &["/bin/sh", "-c", &command, &command]
+            ))
+            .is_err(),
+            "unbound shell remote accepted: {remote}"
+        );
+    }
+    let remote = root.join("remote");
+    for command in [
+        format!("git-upload-pack '{}'; /usr/bin/true", remote.display()),
+        format!("git-upload-pack '{}'; /usr/bin/true # '", remote.display()),
+        format!("git-upload-pack '{}' --strict", remote.display()),
+    ] {
+        assert!(
+            std::panic::catch_unwind(|| classify(
+                "/bin/sh",
+                &["/bin/sh", "-c", &command, &command]
+            ))
+            .is_err(),
+            "extra shell command accepted: {command}"
+        );
     }
 }
 

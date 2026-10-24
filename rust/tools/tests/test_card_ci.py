@@ -82,7 +82,8 @@ def test_required_ci_generates_fixtures_before_tests_and_checks_full_schemas() -
     assert generation < testing
     for checker in ('params', 'state', 'controller'):
       assert any(f'check_card_hyundai_{checker}.py' in script for script in scripts[testing:])
-    assert any(step.get('if') == 'always()' and step.get('uses', '').startswith('actions/upload-artifact')
+    upload_condition = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()) }}"
+    assert any(step.get('if') == upload_condition and step.get('uses', '').startswith('actions/upload-artifact')
                for step in jobs[job]['steps'])
   scripts = [step.get('run', '') for step in jobs['arm64']['steps']]
   assert any('cargo build -p openpilot-card --features native --bins --examples' in script and

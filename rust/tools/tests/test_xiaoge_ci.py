@@ -56,13 +56,38 @@ def test_failed_or_missing_build_receipts_are_rejected(tmp_path: Path, batch: in
 
 def test_both_host_architectures_and_native_memory_are_required_gates() -> None:
   jobs = yaml.safe_load((ROOT / ".github/workflows/rust.yml").read_text())["jobs"]
-  assert jobs["xiaoge-runtime"]["strategy"]["matrix"]["runner"] == ["ubuntu-24.04", "ubuntu-24.04-arm"]
+  runtime = jobs["xiaoge-runtime"]
+  assert runtime["strategy"]["matrix"]["runner"] == ["local-x64", "local-arm64-qemu"]
+  assert runtime["env"]["LOCAL_CI_ARCH"] == "${{ matrix.runner == 'local-arm64-qemu' && 'aarch64' || 'x86_64' }}"
+  trusted = "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}"
+  for name in ("xiaoge-runtime", "xiaoge-memory"):
+    assert jobs[name]["runs-on"] == "ubuntu-24.04"
+    boundary = jobs[name]["steps"][0]
+    assert "if" not in boundary and boundary["env"]["SOURCE_ALLOWED"] == trusted
+    for marker in ('test "$GITHUB_ACTIONS" = true', 'test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust',
+                   'test "$RUNNER_ENVIRONMENT" = github-hosted', 'test "$RUNNER_OS" = Linux',
+                   'test "$RUNNER_ARCH" = X64', 'test "$(uname -m)" = x86_64'):
+      assert marker in boundary["run"].splitlines()
+  alias = ".ci296-source-rust--xiaoge-runtime"
+  assert runtime["env"]["CI296_ALIAS_BASENAME"] == alias
+  transport = [index for index, step in enumerate(runtime["steps"])
+               if step.get("uses") == f"./{alias}/source/.github/actions/local-arm"
+               and step.get("with", {}).get("cleanup") != "true"]
+  assert len(transport) == 1
+  admission = next(index for index, step in enumerate(runtime["steps"]) if step.get("id") == "ci296_source_admission")
+  preflight = next(index for index, step in enumerate(runtime["steps"])
+                   if 'test -x /usr/bin/qemu-aarch64-static' in step.get("run", ""))
+  assert admission < preflight < transport[0]
+  assert runtime["steps"][transport[0]]["if"] == trusted
+  assert any(step.get("shell") == "openpilot-local-shell {0}" for step in runtime["steps"][transport[0] + 1:])
   assert {"xiaoge-runtime", "xiaoge-memory"} <= set(jobs["fast"]["needs"])
   gate = jobs["fast"]["steps"][0]
+  assert gate["env"]["SOURCE_ALLOWED"] == trusted
   environment = dict(os.environ, **dict.fromkeys(gate["env"], "success"))
+  environment["SOURCE_ALLOWED"] = "true"
   assert subprocess.run(["bash", "-e", "-c", gate["run"]], env=environment, check=False).returncode == 0
-  for name in ["XIAOGE", "XIAOGE_MEMORY"]:
-    for value in ["failure", "cancelled", "skipped", ""]:
+  for name in ["XIAOGE", "XIAOGE_MEMORY", "SOURCE_ALLOWED"]:
+    for value in ["failure", "cancelled", "skipped", "", "false"]:
       run = subprocess.run(["bash", "-e", "-c", gate["run"]], env=dict(environment, **{name: value}), check=False)
       assert run.returncode != 0, (name, value)
   for job in ["xiaoge-runtime", "xiaoge-memory"]:

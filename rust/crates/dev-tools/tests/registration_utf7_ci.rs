@@ -2,13 +2,14 @@
 fn startup_builds_and_runs_native_utf7_corpus() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
     let workflow = std::fs::read_to_string(root.join(".github/workflows/rust.yml")).unwrap();
-    let job = workflow
-        .split("  startup-runtime:")
-        .nth(1)
+    let workflow = openpilot_dev_tools::ci_policy::parse(&workflow).unwrap();
+    let job = workflow["jobs"]["startup-runtime"]["steps"]
+        .as_array()
         .unwrap()
-        .split("\n  startup-services:")
-        .next()
-        .unwrap();
+        .iter()
+        .filter_map(|step| step["run"].as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
     assert!(job.contains(
         "rust/target/debug/check-registration-utf7 rust/target/debug/examples/registration_utf7"
     ));

@@ -74,12 +74,37 @@ jobs:
           stat -c '%d:%i:%u:%a:%s %n' "$path"
           sha256sum "$path"
         done
-        # Linux-only rust-path fallback 진입을 금지한다. 이 검사 실패는 installer fallback이 아니다.
-        rustup=$(command -v rustup)
-        [[ $rustup == /* ]] && test -x "$rustup" && test -x "$(dirname "$rustup")/cargo"
-        realpath -e "$rustup"
-        [[ " $(lipo -archs "$rustup") " == *" arm64 "* ]]
-        shasum -a 256 "$rustup"
+        # 이미지 provider는 실행하지 않는다. wrapper/부재는 private bootstrap의 수용 근거가 아니다.
+        printf 'image_os=%s\nimage_version=%s\n' "${ImageOS:-unavailable}" "${ImageVersion:-unavailable}"
+        for tool in rustup cargo; do
+          if path=$(command -v "$tool"); then
+            printf 'image_%s_lookup=%s\n' "$tool" "$path"
+            if [[ $path == /* ]] && test -f "$path"; then
+              if canonical=$(realpath -e -- "$path"); then
+                printf 'image_%s_realpath=%s\n' "$tool" "$canonical"
+                stat -c '%d:%i:%u:%a:%s %n' "$canonical"
+                /usr/bin/file -b "$canonical"
+                sha256sum "$canonical"
+                if archs=$(/usr/bin/lipo -archs "$canonical" 2>&1); then
+                  printf 'image_%s_macho_archs=%s\n' "$tool" "$archs"
+                else
+                  printf 'image_%s_macho=unavailable detail=%s\n' "$tool" "$archs"
+                fi
+              else
+                printf 'image_%s_realpath=unavailable\n' "$tool"
+              fi
+              if test -x "$(dirname "$path")/cargo"; then
+                printf 'image_%s_sibling_cargo=executable\n' "$tool"
+              else
+                printf 'image_%s_sibling_cargo=missing-or-not-executable\n' "$tool"
+              fi
+            else
+              printf 'image_%s_file=not-absolute-regular-file\n' "$tool"
+            fi
+          else
+            printf 'image_%s_lookup=missing\n' "$tool"
+          fi
+        done
         "$brew" --version
       working-directory: ${{ github.workspace }}
       env:
@@ -175,6 +200,90 @@ jobs:
       run: |
         set -euo pipefail
         printf '%s\n' "CARGO_TARGET_DIR=$CI296_LATE_CARGO_TARGET_DIR" >> "$GITHUB_ENV"
+    - name: Bootstrap pinned native Darwin Rustup on owned private paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      timeout-minutes: 5
+      run: |
+        set -euo pipefail
+        test "$(uname -s)" = Darwin
+        test "$(uname -m)" = arm64
+        case "$CI_JOB_TEMP" in /tmp/openpilot-ci.??????) ;; *) exit 1 ;; esac
+        test "${CI_JOB_TEMP%/*}" = /tmp
+        test -d "$CI_JOB_TEMP"
+        test ! -L "$CI_JOB_TEMP"
+        test "$(realpath -e "$CI_JOB_TEMP")" = "$(realpath -e /tmp)/${CI_JOB_TEMP##*/}"
+        test "$(stat -c '%u:%a' "$CI_JOB_TEMP")" = "$(id -u):700"
+        test -f "$CI_JOB_TEMP/owner"
+        test ! -L "$CI_JOB_TEMP/owner"
+        test "$(cat "$CI_JOB_TEMP/owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$HOME" = "$CI_JOB_TEMP/home"
+        test -d "$HOME"
+        test ! -L "$HOME"
+        test "$CARGO_HOME" = "$CI_JOB_TEMP/cargo-home"
+        test "$RUSTUP_HOME" = "$CI_JOB_TEMP/rustup-home"
+        test ! -e "$CARGO_HOME"
+        test ! -L "$CARGO_HOME"
+        test ! -e "$RUSTUP_HOME"
+        test ! -L "$RUSTUP_HOME"
+        umask 077
+        proof="$CI_JOB_TEMP/dbc-darwin"
+        mkdir "$proof"
+        free_kib=$(LC_ALL=C df -Pk "$CI_JOB_TEMP" | awk 'NR==2 {print $4}')
+        [[ $free_kib =~ ^[0-9]+$ ]] || { echo 'Rustup bootstrap: unknown free space' >&2; exit 1; }
+        printf 'before_free_kib=%s\nbootstrap_growth_bytes=536870912\n' "$free_kib" > "$proof/rustup-capacity.txt"
+        ((free_kib >= 512 * 1024)) || { echo 'Rustup bootstrap: 512 MiB growth unavailable' >&2; exit 1; }
+        mkdir "$CARGO_HOME" "$RUSTUP_HOME"
+        installer="$proof/rustup-init"
+        # 공식 archive checksum. 이미지/Homebrew provider나 Linux installer로 fallback하지 않는다.
+        curl --proto '=https' --tlsv1.2 --fail --location --max-time 60 --max-filesize 16777216 \
+          https://static.rust-lang.org/rustup/archive/1.29.1/aarch64-apple-darwin/rustup-init --output "$installer"
+        test -f "$installer"
+        test ! -L "$installer"
+        test "$(stat -c '%s' "$installer")" = 11319056
+        printf 'ec1b9233e7f72990ecd8e62063fa7f6c3dfc2bec8e97f88bff165f9100ac696a  %s\n' "$installer" | sha256sum --check -
+        test "$(/usr/bin/lipo -archs "$installer")" = arm64
+        chmod 700 "$installer"
+        # none은 이 단계의 toolchain 다운로드를 막는다. 모든 설치 출력과 설정은 private 경로다.
+        (ulimit -f 32768; "$installer" -y --default-host aarch64-apple-darwin \
+          --default-toolchain none --profile minimal --no-modify-path) > "$proof/rustup-init.stdout" 2> "$proof/rustup-init.stderr"
+        test -d "$CARGO_HOME/bin"
+        test ! -L "$CARGO_HOME/bin"
+        test -f "$CARGO_HOME/bin/rustup"
+        test ! -L "$CARGO_HOME/bin/rustup"
+        cmp "$installer" "$CARGO_HOME/bin/rustup"
+        export PATH="$CARGO_HOME/bin:$PATH"
+        test "$(command -v rustup)" = "$CARGO_HOME/bin/rustup"
+        test "$(command -v cargo)" = "$CARGO_HOME/bin/cargo"
+        for tool in rustup cargo rustc rustdoc; do test -x "$CARGO_HOME/bin/$tool"; done
+        # 다음 pinned rust-path action은 이 private sibling pair의 ready branch만 사용한다.
+        printf '%s\n' "$CARGO_HOME/bin" >> "$GITHUB_PATH"
+        rustup set auto-self-update disable
+        # --version도 active toolchain을 조회하므로 SDK manifest admission 전 자동 설치를 금지한다.
+        RUSTUP_AUTO_INSTALL=0 rustup --version > "$proof/private-rustup-version.txt" 2>&1
+        grep -E '^rustup 1\.29\.1( |$)' "$proof/private-rustup-version.txt"
+        test ! -e "$RUSTUP_HOME/toolchains"
+        test ! -L "$RUSTUP_HOME/toolchains"
+        find "$CARGO_HOME/bin" -mindepth 1 -maxdepth 1 -print0 | LC_ALL=C sort -z > "$proof/private-rust-proxies.before.bin"
+        {
+          stat -c '%d:%i:%u:%a:%s %n' "$installer"
+          sha256sum "$installer"
+          stat -c '%d:%i:%u:%a %n' "$CARGO_HOME/bin"
+          while IFS= read -r -d '' path; do
+            test -f "$path"
+            test "$path" -ef "$CARGO_HOME/bin/rustup"
+            stat -c '%d:%i:%u:%a:%s:%F %n' "$path"
+            if test -L "$path"; then readlink -- "$path"; fi
+            stat -Lc '%d:%i:%u:%a:%s %n' "$path"
+            sha256sum "$path"
+          done < "$proof/private-rust-proxies.before.bin"
+        } > "$proof/rustup-bootstrap-before.txt"
+        after_kib=$(LC_ALL=C df -Pk "$CI_JOB_TEMP" | awk 'NR==2 {print $4}')
+        [[ $after_kib =~ ^[0-9]+$ ]] || { echo 'Rustup bootstrap: unknown final free space' >&2; exit 1; }
+        printf 'after_free_kib=%s\n' "$after_kib" >> "$proof/rustup-capacity.txt"
+        ((free_kib - after_kib <= 512 * 1024))
+        printf 'private_rustup_bootstrap=pass\n' > "$proof/rustup-bootstrap.prepared"
     - name: Expose provisioned Rust shims
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       uses: bin9208/openpilot-rust/.github/actions/rust-path@b2fc62472ce8183114d59dbeec4d1406df44e4c2
@@ -326,6 +435,30 @@ jobs:
       run: |
         set -euo pipefail
         proof="$CI_JOB_TEMP/dbc-darwin"
+        # SDK 준비 실패에도 먼저 bootstrap baseline을 독립 확인한다. 부재/변경은 cleanup을 막는다.
+        grep -Fx 'private_rustup_bootstrap=pass' "$proof/rustup-bootstrap.prepared"
+        test -f "$proof/rustup-init"
+        test ! -L "$proof/rustup-init"
+        test -f "$CARGO_HOME/bin/rustup"
+        test ! -L "$CARGO_HOME/bin/rustup"
+        test -d "$CARGO_HOME/bin"
+        test ! -L "$CARGO_HOME/bin"
+        find "$CARGO_HOME/bin" -mindepth 1 -maxdepth 1 -print0 | LC_ALL=C sort -z > "$proof/private-rust-proxies.after.bin"
+        cmp "$proof/private-rust-proxies.before.bin" "$proof/private-rust-proxies.after.bin"
+        {
+          stat -c '%d:%i:%u:%a:%s %n' "$proof/rustup-init"
+          sha256sum "$proof/rustup-init"
+          stat -c '%d:%i:%u:%a %n' "$CARGO_HOME/bin"
+          while IFS= read -r -d '' path; do
+            test -f "$path"
+            test "$path" -ef "$CARGO_HOME/bin/rustup"
+            stat -c '%d:%i:%u:%a:%s:%F %n' "$path"
+            if test -L "$path"; then readlink -- "$path"; fi
+            stat -Lc '%d:%i:%u:%a:%s %n' "$path"
+            sha256sum "$path"
+          done < "$proof/private-rust-proxies.after.bin"
+        } > "$proof/rustup-bootstrap-after.txt"
+        cmp "$proof/rustup-bootstrap-before.txt" "$proof/rustup-bootstrap-after.txt"
         # baseline 부재도 실패이다. SDK 준비/기능 실패를 PASS로 바꾸지 않는다.
         test -s "$proof/providers-before.txt"
         while IFS= read -r path; do stat -c '%d:%i:%u:%a:%s %n' "$path"; sha256sum "$path"; done < "$proof/providers.paths" > "$proof/providers-after.txt"

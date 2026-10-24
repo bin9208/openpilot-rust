@@ -247,6 +247,144 @@ jobs:
           lfs: false
           path: ${{ env.CI296_CHECKOUT_PATH }}
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      - name: Admit exact source LFS objects before source baseline
+        id: ci296_lfs_admission
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        timeout-minutes: 15
+        shell: bash
+        working-directory: ${{ env.CI296_SOURCE }}
+        env:
+          CI296_HOST_CONTROL: '1'
+        run: |
+          set -euo pipefail
+          export LC_ALL=C
+          proof="$CI_JOB_TEMP/proof"
+          test "$PWD" = "$CI296_SOURCE"
+          test "$GITHUB_WORKSPACE" = "$CI296_SOURCE"
+          test "$(realpath -e -- "$CI296_SOURCE_OWNER")" = "$CI296_SOURCE_OWNER"
+          test "$(stat -c '%d:%i' -- "$CI296_SOURCE_OWNER")" = "$CI296_SOURCE_IDENTITY"
+          test "$(cat "$CI296_SOURCE_OWNER/.ci296-owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git diff --exit-code
+          git diff --cached --exit-code
+          git ls-files --stage -z > "$proof/lfs-index-before.bin"
+          git ls-files -z > "$proof/lfs-all-paths.bin"
+          git rev-parse HEAD HEAD^{tree} > "$proof/lfs-source.txt"
+          git version > "$proof/lfs-providers.txt"
+          git lfs version >> "$proof/lfs-providers.txt"
+          sha256sum "$(realpath -e -- "$(command -v git)")" "$(realpath -e -- "$(command -v git-lfs)")" > "$proof/lfs-provider-files.sha256"
+          gitdir=$(git rev-parse --absolute-git-dir)
+          test "$gitdir" = "$CI296_SOURCE/.git"
+          test -d "$gitdir" && test ! -L "$gitdir"
+          # 전역 storage가 새 private source 밖으로 다운로드를 보내지 못하게 한다.
+          if storage=$(git config --get lfs.storage); then
+            test "$storage" = "$gitdir/lfs"
+          else
+            test "$?" -eq 1
+          fi
+          if test -e "$gitdir/lfs" || test -L "$gitdir/lfs"; then
+            test -d "$gitdir/lfs" && test ! -L "$gitdir/lfs"
+            test "$(realpath -e -- "$gitdir/lfs")" = "$gitdir/lfs"
+          fi
+          cat > "$proof/lfs-pointers.txt" <<'POINTERS'
+          docs/assets/comma-logo.png|f54dec485ad298ee17b533354ed6f1fdfd3711a163d2c19d758f2ae340a0276e|57|d1eca5f5aca07e531baa8022fc5251eaf7a06658
+          openpilot/selfdrive/carrot/web/assets/alert_camera.svg|f1086279a32f49f68de1db4e89a93aa2aae779395cfb908e5f6a0cbf2bf7dae6|989|9ca3cc9cbf243c430fb395e8c2590f015732b4f5
+          openpilot/selfdrive/carrot/web/assets/alert_police.svg|d0dea6745d5cd5cf8206ced256310fed587555b3309d80cad46a4c066a931401|707|96fdd53484d77fa5f99b67ef35dfc6fe4c31a0d6
+          openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx|d3761c185daf33897ff3ff5edf28115c5dc829c06c538033accb616d6c67528c|13194895|b1d40634a3c566ef0534924da873daddbd696785
+          openpilot/selfdrive/carrot/xiaoge/assets/v_asm_model.onnx|00247ede5159dff9a0768c171095711d40f1ee109ac7b5e24adce344fe4ba6f9|9625905|55964ec7d6e00fec66facb86ba25fd40207360f8
+          openpilot/selfdrive/modeld/models/driving_supercombo.onnx|f73a9e535523d5e9acb9e642c64e33d631825dc8ba74123757d107cedd047bb5|60792584|80161b3fdb7f7a96159a48fb891636f5da551389
+          POINTERS
+          : > "$proof/lfs-paths.bin"
+          : > "$proof/lfs-attributes.bin"
+          count=0
+          payload=0
+          includes=
+          while IFS='|' read -r path oid bytes blob; do
+            count=$((count + 1))
+            payload=$((payload + bytes))
+            includes="${includes:+$includes,}$path"
+            printf '%s\0' "$path" >> "$proof/lfs-paths.bin"
+            test "$(git ls-tree "$GITHUB_SHA" -- "$path")" = "100644 blob $blob"$'\t'"$path"
+            git cat-file blob "$blob" > "$proof/lfs-pointer-$count.txt"
+            printf 'version https://git-lfs.github.com/spec/v1\noid sha256:%s\nsize %s\n' "$oid" "$bytes" | cmp - "$proof/lfs-pointer-$count.txt"
+            git check-attr --source="$GITHUB_SHA" -z filter -- "$path" > "$proof/lfs-attribute.tmp"
+            printf '%s\0filter\0lfs\0' "$path" | cmp - "$proof/lfs-attribute.tmp"
+            cat "$proof/lfs-attribute.tmp" >> "$proof/lfs-attributes.bin"
+            test -f "$path" && test ! -L "$path"
+            test "$(stat -c '%a:%u:%h' -- "$path")" = "644:$(id -u):1"
+          done < "$proof/lfs-pointers.txt"
+          test "$count" -eq 6 && test "$payload" -eq 83615137
+          # 실제 filter=lfs인 committed pointer만 수용한다. updater의 미지정 attribute는 보존한다.
+          git ls-files --cached -z --format=$'%(objectmode) %(objecttype) %(objectname) %(objectsize)\t%(path)' ':(top,attr:filter=lfs)' > "$proof/lfs-candidates.bin"
+          : > "$proof/lfs-observed-paths.bin"
+          while IFS= read -r -d '' row; do
+            meta=${row%%$'\t'*}
+            path=${row#*$'\t'}
+            read -r mode kind blob bytes <<< "$meta"
+            [[ $bytes =~ ^[0-9]+$ ]] && test "$kind" = blob
+            if ((bytes <= 1024)); then
+              git cat-file blob "$blob" > "$proof/lfs-candidate.tmp"
+              header='version https://git-lfs.github.com/spec/v1'
+              if cmp -s -n "$((${#header} + 1))" "$proof/lfs-candidate.tmp" <(printf '%s\n' "$header"); then
+                test "$mode" = 100644
+                printf '%s\0' "$path" >> "$proof/lfs-observed-paths.bin"
+              else
+                test "$?" -eq 1
+              fi
+            fi
+          done < "$proof/lfs-candidates.bin"
+          sort -z "$proof/lfs-paths.bin" > "$proof/lfs-paths-sorted.bin"
+          sort -z "$proof/lfs-observed-paths.bin" > "$proof/lfs-observed-sorted.bin"
+          cmp "$proof/lfs-paths-sorted.bin" "$proof/lfs-observed-sorted.bin"
+          # 원래 2 GiB source 예산에 이미 할당된 checkout과 cache/worktree/tmp 3배를 모두 포함한다.
+          allocated=$(du -s -B1 -- "$CI296_SOURCE_OWNER" | awk '{print $1}')
+          available=$(df -PB1 "$CI296_SOURCE" | awk 'NR == 2 {print $4}')
+          [[ $allocated =~ ^[0-9]+$ && $available =~ ^[0-9]+$ ]]
+          growth=$((3 * payload + 1024 * 1024))
+          cap=$((2 * 1024 * 1024 * 1024))
+          printf '{"allocated_bytes":%s,"payload_bytes":%s,"planned_growth_bytes":%s,"source_cap_bytes":%s,"available_bytes":%s}\n' "$allocated" "$payload" "$growth" "$cap" "$available" > "$proof/lfs-growth-before.json"
+          ((allocated + growth <= cap && available >= growth))
+          source_manifest() {
+            local path mode value
+            while IFS= read -r -d '' path; do
+              case "$path" in
+                docs/assets/comma-logo.png|openpilot/selfdrive/carrot/web/assets/alert_camera.svg|openpilot/selfdrive/carrot/web/assets/alert_police.svg|openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx|openpilot/selfdrive/carrot/xiaoge/assets/v_asm_model.onnx|openpilot/selfdrive/modeld/models/driving_supercombo.onnx) continue ;;
+              esac
+              mode=$(stat -c '%f' -- "$path") || return
+              if test -L "$path"; then
+                value=$(readlink -z -- "$path" | sha256sum) || return
+              elif test -f "$path"; then
+                value=$(sha256sum < "$path") || return
+              else
+                return 1
+              fi
+              printf '%s %s %s\0' "$mode" "${value%% *}" "$path"
+            done < "$1"
+          }
+          export -f source_manifest
+          timeout --signal=TERM --kill-after=10s 240s bash -euo pipefail -c 'source_manifest "$1" | sort -z > "$2"' lfs-manifest "$proof/lfs-all-paths.bin" "$proof/lfs-other-before.bin"
+          timeout --signal=TERM --kill-after=10s 300s git -c "lfs.storage=$gitdir/lfs" lfs pull --include "$includes" --exclude ''
+          sha256sum -c "$proof/lfs-provider-files.sha256"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git ls-files --stage -z > "$proof/lfs-index-after.bin"
+          cmp "$proof/lfs-index-before.bin" "$proof/lfs-index-after.bin"
+          : > "$proof/lfs-hydrated-records.bin"
+          : > "$proof/lfs-objects.sha256"
+          while IFS='|' read -r path oid bytes blob; do
+            test -f "$path" && test ! -L "$path"
+            test "$(stat -c '%a:%u:%h:%s' -- "$path")" = "644:$(id -u):1:$bytes"
+            printf '%s  %s\n' "$oid" "$path" >> "$proof/lfs-objects.sha256"
+            printf '%s %s %s\0' "$(stat -c '%f' -- "$path")" "$oid" "$path" >> "$proof/lfs-hydrated-records.bin"
+          done < "$proof/lfs-pointers.txt"
+          sha256sum -c "$proof/lfs-objects.sha256"
+          timeout --signal=TERM --kill-after=10s 240s bash -euo pipefail -c 'source_manifest "$1" | sort -z > "$2"' lfs-manifest "$proof/lfs-all-paths.bin" "$proof/lfs-other-after.bin"
+          cmp "$proof/lfs-other-before.bin" "$proof/lfs-other-after.bin"
+          cat "$proof/lfs-other-after.bin" "$proof/lfs-hydrated-records.bin" | sort -z > "$proof/lfs-source-files-before.bin"
+          allocated=$(du -s -B1 -- "$CI296_SOURCE_OWNER" | awk '{print $1}')
+          [[ $allocated =~ ^[0-9]+$ ]] && ((allocated <= cap))
+          printf '{"allocated_bytes":%s,"source_cap_bytes":%s}\n' "$allocated" "$cap" > "$proof/lfs-growth-after.json"
+          git diff --exit-code
+          git diff --cached --exit-code
       - *id003
       - *id004
       - name: Reserve capacity before dependency and native-tool setup
@@ -320,7 +458,59 @@ jobs:
             openpilot/system/tests/test_c3_agnos_manifest.py
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         working-directory: ${{ env.CI296_SOURCE }}
-      - *id005
+      - name: Seal private source and index after maintained checks
+        id: ci296_source_seal
+        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI296_SOURCE != '') }}
+        shell: bash
+        working-directory: ${{ env.CI296_SOURCE }}
+        env:
+          CI296_HOST_CONTROL: '1'
+        run: |
+          set -euo pipefail
+          seal_diagnostics() {
+            original_status=$?
+            trap - EXIT
+            if ((original_status != 0)); then
+              set +e
+              proof="$CI_JOB_TEMP/proof"
+              # 진단은 expected를 갱신하지 않으며 원래 봉인의 실패 exit를 보존한다.
+              git --no-pager diff --no-ext-diff --no-textconv --raw HEAD -- > "$proof/source-failed-git-diff.txt" 2> "$proof/source-failed-git-diff.stderr"
+              git --no-pager diff --no-ext-diff --no-textconv --cached --raw -- > "$proof/source-failed-index-diff.txt" 2> "$proof/source-failed-index-diff.stderr"
+              failed_source_manifest() {
+                local path mode value
+                while IFS= read -r -d '' path; do
+                  mode=$(stat -c '%f' -- "$path") || return
+                  if test -L "$path"; then
+                    value=$(readlink -z -- "$path" | sha256sum) || return
+                  elif test -f "$path"; then
+                    value=$(sha256sum < "$path") || return
+                  else
+                    return 1
+                  fi
+                  printf '%s %s %s\0' "$mode" "${value%% *}" "$path"
+                done < "$1"
+              }
+              export -f failed_source_manifest
+              LC_ALL=C timeout --signal=TERM --kill-after=10s 240s bash -euo pipefail -c 'failed_source_manifest "$1" | sort -z > "$2"' source-diagnostics "$proof/lfs-all-paths.bin" "$proof/source-failed-files-after.bin" 2> "$proof/source-failed-files.stderr"
+              diagnostic_status=$?
+              printf 'original_exit=%s\nmanifest_exit=%s\n' "$original_status" "$diagnostic_status" > "$proof/source-failed-diagnostics.txt"
+              if ((diagnostic_status == 0)) && test -f "$proof/lfs-source-files-before.bin"; then
+                LC_ALL=C comm -z --check-order -3 "$proof/lfs-source-files-before.bin" "$proof/source-failed-files-after.bin" > "$proof/source-failed-file-diff.bin"
+                printf 'file_diff_exit=%s\n' "$?" >> "$proof/source-failed-diagnostics.txt"
+              fi
+            fi
+            exit "$original_status"
+          }
+          trap seal_diagnostics EXIT
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"
+          cmp "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/index-after.bin"
+          tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
+          cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
+          git diff --exit-code
+          git diff --cached --exit-code
+          df -PB1 "$CI296_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
+          cat /proc/meminfo > "$CI_JOB_TEMP/proof/memory-after.txt"
       - *id006
       - *id007
       - *id008

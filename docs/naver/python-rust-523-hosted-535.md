@@ -81,3 +81,35 @@ Integration5개 workflow를 명시 Ubuntu24.04로 전환했다. 네 required dep
 setup #539는 관측된 숫자 CPU-time 주석만 수용하고, #540은 prebuild/public에만 Cargo fingerprint info 및 실제 Git input의 부재/type/identity/mtime를 기록하도록 했다. identity 교체 거부와 원래 예산·21+3/public1를 유지한다. packed-refs 부재는 현재 원인 후보이며 아직 확정하지 않는다. normal #538의 고정 로그 API에는 공식 escape 보존 flag1개만 추가한다. raw 로그를 private 파일로 수집해 기존 size/SHA로 검증하며 화면 렌더링/ANSI 변환을 하지 않는다.
 
 독립 소스 검토 지적을 반영했고, 로컬 YAML9개·내부 Bash854개·embedded AST8개·helper AST1개·단독 ARM Bash 문법·workspace Rust 서식과 diff를 확인했다. Focus의 exact 허용134경로/literal115pin이 현재 검토 bytes와 일치한다. 실행 영역의 별도 SHA는4ee29d23ba43e6824f19a550898b5678db549a0d283bace60f177f9713a9ef89다. 이 후보의 컴파일/기능/실제 hosted Mac·ARM·필수 PR 결과는 아직 없다. 새 Actions에서 확인할 대상으로 기록한다.
+
+
+## bdb819e59의 기본 러너 실제 결과와 원인별 보정
+
+PR343을 source `bdb819e59534ffba7c61751653ddaf360e8e324a`로 force 없이 fast-forward했다. dev 대상 draft이며 실제 PR merge source는 `ba1b07c38702bac3bb49614d14b54adaacaa95df`다. push source와 구분한다. [Rust40126297037](https://github.com/bin9208/openpilot-rust/actions/runs/40126297037)의41개 필수 의존성과 실제 Linux/x64·private ARM QEMU·macOS15/ARM64 경계를 유지한다. 아래 결과는 이 source 범위의 실제 관측이며 미완료 worker를 전체 PASS로 세지 않는다.
+
+- [Focus40126286930/job120968310136](https://github.com/bin9208/openpilot-rust/actions/runs/40126286930/job/120968310136) 성공: alias26·전체 scalar/Σ context·SSH27·strict Clippy·source/index/whole SDK 봉인. artifact12573742381은15,867,483B/SHA256 `ea25319a41cf7f2bff5278ee9eefb3a6ae3f2de683f96d15ece3a7d1a463498e`,81CRC와 전후4쌍을 확인했다.
+- [docs40126295962/job120968337170](https://github.com/bin9208/openpilot-rust/actions/runs/40126295962/job/120968337170) 성공:13tests·guard 정상2경로·source/SDK·upload/cleanup. actual mapped CLI는 base 대비7,528paths를 확인했다. Fast6+docs1 artifact 전체285CRC를 감사했고 각source/index·SDK 전후는 동일하다. docs artifact12573662207은328,479B/SHA256 `08447f6cefbe68720626c770f1065030e374b98097cdf5d3ab73eff4edc9873a`다. guard 실패 주입의 수용은 아니다.
+- [Fast40126296032](https://github.com/bin9208/openpilot-rust/actions/runs/40126296032)는5leaf 성공/routing·aggregate 실패다. 실제 cold1/caller5/lib83/athena2 성공 뒤 beep integer workflow parse가 unknown anchor byte6149에서 실패했다. camera/model-family/model-pipelines/encoder/UI/lagd에도 같은 parser 원인이 관측됐다(#541).
+- [setup40126286865/job120968309889](https://github.com/bin9208/openpilot-rust/actions/runs/40126286865/job/120968309889)는 frozen21/음성3/Clippy 및 public stdout·exit1이 일치했다. #539의 SIGCHLD 숫자 CPU-time 주석15개가 실제 parser를 통과했다. #540은 Cargo가 `stale: missing .../.git/packed-refs`를 최초 재build 원인으로 명시했다. HEAD/index/current-ref identity·mtime는 그대로였다. public 재link가 held CLI를 교체해 finalizer가 거부했다. artifact12573042824는10,585,156B/SHA256 `faa165516e0ef1a43e4aadf5f792f1e105600e45c2017aba0243541745c27168`,151CRC/14전후봉인쌍을 확인했다. 전체 trace/immutable 수용과 원본 삭제는 아니다.
+- [normal40126286876/job120968310111](https://github.com/bin9208/openpilot-rust/actions/runs/40126286876/job/120968310111)는 고정 역사raw4·current build/Clippy 이후 numerics staging roster에서 중단됐다. 고정 wheel의 `numpy.libs/`0바이트 directory를 기존 stager가 `numpy.libs`0바이트 일반파일/manifest member로 보존하지만 임시 qualification helper가 directory를 모두 건너뛰어 extra1/missing0이 됐다(#543). artifact12573753108은45,528,966B/SHA256 `cce5ca9405f3bb16ffebe1f76bc144685fef858bdbc2fb4eb619ef1ab6be9f24`,179CRC를 확인했다. normal40 수치 비교는 미도달이다. finalizer의 numerics/native baseline unavailable은 미도달 경계를 실패로 보존한 것이며 source/SDK 변경 성공을 뜻하지 않는다.
+- Mac120968344635는 실제 Darwin/ARM64 guard와GNU8종 성공 뒤 Rustup admission 실패다(#544). image provider가 없었는지 sibling cargo 검사 실패인지는 기존 silent 로그로 확정하지 않는다. 실제 image의 Homebrew formula는 wrapper/libexec 배치를 사용하므로 Mach-O/sibling cargo 가정이 보장되지 않는다. private SDK/build/DBC16tests는 미도달이다.
+- [Integration40126295997](https://github.com/bin9208/openpilot-rust/actions/runs/40126295997)은14성공/2실패다. release build/모델변환/카메라/pytest570은 성공했고 최종 source tar 봉인과 파생 gate가 실패했다. baseline(19:39:49UTC) 뒤 setup의 LFS pull(19:40:49–58)이 관측돼 pointer를 payload로 바꾸는 순서 문제가 확정됐다(#546). exact6개/83,615,137B의 attr-selected LFS roster를 source-before 이전에 검증하는 보정을 준비한다. 모든 source 차이가 이6개만이었다는 근거는 아직 없다.
+
+추가 독립 실패는 #542(현재 logical matrix/보호된 upload 조건과 예전 assertion), #545(Panda venv 실행 경로 canonicalize로 base Python이 실행돼 usb1 누락), #547(updater trace 정책의 `/tmp/updated-source-` 고정 prefix가 owned private TMPDIR를 거부)에서 추적한다. updater artifact12573793106은1,618,914B/SHA256 `9959481e92e1c90b59c501bf1dc6a0651898574f4ca6055557cbdec17c0e81e3`,187CRC를 확인했고 실제 git-upload-pack argv의 private root를 확인했다. 원본5개 비교는 성공했지만 checkout/absence 전체 trace 수용은 실패다.
+
+후속 소스는 원인별로 최소 보완한다. main YAML은 실제 AliasToken472개와 colon 사이에만 공백을 넣어 전체 parsed model/run bytes를 그대로 유지한다(497,337B/41needs). 텍스트 배치에 의존한 stats/soundd/emoji 검사는 실제job/step을 파싱하면서 기존 assertions를 보존한다. setup은 source/build/hold 전에 `git pack-refs --all --no-prune`과 HEAD/index/ref roster 불변을 요구해 정상 metadata를 준비한다. normal은 정확한 빈 marker를 검증·보존하고 실제3DSO만 ldd하며, 이미 관측된 CPU 주석 문법만 trace metadata에 등록한다. Mac은 image provider를 실행하지 않고 진단한 뒤 공식 Darwin Rustup1.29.1을 owned private homes에 별도512MiB admission/16MiB download 상한 아래 설치한다. installer/proxy 전체 identity·SHA 전후를 기존 SDK seal에 연결하고1.94 manifest·16selectors·cleanup을 유지한다.
+
+위 후속 소스의 기능/빌드/Clippy는 Actions 수용 전 UNRUN이다. source 봉인/FD/DSO/provider·숫자·원문 expected·예산을 완화하지 않는다. 이번 추가 retirement credit0, baseline3580의292교체/3부분/3285대기와 전체 필수 PR·병합 후·전달·실기 미완료 상태를 유지한다.
+
+
+후속 배치의 로컬 source 확인에서는 YAML5개/내부Bash774개/embedded AST8개/별도Python AST4개와 diff를 확인했다. main YAML의748개 run 문자열과 전체 모델은 구분자 보정 전후 동일하다. Focus는 exact142허용경로/123literalpin, 실행 영역 SHA `4ee29d23ba43e6824f19a550898b5678db549a0d283bace60f177f9713a9ef89`를 유지한다. execution-edge 원장은 기존92행의 현재 blob 식별자만 갱신하고25교체/63대기/1native-existing/2nonexecuting-text/1removed를 유지한다. 이 기록은 로컬 기능/빌드 성공이 아니며 원본 credit을 늘리지 않는다.
+
+
+추가 종료 관측에서 Xiaoge memory120968344543은4Miri모드와ASan/UBSan9개가 성공한 뒤 모델 LFS hydration으로 source-final이 실패했다. workspace120968344589도 공통 YAML 오류와 LFS 후 source-final 실패를 보존했다. #546의 같은 순서 보정을 Rust5개 job key에만 확장한다. driving1 또는xiaoge2의 exact source OID/size를 기존 baseline 전에 검증할 source-only Bash bootstrap을 준비하며 기존 모델 다운로드·기능 명령은 유지한다.
+
+CarrotMan ARM120968344415와 Carrot Navi ARM120968344549의 cancelled는 부모 취소가 아니다. 두 Actions annotation이 기존25분 maximum job execution 초과를 명시했다(#548). 이2개의 전체 job 한도만60분으로 보완하고 기능별 deadline·QEMU/ABI·메모리/디스크·source/provider/수치 기준은 유지한다. 기능 검사 도달·수용은 아직 미완료다. startup UTF7의 같은 고정 block split 실패도 #541의 parsed-job 보완에 포함한다.
+
+
+최종 source 후보에서 Rust main은497,973B다. source baseline 앞 LFS 준비5개 단계와 ARM job 한도2개를 제외하면 이전 전체 job model/748개 기존run bytes가 동일하다. CarrotMan은 matrix.arch==aarch64에만60분을 적용하고 x86_64의25분은 유지한다. Carrot Navi ARM은60분이다. source-only helper `tools/ci/prepare-lfs-source-535`는exact3model 중 필요한1/2개만 선택하며, 실제 Git/LFS FD·identity·SHA/전용cache/source-index·나머지tracked파일 전후·원래2GiB source cap과bounded hydration을 요구한다. main의 same-source literal SHA 검증 뒤 실행되며 기존 Git LFS 및 기능 명령은 유지한다. 새 compiler·Python loader·모델 expected 생성은 없다.
+
+Focus의 최종등록은exact144경로/125literalpin이며 실행영역SHA는불변이다. registration UTF7의같은text-split을파싱한startupjob으로교정해기존assert3개를보존했다. 이추가후보도Actions 실제수용전UNRUN이며앞선성공에소급하지않는다.

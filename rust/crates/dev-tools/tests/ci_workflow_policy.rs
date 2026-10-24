@@ -1807,3 +1807,11 @@ fn webrtc_retention_policy_rejects_guard_removal_and_unbound_required_stages() {
         );
     }
 }
+#[test]
+fn flow_mapping_alias_keys_keep_an_explicit_colon_separator() {
+    use openpilot_dev_tools::ci_policy::parse;
+    let source = "{keys: [&key run, &body 'cargo test'], steps: [{*key : *body}]}";
+    let value = parse(source).unwrap();
+    assert_eq!(value["steps"][0]["run"], "cargo test");
+    assert!(parse("{keys: [&key run], steps: [{*unknown : value}]}").is_err());
+}

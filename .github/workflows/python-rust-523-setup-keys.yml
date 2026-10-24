@@ -93,6 +93,43 @@ jobs:
         set-safe-directory: false
         clean: false
         lfs: false
+    - name: Prepare private Git packed refs while preserving exact source inputs
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        set -o noclobber
+        umask 077
+        test "$PWD" = "$DIAG_SOURCE"
+        test "$GITHUB_WORKSPACE" = "$DIAG_SOURCE"
+        proof=$CI_JOB_TEMP/proof
+        git_dir=$(git rev-parse --absolute-git-dir)
+        [[ $git_dir == "$DIAG_SOURCE/.git" && -d $git_dir && ! -L $git_dir ]]
+        metadata_snapshot() {
+          local moment=$1 path
+          git rev-parse --verify HEAD > "$proof/git-metadata-$moment.head"
+          test "$(cat "$proof/git-metadata-$moment.head")" = "$GITHUB_SHA"
+          git symbolic-ref -q HEAD > "$proof/git-metadata-$moment.symbolic-head" || test "$?" = 1
+          git for-each-ref --sort=refname --format='%(refname)%09%(objectname)%09%(symref)' > "$proof/git-metadata-$moment.refs.tsv"
+          for path in "$git_dir/HEAD" "$git_dir/index"; do
+            [[ -f $path && ! -L $path ]]
+            stat -c '%n type=%F identity=%d:%i:%f:%u:%g:%s:%h:%y:%z' -- "$path"
+          done > "$proof/git-metadata-$moment.identity.txt"
+          sha256sum -- "$git_dir/HEAD" "$git_dir/index" > "$proof/git-metadata-$moment.files.sha256"
+        }
+        metadata_snapshot before
+        # #540 run40126286865는 missing .git/packed-refs를 Cargo 재빌드 원인으로 확정했다.
+        # 정상 Git metadata를 준비하되 logging이 함께 추적하는 loose branch ref도 보존한다.
+        git pack-refs --all --no-prune > "$proof/git-pack-refs.stdout" 2> "$proof/git-pack-refs.stderr"
+        metadata_snapshot after
+        for suffix in head symbolic-head refs.tsv identity.txt files.sha256; do
+          cmp "$proof/git-metadata-before.$suffix" "$proof/git-metadata-after.$suffix"
+        done
+        packed_refs=$git_dir/packed-refs
+        [[ -f $packed_refs && ! -L $packed_refs && $(stat -c %u -- "$packed_refs") == "$(id -u)" ]]
+        stat -c '%n type=%F identity=%d:%i:%f:%u:%g:%s:%h:%y:%z' -- "$packed_refs" > "$proof/git-packed-refs.metadata.txt"
+        sha256sum -- "$packed_refs" > "$proof/git-packed-refs.sha256"
     - name: Seal exact source HEAD and tracked index before checks
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       id: source_before

@@ -1,0 +1,213 @@
+#!/usr/bin/env bash
+# #535/#546: source baseline 전에 고정 모델만 정상 LFS payload로 준비한다.
+# 사용법: prepare-lfs-source-535 xiaoge|driving (기존 private source/job 환경 필수)
+set -euo pipefail
+umask 077
+export LC_ALL=C PATH=/usr/bin:/bin
+fail() { printf 'private LFS source: %s\n' "$*" >&2; exit 1; }
+[[ $# == 1 && ( $1 == xiaoge || $1 == driving ) ]] || fail 'xiaoge or driving required'
+selection=$1
+[[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == bin9208/openpilot-rust &&
+   ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux &&
+   ${RUNNER_ARCH:-} == X64 && $(uname -s) == Linux && $(uname -m) == x86_64 ]] || fail 'actual hosted Linux/X64 required'
+case "$selection:${GITHUB_JOB:-}" in
+  driving:workspace|driving:model-pipelines|driving:model-llvm20|xiaoge:xiaoge-runtime|xiaoge:xiaoge-memory) ;;
+  *) fail 'model selection does not match an admitted Rust job' ;;
+esac
+uid=$(id -u)
+owned() {
+  local path=$1 kind=$2 owner mode
+  [[ $path == /* && ! -L $path && $(readlink -e -- "$path") == "$path" ]] || fail 'canonical owned path required'
+  if [[ $kind == directory ]]; then [[ -d $path ]] || fail 'owned directory required'
+  else [[ -f $path ]] || fail 'owned regular file required'; fi
+  read -r owner mode < <(stat -c '%u %a' -- "$path")
+  [[ $owner == "$uid" ]] && (( (8#$mode & 0022) == 0 )) || fail 'foreign or shared-writable owned path'
+}
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)
+[[ $root == "${CI296_SOURCE:?private source required}" && $root == "${GITHUB_WORKSPACE:?private workspace required}" && $PWD == "$root" ]] || fail 'source binding differs'
+job=${CI_JOB_TEMP:?private job required}
+[[ $job == /tmp/openpilot-ci.?????? && ${job%/*} == /tmp ]] || fail 'unexpected private job root'
+owned "$job" directory
+owned "$job/owner" file
+owner="${GITHUB_RUN_ID:?}:${GITHUB_RUN_ATTEMPT:?}:${GITHUB_JOB:?}"
+[[ $(cat -- "$job/owner") == "$owner" ]] || fail 'job owner differs'
+[[ ${HOME:-} == "$job/home" ]] || fail 'private HOME required'
+owned "$HOME" directory
+source_owner=${CI296_SOURCE_OWNER:?private source owner required}
+workspace=${CI296_ACTIONS_WORKSPACE:?actual Actions workspace required}
+case "$source_owner" in "$workspace/.ci296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."??????) ;; *) fail 'unexpected source owner path' ;; esac
+owned "$source_owner" directory
+owned "$source_owner/.ci296-owner" file
+owned "$root" directory
+[[ $root == "$source_owner/source" && $(stat -c '%d:%i' -- "$source_owner") == "${CI296_SOURCE_IDENTITY:?source identity required}" &&
+   $(cat -- "$source_owner/.ci296-owner") == "$owner" ]] || fail 'source owner binding differs'
+[[ ${GITHUB_SHA:-} =~ ^[0-9a-f]{40}$ ]] || fail 'exact source SHA required'
+owned "$job/proof" directory
+proof=$job/proof/lfs-$selection
+mkdir -m 700 -- "$proof"
+set -o noclobber
+declare -A provider_fd=() provider_real=() provider_identity=() provider_sha=() provider_alias=() provider_name=()
+providers_ready=false
+admitted=false
+identity() { stat -Lc '%d:%i:%f:%u:%g:%s:%h:%y:%z' -- "$1"; }
+bind_provider() {
+  local name=$1 path real before descriptor digest owner mode
+  path=$(command -v "$name") || return 1
+  [[ $path == /* ]] || return 1
+  real=$(readlink -e -- "$path") || return 1
+  [[ -f $real && ! -L $real && -x $real ]] || return 1
+  read -r owner mode < <(stat -c '%u %a' -- "$real")
+  # 배포 이미지의 root 소유 비공유-writable ELF를 읽기 전용으로 연다.
+  [[ $owner == 0 ]] && (( (8#$mode & 0022) == 0 )) || return 1
+  before=$(identity "$real") || return 1
+  exec {descriptor}<"$real" || return 1
+  [[ $(identity "/proc/$$/fd/$descriptor") == "$before" ]] || return 1
+  [[ $(head -c 4 "/proc/$$/fd/$descriptor" | od -An -tx1 | tr -d ' \n') == 7f454c46 ]] || return 1
+  digest=$(sha256sum "/proc/$$/fd/$descriptor") || return 1
+  [[ $(identity "$real") == "$before" ]] || return 1
+  provider_fd[$name]=$descriptor
+  provider_real[$name]=$real
+  provider_identity[$name]=$before
+  provider_sha[$name]=${digest%% *}
+  provider_name[$name]=$path
+  provider_alias[$name]=$(stat -c '%d:%i:%f:%u:%g:%s:%h:%y:%z' -- "$path") || return 1
+  printf '%s\t%s\t%s\t%s\n' "$name" "$real" "$before" "${digest%% *}" >> "$proof/providers-before.tsv"
+}
+verify_providers() {
+  local name path descriptor digest
+  [[ $("${provider_real[git]}" --exec-path) == "$git_exec" ]] || return 1
+  [[ $(exec_lfs_state) == "$exec_lfs_before" ]] || return 1
+  for name in git git-lfs; do
+    path=${provider_name[$name]}; descriptor=${provider_fd[$name]}
+    [[ $(command -v "$name") == "$path" && $(readlink -e -- "$path") == "${provider_real[$name]}" &&
+       $(stat -c '%d:%i:%f:%u:%g:%s:%h:%y:%z' -- "$path") == "${provider_alias[$name]}" &&
+       $(identity "${provider_real[$name]}") == "${provider_identity[$name]}" &&
+       $(identity "/proc/$$/fd/$descriptor") == "${provider_identity[$name]}" ]] || return 1
+    digest=$(sha256sum "/proc/$$/fd/$descriptor") || return 1
+    [[ ${digest%% *} == "${provider_sha[$name]}" ]] || return 1
+    printf '%s\t%s\t%s\t%s\n' "$name" "${provider_real[$name]}" "${provider_identity[$name]}" "${digest%% *}" >> "$proof/providers-after.tsv"
+  done
+}
+finish() {
+  local result=$?
+  trap - EXIT
+  if $providers_ready; then verify_providers || result=1; fi
+  printf '%s\n' "$result" > "$proof/exit-status" || result=1
+  if ((result == 0)) && $admitted; then
+    printf 'source=%s\nselection=%s\nmodels=%s\npayload_bytes=%s\nprivate_storage=%s\nadmission=pass\n' \
+      "$GITHUB_SHA" "$selection" "$count" "$payload" "$gitdir/lfs" > "$proof/prepared.pass" || result=1
+  fi
+  exit "$result"
+}
+trap finish EXIT
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_EXEC_PATH
+bind_provider git
+bind_provider git-lfs
+git=${provider_real[git]}
+git_exec=$("$git" --exec-path)
+exec_lfs_state() {
+  local path=$git_exec/git-lfs
+  if [[ -e $path || -L $path ]]; then
+    [[ $(readlink -e -- "$path") == "${provider_real[git-lfs]}" ]] || return 1
+    stat -c '%d:%i:%f:%u:%g:%s:%h:%y:%z' -- "$path"
+  else printf 'missing\n'; fi
+}
+exec_lfs_before=$(exec_lfs_state)
+providers_ready=true
+[[ $("$git" rev-parse HEAD) == "$GITHUB_SHA" ]] || fail 'HEAD differs'
+gitdir=$("$git" rev-parse --absolute-git-dir)
+[[ $gitdir == "$root/.git" ]] || fail 'private Git directory differs'
+owned "$gitdir" directory
+"$git" diff --no-ext-diff --exit-code
+"$git" diff --cached --no-ext-diff --exit-code
+"$git" ls-files --stage -z > "$proof/index-before.bin"
+"$git" ls-files -z > "$proof/all-paths.bin"
+"$git" rev-parse HEAD 'HEAD^{tree}' > "$proof/source-before.txt"
+"$git" version > "$proof/provider-versions.txt"
+"$git" lfs version >> "$proof/provider-versions.txt"
+if storage=$("$git" config --get lfs.storage); then
+  [[ $storage == "$gitdir/lfs" ]] || fail 'external LFS storage forbidden'
+else [[ $? == 1 ]] || fail 'cannot inspect LFS storage'; fi
+if [[ ! -e $gitdir/lfs && ! -L $gitdir/lfs ]]; then mkdir -- "$gitdir/lfs"; fi
+owned "$gitdir/lfs" directory
+storage_check() {
+  find -P "$gitdir/lfs" \( ! -uid "$uid" -o \( ! -type d ! -type f \) \) -print0 > "$1"
+  [[ ! -s $1 ]] || fail 'private LFS storage has foreign or special entries'
+}
+storage_check "$proof/storage-rejected-before.bin"
+# Integration #546 표의 committed blob/OID/size를 그대로 사용한다. 다른 LFS 파일은 선택하지 않는다.
+case $selection in
+  xiaoge)
+    printf '%s\n' \
+      'openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx|d3761c185daf33897ff3ff5edf28115c5dc829c06c538033accb616d6c67528c|13194895|b1d40634a3c566ef0534924da873daddbd696785' \
+      'openpilot/selfdrive/carrot/xiaoge/assets/v_asm_model.onnx|00247ede5159dff9a0768c171095711d40f1ee109ac7b5e24adce344fe4ba6f9|9625905|55964ec7d6e00fec66facb86ba25fd40207360f8' > "$proof/pointers.txt" ;;
+  driving)
+    printf '%s\n' \
+      'openpilot/selfdrive/modeld/models/driving_supercombo.onnx|f73a9e535523d5e9acb9e642c64e33d631825dc8ba74123757d107cedd047bb5|60792584|80161b3fdb7f7a96159a48fb891636f5da551389' > "$proof/pointers.txt" ;;
+esac
+count=0; payload=0; includes=
+while IFS='|' read -r path oid bytes blob; do
+  count=$((count + 1)); payload=$((payload + bytes))
+  includes="${includes:+$includes,}$path"
+  [[ $("$git" ls-tree "$GITHUB_SHA" -- "$path") == "100644 blob $blob"$'\t'"$path" ]] || fail 'committed model blob/mode differs'
+  "$git" cat-file blob "$blob" > "$proof/pointer-$count.txt"
+  printf 'version https://git-lfs.github.com/spec/v1\noid sha256:%s\nsize %s\n' "$oid" "$bytes" | cmp - "$proof/pointer-$count.txt"
+  "$git" check-attr --source="$GITHUB_SHA" -z filter -- "$path" > "$proof/attribute-$count.bin"
+  printf '%s\0filter\0lfs\0' "$path" | cmp - "$proof/attribute-$count.bin"
+  [[ -f $path && ! -L $path && $(stat -c '%a:%u:%h' -- "$path") == "644:$uid:1" ]] || fail 'initial model kind/mode/owner/link differs'
+done < "$proof/pointers.txt"
+case $selection in
+  xiaoge) [[ $count == 2 && $payload == 22820800 ]] ;;
+  driving) [[ $count == 1 && $payload == 60792584 ]] ;;
+esac
+allocated=$(du -sx -B1 -- "$source_owner" | awk '{print $1}')
+available=$(df -PB1 "$root" | awk 'NR == 2 {print $4}')
+[[ $allocated =~ ^[0-9]+$ && $available =~ ^[0-9]+$ ]] || fail 'unknown source capacity'
+growth=$((3 * payload + 1024 * 1024))
+cap=$((2 * 1024 * 1024 * 1024))
+printf '{"allocated_bytes":%s,"payload_bytes":%s,"planned_growth_bytes":%s,"source_cap_bytes":%s,"available_bytes":%s}\n' \
+  "$allocated" "$payload" "$growth" "$cap" "$available" > "$proof/growth-before.json"
+((allocated + growth <= cap && available >= growth)) || fail '2 GiB source cap or LFS growth unavailable'
+source_manifest() {
+  local paths=$1 selection=$2 path mode value
+  while IFS= read -r -d '' path; do
+    case "$selection:$path" in
+      xiaoge:openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx|xiaoge:openpilot/selfdrive/carrot/xiaoge/assets/v_asm_model.onnx|driving:openpilot/selfdrive/modeld/models/driving_supercombo.onnx) continue ;;
+    esac
+    mode=$(stat -c '%f' -- "$path") || return 1
+    if [[ -L $path ]]; then value=$(readlink -z -- "$path" | sha256sum) || return 1
+    elif [[ -f $path ]]; then value=$(sha256sum < "$path") || return 1
+    else return 1; fi
+    printf '%s %s %s\0' "$mode" "${value%% *}" "$path"
+  done < "$paths"
+}
+export -f source_manifest
+timeout --signal=TERM --kill-after=10s 240s bash -euo pipefail -c \
+  'source_manifest "$1" "$2" | sort -z > "$3"' lfs-manifest "$proof/all-paths.bin" "$selection" "$proof/other-before.bin"
+pull_status=0
+# 정상 Git checkout mode를 사용한다. helper의 private proof umask로 모델을 chmod하지 않는다.
+(umask 022; timeout --signal=TERM --kill-after=10s 300s "$git" -c "lfs.storage=$gitdir/lfs" \
+  lfs pull --include "$includes" --exclude '') > "$proof/pull.stdout" 2> "$proof/pull.stderr" || pull_status=$?
+printf '%s\n' "$pull_status" > "$proof/pull-exit-status"
+"$git" rev-parse HEAD 'HEAD^{tree}' > "$proof/source-after.txt"
+cmp "$proof/source-before.txt" "$proof/source-after.txt"
+"$git" ls-files --stage -z > "$proof/index-after.bin"
+cmp "$proof/index-before.bin" "$proof/index-after.bin"
+timeout --signal=TERM --kill-after=10s 240s bash -euo pipefail -c \
+  'source_manifest "$1" "$2" | sort -z > "$3"' lfs-manifest "$proof/all-paths.bin" "$selection" "$proof/other-after.bin"
+cmp "$proof/other-before.bin" "$proof/other-after.bin"
+storage_check "$proof/storage-rejected-after.bin"
+allocated=$(du -sx -B1 -- "$source_owner" | awk '{print $1}')
+[[ $allocated =~ ^[0-9]+$ ]] && ((allocated <= cap)) || fail 'final source cap exceeded'
+printf '{"allocated_bytes":%s,"source_cap_bytes":%s}\n' "$allocated" "$cap" > "$proof/growth-after.json"
+"$git" diff --no-ext-diff --exit-code
+"$git" diff --cached --no-ext-diff --exit-code
+[[ $(stat -c '%d:%i' -- "$source_owner") == "$CI296_SOURCE_IDENTITY" &&
+   $(cat -- "$source_owner/.ci296-owner") == "$owner" ]] || fail 'final source owner differs'
+((pull_status == 0)) || exit "$pull_status"
+while IFS='|' read -r path oid bytes blob; do
+  [[ -f $path && ! -L $path && $(stat -c '%a:%u:%h:%s' -- "$path") == "644:$uid:1:$bytes" ]] || fail 'hydrated model kind/mode/owner/link/size differs'
+  printf '%s  %s\n' "$oid" "$path" >> "$proof/objects.sha256"
+done < "$proof/pointers.txt"
+sha256sum --check --strict -- "$proof/objects.sha256"
+admitted=true

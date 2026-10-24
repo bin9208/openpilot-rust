@@ -1042,12 +1042,19 @@ class Probe:
              and manifest["format"] == 1 and manifest["numpy"] == "2.5.3" and manifest["abi"] == "scipy_dgesdd_64_",
              "staged numerics manifest differs")
         expected = {"manifest.json", "provenance.json"}
+        directory_markers = set()
         with zipfile.ZipFile(wheel) as archive:
             for item in archive.infolist():
-                if item.is_dir():
+                if item.is_dir() and not item.filename.startswith("numpy.libs/"):
                     continue
                 if item.filename.startswith("numpy.libs/"):
-                    expected.add(item.filename.rsplit("/", 1)[-1])
+                    name = item.filename.rstrip("/").rsplit("/", 1)[-1]
+                    if item.is_dir():
+                        # 기존 stager는 wheel의 빈 numpy.libs/를 일반파일 marker로 보존한다.
+                        need(item.filename == "numpy.libs/" and item.file_size == 0
+                             and archive.read(item) == b"", "numerics directory marker differs")
+                        directory_markers.add(name)
+                    expected.add(name)
                 elif ".dist-info/licenses/" in item.filename:
                     expected.add("licenses/" + item.filename.split("/licenses/", 1)[1])
         need({name for name, row in self.staged_before.items() if "sha256" in row} == expected,
@@ -1058,7 +1065,14 @@ class Probe:
                  and PurePosixPath(row["name"]).name == row["name"], "numerical file duplicate/path differs")
             declared[row["name"]] = row["sha256"]
         libraries = {name for name in expected if "/" not in name} - {"manifest.json", "provenance.json"}
-        need(set(declared) == libraries and manifest["library"] in declared, "numerical DSO roster incomplete")
+        need(set(declared) == libraries and manifest["library"] in libraries - directory_markers,
+             "numerical DSO roster incomplete")
+        for name in directory_markers:
+            need(declared[name] == sha(b"") and self.staged_before[name]["identity"][5] == 0
+                 and self.staged_before[name]["sha256"] == sha(b""), "numerics marker bytes differ")
+        save(self.out / "numerics-directory-markers.json", {
+             "members": sorted(directory_markers), "size": 0, "sha256": sha(b""),
+             "scope": "exact source-locked wheel directory markers preserved by the existing stager; not DSOs"})
         for name, row in self.staged_before.items():
             need(not "symlink" in row, "numerics symlink forbidden")
             if "sha256" in row:
@@ -1072,7 +1086,7 @@ class Probe:
             self.holds.add(self.numerics / name, declared.get(name))
         self.numerics_before = snapshot(self.numerics, walk(self.numerics))
         save(self.out / "numerics-before.json", self.numerics_before)
-        for index, name in enumerate(sorted(declared)):
+        for index, name in enumerate(sorted(set(declared) - directory_markers)):
             self.dso(self.numerics / name, f"numerics-dso-{index}")
         self.numerical_library = (self.numerics / manifest["library"]).resolve(strict=True)
         self.env["CONTROLS_NUMERICS"] = str(self.numerics)
@@ -1107,7 +1121,7 @@ class Probe:
                                    "argv": unique_json(invocation[2])})
                 continue
             metadata = (r"\+\+\+ exited with 0 \+\+\+",
-                        r"--- SIGCHLD \{si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=[1-9][0-9]*, si_uid=[0-9]+, si_status=0, si_utime=[0-9]+, si_stime=[0-9]+\} ---",
+                        r"--- SIGCHLD \{si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=[1-9][0-9]*, si_uid=[0-9]+, si_status=0, si_utime=[0-9]+(?: /\* [0-9]+\.[0-9]{2} s \*/)?, si_stime=[0-9]+(?: /\* [0-9]+\.[0-9]{2} s \*/)?\} ---",
                         r"--- SIGUSR1 \{si_signo=SIGUSR1, si_code=SI_TKILL, si_pid=[1-9][0-9]*, si_uid=[0-9]+\} ---")
             need(any(re.fullmatch(pattern, body) for pattern in metadata), "unknown runtime trace metadata")
             signals += int(body.startswith("---"))
