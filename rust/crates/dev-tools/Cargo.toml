@@ -2533,6 +2533,10 @@ path = "src/developer_ssh/auth_json_main.rs"
 required-features = ["developer-ssh-native"]
 
 [[test]]
+name = "developer_cli_original"
+required-features = ["developer-ssh-native"]
+
+[[test]]
 name = "developer_auth"
 required-features = ["developer-ssh-native"]
 

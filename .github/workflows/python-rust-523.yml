@@ -105,7 +105,7 @@ jobs:
       uses: bin9208/openpilot-rust/.github/actions/rust-path@b2fc62472ce8183114d59dbeec4d1406df44e4c2
     - uses: actions/setup-python@v6
       with:
-        python-version: '3.12'
+        python-version: 3.12.15
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         }}
     - name: Isolate original Python package installation
@@ -166,62 +166,64 @@ jobs:
         GH_TOKEN: ${{ github.token }}
       run: |
         set -euo pipefail
-        prior="$CI_JOB_TEMP/proof/prior-40081388419.zip"
-        gh api repos/bin9208/openpilot-rust/actions/artifacts/12555169058/zip > "$prior"
-        printf 'c9de529574ed693dfec4cd438b3da29d87fb26060bbe5b43347844dd579fe74d  %s\n' "$prior" | sha256sum --check -
+        prior="$CI_JOB_TEMP/proof/prior-40082949276.zip"
+        gh api repos/bin9208/openpilot-rust/actions/artifacts/12556331299/zip > "$prior"
+        printf '5ed71546d1a7d50ffc0a94c1b8ba9266267fb2a7772de83d8ebfe4bcc3a2e279  %s\n' "$prior" | sha256sum --check -
         unzip -t "$prior" > "$CI_JOB_TEMP/proof/prior-crc.txt"
-        test "$(unzip -p "$prior" SOURCE_COMMIT)" = 40efe7ef964c0b08f9ba867edd9c863fc545bc0a
+        test "$(unzip -p "$prior" SOURCE_COMMIT)" = 41cfaffd310059f4f999c8d24dd491d9694baa91
         for name in source-before.sha256 source-after.sha256 index-before.bin index-after.bin rust-tools.sha256; do
           unzip -p "$prior" "$name" > "$CI_JOB_TEMP/proof/prior-$name"
         done
         cmp "$CI_JOB_TEMP/proof/prior-source-before.sha256" "$CI_JOB_TEMP/proof/prior-source-after.sha256"
         cmp "$CI_JOB_TEMP/proof/prior-index-before.bin" "$CI_JOB_TEMP/proof/prior-index-after.bin"
         sha256sum --check "$CI_JOB_TEMP/proof/prior-rust-tools.sha256"
-        git fetch --no-tags --depth=1 origin 40efe7ef964c0b08f9ba867edd9c863fc545bc0a
-        git diff --no-renames --name-only -z 40efe7ef964c0b08f9ba867edd9c863fc545bc0a HEAD > "$CI_JOB_TEMP/proof/changed-paths.bin"
+        git fetch --no-tags --depth=1 origin 41cfaffd310059f4f999c8d24dd491d9694baa91
+        git diff --no-renames --name-only -z 41cfaffd310059f4f999c8d24dd491d9694baa91 HEAD > "$CI_JOB_TEMP/proof/changed-paths.bin"
         while IFS= read -r -d '' changed; do
           case "$changed" in
-            .github/workflows/python-rust-523.yml|docs/naver/python-rust-523*.md|docs/user/ko/rust-port.md|docs/user/en/rust-port.md|.github/workflows/python-rust-523-model.yml|tools/ci/model_compiler_pair_482.sh|rust/crates/dev-tools/Cargo.toml|rust/crates/dev-tools/src/developer_ssh/login.rs|rust/crates/dev-tools/src/developer_ssh/login/native.rs|rust/crates/dev-tools/src/developer_ssh/login/cli.rs|rust/crates/dev-tools/src/developer_ssh/login/cli/tests.rs|rust/crates/dev-tools/src/developer_ssh/login/pretty.rs|rust/crates/dev-tools/src/developer_ssh/auth_main.rs|rust/tools/run-developer-tool|tools/op.sh|tools/ci/paramsd_native_boundaries_523.sh) ;;
+            .github/workflows/python-rust-523.yml|docs/naver/python-rust-523*.md) ;;
+            .github/workflows/fast-checks.yml|.github/workflows/python-rust-523-bundle.yml|.github/workflows/python-rust-523-model.yml|rust/crates/dev-tools/Cargo.toml|rust/crates/dev-tools/src/developer_ssh/login/cli.rs|rust/crates/dev-tools/tests/ci_disk_bootstrap.rs|rust/crates/dev-tools/tests/developer_cli_original.rs|rust/tools/check-disk-space|tools/ci/model_compiler_pair_482.sh) ;;
             *) printf 'Changed dependency invalidates reuse: %s\n' "$changed" >&2; exit 1 ;;
           esac
         done < "$CI_JOB_TEMP/proof/changed-paths.bin"
-        printf '%s  %s\n' e56d6b7686cee1dbe21376a9301355975b4ec9392402a0a1d3af926a7aa29cda .github/workflows/python-rust-523-model.yml | sha256sum --check -
-        printf '%s  %s\n' 21200d2600f9391fe15f901cbe48db2594b156570a3f10a2028c6eb9294b7392 tools/ci/model_compiler_pair_482.sh | sha256sum --check -
-        printf '%s  %s\n' 3d8bf9da142d689deb46088c9b30447862241bbb613659a1600dbabd4ee8f053 rust/crates/dev-tools/Cargo.toml | sha256sum --check -
-        printf '%s  %s\n' 2179de2992a13972cb60bb75ae4744cf64d8aaa427acad51af95f61383234a34 rust/crates/dev-tools/src/developer_ssh/login.rs | sha256sum --check -
-        printf '%s  %s\n' 7bc87509adca20f9825ebaa98bf97e6c5620c16d723d25eac13559fb7f2d4967 rust/crates/dev-tools/src/developer_ssh/login/native.rs | sha256sum --check -
-        printf '%s  %s\n' f73119a5d255e04ad00b96220cde4654ec684e90438371d7072a1d3008899f23 rust/crates/dev-tools/src/developer_ssh/login/cli.rs | sha256sum --check -
-        printf '%s  %s\n' 7d4058a7913848d54e03a7a5e7a14a4efdc81fe5c14cbdaf05b23726770e2ac1 rust/crates/dev-tools/src/developer_ssh/login/cli/tests.rs | sha256sum --check -
-        printf '%s  %s\n' 4093828837294ff4577ecb98029c78004d6043d77f514cb7e7e7dfceb4401213 rust/crates/dev-tools/src/developer_ssh/login/pretty.rs | sha256sum --check -
-        printf '%s  %s\n' 6ed56c909283e14032187eb87070305c998ae5db7f0b5ff55fa29db0fc1c45df rust/crates/dev-tools/src/developer_ssh/auth_main.rs | sha256sum --check -
-        printf '%s  %s\n' 20bae03329d7e29f055fc8f440cb7d4794522bf55a773d1da92cd821681307de rust/tools/run-developer-tool | sha256sum --check -
-        printf '%s  %s\n' 26ad1cd17628139eecdc08b5fbf3f4ccbc02f69a93d5dde7b4e303a3219f08c3 tools/op.sh | sha256sum --check -
-        printf '%s  %s\n' d031eae5add665a0a404cad98d34f1c9a8a3d7266743e15ece65a8cca1c61b44 tools/ci/paramsd_native_boundaries_523.sh | sha256sum --check -
+        printf '%s  %s\n' 5d5662329f1b02dd1dcc6867642f0d998be4caae468d1c5e68fdd7d9f8a2f2d1 .github/workflows/fast-checks.yml | sha256sum --check -
+        printf '%s  %s\n' c8a3d445626ca2457270112a487b0758d4c923d0f6a532f0efcf9ea5efe8f55e .github/workflows/python-rust-523-bundle.yml | sha256sum --check -
+        printf '%s  %s\n' 351ae0a67d229359c4e03c500b938b746a956d080d742138603312c00d3f6d30 .github/workflows/python-rust-523-model.yml | sha256sum --check -
+        printf '%s  %s\n' 25f69fca9ac59809612dcd1c5fc0ac0ba7227189bda0197bb152910a0d533fc0 rust/crates/dev-tools/Cargo.toml | sha256sum --check -
+        printf '%s  %s\n' 4fb7735dc7bb3f63eda3270f91880c9fcdc3521d3fe4747dc21fd34863c37f8c rust/crates/dev-tools/src/developer_ssh/login/cli.rs | sha256sum --check -
+        printf '%s  %s\n' 87f53a8f432774c99458559a82d3e25e18dbc29b48c3d6d5687335f771eb2991 rust/crates/dev-tools/tests/ci_disk_bootstrap.rs | sha256sum --check -
+        printf '%s  %s\n' 9a70a9162ff13d06d0e1581f66bf3510882134407487aeb2864fdf0102d7ce44 rust/crates/dev-tools/tests/developer_cli_original.rs | sha256sum --check -
+        printf '%s  %s\n' 30d34b67c8a1cad69aa39b7c6ff083276fe69c16f328538d30011d64bb0d7689 rust/tools/check-disk-space | sha256sum --check -
+        printf '%s  %s\n' 3c1ec254d1f1a9d3b821000031c17f97dc0d11ea4a2c5c5ee2efb1fbfa789163 tools/ci/model_compiler_pair_482.sh | sha256sum --check -
         python - <<'MANIFEST'
         import subprocess,tomllib
         from pathlib import Path
-        old=tomllib.loads(subprocess.check_output(['git','show','40efe7ef964c0b08f9ba867edd9c863fc545bc0a:rust/crates/dev-tools/Cargo.toml'],text=True))
+        old=tomllib.loads(subprocess.check_output(['git','show','41cfaffd310059f4f999c8d24dd491d9694baa91:rust/crates/dev-tools/Cargo.toml'],text=True))
         new=tomllib.loads(Path('rust/crates/dev-tools/Cargo.toml').read_text())
-        entry={'name':'developer-auth','path':'src/developer_ssh/auth_main.rs','required-features':['developer-ssh-native']}
-        assert new['bin'].count(entry)==1
-        new['bin'].remove(entry)
-        assert old==new, 'Only the reviewed bin registration may change; all dependencies/features must remain exact.'
+        entry={'name':'developer_cli_original','required-features':['developer-ssh-native']}
+        assert new['test'].count(entry)==1
+        new['test'].remove(entry)
+        assert old==new, 'Only the reviewed test registration may change.'
         MANIFEST
-        # The predecessor includes two exact admitted ZIPs; verify their identities and CRCs again.
         python - "$prior" <<'COHORTS'
-        import hashlib,io,sys,zipfile
+        import hashlib,io,json,sys,zipfile
         with zipfile.ZipFile(sys.argv[1]) as z:
-         for name,pin,source in [
-          ('prior-40079353750.zip','5ad366a8d5ee0d078917be9231c1850b0c3e8dba927a0adcf3a388da56bc8e55','d0f53d15a96ef474ff48810b156437a6a6923c58'),
-          ('prior-40080413343.zip','5e79482c0f26815da14a9d649fe1b467fd245143edefc2843ffde2aae013ab9a','9e7a3b39ebaa2d215e2cadbae0618cc8720f3649')]:
-          blob=z.read(name); assert hashlib.sha256(blob).hexdigest()==pin
-          with zipfile.ZipFile(io.BytesIO(blob)) as cohort:
-           assert cohort.testzip() is None
-           assert cohort.read('SOURCE_COMMIT').decode().strip()==source
-           assert cohort.read('source-before.sha256')==cohort.read('source-after.sha256')
+         for name in ['executables','source','providers','captured']:
+          assert json.loads(z.read(f'paramsd-boundaries/{name}.before.json'))==json.loads(z.read(f'paramsd-boundaries/{name}.after.json'))
+         complete=json.loads(z.read('paramsd-boundaries/complete.json'))
+         assert complete['car_pairs']==9 and complete['numpy_cases']==9600 and complete['passed_ignored_selectors']==2
+         for i in range(3):
+          for name in ['default','empty','custom']:
+           assert z.read(f'paramsd-boundaries/car-params/original-{i}-{name}.bin')==z.read(f'paramsd-boundaries/car-params/native-{i}-{name}.bin')
+         blob=z.read('prior-40081388419.zip')
+         assert hashlib.sha256(blob).hexdigest()=='c9de529574ed693dfec4cd438b3da29d87fb26060bbe5b43347844dd579fe74d'
+         with zipfile.ZipFile(io.BytesIO(blob)) as before:
+          assert before.testzip() is None
+          assert before.read('SOURCE_COMMIT').decode().strip()=='40efe7ef964c0b08f9ba867edd9c863fc545bc0a'
+          assert before.read('source-before.sha256')==before.read('source-after.sha256')
         COHORTS
-        printf '%s\n' 'Reuse unchanged terminal, SSH, HTTP, Github, camera, Paramsd controller and catalog x64/ARM cohorts. Fresh: auth login/CLI/original modes, native op bootstrap callers, Paramsd original wire and NumPy boundaries. Atomic startup and full PR gates remain separate.' > "$CI_JOB_TEMP/proof/reused-scopes.txt"
-    - name: Validate full auth modes against retained original and strict lint
+        printf '%s\n' 'Reused unchanged 41cf Paramsd boundaries and op help callers, callback/API units; 40efe and earlier terminal/SSH/HTTP/Github/camera/controller/catalog ARM cohorts. Fresh: changed auth parser/modes, previously unreached original-login8 and strict Clippy, new source CLI52/3.' > "$CI_JOB_TEMP/proof/reused-scopes.txt"
+    - name: Validate corrected auth parser and complete source CLI comparisons
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
@@ -229,79 +231,15 @@ jobs:
         set -euo pipefail
         export no_proxy="$NO_PROXY"
         export AUTH_CLI_ORACLE_PYTHON="$CI_JOB_TEMP/venv/bin/python"
+        export DEVELOPER_CLI_ORACLE_PYTHON="$AUTH_CLI_ORACLE_PYTHON"
         features=developer-ssh-native,kbhit-native,github-utils-native,camera-runtime-native,paramsd-fixture-native
-        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --lib developer_ssh::login:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/auth-cli-library.log"
-        grep -F 'test result: ok. 7 passed;' "$CI_JOB_TEMP/proof/auth-cli-library.log"
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --lib developer_ssh::login::cli::tests:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/auth-cli-library.log"
+        grep -F 'test result: ok. 3 passed;' "$CI_JOB_TEMP/proof/auth-cli-library.log"
         cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --test developer_auth -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/auth-original.log"
         grep -F 'test result: ok. 8 passed;' "$CI_JOB_TEMP/proof/auth-original.log"
-        cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --lib --bin developer-auth --bin developer-auth-json --bin developer-ssh --bin setup-ssh-keys --test developer_auth -- -D warnings 2>&1 | tee "$CI_JOB_TEMP/proof/auth-clippy.log"
-    - name: Capture independent Paramsd wire and NumPy boundaries and run exact ignored selectors
-      working-directory: ${{ env.DIAG_SOURCE }}
-      shell: bash
-      if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
-      run: |
-        set -euo pipefail
-        features=developer-ssh-native,kbhit-native,github-utils-native,camera-runtime-native,paramsd-fixture-native
-        cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --bin generate-paramsd-car-params 2>&1 | tee "$CI_JOB_TEMP/proof/paramsd-generator-build.log"
-        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --test paramsd_car_params_cli --test paramsd_estimator_check --no-run --message-format=json > "$CI_JOB_TEMP/proof/paramsd-build-artifacts.jsonl" 2> "$CI_JOB_TEMP/proof/paramsd-test-build.log"
-        python - <<'BUILD'
-        import hashlib,json,os
-        from pathlib import Path
-        proof=Path(os.environ['CI_JOB_TEMP'])/'proof'
-        rows=[json.loads(x) for x in (proof/'paramsd-build-artifacts.jsonl').read_text().splitlines()]
-        selected={}
-        for target in ['paramsd_car_params_cli','paramsd_estimator_check']:
-         paths={r['executable'] for r in rows if r.get('reason')=='compiler-artifact' and r['target']['name']==target and r['profile']['test'] and r['executable']}
-         assert len(paths)==1, (target,paths)
-         selected[target]=paths.pop()
-        selected['generator']=str(Path(os.environ['CARGO_TARGET_DIR'])/'debug/generate-paramsd-car-params')
-        receipt={k:{'path':v,'sha256':hashlib.sha256(Path(v).read_bytes()).hexdigest()} for k,v in selected.items()}
-        (proof/'paramsd-prepared.json').write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],'fresh_private_target':True,'executables':receipt},indent=2)+'\n')
-        BUILD
-        export EXPECTED_SOURCE="$GITHUB_SHA"
-        export PARAMSD_ORACLE_PYTHON="$CI_JOB_TEMP/venv/bin/python"
-        export PARAMSD_BOUNDARY_PROOF="$CI_JOB_TEMP/proof/paramsd-boundaries"
-        export PARAMSD_GENERATOR_BINARY=$(jq -er '.executables.generator.path' "$CI_JOB_TEMP/proof/paramsd-prepared.json")
-        export PARAMSD_GENERATOR_SHA256=$(jq -er '.executables.generator.sha256' "$CI_JOB_TEMP/proof/paramsd-prepared.json")
-        export PARAMSD_CAR_TEST_BINARY=$(jq -er '.executables.paramsd_car_params_cli.path' "$CI_JOB_TEMP/proof/paramsd-prepared.json")
-        export PARAMSD_CAR_TEST_SHA256=$(jq -er '.executables.paramsd_car_params_cli.sha256' "$CI_JOB_TEMP/proof/paramsd-prepared.json")
-        export PARAMSD_NUMPY_TEST_BINARY=$(jq -er '.executables.paramsd_estimator_check.path' "$CI_JOB_TEMP/proof/paramsd-prepared.json")
-        export PARAMSD_NUMPY_TEST_SHA256=$(jq -er '.executables.paramsd_estimator_check.sha256' "$CI_JOB_TEMP/proof/paramsd-prepared.json")
-        bash tools/ci/paramsd_native_boundaries_523.sh
-    - name: Exercise actual op auth and ssh native bootstrap without external effects
-      if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
-      shell: bash
-      working-directory: ${{ env.DIAG_SOURCE }}
-      run: |
-        set -euo pipefail
-        proof="$CI_JOB_TEMP/proof/native-callers"
-        mkdir "$proof"
-        export SHELL=/bin/bash
-        # --no-verify is the existing op option; help exits before token/API/browser/SSH effects.
-        for tool in auth ssh; do
-          /usr/bin/timeout --kill-after=5s 240s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "$proof/$tool.exec" bash tools/op.sh --no-verify "$tool" --help > "$proof/$tool.stdout" 2> "$proof/$tool.stderr"
-          grep -F 'usage:' "$proof/$tool.stdout"
-        done
-        python - <<'AUDIT'
-        import json,os,re
-        from pathlib import Path
-        proof=Path(os.environ['CI_JOB_TEMP'])/'proof/native-callers'
-        lanes={}
-        for lane in ['auth','ssh']:
-         trace=(proof/f'{lane}.exec').read_text()
-         assert 'execveat(' not in trace, 'Unreviewed FD exec form in bootstrap lane'
-         calls=[]
-         for line in trace.splitlines():
-          m=re.search(r'\bexecve\(("(?:[^"\\]|\\.)*"),',line)
-          if not m: continue
-          path=json.loads(m[1]); calls.append(path)
-          assert 'python' not in Path(path).name.lower() and not path.endswith('.py'), path
-         wanted='developer-auth' if lane=='auth' else 'developer-ssh'
-         actual=str(Path(os.environ['CARGO_TARGET_DIR'])/'x86_64-unknown-linux-gnu/debug'/wanted)
-         assert any(re.search(r'\bexecve\('+re.escape(json.dumps(actual))+r', .*\) = 0$',line) for line in trace.splitlines()), ('native CLI missing',actual)
-         lanes[lane]={'exec_attempts':len(calls),'native_binary':actual,'native_binary_sha256':__import__('hashlib').sha256(Path(actual).read_bytes()).hexdigest(),'observed_python_exec_attempts':0,'help_only':True}
-        (proof/'audit.json').write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],'lanes':lanes,'whole_source_absence_or_device_acceptance':False},indent=2)+'\n')
-        AUDIT
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --test developer_cli_original -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/developer-cli-original.log"
+        grep -F 'test result: ok. 3 passed;' "$CI_JOB_TEMP/proof/developer-cli-original.log"
+        cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --lib --bin developer-auth --bin developer-auth-json --bin developer-ssh --bin setup-ssh-keys --test developer_auth --test developer_cli_original -- -D warnings 2>&1 | tee "$CI_JOB_TEMP/proof/auth-clippy.log"
     - name: Seal Fast source and index after all maintained checks
       if: ${{ always() && env.DIAG_SOURCE != '' }}
       working-directory: ${{ env.DIAG_SOURCE }}

@@ -49,7 +49,7 @@ printf '%s\n' "$EXPECTED_SOURCE" > "$PAIR_OUTPUT/source-commit.txt"
 git -C "$pair_root" status --short > "$PAIR_OUTPUT/source-status.txt"
 dpkg-query -W -f='${binary:Package}\t${Version}\n' libllvm18:amd64 > "$PAIR_OUTPUT/llvm-package.txt"
 [[ $(dpkg-query -W -f='${Version}' libllvm18:amd64) == 1:18.1.3-1ubuntu1 ]] || fail 'apt libllvm18 원본 버전 불일치'
-pair_llvm=/usr/lib/x86_64-linux-gnu/libLLVM-18.so.1
+pair_llvm=/usr/lib/x86_64-linux-gnu/libLLVM-18.so
 pair_llvm_pin=5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0
 [[ -f $pair_llvm ]] || fail '고정 apt LLVM provider 없음; wheel/SDK provider fallback 금지'
 [[ -z ${LLVM_PATH:-} || $LLVM_PATH == "$pair_llvm" ]] || fail '상속 LLVM_PATH가 지정 경로와 다름'
@@ -186,7 +186,7 @@ try:
         from tinygrad.device import Device
         for module in ('tinygrad', 'tinygrad.runtime.support.compiler_cpu', 'tinygrad.runtime.support.c', 'tinygrad.runtime.autogen.llvm'):
             need(Path(sys.modules[module].__file__).resolve().is_relative_to((D0 / 'tinygrad').resolve()), 'original module outside source prefix D0')
-        need(Path(llvm.dll._name) == Path('/usr/lib/x86_64-linux-gnu/libLLVM-18.so.1'), 'autogen DLL name differs; no SDK fallback')
+        need(Path(llvm.dll._name) == Path('/usr/lib/x86_64-linux-gnu/libLLVM-18.so'), 'autogen DLL name differs; no SDK fallback')
         need(Path(llvm.dll._name).resolve(strict=True) == provider, 'autogen provider realpath differs')
         need(seal(llvm.dll._name)['sha256'] == LLVM_PIN, 'loaded provider pin differs')
         compiler = CPULLVMCompiler(['x86_64', 'native'])

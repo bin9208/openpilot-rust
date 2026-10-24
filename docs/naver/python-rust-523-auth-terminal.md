@@ -254,3 +254,107 @@ traceback stack/path 바이트를 재현하지 않는다. 새 원본 oracle은 �
 `src/changed_files_check/LICENSE-CPYTHON`의 위치도 명시했다. 실제 `op` 호출부의
 help-only exec 검증과 기존 7개 login/8개 원본 비교가 다음 집중 CI 범위다.
 이 통합 기록 작성 시점에는 모두 **UNRUN**이며 원본 제거 수량은 바꾸지 않는다.
+
+## 2026-10-24 후속 배치: SSH·키 설정 CLI의 fresh 원본 비교
+
+부모 통합 기준은 `41cfaffd310059f4f999c8d24dd491d9694baa91`이다. 부모가
+[40082949276](https://github.com/bin9208/openpilot-rust/actions/runs/40082949276)의
+queued 상태를 전달했으며 이 추가 테스트의 결과는 아니다. 이번 직접 변경은
+`rust/crates/dev-tools/tests/developer_cli_original.rs` 신규 파일과 이 기록뿐이다.
+기존 auth/SSH production, Cargo, wrapper, workflows, inventory는 수정하지 않았다.
+
+### 단위 범위: 3개 테스트, 52개 synthetic 사례
+
+| selector | 사례 수 | 범위 |
+| --- | --- | --- |
+| `ssh_cli_original_aliases_prefix_unicode_duplicate_order_and_exec` | 20 | ASCII 공백 제거·lower, 중복 dongle ID의 원래 위치 유지와 마지막 alias, 비문자열 alias 제외, 16자 prefix와 suffix, 15자/비 ASCII fallback, Unicode/비 casefold/NBSP, 포트 정규화·TCP 범위 미제한, 정확한 argv·debug의 의도된 미이스케이프 quote, HTTP 실패, direct ID에서도 전체 dict 구성 |
+| `ssh_cli_original_port_argparse_help_and_no_auth_effects` | 11 | help 및 help 전/후 port 변환, 덮어쓴 잘못된 port, missing/extra/unknown 인자·누락 option 값, 도움말 앞의 ambiguous option도 분류 단계에서 실패, 인증/HTTP/exec 효과 없음 |
+| `setup_cli_original_status_default_decode_and_write_failure_order` | 21 | missing username, 200/empty/201/204/301/404/500, Requests 기본 Latin-1·UTF-8/ASCII replacement·unknown codec fallback, `--help`의 literal username, Unicode username·extra args 무시, HTTP/Params/각 write/decoder 실패 순서 |
+
+원본은 실제 `tools/scripts/ssh.py`, `tools/scripts/setup_ssh_keys.py`의 AST 전체를
+읽어 실행한다. imported config/API/BASEDIR/Params/requests와 `os.execvp`를 주입하며
+BASEDIR는 `/source`, argv[0]은 각 script basename으로 고정한다. 성공한 SSH의
+exec는 별도 BaseException으로 가로채고 file/argv를 기록하며 실제 exec를 하지 않는다.
+site의 `exit`는 `sys.exit`로 주입해 현재 stdin을 닫는 효과를 실행하지 않는다.
+
+native 쪽은 `parse_options`, `prepare`, `setup_keys_with_decoder`를 호출한다.
+후자의 observer는 실제 `RequestsText`를 감싸며 decode 시점만 기록한다. decoder
+자체의 인위적 실패 사례를 제외하면 실제 `setup_keys`도 호출하여 stdout·예외·write·
+HTTP/Params 순서를 재확인한다. 이 보조 비교에서는 observer가 추가한 `decode`
+marker만 제거하며 다른 필드는 정확히 비교한다. non-200은 decoder 실패 주입
+상태에서도 default 경로와 함께 decoder/Params 미접근을 확인하도록 작성했다.
+
+source의 token read·native CLI의 username 선택/반환 code 등은 테스트 adapter가
+이어 주는 경계다. 실제 `ssh_cli`, `setup_cli`, `Plan::exec`, config root 발견,
+네트워크, SSH 및 실제 Params 구현은 실행하지 않는다. 주입 write failure는
+메서드가 예외를 던지는 상황이며 Cython의 native I/O 반환 코드 무시나 실제 디스크
+오류를 검증한 것으로 확대하지 않는다. 기존 별도 게이트를 유지한다.
+
+### 독립 decoder oracle 및 실행 환경
+
+원본의 `requests.get`은 synthetic Response만 반환한다. 실제 `requests.Response.text`
+및 `requests.utils.get_encoding_from_headers`를 decoder oracle로 사용하며 native의
+정답을 Python helper에 다시 구현하지 않는다. requests import 이외의 실제 request,
+account·credential·stdin·SSH·Params 접근은 없다. subprocess stdin은 null이다.
+
+부모가 준비한 **Python 3.12 + requests 설치 환경**이 필요하다. interpreter 선택은
+`DEVELOPER_CLI_ORACLE_PYTHON` → 기존 `AUTH_CLI_ORACLE_PYTHON` → `python3` 순서다.
+`-I`와 비밀 없는 환경, `COLUMNS=80`, private 임시 cwd를 사용한다. requests 패키지를
+사용하므로 `-S`는 쓰지 않으며 다른 Python minor version은 명시적으로 실패한다.
+정확한 Python/requests 버전은 매 캡처의 metadata로 남긴다. 추가 설치나 기능 실행은
+로컬에서 수행하지 않았다.
+
+### 재사용 가능한 기대값과 명시적 차이
+
+`openpilot.developer-cli-original.v1` envelope에는 `group`, Python/requests metadata,
+원본 두 파일의 **raw bytes SHA256**, `records`가 들어간다. 각 record는 `input`,
+`criteria`, `expected_original`로 구성된다. 원본 outcome의 stdout/stderr를 그대로
+남기고 exit code, 예외 type/message, 시간순 효과, 성공한 write의 byte 배열,
+exec file/argv를 모두 보존한다. exec 교체나 uncaught exception에는 exit code를
+null로 두어 정상 exit 0과 구분한다. Python traceback stack/path는 캡처·동등성
+주장의 대상이 아니다.
+
+비교 기준은 다음과 같이 사례에 고정했다. blanket trim·예외 제거·채널 정규화는 없다.
+
+- `exact`: raw 채널과 exception/effects/writes/exec 전체가 같아야 한다.
+- `help-boundary`: 순수 `parse_options`는 help 문자열을 출력하지 않으므로 native
+  빈 채널·반환 성공과 원본 exit 0/원본 help의 필수 내용·부작용 없음을 각각 요구한다.
+  원본 help 전문은 envelope에 그대로 남기며 native help 바이트 동등성은 주장하지 않는다.
+- `parser-error-boundary`: 원본의 구체적 오류 suffix/exit 2와 native의 구체적
+  `NativeParseError` 메시지를 별도로 고정한다. 원본 usage wrapping과 native scanner
+  진단은 서로 다르며 인증/HTTP/exec 미발생 조건은 정확히 비교한다.
+- `exception-pair`: missing alias 한 사례에서 원본 `KeyError("'alias'")`와 native
+  `NativeError("missing alias")`를 각각 정확히 요구한다. 나머지 출력·exit·효과는
+  같아야 한다. 다른 예외를 허용하는 포괄적 예외 비교 규칙은 없다.
+
+fresh 테스트는 항상 원본을 새로 캡처한다. `verify_envelope`는 원본/source/Python에
+의존하지 않고 JSON 기대값에서 native 결과를 **다시 계산**한다. group별 기대 사례 수와
+중복 ID도 검사하며, SSH의 source root/API host는 input에 명시한다. 따라서 추후 부모가
+실제 통과한 원본 데이터를 fixtures로 보존한 뒤 같은 checker를 연결할 수 있다.
+현재 fixture loader/동결·원본 삭제는 수행하지 않았다.
+
+Actions에서 `--nocapture`를 사용하면 `DEVELOPER_CLI_ORIGINAL_JSON ` 뒤에 각 group의
+완전한 JSON envelope를 출력한다. assertions 실패에는 원본 기대값과 fresh native
+결과를 포함한 record를 출력한다. 로컬 기대값 파일이나 암묵적인 output 경로를 만들지 않는다.
+
+### 부모 등록과 검증 대기
+
+부모가 공유 Cargo에 다음 target을 등록한다. 새 feature/dependency/source 등록은 없다.
+
+```toml
+[[test]]
+name = "developer_cli_original"
+required-features = ["developer-ssh-native"]
+```
+
+부모 Actions용 전체 selector:
+
+```sh
+cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features developer-ssh-native --test developer_cli_original -- --nocapture
+```
+
+위 표의 각 이름으로 단위를 선택할 수도 있다. **3개 테스트 전부 UNRUN**이다.
+로컬에서는 Rust 2021 `rustfmt --check`, 새 파일 공백·diff 검토, embedded Python과
+원본 두 script의 `ast.parse`만 확인했다. 기능·원본 비교·빌드·Clippy·fixture 캡처와
+commit/push/Actions 실행을 하지 않았다. 기존 source/안전 gates를 낮추거나 이 후보를
+전체 CLI 교체·원본 retirement 완료 증거로 사용하지 않는다.

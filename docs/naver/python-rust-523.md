@@ -215,3 +215,88 @@ ARM SDK를 새로 설치하지 않는 native-only 묶음의 예상 증가량은 
 같은 작업 브랜치의 superseded pending 상태임을 API로 확인한 뒤 취소했다.
 이미 진행 중인 Fast 실행과 현재 모델 진단은 유지했다. 새 호출부와 원본 경계 수용 전까지
 기준 인벤토리와 원본 Python 파일을 유지한다.
+
+
+## 첫 독립 compiler-pair 실행: 비교 전 SDK 경로 오류
+
+소스 `562a29546717515ba9da34bc9c2809fd32a07e23`의
+[40082144360/job120837717832](https://github.com/bin9208/openpilot-rust/actions/runs/40082144360/job/120837717832)은
+실패했다. SDK package `libllvm18:amd64=1:18.1.3-1ubuntu1`, 원본 venv 및 fresh
+`offline-llvm-compile` build는 성공했다. 진단이 존재하지 않는
+`/usr/lib/x86_64-linux-gnu/libLLVM-18.so.1`을 지정하여 archive 다운로드·두 실제 compile 전에
+거절됐다. compiler 대응이나 #482 해결의 결과로 해석하지 않는다.
+
+artifact `12555444949`, 302,984 bytes의 SHA256은
+`4a6fc440047bca4c3cab32e5f3552bf948ca3ce55e18790a0a1cf2d7b59ee50d`다.
+30개 ZIP 멤버 CRC와 exact source/index 전후 일치를 확인했다. 실패 당시 실제 free는
+7,948,083,200 bytes였다. 기대 SDK version은 정확하지만 진단의 filename이 잘못됐다.
+
+저장소 기존 세 LLVM job과 설치 package의 파일 배치를 확인하여 경로를 고정 alias
+`/usr/lib/x86_64-linux-gnu/libLLVM-18.so`로 바로잡는다. 원래 provider SHA256
+`5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0`와 package pin은
+유지한다. 다음 실행은 package file list와 realpath도 먼저 보존하며 provider fallback이나
+CPU/feature 변경 없이 아직 미실행인 두 compile을 확인한다.
+
+기존 Fast `40079353749`는 Python/Android·corpus·alert manager·alert·timing의 다섯 job이
+성공했으나 routing은 Rustup의 `bin/cargo-clippy` 설치 충돌로 기능 검사 전에 실패했다.
+원인과 영향을 별도로 조사하며 전체 Fast 성공으로 기록하지 않는다.
+
+## 기존 bundle builder 후보의 최초 집중 검증 준비
+
+기존 `82d4f4bb` 후보의 library 1개·integration 17개와 엄격 Clippy를 별도 job에서 검사한다.
+이 checkout의 13개 source selector·7개 고정 파일에서 원본/native CLI가 만드는 context의
+전체 roster·종류·바이트·SOURCE_COMMIT과 출력 메시지를 비교한다. 실제 Git blob 총량의
+보수적 상한은 566개/10,914,295 bytes이며 두 context와 기록 증가량은 128 MiB다.
+준비 전체는 별도 2 GiB admission을 사용한다. native lane은 Python 없는 PATH와 exec
+기록을 확인하며 Docker image 발행·NAS 배포 workflow는 수정하거나 활성화하지 않는다.
+이 작성 시점의 신규 bundle 검사는 **UNRUN**이고 원본 삭제는 보류한다.
+
+
+## 네 번째 집중 배치: Paramsd·실제 native caller 성공, 인증 parser 1건 실패
+
+소스 `41cfaffd310059f4f999c8d24dd491d9694baa91`의
+[40082949276/job120840061385](https://github.com/bin9208/openpilot-rust/actions/runs/40082949276/job/120840061385)은
+최종 실패다. artifact `12556331299`의 114개 ZIP CRC, SHA256
+`5ed71546d1a7d50ffc0a94c1b8ba9266267fb2a7772de83d8ebfe4bcc3a2e279`, source/index 전후를 확인했다.
+
+- 인증 일반/JWT/저장·재조회·오류 순서와 pprint 원본 비교가 성공했다. 기존 callback 3개와
+  새 최종 API 정책도 성공하여 library 7개 중 6개가 성공했다.
+- 인자 비교는 `apple --json unused`에서 실패했다. 실제 Python 3.12.15 원본은 `unused`를
+  두 번째 optional positional에 받아 로그인 JSON을 반환했으나 native는 첫 positional
+  구간에서 빈 두 번째 slot까지 소비하여 exit 2가 됐다. source parser를 남은 slot을
+  옵션 뒤에도 유지하도록 수정하며, 실패한 원본 비교와 영향 있는 mode 검사를 다시 확인한다.
+  그 단계 뒤의 기존 원본 로그인 8개와 새 Clippy는 아직 미실행이다.
+- 실제 원본/native CarParams 9쌍의 전체 bytes가 일치했다. NumPy 9,600개와 원본 비교
+  정책 2,432개를 생성했고 기존 ignored selector 2개가 각각 정확히 1개씩 성공했다.
+  artifact의 source/provider/ELF/corpus 전후 봉인도 독립적으로 대조했다.
+  별도 atomic startup/전체 runtime 수용은 미완료다.
+- 실제 `tools/op.sh --no-verify auth|ssh --help`가 각 native CLI에 도달했다.
+  각 lane의 7,774/159개 exec attempt에서 관측 Python 실행은 0이다. 이 수치는 실패한
+  PATH 탐색도 포함하며 모든 attempt를 성공 실행으로 표현하지 않는다. CLI는 help-only이고
+  source 전체 부재나 실계정/SSH 수용 증거가 아니다.
+
+다음 묶음은 성공한 Paramsd·native helper와 영향 없는 native callback/API·ARM을 재사용한다.
+새 SSH/키 설정의 독립 원본 52사례/3개 테스트도 준비했으며 기능 결과는 **UNRUN**이다.
+
+
+## #530 prepared-toolchain 경로 및 다음 집중 검증
+
+일반 bootstrap은 보존하고, 등록 runner의 검증된 Rust 1.94.0을 명시적으로 사용하는
+opt-in 경로를 추가했다. 실제 bootstrap 두 호출에만 SDK root/manifest를 전달하고,
+warm cache 실행 전과 cold build 직전에 검증한다. 지정 SDK의 절대 cargo/rustc만 사용하며
+이 경로에서는 Rustup 설치·복구·다른 compiler fallback을 하지 않는다.
+
+유지 중인 Fast의 routing job만 SDK 준비를 바꿨다. source/HOME/CARGO/RUSTUP_HOME/target
+격리와 기존 2/6 GiB 작업 증가량, 전체 원래 routing selector를 유지한다.
+기존 성공 SDK 도구 4개의 literal hash와 전체 regular file 내용·inode/종류·mode/owner·
+mtime/ctime·symlink roster를 전후 대조한다. cold bootstrap exec에서 절대 compiler 도달과
+Rustup/Python 실행 부재를 확인한다. 나머지 여섯 job 정의·trigger·aggregate는 구조가 같다.
+새 거부/캐시 우회 방지 8개를 포함한 disk bootstrap target은 총 24개다.
+독립 Sol source review에서는 차단 결함을 발견하지 못했으며 **실제 cold/warm·routing은 UNRUN**이다.
+
+새 auth batch는 parser 수정의 원본 mode/인자 3개, 미도달 기존 로그인 8개,
+독립 SSH/키 설정 52사례/3개 및 엄격 Clippy만 새로 실행한다.
+Paramsd 9쌍/9,600개 및 native helper·기존 callback/API·ARM은 봉인된 성공을 재사용한다.
+원본 Python interpreter는 실제 앞선 실행에서 확인한 `3.12.15`로 고정했다.
+모델 SDK filename 수정과 기존 bundle 18개/실제 context 비교는 별도 실행한다.
+기능 결과를 확인하기 전 원본 삭제나 전체 전환 완료로 집계하지 않는다.

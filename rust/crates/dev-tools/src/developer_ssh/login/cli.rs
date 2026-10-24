@@ -108,7 +108,7 @@ fn parse(args: &[String]) -> Result<std::result::Result<Parsed, String>> {
             kind
         })
         .collect::<Vec<_>>();
-    let (mut index, mut consumed_positionals, mut json) = (0, false, false);
+    let (mut index, mut positional_slot, mut json) = (0, 0, false);
     let (mut method, mut jwt) = ("google".to_owned(), None);
     let mut extras = vec![];
     while index < args.len() {
@@ -132,30 +132,21 @@ fn parse(args: &[String]) -> Result<std::result::Result<Parsed, String>> {
                 extras.push(args[index].clone());
                 index += 1;
             }
-            Arg::Positional | Arg::Delimiter if !consumed_positionals => {
-                // Both '?' positional actions run at the first positional segment.
-                // A later segment after --json is extra even if jwt was defaulted.
-                consumed_positionals = true;
-                for slot in 0..2 {
-                    while index < args.len() && matches!(classified[index], Arg::Delimiter) {
-                        index += 1;
+            Arg::Delimiter => index += 1,
+            Arg::Positional if positional_slot < 2 => {
+                // An unfilled '?' positional remains available across an option:
+                // the source accepts `apple --json unused` as method + jwt.
+                let value = args[index].clone();
+                index += 1;
+                if positional_slot == 0 {
+                    if !matches!(value.as_str(), "google" | "apple" | "github" | "jwt") {
+                        return Ok(Err(format!("argument method: invalid choice: {} (choose from 'google', 'apple', 'github', 'jwt')", quoted(&value)?)));
                     }
-                    if index < args.len() && matches!(classified[index], Arg::Positional) {
-                        let value = args[index].clone();
-                        index += 1;
-                        if slot == 0 {
-                            if !matches!(value.as_str(), "google" | "apple" | "github" | "jwt") {
-                                return Ok(Err(format!("argument method: invalid choice: {} (choose from 'google', 'apple', 'github', 'jwt')", quoted(&value)?)));
-                            }
-                            method = value;
-                        } else {
-                            jwt = Some(value);
-                        }
-                    }
-                    while index < args.len() && matches!(classified[index], Arg::Delimiter) {
-                        index += 1;
-                    }
+                    method = value;
+                } else {
+                    jwt = Some(value);
                 }
+                positional_slot += 1;
             }
             _ => {
                 extras.push(args[index].clone());

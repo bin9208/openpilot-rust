@@ -40,12 +40,6 @@ case $(uname -m) in
   aarch64) host=aarch64-unknown-linux-gnu ;;
   *) printf 'disk space: unsupported bootstrap host\n' >&2; exit 1 ;;
 esac
-identity=$(sha256sum "$root/rust/Cargo.toml" "$root/rust/Cargo.lock" "$root/rust/crates/disk-space/Cargo.toml" "$root/rust/crates/disk-space/src/"*.rs | sha256sum)
-identity=${identity%% *}
-cache_parent=${RUNNER_TEMP:-${XDG_CACHE_HOME:-$HOME/.cache}}
-cache_base=$cache_parent/openpilot-disk-guard
-cache=$cache_base/$host-$identity
-binary=$cache/disk-space-guard
 # Never execute a predictable cache entry before validating its ownership/type.
 uid=$(id -u)
 validate() {
@@ -62,6 +56,45 @@ validate_existing() {
   local path=$1 kind=$2
   if [[ -e $path || -L $path ]]; then validate "$path" "$kind"; fi
 }
+prepared=false
+if [[ -n ${OPENPILOT_CI_PREPARED_RUST_ROOT+x}${OPENPILOT_CI_PREPARED_RUST_MANIFEST+x} ]]; then
+  prepared_root=${OPENPILOT_CI_PREPARED_RUST_ROOT:-}
+  prepared_manifest=${OPENPILOT_CI_PREPARED_RUST_MANIFEST:-}
+  [[ -n $prepared_root && -n $prepared_manifest ]] || fail 'prepared Rust root and manifest are both required'
+  [[ $prepared_root == /home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu ]] || fail 'unapproved prepared Rust root'
+  [[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_NAME:-} == bin-actions && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && $host == x86_64-unknown-linux-gnu ]] || fail 'prepared Rust requires bin-actions Linux X64 CI'
+  [[ $prepared_manifest == /* ]] || fail 'prepared Rust manifest must be absolute'
+  prepared=true
+fi
+validate_prepared() {
+  local entry cargo_seen=false rustc_seen=false
+  validate "$prepared_manifest" file
+  [[ $(readlink -e -- "$prepared_manifest") == "$prepared_manifest" ]] || fail 'prepared Rust manifest must have a canonical nonsymlink path'
+  # The parent supplies an SDK-wide sha256sum manifest with absolute file paths.
+  # Check it even on the warm path; missing/broken SDKs must never trigger repair.
+  sha256sum --check --strict --quiet -- "$prepared_manifest" >&2 || fail 'prepared Rust manifest checksum failed'
+  while IFS= read -r entry || [[ -n $entry ]]; do
+    [[ ${entry:0:64} =~ ^[[:xdigit:]]{64}$ ]] || continue
+    case "${entry:64}" in
+      "  $prepared_root/bin/cargo"|" *$prepared_root/bin/cargo") cargo_seen=true ;;
+      "  $prepared_root/bin/rustc"|" *$prepared_root/bin/rustc") rustc_seen=true ;;
+    esac
+  done < "$prepared_manifest"
+  $cargo_seen && $rustc_seen || fail 'prepared Rust manifest must cover absolute cargo and rustc paths'
+  validate "$prepared_root" directory
+  [[ $(readlink -e -- "$prepared_root") == "$prepared_root" ]] || fail 'prepared Rust root must have a canonical nonsymlink path'
+  for entry in cargo rustc; do
+    validate "$prepared_root/bin/$entry" file
+    [[ -x $prepared_root/bin/$entry && $(readlink -e -- "$prepared_root/bin/$entry") == "$prepared_root/bin/$entry" ]] || fail "prepared Rust executable is missing or aliased: $entry"
+  done
+}
+if $prepared; then validate_prepared; fi
+identity=$(sha256sum "$root/rust/Cargo.toml" "$root/rust/Cargo.lock" "$root/rust/crates/disk-space/Cargo.toml" "$root/rust/crates/disk-space/src/"*.rs | sha256sum)
+identity=${identity%% *}
+cache_parent=${RUNNER_TEMP:-${XDG_CACHE_HOME:-$HOME/.cache}}
+cache_base=$cache_parent/openpilot-disk-guard
+cache=$cache_base/$host-$identity
+binary=$cache/disk-space-guard
 validate_existing "$cache_parent" directory
 validate_existing "$cache_base" directory
 validate_existing "$cache" directory
@@ -104,10 +137,17 @@ if [[ ! -x $binary ]]; then
   reserve "$cache_base" 1073741824
   reserve "${RUSTUP_HOME:-$HOME/.rustup}" 1073741824
   reserve "${CARGO_HOME:-$HOME/.cargo}" 1073741824
-  rustup toolchain install 1.94.0 --profile minimal >&2
+  if $prepared; then
+    # Recheck after the lock wait, then bypass every rustup shim/proxy.
+    validate_prepared
+    bootstrap_cargo=(env "RUSTC=$prepared_root/bin/rustc" "$prepared_root/bin/cargo")
+  else
+    rustup toolchain install 1.94.0 --profile minimal >&2
+    bootstrap_cargo=(cargo +1.94.0)
+  fi
   mkdir -p -- "$cache"
   env -u RUSTFLAGS -u CARGO_ENCODED_RUSTFLAGS -u CARGO_BUILD_TARGET -u RUSTC_WRAPPER -u RUSTC_WORKSPACE_WRAPPER \
-    CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 cargo +1.94.0 build \
+    CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 "${bootstrap_cargo[@]}" build \
     --manifest-path "$root/rust/Cargo.toml" -p openpilot-disk-space --bin disk-space-guard \
     --locked --target "$host" --target-dir "$cache/build" >&2
   temporary=$(mktemp "$cache/.publish.XXXXXXXX")

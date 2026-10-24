@@ -109,14 +109,56 @@ jobs:
       - run: python -m pip install pytest==9.0.2 PyYAML==6.0.2
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         working-directory: ${{ env.DIAG_SOURCE }}
+      - name: Admit provisioned Rust without installing a second toolchain
+        id: prepared_rust
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        working-directory: ${{ env.DIAG_SOURCE }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          sdk=/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu
+          test -d "$sdk" && test ! -L "$sdk"
+          test "$(readlink -e "$sdk")" = "$sdk"
+          test -x /usr/bin/strace
+          printf '%s  %s\n' 103b60e1b1339968c1d74202ea1d45686037e82c4ea3e0569de24b18a1e6836a "$sdk/bin/rustc" > "$CI_JOB_TEMP/proof/prepared-rust-programs.sha256"
+          printf '%s  %s\n' 77f14b761b02b47e6747473f556b3bc9f98f7e4525b7c3b8d74898ff816e4636 "$sdk/bin/cargo" >> "$CI_JOB_TEMP/proof/prepared-rust-programs.sha256"
+          printf '%s  %s\n' d1c6d8c0e2fae4fbb686d421415d2f471e409ade6babb3e491d9ac5d9c70c602 "$sdk/bin/rustfmt" >> "$CI_JOB_TEMP/proof/prepared-rust-programs.sha256"
+          printf '%s  %s\n' 2ff45d07196eec4f57a631103a877631d3579e86db2770bcfaa3b9d92a0b9d15 "$sdk/bin/clippy-driver" >> "$CI_JOB_TEMP/proof/prepared-rust-programs.sha256"
+          sha256sum --check --quiet "$CI_JOB_TEMP/proof/prepared-rust-programs.sha256"
+          "$sdk/bin/rustc" -vV > "$CI_JOB_TEMP/proof/prepared-rustc.txt"
+          grep -Fx 'release: 1.94.0' "$CI_JOB_TEMP/proof/prepared-rustc.txt"
+          grep -Fx 'host: x86_64-unknown-linux-gnu' "$CI_JOB_TEMP/proof/prepared-rustc.txt"
+          "$sdk/bin/cargo" -V > "$CI_JOB_TEMP/proof/prepared-cargo.txt"
+          LC_ALL=C find "$sdk" -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/prepared-rust-files.before.sha256"
+          LC_ALL=C find "$sdk" -printf '%D:%i\t%m:%U:%G\t%T@\t%C@\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$CI_JOB_TEMP/proof/prepared-rust-roster.before.bin"
+          printf '%s\n' "CI_PREPARED_RUST_ROOT=$sdk" "CI_PREPARED_RUST_MANIFEST=$CI_JOB_TEMP/proof/prepared-rust-files.before.sha256" "RUSTC=$sdk/bin/rustc" "RUSTDOC=$sdk/bin/rustdoc" >> "$GITHUB_ENV"
+          printf '%s\n' "$sdk/bin" >> "$GITHUB_PATH"
       - name: Prepare native CI validation
         run: |
-          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          set -euo pipefail
+          test ! -e "$RUNNER_TEMP/openpilot-disk-guard"
+          OPENPILOT_CI_PREPARED_RUST_ROOT="$CI_PREPARED_RUST_ROOT" OPENPILOT_CI_PREPARED_RUST_MANIFEST="$CI_PREPARED_RUST_MANIFEST" \
+            /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "$CI_JOB_TEMP/proof/prepared-cold-bootstrap.exec" \
+            "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          python - <<'AUDIT'
+          import json,os,re
+          from pathlib import Path
+          proof=Path(os.environ['CI_JOB_TEMP'])/'proof'
+          text=(proof/'prepared-cold-bootstrap.exec').read_text()
+          assert 'execveat(' not in text, 'unreviewed FD exec form'
+          programs=[json.loads(m[1]) for m in re.finditer(r'\bexecve\(("(?:[^"\\]|\\.)*"),',text)]
+          root=os.environ['CI_PREPARED_RUST_ROOT']
+          assert root+'/bin/cargo' in programs and root+'/bin/rustc' in programs
+          assert not any('rustup' in Path(x).name.lower() or 'python' in Path(x).name.lower() or x.endswith('.py') for x in programs)
+          (proof/'prepared-cold-bootstrap.json').write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],'absolute_cargo':root+'/bin/cargo','absolute_rustc':root+'/bin/rustc','exec_attempts':len(programs),'observed_rustup_exec_attempts':0,'observed_python_exec_attempts':0},indent=2)+'\n')
+          AUDIT
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         working-directory: ${{ env.DIAG_SOURCE }}
       - name: Check CI routing and upstream synchronization guards
         run: |
-          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 6144
+          OPENPILOT_CI_PREPARED_RUST_ROOT="$CI_PREPARED_RUST_ROOT" OPENPILOT_CI_PREPARED_RUST_MANIFEST="$CI_PREPARED_RUST_MANIFEST" \
+            "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 6144
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --no-default-features --features changed-files-native --test changed_files_caller
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --lib \
             --test ci_workflow_policy --test ci_rust_isolation --test ci_disk_bootstrap --test ci_process_probe \
@@ -136,6 +178,18 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml -p openpilot-service-tools --locked
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         working-directory: ${{ env.DIAG_SOURCE }}
+      - name: Verify provisioned Rust SDK contents and identities after routing
+        if: ${{ always() && steps.prepared_rust.outcome == 'success' }}
+        working-directory: ${{ env.DIAG_SOURCE }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk=$CI_PREPARED_RUST_ROOT
+          LC_ALL=C find "$sdk" -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/prepared-rust-files.after.sha256"
+          LC_ALL=C find "$sdk" -printf '%D:%i\t%m:%U:%G\t%T@\t%C@\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$CI_JOB_TEMP/proof/prepared-rust-roster.after.bin"
+          cmp "$CI_JOB_TEMP/proof/prepared-rust-files.before.sha256" "$CI_JOB_TEMP/proof/prepared-rust-files.after.sha256"
+          cmp "$CI_JOB_TEMP/proof/prepared-rust-roster.before.bin" "$CI_JOB_TEMP/proof/prepared-rust-roster.after.bin"
+          sha256sum --check --quiet "$CI_JOB_TEMP/proof/prepared-rust-programs.sha256"
       - name: Seal Fast source and index after all maintained checks
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         working-directory: ${{ env.DIAG_SOURCE }}

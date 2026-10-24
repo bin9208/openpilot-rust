@@ -202,3 +202,78 @@ Rust source는 무변경이므로 동일한 포맷 검사를 반복하지 않았
 조사 중 외부 작업으로 HEAD가 `17ff019d230d7b84ae6bca1bc2e8a0c75db07b14`로 이동했으며,
 그 시점에도 위 다섯 파일의 `f755005` 대비 diff는 비어 있었다.
 compiler 및 기존 tests는 무변경이며 다른 작업자의 변경은 보존했다.
+
+## 부록: frozen original compiler 유래 조사 — 2026-10-24 KST
+
+**입증된 결론:** baseline에서 원본 kernel92를 새로 컴파일한 것이 아니다.
+저장된 PKL의 `Ops.PROGRAM`에 연결된 `Ops.BINARY` 바이트를 추출해 사용했다.
+PKL 자체는 더 오래된 job에서 새로 생성됐지만, 그때 kernel92의 `compile_cached()`가
+cache hit였는지 fresh compile이었는지는 확인한 기록만으로 입증되지 않는다.
+
+- [baseline run39729562958/job119661244322](https://github.com/bin9208/openpilot-rust/actions/runs/39729562958/job/119661244322),
+  source `defb9011df3fca924dca41a703b48ce5ff0c51e0`,
+  [실제 workflow21ed5629](https://github.com/bin9208/openpilot-rust/blob/21ed562971a92e4fea74ea777c189fad36e7bc2b/.github/workflows/model-road-guarded-copy-296-once.yml).
+  [artifact12404776700](https://github.com/bin9208/openpilot-rust/actions/runs/39729562958/artifacts/12404776700)은
+  4,391,525 bytes / SHA256 `ba28ae07b5becc3afe4346db3e86437f9a93aaaf02031c19f83e070ad9c7d93b`.
+  metadata·원래 로그·workflow를 먼저 읽고, 8MiB 입력 상한 아래 ZIP hash와 133 CRC를 확인했다.
+- artifact의 `watch.py:66–68`은 `extract_kernel92(pkl)` 결과를 그대로 저장한다.
+  `road_program_binding.py:87–117`과 `first-kernel/program-binding.json`은
+  PKL SHA256 `487ef8698775a593726c79ef0651940480f755f5ded57f672d0ee3a4bd8a624f`,
+  metadata SHA256 `8d86fabaa6e1d89f2f69028a1cf158be512cace51183f13c719d0434d9056026`,
+  IR SHA256 `e223a2c36c6bde7cf676bb92fd2529858a723f9ecfa91c811b2b941756a9bea0`을 연결한다.
+  binary leaf 위치는 metadata 내 `6798231`, 길이 14,442 bytes, code SHA256은
+  `324697e4d28a400da3c521fea2f9140eea04d50f19e6771a96549f4b8a5a6767`이다.
+  이는 fresh compiler의 ELF `.o`와 구별해야 하는 저장 runtime image다.
+- 이 baseline의 **재생/guarded variant compile 호스트**는 `actual-cpu.json`상 AMD EPYC9V45,
+  `guarded-copy-result.json`의 LLVM 자연 CPU는 `generic`, pass는 `default<O2>`다.
+  전체 feature string은 같은 JSON의 `actual_host_features`에 있으며 `+avx512f`,
+  `+avx512dq`, `+avx512ifma`, `+f16c` 등을 포함한다. `road_guarded_copy.py:101–128`은
+  `CPULLVMCompiler(['x86_64','native'])`와 실제 mapping을 기록한다. 그 provider는
+  `/usr/lib/llvm-18/lib/libLLVM.so.1`, SHA256
+  `5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0`이다.
+  이 값들은 **PKL 안 원본 code가 최초 생성된 CPU/features/provider의 증거는 아니다**.
+
+**PKL 생성까지의 연결:** tracked fixture ledger와
+[원래 run39635596188/job119345061762](https://github.com/bin9208/openpilot-rust/actions/runs/39635596188/job/119345061762)을 대조했다.
+[workflow8e77eed6](https://github.com/bin9208/openpilot-rust/blob/8e77eed65b9c68ada39f0415f7a67c8164c34f26/.github/workflows/driving-native-296-once.yml)은
+source `e25a14386582858dae25c6daca5ced3bfb4bacab`에서 `compile_modeld.py`를 실행한다.
+로그는 `2026-10-21T16:37:31.9931238Z`에 `Saved JITs ... driving_tinygrad.pkl (72.05 MB)`를 기록한다.
+이 원래 run 전체는 failure이며 PKL 생성 기록을 전체 성공으로 재분류하지 않는다.
+관찰 manifest는 같은 72,045,323-byte PKL SHA를 확인한다.
+
+원래 artifact `12365522894`는 4,388,618,662 bytes여서 전체 다운로드하지 않았다.
+HTTP `206`·정확한 `Content-Range`·요청별 4MiB/합계 상한을 강제한 선택 읽기로
+중앙 directory와 `driving-native-296/fresh-original-observation/manifest.json`만 조사했다.
+두 읽기의 실제 전송 합계는 7,959,336 bytes이며, 선택 manifest의 ZIP CRC와 SHA256
+`ed174bb4610ee55108b3f2502d7ed284cb66abb3cd153777ca546bf8fe0d3fca`를 확인했다.
+4.39GB ZIP의 전체 SHA/CRC를 독립 검증했다는 주장은 하지 않는다.
+manifest의 imported source SHA256은 다음과 같으며 해당 Git blob과 일치한다.
+
+- `tinygrad_repo/tinygrad/runtime/support/compiler_cpu.py`: `db106591197315ecf28f0e15de99d2841c9892e6e58290213c62c598e7014139`
+- `tinygrad_repo/tinygrad/device.py`: `7c28ae3854a3f009fc6eddfb52f03b3d382a23b581d94a3c4741a12bdc79f008`
+- `tinygrad_repo/tinygrad/codegen/__init__.py`: `3e137459c3c1c7a7d8bc7aa67da9a067ff7e0a9dd547d327a5f42b0c10c86357`
+
+이는 관찰 시점의 source provenance이며 kernel별 최초 compiler 호출 receipt는 아니다.
+
+**미확정 경계:** 당시
+[codegen `do_compile`](https://github.com/bin9208/openpilot-rust/blob/e25a14386582858dae25c6daca5ced3bfb4bacab/tinygrad_repo/tinygrad/codegen/__init__.py#L201)은
+`ctx.compiler.compile_cached(source.arg)`를 호출한다.
+[`Compiler.compile_cached`](https://github.com/bin9208/openpilot-rust/blob/e25a14386582858dae25c6daca5ced3bfb4bacab/tinygrad_repo/tinygrad/device.py#L279)는
+cache가 없을 때만 `compile()`을 호출하며,
+[`LLVMCompiler.compile`](https://github.com/bin9208/openpilot-rust/blob/e25a14386582858dae25c6daca5ced3bfb4bacab/tinygrad_repo/tinygrad/runtime/support/compiler_cpu.py#L90)은
+`compile_to_obj` 후 `jit_loader`를 거친다. cache key에는 processor/features/jit/opt가 있으나
+LLVM library SHA는 없다. **실제 cache hit나 그것이 결함 원인이라는 뜻은 아니다.**
+확인한 원래 workflow·로그·manifest에는 kernel92별 cache hit/miss, cache row/생성 object,
+최초 TM CPU/features 및 최초 loaded LLVM SHA를 함께 묶은 receipt가 없다.
+당시 apt `libllvm18=1:18.1.3-1ubuntu1` 설치 로그와 `LLVM_PATH` 설정만으로 이 공백을 채울 수 없다.
+
+**model pair 결과에 따른 최소 후속:** source562a의
+[40082144360](https://github.com/bin9208/openpilot-rust/actions/runs/40082144360)은 이번 조회에서 queued였다.
+준비/봉인 실패면 그 경계만 보완하고 기존 pair를 완료한다. 실제 object가 다르면 같은 한 IR의
+원본/native config와 최적화 IR에서 첫 compiler 경계 차이를 조사한다.
+object가 같으면 성공한 pair를 반복하지 않고, 다음 CI는 같은 한 IR에서 원본 `compile_cached`
+진입의 실제 key·hit/miss·반환 image SHA와 `compile_to_obj` 호출 여부 및 ELF→runtime-image
+연결만 기록하는 작은 compile-only probe로 좁힌다. 생성 code/model을 실행하지 않으며,
+그 새 관찰도 과거 cache hit/miss의 소급 증거로 사용하지 않는다.
+기존 26MB/265 ZIP과 알려진 half 5건은 재감사·재계산하지 않았다.
+로컬 compiler/model 실행·archived ELF/script 실행 및 workflow/source 변경은 하지 않았다.

@@ -119,6 +119,14 @@ chmod +x "$target/$host/debug/disk-space-guard"
             Duration::from_secs(3),
         );
         spec.env = self.env.clone();
+        for key in [
+            "OPENPILOT_CI_PREPARED_RUST_ROOT",
+            "OPENPILOT_CI_PREPARED_RUST_MANIFEST",
+        ] {
+            if !self.env.contains_key(key) {
+                spec.env_remove.push(key.into());
+            }
+        }
         if !self.env.contains_key("RUNNER_TEMP") {
             spec.argv = std::iter::once("env".into())
                 .chain(["-u".into(), "RUNNER_TEMP".into()])
@@ -144,6 +152,30 @@ chmod +x "$target/$host/debug/disk-space-guard"
             .map(|v| v.path().join("disk-space-guard"))
             .find(|p| p.is_file())
             .unwrap()
+    }
+    fn request_prepared(&mut self) -> PathBuf {
+        // Negative tests only: no fake SDK may qualify as a prepared toolchain.
+        let manifest = self.path.join("prepared.sha256");
+        fs::write(&manifest, "not a checksum manifest\n").unwrap();
+        fs::set_permissions(&manifest, fs::Permissions::from_mode(0o600)).unwrap();
+        executable(&self.path.join("commands/uname"), "printf 'x86_64\\n'\n");
+        for (key, value) in [
+            (
+                "OPENPILOT_CI_PREPARED_RUST_ROOT",
+                "/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu",
+            ),
+            (
+                "OPENPILOT_CI_PREPARED_RUST_MANIFEST",
+                manifest.to_str().unwrap(),
+            ),
+            ("GITHUB_ACTIONS", "true"),
+            ("RUNNER_NAME", "bin-actions"),
+            ("RUNNER_OS", "Linux"),
+            ("RUNNER_ARCH", "X64"),
+        ] {
+            self.env.insert(key.into(), value.into());
+        }
+        manifest
     }
 }
 fn success(output: &openpilot_dev_tools::qa_process::Captured) {
@@ -185,6 +217,187 @@ fn cold_bootstrap_builds_only_host_guard_and_survives_target_cleanup() {
     let mut expected = first.clone();
     expected.push(first[2].clone());
     assert_eq!(f.lines(), expected);
+}
+fn rejected_before_bootstrap(f: &Fixture, diagnostic: &str) {
+    let result = f.invoke();
+    assert_ne!(result.code, 0);
+    let stderr = String::from_utf8_lossy(&result.stderr);
+    assert!(stderr.contains(diagnostic), "{stderr}");
+    assert!(
+        !f.log.exists(),
+        "toolchain/cache command ran before rejection"
+    );
+    assert!(!f.cache().exists(), "rejected request created a cache");
+}
+#[test]
+fn prepared_requires_both_opt_in_values() {
+    for (key, remove) in [
+        ("OPENPILOT_CI_PREPARED_RUST_ROOT", true),
+        ("OPENPILOT_CI_PREPARED_RUST_MANIFEST", true),
+        ("OPENPILOT_CI_PREPARED_RUST_ROOT", false),
+        ("OPENPILOT_CI_PREPARED_RUST_MANIFEST", false),
+    ] {
+        let mut f = Fixture::new("999999999999");
+        f.request_prepared();
+        if remove {
+            f.env.remove(key);
+        } else {
+            f.env.insert(key.into(), String::new());
+        }
+        rejected_before_bootstrap(&f, "prepared Rust root and manifest are both required");
+    }
+}
+#[test]
+fn prepared_rejects_unapproved_roots_before_cache() {
+    for root in [
+        "/tmp/prepared-rust",
+        "/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu/",
+        "/home/actions/.rustup/toolchains/1.93.0-x86_64-unknown-linux-gnu",
+    ] {
+        let mut f = Fixture::new("999999999999");
+        f.request_prepared();
+        f.env
+            .insert("OPENPILOT_CI_PREPARED_RUST_ROOT".into(), root.into());
+        rejected_before_bootstrap(&f, "unapproved prepared Rust root");
+    }
+}
+#[test]
+fn prepared_rejects_non_ci_or_wrong_runner_before_cache() {
+    for (key, value) in [
+        ("GITHUB_ACTIONS", "false"),
+        ("RUNNER_NAME", "other-runner"),
+        ("RUNNER_OS", "macOS"),
+        ("RUNNER_ARCH", "ARM64"),
+    ] {
+        let mut f = Fixture::new("999999999999");
+        f.request_prepared();
+        f.env.insert(key.into(), value.into());
+        rejected_before_bootstrap(&f, "prepared Rust requires bin-actions Linux X64 CI");
+    }
+}
+#[test]
+fn prepared_rejects_arm_host_before_cache() {
+    let mut f = Fixture::new("999999999999");
+    f.request_prepared();
+    executable(&f.path.join("commands/uname"), "printf 'aarch64\\n'\n");
+    rejected_before_bootstrap(&f, "prepared Rust requires bin-actions Linux X64 CI");
+}
+#[test]
+fn prepared_rejects_unsafe_manifest_paths_before_cache() {
+    for case in [
+        "missing",
+        "relative",
+        "directory",
+        "symlink",
+        "parent-symlink",
+        "writable",
+    ] {
+        let mut f = Fixture::new("999999999999");
+        let manifest = f.request_prepared();
+        let (path, diagnostic) = match case {
+            "missing" => {
+                fs::remove_file(&manifest).unwrap();
+                (manifest, "cache is not a regular file")
+            }
+            "relative" => (
+                PathBuf::from("prepared.sha256"),
+                "prepared Rust manifest must be absolute",
+            ),
+            "directory" => {
+                fs::remove_file(&manifest).unwrap();
+                fs::create_dir(&manifest).unwrap();
+                (manifest, "cache is not a regular file")
+            }
+            "symlink" => {
+                let link = f.path.join("manifest-link");
+                symlink(&manifest, &link).unwrap();
+                (link, "unsafe cache symlink")
+            }
+            "parent-symlink" => {
+                let link = f.path.join("parent-link");
+                symlink(&f.path, &link).unwrap();
+                (
+                    link.join("prepared.sha256"),
+                    "prepared Rust manifest must have a canonical nonsymlink path",
+                )
+            }
+            "writable" => {
+                fs::set_permissions(&manifest, fs::Permissions::from_mode(0o666)).unwrap();
+                (manifest, "cache is group/world writable")
+            }
+            _ => unreachable!(),
+        };
+        f.env.insert(
+            "OPENPILOT_CI_PREPARED_RUST_MANIFEST".into(),
+            path.display().to_string(),
+        );
+        rejected_before_bootstrap(&f, diagnostic);
+    }
+}
+#[test]
+fn prepared_rejects_bad_manifest_checksums_before_cache() {
+    for malformed in [true, false] {
+        let mut f = Fixture::new("999999999999");
+        let manifest = f.request_prepared();
+        if !malformed {
+            let payload = f.path.join("sdk-payload");
+            fs::write(&payload, "changed SDK bytes").unwrap();
+            fs::write(
+                &manifest,
+                format!("{}  {}\n", "0".repeat(64), payload.display()),
+            )
+            .unwrap();
+        }
+        rejected_before_bootstrap(&f, "prepared Rust manifest checksum failed");
+    }
+}
+#[test]
+fn prepared_rejects_manifest_without_both_sdk_executables() {
+    let mut f = Fixture::new("999999999999");
+    let manifest = f.request_prepared();
+    let payload = f.path.join("unrelated-payload");
+    let contents = b"valid checksum does not qualify an SDK";
+    fs::write(&payload, contents).unwrap();
+    fs::write(
+        &manifest,
+        format!("{:x}  {}\n", Sha256::digest(contents), payload.display()),
+    )
+    .unwrap();
+    rejected_before_bootstrap(
+        &f,
+        "prepared Rust manifest must cover absolute cargo and rustc paths",
+    );
+}
+#[test]
+fn prepared_validation_also_precedes_warm_cached_guard() {
+    let mut f = Fixture::new("999999999999");
+    success(&f.invoke());
+    let log = f.lines();
+    let binary = f.binary();
+    let original = fs::read(&binary).unwrap();
+    let manifest = f.request_prepared();
+    let payload = f.path.join("changed-sdk-payload");
+    fs::write(&payload, "SDK bytes after snapshot").unwrap();
+    fs::write(
+        &manifest,
+        format!(
+            "{:x}  {}\n",
+            Sha256::digest(b"SDK bytes at snapshot"),
+            payload.display()
+        ),
+    )
+    .unwrap();
+    let result = f.invoke();
+    assert_ne!(result.code, 0);
+    assert!(
+        String::from_utf8_lossy(&result.stderr).contains("prepared Rust manifest checksum failed")
+    );
+    assert_eq!(
+        f.lines(),
+        log,
+        "warm cache bypassed prepared SDK validation"
+    );
+    assert_eq!(fs::read(binary).unwrap(), original);
 }
 fn hash(lines: &[String]) -> String {
     format!("{:x}", Sha256::digest(lines.join("\n").as_bytes()))
