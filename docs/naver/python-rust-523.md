@@ -161,3 +161,30 @@ source/index 전후 봉인이 일치한다. 최종 상태는 실패이며 아래
 엄격 Clippy·실제 SDK ARM build/QEMU/CLI를 실행한다. 재사용 allowlist와 코드
 postimage에는 수정한 SSH 테스트도 포함한다. 단일 source commit의 전체 gate가
 통과했다는 뜻으로 여러 단계의 성공을 합치지 않는다.
+
+
+## 세 번째 집중 검사: 실제 ARM 경로와 엄격 lint 성공
+
+소스 `40efe7ef964c0b08f9ba867edd9c863fc545bc0a`의
+[40081388419/job120835512317](https://github.com/bin9208/openpilot-rust/actions/runs/40081388419/job/120835512317)은
+성공했다. artifact `12555169058`의 43개 ZIP 멤버 CRC와 SHA256
+`c9de529574ed693dfec4cd438b3da29d87fb26060bbe5b43347844dd579fe74d`,
+source/index 전후 봉인이 일치한다.
+
+- 보강한 개발 SSH 27개가 성공했고 도구 library 및 지정 integration test target의
+  엄격 Clippy가 성공했다. 성공한 불변 범위는 검토한 앞선 artifact를 재사용했다.
+- 고정 Zig SDK로 실제 `publish-model-catalog` AArch64 musl 실행 파일을 빌드했다.
+  ELF는 AArch64이고 `INTERP`가 없다. SHA256은
+  `f2809ac51b7c33434b978c988e460aaa42c74823e50a7bfefef71379d258c775`다.
+- QEMU에서 원자적 이동 및 디렉터리·파일·symlink 충돌 보존 2개가 성공했다.
+  별도 CLI 검사는 빈 `PATH`에서 최초 발행과 같은 세대의 재사용을 모두 확인했다.
+  이것은 x64 호스트의 QEMU 사용자 모드 실행이며 물리 ARM/기기 검증이 아니다.
+- 정확 #529 수정 소스의 집중 수용 근거를 확보했다. 기존 PR343은 아직 이전 HEAD이므로
+  전체 PR 필수 ARM 게이트 성공이나 #296/#523 완료로 표현하지 않는다.
+
+다음 독립 검사는 #482의 compiler 진입점 비교다. 별도 소유 source/venv/target을 사용하고
+실제 LLVM18 SDK·worker를 준비하기 전에 전체 작업 증가량 3 GiB를 확인한다.
+진단은 원본 Python `compile_to_obj`와 fresh Rust worker를 각각 한 번 호출하며,
+생성 object·과거 ELF·모델은 실행하지 않는다. 원본과 같은 자연 CPU/feature/pass를
+직접 기록하고 결과 bytes·provider/source/import 봉인을 비교한다. 이 진단용 shell의
+내장 Python은 원본 oracle 실행용이며 Python 전환 완료 수량에 포함하지 않는다.
