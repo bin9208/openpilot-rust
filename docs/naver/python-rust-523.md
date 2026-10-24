@@ -609,3 +609,21 @@ context를 만들고 기존Fast 회귀 명령 직전에 연결된다. 삭제 후
 모델은 기존ISA module을 의미 변경 없이 공유화하고 cached source rosters를9→10으로 강화했다.
 새 fixedtriplet/ABI/현재hostISA와 기존unit5/closure거부1/Clippy는 다음 readonly 검사다.
 기본 cached-disabled/guarded-add8 및 raw수치 gate는 그대로다.
+
+
+## d2c18c37e 집중 수용과 다음 경계
+
+changed-files [40097058000](https://github.com/bin9208/openpilot-rust/actions/runs/40097058000)는
+14독립 proof의 current overlay/원본 부재 caller5/receipt5/Clippy 및 source·SDK·GNU8 전후 seal이 성공했다.
+artifact12561756241의144CRC/fullSHA를 부모가 감사해 정확한 원본2파일만 인정했다. 전체3580은
+**291교체/3부분/3286대기**다. Bundle [40097057916](https://github.com/bin9208/openpilot-rust/actions/runs/40097057916)은
+실제 public helper/411파일·hidden6·strict trace를 통과했다. 원본23과 기존17본문을 고정한 삭제 후 검증은 남는다.
+
+모델 [40097057962](https://github.com/bin9208/openpilot-rust/actions/runs/40097057962)는 strict triplet이
+성공했으나 AVX512VL instruction에서 ISA 거부로 실패했다. ISA5/roster1/Clippy·두 consumer compile은 성공했다.
+정확 opcode/현재CPU 진단만 추가하며 실행·수치·모델 수용은 그대로 false다.
+
+121aa5 Fast는 새 diagnostic workflow의 source 신뢰 predicate가 빠진 데서 policy1 실패했다.
+8개 workflow의 첫 Deny 단계는 무조건 실행하고 뒤 단계에 explicit source조건을 AND로 추가한다.
+실패 뒤 seal/upload/cleanup 조건은 그대로 보존하고 Rust policy는 완화하지 않는다.
+60GB runner 확장 없이 작업별 growth guard를 유지한다. 전체PR/통합/전달·실기 수용은 계속 미완료다.

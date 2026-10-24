@@ -210,3 +210,23 @@ CLI/test ELF의 실제 크기와 SHA는 로컬 build 없이 확정하지 않았�
 뒤에 다시 확인한다. source SDK/reader 프로그램 pin, 각 provider의 path/FD identity와 전체SHA가
 before 및 after-caller에서 같아야 하며, 누락이나 변경은 별도 최종 단계 실패로 job 수용을 막는다.
 원본 codec matrix를 다시 실행하거나 과거 extension identity를 소급 확정하지 않는다.
+
+
+## d2c18c37e 실제 원본 부재 수용
+
+[40097058000/job120881407658](https://github.com/bin9208/openpilot-rust/actions/runs/40097058000/job/120881407658)는
+source `d2c18c37eb502f3d8e5a6d0314c709804df92f38`에서 성공했다. 기존14독립 proof의 원문/source/provider
+overlay admission, 유지 caller4+부재·변조 negative1=5, normal receipt5, strict Clippy가 모두 성공했다.
+원본 실행은0이며 두 경로는 index에도 없고 전후 모두 부재다. context SHA는
+`4acdf8da562f687c845a19efd7dd45a35b7e56f21739e27f3f2b7c7604b68fae`, 실제 CLI SHA는
+`0939ee47451e40b9f4fad17aadfc8567c019a6cbd598c92a23c723d8a43678ea`, test ELF SHA는
+`5b2a8760b04e74ce2ecfb9d502223d99023dbadef47e35fddb7a73efd65552a9`다.
+
+artifact12561756241(51,794,433B, SHA256
+`3299e86d3142264de42a1278e5d3af3dcef827c6d9cb54a838e5522e015ee358`)의144개 CRC를 부모가 확인했다.
+전체 source/index/준비 SDK content/roster 전후4쌍이 같고, GNU provider8개의 path·identity·SHA는
+reuse 전/후와 fresh caller·Clippy 뒤까지3관측 모두 같다. receipt5는 같은 context와 held source/data/ELF
+불변성 및 정상 종료에 연결된다. 과거 extension identity의 미확정 범위는 소급 변경하지 않는다.
+
+정확히 `tools/ci/check_changed_files.py`와 `tools/ci/tests/test_changed_files.py` 두 파일만
+replaced-local로 반영했다. 전체3580은291교체/3부분/3286대기다. 필수 PR/병합·runtime 전달·실기 수용은 별도다.

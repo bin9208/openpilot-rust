@@ -104,3 +104,23 @@ raw original/native **411개 파일·8621062B·숨김vendor6개**를 모두 byte
 따라서 job 전체는 FAIL이며 actual helper trace 전체 수용 또는 원본 삭제로 세지 않는다.
 이 관측된 형식만 정확히 분류하고 기존 실패 exec/PID pairing/EOF/ELF/argv 검증과 unknown 거부를
 유지하는 수정 후 actual caller를 재실행한다. 성공한1+17 및23원문은 source/provider pin으로 재사용한다.
+
+
+## d2c18c37e 공개 caller 실제 수용
+
+[40097057916/job120881407562](https://github.com/bin9208/openpilot-rust/actions/runs/40097057916/job/120881407562)는
+source `d2c18c37eb502f3d8e5a6d0314c709804df92f38`에서 성공했다. 121aa5의 library1/기존17계약과
+original23원문을 source/Cargo overlay로 재사용하고, strict Clippy와 실제 public helper를 새로 확인했다.
+전체411파일/8,621,062B가 원본과 byte 동일하며 hidden6개도 포함한다. 실제 native ELF SHA는
+`15e216fe54cfc6d8a9ba76a4f471a2b5453de053cd92920f0b12ef16fedb6a9b`다.
+
+artifact12561452899(8,497,394B, SHA256
+`8903a728e2fe37bd807dabdb471deb8273893b3b8b4573d9e626b8322ad6fd2d`)의873개 CRC 및
+source/index/venv files·links 전후4쌍을 부모가 감사했다. 완전 판독한 trace는1193exec시도/232실패,
+412Git성공/최종ELF1성공, 실제 SIGUSR1/SI_TKILL metadata154건이다. Python명 exec시도는0이다.
+알 수 없는 signal·변조 metadata/미완료·실패 Python시도 등 기존 및 추가 negative도 거부했다.
+이 한정 trace를 이름 변경 interpreter/ELF내부 동작까지 포함한 전체 Python 부재로 확대하지 않는다.
+
+원본 `build_bundle.py`는 아직 남아 있다. 다음은 기존17본문/assertion과 raw23을 그대로 고정한
+원본 없는 replay·재출현 거부 및 삭제 후 실제 caller 연결이다. 현재 inventory credit은0이며
+Docker/NAS workflow 활성화·이미지 발행·배포는 수행하지 않았다.

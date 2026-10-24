@@ -3483,8 +3483,8 @@ tools/carrot_upload_server/tests/__init__.py	e69de29bb2d1d6434b8b29ae775ad8c2e48
 tools/carrot_upload_server/tests/test_server.py	19a1188adebbfad38bccfd544c58850a61620c5b	pending	-
 tools/check_native_manager_stdout.py	6862a3ffe153003df5103273d7776cbff99f8090	pending	-
 tools/check_native_manager_text_window.py	1cd915d8ea83d30e80bb6fc5af73916906784782	pending	-
-tools/ci/check_changed_files.py	5be3c27fdd260d7c48531a8c578a014c5ce56590	pending	-
-tools/ci/tests/test_changed_files.py	1064927d42008023c2bb7c98f944bbc3966f6326	pending	-
+tools/ci/check_changed_files.py	5be3c27fdd260d7c48531a8c578a014c5ce56590	replaced-local	rust/crates/dev-tools/src/changed_files_check.rs; tests/changed_files_caller.rs; Actions40097058000(d2c18c37e)
+tools/ci/tests/test_changed_files.py	1064927d42008023c2bb7c98f944bbc3966f6326	replaced-local	rust/crates/dev-tools/src/changed_files_check.rs; tests/changed_files_caller.rs; Actions40097058000(d2c18c37e)
 tools/ci/tests/test_native_disk_guard.py	6beb32cbb96644ef7530d9ca6605dfe7509360f9	replaced-local	rust/crates/dev-tools/tests/ci_disk_bootstrap.rs
 tools/ci/tests/test_rust_isolation.py	8cb310ffc0b777217cc0887866456c60d7328680	replaced-local	rust/crates/dev-tools/tests/ci_rust_isolation.rs
 tools/ci/tests/test_updated_process_probe.py	16859ada27914944a97bb0b2fd972b0d3508ac70	replaced-local	rust/crates/dev-tools/tests/updated_process_check.rs

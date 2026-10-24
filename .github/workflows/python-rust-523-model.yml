@@ -150,7 +150,7 @@ jobs:
     - name: Observe one original cache miss hit and ELF to runtime image linkage
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
-      if: ${{ !cancelled() && steps.oracle.outcome == 'success' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.oracle.outcome == 'success') }}
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
@@ -163,7 +163,7 @@ jobs:
         sha256sum --check "$CI_JOB_TEMP/proof/oracle-environment.sha256"
         bash tools/ci/model_cache_probe_482.sh
     - name: Seal Fast source index original venv and provider after cache probe
-      if: ${{ always() && env.DIAG_SOURCE != '' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DIAG_SOURCE != '') }}
       working-directory: ${{ env.DIAG_SOURCE }}
       run: |
         set -euo pipefail
@@ -212,9 +212,7 @@ jobs:
         retention-days: 14
     - name: Clean only uploaded private Fast source
       id: fast_source_cleanup
-      if: ${{ always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id !=
-        '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome
-        == 'success' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success') }}
       working-directory: ${{ github.workspace }}
       env:
         UPLOAD_ID: ${{ steps.fast_evidence.outputs.artifact-id }}

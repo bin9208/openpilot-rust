@@ -3062,8 +3062,8 @@ F05-replay-developer-docs	tools/carrot_upload_server/tests/__init__.py	pending
 F05-replay-developer-docs	tools/carrot_upload_server/tests/test_server.py	pending
 F05-replay-developer-docs	tools/check_native_manager_stdout.py	pending
 F05-replay-developer-docs	tools/check_native_manager_text_window.py	pending
-F05-replay-developer-docs	tools/ci/check_changed_files.py	pending
-F05-replay-developer-docs	tools/ci/tests/test_changed_files.py	pending
+F05-replay-developer-docs	tools/ci/check_changed_files.py	replaced-local
+F05-replay-developer-docs	tools/ci/tests/test_changed_files.py	replaced-local
 F05-replay-developer-docs	tools/docs/wiki_settings/ci_check.py	pending
 F05-replay-developer-docs	tools/docs/wiki_settings/generate.py	pending
 F05-replay-developer-docs	tools/docs/wiki_settings/tests/test_ci_check.py	pending

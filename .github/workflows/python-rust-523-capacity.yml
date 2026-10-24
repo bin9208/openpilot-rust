@@ -14,9 +14,13 @@ jobs:
     - dev-md-local
     timeout-minutes: 10
     steps:
-    - name: Require registered runner and allocate small owned report
+    - name: Deny fork source and require registered local runner
       shell: bash
-      run: 'set -euo pipefail
+      env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      run: 'test "${SOURCE_ALLOWED:-}" = true || { echo ''Fork PR source denied on persistent bin-actions'' >&2; exit 1; }
+
+        set -euo pipefail
 
         test "$RUNNER_NAME" = bin-actions
 
@@ -32,6 +36,7 @@ jobs:
 
         '
     - name: Inspect shared compiler caches and historical policy cache ownership
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       shell: bash
       run: "set -euo pipefail\nreport=$CAPACITY_REPORT\nshared=/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust\n\
         df -PB1 \"$shared\" /tmp > \"$report/filesystems.txt\"\ndu -x -B1 --max-depth=2 -- \"$shared/rust\" > \"\
@@ -51,7 +56,7 @@ jobs:
         \ '*owner*' -o -name '*receipt*' -o -name '*manifest*' \\) -printf '%p\\n' >> \"$report/known-marker-paths.txt\"\
         \ndone\n"
     - name: Preserve read-only inventory
-      if: always() && env.CAPACITY_REPORT != ''
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CAPACITY_REPORT != '') }}
       uses: actions/upload-artifact@v6
       with:
         name: python-rust-523-capacity-${{ github.run_id }}

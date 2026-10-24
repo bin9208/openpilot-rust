@@ -441,3 +441,21 @@ global0..9와 선언을 대조하고 기존 `verify_original_program`의 엄격�
 기존 guarded-add source 경로8개는 보존되지만 공용 `lib.rs` bytes가 달라 과거 hash를 현재 binding으로
 승계할 수 없다. 새 current issuer는 변경된 전체source bytes를 다시 봉인해야 한다.
 이 단계는 기존 원본 capture나 e1bf image equality를 무효화하지 않으며 새 수치·전체모델 수용은 아니다.
+
+
+## d2c18c37e strict triplet 성공·ISA 미수용
+
+[40097057962/job120881407614](https://github.com/bin9208/openpilot-rust/actions/runs/40097057962/job/120881407614)는
+source `d2c18c37eb502f3d8e5a6d0314c709804df92f38`에서 strict source/object/BINARY triplet을
+수용했지만 cached program0의 `AVX512VL` extension에서 거부해 전체 실패했다. 기존ISA unit5와
+source9→10 closure거부1, model-runtime Clippy 및 두 native catalog consumer의 feature compile은 성공했다.
+반환 feature목록은 API가 검사한 subset이므로 그것만으로 host의 AVX512 부재를 확정하지 않는다.
+
+artifact12561770243(5,420,496B, SHA256
+`bb3ef2e11dbcae8472b89f022cf4be838fa066cb3871cc6df09bd547b6d7e326`)의48CRC와
+source/index/준비SDK content·roster 전후4쌍을 부모가 확인했다. held source/입력/실제 ELF도 불변이다.
+실제 test ELF SHA는 `31dfc62fa9db40b90a0973968f23769a593b39aa638528ad868366c3d1426666`다.
+generated code/model/원본 compiler 실행은0이며 수치5건/전체program roster 수용은 false다.
+
+다음 진단은 거부 instruction의 IP/Code/encoded bytes/CPUID 목록과 현재 자연 CPU/OS feature를
+기록한다. decoder allowlist/host admission/수치 기준을 바꾸거나 CPU·ISA·target을 강제하지 않는다.

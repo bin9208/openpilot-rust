@@ -20,9 +20,13 @@ jobs:
     - dev-md-local
     timeout-minutes: 20
     steps:
-    - name: Require registered runner and allocate owned evidence
+    - name: Deny fork source and require registered local runner
       shell: bash
-      run: 'set -euo pipefail
+      env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      run: 'test "${SOURCE_ALLOWED:-}" = true || { echo ''Fork PR source denied on persistent bin-actions'' >&2; exit 1; }
+
+        set -euo pipefail
 
         test "$RUNNER_NAME" = bin-actions
 
@@ -38,6 +42,7 @@ jobs:
 
         '
     - name: Remove only inventoried obsolete policy caches and Rust link intermediates
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       shell: bash
       run: "set -euo pipefail\npython3 - <<'PY'\nimport hashlib,json,os,re,shutil,stat,subprocess\nfrom pathlib\
         \ import Path\nproof=Path(os.environ['RECLAIM_EVIDENCE'])\nshared=Path('/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust')\n\
@@ -88,7 +93,7 @@ jobs:
         (proof/'result.json').write_text(json.dumps({'removed_paths':len(plan),'retained_files':len(after),'source':expected_source,'scope':'obsolete\
         \ policy target/registry, pip HTTP downloads and Rust rlib/rmeta only'}))\nPY\n"
     - name: Preserve exact cleanup journal and retained-file evidence
-      if: always() && env.RECLAIM_EVIDENCE != ''
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.RECLAIM_EVIDENCE != '') }}
       uses: actions/upload-artifact@v6
       with:
         name: python-rust-523-reclaim-${{ github.run_id }}

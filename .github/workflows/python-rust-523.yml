@@ -175,12 +175,12 @@ jobs:
     - name: Check complete workspace syntax and formatting
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
-      if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.toolchain.outcome == 'success') }}
       run: |
         set -euo pipefail
         cargo fmt --manifest-path rust/Cargo.toml --all --check 2>&1 | tee "$CI_JOB_TEMP/proof/format.log"
     - name: Admit exact unchanged successful source cohorts
-      if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.toolchain.outcome == 'success') }}
       shell: bash
       working-directory: ${{ env.DIAG_SOURCE }}
       env:
@@ -327,7 +327,7 @@ jobs:
     - name: Admit unchanged a134 runtime-qualified auth and setup cohorts
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
-      if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.toolchain.outcome == 'success') }}
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
@@ -354,7 +354,7 @@ jobs:
     - name: Validate original SSH aliases and Unicode15 context regressions
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
-      if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.toolchain.outcome == 'success') }}
       run: |
         set -euo pipefail
         export no_proxy="$NO_PROXY" DEVELOPER_CLI_ORACLE_PYTHON="$CI_JOB_TEMP/venv/bin/python"
@@ -363,7 +363,7 @@ jobs:
     - name: Admit unchanged successful fb1228 thirteen-case parser comparison
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
-      if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.toolchain.outcome == 'success') }}
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
@@ -385,7 +385,7 @@ jobs:
     - name: Compare fixed Unicode15 scalar mappings and sigma contexts to the original
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
-      if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.toolchain.outcome == 'success') }}
       run: |
         set -euo pipefail
         export DEVELOPER_CLI_ORACLE_PYTHON="$CI_JOB_TEMP/venv/bin/python"
@@ -394,7 +394,7 @@ jobs:
     - name: Validate affected SSH behavior after Unicode15 normalization
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
-      if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.toolchain.outcome == 'success') }}
       run: |
         set -euo pipefail
         cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features developer-ssh-native --test developer_ssh -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/ssh-regression.log"
@@ -402,12 +402,12 @@ jobs:
     - name: Validate strict auth and SSH Clippy
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
-      if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.toolchain.outcome == 'success') }}
       run: |
         set -euo pipefail
         cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features developer-ssh-native --lib --bin developer-auth --bin developer-auth-json --bin developer-ssh --bin setup-ssh-keys --test developer_auth --test developer_cli_original --test developer_ssh --test argparse_scan --test ci_disk_bootstrap -- -D warnings 2>&1 | tee "$CI_JOB_TEMP/proof/auth-clippy.log"
     - name: Seal Fast source and index after all maintained checks
-      if: ${{ always() && env.DIAG_SOURCE != '' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DIAG_SOURCE != '') }}
       working-directory: ${{ env.DIAG_SOURCE }}
       run: |
         set -euo pipefail
@@ -448,9 +448,7 @@ jobs:
         retention-days: 14
     - name: Clean only uploaded private Fast source
       id: fast_source_cleanup
-      if: ${{ always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id !=
-        '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome
-        == 'success' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success') }}
       working-directory: ${{ github.workspace }}
       env:
         UPLOAD_ID: ${{ steps.fast_evidence.outputs.artifact-id }}

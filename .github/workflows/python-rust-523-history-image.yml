@@ -36,13 +36,15 @@ jobs:
       CARGO_PROFILE_TEST_DEBUG: '0'
       CARGO_TERM_COLOR: never
     steps:
-    - name: Require trusted push and registered bin-actions
+    - name: Deny fork source and require registered local runner
       shell: bash
       working-directory: ${{ github.workspace }}
       env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         EVENT_NAME: ${{ github.event_name }}
         SOURCE_REF: ${{ github.ref }}
       run: |
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
         set -euo pipefail
         test "$EVENT_NAME" = push
         test "$SOURCE_REF" = refs/heads/codex/feat-523-python-rust
@@ -53,8 +55,10 @@ jobs:
         test "$RUNNER_ARCH" = X64
         test "$(uname -m)" = x86_64
     - name: Common owned Fast job temporary paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
     - name: Allocate private source cache and target before checkout
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       shell: bash
       working-directory: ${{ github.workspace }}
       run: |
@@ -83,6 +87,7 @@ jobs:
         if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$job/proof/cgroup-memory-before.txt"; fi
         printf '%s\n' "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_OS" "$RUNNER_ARCH" > "$job/proof/runner.txt"
     - uses: actions/checkout@v7
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       with:
         fetch-depth: 1
         persist-credentials: false
@@ -91,6 +96,7 @@ jobs:
         clean: false
         lfs: false
     - name: Seal exact source HEAD and tracked index before checks
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       id: source_before
       shell: bash
       working-directory: ${{ env.DIAG_SOURCE }}
@@ -110,6 +116,7 @@ jobs:
         git ls-tree -r -l HEAD | awk '$4 ~ /^[0-9]+$/ {bytes+=$4; files++} END {printf "{\"tracked_blob_bytes\":%.0f,\"files\":%d}\n",bytes,files}' > "$CI_JOB_TEMP/proof/tracked-source-size.json"
         ((allocated <= 2 * 1024 * 1024 * 1024))
     - name: Admit private preparation and seal installed Rust SDK
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       id: native_ready
       shell: bash
       working-directory: ${{ env.DIAG_SOURCE }}
@@ -152,7 +159,7 @@ jobs:
         capnp --version > "$CI_JOB_TEMP/proof/capnp.txt"
     - name: Reuse the successful exact historical inputs and reconstruction receipt
       id: inputs
-      if: ${{ !cancelled() && steps.native_ready.outcome == 'success' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.native_ready.outcome == 'success') }}
       shell: bash
       working-directory: ${{ env.DIAG_SOURCE }}
       env:
@@ -182,9 +189,19 @@ jobs:
         unzip -p "$prior" historical-image/reconstruction.json > "$CI_JOB_TEMP/proof/prior-reconstruction.json"
         unzip -p "$prior" reconstruction.log | grep -F 'test result: ok. 1 passed;'
         printf '%s\n' 'Historical input bytes and full-image equality accepted on e1bf. Fresh: strict triplet/binding/host ISA; no source compilation oracle or generated-code/model execution.' > "$CI_JOB_TEMP/proof/reused-history.txt"
+    - name: Record natural CPU and OS feature evidence before strict ISA admission
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.native_ready.outcome == 'success') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        LC_ALL=C lscpu --json > "$CI_JOB_TEMP/proof/current-lscpu.json"
+        cat /proc/cpuinfo > "$CI_JOB_TEMP/proof/current-cpuinfo.txt"
+        lscpu_program=$(readlink -e "$(command -v lscpu)")
+        sha256sum "$lscpu_program" > "$CI_JOB_TEMP/proof/cpu-reader-program.sha256"
     - name: Verify strict program triplet and actual host ISA without executing the image
       id: reconstruction
-      if: ${{ !cancelled() && steps.native_ready.outcome == 'success' && steps.inputs.outcome == 'success' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.native_ready.outcome == 'success' && steps.inputs.outcome == 'success') }}
       shell: bash
       working-directory: ${{ env.DIAG_SOURCE }}
       run: |
@@ -194,7 +211,7 @@ jobs:
         grep -Fx 'test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out;' <(sed -E 's/ finished in .*//' "$CI_JOB_TEMP/proof/history-isa.log")
     - name: Verify unchanged ISA rejection controls and the expanded exact source roster
       id: isa_controls
-      if: ${{ !cancelled() && steps.native_ready.outcome == 'success' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.native_ready.outcome == 'success') }}
       shell: bash
       working-directory: ${{ env.DIAG_SOURCE }}
       run: |
@@ -206,7 +223,7 @@ jobs:
         grep -E '^test result: ok. 1 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/cached-source-roster.log"
     - name: Run strict Clippy for shared ISA code and the readonly harness
       id: clippy
-      if: ${{ !cancelled() && steps.native_ready.outcome == 'success' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.native_ready.outcome == 'success') }}
       shell: bash
       working-directory: ${{ env.DIAG_SOURCE }}
       run: |
@@ -215,7 +232,7 @@ jobs:
         "$HISTORY_RUST_ROOT/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --features cached-program-isa --lib --bin offline-cached-code --test historical_cached_image -- -D warnings 2>&1 | tee "$CI_JOB_TEMP/proof/history-clippy.log"
     - name: Compile the two native catalog consumers with the new exact ISA source roster
       id: consumers
-      if: ${{ !cancelled() && steps.native_ready.outcome == 'success' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.native_ready.outcome == 'success') }}
       shell: bash
       working-directory: ${{ env.DIAG_SOURCE }}
       run: |
@@ -224,7 +241,7 @@ jobs:
         "$HISTORY_RUST_ROOT/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --no-default-features --features driver-daemon-native --lib -- -D warnings 2>&1 | tee "$CI_JOB_TEMP/proof/catalog-consumers-clippy.log"
     - name: Seal source and index after all attempted contracts
       id: source_final
-      if: ${{ always() && env.DIAG_SOURCE != '' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DIAG_SOURCE != '') }}
       shell: bash
       working-directory: ${{ env.DIAG_SOURCE }}
       run: |
@@ -244,7 +261,7 @@ jobs:
         if test -f "$CI_JOB_TEMP/proof/data-reader-programs.sha256"; then sha256sum --check "$CI_JOB_TEMP/proof/data-reader-programs.sha256"; fi
     - name: Seal shared Rust SDK after all attempted contracts
       id: rust_final
-      if: ${{ always() && env.CI_JOB_TEMP != '' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}
       shell: bash
       working-directory: ${{ github.workspace }}
       run: |
@@ -261,7 +278,7 @@ jobs:
         sha256sum --check --quiet "$CI_JOB_TEMP/proof/prepared-rust-programs.sha256"
         if test -f "$CI_JOB_TEMP/proof/system-programs.sha256"; then sha256sum --check --quiet "$CI_JOB_TEMP/proof/system-programs.sha256"; fi
     - name: Record exact attempted scopes and outcomes
-      if: ${{ always() && env.CI_JOB_TEMP != '' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}
       shell: bash
       working-directory: ${{ github.workspace }}
       env:
@@ -276,7 +293,7 @@ jobs:
         printf 'source=%s\ntriplet_and_host_isa=%s\nisa_controls_and_source_roster=%s\nstrict_clippy=%s\ncatalog_consumers_compile=%s\nsource_seal=%s\nrust_seal=%s\ngenerated_code_or_model_executions=0\ncompiler_oracle_calls=0\nnumerical_acceptance=false\nwhole_model_or_numerical_acceptance=false\n' "$GITHUB_SHA" "$RECONSTRUCTION_OUTCOME" "$ISA_CONTROLS_OUTCOME" "$CLIPPY_OUTCOME" "$CONSUMERS_OUTCOME" "$SOURCE_OUTCOME" "$RUST_OUTCOME" > "$CI_JOB_TEMP/proof/outcomes.txt"
     - name: Retain owned historical image evidence even after failure
       id: fast_evidence
-      if: ${{ always() && env.CI_JOB_TEMP != '' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}
       uses: actions/upload-artifact@v6
       with:
         name: diagnostic-history-image-${{ github.run_id }}-${{ github.run_attempt }}
@@ -285,7 +302,7 @@ jobs:
         retention-days: 14
     - name: Clean only uploaded and sealed private source
       id: fast_source_cleanup
-      if: ${{ always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success' && steps.rust_final.outcome == 'success' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success' && steps.rust_final.outcome == 'success') }}
       shell: bash
       working-directory: ${{ github.workspace }}
       env:
@@ -309,7 +326,7 @@ jobs:
         test "$(realpath -e -- "$p/source")" = "$p/source"
         rm -rf --one-file-system -- "$p"
     - name: Clean common owned job temporary paths after evidence upload
-      if: ${{ always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome == 'success' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome == 'success') }}
       uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
       with:
         cleanup: 'true'

@@ -52,7 +52,14 @@ mod instruction_isa {
             }
             starts.insert(instruction.ip());
             for feature in code.cpuid_features() {
-                if let Some(name) = feature_name(*feature)? {
+                if let Some(name) = feature_name(*feature).map_err(|error| {
+                    format!(
+                        "{error}; ip={:#x}; code={code:?}; encoded_bytes={:02x?}; cpuid_features={:?}",
+                        instruction.ip(),
+                        &image[decoder.position() - instruction.len()..decoder.position()],
+                        code.cpuid_features()
+                    )
+                })? {
                     required.insert(name);
                 }
             }

@@ -161,7 +161,7 @@ jobs:
         find "$CI_JOB_TEMP/venv" -type l -printf '%p\t%l\n' | sort > "$CI_JOB_TEMP/proof/oracle-venv-links.before.txt"
       id: toolchain
     - name: Admit successful 121aa5 library and seventeen original contracts
-      if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.toolchain.outcome == 'success') }}
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       env:
@@ -208,7 +208,7 @@ jobs:
         CAPTURES
         printf '%s\n' 'Reused exact unchanged library1/integration17 and actual23 captures. Fresh: current Clippy after Cargo/caller-source binding and public helper trace controls/actual exec/context comparison. Prior whole job failed only SIGUSR1 metadata parsing.' > "$CI_JOB_TEMP/proof/reused-contracts.txt"
     - name: Validate strict bundle Clippy after caller and capture changes
-      if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.toolchain.outcome == 'success') }}
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       run: |
@@ -217,7 +217,7 @@ jobs:
         df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after-clippy.txt"
         du -sx --block-size=1 "$CARGO_HOME" "$CARGO_TARGET_DIR" "$CI_JOB_TEMP/venv" > "$CI_JOB_TEMP/proof/allocated-after-clippy.tsv"
     - name: Compare original CLI and public native bootstrap committed contexts
-      if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.toolchain.outcome == 'success') }}
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       run: |
@@ -470,7 +470,7 @@ jobs:
         sha256sum --check "$proof/native-programs.sha256"
         sha256sum --check "$proof/public-entry.sha256"
     - name: Seal Fast source and index after all maintained checks
-      if: ${{ always() && env.DIAG_SOURCE != '' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DIAG_SOURCE != '') }}
       working-directory: ${{ env.DIAG_SOURCE }}
       run: |
         set -euo pipefail
@@ -517,9 +517,7 @@ jobs:
         retention-days: 14
     - name: Clean only uploaded private Fast source
       id: fast_source_cleanup
-      if: ${{ always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id !=
-        '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome
-        == 'success' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success') }}
       working-directory: ${{ github.workspace }}
       env:
         UPLOAD_ID: ${{ steps.fast_evidence.outputs.artifact-id }}
