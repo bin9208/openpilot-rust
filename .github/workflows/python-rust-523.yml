@@ -141,7 +141,7 @@ jobs:
         grep -q '^clippy-' "$CI_JOB_TEMP/proof/rust-components.txt"
         sha256sum "$(rustup which rustc)" "$(rustup which cargo)" "$(rustup which rustfmt)" "$(rustup which clippy-driver)" > "$CI_JOB_TEMP/proof/rust-tools.sha256"
 
-        python -m pip install numpy==2.5.3 pycapnp==2.1.0 requests==2.34.2
+        python -m pip install requests==2.34.2
         rustc -vV > "$CI_JOB_TEMP/proof/rustc.txt"
         cargo -V > "$CI_JOB_TEMP/proof/cargo.txt"
         command -v capnp
@@ -166,80 +166,103 @@ jobs:
         GH_TOKEN: ${{ github.token }}
       run: |
         set -euo pipefail
-        prior="$CI_JOB_TEMP/proof/prior-40082949276.zip"
-        gh api repos/bin9208/openpilot-rust/actions/artifacts/12556331299/zip > "$prior"
-        printf '5ed71546d1a7d50ffc0a94c1b8ba9266267fb2a7772de83d8ebfe4bcc3a2e279  %s\n' "$prior" | sha256sum --check -
+        prior="$CI_JOB_TEMP/proof/prior-40084922332.zip"
+        gh api repos/bin9208/openpilot-rust/actions/artifacts/12557545634/zip > "$prior"
+        printf '921c8b07db200945ee3c39279c63d4d4159a9ef391a1e3f0c64515d8b9dd2df0  %s\n' "$prior" | sha256sum --check -
         unzip -t "$prior" > "$CI_JOB_TEMP/proof/prior-crc.txt"
-        test "$(unzip -p "$prior" SOURCE_COMMIT)" = 41cfaffd310059f4f999c8d24dd491d9694baa91
+        test "$(unzip -p "$prior" SOURCE_COMMIT)" = 97f7ad36dfa0919b4e5c216fb16f44ed29161663
         for name in source-before.sha256 source-after.sha256 index-before.bin index-after.bin rust-tools.sha256; do
           unzip -p "$prior" "$name" > "$CI_JOB_TEMP/proof/prior-$name"
         done
         cmp "$CI_JOB_TEMP/proof/prior-source-before.sha256" "$CI_JOB_TEMP/proof/prior-source-after.sha256"
         cmp "$CI_JOB_TEMP/proof/prior-index-before.bin" "$CI_JOB_TEMP/proof/prior-index-after.bin"
         sha256sum --check "$CI_JOB_TEMP/proof/prior-rust-tools.sha256"
-        git fetch --no-tags --depth=1 origin 41cfaffd310059f4f999c8d24dd491d9694baa91
-        git diff --no-renames --name-only -z 41cfaffd310059f4f999c8d24dd491d9694baa91 HEAD > "$CI_JOB_TEMP/proof/changed-paths.bin"
+        git fetch --no-tags --depth=1 origin 97f7ad36dfa0919b4e5c216fb16f44ed29161663
+        git diff --no-renames --name-only -z 97f7ad36dfa0919b4e5c216fb16f44ed29161663 HEAD > "$CI_JOB_TEMP/proof/changed-paths.bin"
         while IFS= read -r -d '' changed; do
           case "$changed" in
-            .github/workflows/python-rust-523.yml|docs/naver/python-rust-523*.md) ;;
-            .github/workflows/fast-checks.yml|.github/workflows/python-rust-523-bundle.yml|.github/workflows/python-rust-523-model.yml|rust/crates/dev-tools/Cargo.toml|rust/crates/dev-tools/src/developer_ssh/login/cli.rs|rust/crates/dev-tools/tests/ci_disk_bootstrap.rs|rust/crates/dev-tools/tests/developer_cli_original.rs|rust/tools/check-disk-space|tools/ci/model_compiler_pair_482.sh) ;;
+            .github/workflows/python-rust-523*.yml|docs/naver/python-rust-523*.md) ;;
+            rust/crates/dev-tools/Cargo.toml|rust/crates/dev-tools/src/developer_ssh/login/cli.rs|rust/crates/dev-tools/tests/route_vault_bundle.rs|rust/crates/dev-tools/tests/developer_auth.rs|rust/crates/dev-tools/tests/route_sanitizer_original.rs|tools/ci/model_cache_probe_482.sh|tools/ci/model-cache-482-natural-config.json) ;;
             *) printf 'Changed dependency invalidates reuse: %s\n' "$changed" >&2; exit 1 ;;
           esac
         done < "$CI_JOB_TEMP/proof/changed-paths.bin"
-        printf '%s  %s\n' 5d5662329f1b02dd1dcc6867642f0d998be4caae468d1c5e68fdd7d9f8a2f2d1 .github/workflows/fast-checks.yml | sha256sum --check -
-        printf '%s  %s\n' c8a3d445626ca2457270112a487b0758d4c923d0f6a532f0efcf9ea5efe8f55e .github/workflows/python-rust-523-bundle.yml | sha256sum --check -
-        printf '%s  %s\n' 351ae0a67d229359c4e03c500b938b746a956d080d742138603312c00d3f6d30 .github/workflows/python-rust-523-model.yml | sha256sum --check -
-        printf '%s  %s\n' 25f69fca9ac59809612dcd1c5fc0ac0ba7227189bda0197bb152910a0d533fc0 rust/crates/dev-tools/Cargo.toml | sha256sum --check -
-        printf '%s  %s\n' 4fb7735dc7bb3f63eda3270f91880c9fcdc3521d3fe4747dc21fd34863c37f8c rust/crates/dev-tools/src/developer_ssh/login/cli.rs | sha256sum --check -
-        printf '%s  %s\n' 87f53a8f432774c99458559a82d3e25e18dbc29b48c3d6d5687335f771eb2991 rust/crates/dev-tools/tests/ci_disk_bootstrap.rs | sha256sum --check -
-        printf '%s  %s\n' 9a70a9162ff13d06d0e1581f66bf3510882134407487aeb2864fdf0102d7ce44 rust/crates/dev-tools/tests/developer_cli_original.rs | sha256sum --check -
-        printf '%s  %s\n' 30d34b67c8a1cad69aa39b7c6ff083276fe69c16f328538d30011d64bb0d7689 rust/tools/check-disk-space | sha256sum --check -
-        printf '%s  %s\n' 3c1ec254d1f1a9d3b821000031c17f97dc0d11ea4a2c5c5ee2efb1fbfa789163 tools/ci/model_compiler_pair_482.sh | sha256sum --check -
+        printf '%s  %s\n' 5423bf5ab464bce3342e6eee6fc07ab64a6ecca4c4756e35a19cc54520ba0af2 rust/crates/dev-tools/Cargo.toml | sha256sum --check -
+        printf '%s  %s\n' 4ec4ac3923e32ed834dffee608080b31c5806205823ede2221b057020b172496 rust/crates/dev-tools/src/developer_ssh/login/cli.rs | sha256sum --check -
+        printf '%s  %s\n' e96c8774ae224da098c2fc96c010d9036ecbd4b2b52a793e4e952c5ed30b6959 rust/crates/dev-tools/tests/route_vault_bundle.rs | sha256sum --check -
+        printf '%s  %s\n' 0680c5ff748a107e660731bf171c992d81102ff4b83eecf67c777bbf2a8301d9 rust/crates/dev-tools/tests/developer_auth.rs | sha256sum --check -
+        printf '%s  %s\n' 45300e9148e620047b2c3901e8cf4365e51c30b8f7676ecd56010f0513b4f5c9 rust/crates/dev-tools/tests/route_sanitizer_original.rs | sha256sum --check -
         python - <<'MANIFEST'
         import subprocess,tomllib
         from pathlib import Path
-        old=tomllib.loads(subprocess.check_output(['git','show','41cfaffd310059f4f999c8d24dd491d9694baa91:rust/crates/dev-tools/Cargo.toml'],text=True))
+        old=tomllib.loads(subprocess.check_output(['git','show','97f7ad36dfa0919b4e5c216fb16f44ed29161663:rust/crates/dev-tools/Cargo.toml'],text=True))
         new=tomllib.loads(Path('rust/crates/dev-tools/Cargo.toml').read_text())
-        entry={'name':'developer_cli_original','required-features':['developer-ssh-native']}
+        entry={'name':'route_sanitizer_original','required-features':['route-sanitizer-native']}
         assert new['test'].count(entry)==1
         new['test'].remove(entry)
         assert old==new, 'Only the reviewed test registration may change.'
         MANIFEST
         python - "$prior" <<'COHORTS'
         import hashlib,io,json,sys,zipfile
-        with zipfile.ZipFile(sys.argv[1]) as z:
-         for name in ['executables','source','providers','captured']:
-          assert json.loads(z.read(f'paramsd-boundaries/{name}.before.json'))==json.loads(z.read(f'paramsd-boundaries/{name}.after.json'))
-         complete=json.loads(z.read('paramsd-boundaries/complete.json'))
-         assert complete['car_pairs']==9 and complete['numpy_cases']==9600 and complete['passed_ignored_selectors']==2
-         for i in range(3):
-          for name in ['default','empty','custom']:
-           assert z.read(f'paramsd-boundaries/car-params/original-{i}-{name}.bin')==z.read(f'paramsd-boundaries/car-params/native-{i}-{name}.bin')
-         blob=z.read('prior-40081388419.zip')
-         assert hashlib.sha256(blob).hexdigest()=='c9de529574ed693dfec4cd438b3da29d87fb26060bbe5b43347844dd579fe74d'
-         with zipfile.ZipFile(io.BytesIO(blob)) as before:
-          assert before.testzip() is None
-          assert before.read('SOURCE_COMMIT').decode().strip()=='40efe7ef964c0b08f9ba867edd9c863fc545bc0a'
-          assert before.read('source-before.sha256')==before.read('source-after.sha256')
+        with zipfile.ZipFile(sys.argv[1]) as current:
+         log=current.read('auth-cli-library.log').decode()
+         for name in ['cli_modes_match_original_storage_reload_and_unauthorized_order','cli_pprint_json_domain_matches_original_sorting_wrapping_and_repr']:
+          assert f'test developer_ssh::login::cli::tests::{name} ... ok' in log
+         blob=current.read('prior-40082949276.zip')
+         assert hashlib.sha256(blob).hexdigest()=='5ed71546d1a7d50ffc0a94c1b8ba9266267fb2a7772de83d8ebfe4bcc3a2e279'
+         with zipfile.ZipFile(io.BytesIO(blob)) as z:
+          assert z.testzip() is None
+          assert z.read('SOURCE_COMMIT').decode().strip()=='41cfaffd310059f4f999c8d24dd491d9694baa91'
+          assert z.read('source-before.sha256')==z.read('source-after.sha256')
+          assert z.read('index-before.bin')==z.read('index-after.bin')
+          for name in ['executables','source','providers','captured']:
+           assert json.loads(z.read(f'paramsd-boundaries/{name}.before.json'))==json.loads(z.read(f'paramsd-boundaries/{name}.after.json'))
+          complete=json.loads(z.read('paramsd-boundaries/complete.json'))
+          assert complete['car_pairs']==9 and complete['numpy_cases']==9600 and complete['passed_ignored_selectors']==2
+          for i in range(3):
+           for name in ['default','empty','custom']:
+            assert z.read(f'paramsd-boundaries/car-params/original-{i}-{name}.bin')==z.read(f'paramsd-boundaries/car-params/native-{i}-{name}.bin')
+          blob=z.read('prior-40081388419.zip')
+          assert hashlib.sha256(blob).hexdigest()=='c9de529574ed693dfec4cd438b3da29d87fb26060bbe5b43347844dd579fe74d'
+          with zipfile.ZipFile(io.BytesIO(blob)) as before:
+           assert before.testzip() is None
+           assert before.read('SOURCE_COMMIT').decode().strip()=='40efe7ef964c0b08f9ba867edd9c863fc545bc0a'
+           assert before.read('source-before.sha256')==before.read('source-after.sha256')
         COHORTS
-        printf '%s\n' 'Reused unchanged 41cf Paramsd boundaries and op help callers, callback/API units; 40efe and earlier terminal/SSH/HTTP/Github/camera/controller/catalog ARM cohorts. Fresh: changed auth parser/modes, previously unreached original-login8 and strict Clippy, new source CLI52/3.' > "$CI_JOB_TEMP/proof/reused-scopes.txt"
-    - name: Validate corrected auth parser and complete source CLI comparisons
+        printf '%s\n' 'Reused unchanged 97 auth modes/pprint, 41cf Paramsd boundaries/op help/callback/API units; 40efe and earlier terminal/SSH/HTTP/Github/camera/controller/catalog ARM cohorts. Fresh: changed auth argument diagnostics1, previously unreached original-login8 and strict Clippy, new source CLI52/3.' > "$CI_JOB_TEMP/proof/reused-scopes.txt"
+    - name: Validate corrected auth argument diagnostics
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
       run: |
         set -euo pipefail
-        export no_proxy="$NO_PROXY"
-        export AUTH_CLI_ORACLE_PYTHON="$CI_JOB_TEMP/venv/bin/python"
-        export DEVELOPER_CLI_ORACLE_PYTHON="$AUTH_CLI_ORACLE_PYTHON"
-        features=developer-ssh-native,kbhit-native,github-utils-native,camera-runtime-native,paramsd-fixture-native
-        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --lib developer_ssh::login::cli::tests:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/auth-cli-library.log"
-        grep -F 'test result: ok. 3 passed;' "$CI_JOB_TEMP/proof/auth-cli-library.log"
-        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --test developer_auth -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/auth-original.log"
+        export no_proxy="$NO_PROXY" AUTH_CLI_ORACLE_PYTHON="$CI_JOB_TEMP/venv/bin/python"
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features developer-ssh-native --lib developer_ssh::login::cli::tests::cli_argument_actions_and_diagnostics_match_original -- --exact --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/auth-cli-arguments.log"
+        grep -F 'test result: ok. 1 passed;' "$CI_JOB_TEMP/proof/auth-cli-arguments.log"
+    - name: Validate previously unreached original login API cases
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+      run: |
+        set -euo pipefail
+        export no_proxy="$NO_PROXY" AUTH_CLI_ORACLE_PYTHON="$CI_JOB_TEMP/venv/bin/python"
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features developer-ssh-native --test developer_auth -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/auth-original.log"
         grep -F 'test result: ok. 8 passed;' "$CI_JOB_TEMP/proof/auth-original.log"
-        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --test developer_cli_original -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/developer-cli-original.log"
+    - name: Validate original SSH and setup CLI cases
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+      run: |
+        set -euo pipefail
+        export no_proxy="$NO_PROXY" DEVELOPER_CLI_ORACLE_PYTHON="$CI_JOB_TEMP/venv/bin/python"
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features developer-ssh-native --test developer_cli_original -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/developer-cli-original.log"
         grep -F 'test result: ok. 3 passed;' "$CI_JOB_TEMP/proof/developer-cli-original.log"
-        cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --lib --bin developer-auth --bin developer-auth-json --bin developer-ssh --bin setup-ssh-keys --test developer_auth --test developer_cli_original -- -D warnings 2>&1 | tee "$CI_JOB_TEMP/proof/auth-clippy.log"
+    - name: Validate strict auth and SSH Clippy
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+      run: |
+        set -euo pipefail
+        cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features developer-ssh-native --lib --bin developer-auth --bin developer-auth-json --bin developer-ssh --bin setup-ssh-keys --test developer_auth --test developer_cli_original -- -D warnings 2>&1 | tee "$CI_JOB_TEMP/proof/auth-clippy.log"
     - name: Seal Fast source and index after all maintained checks
       if: ${{ always() && env.DIAG_SOURCE != '' }}
       working-directory: ${{ env.DIAG_SOURCE }}

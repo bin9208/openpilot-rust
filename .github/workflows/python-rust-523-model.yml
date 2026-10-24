@@ -1,11 +1,12 @@
-name: Python Rust 523 model compiler pair
+name: Python Rust 523 model original cache probe
 'on':
   push:
     branches:
     - codex/feat-523-python-rust
     paths:
     - .github/workflows/python-rust-523-model.yml
-    - tools/ci/model_compiler_pair_482.sh
+    - tools/ci/model_cache_probe_482.sh
+    - tools/ci/model-cache-482-natural-config.json
 permissions:
   contents: read
   actions: read
@@ -13,8 +14,8 @@ concurrency:
   group: python-rust-523-model-${{ github.ref }}
   cancel-in-progress: false
 jobs:
-  compiler_pair:
-    name: Independent Python and Rust LLVM compiler pair
+  cache_probe:
+    name: Original LLVM cache miss hit and runtime image linkage
     runs-on:
     - self-hosted
     - Linux
@@ -22,11 +23,7 @@ jobs:
     - dev-md-local
     timeout-minutes: 30
     env:
-      RUSTUP_TOOLCHAIN: 1.94.0
-      CARGO_BUILD_JOBS: '2'
-      CARGO_INCREMENTAL: '0'
-      CARGO_PROFILE_DEV_DEBUG: '0'
-      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONDONTWRITEBYTECODE: '1'
     steps:
     - name: Deny fork source and require registered local runner
       shell: bash
@@ -44,7 +41,7 @@ jobs:
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         }}
       uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
-    - name: Allocate private Fast source cache and target before checkout
+    - name: Allocate private Fast source and cache before checkout
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         }}
       working-directory: ${{ github.workspace }}
@@ -69,7 +66,7 @@ jobs:
         # Preserve Actions' real workspace separately. Only Bash consumers see the
         # unique source as GITHUB_WORKSPACE; GitHub/node action provenance is untouched.
         printf 'source %q\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\n  export GITHUB_WORKSPACE=%q\nfi\n' "$BASH_ENV" "$workspace" "$source" > "$job/diagnostic-shell-env"
-        printf '%s\n' "DIAG_ACTIONS_WORKSPACE=$workspace" "DIAG_SOURCE_OWNER=$source_owner" "DIAG_SOURCE_IDENTITY=$(stat -c '%d:%i' -- "$source_owner")" "DIAG_SOURCE=$source" "DIAG_CHECKOUT_PATH=${source#"$workspace/"}" "HOME=$job/home" "CARGO_HOME=$job/cargo-home" "RUSTUP_HOME=$job/rustup-home" "CARGO_TARGET_DIR=$source/rust/target" "XDG_CACHE_HOME=$job/cache" "PIP_CACHE_DIR=$job/cache/pip" "GRADLE_USER_HOME=$job/cache/gradle" "npm_config_cache=$job/cache/npm" "BASH_ENV=$job/diagnostic-shell-env" >> "$GITHUB_ENV"
+        printf '%s\n' "DIAG_ACTIONS_WORKSPACE=$workspace" "DIAG_SOURCE_OWNER=$source_owner" "DIAG_SOURCE_IDENTITY=$(stat -c '%d:%i' -- "$source_owner")" "DIAG_SOURCE=$source" "DIAG_CHECKOUT_PATH=${source#"$workspace/"}" "HOME=$job/home" "XDG_CACHE_HOME=$job/cache" "PIP_CACHE_DIR=$job/cache/pip" "GRADLE_USER_HOME=$job/cache/gradle" "npm_config_cache=$job/cache/npm" "BASH_ENV=$job/diagnostic-shell-env" >> "$GITHUB_ENV"
         printf 'owner=%s\njob=%s\nactions_workspace=%s\nsource_owner=%s\nsource_identity=%s\nsource=%s\nworkflow_sha=%s\n' "$owner" "$job" "$workspace" "$source_owner" "$(stat -c '%d:%i' -- "$source_owner")" "$source" "$GITHUB_SHA" > "$job/proof/ownership.txt"
         df -PB1 "$workspace" "$job" > "$job/proof/disk-before.txt"
         cat /proc/meminfo > "$job/proof/memory-before.txt"
@@ -99,100 +96,108 @@ jobs:
         printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
         git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
         tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
-    - name: Expose provisioned Rust shims
+    - name: Admit cache-only preparation growth and require pinned provisioned LLVM
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         }}
-      uses: bin9208/openpilot-rust/.github/actions/rust-path@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        for tool in gh jq timeout lscpu dpkg-query sha256sum; do command -v "$tool" >/dev/null; done
+        available=$(df -PB1 "$CI_JOB_TEMP" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]]
+        # Reuse the already provisioned Python/LLVM; private venv/wheel <=768MiB.
+        # The pinned 4.4MB baseline and all probe output fit the 256MiB diagnostic budget.
+        required=$((1024 * 1024 * 1024))
+        printf '{"available_bytes":%s,"preparation_growth_limit_bytes":805306368,"diagnostic_growth_bytes":268435456,"combined_growth_limit_bytes":%s,"llvm_install_growth_bytes":0,"python_toolcache_growth_bytes":0}\n' "$available" "$required" > "$CI_JOB_TEMP/proof/cache-growth-before-preparation.json"
+        ((available >= required))
+        printf 'CACHE_PREPARATION_START_BYTES=%s\n' "$(du -sb "$CI_JOB_TEMP" | cut -f1)" >> "$GITHUB_ENV"
+        test -f "$RUNNER_TOOL_CACHE/Python/3.12.15/x64.complete"
+        test -x "$RUNNER_TOOL_CACHE/Python/3.12.15/x64/bin/python"
+        test "$(dpkg-query -W -f='${Version}' libllvm18:amd64)" = 1:18.1.3-1ubuntu1
+        dpkg-query -W -f='${binary:Package}\t${Version}\n' libllvm18:amd64 > "$CI_JOB_TEMP/proof/llvm-package.before.txt"
+        provider=/usr/lib/x86_64-linux-gnu/libLLVM-18.so
+        test -f "$provider"
+        printf '%s  %s\n' 5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0 "$provider" | sha256sum --check --strict
+        sha256sum "$provider" > "$CI_JOB_TEMP/proof/llvm-provider.before.sha256"
+        readlink -e "$provider" > "$CI_JOB_TEMP/proof/llvm-realpath.before.txt"
+        # No Python download, apt install, SDK replacement or provider fallback.
+      id: cache_admission
     - uses: actions/setup-python@v6
       with:
         python-version: 3.12.15
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         }}
-    - name: Isolate original Python package installation
+    - name: Prepare and seal the original Python venv only
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         }}
       working-directory: ${{ env.DIAG_SOURCE }}
       run: |
         set -euo pipefail
-        available=$(df -PB1 "$CI_JOB_TEMP" | awk 'NR == 2 {print $4}')
-        [[ $available =~ ^[0-9]+$ ]]
-        ((available >= 512 * 1024 * 1024))
         python -m venv "$CI_JOB_TEMP/venv"
         printf '%s\n' "$CI_JOB_TEMP/venv/bin" >> "$GITHUB_PATH"
-    - name: Prepare pinned LLVM provider original venv and fresh native worker
-      working-directory: ${{ env.DIAG_SOURCE }}
-      shell: bash
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        }}
-      run: |
-        set -euo pipefail
-        available=$(df -PB1 "$DIAG_SOURCE" | awk 'NR == 2 {print $4}')
-        # Private Cargo registry/target, original-only numpy, LLVM SDK and 384 MiB diagnostics.
-        (( available >= 3 * 1024 * 1024 * 1024 ))
-        printf '{"available_bytes":%s,"planned_preparation_and_diagnostic_growth_bytes":3221225472}\n' "$available" > "$CI_JOB_TEMP/proof/build-growth.json"
-        sudo -n apt-get -o APT::Architectures=amd64 update
-        sudo -n apt-get -o APT::Architectures=amd64 install -y g++ pkg-config gh jq unzip libllvm18:amd64=1:18.1.3-1ubuntu1
-        dpkg-query -L libllvm18:amd64 > "$CI_JOB_TEMP/proof/llvm-package-files.txt"
-        readlink -e /usr/lib/x86_64-linux-gnu/libLLVM-18.so > "$CI_JOB_TEMP/proof/llvm-provider-realpath.txt"
-        export RUSTUP_HOME=/home/actions/.rustup
-        printf 'RUSTUP_HOME=%s\n' "$RUSTUP_HOME" >> "$GITHUB_ENV"
-        test -x "$RUSTUP_HOME/toolchains/1.94.0-x86_64-unknown-linux-gnu/bin/rustc"
-        sha256sum "$(rustup which rustc)" "$(rustup which cargo)" > "$CI_JOB_TEMP/proof/rust-tools.sha256"
-        python -m pip install numpy==2.5.3
-        python -m pip freeze > "$CI_JOB_TEMP/proof/python-provider-versions.txt"
+        "$CI_JOB_TEMP/venv/bin/python" -m pip install --only-binary=:all: --no-cache-dir --no-compile numpy==2.5.3
+        "$CI_JOB_TEMP/venv/bin/python" -m pip freeze > "$CI_JOB_TEMP/proof/python-provider-versions.txt"
         sha256sum "$CI_JOB_TEMP/venv/pyvenv.cfg" "$(readlink -e "$CI_JOB_TEMP/venv/bin/python")" > "$CI_JOB_TEMP/proof/oracle-environment.sha256"
-        rustc -vV > "$CI_JOB_TEMP/proof/rustc.txt"
-        cargo -V > "$CI_JOB_TEMP/proof/cargo.txt"
-        unset RUSTFLAGS CARGO_ENCODED_RUSTFLAGS CARGO_BUILD_TARGET
-        cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --bin offline-llvm-compile 2>&1 | tee "$CI_JOB_TEMP/proof/fresh-worker-build.log"
-        worker="$CARGO_TARGET_DIR/debug/offline-llvm-compile"
-        test -x "$worker"
-        sha256sum "$worker" > "$CI_JOB_TEMP/proof/fresh-worker.sha256"
-        jq -n --arg source "$GITHUB_SHA" --arg binary "$worker" --arg sha256 "$(sha256sum "$worker" | cut -d' ' -f1)" '{source_commit:$source,binary:$binary,sha256:$sha256,fresh_private_target:true,package:"openpilot-model-runtime",binary_name:"offline-llvm-compile",default_features:true}' > "$CI_JOB_TEMP/proof/fresh-worker.json"
-      id: toolchain
-    - name: Compare pinned IR through original Python and fresh Rust compilers
+        find "$CI_JOB_TEMP/venv" -type f -print0 | sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/venv-files.before.sha256"
+        find "$CI_JOB_TEMP/venv" -type l -printf '%p\t%l\n' | sort > "$CI_JOB_TEMP/proof/venv-links.before.txt"
+        owned_after=$(du -sb "$CI_JOB_TEMP" | cut -f1)
+        owned_growth=$((owned_after - CACHE_PREPARATION_START_BYTES))
+        printf '{"owned_bytes_before":%s,"owned_bytes_after":%s,"owned_preparation_growth_bytes":%s,"owned_preparation_limit_bytes":805306368}\n' "$CACHE_PREPARATION_START_BYTES" "$owned_after" "$owned_growth" > "$CI_JOB_TEMP/proof/cache-growth-after-preparation.json"
+        (( owned_growth >= 0 && owned_growth <= 768 * 1024 * 1024 ))
+      id: oracle
+    - name: Observe one original cache miss hit and ELF to runtime image linkage
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
-      if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+      if: ${{ !cancelled() && steps.oracle.outcome == 'success' }}
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
         set -euo pipefail
         export EXPECTED_SOURCE="$GITHUB_SHA"
         export ORACLE_PYTHON="$CI_JOB_TEMP/venv/bin/python"
-        export CURRENT_LLVM_WORKER="$CARGO_TARGET_DIR/debug/offline-llvm-compile"
-        export CURRENT_LLVM_WORKER_SHA256=$(jq -er '.sha256' "$CI_JOB_TEMP/proof/fresh-worker.json")
-        export PAIR_OUTPUT="$CI_JOB_TEMP/proof/model-compiler-pair"
-        # Preparation completed under the preceding combined 3 GiB admission.
-        export PAIR_PREPARATION_GROWTH_MIB=0
-        sha256sum --check "$CI_JOB_TEMP/proof/fresh-worker.sha256"
+        export CACHE_PROBE_OUTPUT="$CI_JOB_TEMP/proof/model-cache-probe"
+        # Python preparation completed under 768MiB + 256MiB admission above.
+        export CACHE_PREPARATION_GROWTH_MIB=0
         sha256sum --check "$CI_JOB_TEMP/proof/oracle-environment.sha256"
-        bash tools/ci/model_compiler_pair_482.sh
-        sha256sum --check "$CI_JOB_TEMP/proof/oracle-environment.sha256"
-    - name: Seal Fast source and index after all maintained checks
+        bash tools/ci/model_cache_probe_482.sh
+    - name: Seal Fast source index original venv and provider after cache probe
       if: ${{ always() && env.DIAG_SOURCE != '' }}
       working-directory: ${{ env.DIAG_SOURCE }}
       run: |
         set -euo pipefail
-        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git rev-parse HEAD > "$CI_JOB_TEMP/proof/SOURCE_COMMIT.after"
         git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"
-        cmp "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/index-after.bin"
         tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
-        cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
-        git diff --exit-code
-        git diff --cached --exit-code
         df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
         cat /proc/meminfo > "$CI_JOB_TEMP/proof/memory-after.txt"
 
-        if test -d "$CARGO_TARGET_DIR"; then
-          find "$CARGO_TARGET_DIR" -name "*.d" -type f -exec sha256sum {} + > "$CI_JOB_TEMP/proof/build-dep-info.sha256"
-        else
-          : > "$CI_JOB_TEMP/proof/build-dep-info.sha256"
+        if test -f "$CI_JOB_TEMP/proof/venv-files.before.sha256"; then
+          find "$CI_JOB_TEMP/venv" -type f -print0 | sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/venv-files.after.sha256"
+          find "$CI_JOB_TEMP/venv" -type l -printf '%p\t%l\n' | sort > "$CI_JOB_TEMP/proof/venv-links.after.txt"
         fi
-
-        if test -f "$CI_JOB_TEMP/proof/rust-tools.sha256"; then sha256sum --check "$CI_JOB_TEMP/proof/rust-tools.sha256"; fi
-
+        if test -f "$CI_JOB_TEMP/proof/llvm-provider.before.sha256"; then
+          provider=/usr/lib/x86_64-linux-gnu/libLLVM-18.so
+          sha256sum "$provider" > "$CI_JOB_TEMP/proof/llvm-provider.after.sha256"
+          readlink -e "$provider" > "$CI_JOB_TEMP/proof/llvm-realpath.after.txt"
+          dpkg-query -W -f='${binary:Package}\t${Version}\n' libllvm18:amd64 > "$CI_JOB_TEMP/proof/llvm-package.after.txt"
+        fi
+        # Capture all after manifests before rejecting a content mismatch.
+        cmp "$CI_JOB_TEMP/proof/SOURCE_COMMIT" "$CI_JOB_TEMP/proof/SOURCE_COMMIT.after"
+        cmp "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/index-after.bin"
+        cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
+        git diff --exit-code
+        git diff --cached --exit-code
         if test -f "$CI_JOB_TEMP/proof/oracle-environment.sha256"; then sha256sum --check "$CI_JOB_TEMP/proof/oracle-environment.sha256"; fi
+        if test -f "$CI_JOB_TEMP/proof/venv-files.before.sha256"; then
+          cmp "$CI_JOB_TEMP/proof/venv-files.before.sha256" "$CI_JOB_TEMP/proof/venv-files.after.sha256"
+          cmp "$CI_JOB_TEMP/proof/venv-links.before.txt" "$CI_JOB_TEMP/proof/venv-links.after.txt"
+        fi
+        if test -f "$CI_JOB_TEMP/proof/llvm-provider.before.sha256"; then
+          cmp "$CI_JOB_TEMP/proof/llvm-provider.before.sha256" "$CI_JOB_TEMP/proof/llvm-provider.after.sha256"
+          cmp "$CI_JOB_TEMP/proof/llvm-realpath.before.txt" "$CI_JOB_TEMP/proof/llvm-realpath.after.txt"
+          cmp "$CI_JOB_TEMP/proof/llvm-package.before.txt" "$CI_JOB_TEMP/proof/llvm-package.after.txt"
+        fi
       id: source_final
     - name: Retain Fast job ownership evidence
       id: fast_evidence

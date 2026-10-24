@@ -300,3 +300,82 @@ Paramsd 9쌍/9,600개 및 native helper·기존 callback/API·ARM은 봉인된 �
 원본 Python interpreter는 실제 앞선 실행에서 확인한 `3.12.15`로 고정했다.
 모델 SDK filename 수정과 기존 bundle 18개/실제 context 비교는 별도 실행한다.
 기능 결과를 확인하기 전 원본 삭제나 전체 전환 완료로 집계하지 않는다.
+
+
+## 독립 compiler-pair 실제 성공: 현재 자연 target 한 IR
+
+소스 `97f7ad36dfa0919b4e5c216fb16f44ed29161663`의
+[40084922315/job120845780499](https://github.com/bin9208/openpilot-rust/actions/runs/40084922315/job/120845780499)이
+성공했다. artifact `12556379198`, 26,950,553 bytes의 SHA256은
+`f8fae028c614f5efa33db25150d29347a52c7f9b49de6e4f6330aa069c063d8c`다.
+68개 ZIP CRC와 source/index·provider/source/imports 전후 봉인을 확인했다.
+
+실제 원본 Python `compile_to_obj`와 fresh Rust worker의 object 17,808 bytes가 전부 같고,
+공통 SHA256은 `e29630e0aade6971df153c374afda4e5f7052e80cc495f7e1647e72170f9c9b3`다.
+원본이 직접 선택한 target은 `x86_64-none-unknown-elf`, CPU `alderlake`,
+`default<O2>`이며 LLVM18 provider hash는 기존 `5c3a6395...`와 같다.
+원본 직접 compile 1회, native compile 1회이며 object나 모델을 실행하지 않았다.
+
+이 성공은 현재 runner의 compiler 진입점 대응이다. 과거 EPYC 재생과 다른 target이므로
+historical 5건·원래 모델 전체 검증을 통과한 것으로 확대하지 않는다.
+과거 frozen code는 PKL에서 읽은 runtime image이며 최초 compile/cache context는
+확정되지 않았다. 다음 조사는 같은 한 IR의 실제 원본 private cache miss/hit 및
+ELF→runtime-image 연결로 좁히고, 성공한 compiler pair는 반복하지 않는다.
+
+
+## Bundle 최초 실행: 기능 18개 성공, Clippy 뒤의 실제 CLI는 미실행
+
+소스 `97f7ad36dfa0919b4e5c216fb16f44ed29161663`의
+[40084922406/job120845780912](https://github.com/bin9208/openpilot-rust/actions/runs/40084922406/job/120845780912)은
+실패다. library 1개와 integration 17개는 실제 원본 synthetic Git 비교를 포함해 성공했다.
+그 뒤 테스트 코드의 `type_complexity`, `field_reassign_with_default`,
+`cloned_ref_to_slice_refs` 세 Clippy 지적에서 멈춰 실제 checkout 전체 CLI 비교는 미실행이다.
+
+artifact `12557345320`, 322,601 bytes의 SHA256
+`b42c5f157976dc8dd421ce571833b31377a5a8b4799c9854473a0089fd8233c0`,
+21개 ZIP CRC 및 source/index 전후 일치를 확인했다. 지적은 type alias·직접 초기화·
+`slice::from_ref`로 보완하여 모든 기존 assert와 역할을 유지한다. 다음 실행은 성공한
+기능 범위를 재사용하고 엄격 Clippy 및 미실행 실제 CLI context 비교를 진행한다.
+
+
+## Runner 용량 제약과 97f7 auth 결과 반영
+
+사용자는 60GB runner 볼륨 확장이 어렵다고 답했다. 기존 정리 후 약 9.44GB 여유를
+기준으로 입력·중간 산출물의 실제 수명과 deep 검사 분할을 검토한다. 16.64GB 증가량이
+필요한 기존 작업의 gate를 근거 없이 내리거나 현재 필요한 source·모델·provider를
+삭제하지 않는다. 작은 집중 검사는 각 작업별 admission을 유지하여 계속한다.
+
+소스 `97f7ad36dfa0919b4e5c216fb16f44ed29161663`의
+[40084922332/job120845780576](https://github.com/bin9208/openpilot-rust/actions/runs/40084922332/job/120845780576)은
+실패다. 옵션 뒤 위치 인자 문제는 통과했고, 원본 Python `3.12.15`의 잘못된 provider
+안내가 `choose from google, apple, github, jwt`인 데 비해 native만 각 선택지에 따옴표를
+붙였다. 관측 원본에 맞춰 이 문구만 보완했다. library mode/저장·재조회와 pprint 2개는
+성공했으며 기존 로그인 8개·새 SSH CLI 52사례/3개·엄격 Clippy는 앞 단계 실패로 미실행이다.
+
+artifact `12557545634`, 3,023,906 bytes, SHA256
+`921c8b07db200945ee3c39279c63d4d4159a9ef391a1e3f0c64515d8b9dd2df0`의
+31개 ZIP CRC·source/index 전후 일치를 확인했다. 다음 workflow는 성공한 2개를 재사용하고
+인자 1개·기존 로그인 8개·SSH CLI 3개·Clippy를 독립 단계로 실행한다.
+앞 단계 한 건의 실패가 다른 미실행 범위를 가리지 않도록 하되 각 실패는 전체 실패로 남긴다.
+
+route sanitizer의 기존 native 구현을 중복 작성하지 않고, 독립 full-Cereal 원본 비교
+5개를 추가했다. 기존 unit 15개와 새 원본 5개·Clippy를 분리해 검증할 예정이며 **UNRUN**이다.
+상세 입력·unknown field 및 identity 증거 범위는
+[별도 기록](python-rust-523-route-sanitizer.md)에 남긴다. caller 전환·원본 삭제·재고 집계는
+실제 수용 결과를 확인한 뒤 진행한다.
+
+
+다음 auth 실행에서는 기존 로그인 21 입력의 원본도 `AUTH_CLI_ORACLE_PYTHON`의
+준비된 절대 interpreter로 고정한다. 이전 `env_clear()` 뒤의 `python3` 이름 탐색은
+준비 venv와 다른 시스템 Python에 도달할 수 있었다. 원본 함수·입력·assert는 보존하고
+누락 시 skip/fallback 없이 실패하도록 바꿨다. 해당 8-test target은 이번에 새로 실행한다.
+
+
+용량 조사에서 기존 route-vault once의 16.643 **GB**는 15.5 **GiB**의 합산 추정치이며
+전체 deep 작업의 실측 peak가 아님을 확인했다. 실제 구성은 source2 + SDK2 + registry2 +
+target8 + Python1 + proof0.5 GiB다. 정리 후 9.439GB는 8.791GiB이며 단위를 섞어 계산하지 않는다.
+기존 gate는 유지하고 SDK 중복·Clippy 중간물 수명·추가 proof tar의 겹침을 분리 후보로 삼는다.
+직전 97f7 bundle artifact의 실제 free는 9,426,989,056 bytes(체크아웃 전) →
+8,229,765,120 bytes(준비 시작) → 6,870,003,712 bytes(종료 전)였다. 이는 해당 실행의
+관측 순증이며 실측 peak나 기존 held-provider 전체 수용을 뜻하지 않는다.
+다음 bundle은 build·Clippy·최종 단계별 registry/target/venv의 할당량도 보존한다.

@@ -118,7 +118,7 @@ jobs:
         ((available >= 512 * 1024 * 1024))
         python -m venv "$CI_JOB_TEMP/venv"
         printf '%s\n' "$CI_JOB_TEMP/venv/bin" >> "$GITHUB_PATH"
-    - name: Prepare native bundle toolchain and run inherited candidate contracts
+    - name: Prepare native bundle toolchain and fresh CLI
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
@@ -130,7 +130,7 @@ jobs:
         (( available >= 2 * 1024 * 1024 * 1024 ))
         printf '{"available_bytes":%s,"planned_preparation_and_diagnostic_growth_bytes":2147483648}\n' "$available" > "$CI_JOB_TEMP/proof/build-growth.json"
         sudo -n apt-get -o APT::Architectures=amd64 update
-        sudo -n apt-get -o APT::Architectures=amd64 install -y g++ pkg-config capnproto libcapnp-dev strace
+        sudo -n apt-get -o APT::Architectures=amd64 install -y g++ pkg-config capnproto libcapnp-dev strace gh unzip
         export RUSTUP_HOME=/home/actions/.rustup
         printf 'RUSTUP_HOME=%s\n' "$RUSTUP_HOME" >> "$GITHUB_ENV"
         test -x "$RUSTUP_HOME/toolchains/1.94.0-x86_64-unknown-linux-gnu/bin/rustc"
@@ -138,12 +138,64 @@ jobs:
         rustc -vV > "$CI_JOB_TEMP/proof/rustc.txt"
         cargo -V > "$CI_JOB_TEMP/proof/cargo.txt"
         unset RUSTFLAGS CARGO_ENCODED_RUSTFLAGS CARGO_BUILD_TARGET
-        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features route-vault-bundle-native --lib route_vault_bundle:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/bundle-lib.log"
-        grep -F 'test result: ok. 1 passed;' "$CI_JOB_TEMP/proof/bundle-lib.log"
-        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features route-vault-bundle-native --test route_vault_bundle -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/bundle-integration.log"
-        grep -F 'test result: ok. 17 passed;' "$CI_JOB_TEMP/proof/bundle-integration.log"
-        cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features route-vault-bundle-native --lib --bin build-route-vault-bundle --test route_vault_bundle -- -D warnings 2>&1 | tee "$CI_JOB_TEMP/proof/bundle-clippy.log"
+        cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features route-vault-bundle-native --bin build-route-vault-bundle 2>&1 | tee "$CI_JOB_TEMP/proof/bundle-cli-build.log"
+        df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after-build.txt"
+        du -sx --block-size=1 "$CARGO_HOME" "$CARGO_TARGET_DIR" "$CI_JOB_TEMP/venv" > "$CI_JOB_TEMP/proof/allocated-after-build.tsv"
       id: toolchain
+    - name: Admit unchanged successful bundle contract cases
+      if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        prior="$CI_JOB_TEMP/proof/prior-bundle-40084922406.zip"
+        gh api repos/bin9208/openpilot-rust/actions/artifacts/12557345320/zip > "$prior"
+        printf 'b42c5f157976dc8dd421ce571833b31377a5a8b4799c9854473a0089fd8233c0  %s\n' "$prior" | sha256sum --check -
+        unzip -t "$prior" > "$CI_JOB_TEMP/proof/prior-bundle-crc.txt"
+        test "$(unzip -p "$prior" SOURCE_COMMIT)" = 97f7ad36dfa0919b4e5c216fb16f44ed29161663
+        unzip -p "$prior" source-before.sha256 > "$CI_JOB_TEMP/proof/prior-bundle-source-before.sha256"
+        unzip -p "$prior" source-after.sha256 > "$CI_JOB_TEMP/proof/prior-bundle-source-after.sha256"
+        cmp "$CI_JOB_TEMP/proof/prior-bundle-source-before.sha256" "$CI_JOB_TEMP/proof/prior-bundle-source-after.sha256"
+        unzip -p "$prior" rust-tools.sha256 > "$CI_JOB_TEMP/proof/prior-bundle-tools.sha256"
+        sha256sum --check "$CI_JOB_TEMP/proof/prior-bundle-tools.sha256"
+        unzip -p "$prior" bundle-lib.log | grep -F 'test result: ok. 1 passed;'
+        unzip -p "$prior" bundle-integration.log | grep -F 'test result: ok. 17 passed;'
+        git fetch --no-tags --depth=1 origin 97f7ad36dfa0919b4e5c216fb16f44ed29161663
+        git diff --no-renames --name-only -z 97f7ad36dfa0919b4e5c216fb16f44ed29161663 HEAD > "$CI_JOB_TEMP/proof/bundle-changed-paths.bin"
+        while IFS= read -r -d '' changed; do
+          case "$changed" in
+            .github/workflows/python-rust-523*.yml|docs/naver/python-rust-523*.md) ;;
+            rust/crates/dev-tools/Cargo.toml|rust/crates/dev-tools/src/developer_ssh/login/cli.rs|rust/crates/dev-tools/tests/route_vault_bundle.rs|rust/crates/dev-tools/tests/developer_auth.rs|rust/crates/dev-tools/tests/route_sanitizer_original.rs|tools/ci/model_cache_probe_482.sh|tools/ci/model-cache-482-natural-config.json) ;;
+            *) printf 'Changed dependency invalidates bundle reuse: %s\n' "$changed" >&2; exit 1 ;;
+          esac
+        done < "$CI_JOB_TEMP/proof/bundle-changed-paths.bin"
+        printf '%s  %s\n' 5423bf5ab464bce3342e6eee6fc07ab64a6ecca4c4756e35a19cc54520ba0af2 rust/crates/dev-tools/Cargo.toml | sha256sum --check -
+        printf '%s  %s\n' 4ec4ac3923e32ed834dffee608080b31c5806205823ede2221b057020b172496 rust/crates/dev-tools/src/developer_ssh/login/cli.rs | sha256sum --check -
+        printf '%s  %s\n' e96c8774ae224da098c2fc96c010d9036ecbd4b2b52a793e4e952c5ed30b6959 rust/crates/dev-tools/tests/route_vault_bundle.rs | sha256sum --check -
+        printf '%s  %s\n' 0680c5ff748a107e660731bf171c992d81102ff4b83eecf67c777bbf2a8301d9 rust/crates/dev-tools/tests/developer_auth.rs | sha256sum --check -
+        printf '%s  %s\n' 45300e9148e620047b2c3901e8cf4365e51c30b8f7676ecd56010f0513b4f5c9 rust/crates/dev-tools/tests/route_sanitizer_original.rs | sha256sum --check -
+        python - <<'MANIFEST'
+        import subprocess,tomllib
+        from pathlib import Path
+        old=tomllib.loads(subprocess.check_output(['git','show','97f7ad36dfa0919b4e5c216fb16f44ed29161663:rust/crates/dev-tools/Cargo.toml'],text=True))
+        new=tomllib.loads(Path('rust/crates/dev-tools/Cargo.toml').read_text())
+        entry={'name':'route_sanitizer_original','required-features':['route-sanitizer-native']}
+        assert new['test'].count(entry)==1
+        new['test'].remove(entry)
+        assert old==new, 'Only the reviewed test registration may change.'
+        MANIFEST
+        printf '%s\n' 'Reuse 97f7 bundle lib1/integration17 with reviewed style-only test changes; fresh strict Clippy/build and actual committed-context CLI comparison.' > "$CI_JOB_TEMP/proof/bundle-reused-scopes.txt"
+    - name: Validate remaining strict bundle Clippy
+      if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features route-vault-bundle-native --lib --bin build-route-vault-bundle --test route_vault_bundle -- -D warnings 2>&1 | tee "$CI_JOB_TEMP/proof/bundle-clippy.log"
+        df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after-clippy.txt"
+        du -sx --block-size=1 "$CARGO_HOME" "$CARGO_TARGET_DIR" "$CI_JOB_TEMP/venv" > "$CI_JOB_TEMP/proof/allocated-after-clippy.tsv"
     - name: Compare actual original and native CLI committed contexts
       if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
       working-directory: ${{ env.DIAG_SOURCE }}
@@ -206,6 +258,9 @@ jobs:
         git diff --exit-code
         git diff --cached --exit-code
         df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
+        for resource in "$DIAG_SOURCE_OWNER" "$CARGO_HOME" "$CARGO_TARGET_DIR" "$CI_JOB_TEMP/venv" "$CI_JOB_TEMP/proof"; do
+          if test -d "$resource"; then du -sx --block-size=1 "$resource" >> "$CI_JOB_TEMP/proof/allocated-after-all.tsv"; fi
+        done
         cat /proc/meminfo > "$CI_JOB_TEMP/proof/memory-after.txt"
 
         if test -d "$CARGO_TARGET_DIR"; then

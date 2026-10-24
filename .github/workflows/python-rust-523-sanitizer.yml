@@ -1,0 +1,342 @@
+name: Python Rust 523 route sanitizer acceptance
+'on':
+  push:
+    branches:
+    - codex/feat-523-python-rust
+    paths:
+    - .github/workflows/python-rust-523-sanitizer.yml
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: python-rust-523-sanitizer-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  sanitizer:
+    name: Fresh original and native route sanitizer
+    if: ${{ github.repository == 'bin9208/openpilot-rust' }}
+    runs-on:
+    - self-hosted
+    - Linux
+    - X64
+    - dev-md-local
+    timeout-minutes: 40
+    env:
+      SANITIZER_RUST_ROOT: /home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_TERM_COLOR: never
+      PYTHONDONTWRITEBYTECODE: '1'
+      PIP_DISABLE_PIP_VERSION_CHECK: '1'
+    steps:
+    - name: Require trusted push and registered bin-actions
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        EVENT_NAME: ${{ github.event_name }}
+        SOURCE_REF: ${{ github.ref }}
+      run: |
+        set -euo pipefail
+        test "$EVENT_NAME" = push
+        test "$SOURCE_REF" = refs/heads/codex/feat-523-python-rust
+        test "$GITHUB_ACTIONS" = true
+        test "$RUNNER_NAME" = bin-actions
+        test "$RUNNER_ENVIRONMENT" = self-hosted
+        test "$RUNNER_OS" = Linux
+        test "$RUNNER_ARCH" = X64
+        test "$(uname -m)" = x86_64
+    - name: Common owned Fast job temporary paths
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+    - name: Allocate private source cache and target before checkout
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+        workspace=$(realpath -e -- "$GITHUB_WORKSPACE")
+        job=$CI_JOB_TEMP
+        owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$(cat "$job/owner")" = "$owner"
+        umask 077
+        mkdir "$job/proof" "$job/home" "$job/cache"
+        available=$(df -PB1 "$workspace" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]]
+        required=$((2 * 1024 * 1024 * 1024))
+        printf '{"available_bytes":%s,"planned_source_growth_bytes":%s}\n' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
+        ((available >= required))
+        source_owner=$(mktemp -d "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
+        printf '%s\n' "$owner" > "$source_owner/.diag296-owner"
+        mkdir "$source_owner/source"
+        source="$source_owner/source"
+        # Actions의 workspace와 Bash가 사용하는 private checkout을 구분한다.
+        printf 'source %q\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\n  export GITHUB_WORKSPACE=%q\nfi\n' "$BASH_ENV" "$workspace" "$source" > "$job/diagnostic-shell-env"
+        printf '%s\n' "DIAG_ACTIONS_WORKSPACE=$workspace" "DIAG_SOURCE_OWNER=$source_owner" "DIAG_SOURCE_IDENTITY=$(stat -c '%d:%i' -- "$source_owner")" "DIAG_SOURCE=$source" "DIAG_CHECKOUT_PATH=${source#"$workspace/"}" "HOME=$job/home" "CARGO_HOME=$job/cargo-home" "RUSTUP_HOME=$job/rustup-home" "CARGO_TARGET_DIR=$source/rust/target" "XDG_CACHE_HOME=$job/cache" "PIP_CACHE_DIR=$job/cache/pip" "BASH_ENV=$job/diagnostic-shell-env" >> "$GITHUB_ENV"
+        printf 'owner=%s\njob=%s\nactions_workspace=%s\nsource_owner=%s\nsource_identity=%s\nsource=%s\nworkflow_sha=%s\n' "$owner" "$job" "$workspace" "$source_owner" "$(stat -c '%d:%i' -- "$source_owner")" "$source" "$GITHUB_SHA" > "$job/proof/ownership.txt"
+        df -PB1 "$workspace" "$job" > "$job/proof/disk-before.txt"
+        cat /proc/meminfo > "$job/proof/memory-before.txt"
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$job/proof/cgroup-memory-before.txt"; fi
+        printf '%s\n' "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_OS" "$RUNNER_ARCH" > "$job/proof/runner.txt"
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 1
+        persist-credentials: false
+        path: ${{ env.DIAG_CHECKOUT_PATH }}
+        set-safe-directory: false
+        clean: false
+        lfs: false
+    - name: Seal exact source HEAD and tracked index before checks
+      id: source_before
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$PWD" = "$DIAG_SOURCE"
+        test "$GITHUB_WORKSPACE" = "$DIAG_SOURCE"
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git diff --exit-code
+        git diff --cached --exit-code
+        printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
+        allocated=$(du -sx --block-size=1 "$DIAG_SOURCE_OWNER" | cut -f1)
+        [[ $allocated =~ ^[0-9]+$ ]]
+        printf '{"allocated_private_source_bytes":%s,"planned_source_growth_bytes":2147483648}\n' "$allocated" > "$CI_JOB_TEMP/proof/source-growth-after-checkout.json"
+        git ls-tree -r -l HEAD | awk '$4 ~ /^[0-9]+$/ {bytes+=$4; files++} END {printf "{\"tracked_blob_bytes\":%.0f,\"files\":%d}\n",bytes,files}' > "$CI_JOB_TEMP/proof/tracked-source-size.json"
+        ((allocated <= 2 * 1024 * 1024 * 1024))
+    - name: Admit private preparation and seal installed Rust SDK
+      id: native_ready
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        umask 077
+        # source checkout과 별도로 private registry/target/venv/proof 증가를 admission한다.
+        for path in "$DIAG_SOURCE" "$CI_JOB_TEMP"; do
+          available=$(df -PB1 "$path" | awk 'NR == 2 {print $4}')
+          [[ $available =~ ^[0-9]+$ ]]
+          printf '%s\t%s\t2147483648\n' "$path" "$available" >> "$CI_JOB_TEMP/proof/preparation-growth.tsv"
+          ((available >= 2 * 1024 * 1024 * 1024))
+        done
+        sdk=$SANITIZER_RUST_ROOT
+        test "$sdk" = /home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu
+        test -d "$sdk" && test ! -L "$sdk"
+        test "$(readlink -e "$sdk")" = "$sdk"
+        for name in cargo rustc rustdoc cargo-clippy clippy-driver; do
+          test -f "$sdk/bin/$name" && test -x "$sdk/bin/$name" && test ! -L "$sdk/bin/$name"
+        done
+        printf '%s  %s\n' 103b60e1b1339968c1d74202ea1d45686037e82c4ea3e0569de24b18a1e6836a "$sdk/bin/rustc" > "$CI_JOB_TEMP/proof/prepared-rust-programs.sha256"
+        printf '%s  %s\n' 77f14b761b02b47e6747473f556b3bc9f98f7e4525b7c3b8d74898ff816e4636 "$sdk/bin/cargo" >> "$CI_JOB_TEMP/proof/prepared-rust-programs.sha256"
+        printf '%s  %s\n' d1c6d8c0e2fae4fbb686d421415d2f471e409ade6babb3e491d9ac5d9c70c602 "$sdk/bin/rustfmt" >> "$CI_JOB_TEMP/proof/prepared-rust-programs.sha256"
+        printf '%s  %s\n' 2ff45d07196eec4f57a631103a877631d3579e86db2770bcfaa3b9d92a0b9d15 "$sdk/bin/clippy-driver" >> "$CI_JOB_TEMP/proof/prepared-rust-programs.sha256"
+        sha256sum --check --quiet "$CI_JOB_TEMP/proof/prepared-rust-programs.sha256"
+        # 전체 regular file hash와 symlink/directory를 포함한 roster를 별도로 보존한다.
+        LC_ALL=C find "$sdk" -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/prepared-rust-files.before.sha256"
+        LC_ALL=C find "$sdk" -printf '%D:%i\t%m:%U:%G\t%s\t%T@\t%C@\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$CI_JOB_TEMP/proof/prepared-rust-roster.before.bin"
+        "$sdk/bin/rustc" -vV > "$CI_JOB_TEMP/proof/rustc.txt"
+        grep -Fx 'release: 1.94.0' "$CI_JOB_TEMP/proof/rustc.txt"
+        grep -Fx 'host: x86_64-unknown-linux-gnu' "$CI_JOB_TEMP/proof/rustc.txt"
+        "$sdk/bin/cargo" -V > "$CI_JOB_TEMP/proof/cargo.txt"
+        printf '%s\n' "RUSTC=$sdk/bin/rustc" "RUSTDOC=$sdk/bin/rustdoc" >> "$GITHUB_ENV"
+        printf '%s\n' "$sdk/bin" >> "$GITHUB_PATH"
+        for name in capnp cc c++ pkg-config; do
+          program=$(readlink -e "$(command -v "$name")")
+          test -f "$program" && test -x "$program"
+          sha256sum "$program" >> "$CI_JOB_TEMP/proof/system-programs.sha256"
+        done
+        capnp --version > "$CI_JOB_TEMP/proof/capnp.txt"
+    - uses: actions/setup-python@v6
+      id: python
+      if: ${{ !cancelled() && steps.native_ready.outcome == 'success' }}
+      with:
+        python-version: 3.12.15
+        check-latest: false
+    - name: Prepare pycapnp-only private venv and seal providers before checks
+      id: oracle_ready
+      if: ${{ !cancelled() && steps.python.outcome == 'success' }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        umask 077
+        python -I -B -c 'import sys; assert sys.version_info[:3] == (3, 12, 15), sys.version'
+        python -I -B -m venv "$CI_JOB_TEMP/venv"
+        oracle="$CI_JOB_TEMP/venv/bin/python"
+        "$oracle" -I -B -m pip install --no-cache-dir --only-binary=:all: pycapnp==2.1.0 2>&1 | tee "$CI_JOB_TEMP/proof/pip-install.log"
+        "$oracle" -I -B -m pip freeze > "$CI_JOB_TEMP/proof/python-provider-versions.txt"
+        "$oracle" -I -B -c 'import capnp,sys; assert sys.version_info[:3] == (3,12,15); assert capnp.__version__ == "2.1.0"; print(sys.version); print(capnp.__file__)' > "$CI_JOB_TEMP/proof/python.txt"
+        # -B를 쓰는 oracle 실행 전의 전체 venv를 기준으로 한다. directory symlink는 순회하지 않는다.
+        LC_ALL=C find "$CI_JOB_TEMP/venv" -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/oracle-venv-files.before.sha256"
+        LC_ALL=C find "$CI_JOB_TEMP/venv" -printf '%D:%i\t%m:%U:%G\t%s\t%T@\t%C@\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$CI_JOB_TEMP/proof/oracle-venv-roster.before.bin"
+        interpreter=$(readlink -e "$oracle")
+        test -f "$interpreter" && test -x "$interpreter"
+        printf '%s\n' "$interpreter" > "$CI_JOB_TEMP/proof/python-interpreter.before.path"
+        sha256sum "$interpreter" > "$CI_JOB_TEMP/proof/python-interpreter.before.sha256"
+        stat -Lc '%d:%i %u:%g %a %s %y %z %n' "$interpreter" > "$CI_JOB_TEMP/proof/python-interpreter.before.stat"
+        printf '%s\n' "ROUTE_SANITIZER_ORACLE_PYTHON=$oracle" >> "$GITHUB_ENV"
+    - name: Compare five fresh original sanitizer contracts
+      id: original
+      if: ${{ !cancelled() && steps.native_ready.outcome == 'success' && steps.oracle_ready.outcome == 'success' }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        unset RUSTFLAGS CARGO_ENCODED_RUSTFLAGS CARGO_BUILD_TARGET RUSTC_WRAPPER RUSTC_WORKSPACE_WRAPPER
+        "$SANITIZER_RUST_ROOT/bin/cargo" test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --no-default-features --features route-sanitizer-native --test route_sanitizer_original -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/sanitizer-original.log"
+        grep -Fx 'test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;' <(sed -E 's/ finished in .*//' "$CI_JOB_TEMP/proof/sanitizer-original.log")
+        "$ROUTE_SANITIZER_ORACLE_PYTHON" -I -B - <<'CAPTURE'
+        import json, os, pathlib, re
+        proof = pathlib.Path(os.environ['CI_JOB_TEMP']) / 'proof'
+        text = (proof / 'sanitizer-original.log').read_text()
+        rows = [json.loads(m[1]) for m in re.finditer(r'ROUTE_SANITIZER_ORIGINAL_JSON (\{[^\n]*\})', text)]
+        expected = {'vin-codepoints': 14, 'car-copy-float-bits': 8, 'non-car-identity': 4,
+                    'filter-order-laziness': 6, 'malformed-boundaries': 5}
+        assert len(rows) == 5 and {r['group'] for r in rows} == set(expected)
+        for row in rows:
+            assert row['schema'] == 'openpilot.route-sanitizer-original.v1'
+            captured = row['expected_original']
+            assert captured['metadata']['pycapnp'] == '2.1.0'
+            observations = captured['observations']
+            if row['group'] == 'filter-order-laziness':
+                assert len(row['input']['wires']) == 9 and observations['trace'] == [0,2,3,4,6,7,8,10]
+                observations = observations['rows']
+            assert len(observations) == expected[row['group']]
+            if row['group'] == 'vin-codepoints':
+                assert len(captured['vins']) == 14
+            (proof / (row['group'] + '.original.json')).write_text(json.dumps(row, ensure_ascii=True, indent=2) + '\n')
+        CAPTURE
+    - name: Run fifteen native sanitizer library contracts
+      id: library
+      if: ${{ !cancelled() && steps.native_ready.outcome == 'success' }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        unset RUSTFLAGS CARGO_ENCODED_RUSTFLAGS CARGO_BUILD_TARGET RUSTC_WRAPPER RUSTC_WORKSPACE_WRAPPER
+        "$SANITIZER_RUST_ROOT/bin/cargo" test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --no-default-features --features route-sanitizer-native --lib route_sanitizer::tests:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/sanitizer-library.log"
+        grep -E '^test result: ok\. 15 passed; 0 failed; 0 ignored; 0 measured; [0-9]+ filtered out;' "$CI_JOB_TEMP/proof/sanitizer-library.log"
+    - name: Run strict sanitizer Clippy independently
+      id: clippy
+      if: ${{ !cancelled() && steps.native_ready.outcome == 'success' }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        unset RUSTFLAGS CARGO_ENCODED_RUSTFLAGS CARGO_BUILD_TARGET RUSTC_WRAPPER RUSTC_WORKSPACE_WRAPPER
+        "$SANITIZER_RUST_ROOT/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --no-default-features --features route-sanitizer-native --lib --test route_sanitizer_original -- -D warnings 2>&1 | tee "$CI_JOB_TEMP/proof/sanitizer-clippy.log"
+    - name: Seal source and index after all attempted contracts
+      id: source_final
+      if: ${{ always() && env.DIAG_SOURCE != '' }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
+        df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
+        du -sx --block-size=1 "$DIAG_SOURCE_OWNER" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/private-output-bytes.txt"
+        cat /proc/meminfo > "$CI_JOB_TEMP/proof/memory-after.txt"
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$CI_JOB_TEMP/proof/cgroup-memory-after.txt"; fi
+        find "$CARGO_TARGET_DIR" -name '*.d' -type f -exec sha256sum {} + > "$CI_JOB_TEMP/proof/build-dep-info.sha256" || test ! -d "$CARGO_TARGET_DIR"
+        cmp "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/index-after.bin"
+        cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
+        git diff --exit-code
+        git diff --cached --exit-code
+    - name: Seal shared Rust SDK after all attempted contracts
+      id: rust_final
+      if: ${{ always() && env.CI_JOB_TEMP != '' }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+        sdk=$SANITIZER_RUST_ROOT
+        if ! test -f "$CI_JOB_TEMP/proof/prepared-rust-files.before.sha256"; then
+          printf '%s\n' 'SDK baseline unavailable; no readonly SDK qualification.' > "$CI_JOB_TEMP/proof/prepared-rust-unqualified.txt"
+          exit 1
+        fi
+        LC_ALL=C find "$sdk" -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/prepared-rust-files.after.sha256"
+        LC_ALL=C find "$sdk" -printf '%D:%i\t%m:%U:%G\t%s\t%T@\t%C@\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$CI_JOB_TEMP/proof/prepared-rust-roster.after.bin"
+        cmp "$CI_JOB_TEMP/proof/prepared-rust-files.before.sha256" "$CI_JOB_TEMP/proof/prepared-rust-files.after.sha256"
+        cmp "$CI_JOB_TEMP/proof/prepared-rust-roster.before.bin" "$CI_JOB_TEMP/proof/prepared-rust-roster.after.bin"
+        sha256sum --check --quiet "$CI_JOB_TEMP/proof/prepared-rust-programs.sha256"
+        if test -f "$CI_JOB_TEMP/proof/system-programs.sha256"; then sha256sum --check --quiet "$CI_JOB_TEMP/proof/system-programs.sha256"; fi
+    - name: Seal full private venv and resolved interpreter after contracts
+      id: oracle_final
+      if: ${{ always() && env.CI_JOB_TEMP != '' }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+        if ! test -f "$CI_JOB_TEMP/proof/oracle-venv-files.before.sha256"; then
+          printf '%s\n' 'Provider baseline unavailable; no before/after provider qualification.' > "$CI_JOB_TEMP/proof/oracle-unqualified.txt"
+          exit 1
+        fi
+        # 변경됐을 수 있는 Python 자체를 실행하지 않고 OS 도구로 after를 채취한다.
+        LC_ALL=C find "$CI_JOB_TEMP/venv" -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/oracle-venv-files.after.sha256"
+        LC_ALL=C find "$CI_JOB_TEMP/venv" -printf '%D:%i\t%m:%U:%G\t%s\t%T@\t%C@\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$CI_JOB_TEMP/proof/oracle-venv-roster.after.bin"
+        interpreter=$(readlink -e "$CI_JOB_TEMP/venv/bin/python")
+        test -f "$interpreter" && test -x "$interpreter"
+        printf '%s\n' "$interpreter" > "$CI_JOB_TEMP/proof/python-interpreter.after.path"
+        sha256sum "$interpreter" > "$CI_JOB_TEMP/proof/python-interpreter.after.sha256"
+        stat -Lc '%d:%i %u:%g %a %s %y %z %n' "$interpreter" > "$CI_JOB_TEMP/proof/python-interpreter.after.stat"
+        for kind in sha256 bin; do
+          if test "$kind" = sha256; then item=oracle-venv-files; else item=oracle-venv-roster; fi
+          cmp "$CI_JOB_TEMP/proof/$item.before.$kind" "$CI_JOB_TEMP/proof/$item.after.$kind"
+        done
+        for kind in path sha256 stat; do
+          cmp "$CI_JOB_TEMP/proof/python-interpreter.before.$kind" "$CI_JOB_TEMP/proof/python-interpreter.after.$kind"
+        done
+    - name: Record exact attempted scopes and outcomes
+      if: ${{ always() && env.CI_JOB_TEMP != '' }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        ORIGINAL_OUTCOME: ${{ steps.original.outcome }}
+        LIBRARY_OUTCOME: ${{ steps.library.outcome }}
+        CLIPPY_OUTCOME: ${{ steps.clippy.outcome }}
+        SOURCE_OUTCOME: ${{ steps.source_final.outcome }}
+        RUST_OUTCOME: ${{ steps.rust_final.outcome }}
+        ORACLE_OUTCOME: ${{ steps.oracle_final.outcome }}
+      run: |
+        set -euo pipefail
+        printf 'source=%s\noriginal5=%s\nlibrary15=%s\nstrict_clippy=%s\nsource_seal=%s\nrust_seal=%s\nprovider_seal=%s\noriginal_retired=false\ncaller_closure=false\ninventory_credit=false\n' "$GITHUB_SHA" "$ORIGINAL_OUTCOME" "$LIBRARY_OUTCOME" "$CLIPPY_OUTCOME" "$SOURCE_OUTCOME" "$RUST_OUTCOME" "$ORACLE_OUTCOME" > "$CI_JOB_TEMP/proof/outcomes.txt"
+    - name: Retain owned sanitizer evidence even after failure
+      id: fast_evidence
+      if: ${{ always() && env.CI_JOB_TEMP != '' }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: diagnostic-sanitizer-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ env.CI_JOB_TEMP }}/proof
+        if-no-files-found: error
+        retention-days: 14
+    - name: Clean only uploaded and sealed private source
+      id: fast_source_cleanup
+      if: ${{ always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success' && steps.rust_final.outcome == 'success' && steps.oracle_final.outcome == 'success' }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        UPLOAD_ID: ${{ steps.fast_evidence.outputs.artifact-id }}
+        UPLOAD_DIGEST: ${{ steps.fast_evidence.outputs.artifact-digest }}
+      run: |
+        set -euo pipefail
+        [[ $UPLOAD_ID =~ ^[0-9]+$ ]]
+        [[ $UPLOAD_DIGEST =~ ^[a-fA-F0-9]{64}$ ]]
+        workspace=$DIAG_ACTIONS_WORKSPACE
+        p=$DIAG_SOURCE_OWNER
+        case "$p" in "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."??????) ;; *) exit 1 ;; esac
+        test -d "$p" && test ! -L "$p"
+        test "$(realpath -e -- "$p")" = "$p"
+        test "$(stat -c '%u' -- "$p")" = "$(id -u)"
+        test "$(stat -c '%d:%i' -- "$p")" = "$DIAG_SOURCE_IDENTITY"
+        test -f "$p/.diag296-owner" && test ! -L "$p/.diag296-owner"
+        test "$(cat "$p/.diag296-owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$DIAG_SOURCE" = "$p/source"
+        test -d "$p/source" && test ! -L "$p/source"
+        test "$(realpath -e -- "$p/source")" = "$p/source"
+        rm -rf --one-file-system -- "$p"
+    - name: Clean common owned job temporary paths after evidence upload
+      if: ${{ always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome == 'success' }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      with:
+        cleanup: 'true'

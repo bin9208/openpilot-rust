@@ -140,7 +140,7 @@ fn parse(args: &[String]) -> Result<std::result::Result<Parsed, String>> {
                 index += 1;
                 if positional_slot == 0 {
                     if !matches!(value.as_str(), "google" | "apple" | "github" | "jwt") {
-                        return Ok(Err(format!("argument method: invalid choice: {} (choose from 'google', 'apple', 'github', 'jwt')", quoted(&value)?)));
+                        return Ok(Err(format!("argument method: invalid choice: {} (choose from google, apple, github, jwt)", quoted(&value)?)));
                     }
                     method = value;
                 } else {

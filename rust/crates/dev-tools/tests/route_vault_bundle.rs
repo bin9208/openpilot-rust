@@ -32,11 +32,13 @@ fn ok(bytes: impl AsRef<[u8]>) -> Captured {
         stderr: vec![],
     }
 }
+type Before = Box<dyn FnMut(usize, &CommandSpec)>;
+
 #[derive(Default)]
 struct Peer {
     replies: VecDeque<Captured>,
     seen: Vec<CommandSpec>,
-    before: Option<Box<dyn FnMut(usize, &CommandSpec)>>,
+    before: Option<Before>,
 }
 impl Runner for Peer {
     fn run(&mut self, spec: &CommandSpec) -> Result<Captured> {
@@ -61,8 +63,10 @@ fn destination_creation_precedes_ref_resolution_and_existing_dest_runs_no_git() 
     let root = t.path().join("missing-repo");
     let dest = t.path().join("nested/bundle");
     let observed = dest.clone();
-    let mut p = Peer::default();
-    p.before = Some(Box::new(move |_, _| assert!(observed.is_dir())));
+    let mut p = Peer {
+        before: Some(Box::new(move |_, _| assert!(observed.is_dir()))),
+        ..Peer::default()
+    };
     p.replies.push_back(Captured {
         code: 128,
         stdout: vec![],
@@ -241,7 +245,10 @@ fn argparse_fixed_surface_duplicate_abbreviation_help_and_literal_destination() 
         assert!(parse(&argv(&args)).unwrap().help);
     }
     let raw = OsString::from_vec(b"raw-\xff".to_vec());
-    assert_eq!(parse(&[raw.clone()]).unwrap().positionals[0], raw);
+    assert_eq!(
+        parse(std::slice::from_ref(&raw)).unwrap().positionals[0],
+        raw
+    );
 }
 #[test]
 fn stdout_error_occurs_after_final_commit_marker() {

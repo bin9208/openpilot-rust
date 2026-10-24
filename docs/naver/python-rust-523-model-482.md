@@ -277,3 +277,87 @@ object가 같으면 성공한 pair를 반복하지 않고, 다음 CI는 같은 �
 그 새 관찰도 과거 cache hit/miss의 소급 증거로 사용하지 않는다.
 기존 26MB/265 ZIP과 알려진 half 5건은 재감사·재계산하지 않았다.
 로컬 compiler/model 실행·archived ELF/script 실행 및 workflow/source 변경은 하지 않았다.
+
+## 원본 cache probe CI 통합 — 2026-10-24 KST, 실행 UNRUN
+
+위 부록의 조건부 다음 단계를 cache 전용 CI로 구체화했다. 성공한
+[pair run40084922315/job120845780499](https://github.com/bin9208/openpilot-rust/actions/runs/40084922315/job/120845780499),
+source `97f7ad36dfa0919b4e5c216fb16f44ed29161663`은 현재 원본/native object가
+각 17,808 bytes / SHA256 `e29630e0aade6971df153c374afda4e5f7052e80cc495f7e1647e72170f9c9b3`로
+일치했다. 이는 현재 IR와 두 compiler 진입점의 대응 증거이며, frozen PKL의 최초 생성 환경이나
+historical half 5건의 수용 증거가 아니다. 이번 workflow는 그 pair를 재실행하지 않는다.
+
+변경 범위는 다음 네 파일이다. 기존 pair script와 Rust/Cargo, 다른 workflow 및 main 기록은
+변경하지 않았다. 이번 작업에서는 커밋·push·Actions 실행을 하지 않는다.
+
+- `tools/ci/model_cache_probe_482.sh`: 검토한 cache probe draft를 CI 진입점으로 승격.
+- `tools/ci/model-cache-482-natural-config.json`: 성공 pair의 exact JSON bytes를 고정.
+- `.github/workflows/python-rust-523-model.yml`: 원본 cache 전용 job으로 교체.
+- 이 문서의 이번 끝 섹션: source/pin·동작 범위·검증 한계 기록.
+
+고정 config의 출처는
+[artifact12556379198](https://github.com/bin9208/openpilot-rust/actions/runs/40084922315/artifacts/12556379198),
+ZIP 26,950,553 bytes / SHA256
+`f8fae028c614f5efa33db25150d29347a52c7f9b49de6e4f6330aa069c063d8c`의
+exact member `model-compiler-pair/natural-config.json`이다. 부모의 다운로드 완료 audit 뒤
+로컬 ZIP 크기·전체 SHA와 이 단일 member의 CRC/1,247 bytes/SHA256
+`2d769aa04fecbf2175532d5ebca995eaaece64adb1200d81bcddebabd1ff7a0d`을 확인하고
+원문 bytes만 소스 파일로 추출했다. archive의 code 실행·unpickle·68 CRC 재감사는 하지 않았다.
+새 job은 이 26MiB artifact를 다시 다운로드하지 않는다.
+
+자연 TM은 `CPULLVMCompiler(['x86_64','native'])`의 실제 getters/pass에서 생성하며
+config 전체를 고정 reference와 비교한다. 실제 `alderlake`/features,
+`x86_64-none-unknown-elf`/`default<O2>`가 다르면 실패하고 target을 강제하지 않는다.
+SDK는 현재 pair의 실제 경로 `/usr/lib/x86_64-linux-gnu/libLLVM-18.so`, apt
+`libllvm18:amd64=1:18.1.3-1ubuntu1`, SHA256
+`5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0`만 허용한다.
+초기 draft의 `.so.1`이나 다른 provider로 fallback하지 않는다. provisioned library/package가
+없거나 pin이 다르면 설치·교체하지 않고 중단한다. Rust toolchain/worker build는 필요 없다.
+
+새 job의 artifact 다운로드는 작은 baseline `12404776700` 한 건이다. `actions:read`로
+metadata의 id/run/workflow SHA/expiry/digest/4,391,525 bytes를 확인한 뒤 ZIP을 받는다.
+API와 ZIP 각각 GNU timeout30s, metadata64KiB·ZIP8MiB 파일 상한을 적용하고, 정확 길이와
+ZIP SHA256 `ba28ae07b5becc3afe4346db3e86437f9a93aaaf02031c19f83e070ad9c7d93b`을
+확인한 완성본만 입력으로 쓴다. 133개 member 중 중복이 없어야 하고 expanded total은
+16MiB 이하다. 아래 네 member만 CRC/길이/SHA 검증 후 inert bytes로 추출한다.
+
+- `first-kernel/kernel92-original.ll`: 166,049 bytes,
+  SHA256 `e223a2c36c6bde7cf676bb92fd2529858a723f9ecfa91c811b2b941756a9bea0`.
+- `first-kernel/original-kernel92-code.bin`: 14,442 bytes,
+  SHA256 `324697e4d28a400da3c521fea2f9140eea04d50f19e6771a96549f4b8a5a6767`.
+- `first-kernel/program-binding.json`: 967 bytes,
+  SHA256 `e9353a5e24b982c1cbe45f9e02bb479a867273115971da9104d03f7d06e78728`.
+- `first-kernel/context.json`: 396 bytes,
+  SHA256 `a6a1f6b07d38a54e85537df7655fced57139e77dfdb195c0c9e16b44dca9f02a`.
+
+원본 package source와 실제 import 파일, interpreter/pyvenv, loaded LLVM/provider/input을
+before/after 봉인한다. workflow도 전체 tracked source/index, venv 파일·symlink 목록,
+provider 파일/package/realpath를 전후 대조한다. script는 새 proof 아래의 진짜 private SQLite
+DB만 사용한다. 원본 `compile_cached`를 동일 IR로 두 번 호출하며, bound `diskcache_get/put`,
+실제 `compile_to_obj`, 원본 `jit_loader`에 관측 wrapper가 위임한다. 실제 miss→compile→link→put→hit,
+get2/put1/compile1/link1, key 전체와 실제 row, 첫/둘째 반환 image 일치를 요구한다.
+fake cache 답변·archived cache 주입·PKL 역직렬화는 없다.
+
+fresh ELF와 실제 `jit_loader` 반환 image, DEBUG7 IR log, event/count/hash/seals를 남긴다.
+ELF/link는 bytes와 relocation 처리까지만 수행하며 생성 object/image/model은 실행하지 않는다.
+GNU timeout90s의 자체 process group과 파일당16MiB/core dump0 제한을 유지한다.
+frozen image와의 전체 byte 비교는 `fresh_image_equals_frozen` 및 첫 차이의 **진단값**이다.
+불일치를 정규화하지 않으며 일치 여부는 cache protocol 성공과 구별한다.
+`objects_executed:false`, `frozen_image_executed:false`,
+`model_or_historical_acceptance:false`를 항상 유지한다. 새 miss/hit 관측으로 과거 hit/provider나
+미확인 최초 CPU를 소급 입증하지 않는다. runtime 수치 gate/CPU target/golden/tolerance는 무변경이다.
+
+기존 source checkout 전 2GiB 작업별 admission과 source ownership guard를 유지한다.
+이후 준비는 provisioned LLVM/Python toolcache 증가량0, private venv/wheel 상한768MiB와 진단256MiB를
+합친 1GiB를 실제 filesystem free bytes로 사전 확인한다. private 준비의 실제 증가량도 기록하고
+768MiB 초과면 probe 전에 중단한다. Python3.12.15의 기존 complete toolcache가 없으면 다운로드
+대신 중단한다. pip는 pinned numpy wheel만 설치하고 cache/source build를
+남기지 않는다. 기존 Rust 준비 3GiB는 제거했으며 볼륨 확장이나 고정 reserve 완화는 하지 않는다.
+실패/timeout에도 proof를 항상 upload하고, upload id/digest와 source after seal·소유권 확인 후에만
+기존 cleanup 경로로 이번 source와 job temp를 정리한다.
+
+로컬 검증은 shell 본문 `bash -n`, embedded Python `ast.parse`, JSON/YAML 문법 및 diff 검토뿐이다.
+실제 venv import/cache miss-hit/compile/link와 새 workflow의 다운로드·봉인·upload/cleanup은
+**UNRUN**이며 다음 부모의 정확 source CI가 확인해야 한다. 자연 features/provider가 reference와
+다르거나 baseline이 만료되면 실패하므로 그 경계만 조사한다. #482 및 모델/runtime 전체 수용은
+열린 상태로 유지한다.

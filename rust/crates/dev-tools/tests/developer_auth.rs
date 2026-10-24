@@ -320,7 +320,12 @@ print(json.dumps(rows))
         ]));
     }
     let temp = tempfile::tempdir().unwrap();
-    let output = std::process::Command::new("python3")
+    let python = std::path::PathBuf::from(
+        std::env::var_os("AUTH_CLI_ORACLE_PYTHON")
+            .expect("prepared absolute auth oracle interpreter required"),
+    );
+    assert!(python.is_absolute() && python.is_file());
+    let output = std::process::Command::new(python)
         .args(["-I", "-S", "-c", script])
         .arg(source)
         .arg(serde_json::to_string(&inputs).unwrap())

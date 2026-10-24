@@ -2494,6 +2494,10 @@ path = "src/bin/build_route_vault_bundle.rs"
 required-features = ["route-vault-bundle-native"]
 
 [[test]]
+name = "route_sanitizer_original"
+required-features = ["route-sanitizer-native"]
+
+[[test]]
 name = "route_vault_bundle"
 path = "tests/route_vault_bundle.rs"
 required-features = ["route-vault-bundle-native"]
