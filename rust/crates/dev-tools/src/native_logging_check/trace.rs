@@ -113,6 +113,10 @@ struct Roster {
     identity: Identity,
 }
 fn roster(parent: &File) -> Result<Vec<Roster>> {
+    roster_with_file_bound(parent, MAX_FILE_BYTES)
+}
+fn roster_with_file_bound(parent: &File, file_bound: u64) -> Result<Vec<Roster>> {
+    require(file_bound <= MAX_FILE_BYTES, "trace file bound invalid")?;
     let mut result = Vec::new();
     let uid = fs::metadata("/proc/self")?.uid();
     for entry in fs::read_dir(format!("/proc/self/fd/{}", parent.as_raw_fd()))? {
@@ -136,7 +140,7 @@ fn roster(parent: &File) -> Result<Vec<Roster>> {
                 && named.nlink() == 1
                 && named.uid() == uid
                 && named.mode() & 0o022 == 0
-                && named.len() <= MAX_FILE_BYTES,
+                && named.len() <= file_bound,
             "trace roster entry unsafe",
         )?;
         let held = open_input(parent, &name)?;

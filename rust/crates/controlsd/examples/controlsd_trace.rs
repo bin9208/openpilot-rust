@@ -6,7 +6,11 @@ use openpilot_controlsd::{
 use openpilot_messaging::state::{Options, Poll, State};
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::{collections::BTreeMap, path::Path};
+use std::{
+    collections::BTreeMap,
+    io::{BufWriter, Write},
+    path::Path,
+};
 
 #[derive(Deserialize)]
 struct Frame {
@@ -151,6 +155,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         results.push(json!({"name":case.name,"printed":printed,"rows":rows}));
     }
-    serde_json::to_writer(std::fs::File::create(output_path)?, &results)?;
+    let mut output = BufWriter::new(std::fs::File::create(output_path)?);
+    serde_json::to_writer(&mut output, &results)?;
+    output.flush()?;
     Ok(())
 }

@@ -7,9 +7,16 @@
 - 원문 경로: `.github/workflows/rust.yml`
 - 원문 Git blob: `c8bc67ce0dc1b1e809d584c2e41222651c1e2798`
 - 추출: `carrot-navi-runtime` 원문에서 comparator build/caller 두 step만 제외.
-  들여쓰기와 끝 newline을 보존한 7,333B다.
+  들여쓰기와 끝 LF 2개를 포함한 원문은 7,333B다.
 - 기존 `RETAINED_JOB_SHA`:
   `fe4b08ff2bab5d8d199c827c6ed13ac392576ed710544a0adef1e6f6160e34cf`
+
+Git에 저장한 파일은 마지막 LF 1바이트만 분리한 7,332B이며 SHA256은
+`41ecbf55743482c5617ae187c5df6d7baae7e9e49c6da8e8bb1d5e5756d8b77a`다.
+이는 원본 실행에 의존하지 않는 데이터 저장 encoding이다. 테스트는
+`include_bytes!`로 읽은 뒤 고정 LF 1바이트를 복원하고, 기존 7,333B 길이와
+`RETAINED_JOB_SHA`를 확인한 원문만 UTF-8/YAML로 해석한다. 원문 hash와
+비교 입력을 갱신하거나 공백 gate의 예외·skip·정규화를 추가하지 않는다.
 
 `BUILD_SHA`와 `CALLER_SHA`도 변경하지 않았다. 현재 parsed run의 641B와
 53B를 각각 기존 pin으로 확인한다. 나머지 도메인 run과 action, job 설정은
@@ -35,8 +42,10 @@ canonical JSON SHA256
 기존 성공 기록은 run `39826752939`, `39832413264` 및 해당 #296 evidence/
 handoff 문서에 있으며 현재 source의 실행 성공으로 소급하지 않는다.
 
-로컬 검증은 source·fixture SHA·rustfmt·diff에 한정했다. 새 policy 함수의
-양성/음성 실행, compile/test/Clippy, 원본 traffic 실행은 모두 **UNRUN**이다.
+로컬 검증은 source·fixture 복원 byte/SHA·rustfmt·diff에 한정했다.
+변경 전 저장 표현의 policy 2개는 `99c0ac14c7d85b7f6ca8903edc2c217bcc00e2cf`의
+Fast `40135740465`에서 실제 통과했지만, 이 encoding 변경의
+양성/음성 실행과 compile/test/Clippy는 **UNRUN**이다. 원본 traffic은 재실행하지 않았다.
 후속 Actions의 source 정책 selector는 다음 두 개다.
 
 - `maintained_policy_rejects_embedded_oracle_and_changed_traffic`

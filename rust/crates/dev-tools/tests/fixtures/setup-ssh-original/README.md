@@ -14,4 +14,11 @@
 - 당시 metadata에 없었던 `native_sources`나 현재 provider 정보를 추가하지 않는다. 현재 source/SDK/ELF/실제 entry 증거는 별도 gate에서 기록한다.
 - a134의 전체 테스트 log는2 PASS/1 FAIL이다. setup21의 개별 성공만 재사용하며 parser 실패는 이후 별도 검증으로 관리한다.
 
-현재는 frozen 원문 수입 후보이며, 실제 current replay·원본 부재·공개 helper 실행과 inventory 반영은 미수용이다.
+96a/a4의 기본 러너 검증에서 frozen21·음성3·public missing-argument1과 전후 봉인이
+성공했다. 마지막 a4 실행은 run40132971114/artifact12576141678이며 public exec20/20,
+15signal과122held 전후를 확인했다. 이 원문 JSON·metadata·기준은 그대로다.
+
+다음 source에서는 setup 원본1을 Git에서 삭제하고 실제 checkout의 부재·재출현 거부와
+같은21/3/public1·Clippy·봉인/upload/정리를 확인한다. 그 postabsence 검증은 아직 UNRUN이며
+이 문서 변경이나 원본 삭제만으로 inventory credit을 추가하지 않는다. SSH plan26/parser13은
+별도 원본 경로를 계속 쓰므로 해당 interpreter 제거 수용으로 확대하지 않는다.

@@ -12,6 +12,7 @@ name: Python Rust 523 setup keys frozen21 and public missing argument
     - rust/tools/prepare-readonly-ci-rust
     - rust/tools/check-disk-space
     - tools/scripts/setup_ssh_keys.py
+    - tools/ci/setup_source_absence_523.sh
     - rust/crates/dev-tools/tests/developer_cli_original/setup_frozen.rs
 permissions:
   contents: read
@@ -32,7 +33,8 @@ jobs:
       CARGO_PROFILE_TEST_DEBUG: '0'
       CARGO_TERM_COLOR: never
       RUSTUP_TOOLCHAIN: 1.94.0
-      SETUP_SOURCE_PHASE: pre-delete
+      SETUP_SOURCE_PHASE: absent
+      SETUP_ABSENCE_HELPER_SHA256: 2dc5533c4a03bdd91fbbaf04c2b442e6b72ca3895b797eef264574e4a2730fa7
     steps:
     - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
       shell: bash
@@ -103,6 +105,14 @@ jobs:
         test "$PWD" = "$DIAG_SOURCE"
         test "$GITHUB_WORKSPACE" = "$DIAG_SOURCE"
         test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        test "$SETUP_SOURCE_PHASE" = absent
+        absence_helper=$DIAG_SOURCE/tools/ci/setup_source_absence_523.sh
+        [[ -f $absence_helper && ! -L $absence_helper && $(readlink -e -- "$absence_helper") == "$absence_helper" ]]
+        printf '%s  %s\n' "$SETUP_ABSENCE_HELPER_SHA256" "$absence_helper" | sha256sum --check --strict --quiet -
+        source "$absence_helper"
+        setup_absence_admit "$DIAG_SOURCE" "$GITHUB_SHA" "$CI_JOB_TEMP/proof"
+        printf '%s\n' "SETUP_ABSENCE_ROOT=$SETUP_ABSENCE_ROOT" "SETUP_ABSENCE_SOURCE_SHA=$SETUP_ABSENCE_SOURCE_SHA" \
+          "SETUP_ABSENCE_PARENTS=$SETUP_ABSENCE_PARENTS" >> "$GITHUB_ENV"
         git diff --exit-code
         git diff --cached --exit-code
         printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
@@ -177,8 +187,11 @@ jobs:
         export PATH="$sdk/bin:/usr/bin:/bin" LC_ALL=C
         unset RUSTFLAGS CARGO_ENCODED_RUSTFLAGS CARGO_BUILD_TARGET RUSTC_WRAPPER RUSTC_WORKSPACE_WRAPPER
         unset LD_PRELOAD LD_LIBRARY_PATH BASH_ENV ENV
+        absence_helper=$source/tools/ci/setup_source_absence_523.sh
+        printf '%s  %s\n' "$SETUP_ABSENCE_HELPER_SHA256" "$absence_helper" | sha256sum --check --strict --quiet -
+        source "$absence_helper"
+        setup_absence_verify "$source" "$GITHUB_SHA" qualify >> "$proof/setup-absence-checks.tsv"
         entry=$source/rust/tools/run-developer-tool
-        original=$source/tools/scripts/setup_ssh_keys.py
         fixture=$source/rust/crates/dev-tools/tests/fixtures/setup-ssh-original/setup-effects-original.json
         fixture_sha=444a47ecba9579d4042f26dd89f8438908b56d244a0f2c98c8b0dd3e1ef3a6ef
         entry_sha=2066721af9f04888d00cc8572c5374ed142bf6d5d658cbf12b97a02c5452ca39
@@ -193,6 +206,7 @@ jobs:
         artifacts_ready=false
         replay_pass=false
         negative_pass=false
+        absence_controls_pass=false
         entry_pass=false
         baseline_ready=false
         guard_ready=false
@@ -348,13 +362,7 @@ jobs:
           bind_dso "$path"
         }
         phase_source() {
-          case "$SETUP_SOURCE_PHASE" in
-            pre-delete)
-              [[ -f $original && ! -L $original ]] || return 1
-              printf '%s  %s\n' ab157e4943734c969ffc1e8113dc9d09ded355f3463da34c2b9132fc24181f3f "$original" | sha256sum --check --strict --quiet - || return 1 ;;
-            absent) [[ ! -e $original && ! -L $original ]] || return 1 ;;
-            *) printf 'unknown explicit setup source phase: %s\n' "$SETUP_SOURCE_PHASE" >&2; return 1 ;;
-          esac
+          setup_absence_verify "$source" "$GITHUB_SHA" "$1" >> "$proof/setup-absence-checks.tsv"
         }
         growth() {
           local label=$1 growth_mib=$2
@@ -370,6 +378,7 @@ jobs:
         }
         budgets() {
           local usage bytes apparent path cap
+          phase_source "${1:-budget-boundary}" || return 1
           usage=$(build_usage) || return 1
           read -r bytes apparent <<< "$usage" || return 1
           [[ $bytes =~ ^[0-9]+$ && $apparent =~ ^[0-9]+$ ]] || return 1
@@ -411,6 +420,7 @@ jobs:
           local -a diagnostic_environment=() git_input_paths=()
           shift 4
           budgets || return 125
+          phase_source "command-before-$label" || return 125
           test ! -e "$proof/resource-stop.txt" || return 125
           printf '%s\0' "$label" "$@" >> "$proof/commands.nul" || return 125
           if [[ $label == public-missing || $label == rustup-preflight ]]; then
@@ -451,7 +461,7 @@ jobs:
           leader=$!; active_leader=$leader; active_stop=$stop
           (
             while [[ ! -e $stop ]] && kill -0 "$leader" 2>/dev/null; do
-              if ! budgets; then
+              if ! budgets sampled-budget; then
                 printf '%s\n' "$label" > "$proof/resource-stop.txt"
                 # kernel EXITKILL은 tracer 사망 때 별도 PGID의 tracee도 종료한다.
                 kill -KILL -- "-$leader" 2>/dev/null || true
@@ -473,6 +483,7 @@ jobs:
           fi
           ((monitor == 0)) || return 125
           budgets || return 125
+          phase_source "command-after-$label" || return 125
           test ! -e "$proof/resource-stop.txt" || return 125
           test "$code" = "$expected"
         }
@@ -637,28 +648,35 @@ jobs:
               cmp "$proof/$name-before.roster.bin" "$proof/$name-after.roster.bin" &&
               cmp "$proof/$name-before.files.sha256" "$proof/$name-after.files.sha256" || status=1
           done
-          phase_source || status=1
+          phase_source finish-before-seals || status=1
           budgets || status=1
           df -PB1 "$source" "$job" > "$proof/disk-after.txt" || status=1
           cat /proc/meminfo > "$proof/memory-after.txt" || status=1
           verify_held || status=1
+          phase_source finish-before-receipt || status=1
           [[ $status == 0 && $baseline_ready == true && $artifacts_ready == true ]] && sealed=true
           # candidate는 최종 receipt가 아니다. reader의 마지막 봉인 뒤에만 no-overwrite 게시한다.
           jq -n --arg source "$GITHUB_SHA" --arg source_phase "$SETUP_SOURCE_PHASE" --arg operation "$phase" \
             --argjson sealed "$sealed" --argjson replay "$replay_pass" --argjson negative "$negative_pass" --argjson entry "$entry_pass" \
+            --argjson absence_controls "$absence_controls_pass" \
             --arg cli "${cli:-}" --arg fixture "$fixture_sha" --argjson code "$original_status" \
             '{source_commit:$source,source_phase:$source_phase,operation:$operation,immutable_seals:$sealed,
               pass:($code==0 and $sealed and $replay and $negative and $entry),
               controlled_semantic_cases:(if $replay then 21 else 0 end),rejection_tests:(if $negative then 3 else 0 end),
               public_missing_argument_calls:(if $entry then 1 else 0 end),public_exit_status:(if $entry then 1 else null end),
               actual_elf:$cli,original_fixture_sha256:$fixture,
+              setup_source_absent:($source_phase=="absent" and $sealed),source_absence_controls:(if $absence_controls then 6 else 0 end),
+              source_absence_scope:"command boundaries and 2-second sampling; not continuous filesystem or whole Python absence",
+              removed_original:{path:"tools/scripts/setup_ssh_keys.py",sha256:"ab157e4943734c969ffc1e8113dc9d09ded355f3463da34c2b9132fc24181f3f"},
               original_python_executions:(if $replay and $negative and $entry then 0 else null end),full_network_cli_cases:0,
               historical_artifact_id:12558498891,historical_run_id:40089943318,historical_source:"a134b32c5d50d346994d671c0882b147175021dc",
               whole_python_absence_accepted:false,existing_http_params_tests_rerun:false,retirement_credit:false,measured_peak_guarantee:false,
               trace_scope:"strict exec targets including failed Python attempts; pinned helper or ELF on success; not whole Python absence",
               owned_recovery_scope:"direct owned groups waited; strace EXITKILL for tracees, not a Bash subreaper claim"}' > "$proof/setup-receipt.candidate.json" || status=1
           # receipt의 native reader를 포함하여 마지막 provider 사용 뒤 다시 확인한다.
+          phase_source finish-before-publish || status=1
           verify_held || status=1
+          [[ $absence_controls_pass == true ]] || status=1
           [[ $status == 0 ]] || sealed=false
           if [[ $status == 0 ]]; then
             ln -- "$proof/setup-receipt.candidate.json" "$proof/setup-receipt.json" &&
@@ -687,12 +705,14 @@ jobs:
           [[ $provider == /* ]] || provider=$(command -v "$provider")
           bind_native "$provider"
         done
-        for relative in rust/tools/run-developer-tool rust/tools/prepare-readonly-ci-rust rust/tools/check-disk-space rust/Cargo.toml rust/Cargo.lock rust/rust-toolchain.toml rust/crates/dev-tools/Cargo.toml rust/crates/dev-tools/src/lib.rs rust/crates/dev-tools/tests/developer_cli_original.rs rust/crates/dev-tools/tests/developer_cli_original/setup_frozen.rs rust/crates/dev-tools/tests/fixtures/setup-ssh-original/setup-effects-original.json rust/crates/dev-tools/tests/fixtures/setup-ssh-original/README.md rust/crates/logging/build.rs rust/crates/logging/tests/build_watch.rs .github/workflows/python-rust-523-setup-keys.yml; do bind_file "$source/$relative"; done
+        for relative in rust/tools/run-developer-tool rust/tools/prepare-readonly-ci-rust rust/tools/check-disk-space tools/ci/setup_source_absence_523.sh rust/Cargo.toml rust/Cargo.lock rust/rust-toolchain.toml rust/crates/dev-tools/Cargo.toml rust/crates/dev-tools/src/lib.rs rust/crates/dev-tools/tests/developer_cli_original.rs rust/crates/dev-tools/tests/developer_cli_original/setup_frozen.rs rust/crates/dev-tools/tests/fixtures/setup-ssh-original/setup-effects-original.json rust/crates/dev-tools/tests/fixtures/setup-ssh-original/README.md rust/crates/logging/build.rs rust/crates/logging/tests/build_watch.rs .github/workflows/python-rust-523-setup-keys.yml; do bind_file "$source/$relative"; done
         for relative in rust/crates/disk-space/Cargo.toml rust/crates/disk-space/src/*.rs; do bind_file "$source/$relative"; done
         printf '%s  %s\n' 86884528b67fab80757b46b8b0bdca6b9b593c6446933adc3ec628d7cff12c58 "$source/rust/crates/dev-tools/tests/developer_cli_original.rs" \
           11fae1ee5c7a17594c023f5adc114dc6236e1bd078749366d0fa2f0bf3958c62 "$source/rust/crates/dev-tools/tests/developer_cli_original/setup_frozen.rs" | sha256sum --check --strict --quiet -
-        phase_source
-        if [[ $SETUP_SOURCE_PHASE == pre-delete ]]; then bind_file "$original"; fi
+        phase_source controls-before
+        setup_absence_controls "$job" "$proof"
+        absence_controls_pass=true
+        phase_source controls-after
         printf '%s  %s\n' "$entry_sha" "$entry" | sha256sum --check --strict --quiet -
         test "$(stat -c %s "$fixture")" = 13800
         printf '%s  %s\n' "$fixture_sha" "$fixture" | sha256sum --check --strict --quiet -
@@ -812,6 +832,15 @@ jobs:
       run: |
         set -euo pipefail
         test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        absence_status=0
+        absence_ready=false
+        absence_helper=$DIAG_SOURCE/tools/ci/setup_source_absence_523.sh
+        if printf '%s  %s\n' "$SETUP_ABSENCE_HELPER_SHA256" "$absence_helper" | sha256sum --check --strict --quiet -; then
+          source "$absence_helper"
+          absence_ready=true
+          setup_absence_verify "$DIAG_SOURCE" "$GITHUB_SHA" source-final-before >> "$CI_JOB_TEMP/proof/setup-absence-checks.tsv" || absence_status=1
+        else absence_status=1
+        fi
         git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"
         tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
         df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
@@ -825,6 +854,9 @@ jobs:
         git diff --cached --exit-code
         # source/SDK/provider 봉인은 qualify 실패 때도 별도로 수행한다.
         # 최종 metadata/dep-info 추가 뒤에도 동일 proof/raw 상한을 유지한다.
+        if [[ $absence_ready == true ]]; then
+          setup_absence_verify "$DIAG_SOURCE" "$GITHUB_SHA" source-final-after >> "$CI_JOB_TEMP/proof/setup-absence-checks.tsv" || absence_status=1
+        fi
         for directory in "$CI_JOB_TEMP/proof" "$CI_JOB_TEMP/proof/raw"; do
           limit=$((1024 * 1024 * 1024))
           [[ $directory != "$CI_JOB_TEMP/proof/raw" ]] || limit=$((16 * 1024 * 1024))
@@ -833,6 +865,8 @@ jobs:
           [[ $allocated =~ ^[0-9]+$ && $apparent =~ ^[0-9]+$ ]]
           ((allocated <= limit && apparent <= limit))
         done
+        test "$absence_status" = 0
+        printf 'setup_source_absent=true\n' >> "$GITHUB_OUTPUT"
     - name: Require fresh scoped setup receipt and preserve pending retirement boundary
       id: closure
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}
@@ -847,12 +881,25 @@ jobs:
         test "$QUALIFY_OUTCOME" = success
         test "$SOURCE_OUTCOME" = success
         test "$SDK_OUTCOME" = success
+        test "$SETUP_SOURCE_PHASE" = absent
+        absence_helper=$DIAG_SOURCE/tools/ci/setup_source_absence_523.sh
+        printf '%s  %s\n' "$SETUP_ABSENCE_HELPER_SHA256" "$absence_helper" | sha256sum --check --strict --quiet -
+        source "$absence_helper"
+        setup_absence_verify "$DIAG_SOURCE" "$GITHUB_SHA" closure >> "$CI_JOB_TEMP/proof/setup-absence-checks.tsv"
+        setup_absence_require_stages "$CI_JOB_TEMP/proof"
         /usr/bin/jq -e --arg source "$GITHUB_SHA" --arg phase "$SETUP_SOURCE_PHASE" '
          .pass == true and .source_commit == $source and .source_phase == $phase and
          .controlled_semantic_cases == 21 and .rejection_tests == 3 and .public_missing_argument_calls == 1 and
          .public_exit_status == 1 and .original_python_executions == 0 and .full_network_cli_cases == 0 and
+         .setup_source_absent == true and .source_absence_controls == 6 and
+         .removed_original == {path:"tools/scripts/setup_ssh_keys.py",sha256:"ab157e4943734c969ffc1e8113dc9d09ded355f3463da34c2b9132fc24181f3f"} and
          .immutable_seals == true and .whole_python_absence_accepted == false and .retirement_credit == false
         ' "$CI_JOB_TEMP/proof/setup-receipt.json"
+        # closure 관측도 proof1GiB 안에 포함한다. raw에는 새로 쓰지 않는다.
+        usage=$(find -P "$CI_JOB_TEMP/proof" -printf '%b %s\n' | awk '{b+=$1*512;s+=$2} END {printf "%.0f %.0f\n",b,s}')
+        read -r allocated apparent <<< "$usage"
+        [[ $allocated =~ ^[0-9]+$ && $apparent =~ ^[0-9]+$ ]]
+        ((allocated <= 1024 * 1024 * 1024 && apparent <= 1024 * 1024 * 1024))
     - name: Upload setup frozen21 and public entry proof before owned cleanup
       id: fast_evidence
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}
@@ -866,7 +913,7 @@ jobs:
       id: fast_source_cleanup
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome
         == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome
-        == 'success' && steps.prepared_rust_final.outcome == 'success' && steps.qualify.outputs.immutable_seals == 'true') }}
+        == 'success' && steps.prepared_rust_final.outcome == 'success' && steps.qualify.outputs.immutable_seals == 'true' && steps.source_final.outputs.setup_source_absent == 'true' && steps.closure.outcome == 'success') }}
       shell: bash
       working-directory: ${{ github.workspace }}
       env:
@@ -888,6 +935,11 @@ jobs:
         test "$DIAG_SOURCE" = "$p/source"
         test -d "$p/source" && test ! -L "$p/source"
         test "$(realpath -e -- "$p/source")" = "$p/source"
+        absence_helper=$DIAG_SOURCE/tools/ci/setup_source_absence_523.sh
+        printf '%s  %s\n' "$SETUP_ABSENCE_HELPER_SHA256" "$absence_helper" | sha256sum --check --strict --quiet -
+        source "$absence_helper"
+        # upload 뒤의 마지막 부재 관측은 job log에 남기며 이미 upload한 proof는 바꾸지 않는다.
+        setup_absence_verify "$DIAG_SOURCE" "$GITHUB_SHA" cleanup
         rm -rf --one-file-system -- "$p"
     - name: Clean common owned job temporary paths after evidence upload
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome

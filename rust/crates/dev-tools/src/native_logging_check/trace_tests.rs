@@ -278,8 +278,20 @@ fn held_inputs_detect_same_length_rewrite_replacement_and_added_roster() {
 fn line_and_sparse_file_bounds_fail_before_unbounded_reads() {
     let f = Fixture::new();
     let file = File::create(f.directory.join("case.21")).unwrap();
-    file.set_len(MAX_FILE_BYTES + 1).unwrap();
-    f.error("trace roster entry unsafe");
+    // 실제 sparse metadata 경계를 작은 한도로 검사한다. production과 CI의512MiB는 유지한다.
+    let file_bound = 4096;
+    file.set_len(file_bound).unwrap();
+    let (parent, _) = directory(&f.directory).unwrap();
+    let accepted = roster_with_file_bound(&parent, file_bound).unwrap();
+    assert_eq!(accepted.len(), 1);
+    assert_eq!(accepted[0].identity.size, file_bound);
+    file.set_len(file_bound + 1).unwrap();
+    assert_eq!(
+        roster_with_file_bound(&parent, file_bound)
+            .unwrap_err()
+            .to_string(),
+        "trace roster entry unsafe"
+    );
     let f = Fixture::new();
     let mut raw = b"1.000001 read(3, \"".to_vec();
     raw.extend(vec![b'a'; MAX_LINE_BYTES]);

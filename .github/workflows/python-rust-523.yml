@@ -375,6 +375,9 @@ jobs:
             rust/crates/dev-tools/tests/fixtures/carrot-navi-comparator/README.md) ;;
             rust/crates/dev-tools/src/native_logging_check/trace.rs) ;;
             rust/crates/dev-tools/src/native_logging_check/trace_tests.rs) ;;
+            tools/scripts/setup_ssh_keys.py) ;;
+            tools/ci/setup_source_absence_523.sh) ;;
+            rust/crates/controlsd/examples/controlsd_trace.rs) ;;
             *) printf 'Changed dependency invalidates reuse: %s\n' "$changed" >&2; exit 1 ;;
           esac
         done < "$CI_JOB_TEMP/proof/changed-paths.bin"
@@ -482,12 +485,12 @@ jobs:
         printf '%s  %s\n' 384cdcae5b30bb6d4281f39d88a54cf9a2701f9c2cbbc1f61b7feef5505fc5ef rust/tools/prepare-readonly-ci-rust | sha256sum --check -
         printf '%s  %s\n' 8009a7377c553b8923640ce8c7b6232e0229978266f112c405f0d759bbf54620 tools/ci/paramsd_gate_523.py | sha256sum --check -
         printf '%s  %s\n' 9c455a724c5f4fcee7616197fbb057e2eda737c4810be0f758cf0a881538f58c rust/crates/dev-tools/src/controlsd_fixture_generate/audit.rs | sha256sum --check -
-        printf '%s  %s\n' ab44187ec95f16015df78588696047b277201efc42a3d7e14ae1a710773bee73 .github/workflows/python-rust-523-controls-normal.yml | sha256sum --check -
-        printf '%s  %s\n' 9658746ec4f7df675ce04f45e80f41966ac1c749c09f9c5674be24cd79654272 .github/workflows/python-rust-523-setup-keys.yml | sha256sum --check -
+        printf '%s  %s\n' f32b7bffaf241cd6a28b223c029983d82c1f3b2fde26f9eee7c25719bfcb3fc6 .github/workflows/python-rust-523-controls-normal.yml | sha256sum --check -
+        printf '%s  %s\n' c4b8b278fed83c80c425c569c68c53516f3c1f1610ca9f1b65a234ec3dabd08f .github/workflows/python-rust-523-setup-keys.yml | sha256sum --check -
         printf '%s  %s\n' 11fae1ee5c7a17594c023f5adc114dc6236e1bd078749366d0fa2f0bf3958c62 rust/crates/dev-tools/tests/developer_cli_original/setup_frozen.rs | sha256sum --check -
-        printf '%s  %s\n' fc9bb32973a65af4a05c183d8378645eedae373767b3ea4eee028e815a0e3b2e rust/crates/dev-tools/tests/fixtures/setup-ssh-original/README.md | sha256sum --check -
+        printf '%s  %s\n' b8d26df87779b7220168833e362466f05713c6b170a9d048d670444acefb693a rust/crates/dev-tools/tests/fixtures/setup-ssh-original/README.md | sha256sum --check -
         printf '%s  %s\n' 444a47ecba9579d4042f26dd89f8438908b56d244a0f2c98c8b0dd3e1ef3a6ef rust/crates/dev-tools/tests/fixtures/setup-ssh-original/setup-effects-original.json | sha256sum --check -
-        printf '%s  %s\n' b1a0d1bb2e42bd5af76bd6eb20a0c26a0589052f9374c69549c35915a253e1e2 tools/ci/controlsd_normal_523.py | sha256sum --check -
+        printf '%s  %s\n' 54719b4d868b079de1d6d835388e55c45dc8545eba11bdae35043dff83d9f02c tools/ci/controlsd_normal_523.py | sha256sum --check -
         printf '%s  %s\n' dd361def66040a1abfcce0634366ecdfa92db6e9cfb062adf231c1640d6695e1 .github/workflows/user-docs.yaml | sha256sum --check -
         printf '%s  %s\n' a1648334531f775ff450f6a71bd82172bd6975cae0898fa3f5c48d9b8604ec3a tools/ci/run-docs-with-growth-guard | sha256sum --check -
         printf '%s  %s\n' b68a027730fff017e6e86fbcd4d72a4ce8b660ccc9ff1297f19add54200f0e38 rust/tools/check-disk-space | sha256sum --check -
@@ -524,12 +527,26 @@ jobs:
         printf '%s  %s\n' affb96987dc608111e9728c280fdaabc8489f18e1c91843bd66d41254acd4373 rust/crates/dev-tools/tests/cutin_alert_ci.rs | sha256sum --check -
         printf '%s  %s\n' 51f1d187f84178a463b1f78f3c47036ac84546fa59e2212abdd79e8ea2e85f11 rust/crates/dev-tools/tests/encoder_runtime_ci.rs | sha256sum --check -
         printf '%s  %s\n' bc8ff4d7a4cbb0e45ca392b11a2d594f96fe71a1997add6cb8c9b4528899b097 rust/crates/dev-tools/tests/ratekeeper_ci.rs | sha256sum --check -
-        printf '%s  %s\n' 32602e99a653ecd5052a4b464907b77f098b717994b94e2e9b08d3d208fe29d7 rust/crates/dev-tools/tests/carrot_navi_compare.rs | sha256sum --check -
-        printf '%s  %s\n' fe4b08ff2bab5d8d199c827c6ed13ac392576ed710544a0adef1e6f6160e34cf rust/crates/dev-tools/tests/fixtures/carrot-navi-comparator/retained-runtime-job.yml | sha256sum --check -
-        printf '%s  %s\n' 0c0130586b6150df807fd7f05f64856ed65d67ede7633e4a52c152fd27b5189a rust/crates/dev-tools/tests/fixtures/carrot-navi-comparator/README.md | sha256sum --check -
-        printf '%s  %s\n' 0b50001fdc54aca609d220307061ead2b79e77cf0b8eb0e8bbc6ccd84d80dd14 rust/crates/dev-tools/src/native_logging_check/trace.rs | sha256sum --check -
-        printf '%s  %s\n' a774925d06ff63f2d13568bd2656868d7bc6c233ab266830b56180a9d02503a7 rust/crates/dev-tools/src/native_logging_check/trace_tests.rs | sha256sum --check -
+        printf '%s  %s\n' 319e9b6b0406e1162bde7f885d00cd3431ab73f55f1d409371628d90f8c2c944 rust/crates/dev-tools/tests/carrot_navi_compare.rs | sha256sum --check -
+        printf '%s  %s\n' 41ecbf55743482c5617ae187c5df6d7baae7e9e49c6da8e8bb1d5e5756d8b77a rust/crates/dev-tools/tests/fixtures/carrot-navi-comparator/retained-runtime-job.yml | sha256sum --check -
+        printf '%s  %s\n' f890640b869260fa3b5d6d79ebb47f15c83d88711d1489e56cff64aabc3093c0 rust/crates/dev-tools/tests/fixtures/carrot-navi-comparator/README.md | sha256sum --check -
+        printf '%s  %s\n' a76f5659e8b4ed0a94967c2ba5d9a8fb30cfe14038ec1c5b5a01694e9d3fc395 rust/crates/dev-tools/src/native_logging_check/trace.rs | sha256sum --check -
+        printf '%s  %s\n' 9ccd6294f5036c556c986c02f9c2d0f47115c15dd316d7b614a88cdeb40b6233 rust/crates/dev-tools/src/native_logging_check/trace_tests.rs | sha256sum --check -
+        printf '%s  %s\n' 2dc5533c4a03bdd91fbbaf04c2b442e6b72ca3895b797eef264574e4a2730fa7 tools/ci/setup_source_absence_523.sh | sha256sum --check -
+        printf '%s  %s\n' 3f9491a0cd690aca1f8e3749e7caa7fa1e0c48daf1b10e8bb50d4c362a3d82e3 rust/crates/controlsd/examples/controlsd_trace.rs | sha256sum --check -
         test ! -e tools/carrot_route_vault/build_bundle.py && test ! -L tools/carrot_route_vault/build_bundle.py
+        # setup1 삭제만 허용한다. 역사 원문과 D 상태를 확인하며 현재 성공을 상속하지 않는다.
+        test -d tools && test ! -L tools
+        test -d tools/scripts && test ! -L tools/scripts
+        test ! -e tools/scripts/setup_ssh_keys.py && test ! -L tools/scripts/setup_ssh_keys.py
+        git diff --no-renames --name-status 97f7ad36dfa0919b4e5c216fb16f44ed29161663 HEAD -- tools/scripts/setup_ssh_keys.py > "$CI_JOB_TEMP/proof/setup-original-diff.txt"
+        printf 'D\ttools/scripts/setup_ssh_keys.py\n' | cmp - "$CI_JOB_TEMP/proof/setup-original-diff.txt"
+        git show 97f7ad36dfa0919b4e5c216fb16f44ed29161663:tools/scripts/setup_ssh_keys.py | sha256sum > "$CI_JOB_TEMP/proof/setup-historical-original.sha256"
+        printf '%s  -\n' ab157e4943734c969ffc1e8113dc9d09ded355f3463da34c2b9132fc24181f3f | cmp - "$CI_JOB_TEMP/proof/setup-historical-original.sha256"
+        git ls-tree -z HEAD -- tools/scripts/setup_ssh_keys.py > "$CI_JOB_TEMP/proof/setup-original-tree.bin"
+        git ls-files -z -- tools/scripts/setup_ssh_keys.py > "$CI_JOB_TEMP/proof/setup-original-index.bin"
+        test ! -s "$CI_JOB_TEMP/proof/setup-original-tree.bin"
+        test ! -s "$CI_JOB_TEMP/proof/setup-original-index.bin"
         python - <<'MANIFEST'
         import hashlib,subprocess,tomllib
         from collections import Counter
@@ -568,9 +585,13 @@ jobs:
         command=b'python tools/carrot_route_vault/build_bundle.py "$RUNNER_TEMP/vault-bundle" --ref "$GITHUB_SHA"'
         replacement=b'rust/tools/run-developer-tool build-route-vault-bundle "$RUNNER_TEMP/vault-bundle" --ref "$GITHUB_SHA"'
         assert old.count(command)==1 and now(path)==old.replace(command,replacement)
-        # 기존 Fast의 cargo test 명령 본문은 유지한다. 새 준비/SDK/삭제 gate의 합격과는 별개다.
+        # 기존 Fast 명령은 유지하고 #552 tools 분할이 추가한 동일 prefix 한 줄만 더 허용한다.
+        # 전체72 selector/순서/새 exact2는 별도 current ci_workflow_policy가 검증한다.
         path='.github/workflows/fast-checks.yml'
         commands=Counter(line for line in before(path).splitlines() if line.lstrip().startswith(b'cargo test '))
+        tools_prefix=b'          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked \\'
+        assert commands[tools_prefix]==2, 'Legacy Fast command prefix baseline differs.'
+        commands[tools_prefix]+=1
         for line,count in commands.items():
             assert now(path).splitlines().count(line)==count, 'Legacy Fast test selection changed.'
         # auth wrapper 기존 세 명령의 feature는 같다. Bundle 선택지만 추가한다.

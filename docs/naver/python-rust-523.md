@@ -1092,3 +1092,21 @@ compact YAML을 비교하도록 보완하며 exact2selector만 Fast에 추가한
 정확 source/run/artifact·후속 후보와 한계는 `python-rust-523-hosted-535.md`에 기록한다.
 PR343은 bdb819e59/dev draft이며 최신 배치의 필수 deep 결과는 아직 없다. baseline3580의
 292교체/3부분/3285대기, 이번 retirement credit0과 전체 #523 미완료 상태를 유지한다.
+
+### 99c 실제 결과와 원본1 삭제 후 검증 후보
+
+99c0ac14c의 Fast6native leaf는72개 baseline와 Navi 정책2개를 통과했고 분할 native/tools가
+305/296초에 완료됐다. 전체 Fast는 역사 fixture 끝 빈 줄로 Python/Android가 실패했다.
+원문7333B를 고정 LF로 복원하는 저장7332B 방식으로 보완하며 공백 gate는 유지한다.
+Focus는 새 tools prefix의 명령 수2→3 미등록에서 실패했고 fresh Unicode/SSH/Clippy 및
+전후 봉인은 성공했다. logging은 raw108/core21/importer9 뒤 trace test의 oversized sparse
+파일이512MiB 제한에 걸렸다. production/ulimit을 유지하고 작은 실제 경계 파일로 보완한다.
+
+38ec normal40는 sha2 opt3를 실제 확인했지만700초에 재실패했다. JSON을 File에 직접 쓰는
+trace 경로를 BufWriter/명시 flush로 감싼 다음 한정 후보를 준비한다. 계산/수치·입력/원문·
+600/700초는 그대로며 성공을 미리 수용하지 않는다. exact source/artifact와 추정 한계는
+`python-rust-523-hosted-535.md`에 기록했다.
+
+setup의96a/a4 pre-delete 수용 후 Python1파일만 삭제하는 후보를 준비했다. 실제 삭제 commit의
+부재/재출현 controls6과 기존21/3/public1·봉인/전달 검증 전에는 해당 row를 pending으로
+유지한다. PR343 dev draft, baseline292/3/3285와 전체 미완료 상태는 변하지 않는다.

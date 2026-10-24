@@ -64,7 +64,7 @@ CORE = {
     "rust/crates/dev-tools/src/paramsd_estimator_check/reference.rs": "b9ac033904538e315602a07ae6f5ade4a29607076e182e0fa6b3b524e778c4d2",
     "rust/crates/dev-tools/src/paramsd_estimator_check/identity.rs": "ad49f0ee94ebcb37f997971c29118fc861c939fe261ceb7af9f53279edfaa402",
     "rust/crates/control-policy/src/numerics.rs": "c7e475ffc1b58d621ea8a90260a352488054ffdb49314d8362e12d5d1cdcb8cc",
-    "rust/crates/controlsd/examples/controlsd_trace.rs": "1f239aad5b18c278cb3987159aac85b5b077197785fe3ef100ed822517998b94",
+    "rust/crates/controlsd/examples/controlsd_trace.rs": "3f9491a0cd690aca1f8e3749e7caa7fa1e0c48daf1b10e8bb50d4c362a3d82e3",
     "rust/tools/check_controlsd.py": "0ea4b8dd0108b8f96955c24febb4ea27206ddda0860d757aed2ca85bf4df2749",
     "rust/tools/controlsd_compare.py": "52c4b064257fc09c9ff85c38ddd0e70b07d9572ad9cb61e2a46dc5c5a7fac830",
     "rust/tools/controlsd_source.py": "f5a51d38c64197cc1f8786e8c10a3c5c0b54301deb8d958eae46cafcb321b7b0",

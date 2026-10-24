@@ -10,6 +10,7 @@ name: Python Rust 523 controls normal40 frozen reference
     - rust/crates/dev-tools/src/controlsd_check/frozen.rs
     - rust/crates/dev-tools/tests/controlsd_check.rs
     - rust/crates/dev-tools/tests/controlsd_check/frozen.rs
+    - rust/crates/controlsd/examples/controlsd_trace.rs
 permissions:
   contents: read
   actions: read

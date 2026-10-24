@@ -316,3 +316,91 @@ PR343 dev draft 및 전체 #523 미완료 상태를 유지한다.
 이번 소스 추가로 변경하지 않는다.
 고정7333B Navi 정책 fixture는 원문 끝 빈 줄까지 hash 보존하며, 해당 파일의
 `blank-at-eof`만 diff 공백 검사에서 제외했다. 나머지 staged diff 검사는 통과했다.
+
+## 이전 PR의 일반 ARM 실제 완료
+
+[Rust40126297037/job120968344517](https://github.com/bin9208/openpilot-rust/actions/runs/40126297037/job/120968344517)은
+PR head bdb819e59의 실제 merge source `ba1b07c38702bac3bb49614d14b54adaacaa95df`에서
+성공했다. GNU/musl workspace와 Card/selfdrived/navd·VisionIPC ION·camera/encoder/UI
+교차빌드, synthetic procLog/Params/msgq QEMU probe와 Panda raw Params2개를 확인했다.
+실물 ARM/AGNOS·차량 runtime 수용이나 현재99c 소스의 성공으로 확대하지 않는다.
+
+다운로드한3 ZIP의99CRC와 SHA를 감사했다. artifact12575863446은288,868B/SHA256
+`190c62cbc867e6aa1b817baa037858c6833cad78a2ed85402512952c14a52eb3`,12576420886은
+306,999B/`55f7cf5b449810191912841fe5ced8d81fecc8c78299e3b4050a0d63d06b1e55`,12576910338은
+75,767,138B/`31e38ed8a40e91f0f2b5ce979ecb50696e1d245b2c06674ec109bd0dc78bffbc`다.
+source/index 전후 봉인·upload·소유 정리는 성공했다. 이 job은 전체 SDK/held-FD 전후
+manifest를 제공하지 않아 해당 수용은 미제공으로 남긴다. 원본 제거 credit은0이다.
+
+## 99c 실제 검사와 다음 한정 보완
+
+[Fast40135740465](https://github.com/bin9208/openpilot-rust/actions/runs/40135740465), source
+`99c0ac14c7d85b7f6ca8903edc2c217bcc00e2cf`에서6native leaf는 모두 성공했다.
+native305초/tools296초, 나머지180/299/222/369초로7분 한도를 지켰다.72개 baseline target
+각각1회와 cold1/caller5/lib83, Navi exact 정책2개가 실제 통과했다.7artifact265CRC와 각각의
+source/index/SDK 전후·upload/cleanup을 감사했다. Python/Android leaf만7333B fixture의
+끝 빈 줄을 whitespace gate가 거부해 실패했고, 후속 Python/Android 검사와 aggregate는
+성공으로 세지 않는다. 저장7332B에 고정 LF1개를 복원해 기존7333B/SHA `fe4b08ff…160e34cf`
+검증 뒤 해석하도록 보완했다. 원문 pin·도메인·공백 gate는 유지한다.
+
+같은 source의
+[Focus40135740416](https://github.com/bin9208/openpilot-rust/actions/runs/40135740416)은142pin을
+통과한 뒤 과거 Fast 명령의 동일 prefix가2→3개가 된 것을 거부해 실패했다. 새 tools가 추가한
+정확한 prefix1개만 허용하도록 보완하며72개 본문/순서는 별도 current 정책으로 검증한다.
+fresh alias26/Unicode7/SSH27·Clippy 및 최종 봉인/upload/정리는 실제 성공했다.
+artifact12576074785는15,866,617B/SHA256
+`1fbe81b447d829ff7e7db7daea7a715870388a181d0457acbf6e7e08c9f28655`,80CRC이며 전후 봉인은 같다.
+
+[logging40135740435](https://github.com/bin9208/openpilot-rust/actions/runs/40135740435)은
+현재4build/Clippy2·raw108/core21/importer9 뒤 trace20의 여섯 번째에서 SIGXFSZ153으로
+종료됐다. 앞5개만 통과했고 뒤14개와 lifecycle14/raw-once/inspection은 미실행이다.
+`set_len(512MiB+1)` 음성이 기존512MiB 파일 크기 제한에 먼저 걸린 것이다. 같은 metadata
+검사를 private bound 함수로 분리해 실제4096B 수용/4097B 거부를 확인하도록 했다.
+production은 고정512MiB를 쓰고 함수도 그보다 큰 bound를 거부한다. 기존 line 음성·20개
+selector·ulimit과 다른 검사는 유지한다. 독립 소스 검토에서 추가 P1/P2는 없었다.
+artifact12576479338은7,391,196B/SHA256
+`991b3566ca8658617ebbd60a0e828f84c351d343868b75ad2e261325a2e13ff7`,198CRC다.
+held-final0/source-index/wholeSDK 전후·upload는 성공했고 전체 기능 수용은 실패다.
+
+## normal40 SHA2 opt3 실제 재실패와 출력 버퍼 후보 — #550
+
+[38ec normal40133699790](https://github.com/bin9208/openpilot-rust/actions/runs/40133699790)은
+3개 actual Cargo JSONL 모두 sha2 opt3를 확인했지만 fixture700.42초 timeout으로 재실패했다.
+artifact12576384518은52,124,725B/SHA256
+`d3353b4ae1413ee9f6251b0e8ca44917652508ce41a6f2cc53f887d327743468`,207CRC·해제382,909,550B다.
+source/index/private SDK·원문·system SDK3개의 실제 files 전후가 같고 자손 회수/upload를
+확인했다. system SDK before는 root/files wrapper, after는 files이므로 그 필드를 대조했다.
+유일한 final 실패는 native baseline unavailable이다. raw가 있어도705,948 비교 성공은 없다.
+
+exec 원문의 직접 CLI CPU는199.85초/시스템9.21초다. child start tick상 trace는 CLI 뒤
+218.58초에 시작했고 outer command908.18초는 caller 종료 뒤 자손의 완료/회수도 포함한다.
+이를 trace 함수별 CPU 측정으로 해석하지 않는다.17,334,185B native JSON을
+`serde_json::to_writer(File, …)`로 직접 쓰는 소스를 확인했다. 이 경로의 작은 write가
+추적 비용을 키울 수 있다는 소스 기반 가설이다. strace6.8 [공식 설명](https://raw.githubusercontent.com/strace/strace/v6.8/doc/strace.1.in)은
+일반 추적이 syscall마다 정지하며 seccomp-bpf가 그 정지를 줄이는 별도 옵션임을 설명한다.
+새 옵션으로 추적 범위를 바꾸지 않고, 기존 writer를 `BufWriter`와 명시적 `flush()?`로
+감싸는 한정 후보를 추가했다. serializer/계산/JSON/입력/feature/DSO·600/700초는 불변이다.
+current trace source pin과 해당 path trigger만 갱신했고 성능 개선 폭·기한 내 성공은 UNRUN이다.
+
+## setup1 실제 삭제 source의 후속 후보
+
+96a/a4 pre-delete 수용 뒤 `tools/scripts/setup_ssh_keys.py` 하나를 삭제하고 setup WF를 literal
+`absent`로 전환한다. frozen21/거부3/public1·Rust 두 파일/entry와 고정 원문13800B는 불변이다.
+작은 Bash helper로 checkout HEAD/index empty roster, exact leaf 부재와 부모dev/ino/mode/uid/gid,
+명령 전후·2초 sampling·최종 receipt/source/closure/cleanup을 연결한다. 별도 synthetic private
+root에서 absent 양성1과 regular/directory/symlink/dangling/parent-symlink 음성5를 정확한
+오류로 검증한다. 다른 오류를 거부 성공으로 세지 않는다. 연속 filesystem 감시나 전체 Python
+부재 수용으로 확대하지 않는다.
+
+원본은 checkout 뒤 숨기거나 삭제하지 않는다. 실제 commit부터 없는 경로여야 하며 Focus도
+base 원문 SHA와 exact D·현재 HEAD/index 부재만 허용한다. 기존 input/provider hold는
+원본1의 FD 대신 부재 증거와 guard helper를 결합하며 나머지 계약을 유지한다. cleanup은
+전체 부재 stage/controls를 검사한 closure의 실제 성공도 요구하도록 검토 지적을 보완했다.
+이 후보의6controls/21/3/public1/Clippy·봉인·upload/정리 actual 수용 전 inventory는 pending,
+baseline292/3/3285와 이번 credit0이다. logging 원본2/caller와 old27 gate는 그대로 남는다.
+
+setup 후속3파일, Navi 저장 복원3파일, sparse 경계2파일과 BufWriter 후보를 각각 독립 소스
+검토했고 보완 후 추가 P1/P2는 없었다. 현 배치의 exact allow164개/144literal pin과 별도
+execution SHA는 일치한다. 로컬 YAML3·Bash block38·embedded AST8·단독 Python AST1·
+Bash helper1, Rust 서식/diff만 확인했다. compile/test/Clippy/원본 프로그램은 실행하지 않았다.
+새 실제 Actions 전 성공은 UNRUN이다. execution-edge92행의 세 current blob만 갱신했다.

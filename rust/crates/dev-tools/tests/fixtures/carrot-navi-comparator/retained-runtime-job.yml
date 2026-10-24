@@ -89,4 +89,3 @@
             rust/target/debug/examples/carrot-navi-policy
             rust/target/debug/examples/carrot-navi-wire
           if-no-files-found: warn
-

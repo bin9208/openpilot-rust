@@ -465,8 +465,9 @@ const CALLER_SHA: &str = "0e1d027a4ca577b885be3551757efe560ecfb31e2f559eb886ca07
 const ACCEPTED_CONTROLS_SHA: &str =
     "815af34faaf6cf9f2cd02a8934d7c328f8fe7ee16716ed8bea16c7378abdc180";
 
-// 역사 원문 pin은 유지한다. 직렬화 형식과 검토된 private infrastructure만 구분한다.
-const RETAINED_JOB: &str = include_str!("fixtures/carrot-navi-comparator/retained-runtime-job.yml");
+// 저장 파일은 마지막 LF 1바이트를 분리한다. 복원한 역사 원문 pin은 유지한다.
+const RETAINED_JOB_STORED: &[u8] =
+    include_bytes!("fixtures/carrot-navi-comparator/retained-runtime-job.yml");
 // a4b1db51c의 추가 11단계 전체 metadata/run. 도메인 단계의 hash를 대신하지 않는다.
 const PRIVATE_OVERLAY_SHA: &str =
     "80845db9512f58300af32f597109177631b208cad7384c4628c647ae69668534";
@@ -509,10 +510,15 @@ fn ordered_model(value: &Value) -> Value {
     }
 }
 fn maintained_steps(workflow: &str) -> Result<(String, String), String> {
-    if RETAINED_JOB.len() != 7333 || hash(RETAINED_JOB.as_bytes()) != RETAINED_JOB_SHA {
+    let mut retained_job = RETAINED_JOB_STORED.to_vec();
+    retained_job.push(b'\n');
+    if retained_job.len() != 7333 || hash(&retained_job) != RETAINED_JOB_SHA {
         return Err("historical retained job fixture changed".into());
     }
-    let historical = parse_workflow(RETAINED_JOB)?;
+    let historical = parse_workflow(
+        std::str::from_utf8(&retained_job)
+            .map_err(|_| "historical retained job fixture encoding changed")?,
+    )?;
     let expected = &historical["carrot-navi-runtime"];
     let parsed = parse_workflow(workflow)?;
     let job = &parsed["jobs"]["carrot-navi-runtime"];
