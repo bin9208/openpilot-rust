@@ -387,6 +387,42 @@ fn push(events: &mut Vec<Event>, budget: &mut usize, row: Event) -> Result<()> {
     events.push(row);
     Ok(())
 }
+#[derive(Default)]
+struct EventSummary {
+    events: Vec<Event>,
+    budget: usize,
+    event_count: usize,
+    counts: std::collections::BTreeMap<String, usize>,
+}
+impl EventSummary {
+    fn observe(&mut self, row: Event) -> Result<()> {
+        self.event_count = self
+            .event_count
+            .checked_add(1)
+            .ok_or("trace event count exceeds bound")?;
+        require(
+            self.event_count <= MAX_EVENTS,
+            "trace event count exceeds bound",
+        )?;
+        let key = format!(
+            "{}:{}:{}",
+            row.kind,
+            row.operation.as_deref().unwrap_or("-"),
+            row.outcome.as_deref().unwrap_or("-")
+        );
+        require(key.len() <= 256, "trace summary key exceeds bound")?;
+        require(
+            self.counts.contains_key(&key) || self.counts.len() < 1024,
+            "trace summary key count exceeds bound",
+        )?;
+        *self.counts.entry(key).or_default() += 1;
+        // 모든 줄은 같은 parser를 거친다. syscall 세부 Event의 영속 출력 범위만 명시적으로 줄인다.
+        if row.exec.is_some() || row.kind != "syscall" {
+            push(&mut self.events, &mut self.budget, row)?;
+        }
+        Ok(())
+    }
+}
 fn quoted(bytes: &[u8], at: &mut usize) -> Result<BytesAt> {
     let start = *at;
     require(bytes.get(*at) == Some(&b'"'), "trace C-string invalid")?;
@@ -981,6 +1017,13 @@ fn parse_file(
     budget: &mut usize,
     lines: &mut usize,
 ) -> Result<()> {
+    parse_file_emit(file, lines, &mut |row| push(events, budget, row))
+}
+fn parse_file_emit(
+    file: &mut Held,
+    lines: &mut usize,
+    emit: &mut dyn FnMut(Event) -> Result<()>,
+) -> Result<()> {
     let mut reader = BufReader::new(ReadAt {
         file: &file.file,
         offset: 0,
@@ -1035,13 +1078,13 @@ fn parse_file(
                     row.outcome = Some("aborted".into());
                     row.opaque_payload = true;
                     row.aborted_by = Some(name);
-                    push(events, budget, row)?;
+                    emit(row)?;
                 }
                 terminal = true;
             }
             let mut row = event(file.pid, &kind, source);
             row.result = Some(body.to_vec());
-            push(events, budget, row)?;
+            emit(row)?;
             continue;
         }
         let unfinished = body.ends_with(b"<unfinished ...>");
@@ -1081,11 +1124,7 @@ fn parse_file(
             call.operation = partial(&call.bytes)?;
             pending = Some(call);
         } else {
-            push(
-                events,
-                budget,
-                self::call(file.pid, &call.bytes, call.source)?,
-            )?;
+            emit(self::call(file.pid, &call.bytes, call.source)?)?;
         }
     }
     require(pending.is_none(), "trace unresolved pending at EOF")?;
@@ -1127,6 +1166,17 @@ struct Report<'a> {
     full_acceptance: bool,
     retirement_credit: bool,
     limits: [&'static str; 5],
+}
+#[derive(Serialize)]
+struct SummaryReport<'a> {
+    #[serde(flatten)]
+    report: Report<'a>,
+    full_event_index: bool,
+    lexically_checked_all_events: bool,
+    event_index_scope: &'static str,
+    event_count: usize,
+    physical_lines: usize,
+    event_counts: &'a std::collections::BTreeMap<String, usize>,
 }
 #[derive(Default)]
 struct ReportBytes(Vec<u8>);
@@ -1171,6 +1221,9 @@ fn verify_output_seal(
     )
 }
 fn inspect(path: &Path, prefix: &str, output: &Path) -> Result<()> {
+    inspect_mode(path, prefix, output, false)
+}
+fn inspect_mode(path: &Path, prefix: &str, output: &Path, summarized: bool) -> Result<()> {
     absolute(output)?;
     require(
         !output.starts_with(path),
@@ -1191,7 +1244,18 @@ fn inspect(path: &Path, prefix: &str, output: &Path) -> Result<()> {
         _ => return Err("trace output already exists or unsafe".into()),
     }
     let mut input = Inputs::open(path, prefix)?;
-    let events = input.events()?;
+    let mut summary = None;
+    let mut physical_lines = 0;
+    let events = if summarized {
+        let mut collected = EventSummary::default();
+        for file in &mut input.files {
+            parse_file_emit(file, &mut physical_lines, &mut |row| collected.observe(row))?;
+        }
+        summary = Some(collected);
+        Vec::new()
+    } else {
+        input.events()?
+    };
     input.verify()?;
     let files = input
         .files
@@ -1207,8 +1271,12 @@ fn inspect(path: &Path, prefix: &str, output: &Path) -> Result<()> {
         })
         .collect::<Result<Vec<_>>>()?;
     let report = Report {
-        schema: 1,
-        scope: "read-only rich strace lexical inspection; no execution policy or family admission",
+        schema: if summarized { 2 } else { 1 },
+        scope: if summarized {
+            "all raw lines checked by shared lexer; syscall details summarized; no execution policy or family admission"
+        } else {
+            "read-only rich strace lexical inspection; no execution policy or family admission"
+        },
         directory: path,
         prefix,
         directory_identity: &input.before,
@@ -1216,7 +1284,7 @@ fn inspect(path: &Path, prefix: &str, output: &Path) -> Result<()> {
         raw_files: files,
         directory_roster: &input.roster,
         selected_raw_bytes: input.total,
-        events: &events,
+        events: summary.as_ref().map_or(events.as_slice(), |s| s.events.as_slice()),
         raw_immutable: true,
         requires_exit_status_zero: true,
         closed_pid: false,
@@ -1234,7 +1302,22 @@ fn inspect(path: &Path, prefix: &str, output: &Path) -> Result<()> {
         ],
     };
     let mut writer = ReportBytes::default();
-    serde_json::to_writer(&mut writer, &report)?;
+    if let Some(summary) = &summary {
+        serde_json::to_writer(
+            &mut writer,
+            &SummaryReport {
+                report,
+                full_event_index: false,
+                lexically_checked_all_events: true,
+                event_index_scope: "all exec attempts, signals, terminals and aborted calls; other syscall details remain in immutable raw files",
+                event_count: summary.event_count,
+                physical_lines,
+                event_counts: &summary.counts,
+            },
+        )?;
+    } else {
+        serde_json::to_writer(&mut writer, &report)?;
+    }
     writer.write_all(b"\n")?;
     let bytes = writer.0;
     require(
@@ -1276,9 +1359,21 @@ fn inspect(path: &Path, prefix: &str, output: &Path) -> Result<()> {
     Ok(())
 }
 pub(super) fn selected(args: &[OsString]) -> bool {
-    args.first().is_some_and(|a| a == "inspect-trace")
+    args.first()
+        .is_some_and(|a| a == "inspect-trace" || a == "inspect-trace-summary")
 }
 pub(super) fn cli(args: &[OsString]) -> Result<()> {
+    cli_mode(args, false)
+}
+pub(super) fn cli_selected(args: &[OsString]) -> Result<()> {
+    require(selected(args), "trace subcommand required")?;
+    if args[0] == "inspect-trace-summary" {
+        cli_mode(&args[1..], true)
+    } else {
+        cli(&args[1..])
+    }
+}
+fn cli_mode(args: &[OsString], summarized: bool) -> Result<()> {
     let parsed = scan_os_required_first(
         args,
         &[
@@ -1288,18 +1383,30 @@ pub(super) fn cli(args: &[OsString]) -> Result<()> {
         ],
     )?;
     if parsed.help {
-        println!("usage: check-native-logging inspect-trace --directory DIR --prefix PREFIX --output ABSENT_JSON");
+        let command = if summarized {
+            "inspect-trace-summary"
+        } else {
+            "inspect-trace"
+        };
+        println!("usage: check-native-logging {command} --directory DIR --prefix PREFIX --output ABSENT_JSON");
         return Ok(());
     }
-    inspect(
-        Path::new(&parsed.values["--directory"]),
-        parsed.values["--prefix"]
-            .to_str()
-            .ok_or("trace prefix not UTF8")?,
-        Path::new(&parsed.values["--output"]),
-    )
+    let directory = Path::new(&parsed.values["--directory"]);
+    let prefix = parsed.values["--prefix"]
+        .to_str()
+        .ok_or("trace prefix not UTF8")?;
+    let output = Path::new(&parsed.values["--output"]);
+    if summarized {
+        inspect_mode(directory, prefix, output, true)
+    } else {
+        inspect(directory, prefix, output)
+    }
 }
 
 #[cfg(test)]
 #[path = "trace_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "trace_summary_tests.rs"]
+mod summary_tests;

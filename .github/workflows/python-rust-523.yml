@@ -367,7 +367,9 @@ jobs:
             rust/crates/dev-tools/src/native_logging_check/retained.rs) ;;
             rust/crates/dev-tools/src/native_logging_check.rs) ;;
             tools/ci/logging_retained_549.sh) ;;
+            tools/ci/logging_collision8_549.sh) ;;
             .github/workflows/python-rust-523-logging.yml) ;;
+            .github/workflows/python-rust-523-logging-collision8.yml) ;;
             rust/crates/logging/tests/build_watch.rs) ;;
             rust/crates/logging/build.rs) ;;
             rust/crates/dev-tools/tests/carrot_navi_compare.rs) ;;
@@ -375,6 +377,7 @@ jobs:
             rust/crates/dev-tools/tests/fixtures/carrot-navi-comparator/README.md) ;;
             rust/crates/dev-tools/src/native_logging_check/trace.rs) ;;
             rust/crates/dev-tools/src/native_logging_check/trace_tests.rs) ;;
+            rust/crates/dev-tools/src/native_logging_check/trace_summary_tests.rs) ;;
             tools/scripts/setup_ssh_keys.py) ;;
             tools/ci/setup_source_absence_523.sh) ;;
             rust/crates/controlsd/examples/controlsd_trace.rs) ;;
@@ -382,7 +385,7 @@ jobs:
           esac
         done < "$CI_JOB_TEMP/proof/changed-paths.bin"
         printf '%s  %s\n' 68f0f800ef5fbb456a06986a8695a5c3aaa2cbdf86160b47826e913edd792f85 .github/workflows/carrot-route-vault-publish.yaml | sha256sum --check -
-        printf '%s  %s\n' 1989a3ecf1c20b2c4da1d76c9325968b30d65370b7afcdb1cc4a59ed632b0b2d .github/workflows/fast-checks.yml | sha256sum --check -
+        printf '%s  %s\n' 871d6f1d3aee3f1c4531978ef280fb33baf5d6f6d7ff1d1349290a6e0252321c .github/workflows/fast-checks.yml | sha256sum --check -
         printf '%s  %s\n' ada137e1a1bbe957903a930c49dc5496f5d685193b8d09970accd90f632c2a0c .github/workflows/python-rust-523-bundle.yml | sha256sum --check -
         printf '%s  %s\n' e7718884de7e2b3f25a31d7c1fdf23f11f1a1ece82c4f86d1e84e6a9673d6388 .github/workflows/python-rust-523-capacity.yml | sha256sum --check -
         printf '%s  %s\n' 634559405e03be79cf66dfcf888bfc28a0b27a51e92b5335013dfe1b16836f59 .github/workflows/python-rust-523-model.yml | sha256sum --check -
@@ -404,7 +407,7 @@ jobs:
         printf '%s  %s\n' 1227b87bdfba7e0ea03d2542766133f75925200bfd0fb7f1eea7f121738294f7 rust/crates/dev-tools/tests/argparse_scan.rs | sha256sum --check -
         printf '%s  %s\n' 823178de2e6b3587e039aa9ea9267a0cfb99e7c355fd6dabbdb2790b4bfd84a3 rust/crates/dev-tools/tests/ci_disk_bootstrap.rs | sha256sum --check -
         printf '%s  %s\n' d8034f578df45c9c68b889eb83c7fb6ec85c3e1cd6d109a36d6e5ecebde189f6 rust/crates/dev-tools/tests/ci_disk_bootstrap/prepared_audit.rs | sha256sum --check -
-        printf '%s  %s\n' b985a4589a20395631a9ec130fa335e6b8c7fd5f095c1c247acd36b170bb784e rust/crates/dev-tools/tests/ci_workflow_policy.rs | sha256sum --check -
+        printf '%s  %s\n' 31b6727663dd632ca715d305558daace36bbab7a40fb75f57eaae048a35ff80a rust/crates/dev-tools/tests/ci_workflow_policy.rs | sha256sum --check -
         printf '%s  %s\n' 9e621eff405a28331789a89ef00b6bb66449a6a6a73fe3b0cabce920777d5e6e rust/crates/dev-tools/tests/developer_auth.rs | sha256sum --check -
         printf '%s  %s\n' 86884528b67fab80757b46b8b0bdca6b9b593c6446933adc3ec628d7cff12c58 rust/crates/dev-tools/tests/developer_cli_original.rs | sha256sum --check -
         printf '%s  %s\n' 7ff3b5e2ca762aa2c10f0fcf6c0e915f286143e51cde7ce2e1898ec1a1cb8958 rust/crates/dev-tools/tests/fixtures/route-sanitizer-original/car-copy-float-bits.original.json | sha256sum --check -
@@ -518,8 +521,8 @@ jobs:
         printf '%s  %s\n' dfd8e9c0a5faff24058f8f570790a625646a4ba17001eff74efc1c3279f81149 rust/crates/logging/build.rs | sha256sum --check -
         printf '%s  %s\n' b70ad5b50c56e3ce3299efb5db87a0aca006488a936e297cca117424b9123423 rust/crates/logging/tests/build_watch.rs | sha256sum --check -
         printf '%s  %s\n' 5254ad39ef99c54fe69e0916dc690b53ce907fba3d1b5ddc1d9be429c14bce40 .github/workflows/python-rust-523-logging.yml | sha256sum --check -
-        printf '%s  %s\n' ea02cd35e042eef2f249e4c8b3c8e5a8624f5493bd63df0f988c1c718537c44f tools/ci/logging_retained_549.sh | sha256sum --check -
-        printf '%s  %s\n' f8de1dfc04204627203dd02525ca6a592567d218c2b538e3e2e98b134eda72d5 rust/crates/dev-tools/src/native_logging_check.rs | sha256sum --check -
+        printf '%s  %s\n' 08e1d52eeb646fa12b4b1d35433159b3de0c98af21314d65c13e81ecc1ef256c tools/ci/logging_retained_549.sh | sha256sum --check -
+        printf '%s  %s\n' 33a29b54b7db56a11f8d4e40c1ab707800efdb5381c50a2273e852ba3e56ec8d rust/crates/dev-tools/src/native_logging_check.rs | sha256sum --check -
         printf '%s  %s\n' 87027bb61d0027f69105eb0109f28e6b86ed792f283074402f72b08fc33a1521 rust/crates/dev-tools/src/native_logging_check/retained.rs | sha256sum --check -
         printf '%s  %s\n' 0a294710d272b90f8741036313dc33b917dd66179492296670fc570d38125214 rust/crates/dev-tools/src/native_logging_check/prepare.rs | sha256sum --check -
         printf '%s  %s\n' 0842c3fad82891a4c39036f7c3a36b4c4f6def63d99ccc6f48bfc8389811ec6b rust/crates/dev-tools/src/native_logging_check/prepare_tests.rs | sha256sum --check -
@@ -530,8 +533,11 @@ jobs:
         printf '%s  %s\n' 319e9b6b0406e1162bde7f885d00cd3431ab73f55f1d409371628d90f8c2c944 rust/crates/dev-tools/tests/carrot_navi_compare.rs | sha256sum --check -
         printf '%s  %s\n' 41ecbf55743482c5617ae187c5df6d7baae7e9e49c6da8e8bb1d5e5756d8b77a rust/crates/dev-tools/tests/fixtures/carrot-navi-comparator/retained-runtime-job.yml | sha256sum --check -
         printf '%s  %s\n' f890640b869260fa3b5d6d79ebb47f15c83d88711d1489e56cff64aabc3093c0 rust/crates/dev-tools/tests/fixtures/carrot-navi-comparator/README.md | sha256sum --check -
-        printf '%s  %s\n' a76f5659e8b4ed0a94967c2ba5d9a8fb30cfe14038ec1c5b5a01694e9d3fc395 rust/crates/dev-tools/src/native_logging_check/trace.rs | sha256sum --check -
+        printf '%s  %s\n' f2c1ae5832b5b9735c202a28eba3797e6c9f8af854250bd9d9b4a72923a9eb47 rust/crates/dev-tools/src/native_logging_check/trace.rs | sha256sum --check -
         printf '%s  %s\n' 9ccd6294f5036c556c986c02f9c2d0f47115c15dd316d7b614a88cdeb40b6233 rust/crates/dev-tools/src/native_logging_check/trace_tests.rs | sha256sum --check -
+        printf '%s  %s\n' 5019593b2b61ca692dbf52ec7136901d2157961e8972050a774326196554c8a1 rust/crates/dev-tools/src/native_logging_check/trace_summary_tests.rs | sha256sum --check -
+        printf '%s  %s\n' 20e94a3667c2680d260bb1eeb19af651b252a307d55c047a5a4137baea754fdd tools/ci/logging_collision8_549.sh | sha256sum --check -
+        printf '%s  %s\n' a6e2c1f342f7c95f2243c4a7a86015ffa9a0fccf56be471debbf5784163e0e64 .github/workflows/python-rust-523-logging-collision8.yml | sha256sum --check -
         printf '%s  %s\n' 2dc5533c4a03bdd91fbbaf04c2b442e6b72ca3895b797eef264574e4a2730fa7 tools/ci/setup_source_absence_523.sh | sha256sum --check -
         printf '%s  %s\n' 3f9491a0cd690aca1f8e3749e7caa7fa1e0c48daf1b10e8bb50d4c362a3d82e3 rust/crates/controlsd/examples/controlsd_trace.rs | sha256sum --check -
         test ! -e tools/carrot_route_vault/build_bundle.py && test ! -L tools/carrot_route_vault/build_bundle.py

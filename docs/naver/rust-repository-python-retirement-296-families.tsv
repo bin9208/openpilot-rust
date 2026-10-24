@@ -3147,7 +3147,7 @@ F05-replay-developer-docs	tools/plotjuggler/juggle.py	pending
 F05-replay-developer-docs	tools/scripts/extract_audio.py	pending
 F05-replay-developer-docs	tools/scripts/fetch_image_from_route.py	pending
 F05-replay-developer-docs	tools/scripts/save_ubloxraw_stream.py	pending
-F05-replay-developer-docs	tools/scripts/setup_ssh_keys.py	pending
+F05-replay-developer-docs	tools/scripts/setup_ssh_keys.py	replaced-local
 F05-replay-developer-docs	tools/scripts/ssh.py	pending
 F06-build-generation-staging	openpilot/selfdrive/carrot/server/features/dashcam/replay_semantics/generate_resources.py	pending
 F06-build-generation-staging	openpilot/selfdrive/carrot/web/tests/generate_ar_projection_golden.py	pending

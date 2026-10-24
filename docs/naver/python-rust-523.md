@@ -16,7 +16,7 @@
    결함을 구분한다. 모델 수치·안전·시간·유효성 기준은 유지한다.
 2. 독립적인 생성기와 개발 도구 전환을 진행하고, 공유 등록·검증은 부모가 통합한다.
 3. 로컬에서는 문법·서식·diff만 확인한다. 기능·원본 비교·빌드·Clippy와
-   필요한 ARM QEMU 검사는 등록 `bin-actions`에서 실행한다.
+   필요한 ARM QEMU 검사는 GitHub 기본 러너에서 실행한다. 초기 `bin-actions` 이력은 아래에 보존한다.
 4. 기능군별 실제 호출부와 원본 부재 검사를 통과한 뒤 인벤토리와 하위 이슈를
    갱신한다. 성공한 불변 검사는 재사용하고 최종 필수 PR/병합 후 게이트는 보존한다.
 5. 소스와 일치하는 전달 산출물까지 확인한다. 사용자 실기 수용과 전체 전환
@@ -1110,3 +1110,32 @@ trace 경로를 BufWriter/명시 flush로 감싼 다음 한정 후보를 준비�
 setup의96a/a4 pre-delete 수용 후 Python1파일만 삭제하는 후보를 준비했다. 실제 삭제 commit의
 부재/재출현 controls6과 기존21/3/public1·봉인/전달 검증 전에는 해당 row를 pending으로
 유지한다. PR343 dev draft, baseline292/3/3285와 전체 미완료 상태는 변하지 않는다.
+
+### setup 원본1 삭제 후 실제 수용
+
+source602ea095f의 setup40137010381은 guard6·controlled21·negative3·public1/Clippy와
+원문/122held·source/index/SDK·closure/upload/cleanup을 통과했다.172CRC와 실제 원본 부재
+299개 관측을 감사해 해당1파일만 원장에 추가했다. 현재 baseline은 **293교체/3부분/3284대기**다.
+receipt의 전체 Python 부재/retirement false는 그대로 유지하며 한정 원장 판정과 구분한다.
+같은 source의 Focus40137010398도 성공했고85CRC·전후 봉인·exact setup D를 확인했다.
+
+Fast40137010462는 Python/Android 등6leaf가 성공했으나 native cold trace의 불명237행에서
+거부됐다. 이를 정상 기록으로 수용하지 않고 같은 source의 실패 작업만1회 재관측한다.
+logging40137010352는20경계와5 lifecycle body가 통과했으나 metadata 경로 trace1.71GB로
+1GiB 한도에서 실패했다. 실제 syscall/FD/path/결과를 유지하는 간결한 표시 후보를 준비하며
+old27/full closure/caller/원본2 및 전체 #523은 계속 미완료다. 정확 evidence와 한계는
+`python-rust-523-hosted-535.md`에 기록한다.
+
+### 602 후속 실제 실패와 다음 검증 후보
+
+Fast 실패 native만 재실행한 attempt2/job121004679000도 unknown raw310행을 거부했다.
+성공6leaf는 재실행하지 않았다. same exec 범위의 seccomp-bpf 요청과 provider/stderr/status
+기록을 보강하며 unknown 행을 허용하지 않는다. logging의 표시 압축과 같은 lexer 요약
+schema2·경계6개, 별도 fresh-build-only C++ collision8 후보를 준비했다. 새 성공은 UNRUN이다.
+
+normal40137010441은40cases/8655rows trace가 EXIT0으로 끝나700/600초 안에 비교에 도달했다.
+첫 `controls[3].rows[0].state.lat_pid[0]`에서 F32 54 ULP 차이로 실패했고 #553에서
+NN response 경계를 추적한다.208CRC·241held와 source/index/SDK 전후 동일성은 확인했지만
+705948 비교·actual trace DSO mapping·native baseline과 최종 closure는 미수용이다.
+normal 성공으로 기록하거나 expected/수치 허용오차를 바꾸지 않는다. baseline293/3/3284,
+PR343 dev draft와 전체 미완료 상태를 유지한다.

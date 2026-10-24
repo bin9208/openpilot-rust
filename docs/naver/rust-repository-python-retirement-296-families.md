@@ -65,6 +65,22 @@ raw trace는 frozen-test Cargo 범위이며 전체 Python 실행 부재 수용�
 
 ## Current batches and blockers
 
+### 2026-10-25 setup 원본1 삭제 후 수용
+
+source `602ea095f7cd89769ffd9233a04a28983ca59d1f`의
+[40137010381/job121000556049](https://github.com/bin9208/openpilot-rust/actions/runs/40137010381/job/121000556049)에서
+`tools/scripts/setup_ssh_keys.py` 한 경로만 추가 수용했다. native 공개 entry와 controlled21,
+거부3·재출현 guard6·Clippy, 원본 부재 HEAD/index·122held·source/SDK 전후·closure/upload/정리를
+확인했다. artifact12577386813은10,462,974B/SHA256
+`1ee86d2c9abfe5ff3141fec71ed582e373f5c27878552650a86013a67532361c`,172CRC다.
+기존 raw21 원문과 metadata를 유지한다. 원문 Python·현재 expected 생성은0이다.
+
+현재 baseline은 **293 replaced-local / 3 partially-replaced / 3284 pending = 3580**이다.
+routing map은19 accepted /3287 pending·partial이다. `replaced-local`은 기존 원장 status이며
+이번 기능 검증을 로컬에서 실행했다는 뜻이 아니다. public missing-argument1과 controlled21을
+실제 외부 network21회로 확대하지 않는다. 전체 Python 부재·auth/SSH 원본·logging2·필수 PR/전달·
+실기 수용은 계속 미완료이고 actual receipt의 `retirement_credit:false`도 그대로 보존한다.
+
 1. Panda device/protocol/CAN-I/O source deletion and maintained fixtures are
    accepted in39640526320 and39647358174. The shared corpus is removed with both
    native callers. Complete independent observations and parser/failure effects

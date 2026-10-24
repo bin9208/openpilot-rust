@@ -196,6 +196,18 @@ native_logging_check::trace::tests::terminal_signal_keeps_interrupted_call_abort
 NAMES
 sed -nE 's/^test (native_logging_check::trace::tests::[a-z0-9_]+) \.\.\. ok$/\1/p' "$proof/build/trace-controls.stdout" | LC_ALL=C sort > "$proof/trace-controls.actual.txt"
 cmp "$proof/trace-controls.expected.txt" "$proof/trace-controls.actual.txt"
+run summary-controls 180 "${runtime[@]}" "$unit" native_logging_check::trace::summary_tests:: --test-threads=1 --color=never
+test "$(grep -Ec '^test result: ok\. 6 passed; 0 failed; 0 ignored;' "$proof/build/summary-controls.stdout")" -eq 1
+cat > "$proof/summary-controls.expected.txt" <<'NAMES'
+native_logging_check::trace::summary_tests::summary_cli_is_explicit_and_full_report_contract_remains_schema_one
+native_logging_check::trace::summary_tests::summary_keeps_every_exec_signal_terminal_and_all_event_counts
+native_logging_check::trace::summary_tests::summary_preserves_event_retained_model_and_key_bounds
+native_logging_check::trace::summary_tests::summary_rejects_malformed_unretained_calls_resumes_and_post_terminal_rows
+native_logging_check::trace::summary_tests::summary_shares_held_raw_hash_and_identity_rejection
+native_logging_check::trace::summary_tests::summary_validates_many_metadata_rows_without_exporting_their_details
+NAMES
+sed -nE 's/^test (native_logging_check::trace::summary_tests::[a-z0-9_]+) \.\.\. ok$/\1/p' "$proof/build/summary-controls.stdout" | LC_ALL=C sort > "$proof/summary-controls.actual.txt"
+cmp "$proof/summary-controls.expected.txt" "$proof/summary-controls.actual.txt"
 export NATIVE_LOGGING_RETAINED_BINARY=$probe NATIVE_LOGGING_RETAINED_CONTEXT=$context
 export NATIVE_LOGGING_RETAINED_SOURCE_COMMIT=$GITHUB_SHA
 export NATIVE_LOGGING_RETAINED_BINARY_SHA256 NATIVE_LOGGING_RETAINED_CONTEXT_SHA256
@@ -212,25 +224,28 @@ monotonic_cs() {
 }
 # read/pread64는 FD/주소/길이/결과를 raw hex로 유지한다. 반복 해시의 대형 버퍼 사본만 펼치지 않는다.
 # 입력·packet 원문은 별도 context/실제 결과에서 봉인한다. exec/argv/path 및 mapping은 계속 해석 출력한다.
+# -x는 비ASCII 문자열의 byte escape를 유지한다. FD 번호·실제 path/metadata 인자는 그대로 두고
+# -yy의 반복 파생 FD-path/protocol annotation만 생략한다. closed FD/cwd/DSO 수용은 계속 false다.
 started=$(monotonic_cs)
 for name in first_int first_term first_eof runtime_directory_int runtime_directory_term escaped_descendant_int escaped_descendant_term escaped_descendant_eof output_file output_directory output_live_directory output_symlink output_dangling_symlink forbidden_executable_options; do
   remaining=$((60000 - ($(monotonic_cs) - started)))
   ((remaining > 0))
   bound_cs=$remaining; ((bound_cs <= 9500)) || bound_cs=9500
   printf -v bound '%s.%02d' "$((bound_cs / 100))" "$((bound_cs % 100))"
-  run "lifecycle-$name" "$bound" "${runtime[@]}" "${lifecycle_env[@]}" /usr/bin/strace --kill-on-exit -ff -ttt -yy -xx -v -s 65536 -e trace=process,%file,%desc,%signal,%network,%memory,setsid,setpgid,prctl,unshare,setns -e raw=read,pread64 -o "$proof/trace/$name" "$fixture" --ignored --exact "retained::$name" --test-threads=1 --color=never
+  run "lifecycle-$name" "$bound" "${runtime[@]}" "${lifecycle_env[@]}" /usr/bin/strace --kill-on-exit -ff -ttt -x -v -s 65536 -e trace=process,%file,%desc,%signal,%network,%memory,setsid,setpgid,prctl,unshare,setns -e raw=read,pread64 -o "$proof/trace/$name" "$fixture" --ignored --exact "retained::$name" --test-threads=1 --color=never
   test "$(grep -Ec '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$proof/build/lifecycle-$name.stdout")" -eq 1
   verify_held
 done
 (( $(monotonic_cs) - started <= 60000 ))
-run retained-once 360 "${runtime[@]}" /usr/bin/strace --kill-on-exit -ff -ttt -yy -xx -v -s 65536 -e trace=process,%file,%desc,%signal,%network,%memory,setsid,setpgid,prctl,unshare,setns -e raw=read,pread64 -o "$proof/trace/retained-once" "$checker" retained --root "$source" --binary "$probe" --context "$context" --output "$proof/native" --source-commit "$GITHUB_SHA" --binary-sha256 "$NATIVE_LOGGING_RETAINED_BINARY_SHA256"
+run retained-once 360 "${runtime[@]}" /usr/bin/strace --kill-on-exit -ff -ttt -x -v -s 65536 -e trace=process,%file,%desc,%signal,%network,%memory,setsid,setpgid,prctl,unshare,setns -e raw=read,pread64 -o "$proof/trace/retained-once" "$checker" retained --root "$source" --binary "$probe" --context "$context" --output "$proof/native" --source-commit "$GITHUB_SHA" --binary-sha256 "$NATIVE_LOGGING_RETAINED_BINARY_SHA256"
 jq -e --arg source "$GITHUB_SHA" '.fresh_native_packets==250 and .fresh_native_responses==697 and .retained_cpp_packets==249 and .retained_cpp_responses==694 and .cpp_executions==0 and .source_commit==$source and .R4_acceptance==false and .lifecycle_reuse_granted==false and (.historical_to_recovered_console|length)==7 and (.recovered_to_fresh_console|length)==7 and all(.historical_to_recovered_console[]; .projected_equal==true) and all(.recovered_to_fresh_console[]; .projected_equal==true)' "$proof/native/report.json" > "$proof/raw-comparison.txt"
 for stem in providers context-inputs source-state; do cmp "$proof/native/$stem.before.json" "$proof/native/$stem.after.json"; done
-# 기능 cohort 뒤의 별도 lexical inspection이다. PID/cwd/FD/DSO 정책 수용으로 올리지 않는다.
+# 같은 lexer로 모든 원문 줄을 검사하되 세부 syscall Event는 집계로 출력한다.
+# 전체 raw는 그대로 보존한다. full event index와 PID/cwd/FD/DSO 정책 수용은 아니다.
 mkdir "$proof/inspect"
 for name in first_int first_term first_eof runtime_directory_int runtime_directory_term escaped_descendant_int escaped_descendant_term escaped_descendant_eof output_file output_directory output_live_directory output_symlink output_dangling_symlink forbidden_executable_options retained-once; do
-  run "inspect-$name" 180 "${runtime[@]}" "$checker" inspect-trace --directory "$proof/trace" --prefix "$name" --output "$proof/inspect/$name.json"
-  jq -e '.schema==1 and .raw_immutable==true and .requires_exit_status_zero==true and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and .full_acceptance==false and .retirement_credit==false' "$proof/inspect/$name.json" > "$proof/inspect/$name.scope.txt"
+  run "inspect-$name" 180 "${runtime[@]}" "$checker" inspect-trace-summary --directory "$proof/trace" --prefix "$name" --output "$proof/inspect/$name.json"
+  jq -e '.schema==2 and .raw_immutable==true and .requires_exit_status_zero==true and .full_event_index==false and .lexically_checked_all_events==true and .event_count>0 and .event_count<=1000000 and .physical_lines>=.event_count and .physical_lines<=2000000 and ((.event_counts|to_entries|map(.value)|add)==.event_count) and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and .full_acceptance==false and .retirement_credit==false' "$proof/inspect/$name.json" > "$proof/inspect/$name.scope.txt"
 done
 verify_held
 printf '%s\n' 'current held files and bytes unchanged' > "$proof/held-after.txt"

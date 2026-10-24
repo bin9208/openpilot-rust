@@ -404,3 +404,120 @@ setup 후속3파일, Navi 저장 복원3파일, sparse 경계2파일과 BufWrite
 execution SHA는 일치한다. 로컬 YAML3·Bash block38·embedded AST8·단독 Python AST1·
 Bash helper1, Rust 서식/diff만 확인했다. compile/test/Clippy/원본 프로그램은 실행하지 않았다.
 새 실제 Actions 전 성공은 UNRUN이다. execution-edge92행의 세 current blob만 갱신했다.
+
+## 602 실제 setup 원본1 수용과 Focus 성공
+
+[setup40137010381/job121000556049](https://github.com/bin9208/openpilot-rust/actions/runs/40137010381/job/121000556049),
+source `602ea095f7cd89769ffd9233a04a28983ca59d1f`에서 실제 삭제 checkout의 guard6·controlled21·
+거부3·public1·strict Clippy와 watcher9가 모두 성공했다. 공개 exec20/20, signal15는
+SIGCHLD14와 SIGUSR1/SI_TKILL1로 구분된다. 정확 stdout102B/exit1과 같은 helper→native PID,
+최종 ELF inode/SHA 불변을 확인했다. raw13800B/SHA·과거 metadata는 그대로다.
+
+artifact12577386813은10,462,974B/SHA256
+`1ee86d2c9abfe5ff3141fec71ed582e373f5c27878552650a86013a67532361c`,172CRC·해제152,844,779B다.
+실제 source HEAD/index에서 원본1이 없고 absence 관측299행과6control·핵심 명령 전후가
+모두 일치했다.122held파일의 두 번 검사와 source/SDK 등15쌍, stable roster10쌍이 같다.
+closure→upload→마지막 cleanup 부재 관측→소유 정리의 실제 순서를 확인했다. 삭제한 원본1의
+FD가 빠지고 guard helper가 들어간 결과122행인 것이며122라는 수만으로 수용하지 않는다.
+
+이 경로 하나를 원장에 추가해 **293교체/3부분/3284대기=3580**이다. routing map은
+19accepted/3287pending·partial이다. 실제 receipt의 `retirement_credit:false`·전체 Python 부재
+false·network CLI0 필드는 그대로 두며, 한정된 원본1의 원장 판정과 구분한다.
+
+같은 source의
+[Focus40137010398](https://github.com/bin9208/openpilot-rust/actions/runs/40137010398)은 성공했다.
+artifact12577357167은15,868,420B/SHA256
+`0b60e9e69f7ae420050432ff4df631dff2cedddfc0ebfcd0bfdd87a7e1054439`,85CRC다.
+current source/index/SDK4쌍 및 내부 과거 봉인쌍도 동일했고 exact setup D/base SHA·HEAD/index
+empty roster를 직접 확인했다. 전체 PR/통합·logging/normal40·실기 수용으로 확대하지 않는다.
+
+## 602 Fast의 불명 cold 기록
+
+[Fast40137010462/native121000557107](https://github.com/bin9208/openpilot-rust/actions/runs/40137010462/job/121000557107)은
+7분 한도에 닿기 전 실제 cold audit가 `2604  ???( <detached ...>`를237행에서 거부했다.
+그 뒤 routing/Navi2는 미도달이다. 나머지6leaf는 성공했고 Python/Android의 공백·Gradle 검사도
+실제 통과했다.7ZIP254CRC 및 각 source/index/SDK·upload/정리를 확인했다.
+capture는 이후507행의 disk-space guard exec와 foreground exit0까지 이어졌지만 PID2604의
+syscall/부모·종료 의미는 알 수 없다. 정상 thread라고 가정하거나 이 행을 skip하지 않는다.
+
+strace의 [공식 v6.8 구현](https://raw.githubusercontent.com/strace/strace/v6.8/src/strace.c)은
+공통 TCB 제거 경로에서도 미완성 출력을 `<detached ...>`로 끝낸다. 이 문자열만으로
+실제 PTRACE_DETACH를 확정할 수 없고, syscall 식별 실패와 양립한다는 것까지 확인했다.
+발생 원인은 미확정이며 기존 FAIL과237행 거부는 유지한다. 같은602 source의 실패 native와
+그 집계만1회 재관측하며 성공6leaf는 반복하지 않는다. 다음 성공도 이 원인을 해결했다는
+증거로 바꾸지 않는다. 아직 PR343 fast-forward와 새 필수 deep는 진행하지 않았다.
+
+## 602 logging 실제 metadata trace 초과
+
+[logging40137010352](https://github.com/bin9208/openpilot-rust/actions/runs/40137010352)은 새 trace20과
+앞5 lifecycle body까지 통과했다. 다섯 번째 runtime-directory TERM 뒤 proof1,710,235,648B로
+1GiB 사후 한도를 넘어 실패했다. 이후9 lifecycle/retained-once/15inspection은 미실행이다.
+artifact12577451344는74,226,142B/SHA256
+`d42654c9d0bb1c45c2e372320e0326c059ff2309e049917580f3587741b6d651`,2,005CRC·해제1,705,848,612B다.
+source/index·wholeSDK 내용은 전후 같고 held-final0·upload는 성공했다. 최종 source/SDK 단계는
+동일 proof 크기 guard에서 실패했다. 이를 source/SDK 변조로 해석하지 않는다.
+
+inert 원문의 호출별 byte 집계에서 newfstatat897,261,941B/getdents64 266,178,070B/
+openat175,872,114B가 대부분을 차지했다. read는3,489,009B다. 실제 syscall 인자와 별도로
+`-xx/-yy`가 반복한 hex 절대경로·FD annotation이 주된 비용이다. 이 관측을 새 허용목록으로
+만들지 않는다. 후속 후보는 `-x`로 byte escape를 보존하면서 파생 FD-path/protocol annotation을
+생략한다. FD 번호·실제 path/metadata/호출/결과·원문 packet/context는 유지한다.
+전체 classes·raw read·512MiB/1GiB·600초와 lexical scope의 closed PID/cwd/FD/DSO false는
+변하지 않는다. 초기 FD 표 및 semantic closure는 계속 미완료이며 actual fit·inspection 성공은
+새 실행에서 확인한다. 현재 성공5를 old27나 최종 raw 비교 성공으로 올리지 않는다.
+
+## 602 후속 cold 재관측과 normal40의 첫 수치 실패
+
+Fast의 실패 native만1회 재관측한 attempt2/job121004679000도 raw310행의
+`2664  ???( <detached ...>`로 실패했다. 성공6leaf의 start/end가 attempt1과 같아
+새 실행6개로 세지 않는다. 원인 미확정·unknown 거부는 그대로이며 재시도를 추가하지 않는다.
+후속 수집 후보는 같은 `execve,execveat` 범위에 `--seccomp-bpf`를 요청하고 실제
+strace provider/version/시작·종료/status/stderr를 남긴다. fallback이 가능하므로 BPF 활성이나
+원인 해결을 주장하지 않는다. stderr 수집도 별도 유한 대기·현재 소유 PID 회수가 필요하다.
+
+[normal40137010441/job121000556319](https://github.com/bin9208/openpilot-rust/actions/runs/40137010441/job/121000556319)은
+trace40/8655를 EXIT0으로 완성하고700/600초 안에 비교에 도달했다. BufWriter 이후 이전
+timeout 장벽은 넘었지만 실제 비교는 `controls[3].rows[0].state.lat_pid[0]`에서 실패했다.
+역사값 `-0.034913528710603714`와 현재 `-0.03491372987627983`은 F32 54 ULP 차이다.
+[#553](https://github.com/bin9208/openpilot-rust/issues/553)에서 NN response/PID 전 경계를
+추적하며 기대값·허용오차·DSO·ISA 정책을 바꾸지 않는다. 최초 layer 원인은 미확정이다.
+
+artifact12577798385는52,127,695B/SHA256
+`9212f3233b3fd4d479334519e0e7667df1672005823eed5ee23e1bc3e03caf4c`,208CRC 정상·해제382,908,540B다.
+241held와 source/index/SDK/numerics 내용은 전후 같고 failure-seals marker도 pass다.
+전체 native baseline unavailable로 final closure는 실패, upload만 성공하고 cleanup은 skipped다.
+이를705948 비교 성공·actual trace PID의 DSO mapping 수용으로 확대하지 않는다.
+
+## logging 기록량과 현재 collision8의 분리 후보
+
+같은 lexer가 모든 원문 줄을 검사하는 `inspect-trace-summary`를 별도 schema2로 추가한다.
+모든 exec 시도·signal·terminal·중단 call은 상세 Event를 보존하고 나머지는 kind/operation/outcome
+개수와 원문 SHA를 남긴다. `full_event_index:false`를 명시하고 다른 syscall 세부값은 immutable
+raw에 남는다. full schema1과 기존 trace20, 모든 raw/file/model/event/line 상한은 유지한다.
+summary 경계6개를 CI에서 별도 실행하며 dispatcher가 옵션만 scanner에 넘기도록 검토 지적을
+수정했다. semantic PID/cwd/FD/DSO closure의 대용이 아니다.
+
+기존 pending collision8은 별도 기본 Ubuntu workflow/helper로 분리한다. 현재 source에서
+checker/builder/probe/fixture를 빌드하고 원래 pin/recipe의 fresh C++ reference는 build만 한다.
+현재 fixture1이 만든8receipt·checker8exec/exit1·child spawn 시도0·외부 output 전후 동일성을
+byte argv/env와 원문으로 검사한다. provider를 과거 ELF나 가짜 wrapper로 대체하지 않는다.
+operation별 동시 증가량은 같은 filesystem에서16.5GiB이며 SDK/빌드/proof 상한·소유 정리·
+실패 후 봉인/upload를 결합한다. actual fit·build·8case·cleanup은 아직 UNRUN이다.
+old27/runtime2/caller/source absence/full closure와 퇴역 credit은 그대로 미수용이다.
+
+현재 cold stderr 후보는 tracer status를 먼저 noclobber 저장한 뒤 현재 collector의
+PID/start ticks/PPID를 확인한다.10초 drain·2초 회수 뒤 terminal/gone에만 wait하며,
+회수는 단일 현재 collector PID만 대상으로 한다. tracer/과거 PGID에 신호하지 않는다.
+수집 실패에도 provider-after 기록과 비교를 수행하고 전체 단계는 FAIL로 남긴다.
+정상·tracer 실패·collector 실패·pipe 잔류·잘못된 start ticks/PPID의6사례를 기존 CI 정책
+test에 추가했다. writer ACK/release와 별도 postcondition marker로 음성 결과1에 다른
+검사 실패1이 섞이지 않게 보완했다. 독립 검토 뒤 actual은 아직 UNRUN이다.
+
+새 후보 경계3개를 등록해 Focus exact allow167개/literal pin147개다. 기존 실행부의
+별도 SHA `4ee29d23ba43e6824f19a550898b5678db549a0d283bace60f177f9713a9ef89`는 불변이다.
+원장의 execution-edge92행 분류/credit은 유지하고 Focus current blob만 갱신했다.
+
+로컬 최종 확인은 YAML3·Bash 본문102·embedded Python AST6·Bash helper2의 문법과
+Rust 서식/diff·147literal pin·167exact allow 및 원장3580/3306행 집계다. 모두 확인했으며
+컴파일·test·Clippy·원본/후보 CLI 기능은 로컬에서 실행하지 않았다. 새 성공은 Actions
+실행과 artifact/봉인/정리 감사 뒤에만 기록한다.
