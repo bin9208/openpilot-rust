@@ -34,18 +34,12 @@ jobs:
       env:
         SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name
           == github.repository }}
-      run: 'test "${SOURCE_ALLOWED:-}" = true || { echo ''Fork PR source denied on persistent bin-actions'' >&2;
-        exit 1; }
-
+      run: |
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
         test "$RUNNER_NAME" = bin-actions
-
         test "$RUNNER_ENVIRONMENT" = self-hosted
-
         test "$RUNNER_OS" = Linux
-
         test "$RUNNER_ARCH" = X64
-
-        '
     - name: Common owned Fast job temporary paths
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         }}
@@ -54,67 +48,33 @@ jobs:
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         }}
       working-directory: ${{ github.workspace }}
-      run: 'set -euo pipefail
-
+      run: |
+        set -euo pipefail
         workspace=$(realpath -e -- "$GITHUB_WORKSPACE")
-
         job=$CI_JOB_TEMP
-
         owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
-
         test "$(cat "$job/owner")" = "$owner"
-
         umask 077
-
         mkdir "$job/proof" "$job/home" "$job/cache"
-
         # Source capacity is checked on the actual source filesystem BEFORE checkout.
-
-        available=$(df -PB1 "$workspace" | awk ''NR == 2 {print $4}'')
-
+        available=$(df -PB1 "$workspace" | awk 'NR == 2 {print $4}')
         [[ $available =~ ^[0-9]+$ ]]
-
         required=$((2 * 1024 * 1024 * 1024))
-
-        printf ''{"available_bytes":%s,"planned_source_growth_bytes":%s}\n'' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
-
+        printf '{"available_bytes":%s,"planned_source_growth_bytes":%s}\n' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
         ((available >= required))
-
         source_owner=$(mktemp -d "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
-
-        printf ''%s\n'' "$owner" > "$source_owner/.diag296-owner"
-
+        printf '%s\n' "$owner" > "$source_owner/.diag296-owner"
         mkdir "$source_owner/source"
-
         source="$source_owner/source"
-
-        # Preserve Actions'' real workspace separately. Only Bash consumers see the
-
+        # Preserve Actions' real workspace separately. Only Bash consumers see the
         # unique source as GITHUB_WORKSPACE; GitHub/node action provenance is untouched.
-
-        printf ''source %q\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\n  export GITHUB_WORKSPACE=%q\nfi\n'' "$BASH_ENV"
-        "$workspace" "$source" > "$job/diagnostic-shell-env"
-
-        printf ''%s\n'' "DIAG_ACTIONS_WORKSPACE=$workspace" "DIAG_SOURCE_OWNER=$source_owner" "DIAG_SOURCE_IDENTITY=$(stat
-        -c ''%d:%i'' -- "$source_owner")" "DIAG_SOURCE=$source" "DIAG_CHECKOUT_PATH=${source#"$workspace/"}" "HOME=$job/home"
-        "CARGO_HOME=$job/cargo-home" "RUSTUP_HOME=$job/rustup-home" "CARGO_TARGET_DIR=$source/rust/target" "XDG_CACHE_HOME=$job/cache"
-        "PIP_CACHE_DIR=$job/cache/pip" "GRADLE_USER_HOME=$job/cache/gradle" "npm_config_cache=$job/cache/npm" "BASH_ENV=$job/diagnostic-shell-env"
-        >> "$GITHUB_ENV"
-
-        printf ''owner=%s\njob=%s\nactions_workspace=%s\nsource_owner=%s\nsource_identity=%s\nsource=%s\nworkflow_sha=%s\n''
-        "$owner" "$job" "$workspace" "$source_owner" "$(stat -c ''%d:%i'' -- "$source_owner")" "$source" "$GITHUB_SHA"
-        > "$job/proof/ownership.txt"
-
+        printf 'source %q\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\n  export GITHUB_WORKSPACE=%q\nfi\n' "$BASH_ENV" "$workspace" "$source" > "$job/diagnostic-shell-env"
+        printf '%s\n' "DIAG_ACTIONS_WORKSPACE=$workspace" "DIAG_SOURCE_OWNER=$source_owner" "DIAG_SOURCE_IDENTITY=$(stat -c '%d:%i' -- "$source_owner")" "DIAG_SOURCE=$source" "DIAG_CHECKOUT_PATH=${source#"$workspace/"}" "HOME=$job/home" "CARGO_HOME=$job/cargo-home" "RUSTUP_HOME=$job/rustup-home" "CARGO_TARGET_DIR=$source/rust/target" "XDG_CACHE_HOME=$job/cache" "PIP_CACHE_DIR=$job/cache/pip" "GRADLE_USER_HOME=$job/cache/gradle" "npm_config_cache=$job/cache/npm" "BASH_ENV=$job/diagnostic-shell-env" >> "$GITHUB_ENV"
+        printf 'owner=%s\njob=%s\nactions_workspace=%s\nsource_owner=%s\nsource_identity=%s\nsource=%s\nworkflow_sha=%s\n' "$owner" "$job" "$workspace" "$source_owner" "$(stat -c '%d:%i' -- "$source_owner")" "$source" "$GITHUB_SHA" > "$job/proof/ownership.txt"
         df -PB1 "$workspace" "$job" > "$job/proof/disk-before.txt"
-
         cat /proc/meminfo > "$job/proof/memory-before.txt"
-
-        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$job/proof/cgroup-memory-before.txt";
-        fi
-
-        printf ''%s\n'' "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_OS" "$RUNNER_ARCH" > "$job/proof/runner.txt"
-
-        '
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$job/proof/cgroup-memory-before.txt"; fi
+        printf '%s\n' "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_OS" "$RUNNER_ARCH" > "$job/proof/runner.txt"
     - uses: actions/checkout@v7
       with:
         fetch-depth: 1
@@ -129,26 +89,16 @@ jobs:
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         }}
       working-directory: ${{ env.DIAG_SOURCE }}
-      run: 'set -euo pipefail
-
+      run: |
+        set -euo pipefail
         test "$PWD" = "$DIAG_SOURCE"
-
         test "$GITHUB_WORKSPACE" = "$DIAG_SOURCE"
-
         test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-
         git diff --exit-code
-
         git diff --cached --exit-code
-
-        printf ''%s\n'' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
-
+        printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
         git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
-
-        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime=''UTC
-        1970-01-01'' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
-
-        '
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
     - name: Expose provisioned Rust shims
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         }}
@@ -162,205 +112,218 @@ jobs:
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         }}
       working-directory: ${{ env.DIAG_SOURCE }}
-      run: 'set -euo pipefail
-
-        available=$(df -PB1 "$CI_JOB_TEMP" | awk ''NR == 2 {print $4}'')
-
+      run: |
+        set -euo pipefail
+        available=$(df -PB1 "$CI_JOB_TEMP" | awk 'NR == 2 {print $4}')
         [[ $available =~ ^[0-9]+$ ]]
-
         ((available >= 512 * 1024 * 1024))
-
         python -m venv "$CI_JOB_TEMP/venv"
-
-        printf ''%s\n'' "$CI_JOB_TEMP/venv/bin" >> "$GITHUB_PATH"
-
-        '
+        printf '%s\n' "$CI_JOB_TEMP/venv/bin" >> "$GITHUB_PATH"
     - name: Prepare focused toolchain and original-only Python dependencies
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         }}
-      run: 'set -euo pipefail
-
-        available=$(df -PB1 "$DIAG_SOURCE" | awk ''NR == 2 {print $4}'')
-
+      run: |
+        set -euo pipefail
+        available=$(df -PB1 "$DIAG_SOURCE" | awk 'NR == 2 {print $4}')
         # This operation reuses the installed pinned toolchain instead of installing a duplicate.
-
-        # Growth covers the private Cargo registry, focused targets and a missing musl std component.
-
-        (( available >= 6 * 1024 * 1024 * 1024 ))
-
-        printf ''{"available_bytes":%s,"planned_focused_growth_bytes":6442450944}\n'' "$available" > "$CI_JOB_TEMP/proof/build-growth.json"
-
+        # Growth covers the private Cargo registry, focused targets and explicit host bootstrap targets and original-only captures.
+        (( available >= 4 * 1024 * 1024 * 1024 ))
+        printf '{"available_bytes":%s,"planned_focused_growth_bytes":4294967296}\n' "$available" > "$CI_JOB_TEMP/proof/build-growth.json"
         sudo -n apt-get -o APT::Architectures=amd64 update
-
-        sudo -n apt-get -o APT::Architectures=amd64 install -y g++ pkg-config capnproto libcapnp-dev libzmq3-dev
-        qemu-user-static gh unzip
-
+        sudo -n apt-get -o APT::Architectures=amd64 install -y g++ pkg-config capnproto libcapnp-dev libzmq3-dev gh unzip jq strace
         export RUSTUP_HOME=/home/actions/.rustup
-
-        printf ''RUSTUP_HOME=%s\n'' "$RUSTUP_HOME" >> "$GITHUB_ENV"
-
+        printf 'RUSTUP_HOME=%s\n' "$RUSTUP_HOME" >> "$GITHUB_ENV"
         test -x "$RUSTUP_HOME/toolchains/1.94.0-x86_64-unknown-linux-gnu/bin/rustc"
-
         rustup component list --installed > "$CI_JOB_TEMP/proof/rust-components.txt"
+        grep -q '^rustfmt-' "$CI_JOB_TEMP/proof/rust-components.txt"
+        grep -q '^clippy-' "$CI_JOB_TEMP/proof/rust-components.txt"
+        sha256sum "$(rustup which rustc)" "$(rustup which cargo)" "$(rustup which rustfmt)" "$(rustup which clippy-driver)" > "$CI_JOB_TEMP/proof/rust-tools.sha256"
 
-        grep -q ''^rustfmt-'' "$CI_JOB_TEMP/proof/rust-components.txt"
-
-        grep -q ''^clippy-'' "$CI_JOB_TEMP/proof/rust-components.txt"
-
-        sha256sum "$(rustup which rustc)" "$(rustup which cargo)" "$(rustup which rustfmt)" "$(rustup which clippy-driver)"
-        > "$CI_JOB_TEMP/proof/rust-tools.sha256"
-
-        rustup target add --toolchain 1.94.0 aarch64-unknown-linux-musl
-
-        python -m pip install numpy==2.5.3 pycapnp==2.1.0 requests==2.34.2 cargo-zigbuild==0.23.4 ziglang==0.16.0
-
+        python -m pip install numpy==2.5.3 pycapnp==2.1.0 requests==2.34.2
         rustc -vV > "$CI_JOB_TEMP/proof/rustc.txt"
-
         cargo -V > "$CI_JOB_TEMP/proof/cargo.txt"
-
         command -v capnp
+        command -v strace
 
-        command -v qemu-aarch64-static
 
-
-        cargo-zigbuild --version > "$CI_JOB_TEMP/proof/zigbuild-version.txt"
-
-        python-zig version > "$CI_JOB_TEMP/proof/zig-version.txt"
 
         python -m pip freeze > "$CI_JOB_TEMP/proof/python-provider-versions.txt"
-
-        '
       id: toolchain
     - name: Check complete workspace syntax and formatting
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
-      run: 'set -euo pipefail
-
+      run: |
+        set -euo pipefail
         cargo fmt --manifest-path rust/Cargo.toml --all --check 2>&1 | tee "$CI_JOB_TEMP/proof/format.log"
-
-        '
     - name: Admit exact unchanged successful source cohorts
       if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
       shell: bash
       working-directory: ${{ env.DIAG_SOURCE }}
       env:
         GH_TOKEN: ${{ github.token }}
-      run: "set -euo pipefail\nprior=\"$CI_JOB_TEMP/proof/prior-40079353750.zip\"\ngh api repos/bin9208/openpilot-rust/actions/artifacts/12554139608/zip\
-        \ > \"$prior\"\nprintf '5ad366a8d5ee0d078917be9231c1850b0c3e8dba927a0adcf3a388da56bc8e55  %s\\n' \"$prior\"\
-        \ | sha256sum --check -\nunzip -t \"$prior\" > \"$CI_JOB_TEMP/proof/prior-crc.txt\"\ntest \"$(unzip -p \"\
-        $prior\" SOURCE_COMMIT)\" = d0f53d15a96ef474ff48810b156437a6a6923c58\nunzip -p \"$prior\" source-before.sha256\
-        \ > \"$CI_JOB_TEMP/proof/prior-source-before.sha256\"\nunzip -p \"$prior\" source-after.sha256 > \"$CI_JOB_TEMP/proof/prior-source-after.sha256\"\
-        \ncmp \"$CI_JOB_TEMP/proof/prior-source-before.sha256\" \"$CI_JOB_TEMP/proof/prior-source-after.sha256\"\
-        \nunzip -p \"$prior\" rust-tools.sha256 > \"$CI_JOB_TEMP/proof/prior-rust-tools.sha256\"\nsha256sum --check\
-        \ \"$CI_JOB_TEMP/proof/prior-rust-tools.sha256\"\ngit fetch --no-tags --depth=1 origin d0f53d15a96ef474ff48810b156437a6a6923c58\n\
-        git diff --no-renames --name-only -z d0f53d15a96ef474ff48810b156437a6a6923c58 HEAD > \"$CI_JOB_TEMP/proof/changed-paths.bin\"\
-        \nwhile IFS= read -r -d '' changed; do\n  case \"$changed\" in\n    .github/workflows/python-rust-523.yml|docs/naver/python-rust-523*.md|rust/crates/dev-tools/src/developer_ssh/http.rs|rust/crates/dev-tools/src/github_utils.rs|rust/crates/dev-tools/src/developer_ssh/login/native.rs|rust/crates/model-runtime/tests/catalog_publish.rs|rust/crates/dev-tools/tests/developer_ssh.rs)\
-        \ ;;\n    *) printf 'Changed dependency invalidates scoped reuse: %s\\n' \"$changed\" >&2; exit 1 ;;\n \
-        \ esac\ndone < \"$CI_JOB_TEMP/proof/changed-paths.bin\"\n# Freeze the exact reviewed postimages of the allowed\
-        \ code changes.\nprintf '%s  %s\\n' 6beaccdad7cc50ec7fa4d32e61191af20d8e8e75a52e37c9d603c6cee609816f rust/crates/dev-tools/src/developer_ssh/http.rs\
-        \ | sha256sum --check -\nprintf '%s  %s\\n' 6010fb32078700cdb054303b8b5bdcbbc9c70eaf74487c6325940ec8bd6db37c\
-        \ rust/crates/dev-tools/src/github_utils.rs | sha256sum --check -\nprintf '%s  %s\\n' 17acabad25b59636e212e9d4bacd671361fba4daa6093e343ad4b3537d964bb0\
-        \ rust/crates/dev-tools/src/developer_ssh/login/native.rs | sha256sum --check -\nprintf '%s  %s\\n' 9bdbd0902538b965cf97a68f4cff63efd9d1e16f1770ce283053749d704247b7\
-        \ rust/crates/model-runtime/tests/catalog_publish.rs | sha256sum --check -\nprintf '%s  %s\\n' 7e3eec4c64fc86449871184ffd880ecc67f40c609c458b1e8c6ac9b5e6e7d3a4\
-        \ rust/crates/dev-tools/tests/developer_ssh.rs | sha256sum --check -\nprior2=\"$CI_JOB_TEMP/proof/prior-40080413343.zip\"\
-        \ngh api repos/bin9208/openpilot-rust/actions/artifacts/12554902305/zip > \"$prior2\"\nprintf '5e79482c0f26815da14a9d649fe1b467fd245143edefc2843ffde2aae013ab9a\
-        \  %s\\n' \"$prior2\" | sha256sum --check -\nunzip -t \"$prior2\" > \"$CI_JOB_TEMP/proof/prior2-crc.txt\"\
-        \ntest \"$(unzip -p \"$prior2\" SOURCE_COMMIT)\" = 9e7a3b39ebaa2d215e2cadbae0618cc8720f3649\nunzip -p \"\
-        $prior2\" source-before.sha256 > \"$CI_JOB_TEMP/proof/prior2-source-before.sha256\"\nunzip -p \"$prior2\"\
-        \ source-after.sha256 > \"$CI_JOB_TEMP/proof/prior2-source-after.sha256\"\ncmp \"$CI_JOB_TEMP/proof/prior2-source-before.sha256\"\
-        \ \"$CI_JOB_TEMP/proof/prior2-source-after.sha256\"\nunzip -p \"$prior2\" rust-tools.sha256 > \"$CI_JOB_TEMP/proof/prior2-rust-tools.sha256\"\
-        \nsha256sum --check \"$CI_JOB_TEMP/proof/prior2-rust-tools.sha256\"\nprintf '%s\\n' 'Reused d0: catalog\
-        \ x64 10 + its Clippy; terminal 20; auth/HTTP library 19; auth original 8; Paramsd 11; camera 1. Reused\
-        \ 9e7: callback sockets 3; HTTP 1; Github 26; model test Clippy. Fresh: strengthened SSH 27, remaining strict\
-        \ Clippy, genuine Zig musl build/QEMU.' > \"$CI_JOB_TEMP/proof/reused-scopes.txt\"\n"
-    - name: Run strengthened SSH regressions and remaining strict lint
+      run: |
+        set -euo pipefail
+        prior="$CI_JOB_TEMP/proof/prior-40081388419.zip"
+        gh api repos/bin9208/openpilot-rust/actions/artifacts/12555169058/zip > "$prior"
+        printf 'c9de529574ed693dfec4cd438b3da29d87fb26060bbe5b43347844dd579fe74d  %s\n' "$prior" | sha256sum --check -
+        unzip -t "$prior" > "$CI_JOB_TEMP/proof/prior-crc.txt"
+        test "$(unzip -p "$prior" SOURCE_COMMIT)" = 40efe7ef964c0b08f9ba867edd9c863fc545bc0a
+        for name in source-before.sha256 source-after.sha256 index-before.bin index-after.bin rust-tools.sha256; do
+          unzip -p "$prior" "$name" > "$CI_JOB_TEMP/proof/prior-$name"
+        done
+        cmp "$CI_JOB_TEMP/proof/prior-source-before.sha256" "$CI_JOB_TEMP/proof/prior-source-after.sha256"
+        cmp "$CI_JOB_TEMP/proof/prior-index-before.bin" "$CI_JOB_TEMP/proof/prior-index-after.bin"
+        sha256sum --check "$CI_JOB_TEMP/proof/prior-rust-tools.sha256"
+        git fetch --no-tags --depth=1 origin 40efe7ef964c0b08f9ba867edd9c863fc545bc0a
+        git diff --no-renames --name-only -z 40efe7ef964c0b08f9ba867edd9c863fc545bc0a HEAD > "$CI_JOB_TEMP/proof/changed-paths.bin"
+        while IFS= read -r -d '' changed; do
+          case "$changed" in
+            .github/workflows/python-rust-523.yml|docs/naver/python-rust-523*.md|docs/user/ko/rust-port.md|docs/user/en/rust-port.md|.github/workflows/python-rust-523-model.yml|tools/ci/model_compiler_pair_482.sh|rust/crates/dev-tools/Cargo.toml|rust/crates/dev-tools/src/developer_ssh/login.rs|rust/crates/dev-tools/src/developer_ssh/login/native.rs|rust/crates/dev-tools/src/developer_ssh/login/cli.rs|rust/crates/dev-tools/src/developer_ssh/login/cli/tests.rs|rust/crates/dev-tools/src/developer_ssh/login/pretty.rs|rust/crates/dev-tools/src/developer_ssh/auth_main.rs|rust/tools/run-developer-tool|tools/op.sh|tools/ci/paramsd_native_boundaries_523.sh) ;;
+            *) printf 'Changed dependency invalidates reuse: %s\n' "$changed" >&2; exit 1 ;;
+          esac
+        done < "$CI_JOB_TEMP/proof/changed-paths.bin"
+        printf '%s  %s\n' e56d6b7686cee1dbe21376a9301355975b4ec9392402a0a1d3af926a7aa29cda .github/workflows/python-rust-523-model.yml | sha256sum --check -
+        printf '%s  %s\n' 21200d2600f9391fe15f901cbe48db2594b156570a3f10a2028c6eb9294b7392 tools/ci/model_compiler_pair_482.sh | sha256sum --check -
+        printf '%s  %s\n' 3d8bf9da142d689deb46088c9b30447862241bbb613659a1600dbabd4ee8f053 rust/crates/dev-tools/Cargo.toml | sha256sum --check -
+        printf '%s  %s\n' 2179de2992a13972cb60bb75ae4744cf64d8aaa427acad51af95f61383234a34 rust/crates/dev-tools/src/developer_ssh/login.rs | sha256sum --check -
+        printf '%s  %s\n' 7bc87509adca20f9825ebaa98bf97e6c5620c16d723d25eac13559fb7f2d4967 rust/crates/dev-tools/src/developer_ssh/login/native.rs | sha256sum --check -
+        printf '%s  %s\n' f73119a5d255e04ad00b96220cde4654ec684e90438371d7072a1d3008899f23 rust/crates/dev-tools/src/developer_ssh/login/cli.rs | sha256sum --check -
+        printf '%s  %s\n' 7d4058a7913848d54e03a7a5e7a14a4efdc81fe5c14cbdaf05b23726770e2ac1 rust/crates/dev-tools/src/developer_ssh/login/cli/tests.rs | sha256sum --check -
+        printf '%s  %s\n' 4093828837294ff4577ecb98029c78004d6043d77f514cb7e7e7dfceb4401213 rust/crates/dev-tools/src/developer_ssh/login/pretty.rs | sha256sum --check -
+        printf '%s  %s\n' 6ed56c909283e14032187eb87070305c998ae5db7f0b5ff55fa29db0fc1c45df rust/crates/dev-tools/src/developer_ssh/auth_main.rs | sha256sum --check -
+        printf '%s  %s\n' 20bae03329d7e29f055fc8f440cb7d4794522bf55a773d1da92cd821681307de rust/tools/run-developer-tool | sha256sum --check -
+        printf '%s  %s\n' 26ad1cd17628139eecdc08b5fbf3f4ccbc02f69a93d5dde7b4e303a3219f08c3 tools/op.sh | sha256sum --check -
+        printf '%s  %s\n' d031eae5add665a0a404cad98d34f1c9a8a3d7266743e15ece65a8cca1c61b44 tools/ci/paramsd_native_boundaries_523.sh | sha256sum --check -
+        python - <<'MANIFEST'
+        import subprocess,tomllib
+        from pathlib import Path
+        old=tomllib.loads(subprocess.check_output(['git','show','40efe7ef964c0b08f9ba867edd9c863fc545bc0a:rust/crates/dev-tools/Cargo.toml'],text=True))
+        new=tomllib.loads(Path('rust/crates/dev-tools/Cargo.toml').read_text())
+        entry={'name':'developer-auth','path':'src/developer_ssh/auth_main.rs','required-features':['developer-ssh-native']}
+        assert new['bin'].count(entry)==1
+        new['bin'].remove(entry)
+        assert old==new, 'Only the reviewed bin registration may change; all dependencies/features must remain exact.'
+        MANIFEST
+        # The predecessor includes two exact admitted ZIPs; verify their identities and CRCs again.
+        python - "$prior" <<'COHORTS'
+        import hashlib,io,sys,zipfile
+        with zipfile.ZipFile(sys.argv[1]) as z:
+         for name,pin,source in [
+          ('prior-40079353750.zip','5ad366a8d5ee0d078917be9231c1850b0c3e8dba927a0adcf3a388da56bc8e55','d0f53d15a96ef474ff48810b156437a6a6923c58'),
+          ('prior-40080413343.zip','5e79482c0f26815da14a9d649fe1b467fd245143edefc2843ffde2aae013ab9a','9e7a3b39ebaa2d215e2cadbae0618cc8720f3649')]:
+          blob=z.read(name); assert hashlib.sha256(blob).hexdigest()==pin
+          with zipfile.ZipFile(io.BytesIO(blob)) as cohort:
+           assert cohort.testzip() is None
+           assert cohort.read('SOURCE_COMMIT').decode().strip()==source
+           assert cohort.read('source-before.sha256')==cohort.read('source-after.sha256')
+        COHORTS
+        printf '%s\n' 'Reuse unchanged terminal, SSH, HTTP, Github, camera, Paramsd controller and catalog x64/ARM cohorts. Fresh: auth login/CLI/original modes, native op bootstrap callers, Paramsd original wire and NumPy boundaries. Atomic startup and full PR gates remain separate.' > "$CI_JOB_TEMP/proof/reused-scopes.txt"
+    - name: Validate full auth modes against retained original and strict lint
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
-      run: 'set -euo pipefail
-
+      run: |
+        set -euo pipefail
         export no_proxy="$NO_PROXY"
-
+        export AUTH_CLI_ORACLE_PYTHON="$CI_JOB_TEMP/venv/bin/python"
         features=developer-ssh-native,kbhit-native,github-utils-native,camera-runtime-native,paramsd-fixture-native
-
-        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --test
-        developer_ssh -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/strengthened-ssh.log"
-
-        grep -F ''test result: ok. 27 passed;'' "$CI_JOB_TEMP/proof/strengthened-ssh.log"
-
-        cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --lib
-        --test developer_ssh --test developer_auth --test developer_http --test github_utils --test paramsd_car_params_cli
-        --test paramsd_estimator_check --test camera_lifecycle_check -- -D warnings 2>&1 | tee "$CI_JOB_TEMP/proof/tools-clippy.log"
-
-        '
-    - name: Build the actual catalog publisher for AArch64 musl
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --lib developer_ssh::login:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/auth-cli-library.log"
+        grep -F 'test result: ok. 7 passed;' "$CI_JOB_TEMP/proof/auth-cli-library.log"
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --test developer_auth -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/auth-original.log"
+        grep -F 'test result: ok. 8 passed;' "$CI_JOB_TEMP/proof/auth-original.log"
+        cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --lib --bin developer-auth --bin developer-auth-json --bin developer-ssh --bin setup-ssh-keys --test developer_auth -- -D warnings 2>&1 | tee "$CI_JOB_TEMP/proof/auth-clippy.log"
+    - name: Capture independent Paramsd wire and NumPy boundaries and run exact ignored selectors
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
-      run: 'set -euo pipefail
-
-        unset RUSTFLAGS CARGO_ENCODED_RUSTFLAGS CARGO_BUILD_TARGET CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS
-        CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER
-
-        # Use the repository''s existing pinned musl SDK, including its genuine libdl archive.
-
-        # A bare rust-lld invocation does not provide the complete musl link search path.
-
-        cargo zigbuild --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --bin publish-model-catalog
-        --target aarch64-unknown-linux-musl 2>&1 | tee "$CI_JOB_TEMP/proof/catalog-musl-build.log"
-
-        readelf -h -l -d "$CARGO_TARGET_DIR/aarch64-unknown-linux-musl/debug/publish-model-catalog" > "$CI_JOB_TEMP/proof/catalog-musl-elf.txt"
-
-        readelf -h "$CARGO_TARGET_DIR/aarch64-unknown-linux-musl/debug/publish-model-catalog" | grep -q AArch64
-
-        if readelf -l "$CARGO_TARGET_DIR/aarch64-unknown-linux-musl/debug/publish-model-catalog" | grep -q INTERP;
-        then exit 1; fi
-
-        export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUNNER=/usr/bin/qemu-aarch64-static
-
-        cargo-zigbuild test --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --test catalog_publish
-        --target aarch64-unknown-linux-musl no_replace_tests:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/catalog-musl-qemu.log"
-
-        mapfile -d '''' arm_tests < <(find "$CARGO_TARGET_DIR/aarch64-unknown-linux-musl/debug/deps" -maxdepth 1
-        -type f -name ''catalog_publish-*'' -executable -print0)
-
-        ((${#arm_tests[@]} == 1))
-
-        grep -F ''test result: ok. 2 passed;'' "$CI_JOB_TEMP/proof/catalog-musl-qemu.log"
-
-        sha256sum /usr/bin/qemu-aarch64-static "$CARGO_TARGET_DIR/aarch64-unknown-linux-musl/debug/publish-model-catalog"
-        "${arm_tests[0]}" > "$CI_JOB_TEMP/proof/arm-sha256.txt"
-
-        printf ''{"host":"X64","target":"AArch64 musl","execution":"qemu-user","physical_arm_cpu":false}\n'' > "$CI_JOB_TEMP/proof/arm-execution.json"
-
-        export MODEL_CATALOG_ARM_RUNNER=/usr/bin/qemu-aarch64-static
-
-        export MODEL_CATALOG_ARM_BINARY="$CARGO_TARGET_DIR/aarch64-unknown-linux-musl/debug/publish-model-catalog"
-
-        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --test catalog_publish aarch64_musl_cli_publishes_without_an_interpreter
-        -- --ignored --exact --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/catalog-musl-cli.log"
-
-        grep -F ''test result: ok. 1 passed;'' "$CI_JOB_TEMP/proof/catalog-musl-cli.log"
-
-        sha256sum --check "$CI_JOB_TEMP/proof/arm-sha256.txt"
-
-        '
+      run: |
+        set -euo pipefail
+        features=developer-ssh-native,kbhit-native,github-utils-native,camera-runtime-native,paramsd-fixture-native
+        cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --bin generate-paramsd-car-params 2>&1 | tee "$CI_JOB_TEMP/proof/paramsd-generator-build.log"
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --test paramsd_car_params_cli --test paramsd_estimator_check --no-run --message-format=json > "$CI_JOB_TEMP/proof/paramsd-build-artifacts.jsonl" 2> "$CI_JOB_TEMP/proof/paramsd-test-build.log"
+        python - <<'BUILD'
+        import hashlib,json,os
+        from pathlib import Path
+        proof=Path(os.environ['CI_JOB_TEMP'])/'proof'
+        rows=[json.loads(x) for x in (proof/'paramsd-build-artifacts.jsonl').read_text().splitlines()]
+        selected={}
+        for target in ['paramsd_car_params_cli','paramsd_estimator_check']:
+         paths={r['executable'] for r in rows if r.get('reason')=='compiler-artifact' and r['target']['name']==target and r['profile']['test'] and r['executable']}
+         assert len(paths)==1, (target,paths)
+         selected[target]=paths.pop()
+        selected['generator']=str(Path(os.environ['CARGO_TARGET_DIR'])/'debug/generate-paramsd-car-params')
+        receipt={k:{'path':v,'sha256':hashlib.sha256(Path(v).read_bytes()).hexdigest()} for k,v in selected.items()}
+        (proof/'paramsd-prepared.json').write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],'fresh_private_target':True,'executables':receipt},indent=2)+'\n')
+        BUILD
+        export EXPECTED_SOURCE="$GITHUB_SHA"
+        export PARAMSD_ORACLE_PYTHON="$CI_JOB_TEMP/venv/bin/python"
+        export PARAMSD_BOUNDARY_PROOF="$CI_JOB_TEMP/proof/paramsd-boundaries"
+        export PARAMSD_GENERATOR_BINARY=$(jq -er '.executables.generator.path' "$CI_JOB_TEMP/proof/paramsd-prepared.json")
+        export PARAMSD_GENERATOR_SHA256=$(jq -er '.executables.generator.sha256' "$CI_JOB_TEMP/proof/paramsd-prepared.json")
+        export PARAMSD_CAR_TEST_BINARY=$(jq -er '.executables.paramsd_car_params_cli.path' "$CI_JOB_TEMP/proof/paramsd-prepared.json")
+        export PARAMSD_CAR_TEST_SHA256=$(jq -er '.executables.paramsd_car_params_cli.sha256' "$CI_JOB_TEMP/proof/paramsd-prepared.json")
+        export PARAMSD_NUMPY_TEST_BINARY=$(jq -er '.executables.paramsd_estimator_check.path' "$CI_JOB_TEMP/proof/paramsd-prepared.json")
+        export PARAMSD_NUMPY_TEST_SHA256=$(jq -er '.executables.paramsd_estimator_check.sha256' "$CI_JOB_TEMP/proof/paramsd-prepared.json")
+        bash tools/ci/paramsd_native_boundaries_523.sh
+    - name: Exercise actual op auth and ssh native bootstrap without external effects
+      if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        proof="$CI_JOB_TEMP/proof/native-callers"
+        mkdir "$proof"
+        export SHELL=/bin/bash
+        # --no-verify is the existing op option; help exits before token/API/browser/SSH effects.
+        for tool in auth ssh; do
+          /usr/bin/timeout --kill-after=5s 240s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "$proof/$tool.exec" bash tools/op.sh --no-verify "$tool" --help > "$proof/$tool.stdout" 2> "$proof/$tool.stderr"
+          grep -F 'usage:' "$proof/$tool.stdout"
+        done
+        python - <<'AUDIT'
+        import json,os,re
+        from pathlib import Path
+        proof=Path(os.environ['CI_JOB_TEMP'])/'proof/native-callers'
+        lanes={}
+        for lane in ['auth','ssh']:
+         trace=(proof/f'{lane}.exec').read_text()
+         assert 'execveat(' not in trace, 'Unreviewed FD exec form in bootstrap lane'
+         calls=[]
+         for line in trace.splitlines():
+          m=re.search(r'\bexecve\(("(?:[^"\\]|\\.)*"),',line)
+          if not m: continue
+          path=json.loads(m[1]); calls.append(path)
+          assert 'python' not in Path(path).name.lower() and not path.endswith('.py'), path
+         wanted='developer-auth' if lane=='auth' else 'developer-ssh'
+         actual=str(Path(os.environ['CARGO_TARGET_DIR'])/'x86_64-unknown-linux-gnu/debug'/wanted)
+         assert any(re.search(r'\bexecve\('+re.escape(json.dumps(actual))+r', .*\) = 0$',line) for line in trace.splitlines()), ('native CLI missing',actual)
+         lanes[lane]={'exec_attempts':len(calls),'native_binary':actual,'native_binary_sha256':__import__('hashlib').sha256(Path(actual).read_bytes()).hexdigest(),'observed_python_exec_attempts':0,'help_only':True}
+        (proof/'audit.json').write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],'lanes':lanes,'whole_source_absence_or_device_acceptance':False},indent=2)+'\n')
+        AUDIT
     - name: Seal Fast source and index after all maintained checks
       if: ${{ always() && env.DIAG_SOURCE != '' }}
       working-directory: ${{ env.DIAG_SOURCE }}
-      run: "set -euo pipefail\ntest \"$(git rev-parse HEAD)\" = \"$GITHUB_SHA\"\ngit ls-files -z > \"$CI_JOB_TEMP/proof/index-after.bin\"\
-        \ncmp \"$CI_JOB_TEMP/proof/index-before.bin\" \"$CI_JOB_TEMP/proof/index-after.bin\"\ntar --null --no-recursion\
-        \ --verbatim-files-from -T \"$CI_JOB_TEMP/proof/index-before.bin\" -cf - --mtime='UTC 1970-01-01' --owner=0\
-        \ --group=0 --numeric-owner | sha256sum > \"$CI_JOB_TEMP/proof/source-after.sha256\"\ncmp \"$CI_JOB_TEMP/proof/source-before.sha256\"\
-        \ \"$CI_JOB_TEMP/proof/source-after.sha256\"\ngit diff --exit-code\ngit diff --cached --exit-code\ndf -PB1\
-        \ \"$DIAG_SOURCE\" \"$CI_JOB_TEMP\" > \"$CI_JOB_TEMP/proof/disk-after.txt\"\ncat /proc/meminfo > \"$CI_JOB_TEMP/proof/memory-after.txt\"\
-        \n\nif test -d \"$CARGO_TARGET_DIR\"; then\n  find \"$CARGO_TARGET_DIR\" -name \"*.d\" -type f -exec sha256sum\
-        \ {} + > \"$CI_JOB_TEMP/proof/build-dep-info.sha256\"\nelse\n  : > \"$CI_JOB_TEMP/proof/build-dep-info.sha256\"\
-        \nfi\n\nif test -f \"$CI_JOB_TEMP/proof/rust-tools.sha256\"; then sha256sum --check \"$CI_JOB_TEMP/proof/rust-tools.sha256\"\
-        ; fi\n"
+      run: |
+        set -euo pipefail
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"
+        cmp "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/index-after.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
+        cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
+        git diff --exit-code
+        git diff --cached --exit-code
+        df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
+        cat /proc/meminfo > "$CI_JOB_TEMP/proof/memory-after.txt"
+
+        if test -d "$CARGO_TARGET_DIR"; then
+          find "$CARGO_TARGET_DIR" -name "*.d" -type f -exec sha256sum {} + > "$CI_JOB_TEMP/proof/build-dep-info.sha256"
+        else
+          : > "$CI_JOB_TEMP/proof/build-dep-info.sha256"
+        fi
+
+        if test -f "$CI_JOB_TEMP/proof/rust-tools.sha256"; then sha256sum --check "$CI_JOB_TEMP/proof/rust-tools.sha256"; fi
       id: source_final
     - name: Retain Fast job ownership evidence
       id: fast_evidence
@@ -381,40 +344,23 @@ jobs:
       env:
         UPLOAD_ID: ${{ steps.fast_evidence.outputs.artifact-id }}
         UPLOAD_DIGEST: ${{ steps.fast_evidence.outputs.artifact-digest }}
-      run: 'set -euo pipefail
-
+      run: |
+        set -euo pipefail
         [[ $UPLOAD_ID =~ ^[0-9]+$ ]]
-
         [[ $UPLOAD_DIGEST =~ ^[a-fA-F0-9]{64}$ ]]
-
         workspace=$DIAG_ACTIONS_WORKSPACE
-
         p=$DIAG_SOURCE_OWNER
-
-        case "$p" in "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."??????) ;; *) exit 1 ;;
-        esac
-
+        case "$p" in "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."??????) ;; *) exit 1 ;; esac
         test -d "$p" && test ! -L "$p"
-
         test "$(realpath -e -- "$p")" = "$p"
-
-        test "$(stat -c ''%u'' -- "$p")" = "$(id -u)"
-
-        test "$(stat -c ''%d:%i'' -- "$p")" = "$DIAG_SOURCE_IDENTITY"
-
+        test "$(stat -c '%u' -- "$p")" = "$(id -u)"
+        test "$(stat -c '%d:%i' -- "$p")" = "$DIAG_SOURCE_IDENTITY"
         test -f "$p/.diag296-owner" && test ! -L "$p/.diag296-owner"
-
         test "$(cat "$p/.diag296-owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
-
         test "$DIAG_SOURCE" = "$p/source"
-
         test -d "$p/source" && test ! -L "$p/source"
-
         test "$(realpath -e -- "$p/source")" = "$p/source"
-
         rm -rf --one-file-system -- "$p"
-
-        '
     - name: Clean common owned Fast job temporary paths
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != ''

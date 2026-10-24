@@ -103,8 +103,13 @@ Git 공백 오류를 검사합니다. `openpilot-dev-tools`에서
 승인된 인코딩·수명주기 증거와 별도 삭제 검증을 요구합니다. 이 CI 전환은 기기 검증이나
 저장소 전체의 Python 제거 완료를 뜻하지 않습니다.
 
-`openpilot-dev-tools`의 `--features developer-ssh-native --bin developer-auth-json`
-후보는 `google|apple|github --json` 브라우저 로그인 상태를 처리합니다. 실행하면
-브라우저를 열고 성공 시 기존 인증 설정에 토큰을 저장합니다. 실제 인증을 수행하지
-않는 합성 회귀 검증은 Actions에서 진행하며, 원본 `auth.py`의 일반/JWT 출력 모드와
-기존 호출부는 아직 유지합니다. 이 후보 추가만으로 인증 도구 전체 전환을 인정하지 않습니다.
+`op auth`와 `op ssh`는 `rust/tools/run-developer-tool`을 통해 현재 체크아웃의
+`developer-auth`·`developer-ssh`를 빌드하고 실행합니다. Rustup과 Rust 1.94.0이 필요하며,
+빌드 전에 작업별 예상 증가량을 확인합니다. `setup-ssh-keys`도 같은 부트스트랩으로
+실행할 수 있습니다. 인증 명령은 기본 Google, `google|apple|github`, `jwt TOKEN`,
+브라우저 상태용 `--json` 모드를 제공합니다. `developer-auth-json` 명령은 유지합니다.
+브라우저 로그인을 실제 실행하면 브라우저를 열고 성공 시 기존 인증 설정에 토큰을 저장합니다.
+
+이 호출부 전환은 검증 중입니다. Actions는 실제 계정 인증·SSH 연결 없이 합성 입력과
+격리된 loopback을 검사합니다. 원본 Python 도구와 다른 라이브러리 소비자는 제거 수용
+전까지 유지하며, 이 변경만으로 인증 도구 전체 전환이나 실기 수용을 인정하지 않습니다.

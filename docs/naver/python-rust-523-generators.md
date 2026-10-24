@@ -204,3 +204,75 @@ cookie/auth/user-agent 비교에서 P1은 발견하지 못했다. 기능 실행�
 첫 focused run `40078269062`의 checkout 전 실패는 부모가 전달한
 `1512144896 < 2147483648` 용량 사전검사 결과로 기록한다. 이 검토에서 run을 재실행하거나
 진행 중 metadata run `40078386189`의 결과를 추정하지 않았다.
+
+## 기존 ignored 경계 검사 2개를 위한 fresh 캡처 진단
+
+2026-10-24 `tools/ci/paramsd_native_boundaries_523.sh`를 추가했다. 상태는 **UNRUN**이다.
+로컬에서는 shell/embedded Python 문법과 diff만 확인하며 NumPy·pycapnp import, 원본 캡처,
+native CLI 및 Rust test executable은 실행하지 않는다. workflow와 Cargo 등록은 수정하지 않는다.
+
+이 진단은 부모가 준비한 현재 source의 실행 파일 3개를 경로·SHA-256으로 받아 held FD로
+실행한다. 스크립트 안에는 apt/pip 설치, Cargo build, Cargo test의 암묵적 재빌드, 네트워크,
+기기·인증정보 탐색이 없다. 원본 Python 모듈은 현재 checkout의 source bytes 전체에서 로드한다.
+`paramsd_source.load()`와 `check_paramsd.main()`은 실행하지 않는다.
+
+- 원본 `paramsd_fixture.car_params()`와 실제 `generate-paramsd-car-params`를 각각
+  3개 profile × fingerprint `default`/`empty`/`custom`으로 호출하여 9쌍을 새로 만든다.
+  custom 문자열에는 UTF-8 문자를 포함한다. 두 결과 모두 새 proof 디렉터리에 저장하며
+  기존 fixture/과거 산출물을 복사하지 않는다.
+- NumPy **2.5.3**의 실제 `np.isclose(..., equal_nan=True)` 결과를 f64 입력 비트와 함께
+  9,600개 저장한다. 32개 비트 패턴의 순서 있는 9개 tolerance 전수 조합 9,216개와
+  현재 두 tolerance의 threshold/인접 ULP·역방향 관측 384개다.
+  signed zero, subnormal/normal 경계, 큰 유한값, infinity, NaN, 비대칭과 overflow/underflow를
+  포함한다. 기대값을 Rust 출력이나 복사한 판정 수식으로 생성하지 않는다.
+- 현재 tolerance `1e-9`와 `2e-6`의 2,432개 관측은 원본 `check_paramsd.compare()`에도
+  실제 전달하여 NumPy 결과와 원본 path별 정책이 일치하는지 확인한다.
+  경계 입력 생성의 산술은 후보 선택에만 쓰며 판정 기대값은 항상 실제 NumPy에서 얻는다.
+- 캡처 뒤 아래 **기존 ignored selector만 각각 1개씩** 실행한다. 이름·exit 0·
+  `1 passed; 0 failed; 0 ignored`를 모두 확인한다. 전체 suite나 이미 성공한 다른 항목은
+  실행하지 않는다.
+
+```text
+paramsd_car_params_cli::all_cli_profiles_and_fingerprints_match_fresh_python_fixture_bytes
+paramsd_estimator_check::matches_fresh_numpy_comparison_boundary_observations
+```
+
+위 표기의 `::` 앞은 Cargo test target 이름이다. 실제 libtest에는 뒤 함수명과
+`--ignored --exact --nocapture --test-threads=1 --color=never`를 전달한다.
+원본/runtime tolerance나 Rust 수학 구현은 변경하지 않는다. `np.errstate`는 이 캡처 안에서
+경계 입력의 경고만 억제하며, 실제 bool 결과와 모든 입력 비트를 그대로 기록한다.
+
+부모 통합에 필요한 환경변수는 다음과 같다. 모두 현재 source로 새로 준비해야 하며
+과거 archive의 compiled executable을 전달하면 안 된다.
+
+| 환경변수 | 부모가 전달할 값 |
+| --- | --- |
+| `GITHUB_WORKSPACE`, `EXPECTED_SOURCE` | 실제 checkout의 절대 경로와 현재 40자리 HEAD SHA |
+| `GITHUB_ACTIONS`, `GITHUB_REPOSITORY`, `RUNNER_NAME`, `RUNNER_OS` | `true`, `bin9208/openpilot-rust`, `bin-actions`, `Linux` |
+| `RUNNER_TEMP`, `PARAMSD_BOUNDARY_PROOF` | private temp와 그 하위의 아직 없는 절대 proof 경로 |
+| `CARGO_TARGET_DIR` | 부모가 사용한 현재 fresh target의 절대 경로 |
+| `PARAMSD_ORACLE_PYTHON` | NumPy 2.5.3/pycapnp가 준비된 기존 venv의 절대 Python 경로 |
+| `PARAMSD_GENERATOR_BINARY`, `PARAMSD_GENERATOR_SHA256` | 실제 새 `generate-paramsd-car-params` executable과 그 SHA-256 |
+| `PARAMSD_CAR_TEST_BINARY`, `PARAMSD_CAR_TEST_SHA256` | 새 `paramsd_car_params_cli` test executable과 SHA-256 |
+| `PARAMSD_NUMPY_TEST_BINARY`, `PARAMSD_NUMPY_TEST_SHA256` | 새 `paramsd_estimator_check` test executable과 SHA-256 |
+
+부모의 준비 명령 예시는 다음과 같다. 이 문서 작성 중 실행하지 않았다.
+
+```bash
+cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features paramsd-fixture-native --bin generate-paramsd-car-params
+cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features paramsd-fixture-native --test paramsd_car_params_cli --test paramsd_estimator_check --no-run --message-format=json
+# compiler-artifact의 target.name/profile.test/executable로 각 정확 test executable을 선택하고 해시를 고정한다.
+bash tools/ci/paramsd_native_boundaries_523.sh
+```
+
+스크립트는 source/원본 pin, 실행 파일 FD·identity/hash와 실제 import/NumPy·pycapnp 공유
+provider를 전후 확인한다. proof 64 MiB의 작업별 growth admission, 파일별 8 MiB 제한,
+GNU timeout 240초 그룹과 자식별 60초 kill/reap을 적용한다. native/test 자식은 최소 환경과
+`PATH=/nonexistent`를 쓰고, 실패 산출물도 보존한다. 부모는 실패 시에도 proof 전체를
+upload하고 기존 whole-source/build receipt 봉인을 유지해야 한다.
+
+`complete.json`은 fresh 캡처 9쌍·9,600개와 ignored selector 2개 및 최종 guard가 모두
+성공한 뒤에만 생성된다. **현재 이 성공 증거는 없다.**
+`maintained_atomic_gate_uses_exact_native_generator_exec`는 실제 startup gate를 실행하지
+않으므로 제외한다. 좁은 CLI 실행 기록을 그 gate의 증거로 만들지 않으며 해당 세 번째
+ignored 항목과 runtime/실기 수용은 계속 미완료다.

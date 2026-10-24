@@ -108,10 +108,16 @@ process groups; unsupported source capabilities fail explicitly. Source retireme
 requires the accepted codec/lifecycle evidence and a separate deletion verification.
 This CI migration does not establish device acceptance or repository-wide retirement.
 
-The `developer-auth-json` candidate in `openpilot-dev-tools` builds with
-`--features developer-ssh-native --bin developer-auth-json` and accepts
-`google|apple|github --json`. Running it opens a browser and saves a token to the
-existing auth configuration after successful sign-in. Synthetic regression tests
-run in Actions without authenticating. The original `auth.py` plain/JWT modes and
-existing callers remain until their conversion is verified; this candidate does
-not complete the authentication tool family.
+`op auth` and `op ssh` build and run this checkout's `developer-auth` and
+`developer-ssh` through `rust/tools/run-developer-tool`. They require Rustup and
+Rust 1.94.0 and check estimated operation growth before building. The same
+bootstrap also runs `setup-ssh-keys`. Authentication supports default Google,
+`google|apple|github`, `jwt TOKEN`, and browser status with `--json`.
+`developer-auth-json` remains available. Actually running browser sign-in opens
+a browser and saves a token to the existing auth configuration on success.
+
+The caller migration is under validation. Actions uses synthetic inputs and
+private loopback without authenticating a real account or connecting over SSH.
+Original Python tools and other library consumers remain until retirement is
+accepted. This change alone does not complete the auth tool family or establish
+device acceptance.

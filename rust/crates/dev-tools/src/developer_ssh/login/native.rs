@@ -1,8 +1,8 @@
 //! Explicit browser entrypoint; nothing executes during import or library tests.
-use super::{auth_redirect_link, login_with, parse_json_options, Callback, LoginIo, Provider};
+use super::{auth_redirect_link, cli, login_with, Callback, LoginIo, LoginStatus, Provider};
 use crate::developer_ssh::{
-    config_root, http::NativeTransport, set_token_at, Get, RequestsText, Result, TextDecoder,
-    Transport,
+    config_root, get_token_at, http::NativeTransport, set_token_at, Get, RequestsText, Result,
+    TextDecoder, Transport,
 };
 use openpilot_log_format::JsonValue;
 use std::{
@@ -187,46 +187,103 @@ fn handle_callback(mut stream: TcpStream, callback: Arc<Mutex<Callback>>) -> Res
     Ok(())
 }
 
-pub fn auth_json_cli() -> Result<i32> {
-    let args = std::env::args().skip(1).collect::<Vec<_>>();
-    let provider = match parse_json_options(&args) {
-        Ok(Some(provider)) => provider,
-        Ok(None) => {
-            println!(
-                "usage: developer-auth-json [google|apple|github] --json\nBrowser sign-in status as JSON; plain/JWT mode remains in auth.py."
-            );
-            return Ok(0);
-        }
-        Err(error) => {
-            eprintln!("{error}");
-            return Ok(2);
-        }
-    };
-    let mut io = NativeLogin {
-        listener: None,
-        callback: Arc::new(Mutex::new(Callback::default())),
-        browser: None,
-        clock: Instant::now(),
-        api_host: std::env::var("API_HOST").unwrap_or_else(|_| "https://api.commadotai.com".into()),
-    };
-    let status = login_with(&mut io, provider, Duration::from_secs(180), |token| {
-        let root = if Path::new("/TICI").is_file() {
-            config_root(Path::new(""), "", true)
+fn token_root() -> Result<std::path::PathBuf> {
+    if Path::new("/TICI").is_file() {
+        return Ok(config_root(Path::new(""), "", true));
+    }
+    #[allow(deprecated)]
+    let home = std::env::home_dir().ok_or("home directory unavailable for auth configuration")?;
+    Ok(config_root(
+        &home,
+        &std::env::var("OPENPILOT_PREFIX").unwrap_or_default(),
+        false,
+    ))
+}
+fn save_token(token: &str) -> Result<()> {
+    set_token_at(&token_root()?, &JsonValue::text(token))
+}
+fn final_request(api_host: &str, token: &JsonValue) -> Result<Get> {
+    Ok(Get {
+        // Source CommaApi.request adds '/', while this main call passes '/v1/me'.
+        url: format!("{api_host}//v1/me"),
+        authorization: if crate::developer_ssh::truth(token) {
+            Some(format!(
+                "JWT {}",
+                token
+                    .to_utf8()
+                    .ok_or("can only concatenate str to JWT prefix")?
+            ))
         } else {
-            #[allow(deprecated)]
-            let home =
-                std::env::home_dir().ok_or("home directory unavailable for auth configuration")?;
-            config_root(
-                &home,
-                &std::env::var("OPENPILOT_PREFIX").unwrap_or_default(),
-                false,
-            )
+            None
+        },
+        user_agent: "OpenpilotTools",
+        // The final main call is distinct from login's bounded verification call.
+        timeout: None,
+    })
+}
+fn final_api_json(response: crate::developer_ssh::Response) -> Result<JsonValue> {
+    let value = JsonValue::parse(&RequestsText.decode(&response.body, &response.content_type)?)?;
+    if let Some(error) = value.get("error").filter(crate::developer_ssh::truth) {
+        if matches!(response.status, 401 | 403) {
+            return Err(cli::Unauthorized.into());
+        }
+        let description = match value.get("description") {
+            Some(value) => value.to_utf8().ok_or("API description must be str")?,
+            None => crate::developer_ssh::python_str(&error)?,
         };
-        set_token_at(&root, &JsonValue::text(token))
-    });
-    println!("{}", status.to_json());
-    // Source --json exits zero for both success/error status; parse errors exit two.
-    Ok(0)
+        return Err(format!("{}:{description}", response.status).into());
+    }
+    Ok(value)
+}
+struct NativeCli {
+    login: NativeLogin,
+}
+impl cli::CliIo for NativeCli {
+    fn login(&mut self, provider: Provider) -> LoginStatus {
+        login_with(
+            &mut self.login,
+            provider,
+            Duration::from_secs(180),
+            save_token,
+        )
+    }
+    fn set_token(&mut self, token: &str) -> Result<()> {
+        save_token(token)
+    }
+    fn get_token(&mut self) -> Result<JsonValue> {
+        // get_token() suppresses all discovery/read/parse errors, returning None.
+        Ok(token_root()
+            .map(|root| get_token_at(&root))
+            .unwrap_or_else(|_| JsonValue::parse("null").expect("JSON null")))
+    }
+    fn me(&mut self, token: &JsonValue) -> Result<JsonValue> {
+        final_api_json(NativeTransport.get(&final_request(&self.login.api_host, token)?)?)
+    }
+}
+/// Full normal/JWT/JSON candidate; login.rs retains the historical JSON symbol alias.
+pub fn auth_cli() -> Result<i32> {
+    let argv = std::env::args().collect::<Vec<_>>();
+    let prog = Path::new(&argv[0])
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or(&argv[0]);
+    let mut io = NativeCli {
+        login: NativeLogin {
+            listener: None,
+            callback: Arc::new(Mutex::new(Callback::default())),
+            browser: None,
+            clock: Instant::now(),
+            api_host: std::env::var("API_HOST")
+                .unwrap_or_else(|_| "https://api.commadotai.com".into()),
+        },
+    };
+    cli::run_cli_with(
+        prog,
+        &argv[1..],
+        &mut io,
+        &mut std::io::stdout().lock(),
+        &mut std::io::stderr().lock(),
+    )
 }
 
 #[cfg(test)]
@@ -275,6 +332,45 @@ mod tests {
         assert_eq!(callback.query.len(), 2);
         assert_eq!(callback.query["code"], [code]);
         assert_eq!(callback.query["provider"], [provider]);
+    }
+
+    #[test]
+    fn final_me_request_retains_source_url_timeout_and_api_error_rules() {
+        let request = final_request("https://example.invalid/", &JsonValue::text("inert")).unwrap();
+        assert_eq!(request.url, "https://example.invalid///v1/me");
+        assert_eq!(request.timeout, None);
+        assert_eq!(request.authorization.as_deref(), Some("JWT inert"));
+        for token in ["null", "false", "0", "\"\"", "[]", "{}"] {
+            assert!(
+                final_request("https://example.invalid", &JsonValue::parse(token).unwrap())
+                    .unwrap()
+                    .authorization
+                    .is_none()
+            );
+        }
+        assert!(
+            final_request("https://example.invalid", &JsonValue::parse("123").unwrap()).is_err()
+        );
+        let response = |status, body: &str| crate::developer_ssh::Response {
+            status,
+            body: body.as_bytes().to_vec(),
+            content_type: "application/json; charset=utf-8".into(),
+        };
+        for status in [401, 403] {
+            assert!(final_api_json(response(status, r#"{"error":"denied"}"#))
+                .err()
+                .unwrap()
+                .is::<cli::Unauthorized>());
+            assert!(final_api_json(response(status, r#"{"error":false}"#)).is_ok());
+        }
+        let failure = final_api_json(response(
+            500,
+            r#"{"error":"bad","description":"synthetic"}"#,
+        ))
+        .err()
+        .unwrap();
+        assert!(!failure.is::<cli::Unauthorized>());
+        assert_eq!(failure.to_string(), "500:synthetic");
     }
 
     #[test]

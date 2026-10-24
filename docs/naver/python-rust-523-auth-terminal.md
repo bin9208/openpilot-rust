@@ -149,3 +149,108 @@ client connect/read/write는 각각 2초로 제한하며 무제한 재시도 루
 ```sh
 cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features developer-ssh-native --lib developer_ssh::login::native::tests::
 ```
+
+## 2026-10-24 후속 배치: 일반/JWT CLI와 pprint 후보
+
+부모가 JSON 후보·실제 loopback socket 테스트의
+[40079353750](https://github.com/bin9208/openpilot-rust/actions/runs/40079353750),
+[40080413343](https://github.com/bin9208/openpilot-rust/actions/runs/40080413343)
+성공을 전달했다. 위의 초기 UNRUN/queued 기록은 당시 이력이다. 이번 일반/JWT
+추가는 그 뒤의 **새 소스 후보이며 기능·원본 비교·빌드·Clippy는 UNRUN**이다.
+부모의 wrapper/op.sh·CLOEXEC·기존 Clippy 보완과 #482/#529 작업은 수정하지 않았다.
+
+### 원본에서 보존한 동작
+
+- 인자를 생략하면 google 브라우저 모드이다. 브라우저 모드의 두 번째 positional은
+  원본처럼 무시한다. `--json`은 성공/오류 모두 JSON status와 exit 0이며,
+  JWT와 `--json`을 함께 주면 argparse 오류와 exit 2이다.
+- 일반 브라우저 모드는 로그인 오류를 stderr에 출력하고 exit 1이다. 성공한 뒤에는
+  저장한 token을 **다시 읽고** 최종 사용자 API를 호출한다.
+- JWT 인자 누락은 stdout의 `method JWT selected, but no JWT was provided`와 exit 1이다.
+  빈 문자열을 포함해 제공된 JWT는 원본대로 **저장한 다음 다시 읽어** 검증한다.
+  이 원본 수동 모드 순서를 브라우저 JSON 모드의 검증 전 저장 허용으로 확대하지 않았다.
+- 최종 main 호출은 원본의 `CommaApi(token=get_token()).get('/v1/me')`이다.
+  API_HOST 뒤에 `/`를 추가하는 원본 특성 때문에 URL의 `//v1/me`를 보존하며,
+  login 내부의 `v1/me`/timeout 30초와 달리 최종 호출에는 timeout을 지정하지 않는다.
+- 최종 조회 성공 뒤에만 `Authenticated!`와 기본 `pprint.pprint(me)` 형식 및 newline을
+  출력한다. 최종 API의 truthy error와 HTTP 401/403이 함께 있을 때만
+  `Got invalid JWT`를 stdout에 출력하고 exit 1이다. HTTP status만으로
+  원본의 JSON error 조건을 대체하지 않는다. 다른 의존성 오류는 전파한다.
+- help·인자 오류는 인증 작업보다 먼저 처리한다. `--`·long option 축약·명시적 flag 값
+  오류·help action 순서와 두 optional positional의 소비 순서를 원본에 맞춰 작성했다.
+  특히 `apple --json unused`는 뒤의 positional을 다시 채우지 않고 extra로 처리한다.
+
+### 변경 파일과 노출 범위
+
+- `rust/crates/dev-tools/src/developer_ssh/login/cli.rs`: private `CliIo`와 CLI 처리.
+  token 저장·재조회·최종 API를 주입하므로 실제 계정 없이 main 동작을 비교할 수 있다.
+- `rust/crates/dev-tools/src/developer_ssh/login/pretty.rs`: JSON 값 영역의 기본 pprint.
+  dict key 정렬, width 80/indent 1, list·dict 줄바꿈, 문자열 word/line 분할·최상위 괄호,
+  Python scalar repr을 구현했다. CPython `Lib/pprint.py`의 관련 PSF 라이선스 동작을
+  소스로 확인했으며 기존 저장소의 scalar repr을 재사용한다.
+- `rust/crates/dev-tools/src/developer_ssh/login/cli/tests.rs`: **3개 새 lib 테스트**.
+  원본 파일을 바꾸지 않고 메인 AST를 실행하되 login/config/API 의존성만 주입한다.
+  stdout·stderr·exit code/전파 오류 메시지·호출 순서·저장 결과를 native와 비교한다.
+  mode/오류, argparse action, pprint JSON 영역을 각각 검증하도록 작성했다.
+  `-S`에서 없는 site `exit`는 `sys.exit`로 주입해 SystemExit만 비교하며 실제 stdin을
+  닫는 site.Quitter 효과는 실행하거나 동등하다고 주장하지 않는다.
+  help 사례는 auth dependency 호출·저장 효과가 모두 비어 있음을 별도로 요구한다.
+- `rust/crates/dev-tools/src/developer_ssh/login/native.rs`: 기존 login과 새 CLI 연결,
+  token root 재사용, 최종 API의 typed Unauthorized 경계. 새 private request/response
+  단위 1개는 double-slash URL·timeout None·falsey token·API error 규칙만 검사한다.
+  기존 callback socket 테스트와 accepted-stream timeout은 그대로 둔다.
+- `rust/crates/dev-tools/src/developer_ssh/login.rs`: 두 private 모듈과 `auth_cli` 공개.
+  기존 `auth_json_cli`는 같은 함수의 호환 별칭이다. 주입 trait·pprint·parser는 공개하지 않는다.
+- `rust/crates/dev-tools/src/developer_ssh/auth_main.rs`: `developer-auth`용 새 진입점.
+  기존 `auth_json_main.rs`는 수정하지 않으며 `developer-auth-json` 호환 경로를 유지한다.
+- 이 기록 문서만 추가 갱신했다. 기존 Python, Cargo, workflows, shared docs/inventory,
+  `rust/tools/run-developer-tool`, `tools/op.sh`는 수정하지 않았다.
+
+### 부모 등록과 다음 Actions selector
+
+부모가 `rust/crates/dev-tools/Cargo.toml`에 다음 bin만 추가하면 된다.
+기존 `developer-auth-json` 등록은 그대로 둔다. 새 feature/dependency/lock/테스트 target은
+필요 없으며 wrapper의 `developer-ssh-native`로 두 entrypoint와 lib 테스트를 빌드한다.
+
+```toml
+[[bin]]
+name = "developer-auth"
+path = "src/developer_ssh/auth_main.rs"
+required-features = ["developer-ssh-native"]
+```
+
+다음은 부모 Actions용 selector이며 로컬에서는 실행하지 않았다.
+
+```sh
+cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features developer-ssh-native --lib developer_ssh::login::cli::tests::
+cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features developer-ssh-native --lib developer_ssh::login::native::tests::final_me_request_retains_source_url_timeout_and_api_error_rules
+cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features developer-ssh-native --bin developer-auth --bin developer-auth-json
+```
+
+기존 `--test developer_auth`·기존 auth 파일 효과·native callback·원본/안전 게이트는
+그대로 유지한다. 새 원본 비교 subprocess는 `python3 -I -S`, 비밀 없는 환경,
+private 임시 cwd와 stdlib만 사용하며 original login·실제 token/config/API·browser·
+stdin·SSH는 호출하지 않는다. 이 subprocess 및 socket/functional 체크는 로컬 미실행이다.
+
+### 로컬 확인과 남은 한계
+
+Rust 2021 `rustfmt --check`와 변경 범위 `git diff --check`, embedded Python의
+`ast.parse` 구문 확인 및 diff 검토만 수행했다. 빌드·기능·원본 oracle·Clippy의 새
+성공 결과는 없고 commit/push/Actions 실행도 하지 않았다.
+
+pprint 대상은 실제 JSON API 값이며 Python 임의 객체·cycle·tuple·비문자열 dict key는
+대상이 아니다. Python 버전별 Unicode repr 표, 비표준 터미널 폭/locale에 따른
+argparse help 재배치, 출력 stream 실패의 부분 쓰기, OS 비 UTF-8 argv는 아직
+동등성 완료 근거가 없다. 일반 API/파일 예외는 native error로 전파하며 Python의
+traceback stack/path 바이트를 재현하지 않는다. 새 원본 oracle은 이 예외들의
+전파 메시지·그 전까지의 출력·효과 순서를 비교하며 traceback 자체를 비교하지 않는다.
+실제 account/browser/API/config/stdin/SSH, wrapper 실행·caller 설치와 원본 retirement는
+검증하지 않았으며 **원본 삭제·전체 대체 완료 선언은 계속 보류**한다.
+
+
+부모 통합에서 `developer-auth` bin을 등록하고 기존 `developer-auth-json`은 유지했다.
+새 oracle 테스트에는 `AUTH_CLI_ORACLE_PYTHON`으로 준비한 Python 3.12 venv의 절대
+경로를 전달한다. pprint의 원저자 Fred L. Drake, Jr. 및 기존 보존 PSF 라이선스
+`src/changed_files_check/LICENSE-CPYTHON`의 위치도 명시했다. 실제 `op` 호출부의
+help-only exec 검증과 기존 7개 login/8개 원본 비교가 다음 집중 CI 범위다.
+이 통합 기록 작성 시점에는 모두 **UNRUN**이며 원본 제거 수량은 바꾸지 않는다.

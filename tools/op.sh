@@ -236,7 +236,7 @@ function op_setup() {
 
 function op_auth() {
   op_before_cmd
-  op_run_command openpilot/tools/lib/auth.py "$@"
+  op_run_command rust/tools/run-developer-tool developer-auth "$@"
 }
 
 function op_activate_venv() {
@@ -276,7 +276,7 @@ function op_adb() {
 
 function op_ssh() {
   op_before_cmd
-  op_run_command tools/scripts/ssh.py "$@"
+  op_run_command rust/tools/run-developer-tool developer-ssh "$@"
 }
 
 function op_script() {

@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Build and run the maintained native developer entrypoint from this checkout.
+set -euo pipefail
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
+[[ $# -gt 0 ]] || { printf 'native developer tool: command required\n' >&2; exit 1; }
+tool=$1
+shift
+case "$tool" in
+  developer-auth|developer-ssh|setup-ssh-keys) ;;
+  *) printf 'native developer tool: unsupported command: %s\n' "$tool" >&2; exit 1 ;;
+esac
+target=${CARGO_TARGET_DIR:-rust/target}
+[[ $target == /* ]] || target=$root/$target
+reserve() {
+  local ancestor=$1 growth_mib=$2 free_kib
+  while [[ ! -e $ancestor ]]; do ancestor=$(dirname -- "$ancestor"); done
+  free_kib=$(LC_ALL=C df -Pk "$ancestor" | awk 'END {print $4}')
+  [[ $free_kib =~ ^[0-9]+$ ]] || { printf 'native developer tool: invalid disk-space response\n' >&2; return 1; }
+  if (( free_kib < growth_mib * 1024 )); then
+    printf 'native developer tool: operation requires %s MiB growth (%s)\n' "$growth_mib" "$1" >&2
+    return 1
+  fi
+}
+command -v rustup >/dev/null || {
+  printf 'native developer tool: install rustup, then rerun; Rust 1.94.0 is required\n' >&2
+  exit 1
+}
+if ! rustup run 1.94.0 rustc -vV >/dev/null 2>&1; then
+  reserve "${RUSTUP_HOME:-$HOME/.rustup}" 1536
+  rustup toolchain install 1.94.0 --profile minimal >&2
+fi
+native_host=$(rustup run 1.94.0 rustc -vV | sed -n 's/^host: //p')
+[[ -n $native_host ]] || { printf 'native developer tool: missing native host triple\n' >&2; exit 1; }
+# The same filesystem may back both paths; admit their combined estimated growth.
+reserve "$target" 3072
+reserve "${CARGO_HOME:-$HOME/.cargo}" 3072
+env -u RUSTFLAGS -u CARGO_ENCODED_RUSTFLAGS -u CARGO_BUILD_TARGET -u RUSTC_WRAPPER -u RUSTC_WORKSPACE_WRAPPER \
+  -u CC -u CXX -u CFLAGS -u CXXFLAGS -u CPPFLAGS -u LDFLAGS \
+  CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 CARGO_PROFILE_DEV_DEBUG=0 \
+  rustup run 1.94.0 cargo build --manifest-path "$root/rust/Cargo.toml" \
+    -p openpilot-dev-tools --features developer-ssh-native --bin "$tool" --locked \
+    --target "$native_host" --target-dir "$target" >&2
+binary=$target/$native_host/debug/$tool
+[[ -x $binary ]] || { printf 'native developer tool: expected host executable missing: %s\n' "$binary" >&2; exit 1; }
+exec "$binary" "$@"

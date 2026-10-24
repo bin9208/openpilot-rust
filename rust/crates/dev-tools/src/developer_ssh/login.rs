@@ -1,12 +1,15 @@
-//! Browser JSON sign-in from openpilot/tools/lib/auth.py at 7a3727e44.
+//! Browser sign-in and native auth CLI candidate from tools/lib/auth.py at 7a3727e44.
 //! Copyright (c) 2018, Comma.ai, Inc.; repository MIT license applies.
-//! Plain/JWT CLI and pprint output are deliberately not registered by this adapter.
+//! Original Python and callers remain pending exact-source qualification.
 use super::Result;
 use openpilot_log_format::JsonValue;
 use std::{collections::BTreeMap, time::Duration};
 
+mod cli;
 mod native;
-pub use native::auth_json_cli;
+mod pretty;
+pub use native::auth_cli;
+pub use native::auth_cli as auth_json_cli;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Provider {
@@ -192,8 +195,8 @@ pub fn login_with(
     ))
 }
 
-/// This entrypoint covers the Cabana browser --json contract only. Never silently
-/// substitute JSON output for the source's plain/JWT CLI or persist an unverified JWT.
+/// Legacy JSON-only options helper retained for earlier callers/tests.
+/// Native entrypoints use the private full-mode CLI parser instead.
 pub fn parse_json_options(args: &[String]) -> Result<Option<Provider>> {
     let mut positionals = vec![];
     let mut json = false;

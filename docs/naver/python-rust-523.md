@@ -188,3 +188,30 @@ source/index 전후 봉인이 일치한다.
 생성 object·과거 ELF·모델은 실행하지 않는다. 원본과 같은 자연 CPU/feature/pass를
 직접 기록하고 결과 bytes·provider/source/import 봉인을 비교한다. 이 진단용 shell의
 내장 Python은 원본 oracle 실행용이며 Python 전환 완료 수량에 포함하지 않는다.
+
+
+## 인증 실제 호출부·Paramsd 미실행 경계의 다음 묶음
+
+일반/JWT/JSON 인증 CLI·JSON 영역 pprint와 주입형 원본 메인 비교 3개,
+최종 API 정책 1개를 추가했다. `developer-auth` bin만 등록하고 dependency/feature/lock은
+유지한다. `tools/op.sh`의 auth/ssh는 현재 checkout을 빌드하는
+`rust/tools/run-developer-tool`로 전환했다. 부트스트랩의 명령 allowlist·명시적 host
+빌드·인자 전달을 검토했으며, 실제 계정·SSH 대신 help-only 호출을 Actions에서 감사한다.
+독립 Sol 검토에서 차단 결함은 발견하지 못했다. **이 묶음의 기능 결과는 아직 UNRUN**이다.
+
+Paramsd는 실제 원본 CarParams 3 profile × 3 fingerprint의 9쌍과 NumPy 9,600개
+관측을 새로 캡처한다. 현재 두 tolerance의 원본 checker 관측 2,432개도 별도로 확인한다.
+준비한 현재 ELF 3개를 고정하고 기존 ignored selector 두 개만 각각 정확히 실행한다.
+원본 atomic startup gate·전체 estimator 1,196행 검증은 이 좁은 경계 검사로 대체하지 않는다.
+
+다음 집중 job은 성공한 `40efe7ef9` artifact와 그 안의 두 선행 artifact를
+CRC/hash·source/tool·변경 경로·postimage로 고정해 불변 범위를 재사용한다.
+Cargo manifest 변경도 reviewed bin 하나 외에는 구조가 같아야 한다. 변경된 auth 경로만
+원본/기능/Clippy를 새로 검사하며 ARM의 성공한 불변 빌드를 반복하지 않는다.
+ARM SDK를 새로 설치하지 않는 native-only 묶음의 예상 증가량은 4 GiB이고,
+실제 시점의 가용 공간 admission을 유지한다. 전체 PR 작업의 별도 증가량은 낮추지 않는다.
+
+작업을 시작하지 않은 이전 Fast 실행 `40080413341`, `40081388493`은 jobs가 없고
+같은 작업 브랜치의 superseded pending 상태임을 API로 확인한 뒤 취소했다.
+이미 진행 중인 Fast 실행과 현재 모델 진단은 유지했다. 새 호출부와 원본 경계 수용 전까지
+기준 인벤토리와 원본 Python 파일을 유지한다.
