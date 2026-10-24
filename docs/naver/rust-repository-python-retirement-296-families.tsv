@@ -3172,7 +3172,7 @@ F06-build-generation-staging	rust/tools/generate_xiaoge_opencv_reference.py	pend
 F06-build-generation-staging	rust/tools/stage_card_corpus.py	pending
 F06-build-generation-staging	rust/tools/stage_card_fixtures.py	pending
 F06-build-generation-staging	rust/tools/stage_radarcan_runtime.py	pending
-F06-build-generation-staging	tools/carrot_route_vault/build_bundle.py	pending
+F06-build-generation-staging	tools/carrot_route_vault/build_bundle.py	replaced-local
 F07-ci-release-launch	conftest.py	pending
 F07-ci-release-launch	openpilot/tools/sim/tests/conftest.py	pending
 F07-ci-release-launch	release/pack.py	pending

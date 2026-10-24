@@ -300,20 +300,26 @@ jobs:
             tools/ci/tests/test_changed_files.py) ;;
             .github/workflows/python-rust-523-controls.yml) ;;
             tools/ci/controlsd_fixture_523.py) ;;
+            .github/workflows/python-rust-523-arm-probe.yml) ;;
+            .github/workflows/python-rust-523-paramsd-gate.yml) ;;
+            docs/naver/python-rust-523-arm-probe.md) ;;
+            rust/tools/prepare-readonly-ci-rust) ;;
+            tools/ci/paramsd_gate_523.py) ;;
+            rust/crates/dev-tools/src/controlsd_fixture_generate/audit.rs) ;;
             *) printf 'Changed dependency invalidates reuse: %s\n' "$changed" >&2; exit 1 ;;
           esac
         done < "$CI_JOB_TEMP/proof/changed-paths.bin"
         printf '%s  %s\n' 68f0f800ef5fbb456a06986a8695a5c3aaa2cbdf86160b47826e913edd792f85 .github/workflows/carrot-route-vault-publish.yaml | sha256sum --check -
-        printf '%s  %s\n' 22719e25574725f4fe7a95a3486741fd7eb9dded6e7f39c9fbeb8d44054d6f03 .github/workflows/fast-checks.yml | sha256sum --check -
+        printf '%s  %s\n' 282b42c417da7af8442ceeb8e660700f8039834f28b363befa59c0b9f59d8736 .github/workflows/fast-checks.yml | sha256sum --check -
         printf '%s  %s\n' ada137e1a1bbe957903a930c49dc5496f5d685193b8d09970accd90f632c2a0c .github/workflows/python-rust-523-bundle.yml | sha256sum --check -
         printf '%s  %s\n' e7718884de7e2b3f25a31d7c1fdf23f11f1a1ece82c4f86d1e84e6a9673d6388 .github/workflows/python-rust-523-capacity.yml | sha256sum --check -
         printf '%s  %s\n' 634559405e03be79cf66dfcf888bfc28a0b27a51e92b5335013dfe1b16836f59 .github/workflows/python-rust-523-model.yml | sha256sum --check -
-        printf '%s  %s\n' 9f0ccbfee171ae626f8a87ae0c32eeb79ecc6b1ce8933da78528b7b3cb9a10a7 .github/workflows/python-rust-523-reclaim.yml | sha256sum --check -
+        printf '%s  %s\n' 5ec87c23ae6dfdda2c64ce32c314da87197e3da702e3bbca710c0fc6d4477523 .github/workflows/python-rust-523-reclaim.yml | sha256sum --check -
         printf '%s  %s\n' b2b6c63dab892b9a2c0358daf5dd07771515781737c369e5407926e7df90b188 .github/workflows/python-rust-523-sanitizer.yml | sha256sum --check -
         test ! -e openpilot/tools/lib/sanitizer.py && test ! -L openpilot/tools/lib/sanitizer.py
         printf '%s  %s\n' a1db3f1726cba01dfcb50efd8d13536de6ff9c47d5244346019010bf7be243a8 rust/crates/dev-tools/Cargo.toml | sha256sum --check -
         printf '%s  %s\n' a2e53b5164624f1946ca40fe188915493329dd25fe7abe37a9f7958dcf56adaa rust/crates/dev-tools/src/argparse_scan.rs | sha256sum --check -
-        printf '%s  %s\n' dceaf77a84c9994ffdd2f3bd1da471823059e3b443d508eff8316642046ecb60 rust/crates/dev-tools/src/ci_policy.rs | sha256sum --check -
+        printf '%s  %s\n' 2949420bc853af93dafcd1f0770a29f626929026e4258602c9863cab0b48e0ab rust/crates/dev-tools/src/ci_policy.rs | sha256sum --check -
         printf '%s  %s\n' 45f5c9880964d2ce954f02997cf0b85c8b429051aa6900daaa822258f07546ee rust/crates/dev-tools/src/developer_ssh.rs | sha256sum --check -
         printf '%s  %s\n' 390141ed26fb0afbaffed631bfbc61462044b033e2afea14e0eeecaf86c5aef6 rust/crates/dev-tools/src/developer_ssh/cli.rs | sha256sum --check -
         printf '%s  %s\n' 4ec4ac3923e32ed834dffee608080b31c5806205823ede2221b057020b172496 rust/crates/dev-tools/src/developer_ssh/login/cli.rs | sha256sum --check -
@@ -326,7 +332,7 @@ jobs:
         printf '%s  %s\n' 1227b87bdfba7e0ea03d2542766133f75925200bfd0fb7f1eea7f121738294f7 rust/crates/dev-tools/tests/argparse_scan.rs | sha256sum --check -
         printf '%s  %s\n' a3c592dc7af2e78964bb4c0475dc201d93171ac2d035bf684db2d2b6f1521fb2 rust/crates/dev-tools/tests/ci_disk_bootstrap.rs | sha256sum --check -
         printf '%s  %s\n' f1fb63059d2fbcdcd039c5c47fe7f784bf17601a4476aef60a4a0053b0f8477c rust/crates/dev-tools/tests/ci_disk_bootstrap/prepared_audit.rs | sha256sum --check -
-        printf '%s  %s\n' 67427eb22a426e13403908626d05dbf58c2a489bd552d56413eb478468d957ed rust/crates/dev-tools/tests/ci_workflow_policy.rs | sha256sum --check -
+        printf '%s  %s\n' dd6f6c9c8771bfd31ecdc7d8e2a88ad8f69759235fbf01ee4b130bb2ab870b11 rust/crates/dev-tools/tests/ci_workflow_policy.rs | sha256sum --check -
         printf '%s  %s\n' 9e621eff405a28331789a89ef00b6bb66449a6a6a73fe3b0cabce920777d5e6e rust/crates/dev-tools/tests/developer_auth.rs | sha256sum --check -
         printf '%s  %s\n' 69b4ff1a2c560016383d14661ccb0b39d5d59eabda33ce219b138e94f20ee471 rust/crates/dev-tools/tests/developer_cli_original.rs | sha256sum --check -
         printf '%s  %s\n' 7ff3b5e2ca762aa2c10f0fcf6c0e915f286143e51cde7ce2e1898ec1a1cb8958 rust/crates/dev-tools/tests/fixtures/route-sanitizer-original/car-copy-float-bits.original.json | sha256sum --check -
@@ -344,10 +350,10 @@ jobs:
         printf '%s  %s\n' 837946b71e9a99b0bc061a3a7ef5c7cd384a6e6ee11dc3d4c0ea03ea229cdd90 tools/ci/model_cache_probe_482.sh | sha256sum --check -
         # 642d 검토 overlay: CFI/SAN/Bundle 삭제 후 수용과 history/ISA 진단은 각각 별도 gate다.
         # 아래 핀은 기존 123+callback3의 source 범위를 확장하거나 새 기능 PASS를 만들지 않는다.
-        # 추가 batch는 e719의 reclaim 원문과 아래 두 controls diagnostic의 exact SHA만 허용한다.
-        # controls는 기존 cohort 실행에 연결하지 않는 별도 opt-in workflow이며 기능 수용 pending이다.
-        printf '%s  %s\n' 9bae7fff616a683c7a8c9070a860f8ce7f0ae05e92a8c43d0a599fa53943512a .github/workflows/python-rust-523-controls.yml | sha256sum --check -
-        printf '%s  %s\n' f3f67a52cab9cfb5190235120fc0ca7fec913509472157cb8a508d1955ad1870 tools/ci/controlsd_fixture_523.py | sha256sum --check -
+        # 추가 CI/도구는 아래 current SHA로만 허용하며 서로의 별도 gate 성공을 대신하지 않는다.
+        # controls/ARM/Paramsd/캐시 회수의 새 기능 수용은 각각 별도 workflow 결과로 판단한다.
+        printf '%s  %s\n' 909149861958d56886f847da128e48dbaa868b3a8b4197091f996ff507a2ad90 .github/workflows/python-rust-523-controls.yml | sha256sum --check -
+        printf '%s  %s\n' 9316a0b17ba6c50c6e56b62058286f02199751989b363376af8eeaa168923b00 tools/ci/controlsd_fixture_523.py | sha256sum --check -
         printf '%s  %s\n' 6b0781cdd61e1bbdd4fd9e12573d3dde50ff64a1b0ed210eecce1a351ed3acb0 .github/workflows/python-rust-523-changed-files.yml | sha256sum --check -
         printf '%s  %s\n' 158afd2994f455c7a2a1b55f996ba3e43dfa4c725952496f723f91c87358bacd .github/workflows/python-rust-523-history-image.yml | sha256sum --check -
         printf '%s  %s\n' b47da7e2bda55afe1c6229f8b55ab539bdb72a87490a169049c77fc2b9c94ff2 rust/crates/dev-tools/src/bin/prepare_changed_files_context.rs | sha256sum --check -
@@ -396,6 +402,11 @@ jobs:
         printf '%s  %s\n' b7fae464db25af5b1c13b64ce0e1556d3c4e6f88553641c927ff6f9d8f294980 rust/crates/model-runtime/Cargo.toml | sha256sum --check -
         test ! -e tools/ci/check_changed_files.py && test ! -L tools/ci/check_changed_files.py
         test ! -e tools/ci/tests/test_changed_files.py && test ! -L tools/ci/tests/test_changed_files.py
+        printf '%s  %s\n' 538c4d67ee58d7f5b1659568f2824a3ef08bfaa6154163ad01c5df0b39704735 .github/workflows/python-rust-523-arm-probe.yml | sha256sum --check -
+        printf '%s  %s\n' 85f704fadbc19cd907060d99b59bf974180423b96fe096f5f0f68d164c6bba9c .github/workflows/python-rust-523-paramsd-gate.yml | sha256sum --check -
+        printf '%s  %s\n' fc3831e2d270f0b1da834008911603deedab4d20b1d785310505e9bf3b8200b7 rust/tools/prepare-readonly-ci-rust | sha256sum --check -
+        printf '%s  %s\n' 20a54c19e6fa7969251bfcdf3acef66038ab17779fd4b5439180a79f0fd971b9 tools/ci/paramsd_gate_523.py | sha256sum --check -
+        printf '%s  %s\n' 9c455a724c5f4fcee7616197fbb057e2eda737c4810be0f758cf0a881538f58c rust/crates/dev-tools/src/controlsd_fixture_generate/audit.rs | sha256sum --check -
         test ! -e tools/carrot_route_vault/build_bundle.py && test ! -L tools/carrot_route_vault/build_bundle.py
         python - <<'MANIFEST'
         import hashlib,subprocess,tomllib

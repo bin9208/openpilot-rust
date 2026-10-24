@@ -156,3 +156,21 @@ native18은14성공/4실패였다. 모두 materialize의 authored parent0700 검
 umask/출력mode/기존guard700/Git fixture commit과 기대값은 유지한다. 독립 source 검토에는 finding이
 없었으며 수정 후 fresh18은 다음 CI 경계다. 다른 단계의 Clippy·실제 공개caller는 성공했지만
 전체 source 삭제 수용과 inventory credit은 계속0이다.
+
+
+## 2026-10-25: Bundle 원본1개 제거 수용
+
+[40103403086/job120899996843](https://github.com/bin9208/openpilot-rust/actions/runs/40103403086/job/120899996843)는
+source `5d376b306c93ec799b0c5346cb60e9425b1618f7`에서 성공했다. artifact12563363998
+(15,244,279B, SHA256 `f11e9e6200a0abae98cc790fc5cba04f69f771878372028c2be8e4b1968a157c`)의
+470멤버 CRC·중복명 부재와 source/index/venv 및 context source/index의6쌍 전후 byte 동일성을
+부모가 감사했다. frozen18검사와 strict Clippy가 성공했으며, 기존17본문을 유지한 원본23고유row
+184,435B는 과거121 capture와 그대로 같다. 새 원본 producer 실행은0이다.
+
+실제 공개 `rust/tools/run-developer-tool`가 만든411파일 중410파일 전체 bytes가 d2 원문과 같고,
+나머지 `SOURCE_COMMIT`1개는 정확한 새 HEAD다. 전체 file/directory roster도 이전과 같다.
+strict trace1185시도/실패229/Git성공412/final ELF성공1/이름으로 식별한 Python시도0을 확인했다.
+실제 CLI ELF SHA256은 `a3c9b87d121992c213f8570b8492cbd37ce968da6596491b5a7dd1b39deca20b`다.
+원본 부재·재출현/held입력변경 거부를 포함한 한정 경계로 `tools/carrot_route_vault/build_bundle.py`
+1개를 replaced-local로 인정한다. metadata용 diagnostic interpreter는 pending이며,
+무제한 전체 Python 부재·Docker/NAS 발행·실기 수용은 인정하지 않는다.

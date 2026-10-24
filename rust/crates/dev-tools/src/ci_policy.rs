@@ -746,13 +746,18 @@ pub const DIAGNOSTIC_LOCAL_RUNNER: [&str; 4] = ["self-hosted", "Linux", "X64", "
 pub const DIAGNOSTIC_TRUSTED_SOURCE: &str = "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}";
 pub const DIAGNOSTIC_FORK_DENIAL: &str = "test \"${SOURCE_ALLOWED:-}\" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }\n";
 pub const DIAGNOSTIC_PROOF: &str = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}";
-pub const DIAGNOSTIC_CLEANUP: &str = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '') }}";
+pub const DIAGNOSTIC_CLEANUP: &str = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome == 'success') }}";
 pub const DIAGNOSTIC_COMMON_CLEANUP: &str = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome == 'success') }}";
 
 /// Preserve the required fast-check status while its six mandatory workers run
 /// independently. Execute the aggregate shell to reject accidental fail-open
 /// edits, including absent results that GitHub exposes as empty strings.
 pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
+    let opt_in = [
+        "OPENPILOT_CI_PREPARED_RUST_ROOT",
+        "OPENPILOT_CI_PREPARED_RUST_MANIFEST",
+    ];
+    absent(&workflow["env"], &opt_in)?;
     require(
         workflow["concurrency"]["cancel-in-progress"] == "false",
         "Fast must not cancel an existing run",
@@ -774,6 +779,7 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
         let worker = jobs
             .get(name)
             .ok_or_else(|| format!("missing fast worker {name}"))?;
+        absent(&worker["env"], &opt_in)?;
         absent(worker, &["if", "continue-on-error", "needs"])?;
         require(
             worker["timeout-minutes"] == "7",
@@ -799,9 +805,31 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
                 .is_some_and(|s| s.starts_with(DIAGNOSTIC_FORK_DENIAL)),
             "Fast fork refusal must precede source execution",
         )?;
+        let prepared_final = if name == "native" {
+            "Verify provisioned Rust SDK contents and identities after routing"
+        } else {
+            "Verify read-only Rust SDK contents and identities after maintained checks"
+        };
+        // 모든 consumer에서 after/cleanup 조건을 유일한 실제 생산 단계에 결합한다.
+        let mut stages = vec![
+            (
+                "Admit provisioned Rust without installing a second toolchain",
+                "prepared_rust",
+            ),
+            (prepared_final, "prepared_rust_final"),
+            (
+                "Seal Fast source and index after all maintained checks",
+                "source_final",
+            ),
+            ("Retain Fast job ownership evidence", "fast_evidence"),
+            (
+                "Clean only uploaded private Fast source",
+                "fast_source_cleanup",
+            ),
+        ];
         if name == "native" {
-            // 더 강한 after/cleanup 조건이 실제 생산 단계의 결과를 참조해야 한다.
-            for (stage, id) in [
+            // SDK 권한 준비는 기존 routing worker만 수행한다.
+            stages.extend([
                 (
                     "Remove shared write permission from the owned provisioned SDK",
                     "sdk_permissions",
@@ -810,32 +838,70 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
                     "Verify SDK contents after permission preparation even on failure",
                     "sdk_permissions_final",
                 ),
-                (
-                    "Admit provisioned Rust without installing a second toolchain",
-                    "prepared_rust",
-                ),
-                (
-                    "Verify provisioned Rust SDK contents and identities after routing",
-                    "prepared_rust_final",
-                ),
-                (
-                    "Seal Fast source and index after all maintained checks",
-                    "source_final",
-                ),
-                ("Retain Fast job ownership evidence", "fast_evidence"),
-                (
-                    "Clean only uploaded private Fast source",
-                    "fast_source_cleanup",
-                ),
-            ] {
+            ]);
+        }
+        for (stage, id) in stages {
+            require(
+                steps
+                    .iter()
+                    .filter(|step| step["name"] == stage && step["id"] == id)
+                    .count()
+                    == 1
+                    && steps.iter().filter(|step| step["id"] == id).count() == 1
+                    && steps.iter().filter(|step| step["name"] == stage).count() == 1,
+                format!("Fast {name} outcome stage missing or duplicated: {id}"),
+            )?;
+        }
+        let admit = steps
+            .iter()
+            .position(|step| step["id"] == "prepared_rust")
+            .ok_or("missing prepared SDK admission")?;
+        require(steps.len() >= 5, "missing Fast final stages")?;
+        let final_start = steps.len() - 5;
+        for (step, stage) in steps[final_start..].iter().zip([
+            prepared_final,
+            "Seal Fast source and index after all maintained checks",
+            "Retain Fast job ownership evidence",
+            "Clean only uploaded private Fast source",
+            "Clean common owned Fast job temporary paths",
+        ]) {
+            require(step["name"] == stage, "Fast final stage order changed")?;
+        }
+        require(admit < final_start, "SDK admission must precede checks")?;
+        if name != "native" {
+            require(
+                !steps.iter().any(|step| {
+                    step["id"] == "sdk_permissions" || step["id"] == "sdk_permissions_final"
+                }),
+                "SDK permission preparation belongs only to native routing",
+            )?;
+            for (index, phase) in [(admit, "before"), (final_start, "after")] {
+                let command =
+                    format!("\"$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust\" {phase}");
                 require(
-                    steps
-                        .iter()
-                        .filter(|step| step["name"] == stage && step["id"] == id)
-                        .count()
-                        == 1
-                        && steps.iter().filter(|step| step["id"] == id).count() == 1,
-                    format!("native Fast outcome ID missing or duplicated: {id}"),
+                    steps[index]["run"]
+                        .as_str()
+                        .is_some_and(|s| s.trim() == command)
+                        && steps[index]["shell"] == "bash"
+                        && steps[index]["working-directory"] == "${{ env.DIAG_SOURCE }}",
+                    "Fast read-only SDK stage must execute its bound helper",
+                )?;
+            }
+        }
+        for (index, step) in steps.iter().enumerate() {
+            absent(&step["env"], &opt_in)?;
+            let script = step["run"].as_str().unwrap_or("");
+            if script.contains("/rust/tools/check-disk-space\"") {
+                let commands = script.replace("\\\n", " ");
+                let inline = commands
+                    .lines()
+                    .filter(|line| line.contains("/rust/tools/check-disk-space\""))
+                    .all(|line| line.trim_start().starts_with(
+                        "OPENPILOT_CI_PREPARED_RUST_ROOT=\"$CI_PREPARED_RUST_ROOT\" OPENPILOT_CI_PREPARED_RUST_MANIFEST=\"$CI_PREPARED_RUST_MANIFEST\" ",
+                    ));
+                require(
+                    admit < index && index < final_start && inline,
+                    "Fast disk bootstrap requires inline prepared SDK admission",
                 )?;
             }
         }
@@ -845,10 +911,10 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
                 ("native", "Verify SDK contents after permission preparation even on failure") => private_source_condition(
                     "always() && steps.sdk_permissions.outcome != 'skipped' && env.DIAG_SOURCE != ''",
                 ),
-                ("native", "Verify provisioned Rust SDK contents and identities after routing") => private_source_condition(
+                (_, stage) if stage == prepared_final => private_source_condition(
                     "always() && steps.prepared_rust.outcome == 'success'",
                 ),
-                ("native", "Seal Fast source and index after all maintained checks") => private_source_condition(
+                (_, "Seal Fast source and index after all maintained checks") => private_source_condition(
                     "always() && env.DIAG_SOURCE != ''",
                 ),
                 ("native", "Clean only uploaded private Fast source") => private_source_condition(

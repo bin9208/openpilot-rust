@@ -417,7 +417,7 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         let disk_guard = if worker == "native" {
             format!("OPENPILOT_CI_PREPARED_RUST_ROOT=\"$CI_PREPARED_RUST_ROOT\" OPENPILOT_CI_PREPARED_RUST_MANIFEST=\"$CI_PREPARED_RUST_MANIFEST\" /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o \"$CI_JOB_TEMP/proof/prepared-cold-bootstrap.exec\" {disk_guard}")
         } else {
-            disk_guard.to_owned()
+            format!("OPENPILOT_CI_PREPARED_RUST_ROOT=\"$CI_PREPARED_RUST_ROOT\" OPENPILOT_CI_PREPARED_RUST_MANIFEST=\"$CI_PREPARED_RUST_MANIFEST\" {disk_guard}")
         };
         assert_eq!(
             commands.iter().filter(|line| *line == &disk_guard).count(),
@@ -761,6 +761,195 @@ fn native_fast_after_guards_reject_skipped_audits_and_unsealed_cleanup() {
             validate_fast_gate(&changed).is_err(),
             "accepted duplicated {id}"
         );
+    }
+}
+
+#[test]
+fn all_fast_workers_require_bound_sdk_seals_and_sealed_cleanup() {
+    let workflow =
+        parse(&fs::read_to_string(root().join(".github/workflows/fast-checks.yml")).unwrap())
+            .unwrap();
+    validate_fast_gate(&workflow).unwrap();
+    for worker in [
+        "native",
+        "native-corpus",
+        "native-alerts",
+        "native-alert-manager",
+        "native-timing",
+        "python-android",
+    ] {
+        let steps = workflow["jobs"][worker]["steps"].as_array().unwrap();
+        let at = |id: &str| steps.iter().position(|s| s["id"] == id).unwrap();
+        for id in [
+            "prepared_rust",
+            "prepared_rust_final",
+            "source_final",
+            "fast_evidence",
+            "fast_source_cleanup",
+        ] {
+            let index = at(id);
+            let mut missing = workflow.clone();
+            missing["jobs"][worker]["steps"]
+                .as_array_mut()
+                .unwrap()
+                .remove(index);
+            assert!(
+                validate_fast_gate(&missing).is_err(),
+                "{worker}: missing {id}"
+            );
+            let mut duplicate = workflow.clone();
+            duplicate["jobs"][worker]["steps"]
+                .as_array_mut()
+                .unwrap()
+                .push(steps[index].clone());
+            assert!(
+                validate_fast_gate(&duplicate).is_err(),
+                "{worker}: duplicate {id}"
+            );
+            let mut unbound = workflow.clone();
+            unbound["jobs"][worker]["steps"][index]["id"] = "unbound_outcome".into();
+            assert!(
+                validate_fast_gate(&unbound).is_err(),
+                "{worker}: unbound {id}"
+            );
+            let mut skipped = workflow.clone();
+            skipped["jobs"][worker]["steps"][index]["if"] = "false".into();
+            assert!(
+                validate_fast_gate(&skipped).is_err(),
+                "{worker}: skipped {id}"
+            );
+        }
+        for id in ["prepared_rust_final", "source_final", "fast_evidence"] {
+            let index = at(id);
+            let condition = steps[index]["if"].as_str().unwrap();
+            for guard in [
+                TRUSTED_SOURCE.to_owned(),
+                "${{ always() }}".to_owned(),
+                condition.replace("always()", "success()"),
+                condition.replace(" }}", " && false }}"),
+            ] {
+                let mut skipped = workflow.clone();
+                skipped["jobs"][worker]["steps"][index]["if"] = guard.into();
+                assert!(
+                    validate_fast_gate(&skipped).is_err(),
+                    "{worker}: skip or untrusted {id}"
+                );
+            }
+        }
+        let cleanup = at("fast_source_cleanup");
+        let condition = steps[cleanup]["if"].as_str().unwrap();
+        for clause in [
+            " && steps.fast_evidence.outcome == 'success'",
+            " && steps.fast_evidence.outputs.artifact-id != ''",
+            " && steps.fast_evidence.outputs.artifact-digest != ''",
+            " && env.DIAG_SOURCE_OWNER != ''",
+            " && steps.source_final.outcome == 'success'",
+            " && steps.prepared_rust_final.outcome == 'success'",
+        ] {
+            assert!(condition.contains(clause));
+            let mut unsafe_cleanup = workflow.clone();
+            unsafe_cleanup["jobs"][worker]["steps"][cleanup]["if"] =
+                condition.replace(clause, "").into();
+            assert!(
+                validate_fast_gate(&unsafe_cleanup).is_err(),
+                "{worker}: cleanup without {clause}"
+            );
+        }
+        let mut premature = workflow.clone();
+        premature["jobs"][worker]["steps"]
+            .as_array_mut()
+            .unwrap()
+            .swap(at("prepared_rust"), at("prepared_rust_final"));
+        assert!(
+            validate_fast_gate(&premature).is_err(),
+            "{worker}: final seal before checks"
+        );
+    }
+}
+
+#[test]
+fn fast_sdk_opt_in_stays_inline_and_readonly_helpers_cannot_be_skipped() {
+    let workflow =
+        parse(&fs::read_to_string(root().join(".github/workflows/fast-checks.yml")).unwrap())
+            .unwrap();
+    validate_fast_gate(&workflow).unwrap();
+    let variables = [
+        "OPENPILOT_CI_PREPARED_RUST_ROOT",
+        "OPENPILOT_CI_PREPARED_RUST_MANIFEST",
+    ];
+    for variable in variables {
+        assert!(workflow["env"].get(variable).is_none());
+        let mut global = workflow.clone();
+        global["env"] = serde_json::json!({});
+        global["env"][variable] = "/unexpected/global/opt-in".into();
+        assert!(validate_fast_gate(&global).is_err());
+    }
+    for (worker, job) in workflow["jobs"].as_object().unwrap() {
+        if worker == "fast" {
+            continue;
+        }
+        for variable in variables {
+            assert!(job["env"].get(variable).is_none());
+            let mut global = workflow.clone();
+            global["jobs"][worker]["env"][variable] = "/unexpected/job/opt-in".into();
+            assert!(validate_fast_gate(&global).is_err());
+        }
+        let steps = job["steps"].as_array().unwrap();
+        for (index, step) in steps.iter().enumerate() {
+            for variable in variables {
+                assert!(step["env"].get(variable).is_none());
+            }
+            let body = step["run"].as_str().unwrap_or("");
+            // Mock bootstrap tests retain the unprepared API: no global opt-in export.
+            assert!(!body.contains("export OPENPILOT_CI_PREPARED_"));
+            assert!(!body.lines().any(|line| {
+                line.contains("OPENPILOT_CI_PREPARED_") && line.contains("GITHUB_ENV")
+            }));
+            if body.contains("/rust/tools/check-disk-space\"") {
+                for variable in variables {
+                    let mut inherited = workflow.clone();
+                    inherited["jobs"][worker]["steps"][index]["env"][variable] =
+                        "/unexpected/step/opt-in".into();
+                    assert!(validate_fast_gate(&inherited).is_err());
+                }
+                for binding in [
+                    "OPENPILOT_CI_PREPARED_RUST_ROOT=\"$CI_PREPARED_RUST_ROOT\" ",
+                    "OPENPILOT_CI_PREPARED_RUST_MANIFEST=\"$CI_PREPARED_RUST_MANIFEST\" ",
+                ] {
+                    assert!(body.contains(binding));
+                    let mut unprepared = workflow.clone();
+                    unprepared["jobs"][worker]["steps"][index]["run"] =
+                        body.replace(binding, "").into();
+                    assert!(
+                        validate_fast_gate(&unprepared).is_err(),
+                        "{worker}: missing inline {binding}"
+                    );
+                }
+            }
+            if worker != "native"
+                && ["prepared_rust", "prepared_rust_final"]
+                    .iter()
+                    .any(|id| step["id"] == *id)
+            {
+                // Admission/final must call their distinct bound helper phases.
+                let wrong_phase = if step["id"] == "prepared_rust" {
+                    body.replace(" before", " after")
+                } else {
+                    body.replace(" after", " before")
+                };
+                for replacement in ["true", wrong_phase.as_str()] {
+                    let mut bypass = workflow.clone();
+                    bypass["jobs"][worker]["steps"][index]["run"] = replacement.into();
+                    assert!(
+                        validate_fast_gate(&bypass).is_err(),
+                        "{worker}: helper bypass"
+                    );
+                }
+                assert!(!steps.iter().any(|s| {
+                    s["id"] == "sdk_permissions" || s["id"] == "sdk_permissions_final"
+                }));
+            }
+        }
     }
 }
 

@@ -47,12 +47,18 @@ ORIGINAL_PINS = {
 }
 CORE = {
     "src/controlsd_fixture_generate.rs": "bd43c2fe8db4243888395d035145ab574bd1a2f52f72aaeee6ac26220684c8ef",
-    "src/controlsd_fixture_generate/audit.rs": "6e0c0b16b667ba577c42a71e55972e77a851a5bb47adb7b56b4942411bbe399e",
+    "src/controlsd_fixture_generate/audit.rs": "9c455a724c5f4fcee7616197fbb057e2eda737c4810be0f758cf0a881538f58c",
     "src/controlsd_fixture_generate/parameters.rs": "eecf9b4061858547b6081db26c2b614018e9e71b67b64084045cb2aefbb7827d",
     "src/controlsd_fixture_generate/recipes.rs": "ef36f1cdee47cc3ecf30f50f311b633812a3f9799ae652bcd15fcc14d6976385",
     "src/controlsd_fixture_generate/wire.rs": "554144bdc2f57e61ea0569130c36783ff3bb14c20a608ab61584207f99e39569",
     "src/bin/generate_controlsd_fixtures.rs": "4a4f00b454090cb367c9a3023799e263a21129f9a71581fe696ab840465a096f",
     "tests/controlsd_fixture_generate.rs": "a322a9b20ebfe9bd62abea5ce6511657a7f613b07258bf7baf0758146d1a9658",
+}
+AUDIT_PREFIX_SHA = "6fc8f02115d71b5a0138f2b0cf8c78ebad4d943576b124e2aa7515414741686e"
+STREAM_TESTS = {
+    "controlsd_fixture_generate::audit::tests::cases_cursor_splits_nested_escaped_and_nonfinite_values",
+    "controlsd_fixture_generate::audit::tests::streamed_cases_preserve_projection_float_bits_and_packet_counts",
+    "controlsd_fixture_generate::audit::tests::streamed_cases_reject_incomplete_rosters_syntax_and_late_differences",
 }
 SDK_PINS = {
     "rustc": "103b60e1b1339968c1d74202ea1d45686037e82c4ea3e0569de24b18a1e6836a",
@@ -584,9 +590,14 @@ class Probe:
              == [("5", "0", "1", "0", "0")], "historical five-pass result")
         self.holds.add(history / "SOURCE_COMMIT", owned=True)
         self.holds.add(history / "focused-tests.log", owned=True)
+        audit = read(self.root / "rust/crates/dev-tools/src/controlsd_fixture_generate/audit.rs", MIB)
+        need(hashlib.sha256(audit.split(b"// Frame only", 1)[0].rstrip(b"\n")).hexdigest() == AUDIT_PREFIX_SHA,
+             "historical normalization/comparison/wire contracts changed")
         save(self.out / "regular5-reused.json", {"run": 39876347504, "job": 120162770498, "artifact": 12472101435,
              "historical_source": "55084e65ab94b71ba884ec11e2ce91eb8127bd71", "reviewed_source": REVIEWED_SOURCE,
-             "current_core7_equal_reviewed_source": True, "current_core7": CORE,
+             "current_core7_equal_reviewed_source": False, "current_core7": CORE,
+             "current_core6_equal_reviewed_source": True, "auditor_stable_prefix_sha256": AUDIT_PREFIX_SHA,
+             "current_auditor_change": "cases-only bounded streaming with existing comparison functions",
              "current_cargo_lib_and_dependency_bindings": "fresh source seal and current build/Clippy; not the old fixture150 tree",
              "historical_passed": 5, "historical_ignored_not_passed": 1, "fresh_regular_test_invocations": 0,
              "fresh_source_regular5_acceptance_claimed": False, "archived_code_or_elf_executed": False})
@@ -634,7 +645,7 @@ class Probe:
         need(providers, "empty current DSO closure")
         return set(providers)
 
-    def trace(self, binary, args, label, allowed):
+    def trace(self, binary, args, label, allowed, *, require_mapped=True):
         trace = self.out / f"{label}.exec"
         argv = [str(binary), *map(str, args)]
         env = {key: value for key, value in self.env.items() if key not in ("GH_TOKEN", "GITHUB_TOKEN", "ACTIONS_RUNTIME_TOKEN")}
@@ -651,7 +662,7 @@ class Probe:
             execs.append((json.loads(match[1]), json.loads(match[2])))
         need(execs == [(str(binary), argv)], f"unexpected runtime exec roster: {label}")
         observed = self.commands[-1]["observed_executable_mappings"]
-        need(str(binary) in observed, f"actual runtime ELF mapping not observed: {label}")
+        need(not require_mapped or str(binary) in observed, f"actual runtime ELF mapping not observed: {label}")
         self.holds.verify()
         return output
 
@@ -681,6 +692,9 @@ class Probe:
         self.growth("auditor-precompile", self.root, 512)
         test_raw = self.cargo(["test", "--test", "controlsd_fixture_generate", "--no-run", "--message-format=json"],
                               "auditor-build")
+        self.growth("stream-controls-precompile", self.root, 512)
+        controls_raw = self.cargo(["test", "--lib", "--no-run", "--message-format=json"], "stream-controls-build")
+        self.holds.add(self.out / "stream-controls-build.stdout", owned=True)
         self.holds.add(self.out / "native-build.stdout", owned=True)
         self.holds.add(self.out / "auditor-build.stdout", owned=True)
         self.phase = "strict-clippy"
@@ -695,16 +709,29 @@ class Probe:
         cli, cli_record = self.select(test_raw, "generate-controlsd-fixtures", "bin", cli_source, False)
         built_cli, _ = self.select(cli_raw, "generate-controlsd-fixtures", "bin", cli_source, False)
         auditor, test_record = self.select(test_raw, "controlsd_fixture_generate", "test", test_source, True)
+        controls, controls_record = self.select(controls_raw, "openpilot_dev_tools", "lib",
+                                               "rust/crates/dev-tools/src/lib.rs", True)
+        self.holds.add(controls, owned=True, elf=True)
         need(cli == built_cli, "CLI differs across current Cargo invocations")
         self.holds.add(cli, owned=True, elf=True)
         self.holds.add(auditor, owned=True, elf=True)
-        save(self.out / "current-artifacts.json", {"source": self.expected, "cli": cli_record, "auditor": test_record})
+        save(self.out / "current-artifacts.json", {"source": self.expected, "cli": cli_record, "auditor": test_record,
+                                                  "stream_controls": controls_record})
         allowed = set(self.holds.files)
-        for path, label in ((cli, "cli-ldd"), (auditor, "auditor-ldd"),
+        for path, label in ((cli, "cli-ldd"), (auditor, "auditor-ldd"), (controls, "stream-controls-ldd"),
                             (self.tools["strace"], "strace-ldd"), (self.tools["timeout"], "timeout-ldd")):
             allowed.update(self.dso(path, label))
         allowed.update(self.holds.files)
         save(self.out / "holds-before-runtime.json", self.holds.records())
+        self.phase = "stream-controls"
+        # 빠른 합성 통제는 sampling에서 ELF를 놓칠 수 있다. 실제 exec와 모든 관측 mapping은 검사한다.
+        # native109/전체 auditor에는 원래 actual mapping 관측 필수 조건을 그대로 둔다.
+        output = self.trace(controls, ["controlsd_fixture_generate::audit::tests::", "--nocapture", "--test-threads=1"],
+                            "stream-controls", allowed, require_mapped=False).decode()
+        names = re.findall(r"^test ([\w:]+) \.\.\. ok$", output, re.M)
+        results = re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;", output)
+        need(len(names) == 3 and set(names) == STREAM_TESTS and len(results) == 1
+             and results[0][:4] == ("3", "0", "0", "0"), "exact new streaming control result")
         self.phase = "native109"
         self.trace(cli, ["--root", self.root, "--input", self.out / "requests.jsonl",
                         "--output", self.out / "native.jsonl"], "native109", allowed)
@@ -722,7 +749,7 @@ class Probe:
              and comparison["sources_retired"] is False and comparison["runtime_acceptance"] is False,
              "comparison receipt contract")
         self.resources("audited")
-        self.runtime = {"comparison": comparison, "native_cli_invocations": 1, "exact_ignored_tests": 1,
+        self.runtime = {"comparison": comparison, "native_cli_invocations": 1, "exact_ignored_tests": 1, "stream_controls": 3,
                         "fresh_regular_test_invocations": 0, "strict_clippy": True,
                         "runtime_mapping_observation": "sampled executable mappings, with current ELF/ldd DSO FD holds; not pre-dlopen"}
 

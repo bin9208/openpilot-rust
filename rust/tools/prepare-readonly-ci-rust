@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# #530: 이미 준비된 SDK를 읽기 전용으로 수용/재검증한다. 설치·권한 복구는 하지 않는다.
+# Usage: prepare-readonly-ci-rust before|after (Fast의 소유 source/job/proof 환경 필수)
+set -euo pipefail
+umask 077
+fail() { printf 'prepared CI Rust: %s\n' "$*" >&2; exit 1; }
+[[ $# == 1 && ( $1 == before || $1 == after ) ]] || fail 'before or after required'
+phase=$1
+[[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == bin9208/openpilot-rust && ${RUNNER_NAME:-} == bin-actions && ${RUNNER_ENVIRONMENT:-} == self-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && $(uname -m) == x86_64 ]] || fail 'registered bin-actions Linux/X64 CI required'
+uid=$(id -u)
+validate() {
+  local path=$1 kind=$2 owner mode
+  [[ $path == /* && ! -L $path && $(readlink -e -- "$path") == "$path" ]] || fail 'canonical nonsymlink path required'
+  if [[ $kind == directory ]]; then [[ -d $path ]] || fail 'directory required'
+  else [[ -f $path ]] || fail 'regular file required'; fi
+  read -r owner mode < <(stat -c '%u %a' -- "$path")
+  [[ $owner == "$uid" ]] && (( (8#$mode & 0022) == 0 )) || fail 'owned path without shared write permission required'
+}
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)
+[[ $root == "${DIAG_SOURCE:?private source required}" && $root == "${GITHUB_WORKSPACE:?private workspace required}" ]] || fail 'private source binding differs'
+validate "$root" directory
+[[ ${GITHUB_SHA:-} =~ ^[0-9a-f]{40}$ && $(git -C "$root" rev-parse HEAD) == "$GITHUB_SHA" ]] || fail 'source SHA differs'
+job=${CI_JOB_TEMP:?owned Fast temporary directory required}
+[[ $job == /tmp/openpilot-ci.?????? && ${job%/*} == /tmp ]] || fail 'unexpected common job path'
+validate "$job" directory
+validate "$job/owner" file
+[[ $(cat -- "$job/owner") == "${GITHUB_RUN_ID:?}:${GITHUB_RUN_ATTEMPT:?}:${GITHUB_JOB:?}" ]] || fail 'common job owner differs'
+proof=$job/proof
+validate "$proof" directory
+sdk=/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu
+validate "$sdk" directory
+# SDK symlink/특수 파일/다른 소유자/공유 쓰기는 수리하지 않고 거절한다.
+set -C
+find "$sdk" \( ! -uid "$uid" -o \( ! -type d ! -type f \) -o -perm /0022 \) -print0 > "$proof/prepared-rust-rejected.$phase.bin"
+[[ ! -s $proof/prepared-rust-rejected.$phase.bin ]] || fail 'SDK entries are not read-only owned regular files/directories'
+programs=$proof/prepared-rust-programs.sha256
+if [[ $phase == after ]]; then
+  [[ ${CI_PREPARED_RUST_ROOT:-} == "$sdk" && ${CI_PREPARED_RUST_MANIFEST:-} == "$proof/prepared-rust-files.before.sha256" ]] || fail 'prepared environment binding differs'
+  programs=$proof/prepared-rust-programs.after.sha256
+fi
+printf '%s  %s\n' 103b60e1b1339968c1d74202ea1d45686037e82c4ea3e0569de24b18a1e6836a "$sdk/bin/rustc" > "$programs"
+printf '%s  %s\n' 77f14b761b02b47e6747473f556b3bc9f98f7e4525b7c3b8d74898ff816e4636 "$sdk/bin/cargo" >> "$programs"
+printf '%s  %s\n' d1c6d8c0e2fae4fbb686d421415d2f471e409ade6babb3e491d9ac5d9c70c602 "$sdk/bin/rustfmt" >> "$programs"
+printf '%s  %s\n' 2ff45d07196eec4f57a631103a877631d3579e86db2770bcfaa3b9d92a0b9d15 "$sdk/bin/clippy-driver" >> "$programs"
+validate "$programs" file
+for program in cargo rustc rustfmt clippy-driver rustdoc; do
+  validate "$sdk/bin/$program" file
+  [[ -x $sdk/bin/$program ]] || fail 'SDK executable missing'
+done
+sha256sum --check --strict --quiet -- "$programs"
+LC_ALL=C find "$sdk" -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum > "$proof/prepared-rust-files.$phase.sha256"
+LC_ALL=C find "$sdk" -printf '%D:%i\t%m:%U:%G\t%T@\t%C@\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$proof/prepared-rust-roster.$phase.bin"
+if [[ $phase == before ]]; then
+  "$sdk/bin/rustc" -vV > "$proof/prepared-rustc.txt"
+  grep -Fx 'release: 1.94.0' "$proof/prepared-rustc.txt"
+  grep -Fx 'host: x86_64-unknown-linux-gnu' "$proof/prepared-rustc.txt"
+  "$sdk/bin/cargo" -V > "$proof/prepared-cargo.txt"
+  printf '%s\n' "CI_PREPARED_RUST_ROOT=$sdk" "CI_PREPARED_RUST_MANIFEST=$proof/prepared-rust-files.before.sha256" "RUSTC=$sdk/bin/rustc" "RUSTDOC=$sdk/bin/rustdoc" >> "${GITHUB_ENV:?Actions environment required}"
+  printf '%s\n' "$sdk/bin" >> "${GITHUB_PATH:?Actions path required}"
+else
+  validate "$proof/prepared-rust-programs.sha256" file
+  validate "$proof/prepared-rust-files.before.sha256" file
+  validate "$proof/prepared-rust-roster.before.bin" file
+  cmp "$proof/prepared-rust-programs.sha256" "$proof/prepared-rust-programs.after.sha256"
+  cmp "$proof/prepared-rust-files.before.sha256" "$proof/prepared-rust-files.after.sha256"
+  cmp "$proof/prepared-rust-roster.before.bin" "$proof/prepared-rust-roster.after.bin"
+fi

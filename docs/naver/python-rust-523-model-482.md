@@ -486,3 +486,17 @@ artifact12562433455(5,423,678B,SHA256 `464cda9216eb0671f9cfdaa91a024275352d8d6ef
 51CRC와 source/index/SDK 전후4쌍을 부모가 확인했다. 기존ISA5/roster1/Clippy/두consumer compile은
 성공했으나 수치5건과 전체모델 수용은 계속 false다. 원본이미지/동작 기준을 보존한 다른 모델
 검증 경계와 나머지 개발도구 전환을 이어간다.
+
+### 642d01 streaming guard의 실제 집중 수용
+
+[40100476235/job120893195418](https://github.com/bin9208/openpilot-rust/actions/runs/40100476235/job/120893195418),
+source `642d01cc2296790226d7f9058e4f19bca8dc9b1e`의 cached-code13개(기존8+streaming5), ISA5개,
+현재 library/bin/test strict Clippy 및 두 native catalog consumer compile은 성공했다.
+artifact12562813044(5,424,311B,SHA256 `01eb7b7d6fc9f7c60953e73c9798b5ab8499e116c3e2be18035b4051d5872a23`)의
+51CRC와 source/index/전체 SDK 전후4쌍을 부모가 감사했다. 실제 test ELF SHA256은
+`2b5fed3c378f22621fc87ec125cf511a033489a0330056e4bba51fa127ba2508`이다.
+
+전체 job은 위와 같은 자연 host의 frozen ISA 거부 때문에 실패다. 새 streaming guard는 큰
+synthetic 입력에서 검증됐으며, 실제72,045,323B 원본 PKL은 이 읽기 전용 역사 triplet 경계의
+입력이 아니므로 새 issuer로 실제 원본을 수용했다고 기록하지 않는다. generated image/모델 실행,
+FP5·전체 모델 수치 수용과 원본 compiler 최초 발행자 증명은 계속 미완료다.

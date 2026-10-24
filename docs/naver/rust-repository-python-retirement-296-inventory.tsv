@@ -3467,7 +3467,7 @@ tools/car_porting/test_car_model.py	dd248f562e59e72d0d30c5ac7ae89b2c7eb6e64a	pen
 tools/carrot_navi_lab/server.py	132707e05d90c1521e0c30dd47f252a409c53d20	pending	-
 tools/carrot_route_vault/__init__.py	52f4d729a0e7817ff1ef1423fb7ca3104d331dbb	pending	-
 tools/carrot_route_vault/auto_update.py	117e9944c5a9885d58663111277240e0ac59c740	pending	-
-tools/carrot_route_vault/build_bundle.py	a1ba9b22a40d19545c5b70a8103d5e9fc20b28fe	pending	-
+tools/carrot_route_vault/build_bundle.py	a1ba9b22a40d19545c5b70a8103d5e9fc20b28fe	replaced-local	rust/crates/dev-tools/src/route_vault_bundle.rs; rust/tools/run-developer-tool build-route-vault-bundle; frozen original23/native18/actual caller accepted40103403086 source5d376b306; docs/naver/python-rust-523-bundle.md
 tools/carrot_route_vault/deploy_probe.py	0f8145e92b70ac30fc874949fe35951a0c5c5a15	pending	-
 tools/carrot_route_vault/radar.py	bb4ddcfbd11b96a68c802d553b4f64be2fd95b68	pending	-
 tools/carrot_route_vault/server.py	a3f34772f6b319c34ea1f5a5e99255330aa13bdc	pending	-

@@ -6,6 +6,7 @@ name: Python Rust 523 controls full-schema109 fixture
     paths:
     - .github/workflows/python-rust-523-controls.yml
     - tools/ci/controlsd_fixture_523.py
+    - rust/crates/dev-tools/src/controlsd_fixture_generate/audit.rs
 permissions:
   contents: read
   actions: read
@@ -180,6 +181,7 @@ jobs:
         assert complete['pass'] is True and complete['source'] == os.environ['GITHUB_SHA']
         assert complete['requests'] == 109 and complete['native_cli_invocations'] == 1
         assert complete['exact_ignored_tests'] == 1 and complete['fresh_regular_test_invocations'] == 0
+        assert complete['stream_controls'] == 3
         assert complete['original_capture_rerun'] is False and complete['runtime_acceptance'] is False
         SEALS
     - name: Record attempted controls-only outcomes
