@@ -1016,3 +1016,13 @@ execution-edge의 변경4경로 working blob도 동결 소스로 갱신했다.
 diff를 확인했다. 이 배치의 compile·기능·Clippy·새 normal40/setup entry·docs growth 실패 주입과
 실제 정리는 미실행이다. 앞의0538007 성공은 이번 미실행 소스의 성공으로 사용하지 않는다.
 원본 제거·baseline credit·필수 PR/병합 후·전달 및 실기 수용은 별도 조건으로 남는다.
+
+### checkout 없는 과거 공용 build 회수 후보
+
+새 b7ab74의 setup/normal WF도 실제 검사 이전 `actions/checkout` archive 다운로드 ENOSPC로
+실패했다. worker가 해당 준비 단계까지 시작한 관측을 근거로, 외부 action0개인 inline rescue를
+별도 시도한다. 첫 범위는 과거 공용 `rust/target` 하나이고 현재 private docs build·source·원본
+입력·현재 SDK는 유지한다. metadata와 모든 UID의 process 참조를 확인한 뒤 literal root만
+삭제하며, 작은 콘솔 요약으로 용량/inode/실제 삭제 여부를 남긴다. 독립 소스 리뷰와 문법만
+확인했고 실제 삭제·복구는 미실행이다. 이 임시 Python 복구 진단1경로를 edge pending으로
+추가해25교체/64대기/1native-existing/2non-executing-text(92행)로 추적한다. baseline credit은0이다.

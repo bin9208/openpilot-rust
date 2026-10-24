@@ -23,3 +23,9 @@ check-run annotation 원문은 `System.IO.IOException: No space left on device`�
 재발 방지 후보는 기존 docs gate·Rust1.94·두 검사 selector를 유지한다. prepared SDK를 재사용하고, debug/incremental 산출물을 줄이며, 두 Cargo 단계가 합쳐 8GiB 증가 예산을 공유하도록 한다. 512MiB 마무리 공간과 1GiB 유입 여유를 두고 100ms마다 용량을 관측하며 소유 child group 종료·wait·실패 evidence와 after-seal/upload/cleanup을 연결한다. 이 8GiB는 docs leaf에만 적용하며 전체 #296 검사나 ARM의 자원 admission을 낮추지 않는다.
 
 독립 리뷰에서 발견한 PID/PGID 정리 문제는 소스상 수정·재검토했다. 정상 wait 뒤에는 이전 verified 값으로 KILL하지 않으며, 중단 시 현재 PPID/PGID/SID/starttime이 일치할 때만 신호를 보낸다. 소유성 또는 잔여 group의 non-live 상태가 미확정이면 recovery/cleanup 성공을 기록하지 않는다. 동결 guard SHA256은 `88e292d7718216bc16341f1ae8eedee2558ae4fdb52a2c2b4a983197f5982c12`, WF는 `c1227d57011d494cb5a71e1a33fb5fe4d9785b3f78ac387c1faea0112b55ead6`다. 현재 후보의 검증은 소스·문법·diff에 한정되고, 실패 주입·실제 docs 기능/빌드/봉인/회수는 모두 미실행이다.
+
+### 액션 다운로드를 생략하는 응급 복구 후보
+
+다음 source `b7ab74bf0979dce2f02ad53bf6a8ef24643c83a3`의 [setup40116974870/job120940160021](https://github.com/bin9208/openpilot-rust/actions/runs/40116974870/job/120940160021) 및 [normal40116974938/job120940160271](https://github.com/bin9208/openpilot-rust/actions/runs/40116974938/job/120940160271)은 steps0에서 실패했다. 이번 annotation은 worker 시작 뒤 `actions/checkout` tar.gz를 받을 공간이 없다는 ENOSPC다. 따라서 직접 접속 정보 확인과 병행해 `uses`·checkout·artifact 업로드가 모두 없는 inline 복구 WF를 준비한다. 아직 실제 shell 진입·삭제·공간 복구 증거는 없다.
+
+첫 삭제 범위는 과거 공용 `/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/rust/target` 한 곳이다. 현재 docs의 private build/source·검증 원본 입력·현재 SDK는 그 밖에 남긴다. root/상위 경로의 canonical identity·소유자·동일 filesystem·하위 mount 부재를 확인하고, metadata inode 집합과 모든 UID의 cwd/exe/FD/maps 교차 참조·활성 compiler를 조사한다. 참조/미확정/변경이 있으면 삭제하지 않는다. 조건을 만족하면 정확한 literal target만 `rm -rf --one-file-system`으로 제한 시간 안에 지운다. 큰 evidence/파일 내용 hash/압축을 만들지 않고 콘솔의 작은 JSON에 before/after available bytes·inode·실제 삭제 결과를 남긴다. 이는 순간 snapshot이며 새 writer의 원자적 배제를 주장하지 않는다. timeout 뒤 부분 삭제 가능성은 실패로 기록한다.
