@@ -17,6 +17,7 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
+// 기존 합성 trace의 고정 경로다. 실제 hosted admission은 이 root를 거부한다.
 const SDK: &str = "/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu";
 const CARGO_SHA: &str = "77f14b761b02b47e6747473f556b3bc9f98f7e4525b7c3b8d74898ff816e4636";
 const RUSTC_SHA: &str = "103b60e1b1339968c1d74202ea1d45686037e82c4ea3e0569de24b18a1e6836a";
@@ -314,6 +315,9 @@ struct Audit {
     rustc_successes: usize,
 }
 fn audit_trace(text: &str) -> Result<Audit> {
+    audit_trace_for_sdk(text, Path::new(SDK))
+}
+fn audit_trace_for_sdk(text: &str, sdk: &Path) -> Result<Audit> {
     if text.is_empty() || !text.is_ascii() || text.contains(['\r', '\0']) || !text.ends_with('\n') {
         return Err("empty, non-ASCII or truncated trace".into());
     }
@@ -382,7 +386,7 @@ fn audit_trace(text: &str) -> Result<Audit> {
     let successes = |name: &str| {
         calls
             .iter()
-            .filter(|c| c.success && c.program == format!("{SDK}/bin/{name}"))
+            .filter(|c| c.success && c.program == format!("{}/bin/{name}", sdk.display()))
             .count()
     };
     let cargo_successes = successes("cargo");
@@ -529,7 +533,7 @@ fn invalidate_owned_receipt(output: &Path) -> Result<()> {
 fn sha(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
-fn check_manifest(manifest: &str) -> Result<usize> {
+fn check_manifest(manifest: &str, sdk: &Path) -> Result<usize> {
     // find/sha256sum이 만든 ASCII 절대 경로 형식만 받는다. GNU escaped filename은 별도 지원하지 않는다.
     if !manifest.is_ascii() || manifest.contains(['\r', '\0']) {
         return Err("unsupported SDK manifest path encoding".into());
@@ -546,7 +550,7 @@ fn check_manifest(manifest: &str) -> Result<usize> {
         }
         let path = Path::new(&line[66..]);
         if !path.is_absolute()
-            || !path.starts_with(SDK)
+            || !path.starts_with(sdk)
             || path
                 .components()
                 .any(|v| matches!(v, Component::CurDir | Component::ParentDir))
@@ -572,25 +576,42 @@ fn check_manifest(manifest: &str) -> Result<usize> {
             ));
         }
         for (name, pinned) in [("cargo", CARGO_SHA), ("rustc", RUSTC_SHA)] {
-            if path == Path::new(SDK).join("bin").join(name) && actual != pinned {
+            if path == sdk.join("bin").join(name) && actual != pinned {
                 return Err(format!("SDK program pin mismatch: {name}"));
             }
         }
     }
     if !["cargo", "rustc"]
         .iter()
-        .all(|name| seen.contains(&Path::new(SDK).join("bin").join(name)))
+        .all(|name| seen.contains(&sdk.join("bin").join(name)))
     {
         return Err("manifest omits absolute SDK cargo/rustc".into());
     }
     Ok(seen.len())
 }
+fn private_hosted_sdk(job: &Path, sdk: &str, rustup: &str, cargo: &str) -> Result<PathBuf> {
+    let expected = job.join("rustup-home/toolchains/1.94.0-x86_64-unknown-linux-gnu");
+    if sdk != expected.to_str().ok_or("non-UTF8 private SDK")?
+        || rustup
+            != job
+                .join("rustup-home")
+                .to_str()
+                .ok_or("non-UTF8 Rustup home")?
+        || cargo
+            != job
+                .join("cargo-home")
+                .to_str()
+                .ok_or("non-UTF8 Cargo home")?
+    {
+        return Err("unapproved actual-proof private SDK/tool homes".into());
+    }
+    Ok(expected)
+}
 fn actual_receipt() -> Result<Value> {
     for (name, expected) in [
         ("GITHUB_ACTIONS", "true"),
         ("GITHUB_REPOSITORY", "bin9208/openpilot-rust"),
-        ("RUNNER_NAME", "bin-actions"),
-        ("RUNNER_ENVIRONMENT", "self-hosted"),
+        ("RUNNER_ENVIRONMENT", "github-hosted"),
         ("RUNNER_OS", "Linux"),
         ("RUNNER_ARCH", "X64"),
     ] {
@@ -625,9 +646,12 @@ fn actual_receipt() -> Result<Value> {
     }
     let output = proof.join("prepared-cold-bootstrap.json");
     invalidate_owned_receipt(&output)?;
-    if env("CI_PREPARED_RUST_ROOT")? != SDK {
-        return Err("unapproved actual-proof SDK root".into());
-    }
+    let sdk = private_hosted_sdk(
+        &job,
+        &env("CI_PREPARED_RUST_ROOT")?,
+        &env("RUSTUP_HOME")?,
+        &env("CARGO_HOME")?,
+    )?;
     let source_sha = env("GITHUB_SHA")?;
     if source_sha.len() != 40
         || !source_sha
@@ -665,9 +689,9 @@ fn actual_receipt() -> Result<Value> {
     {
         return Err("private source owner identity mismatch".into());
     }
-    owned(Path::new(SDK), true)?; // mode 775도 거부한다. 부모의 사전 hardening을 완화하지 않는다.
+    owned(&sdk, true)?; // private SDK도 mode 775를 거부한다. permission 검사를 완화하지 않는다.
     for name in ["cargo", "rustc"] {
-        let metadata = owned(&Path::new(SDK).join("bin").join(name), false)?;
+        let metadata = owned(&sdk.join("bin").join(name), false)?;
         if metadata.mode() & 0o111 == 0 {
             return Err("SDK program not executable".into());
         }
@@ -677,15 +701,16 @@ fn actual_receipt() -> Result<Value> {
         return Err("unexpected SDK manifest location".into());
     }
     let manifest = ProofInput::read(&manifest_path)?;
-    let manifest_files = check_manifest(&manifest.text)?;
+    let manifest_files = check_manifest(&manifest.text, &sdk)?;
     let trace = ProofInput::read(&proof.join("prepared-cold-bootstrap.exec"))?;
-    let audit = audit_trace(&trace.text)?;
+    let audit = audit_trace_for_sdk(&trace.text, &sdk)?;
     let first = audit.calls.first().ok_or("empty exec audit")?;
     if !first.success || Path::new(&first.program) != source.join("rust/tools/check-disk-space") {
         return Err("trace does not begin with this source's successful bootstrap exec".into());
     }
     let receipt = json!({
-        "source_commit":source_sha, "absolute_cargo":format!("{SDK}/bin/cargo"), "absolute_rustc":format!("{SDK}/bin/rustc"),
+        "source_commit":source_sha, "absolute_cargo":sdk.join("bin/cargo"), "absolute_rustc":sdk.join("bin/rustc"),
+        "runner_environment":"github-hosted", "runner_name":env("RUNNER_NAME")?,
         "exec_attempts":audit.calls.len(), "observed_rustup_exec_attempts":0, "observed_python_exec_attempts":0,
         "successful_absolute_cargo_execs":audit.cargo_successes, "successful_absolute_rustc_execs":audit.rustc_successes,
         "failed_exec_attempts":audit.calls.iter().filter(|call| !call.success).count(),
@@ -852,9 +877,38 @@ fn prepared_audit_c_strings_have_an_explicit_fail_closed_ascii_scope() {
     }
 }
 #[test]
-#[ignore = "실제 bin-actions cold strace와 소유 source/SDK manifest 필요; 합성 자료 qualification 금지"]
+#[ignore = "실제 github-hosted cold strace와 소유 private source/SDK manifest 필요; 합성 자료 qualification 금지"]
 fn prepared_audit_actual_cold_bootstrap_receipt() {
     let receipt = actual_receipt()
         .unwrap_or_else(|error| panic!("actual prepared SDK audit rejected: {error}"));
     println!("PREPARED_COLD_BOOTSTRAP_AUDIT_JSON {receipt}");
+}
+
+#[test]
+fn prepared_audit_hosted_sdk_rejects_legacy_other_job_and_tool_homes() {
+    let job = Path::new("/tmp/openpilot-ci.abcdef");
+    let sdk = "/tmp/openpilot-ci.abcdef/rustup-home/toolchains/1.94.0-x86_64-unknown-linux-gnu";
+    let rustup = "/tmp/openpilot-ci.abcdef/rustup-home";
+    let cargo = "/tmp/openpilot-ci.abcdef/cargo-home";
+    assert_eq!(
+        private_hosted_sdk(job, sdk, rustup, cargo).unwrap(),
+        Path::new(sdk)
+    );
+    for wrong in [
+        SDK.to_owned(),
+        sdk.replace("abcdef", "uvwxyz"),
+        format!("{sdk}/"),
+        sdk.replace("1.94.0", "1.93.0"),
+    ] {
+        assert!(
+            private_hosted_sdk(job, &wrong, rustup, cargo).is_err(),
+            "{wrong}"
+        );
+    }
+    assert!(private_hosted_sdk(job, sdk, "/tmp/other/rustup-home", cargo).is_err());
+    assert!(private_hosted_sdk(job, sdk, rustup, "/tmp/other/cargo-home").is_err());
+    let trace = synthetic_trace().replace(SDK, sdk);
+    assert!(audit_trace_for_sdk(&trace, Path::new(sdk)).is_ok());
+    assert!(audit_trace_for_sdk(&synthetic_trace(), Path::new(sdk)).is_err());
+    assert!(audit_trace_for_sdk(&trace.replace("abcdef", "uvwxyz"), Path::new(sdk)).is_err());
 }

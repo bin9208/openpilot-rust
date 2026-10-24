@@ -1026,3 +1026,18 @@ diff를 확인했다. 이 배치의 compile·기능·Clippy·새 normal40/setup 
 삭제하며, 작은 콘솔 요약으로 용량/inode/실제 삭제 여부를 남긴다. 독립 소스 리뷰와 문법만
 확인했고 실제 삭제·복구는 미실행이다. 이 임시 Python 복구 진단1경로를 edge pending으로
 추가해25교체/64대기/1native-existing/2non-executing-text(92행)로 추적한다. baseline credit은0이다.
+
+### 2026-10-25 GitHub 기본 러너로 명시 전환 — #535
+
+사용자는 bin-actions가 타관리자가 만든 현재 사용할 수 없는 러너라고 설명하고 GitHub 기본
+러너를 사용하도록 명시했다. 이전 self-hosted-only 지시보다 최신 선택을 우선한다. 미시작
+rescue40118006504는 실제 completed/cancelled를 확인했고 현재 복구 WF를 제거했다. 타관리
+러너의 원격 삭제/복구 실행은0이며 SSH/증설 대기를 전환의 선행 조건으로 삼지 않는다.
+
+#535에서 명시 Ubuntu24.04 기반 집중 검증과 실제 private 경로·현재 SDK 준비/전후 봉인을
+연결한다. source/원문·Rust1.94의 기존4개 component pin·ELF/ABI·기능 기준과 필수 gate를
+유지한다. 과거 manifest의 절대 경로는 원문 그대로 두고 현재 동일 component hash와 별도
+대조한다. 기존 성공을 새 러너의 성공으로 재표기하지 않는다. 상세는
+`python-rust-523-hosted-535.md`에 기록한다. 전환 후보의 현재 기능/빌드/Clippy/용량 실측은
+미실행이며, baseline292/3/3285와 원본 제거 credit0을 유지한다. 임시 rescue edge의 삭제는
+25교체/63대기/1native-existing/2non-executing-text/1removed로 구분한다.

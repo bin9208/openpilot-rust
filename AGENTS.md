@@ -1,5 +1,14 @@
 # Independent Rust port repository (2026-09-29)
 
+- 2026-10-25 사용자는 `bin-actions`가 다른 관리자가 만든 현재 사용할 수 없는
+  러너임을 밝히고, 이 #523/#296 작업은 GitHub Actions 기본 러너로 진행하라고
+  명시했다. 아래 self-hosted-only 선택보다 이 지시가 우선한다. 명시적인
+  GitHub-hosted 플랫폼에서 필요한 검증을 계속하고, 과거 bin-actions 복구·삭제
+  작업은 실행하지 않는다. 실제 runner/SDK 경로와 소유권을 검증하며 예전 이름이나
+  경로를 위장하지 않는다. 원본·ABI·수치·자원 admission·전후 봉인·필수 gate 및
+  dev/dev-md 분리와 실기 수용 경계는 유지한다. 로컬은 여전히 소스·문법·서식·diff와
+  inert 원문 확인만 수행하고 기능·빌드 검증은 Actions에서 실행한다.
+
 - On 2026-10-23 the user requested applying the faster validated Actions runner
   across active tasks, then explicitly fixed the choice to local Actions.
   Use registered `bin-actions` for the next necessary

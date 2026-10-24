@@ -135,6 +135,18 @@ pub fn uses_native_action(job: &Value, step: &Value, name: &str) -> bool {
 }
 
 pub const LOCAL_RUNNER: [&str; 4] = ["self-hosted", "Linux", "X64", "dev-md-local"];
+pub const HOSTED_RUNNER: &str = "ubuntu-24.04";
+fn approved_runner(runner: &Value) -> bool {
+    runner == &serde_json::json!(LOCAL_RUNNER) || runner.as_str() == Some(HOSTED_RUNNER)
+}
+fn source_boundary_name(name: &str) -> bool {
+    matches!(
+        name,
+        "Deny fork source and require registered local runner"
+            | "Deny fork source and require GitHub-hosted Linux X64"
+            | "Deny fork source and require GitHub-hosted Ubuntu X64 runner"
+    )
+}
 pub const TRUSTED_SOURCE: &str = "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}";
 pub const TRUSTED_SUCCESS: &str = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (success()) }}";
 pub const TRUSTED_ALWAYS: &str = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()) }}";
@@ -148,7 +160,18 @@ fn source_result_binding(step: &Value) -> Result<(), String> {
     require(
         step["run"]
             .as_str()
-            .is_some_and(|s| s.starts_with(FORK_DENIAL)),
+            .is_some_and(|s| {
+                // 승인된 오류 문구만 허용한다. shell prelude는 이 한 줄 외에 허용하지 않는다.
+                let s = s.strip_prefix("set -euo pipefail\n").unwrap_or(s);
+                [
+                    FORK_DENIAL,
+                    "test \"${SOURCE_ALLOWED:-}\" = true || { echo 'Fork PR source denied for trusted docs validation' >&2; exit 1; }\n",
+                    "test \"${SOURCE_ALLOWED:-}\" = true || { echo 'Fork PR source denied for setup qualification' >&2; exit 1; }\n",
+                    "test \"${SOURCE_ALLOWED:-}\" = true || { echo 'Fork PR source denied for normal40 qualification' >&2; exit 1; }\n",
+                ]
+                .iter()
+                .any(|prefix| s.starts_with(prefix))
+            }),
         "fork source must fail before other commands",
     )
 }
@@ -330,6 +353,8 @@ pub fn validate_private_job_layout(job: &Value) -> Result<(), String> {
                 && step["env"]["CI296_HOST_CONTROL"] == "1"
                 && matches!(step["name"].as_str().unwrap_or(""),
                 "Deny fork source and require registered local runner" |
+                "Deny fork source and require GitHub-hosted Linux X64" |
+                "Deny fork source and require GitHub-hosted Ubuntu X64 runner" |
                 "Require unavailable Darwin execution interface" |
                 "Allocate private source cache target and local action alias before checkout" |
                 "Clean only uploaded owned source alias and target");
@@ -521,8 +546,8 @@ pub fn validate_concurrency(workflow: &Value) -> Result<(), String> {
     Ok(())
 }
 
-/// Every current or newly published diagnostic workflow is checked, not just
-/// the inherited Fast/Rust files. Matrix roles never select hosted machines.
+/// 모든 workflow에 정적으로 승인한 legacy labels 또는 Ubuntu 24.04 scalar만 허용한다.
+/// matrix/expression/unknown runner는 hosted 전환 뒤에도 허용하지 않는다.
 pub fn validate_local_routing(workflow: &Value) -> Result<(), String> {
     validate_concurrency(workflow)?;
     require(
@@ -541,15 +566,15 @@ pub fn validate_local_routing(workflow: &Value) -> Result<(), String> {
             continue;
         }
         require(
-            job["runs-on"] == serde_json::json!(LOCAL_RUNNER),
-            format!("{name}: fixed bin-actions labels required; no hosted/matrix fallback"),
+            approved_runner(&job["runs-on"]),
+            format!("{name}: exact legacy labels or ubuntu-24.04 required; no matrix fallback"),
         )?;
         validate_private_job_layout(job)?;
         let steps = job["steps"]
             .as_array()
             .ok_or("missing source trust boundary")?;
         source_result_binding(steps.first().ok_or("missing fork refusal step")?)?;
-        if steps[0]["name"] == "Deny fork source and require registered local runner" {
+        if source_boundary_name(steps[0]["name"].as_str().unwrap_or("")) {
             require(
                 steps[0].get("if").is_none(),
                 "fork refusal must not be skipped",
@@ -562,7 +587,7 @@ pub fn validate_local_routing(workflow: &Value) -> Result<(), String> {
             }
         } else {
             require(
-                job["if"] == "${{ always() }}",
+                job["if"] == "${{ always() }}" && steps.len() == 1,
                 "result aggregate must still run and explicitly reject forks",
             )?;
         }
@@ -790,8 +815,8 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
             .ok_or("missing fast worker steps")?;
         require(!steps.is_empty(), "fast worker has no checks")?;
         require(
-            worker["runs-on"] == serde_json::json!(DIAGNOSTIC_LOCAL_RUNNER),
-            "Fast workers require fixed bin-actions labels",
+            approved_runner(&worker["runs-on"]),
+            "Fast workers require exact legacy labels or ubuntu-24.04",
         )?;
         let boundary = &steps[0];
         absent(boundary, &["if", "continue-on-error"])?;
@@ -875,18 +900,33 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
                 }),
                 "SDK permission preparation belongs only to native routing",
             )?;
-            for (index, phase) in [(admit, "before"), (final_start, "after")] {
-                let command =
-                    format!("\"$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust\" {phase}");
-                require(
-                    steps[index]["run"]
-                        .as_str()
-                        .is_some_and(|s| s.trim() == command)
-                        && steps[index]["shell"] == "bash"
-                        && steps[index]["working-directory"] == "${{ env.DIAG_SOURCE }}",
-                    "Fast read-only SDK stage must execute its bound helper",
-                )?;
-            }
+        } else {
+            let permissions = steps
+                .iter()
+                .position(|step| step["id"] == "sdk_permissions")
+                .unwrap();
+            let permissions_final = steps
+                .iter()
+                .position(|step| step["id"] == "sdk_permissions_final")
+                .unwrap();
+            require(
+                admit < permissions
+                    && permissions < permissions_final
+                    && permissions_final < final_start,
+                "private SDK preparation must precede permission verification",
+            )?;
+        }
+        for (index, phase) in [(admit, "before"), (final_start, "after")] {
+            let command =
+                format!("\"$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust\" {phase}");
+            require(
+                steps[index]["run"]
+                    .as_str()
+                    .is_some_and(|s| s.trim() == command)
+                    && steps[index]["shell"] == "bash"
+                    && steps[index]["working-directory"] == "${{ env.DIAG_SOURCE }}",
+                "Fast read-only SDK stage must execute its bound helper",
+            )?;
         }
         for (index, step) in steps.iter().enumerate() {
             absent(&step["env"], &opt_in)?;
@@ -934,8 +974,8 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
     let gate = jobs.get("fast").ok_or("missing fast aggregate")?;
     absent(gate, &["continue-on-error"])?;
     require(
-        gate["runs-on"] == serde_json::json!(DIAGNOSTIC_LOCAL_RUNNER),
-        "Fast aggregate requires bin-actions",
+        approved_runner(&gate["runs-on"]),
+        "Fast aggregate requires exact legacy labels or ubuntu-24.04",
     )?;
     require(
         gate["name"] == "fast checks",

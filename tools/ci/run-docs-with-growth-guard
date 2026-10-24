@@ -7,7 +7,7 @@ umask 077
 fail() { printf 'docs growth guard: %s\n' "$*" >&2; exit 1; }
 [[ $# == 1 && ( $1 == mapped || $1 == user-docs-tests ) ]] || fail 'mapped or user-docs-tests required'
 phase=$1
-[[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == bin9208/openpilot-rust && ${RUNNER_NAME:-} == bin-actions && ${RUNNER_ENVIRONMENT:-} == self-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && $(uname -m) == x86_64 ]] || fail 'registered bin-actions Linux/X64 CI required'
+[[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == bin9208/openpilot-rust && ${GH_HOSTED:-} == 1 && ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && $(uname -m) == x86_64 ]] || fail 'trusted GitHub-hosted Linux/X64 CI required'
 uid=$(id -u)
 validate() {
   local path=$1 kind=$2 owner mode
@@ -34,8 +34,8 @@ owner="${GITHUB_RUN_ID:?}:${GITHUB_RUN_ATTEMPT:?}:${GITHUB_JOB:?}"
 [[ ${GITHUB_SHA:-} =~ ^[0-9a-f]{40}$ && $(git -C "$root" rev-parse HEAD) == "$GITHUB_SHA" ]] || fail 'current source differs'
 [[ ${CARGO_TARGET_DIR:-} == "$root/rust/target" && ${CARGO_HOME:-} == "$job/cargo-home" && ${HOME:-} == "$job/home" && ${TMPDIR:-} == "$job" ]] || fail 'private output paths differ'
 [[ ${CARGO_PROFILE_DEV_DEBUG:-} == 0 && ${CARGO_PROFILE_TEST_DEBUG:-} == 0 && ${CARGO_BUILD_JOBS:-} == 2 && ${CARGO_INCREMENTAL:-} == 0 && ${RUSTUP_TOOLCHAIN:-} == 1.94.0 ]] || fail 'docs build profile differs'
-sdk=/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu
-[[ ${CI_PREPARED_RUST_ROOT:-} == "$sdk" && ${CI_PREPARED_RUST_MANIFEST:-} == "$job/proof/prepared-rust-files.before.sha256" && ${RUSTC:-} == "$sdk/bin/rustc" && ${RUSTDOC:-} == "$sdk/bin/rustdoc" ]] || fail 'prepared SDK binding required'
+sdk=${CI_PREPARED_RUST_ROOT:?prepared SDK root required}
+[[ ${RUSTUP_HOME:-} == "$job/rustup-home" && $sdk == "$job/rustup-home/toolchains/1.94.0-x86_64-unknown-linux-gnu" && ${CI_PREPARED_RUST_MANIFEST:-} == "$job/proof/prepared-rust-files.before.sha256" && ${RUSTC:-} == "$sdk/bin/rustc" && ${RUSTDOC:-} == "$sdk/bin/rustdoc" ]] || fail 'private prepared SDK binding required'
 validate "$sdk" directory
 validate "$sdk/bin/cargo" file
 validate "$CI_PREPARED_RUST_MANIFEST" file
@@ -162,6 +162,8 @@ trap 'reason=signal-TERM; exit 143' TERM
 trap 'reason=signal-INT; exit 130' INT
 trap 'reason=signal-HUP; exit 129' HUP
 sample || exit 1
+printf 'docs growth admission: phase=%s source_available_bytes=%s job_available_bytes=%s shared_growth_bytes=%s finish_reserve_bytes=%s inflight_reserve_bytes=%s\n' \
+  "$phase" "$last_root" "$last_job" "$growth" "$finish_reserve" "$inflight_reserve"
 # mapped/test가 각각8 GiB를 더 받지 않도록 한 docs leaf의 기준을 공유한다.
 baseline=$job/proof/docs-growth-baseline.txt
 if [[ $phase == mapped ]]; then

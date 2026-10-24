@@ -8,19 +8,25 @@ name: user docs
 jobs:
   check_user_docs:
     name: check mapped user docs
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     steps:
-      - name: Deny fork source and require registered local runner
+      - name: Deny fork source and require GitHub-hosted Linux X64
         shell: bash
         env:
           SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
           CI296_HOST_CONTROL: '1'
         run: |
-          test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
-          test "$RUNNER_NAME" = bin-actions
-          test "$RUNNER_ENVIRONMENT" = self-hosted
+          set -euo pipefail
+          test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied for trusted docs validation' >&2; exit 1; }
+          test "$GITHUB_ACTIONS" = true
+          test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+          test "$GH_HOSTED" = 1
+          test "$RUNNER_ENVIRONMENT" = github-hosted
           test "$RUNNER_OS" = Linux
           test "$RUNNER_ARCH" = X64
+          test "$(uname -m)" = x86_64
+          # private source clone/SDK 준비 전에 실제 filesystem 여유를 먼저 보고한다.
+          df -PB1 "$GITHUB_WORKSPACE" /tmp
         working-directory: ${{ github.workspace }}
       - name: Common owned job temporary paths
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
@@ -46,6 +52,7 @@ jobs:
           [[ $available =~ ^[0-9]+$ ]]
           required=$((2 * 1024 * 1024 * 1024))
           printf '{"available_bytes":%s,"planned_source_growth_bytes":%s}\n' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
+          cat "$job/proof/source-growth-before-checkout.json"
           ((available >= required))
           source_owner=$(mktemp -d "$workspace/.ci296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
           printf '%s\n' "$owner" > "$source_owner/.ci296-owner"
@@ -93,14 +100,18 @@ jobs:
           printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
           git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
           tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
-      - name: Admit prepared read-only Rust SDK bound to the private docs source
+      - name: Prepare private Rust 1.94 SDK bound to the private docs source
         id: prepared_rust
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         shell: bash
         working-directory: ${{ env.CI296_SOURCE }}
         env:
           CI296_HOST_CONTROL: '1'
-        run: DIAG_SOURCE="$CI296_SOURCE" "$CI296_SOURCE/rust/tools/prepare-readonly-ci-rust" before
+        run: |
+          set -euo pipefail
+          df -PB1 "$CI296_SOURCE" "$CI_JOB_TEMP"
+          # before가 private RUSTUP_HOME 설치 admission/준비/봉인을 담당한다.
+          DIAG_SOURCE="$CI296_SOURCE" "$CI296_SOURCE/rust/tools/prepare-readonly-ci-rust" before
       - name: Check code and user documentation changes
         env:
           DOCS_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
@@ -209,6 +220,7 @@ jobs:
         env:
           CI296_HOST_CONTROL: '1'
     env:
+      GH_HOSTED: '1'
       CI296_ALIAS_BASENAME: .ci296-source-user-docs--check_user_docs
       RUSTUP_TOOLCHAIN: 1.94.0
       CARGO_PROFILE_DEV_DEBUG: '0'

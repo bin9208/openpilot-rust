@@ -27,7 +27,6 @@ import zlib
 MIB = 1024**2
 GIB = 1024**3
 REPO = "bin9208/openpilot-rust"
-SDK = Path("/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu")
 FEATURES = "controlsd-fixture-native"
 DEV_FEATURES = ["controlsd-fixture-native", "paramsd-fixture-native"]
 REFERENCE_ID = "legacy-normal40-12456242812-v1"
@@ -388,18 +387,35 @@ class BudgetTransition(Exception):
 class Probe:
     def __init__(self):
         expected = {"GITHUB_ACTIONS": "true", "GITHUB_REPOSITORY": REPO, "GITHUB_EVENT_NAME": "push",
-                    "GITHUB_REF": "refs/heads/codex/feat-523-python-rust", "RUNNER_NAME": "bin-actions",
-                    "RUNNER_ENVIRONMENT": "self-hosted", "RUNNER_OS": "Linux", "RUNNER_ARCH": "X64"}
-        need(all(os.environ.get(key) == value for key, value in expected.items()), "registered Actions identity required")
+                    "GITHUB_REF": "refs/heads/codex/feat-523-python-rust",
+                    "RUNNER_ENVIRONMENT": "github-hosted", "RUNNER_OS": "Linux", "RUNNER_ARCH": "X64"}
+        need(all(os.environ.get(key) == value for key, value in expected.items()) and os.uname().machine == "x86_64",
+             "GitHub-hosted Actions Linux/X64 identity required")
         need(sys.flags.isolated and sys.flags.no_site and sys.dont_write_bytecode, "isolated stdlib-only diagnostic Python required")
         self.source = os.environ["GITHUB_SHA"]
         need(re.fullmatch(r"[0-9a-f]{40}", self.source), "source SHA required")
         self.root = Path(os.environ["DIAG_SOURCE"])
         self.job = Path(os.environ["CI_JOB_TEMP"])
+        self.rustup = self.job / "rustup-home"
+        self.sdk_root = Path(os.environ["CI_PREPARED_RUST_ROOT"])
+        self.sdk_manifest = self.job / "proof/prepared-rust-files.before.sha256"
+        need(self.root == Path(os.environ["GITHUB_WORKSPACE"]) == Path.cwd()
+             and self.root.parent == Path(os.environ["DIAG_SOURCE_OWNER"])
+             and self.root.parent.parent == Path(os.environ["DIAG_ACTIONS_WORKSPACE"]), "private source binding differs")
+        need(re.fullmatch(r"\.diag296-source-" + re.escape(os.environ["GITHUB_RUN_ID"]) + "-"
+             + re.escape(os.environ["GITHUB_RUN_ATTEMPT"]) + r"\.[A-Za-z0-9]{6}", self.root.parent.name)
+             and self.root.name == "source", "private source owner path differs")
+        need(":".join(map(str, (self.root.parent.stat().st_dev, self.root.parent.stat().st_ino)))
+             == os.environ["DIAG_SOURCE_IDENTITY"], "private source owner identity differs")
+        need(Path(os.environ["RUSTUP_HOME"]) == self.rustup and self.sdk_root == self.rustup / "toolchains/1.94.0-x86_64-unknown-linux-gnu"
+             and self.sdk_root.resolve(strict=True) == self.sdk_root
+             and os.environ["CI_PREPARED_RUST_MANIFEST"] == str(self.sdk_manifest)
+             and os.environ["RUSTC"] == str(self.sdk_root / "bin/rustc")
+             and os.environ["RUSTDOC"] == str(self.sdk_root / "bin/rustdoc"), "owned prepared SDK binding differs")
         self.target = self.root / "rust/target"
         self.out = self.job / "proof/controls-normal40"
         owner = ":".join(os.environ[key] for key in ("GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT", "GITHUB_JOB"))
-        for path in (self.root, self.job, self.out.parent):
+        for path in (self.root, self.root.parent, self.job, self.rustup, self.out.parent):
             info = path.lstat()
             need(path.is_absolute() and path.resolve(strict=True) == path and stat.S_ISDIR(info.st_mode)
                  and info.st_uid == os.getuid(), f"owned canonical directory required: {path}")
@@ -434,10 +450,10 @@ class Probe:
         self.build_started = False
         self.finalizing = False
         self.header_before = {}
-        self.env = {"RUSTUP_HOME": str(self.job / "rustup-home"), "PATH": f"{SDK}/bin:/usr/bin:/bin", "HOME": str(self.job / "home"),
+        self.env = {"RUSTUP_HOME": str(self.rustup), "PATH": f"{self.sdk_root}/bin:/usr/bin:/bin", "HOME": str(self.job / "home"),
                     "TMPDIR": str(self.tmp), "CARGO_HOME": str(self.job / "cargo-home"),
-                    "CARGO_TARGET_DIR": str(self.target), "RUSTC": str(SDK / "bin/rustc"),
-                    "RUSTDOC": str(SDK / "bin/rustdoc"), "RUSTUP_TOOLCHAIN": "1.94.0",
+                    "CARGO_TARGET_DIR": str(self.target), "RUSTC": str(self.sdk_root / "bin/rustc"),
+                    "RUSTDOC": str(self.sdk_root / "bin/rustdoc"), "RUSTUP_TOOLCHAIN": "1.94.0",
                     "CARGO_BUILD_JOBS": "2", "CARGO_INCREMENTAL": "0", "CARGO_PROFILE_DEV_DEBUG": "0",
                     "CARGO_PROFILE_TEST_DEBUG": "0", "CARGO_TERM_COLOR": "never", "LC_ALL": "C", "TZ": "UTC"}
         resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
@@ -514,8 +530,8 @@ class Probe:
 
 
     def sdk(self, label):
-        need(SDK.resolve(strict=True) == SDK, "SDK root alias")
-        value = snapshot(SDK, walk(SDK), sdk=True)
+        need(self.sdk_root.resolve(strict=True) == self.sdk_root, "SDK root alias")
+        value = snapshot(self.sdk_root, walk(self.sdk_root), sdk=True)
         save(self.out / f"sdk-{label}.json", value)
         return value
 
@@ -527,7 +543,7 @@ class Probe:
             match = re.fullmatch(r"\s*(?:\S+\s+=>\s+)?(/\S+)\s+\(0x[0-9a-fA-F]+\)\s*", line)
             if match:
                 path = Path(match[1]).resolve(strict=True)
-                need(any(path.is_relative_to(root) for root in (Path("/usr/lib"), Path("/lib").resolve(), SDK, self.target, self.numerics)),
+                need(any(path.is_relative_to(root) for root in (Path("/usr/lib"), Path("/lib").resolve(), self.sdk_root, self.target, self.numerics)),
                      "DSO outside system/SDK/current target")
                 paths.add(self.holds.add(Path(match[1]), elf=True))
             else:
@@ -543,9 +559,11 @@ class Probe:
             need(path, f"prepared provider missing: {name}; no installation/fallback")
             self.tools[name] = self.holds.add(path)
         for name, pin in SDK_PINS.items():
-            self.holds.add(SDK / "bin" / name, pin, elf=True)
+            self.holds.add(self.sdk_root / "bin" / name, pin, elf=True)
         for name in ("rustdoc", "cargo-clippy"):
-            self.holds.add(SDK / "bin" / name, elf=True)
+            self.holds.add(self.sdk_root / "bin" / name, elf=True)
+        for name in ("prepared-rust-files.before.sha256", "prepared-rust-roster.before.bin", "prepared-rust-programs.sha256"):
+            self.holds.add(self.job / "proof" / name)
         self.holds.add(Path("/etc/ld.so.cache"))
         self.holds.add(Path(sys.executable), elf=True)
         for module in tuple(sys.modules.values()):
@@ -573,11 +591,11 @@ class Probe:
         for index, path in enumerate(self.header_before):
             self.header_before[path] = snapshot(path, walk(path))
             save(self.out / f"system-sdk-{index}-before.json", {"root": str(path), "files": self.header_before[path]})
-        version = self.command([SDK / "bin/rustc", "-vV"], "rustc-version").decode()
+        version = self.command([self.sdk_root / "bin/rustc", "-vV"], "rustc-version").decode()
         need("release: 1.94.0\n" in version and "host: x86_64-unknown-linux-gnu\n" in version, "Rust version/host differs")
         need("GNU coreutils" in self.command([self.tools["timeout"], "--version"], "timeout-version").decode(),
              "GNU timeout provider required")
-        programs = set(self.tools.values()) | helpers | {SDK / "bin" / name for name in
+        programs = set(self.tools.values()) | helpers | {self.sdk_root / "bin" / name for name in
                    [*SDK_PINS, "rustdoc", "cargo-clippy"]} | {Path(sys.executable).resolve()}
         for index, path in enumerate(sorted(programs)):
             if os.pread(self.holds.files[path]["fd"], 4, 0) == b"\x7fELF":
@@ -712,8 +730,8 @@ class Probe:
             totals, devices, transient = self.budget_scan()
             # 불완전한 표본도 초과 lower bound면 즉시 거부한다. 성공 판정은
             # ENOENT/게시 전이가 없는 전체 표본에만 가능하다.
-            need(totals["source"] <= 2 * GIB and totals["build"] <= 8 * GIB and totals["proof"] <= GIB,
-                 f"owned source/build/proof bound exceeded: {totals}")
+            need(totals["source"] <= 2 * GIB and totals["build"] <= 8 * GIB and totals["proof"] <= GIB
+                 and totals["sdk"] <= 3 * GIB, f"owned source/build/proof/SDK bound exceeded: {totals}")
             if not transient:
                 break
             need(len(self.budget_resamples) < 256, "mutable/publication resample record bound")
@@ -732,7 +750,7 @@ class Probe:
         self.last_growth = time.monotonic()
 
     def budget_scan(self):
-        totals = {"source": 0, "build": 0, "proof": 0}
+        totals = {"source": 0, "build": 0, "proof": 0, "sdk": 0}
         devices = {}
         seen = set()
         transient = []
@@ -763,6 +781,9 @@ class Probe:
                 need(count <= 180000, "owned output roster exceeds 180000")
                 key = (info.st_dev, info.st_ino)
                 category = "build" if path.is_relative_to(self.target) else default
+                if any(path.is_relative_to(area) for area in
+                       (self.rustup, self.job / "rust-bootstrap", self.job / "cargo-home/bin")):
+                    category = "sdk"  # 별도 준비된 immutable SDK가 기존 build8GiB를 소비하지 않는다.
                 if path.is_relative_to(self.job / "proof"):
                     category = "proof"
                     need(stat.S_ISREG(info.st_mode) or stat.S_ISDIR(info.st_mode), "special proof output")
@@ -924,7 +945,7 @@ class Probe:
         self.holds.verify()
 
     def cargo(self, args, label, package="openpilot-dev-tools", features=FEATURES):
-        return self.command([SDK / "bin/cargo", *args, "--manifest-path", self.root / "rust/Cargo.toml",
+        return self.command([self.sdk_root / "bin/cargo", *args, "--manifest-path", self.root / "rust/Cargo.toml",
                              "--locked", "-p", package, "--no-default-features", "--features", features],
                             label, seconds=1200)
 
@@ -1094,6 +1115,7 @@ class Probe:
         self.budget(force=True)
         save(self.out / "growth-build-admission.json", {"source_cap": 2 * GIB, "build_cap": 8 * GIB,
              "proof_total_cap": GIB, "per_raw_file_cap": 512 * MIB, "proof_free_space_admission": 2 * GIB,
+             "separate_prepared_sdk_cap": 3 * GIB,
              "physical_filesystem_remaining_check": True, "sample_period_seconds": 0.5,
              "current": self.usage, "measured_peak_guarantee": False})
         binaries = self.cargo(["build", "--bin", "check-controlsd-native", "--bin", "stage-torque-numerics",
@@ -1105,7 +1127,7 @@ class Probe:
         self.resources("built")
         self.phase = "strict-clippy"
         need(shutil.disk_usage(self.root).free >= 512 * MIB, "existing Clippy append512MiB admission")
-        self.command([SDK / "bin/cargo", "clippy", "--manifest-path", self.root / "rust/Cargo.toml", "--locked",
+        self.command([self.sdk_root / "bin/cargo", "clippy", "--manifest-path", self.root / "rust/Cargo.toml", "--locked",
                       "-p", "openpilot-dev-tools", "--no-default-features", "--features", FEATURES,
                       "--bin", "check-controlsd-native", "--bin", "stage-torque-numerics", "--test", "controlsd_check",
                       "--", "-D", "warnings"], "current-clippy", seconds=1200)

@@ -21,11 +21,7 @@ jobs:
   controls-normal40:
     name: 'Current controls CLI normal40 with historical raw reference'
     if: ${{ github.repository == 'bin9208/openpilot-rust' }}
-    runs-on:
-    - self-hosted
-    - Linux
-    - X64
-    - dev-md-local
+    runs-on: ubuntu-24.04
     timeout-minutes: 75
     env:
       CARGO_BUILD_JOBS: '2'
@@ -35,7 +31,7 @@ jobs:
       CARGO_TERM_COLOR: never
       RUSTUP_TOOLCHAIN: 1.94.0
     steps:
-    - name: Deny fork source and require registered local runner
+    - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
       shell: bash
       working-directory: ${{ github.workspace }}
       env:
@@ -44,13 +40,13 @@ jobs:
         EVENT_NAME: ${{ github.event_name }}
         SOURCE_REF: ${{ github.ref }}
       run: |
-        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied for normal40 qualification' >&2; exit 1; }
         set -euo pipefail
         test "$EVENT_NAME" = push
         test "$SOURCE_REF" = refs/heads/codex/feat-523-python-rust
         test "$GITHUB_ACTIONS" = true
-        test "$RUNNER_NAME" = bin-actions
-        test "$RUNNER_ENVIRONMENT" = self-hosted
+        test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+        test "$RUNNER_ENVIRONMENT" = github-hosted
         test "$RUNNER_OS" = Linux
         test "$RUNNER_ARCH" = X64
         test "$(uname -m)" = x86_64
@@ -115,6 +111,57 @@ jobs:
         printf '{"allocated_private_source_bytes":%s,"planned_source_growth_bytes":2147483648}\n' "$allocated" > "$CI_JOB_TEMP/proof/source-growth-after-checkout.json"
         git ls-tree -r -l HEAD | awk '$4 ~ /^[0-9]+$/ {bytes+=$4; files++} END {printf "{\"tracked_blob_bytes\":%.0f,\"files\":%d}\n",bytes,files}' > "$CI_JOB_TEMP/proof/tracked-source-size.json"
         ((allocated <= 2 * 1024 * 1024 * 1024))
+    - name: Prepare official pinned Rust in the owned private rustup root and seal it
+      id: prepared_rust
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$RUSTUP_HOME" = "$CI_JOB_TEMP/rustup-home"
+        "$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" before
+    - name: Admit actual hosted disk space before native dependency preparation
+      id: hosted_dependencies
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      timeout-minutes: 15
+      run: |
+        set -euo pipefail
+        test "$RUNNER_ENVIRONMENT" = github-hosted
+        test "$RUNNER_OS" = Linux
+        test "$RUNNER_ARCH" = X64
+        test "$PWD" = "$DIAG_SOURCE"
+        test "$GITHUB_WORKSPACE" = "$DIAG_SOURCE"
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        before_source=$(df -PB1 "$DIAG_SOURCE" | awk 'NR == 2 {print $4}')
+        before_job=$(df -PB1 "$CI_JOB_TEMP" | awk 'NR == 2 {print $4}')
+        before_system=$(df -PB1 / | awk 'NR == 2 {print $4}')
+        [[ $before_source =~ ^[0-9]+$ && $before_job =~ ^[0-9]+$ && $before_system =~ ^[0-9]+$ ]]
+        preparation=$((2 * 1024 * 1024 * 1024))
+        remaining=$(((8 + 2) * 1024 * 1024 * 1024))
+        printf '{"source_available_bytes":%s,"job_available_bytes":%s,"system_available_bytes":%s,"planned_apt_growth_bytes":%s,"reserved_build_and_proof_bytes":%s,"measured_peak_guarantee":false}\n' "$before_source" "$before_job" "$before_system" "$preparation" "$remaining" | tee "$CI_JOB_TEMP/proof/hosted-dependencies-before.json"
+        ((before_source >= preparation + remaining && before_job >= preparation + remaining))
+        ((before_system >= preparation + 512 * 1024 * 1024))
+        # 전역 apt 변경은 provider baseline 전 한 번만 한다. missing provider는 helper가 거부한다.
+        (ulimit -f 524288; sudo -n /usr/bin/timeout --signal=TERM --kill-after=30s 600s \
+          apt-get -o APT::Architecture=amd64 update) > "$CI_JOB_TEMP/proof/hosted-apt-update.log" 2>&1
+        (ulimit -f 524288; sudo -n /usr/bin/timeout --signal=TERM --kill-after=30s 600s \
+          apt-get -o APT::Architecture=amd64 install --no-install-recommends -y \
+          build-essential clang pkg-config capnproto libcapnp-dev libzmq3-dev strace gh curl) \
+          > "$CI_JOB_TEMP/proof/hosted-apt-install.log" 2>&1
+        after_source=$(df -PB1 "$DIAG_SOURCE" | awk 'NR == 2 {print $4}')
+        after_job=$(df -PB1 "$CI_JOB_TEMP" | awk 'NR == 2 {print $4}')
+        after_system=$(df -PB1 / | awk 'NR == 2 {print $4}')
+        [[ $after_source =~ ^[0-9]+$ && $after_job =~ ^[0-9]+$ && $after_system =~ ^[0-9]+$ ]]
+        printf '{"source_available_bytes":%s,"job_available_bytes":%s,"system_available_bytes":%s,"planned_apt_growth_bytes":%s,"measured_peak_guarantee":false}\n' "$after_source" "$after_job" "$after_system" "$preparation" | tee "$CI_JOB_TEMP/proof/hosted-dependencies-after.json"
+        ((before_source - after_source <= preparation && before_job - after_job <= preparation && before_system - after_system <= preparation))
+        ((after_source >= remaining && after_job >= remaining))
+        ((after_system >= 512 * 1024 * 1024))
+        dpkg-query -W build-essential clang pkg-config capnproto libcapnp-dev libzmq3-dev strace gh curl > "$CI_JOB_TEMP/proof/hosted-native-packages.txt"
+        for provider in bash sh ranlib nm git gh curl clang clang++ cc c++ ar as ld pkg-config capnp ldd strace timeout; do
+          command -v "$provider" > /dev/null
+        done
     - name: Admit historical raw4 and qualify current native normal40 once
       id: qualify
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
@@ -154,6 +201,18 @@ jobs:
         proof_bytes=$(du -sx --block-size=1 "$CI_JOB_TEMP/proof" | cut -f1)
         [[ $proof_bytes =~ ^[0-9]+$ ]]
         ((proof_bytes <= 1024 * 1024 * 1024))
+    - name: Verify whole prepared private Rust SDK after all attempted normal40 contracts
+      id: prepared_rust_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && steps.prepared_rust.outcome == 'success') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        "$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" after
+        proof_bytes=$(du -sx --block-size=1 "$CI_JOB_TEMP/proof" | cut -f1)
+        [[ $proof_bytes =~ ^[0-9]+$ ]]
+        ((proof_bytes <= 1024 * 1024 * 1024))
     - name: Require immutable source SDK and held input seals independently of comparison outcome
       id: immutable_seals
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
@@ -187,7 +246,7 @@ jobs:
         /usr/bin/python3 -I -B -S - <<'SEALS'
         import json, os
         from pathlib import Path
-        assert os.environ['QUALIFY_OUTCOME']=='success'
+        assert os.environ['QUALIFY_OUTCOME']==os.environ['SDK_OUTCOME']=='success'
         proof=Path(os.environ['CI_JOB_TEMP'])/'proof/controls-normal40'
         seal=json.loads((proof/'final-seals.json').read_bytes())
         complete=json.loads((proof/'complete.json').read_bytes())
@@ -212,6 +271,7 @@ jobs:
         SEALS
       env:
         QUALIFY_OUTCOME: ${{ steps.qualify.outcome }}
+        SDK_OUTCOME: ${{ steps.prepared_rust_final.outcome }}
     - name: Record attempted normal40-only outcomes
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         && (always() && env.CI_JOB_TEMP != '') }}
@@ -222,9 +282,10 @@ jobs:
         SOURCE_OUTCOME: ${{ steps.source_final.outcome }}
         IMMUTABLE_OUTCOME: ${{ steps.immutable_seals.outcome }}
         CLOSURE_OUTCOME: ${{ steps.closure.outcome }}
+        SDK_OUTCOME: ${{ steps.prepared_rust_final.outcome }}
       run: |
         set -euo pipefail
-        printf 'source=%s\ncurrent_normal40=%s\nsource_seal=%s\nimmutable_seals=%s\nsource_sdk_numerics_elf_provider_children_closure=%s\noriginal_capture_rerun=false\nhistorical_original_provider_closure=not-recorded\noriginal109_and_rejection27_health5_continuous_rerun=false\nfull_runtime_acceptance=false\ninventory_credit=false\ntemporary_python_controller=pending\n' "$GITHUB_SHA" "$QUALIFY_OUTCOME" "$SOURCE_OUTCOME" "$IMMUTABLE_OUTCOME" "$CLOSURE_OUTCOME" > "$CI_JOB_TEMP/proof/outcomes.txt"
+        printf 'source=%s\ncurrent_normal40=%s\nsource_seal=%s\nimmutable_seals=%s\nsource_sdk_numerics_elf_provider_children_closure=%s\nprepared_sdk_seal=%s\noriginal_capture_rerun=false\nhistorical_original_provider_closure=not-recorded\noriginal109_and_rejection27_health5_continuous_rerun=false\nfull_runtime_acceptance=false\ninventory_credit=false\ntemporary_python_controller=pending\n' "$GITHUB_SHA" "$QUALIFY_OUTCOME" "$SOURCE_OUTCOME" "$IMMUTABLE_OUTCOME" "$CLOSURE_OUTCOME" "$SDK_OUTCOME" > "$CI_JOB_TEMP/proof/outcomes.txt"
     - name: Retain owned normal40 proof including failed admissions and cleanup evidence
       id: fast_evidence
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
@@ -240,7 +301,7 @@ jobs:
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest
         != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success' && steps.immutable_seals.outcome ==
-        'success') }}
+        'success' && steps.prepared_rust_final.outcome == 'success') }}
       shell: bash
       working-directory: ${{ github.workspace }}
       env:

@@ -4,11 +4,12 @@ set -euo pipefail
 umask 077
 fail() { printf 'changed-files reuse: %s\n' "$*" >&2; exit 1; }
 [[ $# == 0 ]] || fail '인자는 받지 않음; 명시적 환경변수 필요'
-[[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_NAME:-} == bin-actions && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]] || fail 'registered bin-actions Linux/X64 CI 전용'
+[[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && $(uname -m) == x86_64 ]] || fail 'GitHub-hosted Linux/X64 CI 전용'
 [[ ${GITHUB_REPOSITORY:-} == bin9208/openpilot-rust ]] || fail '저장소 불일치'
 for key in AST_REUSE_SOURCE EXPECTED_SOURCE AST_REUSE_PROOF AST_REUSE_PYTHON AST_REUSE_PYTHON_LIBRARY_PATH RUNNER_TEMP GH_TOKEN; do
   [[ -n ${!key:-} ]] || fail "필수 환경변수 없음: $key"
 done
+[[ $AST_REUSE_SOURCE == "${DIAG_SOURCE:-}" && $AST_REUSE_SOURCE == "${GITHUB_WORKSPACE:-}" && $EXPECTED_SOURCE == "${GITHUB_SHA:-}" ]] || fail 'actual hosted private source/SHA 불일치'
 [[ $EXPECTED_SOURCE =~ ^[0-9a-f]{40}$ ]] || fail 'EXPECTED_SOURCE 형식'
 [[ -z ${LD_PRELOAD:-} && -z ${GCONV_PATH:-} && -z ${GCONV_MODULES_CACHE:-} ]] || fail 'loader/GNU conversion override 금지'
 for key in AST_REUSE_SOURCE AST_REUSE_PYTHON AST_REUSE_PYTHON_LIBRARY_PATH; do

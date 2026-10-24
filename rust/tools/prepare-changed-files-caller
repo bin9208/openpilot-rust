@@ -9,7 +9,10 @@ root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)
 expected=${GITHUB_SHA:?Actions source SHA required}
 proof=$1
 env_file=$2
-[[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == bin9208/openpilot-rust && ${RUNNER_NAME:-} == bin-actions && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]] || fail 'registered bin-actions Linux/X64 CI required'
+[[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == bin9208/openpilot-rust && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]] || fail 'trusted Actions Linux/X64 CI required'
+if [[ ${RUNNER_ENVIRONMENT:-} != github-hosted ]]; then
+  [[ ${RUNNER_NAME:-} == bin-actions ]] || fail 'registered legacy runner required'
+fi
 [[ $expected =~ ^[0-9a-f]{40}$ && $expected == "${GITHUB_SHA:-}" ]] || fail 'expected source differs from Actions SHA'
 validate_dir() {
   local directory=$1 owner mode
@@ -21,6 +24,16 @@ job=${CI_JOB_TEMP:?common CI_JOB_TEMP required}
 validate_dir "$job"
 [[ $(cat -- "$job/owner") == "${GITHUB_RUN_ID:?}:${GITHUB_RUN_ATTEMPT:?}:${GITHUB_JOB:?}" ]] || fail 'common job owner mismatch'
 validate_dir "$job/proof"
+cargo_command=cargo
+if [[ ${RUNNER_ENVIRONMENT:-} == github-hosted ]]; then
+  [[ $job == /tmp/openpilot-ci.?????? && ${job%/*} == /tmp ]] || fail 'private hosted job root differs'
+  [[ ${CI_PREPARED_RUST_ROOT:-} == "$job/rustup-home/toolchains/1.94.0-x86_64-unknown-linux-gnu" && ${CI_PREPARED_RUST_MANIFEST:-} == "$job/proof/prepared-rust-files.before.sha256" ]] || fail 'hosted caller SDK binding differs'
+  [[ $root == "${DIAG_SOURCE:-}" && $root == "${GITHUB_WORKSPACE:-}" ]] || fail 'private hosted caller source differs'
+  validate_dir "$CI_PREPARED_RUST_ROOT"
+  [[ -f $CI_PREPARED_RUST_MANIFEST && ! -L $CI_PREPARED_RUST_MANIFEST ]] || fail 'hosted SDK manifest unavailable'
+  sha256sum --check --strict --quiet -- "$CI_PREPARED_RUST_MANIFEST" || fail 'hosted caller SDK changed'
+  cargo_command=$CI_PREPARED_RUST_ROOT/bin/cargo
+fi
 validate_dir "$root"
 [[ $(git -C "$root" rev-parse --verify HEAD) == "$expected" ]] || fail 'actual source HEAD mismatch'
 [[ $proof == "$job/proof/"* && ! -e $proof && ! -L $proof ]] || fail 'new common-job proof subdirectory required'
@@ -39,10 +52,10 @@ mkdir -m 700 -- "$proof" "$proof/receipts"
 set -C
 cd -- "$root"
 export CARGO_TARGET_DIR="$target"
-cargo test --manifest-path "$root/rust/Cargo.toml" -p openpilot-dev-tools --locked \
+"$cargo_command" test --manifest-path "$root/rust/Cargo.toml" -p openpilot-dev-tools --locked \
   --no-default-features --features changed-files-native --test changed_files_caller \
   --no-run --message-format=json > "$proof/cargo.jsonl" 2> "$proof/compile.stderr"
-cargo run --quiet --manifest-path "$root/rust/Cargo.toml" -p openpilot-dev-tools --locked \
+"$cargo_command" run --quiet --manifest-path "$root/rust/Cargo.toml" -p openpilot-dev-tools --locked \
   --no-default-features --features changed-files-native --bin prepare-changed-files-context -- \
   --root "$root" --expected-source "$expected" --proof-dir "$proof" --cargo-jsonl "$proof/cargo.jsonl" \
   > "$proof/context.sha256" 2> "$proof/builder.stderr"

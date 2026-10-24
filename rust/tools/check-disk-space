@@ -61,8 +61,17 @@ if [[ -n ${OPENPILOT_CI_PREPARED_RUST_ROOT+x}${OPENPILOT_CI_PREPARED_RUST_MANIFE
   prepared_root=${OPENPILOT_CI_PREPARED_RUST_ROOT:-}
   prepared_manifest=${OPENPILOT_CI_PREPARED_RUST_MANIFEST:-}
   [[ -n $prepared_root && -n $prepared_manifest ]] || fail 'prepared Rust root and manifest are both required'
-  [[ $prepared_root == /home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu ]] || fail 'unapproved prepared Rust root'
-  [[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_NAME:-} == bin-actions && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && $host == x86_64-unknown-linux-gnu ]] || fail 'prepared Rust requires bin-actions Linux X64 CI'
+  if [[ ${RUNNER_ENVIRONMENT:-} == github-hosted ]]; then
+    [[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == bin9208/openpilot-rust && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && $host == x86_64-unknown-linux-gnu ]] || fail 'prepared Rust requires trusted Linux X64 Actions'
+    [[ ${CI_JOB_TEMP:-} == /tmp/openpilot-ci.?????? && ${CI_JOB_TEMP%/*} == /tmp ]] || fail 'prepared hosted job path differs'
+    [[ $prepared_root == "$CI_JOB_TEMP/rustup-home/toolchains/1.94.0-x86_64-unknown-linux-gnu" && $prepared_manifest == "$CI_JOB_TEMP/proof/prepared-rust-files.before.sha256" ]] || fail 'unapproved private hosted Rust binding'
+    validate "$CI_JOB_TEMP" directory
+    validate "$CI_JOB_TEMP/owner" file
+    [[ $(cat -- "$CI_JOB_TEMP/owner") == "${GITHUB_RUN_ID:?}:${GITHUB_RUN_ATTEMPT:?}:${GITHUB_JOB:?}" ]] || fail 'prepared hosted owner differs'
+  else
+    [[ $prepared_root == /home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu ]] || fail 'unapproved prepared Rust root'
+    [[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_NAME:-} == bin-actions && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && $host == x86_64-unknown-linux-gnu ]] || fail 'prepared Rust requires bin-actions Linux X64 CI'
+  fi
   [[ $prepared_manifest == /* ]] || fail 'prepared Rust manifest must be absolute'
   prepared=true
 fi

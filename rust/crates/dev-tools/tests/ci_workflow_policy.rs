@@ -1,7 +1,7 @@
 //! Native counterparts of tools/ci/tests/test_workflow_policy.py.
 use openpilot_dev_tools::ci_policy::{
     check_workflow_policy, parse, run_shell, validate_fast_gate, validate_local_routing,
-    LOCAL_RUNNER, TRUSTED_SOURCE,
+    HOSTED_RUNNER, LOCAL_RUNNER, TRUSTED_SOURCE,
 };
 use std::{collections::BTreeMap, fs, path::PathBuf};
 
@@ -343,7 +343,7 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         "native-alert-manager",
     ] {
         let job = &workflow["jobs"][worker];
-        assert_eq!(job["runs-on"], serde_json::json!(LOCAL_RUNNER));
+        assert_eq!(job["runs-on"], serde_json::json!(HOSTED_RUNNER));
         for (key, value) in [
             ("RUSTUP_TOOLCHAIN", "1.94.0"),
             ("CARGO_BUILD_JOBS", "2"),
@@ -444,14 +444,24 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
 }
 
 #[test]
-fn future_diagnostic_runner_and_fork_refusal_cannot_use_hosted_fallback() {
+fn future_diagnostic_runner_and_fork_refusal_require_static_approved_routing() {
     let workflow =
         parse(&fs::read_to_string(root().join(".github/workflows/fast-checks.yml")).unwrap())
             .unwrap();
     validate_local_routing(&workflow).unwrap();
     for runner in [
-        serde_json::json!("ubuntu-24.04"),
+        serde_json::json!(LOCAL_RUNNER),
+        serde_json::json!(HOSTED_RUNNER),
+    ] {
+        let mut approved = workflow.clone();
+        approved["jobs"]["native"]["runs-on"] = runner;
+        validate_local_routing(&approved).unwrap();
+    }
+    for runner in [
+        serde_json::json!("ubuntu-latest"),
+        serde_json::json!("windows-latest"),
         serde_json::json!("ubuntu-24.04-arm"),
+        serde_json::json!(["ubuntu-24.04"]),
         serde_json::json!("${{ matrix.runner }}"),
     ] {
         let mut bad = workflow.clone();
@@ -580,7 +590,7 @@ fn diagnostic_fast_slice_keeps_private_paths_and_explicit_fork_failure() {
             .unwrap();
     validate_fast_gate(&workflow).unwrap();
     for (name, worker) in workflow["jobs"].as_object().unwrap() {
-        assert_eq!(worker["runs-on"], serde_json::json!(LOCAL_RUNNER));
+        assert_eq!(worker["runs-on"], serde_json::json!(HOSTED_RUNNER));
         if name == "fast" {
             continue;
         }
@@ -650,9 +660,14 @@ fn diagnostic_fast_slice_keeps_private_paths_and_explicit_fork_failure() {
                 "unsafe owned cleanup missing {marker}"
             );
         }
-        let mut hosted = workflow.clone();
-        hosted["jobs"][name]["runs-on"] = "ubuntu-24.04".into();
-        assert!(validate_fast_gate(&hosted).is_err());
+        let mut legacy = workflow.clone();
+        legacy["jobs"][name]["runs-on"] = serde_json::json!(LOCAL_RUNNER);
+        validate_fast_gate(&legacy).unwrap();
+        for runner in ["ubuntu-latest", "windows-latest", "${{ matrix.runner }}"] {
+            let mut unapproved = workflow.clone();
+            unapproved["jobs"][name]["runs-on"] = runner.into();
+            assert!(validate_fast_gate(&unapproved).is_err());
+        }
         assert_eq!(steps[0]["env"]["SOURCE_ALLOWED"], DIAGNOSTIC_TRUSTED_SOURCE);
     }
     let mut fork_pass = workflow.clone();
@@ -669,6 +684,13 @@ fn native_fast_after_guards_reject_skipped_audits_and_unsealed_cleanup() {
     validate_fast_gate(&workflow).unwrap();
     let steps = workflow["jobs"]["native"]["steps"].as_array().unwrap();
     let at = |id: &str| steps.iter().position(|step| step["id"] == id).unwrap();
+    assert!(at("prepared_rust") < at("sdk_permissions"));
+    let mut late_prepare = workflow.clone();
+    late_prepare["jobs"]["native"]["steps"]
+        .as_array_mut()
+        .unwrap()
+        .swap(at("prepared_rust"), at("sdk_permissions"));
+    assert!(validate_fast_gate(&late_prepare).is_err());
 
     // after 검사는 실패 때도 실행해야 하며 fork/source 경계 밖으로 빠져나갈 수 없다.
     for id in [
@@ -762,6 +784,38 @@ fn native_fast_after_guards_reject_skipped_audits_and_unsealed_cleanup() {
             "accepted duplicated {id}"
         );
     }
+}
+
+#[test]
+fn hosted_source_boundary_names_and_denials_do_not_become_aggregate_bypasses() {
+    use openpilot_dev_tools::ci_policy::FORK_DENIAL;
+    let workflow =
+        parse(&fs::read_to_string(root().join(".github/workflows/fast-checks.yml")).unwrap())
+            .unwrap();
+    for (name, denial) in [
+        ("Deny fork source and require GitHub-hosted Linux X64", "set -euo pipefail\ntest \"${SOURCE_ALLOWED:-}\" = true || { echo 'Fork PR source denied for trusted docs validation' >&2; exit 1; }\n"),
+        ("Deny fork source and require GitHub-hosted Ubuntu X64 runner", "test \"${SOURCE_ALLOWED:-}\" = true || { echo 'Fork PR source denied for setup qualification' >&2; exit 1; }\n"),
+        ("Deny fork source and require GitHub-hosted Ubuntu X64 runner", "test \"${SOURCE_ALLOWED:-}\" = true || { echo 'Fork PR source denied for normal40 qualification' >&2; exit 1; }\n"),
+    ] {
+        let mut hosted = workflow.clone();
+        let boundary = &mut hosted["jobs"]["native"]["steps"][0];
+        boundary["name"] = name.into();
+        boundary["run"] = boundary["run"].as_str().unwrap().replacen(FORK_DENIAL, denial, 1).into();
+        validate_local_routing(&hosted).unwrap();
+        let mut bypass = hosted.clone();
+        bypass["jobs"]["native"]["steps"][1]["if"] = "${{ always() }}".into();
+        assert!(validate_local_routing(&bypass).is_err());
+        let mut skipped = hosted.clone();
+        skipped["jobs"]["native"]["steps"][0]["if"] = "${{ always() }}".into();
+        assert!(validate_local_routing(&skipped).is_err());
+        let mut fail_open = hosted.clone();
+        fail_open["jobs"]["native"]["steps"][0]["run"] = denial.replace("exit 1", "exit 0").into();
+        assert!(validate_local_routing(&fail_open).is_err());
+    }
+    let mut fake_aggregate = workflow.clone();
+    fake_aggregate["jobs"]["native"]["if"] = "${{ always() }}".into();
+    fake_aggregate["jobs"]["native"]["steps"][0]["name"] = "unapproved source boundary".into();
+    assert!(validate_local_routing(&fake_aggregate).is_err());
 }
 
 #[test]
@@ -926,10 +980,9 @@ fn fast_sdk_opt_in_stays_inline_and_readonly_helpers_cannot_be_skipped() {
                     );
                 }
             }
-            if worker != "native"
-                && ["prepared_rust", "prepared_rust_final"]
-                    .iter()
-                    .any(|id| step["id"] == *id)
+            if ["prepared_rust", "prepared_rust_final"]
+                .iter()
+                .any(|id| step["id"] == *id)
             {
                 // Admission/final must call their distinct bound helper phases.
                 let wrong_phase = if step["id"] == "prepared_rust" {
@@ -945,9 +998,11 @@ fn fast_sdk_opt_in_stays_inline_and_readonly_helpers_cannot_be_skipped() {
                         "{worker}: helper bypass"
                     );
                 }
-                assert!(!steps.iter().any(|s| {
-                    s["id"] == "sdk_permissions" || s["id"] == "sdk_permissions_final"
-                }));
+                if worker != "native" {
+                    assert!(!steps.iter().any(|s| {
+                        s["id"] == "sdk_permissions" || s["id"] == "sdk_permissions_final"
+                    }));
+                }
             }
         }
     }

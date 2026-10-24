@@ -15,11 +15,7 @@ concurrency:
 jobs:
   focused:
     name: Native conversion focused acceptance
-    runs-on:
-    - self-hosted
-    - Linux
-    - X64
-    - dev-md-local
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
       RUSTUP_TOOLCHAIN: 1.94.0
@@ -37,8 +33,7 @@ jobs:
           == github.repository }}
       run: |
         test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
-        test "$RUNNER_NAME" = bin-actions
-        test "$RUNNER_ENVIRONMENT" = self-hosted
+        test "$RUNNER_ENVIRONMENT" = github-hosted
         test "$RUNNER_OS" = Linux
         test "$RUNNER_ARCH" = X64
     - name: Common owned Fast job temporary paths
@@ -152,17 +147,16 @@ jobs:
         printf '{"available_bytes":%s,"planned_focused_growth_bytes":4294967296}\n' "$available" > "$CI_JOB_TEMP/proof/build-growth.json"
         sudo -n apt-get -o APT::Architectures=amd64 update
         sudo -n apt-get -o APT::Architectures=amd64 install -y g++ pkg-config capnproto libcapnp-dev libzmq3-dev gh unzip jq strace
-        export RUSTUP_HOME=/home/actions/.rustup
-        printf 'RUSTUP_HOME=%s\n' "$RUSTUP_HOME" >> "$GITHUB_ENV"
-        test -x "$RUSTUP_HOME/toolchains/1.94.0-x86_64-unknown-linux-gnu/bin/rustc"
-        rustup component list --installed > "$CI_JOB_TEMP/proof/rust-components.txt"
+        "$DIAG_SOURCE/rust/tools/prepare-readonly-ci-rust" before
+        sdk="$RUSTUP_HOME/toolchains/1.94.0-x86_64-unknown-linux-gnu"
+        "$CARGO_HOME/bin/rustup" component list --installed --toolchain 1.94.0 > "$CI_JOB_TEMP/proof/rust-components.txt"
         grep -q '^rustfmt-' "$CI_JOB_TEMP/proof/rust-components.txt"
         grep -q '^clippy-' "$CI_JOB_TEMP/proof/rust-components.txt"
-        sha256sum "$(rustup which rustc)" "$(rustup which cargo)" "$(rustup which rustfmt)" "$(rustup which clippy-driver)" > "$CI_JOB_TEMP/proof/rust-tools.sha256"
+        sha256sum "$sdk/bin/rustc" "$sdk/bin/cargo" "$sdk/bin/rustfmt" "$sdk/bin/clippy-driver" > "$CI_JOB_TEMP/proof/rust-tools.sha256"
 
         "$CI_JOB_TEMP/venv/bin/python" -m pip install requests==2.34.2
-        rustc -vV > "$CI_JOB_TEMP/proof/rustc.txt"
-        cargo -V > "$CI_JOB_TEMP/proof/cargo.txt"
+        "$sdk/bin/rustc" -vV > "$CI_JOB_TEMP/proof/rustc.txt"
+        "$sdk/bin/cargo" -V > "$CI_JOB_TEMP/proof/cargo.txt"
         command -v capnp
         command -v strace
 
@@ -197,7 +191,25 @@ jobs:
         done
         cmp "$CI_JOB_TEMP/proof/prior-source-before.sha256" "$CI_JOB_TEMP/proof/prior-source-after.sha256"
         cmp "$CI_JOB_TEMP/proof/prior-index-before.bin" "$CI_JOB_TEMP/proof/prior-index-after.bin"
-        sha256sum --check "$CI_JOB_TEMP/proof/prior-rust-tools.sha256"
+        python - <<'SDK_ORIGIN'
+        import hashlib,json,os,re
+        from pathlib import Path
+        proof=Path(os.environ['CI_JOB_TEMP'])/'proof'
+        sdk=Path(os.environ['CI_PREPARED_RUST_ROOT'])
+        old=Path('/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu/bin')
+        expected={'rustc','cargo','rustfmt','clippy-driver'}
+        mapping=[]
+        for line in (proof/'prior-rust-tools.sha256').read_text().splitlines():
+            match=re.fullmatch(r'([0-9a-f]{64})  (/[^\n]+)',line)
+            assert match is not None
+            prior=Path(match[2]);assert prior.parent==old and prior.name in expected
+            expected.remove(prior.name)
+            current=sdk/'bin'/prior.name
+            assert hashlib.sha256(current.read_bytes()).hexdigest()==match[1]
+            mapping.append({'historical_path':str(prior),'current_path':str(current),'sha256':match[1]})
+        assert not expected and len(mapping)==4
+        (proof/'historical-current-rust-programs.json').write_text(json.dumps(mapping,indent=2)+'\n')
+        SDK_ORIGIN
         git fetch --no-tags --depth=1 origin 97f7ad36dfa0919b4e5c216fb16f44ed29161663
         git diff --no-renames --name-only -z 97f7ad36dfa0919b4e5c216fb16f44ed29161663 HEAD > "$CI_JOB_TEMP/proof/changed-paths.bin"
         while IFS= read -r -d '' changed; do
@@ -322,11 +334,14 @@ jobs:
             rust/crates/dev-tools/tests/fixtures/setup-ssh-original/setup-effects-original.json) ;;
             tools/ci/controlsd_normal_523.py) ;;
             tools/ci/run-docs-with-growth-guard) ;;
+            AGENTS.md) ;;
+            rust/tools/check-disk-space) ;;
+            docs/naver/python-rust-523-hosted-535.md) ;;
             *) printf 'Changed dependency invalidates reuse: %s\n' "$changed" >&2; exit 1 ;;
           esac
         done < "$CI_JOB_TEMP/proof/changed-paths.bin"
         printf '%s  %s\n' 68f0f800ef5fbb456a06986a8695a5c3aaa2cbdf86160b47826e913edd792f85 .github/workflows/carrot-route-vault-publish.yaml | sha256sum --check -
-        printf '%s  %s\n' 282b42c417da7af8442ceeb8e660700f8039834f28b363befa59c0b9f59d8736 .github/workflows/fast-checks.yml | sha256sum --check -
+        printf '%s  %s\n' d73e8dc37bcb33dc868895a89cc5b6bab45c7a486c6078d6e02021370ff5d266 .github/workflows/fast-checks.yml | sha256sum --check -
         printf '%s  %s\n' ada137e1a1bbe957903a930c49dc5496f5d685193b8d09970accd90f632c2a0c .github/workflows/python-rust-523-bundle.yml | sha256sum --check -
         printf '%s  %s\n' e7718884de7e2b3f25a31d7c1fdf23f11f1a1ece82c4f86d1e84e6a9673d6388 .github/workflows/python-rust-523-capacity.yml | sha256sum --check -
         printf '%s  %s\n' 634559405e03be79cf66dfcf888bfc28a0b27a51e92b5335013dfe1b16836f59 .github/workflows/python-rust-523-model.yml | sha256sum --check -
@@ -335,7 +350,7 @@ jobs:
         test ! -e openpilot/tools/lib/sanitizer.py && test ! -L openpilot/tools/lib/sanitizer.py
         printf '%s  %s\n' a1db3f1726cba01dfcb50efd8d13536de6ff9c47d5244346019010bf7be243a8 rust/crates/dev-tools/Cargo.toml | sha256sum --check -
         printf '%s  %s\n' a2e53b5164624f1946ca40fe188915493329dd25fe7abe37a9f7958dcf56adaa rust/crates/dev-tools/src/argparse_scan.rs | sha256sum --check -
-        printf '%s  %s\n' 2949420bc853af93dafcd1f0770a29f626929026e4258602c9863cab0b48e0ab rust/crates/dev-tools/src/ci_policy.rs | sha256sum --check -
+        printf '%s  %s\n' 705c5dcc849aec55533b7a288fd70c29610f5b83c90aa6f67f4834646a40817a rust/crates/dev-tools/src/ci_policy.rs | sha256sum --check -
         printf '%s  %s\n' 45f5c9880964d2ce954f02997cf0b85c8b429051aa6900daaa822258f07546ee rust/crates/dev-tools/src/developer_ssh.rs | sha256sum --check -
         printf '%s  %s\n' 390141ed26fb0afbaffed631bfbc61462044b033e2afea14e0eeecaf86c5aef6 rust/crates/dev-tools/src/developer_ssh/cli.rs | sha256sum --check -
         printf '%s  %s\n' 4ec4ac3923e32ed834dffee608080b31c5806205823ede2221b057020b172496 rust/crates/dev-tools/src/developer_ssh/login/cli.rs | sha256sum --check -
@@ -346,9 +361,9 @@ jobs:
         printf '%s  %s\n' bf2758c92e1cfdc9f69249ce1c16b6a96e393ad062adf259e15d6120148e38a0 rust/crates/dev-tools/src/developer_ssh/unicode_lower15_original.rs | sha256sum --check -
         printf '%s  %s\n' 1dd943c418bee41bc2a7d4b850a6d0cf9dfce885fb1182fb437f59a0747ae03f rust/crates/dev-tools/src/route_sanitizer_tests.rs | sha256sum --check -
         printf '%s  %s\n' 1227b87bdfba7e0ea03d2542766133f75925200bfd0fb7f1eea7f121738294f7 rust/crates/dev-tools/tests/argparse_scan.rs | sha256sum --check -
-        printf '%s  %s\n' a3c592dc7af2e78964bb4c0475dc201d93171ac2d035bf684db2d2b6f1521fb2 rust/crates/dev-tools/tests/ci_disk_bootstrap.rs | sha256sum --check -
-        printf '%s  %s\n' f1fb63059d2fbcdcd039c5c47fe7f784bf17601a4476aef60a4a0053b0f8477c rust/crates/dev-tools/tests/ci_disk_bootstrap/prepared_audit.rs | sha256sum --check -
-        printf '%s  %s\n' dd6f6c9c8771bfd31ecdc7d8e2a88ad8f69759235fbf01ee4b130bb2ab870b11 rust/crates/dev-tools/tests/ci_workflow_policy.rs | sha256sum --check -
+        printf '%s  %s\n' 823178de2e6b3587e039aa9ea9267a0cfb99e7c355fd6dabbdb2790b4bfd84a3 rust/crates/dev-tools/tests/ci_disk_bootstrap.rs | sha256sum --check -
+        printf '%s  %s\n' d8034f578df45c9c68b889eb83c7fb6ec85c3e1cd6d109a36d6e5ecebde189f6 rust/crates/dev-tools/tests/ci_disk_bootstrap/prepared_audit.rs | sha256sum --check -
+        printf '%s  %s\n' 54258a2816988b474ccb1ad45218347e789c7d628177d4e2305db7bcc5f06f75 rust/crates/dev-tools/tests/ci_workflow_policy.rs | sha256sum --check -
         printf '%s  %s\n' 9e621eff405a28331789a89ef00b6bb66449a6a6a73fe3b0cabce920777d5e6e rust/crates/dev-tools/tests/developer_auth.rs | sha256sum --check -
         printf '%s  %s\n' 86884528b67fab80757b46b8b0bdca6b9b593c6446933adc3ec628d7cff12c58 rust/crates/dev-tools/tests/developer_cli_original.rs | sha256sum --check -
         printf '%s  %s\n' 7ff3b5e2ca762aa2c10f0fcf6c0e915f286143e51cde7ce2e1898ec1a1cb8958 rust/crates/dev-tools/tests/fixtures/route-sanitizer-original/car-copy-float-bits.original.json | sha256sum --check -
@@ -370,7 +385,7 @@ jobs:
         # controls/ARM/Paramsd/캐시 회수의 새 기능 수용은 각각 별도 workflow 결과로 판단한다.
         printf '%s  %s\n' 909149861958d56886f847da128e48dbaa868b3a8b4197091f996ff507a2ad90 .github/workflows/python-rust-523-controls.yml | sha256sum --check -
         printf '%s  %s\n' 9316a0b17ba6c50c6e56b62058286f02199751989b363376af8eeaa168923b00 tools/ci/controlsd_fixture_523.py | sha256sum --check -
-        printf '%s  %s\n' 6b0781cdd61e1bbdd4fd9e12573d3dde50ff64a1b0ed210eecce1a351ed3acb0 .github/workflows/python-rust-523-changed-files.yml | sha256sum --check -
+        printf '%s  %s\n' fd7ff5380cb3d31cff675f27580969dd7ddec87d7e10b3e7dd08981328deb715 .github/workflows/python-rust-523-changed-files.yml | sha256sum --check -
         printf '%s  %s\n' 158afd2994f455c7a2a1b55f996ba3e43dfa4c725952496f723f91c87358bacd .github/workflows/python-rust-523-history-image.yml | sha256sum --check -
         printf '%s  %s\n' b47da7e2bda55afe1c6229f8b55ab539bdb72a87490a169049c77fc2b9c94ff2 rust/crates/dev-tools/src/bin/prepare_changed_files_context.rs | sha256sum --check -
         printf '%s  %s\n' f6e9bdba494dba9307a34269c0ac199e855e52b8c3d307e69e2d68d61270f7c9 rust/crates/dev-tools/src/driver_daemon_current_catalog.rs | sha256sum --check -
@@ -408,8 +423,8 @@ jobs:
         printf '%s  %s\n' 015e710c54ef879927443d3014bddcdb9fc27c2d5539b3ed500b16f05643cf55 rust/crates/model-runtime/src/cached_isa.rs | sha256sum --check -
         printf '%s  %s\n' 3e88a87de7afbe8319c75a130afc4e6942f60f66ed577fbcc5c7ee759be95031 rust/crates/model-runtime/src/lib.rs | sha256sum --check -
         printf '%s  %s\n' 203cec3da143a5cea6d9015c527e93e0496e0da6bba20ade83ad4fab8b6e72f8 rust/crates/model-runtime/tests/historical_cached_image.rs | sha256sum --check -
-        printf '%s  %s\n' e8d1afc32ba41eb2c327b8f9d797beee70883f00df0d43130e0bdf040c41aed3 rust/tools/prepare-changed-files-caller | sha256sum --check -
-        printf '%s  %s\n' 996d3c1a2d128a16967d83ad4527f0a1fd48fdd9ea0db6ddb971d5e169e18439 tools/ci/changed_files_reuse_523.sh | sha256sum --check -
+        printf '%s  %s\n' 186e02bf0c24b22dd0bc1ee74f7e3cdd91a146ffd2639a98fe0ac2af5bf53b9a rust/tools/prepare-changed-files-caller | sha256sum --check -
+        printf '%s  %s\n' 6f75ef40f6904dc9174ffa132de49c5095ae4f5d4b5765dea4f521607bdae32a tools/ci/changed_files_reuse_523.sh | sha256sum --check -
         printf '%s  %s\n' a20688786622f9cb4600d46e9ee2adc57a03950fc5fe4a1d7b0318558631f814 tools/ci/model_history_image_482.sh | sha256sum --check -
         printf '%s  %s\n' 7372b8240f7998d6a78f6ef95b574cf64523b913282240d918ef5697a7d8507d rust/Cargo.toml | sha256sum --check -
         printf '%s  %s\n' a82648159767a21268e61ed4f2aba64940b7458733333ece0fab653017929ea0 rust/Cargo.lock | sha256sum --check -
@@ -426,17 +441,18 @@ jobs:
         printf '%s  %s\n' 4ba524fef3123c5d14782bd2deae63c6d6347c2476328830bc155fccf8c1009c rust/crates/dev-tools/src/controlsd_check/frozen.rs | sha256sum --check -
         printf '%s  %s\n' 9e6a3b491a5b00874fe357dbbc0aa8bb9e27bd7e3a115f15ba7d784bd287f973 rust/crates/dev-tools/tests/controlsd_check.rs | sha256sum --check -
         printf '%s  %s\n' aa8c9160bcab82028491ad93f1f501fe5fa36a43b3a6572d03d38b4a239eff76 rust/crates/dev-tools/tests/controlsd_check/frozen.rs | sha256sum --check -
-        printf '%s  %s\n' fc3831e2d270f0b1da834008911603deedab4d20b1d785310505e9bf3b8200b7 rust/tools/prepare-readonly-ci-rust | sha256sum --check -
+        printf '%s  %s\n' 384cdcae5b30bb6d4281f39d88a54cf9a2701f9c2cbbc1f61b7feef5505fc5ef rust/tools/prepare-readonly-ci-rust | sha256sum --check -
         printf '%s  %s\n' 8009a7377c553b8923640ce8c7b6232e0229978266f112c405f0d759bbf54620 tools/ci/paramsd_gate_523.py | sha256sum --check -
         printf '%s  %s\n' 9c455a724c5f4fcee7616197fbb057e2eda737c4810be0f758cf0a881538f58c rust/crates/dev-tools/src/controlsd_fixture_generate/audit.rs | sha256sum --check -
-        printf '%s  %s\n' c07ed2737ed4a7828b0827098924cb26c47942bed50e218153d6af604c8fa913 .github/workflows/python-rust-523-controls-normal.yml | sha256sum --check -
-        printf '%s  %s\n' 265ef5c60c91c7fd01c31f6a1458993c9656dcc92a9e08a6cc5316ac0e5858d6 .github/workflows/python-rust-523-setup-keys.yml | sha256sum --check -
+        printf '%s  %s\n' ab44187ec95f16015df78588696047b277201efc42a3d7e14ae1a710773bee73 .github/workflows/python-rust-523-controls-normal.yml | sha256sum --check -
+        printf '%s  %s\n' e9046f556221aa2c10cc548901aa5a40dc9cd4571177e281c5acff6789035909 .github/workflows/python-rust-523-setup-keys.yml | sha256sum --check -
         printf '%s  %s\n' 11fae1ee5c7a17594c023f5adc114dc6236e1bd078749366d0fa2f0bf3958c62 rust/crates/dev-tools/tests/developer_cli_original/setup_frozen.rs | sha256sum --check -
         printf '%s  %s\n' fc9bb32973a65af4a05c183d8378645eedae373767b3ea4eee028e815a0e3b2e rust/crates/dev-tools/tests/fixtures/setup-ssh-original/README.md | sha256sum --check -
         printf '%s  %s\n' 444a47ecba9579d4042f26dd89f8438908b56d244a0f2c98c8b0dd3e1ef3a6ef rust/crates/dev-tools/tests/fixtures/setup-ssh-original/setup-effects-original.json | sha256sum --check -
-        printf '%s  %s\n' 90ff3adde308f46c1a4a96d3785b386d28f9f3e7049e3b2505dab1f558ced027 tools/ci/controlsd_normal_523.py | sha256sum --check -
-        printf '%s  %s\n' c1227d57011d494cb5a71e1a33fb5fe4d9785b3f78ac387c1faea0112b55ead6 .github/workflows/user-docs.yaml | sha256sum --check -
-        printf '%s  %s\n' 88e292d7718216bc16341f1ae8eedee2558ae4fdb52a2c2b4a983197f5982c12 tools/ci/run-docs-with-growth-guard | sha256sum --check -
+        printf '%s  %s\n' ecf82bd1fb23092174b3cd5385651a6a877e303015835be71f85e3df6cddf91d tools/ci/controlsd_normal_523.py | sha256sum --check -
+        printf '%s  %s\n' dd361def66040a1abfcce0634366ecdfa92db6e9cfb062adf231c1640d6695e1 .github/workflows/user-docs.yaml | sha256sum --check -
+        printf '%s  %s\n' a1648334531f775ff450f6a71bd82172bd6975cae0898fa3f5c48d9b8604ec3a tools/ci/run-docs-with-growth-guard | sha256sum --check -
+        printf '%s  %s\n' b68a027730fff017e6e86fbcd4d72a4ce8b660ccc9ff1297f19add54200f0e38 rust/tools/check-disk-space | sha256sum --check -
         test ! -e tools/carrot_route_vault/build_bundle.py && test ! -L tools/carrot_route_vault/build_bundle.py
         python - <<'MANIFEST'
         import hashlib,subprocess,tomllib
@@ -489,7 +505,7 @@ jobs:
         old_feature=b'--features developer-ssh-native --bin "$tool"'
         assert old.count(old_case)==old.count(old_feature)==1
         assert now(path)==old.replace(old_case,new_case).replace(old_feature,b'--features "$features" --bin "$tool"')
-        # 이 admission block 외의 focused workflow는 642d 원문으로 고정한다.
+        # 이 admission block 밖의 현재 실행 경계도 #535 검토 소스로 별도 고정한다.
         path='.github/workflows/python-rust-523.yml'
         raw=now(path)
         start=b'    - name: Admit exact unchanged successful source cohorts\n'
@@ -497,7 +513,7 @@ jobs:
         assert raw.count(start)==raw.count(end)==1
         prefix,tail=raw.split(start)
         _,suffix=tail.split(end)
-        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='4decb9df2d5961ca67dc8e63f0a6d99234c7ec2a7eabc386020c0673837e88cb', 'Focused workflow changed outside the reviewed reuse block.'
+        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='9bcc710eaf01a0d4146337e1c6a3795f194757d2da32511e32ddcec147b3fb8c', 'Focused workflow changed outside the reviewed reuse block.'
         MANIFEST
         python - "$prior" <<'COHORTS'
         import hashlib,io,json,sys,zipfile
@@ -642,6 +658,12 @@ jobs:
           cmp "$CI_JOB_TEMP/proof/oracle-venv-links.before.txt" "$CI_JOB_TEMP/proof/oracle-venv-links.after.txt"
         fi
       id: source_final
+    - name: Verify prepared Rust SDK after all attempted focused checks
+      id: prepared_rust_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_PREPARED_RUST_ROOT != '') }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      run: '"$DIAG_SOURCE/rust/tools/prepare-readonly-ci-rust" after'
     - name: Retain Fast job ownership evidence
       id: fast_evidence
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
@@ -654,7 +676,7 @@ jobs:
         retention-days: 14
     - name: Clean only uploaded private Fast source
       id: fast_source_cleanup
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success') }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome == 'success') }}
       working-directory: ${{ github.workspace }}
       env:
         UPLOAD_ID: ${{ steps.fast_evidence.outputs.artifact-id }}

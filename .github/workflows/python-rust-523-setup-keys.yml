@@ -9,6 +9,8 @@ name: Python Rust 523 setup keys frozen21 and public missing argument
     - rust/crates/dev-tools/tests/fixtures/setup-ssh-original/setup-effects-original.json
     - rust/crates/dev-tools/tests/fixtures/setup-ssh-original/README.md
     - rust/tools/run-developer-tool
+    - rust/tools/prepare-readonly-ci-rust
+    - rust/tools/check-disk-space
     - tools/scripts/setup_ssh_keys.py
     - rust/crates/dev-tools/tests/developer_cli_original/setup_frozen.rs
 permissions:
@@ -21,11 +23,7 @@ jobs:
   setup-keys:
     name: Setup frozen21 semantic replay and one public no-argument entry
     if: ${{ github.repository == 'bin9208/openpilot-rust' }}
-    runs-on:
-    - self-hosted
-    - Linux
-    - X64
-    - dev-md-local
+    runs-on: ubuntu-24.04
     timeout-minutes: 75
     env:
       CARGO_BUILD_JOBS: '2'
@@ -36,7 +34,7 @@ jobs:
       RUSTUP_TOOLCHAIN: 1.94.0
       SETUP_SOURCE_PHASE: pre-delete
     steps:
-    - name: Deny fork source and require registered local runner
+    - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
       shell: bash
       working-directory: ${{ github.workspace }}
       env:
@@ -44,13 +42,13 @@ jobs:
         EVENT_NAME: ${{ github.event_name }}
         SOURCE_REF: ${{ github.ref }}
       run: |
-        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied for setup qualification' >&2; exit 1; }
         set -euo pipefail
         test "$EVENT_NAME" = push
         test "$SOURCE_REF" = refs/heads/codex/feat-523-python-rust
         test "$GITHUB_ACTIONS" = true
-        test "$RUNNER_NAME" = bin-actions
-        test "$RUNNER_ENVIRONMENT" = self-hosted
+        test -n "$RUNNER_NAME"
+        test "$RUNNER_ENVIRONMENT" = github-hosted
         test "$RUNNER_OS" = Linux
         test "$RUNNER_ARCH" = X64
         test "$(uname -m)" = x86_64
@@ -115,13 +113,34 @@ jobs:
         printf '{"allocated_private_source_bytes":%s,"planned_source_growth_bytes":2147483648}\n' "$allocated" > "$CI_JOB_TEMP/proof/source-growth-after-checkout.json"
         git ls-tree -r -l HEAD | awk '$4 ~ /^[0-9]+$/ {bytes+=$4; files++} END {printf "{\"tracked_blob_bytes\":%.0f,\"files\":%d}\n",bytes,files}' > "$CI_JOB_TEMP/proof/tracked-source-size.json"
         ((allocated <= 2 * 1024 * 1024 * 1024))
-    - name: Admit prepared Rust SDK without installation or permission changes
+    - name: Admit package growth and install native build and proof prerequisites
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        # Rust 설치는 아래 공통 before 단계가 private RUSTUP_HOME에서 담당한다.
+        # 이 단계는 system package filesystem의 별도 1 GiB 설치 성장 추정이다.
+        available=$(df -PB1 / | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]]
+        required=$((1024 * 1024 * 1024))
+        printf '{"available_bytes":%s,"planned_package_growth_bytes":%s}\n' "$available" "$required" > "$CI_JOB_TEMP/proof/package-growth-before.json"
+        ((available >= required))
+        sudo -n apt-get -o APT::Architecture=amd64 update > "$CI_JOB_TEMP/proof/apt-update.log" 2>&1
+        sudo -n apt-get -o APT::Architecture=amd64 install -y --no-install-recommends \
+          build-essential binutils capnproto libcapnp-dev libzmq3-dev pkg-config \
+          jq strace curl ca-certificates xz-utils > "$CI_JOB_TEMP/proof/apt-install.log" 2>&1
+        dpkg-query -W build-essential binutils capnproto libcapnp-dev libzmq3-dev pkg-config \
+          jq strace curl ca-certificates xz-utils > "$CI_JOB_TEMP/proof/native-packages.txt"
+        df -PB1 / "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/package-disk-after.txt"
+    - name: Prepare and seal official Rust SDK in the owned private Rustup home
       id: prepared_rust
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       shell: bash
       working-directory: ${{ env.DIAG_SOURCE }}
       run: |
-        "$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" before
+        # SDK 설치 home과 qualification의 8 GiB build/cargo-home을 분리한다.
+        CARGO_HOME="$CI_JOB_TEMP/cargo-home" "$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" before
     - name: Replay frozen setup21 and reach exact current public native entry once
       id: qualify
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
@@ -142,7 +161,19 @@ jobs:
         mkdir "$raw" "$proof/build" "$build" "$build/cargo-home" "$build/target" "$build/tmp" "$build/programs" "$build/entry-home" "$build/entry-params"
         test "$CARGO_HOME" = "$build/cargo-home"
         test "$CARGO_TARGET_DIR" = "$build/target"
-        test "$sdk" = /home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu
+        test "$RUNNER_ENVIRONMENT" = github-hosted
+        rustup_root=$CI_PREPARED_RUSTUP_ROOT
+        rustup_shim=$CI_PREPARED_RUSTUP_BIN
+        test "$rustup_root" = "$job/rustup-home"
+        test "$RUSTUP_HOME" = "$rustup_root"
+        test "$sdk" = "$rustup_root/toolchains/1.94.0-x86_64-unknown-linux-gnu"
+        test "$(readlink -e -- "$sdk")" = "$sdk"
+        test "$CI_PREPARED_RUST_MANIFEST" = "$proof/prepared-rust-files.before.sha256"
+        # 공통 before가 고정 official Rustup/SDK를 private job에 준비했다.
+        # 설치 영역은 아래 8 GiB build cap 밖이며, before/after의 별도 owner/growth/seal 계약을 따른다.
+        test "$rustup_shim" = "$job/cargo-home/bin/rustup"
+        [[ -f $rustup_shim && ! -L $rustup_shim && -x $rustup_shim && $(readlink -e -- "$rustup_shim") == "$rustup_shim" ]]
+        test "$(stat -c %u -- "$rustup_shim")" = "$(id -u)"
         export PATH="$sdk/bin:/usr/bin:/bin" LC_ALL=C
         unset RUSTFLAGS CARGO_ENCODED_RUSTFLAGS CARGO_BUILD_TARGET RUSTC_WRAPPER RUSTC_WORKSPACE_WRAPPER
         unset LD_PRELOAD LD_LIBRARY_PATH BASH_ENV ENV
@@ -151,8 +182,6 @@ jobs:
         fixture=$source/rust/crates/dev-tools/tests/fixtures/setup-ssh-original/setup-effects-original.json
         fixture_sha=444a47ecba9579d4042f26dd89f8438908b56d244a0f2c98c8b0dd3e1ef3a6ef
         entry_sha=2066721af9f04888d00cc8572c5374ed142bf6d5d658cbf12b97a02c5452ca39
-        rustup_root=/home/actions/.rustup
-        rustup_shim=/home/actions/.cargo/bin/rustup
         replay=setup_cli_original_status_default_decode_and_write_failure_order
         negatives=(setup_frozen::setup_frozen_rejects_wrong_pin_last_byte_truncation_and_extra_bytes
                    setup_frozen::setup_frozen_rejects_wrong_scope_metadata_roster_and_types
@@ -600,7 +629,7 @@ jobs:
         trap 'exit 130' INT
         trap 'exit 143' TERM
         trap 'exit 129' HUP
-        # 설치/apt/복구 fallback은 없다. reader/실제 /bin/sh/컴파일러 helper도 먼저 FD+DSO에 묶는다.
+        # 준비 이후 설치/apt/복구 fallback은 없다. reader/실제 /bin/sh/컴파일러 helper도 먼저 FD+DSO에 묶는다.
         readers=(bash sh sleep jq strace setsid timeout head tail sha256sum stat readlink awk sort find ldd capnp cc c++ ar ranlib nm ld as git tar cmp df du cat env grep sed od tr id mkdir rm cut readelf xargs dirname ln cp expr flock chmod mv mktemp uname)
         for tool in "${readers[@]}"; do bind_file "$(command -v "$tool")"; done
         for tool in "${readers[@]}"; do [[ $tool == ldd ]] || bind_native "$(command -v "$tool")"; done
@@ -630,14 +659,14 @@ jobs:
         ln -s "$rustup_shim" "$build/programs/rustup"
         for tool in cargo rustc rustdoc; do ln -s "$sdk/bin/$tool" "$build/programs/$tool"; done
         add_tree source-tree "$source"
-        add_tree global-rustup "$rustup_root"
+        add_tree private-rustup "$rustup_root"
         add_tree entry-home "$build/entry-home"
         add_tree entry-params "$build/entry-params"
         add_tree public-programs "$build/programs"
         baseline_ready=true
         /usr/bin/strace --help > "$proof/build/strace-help.txt"
         grep -F -- --kill-on-exit "$proof/build/strace-help.txt"
-        # 현재 global Rustup이 이미 준비된 SDK를 읽는 실제 preflight. 실패하면 helper 설치 분기에 도달하지 않는다.
+        # 실제 Rustup ELF가 private SDK를 읽는 preflight. 실패하면 helper 설치 분기에 도달하지 않는다.
         phase=readonly-rustup-preflight
         run_bounded rustup-preflight 60s "$proof/build/rustup.txt" 0 "$rustup_shim" run 1.94.0 rustc -vV
         grep -Fx 'release: 1.94.0' "$proof/build/rustup.txt"
@@ -651,7 +680,10 @@ jobs:
         guard_target=$guard_cache/build
         disk_guard=$guard_cache/disk-space-guard
         [[ ! -e $build/openpilot-disk-guard && ! -L $build/openpilot-disk-guard ]]
-        guard_environment=(/usr/bin/env RUNNER_TEMP="$build" GITHUB_ACTIONS=true RUNNER_NAME=bin-actions RUNNER_OS=Linux RUNNER_ARCH=X64
+        guard_environment=(/usr/bin/env RUNNER_TEMP="$build" CI_JOB_TEMP="$job" DIAG_SOURCE="$source" GITHUB_WORKSPACE="$source"
+                           GITHUB_ACTIONS="$GITHUB_ACTIONS" GITHUB_REPOSITORY="$GITHUB_REPOSITORY" GITHUB_SHA="$GITHUB_SHA"
+                           GITHUB_RUN_ID="$GITHUB_RUN_ID" GITHUB_RUN_ATTEMPT="$GITHUB_RUN_ATTEMPT" GITHUB_JOB="$GITHUB_JOB"
+                           RUNNER_NAME="$RUNNER_NAME" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" RUNNER_OS="$RUNNER_OS" RUNNER_ARCH="$RUNNER_ARCH"
                            OPENPILOT_CI_PREPARED_RUST_ROOT="$CI_PREPARED_RUST_ROOT" OPENPILOT_CI_PREPARED_RUST_MANIFEST="$CI_PREPARED_RUST_MANIFEST")
         # 2 GiB cold admission과 7분 outer bound를 유지하며 PGID/FSIZE/watcher를 먼저 건다.
         # Fast의 기존 2048/6144 MiB bootstrap 계약이나 공유 script는 수정하지 않는다.
@@ -722,7 +754,7 @@ jobs:
       shell: bash
       working-directory: ${{ env.DIAG_SOURCE }}
       run: |
-        "$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" after
+        CARGO_HOME="$CI_JOB_TEMP/cargo-home" "$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" after
     - name: Seal source and index after all attempted contracts
       id: source_final
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DIAG_SOURCE != '') }}

@@ -14,9 +14,10 @@ concurrency:
 jobs:
   native:
     name: fast native routing checks
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 7
     env:
+      GH_HOSTED: '1'
       RUSTUP_TOOLCHAIN: 1.94.0
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
@@ -30,10 +31,15 @@ jobs:
           SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
           test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
-          test "$RUNNER_NAME" = bin-actions
-          test "$RUNNER_ENVIRONMENT" = self-hosted
+          set -euo pipefail
+          test "$GITHUB_ACTIONS" = true
+          test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+          test "$GH_HOSTED" = 1
+          test "$RUNNER_ENVIRONMENT" = github-hosted
           test "$RUNNER_OS" = Linux
           test "$RUNNER_ARCH" = X64
+          test "$(uname -m)" = x86_64
+          df -PB1 "$GITHUB_WORKSPACE" /tmp
       - name: Common owned Fast job temporary paths
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
@@ -53,6 +59,7 @@ jobs:
           [[ $available =~ ^[0-9]+$ ]]
           required=$((2 * 1024 * 1024 * 1024))
           printf '{"available_bytes":%s,"planned_source_growth_bytes":%s}\n' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
+          cat "$job/proof/source-growth-before-checkout.json"
           ((available >= required))
           source_owner=$(mktemp -d "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
           printf '%s\n' "$owner" > "$source_owner/.diag296-owner"
@@ -89,9 +96,12 @@ jobs:
           printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
           git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
           tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
-      - name: Expose provisioned Rust shims
+      - name: Admit provisioned Rust without installing a second toolchain
+        id: prepared_rust
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        uses: bin9208/openpilot-rust/.github/actions/rust-path@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+        working-directory: ${{ env.DIAG_SOURCE }}
+        shell: bash
+        run: '"$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" before'
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -117,10 +127,12 @@ jobs:
         run: |
           set -euo pipefail
           umask 077
-          sdk=/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu
+          sdk=$RUSTUP_HOME/toolchains/1.94.0-x86_64-unknown-linux-gnu
+          test "$RUSTUP_HOME" = "$CI_JOB_TEMP/rustup-home"
+          test "$CI_PREPARED_RUST_ROOT" = "$sdk"
           test -d "$sdk" && test ! -L "$sdk"
           test "$(readlink -e "$sdk")" = "$sdk"
-          # Preserve content and owner access. Never relax the bootstrap's 0022 rejection.
+          # SDK 소유권/type/device/content 검사를 유지하고 공유 쓰기 권한은 거부한다.
           find "$sdk" -xdev ! -uid "$(id -u)" -print0 > "$CI_JOB_TEMP/proof/sdk-foreign-owners.bin"
           test ! -s "$CI_JOB_TEMP/proof/sdk-foreign-owners.bin"
           find "$sdk" -xdev ! -type d ! -type f -print0 > "$CI_JOB_TEMP/proof/sdk-unapproved-kinds.bin"
@@ -137,31 +149,8 @@ jobs:
           LC_ALL=C find "$sdk" -xdev -printf '%D:%i\t%m:%U:%G\t%T@\t%C@\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$CI_JOB_TEMP/proof/sdk-permission-roster.before.bin"
           find "$sdk" -xdev \( -type d -o -type f \) -perm /0022 -print0 > "$CI_JOB_TEMP/proof/sdk-permission-candidates.bin"
           : > "$CI_JOB_TEMP/proof/sdk-permission-journal.tsv"
-          env -u BASH_ENV /usr/bin/timeout --signal=KILL 60s /usr/bin/bash -s -- "$sdk" "$CI_JOB_TEMP/proof" "$sdk_device" <<'HARDEN'
-          set -euo pipefail
-          sdk=$1
-          proof=$2
-          sdk_device=$3
-          while IFS= read -r -d '' entry; do
-            test ! -L "$entry"
-            before=$(stat -c '%d:%i:%u:%g:%f:%a' -- "$entry")
-            exec {sdk_fd}<"$entry"
-            descriptor=/proc/$$/fd/$sdk_fd
-            test "$(stat -Lc '%d:%i:%u:%g:%f:%a' -- "$descriptor")" = "$before"
-            test "$(stat -Lc '%u' -- "$descriptor")" = "$(id -u)"
-            test "$(stat -Lc '%d' -- "$descriptor")" = "$sdk_device"
-            test "$(readlink -e -- "$entry")" = "$entry"
-            mode=$(stat -Lc '%a' -- "$descriptor")
-            printf -v tightened '%o' "$((8#$mode & ~0022))"
-            printf 'intent\t%s\t%s\t%s\n' "$before" "$tightened" "$entry" >> "$proof/sdk-permission-journal.tsv"
-            # chmod follows only our already checked held descriptor, never a replaced path.
-            chmod "$tightened" -- "$descriptor"
-            test "$(stat -Lc '%a' -- "$descriptor")" = "$tightened"
-            test "$(stat -c '%d:%i:%u:%g:%f:%a' -- "$entry")" = "$(stat -Lc '%d:%i:%u:%g:%f:%a' -- "$descriptor")"
-            printf 'applied\t%s\t%s\t%s\n' "$before" "$tightened" "$entry" >> "$proof/sdk-permission-journal.tsv"
-            exec {sdk_fd}<&-
-          done < "$proof/sdk-permission-candidates.bin"
-          HARDEN
+          # hosted SDK는 처음부터 private다. 권한을 고치지 않고 기존 0022 거부를 검증한다.
+          test ! -s "$CI_JOB_TEMP/proof/sdk-permission-candidates.bin"
       - name: Verify SDK contents after permission preparation even on failure
         id: sdk_permissions_final
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.sdk_permissions.outcome != 'skipped' && env.DIAG_SOURCE != '') }}
@@ -169,11 +158,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sdk=/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu
+          sdk=$RUSTUP_HOME/toolchains/1.94.0-x86_64-unknown-linux-gnu
+          test "$RUSTUP_HOME" = "$CI_JOB_TEMP/rustup-home"
+          test "$CI_PREPARED_RUST_ROOT" = "$sdk"
           LC_ALL=C find "$sdk" -xdev -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/sdk-permission-content.after.sha256"
           LC_ALL=C find "$sdk" -xdev -printf '%D:%i\t%m:%U:%G\t%T@\t%C@\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$CI_JOB_TEMP/proof/sdk-permission-roster.after.bin"
           cmp "$CI_JOB_TEMP/proof/sdk-permission-content.before.sha256" "$CI_JOB_TEMP/proof/sdk-permission-content.after.sha256"
-          # chmod changes ctime and the 0022 bits only. Compare every other recorded field.
+          cmp "$CI_JOB_TEMP/proof/sdk-permission-roster.before.bin" "$CI_JOB_TEMP/proof/sdk-permission-roster.after.bin"
+          # 권한 변경도 허용하지 않는다. 기존 나머지 field 불변식 검사도 유지한다.
           for phase in before after; do
             while IFS=$'\t' read -r -d '' identity permissions mtime ctime kind entry link; do
               test -z "$link"
@@ -187,31 +179,6 @@ jobs:
           cmp "$CI_JOB_TEMP/proof/sdk-permission-invariants.before.bin" "$CI_JOB_TEMP/proof/sdk-permission-invariants.after.bin"
           find "$sdk" -xdev \( -type d -o -type f \) -perm /0022 -print0 > "$CI_JOB_TEMP/proof/sdk-remaining-shared-writes.bin"
           test ! -s "$CI_JOB_TEMP/proof/sdk-remaining-shared-writes.bin"
-      - name: Admit provisioned Rust without installing a second toolchain
-        id: prepared_rust
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        working-directory: ${{ env.DIAG_SOURCE }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          umask 077
-          sdk=/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu
-          test -d "$sdk" && test ! -L "$sdk"
-          test "$(readlink -e "$sdk")" = "$sdk"
-          test -x /usr/bin/strace
-          printf '%s  %s\n' 103b60e1b1339968c1d74202ea1d45686037e82c4ea3e0569de24b18a1e6836a "$sdk/bin/rustc" > "$CI_JOB_TEMP/proof/prepared-rust-programs.sha256"
-          printf '%s  %s\n' 77f14b761b02b47e6747473f556b3bc9f98f7e4525b7c3b8d74898ff816e4636 "$sdk/bin/cargo" >> "$CI_JOB_TEMP/proof/prepared-rust-programs.sha256"
-          printf '%s  %s\n' d1c6d8c0e2fae4fbb686d421415d2f471e409ade6babb3e491d9ac5d9c70c602 "$sdk/bin/rustfmt" >> "$CI_JOB_TEMP/proof/prepared-rust-programs.sha256"
-          printf '%s  %s\n' 2ff45d07196eec4f57a631103a877631d3579e86db2770bcfaa3b9d92a0b9d15 "$sdk/bin/clippy-driver" >> "$CI_JOB_TEMP/proof/prepared-rust-programs.sha256"
-          sha256sum --check --quiet "$CI_JOB_TEMP/proof/prepared-rust-programs.sha256"
-          "$sdk/bin/rustc" -vV > "$CI_JOB_TEMP/proof/prepared-rustc.txt"
-          grep -Fx 'release: 1.94.0' "$CI_JOB_TEMP/proof/prepared-rustc.txt"
-          grep -Fx 'host: x86_64-unknown-linux-gnu' "$CI_JOB_TEMP/proof/prepared-rustc.txt"
-          "$sdk/bin/cargo" -V > "$CI_JOB_TEMP/proof/prepared-cargo.txt"
-          LC_ALL=C find "$sdk" -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/prepared-rust-files.before.sha256"
-          LC_ALL=C find "$sdk" -printf '%D:%i\t%m:%U:%G\t%T@\t%C@\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$CI_JOB_TEMP/proof/prepared-rust-roster.before.bin"
-          printf '%s\n' "CI_PREPARED_RUST_ROOT=$sdk" "CI_PREPARED_RUST_MANIFEST=$CI_JOB_TEMP/proof/prepared-rust-files.before.sha256" "RUSTC=$sdk/bin/rustc" "RUSTDOC=$sdk/bin/rustdoc" >> "$GITHUB_ENV"
-          printf '%s\n' "$sdk/bin" >> "$GITHUB_PATH"
       - name: Prepare native CI validation
         run: |
           set -euo pipefail
@@ -257,14 +224,7 @@ jobs:
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.prepared_rust.outcome == 'success') }}
         working-directory: ${{ env.DIAG_SOURCE }}
         shell: bash
-        run: |
-          set -euo pipefail
-          sdk=$CI_PREPARED_RUST_ROOT
-          LC_ALL=C find "$sdk" -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/prepared-rust-files.after.sha256"
-          LC_ALL=C find "$sdk" -printf '%D:%i\t%m:%U:%G\t%T@\t%C@\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$CI_JOB_TEMP/proof/prepared-rust-roster.after.bin"
-          cmp "$CI_JOB_TEMP/proof/prepared-rust-files.before.sha256" "$CI_JOB_TEMP/proof/prepared-rust-files.after.sha256"
-          cmp "$CI_JOB_TEMP/proof/prepared-rust-roster.before.bin" "$CI_JOB_TEMP/proof/prepared-rust-roster.after.bin"
-          sha256sum --check --quiet "$CI_JOB_TEMP/proof/prepared-rust-programs.sha256"
+        run: '"$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" after'
       - name: Seal Fast source and index after all maintained checks
         id: source_final
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DIAG_SOURCE != '') }}
@@ -320,9 +280,10 @@ jobs:
           cleanup: 'true'
   native-corpus:
     name: fast native corpus checks
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 7
     env:
+      GH_HOSTED: '1'
       RUSTUP_TOOLCHAIN: 1.94.0
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
@@ -336,10 +297,15 @@ jobs:
           SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
           test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
-          test "$RUNNER_NAME" = bin-actions
-          test "$RUNNER_ENVIRONMENT" = self-hosted
+          set -euo pipefail
+          test "$GITHUB_ACTIONS" = true
+          test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+          test "$GH_HOSTED" = 1
+          test "$RUNNER_ENVIRONMENT" = github-hosted
           test "$RUNNER_OS" = Linux
           test "$RUNNER_ARCH" = X64
+          test "$(uname -m)" = x86_64
+          df -PB1 "$GITHUB_WORKSPACE" /tmp
       - name: Common owned Fast job temporary paths
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
@@ -359,6 +325,7 @@ jobs:
           [[ $available =~ ^[0-9]+$ ]]
           required=$((2 * 1024 * 1024 * 1024))
           printf '{"available_bytes":%s,"planned_source_growth_bytes":%s}\n' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
+          cat "$job/proof/source-growth-before-checkout.json"
           ((available >= required))
           source_owner=$(mktemp -d "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
           printf '%s\n' "$owner" > "$source_owner/.diag296-owner"
@@ -493,9 +460,10 @@ jobs:
           cleanup: 'true'
   native-alerts:
     name: fast native alert checks
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 7
     env:
+      GH_HOSTED: '1'
       RUSTUP_TOOLCHAIN: 1.94.0
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
@@ -509,10 +477,15 @@ jobs:
           SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
           test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
-          test "$RUNNER_NAME" = bin-actions
-          test "$RUNNER_ENVIRONMENT" = self-hosted
+          set -euo pipefail
+          test "$GITHUB_ACTIONS" = true
+          test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+          test "$GH_HOSTED" = 1
+          test "$RUNNER_ENVIRONMENT" = github-hosted
           test "$RUNNER_OS" = Linux
           test "$RUNNER_ARCH" = X64
+          test "$(uname -m)" = x86_64
+          df -PB1 "$GITHUB_WORKSPACE" /tmp
       - name: Common owned Fast job temporary paths
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
@@ -532,6 +505,7 @@ jobs:
           [[ $available =~ ^[0-9]+$ ]]
           required=$((2 * 1024 * 1024 * 1024))
           printf '{"available_bytes":%s,"planned_source_growth_bytes":%s}\n' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
+          cat "$job/proof/source-growth-before-checkout.json"
           ((available >= required))
           source_owner=$(mktemp -d "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
           printf '%s\n' "$owner" > "$source_owner/.diag296-owner"
@@ -647,9 +621,10 @@ jobs:
           cleanup: 'true'
   native-alert-manager:
     name: fast native alert manager checks
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 7
     env:
+      GH_HOSTED: '1'
       RUSTUP_TOOLCHAIN: 1.94.0
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
@@ -663,10 +638,15 @@ jobs:
           SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
           test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
-          test "$RUNNER_NAME" = bin-actions
-          test "$RUNNER_ENVIRONMENT" = self-hosted
+          set -euo pipefail
+          test "$GITHUB_ACTIONS" = true
+          test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+          test "$GH_HOSTED" = 1
+          test "$RUNNER_ENVIRONMENT" = github-hosted
           test "$RUNNER_OS" = Linux
           test "$RUNNER_ARCH" = X64
+          test "$(uname -m)" = x86_64
+          df -PB1 "$GITHUB_WORKSPACE" /tmp
       - name: Common owned Fast job temporary paths
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
@@ -686,6 +666,7 @@ jobs:
           [[ $available =~ ^[0-9]+$ ]]
           required=$((2 * 1024 * 1024 * 1024))
           printf '{"available_bytes":%s,"planned_source_growth_bytes":%s}\n' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
+          cat "$job/proof/source-growth-before-checkout.json"
           ((available >= required))
           source_owner=$(mktemp -d "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
           printf '%s\n' "$owner" > "$source_owner/.diag296-owner"
@@ -800,9 +781,10 @@ jobs:
           cleanup: 'true'
   native-timing:
     name: fast native timing checks
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 7
     env:
+      GH_HOSTED: '1'
       RUSTUP_TOOLCHAIN: 1.94.0
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
@@ -816,10 +798,15 @@ jobs:
           SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
           test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
-          test "$RUNNER_NAME" = bin-actions
-          test "$RUNNER_ENVIRONMENT" = self-hosted
+          set -euo pipefail
+          test "$GITHUB_ACTIONS" = true
+          test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+          test "$GH_HOSTED" = 1
+          test "$RUNNER_ENVIRONMENT" = github-hosted
           test "$RUNNER_OS" = Linux
           test "$RUNNER_ARCH" = X64
+          test "$(uname -m)" = x86_64
+          df -PB1 "$GITHUB_WORKSPACE" /tmp
       - name: Common owned Fast job temporary paths
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
@@ -839,6 +826,7 @@ jobs:
           [[ $available =~ ^[0-9]+$ ]]
           required=$((2 * 1024 * 1024 * 1024))
           printf '{"available_bytes":%s,"planned_source_growth_bytes":%s}\n' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
+          cat "$job/proof/source-growth-before-checkout.json"
           ((available >= required))
           source_owner=$(mktemp -d "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
           printf '%s\n' "$owner" > "$source_owner/.diag296-owner"
@@ -953,9 +941,10 @@ jobs:
           cleanup: 'true'
   python-android:
     name: fast Python and Android checks
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 7
     env:
+      GH_HOSTED: '1'
       RUSTUP_TOOLCHAIN: 1.94.0
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
@@ -969,10 +958,15 @@ jobs:
           SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
           test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
-          test "$RUNNER_NAME" = bin-actions
-          test "$RUNNER_ENVIRONMENT" = self-hosted
+          set -euo pipefail
+          test "$GITHUB_ACTIONS" = true
+          test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+          test "$GH_HOSTED" = 1
+          test "$RUNNER_ENVIRONMENT" = github-hosted
           test "$RUNNER_OS" = Linux
           test "$RUNNER_ARCH" = X64
+          test "$(uname -m)" = x86_64
+          df -PB1 "$GITHUB_WORKSPACE" /tmp
       - name: Common owned Fast job temporary paths
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
@@ -992,6 +986,7 @@ jobs:
           [[ $available =~ ^[0-9]+$ ]]
           required=$((2 * 1024 * 1024 * 1024))
           printf '{"available_bytes":%s,"planned_source_growth_bytes":%s}\n' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
+          cat "$job/proof/source-growth-before-checkout.json"
           ((available >= required))
           source_owner=$(mktemp -d "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
           printf '%s\n' "$owner" > "$source_owner/.diag296-owner"
@@ -1149,7 +1144,7 @@ jobs:
     name: fast checks
     if: ${{ always() }}
     needs: [native, native-corpus, native-timing, native-alerts, native-alert-manager, python-android]
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
       - name: Require every fast worker to succeed

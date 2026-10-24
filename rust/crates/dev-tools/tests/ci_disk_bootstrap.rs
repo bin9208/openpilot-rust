@@ -169,6 +169,8 @@ chmod +x "$target/$host/debug/disk-space-guard"
                 manifest.to_str().unwrap(),
             ),
             ("GITHUB_ACTIONS", "true"),
+            // 이 negative fixture는 legacy 분기를 검증한다. 실제 hosted job 환경을 상속하지 않는다.
+            ("RUNNER_ENVIRONMENT", "self-hosted"),
             ("RUNNER_NAME", "bin-actions"),
             ("RUNNER_OS", "Linux"),
             ("RUNNER_ARCH", "X64"),

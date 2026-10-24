@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
-# #530: 이미 준비된 SDK를 읽기 전용으로 수용/재검증한다. 설치·권한 복구는 하지 않는다.
+# #530/#535: ephemeral GitHub 러너는 별도 SDK를 준비하고, 봉인 뒤에는 읽기 전용으로 재검증한다.
 # Usage: prepare-readonly-ci-rust before|after (Fast의 소유 source/job/proof 환경 필수)
 set -euo pipefail
 umask 077
 fail() { printf 'prepared CI Rust: %s\n' "$*" >&2; exit 1; }
 [[ $# == 1 && ( $1 == before || $1 == after ) ]] || fail 'before or after required'
 phase=$1
-[[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == bin9208/openpilot-rust && ${RUNNER_NAME:-} == bin-actions && ${RUNNER_ENVIRONMENT:-} == self-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && $(uname -m) == x86_64 ]] || fail 'registered bin-actions Linux/X64 CI required'
+[[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == bin9208/openpilot-rust && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && $(uname -m) == x86_64 ]] || fail 'trusted Actions Linux/X64 CI required'
+case ${RUNNER_ENVIRONMENT:-} in
+  github-hosted) hosted=true ;;
+  self-hosted) [[ ${RUNNER_NAME:-} == bin-actions ]] || fail 'unregistered legacy runner'; hosted=false ;;
+  *) fail 'unknown runner environment' ;;
+esac
 uid=$(id -u)
 validate() {
   local path=$1 kind=$2 owner mode
@@ -27,7 +32,71 @@ validate "$job/owner" file
 [[ $(cat -- "$job/owner") == "${GITHUB_RUN_ID:?}:${GITHUB_RUN_ATTEMPT:?}:${GITHUB_JOB:?}" ]] || fail 'common job owner differs'
 proof=$job/proof
 validate "$proof" directory
-sdk=/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu
+if $hosted; then
+  [[ ${RUSTUP_HOME:-} == "$job/rustup-home" && ${CARGO_HOME:-} == "$job/cargo-home" ]] || fail 'private hosted tool homes differ'
+  sdk=$job/rustup-home/toolchains/1.94.0-x86_64-unknown-linux-gnu
+  if [[ $phase == before ]]; then
+    # 이 x64 집중 검사/docs에는 Android SDK가 필요 없다. job 전용 hosted VM에서만 회수한다.
+    df -PB1 -- "$root" "$job" > "$proof/hosted-space-before.txt"
+    df -Pi -- "$root" "$job" > "$proof/hosted-inodes-before.txt"
+    printf 'name=%s\nenvironment=%s\nos=%s\narch=%s\nimage_os=%s\nimage_version=%s\n' "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_OS" "$RUNNER_ARCH" "${ImageOS:-not-recorded}" "${ImageVersion:-not-recorded}" > "$proof/hosted-runner.txt"
+    lscpu --json > "$proof/hosted-cpu.json"
+    cat /etc/os-release > "$proof/hosted-os-release.txt"
+    # python-android 등 다른 job은 SDK를 유지한다. 단순 Java/Gradle 작업도 Android 설정을 읽을 수 있다.
+    android_unused=false
+    case $GITHUB_JOB in focused|controls-normal40|setup-keys|check_user_docs|native) android_unused=true ;; esac
+    printf 'job=%s\nandroid_sdk_unused=%s\n' "$GITHUB_JOB" "$android_unused" > "$proof/hosted-android-policy.txt"
+    if $android_unused && [[ -e /usr/local/lib/android || -L /usr/local/lib/android ]]; then
+      [[ -d /usr/local/lib/android && ! -L /usr/local/lib/android && $(readlink -e -- /usr/local/lib/android) == /usr/local/lib/android ]] || fail 'unexpected hosted Android SDK path'
+      du -sx --block-size=1 -- /usr/local/lib/android > "$proof/unused-android-sdk-bytes.txt"
+      sudo -n /usr/bin/timeout --signal=TERM --kill-after=10s 3m /usr/bin/rm -rf --one-file-system -- /usr/local/lib/android
+      [[ ! -e /usr/local/lib/android && ! -L /usr/local/lib/android ]] || fail 'unused hosted Android SDK remains'
+    fi
+    df -PB1 -- "$root" "$job" > "$proof/hosted-space-after.txt"
+    df -Pi -- "$root" "$job" > "$proof/hosted-inodes-after.txt"
+    # Fast native의 실제 cold-bootstrap audit는 strace가 필요하다. 이미지에 없을 때만 준비한다.
+    if [[ $GITHUB_JOB == native && ! -x /usr/bin/strace ]]; then
+      available=$(df --output=avail -B1 -- / | tail -n 1)
+      available=${available//[[:space:]]/}
+      [[ $available =~ ^[0-9]+$ ]] || fail 'native proof package capacity unavailable'
+      printf '{"available_bytes":%s,"planned_package_growth_bytes":1073741824}\n' "$available" > "$proof/hosted-native-package-admission.json"
+      ((available >= 1024 * 1024 * 1024)) || fail 'insufficient native proof package growth'
+      sudo -n /usr/bin/timeout --signal=TERM --kill-after=10s 3m apt-get -o APT::Architectures=amd64 update > "$proof/hosted-native-apt-update.log" 2>&1
+      sudo -n /usr/bin/timeout --signal=TERM --kill-after=10s 3m apt-get -o APT::Architectures=amd64 install -y --no-install-recommends strace > "$proof/hosted-native-apt-install.log" 2>&1
+      [[ -x /usr/bin/strace ]] || fail 'native proof strace unavailable'
+    fi
+  fi
+  if [[ $phase == before && ! -e $sdk && ! -L $sdk ]]; then
+    # SDK/다운로드/설치의 예상 증가량이다. source/build admission을 대신하지 않는다.
+    available=$(df --output=avail -B1 -- "$job" | tail -n 1)
+    available=${available//[[:space:]]/}
+    [[ $available =~ ^[0-9]+$ ]] || fail 'SDK capacity unavailable'
+    printf '{"available_bytes":%s,"planned_sdk_growth_bytes":3221225472}\n' "$available" > "$proof/hosted-sdk-admission.json"
+    ((available >= 3 * 1024 * 1024 * 1024)) || fail 'insufficient hosted SDK growth'
+    for path in "$RUSTUP_HOME" "$CARGO_HOME"; do
+      if [[ -e $path || -L $path ]]; then validate "$path" directory; fi
+    done
+    mkdir -p -- "$RUSTUP_HOME" "$CARGO_HOME"
+    validate "$RUSTUP_HOME" directory
+    validate "$CARGO_HOME" directory
+    bootstrap=$job/rust-bootstrap
+    mkdir -- "$bootstrap"
+    validate "$bootstrap" directory
+    curl --proto '=https' --tlsv1.2 --fail --location --retry 3 --retry-all-errors \
+      --max-time 300 --max-filesize 67108864 \
+      https://static.rust-lang.org/rustup/archive/1.29.1/x86_64-unknown-linux-gnu/rustup-init \
+      --output "$bootstrap/rustup-init"
+    printf '%s  %s\n' dda7234360b7f578ca8b0ddcb80145646fa61a67c1720a5abc7051b35c9fcb71 "$bootstrap/rustup-init" > "$proof/hosted-rustup.sha256"
+    sha256sum --check --strict --quiet -- "$proof/hosted-rustup.sha256"
+    chmod u+x -- "$bootstrap/rustup-init"
+    timeout --signal=TERM --kill-after=10s 3m "$bootstrap/rustup-init" -y --default-toolchain none --no-modify-path
+    timeout --signal=TERM --kill-after=10s 12m "$CARGO_HOME/bin/rustup" toolchain install 1.94.0 \
+      --profile minimal --component rustfmt --component clippy > "$proof/hosted-sdk-install.stdout" 2> "$proof/hosted-sdk-install.stderr"
+  fi
+  printf '%s\n' "CI_PREPARED_RUSTUP_ROOT=$job/rustup-home" "CI_PREPARED_RUSTUP_BIN=$job/cargo-home/bin/rustup" >> "${GITHUB_ENV:?Actions environment required}"
+else
+  sdk=/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu
+fi
 validate "$sdk" directory
 # SDK symlink/특수 파일/다른 소유자/공유 쓰기는 수리하지 않고 거절한다.
 set -C
