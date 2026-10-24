@@ -377,3 +377,27 @@ frozen14,442B와 byte14부터 다르다. 이 결과는 현재 자연 target의 �
 과거 최초 compile/cache CPU/provider를 소급 확정하지 않는다. 실제 metadata Python은3.12.15였고
 모델/kernel/object/frozen image를 실행하지 않았다. `model_or_historical_acceptance:false`와
 historical5건 실패를 유지하며 성공 cache/pair는 변경 근거 없이 반복하지 않는다.
+
+
+## 역사 object의 새 단서와 비실행 대조 후보
+
+[39635596188/artifact12365522894](https://github.com/bin9208/openpilot-rust/actions/runs/39635596188/artifacts/12365522894)의
+outer central directory28880entry 전체와 제한된 selected member를 HTTP206 Range로 조사했다.
+전체4388618662B ZIP digest는 API metadata이며 전체 body를 독립 검증한 hash는 아니다.
+20MB 상한 내12190859B 전송으로 central directory/개별 LFH/길이/CRC/SHA를 검증했다.
+
+`complete-fixture/catalog/e776e00928c8166d2cb5d47874d43f2aa860161f5c0110dc556210fa42805534/`
+아래 두 driving 해상도의 kernel92.o는15928B/SHA256
+`bf56a30c37f0128497b626329df7239dd7a1c4b5dd9ec728d501f2c11deebea1`로 같다.
+해당 object는 당시 e25a source의 native exporter가 원본 IR 함수명을 바꿔 컴파일한 역사 산출물이다.
+PKL 최초 compile object라는 receipt는 아니며 그 유래를 소급 확정하지 않는다.
+IR166049B/SHA e223a2c...도 같은 fixture manifest와 source/PKL pin에 연결된다.
+
+object의 text14244/readonly section 크기는 frozen14442B layout과 맞는 단서지만 전체 byte 일치는
+아직 UNRUN이다. 기존 `cached_elf::reconstruct`에 실제 역사 object를 넣고 전체 frozen BINARY와
+비교하는 read-only ignored test 및 등록 Actions 후보를 준비한다. 모든 input/source/test ELF의
+FD를 보유하고 전후 identity/bytes SHA를 확인한다. compiler·generated code·모델은 실행하지 않는다.
+새 gate나 object 포장 우회는 만들지 않으며 현재 재구성기의 그대로인 엄격한 section/relocation 정책을 쓴다.
+
+후보 성공도 ISA admission, 최초 compiler/provider 입증, raw 수치5건·전체 모델·device 수용은 아니다.
+그 결과를 토대로 기존 cached issuer의 엄격 gate를 유지한 후속 독립 검증을 진행한다.

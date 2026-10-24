@@ -553,3 +553,15 @@ frozen5+음성1/Clippy/source·index·SDK seal이 모두 성공했다. artifact1
 `openpilot/tools/lib/sanitizer.py` 한 파일을 replaced-local로 기록한다.
 새 전체 inventory는 **3580 = 289 replaced-local / 3 partial / 3288 pending**이다.
 나머지 작업의 과거 pending/수용 보류 기록은 해당 시점의 상태로 유지한다.
+
+
+### #531 개별 종료와 #482 다음 단서
+
+#531의 준비 runtime/provider mismatch는 a134의 auth3/login8/alias20/setup21/SAN5 및
+fb1228 parser13의 원본 수용을 연결해 개별 종료했다. 실제 runtime3.12.15, maps의 SDK
+libpython identity, source/provider 전후 seal을 확인했다. PR343 통합·#532·전체523/296와는 별개다.
+
+#482는 역사 artifact12365522894에서 당시 native exporter의 kernel92.o15928B를 찾았다.
+전체 ZIP digest를 독립 검증한 것으로 확대하지 않고 selected Range/CRC/SHA와 원래 fixture pin만
+수용한다. 기존 `cached_elf::reconstruct`로 전체 frozen BINARY14442B와 같을지 확인하는
+비실행 진단을 준비 중이다. ISA/raw 수치/모델 수용은 그대로 미완료다.
