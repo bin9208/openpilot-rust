@@ -195,3 +195,47 @@ fn cli_has_no_python_or_compiler_command_requirement() {
     assert_eq!(receipt["reused"], false);
     assert_eq!(receipt["generation"].as_str().unwrap().len(), 64);
 }
+
+#[test]
+#[ignore = "requires the freshly cross-built musl publisher and an explicit QEMU runner"]
+fn aarch64_musl_cli_publishes_without_an_interpreter() {
+    let runner =
+        std::env::var_os("MODEL_CATALOG_ARM_RUNNER").expect("explicit QEMU runner required");
+    let binary =
+        std::env::var_os("MODEL_CATALOG_ARM_BINARY").expect("fresh ARM publisher required");
+    assert!(Path::new(&runner).is_absolute());
+    assert!(Path::new(&binary).is_absolute());
+    let root = tempfile::tempdir().unwrap();
+    let mut previous_pointer = None;
+    for (suffix, reused) in [("first", false), ("second", true)] {
+        let (generation, request) = stage(root.path(), suffix);
+        let result = Command::new(&runner)
+            .arg(&binary)
+            .env("PATH", "/nonexistent")
+            .arg("--root")
+            .arg(root.path())
+            .arg("--staged-generation")
+            .arg(generation)
+            .arg("--entries")
+            .arg(request)
+            .output()
+            .unwrap();
+        assert!(
+            result.status.success(),
+            "{}",
+            String::from_utf8_lossy(&result.stderr)
+        );
+        let receipt: serde_json::Value = serde_json::from_slice(&result.stdout).unwrap();
+        assert_eq!(receipt["reused"], reused);
+        let published = root.path().join(receipt["generation"].as_str().unwrap());
+        assert_eq!(
+            fs::read(published.join("driver-1344x760/weights.bin")).unwrap(),
+            b"emitter-owned inert bytes"
+        );
+        let pointer = fs::read(root.path().join("current.json")).unwrap();
+        if let Some(previous) = previous_pointer {
+            assert_eq!(pointer, previous);
+        }
+        previous_pointer = Some(pointer);
+    }
+}

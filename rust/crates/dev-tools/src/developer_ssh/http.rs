@@ -109,7 +109,7 @@ impl NativeTransport {
                     authorization = None;
                 }
                 // Requests rewrites POST for 301/302/303; 307/308 retain its form body.
-                if matches!(status, 301 | 302 | 303) {
+                if matches!(status, 301..=303) {
                     if status != 301 || method == "POST" {
                         method = "GET".into();
                     }

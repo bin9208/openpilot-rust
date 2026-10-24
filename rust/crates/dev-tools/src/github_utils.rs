@@ -327,7 +327,7 @@ fn comment_rows(value: &JsonValue) -> Result<Vec<JsonValue>> {
     match value.view() {
         JsonView::Array(values) => Ok(values),
         JsonView::Object(values) if values.is_empty() => Ok(Vec::new()),
-        JsonView::Text(points) if points.is_empty() => Ok(Vec::new()),
+        JsonView::Text([]) => Ok(Vec::new()),
         _ => Err("comments response must be a list or empty dict/text".into()),
     }
 }

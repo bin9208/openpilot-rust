@@ -7,6 +7,7 @@ name: Python Rust 523 focused acceptance
     - .github/workflows/python-rust-523.yml
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: python-rust-523-${{ github.ref }}
   cancel-in-progress: false
@@ -194,7 +195,7 @@ jobs:
         sudo -n apt-get -o APT::Architectures=amd64 update
 
         sudo -n apt-get -o APT::Architectures=amd64 install -y g++ pkg-config capnproto libcapnp-dev libzmq3-dev
-        qemu-user-static
+        qemu-user-static gh unzip
 
         export RUSTUP_HOME=/home/actions/.rustup
 
@@ -234,20 +235,34 @@ jobs:
         cargo fmt --manifest-path rust/Cargo.toml --all --check 2>&1 | tee "$CI_JOB_TEMP/proof/format.log"
 
         '
-    - name: Run catalog publication and collision regressions on x64
-      working-directory: ${{ env.DIAG_SOURCE }}
-      shell: bash
+    - name: Admit unchanged successful cohort and lint the new ARM CLI test
       if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
-      run: 'set -euo pipefail
-
-        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --test catalog_publish --
-        --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/catalog-x64.log"
-
-        cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --test catalog_publish
-        --bin publish-model-catalog -- -D warnings 2>&1 | tee "$CI_JOB_TEMP/proof/catalog-clippy.log"
-
-        '
-    - name: Run focused native development and generator regressions
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: "set -euo pipefail\nprior=\"$CI_JOB_TEMP/proof/prior-40079353750.zip\"\ngh api repos/bin9208/openpilot-rust/actions/artifacts/12554139608/zip\
+        \ > \"$prior\"\nprintf '5ad366a8d5ee0d078917be9231c1850b0c3e8dba927a0adcf3a388da56bc8e55  %s\\n' \"$prior\"\
+        \ | sha256sum --check -\nunzip -t \"$prior\" > \"$CI_JOB_TEMP/proof/prior-crc.txt\"\ntest \"$(unzip -p \"\
+        $prior\" SOURCE_COMMIT)\" = d0f53d15a96ef474ff48810b156437a6a6923c58\nunzip -p \"$prior\" source-before.sha256\
+        \ > \"$CI_JOB_TEMP/proof/prior-source-before.sha256\"\nunzip -p \"$prior\" source-after.sha256 > \"$CI_JOB_TEMP/proof/prior-source-after.sha256\"\
+        \ncmp \"$CI_JOB_TEMP/proof/prior-source-before.sha256\" \"$CI_JOB_TEMP/proof/prior-source-after.sha256\"\
+        \nunzip -p \"$prior\" rust-tools.sha256 > \"$CI_JOB_TEMP/proof/prior-rust-tools.sha256\"\nsha256sum --check\
+        \ \"$CI_JOB_TEMP/proof/prior-rust-tools.sha256\"\ngit fetch --no-tags --depth=1 origin d0f53d15a96ef474ff48810b156437a6a6923c58\n\
+        git diff --no-renames --name-only -z d0f53d15a96ef474ff48810b156437a6a6923c58 HEAD > \"$CI_JOB_TEMP/proof/changed-paths.bin\"\
+        \nwhile IFS= read -r -d '' changed; do\n  case \"$changed\" in\n    .github/workflows/python-rust-523.yml|docs/naver/python-rust-523*.md|rust/crates/dev-tools/src/developer_ssh/http.rs|rust/crates/dev-tools/src/github_utils.rs|rust/crates/dev-tools/src/developer_ssh/login/native.rs|rust/crates/model-runtime/tests/catalog_publish.rs)\
+        \ ;;\n    *) printf 'Changed dependency invalidates scoped reuse: %s\\n' \"$changed\" >&2; exit 1 ;;\n \
+        \ esac\ndone < \"$CI_JOB_TEMP/proof/changed-paths.bin\"\n# Freeze the exact reviewed postimages of the four\
+        \ allowed code changes.\nprintf '%s  %s\\n' 6beaccdad7cc50ec7fa4d32e61191af20d8e8e75a52e37c9d603c6cee609816f\
+        \ rust/crates/dev-tools/src/developer_ssh/http.rs | sha256sum --check -\nprintf '%s  %s\\n' 6010fb32078700cdb054303b8b5bdcbbc9c70eaf74487c6325940ec8bd6db37c\
+        \ rust/crates/dev-tools/src/github_utils.rs | sha256sum --check -\nprintf '%s  %s\\n' 17acabad25b59636e212e9d4bacd671361fba4daa6093e343ad4b3537d964bb0\
+        \ rust/crates/dev-tools/src/developer_ssh/login/native.rs | sha256sum --check -\nprintf '%s  %s\\n' 9bdbd0902538b965cf97a68f4cff63efd9d1e16f1770ce283053749d704247b7\
+        \ rust/crates/model-runtime/tests/catalog_publish.rs | sha256sum --check -\nprintf '%s\\n' 'Reused: catalog\
+        \ x64 10 + its completed Clippy; terminal 20; auth/HTTP library 19; SSH 27; Paramsd 11; camera 1. Changed\
+        \ HTTP/Github behavior, new callback cases and previously unreached Clippy/ARM remain fresh gates.' > \"\
+        $CI_JOB_TEMP/proof/reused-scopes.txt\"\ncargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime\
+        \ --test catalog_publish -- -D warnings 2>&1 | tee \"$CI_JOB_TEMP/proof/catalog-new-test-clippy.log\"\n"
+    - name: Run new callback cases, affected HTTP/Github comparisons and remaining strict lint
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
@@ -258,18 +273,12 @@ jobs:
         features=developer-ssh-native,kbhit-native,github-utils-native,camera-runtime-native,paramsd-fixture-native
 
         cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --lib
-        kbhit:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/terminal.log"
+        developer_ssh::login::native::tests:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/new-callback-sockets.log"
 
-        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --lib
-        developer_ssh:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/auth-library.log"
-
-        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --test
-        developer_ssh --test developer_auth --test developer_http --test github_utils --test paramsd_car_params_cli
-        --test paramsd_estimator_check -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/tools-generators.log"
+        grep -F ''test result: ok. 3 passed;'' "$CI_JOB_TEMP/proof/new-callback-sockets.log"
 
         cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --test
-        camera_lifecycle_check original_process_environment_sanitizer_failure_and_artifact_order -- --exact --nocapture
-        2>&1 | tee "$CI_JOB_TEMP/proof/camera-lifecycle.log"
+        developer_http --test github_utils -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/affected-http-github.log"
 
         cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features "$features" --lib
         --test developer_ssh --test developer_auth --test developer_http --test github_utils --test paramsd_car_params_cli
@@ -290,7 +299,7 @@ jobs:
 
         test -x "$linker"
 
-        export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS="-C linker=$linker -C linker-flavor=gnu-lld"
+        export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS="-C linker=$linker -C linker-flavor=ld.lld"
 
         cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --bin publish-model-catalog
         --target aarch64-unknown-linux-musl 2>&1 | tee "$CI_JOB_TEMP/proof/catalog-musl-build.log"
@@ -318,6 +327,16 @@ jobs:
 
 
         grep -F "test result: ok. 2 passed;" "$CI_JOB_TEMP/proof/catalog-musl-qemu.log"
+
+
+        export MODEL_CATALOG_ARM_RUNNER=/usr/bin/qemu-aarch64-static
+
+        export MODEL_CATALOG_ARM_BINARY="$CARGO_TARGET_DIR/aarch64-unknown-linux-musl/debug/publish-model-catalog"
+
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --test catalog_publish aarch64_musl_cli_publishes_without_an_interpreter
+        -- --ignored --exact --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/catalog-musl-cli.log"
+
+        grep -F ''test result: ok. 1 passed;'' "$CI_JOB_TEMP/proof/catalog-musl-cli.log"
 
         '
     - name: Seal Fast source and index after all maintained checks

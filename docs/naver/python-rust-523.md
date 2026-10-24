@@ -89,3 +89,46 @@ artifact `12554042677`의 8개 ZIP 멤버 CRC와 SHA256
 같은 볼륨의 실제 가용 공간은 1,509,208,064 → 9,439,432,704 bytes다.
 이 순증가는 실행 중 다른 활동·증거 파일 증가도 포함하므로 영구 용량 보장이나
 각 파일의 정확 회수량으로 해석하지 않는다. 다음 검사는 실제 시점별 admission을 유지한다.
+
+## 첫 집중 기능 검증: 123개 성공, 잔여 검사 실패 구분
+
+소스 `d0f53d15a96ef474ff48810b156437a6a6923c58`의
+[40079353750/job120829459871](https://github.com/bin9208/openpilot-rust/actions/runs/40079353750/job/120829459871)은
+최종 실패다. artifact `12554139608`의 28개 ZIP 멤버 CRC와 SHA256
+`5ad366a8d5ee0d078917be9231c1850b0c3e8dba927a0adcf3a388da56bc8e55`,
+추적 index와 source 전후 봉인을 확인했다. Rust 1.94.0과 작업별 6 GiB admission이
+실제로 통과했다. 검사 시 가용 공간은 8,241,963,008 bytes였다.
+
+| 실제 실행 범위 | 성공 |
+| --- | ---: |
+| x64 카탈로그 발행·충돌/보존 | 10 |
+| KBHit·private PTY·CLOEXEC | 20 |
+| 인증 저장/HTTP 정책 library | 19 |
+| 로그인·URL·원본 21개 입력 대조 | 8 |
+| 실제 loopback Requests POST/301·302·303·307·308 비교 | 1 |
+| 개발 SSH·키 설정·Params 경계 | 27 |
+| 주입형 GithubUtils | 26 |
+| Paramsd CarParams CLI | 1 |
+| Paramsd estimator controller | 10 |
+| 기존 camera disk-boundary 실패 사례 | 1 |
+| 합계 | 123 |
+
+Paramsd의 실제 원본 wire/exec/NumPy 비교 3개는 ignored 상태로 남았으며 성공에 포함하지 않는다.
+전체 원본 비교·런타임 수용을 위 합계로 대체하지 않는다. x64 카탈로그의 엄격한 Clippy는 성공했다.
+
+도구군 Clippy는 HTTP의 `manual_range_patterns`와 GithubUtils의 `redundant_guards`
+두 지적에서 실패했다. 각각 동일 의미의 `301..=303` 및 `JsonView::Text([])`로 보완했다.
+ARM은 rustc의 target 정보 조회에서 `gnu-lld` flavor가 unstable이라고 거절되어
+컴파일·실행에 도달하지 않았다. 안정판 호환 `ld.lld`의 인자 문법은 로컬 `--print cfg`로
+확인했으며 빌드나 기능 검사를 로컬에서 실행하지 않았다.
+
+다음 배치는 성공한 불변 cohort의 artifact hash/CRC·소스·tool hash를 확인해 재사용한다.
+전체 변경 경로 allowlist와 검토한 네 코드 파일의 postimage hash가 다르면 재사용을 거절한다.
+새 callback socket 3개, 영향 있는 HTTP/Github 대조, 미도달 Clippy 및 ARM build/QEMU를
+새로 실행한다. ARM 실제 CLI의 최초 발행·동일 세대 재사용도 별도 ignored test를 명시적으로
+선택해 검사하며 빈 `PATH`에서 실행해 Python이나 다른 compiler command에 의존하지 않음을 확인한다.
+
+모델 #482의 별도 조사에서 과거 256 controls의 실제 성공을 확인했으나 historical half
+operand 5건은 미해결이다. fresh `original` label도 같은 Rust worker를 썼으므로 독립 Python
+compiler 대조로 확대하지 않는다. 추측 산술 수정은 하지 않았으며 다음 제한된 독립 compiler
+대조는 `python-rust-523-model-482.md`에 기록했다.
