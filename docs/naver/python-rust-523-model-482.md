@@ -361,3 +361,19 @@ frozen image와의 전체 byte 비교는 `fresh_image_equals_frozen` 및 첫 차
 **UNRUN**이며 다음 부모의 정확 source CI가 확인해야 한다. 자연 features/provider가 reference와
 다르거나 baseline이 만료되면 실패하므로 그 경계만 조사한다. #482 및 모델/runtime 전체 수용은
 열린 상태로 유지한다.
+
+
+## 0e28 원본 cache 실제 관측
+
+[40087242279/job120852565465](https://github.com/bin9208/openpilot-rust/actions/runs/40087242279/job/120852565465)은
+성공했다. artifact12557553192/5,024,082B/SHA256
+`f193dcf00c29d4db0df066fba797a370f0f3fd3b11ae06737c86a702f7eb88fc`,70 ZIP CRC와 source/index,
+source/provider/input/imports 전후 일치를 확인했다. 원본 get2/put1/compile_to_obj1/jit_loader1,
+실제 private SQLite miss→hit 및 같은16,256B 반환 image를 관측했다. image SHA256은
+`f2427b64b89301d197dfd374a6ae89ca3166d3ca1d13203aca277ff9bb9a59ed`이며,
+fresh object SHA는 성공 pair의 `e29630e0aade6971df153c374afda4e5f7052e80cc495f7e1647e72170f9c9b3`와 같다.
+
+frozen14,442B와 byte14부터 다르다. 이 결과는 현재 자연 target의 실제 cache protocol 진단이며
+과거 최초 compile/cache CPU/provider를 소급 확정하지 않는다. 실제 metadata Python은3.12.15였고
+모델/kernel/object/frozen image를 실행하지 않았다. `model_or_historical_acceptance:false`와
+historical5건 실패를 유지하며 성공 cache/pair는 변경 근거 없이 반복하지 않는다.

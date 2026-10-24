@@ -241,6 +241,7 @@ fn original_login_and_urls_match_synthetic_native_status_and_effect_order() {
         .join("../../../openpilot/tools/lib/auth.py");
     let script = r#"
 import importlib.util, json, sys
+assert sys.version_info[:3] == (3, 12, 15), 'prepared Python runtime mismatch'
 from types import ModuleType
 from unittest.mock import Mock
 api = ModuleType('openpilot.tools.lib.api')
@@ -326,11 +327,21 @@ print(json.dumps(rows))
     );
     assert!(python.is_absolute() && python.is_file());
     let output = std::process::Command::new(python)
-        .args(["-I", "-S", "-c", script])
+        .args(["-I", "-B", "-S", "-X"])
+        .arg(format!(
+            "pycache_prefix={}/fresh-pycache",
+            temp.path().display()
+        ))
+        .args(["-c", script])
         .arg(source)
         .arg(serde_json::to_string(&inputs).unwrap())
         .current_dir(temp.path())
         .env_clear()
+        .env(
+            "LD_LIBRARY_PATH",
+            std::env::var_os("OPENPILOT_ORACLE_PYTHON_LIBRARY_PATH")
+                .expect("prepared Python runtime library directory required"),
+        )
         .output()
         .unwrap();
     assert!(

@@ -14,24 +14,25 @@ pub fn parse_options_with_limit(
     source_root: &Path,
     limit: IntStringLimit,
 ) -> Result<Option<Options>> {
-    let parsed = argparse_scan::scan_with_positionals(
+    let mut port = String::from("22");
+    let parsed = argparse_scan::scan_with_positionals_and_value_validation(
         args,
         &[
             OptionSpec::value("--host", false),
-            OptionSpec::append("--port"),
+            OptionSpec::value("--port", false),
             OptionSpec::value("--key", false),
             OptionSpec::flag("--debug", None),
         ],
         1,
+        |name, value| {
+            if name == "--port" {
+                // Convert before later ambiguity/help, including overwritten values.
+                port = port_value(value, limit)
+                    .map_err(|error| argparse_scan::ArgumentError(error.to_string()))?;
+            }
+            Ok(())
+        },
     )?;
-    // Scanner append mode records each port action consumed BEFORE help.
-    // Validate all of them, including a bad value overwritten by a later good one.
-    let mut port = String::from("22");
-    if let Some(values) = parsed.append_values.get("--port") {
-        for value in values {
-            port = port_value(value, limit)?;
-        }
-    }
     if parsed.help {
         return Ok(None);
     }

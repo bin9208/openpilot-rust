@@ -215,7 +215,7 @@ const ORIGINAL: &str = r#"
 import ast, contextlib, hashlib, io, json, os, sys
 from types import ModuleType
 import requests as real_requests
-assert sys.version_info[:2] == (3, 12), 'the native argparse contract requires the prepared Python 3.12 oracle'
+assert sys.version_info[:3] == (3, 12, 15), 'the prepared Python runtime must stay pinned after env_clear'
 root, cases = sys.argv[1], json.loads(sys.argv[2])
 paths = {'ssh':'tools/scripts/ssh.py', 'setup':'tools/scripts/setup_ssh_keys.py'}
 source_bytes = {tool: open(os.path.join(root, path), 'rb').read() for tool, path in paths.items()}
@@ -303,17 +303,28 @@ fn oracle(cases: &[Case]) -> Value {
     let input = cases.iter().map(|case| &case.input).collect::<Vec<_>>();
     let interpreter = std::env::var_os("DEVELOPER_CLI_ORACLE_PYTHON")
         .or_else(|| std::env::var_os("AUTH_CLI_ORACLE_PYTHON"))
-        .unwrap_or_else(|| "python3".into());
+        .expect("prepared absolute developer CLI interpreter required");
+    assert!(Path::new(&interpreter).is_absolute());
     let temp = tempfile::tempdir().unwrap();
     let source_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
     let output = std::process::Command::new(interpreter)
         // requests.Response is the independent default-decoding oracle. Use the
         // parent's prepared Python/requests environment; never call requests.get.
-        .args(["-I", "-c", ORIGINAL])
+        .args(["-I", "-B", "-X"])
+        .arg(format!(
+            "pycache_prefix={}/fresh-pycache",
+            temp.path().display()
+        ))
+        .args(["-c", ORIGINAL])
         .arg(source_root)
         .arg(serde_json::to_string(&input).unwrap())
         .stdin(std::process::Stdio::null())
         .env_clear()
+        .env(
+            "LD_LIBRARY_PATH",
+            std::env::var_os("OPENPILOT_ORACLE_PYTHON_LIBRARY_PATH")
+                .expect("prepared Python runtime library directory required"),
+        )
         .env("COLUMNS", "80")
         .current_dir(temp.path())
         .output()
@@ -575,6 +586,7 @@ fn ssh_cli_original_port_argparse_help_and_no_auth_effects() {
     for (id, args) in [
         ("help", vec!["--help"]),
         ("help-before-bad-port", vec!["--help", "--port=bad"]),
+        ("help-before-ambiguous", vec!["--help", "--h"]),
         ("valid-port-before-help", vec!["--port=22", "--help"]),
     ] {
         let mut case = ssh(id, &args, json!([]));
@@ -625,8 +637,14 @@ fn ssh_cli_original_port_argparse_help_and_no_auth_effects() {
             "unrecognized arguments",
         ),
         (
+            "bad-port-before-ambiguous-help",
+            vec!["--port=bad", "--h", "--help"],
+            "argument --port: invalid int value: 'bad'",
+            "invalid int value: \"bad\"",
+        ),
+        (
             "ambiguous-before-help",
-            vec!["--help", "--h"],
+            vec!["--h", "--help"],
             "ambiguous option: --h could match --help, --host",
             "ambiguous option: --h",
         ),

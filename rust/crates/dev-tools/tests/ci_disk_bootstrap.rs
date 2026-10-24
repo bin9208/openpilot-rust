@@ -2258,3 +2258,6 @@ fn zero_and_maximum_growth_keep_bootstrap_integer_semantics() {
     assert_eq!(report["growth_bytes"], u64::MAX - (1024 * 1024 - 1));
     assert!(!cold.log.exists());
 }
+
+#[path = "ci_disk_bootstrap/prepared_audit.rs"]
+mod prepared_audit;

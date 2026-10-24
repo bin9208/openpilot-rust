@@ -187,3 +187,18 @@ artifact outcomes에는 `original_retired=false`, `caller_closure=false`, `inven
 
 workflow YAML, 각 run block의 Bash 문법, 내장 Python 문법만 로컬에서 확인한다.
 실제 원본 5개·library 15개·strict Clippy·provider 전후 불변성은 모두 **UNRUN**이다.
+
+
+## 0e28 실제 실패와 다음 수정
+
+[40087242329/job120852565522](https://github.com/bin9208/openpilot-rust/actions/runs/40087242329/job/120852565522)은
+실패다. 세 check는 독립 실행됐지만 original5·library15 모두 잘못된 generated API와
+raw schema wrapper 때문에 컴파일 전에 멈췄고, Clippy도 동일한 오류다. 두 테스트 파일에서
+`init/get_kp_b_p` 및 `capnp::schema::StructSchema::new(raw).get_proto()`로 수정한다.
+fixture bits·모든 assert·production sanitizer는 변경하지 않는다. 기능 결과는 여전히 **UNRUN**이다.
+
+artifact12557518748/493,413B/SHA256
+`ab503357cdb0ad47040263bf79a82ead6464a7f9192ea6457b1428fbe21feb04`의45 CRC/source/index 및
+SDK/venv 내용·identity 전후 일치를 확인했다. 부모3.12.15 확인만으로 env-i 자식의 동일 runtime을
+보증하지 않고, #531 수정처럼 명시된 단일 library directory를 전달해 실제 자식3.12.15 및
+provider mapping·전후 hash를 확인한다. 원본 source 삭제와 inventory credit은 아직 없다.

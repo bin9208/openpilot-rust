@@ -90,13 +90,41 @@ pub fn scan_with_positionals(
     specs: &[OptionSpec],
     required_positionals: usize,
 ) -> Result<Parsed, ArgumentError> {
-    scan_with_policy(args, specs, required_positionals, false)
+    scan_with_policy(args, specs, required_positionals, false, false, None)
 }
+/// Python 3.12 SSH grammar: ambiguity fails when that action is consumed.
+/// Existing scanner entrypoints retain their eager error-order contract.
+pub fn scan_with_positionals_deferred_ambiguity(
+    args: &[String],
+    specs: &[OptionSpec],
+    required_positionals: usize,
+) -> Result<Parsed, ArgumentError> {
+    scan_with_policy(args, specs, required_positionals, false, true, None)
+}
+/// Run value conversion at consumption time, before any later parser error.
+pub fn scan_with_positionals_and_value_validation(
+    args: &[String],
+    specs: &[OptionSpec],
+    required_positionals: usize,
+    mut check: impl FnMut(&str, &str) -> Result<(), ArgumentError>,
+) -> Result<Parsed, ArgumentError> {
+    scan_with_policy(
+        args,
+        specs,
+        required_positionals,
+        false,
+        true,
+        Some(&mut check),
+    )
+}
+type ValueCheck<'a> = Option<&'a mut dyn FnMut(&str, &str) -> Result<(), ArgumentError>>;
 fn scan_with_policy(
     args: &[String],
     specs: &[OptionSpec],
     required_positionals: usize,
     required_first: bool,
+    defer_ambiguity: bool,
+    mut check_value: ValueCheck<'_>,
 ) -> Result<Parsed, ArgumentError> {
     let mut all = specs.to_vec();
     all.push(OptionSpec::flag("--help", None));
@@ -121,20 +149,22 @@ fn scan_with_policy(
             _ => Err(ArgumentError(format!("ambiguous option: {name}"))),
         }
     };
-    // argparse classifies every option (and rejects ambiguity) before executing help/actions.
+    // The legacy policy rejects ambiguity during classification; the opt-in
+    // grammar defers that error until consumption, preserving earlier help.
     let mut classified = Vec::new();
     let mut terminated = false;
     for arg in args {
         if arg == "--" {
             terminated = true;
-            classified.push(None);
+            classified.push(Ok(None));
             continue;
         }
-        classified.push(if terminated {
-            None
+        let option = if terminated {
+            Ok(None)
         } else {
-            resolve(arg.split_once('=').map_or(arg.as_str(), |(n, _)| n))?
-        });
+            resolve(arg.split_once('=').map_or(arg.as_str(), |(n, _)| n))
+        };
+        classified.push(if defer_ambiguity { option } else { Ok(option?) });
     }
     let mut values = BTreeMap::new();
     let mut append_values: BTreeMap<String, Vec<String>> = BTreeMap::new();
@@ -144,7 +174,10 @@ fn scan_with_policy(
     let mut literal = false;
     let mut i = 0;
     while i < args.len() {
-        let Some(index) = classified[i] else {
+        let resolved = classified[i]
+            .as_ref()
+            .map_err(|error| ArgumentError(error.0.clone()))?;
+        let Some(index) = *resolved else {
             if required_positionals > 0 && args[i] == "--" && !literal {
                 literal = true;
             } else if required_positionals > 0 && (literal || !option(&args[i])) {
@@ -200,9 +233,12 @@ fn scan_with_policy(
             } else {
                 i += 1;
                 args.get(i)
-                    .filter(|v| classified[i].is_none() && !option(v))
+                    .filter(|v| matches!(classified[i], Ok(None)) && !option(v))
                     .ok_or_else(|| ArgumentError(format!("{} requires a value", spec.name)))?
             };
+            if let Some(check) = check_value.as_mut() {
+                check(spec.name, value)?;
+            }
             if spec.append {
                 append_values
                     .entry(spec.name.to_owned())
@@ -328,6 +364,8 @@ fn scan_os_with_policy(
         specs,
         required_positionals,
         required_first,
+        false,
+        None,
     )?;
     Ok(ParsedOs {
         values: parsed

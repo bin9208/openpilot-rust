@@ -40,6 +40,7 @@ paths = request['source_paths']
 def hashes():
     return {p: hashlib.sha256((root / p).read_bytes()).hexdigest() for p in paths}
 before = hashes()
+assert sys.version_info[:3] == (3, 12, 15), 'prepared Python runtime mismatch'
 # -B는 쓰기만 막는다. 기존 checkout의 stale .pyc도 읽지 않도록 새 private prefix를 쓴다.
 sys.pycache_prefix = str(pathlib.Path.cwd() / 'fresh-pycache')
 sys.path.insert(0, str(root))
@@ -206,9 +207,16 @@ fn oracle(group: &str, mut request: Value) -> Value {
             format!("TMPDIR={}", temp.path().display()),
             format!("XDG_CACHE_HOME={}", temp.path().display()),
             "LC_ALL=C.UTF-8".into(),
+            format!(
+                "LD_LIBRARY_PATH={}",
+                std::env::var("OPENPILOT_ORACLE_PYTHON_LIBRARY_PATH")
+                    .expect("prepared Python runtime library directory required")
+            ),
             python.display().to_string(),
             "-I".into(),
             "-B".into(),
+            "-X".into(),
+            format!("pycache_prefix={}/fresh-pycache", temp.path().display()),
             "-c".into(),
             ORIGINAL.into(),
             root.display().to_string(),
@@ -261,7 +269,7 @@ fn fixture(service: &str, vin: &str, bits: u32, time: u64) -> Builder<HeapAlloca
             cp.set_flags(0x5a5a_0101);
             cp.set_mass(f32::from_bits(bits));
             cp.set_wheelbase(f32::from_bits(0x8000_0000));
-            let mut points = cp.reborrow().init_longitudinal_tuning().init_kp_bp(3);
+            let mut points = cp.reborrow().init_longitudinal_tuning().init_kp_b_p(3);
             for (i, bits) in [0x3fa0_0000, 1, 0x7fc1_2345].into_iter().enumerate() {
                 points.set(i as u32, f32::from_bits(bits));
             }
@@ -316,7 +324,7 @@ fn fields(reader: event::Reader<'_>) -> Value {
             result["kp_bits"] = json!(cp
                 .get_longitudinal_tuning()
                 .unwrap()
-                .get_kp_bp()
+                .get_kp_b_p()
                 .unwrap()
                 .iter()
                 .map(f32::to_bits)
@@ -627,7 +635,11 @@ fn original_malformed_boundaries_are_lazy_and_leave_inputs_unchanged() {
     let TypeVariant::Struct(schema) = event::Owned::introspect().which() else {
         panic!("Event schema");
     };
-    let capnp::schema_capnp::node::Struct(proto) = schema.get_proto().which().unwrap() else {
+    let capnp::schema_capnp::node::Struct(proto) = capnp::schema::StructSchema::new(schema)
+        .get_proto()
+        .which()
+        .unwrap()
+    else {
         panic!("Event struct");
     };
     let discriminator = proto.get_discriminant_offset() as usize;

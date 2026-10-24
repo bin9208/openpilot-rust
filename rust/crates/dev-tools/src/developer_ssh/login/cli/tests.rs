@@ -73,6 +73,7 @@ fn oracle(cases: &[Value]) -> Vec<Value> {
     // No original login(), filesystem credential operation, API, browser or stdin is used.
     let script = r#"
 import ast, contextlib, io, json, sys
+assert sys.version_info[:3] == (3, 12, 15), 'prepared Python runtime mismatch'
 from types import ModuleType
 api = ModuleType('openpilot.tools.lib.api')
 api.UnauthorizedError = type('UnauthorizedError', (Exception,), {})
@@ -124,13 +125,24 @@ print(json.dumps(rows))
 "#;
     let temp = tempfile::tempdir().unwrap();
     let source = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../openpilot/tools/lib/auth.py");
-    let interpreter =
-        std::env::var_os("AUTH_CLI_ORACLE_PYTHON").unwrap_or_else(|| "python3".into());
+    let interpreter = std::env::var_os("AUTH_CLI_ORACLE_PYTHON")
+        .expect("prepared absolute auth interpreter required");
+    assert!(Path::new(&interpreter).is_absolute());
     let output = std::process::Command::new(interpreter)
-        .args(["-I", "-S", "-c", script])
+        .args(["-I", "-B", "-S", "-X"])
+        .arg(format!(
+            "pycache_prefix={}/fresh-pycache",
+            temp.path().display()
+        ))
+        .args(["-c", script])
         .arg(source)
         .arg(serde_json::to_string(cases).unwrap())
         .env_clear()
+        .env(
+            "LD_LIBRARY_PATH",
+            std::env::var_os("OPENPILOT_ORACLE_PYTHON_LIBRARY_PATH")
+                .expect("prepared Python runtime library directory required"),
+        )
         .env("COLUMNS", "80")
         .current_dir(temp.path())
         .output()

@@ -13,3 +13,58 @@ fn short_help_clusters_keep_action_order_and_reject_explicit_values() {
         );
     }
 }
+
+#[test]
+fn deferred_ambiguity_preserves_help_order_without_changing_legacy_scans() {
+    use openpilot_dev_tools::argparse_scan::{
+        scan_with_positionals, scan_with_positionals_and_value_validation,
+        scan_with_positionals_deferred_ambiguity, ArgumentError, OptionSpec,
+    };
+    let specs = [OptionSpec::value("--host", false)];
+    let help_first = vec!["--help".into(), "--h".into()];
+    assert!(scan_with_positionals(&help_first, &specs, 1).is_err());
+    assert!(
+        scan_with_positionals_deferred_ambiguity(&help_first, &specs, 1)
+            .unwrap()
+            .help
+    );
+    let ambiguous_first = vec!["--h".into(), "--help".into()];
+    assert_eq!(
+        scan_with_positionals_deferred_ambiguity(&ambiguous_first, &specs, 1)
+            .err()
+            .unwrap()
+            .0,
+        "ambiguous option: --h"
+    );
+    let missing_value = vec!["--host".into(), "--h".into(), "--help".into()];
+    assert_eq!(
+        scan_with_positionals_deferred_ambiguity(&missing_value, &specs, 1)
+            .err()
+            .unwrap()
+            .0,
+        "--host requires a value"
+    );
+    let invalid_value = vec!["--host=bad".into(), "--h".into(), "--help".into()];
+    let conversion =
+        scan_with_positionals_and_value_validation(&invalid_value, &specs, 1, |name, value| {
+            assert_eq!((name, value), ("--host", "bad"));
+            Err(ArgumentError("conversion failed first".into()))
+        })
+        .err()
+        .unwrap();
+    assert_eq!(conversion.0, "conversion failed first");
+    assert!(
+        scan_with_positionals_and_value_validation(&help_first, &specs, 1, |_, _| panic!(
+            "help must not consume later values"
+        ),)
+        .unwrap()
+        .help
+    );
+    let literal = vec!["--".into(), "--h".into()];
+    assert_eq!(
+        scan_with_positionals_deferred_ambiguity(&literal, &specs, 1)
+            .unwrap()
+            .positionals,
+        ["--h"]
+    );
+}

@@ -20,7 +20,7 @@ fn fixture(service: &str, vin: &str) -> Builder<HeapAllocator> {
             params.set_car_fingerprint("SYNTHETIC_FIXTURE_ONLY");
             params.set_mass(1234.5);
             params.set_flags(0x5a5a_0101);
-            let mut points = params.init_longitudinal_tuning().init_kp_bp(2);
+            let mut points = params.init_longitudinal_tuning().init_kp_b_p(2);
             points.set(0, 1.25);
             points.set(1, 9.5);
         }
@@ -146,7 +146,7 @@ fn car_params_copy_preserves_metadata_fields_and_original() {
     let points = params
         .get_longitudinal_tuning()
         .unwrap()
-        .get_kp_bp()
+        .get_kp_b_p()
         .unwrap();
     assert_eq!([points.get(0), points.get(1)], [1.25, 9.5]);
     assert_eq!(write_message_to_words(&original), before);
@@ -448,7 +448,11 @@ fn unknown_union_tag_errors_in_filter_and_can_resume_on_next_input() {
     let TypeVariant::Struct(schema) = event::Owned::introspect().which() else {
         panic!("not struct")
     };
-    let capnp::schema_capnp::node::Struct(proto) = schema.get_proto().which().unwrap() else {
+    let capnp::schema_capnp::node::Struct(proto) = capnp::schema::StructSchema::new(schema)
+        .get_proto()
+        .which()
+        .unwrap()
+    else {
         panic!("not struct node")
     };
     let discriminator = proto.get_discriminant_offset() as usize;

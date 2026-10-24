@@ -379,3 +379,90 @@ target8 + Python1 + proof0.5 GiB다. 정리 후 9.439GB는 8.791GiB이며 단위
 8,229,765,120 bytes(준비 시작) → 6,870,003,712 bytes(종료 전)였다. 이는 해당 실행의
 관측 순증이며 실측 peak나 기존 held-provider 전체 수용을 뜻하지 않는다.
 다음 bundle은 build·Clippy·최종 단계별 registry/target/venv의 할당량도 보존한다.
+
+
+## 0e28 실제 결과: bundle·cache 성공, auth/sanitizer와 SDK 후속 수정
+
+소스 `0e28b8601a02092b4103ff84191be6cbef2b576d`의 결과를 기능군별로 분리한다.
+
+- [Bundle40087242278/job120852565401](https://github.com/bin9208/openpilot-rust/actions/runs/40087242278/job/120852565401):
+  성공. 기존18개 계약 재사용, fresh CLI build·엄격 Clippy·실제 checkout 원본/native의
+  **411파일/8,621,062 bytes** 비교 및 native Python exec attempt0을 확인했다.
+  artifact12558055881/6,331,785B/SHA256
+  `2913e7a3e3b7abbdd0696b99fcb6606dcd50ec6e19a0e6c94db0ff3ed746b3d2`,853 ZIP CRC/source/index 전후 일치.
+  업로더의 기본 hidden 제외 때문에 `.vendor` 아래6파일/69,990B 원시 출력은 archive에 없다.
+  archive의 나머지405쌍/8,551,072B는 전부 동일하다. CI의 전체411 비교와 보존된 full roster를
+  구분하며 archive에서411쌍 전체를 직접 확인했다고 주장하지 않는다. 다음 실제 caller 검증에서
+  proof의 hidden 파일도 보존하도록 고친다. 원본 삭제·Docker/NAS 전달은 아직 하지 않았다.
+- [Cache40087242279/job120852565465](https://github.com/bin9208/openpilot-rust/actions/runs/40087242279/job/120852565465):
+  성공. 원본 get2/put1/compile_to_obj1/jit_loader1의 실제 miss→hit를 관측했다.
+  fresh object는 기존pair와 같은 `e29630e0...`이며 두 반환 image16,256B의 SHA는
+  `f2427b64b89301d197dfd374a6ae89ca3166d3ca1d13203aca277ff9bb9a59ed`다.
+  frozen14,442B와는 byte14부터 다르다. historical/model acceptance는 false이며 code는 실행하지 않았다.
+  artifact12557553192/5,024,082B/SHA256
+  `f193dcf00c29d4db0df066fba797a370f0f3fd3b11ae06737c86a702f7eb88fc`,70 ZIP CRC 및 source/index·provider/input/imports 전후 일치.
+- [Auth40087242286/job120852565373](https://github.com/bin9208/openpilot-rust/actions/runs/40087242286/job/120852565373):
+  실패. 인자1·기존로그인8·SSH 정상20와setup21의 두 그룹·strict Clippy는 성공했지만
+  `--help --h`의 원본은 help로 종료하고 native는 먼저 ambiguity를 거절했다.
+  잘못 붙인 `ambiguous-before-help` 기대를 수정하여 기존 입력은 help 사례로 보존하고,
+  실제 ambiguous-first `--h --help`를 추가한다(총54사례/3개).
+  CPython3.12.15의 [consume_optional](https://raw.githubusercontent.com/python/cpython/v3.12.15/Lib/argparse.py)을
+  확인해 SSH 전용 deferred-ambiguity opt-in을 추가한다. 기존 scanner 진입점의 eager 정책은 유지한다.
+  artifact12557463586/3,646,065B/SHA256
+  `aa50d837e00804df7132e721865ebd4d39e7654dec86216ac5e2bc1056cab641`,34 ZIP CRC/source/index 전후 일치.
+- [Sanitizer40087242329/job120852565522](https://github.com/bin9208/openpilot-rust/actions/runs/40087242329/job/120852565522):
+  실패. original5/library15/Clippy 모두 테스트 코드의 잘못된 generated API에서 컴파일이 멈췄다.
+  실제 API `init/get_kp_b_p`와 `StructSchema::new(raw).get_proto()`로 양쪽 테스트를 보완한다.
+  입력·assert·unknown field 검사와 production sanitizer는 유지한다.
+  artifact12557518748/493,413B/SHA256
+  `ab503357cdb0ad47040263bf79a82ead6464a7f9192ea6457b1428fbe21feb04`,45 ZIP CRC/source/index·SDK/venv 내용/identity 전후 일치.
+
+Bundle 종료 시 실제 allocated bytes는 registry163,643,392/target633,548,800/venv13,488,128/
+proof22,466,560이며 source-owner 전체1,811,054,592는 target을 포함한다. 이 항목을 합산해
+중복 계산하거나 실측 peak로 표현하지 않는다.
+
+### #530 SDK 권한 준비 — 검증 기준 유지
+
+[97f7 Fast40084922340/native120850033970](https://github.com/bin9208/openpilot-rust/actions/runs/40084922340/job/120850033970)은
+cold 컴파일 전에 SDKroot775를 정확히 거절했다. 실제 SDK는 UID/GID1000의322항목이며
+28 directory775·11 regular664·나머지 regular644/755였다. artifact12557358454/189,911B/
+SHA256 `47c856f5e841bbde9cd07f57f9a761d94b3a610068bef3994538bcc08f7a80f6`,17 ZIP CRC와
+SDK hash/roster 전후 일치는 확인했다. 이 실패에서는 기존 Fast의 조건 때문에 source/index
+after가 없으므로 전체 source seal 성공으로 표현하지 않는다. cold/warm·routing24는 미실행이다.
+
+다음 준비는 소유권·종류를 먼저 확인한 SDK의 shared-write bits만 held descriptor를 통해 제거하고,
+내용·identity·owner/group·mtime·0022 외 mode bits를 보존한다. 권한 작업은60초 자체 process group으로
+제한하고 실패해도 before/after를 남긴다. 그 뒤부터 기존 SDK 전체의 정확한 before/after seal을
+적용한다. `0022` 거절을 완화하거나 SDK contents를 바꾸지 않는다. native routing의 source after도
+실패 때 실행하도록 고친다. 나머지 여섯 job·trigger·기존2/6GiB guard는 유지한다. 실제 수정은 **UNRUN**이다.
+
+### #531 원본 Python runtime의 관측 정정
+
+앞선 기록의3.12.15는 설정/parent 관측이었다. 0e28의 환경을 비운 SSH 자식 metadata는 실제
+`sys.version=3.12.3`을 보였다. parent는3.12.15를 보고하고 선택된 executable은3.12.15 toolcache에
+있었지만 `env_clear()`가 `LD_LIBRARY_PATH`도 제거했다. 공유 libpython 선택 차이를 조사하며 옛 자식의
+map이 없으므로 특정 DSO 경로를 소급 확정하지 않는다. 이 문제를 [#531](https://github.com/bin9208/openpilot-rust/issues/531)에 기록했다.
+
+후속 oracle는 절대 interpreter와 명시한 단일 runtime-library directory만 전달하며, 환경을 비운
+자식의 실제3.12.15 버전·process map의 library path/inode를 먼저 확인한다. libpython·argparse·interpreter
+해시를 전후 검사한다. 이 provider context가 바뀌므로 auth3/로그인8/SSH54은 새로 검증한다.
+모델 cache의 실제 metadata는3.12.15였으며 성공 cache/pair를 반복하지 않는다.
+
+
+독립 source review에서 뒤의 ambiguity가 앞의 잘못된 port 변환보다 먼저 반환되는 경계도
+확인했다. SSH 값 변환을 소비 시점 callback으로 옮기고 `--port=bad --h --help`를 추가하여
+총54사례로 검증한다. 기존 scanner 진입점은 callback 없이 원래 정책을 유지한다.
+또한 SDK chmod 이전의 도구4 pin과 root device 일치를 확인하고 mount boundary를 거절한다.
+source/SDK seal 실패 때 native job의 source/target을 정리하지 않도록 cleanup 조건을 강화했다.
+원본 자식은 새 `-X pycache_prefix`와 `-B`로 startup부터 stale bytecode를 읽거나 쓰지 않는다.
+
+
+SDK cold 감사는 Python에서 Rust로 옮긴다. 신규6개 parser/무결성 negative-control과 실제
+증거 전용 ignored1개를 추가하여 disk bootstrap target은 기본30개+ignored1개가 된다.
+실제 검사는 source/job owner·SDK manifest·trace identity/hash를 묶고, 이전 owned receipt를
+먼저 무효화하여 실패 후 낡은 PASS가 남지 않게 한다. 절대 cargo/rustc의 성공 exec가 필요하며
+실패한 PATH 탐색을 포함한 Python/Rustup attempt·FD exec·잘린 trace는 거절한다.
+실제 감사는 기존6GiB routing admission 뒤, 원래 functional selectors 전에 실행하여
+같은 target을 재사용한다. strict Clippy도 새 target을 포함한다. 아직 **UNRUN**이다.
+원본 focus venv 전체 파일/링크도 전후 봉인한다. 독립 review의 차단 지적은 반영했고,
+다음 게시 전 마지막 source pin 갱신과 문법/diff 확인을 진행한다.

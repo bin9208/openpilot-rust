@@ -358,3 +358,18 @@ cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features dev
 원본 두 script의 `ast.parse`만 확인했다. 기능·원본 비교·빌드·Clippy·fixture 캡처와
 commit/push/Actions 실행을 하지 않았다. 기존 source/안전 gates를 낮추거나 이 후보를
 전체 CLI 교체·원본 retirement 완료 증거로 사용하지 않는다.
+
+
+## 0e28 원본 추가 실행과 순서 보완
+
+원본 SSH/setup 세 그룹 중 정상 SSH20 및 setup21은 성공했고 parser 그룹의
+`--help --h` 기대가 실패했다. 원본은 앞선 help에서 종료했으나 native의 공유 scanner는
+뒤의 ambiguity를 먼저 거절했다. 기존 입력을 help 사례로 보존하고 실제 ambiguous-first
+`--h --help`를 추가해54사례/3개로 만든다. SSH에서만 명시적으로 ambiguity를 소비 시점에
+거절하도록 opt-in하며 기존 scanner 진입점의 eager 정책은 유지한다. 기존 scanner1개와
+새 순서/legacy/literal/값 경계1개, 영향 있는 SSH27개를 새로 검증한다.
+
+실제 자식 sys.version3.12.3과 parent 설정3.12.15 차이도 드러났다(#531).
+절대 interpreter뿐 아니라 명시된 runtime library를 전달하고 실제 env-clear 자식의
+3.12.15·provider mapping 및 전후 hash를 확인한다. 새 provider context의 auth3/로그인8/
+SSH54 및 Clippy는 **UNRUN**이다. 이전 성공을 이 context의 통과로 표현하지 않는다.

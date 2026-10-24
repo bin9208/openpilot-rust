@@ -104,6 +104,7 @@ jobs:
         }}
       uses: bin9208/openpilot-rust/.github/actions/rust-path@b2fc62472ce8183114d59dbeec4d1406df44e4c2
     - uses: actions/setup-python@v6
+      id: oracle_python
       with:
         python-version: 3.12.15
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
@@ -117,8 +118,25 @@ jobs:
         available=$(df -PB1 "$CI_JOB_TEMP" | awk 'NR == 2 {print $4}')
         [[ $available =~ ^[0-9]+$ ]]
         ((available >= 512 * 1024 * 1024))
-        python -m venv "$CI_JOB_TEMP/venv"
+        "$pythonLocation/bin/python" -I -B -m venv "$CI_JOB_TEMP/venv"
         printf '%s\n' "$CI_JOB_TEMP/venv/bin" >> "$GITHUB_PATH"
+        library=$(readlink -e "$pythonLocation/lib")
+        test "$library" = "$pythonLocation/lib"
+        test -f "$library/libpython3.12.so.1.0"
+        printf '%s\n' "OPENPILOT_ORACLE_PYTHON_LIBRARY_PATH=$library" >> "$GITHUB_ENV"
+        sha256sum "$library/libpython3.12.so.1.0" "$library/python3.12/argparse.py" "$(readlink -e "$CI_JOB_TEMP/venv/bin/python")" > "$CI_JOB_TEMP/proof/oracle-runtime.sha256"
+        /usr/bin/env -i HOME="$CI_JOB_TEMP/home" LD_LIBRARY_PATH="$library" "$CI_JOB_TEMP/venv/bin/python" -I -B -X "pycache_prefix=$CI_JOB_TEMP/unused-oracle-pycache" - <<'RUNTIME' > "$CI_JOB_TEMP/proof/oracle-runtime.json"
+        import argparse, hashlib, json, os, pathlib, sys
+        assert sys.version_info[:3] == (3,12,15), sys.version
+        base = pathlib.Path(sys.base_prefix).resolve()
+        provider = (base/'lib/libpython3.12.so.1.0').resolve(strict=True)
+        assert pathlib.Path(argparse.__file__).resolve() == base/'lib/python3.12/argparse.py'
+        info = provider.stat()
+        mappings = [line.split(maxsplit=5) for line in pathlib.Path('/proc/self/maps').read_text().splitlines() if 'libpython' in line]
+        device = f'{os.major(info.st_dev):02x}:{os.minor(info.st_dev):02x}'
+        assert mappings and all(len(r)==6 and r[3]==device and int(r[4])==info.st_ino and pathlib.Path(r[5]).resolve()==provider for r in mappings)
+        print(json.dumps({'version':sys.version,'executable':str(pathlib.Path(sys.executable).resolve()),'base_prefix':str(base),'library':str(provider),'library_sha256':hashlib.sha256(provider.read_bytes()).hexdigest(),'argparse':str(pathlib.Path(argparse.__file__).resolve()),'argparse_sha256':hashlib.sha256(pathlib.Path(argparse.__file__).read_bytes()).hexdigest(),'cleared_environment':True},indent=2))
+        RUNTIME
     - name: Prepare focused toolchain and original-only Python dependencies
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
@@ -141,7 +159,7 @@ jobs:
         grep -q '^clippy-' "$CI_JOB_TEMP/proof/rust-components.txt"
         sha256sum "$(rustup which rustc)" "$(rustup which cargo)" "$(rustup which rustfmt)" "$(rustup which clippy-driver)" > "$CI_JOB_TEMP/proof/rust-tools.sha256"
 
-        python -m pip install requests==2.34.2
+        "$CI_JOB_TEMP/venv/bin/python" -m pip install requests==2.34.2
         rustc -vV > "$CI_JOB_TEMP/proof/rustc.txt"
         cargo -V > "$CI_JOB_TEMP/proof/cargo.txt"
         command -v capnp
@@ -149,7 +167,9 @@ jobs:
 
 
 
-        python -m pip freeze > "$CI_JOB_TEMP/proof/python-provider-versions.txt"
+        "$CI_JOB_TEMP/venv/bin/python" -m pip freeze > "$CI_JOB_TEMP/proof/python-provider-versions.txt"
+        find "$CI_JOB_TEMP/venv" -type f -print0 | sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/oracle-venv-files.before.sha256"
+        find "$CI_JOB_TEMP/venv" -type l -printf '%p\t%l\n' | sort > "$CI_JOB_TEMP/proof/oracle-venv-links.before.txt"
       id: toolchain
     - name: Check complete workspace syntax and formatting
       working-directory: ${{ env.DIAG_SOURCE }}
@@ -182,15 +202,26 @@ jobs:
         while IFS= read -r -d '' changed; do
           case "$changed" in
             .github/workflows/python-rust-523*.yml|docs/naver/python-rust-523*.md) ;;
-            rust/crates/dev-tools/Cargo.toml|rust/crates/dev-tools/src/developer_ssh/login/cli.rs|rust/crates/dev-tools/tests/route_vault_bundle.rs|rust/crates/dev-tools/tests/developer_auth.rs|rust/crates/dev-tools/tests/route_sanitizer_original.rs|tools/ci/model_cache_probe_482.sh|tools/ci/model-cache-482-natural-config.json) ;;
+            rust/crates/dev-tools/Cargo.toml|rust/crates/dev-tools/src/developer_ssh/login/cli.rs|rust/crates/dev-tools/src/developer_ssh/login/cli/tests.rs|rust/crates/dev-tools/src/developer_ssh/cli.rs|rust/crates/dev-tools/src/argparse_scan.rs|rust/crates/dev-tools/tests/argparse_scan.rs|rust/crates/dev-tools/tests/developer_cli_original.rs|rust/crates/dev-tools/src/route_sanitizer_tests.rs|rust/crates/dev-tools/tests/ci_disk_bootstrap.rs|rust/crates/dev-tools/tests/ci_disk_bootstrap/prepared_audit.rs|.github/workflows/fast-checks.yml|rust/crates/dev-tools/tests/route_vault_bundle.rs|rust/crates/dev-tools/tests/developer_auth.rs|rust/crates/dev-tools/tests/route_sanitizer_original.rs|tools/ci/model_cache_probe_482.sh|tools/ci/model-cache-482-natural-config.json) ;;
             *) printf 'Changed dependency invalidates reuse: %s\n' "$changed" >&2; exit 1 ;;
           esac
         done < "$CI_JOB_TEMP/proof/changed-paths.bin"
+        printf '%s  %s\n' 5477ab6cd7e7b4aa83d55c2b6f047f54dedfe434d23585ccf0ed9d19d9f8f023 .github/workflows/fast-checks.yml | sha256sum --check -
         printf '%s  %s\n' 5423bf5ab464bce3342e6eee6fc07ab64a6ecca4c4756e35a19cc54520ba0af2 rust/crates/dev-tools/Cargo.toml | sha256sum --check -
         printf '%s  %s\n' 4ec4ac3923e32ed834dffee608080b31c5806205823ede2221b057020b172496 rust/crates/dev-tools/src/developer_ssh/login/cli.rs | sha256sum --check -
+        printf '%s  %s\n' bcf6cd781fd6c2d1e0738c8b96213bca284e935cb68e9219a224e9fb98d2331b rust/crates/dev-tools/src/developer_ssh/login/cli/tests.rs | sha256sum --check -
+        printf '%s  %s\n' 390141ed26fb0afbaffed631bfbc61462044b033e2afea14e0eeecaf86c5aef6 rust/crates/dev-tools/src/developer_ssh/cli.rs | sha256sum --check -
+        printf '%s  %s\n' a2e53b5164624f1946ca40fe188915493329dd25fe7abe37a9f7958dcf56adaa rust/crates/dev-tools/src/argparse_scan.rs | sha256sum --check -
+        printf '%s  %s\n' 1227b87bdfba7e0ea03d2542766133f75925200bfd0fb7f1eea7f121738294f7 rust/crates/dev-tools/tests/argparse_scan.rs | sha256sum --check -
+        printf '%s  %s\n' bc8402cbcfda4a086891e9f52b1209059c8ae9bcf0d865f554b7391354f87fd2 rust/crates/dev-tools/tests/developer_cli_original.rs | sha256sum --check -
+        printf '%s  %s\n' 1dd943c418bee41bc2a7d4b850a6d0cf9dfce885fb1182fb437f59a0747ae03f rust/crates/dev-tools/src/route_sanitizer_tests.rs | sha256sum --check -
+        printf '%s  %s\n' 06c3b91c2f51a84a9934270260386b5b4f76f798fbebaaaa40f3235c0d93c6ef rust/crates/dev-tools/tests/route_sanitizer_original.rs | sha256sum --check -
+        printf '%s  %s\n' 9e621eff405a28331789a89ef00b6bb66449a6a6a73fe3b0cabce920777d5e6e rust/crates/dev-tools/tests/developer_auth.rs | sha256sum --check -
         printf '%s  %s\n' e96c8774ae224da098c2fc96c010d9036ecbd4b2b52a793e4e952c5ed30b6959 rust/crates/dev-tools/tests/route_vault_bundle.rs | sha256sum --check -
-        printf '%s  %s\n' 0680c5ff748a107e660731bf171c992d81102ff4b83eecf67c777bbf2a8301d9 rust/crates/dev-tools/tests/developer_auth.rs | sha256sum --check -
-        printf '%s  %s\n' 45300e9148e620047b2c3901e8cf4365e51c30b8f7676ecd56010f0513b4f5c9 rust/crates/dev-tools/tests/route_sanitizer_original.rs | sha256sum --check -
+        printf '%s  %s\n' a3c592dc7af2e78964bb4c0475dc201d93171ac2d035bf684db2d2b6f1521fb2 rust/crates/dev-tools/tests/ci_disk_bootstrap.rs | sha256sum --check -
+        printf '%s  %s\n' f1fb63059d2fbcdcd039c5c47fe7f784bf17601a4476aef60a4a0053b0f8477c rust/crates/dev-tools/tests/ci_disk_bootstrap/prepared_audit.rs | sha256sum --check -
+        printf '%s  %s\n' 837946b71e9a99b0bc061a3a7ef5c7cd384a6e6ee11dc3d4c0ea03ea229cdd90 tools/ci/model_cache_probe_482.sh | sha256sum --check -
+        printf '%s  %s\n' 2d769aa04fecbf2175532d5ebca995eaaece64adb1200d81bcddebabd1ff7a0d tools/ci/model-cache-482-natural-config.json | sha256sum --check -
         python - <<'MANIFEST'
         import subprocess,tomllib
         from pathlib import Path
@@ -204,9 +235,6 @@ jobs:
         python - "$prior" <<'COHORTS'
         import hashlib,io,json,sys,zipfile
         with zipfile.ZipFile(sys.argv[1]) as current:
-         log=current.read('auth-cli-library.log').decode()
-         for name in ['cli_modes_match_original_storage_reload_and_unauthorized_order','cli_pprint_json_domain_matches_original_sorting_wrapping_and_repr']:
-          assert f'test developer_ssh::login::cli::tests::{name} ... ok' in log
          blob=current.read('prior-40082949276.zip')
          assert hashlib.sha256(blob).hexdigest()=='5ed71546d1a7d50ffc0a94c1b8ba9266267fb2a7772de83d8ebfe4bcc3a2e279'
          with zipfile.ZipFile(io.BytesIO(blob)) as z:
@@ -228,16 +256,16 @@ jobs:
            assert before.read('SOURCE_COMMIT').decode().strip()=='40efe7ef964c0b08f9ba867edd9c863fc545bc0a'
            assert before.read('source-before.sha256')==before.read('source-after.sha256')
         COHORTS
-        printf '%s\n' 'Reused unchanged 97 auth modes/pprint, 41cf Paramsd boundaries/op help/callback/API units; 40efe and earlier terminal/SSH/HTTP/Github/camera/controller/catalog ARM cohorts. Fresh: changed auth argument diagnostics1, previously unreached original-login8 and strict Clippy, new source CLI52/3.' > "$CI_JOB_TEMP/proof/reused-scopes.txt"
-    - name: Validate corrected auth argument diagnostics
+        printf '%s\n' 'Reused unchanged 41cf Paramsd boundaries/op help/callback/API units; 40efe and earlier terminal/HTTP/Github/camera/controller/catalog ARM cohorts. Fresh prepared-runtime auth3/login8/SSH CLI54/3, affected SSH27/scanner2 and strict Clippy. Legacy scanner entrypoint policy remains eager.' > "$CI_JOB_TEMP/proof/reused-scopes.txt"
+    - name: Validate auth CLI against the exact prepared Python runtime
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
       run: |
         set -euo pipefail
         export no_proxy="$NO_PROXY" AUTH_CLI_ORACLE_PYTHON="$CI_JOB_TEMP/venv/bin/python"
-        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features developer-ssh-native --lib developer_ssh::login::cli::tests::cli_argument_actions_and_diagnostics_match_original -- --exact --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/auth-cli-arguments.log"
-        grep -F 'test result: ok. 1 passed;' "$CI_JOB_TEMP/proof/auth-cli-arguments.log"
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features developer-ssh-native --lib developer_ssh::login::cli::tests:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/auth-cli-exact-runtime.log"
+        grep -F 'test result: ok. 3 passed;' "$CI_JOB_TEMP/proof/auth-cli-exact-runtime.log"
     - name: Validate previously unreached original login API cases
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
@@ -256,13 +284,23 @@ jobs:
         export no_proxy="$NO_PROXY" DEVELOPER_CLI_ORACLE_PYTHON="$CI_JOB_TEMP/venv/bin/python"
         cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features developer-ssh-native --test developer_cli_original -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/developer-cli-original.log"
         grep -F 'test result: ok. 3 passed;' "$CI_JOB_TEMP/proof/developer-cli-original.log"
+    - name: Validate affected SSH parser and existing scanner policies
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+      run: |
+        set -euo pipefail
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features developer-ssh-native --test developer_ssh -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/ssh-regression.log"
+        grep -F 'test result: ok. 27 passed;' "$CI_JOB_TEMP/proof/ssh-regression.log"
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test argparse_scan -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/scanner-regression.log"
+        grep -F 'test result: ok. 2 passed;' "$CI_JOB_TEMP/proof/scanner-regression.log"
     - name: Validate strict auth and SSH Clippy
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
       run: |
         set -euo pipefail
-        cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features developer-ssh-native --lib --bin developer-auth --bin developer-auth-json --bin developer-ssh --bin setup-ssh-keys --test developer_auth --test developer_cli_original -- -D warnings 2>&1 | tee "$CI_JOB_TEMP/proof/auth-clippy.log"
+        cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features developer-ssh-native --lib --bin developer-auth --bin developer-auth-json --bin developer-ssh --bin setup-ssh-keys --test developer_auth --test developer_cli_original --test developer_ssh --test argparse_scan --test ci_disk_bootstrap -- -D warnings 2>&1 | tee "$CI_JOB_TEMP/proof/auth-clippy.log"
     - name: Seal Fast source and index after all maintained checks
       if: ${{ always() && env.DIAG_SOURCE != '' }}
       working-directory: ${{ env.DIAG_SOURCE }}
@@ -285,6 +323,13 @@ jobs:
         fi
 
         if test -f "$CI_JOB_TEMP/proof/rust-tools.sha256"; then sha256sum --check "$CI_JOB_TEMP/proof/rust-tools.sha256"; fi
+        if test -f "$CI_JOB_TEMP/proof/oracle-runtime.sha256"; then sha256sum --check "$CI_JOB_TEMP/proof/oracle-runtime.sha256"; fi
+        if test -f "$CI_JOB_TEMP/proof/oracle-venv-files.before.sha256"; then
+          find "$CI_JOB_TEMP/venv" -type f -print0 | sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/oracle-venv-files.after.sha256"
+          cmp "$CI_JOB_TEMP/proof/oracle-venv-files.before.sha256" "$CI_JOB_TEMP/proof/oracle-venv-files.after.sha256"
+          find "$CI_JOB_TEMP/venv" -type l -printf '%p\t%l\n' | sort > "$CI_JOB_TEMP/proof/oracle-venv-links.after.txt"
+          cmp "$CI_JOB_TEMP/proof/oracle-venv-links.before.txt" "$CI_JOB_TEMP/proof/oracle-venv-links.after.txt"
+        fi
       id: source_final
     - name: Retain Fast job ownership evidence
       id: fast_evidence

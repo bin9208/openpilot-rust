@@ -160,10 +160,27 @@ jobs:
         set -euo pipefail
         umask 077
         python -I -B -c 'import sys; assert sys.version_info[:3] == (3, 12, 15), sys.version'
-        python -I -B -m venv "$CI_JOB_TEMP/venv"
+        "$pythonLocation/bin/python" -I -B -m venv "$CI_JOB_TEMP/venv"
         oracle="$CI_JOB_TEMP/venv/bin/python"
         "$oracle" -I -B -m pip install --no-cache-dir --only-binary=:all: pycapnp==2.1.0 2>&1 | tee "$CI_JOB_TEMP/proof/pip-install.log"
         "$oracle" -I -B -m pip freeze > "$CI_JOB_TEMP/proof/python-provider-versions.txt"
+        library=$(readlink -e "$pythonLocation/lib")
+        test "$library" = "$pythonLocation/lib"
+        test -f "$library/libpython3.12.so.1.0"
+        printf '%s\n' "OPENPILOT_ORACLE_PYTHON_LIBRARY_PATH=$library" >> "$GITHUB_ENV"
+        sha256sum "$library/libpython3.12.so.1.0" "$library/python3.12/argparse.py" "$(readlink -e "$CI_JOB_TEMP/venv/bin/python")" > "$CI_JOB_TEMP/proof/oracle-runtime.sha256"
+        /usr/bin/env -i HOME="$CI_JOB_TEMP/home" LD_LIBRARY_PATH="$library" "$CI_JOB_TEMP/venv/bin/python" -I -B -X "pycache_prefix=$CI_JOB_TEMP/unused-oracle-pycache" - <<'RUNTIME' > "$CI_JOB_TEMP/proof/oracle-runtime.json"
+        import argparse, hashlib, json, os, pathlib, sys
+        assert sys.version_info[:3] == (3,12,15), sys.version
+        base = pathlib.Path(sys.base_prefix).resolve()
+        provider = (base/'lib/libpython3.12.so.1.0').resolve(strict=True)
+        assert pathlib.Path(argparse.__file__).resolve() == base/'lib/python3.12/argparse.py'
+        info = provider.stat()
+        mappings = [line.split(maxsplit=5) for line in pathlib.Path('/proc/self/maps').read_text().splitlines() if 'libpython' in line]
+        device = f'{os.major(info.st_dev):02x}:{os.minor(info.st_dev):02x}'
+        assert mappings and all(len(r)==6 and r[3]==device and int(r[4])==info.st_ino and pathlib.Path(r[5]).resolve()==provider for r in mappings)
+        print(json.dumps({'version':sys.version,'executable':str(pathlib.Path(sys.executable).resolve()),'base_prefix':str(base),'library':str(provider),'library_sha256':hashlib.sha256(provider.read_bytes()).hexdigest(),'argparse':str(pathlib.Path(argparse.__file__).resolve()),'argparse_sha256':hashlib.sha256(pathlib.Path(argparse.__file__).read_bytes()).hexdigest(),'cleared_environment':True},indent=2))
+        RUNTIME
         "$oracle" -I -B -c 'import capnp,sys; assert sys.version_info[:3] == (3,12,15); assert capnp.__version__ == "2.1.0"; print(sys.version); print(capnp.__file__)' > "$CI_JOB_TEMP/proof/python.txt"
         # -B를 쓰는 oracle 실행 전의 전체 venv를 기준으로 한다. directory symlink는 순회하지 않는다.
         LC_ALL=C find "$CI_JOB_TEMP/venv" -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/oracle-venv-files.before.sha256"
@@ -243,6 +260,7 @@ jobs:
         cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
         git diff --exit-code
         git diff --cached --exit-code
+        if test -f "$CI_JOB_TEMP/proof/oracle-runtime.sha256"; then sha256sum --check "$CI_JOB_TEMP/proof/oracle-runtime.sha256"; fi
     - name: Seal shared Rust SDK after all attempted contracts
       id: rust_final
       if: ${{ always() && env.CI_JOB_TEMP != '' }}

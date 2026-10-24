@@ -109,6 +109,84 @@ jobs:
       - run: python -m pip install pytest==9.0.2 PyYAML==6.0.2
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         working-directory: ${{ env.DIAG_SOURCE }}
+      - name: Remove shared write permission from the owned provisioned SDK
+        id: sdk_permissions
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        working-directory: ${{ env.DIAG_SOURCE }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          sdk=/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu
+          test -d "$sdk" && test ! -L "$sdk"
+          test "$(readlink -e "$sdk")" = "$sdk"
+          # Preserve content and owner access. Never relax the bootstrap's 0022 rejection.
+          find "$sdk" -xdev ! -uid "$(id -u)" -print0 > "$CI_JOB_TEMP/proof/sdk-foreign-owners.bin"
+          test ! -s "$CI_JOB_TEMP/proof/sdk-foreign-owners.bin"
+          find "$sdk" -xdev ! -type d ! -type f -print0 > "$CI_JOB_TEMP/proof/sdk-unapproved-kinds.bin"
+          test ! -s "$CI_JOB_TEMP/proof/sdk-unapproved-kinds.bin"
+          sdk_device=$(stat -c '%d' -- "$sdk")
+          find "$sdk" -xdev -printf '%D\n' > "$CI_JOB_TEMP/proof/sdk-devices.before.txt"
+          while IFS= read -r device; do test "$device" = "$sdk_device"; done < "$CI_JOB_TEMP/proof/sdk-devices.before.txt"
+          printf '%s  %s\n' 103b60e1b1339968c1d74202ea1d45686037e82c4ea3e0569de24b18a1e6836a "$sdk/bin/rustc" > "$CI_JOB_TEMP/proof/sdk-permission-program-pins.sha256"
+          printf '%s  %s\n' 77f14b761b02b47e6747473f556b3bc9f98f7e4525b7c3b8d74898ff816e4636 "$sdk/bin/cargo" >> "$CI_JOB_TEMP/proof/sdk-permission-program-pins.sha256"
+          printf '%s  %s\n' d1c6d8c0e2fae4fbb686d421415d2f471e409ade6babb3e491d9ac5d9c70c602 "$sdk/bin/rustfmt" >> "$CI_JOB_TEMP/proof/sdk-permission-program-pins.sha256"
+          printf '%s  %s\n' 2ff45d07196eec4f57a631103a877631d3579e86db2770bcfaa3b9d92a0b9d15 "$sdk/bin/clippy-driver" >> "$CI_JOB_TEMP/proof/sdk-permission-program-pins.sha256"
+          sha256sum --check --quiet "$CI_JOB_TEMP/proof/sdk-permission-program-pins.sha256"
+          LC_ALL=C find "$sdk" -xdev -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/sdk-permission-content.before.sha256"
+          LC_ALL=C find "$sdk" -xdev -printf '%D:%i\t%m:%U:%G\t%T@\t%C@\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$CI_JOB_TEMP/proof/sdk-permission-roster.before.bin"
+          find "$sdk" -xdev \( -type d -o -type f \) -perm /0022 -print0 > "$CI_JOB_TEMP/proof/sdk-permission-candidates.bin"
+          : > "$CI_JOB_TEMP/proof/sdk-permission-journal.tsv"
+          env -u BASH_ENV /usr/bin/timeout --signal=KILL 60s /usr/bin/bash -s -- "$sdk" "$CI_JOB_TEMP/proof" "$sdk_device" <<'HARDEN'
+          set -euo pipefail
+          sdk=$1
+          proof=$2
+          sdk_device=$3
+          while IFS= read -r -d '' entry; do
+            test ! -L "$entry"
+            before=$(stat -c '%d:%i:%u:%g:%f:%a' -- "$entry")
+            exec {sdk_fd}<"$entry"
+            descriptor=/proc/$$/fd/$sdk_fd
+            test "$(stat -Lc '%d:%i:%u:%g:%f:%a' -- "$descriptor")" = "$before"
+            test "$(stat -Lc '%u' -- "$descriptor")" = "$(id -u)"
+            test "$(stat -Lc '%d' -- "$descriptor")" = "$sdk_device"
+            test "$(readlink -e -- "$entry")" = "$entry"
+            mode=$(stat -Lc '%a' -- "$descriptor")
+            printf -v tightened '%o' "$((8#$mode & ~0022))"
+            printf 'intent\t%s\t%s\t%s\n' "$before" "$tightened" "$entry" >> "$proof/sdk-permission-journal.tsv"
+            # chmod follows only our already checked held descriptor, never a replaced path.
+            chmod "$tightened" -- "$descriptor"
+            test "$(stat -Lc '%a' -- "$descriptor")" = "$tightened"
+            test "$(stat -c '%d:%i:%u:%g:%f:%a' -- "$entry")" = "$(stat -Lc '%d:%i:%u:%g:%f:%a' -- "$descriptor")"
+            printf 'applied\t%s\t%s\t%s\n' "$before" "$tightened" "$entry" >> "$proof/sdk-permission-journal.tsv"
+            exec {sdk_fd}<&-
+          done < "$proof/sdk-permission-candidates.bin"
+          HARDEN
+      - name: Verify SDK contents after permission preparation even on failure
+        id: sdk_permissions_final
+        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && always() && steps.sdk_permissions.outcome != 'skipped' && env.DIAG_SOURCE != '' }}
+        working-directory: ${{ env.DIAG_SOURCE }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk=/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu
+          LC_ALL=C find "$sdk" -xdev -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/sdk-permission-content.after.sha256"
+          LC_ALL=C find "$sdk" -xdev -printf '%D:%i\t%m:%U:%G\t%T@\t%C@\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$CI_JOB_TEMP/proof/sdk-permission-roster.after.bin"
+          cmp "$CI_JOB_TEMP/proof/sdk-permission-content.before.sha256" "$CI_JOB_TEMP/proof/sdk-permission-content.after.sha256"
+          # chmod changes ctime and the 0022 bits only. Compare every other recorded field.
+          for phase in before after; do
+            while IFS=$'\t' read -r -d '' identity permissions mtime ctime kind entry link; do
+              test -z "$link"
+              [[ $kind == d || $kind == f ]]
+              [[ $entry == "$sdk" || $entry == "$sdk/"* ]]
+              [[ $entry != *$'\n'* && $entry != *$'\t'* ]]
+              mode=${permissions%%:*}
+              printf '%s\t%o:%s\t%s\t%s\t%s\0' "$identity" "$((8#$mode & ~0022))" "${permissions#*:}" "$mtime" "$kind" "$entry"
+            done < "$CI_JOB_TEMP/proof/sdk-permission-roster.$phase.bin" > "$CI_JOB_TEMP/proof/sdk-permission-invariants.$phase.bin"
+          done
+          cmp "$CI_JOB_TEMP/proof/sdk-permission-invariants.before.bin" "$CI_JOB_TEMP/proof/sdk-permission-invariants.after.bin"
+          find "$sdk" -xdev \( -type d -o -type f \) -perm /0022 -print0 > "$CI_JOB_TEMP/proof/sdk-remaining-shared-writes.bin"
+          test ! -s "$CI_JOB_TEMP/proof/sdk-remaining-shared-writes.bin"
       - name: Admit provisioned Rust without installing a second toolchain
         id: prepared_rust
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
@@ -141,24 +219,18 @@ jobs:
           OPENPILOT_CI_PREPARED_RUST_ROOT="$CI_PREPARED_RUST_ROOT" OPENPILOT_CI_PREPARED_RUST_MANIFEST="$CI_PREPARED_RUST_MANIFEST" \
             /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "$CI_JOB_TEMP/proof/prepared-cold-bootstrap.exec" \
             "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-          python - <<'AUDIT'
-          import json,os,re
-          from pathlib import Path
-          proof=Path(os.environ['CI_JOB_TEMP'])/'proof'
-          text=(proof/'prepared-cold-bootstrap.exec').read_text()
-          assert 'execveat(' not in text, 'unreviewed FD exec form'
-          programs=[json.loads(m[1]) for m in re.finditer(r'\bexecve\(("(?:[^"\\]|\\.)*"),',text)]
-          root=os.environ['CI_PREPARED_RUST_ROOT']
-          assert root+'/bin/cargo' in programs and root+'/bin/rustc' in programs
-          assert not any('rustup' in Path(x).name.lower() or 'python' in Path(x).name.lower() or x.endswith('.py') for x in programs)
-          (proof/'prepared-cold-bootstrap.json').write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],'absolute_cargo':root+'/bin/cargo','absolute_rustc':root+'/bin/rustc','exec_attempts':len(programs),'observed_rustup_exec_attempts':0,'observed_python_exec_attempts':0},indent=2)+'\n')
-          AUDIT
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         working-directory: ${{ env.DIAG_SOURCE }}
       - name: Check CI routing and upstream synchronization guards
         run: |
+          set -euo pipefail
           OPENPILOT_CI_PREPARED_RUST_ROOT="$CI_PREPARED_RUST_ROOT" OPENPILOT_CI_PREPARED_RUST_MANIFEST="$CI_PREPARED_RUST_MANIFEST" \
             "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 6144
+          # The original 6GiB routing admission also covers compiling this native verifier.
+          # Reuse that target for the unchanged routing selectors below.
+          CI_PREPARED_RUST_PROOF="$CI_JOB_TEMP/proof" cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked \
+            --test ci_disk_bootstrap prepared_audit::prepared_audit_actual_cold_bootstrap_receipt -- --ignored --exact --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/prepared-cold-native-audit.log"
+          grep -F 'test result: ok. 1 passed;' "$CI_JOB_TEMP/proof/prepared-cold-native-audit.log"
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --no-default-features --features changed-files-native --test changed_files_caller
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --lib \
             --test ci_workflow_policy --test ci_rust_isolation --test ci_disk_bootstrap --test ci_process_probe \
@@ -179,6 +251,7 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         working-directory: ${{ env.DIAG_SOURCE }}
       - name: Verify provisioned Rust SDK contents and identities after routing
+        id: prepared_rust_final
         if: ${{ always() && steps.prepared_rust.outcome == 'success' }}
         working-directory: ${{ env.DIAG_SOURCE }}
         shell: bash
@@ -191,7 +264,8 @@ jobs:
           cmp "$CI_JOB_TEMP/proof/prepared-rust-roster.before.bin" "$CI_JOB_TEMP/proof/prepared-rust-roster.after.bin"
           sha256sum --check --quiet "$CI_JOB_TEMP/proof/prepared-rust-programs.sha256"
       - name: Seal Fast source and index after all maintained checks
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        id: source_final
+        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && always() && env.DIAG_SOURCE != '' }}
         working-directory: ${{ env.DIAG_SOURCE }}
         run: |
           set -euo pipefail
@@ -215,7 +289,7 @@ jobs:
           retention-days: 14
       - name: Clean only uploaded private Fast source
         id: fast_source_cleanup
-        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '') }}
+        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome == 'success' && steps.sdk_permissions_final.outcome == 'success') }}
         working-directory: ${{ github.workspace }}
         env:
           UPLOAD_ID: ${{ steps.fast_evidence.outputs.artifact-id }}
