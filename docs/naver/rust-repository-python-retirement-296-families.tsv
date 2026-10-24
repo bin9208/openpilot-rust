@@ -3002,7 +3002,7 @@ F05-replay-developer-docs	openpilot/tools/lib/logreader.py	pending
 F05-replay-developer-docs	openpilot/tools/lib/openpilotci.py	pending
 F05-replay-developer-docs	openpilot/tools/lib/openpilotcontainers.py	pending
 F05-replay-developer-docs	openpilot/tools/lib/route.py	pending
-F05-replay-developer-docs	openpilot/tools/lib/sanitizer.py	pending
+F05-replay-developer-docs	openpilot/tools/lib/sanitizer.py	replaced-local
 F05-replay-developer-docs	openpilot/tools/lib/tests/__init__.py	pending
 F05-replay-developer-docs	openpilot/tools/lib/tests/test_auth.py	pending
 F05-replay-developer-docs	openpilot/tools/lib/tests/test_caching.py	pending

@@ -542,3 +542,14 @@ Bundle은 fixture/capture23행의 생성 방식이 바뀌어17개를 fresh로 �
 strict trace의 positive2/negative16 controls와 실제 helper/Git/final ELF 성공·argv를 구분한다.
 숨김 vendor파일도 artifact에 포함하며 전체411개로 고정하지 않고 현재 source의 실제 whole roster를 비교한다.
 원본 builder는 보존한다. nativecaller/context 수용은 아직 UNRUN이다.
+
+
+## Sanitizer 파일1개 수용 반영
+
+fb1228 source-absence [40092771424](https://github.com/bin9208/openpilot-rust/actions/runs/40092771424)는
+frozen5+음성1/Clippy/source·index·SDK seal이 모두 성공했다. artifact12559378200의39CRC 및
+전후4쌍을 독립 감사했다. raw trace는 frozen Cargo 범위로 제한한다.
+기존 original5/native15의 정확 source핀, 원문 fixture5개, 실제 caller 부재 검토를 연결해
+`openpilot/tools/lib/sanitizer.py` 한 파일을 replaced-local로 기록한다.
+새 전체 inventory는 **3580 = 289 replaced-local / 3 partial / 3288 pending**이다.
+나머지 작업의 과거 pending/수용 보류 기록은 해당 시점의 상태로 유지한다.

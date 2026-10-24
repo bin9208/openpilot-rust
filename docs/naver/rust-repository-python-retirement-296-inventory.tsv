@@ -1286,7 +1286,7 @@ openpilot/tools/lib/logreader.py	805e411b53adb56e89b9ecba35be00c400aff178	pendin
 openpilot/tools/lib/openpilotci.py	6b484dfdadab0ab99ede2db106a374872eb0c035	pending	-
 openpilot/tools/lib/openpilotcontainers.py	988246111189c40e8ef875b2be4a9bf2a72953dd	pending	-
 openpilot/tools/lib/route.py	98334a06c86a6d401411127130f7a2f9b8939d5d	pending	-
-openpilot/tools/lib/sanitizer.py	b4a97a3792486540d9d06359f25759ae2dfe7a4e	pending	-
+openpilot/tools/lib/sanitizer.py	b4a97a3792486540d9d06359f25759ae2dfe7a4e	replaced-local	rust/crates/dev-tools/src/route_sanitizer.rs; tests/route_sanitizer_original.rs; Actions40092771424(fb1228f02)
 openpilot/tools/lib/tests/__init__.py	e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	pending	-
 openpilot/tools/lib/tests/test_auth.py	03e2c3a9516303ef4ba97934eddf44491243a246	pending	-
 openpilot/tools/lib/tests/test_caching.py	cb14098e6dcbcaeb201e21cdbba61036efb49ac0	pending	-

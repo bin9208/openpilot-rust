@@ -230,3 +230,18 @@ tracked source에서 이 모듈의 실제 import/caller가 없는지 재검색�
 부분 정규식에 의존한 Python0 receipt를 만들지 않으며 Clippy까지 포함한 전체 실행체의
 non-Python 수용을 주장하지 않는다. 수용 대상은 원본 모듈 부재, 원문 JSON에 대한 native API
 비교 및 source/fixture 전후 seal이다. execveat는 명시적 실패 분기로 거부한다.
+
+
+## fb1228 삭제 후 수용 결과
+
+[40092771424/job120868686734](https://github.com/bin9208/openpilot-rust/actions/runs/40092771424/job/120868686734),
+source `fb1228f02e0546b6fe7a9d8d0eec098e650a86bd`가 성공했다.
+frozen5+파일/디렉터리/broken link 재출현 음성통제1, strict Clippy 및 source/index/SDK seal이 성공했다.
+artifact12559378200,2303848B,SHA256
+`628301b2cd3614ee22a8325e53ca2182c93b3ebd62eb935263fe354792c30ce0`를
+부모가 별도 내려받아39CRC, source/index/전체SDK 전후4쌍과 모든5개 after-check행을 확인했다.
+tracked index에도 삭제 파일이 없음을 확인했다. 현재 구현/IDL과 고정 JSON 원문의 전체 SHA는 유지된다.
+
+이 결과로 원본 파일 하나의 inventory를 replaced-local로 갱신한다.
+전체3580개는289 replaced-local/3partial/3288pending이다.
+전체 Python 실행 부재, 프로젝트 전체 또는 물리 수용으로 확대하지 않는다.

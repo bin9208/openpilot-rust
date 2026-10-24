@@ -43,11 +43,25 @@ Original runtime uploader/deleter/xattr/loggerd/Athena consumers remain live.
 
 The four deleter development helpers are also accepted at source1d570b345 by
 [39805553255](https://github.com/bin9208/openpilot-rust/actions/runs/39805553255).
-The current baseline is288replaced-local/3partially-replaced/3289pending;
+The preceding baseline was288replaced-local/3partially-replaced/3289pending;
 the routing map retains14accepted rows and3292remaining pending/partial entries.
 This removes three F03 roles and one F07 role, leaving1117/F03 and49/F07.
 The four retained runtime source dependencies remain live; embedded-edge counts
 are unchanged. Native logging and syntax-check candidates receive no credit yet.
+
+## 2026-10-24 Sanitizer 소스 수용
+
+현재 baseline은 **289 replaced-local / 3 partially-replaced / 3288 pending = 3580**이다.
+추가 routing map은15 accepted /3291 remaining pending·partial이다.
+F05의 `openpilot/tools/lib/sanitizer.py` 한 파일만 갱신했다.
+[a134 원본 비교](https://github.com/bin9208/openpilot-rust/actions/runs/40089943421/job/120860396114)의
+원본5/native15/Clippy 성공 후, [fb1228 소스 부재 검증](https://github.com/bin9208/openpilot-rust/actions/runs/40092771424/job/120868686734)의
+고정 원문5개 비교+재출현 음성통제1개/strict Clippy가 성공했다.
+원문 fixture 전체SHA와 현재 native/IDL8개 pin, source/index/SDK 전후 seal을 확인했다.
+tracked 전체·notebook 검색에서 기존 oracle 외 실사용 caller를 찾지 못했고 해당 파일을 제거했다.
+raw trace는 frozen-test Cargo 범위이며 전체 Python 실행 부재 수용이 아니다.
+나머지 auth/SSH/Bundle·vendor·tinygrad compiler 및 모델 수치/전달/실기 게이트는 미완료다.
+자세한 근거는 [작업 기록](python-rust-523-route-sanitizer.md)을 참조한다.
 
 ## Current batches and blockers
 
