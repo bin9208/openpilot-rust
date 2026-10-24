@@ -136,6 +136,7 @@ pub fn uses_native_action(job: &Value, step: &Value, name: &str) -> bool {
 
 pub const LOCAL_RUNNER: [&str; 4] = ["self-hosted", "Linux", "X64", "dev-md-local"];
 pub const HOSTED_RUNNER: &str = "ubuntu-24.04";
+pub const DARWIN_RUNNER: &str = "macos-15";
 fn approved_runner(runner: &Value) -> bool {
     runner == &serde_json::json!(LOCAL_RUNNER) || runner.as_str() == Some(HOSTED_RUNNER)
 }
@@ -356,6 +357,7 @@ pub fn validate_private_job_layout(job: &Value) -> Result<(), String> {
                 "Deny fork source and require GitHub-hosted Linux X64" |
                 "Deny fork source and require GitHub-hosted Ubuntu X64 runner" |
                 "Require unavailable Darwin execution interface" |
+                "Prepare GNU and Rust providers on native Darwin" |
                 "Allocate private source cache target and local action alias before checkout" |
                 "Clean only uploaded owned source alias and target");
             let private = directory
@@ -484,10 +486,116 @@ pub fn validate_private_job_layout(job: &Value) -> Result<(), String> {
     }
     let mut expected = private_upload_conditions(steps)?;
     expected.splice(1..1, native_success.iter().cloned());
-    expected.extend([
-        "steps.ci296_source_seal.outcome == 'success'".into(),
-        "env.CI296_SOURCE_OWNER != ''".into(),
-    ]);
+    expected.push("steps.ci296_source_seal.outcome == 'success'".into());
+    if alias == ".ci296-source-user-docs--check_user_docs" {
+        let before = position("Prepare private Rust 1.94 SDK bound to the private docs source")?;
+        let after = position("Verify prepared Rust SDK after all attempted docs commands")?;
+        let recovery = position("Require owned docs groups to be non-live before cleanup")?;
+        let upload = position("Retain private job ownership and source evidence")?;
+        require(
+            admission < before
+                && before < position("Check code and user documentation changes")?
+                && position("Check code and user documentation changes")?
+                    < position("Test user documentation checker")?
+                && position("Test user documentation checker")? < seal
+                && seal < after
+                && after < recovery
+                && recovery < upload,
+            "docs SDK/recovery stage order changed",
+        )?;
+        for (at, id, condition) in [
+            (before, "prepared_rust", TRUSTED_SOURCE.to_owned()),
+            (
+                after,
+                "prepared_rust_final",
+                private_source_condition("always() && steps.prepared_rust.outcome == 'success'"),
+            ),
+            (
+                recovery,
+                "ci296_docs_recovery",
+                private_source_condition("always() && env.CI296_SOURCE != ''"),
+            ),
+        ] {
+            require(
+                steps[at]["id"] == id && steps.iter().filter(|step| step["id"] == id).count() == 1,
+                format!("docs safety stage ID missing or duplicated: {id}"),
+            )?;
+            require(
+                steps[at]["if"] == condition,
+                format!("docs safety guard changed: {id}"),
+            )?;
+            absent(&steps[at], &["continue-on-error"])?;
+        }
+        for (at, phase) in [(before, "before"), (after, "after")] {
+            let command = format!("DIAG_SOURCE=\"$CI296_SOURCE\" \"$CI296_SOURCE/rust/tools/prepare-readonly-ci-rust\" {phase}");
+            require(
+                steps[at]["run"]
+                    .as_str()
+                    .is_some_and(|body| body.lines().any(|line| line == command)),
+                format!("docs SDK {phase} must bind the same private source"),
+            )?;
+        }
+        let recover = steps[recovery]["run"]
+            .as_str()
+            .ok_or("missing docs recovery body")?;
+        for marker in [
+            "for phase in mapped user-docs-tests; do",
+            "test -f \"$receipt\" && test ! -L \"$receipt\"",
+            "grep -Fx \"phase=$phase\" \"$receipt\"",
+            "grep -Fx \"source=$GITHUB_SHA\" \"$receipt\"",
+            "grep -Fx \"owner=$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB\" \"$receipt\"",
+            "grep -Fx 'recovery=pass' \"$receipt\"",
+        ] {
+            require(
+                recover.contains(marker),
+                format!("docs recovery receipt binding missing: {marker}"),
+            )?;
+        }
+        expected.extend([
+            "steps.prepared_rust_final.outcome == 'success'".into(),
+            "steps.ci296_docs_recovery.outcome == 'success'".into(),
+        ]);
+    }
+    if alias == ".ci296-source-rust--dbc-darwin" {
+        let sdk = position("Seal native Darwin providers and private SDK after maintained checks")?;
+        let upload = position("Preserve macOS host and disk evidence")?;
+        require(
+            seal < sdk && sdk < upload,
+            "Darwin SDK seal must precede evidence upload",
+        )?;
+        require(
+            steps[sdk]["id"] == "ci296_mac_sdk_seal"
+                && steps
+                    .iter()
+                    .filter(|step| step["id"] == "ci296_mac_sdk_seal")
+                    .count()
+                    == 1,
+            "Darwin SDK seal ID missing or duplicated",
+        )?;
+        require(
+            steps[sdk]["if"] == private_source_condition("always() && env.CI296_SOURCE != ''"),
+            "Darwin SDK seal lost failure finalizer",
+        )?;
+        absent(&steps[sdk], &["continue-on-error"])?;
+        let body = steps[sdk]["run"]
+            .as_str()
+            .ok_or("missing Darwin SDK seal body")?;
+        for marker in [
+            "test -s \"$proof/providers-before.txt\"",
+            "cmp \"$proof/providers-before.txt\" \"$proof/providers-after.txt\"",
+            "for kind in rust mac; do",
+            "cmp \"$proof/$kind-sdk-identity.txt\" \"$proof/$kind-sdk-identity-after.txt\"",
+            "cmp \"$proof/$kind-sdk-before.sha256\" \"$proof/$kind-sdk-after.sha256\"",
+            "cmp \"$proof/mac-sdk-version.txt\" \"$proof/mac-sdk-version-after.txt\"",
+        ] {
+            require(
+                body.contains(marker),
+                format!("Darwin SDK seal binding missing: {marker}"),
+            )?;
+        }
+        expected.push("steps.ci296_mac_sdk_seal.outcome == 'success'".into());
+    }
+    expected.push("env.CI296_SOURCE_OWNER != ''".into());
     require(
         condition == private_source_condition(&expected.join(" && ")),
         "source cleanup requires the exact successful seal and upload receipts",
@@ -565,10 +673,41 @@ pub fn validate_local_routing(workflow: &Value) -> Result<(), String> {
             )?;
             continue;
         }
+        let darwin = name == "dbc-darwin";
         require(
-            approved_runner(&job["runs-on"]),
-            format!("{name}: exact legacy labels or ubuntu-24.04 required; no matrix fallback"),
+            if darwin {
+                job["runs-on"].as_str() == Some(DARWIN_RUNNER)
+            } else {
+                approved_runner(&job["runs-on"])
+            },
+            format!("{name}: exact approved platform required; no matrix or platform fallback"),
         )?;
+        if darwin {
+            require(
+                job["env"]["CI296_ALIAS_BASENAME"] == ".ci296-source-rust--dbc-darwin",
+                "Darwin source alias differs",
+            )?;
+            let boundary = job["steps"][0]["run"]
+                .as_str()
+                .ok_or("missing native Darwin boundary")?;
+            let guards = [
+                "test \"$GITHUB_ACTIONS\" = true",
+                "test \"$GITHUB_REPOSITORY\" = bin9208/openpilot-rust",
+                "test \"$RUNNER_ENVIRONMENT\" = github-hosted",
+                "test \"$RUNNER_OS\" = macOS",
+                "test \"$RUNNER_ARCH\" = ARM64",
+                "test \"$(uname -s)\" = Darwin",
+                "test \"$(uname -m)\" = arm64",
+            ];
+            let prelude = format!("{FORK_DENIAL}{}\n", guards.join("\n"));
+            let body = boundary
+                .strip_prefix("set -euo pipefail\n")
+                .unwrap_or(boundary);
+            require(
+                body.starts_with(&prelude),
+                "native Darwin physical guards must execute immediately after fork refusal",
+            )?;
+        }
         validate_private_job_layout(job)?;
         let steps = job["steps"]
             .as_array()
@@ -726,6 +865,20 @@ pub fn check_workflow_policy(files: &[(String, String)]) -> Result<(), String> {
             format!("{called} is not reusable"),
         )?;
     }
+    let rust = get("rust.yml")?;
+    require(
+        rust["jobs"]["dbc-darwin"]["uses"] == "./.github/workflows/rust-dbc-darwin.yml",
+        "Darwin dependency must call its same-source native workflow",
+    )?;
+    absent(&rust["jobs"]["dbc-darwin"], &["if", "continue-on-error"])?;
+    let darwin = get("rust-dbc-darwin.yml")?;
+    require(
+        darwin["on"].get("workflow_call").is_some()
+            && darwin["jobs"]
+                .as_object()
+                .is_some_and(|jobs| jobs.len() == 1 && jobs.contains_key("dbc-darwin")),
+        "native Darwin workflow must retain one required reusable job",
+    )?;
     let docs = get("user-docs.yaml")?;
     require(
         expected_strings(&["dev", "main"]).is_subset(&strings(&docs["on"]["push"]["branches"])?),
@@ -1150,6 +1303,11 @@ pub fn validate_rust_gate(workflow: &Value) -> Result<(), String> {
     for job in jobs.values() {
         absent(job, &["continue-on-error"])?;
     }
+    require(
+        jobs["dbc-darwin"]["uses"] == "./.github/workflows/rust-dbc-darwin.yml",
+        "required Darwin job must keep its same-source reusable caller",
+    )?;
+    absent(&jobs["dbc-darwin"], &["if", "continue-on-error"])?;
     let gate = &workflow["jobs"]["fast"];
     require(gate["if"] == "${{ always() }}", "Rust gate must always run")?;
     require(

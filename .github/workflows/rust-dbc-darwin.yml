@@ -1,0 +1,405 @@
+name: Rust native Darwin DBC
+'on':
+  workflow_call: null
+permissions:
+  contents: read
+concurrency:
+  group: rust-dbc-darwin-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: false
+  queue: max
+jobs:
+  dbc-darwin:
+    name: rust DBC generator on macOS ARM64
+    runs-on: macos-15
+    timeout-minutes: 40
+    env:
+      RUSTUP_TOOLCHAIN: 1.94.0
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CI296_ALIAS_BASENAME: .ci296-source-rust--dbc-darwin
+      CARGO_TERM_COLOR: never
+      RUSTUP_DIST_SERVER: https://static.rust-lang.org
+      RUSTUP_UPDATE_ROOT: https://static.rust-lang.org/rustup
+    steps:
+    - name: Deny fork source and require registered local runner
+      shell: bash
+      env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        CI296_HOST_CONTROL: '1'
+      run: |
+        set -euo pipefail
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
+        test "$GITHUB_ACTIONS" = true
+        test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+        test "$RUNNER_ENVIRONMENT" = github-hosted
+        test "$RUNNER_OS" = macOS
+        test "$RUNNER_ARCH" = ARM64
+        test "$(uname -s)" = Darwin
+        test "$(uname -m)" = arm64
+        case "$(sw_vers -productVersion)" in 15.*) ;; *) exit 1 ;; esac
+        test "$(id -u)" -ne 0
+        # source/설치 전에 실제 source filesystem을 관측한다. purgeable 추정값은 쓰지 않는다.
+        LC_ALL=C /bin/df -Pk "$GITHUB_WORKSPACE" "$RUNNER_TEMP"
+      working-directory: ${{ github.workspace }}
+    - name: Prepare GNU and Rust providers on native Darwin
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        # pinned job-temp/allocation 이전 단계. 이미 설치된 세 formula는 재설치하지 않는다.
+        brew=$(command -v brew)
+        [[ $brew == /opt/homebrew/* ]] && test -x "$brew"
+        for formula in coreutils findutils gnu-tar; do
+          prefix=$("$brew" --prefix "$formula")
+          case $formula in coreutils) probe=stat ;; findutils) probe=find ;; gnu-tar) probe=tar ;; esac
+          if ! test -x "$prefix/libexec/gnubin/$probe"; then
+            free=$(LC_ALL=C /bin/df -Pk /opt/homebrew | /usr/bin/awk 'NR==2 {print $4}')
+            [[ $free =~ ^[0-9]+$ ]] && ((free >= 2 * 1024 * 1024))
+            # --force-bottle은 직접 formula에만 적용된다. 누락 runtime dependency는 여기서 거부한다.
+            missing=$("$brew" deps --missing "$formula")
+            test -z "$missing" || { printf 'Missing bottle dependency: %s\n' "$missing" >&2; exit 1; }
+            (ulimit -f 1048576; "$brew" install --ignore-dependencies --force-bottle "$formula")
+          fi
+          test -x "$prefix/libexec/gnubin/$probe"
+          export PATH="$prefix/libexec/gnubin:$PATH"
+          printf '%s\n' "$prefix/libexec/gnubin" >> "$GITHUB_PATH"
+        done
+        for tool in stat find tar ln rm realpath df sha256sum; do
+          type -a "$tool"
+          "$tool" --version
+          path=$(realpath -e "$(command -v "$tool")")
+          [[ $path == /opt/homebrew/Cellar/* ]]
+          stat -c '%d:%i:%u:%a:%s %n' "$path"
+          sha256sum "$path"
+        done
+        # Linux-only rust-path fallback 진입을 금지한다. 이 검사 실패는 installer fallback이 아니다.
+        rustup=$(command -v rustup)
+        [[ $rustup == /* ]] && test -x "$rustup" && test -x "$(dirname "$rustup")/cargo"
+        realpath -e "$rustup"
+        [[ " $(lipo -archs "$rustup") " == *" arm64 "* ]]
+        shasum -a 256 "$rustup"
+        "$brew" --version
+      working-directory: ${{ github.workspace }}
+      env:
+        CI296_HOST_CONTROL: '1'
+        HOMEBREW_NO_AUTO_UPDATE: '1'
+        HOMEBREW_NO_INSTALL_CLEANUP: '1'
+        HOMEBREW_NO_INSTALL_UPGRADE: '1'
+        HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: '1'
+        HOMEBREW_NO_ANALYTICS: '1'
+      timeout-minutes: 5
+    - name: Common owned job temporary paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      env:
+        CI296_HOST_CONTROL: '1'
+    - name: Allocate private source cache target and local action alias before checkout
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        CI296_HOST_CONTROL: '1'
+      run: |
+        set -euo pipefail
+        workspace=$(realpath -e -- "$GITHUB_WORKSPACE")
+        job=$CI_JOB_TEMP
+        owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$(cat "$job/owner")" = "$owner"
+        umask 077
+        mkdir "$job/proof" "$job/home" "$job/cache"
+        # Source capacity is checked on the actual source filesystem BEFORE checkout.
+        available=$(df -PB1 "$workspace" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]]
+        required=$((2 * 1024 * 1024 * 1024))
+        printf '{"available_bytes":%s,"planned_source_growth_bytes":%s}\n' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
+        ((available >= required))
+        source_owner=$(mktemp -d "$workspace/.ci296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
+        printf '%s\n' "$owner" > "$source_owner/.ci296-owner"
+        mkdir "$source_owner/source"
+        source="$source_owner/source"
+        # Preserve Actions' real workspace separately. Only Bash consumers see the
+        # unique source as GITHUB_WORKSPACE; GitHub/node action provenance is untouched.
+        printf 'source %q\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\n  export GITHUB_WORKSPACE=%q\nfi\n' "$BASH_ENV" "$workspace" "$source" > "$job/ci296-shell-env"
+        printf '%s\n' "CI296_ACTIONS_WORKSPACE=$workspace" "CI296_SOURCE_OWNER=$source_owner" "CI296_SOURCE_IDENTITY=$(stat -c '%d:%i' -- "$source_owner")" "CI296_SOURCE=$source" "CI296_CHECKOUT_PATH=${source#"$workspace/"}" "HOME=$job/home" "CARGO_HOME=$job/cargo-home" "RUSTUP_HOME=$job/rustup-home" "CARGO_TARGET_DIR=$source/rust/target" "XDG_CACHE_HOME=$job/cache" "PIP_CACHE_DIR=$job/cache/pip" "GRADLE_USER_HOME=$job/cache/gradle" "npm_config_cache=$job/cache/npm" "BASH_ENV=$job/ci296-shell-env" >> "$GITHUB_ENV"
+        printf 'owner=%s\njob=%s\nactions_workspace=%s\nsource_owner=%s\nsource_identity=%s\nsource=%s\nworkflow_sha=%s\n' "$owner" "$job" "$workspace" "$source_owner" "$(stat -c '%d:%i' -- "$source_owner")" "$source" "$GITHUB_SHA" > "$job/proof/ownership.txt"
+        df -PB1 "$workspace" "$job" > "$job/proof/disk-before.txt"
+        if test "$RUNNER_OS" = macOS; then
+          sysctl hw.memsize hw.ncpu > "$job/proof/memory-before.txt"
+        else
+          cat /proc/meminfo > "$job/proof/memory-before.txt"
+          if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$job/proof/cgroup-memory-before.txt"; fi
+        fi
+        printf '%s\n' "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_OS" "$RUNNER_ARCH" > "$job/proof/runner.txt"
+
+        alias_path="$workspace/$CI296_ALIAS_BASENAME"
+        case "$CI296_ALIAS_BASENAME" in .ci296-source-*) ;; *) exit 1 ;; esac
+        [[ $CI296_ALIAS_BASENAME != */* ]]
+        # -T makes this an exclusive atomic link, never traversal into a stale directory.
+        ln -sT -- "$source_owner" "$alias_path"
+        printf '%s\n' "CI296_SOURCE_ALIAS=$alias_path" "CI296_ALIAS_IDENTITY=$(stat -c '%d:%i' -- "$alias_path")" "LOCAL_CI_SOURCE_ROOT=$source" >> "$GITHUB_ENV"
+        printf 'source_alias=%s\nalias_identity=%s\n' "$alias_path" "$(stat -c '%d:%i' -- "$alias_path")" >> "$job/proof/ownership.txt"
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        set-safe-directory: false
+        clean: false
+        lfs: false
+        path: ${{ env.CI296_CHECKOUT_PATH }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    - name: Admit exact private source and index
+      id: ci296_source_admission
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_HOST_CONTROL: '1'
+      run: |
+        set -euo pipefail
+        test "$PWD" = "$CI296_SOURCE"
+        test "$GITHUB_WORKSPACE" = "$CI296_SOURCE"
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git diff --exit-code
+        git diff --cached --exit-code
+        printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
+    - name: Configure source-dependent job environment on private paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_LATE_CARGO_TARGET_DIR: ${{ env.CI296_SOURCE }}/rust/target
+        CI296_HOST_CONTROL: '1'
+      run: |
+        set -euo pipefail
+        printf '%s\n' "CARGO_TARGET_DIR=$CI296_LATE_CARGO_TARGET_DIR" >> "$GITHUB_ENV"
+    - name: Expose provisioned Rust shims
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      uses: bin9208/openpilot-rust/.github/actions/rust-path@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      env:
+        CI296_HOST_CONTROL: '1'
+    - name: Reclaim unused Xcode copies while retaining the selected macOS SDK
+      run: |
+        set -euo pipefail
+        test "$(uname -s)" = Darwin
+        test "$(uname -m)" = arm64
+        mkdir -p "$RUNNER_TEMP/dbc-darwin"
+        df -Pk "$GITHUB_WORKSPACE" > "$RUNNER_TEMP/dbc-darwin/disk-before.txt"
+        selected=$(xcode-select -p)
+        selected_app=${selected%/Contents/Developer}
+        test -d "$selected_app"
+        # Reclaim only if the 2 GiB host-tool build growth is unavailable;
+        # keep the active compiler/SDK and its aliases.
+        for application in /Applications/Xcode*.app; do
+          free_kib=$(LC_ALL=C df -Pk "$GITHUB_WORKSPACE" | awk 'END {print $4}')
+          [[ $free_kib =~ ^[0-9]+$ ]] || exit 1
+          (( free_kib >= 2 * 1024 * 1024 )) && break
+          [[ -d $application && ! -L $application ]] || continue
+          [[ $application -ef $selected_app ]] && continue
+          : # Shared Xcode path retained; no host-global cleanup
+        done
+        df -Pk "$GITHUB_WORKSPACE" > "$RUNNER_TEMP/dbc-darwin/disk-after.txt"
+        free_kib=$(LC_ALL=C df -Pk "$GITHUB_WORKSPACE" | awk 'END {print $4}')
+        [[ $free_kib =~ ^[0-9]+$ ]] && (( free_kib >= 2 * 1024 * 1024 ))
+        test -d "$selected_app"
+        xcrun --find clang
+        # 실제 APFS와 private Rust SDK를 admission한다. Xcode/전역 Rust 설치는 삭제/변경하지 않는다.
+        proof="$CI_JOB_TEMP/dbc-darwin"
+        for kind in source temp; do
+          case $kind in source) path=$CI296_SOURCE ;; temp) path=$CI_JOB_TEMP ;; esac
+          device=$(LC_ALL=C /bin/df -Pk "$path" | /usr/bin/awk 'NR==2 {print $1}')
+          [[ $device == /dev/disk* ]]
+          /usr/sbin/diskutil info -plist "$device" > "$proof/$kind-volume.plist"
+          test "$(/usr/bin/plutil -extract FilesystemType raw -o - "$proof/$kind-volume.plist")" = apfs
+        done
+        sw_vers > "$proof/sw-vers.txt"
+        uname -a > "$proof/uname.txt"
+        sysctl hw.memsize hw.ncpu machdep.cpu.brand_string > "$proof/host.txt"
+        printf '%s\n' "${ImageOS:-unavailable}" "${ImageVersion:-unavailable}" > "$proof/image.txt"
+        # 전체 준비 동작 전에 2 GiB를 실제 job/source filesystem에서 다시 확인한다.
+        for path in "$CI_JOB_TEMP" "$CI296_SOURCE"; do
+          free=$(LC_ALL=C df -Pk "$path" | awk 'NR==2 {print $4}')
+          [[ $free =~ ^[0-9]+$ ]] && ((free >= 2 * 1024 * 1024))
+        done
+        test ! -e "$RUSTUP_HOME/toolchains" && test ! -L "$RUSTUP_HOME/toolchains"
+        curl --proto '=https' --tlsv1.2 --fail --location --max-time 60 --max-filesize 2097152 \
+          https://static.rust-lang.org/dist/channel-rust-1.94.0.toml --output "$proof/channel-rust-1.94.0.toml"
+        printf 'aaa177def36e01d539bee6bde95295230b9ce378f81057845db8d0ebe97898ee  %s\n' "$proof/channel-rust-1.94.0.toml" | sha256sum --check -
+        rustup set auto-self-update disable
+        rustup toolchain install 1.94.0 --profile minimal --no-self-update
+        rustup --version > "$proof/rustup.txt" 2>&1
+        rustup run 1.94.0 rustc -vV > "$proof/rustc.txt"
+        rustup run 1.94.0 cargo -Vv > "$proof/cargo.txt"
+        grep -Fx 'release: 1.94.0' "$proof/rustc.txt"
+        grep -Fx 'host: aarch64-apple-darwin' "$proof/rustc.txt"
+        grep -Fx 'release: 1.94.0' "$proof/cargo.txt"
+        grep -Fx 'host: aarch64-apple-darwin' "$proof/cargo.txt"
+        rust_root=$(realpath -e "$RUSTUP_HOME/toolchains/1.94.0-aarch64-apple-darwin")
+        test "$(realpath -e "$(rustup which --toolchain 1.94.0 rustc)")" = "$rust_root/bin/rustc"
+        [[ $rust_root == "$(realpath -e "$CI_JOB_TEMP")/rustup-home/toolchains/1.94.0-aarch64-apple-darwin" ]]
+        for tool in rustc cargo rustdoc; do test "$(lipo -archs "$rust_root/bin/$tool")" = arm64; done
+        mac_sdk=$(realpath -e "$(xcrun --sdk macosx --show-sdk-path)")
+        clang=$(realpath -e "$(xcrun --sdk macosx --find clang)")
+        xcodebuild -version > "$proof/xcode.txt"
+        "$clang" --version > "$proof/clang.txt"
+        xcrun --sdk macosx --show-sdk-version > "$proof/mac-sdk-version.txt"
+        printf '%s\n' "CI296_MAC_RUST_ROOT=$rust_root" "CI296_MAC_SDK_ROOT=$mac_sdk" "SDKROOT=$mac_sdk" > "$proof/sdk-env.txt"
+        cat "$proof/sdk-env.txt" >> "$GITHUB_ENV"
+        # 같은 provider 경로/identity/bytes와 전체 SDK tree를 failure 경로에서도 재검사한다.
+        for tool in stat find tar ln rm realpath df sha256sum rustup; do realpath -e "$(command -v "$tool")"; done > "$proof/providers.paths"
+        printf '%s\n' "$rust_root/bin/rustc" "$rust_root/bin/cargo" "$rust_root/bin/rustdoc" "$clang" >> "$proof/providers.paths"
+        while IFS= read -r path; do stat -c '%d:%i:%u:%a:%s %n' "$path"; sha256sum "$path"; done < "$proof/providers.paths" > "$proof/providers-before.txt"
+        for kind in rust mac; do
+          case $kind in rust) path=$rust_root ;; mac) path=$mac_sdk ;; esac
+          stat -c '%d:%i:%u:%a' "$path" > "$proof/$kind-sdk-identity.txt"
+          tar --sort=name -C "$path" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner . | sha256sum > "$proof/$kind-sdk-before.sha256"
+        done
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: bash
+      timeout-minutes: 10
+    - name: Build and execute the pinned native host bootstrap
+      run: |
+        set -euo pipefail
+        # Bash argv/종료 상태/현재 Mach-O를 남긴다. syscall 전체 exec 관측이라는 주장은 하지 않는다.
+        exec 2> "$CI_JOB_TEMP/dbc-darwin/bootstrap.trace"
+        trap 'rc=$?; trap - EXIT; cat "$CI_JOB_TEMP/dbc-darwin/bootstrap.trace" >&1; exit "$rc"' EXIT
+        set -x
+        generator=$("$GITHUB_WORKSPACE/rust/tools/build-dbc-generator")
+        test "$generator" = "$CARGO_TARGET_DIR/debug/dbc-generator"
+        test "$(lipo -archs "$generator")" = arm64
+        "$generator" program-outputs > "$RUNNER_TEMP/dbc-darwin/program-outputs.json"
+        rustup run 1.94.0 rustc -vV > "$RUNNER_TEMP/dbc-darwin/rustc.txt"
+        git rev-parse HEAD > "$RUNNER_TEMP/dbc-darwin/SOURCE_COMMIT"
+        shasum -a 256 "$generator" > "$RUNNER_TEMP/dbc-darwin/binary.sha256"
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: bash
+      timeout-minutes: 10
+    - name: Require 16 current APFS-compatible DBC generator and actual CLI tests
+      run: |
+        set -euo pipefail
+        exec 2> "$CI_JOB_TEMP/dbc-darwin/tests.trace"
+        trap 'rc=$?; trap - EXIT; cat "$CI_JOB_TEMP/dbc-darwin/tests.trace" >&1; exit "$rc"' EXIT
+        set -x
+        # Reuse the portable bootstrap's operation-growth checks immediately
+        # before tests; this second Cargo freshness check is normally a no-op.
+        "$GITHUB_WORKSPACE/rust/tools/build-dbc-generator" >/dev/null
+        env -u RUSTFLAGS -u CARGO_ENCODED_RUSTFLAGS -u CARGO_BUILD_TARGET -u RUSTC_WRAPPER -u RUSTC_WORKSPACE_WRAPPER \
+          -u CC -u CXX -u CFLAGS -u CXXFLAGS -u CPPFLAGS -u LDFLAGS \
+          rustup run 1.94.0 cargo test --manifest-path "$GITHUB_WORKSPACE/rust/Cargo.toml" \
+            -p openpilot-dev-tools --features dbc-generator-native --test dbc_generator --test dbc_generator_cli \
+            --locked --target aarch64-apple-darwin --target-dir "$CARGO_TARGET_DIR" -j2 \
+            2>&1 | tee "$RUNNER_TEMP/dbc-darwin/tests.log"
+        # 기존 Mac 15개와 2bbfc130c filesystem-enumeration collision 1개. 두 Linux-only cfg test는 수정하지 않는다.
+        test "$(grep -Ec '^test result: ok\. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;' "$CI_JOB_TEMP/dbc-darwin/tests.log")" = 1
+        test "$(grep -Ec '^test result: ok\. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;' "$CI_JOB_TEMP/dbc-darwin/tests.log")" = 1
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: bash
+      timeout-minutes: 12
+    - name: Seal private source and index after maintained checks
+      id: ci296_source_seal
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI296_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_HOST_CONTROL: '1'
+      run: |
+        set -euo pipefail
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"
+        cmp "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/index-after.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
+        cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
+        git diff --exit-code
+        git diff --cached --exit-code
+        df -PB1 "$CI296_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
+        if test "$RUNNER_OS" = macOS; then sysctl hw.memsize hw.ncpu > "$CI_JOB_TEMP/proof/memory-after.txt"; else cat /proc/meminfo > "$CI_JOB_TEMP/proof/memory-after.txt"; fi
+    - id: ci296_mac_sdk_seal
+      name: Seal native Darwin providers and private SDK after maintained checks
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI296_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      run: |
+        set -euo pipefail
+        proof="$CI_JOB_TEMP/dbc-darwin"
+        # baseline 부재도 실패이다. SDK 준비/기능 실패를 PASS로 바꾸지 않는다.
+        test -s "$proof/providers-before.txt"
+        while IFS= read -r path; do stat -c '%d:%i:%u:%a:%s %n' "$path"; sha256sum "$path"; done < "$proof/providers.paths" > "$proof/providers-after.txt"
+        cmp "$proof/providers-before.txt" "$proof/providers-after.txt"
+        for kind in rust mac; do
+          case $kind in rust) path=$CI296_MAC_RUST_ROOT ;; mac) path=$CI296_MAC_SDK_ROOT ;; esac
+          stat -c '%d:%i:%u:%a' "$path" > "$proof/$kind-sdk-identity-after.txt"
+          cmp "$proof/$kind-sdk-identity.txt" "$proof/$kind-sdk-identity-after.txt"
+          tar --sort=name -C "$path" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner . | sha256sum > "$proof/$kind-sdk-after.sha256"
+          cmp "$proof/$kind-sdk-before.sha256" "$proof/$kind-sdk-after.sha256"
+        done
+        xcrun --sdk macosx --show-sdk-version > "$proof/mac-sdk-version-after.txt"
+        cmp "$proof/mac-sdk-version.txt" "$proof/mac-sdk-version-after.txt"
+        test "$(realpath -e "$(xcrun --sdk macosx --show-sdk-path)")" = "$CI296_MAC_SDK_ROOT"
+        printf 'provider_sdk_seal=pass\nsource_seal=separate-ci296_source_seal-outcome\ntrace_scope=Bash-argv-and-native-CLI-output\n' > "$proof/provider-sdk-seal.pass"
+    - name: Preserve macOS host and disk evidence
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: rust-dbc-darwin-evidence
+        path: |
+          ${{ env.CI_JOB_TEMP }}/dbc-darwin/
+        if-no-files-found: warn
+      id: local_evidence_1
+    - name: Retain private job ownership and source evidence
+      id: ci296_private_evidence
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: private-rust-${{ github.job }}-${{ strategy.job-index }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ env.CI_JOB_TEMP }}/proof
+        retention-days: 14
+        if-no-files-found: error
+    - name: Clean only uploaded owned source alias and target
+      id: ci296_source_cleanup
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' && steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_seal.outcome == 'success' && steps.ci296_mac_sdk_seal.outcome == 'success' && env.CI296_SOURCE_OWNER != '') }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        CI296_HOST_CONTROL: '1'
+        UPLOAD_ID: ${{ steps.ci296_private_evidence.outputs.artifact-id }}
+        UPLOAD_DIGEST: ${{ steps.ci296_private_evidence.outputs.artifact-digest }}
+      run: |
+        set -euo pipefail
+        [[ $UPLOAD_ID =~ ^[0-9]+$ ]]
+        [[ $UPLOAD_DIGEST =~ ^[a-fA-F0-9]{64}$ ]]
+        workspace=$CI296_ACTIONS_WORKSPACE
+        p=$CI296_SOURCE_OWNER
+        case "$p" in "$workspace/.ci296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."??????) ;; *) exit 1 ;; esac
+        test -d "$p" && test ! -L "$p"
+        test "$(realpath -e -- "$p")" = "$p"
+        test "$(stat -c '%u' -- "$p")" = "$(id -u)"
+        test "$(stat -c '%d:%i' -- "$p")" = "$CI296_SOURCE_IDENTITY"
+        test -f "$p/.ci296-owner" && test ! -L "$p/.ci296-owner"
+        test "$(cat "$p/.ci296-owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$CI296_SOURCE" = "$p/source"
+        test -d "$p/source" && test ! -L "$p/source"
+        test "$(realpath -e -- "$p/source")" = "$p/source"
+        alias_path="$CI296_ACTIONS_WORKSPACE/$CI296_ALIAS_BASENAME"
+        test "$CI296_SOURCE_ALIAS" = "$alias_path"
+        test -L "$alias_path"
+        test "$(readlink -- "$alias_path")" = "$p"
+        test "$(stat -c '%d:%i' -- "$alias_path")" = "$CI296_ALIAS_IDENTITY"
+        rm -- "$alias_path"
+        if ! rm -rf --one-file-system -- "$p"; then
+          sudo -n rm -rf --one-file-system -- "$p"
+        fi
+    - name: Clean common owned temporary paths after uploaded source
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' && steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_cleanup.outcome == 'success') }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      with:
+        cleanup: 'true'
+      env:
+        CI296_HOST_CONTROL: '1'
+    defaults:
+      run:
+        shell: bash

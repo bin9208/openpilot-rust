@@ -1048,3 +1048,10 @@ rescue40118006504는 실제 completed/cancelled를 확인했고 현재 복구 WF
 source f8e9d62b073d2c8a66c68f728247b9424df72ce8에서 docs40121817587과 Fast5leaf는 성공했다. Fast routing은 actual cold bootstrap1 성공 후 changed-files의 고정 caller RUN fixture가 새 prepared SDK prefix와 달라 실패했다. Focus40121818148은 현재 alias/Unicode/SSH27/Clippy·봉인이 성공했으나 과거 oracle JSON의 절대 cache 경로2비교가 실패했다. setup40121818144는 Bash local mib가 단위 상수를 가려 admission을 잘못 계산한 #536, normal40121818149는 static 여부를 구분하지 않은 gh ldd provider admission #537에서 중단됐다. 원본 비교가 실행되지 않은 경계를 PASS로 세지 않는다.
 
 정확 job/artifact SHA·CRC·전후 봉인, source-only 보정 후보와 현재 실측은 `python-rust-523-hosted-535.md`에 기록한다. 실제 기본 러너 실행으로 전환했으며 bin-actions 복구를 기다리지 않는다. 보정의 기능/빌드 검증은 다음 Actions에 남아 있고 PR343 head053/dev draft 및 baseline292/3/3285를 유지한다. 원본 제거 credit0이다.
+
+
+### 2026-10-25 보정19e180650 실행 결과와 남은 검증
+
+source19e180650bae8b46f9d04056b796ba68666b364e의 Focus40122888950와 changed-files40122889010은 성공했다. 둘의 source/index/whole SDK 봉인·업로드/소유 정리와 실제 원문 artifact CRC를 확인했다. Fast는 caller5와 cold bootstrap1을 통과한 뒤 docs cleanup의 추가 SDK/recovery 조건 미등록으로 실패해 validator를 보정 중이다. setup은 frozen21/음성3/Clippy/public1의 기대 출력까지 도달했으나 SIGCHLD trace 문법 #539 및 재빌드 CLI identity #540 수용이 남는다. normal은 static gh를 수용한 뒤 고정 로그 API의 escape 출력 정책 #538에서 중단됐다. 아직 normal40 수치 비교·setup 완전 봉인은 수용하지 않는다.
+
+상세 exact job·artifact SHA와 source-only 후속 후보는 `python-rust-523-hosted-535.md`에 기록한다. Integration/Rust/ARM/Mac 기본 러너 전환도 이어가며 PR343 head053/dev draft, baseline292/3/3285와 원본 제거 credit0을 유지한다.

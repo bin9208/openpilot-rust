@@ -7,20 +7,23 @@ permissions:
 jobs:
   model:
     name: model contract and CPU inference
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: Deny fork source and require registered local runner
+      - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
         shell: bash
         env:
           SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
           CI296_HOST_CONTROL: '1'
         run: |
           test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
-          test "$RUNNER_NAME" = bin-actions
-          test "$RUNNER_ENVIRONMENT" = self-hosted
+          set -euo pipefail
+          test "$GITHUB_ACTIONS" = true
+          test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+          test "$RUNNER_ENVIRONMENT" = github-hosted
           test "$RUNNER_OS" = Linux
           test "$RUNNER_ARCH" = X64
+          test "$(uname -m)" = x86_64
         working-directory: ${{ github.workspace }}
       - &id001
         name: Common owned job temporary paths
@@ -199,20 +202,23 @@ jobs:
       CI296_ALIAS_BASENAME: .ci296-source-jetlink--model
   android-core:
     name: Android protocol and Java inference
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: Deny fork source and require registered local runner
+      - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
         shell: bash
         env:
           SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
           CI296_HOST_CONTROL: '1'
         run: |
           test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
-          test "$RUNNER_NAME" = bin-actions
-          test "$RUNNER_ENVIRONMENT" = self-hosted
+          set -euo pipefail
+          test "$GITHUB_ACTIONS" = true
+          test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+          test "$RUNNER_ENVIRONMENT" = github-hosted
           test "$RUNNER_OS" = Linux
           test "$RUNNER_ARCH" = X64
+          test "$(uname -m)" = x86_64
         working-directory: ${{ github.workspace }}
       - *id001
       - *id002

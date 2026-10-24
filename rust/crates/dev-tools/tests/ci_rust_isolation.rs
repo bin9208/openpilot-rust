@@ -1,6 +1,7 @@
 //! Assertion-for-assertion native migration of test_rust_isolation.py.
 use openpilot_dev_tools::ci_policy::{
-    parse, run_shell, validate_rust_gate, LOCAL_RUNNER, TRUSTED_ALWAYS, TRUSTED_SOURCE,
+    parse, run_shell, validate_rust_gate, DARWIN_RUNNER, HOSTED_RUNNER, TRUSTED_ALWAYS,
+    TRUSTED_SOURCE,
 };
 use serde_json::Value;
 use std::{collections::BTreeMap, fs, path::PathBuf};
@@ -57,9 +58,14 @@ fn dbc_native_tools_are_built_before_every_required_consumer() {
         ],
     );
     let data = workflow();
-    let darwin = &data["jobs"]["dbc-darwin"];
+    assert_eq!(
+        data["jobs"]["dbc-darwin"]["uses"],
+        "./.github/workflows/rust-dbc-darwin.yml"
+    );
+    let native = parse(&read(".github/workflows/rust-dbc-darwin.yml")).unwrap();
+    let darwin = &native["jobs"]["dbc-darwin"];
     absent(darwin, &["if", "continue-on-error"]);
-    assert_eq!(darwin["runs-on"], serde_json::json!(LOCAL_RUNNER));
+    assert_eq!(darwin["runs-on"], serde_json::json!(DARWIN_RUNNER));
     for (key, expected) in [
         ("RUSTUP_TOOLCHAIN", "1.94.0"),
         ("CARGO_BUILD_JOBS", "2"),
@@ -438,7 +444,7 @@ fn llvm20_has_an_independent_mandatory_budget_without_removing_workspace_checks(
         "LLVM20 must not consume the workspace job's remaining budget"
     );
     absent(job, &["needs", "if", "continue-on-error"]);
-    assert_eq!(job["runs-on"], serde_json::json!(LOCAL_RUNNER));
+    assert_eq!(job["runs-on"], serde_json::json!(HOSTED_RUNNER));
     assert_eq!(job["timeout-minutes"], "90");
     assert_eq!(job["env"]["CARGO_BUILD_JOBS"], "2");
     assert_eq!(job["env"]["CARGO_INCREMENTAL"], "0");
@@ -500,6 +506,16 @@ fn private_local_action(step: &Value, name: &str) -> bool {
     })
 }
 fn commands(job: &Value) -> String {
+    if let Some(caller) = job["uses"].as_str() {
+        assert_eq!(caller, "./.github/workflows/rust-dbc-darwin.yml");
+        let workflow = parse(&read(".github/workflows/rust-dbc-darwin.yml")).unwrap();
+        let actual = &workflow["jobs"]["dbc-darwin"];
+        assert!(
+            actual.get("uses").is_none(),
+            "Darwin caller must resolve once to native steps"
+        );
+        return commands(actual);
+    }
     job["steps"]
         .as_array()
         .unwrap()
@@ -1542,7 +1558,7 @@ fn radar_requires_fresh_source_runtime_arm_and_memory_checks() {
     let arm = commands(&data["jobs"]["radar-arm"]);
     assert_eq!(
         data["jobs"]["radar-arm"]["runs-on"],
-        serde_json::json!(LOCAL_RUNNER)
+        serde_json::json!(HOSTED_RUNNER)
     );
     required(
         &arm,
@@ -1559,7 +1575,7 @@ fn radar_requires_fresh_source_runtime_arm_and_memory_checks() {
         ],
     );
     assert_eq!(data["jobs"]["radar-arm"]["env"]["LOCAL_CI_ARCH"], "aarch64");
-    // ARM execution is explicitly emulated on the registered x64 runner.
+    // ARM execution is explicitly emulated on the GitHub-hosted x64 runner.
     required(&arm, &["test -x /usr/bin/qemu-aarch64-static"]);
     required(
         &commands(&data["jobs"]["radar-memory"]),

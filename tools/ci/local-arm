@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
-# Execute the original ARM workflow commands on the real self-hosted X64 runner.
+# 실제 Actions X64 host에서 고정된 ARM 사용자 공간으로 원래 명령을 실행한다.
 set -euo pipefail
 
 fail() { printf '%s\n' "$*" >&2; exit 1; }
-[[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_ENVIRONMENT:-} == self-hosted && ${RUNNER_NAME:-} == bin-actions ]] || fail 'Local Actions runner required'
+[[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == bin9208/openpilot-rust && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && $(uname -m) == x86_64 ]] || fail 'Trusted Actions Linux/X64 host required'
+case ${RUNNER_ENVIRONMENT:-} in
+  github-hosted) ;;
+  self-hosted) [[ ${RUNNER_NAME:-} == bin-actions ]] || fail 'Registered legacy runner required' ;;
+  *) fail 'Unknown Actions runner environment' ;;
+esac
 [[ ${LOCAL_CI_ARCH:-} == x86_64 || ${LOCAL_CI_ARCH:-} == aarch64 ]] || fail 'Explicit local execution architecture required'
 [[ ${CI_JOB_TEMP:-} == /tmp/openpilot-ci.* && ${CI_JOB_TEMP%/*} == /tmp && ! -L $CI_JOB_TEMP ]] || fail 'Owned job-temp directory required'
 [[ -f $CI_JOB_TEMP/owner && ! -L $CI_JOB_TEMP/owner && $(cat "$CI_JOB_TEMP/owner") == "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" ]] || fail 'Wrong job-temp owner'
@@ -18,14 +23,18 @@ host_machine=$(uname -m)
 
 # Guest filesystem paths retain the real Actions workspace and command-file paths.
 # CARGO_TARGET_DIR is private to ARM in the guest; uploads use its real host path.
+# host SDK 변수와 PATH suffix는 제외하고 guest compiler/tool 홈만 사용한다.
 guest() {
   "$proot" -0 -r "$rootfs" -q "$qemu" \
     -b /dev -b /proc -b /sys -b /etc/resolv.conf -b /etc/hosts \
     -b "$source_dir" -b "$CI_RUNNER_TEMP" -b "$CI_JOB_TEMP" \
     -b "$arm_dir/target:$source_dir/rust/target" -w "$PWD" \
-    /usr/bin/env GITHUB_WORKSPACE="$source_dir" HOME=/root CARGO_HOME=/root/.cargo RUSTUP_HOME=/root/.rustup \
+    /usr/bin/env -u RUSTC -u RUSTDOC \
+    -u CI_PREPARED_RUST_ROOT -u CI_PREPARED_RUST_MANIFEST -u CI_PREPARED_RUSTUP_ROOT -u CI_PREPARED_RUSTUP_BIN -u CI_PREPARED_RUST_PROOF \
+    -u OPENPILOT_CI_PREPARED_RUST_ROOT -u OPENPILOT_CI_PREPARED_RUST_MANIFEST \
+    GITHUB_WORKSPACE="$source_dir" HOME=/root CARGO_HOME=/root/.cargo RUSTUP_HOME=/root/.rustup \
     CARGO_TARGET_DIR="$source_dir/rust/target" \
-    PATH="/opt/openpilot-python/bin:/root/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH" \
+    PATH="/opt/openpilot-python/bin:/root/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
     OPENPILOT_CI_EXECUTION_MODE=qemu-user OPENPILOT_CI_HOST_ARCH="$host_machine" \
     OPENPILOT_CI_TARGET_ARCH=aarch64 "$@"
 }

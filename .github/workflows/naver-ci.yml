@@ -15,20 +15,23 @@ concurrency:
   queue: max
 jobs:
   navigation-ui:
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Deny fork source and require registered local runner
+      - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
         shell: bash
         env:
           SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
           CI296_HOST_CONTROL: '1'
         run: |
           test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
-          test "$RUNNER_NAME" = bin-actions
-          test "$RUNNER_ENVIRONMENT" = self-hosted
+          set -euo pipefail
+          test "$GITHUB_ACTIONS" = true
+          test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+          test "$RUNNER_ENVIRONMENT" = github-hosted
           test "$RUNNER_OS" = Linux
           test "$RUNNER_ARCH" = X64
+          test "$(uname -m)" = x86_64
         working-directory: ${{ github.workspace }}
       - &id001
         name: Common owned job temporary paths
@@ -224,20 +227,23 @@ jobs:
     env:
       CI296_ALIAS_BASENAME: .ci296-source-naver-ci--navigation-ui
   phone-mapping-contract:
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 8
     steps:
-      - name: Deny fork source and require registered local runner
+      - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
         shell: bash
         env:
           SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
           CI296_HOST_CONTROL: '1'
         run: |
           test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
-          test "$RUNNER_NAME" = bin-actions
-          test "$RUNNER_ENVIRONMENT" = self-hosted
+          set -euo pipefail
+          test "$GITHUB_ACTIONS" = true
+          test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+          test "$RUNNER_ENVIRONMENT" = github-hosted
           test "$RUNNER_OS" = Linux
           test "$RUNNER_ARCH" = X64
+          test "$(uname -m)" = x86_64
         working-directory: ${{ github.workspace }}
       - *id001
       - *id002
@@ -275,20 +281,23 @@ jobs:
     env:
       CI296_ALIAS_BASENAME: .ci296-source-naver-ci--phone-mapping-contract
   runtime-controller:
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 8
     steps:
-      - name: Deny fork source and require registered local runner
+      - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
         shell: bash
         env:
           SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
           CI296_HOST_CONTROL: '1'
         run: |
           test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
-          test "$RUNNER_NAME" = bin-actions
-          test "$RUNNER_ENVIRONMENT" = self-hosted
+          set -euo pipefail
+          test "$GITHUB_ACTIONS" = true
+          test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+          test "$RUNNER_ENVIRONMENT" = github-hosted
           test "$RUNNER_OS" = Linux
           test "$RUNNER_ARCH" = X64
+          test "$(uname -m)" = x86_64
         working-directory: ${{ github.workspace }}
       - *id001
       - *id002
@@ -321,20 +330,23 @@ jobs:
     env:
       CI296_ALIAS_BASENAME: .ci296-source-naver-ci--runtime-controller
   wire-schema:
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: Deny fork source and require registered local runner
+      - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
         shell: bash
         env:
           SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
           CI296_HOST_CONTROL: '1'
         run: |
           test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
-          test "$RUNNER_NAME" = bin-actions
-          test "$RUNNER_ENVIRONMENT" = self-hosted
+          set -euo pipefail
+          test "$GITHUB_ACTIONS" = true
+          test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+          test "$RUNNER_ENVIRONMENT" = github-hosted
           test "$RUNNER_OS" = Linux
           test "$RUNNER_ARCH" = X64
+          test "$(uname -m)" = x86_64
         working-directory: ${{ github.workspace }}
       - *id001
       - *id002
@@ -377,20 +389,23 @@ jobs:
     env:
       CI296_ALIAS_BASENAME: .ci296-source-naver-ci--wire-schema
   naver-input:
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Deny fork source and require registered local runner
+      - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
         shell: bash
         env:
           SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
           CI296_HOST_CONTROL: '1'
         run: |
           test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
-          test "$RUNNER_NAME" = bin-actions
-          test "$RUNNER_ENVIRONMENT" = self-hosted
+          set -euo pipefail
+          test "$GITHUB_ACTIONS" = true
+          test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+          test "$RUNNER_ENVIRONMENT" = github-hosted
           test "$RUNNER_OS" = Linux
           test "$RUNNER_ARCH" = X64
+          test "$(uname -m)" = x86_64
         working-directory: ${{ github.workspace }}
       - *id001
       - *id002
@@ -429,7 +444,7 @@ jobs:
     env:
       CI296_ALIAS_BASENAME: .ci296-source-naver-ci--naver-input
   infrastructure:
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     env:
       RUSTUP_TOOLCHAIN: 1.94.0
@@ -439,17 +454,20 @@ jobs:
       CARGO_PROFILE_TEST_DEBUG: '0'
       CI296_ALIAS_BASENAME: .ci296-source-naver-ci--infrastructure
     steps:
-      - name: Deny fork source and require registered local runner
+      - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
         shell: bash
         env:
           SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
           CI296_HOST_CONTROL: '1'
         run: |
           test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
-          test "$RUNNER_NAME" = bin-actions
-          test "$RUNNER_ENVIRONMENT" = self-hosted
+          set -euo pipefail
+          test "$GITHUB_ACTIONS" = true
+          test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+          test "$RUNNER_ENVIRONMENT" = github-hosted
           test "$RUNNER_OS" = Linux
           test "$RUNNER_ARCH" = X64
+          test "$(uname -m)" = x86_64
         working-directory: ${{ github.workspace }}
       - *id001
       - *id002
@@ -469,7 +487,17 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       - name: Test synchronization guards
         run: |
+          set -euo pipefail
+          test "$RUSTUP_HOME" = "$CI_JOB_TEMP/rustup-home"
+          test "$CARGO_HOME" = "$CI_JOB_TEMP/cargo-home"
+          test -x "$(command -v rustup)"
+          # 기존 guard의 private 1.94 설치를 실제 compiler 경로/버전으로 확인한다.
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          sdk="$RUSTUP_HOME/toolchains/1.94.0-x86_64-unknown-linux-gnu"
+          test "$(rustup which --toolchain 1.94.0 rustc)" = "$sdk/bin/rustc"
+          "$sdk/bin/rustc" -vV > "$CI_JOB_TEMP/proof/private-rustc.txt"
+          grep -Fx 'release: 1.94.0' "$CI_JOB_TEMP/proof/private-rustc.txt"
+          grep -Fx 'host: x86_64-unknown-linux-gnu' "$CI_JOB_TEMP/proof/private-rustc.txt"
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --test upstream_sync
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         working-directory: ${{ env.CI296_SOURCE }}

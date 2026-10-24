@@ -53,3 +53,31 @@ setup의 실제 image는20261023.334.3, Focus는20261012.334.1이다. setup의 d
 - #537은 held FD의 bounded ELF64/x64 program header로 valid static 실행 파일만 구분한다. executable LOAD/entry/segment 범위와 PT_INTERP/PT_DYNAMIC 부재를 확인해 empty DSO closure를 별도 기록하며, dynamic ELF의 ldd 성공·resolved DSO·전후 hold 검증은 유지한다. ldd 실패 문구를 포괄 허용하지 않는다.
 
 이 후보는 소스/문법 검토 단계이며 새 기능/Clippy/빌드 성공은 아직 없다. Integration5개 workflow 전환은 별도 동결 WIP로 준비했으나 이 첫 실패 보정과 분리한다. required Rust/ARM/Darwin·PR통합·병합 후·전달·전체 인벤토리는 미완료다. baseline292/3/3285, 원본 credit0을 유지한다.
+
+
+## 19e180650 보정 후 실제 결과
+
+source `19e180650bae8b46f9d04056b796ba68666b364e`에서 [Focus40122888950/job120958068576](https://github.com/bin9208/openpilot-rust/actions/runs/40122888950/job/120958068576)와 [changed-files40122889010/job120958069116](https://github.com/bin9208/openpilot-rust/actions/runs/40122889010/job/120958069116)가 성공했다. Focus의 두 역사 JSON은 각각 정확4개 경로 대응과 나머지 버전/provider/stdlib bytes 동일성으로 수용됐고, 새 alias/Unicode/SSH27·Clippy·봉인과 소유 정리가 성공했다. changed-files는 원래5tests·strict Clippy와 current2원본 부재/held/source-data 조건을 수용했다. 새 baseline 교체 credit은 추가하지 않는다.
+
+Focus artifact12572356676은15,867,375B/SHA256 `59712bbca4a6bb1e8ab3d4aaa81a1e38668c8665526ce45b4a2d5d1af3e32ac0`,81member CRC 확인. changed-files12572146266은51,782,770B/SHA256 `eda43811fd935852d8fdfe776e148fd667a5a60ab78e6f3a691274f981c80574`,166member CRC와5개 성공 receipt를 확인했다. 두 산출물 source/index·whole SDK file/roster 전후는 각각 byte-identical이다.
+
+[Fast40122889061](https://github.com/bin9208/openpilot-rust/actions/runs/40122889061)은5leaf성공/본 routing·aggregate실패다. actual cold bootstrap1·caller5·여러 기존 regression 뒤 ci_workflow_policy에서23성공/3실패가 나왔다. docs의 강화된 SDK/recovery cleanup 조건을 exact validator가 아직 등록하지 않아 거부한 것이며 cleanup guard를 삭제해서 통과시키지 않는다. 해당 validator 등록과 guard 누락을 거부하는 음성 검증을 후속 소스에 추가했다. 후속 컴파일/기능은 아직 미실행이다.
+
+[normal40122889070/job120958069525](https://github.com/bin9208/openpilot-rust/actions/runs/40122889070/job/120958069525)는 static gh 수용을 통과했다. 실제 ET_EXEC/x64/program headers6/no PT_INTERP/no PT_DYNAMIC receipt를 확인했다. 그 뒤 고정 역사 로그 API가 최신 gh의 escape 출력 정책에 막혀 #538로 추적한다. 고정 raw 로그를 private 파일에 수집할 때만 공식 --allow-escape-sequences를 명시하는 보정을 준비하고, 원문 LOG_SIZE/LOG_SHA를 유지한다. artifact12572146888은14,218,679B/SHA256 `a6d24f9ba88ee0fffaa1dcedc78ae4fae5d6cd7ea9fff6bfe5917fe335fd28d3`,152member CRC 확인. normal40 수치 비교는 여전히 미실행이다.
+
+[setup40122889053/job120958069286](https://github.com/bin9208/openpilot-rust/actions/runs/40122889053/job/120958069286)는 #536의 예산 계산을 지나 frozen21·음성3·Clippy·public1를 실제로 실행했다. child/monitor 상태와 공개 무인자 stdout/exit1은 기대와 일치했다. 그러나 strace의 SIGCHLD CPU-time 주석 미지원(#539)과 공개 helper가 logging 종속물을 재빌드해 preheld CLI identity를 바꾼 문제(#540) 때문에 immutable/exec 전체 수용은 실패다. 원본/공개 CLI 전체 완료로 세지 않는다. artifact12571688781은10,575,291B/SHA256 `fb6e039142b4f7dcc2378415d21d04dd8f7969fae5d7ed43a01cc71aebf4c964`,147member CRC 확인. 재빌드의 최초 invalidation 원인은 아직 미확정이며 현재 identity pin을 유지한다.
+
+후속 Integration/Rust Linux·QEMU·실제 Mac 전환도 작성 중이다. Mac DBC는 같은 소스의 reusable workflow로 분리해 main Rust의500000B 등록 제한을 지키고, 기존41dependency와16개 현재 Mac selector를 유지한다. 재출력된 main의42개 non-Mac job model과 run 문자열은 앞서 검토한 Linux 후보와 동일하다. 새 Mac/APFS 실행·후속 정책 등록·실제 ARM transport는 아직 미수용이다. 현재 실제 성공을 이 미실행 소스의 성공으로 확대하지 않는다.
+
+
+## 필수 검사 전환과 다음 실행 후보
+
+Integration5개 workflow를 명시 Ubuntu24.04로 전환했다. 네 required dependency와 all-success aggregate, Java/Android SDK·Gradle·native 기능 명령을 보존했다. Rust main의42개 non-Mac job은 Linux 전환 동결 model/run 문자열을 보존한다. source/owner/ABI/provider·정확 source/index 봉인과 업로드 뒤 소유 정리 조건을 유지하며, QEMU가 없는 실제 x64 VM에서는 별도1GiB APT admission 후 준비한다. guest에서 host RUSTC/RUSTDOC/prepared SDK와 host PATH가 섞이지 않게 분리하고 PRoot/rootfs/Python 원본 pin·physical_arm_cpu=false를 유지한다. 역사4-file 계약은 그대로 두고 local-arm1개 검토 postimage만 명시적인 #535 overlay로 등록했다. 이를 새 ARM 기능 성공으로 세지 않는다.
+
+실제 Mac DBC는 `rust-dbc-darwin.yml`의 workflow_call1job으로 분리했다. main은 동일 source 상대 경로로 필수 호출하고 기존41needs/DBC 성공 요구를 유지한다. main496865B, callee25295B로 각각500000B 등록 제한을 지킨다. scalar alias를 보존한 main 재출력 전후의42개 non-Mac model과 run 문자열은 동일하다. Mac은 실제 macOS15/ARM64/APFS를 요구하고 준비된 GNU 도구/Apple SDK·private Rust1.94의 실제 버전·Mach-O·before/after를 검증한다. Linux ELF pin이나 Linux 성공을 대신 쓰지 않는다. 기존 selector의 현재16tests(11+5)를 그대로 실행하며 외부 SDK symlink target/OS dyld cache 전체 봉인으로 확대하지 않는다.
+
+정책 검증기는 Mac의 같은 source callee와 실제 검사 본문을 해석하고, fork 거부 바로 뒤의7개 연속 실제 platform guard를 요구한다. 주석 대체·Linux fallback·재귀 caller를 거부한다. docs의 두 명령은 source seal 전에 와야 하며 SDK/소유 복구 결과를 cleanup의 필수 조건으로 등록했다. Mac도 SDK seal 성공 전에 cleanup하지 않는다. 누락/이동/주석 대체/guard 변경 음성 검증을 추가했다.
+
+setup #539는 관측된 숫자 CPU-time 주석만 수용하고, #540은 prebuild/public에만 Cargo fingerprint info 및 실제 Git input의 부재/type/identity/mtime를 기록하도록 했다. identity 교체 거부와 원래 예산·21+3/public1를 유지한다. packed-refs 부재는 현재 원인 후보이며 아직 확정하지 않는다. normal #538의 고정 로그 API에는 공식 escape 보존 flag1개만 추가한다. raw 로그를 private 파일로 수집해 기존 size/SHA로 검증하며 화면 렌더링/ANSI 변환을 하지 않는다.
+
+독립 소스 검토 지적을 반영했고, 로컬 YAML9개·내부 Bash854개·embedded AST8개·helper AST1개·단독 ARM Bash 문법·workspace Rust 서식과 diff를 확인했다. Focus의 exact 허용134경로/literal115pin이 현재 검토 bytes와 일치한다. 실행 영역의 별도 SHA는4ee29d23ba43e6824f19a550898b5678db549a0d283bace60f177f9713a9ef89다. 이 후보의 컴파일/기능/실제 hosted Mac·ARM·필수 PR 결과는 아직 없다. 새 Actions에서 확인할 대상으로 기록한다.

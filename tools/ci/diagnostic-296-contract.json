@@ -62,5 +62,29 @@
     "provenance_path": "tools/ci/helper-provenance.json",
     "provenance_sha256": "17795c847534d81c7ba260d566d944e08c10ac624a0fde575d91f48f3f0d5039",
     "regular_files": 7
+  },
+  "github_hosted_535_overlay": {
+    "issue": 535,
+    "baseline_source_commit": "77663836a95a9e2aff9aa66592d8b06ed9c87cd9",
+    "authorization": "2026-10-25 사용자 명시 GitHub 기본 러너 선택",
+    "status": "소스 동결, 실제 hosted ARM 실행 미수용",
+    "files": {
+      "tools/ci/local-arm": {
+        "preimage_sha256": "1c69c096fa890b478a5b157aba021ba412ff0106e9e31b4b0b840f30f618c090",
+        "sha256": "a286863a38d2d122bd97b7f648086c1763e3aa863fe36fe7101f2f7a6ae7ada0",
+        "git_blob": "422d3f93b2c4288486e771f4f3c3bb7b91fb69f0",
+        "mode": "100755"
+      }
+    },
+    "scope": "실제 trusted Linux/X64 host의 명시 hosted 환경 허용 및 guest에 host SDK 변수/PATH가 유입되지 않게 분리",
+    "consumer": "ARM composite는 source admission 후 같은 private source alias에서 읽는다. job-temp/rust-path의 기존 remote b2fc distribution pin은 유지한다.",
+    "preserved": [
+      "원래 PRoot/rootfs/Python/Rustup pins",
+      "source HEAD==GITHUB_SHA",
+      "원래 native/ARM 명령과 QEMU receipt physical_arm_cpu=false",
+      "기존 owner/admission/봉인/소유 정리 조건"
+    ],
+    "historical_acceptance_changed": false,
+    "retirement_credit": 0
   }
 }

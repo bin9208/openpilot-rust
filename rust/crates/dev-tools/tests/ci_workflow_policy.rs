@@ -511,6 +511,31 @@ fn future_diagnostic_runner_and_fork_refusal_require_static_approved_routing() {
     }
 }
 
+fn current_common_file_sha<'a>(
+    contract: &'a serde_json::Value,
+    name: &str,
+    historical: &'a serde_json::Value,
+) -> &'a str {
+    if name != "tools/ci/local-arm" {
+        return historical["sha256"].as_str().unwrap();
+    }
+    let overlay = &contract["github_hosted_535_overlay"];
+    assert_eq!(overlay["issue"], 535);
+    assert_eq!(
+        overlay["baseline_source_commit"],
+        "77663836a95a9e2aff9aa66592d8b06ed9c87cd9"
+    );
+    assert_eq!(overlay["files"].as_object().unwrap().len(), 1);
+    assert_eq!(overlay["historical_acceptance_changed"], false);
+    let current = &overlay["files"][name];
+    assert_eq!(current["preimage_sha256"], historical["sha256"]);
+    assert_eq!(
+        current["sha256"],
+        "a286863a38d2d122bd97b7f648086c1763e3aa863fe36fe7101f2f7a6ae7ada0"
+    );
+    current["sha256"].as_str().unwrap()
+}
+
 #[test]
 fn common_foundation_files_match_the_separate_pinned_source_contract() {
     use sha2::{Digest, Sha256};
@@ -555,7 +580,7 @@ fn common_foundation_files_match_the_separate_pinned_source_contract() {
         let bytes = fs::read(root().join(name)).unwrap();
         assert_eq!(
             format!("{:x}", Sha256::digest(&bytes)),
-            seal["sha256"].as_str().unwrap(),
+            current_common_file_sha(&contract, name, seal),
             "common interface drift: {name}"
         );
     }
@@ -1031,7 +1056,7 @@ fn diagnostic_common_helpers_match_verified_7766383_bytes_without_reexecution() 
     for (name, seal) in contract["common_files"].as_object().unwrap() {
         assert_eq!(
             format!("{:x}", Sha256::digest(fs::read(root().join(name)).unwrap())),
-            seal["sha256"].as_str().unwrap(),
+            current_common_file_sha(&contract, name, seal),
             "common source drift {name}"
         );
     }
@@ -1081,6 +1106,128 @@ fn full_private_jobs_reject_shared_checkouts_or_unsealed_cleanup() {
         }
     }
     assert_eq!(covered, 60, "maintained private source roster changed");
+}
+
+#[test]
+fn darwin_uses_actual_hosted_arm64_without_linux_or_generic_runner_fallback() {
+    use openpilot_dev_tools::ci_policy::DARWIN_RUNNER;
+    let original =
+        parse(&fs::read_to_string(root().join(".github/workflows/rust-dbc-darwin.yml")).unwrap())
+            .unwrap();
+    assert_eq!(original["jobs"]["dbc-darwin"]["runs-on"], DARWIN_RUNNER);
+    validate_local_routing(&original).unwrap();
+    let mut changed = original.clone();
+    changed["jobs"]["dbc-darwin"]["runs-on"] = HOSTED_RUNNER.into();
+    assert!(
+        validate_local_routing(&changed).is_err(),
+        "Linux cannot qualify Darwin"
+    );
+    let mut changed = original.clone();
+    changed["jobs"]["dbc-darwin"]["env"]["CI296_ALIAS_BASENAME"] = ".ci296-source-foreign".into();
+    assert!(validate_local_routing(&changed).is_err());
+    for marker in [
+        "test \"$GITHUB_ACTIONS\" = true",
+        "test \"$GITHUB_REPOSITORY\" = bin9208/openpilot-rust",
+        "test \"$RUNNER_ENVIRONMENT\" = github-hosted",
+        "test \"$RUNNER_OS\" = macOS",
+        "test \"$RUNNER_ARCH\" = ARM64",
+        "test \"$(uname -s)\" = Darwin",
+        "test \"$(uname -m)\" = arm64",
+    ] {
+        let mut changed = original.clone();
+        let body = original["jobs"]["dbc-darwin"]["steps"][0]["run"]
+            .as_str()
+            .unwrap();
+        assert!(body.contains(marker));
+        changed["jobs"]["dbc-darwin"]["steps"][0]["run"] = body.replace(marker, "true").into();
+        assert!(
+            validate_local_routing(&changed).is_err(),
+            "missing native boundary: {marker}"
+        );
+    }
+    let mut commented = original.clone();
+    let boundary = original["jobs"]["dbc-darwin"]["steps"][0]["run"]
+        .as_str()
+        .unwrap();
+    commented["jobs"]["dbc-darwin"]["steps"][0]["run"] = boundary
+        .replace(
+            "test \"$RUNNER_OS\" = macOS",
+            "# test \"$RUNNER_OS\" = macOS",
+        )
+        .into();
+    assert!(
+        validate_local_routing(&commented).is_err(),
+        "a comment cannot substitute for physical guards"
+    );
+    let mut fast =
+        parse(&fs::read_to_string(root().join(".github/workflows/fast-checks.yml")).unwrap())
+            .unwrap();
+    fast["jobs"]["native"]["runs-on"] = DARWIN_RUNNER.into();
+    assert!(
+        validate_local_routing(&fast).is_err(),
+        "Darwin admission must be limited to its owned job"
+    );
+}
+
+#[test]
+fn docs_private_cleanup_requires_exact_sdk_and_owned_recovery_receipts() {
+    use openpilot_dev_tools::ci_policy::validate_private_job_layout;
+    let workflow =
+        parse(&fs::read_to_string(root().join(".github/workflows/user-docs.yaml")).unwrap())
+            .unwrap();
+    let job = &workflow["jobs"]["check_user_docs"];
+    validate_private_job_layout(job).unwrap();
+    let steps = job["steps"].as_array().unwrap();
+    let at = |id: &str| steps.iter().position(|step| step["id"] == id).unwrap();
+    let cleanup = at("ci296_source_cleanup");
+    for id in ["prepared_rust_final", "ci296_docs_recovery"] {
+        let mut changed = job.clone();
+        let original = steps[cleanup]["if"].as_str().unwrap();
+        changed["steps"][cleanup]["if"] = original
+            .replace(&format!(" && steps.{id}.outcome == 'success'"), "")
+            .into();
+        assert!(
+            validate_private_job_layout(&changed).is_err(),
+            "docs cleanup omitted {id}"
+        );
+        let mut changed = job.clone();
+        changed["steps"][at(id)]["run"] = "true".into();
+        assert!(
+            validate_private_job_layout(&changed).is_err(),
+            "docs safety body omitted {id}"
+        );
+        let mut changed = job.clone();
+        changed["steps"][at(id)]["if"] = TRUSTED_SOURCE.into();
+        assert!(
+            validate_private_job_layout(&changed).is_err(),
+            "docs finalizer skipped on failure: {id}"
+        );
+    }
+    for name in [
+        "Check code and user documentation changes",
+        "Test user documentation checker",
+    ] {
+        let mut changed = job.clone();
+        let command = steps.iter().position(|step| step["name"] == name).unwrap();
+        changed["steps"]
+            .as_array_mut()
+            .unwrap()
+            .swap(command, at("ci296_source_seal"));
+        assert!(
+            validate_private_job_layout(&changed).is_err(),
+            "docs command must precede its source seal"
+        );
+    }
+    let mut changed = job.clone();
+    changed["steps"][at("ci296_docs_recovery")]["run"] = steps[at("ci296_docs_recovery")]["run"]
+        .as_str()
+        .unwrap()
+        .replace(
+            "owner=$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB",
+            "owner=foreign",
+        )
+        .into();
+    assert!(validate_private_job_layout(&changed).is_err());
 }
 
 #[test]

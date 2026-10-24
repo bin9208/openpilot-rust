@@ -26,7 +26,7 @@ jobs:
     name: integration gate
     if: ${{ always() }}
     needs: [build, navigation, apk, jetlink]
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
       - name: Require every integration suite to succeed

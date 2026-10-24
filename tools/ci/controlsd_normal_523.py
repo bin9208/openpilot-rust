@@ -896,7 +896,8 @@ class Probe:
                      "frozen-archive", seconds=180, env=token_env, limit=ZIP_SIZE + 1)
         need(archive_path.stat().st_size == ZIP_SIZE, "historical ZIP byte count differs")
         self.holds.add(archive_path, ZIP_SHA)
-        log = self.command([self.tools["gh"], "api", f"repos/{REPO}/actions/jobs/{JOB}/logs"],
+        # 고정 raw 로그는 private 파일에만 수집한다. ANSI 원문을 변환하지 않고 아래 size/SHA로 확인한다.
+        log = self.command([self.tools["gh"], "api", "--allow-escape-sequences", f"repos/{REPO}/actions/jobs/{JOB}/logs"],
                            "historical-job-log", seconds=180, env=token_env, limit=LOG_SIZE + 1)
         need(len(log) == LOG_SIZE and sha(log) == LOG_SHA, "historical raw job log differs")
         self.holds.add(self.out / "historical-job-log.stdout", LOG_SHA)
