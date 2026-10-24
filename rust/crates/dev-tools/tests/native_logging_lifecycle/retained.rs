@@ -14,7 +14,14 @@ struct Inputs {
 impl Inputs {
     fn actions() -> Self {
         assert_eq!(std::env::var("GITHUB_ACTIONS").as_deref(), Ok("true"));
-        assert_eq!(std::env::var("RUNNER_NAME").as_deref(), Ok("bin-actions"));
+        for (name, expected) in [
+            ("RUNNER_ENVIRONMENT", "github-hosted"),
+            ("RUNNER_OS", "Linux"),
+            ("RUNNER_ARCH", "X64"),
+            ("GITHUB_REPOSITORY", "bin9208/openpilot-rust"),
+        ] {
+            assert_eq!(std::env::var(name).as_deref(), Ok(expected), "{name}");
+        }
         for key in [
             "NATIVE_LOGGING_LIFECYCLE_RESUME",
             "NATIVE_LOGGING_TEST_BUILDER",

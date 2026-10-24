@@ -151,3 +151,74 @@ x86_64 한도와753개 run 본문·기능별 deadline·QEMU/ABI/메모리/수치
 2non-executing-text/1removed를 유지했다. 독립 소스 검토에서 P1/P2는 추가 발견되지
 않았으나 새 회귀/Clippy/현재 setup의 기능 수용은 Actions 전까지 UNRUN이다.
 baseline3580의292교체/3부분/3285대기와 이번 원본 제거 credit0을 유지한다.
+
+## 96a904e6d 실제 수용과 다음 한정 후보
+
+[Focus40131329248](https://github.com/bin9208/openpilot-rust/actions/runs/40131329248)은
+source `96a904e6da44151785eb1206963fa6ecea019e31`에서 성공했다. artifact12575446425는
+15,867,310B/SHA256 `b7a876eada164cc0dfaf090006ea9e913b18b6d1307da2e2f4acd675ebd8d500`이며
+81CRC와 source/index/SDK 전후4쌍을 감사했다. alias26·Unicode7·SSH27·Clippy와127pin의
+실제 수용 범위다. 아래 새 source의 성공을 소급하지 않는다.
+
+[setup40131329251/job120983468155](https://github.com/bin9208/openpilot-rust/actions/runs/40131329251/job/120983468155)은
+같은 source에서 검증·봉인·upload·두 cleanup까지 모두 성공했다. logging watch9/ignored0와
+strict Clippy, frozen21/음성3/public 무인자1의 exact stdout/exit1이 일치했다. 공개 호출은
+2.10초의 fresh Cargo 정보 조회였으며 compile/link를 실행하지 않았다. CLI의 inode/mtime/
+ctime/SHA가 hold 뒤 유지됐고122개 held input/provider도 두 번 같은 값으로 확인됐다.
+missing packed-refs는 실제로 계속 없는 상태였다. artifact12575221909는10,464,638B/SHA256
+`35a3f8d7c6bb968b4b101876e98188629ca644df6f80410ddc3d6f577def042f`,167CRC·14봉인쌍이
+일치했다. #536의 예산 단위, #539의 CPU 주석, #540의 재link 결함에 대한 개별 해결 근거다.
+
+별도 원문 감사에서는 public exec20개가 전부 성공했는데 기존 summary는16성공으로
+집계한 공백 파싱 문제를 발견했다(#551). `)             = 0`의 정렬 공백이 기존 결과
+분리를 통과하지 못한 것이다. 네 provider 모두 실제 held 목록과 전후 SHA가 일치함을
+별도로 확인했지만, 자동 성공 분기 누락은 수정한다. 이미 검증한 전체 exec grammar를
+유지하면서 마지막 ` = ` 뒤 결과를 분리하도록 한정 보완한다. 새 parser의 Actions 수용은
+아직 미실행이며 #540의 inode 교체 해결과 구분한다.
+
+[Fast40131329250](https://github.com/bin9208/openpilot-rust/actions/runs/40131329250)은4leaf 성공,
+native 실패·alert-manager 시간 초과로 aggregate 실패다. native의 isolation84와 policy29는
+모두 성공했다. 다음 cutin 검사는 현재 hosted job을 예전 LOCAL_RUNNER와 비교해1성공/2실패였다
+(#542). Fast가 선택하는73target을 소스로 조사해 같은 문제의 cutin/ratekeeper/encoder3개를
+현재 정확한 HOSTED_RUNNER로 보완하고 legacy·임의 label·matrix 거부를 유지했다. encoder의
+첫 경계는 전체 routing 검사 후 도메인 조건과 구분했다. 실제 cutin 실패와 아직 실행되지
+않은 ratekeeper/encoder의 예측된 결함을 구분한다. artifact6개231CRC 및 전후 source/SDK와
+실패·취소 뒤 upload/cleanup을 확인했다. alert-manager는 checkout153초를 포함해 기존7분
+전체 한도를 초과했으며, 전체 corpus4성공 summary는 없다. 7분 한도는 유지하고 다음
+현재 source 실행을 확인한다.
+
+## normal40 실제 실행의 새 시간 제한 실패 — #550
+
+[normal40129042248/job120976604351](https://github.com/bin9208/openpilot-rust/actions/runs/40129042248/job/120976604351)은
+ded source에서 raw4·build/Clippy·정확한 numerics marker/3DSO·음성2를 통과한 뒤 실제
+fixture의700초 제한에서 실패했다. artifact12575287289는52,138,342B/SHA256
+`871c5e190a923f7f800f823f9d0ea8192eb7bc5972c20715194f6ebf0c806b43`,207CRC·해제382,823,947B를
+감사했다. native raw는 완전한40cases/8,655rows였지만 process.log·정식 비교 결과·최종
+native baseline이 없으므로705,948비교와 수용을 주장하지 않는다. source/index/SDK 및
+held/numerics 전후6쌍은 동일했고 자손 회수·upload를 확인했다. 강한 수용 실패로 정리는
+skipped다. #537/#538/#543의 이전 admission은 통과했지만, 이 이슈들의 전체 normal40 완료
+조건은 아직 남는다. hash·입력 준비·native 실행·감독 시간을 구분해 조사하며600/700초와
+수치·봉인 기준은 유지한다. #533의 기존30case/F64 수용과는 별도다.
+
+## shared logging2 원본 보존 후보 — #549
+
+기존 Rust retained checker에 `prepare-context --root ROOT --archive ARCHIVE --output OUTPUT`을
+추가한다. exact R11 artifact12477566277의 outer ZIP2·TAR788·inner ZIP2185를 inert로 읽어
+TAR70+inner ZIP37+변하지 않은 current C++ source1의108개/700,585B를 그대로 검증한다.
+고정 원문 pin을 새 출력으로 만들지 않는다. 새 context는 source19 index와 함께 private
+directory에 NOREPLACE로 게시하고 외부 sidecar `${OUTPUT}.prepare.json`에 FD·source/provider
+전후 관측과 수용 한계를 기록한다. source19는 전체 Cargo/DSO 의존성 봉인이 아니다.
+
+새 집중 workflow는 기존 private source/SDK·APT admission을 재사용한다. 원문2파일의
+존재·exact SHA를 유지하고 현재 checker/probe/lib/fixture를 Cargo JSONL에서 유일하게
+선택한다. core21·새 importer9의 정확한 이름/수와 ignored0, 기존 retained14 selector 각각
+1성공, 하나의600초 잔여 예산과 한 번의 raw 비교를 요구한다. probe는 새 single-link copy를
+hold한다. 다운로드 뒤 native/trace는 비밀 없는 명시적 env만 전달하고 strace EXITKILL을
+요구한다. 준비 단계 실패 뒤 새 Cargo를 실행하지 않으며 source/SDK final·upload는 항상
+보존한다. 전체20여 프로그램의 실행/FD 폐쇄를 이 후보만으로 수용했다고 주장하지 않는다.
+
+독립 검토에서 importer의 P1/P2는 없었고, 실행 조건·EXITKILL 지적을 보완했다. 이 새 코드의
+컴파일/기능/Clippy는 모두 Actions 전 UNRUN이다. old27은 역사17/미완료10으로 별도이며,
+현재 source bridge도 아직 HOLD다. 새14를 old10의 대체 credit으로 세지 않는다. P2 adversarial·
+전체 build/trace/FD closure·caller1·원본 부재 단계도 별도로 남는다. 두 Python 원본·caller와
+baseline292/3/3285를 보존하며 새 retirement credit은0이다.

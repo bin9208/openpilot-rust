@@ -1,5 +1,5 @@
 //! The shared Ratekeeper checker is a host tool, outside the Python helper.
-use openpilot_dev_tools::ci_policy::{parse, LOCAL_RUNNER, TRUSTED_SOURCE};
+use openpilot_dev_tools::ci_policy::{parse, HOSTED_RUNNER, LOCAL_RUNNER, TRUSTED_SOURCE};
 use serde_json::Value;
 use std::{fs, path::Path, process::Command};
 const BUILD:&str="cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ratekeeper --bin check-cutin-alert --bin check-selfdrive-state --bin check-alert-manager --bin check-selfdrive-events --bin check-alert-callbacks --bin check-selfdrive-helpers --locked";
@@ -7,7 +7,7 @@ const CHECK:&str="rust/target/debug/check-ratekeeper --binary \"$selfdrive_examp
 const GUARD:&str="\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 2048";
 fn check(workflow: &Value) -> Result<(), String> {
     let job = &workflow["jobs"]["selfdrive-runtime"];
-    if job["runs-on"] != serde_json::json!(LOCAL_RUNNER)
+    if job["runs-on"] != serde_json::json!(HOSTED_RUNNER)
         || job.get("if").is_some()
         || job.get("continue-on-error").is_some()
     {
@@ -93,8 +93,22 @@ fn native_checker_nonzero_status_stops_the_actual_selected_command() {
 fn missing_softened_python_and_wrong_architecture_routes_cannot_pass() {
     let build=format!("\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024\n{BUILD}");
     let run=format!("selfdrive_examples=\"$GITHUB_WORKSPACE/rust/target/debug/examples\"\nselfdrive_evidence=\"$RUNNER_TEMP/selfdrived-native/reference\"\nrun_reference() {{\npython \"$@\"\n}}\n{GUARD}\n{CHECK}");
-    let good = serde_json::json!({"jobs":{"selfdrive-runtime":{"runs-on":LOCAL_RUNNER,"steps":[{"if":TRUSTED_SOURCE,"run":build},{"if":TRUSTED_SOURCE,"run":run}]}}});
+    let good = serde_json::json!({"jobs":{"selfdrive-runtime":{"runs-on":HOSTED_RUNNER,"steps":[{"if":TRUSTED_SOURCE,"run":build},{"if":TRUSTED_SOURCE,"run":run}]}}});
     check(&good).unwrap();
+    for host in [
+        serde_json::json!(LOCAL_RUNNER),
+        serde_json::json!("ubuntu-latest"),
+        serde_json::json!("windows-latest"),
+        serde_json::json!("${{ matrix.runner }}"),
+        serde_json::json!([HOSTED_RUNNER]),
+    ] {
+        let mut bad = good.clone();
+        bad["jobs"]["selfdrive-runtime"]["runs-on"] = host;
+        assert_eq!(
+            check(&bad),
+            Err("selfdrived host selection/required job changed".into())
+        );
+    }
     for mutation in [
         "missing-build",
         "missing-check",

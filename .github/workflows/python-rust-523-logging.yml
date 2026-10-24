@@ -1,0 +1,242 @@
+name: Python Rust 523 shared logging retained candidate
+'on':
+  push:
+    branches:
+    - codex/feat-523-python-rust
+    paths:
+    - .github/workflows/python-rust-523-logging.yml
+    - tools/ci/logging_retained_549.sh
+    - rust/crates/dev-tools/src/native_logging_check.rs
+    - rust/crates/dev-tools/src/native_logging_check/**
+    - rust/crates/dev-tools/tests/native_logging_lifecycle.rs
+    - rust/crates/dev-tools/tests/native_logging_lifecycle/**
+    - rust/crates/logging/**
+    - rust/crates/dev-tools/Cargo.toml
+    - rust/Cargo.toml
+    - rust/Cargo.lock
+    - rust/tools/prepare-readonly-ci-rust
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: python-rust-523-logging-${{ github.ref }}
+  cancel-in-progress: false
+  queue: max
+jobs:
+  logging-retained:
+    name: Shared logging retained source and current native candidate
+    if: ${{ github.repository == 'bin9208/openpilot-rust' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      CARGO_BUILD_JOBS: '1'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_TERM_COLOR: never
+      RUSTUP_TOOLCHAIN: 1.94.0
+    steps:
+    - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name
+          == github.repository }}
+        EVENT_NAME: ${{ github.event_name }}
+        SOURCE_REF: ${{ github.ref }}
+      run: |
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied for logging retained qualification' >&2; exit 1; }
+        set -euo pipefail
+        test "$EVENT_NAME" = push
+        test "$SOURCE_REF" = refs/heads/codex/feat-523-python-rust
+        test "$GITHUB_ACTIONS" = true
+        test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+        test "$RUNNER_ENVIRONMENT" = github-hosted
+        test "$RUNNER_OS" = Linux
+        test "$RUNNER_ARCH" = X64
+        test "$(uname -m)" = x86_64
+    - name: Common owned Fast job temporary paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+    - name: Allocate private source cache and target before checkout
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+        workspace=$(realpath -e -- "$GITHUB_WORKSPACE")
+        job=$CI_JOB_TEMP
+        owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$(cat "$job/owner")" = "$owner"
+        umask 077
+        mkdir "$job/proof" "$job/home" "$job/cache"
+        available=$(df -PB1 "$workspace" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]]
+        required=$((2 * 1024 * 1024 * 1024))
+        printf '{"available_bytes":%s,"planned_source_growth_bytes":%s}\n' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
+        ((available >= required))
+        source_owner=$(mktemp -d "$workspace/.logging549-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
+        printf '%s\n' "$owner" > "$source_owner/.diag296-owner"
+        mkdir "$source_owner/source"
+        source="$source_owner/source"
+        # Actions의 workspace와 Bash가 사용하는 private checkout을 구분한다.
+        printf 'source %q\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\n  export GITHUB_WORKSPACE=%q\nfi\n' "$BASH_ENV" "$workspace" "$source" > "$job/diagnostic-shell-env"
+        printf '%s\n' "DIAG_ACTIONS_WORKSPACE=$workspace" "DIAG_SOURCE_OWNER=$source_owner" "DIAG_SOURCE_IDENTITY=$(stat -c '%d:%i' -- "$source_owner")" "DIAG_SOURCE=$source" "DIAG_CHECKOUT_PATH=${source#"$workspace/"}" "HOME=$job/home" "CARGO_HOME=$job/cargo-home" "RUSTUP_HOME=$job/rustup-home" "CARGO_TARGET_DIR=$source/rust/target" "XDG_CACHE_HOME=$job/cache" "PIP_CACHE_DIR=$job/cache/pip" "BASH_ENV=$job/diagnostic-shell-env" >> "$GITHUB_ENV"
+        printf 'owner=%s\njob=%s\nactions_workspace=%s\nsource_owner=%s\nsource_identity=%s\nsource=%s\nworkflow_sha=%s\n' "$owner" "$job" "$workspace" "$source_owner" "$(stat -c '%d:%i' -- "$source_owner")" "$source" "$GITHUB_SHA" > "$job/proof/ownership.txt"
+        df -PB1 "$workspace" "$job" > "$job/proof/disk-before.txt"
+        cat /proc/meminfo > "$job/proof/memory-before.txt"
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$job/proof/cgroup-memory-before.txt"; fi
+        printf '%s\n' "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_OS" "$RUNNER_ARCH" > "$job/proof/runner.txt"
+    - uses: actions/checkout@v7
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      with:
+        fetch-depth: 1
+        persist-credentials: false
+        path: ${{ env.DIAG_CHECKOUT_PATH }}
+        set-safe-directory: false
+        clean: false
+        lfs: false
+    - name: Seal exact source HEAD and tracked index before checks
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      id: source_before
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$PWD" = "$DIAG_SOURCE"
+        test "$GITHUB_WORKSPACE" = "$DIAG_SOURCE"
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git diff --exit-code
+        git diff --cached --exit-code
+        printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
+        allocated=$(du -sx --block-size=1 "$DIAG_SOURCE_OWNER" | cut -f1)
+        [[ $allocated =~ ^[0-9]+$ ]]
+        printf '{"allocated_private_source_bytes":%s,"planned_source_growth_bytes":2147483648}\n' "$allocated" > "$CI_JOB_TEMP/proof/source-growth-after-checkout.json"
+        git ls-tree -r -l HEAD | awk '$4 ~ /^[0-9]+$/ {bytes+=$4; files++} END {printf "{\"tracked_blob_bytes\":%.0f,\"files\":%d}\n",bytes,files}' > "$CI_JOB_TEMP/proof/tracked-source-size.json"
+        ((allocated <= 2 * 1024 * 1024 * 1024))
+    - name: Prepare official pinned Rust in the owned private rustup root and seal it
+      id: prepared_rust
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$RUSTUP_HOME" = "$CI_JOB_TEMP/rustup-home"
+        "$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" before
+    - name: Admit actual hosted disk space before native dependency preparation
+      id: hosted_dependencies
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      timeout-minutes: 15
+      run: |
+        set -euo pipefail
+        test "$RUNNER_ENVIRONMENT" = github-hosted
+        test "$RUNNER_OS" = Linux
+        test "$RUNNER_ARCH" = X64
+        test "$PWD" = "$DIAG_SOURCE"
+        test "$GITHUB_WORKSPACE" = "$DIAG_SOURCE"
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        before_source=$(df -PB1 "$DIAG_SOURCE" | awk 'NR == 2 {print $4}')
+        before_job=$(df -PB1 "$CI_JOB_TEMP" | awk 'NR == 2 {print $4}')
+        before_system=$(df -PB1 / | awk 'NR == 2 {print $4}')
+        [[ $before_source =~ ^[0-9]+$ && $before_job =~ ^[0-9]+$ && $before_system =~ ^[0-9]+$ ]]
+        preparation=$((2 * 1024 * 1024 * 1024))
+        remaining=$(((8 + 2) * 1024 * 1024 * 1024))
+        printf '{"source_available_bytes":%s,"job_available_bytes":%s,"system_available_bytes":%s,"planned_apt_growth_bytes":%s,"reserved_build_and_proof_bytes":%s,"measured_peak_guarantee":false}\n' "$before_source" "$before_job" "$before_system" "$preparation" "$remaining" | tee "$CI_JOB_TEMP/proof/hosted-dependencies-before.json"
+        ((before_source >= preparation + remaining && before_job >= preparation + remaining))
+        ((before_system >= preparation + 512 * 1024 * 1024))
+        # 전역 apt 변경은 provider baseline 전 한 번만 한다. missing provider는 helper가 거부한다.
+        (ulimit -f 524288; sudo -n /usr/bin/timeout --signal=TERM --kill-after=30s 600s \
+          apt-get -o APT::Architecture=amd64 update) > "$CI_JOB_TEMP/proof/hosted-apt-update.log" 2>&1
+        (ulimit -f 524288; sudo -n /usr/bin/timeout --signal=TERM --kill-after=30s 600s \
+          apt-get -o APT::Architecture=amd64 install --no-install-recommends -y \
+          build-essential clang pkg-config capnproto libcapnp-dev libzmq3-dev strace gh curl) \
+          > "$CI_JOB_TEMP/proof/hosted-apt-install.log" 2>&1
+        after_source=$(df -PB1 "$DIAG_SOURCE" | awk 'NR == 2 {print $4}')
+        after_job=$(df -PB1 "$CI_JOB_TEMP" | awk 'NR == 2 {print $4}')
+        after_system=$(df -PB1 / | awk 'NR == 2 {print $4}')
+        [[ $after_source =~ ^[0-9]+$ && $after_job =~ ^[0-9]+$ && $after_system =~ ^[0-9]+$ ]]
+        printf '{"source_available_bytes":%s,"job_available_bytes":%s,"system_available_bytes":%s,"planned_apt_growth_bytes":%s,"measured_peak_guarantee":false}\n' "$after_source" "$after_job" "$after_system" "$preparation" | tee "$CI_JOB_TEMP/proof/hosted-dependencies-after.json"
+        ((before_source - after_source <= preparation && before_job - after_job <= preparation && before_system - after_system <= preparation))
+        ((after_source >= remaining && after_job >= remaining))
+        ((after_system >= 512 * 1024 * 1024))
+        dpkg-query -W build-essential clang pkg-config capnproto libcapnp-dev libzmq3-dev strace gh curl > "$CI_JOB_TEMP/proof/hosted-native-packages.txt"
+        for provider in bash sh ranlib nm git gh curl clang clang++ cc c++ ar as ld pkg-config capnp ldd strace timeout; do
+          command -v "$provider" > /dev/null
+        done
+    - name: Build and observe retained native logging without deleting originals
+      id: qualify
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        umask 077
+        # 첫 candidate의 실제 결과를 수집한다. old27/P2/closed-trace/caller/absence 수용은 별도다.
+        /usr/bin/timeout --signal=TERM --kill-after=180s 60m /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH /usr/bin/bash tools/ci/logging_retained_549.sh
+    - name: Seal source and index after all attempted contracts
+      id: source_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && env.DIAG_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
+        df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
+        du -sx --block-size=1 "$DIAG_SOURCE_OWNER" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/private-output-bytes.txt"
+        cat /proc/meminfo > "$CI_JOB_TEMP/proof/memory-after.txt"
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$CI_JOB_TEMP/proof/cgroup-memory-after.txt"; fi
+        find "$CARGO_TARGET_DIR" -name '*.d' -type f -exec sha256sum {} + > "$CI_JOB_TEMP/proof/build-dep-info.sha256" || test ! -d "$CARGO_TARGET_DIR"
+        cmp "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/index-after.bin"
+        cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
+        git diff --exit-code
+        git diff --cached --exit-code
+        proof_bytes=$(du -sx --block-size=1 "$CI_JOB_TEMP/proof" | cut -f1)
+        [[ $proof_bytes =~ ^[0-9]+$ ]]
+        ((proof_bytes <= 1024 * 1024 * 1024))
+    - name: Verify whole prepared private Rust SDK after all attempted logging candidate contracts
+      id: prepared_rust_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && steps.prepared_rust.outcome == 'success') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        "$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" after
+        proof_bytes=$(du -sx --block-size=1 "$CI_JOB_TEMP/proof" | cut -f1)
+        [[ $proof_bytes =~ ^[0-9]+$ ]]
+        ((proof_bytes <= 1024 * 1024 * 1024))
+    - name: Retain current source and native logging candidate proof even on failure
+      id: proof_upload
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && env.CI_JOB_TEMP != '') }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: logging-retained-549-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ env.CI_JOB_TEMP }}/proof
+        if-no-files-found: error
+        retention-days: 7
+        include-hidden-files: true
+    - name: Record candidate scope and outstanding retirement gates
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && env.CI_JOB_TEMP != '') }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+        printf '%s\n' '이 실행은 원본을 보존한 shared logging 후보 검증이다.' 'old27/P2/전체 trace·FD 폐쇄/caller·absence/퇴역 수용은 별도이며 원본 교체 credit은 0이다.' >> "$GITHUB_STEP_SUMMARY"

@@ -687,6 +687,9 @@ impl HeldBinary {
 }
 pub fn cli() -> Result<()> {
     let args = std::env::args_os().skip(1).collect::<Vec<_>>();
+    if retained::prepare::selected(&args) {
+        return retained::prepare::cli(&args[1..]);
+    }
     if retained::selected(&args) {
         return retained::cli(&args[1..]);
     }

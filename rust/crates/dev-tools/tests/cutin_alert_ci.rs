@@ -1,5 +1,5 @@
 //! Preserve the surrounding source comparisons while retiring the fixed cut-in checker.
-use openpilot_dev_tools::ci_policy::{parse, LOCAL_RUNNER, TRUSTED_SOURCE};
+use openpilot_dev_tools::ci_policy::{parse, HOSTED_RUNNER, LOCAL_RUNNER, TRUSTED_SOURCE};
 use serde_json::Value;
 use std::{fs, path::PathBuf, process::Command};
 
@@ -23,7 +23,7 @@ const REFERENCES: [&str; 9] = [
 
 fn check(workflow: &Value) -> Result<(), String> {
     let job = &workflow["jobs"]["selfdrive-runtime"];
-    if job["runs-on"] != serde_json::json!(LOCAL_RUNNER)
+    if job["runs-on"] != serde_json::json!(HOSTED_RUNNER)
         || job.get("if").is_some()
         || job.get("continue-on-error").is_some()
     {
@@ -170,8 +170,22 @@ fn missing_optional_softened_python_or_changed_source_routes_are_rejected() {
             .join("\n"),
         REFERENCES[8]
     );
-    let good = serde_json::json!({"jobs":{"selfdrive-runtime":{"runs-on":LOCAL_RUNNER,"steps":[{"if":TRUSTED_SOURCE,"run":build},{"if":TRUSTED_SOURCE,"run":run}]}}});
+    let good = serde_json::json!({"jobs":{"selfdrive-runtime":{"runs-on":HOSTED_RUNNER,"steps":[{"if":TRUSTED_SOURCE,"run":build},{"if":TRUSTED_SOURCE,"run":run}]}}});
     check(&good).unwrap();
+    for host in [
+        serde_json::json!(LOCAL_RUNNER),
+        serde_json::json!("ubuntu-latest"),
+        serde_json::json!("windows-latest"),
+        serde_json::json!("${{ matrix.runner }}"),
+        serde_json::json!([HOSTED_RUNNER]),
+    ] {
+        let mut bad = good.clone();
+        bad["jobs"]["selfdrive-runtime"]["runs-on"] = host;
+        assert_eq!(
+            check(&bad),
+            Err("selfdrived host or required job changed".into())
+        );
+    }
     for command in &REFERENCES[1..=6] {
         for replacement in [
             command.to_string(),

@@ -1068,3 +1068,9 @@ source bdb819e59534ffba7c61751653ddaf360e8e324a를 dev 대상 draft PR343에 fas
 ded6051b33f51ffa3aa4b23e76e51c2eb4804d4b의 Focus40129042247은 alias26·Unicode7·SSH27·Clippy와 source/SDK 봉인까지 성공했고 artifact81CRC를 감사했다. Fast40129042267은 이전 YAML parse를 통과했으나 첫 unconditional fork guard를 잘못 분류한 정책 검사2개가 실패해 수정했다(#542). setup40129042246은21+3/Clippy/public 출력 비교 뒤 held CLI 교체를 거부했다. 실제 dangling source symlink의 Cargo 감시가 재빌드를 유발한 #540으로, 일반 missing/symlink 감시와 read-only Git 조회를 수정하고 회귀9개·Clippy를 setup Actions의 최종 CLI hold 앞에 연결했다. 새 소스의 기능 수용은 아직 미실행이다.
 
 normal40129042248과 이전 필수 ARM 일부는 진행 중이며 완료로 세지 않는다. 실제로 job 시간 한도를 초과한 ARM5개만 추가 보완했다(#548). 별도 #549에서는 기존 shared logging 도구2개의 남은 원문/lifecycle/caller/absence 검증을 진행하며 원본을 보존한다. 정확한 source와 artifact·검토 범위는 `python-rust-523-hosted-535.md`에 기록했다. PR343은 bdb819e59/dev draft, baseline292/3/3285와 새 원본 credit0, 전체 #523 미완료 상태를 유지한다.
+
+### 96a 실제 setup 수용과 shared logging 후보
+
+96a904e6da44151785eb1206963fa6ecea019e31의 Focus40131329248과 setup40131329251은 성공했다. 각각81CRC/167CRC와 전후 봉인을 감사했고, setup은 watcher9/Clippy·원문21/음성3/public1 및 CLI inode·SHA 불변·upload/정리를 확인했다. #536/#539/#540의 개별 해결 근거와 별도 trace 성공 집계 공백 #551을 구분한다. Fast40131329250은 isolation84/policy29 성공 뒤 cutin의 예전 runner 비교에서 실패했고 alert-manager는 checkout 지연을 포함한7분 제한에 걸렸다. 같은 runner 비교3개를 한정 보완하고7분 한도는 유지한다.
+
+normal40129042248은 이제 실제700초 timeout으로 실패했다(#550). raw40/8,655rows는 있으나 정식705,948비교/최종 native 수용은 아직 없다. 기존600/700초·수치·source/SDK 기준을 유지해 조사한다. shared logging2의 #549에서는 고정108개 inert 자료를 직접 읽는 native prepare-context와 core21/importer9/retained14/한 번의 raw 비교를 실행할 원본 보존 후보를 준비했다. 기존 old27·P2·전체 trace/FD·caller/absence gate와 구분하며 새 기능은 Actions 검증 전 UNRUN이다. 상세 exact source/run/artifact·리뷰·한계는 `python-rust-523-hosted-535.md`에 남긴다. baseline292/3/3285와 전체 미완료 상태를 유지한다.

@@ -169,6 +169,7 @@ fn source_result_binding(step: &Value) -> Result<(), String> {
                     "test \"${SOURCE_ALLOWED:-}\" = true || { echo 'Fork PR source denied for trusted docs validation' >&2; exit 1; }\n",
                     "test \"${SOURCE_ALLOWED:-}\" = true || { echo 'Fork PR source denied for setup qualification' >&2; exit 1; }\n",
                     "test \"${SOURCE_ALLOWED:-}\" = true || { echo 'Fork PR source denied for normal40 qualification' >&2; exit 1; }\n",
+                    "test \"${SOURCE_ALLOWED:-}\" = true || { echo 'Fork PR source denied for logging retained qualification' >&2; exit 1; }\n",
                 ]
                 .iter()
                 .any(|prefix| s.starts_with(prefix))

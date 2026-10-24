@@ -1,5 +1,6 @@
 //! Native-only consumer of the independently admitted, inert R11 C++ records.
-//! No archive reader, builder, executable reference or source hook is accepted.
+//! The live retained mode accepts no archive, builder, executable reference or
+//! source hook. Its private prepare child only admits pinned inert archive data.
 use super::*;
 use serde::{
     de::{MapAccess, Visitor},
@@ -1922,3 +1923,6 @@ fn compare_native(
 #[cfg(test)]
 #[path = "retained_tests.rs"]
 mod tests;
+
+#[path = "prepare.rs"]
+pub(super) mod prepare;

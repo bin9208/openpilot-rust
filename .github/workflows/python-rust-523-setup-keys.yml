@@ -561,7 +561,8 @@ jobs:
               [[ $body =~ $exec_re ]] || { printf 'unsupported exec record: %s\n' "$body" >&2; return 1; }
               rest=${body#'execve('}; program=${rest%%, *}; rest=${rest#"$program, "}
               if [[ $rest == '['* ]]; then argv=${rest%%], *}']'; else argv=NULL; fi
-              result=${body##*') = '}
+              # exec_re가 검증한 마지막 결과 구분자는 정렬용 공백 수에 의존하지 않는다.
+              result=${body##*' = '}
               unhex "$program" || return 1; program=$decoded; base=${program##*/}; base=${base,,}
               [[ $base != *python* && $base != *.py ]] || return 1
               calls=$((calls+1))

@@ -1,6 +1,7 @@
 //! Mandatory native encoder workflow routing; no interpreter fixture bootstrap.
 use openpilot_dev_tools::ci_policy::{
-    parse, uses_native_action, validate_local_routing, LOCAL_RUNNER, TRUSTED_ALWAYS, TRUSTED_SOURCE,
+    parse, uses_native_action, validate_local_routing, HOSTED_RUNNER, LOCAL_RUNNER, TRUSTED_ALWAYS,
+    TRUSTED_SOURCE,
 };
 use serde_json::Value;
 use std::{fs, path::Path};
@@ -18,25 +19,45 @@ fn runs(job: &Value) -> String {
         .collect::<Vec<_>>()
         .join("\n")
 }
+fn hosted_job(job: &Value) {
+    assert_eq!(job["runs-on"], serde_json::json!(HOSTED_RUNNER));
+    assert!(job.get("if").is_none());
+    assert!(job.get("continue-on-error").is_none());
+}
+#[test]
+fn encoder_host_rejects_legacy_or_unapproved_routing() {
+    let workflow = workflow();
+    let job = &workflow["jobs"]["encoder-runtime"];
+    hosted_job(job);
+    for host in [
+        serde_json::json!(LOCAL_RUNNER),
+        serde_json::json!("ubuntu-latest"),
+        serde_json::json!("windows-latest"),
+        serde_json::json!("${{ matrix.runner }}"),
+        serde_json::json!([HOSTED_RUNNER]),
+    ] {
+        let mut bad = job.clone();
+        bad["runs-on"] = host;
+        assert!(std::panic::catch_unwind(|| hosted_job(&bad)).is_err());
+    }
+}
 #[test]
 fn encoder_host_job_uses_native_checkers_without_python_bootstrap() {
     let workflow = workflow();
     let job = &workflow["jobs"]["encoder-runtime"];
     let commands = runs(job);
-    assert_eq!(job["runs-on"], serde_json::json!(LOCAL_RUNNER));
+    hosted_job(job);
     validate_local_routing(&workflow).unwrap();
     assert_eq!(job["env"]["CARGO_BUILD_JOBS"], "2");
     assert_eq!(job["env"]["CARGO_INCREMENTAL"], "0");
-    assert!(job.get("if").is_none());
-    assert!(job.get("continue-on-error").is_none());
-    for step in steps(job) {
+    // 실제 첫 source/fork 경계는 위 validate_local_routing으로 먼저 검증한다.
+    for step in steps(job).iter().skip(1) {
         assert!(!step["uses"].as_str().unwrap_or("").contains("setup-python"));
         assert!(step.get("continue-on-error").is_none());
         if step.get("run").is_some()
             && !matches!(
                 step["name"].as_str().unwrap_or(""),
-                "Deny fork source and require registered local runner"
-                    | "Seal private source and index after maintained checks"
+                "Seal private source and index after maintained checks"
                     | "Clean only uploaded owned source alias and target"
             )
         {
