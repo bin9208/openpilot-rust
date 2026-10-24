@@ -1,0 +1,96 @@
+name: Python Rust 523 unused compiler cache recovery
+'on':
+  push:
+    branches:
+    - codex/feat-523-python-rust
+    paths:
+    - .github/workflows/python-rust-523-reclaim.yml
+permissions:
+  contents: read
+concurrency:
+  group: python-rust-523-cache-recovery
+  cancel-in-progress: false
+jobs:
+  reclaim:
+    runs-on:
+    - self-hosted
+    - Linux
+    - X64
+    - dev-md-local
+    timeout-minutes: 20
+    steps:
+    - name: Require registered runner and allocate owned evidence
+      shell: bash
+      run: 'set -euo pipefail
+
+        test "$RUNNER_NAME" = bin-actions
+
+        test "$RUNNER_ENVIRONMENT" = self-hosted
+
+        test "$RUNNER_ARCH" = X64
+
+        evidence=$(mktemp -d "$RUNNER_TEMP/python-rust-523-reclaim.XXXXXX")
+
+        printf ''%s:%s:%s\n'' "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$GITHUB_JOB" > "$evidence/owner"
+
+        printf ''RECLAIM_EVIDENCE=%s\n'' "$evidence" >> "$GITHUB_ENV"
+
+        '
+    - name: Remove only inventoried obsolete policy caches and Rust link intermediates
+      shell: bash
+      run: "set -euo pipefail\npython3 - <<'PY'\nimport hashlib,json,os,re,shutil,stat,subprocess\nfrom pathlib\
+        \ import Path\nproof=Path(os.environ['RECLAIM_EVIDENCE'])\nshared=Path('/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust')\n\
+        expected_source='e0ef927ebb4010996feaf52137611cdf2e2c3b86'\nassert subprocess.check_output(['git','-C',str(shared),'rev-parse','HEAD'],text=True).strip()==expected_source\n\
+        assert not subprocess.check_output(['git','-C',str(shared),'status','--porcelain=v1','-uno'])\ncontexts=[\n\
+        \  (Path('/tmp/openpilot-ci.hRmquO'),285821,'39876347459:1:routing-policy'),\n  (Path('/tmp/openpilot-ci.s9WqUE'),176810,'39875010264:1:routing-policy'),\n\
+        \  (Path('/tmp/openpilot-ci.Rt5Jlt'),134388,'39871081170:1:routing-policy'),\n  (Path('/tmp/openpilot-ci.eQd1Pi'),3042742,'39892674289:1:routing-policy'),\n\
+        ]\ndef directory(path, inode=None):\n  s=path.lstat()\n  assert stat.S_ISDIR(s.st_mode) and s.st_uid==os.getuid()\
+        \ and not path.is_symlink(),str(path)\n  assert path.resolve()==path,str(path)\n  if inode is not None:\
+        \ assert (s.st_dev,s.st_ino)==(64525,inode),str(path)\n  return s\nfor root,inode,owner in contexts:\n \
+        \ directory(root,inode)\n  marker=root/'owner'\n  assert stat.S_ISREG(marker.lstat().st_mode) and marker.read_text().strip()==owner\n\
+        target=shared/'rust/target'\ndirectory(target,396387)\nremovable=[]\nfor root,_,_ in contexts:\n  for path\
+        \ in [root/'target',root/'cargo-home/registry']:\n    if path.exists(): directory(path);removable.append(path)\n\
+        pip=Path('/home/actions/.cache/pip/http-v2')\nif pip.exists(): directory(pip);removable.append(pip)\nintermediates=[]\n\
+        deps=target/'debug/deps'\ndirectory(deps)\nfor path in deps.iterdir():\n  s=path.lstat()\n  if stat.S_ISREG(s.st_mode)\
+        \ and re.fullmatch(r'lib[A-Za-z0-9_]+-[0-9a-f]{16}\\.(?:rlib|rmeta)',path.name):\n    assert s.st_uid==os.getuid()\n\
+        \    intermediates.append(path)\nprotected=[str(p) for p in removable+intermediates]\ndef idle():\n  # Read-only\
+        \ root inspection includes all UIDs; unreadable processes reject cleanup.\n  guard=\"import json,os\\nfrom\
+        \ pathlib import Path\\nprotected=json.load(__import__('sys').stdin)\\nfor proc in Path('/proc').iterdir():\\\
+        n  if not proc.name.isdigit() or int(proc.name)==os.getpid():continue\\n  try:\\n    comm=(proc/'comm').read_text().strip()\\\
+        n    assert comm not in {'cargo','rustc','rustdoc','gcc','g++','cc','cc1','cc1plus','clang','clang++','ld','ld.lld'},comm\\\
+        n    links=[proc/'cwd',proc/'exe']+list((proc/'fd').iterdir())\\n    for link in links:\\n      try:value=os.readlink(link).removesuffix('\
+        \ (deleted)')\\n      except FileNotFoundError:continue\\n      assert not any(value==p or value.startswith(p+'/')\
+        \ for p in protected),(proc.name,value)\\n    for line in (proc/'maps').read_text().splitlines():\\n   \
+        \   fields=line.split(None,5)\\n      if len(fields)==6:\\n        value=fields[5].removesuffix(' (deleted)')\\\
+        n        assert not any(value==p or value.startswith(p+'/') for p in protected),(proc.name,value)\\n  except\
+        \ (FileNotFoundError,ProcessLookupError):continue\\n\"\n  subprocess.run(['sudo','-n','python3','-c',guard],input=json.dumps(protected),text=True,check=True)\n\
+        def digest(path):\n  h=hashlib.sha256()\n  with path.open('rb') as f:\n    for block in iter(lambda:f.read(1024*1024),b''):h.update(block)\n\
+        \  return h.hexdigest()\ndef retained():\n  result={}\n  roots=[shared/'rust/target']+[r for r,_,_ in contexts]\n\
+        \  for root in roots:\n    for base,dirs,files in os.walk(root,followlinks=False):\n      dirs[:]=[d for\
+        \ d in dirs if str(Path(base)/d) not in protected]\n      for name in list(dirs):\n        path=Path(base)/name\n\
+        \        metadata=path.lstat()\n        if stat.S_ISLNK(metadata.st_mode):\n          result[str(path)]=['directory-symlink',os.readlink(path)]\n\
+        \          dirs.remove(name)\n        else:result[str(path)]=['directory',metadata.st_mode,metadata.st_ino]\n\
+        \      for name in files:\n        path=Path(base)/name\n        if str(path) in protected:continue\n  \
+        \      s=path.lstat()\n        if stat.S_ISLNK(s.st_mode):result[str(path)]=['symlink',os.readlink(path)]\n\
+        \        elif stat.S_ISREG(s.st_mode):result[str(path)]=[s.st_mode,s.st_size,digest(path)]\n        else:result[str(path)]=['special',s.st_mode,s.st_rdev,s.st_ino]\n\
+        \  return result\nidle()\nbefore=retained()\n(proof/'retained-before.json').write_text(json.dumps(before,sort_keys=True))\n\
+        (proof/'free-before.json').write_text(json.dumps(shutil.disk_usage(shared)._asdict()))\nplan=[{'path':str(p),'identity':[p.lstat().st_dev,p.lstat().st_ino],'type':'tree'}\
+        \ for p in removable]\nplan += [{'path':str(p),'identity':[p.lstat().st_dev,p.lstat().st_ino],'type':'intermediate'}\
+        \ for p in intermediates]\n(proof/'plan.json').write_text(json.dumps(plan,sort_keys=True))\nassert shutil.rmtree.avoids_symlink_attacks\n\
+        idle()\nwith (proof/'journal.jsonl').open('w',buffering=1) as journal:\n  for item in plan:\n    path=Path(item['path']);s=path.lstat()\n\
+        \    assert [s.st_dev,s.st_ino]==item['identity']\n    journal.write(json.dumps({'intent':item})+'\\n')\n\
+        \    if item['type']=='tree':shutil.rmtree(path)\n    else:path.unlink()\n    assert not path.exists() and\
+        \ not path.is_symlink()\n    journal.write(json.dumps({'removed':str(path)})+'\\n')\nafter=retained()\n\
+        (proof/'retained-after.json').write_text(json.dumps(after,sort_keys=True))\nassert before==after,'retained\
+        \ source/proof/toolchains/binaries changed'\nassert subprocess.check_output(['git','-C',str(shared),'rev-parse','HEAD'],text=True).strip()==expected_source\n\
+        assert not subprocess.check_output(['git','-C',str(shared),'status','--porcelain=v1','-uno'])\n(proof/'free-after.json').write_text(json.dumps(shutil.disk_usage(shared)._asdict()))\n\
+        (proof/'result.json').write_text(json.dumps({'removed_paths':len(plan),'retained_files':len(after),'source':expected_source,'scope':'obsolete\
+        \ policy target/registry, pip HTTP downloads and Rust rlib/rmeta only'}))\nPY\n"
+    - name: Preserve exact cleanup journal and retained-file evidence
+      if: always() && env.RECLAIM_EVIDENCE != ''
+      uses: actions/upload-artifact@v6
+      with:
+        name: python-rust-523-reclaim-${{ github.run_id }}
+        path: ${{ env.RECLAIM_EVIDENCE }}
+        if-no-files-found: error
+        retention-days: 14
